@@ -1,0 +1,71 @@
+{
+  "title": "Matterbridge Roborock Vacuum Plugin",
+  "description": "matterbridge-roborock-vacuum-plugin v. 1.0.0 by https://github.com/Luligu",
+  "type": "object",
+  "required": [],
+  "properties": {
+    "name": {
+      "description": "Plugin name",
+      "type": "string",
+      "readOnly": true,
+      "ui:widget": "hidden"
+    },
+    "type": {
+      "description": "Plugin type",
+      "type": "string",
+      "readOnly": true,
+      "ui:widget": "hidden"
+    },
+    "whiteList": {
+      "description": "Only the devices in the list will be exposed. If the list is empty, all the devices will be exposed.",
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "uniqueItems": true,
+      "selectFrom": "name"
+    },
+    "blackList": {
+      "description": "The devices in the list will not be exposed. If the list is empty, no devices will be excluded.",
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "uniqueItems": true,
+      "selectFrom": "name"
+    },
+    "useInterval": {
+      "description": "Use interval to refresh the devices",
+      "type": "boolean",
+      "default": true
+    },
+    "enableRVC": {
+      "description": "Enable the Robot Vacuum Cleaner (Apple Home will crash unless you use child bridge and put the rvc in the white list as a single device)",
+      "type": "boolean",
+      "default": false
+    },
+    "username": {
+      "description": "Roborock username (required for the plugin to work)",
+      "type": "string"
+    },
+    "password": {
+      "description": "Roborock password (required for the plugin to work)",
+      "type": "string"
+    },
+    "refreshInterval": {
+      "description": "Refresh interval in seconds (default: 60)",
+      "type": "number",
+      "default": 60
+    },
+    "debug": {
+      "description": "Enable the debug for the plugin (development only)",
+      "type": "boolean",
+      "default": false
+    },
+    "unregisterOnShutdown": {
+      "description": "Unregister all devices on shutdown (development only)",
+      "type": "boolean",
+      "default": false
+    }
+  }
+}
