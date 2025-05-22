@@ -21,7 +21,7 @@ export default class RoborockAuthenticateApi {
   }
 
   async loginWithPassword(username: string, password: string): Promise<UserData> {
-    const api = await this.apiFor(username);
+    const api = await this.getAPIFor(username);
     const response = await api.post(
       'api/v1/login',
       new URLSearchParams({
@@ -38,7 +38,7 @@ export default class RoborockAuthenticateApi {
       return undefined;
     }
 
-    const api = await this.apiFor(this.username);
+    const api = await this.getAPIFor(this.username);
     const response = await api.get('api/v1/getHomeDetail');
 
     const apiResponse: AuthenticateResponse<HomeInfo> = response.data;
@@ -48,7 +48,7 @@ export default class RoborockAuthenticateApi {
     return apiResponse.data;
   }
 
-  private async apiFor(username: string): Promise<AxiosInstance> {
+  private async getAPIFor(username: string): Promise<AxiosInstance> {
     const baseUrl = await this.getBaseUrl(username);
     return this.apiForUser(username, baseUrl);
   }

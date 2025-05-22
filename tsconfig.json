@@ -25,12 +25,7 @@
     "alwaysStrict": true,
     "noImplicitOverride": true,
     "skipLibCheck": true,
-    "baseUrl": ".",
-    "paths": {
-      "src/*": [
-        "src/*"
-      ]
-    }
+    "baseUrl": "."
   },
   "include": [
     "src/**/*.ts"

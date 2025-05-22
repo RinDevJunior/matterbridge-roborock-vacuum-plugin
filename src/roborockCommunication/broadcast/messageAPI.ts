@@ -1,3 +1,4 @@
+import { AnsiLogger } from 'node-ansi-logger';
 import DeviceStatus from '../Zmodel/deviceStatus.js';
 import { CloudMessageResult } from '../Zmodel/messageResult.js';
 import NetworkInfo from '../Zmodel/networkInfo.js';
@@ -11,12 +12,17 @@ import { RequestMessage } from './model/requestMessage.js';
 export default class MessageApi {
   private readonly client: Client;
   private readonly messageListener: SimpleMessageListener;
+  logger: AnsiLogger | undefined;
 
   constructor(client: Client) {
     this.client = client;
 
     this.messageListener = new SimpleMessageListener();
     this.client.registerMessageListener(this.messageListener);
+  }
+
+  public injectLogger(logger: AnsiLogger): void {
+    this.logger = logger;
   }
 
   public registerListener(listener: AbstractMessageHandler): void {
@@ -28,9 +34,17 @@ export default class MessageApi {
     return await this.client.get(duid, request);
   }
 
+  // public async getDeviceStatus(duid: string): Promise<DeviceStatus> {
+  //   const request = new RequestMessage({ method: 'get_status' });
+  //   return this.client.get<CloudMessageResult[]>(duid, request).then((response) => new DeviceStatus(response[0]));
+  // }
+
   public async getDeviceStatus(duid: string): Promise<DeviceStatus> {
     const request = new RequestMessage({ method: 'get_status' });
-    return this.client.get<CloudMessageResult[]>(duid, request).then((response) => new DeviceStatus(response[0]));
+    const response = await this.client.get<CloudMessageResult>(duid, request);
+
+    this.logger?.debug('Device status: ', JSON.stringify(response));
+    return new DeviceStatus(response);
   }
 
   public async getRooms(duid: string, rooms: Room[]): Promise<RoomInfo> {

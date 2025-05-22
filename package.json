@@ -33,6 +33,8 @@
   "scripts": {
     "precondition": "npm install -g matterbridge@3.0.3",
     "deepCleanBuild": "npm run deepClean && npm install && npm link matterbridge && npm run build",
+    "dev:link": "npm link matterbridge",
+    "matterbridge:add": "matterbridge -add .\\",
     "start:roborock": "tsc && matterbridge -childbridge",
     "test": "echo \"Error: no test specified\" && exit 1",
     "build": "tsc",
@@ -41,12 +43,10 @@
     "start": "matterbridge",
     "start:bridge": "matterbridge -bridge",
     "start:childbridge": "matterbridge -childbridge",
-    "matterbridge:add": "matterbridge -add .\\",
     "matterbridge:remove": "matterbridge -remove .\\",
     "matterbridge:enable": "matterbridge -enable .\\",
     "matterbridge:disable": "matterbridge -disable .\\",
     "matterbridge:list": "matterbridge -list",
-    "dev:link": "npm link matterbridge",
     "dev:unlink": "npm unlink matterbridge",
     "deepClean": "npx rimraf tsconfig.tsbuildinfo package-lock.json npm-shrinkwrap.json ./dist ./node_modules"
   },

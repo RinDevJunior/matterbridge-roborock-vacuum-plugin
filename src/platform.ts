@@ -14,7 +14,6 @@ import { NotifyMessageTypes } from './notifyMessageTypes.js';
 import RoborockAuthenticateApi from './roborockCommunication/RESTAPI/roborockAuthenticateApi.js';
 import RoborockIoTApi from './roborockCommunication/RESTAPI/roborockIoTApi.js';
 import Device from './roborockCommunication/Zmodel/device.js';
-import UserData from './roborockCommunication/Zmodel/userData.js';
 
 export class RoborockMatterbridgePlatform extends MatterbridgeDynamicPlatform {
   robot: RoborockVacuumCleaner | undefined;
@@ -62,7 +61,25 @@ export class RoborockMatterbridgePlatform extends MatterbridgeDynamicPlatform {
 
     // Add request interceptor
     const axiosInstance = axios.default ?? axios;
-    axiosInstance.interceptRequestAndResponse(this.log);
+    axiosInstance.interceptors.request.use((request: any) => {
+      self.log.debug('Axios Request:', {
+        method: request.method,
+        url: request.url,
+        data: request.data,
+        headers: request.headers,
+      });
+      return request;
+    });
+
+    axiosInstance.interceptors.response.use((response: any) => {
+      self.log.debug('Axios Response:', {
+        status: response.status,
+        data: response.data,
+        headers: response.headers,
+        url: response.config.url,
+      });
+      return response;
+    });
 
     this.platformRunner = new PlatformRunner(this);
 
@@ -113,7 +130,9 @@ export class RoborockMatterbridgePlatform extends MatterbridgeDynamicPlatform {
   }
 
   async onConfigurateDevice(): Promise<void> {
+    this.log.info('onConfigurateDevice called');
     if (this.platformRunner === undefined || this.roborockService === undefined) {
+      this.log.error('PlatformRunner or RoborockService is undefined');
       return;
     }
     const vacuum = this.devices.get(this.serialNumber as string);
@@ -124,10 +143,11 @@ export class RoborockMatterbridgePlatform extends MatterbridgeDynamicPlatform {
     }
 
     const self = this;
-    const roomMap = await this.platformRunner.getRoomMap(vacuum);
+    await this.roborockService.initializeMessageClientForLocal(vacuum);
 
+    const roomMap = await this.platformRunner.getRoomMapFromDevice(vacuum);
     const { supportedAreas, defaultSelectedAreas } = getSupportedAreas(vacuum.rooms, roomMap, this.log);
-    const { behaviorClass, behaviorHandler } = configurateBehavior(vacuum.data.model, vacuum.duid, this.roborockService, this.log);
+    const { BehaviorClass, behaviorHandler } = configurateBehavior(vacuum.data.model, vacuum.duid, this.roborockService, this.log);
 
     this.serialNumberAndDuidMapping.set(vacuum.serialNumber, vacuum.duid);
 
@@ -142,7 +162,7 @@ export class RoborockMatterbridgePlatform extends MatterbridgeDynamicPlatform {
         0x8000,
         'Matterbridge Roborock Vacuum Cleaner',
         undefined,
-        vacuum.fv, //softwareVersionString
+        vacuum.pv, //softwareVersionString
         undefined,
         vacuum.fv, //hardwareVersionString
       )
@@ -151,7 +171,9 @@ export class RoborockMatterbridgePlatform extends MatterbridgeDynamicPlatform {
       .createDefaultRvcCleanModeClusterServer(getSupportedCleanModes(vacuum.data.model))
       .createDefaultServiceAreaClusterServer(supportedAreas, [], defaultSelectedAreas)
       .createDefaultPowerSourceRechargeableBatteryClusterServer(vacuum.data.batteryLevel ?? 100, getBatteryStatus(vacuum.data.batteryLevel ?? 100), 5900)
-      .configurateBehaviorHandler(behaviorClass, behaviorHandler);
+      .configurateBehaviorHandler(BehaviorClass, behaviorHandler);
+
+    this.log.info('vacuum:', JSON.stringify(vacuum));
 
     this.robot.addCommandHandler('identify', async ({ request: { identifyTime } }) => {
       this.log.info(`Command identify called identifyTime:${identifyTime}`);
@@ -169,6 +191,8 @@ export class RoborockMatterbridgePlatform extends MatterbridgeDynamicPlatform {
 
     await this.roborockService.activateDeviceNotify(this.robot.device);
     await self.platformRunner?.requestHomeData();
+
+    this.log.info('onConfigurateDevice finished');
   }
 
   override async onShutdown(reason?: string) {

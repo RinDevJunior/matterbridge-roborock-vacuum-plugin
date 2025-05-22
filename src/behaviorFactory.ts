@@ -6,21 +6,21 @@ import { DefaultBehavior, DefaultEndpointCommands, setDefaultCommandHandler } fr
 import { DeviceModel } from './roborockCommunication/Zmodel/deviceModel.js';
 
 export type BehaviorFactoryResult =
-  | { behaviorClass: typeof BehaviorA187; behaviorHandler: BehaviorDeviceGeneric<EndpointCommandsA187> }
-  | { behaviorClass: typeof DefaultBehavior; behaviorHandler: BehaviorDeviceGeneric<DefaultEndpointCommands> };
+  | { BehaviorClass: typeof BehaviorA187; behaviorHandler: BehaviorDeviceGeneric<EndpointCommandsA187> }
+  | { BehaviorClass: typeof DefaultBehavior; behaviorHandler: BehaviorDeviceGeneric<DefaultEndpointCommands> };
 
 export function configurateBehavior(model: string, duid: string, roborockService: RoborockService, logger: AnsiLogger): BehaviorFactoryResult {
   switch (model) {
     case DeviceModel.QREVO_EDGE_5V1: {
       const deviceHandler = new BehaviorDeviceGeneric<EndpointCommandsA187>(logger);
       setCommandHandlerA187(duid, deviceHandler, logger, roborockService);
-      return { behaviorClass: BehaviorA187, behaviorHandler: deviceHandler };
+      return { BehaviorClass: BehaviorA187, behaviorHandler: deviceHandler };
     }
 
     default: {
       const deviceHandler = new BehaviorDeviceGeneric<DefaultEndpointCommands>(logger);
       setDefaultCommandHandler(duid, deviceHandler, logger, roborockService);
-      return { behaviorClass: DefaultBehavior, behaviorHandler: deviceHandler };
+      return { BehaviorClass: DefaultBehavior, behaviorHandler: deviceHandler };
     }
   }
 }

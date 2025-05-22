@@ -1,4 +1,5 @@
 import { Socket } from 'node:net';
+import { clearInterval } from 'node:timers';
 import AbstractClient from '../abstractClient.js';
 import MessageContext from '../model/messageContext.js';
 import { Protocol } from '../model/protocol.js';
@@ -8,53 +9,49 @@ import ChunkBuffer from '../../helper/chunkBuffer.js';
 import Sequence from '../../helper/sequence.js';
 
 export default class LocalNetworkClient extends AbstractClient {
-  private readonly PORT = 58867;
-  private readonly PING_INTERVAL_MS = 5000;
-
-  private readonly duid: string;
-  private readonly ip: string;
-
   private socket: Socket | undefined = undefined;
   private buffer: ChunkBuffer = new ChunkBuffer();
-
   private messageIdSeq: Sequence;
-
   private pingInterval?: NodeJS.Timeout;
+  duid: string;
+  ip: string;
+  isUnexpedtedDisconnect: boolean = true;
 
   public constructor(logger: AnsiLogger, context: MessageContext, duid: string, ip: string) {
     super(logger, context);
     this.duid = duid;
     this.ip = ip;
-
     this.messageIdSeq = new Sequence(100000, 999999);
   }
 
   public connect(): void {
     this.socket = new Socket();
-
-    // connection events
     this.socket.on('close', this.onDisconnect.bind(this));
     this.socket.on('end', this.onDisconnect.bind(this));
     this.socket.on('error', this.onError.bind(this));
-
-    // data events
     this.socket.on('data', this.onData.bind(this));
-
-    this.socket.connect(this.PORT, this.ip, this.onConnect.bind(this));
+    this.socket.connect(58867, this.ip, this.onConnect.bind(this));
   }
 
   private async onConnect() {
-    this.logger.debug('TCP client for ' + this.duid + ' connected');
-
-    await this.sendHello();
-    this.pingInterval = setInterval(this.sendPing.bind(this), this.PING_INTERVAL_MS);
-
+    const address = this.socket?.address();
+    this.logger.debug(`${this.duid} connected to ${this.ip}, address: ${JSON.stringify(address)}`);
+    await this.sendHelloMessage();
     this.connected = true;
+    this.pingInterval = setInterval(this.sendPingRequest.bind(this), 5000);
     await this.connectionListeners.onConnected();
   }
 
-  private async onDisconnect() {
+  private async onDisconnect(): Promise<void> {
     this.logger.info('Socket has disconnected.');
+    if (this.isUnexpedtedDisconnect) {
+      this.logger.error('Unexpected disconnect, trying to reconnect...');
+      this.connect();
+      return;
+    }
+
+    //reset isUnexpedtedDisconnect value
+    this.isUnexpedtedDisconnect = true;
     this.connected = false;
 
     if (this.socket) {
@@ -88,7 +85,7 @@ export default class LocalNetworkClient extends AbstractClient {
     if (this.pingInterval) {
       clearInterval(this.pingInterval);
     }
-
+    this.isUnexpedtedDisconnect = false;
     this.socket.destroy();
     this.socket = undefined;
   }
@@ -149,7 +146,7 @@ export default class LocalNetworkClient extends AbstractClient {
 
   async send(duid: string, request: RequestMessage): Promise<void> {
     if (!this.socket || !this.connected) {
-      this.logger.error('failed to send request to ' + duid + ', socket is not online');
+      this.logger.error(`failed to send request to ${duid}, socket is not online, ${JSON.stringify(request)}`);
       return;
     }
 
@@ -166,7 +163,7 @@ export default class LocalNetworkClient extends AbstractClient {
     return Buffer.concat([lengthBuffer, buffer]);
   }
 
-  private async sendHello() {
+  private async sendHelloMessage() {
     const request = new RequestMessage({
       protocol: Protocol.hello_request,
       messageId: this.messageIdSeq.next(),
@@ -174,7 +171,7 @@ export default class LocalNetworkClient extends AbstractClient {
     await this.send(this.duid, request);
   }
 
-  private async sendPing() {
+  private async sendPingRequest() {
     const request = new RequestMessage({
       protocol: Protocol.ping_request,
       messageId: this.messageIdSeq.next(),

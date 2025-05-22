@@ -7,7 +7,6 @@ import { ApiResponse } from '../Zmodel/apiResponse.js';
 
 export default class RoborockIoTApi {
   logger: AnsiLogger;
-
   private readonly api: AxiosInstance;
 
   constructor(userdata: UserData, logger: AnsiLogger) {

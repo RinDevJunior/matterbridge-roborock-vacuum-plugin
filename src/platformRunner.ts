@@ -1,11 +1,11 @@
-import { RvcRunMode, PowerSource, ServiceArea } from 'matterbridge/matter/clusters';
+import { RvcRunMode, PowerSource, ServiceArea, RvcOperationalState } from 'matterbridge/matter/clusters';
 import { getVacuumProperty } from './helper.js';
 import { getRunningMode } from './initialData/getSupportedRunModes.js';
 import { CloudMessageModel } from './model/CloudMessageModel.js';
 import { RoborockMatterbridgePlatform } from './platform.js';
 import { state_to_matter_state } from './share/function.js';
 import RoomMap from './model/RoomMap.js';
-import { getBatteryState, getBatteryStatus } from './initialData/index.js';
+import { getBatteryState, getBatteryStatus, getOperationalErrorState } from './initialData/index.js';
 import { NotifyMessageTypes } from './notifyMessageTypes.js';
 import Device from './roborockCommunication/Zmodel/device.js';
 import { CloudMessageResult } from './roborockCommunication/Zmodel/messageResult.js';
@@ -39,16 +39,20 @@ export class PlatformRunner {
     await platform.platformRunner?.updateRobot(NotifyMessageTypes.HomeData, homeData);
   }
 
-  async getRoomMap(device: Device | undefined = undefined): Promise<RoomMap | undefined> {
+  public async getRoomMapFromDevice(device: Device): Promise<RoomMap> {
     const platform = this.platform;
-    let rooms = device?.rooms ?? [];
+    const rooms = device?.rooms ?? [];
 
     if (device && platform.roborockService) {
       const roomData = await platform.roborockService.getRoomMappings(device.duid);
       return new RoomMap(roomData ?? [], rooms);
     }
+    return new RoomMap([], rooms);
+  }
 
-    rooms = platform.robot?.device.rooms ?? [];
+  async getRoomMap(): Promise<RoomMap | undefined> {
+    const platform = this.platform;
+    const rooms = platform.robot?.device.rooms ?? [];
     if (platform.robot?.device === undefined || platform.roborockService === undefined) return undefined;
     if (platform.robot.roomInfo === undefined) {
       const roomData = await platform.roborockService.getRoomMappings(platform.robot.device.duid);
@@ -83,93 +87,111 @@ export class PlatformRunner {
       return;
     }
 
-    if (messageSource === NotifyMessageTypes.BatteryUpdate) {
-      const batteryLevel = messageData.percentage as number;
-      if ((messageData.percentage as number) && batteryLevel) {
-        platform.robot.updateAttribute(PowerSource.Cluster.id, 'batPercentRemaining', batteryLevel * 2, platform.log);
-        platform.robot.updateAttribute(PowerSource.Cluster.id, 'batChargeLevel', getBatteryStatus(batteryLevel), platform.log);
+    switch (messageSource) {
+      case NotifyMessageTypes.ErrorOccurred: {
+        const errorCode = messageData.errorCode as number;
+        const operationalStateId = getOperationalErrorState(errorCode);
+        if (operationalStateId) {
+          platform.log.error(`Error occurred: ${errorCode}`);
+          platform.robot.updateAttribute(RvcOperationalState.Cluster.id, 'operationalStateId', operationalStateId, platform.log);
+        }
+        break;
       }
-      return;
-    }
-
-    if (messageSource === NotifyMessageTypes.LocalMessage) {
-      const data = messageData.statusType as CloudMessageResult;
-      if (data) {
-        const state = state_to_matter_state(data.state);
-        if (state) {
-          platform.robot.updateAttribute(RvcRunMode.Cluster.id, 'currentMode', getRunningMode(deviceData.model, state), platform.log);
-        }
-
-        const currentRoom = data.cleaning_info?.segment_id ?? -1;
-        if (currentRoom !== -1) {
-          const roomMap = await this.getRoomMap();
-          this.platform.log.debug('RoomMap:', JSON.stringify(roomMap));
-          this.platform.log.debug('CurrentRoom:', currentRoom);
-          platform.robot.updateAttribute(ServiceArea.Cluster.id, 'currentArea', currentRoom, platform.log);
-        }
-
-        if (data.battery) {
-          const batteryLevel = data.battery as number;
-
+      case NotifyMessageTypes.BatteryUpdate: {
+        const batteryLevel = messageData.percentage as number;
+        if ((messageData.percentage as number) && batteryLevel) {
           platform.robot.updateAttribute(PowerSource.Cluster.id, 'batPercentRemaining', batteryLevel * 2, platform.log);
-          platform.robot.updateAttribute(PowerSource.Cluster.id, 'batChargeState', getBatteryState(data.state, data.battery), platform.log);
           platform.robot.updateAttribute(PowerSource.Cluster.id, 'batChargeLevel', getBatteryStatus(batteryLevel), platform.log);
         }
-
-        this.processAdditionalProps(platform.robot, data);
+        break;
       }
-    }
 
-    if (messageSource === NotifyMessageTypes.CloudMessage) {
-      var data = messageData.data as CloudMessageModel;
-      if (!data) {
-        data = messageData as CloudMessageModel;
-      }
-      if (!data) return;
-
-      const messageTypes = Object.keys(data.dps).map(Number);
-      const self = this;
-
-      //Known: 122, 121, 102,
-      //Unknown: 128, 139
-      messageTypes.forEach(async (messageType) => {
-        switch (messageType) {
-          case Protocol.status_update: {
-            const status = data.dps[messageType] as number;
-            const matterState = state_to_matter_state(status);
-            if (matterState) {
-              platform.robot!.updateAttribute(RvcRunMode.Cluster.id, 'currentMode', getRunningMode(deviceData.model, matterState), platform.log);
-            }
-            break;
-          }
-          case Protocol.rpc_response: {
-            const response = data.dps[messageType] as DpsPayload;
-            //ignore network info
-            if (!self.isStatusUpdate(response.result)) {
-              platform.log.notice('Ignore message:', JSON.stringify(data));
-              return;
-            }
-
-            const roboStatus = response.result[0] as CloudMessageResult;
-            if (roboStatus) {
-              const message = { duid: messageData.duid, statusType: { ...roboStatus } };
-              platform.log.debug('rpc_response:', JSON.stringify(message));
-              await self.updateFromMQTTMessage(NotifyMessageTypes.LocalMessage, message, true);
-            }
-            break;
-          }
-          case Protocol.additional_props:
-          case Protocol.todo_some_thing_need_to_correct: {
-            break;
+      case NotifyMessageTypes.LocalMessage: {
+        const data = messageData.statusType as CloudMessageResult;
+        if (data) {
+          const state = state_to_matter_state(data.state);
+          if (state) {
+            platform.robot.updateAttribute(RvcRunMode.Cluster.id, 'currentMode', getRunningMode(deviceData.model, state), platform.log);
           }
 
-          default: {
-            platform.log.notice(`Unknown message type: ${messageType} ,`, JSON.stringify(messageData));
-            break;
+          const currentRoom = data.cleaning_info?.segment_id ?? -1;
+          if (currentRoom !== -1) {
+            const roomMap = await this.getRoomMap();
+            this.platform.log.debug('RoomMap:', JSON.stringify(roomMap));
+            this.platform.log.debug('CurrentRoom:', currentRoom);
+            platform.robot.updateAttribute(ServiceArea.Cluster.id, 'currentArea', currentRoom, platform.log);
           }
+
+          if (data.battery) {
+            const batteryLevel = data.battery as number;
+            platform.robot.updateAttribute(PowerSource.Cluster.id, 'batPercentRemaining', batteryLevel * 2, platform.log);
+            platform.robot.updateAttribute(PowerSource.Cluster.id, 'batChargeState', getBatteryState(data.state, data.battery), platform.log);
+            platform.robot.updateAttribute(PowerSource.Cluster.id, 'batChargeLevel', getBatteryStatus(batteryLevel), platform.log);
+          }
+
+          this.processAdditionalProps(platform.robot, data);
         }
-      });
+        break;
+      }
+
+      case NotifyMessageTypes.CloudMessage: {
+        var data = messageData.data as CloudMessageModel;
+        if (!data) {
+          data = messageData as CloudMessageModel;
+        }
+        if (!data) return;
+        this.handlerCloudMessage(data, duid, deviceData.model);
+        break;
+      }
+
+      default:
+        break;
     }
+  }
+
+  private handlerCloudMessage(data: CloudMessageModel, duid: string, model: string): void {
+    const platform = this.platform;
+    const messageTypes = Object.keys(data.dps).map(Number);
+    const self = this;
+
+    //Known: 122, 121, 102,
+    //Unknown: 128, 139
+    messageTypes.forEach(async (messageType) => {
+      switch (messageType) {
+        case Protocol.status_update: {
+          const status = data.dps[messageType] as number;
+          const matterState = state_to_matter_state(status);
+          if (matterState) {
+            platform.robot!.updateAttribute(RvcRunMode.Cluster.id, 'currentMode', getRunningMode(model, matterState), platform.log);
+          }
+          break;
+        }
+        case Protocol.rpc_response: {
+          const response = data.dps[messageType] as DpsPayload;
+          //ignore network info
+          if (!self.isStatusUpdate(response.result)) {
+            platform.log.notice('Ignore message:', JSON.stringify(data));
+            return;
+          }
+
+          const roboStatus = response.result[0] as CloudMessageResult;
+          if (roboStatus) {
+            const message = { duid: duid, statusType: { ...roboStatus } };
+            platform.log.debug('rpc_response:', JSON.stringify(message));
+            await self.updateFromMQTTMessage(NotifyMessageTypes.LocalMessage, message, true);
+          }
+          break;
+        }
+        case Protocol.additional_props:
+        case Protocol.todo_some_thing_need_to_correct: {
+          break;
+        }
+        default: {
+          platform.log.notice(`Unknown message type: ${messageType} ,`, JSON.stringify(data));
+          break;
+        }
+      }
+    });
   }
 
   private async processAdditionalProps(robot: RoborockVacuumCleaner, message: CloudMessageResult): Promise<void> {
@@ -203,9 +225,12 @@ export class PlatformRunner {
       return;
     }
 
+    this.platform.log.debug('updateHomeData-homeData:', JSON.stringify(homeData));
+    this.platform.log.debug('updateHomeData-device:', JSON.stringify(device));
+
     device.schema = homeData.products.find((d) => d.id === device.productId)?.schema ?? [];
     const batteryLevel = getVacuumProperty(device, 'battery');
-    platform.robot.updateAttribute(PowerSource.Cluster.id, 'batPercentRemaining', batteryLevel ? batteryLevel * 2 : null, platform.log);
+    platform.robot.updateAttribute(PowerSource.Cluster.id, 'batPercentRemaining', batteryLevel ? batteryLevel * 2 : 200, platform.log);
     platform.robot.updateAttribute(PowerSource.Cluster.id, 'batChargeLevel', getBatteryStatus(batteryLevel), platform.log);
 
     const state = getVacuumProperty(device, 'state');

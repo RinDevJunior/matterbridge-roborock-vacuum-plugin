@@ -14,22 +14,22 @@ export default class VacuumError {
   }
 
   isStuck(): boolean {
-    return this.vacuumErrorCode === VacuumErrorCode.robot_trapped;
+    return this.vacuumErrorCode === VacuumErrorCode.RobotTrapped;
   }
 
   isBatteryLow(): boolean {
-    return this.vacuumErrorCode === VacuumErrorCode.low_battery;
+    return this.vacuumErrorCode === VacuumErrorCode.LowBattery;
   }
 
   isBinFull(): boolean {
-    return this.vacuumErrorCode === VacuumErrorCode.clean_auto_empty_dock || this.dockErrorCode == DockErrorCode.duct_blockage;
+    return this.vacuumErrorCode === VacuumErrorCode.CleanAutoEmptyDock || this.dockErrorCode == DockErrorCode.DuctBlockage;
   }
 
   isCleanWaterEmpty(): boolean {
-    return this.vacuumErrorCode === VacuumErrorCode.clear_water_box_exception || this.dockErrorCode == DockErrorCode.water_empty;
+    return this.vacuumErrorCode === VacuumErrorCode.ClearWaterTankEmpty || this.dockErrorCode == DockErrorCode.WaterEmpty;
   }
 
   isWasteWaterFull(): boolean {
-    return this.dockErrorCode == DockErrorCode.waste_water_tank_full;
+    return this.dockErrorCode == DockErrorCode.WasteWaterTankFull;
   }
 }

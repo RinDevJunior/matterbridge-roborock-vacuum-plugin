@@ -16,7 +16,9 @@ import DeviceStatus from './roborockCommunication/Zmodel/deviceStatus.js';
 import Home from './roborockCommunication/Zmodel/home.js';
 import { ResponseMessage } from './roborockCommunication/broadcast/model/responseMessage.js';
 import { AbstractConnectionListener, AbstractMessageListener } from './roborockCommunication/broadcast/listener/index.js';
+import Client from './roborockCommunication/broadcast/client.js';
 export type Factory<A, T> = (logger: AnsiLogger, arg: A) => T;
+import { clearInterval } from 'node:timers';
 
 export default class RoborockService {
   private loginApi: RoborockAuthenticateApi;
@@ -30,9 +32,10 @@ export default class RoborockService {
   remoteDevices: Set<string> = new Set();
   messageApi: MessageApi | undefined;
   ip: string | undefined;
-  localClient: any;
+  localClient: Client | undefined;
   clientManager: ClientManager;
   refreshInterval: number;
+  requestDeviceStatusInterval: NodeJS.Timeout | undefined;
 
   constructor(
     authenticateApiSupplier: Factory<void, RoborockAuthenticateApi> = (logger) => new RoborockAuthenticateApi(logger),
@@ -54,9 +57,8 @@ export default class RoborockService {
 
   public getMessageApi(): MessageApi | undefined {
     if (!this.messageApi) {
-      this.logger.error('MessageApi is not initialized');
+      this.logger.error('MessageApi is not initialized.');
     }
-
     return this.messageApi;
   }
 
@@ -103,6 +105,11 @@ export default class RoborockService {
     if (this.messageApi) {
       this.messageApi = undefined;
     }
+
+    if (this.requestDeviceStatusInterval) {
+      clearInterval(this.requestDeviceStatusInterval);
+      this.requestDeviceStatusInterval = undefined;
+    }
   }
 
   public setDeviceNotify(callback: (messageSource: NotifyMessageTypes, homeData: any) => Promise<void>): void {
@@ -110,11 +117,9 @@ export default class RoborockService {
   }
 
   public async activateDeviceNotify(device: Device): Promise<void> {
-    await this.initializeMessageClientForLocal(device);
     const self = this;
-
     this.logger.debug('Requesting device info for device', device.duid);
-    setInterval(async () => {
+    this.requestDeviceStatusInterval = setInterval(async () => {
       if (this.messageApi) {
         await this.messageApi.getDeviceStatus(device.duid).then((response: DeviceStatus) => {
           if (self.deviceNotify) {
@@ -124,7 +129,7 @@ export default class RoborockService {
       } else {
         self.logger.error('Local client not initialized');
       }
-    }, this.refreshInterval * 1000);
+    }, 15 * 1000);
   }
 
   public async listDevices(username: string): Promise<Device[]> {
@@ -270,10 +275,10 @@ export default class RoborockService {
       await this.sleep(500);
     }
 
-    this.logger.debug('messageClient connected');
+    this.logger.debug('MessageClient connected');
   }
 
-  private async initializeMessageClientForLocal(device: Device): Promise<void> {
+  public async initializeMessageClientForLocal(device: Device): Promise<void> {
     this.logger.debug('Begin get local ip');
     if (this.messageClient === undefined) {
       this.logger.error('messageClient not initialized');
@@ -282,9 +287,12 @@ export default class RoborockService {
     const self = this;
 
     this.messageApi = new MessageApi(this.messageClient);
+    this.messageApi.injectLogger(this.logger);
     this.messageApi.registerListener({
       onError: (message: VacuumErrorCode) => {
-        self.logger.error('MessageApi - onError', JSON.stringify(message));
+        if (self.deviceNotify) {
+          self.deviceNotify(NotifyMessageTypes.ErrorOccurred, { duid: device.duid, errorCode: message });
+        }
       },
       onBatteryUpdate: (percentage: number) => {
         if (self.deviceNotify) {
@@ -305,10 +313,17 @@ export default class RoborockService {
         this.logger.debug('initializing the local connection for this client towards ' + this.ip);
         this.localClient = this.messageClient.registerClient(device.duid, this.ip);
         this.localClient.connect();
+
+        while (!this.localClient.isConnected()) {
+          await this.sleep(500);
+        }
+        this.logger.debug('LocalClient connected');
       }
     } catch (error) {
       this.logger.error('Error requesting network info', error);
     }
+
+    this.logger.debug('Local client connected');
   }
 
   private sleep(ms: number): Promise<void> {
