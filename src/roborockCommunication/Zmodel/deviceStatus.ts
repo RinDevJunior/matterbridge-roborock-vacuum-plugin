@@ -1,9 +1,9 @@
-import { DockErrorCode, VacuumErrorCode } from '../Zenum/vacuumAndDockErrorCode.js';
-import DockInfo from './dockInfo.js';
+import { VacuumErrorCode, DockErrorCode } from '../Zenum/vacuumAndDockErrorCode.js';
+import { DockInfo } from './dockInfo.js';
 import { CloudMessageResult } from './messageResult.js';
-import VacuumError from './vacuumError.js';
+import { VacuumError } from './vacuumError.js';
 
-export default class DeviceStatus {
+export class DeviceStatus {
   errorStatus: VacuumError;
   private readonly message: CloudMessageResult;
 

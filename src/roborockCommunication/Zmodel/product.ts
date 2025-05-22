@@ -1,6 +1,6 @@
-import DeviceSchema from './deviceSchema.js';
+import { DeviceSchema } from './deviceSchema.js';
 
-export default interface Product {
+export interface Product {
   id: string;
   name: string;
   model: string;

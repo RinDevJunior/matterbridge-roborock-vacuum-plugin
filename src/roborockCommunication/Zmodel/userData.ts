@@ -1,4 +1,4 @@
-export default interface UserData {
+export interface UserData {
   uid: string;
   token: string;
   rruid: string;

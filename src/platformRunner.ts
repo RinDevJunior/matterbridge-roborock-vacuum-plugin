@@ -7,13 +7,12 @@ import { state_to_matter_state } from './share/function.js';
 import RoomMap from './model/RoomMap.js';
 import { getBatteryState, getBatteryStatus, getOperationalErrorState } from './initialData/index.js';
 import { NotifyMessageTypes } from './notifyMessageTypes.js';
-import Device from './roborockCommunication/Zmodel/device.js';
 import { CloudMessageResult } from './roborockCommunication/Zmodel/messageResult.js';
 import { Protocol } from './roborockCommunication/broadcast/model/protocol.js';
-import Home from './roborockCommunication/Zmodel/home.js';
 import { DpsPayload } from './roborockCommunication/broadcast/model/dps.js';
 import { RoborockVacuumCleaner } from './rvc.js';
 import { parseDockingStationStatus } from './model/DockingStationStatus.js';
+import { Device, Home } from './roborockCommunication/index.js';
 //TODO: read src/roborock/message-api/codes/StatusCode.ts
 
 export class PlatformRunner {

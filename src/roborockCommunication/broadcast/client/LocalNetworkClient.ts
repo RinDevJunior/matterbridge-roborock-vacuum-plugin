@@ -1,14 +1,14 @@
 import { Socket } from 'node:net';
 import { clearInterval } from 'node:timers';
-import AbstractClient from '../abstractClient.js';
-import MessageContext from '../model/messageContext.js';
 import { Protocol } from '../model/protocol.js';
 import { RequestMessage } from '../model/requestMessage.js';
 import { AnsiLogger } from 'node-ansi-logger';
-import ChunkBuffer from '../../helper/chunkBuffer.js';
-import Sequence from '../../helper/sequence.js';
+import { AbstractClient } from '../abstractClient.js';
+import { MessageContext } from '../model/messageContext.js';
+import { Sequence } from '../../helper/sequence.js';
+import { ChunkBuffer } from '../../helper/chunkBuffer.js';
 
-export default class LocalNetworkClient extends AbstractClient {
+export class LocalNetworkClient extends AbstractClient {
   private socket: Socket | undefined = undefined;
   private buffer: ChunkBuffer = new ChunkBuffer();
   private messageIdSeq: Sequence;
@@ -34,10 +34,10 @@ export default class LocalNetworkClient extends AbstractClient {
   }
 
   private async onConnect() {
+    this.connected = true;
     const address = this.socket?.address();
     this.logger.debug(`${this.duid} connected to ${this.ip}, address: ${JSON.stringify(address)}`);
     await this.sendHelloMessage();
-    this.connected = true;
     this.pingInterval = setInterval(this.sendPingRequest.bind(this), 5000);
     await this.connectionListeners.onConnected();
   }
@@ -153,7 +153,7 @@ export default class LocalNetworkClient extends AbstractClient {
     const localRequest = request.toLocalRequest();
     const message = this.serializer.serialize(duid, localRequest);
 
-    this.logger.debug('sending message ' + localRequest.protocol + '/' + localRequest.method + '/' + request.secure + ' to ' + duid + ' with id ' + message.messageId);
+    this.logger.debug(`sending message ${message.messageId}, protocol:${localRequest.protocol}, method:${localRequest.method}, secure:${request.secure} to ${duid}`);
     this.socket.write(this.wrapWithLengthData(message.buffer));
   }
 
@@ -168,6 +168,7 @@ export default class LocalNetworkClient extends AbstractClient {
       protocol: Protocol.hello_request,
       messageId: this.messageIdSeq.next(),
     });
+
     await this.send(this.duid, request);
   }
 

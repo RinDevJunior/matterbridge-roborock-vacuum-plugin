@@ -1,4 +1,4 @@
-export default interface BaseUrl {
+export interface BaseUrl {
   url: string;
   country: string;
   countrycode: string;

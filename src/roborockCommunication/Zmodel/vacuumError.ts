@@ -1,6 +1,6 @@
 import { DockErrorCode, VacuumErrorCode } from '../Zenum/vacuumAndDockErrorCode.js';
 
-export default class VacuumError {
+export class VacuumError {
   private readonly vacuumErrorCode: VacuumErrorCode;
   private readonly dockErrorCode: DockErrorCode;
 

@@ -1,6 +1,6 @@
 import { MatterbridgeEndpoint, roboticVacuumCleaner } from 'matterbridge';
 import RoomMap from './model/RoomMap.js';
-import Device from './roborockCommunication/Zmodel/device.js';
+import { Device } from './roborockCommunication/index.js';
 
 export class RoborockVacuumCleaner extends MatterbridgeEndpoint {
   username: string | undefined;

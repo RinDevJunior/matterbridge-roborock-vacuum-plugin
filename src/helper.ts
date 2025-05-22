@@ -1,4 +1,4 @@
-import Device from './roborockCommunication/Zmodel/device.js';
+import { Device } from './roborockCommunication/index.js';
 
 export function getVacuumProperty(device: Device, property: string): number | undefined {
   if (device) {

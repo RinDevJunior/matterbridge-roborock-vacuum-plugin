@@ -1,4 +1,4 @@
-export default class ChunkBuffer {
+export class ChunkBuffer {
   private buffer: Buffer = Buffer.alloc(0);
 
   get(): Buffer {

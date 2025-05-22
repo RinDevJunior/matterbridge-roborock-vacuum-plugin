@@ -1,7 +1,7 @@
-import Room from './room.js';
-import DeviceSchema from './deviceSchema.js';
+import { DeviceSchema } from './deviceSchema.js';
+import { Room } from './room.js';
 
-export default interface Device {
+export interface Device {
   duid: string;
   name: string;
   sn: string;

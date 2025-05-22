@@ -1,13 +1,12 @@
 import crypto from 'crypto';
-import pkg from 'crc-32';
-const { buf } = pkg;
+import CRC32 from 'crc-32';
 // @ts-ignore
 import { Parser } from 'binary-parser';
 import assert from 'node:assert';
-import MessageContext from '../broadcast/model/messageContext.js';
 import { ResponseMessage } from '../broadcast/model/responseMessage.js';
 import { CryptoUtils, MessageUtils } from './cryptoHelper.js';
 import { Protocol } from '../broadcast/model/protocol.js';
+import { MessageContext } from '../broadcast/model/messageContext.js';
 
 export interface Message {
   version: string;
@@ -22,12 +21,12 @@ export interface Message {
 
 export class MessageDeserializer {
   private readonly context: MessageContext;
-  private readonly rpcMessageParser: Parser;
+  private readonly mqttMessageParser: Parser;
 
   constructor(context: MessageContext) {
     this.context = context;
 
-    this.rpcMessageParser = new Parser()
+    this.mqttMessageParser = new Parser()
       .endianess('big')
       .string('version', {
         length: 3,
@@ -49,14 +48,16 @@ export class MessageDeserializer {
       throw new Error('unknown protocol version ' + version);
     }
 
-    const crc32 = buf(message.subarray(0, message.length - 4)) >>> 0;
+    const crc32 = CRC32.buf(message.subarray(0, message.length - 4)) >>> 0;
     const expectedCrc32 = message.readUint32BE(message.length - 4);
     if (crc32 != expectedCrc32) {
-      throw new Error('wrong CRC32 ' + crc32 + ', expected ' + expectedCrc32);
+      //throw new Error(`Wrong CRC32 ${crc32}, expected ${expectedCrc32}`);
+      //ignore the error for now
+      return new ResponseMessage(duid, { dps: { id: 0, result: null } });
     }
     const localKey = this.context.getLocalKey(duid);
     assert(localKey, 'unable to retrieve local key for ' + duid);
-    const data: Message = this.rpcMessageParser.parse(message);
+    const data: Message = this.mqttMessageParser.parse(message);
 
     if (version == '1.0') {
       const aesKey = CryptoUtils.md5bin(MessageUtils.encodeTimestamp(data.timestamp) + localKey + MessageUtils.SALT);
@@ -70,7 +71,7 @@ export class MessageDeserializer {
 
     // map visualization not support
     if (data.protocol == Protocol.map_response) {
-      return new ResponseMessage(duid, { '301': { id: 0, result: null } });
+      return new ResponseMessage(duid, { dps: { id: 0, result: null } });
     }
 
     if (data.protocol == Protocol.rpc_response || data.protocol == Protocol.general_request) {

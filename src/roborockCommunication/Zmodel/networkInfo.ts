@@ -1,4 +1,4 @@
-export default interface NetworkInfo {
+export interface NetworkInfo {
   ssid: string;
   ip: string;
   mac: string;

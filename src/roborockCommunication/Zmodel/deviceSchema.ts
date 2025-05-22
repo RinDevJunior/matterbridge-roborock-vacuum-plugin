@@ -1,4 +1,4 @@
-export default interface DeviceSchema {
+export interface DeviceSchema {
   id: number;
   name: string;
   code: string;

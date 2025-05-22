@@ -15,7 +15,7 @@ roomMap = {
 };
 */
 
-import Room from '../roborockCommunication/Zmodel/room.js';
+import { Room } from '../roborockCommunication/Zmodel/room.js';
 
 export default class RoomMap {
   readonly rooms: {

@@ -2,27 +2,30 @@ import assert from 'node:assert';
 import { AnsiLogger } from 'node-ansi-logger';
 import ClientManager from './clientManager.js';
 import { NotifyMessageTypes } from './notifyMessageTypes.js';
-import RoborockAuthenticateApi from './roborockCommunication/RESTAPI/roborockAuthenticateApi.js';
-import RoborockIoTApi from './roborockCommunication/RESTAPI/roborockIoTApi.js';
-import MessageApi from './roborockCommunication/broadcast/messageAPI.js';
-import UserData from './roborockCommunication/Zmodel/userData.js';
-import Device from './roborockCommunication/Zmodel/device.js';
-import { AbstractMessageHandler } from './roborockCommunication/broadcast/listener/abstractMessageHandler.js';
-import { VacuumErrorCode } from './roborockCommunication/Zenum/vacuumAndDockErrorCode.js';
-import { RequestMessage } from './roborockCommunication/broadcast/model/requestMessage.js';
-import { Protocol } from './roborockCommunication/broadcast/model/protocol.js';
-import { ClientRouter } from './roborockCommunication/broadcast/clientRouter.js';
-import DeviceStatus from './roborockCommunication/Zmodel/deviceStatus.js';
-import Home from './roborockCommunication/Zmodel/home.js';
 import { ResponseMessage } from './roborockCommunication/broadcast/model/responseMessage.js';
-import { AbstractConnectionListener, AbstractMessageListener } from './roborockCommunication/broadcast/listener/index.js';
-import Client from './roborockCommunication/broadcast/client.js';
 export type Factory<A, T> = (logger: AnsiLogger, arg: A) => T;
 import { clearInterval } from 'node:timers';
+import {
+  RoborockAuthenticateApi,
+  UserData,
+  RoborockIoTApi,
+  ClientRouter,
+  MessageApi,
+  Client,
+  Device,
+  DeviceStatus,
+  Home,
+  Protocol,
+  RequestMessage,
+  VacuumErrorCode,
+  AbstractMessageHandler,
+  AbstractMessageListener,
+  AbstractConnectionListener,
+} from './roborockCommunication/index.js';
 
 export default class RoborockService {
   private loginApi: RoborockAuthenticateApi;
-  private logger = new AnsiLogger({ logName: 'RoborockService' });
+  private logger: AnsiLogger;
   private readonly iotApiFactory: Factory<UserData, RoborockIoTApi>;
 
   private iotApi?: RoborockIoTApi;
@@ -44,6 +47,7 @@ export default class RoborockService {
     clientManager: ClientManager,
     logger: AnsiLogger,
   ) {
+    this.logger = logger;
     this.loginApi = authenticateApiSupplier(logger);
     this.iotApiFactory = iotApiSupplier;
     this.refreshInterval = refreshInterval;
@@ -129,7 +133,7 @@ export default class RoborockService {
       } else {
         self.logger.error('Local client not initialized');
       }
-    }, 15 * 1000);
+    }, this.refreshInterval * 1000);
   }
 
   public async listDevices(username: string): Promise<Device[]> {
@@ -240,7 +244,7 @@ export default class RoborockService {
     }
 
     const self = this;
-    this.messageClient = this.clientManager.get(username, userdata, this.logger);
+    this.messageClient = this.clientManager.get(username, userdata);
     this.messageClient.registerDevice(device.duid, device.localKey, device.pv);
     this.messageClient.registerConnectionListener({
       onConnected: () => {

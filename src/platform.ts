@@ -11,9 +11,7 @@ import { RoborockVacuumCleaner } from './rvc.js';
 import { getOperationalStates, getSupportedCleanModes, getSupportedRunModes, getSupportedAreas, getBatteryStatus } from './initialData/index.js';
 import { configurateBehavior } from './behaviorFactory.js';
 import { NotifyMessageTypes } from './notifyMessageTypes.js';
-import RoborockAuthenticateApi from './roborockCommunication/RESTAPI/roborockAuthenticateApi.js';
-import RoborockIoTApi from './roborockCommunication/RESTAPI/roborockIoTApi.js';
-import Device from './roborockCommunication/Zmodel/device.js';
+import { Device, RoborockAuthenticateApi, RoborockIoTApi } from './roborockCommunication/index.js';
 
 export class RoborockMatterbridgePlatform extends MatterbridgeDynamicPlatform {
   robot: RoborockVacuumCleaner | undefined;
@@ -24,6 +22,7 @@ export class RoborockMatterbridgePlatform extends MatterbridgeDynamicPlatform {
   serialNumberAndDuidMapping: Map<string, string>;
   devices: Map<string, Device>;
   serialNumber: string | undefined;
+  isReadyToConfigurate = false;
 
   constructor(matterbridge: Matterbridge, log: AnsiLogger, config: PlatformConfig) {
     super(matterbridge, log, config);
@@ -40,7 +39,7 @@ export class RoborockMatterbridgePlatform extends MatterbridgeDynamicPlatform {
     if (config.blackList === undefined) config.blackList = [];
     if (config.enableRVC === undefined) config.enableRVC = false;
 
-    this.clientManager = new ClientManager();
+    this.clientManager = new ClientManager(this.log);
     this.serialNumberAndDuidMapping = new Map<string, string>();
     this.devices = new Map<string, Device>();
   }
@@ -86,7 +85,7 @@ export class RoborockMatterbridgePlatform extends MatterbridgeDynamicPlatform {
     this.roborockService = new RoborockService(
       () => new RoborockAuthenticateApi(this.log, axiosInstance),
       (logger, ud) => new RoborockIoTApi(ud, logger),
-      (this.config.refreshInterval as number) ?? 30,
+      (this.config.refreshInterval as number) ?? 60,
       this.clientManager,
       this.log,
     );
@@ -106,15 +105,23 @@ export class RoborockMatterbridgePlatform extends MatterbridgeDynamicPlatform {
     await this.roborockService.initializeMessageClient(username, vacuum, userData);
     this.devices.set(vacuum.serialNumber, vacuum);
     this.serialNumber = vacuum.serialNumber;
+
+    this.isReadyToConfigurate = true;
+    this.log.notice('onStart finished');
   }
 
   override async onConfigure() {
     await super.onConfigure();
+    this.log.notice('onConfigure started');
 
     // Verify that the config is correct
     if (this.config.username === undefined || this.config.password === undefined) {
       this.log.error('"username" and "password" are required in the config');
       return;
+    }
+
+    while (!this.isReadyToConfigurate) {
+      await this.sleep(1000);
     }
 
     const self = this;
@@ -126,11 +133,11 @@ export class RoborockMatterbridgePlatform extends MatterbridgeDynamicPlatform {
       ((this.config.refreshInterval as number) ?? 60) * 1000 + 100,
     );
 
-    this.log.info('onConfigure called');
+    this.log.notice('onConfigure finished');
   }
 
   async onConfigurateDevice(): Promise<void> {
-    this.log.info('onConfigurateDevice called');
+    this.log.info('onConfigurateDevice start');
     if (this.platformRunner === undefined || this.roborockService === undefined) {
       this.log.error('PlatformRunner or RoborockService is undefined');
       return;
@@ -207,5 +214,9 @@ export class RoborockMatterbridgePlatform extends MatterbridgeDynamicPlatform {
     this.log.notice(`Change ${PLUGIN_NAME} log level: ${logLevel} (was ${this.log.logLevel})`);
     this.log.logLevel = logLevel;
     return Promise.resolve();
+  }
+
+  private sleep(ms: number): Promise<void> {
+    return new Promise((resolve) => setTimeout(resolve, ms));
   }
 }

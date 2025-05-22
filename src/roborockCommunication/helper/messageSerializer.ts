@@ -1,9 +1,9 @@
-import MessageContext from '../broadcast/model/messageContext.js';
 import { RequestMessage } from '../broadcast/model/requestMessage.js';
 import { CryptoUtils, MessageUtils } from './cryptoHelper.js';
 import crypto from 'crypto';
 import CRC32 from 'crc-32';
 import { DpsPayload, Payload } from '../broadcast/model/dps.js';
+import { MessageContext } from '../broadcast/model/messageContext.js';
 
 export class MessageSerializer {
   private readonly context: MessageContext;

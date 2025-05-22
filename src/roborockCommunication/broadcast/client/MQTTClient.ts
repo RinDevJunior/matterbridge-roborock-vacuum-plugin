@@ -1,12 +1,12 @@
 import mqtt, { ErrorWithReasonCode, IConnackPacket, ISubscriptionGrant, MqttClient as MqttLibClient } from 'mqtt';
-import AbstractClient from '../abstractClient.js';
-import MessageContext from '../model/messageContext.js';
-import UserData, { Rriot } from '../../Zmodel/userData.js';
 import { CryptoUtils } from '../../helper/cryptoHelper.js';
 import { AnsiLogger } from 'node-ansi-logger';
 import { RequestMessage } from '../model/requestMessage.js';
+import { AbstractClient } from '../abstractClient.js';
+import { MessageContext } from '../model/messageContext.js';
+import { Rriot, UserData } from '../../Zmodel/userData.js';
 
-export default class MQTTClient extends AbstractClient {
+export class MQTTClient extends AbstractClient {
   private readonly rriot: Rriot;
   private readonly mqttUsername: string;
   private readonly mqttPassword: string;
@@ -32,7 +32,7 @@ export default class MQTTClient extends AbstractClient {
       password: this.mqttPassword,
       keepalive: 30,
       log: (...args: any[]) => {
-        this.logger.debug('MQTTClient args:: ' + args[0]);
+        //this.logger.debug('MQTTClient args:: ' + args[0]);
       },
     });
 

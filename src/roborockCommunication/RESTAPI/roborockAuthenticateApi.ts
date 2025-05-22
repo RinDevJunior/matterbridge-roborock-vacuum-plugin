@@ -2,12 +2,12 @@ import axios, { AxiosInstance, AxiosStatic } from 'axios';
 import crypto from 'crypto';
 import { AnsiLogger } from 'node-ansi-logger';
 import { URLSearchParams } from 'node:url';
-import BaseUrl from '../Zmodel/baseURL.js';
 import { AuthenticateResponse } from '../Zmodel/authenticateResponse.js';
-import UserData from '../Zmodel/userData.js';
-import HomeInfo from '../Zmodel/homeInfo.js';
+import { BaseUrl } from '../Zmodel/baseURL.js';
+import { HomeInfo } from '../Zmodel/homeInfo.js';
+import { UserData } from '../Zmodel/userData.js';
 
-export default class RoborockAuthenticateApi {
+export class RoborockAuthenticateApi {
   private readonly logger: AnsiLogger;
   private axiosFactory: AxiosStatic;
   private deviceId: string;

@@ -1,5 +1,5 @@
 import decodeComponent from '../helper/nameDecoder.js';
-import Room from './room.js';
+import { Room } from './room.js';
 
 export class RoomInfo {
   readonly rooms: { id: number; name: string | undefined }[] = [];

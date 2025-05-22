@@ -1,6 +1,6 @@
 import { AbstractConnectionListener } from '../abstractConnectionListener.js';
 
-export default class ChainedConnectionListener implements AbstractConnectionListener {
+export class ChainedConnectionListener implements AbstractConnectionListener {
   private listeners: AbstractConnectionListener[] = [];
   register(listener: AbstractConnectionListener): void {
     this.listeners.push(listener);

@@ -1,6 +1,6 @@
 import { DockType } from '../Zenum/dockType.js';
 
-export default class DockInfo {
+export class DockInfo {
   private readonly dockType: DockType;
 
   constructor(dockType: DockType) {

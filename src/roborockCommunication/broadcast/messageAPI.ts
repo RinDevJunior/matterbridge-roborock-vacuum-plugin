@@ -1,15 +1,15 @@
 import { AnsiLogger } from 'node-ansi-logger';
-import DeviceStatus from '../Zmodel/deviceStatus.js';
 import { CloudMessageResult } from '../Zmodel/messageResult.js';
-import NetworkInfo from '../Zmodel/networkInfo.js';
-import Room from '../Zmodel/room.js';
 import { RoomInfo } from '../Zmodel/roomInfo.js';
-import Client from './client.js';
 import { AbstractMessageHandler } from './listener/abstractMessageHandler.js';
 import { SimpleMessageListener } from './listener/index.js';
 import { RequestMessage } from './model/requestMessage.js';
+import { DeviceStatus } from '../Zmodel/deviceStatus.js';
+import { Room } from '../Zmodel/room.js';
+import { Client } from './client.js';
+import { NetworkInfo } from '../Zmodel/networkInfo.js';
 
-export default class MessageApi {
+export class MessageApi {
   private readonly client: Client;
   private readonly messageListener: SimpleMessageListener;
   logger: AnsiLogger | undefined;

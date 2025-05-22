@@ -1,16 +1,16 @@
 import { AnsiLogger } from 'node-ansi-logger';
 import { MessageDeserializer } from '../helper/messageDeserializer.js';
 import { MessageSerializer } from '../helper/messageSerializer.js';
-import Client from './client.js';
 import { AbstractConnectionListener } from './listener/abstractConnectionListener.js';
 import { AbstractMessageListener } from './listener/abstractMessageListener.js';
-import ChainedConnectionListener from './listener/implementation/chainedConnectionListener.js';
-import ChainedMessageListener from './listener/implementation/chainedMessageListener.js';
-import SyncMessageListener from './listener/implementation/syncMessageListener.js';
-import MessageContext from './model/messageContext.js';
 import { RequestMessage } from './model/requestMessage.js';
+import { Client } from './client.js';
+import { MessageContext } from './model/messageContext.js';
+import { ChainedConnectionListener } from './listener/implementation/chainedConnectionListener.js';
+import { ChainedMessageListener } from './listener/implementation/chainedMessageListener.js';
+import { SyncMessageListener } from './listener/implementation/syncMessageListener.js';
 
-export default abstract class AbstractClient implements Client {
+export abstract class AbstractClient implements Client {
   protected readonly connectionListeners = new ChainedConnectionListener();
   protected readonly messageListeners = new ChainedMessageListener();
 

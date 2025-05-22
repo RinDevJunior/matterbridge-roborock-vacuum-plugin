@@ -1,4 +1,4 @@
-export default class Sequence {
+export class Sequence {
   private readonly min: number;
   private readonly max: number;
   private current: number;

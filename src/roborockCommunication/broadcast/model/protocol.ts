@@ -16,3 +16,4 @@ export enum Protocol {
   todo_some_thing_need_to_correct = 139,
   map_response = 301,
 }
+//"deviceStatus":{"120":0,"121":8,"122":100,"123":110,"124":209,"125":99,"126":96,"127":97,"128":0,"133":1,"134":1,"135":0,"139":0}

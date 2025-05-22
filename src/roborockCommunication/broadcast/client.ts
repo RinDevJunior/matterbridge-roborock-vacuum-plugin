@@ -2,7 +2,7 @@ import { AbstractConnectionListener } from './listener/abstractConnectionListene
 import { AbstractMessageListener } from './listener/abstractMessageListener.js';
 import { RequestMessage } from './model/requestMessage.js';
 
-export default interface Client {
+export interface Client {
   registerConnectionListener(listener: AbstractConnectionListener): void;
 
   registerMessageListener(listener: AbstractMessageListener): void;

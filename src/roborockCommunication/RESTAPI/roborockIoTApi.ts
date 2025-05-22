@@ -1,11 +1,11 @@
 import axios, { AxiosInstance } from 'axios';
 import crypto from 'crypto';
 import { AnsiLogger } from 'matterbridge/logger';
-import UserData from '../Zmodel/userData.js';
-import Home from '../Zmodel/home.js';
 import { ApiResponse } from '../Zmodel/apiResponse.js';
+import { Home } from '../Zmodel/home.js';
+import { UserData } from '../Zmodel/userData.js';
 
-export default class RoborockIoTApi {
+export class RoborockIoTApi {
   logger: AnsiLogger;
   private readonly api: AxiosInstance;
 

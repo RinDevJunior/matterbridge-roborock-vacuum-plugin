@@ -1,7 +1,7 @@
 import { MaybePromise } from 'matterbridge/matter';
 import { AnsiLogger } from 'node-ansi-logger';
 import { BehaviorDeviceGeneric, BehaviorRoborock, DeviceCommands } from '../../BehaviorDeviceGeneric.js';
-import RoborockService from 'src/roborockService.js';
+import RoborockService from '../../../roborockService.js';
 
 export interface DefaultEndpointCommands extends DeviceCommands {
   ChangeRunMode: ({ newMode, selectedAreas }: { newMode: number; selectedAreas: number[] }) => MaybePromise;

@@ -1,8 +1,8 @@
 import { randomBytes } from 'node:crypto';
-import UserData from '../../Zmodel/userData.js';
 import { CryptoUtils } from '../../helper/cryptoHelper.js';
+import { UserData } from '../../Zmodel/userData.js';
 
-export default class MessageContext {
+export class MessageContext {
   private readonly endpoint: string;
   readonly nonce: Buffer;
   private readonly devices: Map<string, { localKey: string; protocolVersion: string }> = new Map();
