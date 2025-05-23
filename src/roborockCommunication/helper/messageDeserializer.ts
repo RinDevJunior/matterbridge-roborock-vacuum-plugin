@@ -77,7 +77,8 @@ export class MessageDeserializer {
     if (data.protocol == Protocol.rpc_response || data.protocol == Protocol.general_request) {
       return this.deserializeProtocolRpcResponse(duid, data);
     } else {
-      throw new Error('unknown protocol: ' + data.protocol);
+      //throw new Error('unknown protocol: ' + data.protocol);
+      return new ResponseMessage(duid, { dps: { id: 0, result: null } });
     }
   }
 

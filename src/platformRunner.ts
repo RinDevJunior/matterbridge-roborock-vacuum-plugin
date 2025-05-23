@@ -3,7 +3,7 @@ import { getVacuumProperty } from './helper.js';
 import { getRunningMode } from './initialData/getSupportedRunModes.js';
 import { CloudMessageModel } from './model/CloudMessageModel.js';
 import { RoborockMatterbridgePlatform } from './platform.js';
-import { state_to_matter_state } from './share/function.js';
+import { state_to_matter_operational_status, state_to_matter_state } from './share/function.js';
 import RoomMap from './model/RoomMap.js';
 import { getBatteryState, getBatteryStatus, getOperationalErrorState } from './initialData/index.js';
 import { NotifyMessageTypes } from './notifyMessageTypes.js';
@@ -92,7 +92,7 @@ export class PlatformRunner {
         const operationalStateId = getOperationalErrorState(errorCode);
         if (operationalStateId) {
           platform.log.error(`Error occurred: ${errorCode}`);
-          platform.robot.updateAttribute(RvcOperationalState.Cluster.id, 'operationalStateId', operationalStateId, platform.log);
+          platform.robot.updateAttribute(RvcOperationalState.Cluster.id, 'operationalState', operationalStateId, platform.log);
         }
         break;
       }
@@ -162,6 +162,11 @@ export class PlatformRunner {
           const matterState = state_to_matter_state(status);
           if (matterState) {
             platform.robot!.updateAttribute(RvcRunMode.Cluster.id, 'currentMode', getRunningMode(model, matterState), platform.log);
+          }
+
+          const operationalStateId = state_to_matter_operational_status(status);
+          if (operationalStateId) {
+            platform.robot!.updateAttribute(RvcOperationalState.Cluster.id, 'operationalState', operationalStateId, platform.log);
           }
           break;
         }
