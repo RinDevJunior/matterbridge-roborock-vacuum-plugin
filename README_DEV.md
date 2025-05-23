@@ -3,6 +3,8 @@
 Follow these steps to add support for a new device:
 
 ---
+## 0. Precondition
+- Matterbridge must be run at childbridge mode
 
 ## 1. Check the Model
 
@@ -60,3 +62,8 @@ sudo npm run start:roborock
 
 ## 8. TODO
 - correct state_to_matter_state
+
+## 9. Build package
+```sh
+cd .. && tar -czvf matterbridge-roborock-vacuum-plugin-1.0.1-rc02.tgz matterbridge-roborock-vacuum-plugin && cd matterbridge-roborock-vacuum-plugin
+```

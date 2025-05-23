@@ -22,6 +22,7 @@ import {
   AbstractMessageListener,
   AbstractConnectionListener,
 } from './roborockCommunication/index.js';
+import { ServiceArea } from 'matterbridge/matter/clusters';
 
 export default class RoborockService {
   private loginApi: RoborockAuthenticateApi;
@@ -39,6 +40,11 @@ export default class RoborockService {
   clientManager: ClientManager;
   refreshInterval: number;
   requestDeviceStatusInterval: NodeJS.Timeout | undefined;
+
+  //These are properties that are used to store the state of the device
+  private supportedAreas: Map<string, ServiceArea.Area[]> = new Map();
+  private selectedAreas: Map<string, number[]> = new Map();
+  private currentMode: number = 1; // 1: Idle, 2: Cleaning, 3: Mapping
 
   constructor(
     authenticateApiSupplier: Factory<void, RoborockAuthenticateApi> = (logger) => new RoborockAuthenticateApi(logger),
@@ -66,28 +72,57 @@ export default class RoborockService {
     return this.messageApi;
   }
 
-  public async startClean(duid: string, selectedAreas: number[]): Promise<void> {
-    if (selectedAreas.length == 0) {
+  public setSelectedAreas(duid: string, selectedAreas: number[]): void {
+    this.logger.debug('setSelectedAreas', selectedAreas);
+    this.selectedAreas.set(duid, selectedAreas);
+  }
+
+  public setSupportedAreas(duid: string, supportedAreas: ServiceArea.Area[]): void {
+    this.supportedAreas.set(duid, supportedAreas);
+  }
+
+  public setCleanMode(duid: string, mode: number): void {
+    //TODO
+    this.logger.debug('setCleanMode', mode);
+  }
+
+  public async startClean(duid: string): Promise<void> {
+    if (this.currentMode === 2) return;
+    const areas = this.supportedAreas.get(duid);
+    const sltArea = this.selectedAreas.get(duid);
+    this.currentMode = 2;
+
+    if (sltArea?.length == areas?.length || !sltArea) {
       this.logger.notice('startGlobalClean');
       this.getMessageApi()?.startClean(duid);
     } else {
-      return this.messageApi?.startRoomClean(duid, selectedAreas, 1);
+      this.logger.notice('startRoomClean');
+      return this.messageApi?.startRoomClean(duid, sltArea, 1);
     }
   }
 
   public async pauseClean(duid: string): Promise<void> {
-    this.logger.notice('pauseClean');
-    await this.getMessageApi()?.pauseClean(duid);
+    if (this.currentMode === 2) {
+      this.logger.notice('pauseClean');
+      this.currentMode = 1;
+      await this.getMessageApi()?.pauseClean(duid);
+    }
   }
 
   public async stopAndGoHome(duid: string): Promise<void> {
-    this.logger.notice('stopAndGoHome');
-    await this.getMessageApi()?.gotoDock(duid);
+    if (this.currentMode === 2) {
+      this.logger.notice('stopAndGoHome');
+      this.currentMode = 1;
+      await this.getMessageApi()?.gotoDock(duid);
+    }
   }
 
   public async resumeClean(duid: string): Promise<void> {
-    this.logger.notice('resumeClean');
-    await this.getMessageApi()?.resumeClean(duid);
+    if (this.currentMode === 1) {
+      this.logger.notice('resumeClean');
+      this.currentMode = 2;
+      await this.getMessageApi()?.resumeClean(duid);
+    }
   }
 
   public async playSoundToLocate(duid: string): Promise<void> {
@@ -146,7 +181,6 @@ export default class RoborockService {
     }
 
     const homeData = (await this.iotApi.getHome(homeDetails.rrHomeId)) as Home;
-
     if (!homeData) {
       return [];
     }

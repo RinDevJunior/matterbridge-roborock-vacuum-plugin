@@ -4,11 +4,11 @@ import { BehaviorDeviceGeneric, BehaviorRoborock, DeviceCommands } from '../../B
 import RoborockService from '../../../roborockService.js';
 
 export interface DefaultEndpointCommands extends DeviceCommands {
-  ChangeRunMode: ({ newMode, selectedAreas }: { newMode: number; selectedAreas: number[] }) => MaybePromise;
-  ChangeCleanMode: (newMode: number) => MaybePromise;
-  Pause: () => MaybePromise;
-  Resume: () => MaybePromise;
-  GoHome: () => MaybePromise;
+  selectAreas: (newAreas: number[]) => MaybePromise;
+  changeToMode: (newMode: number) => MaybePromise;
+  pause: () => MaybePromise;
+  resume: () => MaybePromise;
+  goHome: () => MaybePromise;
   PlaySoundToLocate: (identifyTime: number) => MaybePromise;
 }
 
@@ -22,50 +22,62 @@ export namespace DefaultBehaviorRoborock {
   }
 }
 
+const RvcRunMode: Record<number, string> = {
+  [1]: 'Idle', //DO NOT HANDLE HERE,
+  [2]: 'Cleaning',
+  [3]: 'Mapping',
+};
+const RvcCleanMode: Record<number, string> = {
+  [4]: 'Mop',
+  [5]: 'Vacuum',
+};
+
 export function setDefaultCommandHandler(duid: string, handler: BehaviorDeviceGeneric<DeviceCommands>, logger: AnsiLogger, roborockService: RoborockService): void {
-  handler.setCommandHandler('ChangeRunMode', async ({ newMode, selectedAreas }) => {
-    const activityMap: Record<number, string> = {
-      [1]: 'Idle',
-      [2]: 'Cleaning',
-      [3]: 'Mapping',
-    };
-    const activity = activityMap[newMode];
+  handler.setCommandHandler('changeToMode', async (newMode: number) => {
+    const activity = RvcRunMode[newMode] || RvcCleanMode[newMode];
     switch (activity) {
       case 'Cleaning': {
-        await roborockService.startClean(duid, selectedAreas);
+        await roborockService.startClean(duid);
+        return;
+      }
+      case 'Idle': {
+        logger.notice('BehaviorA187-ChangeRunMode to Idle');
+        return;
+      }
+      case 'Mop':
+      case 'Vacuum': {
+        logger.notice('BehaviorA187-ChangeCleanMode to: ', activity);
+        roborockService.setCleanMode(duid, newMode);
         return;
       }
       default:
+        logger.notice('BehaviorA187-changeToMode-Unknown: ', newMode);
         return;
     }
   });
 
-  handler.setCommandHandler('ChangeCleanMode', async (newMode) => {
-    const activityMap: Record<number, string> = {
-      [1]: 'Vacuum',
-      [2]: 'Mop',
-    };
-    const activity = activityMap[newMode];
-    logger.debug('DefaultBehavior-ChangeCleanMode to ', activity);
+  handler.setCommandHandler('selectAreas', async (newAreas: number[]) => {
+    logger.notice('DefaultBehavior-selectAreas: ', newAreas);
+    roborockService.setSelectedAreas(duid, newAreas);
   });
 
-  handler.setCommandHandler('Pause', async () => {
-    logger.debug('DefaultBehavior-Pause');
+  handler.setCommandHandler('pause', async () => {
+    logger.notice('DefaultBehavior-Pause');
     await roborockService.pauseClean(duid);
   });
 
-  handler.setCommandHandler('Resume', async () => {
-    logger.debug('DefaultBehavior-Resume');
+  handler.setCommandHandler('resume', async () => {
+    logger.notice('DefaultBehavior-Resume');
     await roborockService.resumeClean(duid);
   });
 
-  handler.setCommandHandler('GoHome', async () => {
-    logger.debug('DefaultBehavior-GoHome');
+  handler.setCommandHandler('goHome', async () => {
+    logger.notice('DefaultBehavior-GoHome');
     await roborockService.stopAndGoHome(duid);
   });
 
   handler.setCommandHandler('PlaySoundToLocate', async (identifyTime: number) => {
-    logger.debug('DefaultBehavior-PlaySoundToLocate');
+    logger.notice('DefaultBehavior-PlaySoundToLocate');
     await roborockService.playSoundToLocate(duid);
   });
 }

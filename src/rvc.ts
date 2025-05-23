@@ -1,18 +1,65 @@
-import { MatterbridgeEndpoint, roboticVacuumCleaner } from 'matterbridge';
+import { RoboticVacuumCleaner } from 'matterbridge';
 import RoomMap from './model/RoomMap.js';
 import { Device } from './roborockCommunication/index.js';
+import { getOperationalStates, getSupportedAreas, getSupportedCleanModes, getSupportedRunModes } from './initialData/index.js';
+import { AnsiLogger } from 'node-ansi-logger';
+import { BehaviorFactoryResult } from './behaviorFactory.js';
+import { ModeBase, RvcOperationalState, ServiceArea } from 'matterbridge/matter/clusters';
 
-export class RoborockVacuumCleaner extends MatterbridgeEndpoint {
+export class RoborockVacuumCleaner extends RoboticVacuumCleaner {
   username: string | undefined;
   device: Device;
   rrHomeId: number;
   roomInfo: RoomMap | undefined;
 
-  constructor(username: string, device: Device, isDebug = false) {
-    super(roboticVacuumCleaner, { uniqueStorageKey: `${device.name}-${device.duid}` }, isDebug);
+  constructor(username: string, device: Device, roomMap: RoomMap, log: AnsiLogger) {
+    const cleanModes = getSupportedCleanModes(device.data.model);
+    const supportedRunModes = getSupportedRunModes(device.data.model);
+    super(
+      device.name, //name
+      device.duid, //serial
+      supportedRunModes[0].mode, //currentRunMode
+      supportedRunModes, //supportedRunModes
+      cleanModes[0].mode, //currentCleanMode
+      cleanModes, //supportedCleanModes
+      undefined, //currentPhase
+      undefined, //phaseList
+      RvcOperationalState.OperationalState.Docked, //operationalState
+      getOperationalStates(device.data.model), //operationalStateList
+      getSupportedAreas(device.rooms, roomMap, log), //supportedAreas
+      undefined, //selectedAreas
+      undefined, //currentArea
+    );
 
     this.username = username;
     this.device = device;
     this.rrHomeId = device.rrHomeId;
+  }
+
+  configurateHandler(behaviorHandler: BehaviorFactoryResult): void {
+    this.addCommandHandler('identify', async ({ request: { identifyTime } }) => {
+      behaviorHandler.executeCommand('PlaySoundToLocate', identifyTime as number);
+    });
+
+    this.addCommandHandler('selectAreas', async ({ request }: { request: ServiceArea.SelectAreasRequest }) => {
+      behaviorHandler.executeCommand('selectAreas', request.newAreas);
+    });
+
+    this.addCommandHandler('changeToMode', async ({ request }: { request: ModeBase.ChangeToModeRequest }) => {
+      this.log.error('RoborockVacuumCleaner-changeToMode: ', JSON.stringify(request.newMode));
+      behaviorHandler.executeCommand('changeToMode', request.newMode);
+    });
+
+    this.addCommandHandler('pause', async () => {
+      behaviorHandler.executeCommand('pause');
+    });
+
+    this.addCommandHandler('resume', async () => {
+      behaviorHandler.executeCommand('resume');
+    });
+
+    this.addCommandHandler('goHome', async () => {
+      behaviorHandler.executeCommand('goHome');
+    });
   }
 }

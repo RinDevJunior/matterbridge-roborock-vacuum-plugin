@@ -8,10 +8,10 @@ import ClientManager from './clientManager.js';
 import { isSupportedDevice } from './helper.js';
 import { PlatformRunner } from './platformRunner.js';
 import { RoborockVacuumCleaner } from './rvc.js';
-import { getOperationalStates, getSupportedCleanModes, getSupportedRunModes, getSupportedAreas, getBatteryStatus } from './initialData/index.js';
 import { configurateBehavior } from './behaviorFactory.js';
 import { NotifyMessageTypes } from './notifyMessageTypes.js';
 import { Device, RoborockAuthenticateApi, RoborockIoTApi } from './roborockCommunication/index.js';
+import { getSupportedAreas } from './initialData/index.js';
 
 export class RoborockMatterbridgePlatform extends MatterbridgeDynamicPlatform {
   robot: RoborockVacuumCleaner | undefined;
@@ -19,18 +19,16 @@ export class RoborockMatterbridgePlatform extends MatterbridgeDynamicPlatform {
   roborockService: RoborockService | undefined;
   clientManager: ClientManager;
   platformRunner: PlatformRunner | undefined;
-  serialNumberAndDuidMapping: Map<string, string>;
   devices: Map<string, Device>;
   serialNumber: string | undefined;
-  isReadyToConfigurate = false;
 
   constructor(matterbridge: Matterbridge, log: AnsiLogger, config: PlatformConfig) {
     super(matterbridge, log, config);
 
     // Verify that Matterbridge is the correct version
-    if (this.verifyMatterbridgeVersion === undefined || typeof this.verifyMatterbridgeVersion !== 'function' || !this.verifyMatterbridgeVersion('3.0.1')) {
+    if (this.verifyMatterbridgeVersion === undefined || typeof this.verifyMatterbridgeVersion !== 'function' || !this.verifyMatterbridgeVersion('3.0.3')) {
       throw new Error(
-        `This plugin requires Matterbridge version >= "3.0.1". Please update Matterbridge from ${this.matterbridge.matterbridgeVersion} to the latest version in the frontend.`,
+        `This plugin requires Matterbridge version >= "3.0.3". Please update Matterbridge from ${this.matterbridge.matterbridgeVersion} to the latest version in the frontend.`,
       );
     }
 
@@ -40,7 +38,6 @@ export class RoborockMatterbridgePlatform extends MatterbridgeDynamicPlatform {
     if (config.enableRVC === undefined) config.enableRVC = false;
 
     this.clientManager = new ClientManager(this.log);
-    this.serialNumberAndDuidMapping = new Map<string, string>();
     this.devices = new Map<string, Device>();
   }
 
@@ -106,34 +103,19 @@ export class RoborockMatterbridgePlatform extends MatterbridgeDynamicPlatform {
     this.devices.set(vacuum.serialNumber, vacuum);
     this.serialNumber = vacuum.serialNumber;
 
-    this.isReadyToConfigurate = true;
+    await this.onConfigurateDevice();
     this.log.notice('onStart finished');
   }
 
   override async onConfigure() {
     await super.onConfigure();
-    this.log.notice('onConfigure started');
-
-    // Verify that the config is correct
-    if (this.config.username === undefined || this.config.password === undefined) {
-      this.log.error('"username" and "password" are required in the config');
-      return;
-    }
-
-    while (!this.isReadyToConfigurate) {
-      await this.sleep(1000);
-    }
-
     const self = this;
-    await this.onConfigurateDevice();
     this.rvcInterval = setInterval(
       async () => {
         self.platformRunner?.requestHomeData();
       },
       ((this.config.refreshInterval as number) ?? 60) * 1000 + 100,
     );
-
-    this.log.notice('onConfigure finished');
   }
 
   async onConfigurateDevice(): Promise<void> {
@@ -151,41 +133,14 @@ export class RoborockMatterbridgePlatform extends MatterbridgeDynamicPlatform {
 
     const self = this;
     await this.roborockService.initializeMessageClientForLocal(vacuum);
-
     const roomMap = await this.platformRunner.getRoomMapFromDevice(vacuum);
-    const { supportedAreas, defaultSelectedAreas } = getSupportedAreas(vacuum.rooms, roomMap, this.log);
-    const { BehaviorClass, behaviorHandler } = configurateBehavior(vacuum.data.model, vacuum.duid, this.roborockService, this.log);
+    const behaviorHandler = configurateBehavior(vacuum.data.model, vacuum.duid, this.roborockService, this.log);
 
-    this.serialNumberAndDuidMapping.set(vacuum.serialNumber, vacuum.duid);
-
-    // Create a new MatterbridgeEndpoint for the robot vacuum cleaner
-    this.robot = new RoborockVacuumCleaner(username, vacuum, true)
-      .createDefaultIdentifyClusterServer()
-      .createDefaultBasicInformationClusterServer(
-        vacuum.name,
-        vacuum.serialNumber,
-        0xfff1,
-        'Roborock',
-        0x8000,
-        'Matterbridge Roborock Vacuum Cleaner',
-        undefined,
-        vacuum.pv, //softwareVersionString
-        undefined,
-        vacuum.fv, //hardwareVersionString
-      )
-      .createDefaultRvcRunModeClusterServer(getSupportedRunModes(vacuum.data.model))
-      .createDefaultRvcOperationalStateClusterServer(getOperationalStates(vacuum.data.model))
-      .createDefaultRvcCleanModeClusterServer(getSupportedCleanModes(vacuum.data.model))
-      .createDefaultServiceAreaClusterServer(supportedAreas, [], defaultSelectedAreas)
-      .createDefaultPowerSourceRechargeableBatteryClusterServer(vacuum.data.batteryLevel ?? 100, getBatteryStatus(vacuum.data.batteryLevel ?? 100), 5900)
-      .configurateBehaviorHandler(BehaviorClass, behaviorHandler);
+    this.roborockService.setSupportedAreas(vacuum.duid, getSupportedAreas(vacuum.rooms, roomMap, this.log));
+    this.robot = new RoborockVacuumCleaner(username, vacuum, roomMap, this.log);
+    this.robot.configurateHandler(behaviorHandler);
 
     this.log.info('vacuum:', JSON.stringify(vacuum));
-
-    this.robot.addCommandHandler('identify', async ({ request: { identifyTime } }) => {
-      this.log.info(`Command identify called identifyTime:${identifyTime}`);
-      behaviorHandler.executeCommand('PlaySoundToLocate', identifyTime as number);
-    });
 
     this.setSelectDevice(this.robot.serialNumber ?? '', this.robot.deviceName ?? '', undefined, 'hub');
     if (this.validateDevice(this.robot.deviceName ?? '')) {

@@ -20,21 +20,27 @@ roomMap = {
 };
 */
 
-export function getSupportedAreas(
-  rooms: Room[],
-  roomMap: RoomMap | undefined,
-  log?: AnsiLogger,
-): {
-  supportedAreas: ServiceArea.Area[];
-  defaultSelectedAreas: number;
-} {
-  if (!rooms || rooms.length === 0 || !roomMap) {
-    log?.error('No rooms found');
-    return { supportedAreas: [], defaultSelectedAreas: 0 };
-  }
-
+export function getSupportedAreas(rooms: Room[], roomMap: RoomMap | undefined, log?: AnsiLogger): ServiceArea.Area[] {
   log?.debug('getSupportedAreas', JSON.stringify(rooms));
   log?.debug('getSupportedAreas', JSON.stringify(roomMap));
+
+  if (!rooms || rooms.length === 0 || !roomMap) {
+    log?.error('No rooms found');
+    return [
+      {
+        areaId: 1,
+        mapId: null,
+        areaInfo: {
+          locationInfo: {
+            locationName: 'Unknown',
+            floorNumber: null,
+            areaType: null,
+          },
+          landmarkInfo: null,
+        },
+      },
+    ];
+  }
 
   const supportedAreas: ServiceArea.Area[] = rooms.map((room, index) => {
     return {
@@ -50,9 +56,6 @@ export function getSupportedAreas(
       },
     };
   });
-  const defaultSelectedAreas = supportedAreas.find((room) => room.areaInfo.locationInfo?.locationName === 'Living Room')?.areaId ?? roomMap.rooms[0].id;
 
-  log?.debug('getSupportedAreas', JSON.stringify(supportedAreas));
-
-  return { supportedAreas, defaultSelectedAreas };
+  return supportedAreas;
 }

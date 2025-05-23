@@ -24,12 +24,12 @@ export function getDefaultSupportedCleanModes(): RvcCleanMode.ModeOption[] {
   return [
     {
       label: 'Vacuum',
-      mode: 1,
+      mode: 4,
       modeTags: [{ value: RvcCleanMode.ModeTag.Vacuum }],
     },
     {
       label: 'Mop',
-      mode: 2,
+      mode: 5,
       modeTags: [{ value: RvcCleanMode.ModeTag.Mop }],
     },
   ];

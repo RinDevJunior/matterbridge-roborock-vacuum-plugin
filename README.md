@@ -37,4 +37,4 @@ See the guidelines on [Matterbridge](https://github.com/Luligu/matterbridge/blob
 
 ## Third-Party Code
 
-This project is built on top of [Roborock](https://gitlab.com/functor-solutions/typescript/roborock) and [matterbridge-example-dynamic-platform](https://github.com/Luligu/matterbridge-example-dynamic-platform)
+This project is built on top of [matterbridge-example-dynamic-platform](https://github.com/Luligu/matterbridge-example-dynamic-platform)

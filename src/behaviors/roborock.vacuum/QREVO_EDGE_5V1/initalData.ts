@@ -24,28 +24,28 @@ export function getSupportedCleanModesA187(): RvcCleanMode.ModeOption[] {
   return [
     {
       label: 'Smart Plan',
-      mode: 1,
+      mode: 4,
       modeTags: [{ value: RvcCleanMode.ModeTag.Mop }, { value: RvcCleanMode.ModeTag.Vacuum }, { value: RvcCleanMode.ModeTag.Auto }],
     },
     {
       label: 'Mop',
-      mode: 2,
+      mode: 5,
       modeTags: [{ value: RvcCleanMode.ModeTag.Mop }, { value: RvcCleanMode.ModeTag.Auto }],
     },
     {
       label: 'Vacuum',
-      mode: 3,
+      mode: 6,
       modeTags: [{ value: RvcCleanMode.ModeTag.Vacuum }, { value: RvcCleanMode.ModeTag.Auto }],
     },
     {
       label: 'Mop & Vacuum',
-      mode: 4,
+      mode: 7,
       modeTags: [{ value: RvcCleanMode.ModeTag.Mop }, { value: RvcCleanMode.ModeTag.Vacuum }, { value: RvcCleanMode.ModeTag.DeepClean }],
     },
 
     {
       label: 'Custom',
-      mode: 5,
+      mode: 8,
       modeTags: [{ value: RvcCleanMode.ModeTag.Mop }, { value: RvcCleanMode.ModeTag.Vacuum }, { value: RvcCleanMode.ModeTag.Quick }],
     },
   ];

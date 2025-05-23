@@ -1,2 +1,1 @@
-import "./MatterbridgeEndpointExtensions.js";
-import "./AxiosStaticExtensions.js";
+import './AxiosStaticExtensions.js';

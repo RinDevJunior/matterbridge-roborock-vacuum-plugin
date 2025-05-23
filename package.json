@@ -32,7 +32,7 @@
   },
   "scripts": {
     "precondition": "npm install -g matterbridge@3.0.3",
-    "deepCleanBuild": "npm run deepClean && npm install && npm link matterbridge && npm run build",
+    "deepCleanBuild": "npm run deepClean && npm install && npm link matterbridge && npm run build && npm run matterbridge:add",
     "dev:link": "npm link matterbridge",
     "matterbridge:add": "matterbridge -add .\\",
     "start:roborock": "tsc && matterbridge -childbridge",

@@ -80,9 +80,9 @@ export class PlatformRunner {
       return;
     }
 
-    const deviceDuid = platform.serialNumberAndDuidMapping.get(platform.robot.serialNumber);
-    if (deviceDuid !== duid) {
-      platform.log.notice(`DUID mismatch: ${deviceDuid} !== ${duid}, device serial number: ${platform.robot.serialNumber}`);
+    //duid is set as device serial number
+    if (platform.robot.serialNumber !== duid) {
+      platform.log.notice(`DUID mismatch: ${duid}, device serial number: ${platform.robot.serialNumber}`);
       return;
     }
 
@@ -213,7 +213,7 @@ export class PlatformRunner {
   private updateHomeData(homeData: Home): void {
     const platform = this.platform;
     if (platform.robot === undefined) return;
-    const device = homeData.devices.find((d: Device) => d.serialNumber === platform.robot?.serialNumber);
+    const device = homeData.devices.find((d: Device) => d.duid === platform.robot?.serialNumber);
     if (!device) {
       platform.log.error('Device not found in home data');
       return;
