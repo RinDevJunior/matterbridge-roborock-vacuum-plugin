@@ -23,7 +23,7 @@ export class PlatformRunner {
 
   async updateRobot(messageSource: NotifyMessageTypes, homeData: any): Promise<void> {
     if (messageSource === NotifyMessageTypes.HomeData) {
-      this.updateHomeData(homeData);
+      this.updateFromHomeData(homeData);
     } else {
       await this.updateFromMQTTMessage(messageSource, homeData);
     }
@@ -182,7 +182,8 @@ export class PlatformRunner {
           break;
         }
         case Protocol.additional_props:
-        case Protocol.todo_some_thing_need_to_correct: {
+        case Protocol.back_type: {
+          //TODO: check if this is needed
           break;
         }
         default: {
@@ -210,7 +211,7 @@ export class PlatformRunner {
     return result && Array.isArray(result) && result.length > 0 && (result[0] as CloudMessageResult).msg_ver !== undefined && (result[0] as CloudMessageResult).msg_ver !== null;
   }
 
-  private updateHomeData(homeData: Home): void {
+  private updateFromHomeData(homeData: Home): void {
     const platform = this.platform;
     if (platform.robot === undefined) return;
     const device = homeData.devices.find((d: Device) => d.duid === platform.robot?.serialNumber);
@@ -224,16 +225,26 @@ export class PlatformRunner {
       return;
     }
 
-    this.platform.log.debug('updateHomeData-homeData:', JSON.stringify(homeData));
-    this.platform.log.debug('updateHomeData-device:', JSON.stringify(device));
+    this.platform.log.debug('updateFromHomeData-homeData:', JSON.stringify(homeData));
+    this.platform.log.debug('updateFromHomeData-device:', JSON.stringify(device));
 
-    device.schema = homeData.products.find((d) => d.id === device.productId)?.schema ?? [];
+    device.schema = homeData.products.find((prd) => prd.id == device.productId || prd.model == device.data.model)?.schema ?? [];
+
     const batteryLevel = getVacuumProperty(device, 'battery');
-    platform.robot.updateAttribute(PowerSource.Cluster.id, 'batPercentRemaining', batteryLevel ? batteryLevel * 2 : 200, platform.log);
-    platform.robot.updateAttribute(PowerSource.Cluster.id, 'batChargeLevel', getBatteryStatus(batteryLevel), platform.log);
+    if (batteryLevel) {
+      platform.robot.updateAttribute(PowerSource.Cluster.id, 'batPercentRemaining', batteryLevel ? batteryLevel * 2 : 200, platform.log);
+      platform.robot.updateAttribute(PowerSource.Cluster.id, 'batChargeLevel', getBatteryStatus(batteryLevel), platform.log);
+    }
 
     const state = getVacuumProperty(device, 'state');
     const matterState = state_to_matter_state(state);
-    platform.robot.updateAttribute(RvcRunMode.Cluster.id, 'currentMode', getRunningMode(deviceData.model, matterState), platform.log);
+    if (matterState) {
+      platform.robot.updateAttribute(RvcRunMode.Cluster.id, 'currentMode', getRunningMode(deviceData.model, matterState), platform.log);
+    }
+
+    //const chargeStatus = getVacuumProperty(device, 'charge_status');
+    if (state && batteryLevel) {
+      platform.robot.updateAttribute(PowerSource.Cluster.id, 'batChargeState', getBatteryState(state, batteryLevel), platform.log);
+    }
   }
 }

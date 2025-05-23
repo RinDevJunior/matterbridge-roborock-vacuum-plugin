@@ -13,7 +13,7 @@ export enum Protocol {
   suction_power = 123,
   water_box_mode = 124,
   additional_props = 128,
-  todo_some_thing_need_to_correct = 139,
+  back_type = 139, //WTF is this
   map_response = 301,
 }
 //"deviceStatus":{"120":0,"121":8,"122":100,"123":110,"124":209,"125":99,"126":96,"127":97,"128":0,"133":1,"134":1,"135":0,"139":0}
