@@ -157,7 +157,7 @@ export class PlatformRunner {
     messageTypes.forEach(async (messageType) => {
       switch (messageType) {
         case Protocol.status_update: {
-          const status = data.dps[messageType] as number;
+          const status = Number(data.dps[messageType]);
           const matterState = state_to_matter_state(status);
           if (matterState) {
             platform.robot!.updateAttribute(RvcRunMode.Cluster.id, 'currentMode', getRunningMode(model, matterState), platform.log);
@@ -246,13 +246,20 @@ export class PlatformRunner {
     const matterState = state_to_matter_state(state);
     this.platform.log.debug('updateFromHomeData-state:', state);
     this.platform.log.debug('updateFromHomeData-matterState:', matterState);
+    if (!state) {
+      return;
+    }
 
     if (matterState) {
       platform.robot.updateAttribute(RvcRunMode.Cluster.id, 'currentMode', getRunningMode(deviceData.model, matterState), platform.log);
     }
 
-    //const chargeStatus = getVacuumProperty(device, 'charge_status');
-    if (state && batteryLevel) {
+    const operationalStateId = state_to_matter_operational_status(state);
+    if (operationalStateId) {
+      platform.robot!.updateAttribute(RvcOperationalState.Cluster.id, 'operationalState', operationalStateId, platform.log);
+    }
+
+    if (batteryLevel) {
       platform.robot.updateAttribute(PowerSource.Cluster.id, 'batChargeState', getBatteryState(state, batteryLevel), platform.log);
     }
   }
