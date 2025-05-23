@@ -69,8 +69,9 @@ export function state_to_matter_operational_status(state: number | undefined): R
     case OperationStatusCode.ZoneMopping:
     case OperationStatusCode.ZoneCleanMopCleaning:
     case OperationStatusCode.ZoneCleanMopMopping:
-    case OperationStatusCode.BackToDockWashingDuster:
     case OperationStatusCode.WashingTheMop2:
+    case OperationStatusCode.RobotStatusMopping:
+    case OperationStatusCode.EmptyingDustContainer:
       return RvcOperationalState.OperationalState.Running;
 
     case OperationStatusCode.InError:
@@ -89,9 +90,8 @@ export function state_to_matter_operational_status(state: number | undefined): R
       return RvcOperationalState.OperationalState.Stopped;
 
     case OperationStatusCode.ReturningDock:
-    case OperationStatusCode.EmptyingDustContainer:
     case OperationStatusCode.GoingToWashTheMop:
-    case OperationStatusCode.Docking:
+    case OperationStatusCode.BackToDockWashingDuster:
       return RvcOperationalState.OperationalState.SeekingCharger;
 
     case OperationStatusCode.Idle:
