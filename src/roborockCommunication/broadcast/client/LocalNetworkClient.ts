@@ -96,6 +96,11 @@ export class LocalNetworkClient extends AbstractClient {
       return;
     }
 
+    if (!message || message.length == 0) {
+      this.logger.debug('LocalNetworkClient received empty message from socket.');
+      return;
+    }
+
     try {
       this.buffer.append(message);
 
