@@ -15,6 +15,7 @@ export class RoborockVacuumCleaner extends RoboticVacuumCleaner {
   constructor(username: string, device: Device, roomMap: RoomMap, log: AnsiLogger) {
     const cleanModes = getSupportedCleanModes(device.data.model);
     const supportedRunModes = getSupportedRunModes(device.data.model);
+    const supportedAreas = getSupportedAreas(device.rooms, roomMap, log);
     super(
       device.name, //name
       device.duid, //serial
@@ -26,9 +27,9 @@ export class RoborockVacuumCleaner extends RoboticVacuumCleaner {
       undefined, //phaseList
       RvcOperationalState.OperationalState.Docked, //operationalState
       getOperationalStates(device.data.model), //operationalStateList
-      getSupportedAreas(device.rooms, roomMap, log), //supportedAreas
+      supportedAreas, //supportedAreas
       undefined, //selectedAreas
-      undefined, //currentArea
+      supportedAreas[0].areaId, //currentArea
     );
 
     this.username = username;
