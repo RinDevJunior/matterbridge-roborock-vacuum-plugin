@@ -47,7 +47,6 @@ export class RoborockVacuumCleaner extends RoboticVacuumCleaner {
     });
 
     this.addCommandHandler('changeToMode', async ({ request }: { request: ModeBase.ChangeToModeRequest }) => {
-      this.log.error('RoborockVacuumCleaner-changeToMode: ', JSON.stringify(request.newMode));
       behaviorHandler.executeCommand('changeToMode', request.newMode);
     });
 
