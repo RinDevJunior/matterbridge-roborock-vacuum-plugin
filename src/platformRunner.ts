@@ -235,6 +235,8 @@ export class PlatformRunner {
 
     device.schema = homeData.products.find((prd) => prd.id == device.productId || prd.model == device.data.model)?.schema ?? [];
 
+    this.platform.log.debug('updateFromHomeData-device.schema:', JSON.stringify(device.schema));
+
     const batteryLevel = getVacuumProperty(device, 'battery');
     if (batteryLevel) {
       platform.robot.updateAttribute(PowerSource.Cluster.id, 'batPercentRemaining', batteryLevel ? batteryLevel * 2 : 200, platform.log);
@@ -243,6 +245,9 @@ export class PlatformRunner {
 
     const state = getVacuumProperty(device, 'state');
     const matterState = state_to_matter_state(state);
+    this.platform.log.debug('updateFromHomeData-state:', state);
+    this.platform.log.debug('updateFromHomeData-matterState:', matterState);
+
     if (matterState) {
       platform.robot.updateAttribute(RvcRunMode.Cluster.id, 'currentMode', getRunningMode(deviceData.model, matterState), platform.log);
     }

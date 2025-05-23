@@ -5,8 +5,8 @@ export function getVacuumProperty(device: Device, property: string): number | un
     const schemas = device.schema;
     const schema = schemas.find((sch) => sch.code == property);
 
-    if (schema && device.deviceStatus && device.deviceStatus[schema.code] != undefined) {
-      return device.deviceStatus[schema.code];
+    if (schema && device.deviceStatus && device.deviceStatus[schema.id] != undefined) {
+      return device.deviceStatus[schema.id];
     }
   }
 
