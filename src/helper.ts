@@ -8,6 +8,10 @@ export function getVacuumProperty(device: Device, property: string): number | un
     if (schema && device.deviceStatus && device.deviceStatus[schema.id] != undefined) {
       return device.deviceStatus[schema.id];
     }
+
+    if (device.deviceStatus && device.deviceStatus[property] != undefined) {
+      return device.deviceStatus[property];
+    }
   }
 
   return undefined;

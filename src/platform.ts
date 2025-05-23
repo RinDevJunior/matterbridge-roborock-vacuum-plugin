@@ -31,11 +31,9 @@ export class RoborockMatterbridgePlatform extends MatterbridgeDynamicPlatform {
         `This plugin requires Matterbridge version >= "3.0.3". Please update Matterbridge from ${this.matterbridge.matterbridgeVersion} to the latest version in the frontend.`,
       );
     }
-
     this.log.info('Initializing platform:', this.config.name);
     if (config.whiteList === undefined) config.whiteList = [];
     if (config.blackList === undefined) config.blackList = [];
-    if (config.enableRVC === undefined) config.enableRVC = false;
 
     this.clientManager = new ClientManager(this.log);
     this.devices = new Map<string, Device>();
@@ -94,7 +92,17 @@ export class RoborockMatterbridgePlatform extends MatterbridgeDynamicPlatform {
     this.log.debug('Login successful:', JSON.stringify(userData));
 
     const devices = await this.roborockService.listDevices(username);
-    const vacuum = devices.find((d) => isSupportedDevice(d.data.model));
+
+    this.log.notice('Scan device with duid result: ', JSON.stringify(devices));
+
+    let vacuum: Device | undefined = undefined;
+    if ((this.config.whiteList as string[]).length > 0) {
+      const firstDUID = (this.config.whiteList as string[])[0];
+      vacuum = devices.find((d) => d.duid == firstDUID);
+    } else {
+      vacuum = devices.find((d) => isSupportedDevice(d.data.model));
+    }
+
     if (!vacuum) {
       this.log.error('No supported devices found');
       return;
