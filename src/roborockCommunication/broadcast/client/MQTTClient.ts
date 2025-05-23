@@ -106,6 +106,12 @@ export class MQTTClient extends AbstractClient {
   }
 
   private async onMessage(topic: string, message: Buffer<ArrayBufferLike>) {
+    if (!message) {
+      //Ignore empty messages
+      this.logger.notice('MQTTClient received empty message from topic: ' + topic);
+      return;
+    }
+
     try {
       const duid = topic.split('/').slice(-1)[0];
       const response = this.deserializer.deserialize(duid, message);
