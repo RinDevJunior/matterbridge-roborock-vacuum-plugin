@@ -1,0 +1,31 @@
+{
+  "name": "web",
+  "version": "1.0.0",
+  "description": "",
+  "main": "/src/app.ts",
+  "scripts": {
+    "build": "rm -rf dist && tsc",
+    "start": "node dist/app.js",
+    "dev": "nodemon --watch src --ext ts --exec \"npm run build && node dist/app.js\"",
+    "dev:macos": "osascript -e 'tell application \"Terminal\" to do script \"cd /Users/xxx/matterbridge-roborock-vacuum-plugin/webui && npm run dev\"'",
+    "copy-src": "cd src && rm -rf ext && cd .. && cpx '../src/**/*.!(json)' src/ext/"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "module",
+  "dependencies": {
+    "ejs": "^3.1.10",
+    "express": "^5.1.0",
+    "node-ansi-logger": "^3.0.1"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.2",
+    "@types/node": "^22.15.21",
+    "cpx": "^1.5.0",
+    "nodemon": "^3.1.10",
+    "ts-node": "^10.9.2",
+    "tsx": "^4.19.4",
+    "typescript": "^5.8.3"
+  }
+}

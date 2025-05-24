@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>
+        <%= title %>
+    </title>
+    <link rel="stylesheet" href="/style.css">
+</head>
+
+<body>
+    <h1>
+        <%= title %>
+    </h1>
+
+    <!-- Login Section -->
+    <section id="loginSection">
+        <h2>Login</h2>
+        <input type="text" id="username" placeholder="Username" />
+        <input type="text" id="password" placeholder="Password" />
+        <button id="loginBtn">Login</button>
+        <span id="loginStatus"></span>
+        <br><br>
+        <pre id="loginResult" style="background:#f5f5f5;padding:10px;"></pre>
+    </section>
+    <section id="tryToConnect">
+        <br>
+        <label for="tryConnectIp">IP to try connect:</label>
+        <input type="text" id="tryConnectIp" placeholder="192.168.1.100" />
+        <button id="tryConnectBtn">Try to Connect</button>
+        <br>
+    </section>
+
+    <!-- Search Section -->
+    <section id="execute-command">
+        <input type="text" id="duid" placeholder="duid" />
+        <input type="text" id="command" placeholder="command" value="get_network_info" />
+        <label for="secure">Secure?: </label>
+        <input type="checkbox" id="secure" />
+        <button id="submitBtn">Submit</button>
+        <button id="disconnectBtn" style="margin-left:10px;">Disconnect</button>
+        <br><br>
+        <label for="userDataField">User Data:</label><br>
+        <textarea id="userDataField" rows="5" cols="60"></textarea>
+        <br>
+        <label for="deviceField">Device:</label><br>
+        <textarea id="deviceField" rows="5" cols="60"></textarea>
+        <br>
+        <label for="resultArea">Result</label>
+        <textarea id="resultArea" rows="10" cols="60"></textarea>
+    </section>
+
+    <script>
+        // Login handler
+        document.getElementById('loginBtn').onclick = async function () {
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            const response = await fetch('/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username, password })
+            });
+            const data = await response.json();
+            document.getElementById('loginStatus').textContent = data.success ? 'Login successful!' : (data.error || 'Login failed');
+
+            // Hiển thị kết quả deserialize
+            const loginResult = document.getElementById('loginResult');
+            if (data.success) {
+                loginResult.textContent =
+                    'devices = ' + JSON.stringify(data.devices, null, 2) + '\n\n' +
+                    'userData = ' + JSON.stringify(data.userData, null, 2);
+            } else {
+                loginResult.textContent =
+                    'error = ' + JSON.stringify(data.error, null, 2);
+            }
+        };
+        // Search handler
+        document.getElementById('submitBtn').onclick = async function () {
+            const duid = document.getElementById('duid').value;
+            const command = document.getElementById('command').value;
+            const secure = document.getElementById('secure').checked;
+            const userData = document.getElementById('userDataField').value;
+            const device = document.getElementById('deviceField').value;
+
+            const response = await fetch('/run', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ duid, command, secure, userData1: userData, device1: device })
+            });
+            const data = await response.json();
+            document.getElementById('resultArea').value = data.result || data.error || '';
+        };
+        document.getElementById('disconnectBtn').onclick = async function () {
+            const response = await fetch('/disconnect', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' }
+            });
+            const data = await response.json();
+            document.getElementById('resultArea').value = data.success ? 'Disconnected!' : 'Disconnect failed!';
+        };
+        document.getElementById('tryConnectBtn').onclick = async function () {
+            const ip = document.getElementById('tryConnectIp').value;
+            if (!ip) {
+                document.getElementById('resultArea').value = 'Please enter an IP address!';
+                return;
+            }
+            const response = await fetch('/try-connect', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ ip })
+            });
+            const data = await response.json();
+            document.getElementById('resultArea').value = data.result || data.error || '';
+        };
+    </script>
+</body>
+
+</html>
