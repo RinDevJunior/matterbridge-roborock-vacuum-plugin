@@ -11,7 +11,6 @@ export class MQTTClient extends AbstractClient {
   private readonly mqttUsername: string;
   private readonly mqttPassword: string;
   private client: MqttLibClient | undefined = undefined;
-  isUnexpedtedDisconnect: boolean = true;
 
   public constructor(logger: AnsiLogger, context: MessageContext, userdata: UserData) {
     super(logger, context);
@@ -51,7 +50,6 @@ export class MQTTClient extends AbstractClient {
     if (!this.client || !this.connected) {
       return;
     }
-    this.isUnexpedtedDisconnect = false;
     try {
       this.client.end();
     } catch (error) {
@@ -99,14 +97,6 @@ export class MQTTClient extends AbstractClient {
   }
 
   private async onDisconnect() {
-    if (this.isUnexpedtedDisconnect) {
-      this.logger.error('Unexpected disconnect, trying to reconnect...');
-      this.connect();
-      return;
-    }
-
-    //reset isUnexpedtedDisconnect value
-    this.isUnexpedtedDisconnect = true;
     await this.connectionListeners.onDisconnected();
   }
 

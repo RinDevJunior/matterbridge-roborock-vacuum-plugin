@@ -6,7 +6,7 @@ dist/
 build/
 out/
 .shouldnotcommit/
-
+webui/
 exampleData/
 
 # TypeScript cache

@@ -15,7 +15,6 @@ export class LocalNetworkClient extends AbstractClient {
   private pingInterval?: NodeJS.Timeout;
   duid: string;
   ip: string;
-  isUnexpedtedDisconnect: boolean = true;
 
   public constructor(logger: AnsiLogger, context: MessageContext, duid: string, ip: string) {
     super(logger, context);
@@ -41,7 +40,6 @@ export class LocalNetworkClient extends AbstractClient {
     if (this.pingInterval) {
       clearInterval(this.pingInterval);
     }
-    this.isUnexpedtedDisconnect = false;
     this.socket.destroy();
     this.socket = undefined;
   }
@@ -70,14 +68,6 @@ export class LocalNetworkClient extends AbstractClient {
 
   private async onDisconnect(): Promise<void> {
     this.logger.info('Socket has disconnected.');
-    if (this.isUnexpedtedDisconnect) {
-      this.logger.error('Unexpected disconnect, trying to reconnect...');
-      this.connect();
-      return;
-    }
-
-    //reset isUnexpedtedDisconnect value
-    this.isUnexpedtedDisconnect = true;
     this.connected = false;
 
     if (this.socket) {
