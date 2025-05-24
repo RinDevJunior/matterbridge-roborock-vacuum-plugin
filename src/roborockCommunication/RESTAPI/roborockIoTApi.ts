@@ -33,7 +33,7 @@ export class RoborockIoTApi {
   }
 
   async getHome(homeId: number): Promise<Home | undefined> {
-    const result = await this.api.get('v2/user/homes/' + homeId);
+    const result = await this.api.get(`user/homes/${homeId}`);
 
     const apiResponse: ApiResponse<Home> = result.data;
     if (apiResponse.result) {
@@ -45,7 +45,19 @@ export class RoborockIoTApi {
   }
 
   async getHomev2(homeId: number): Promise<Home | undefined> {
-    const result = await this.api.get(`user/homes/${homeId}`);
+    const result = await this.api.get('v2/user/homes/' + homeId);
+
+    const apiResponse: ApiResponse<Home> = result.data;
+    if (apiResponse.result) {
+      return apiResponse.result;
+    } else {
+      this.logger.error('Failed to retrieve the home data');
+      return undefined;
+    }
+  }
+
+  async getHomev3(homeId: number): Promise<Home | undefined> {
+    const result = await this.api.get('v3/user/homes/' + homeId);
 
     const apiResponse: ApiResponse<Home> = result.data;
     if (apiResponse.result) {

@@ -148,6 +148,11 @@ export class RoborockMatterbridgePlatform extends MatterbridgeDynamicPlatform {
     this.robot = new RoborockVacuumCleaner(username, vacuum, roomMap, this.log);
     this.robot.configurateHandler(behaviorHandler);
 
+    // const xxx = this.roborockService.customGet(vacuum.duid, 'get_custom_mode');
+    // this.log.error('XXXXXXX: ', JSON.stringify(xxx));
+    // const yyyy = this.roborockService.customGetInSecure(vacuum.duid, 'get_custom_mode');
+    // this.log.error('XXXXXXX: ', JSON.stringify(yyyy));
+
     this.log.info('vacuum:', JSON.stringify(vacuum));
 
     this.setSelectDevice(this.robot.serialNumber ?? '', this.robot.deviceName ?? '', undefined, 'hub');

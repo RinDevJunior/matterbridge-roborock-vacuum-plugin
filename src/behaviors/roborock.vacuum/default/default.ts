@@ -40,18 +40,14 @@ export function setDefaultCommandHandler(duid: string, handler: BehaviorDeviceGe
         await roborockService.startClean(duid);
         return;
       }
-      case 'Idle': {
-        logger.notice('BehaviorA187-ChangeRunMode to Idle');
-        return;
-      }
       case 'Mop':
       case 'Vacuum': {
-        logger.notice('BehaviorA187-ChangeCleanMode to: ', activity);
+        logger.notice('DefaultBehavior-ChangeCleanMode to: ', activity);
         roborockService.setCleanMode(duid, newMode);
         return;
       }
       default:
-        logger.notice('BehaviorA187-changeToMode-Unknown: ', newMode);
+        logger.notice('DefaultBehavior-changeToMode-Unknown: ', newMode);
         return;
     }
   });

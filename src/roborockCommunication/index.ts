@@ -1,6 +1,6 @@
 export { RoborockAuthenticateApi } from './RESTAPI/roborockAuthenticateApi.js';
 export { RoborockIoTApi } from './RESTAPI/roborockIoTApi.js';
-export { MessageApi } from './broadcast/messageAPI.js';
+export { MessageProcessor } from './broadcast/messageProcessor.js';
 export { UserData } from './Zmodel/userData.js';
 export { Device } from './Zmodel/device.js';
 export { AbstractMessageHandler } from './broadcast/listener/abstractMessageHandler.js';

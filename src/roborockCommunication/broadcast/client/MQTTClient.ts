@@ -10,8 +10,8 @@ export class MQTTClient extends AbstractClient {
   private readonly rriot: Rriot;
   private readonly mqttUsername: string;
   private readonly mqttPassword: string;
-
   private client: MqttLibClient | undefined = undefined;
+  isUnexpedtedDisconnect: boolean = true;
 
   public constructor(logger: AnsiLogger, context: MessageContext, userdata: UserData) {
     super(logger, context);
@@ -21,7 +21,7 @@ export class MQTTClient extends AbstractClient {
     this.mqttPassword = CryptoUtils.md5hex(userdata.rriot.s + ':' + userdata.rriot.k).substring(16);
   }
 
-  public connect() {
+  public connect(): void {
     if (this.client) {
       return;
     }
@@ -45,6 +45,28 @@ export class MQTTClient extends AbstractClient {
 
     // message events
     this.client.on('message', this.onMessage.bind(this));
+  }
+
+  public async disconnect(): Promise<void> {
+    if (!this.client || !this.connected) {
+      return;
+    }
+    this.isUnexpedtedDisconnect = false;
+    try {
+      this.client.end();
+    } catch (error) {
+      this.logger.error('MQTT client failed to disconnect with error: ' + error);
+    }
+  }
+
+  public async send(duid: string, request: RequestMessage): Promise<void> {
+    if (!this.client || !this.connected) {
+      return;
+    }
+
+    const mqttRequest = request.toMqttRequest();
+    const message = this.serializer.serialize(duid, mqttRequest);
+    this.client.publish('rr/m/i/' + this.rriot.u + '/' + this.mqttUsername + '/' + duid, message.buffer, { qos: 1 });
   }
 
   private async onConnect(result: IConnackPacket) {
@@ -77,8 +99,14 @@ export class MQTTClient extends AbstractClient {
   }
 
   private async onDisconnect() {
-    this.connected = false;
+    if (this.isUnexpedtedDisconnect) {
+      this.logger.error('Unexpected disconnect, trying to reconnect...');
+      this.connect();
+      return;
+    }
 
+    //reset isUnexpedtedDisconnect value
+    this.isUnexpedtedDisconnect = true;
     await this.connectionListeners.onDisconnected();
   }
 
@@ -91,18 +119,6 @@ export class MQTTClient extends AbstractClient {
 
   private onReconnect() {
     this.subscribeToQueue();
-  }
-
-  async disconnect() {
-    if (!this.client || !this.connected) {
-      return;
-    }
-
-    try {
-      this.client.end();
-    } catch (error) {
-      this.logger.error('MQTT client failed to disconnect with error: ' + error);
-    }
   }
 
   private async onMessage(topic: string, message: Buffer<ArrayBufferLike>) {
@@ -119,15 +135,5 @@ export class MQTTClient extends AbstractClient {
     } catch (error) {
       this.logger.error('unable to process message from queue ' + topic + ': ' + error);
     }
-  }
-
-  async send(duid: string, request: RequestMessage) {
-    if (!this.client || !this.connected) {
-      return;
-    }
-
-    const mqttRequest = request.toMqttRequest();
-    const message = this.serializer.serialize(duid, mqttRequest);
-    this.client.publish('rr/m/i/' + this.rriot.u + '/' + this.mqttUsername + '/' + duid, message.buffer, { qos: 1 });
   }
 }

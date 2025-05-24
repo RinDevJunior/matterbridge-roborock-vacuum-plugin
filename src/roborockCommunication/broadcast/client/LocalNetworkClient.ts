@@ -29,8 +29,34 @@ export class LocalNetworkClient extends AbstractClient {
     this.socket.on('close', this.onDisconnect.bind(this));
     this.socket.on('end', this.onDisconnect.bind(this));
     this.socket.on('error', this.onError.bind(this));
-    this.socket.on('data', this.onData.bind(this));
+    this.socket.on('data', this.onMessage.bind(this));
     this.socket.connect(58867, this.ip, this.onConnect.bind(this));
+  }
+
+  public async disconnect(): Promise<void> {
+    if (!this.socket) {
+      return;
+    }
+
+    if (this.pingInterval) {
+      clearInterval(this.pingInterval);
+    }
+    this.isUnexpedtedDisconnect = false;
+    this.socket.destroy();
+    this.socket = undefined;
+  }
+
+  public async send(duid: string, request: RequestMessage): Promise<void> {
+    if (!this.socket || !this.connected) {
+      this.logger.error(`failed to send request to ${duid}, socket is not online, ${JSON.stringify(request)}`);
+      return;
+    }
+
+    const localRequest = request.toLocalRequest();
+    const message = this.serializer.serialize(duid, localRequest);
+
+    this.logger.debug(`sending message ${message.messageId}, protocol:${localRequest.protocol}, method:${localRequest.method}, secure:${request.secure} to ${duid}`);
+    this.socket.write(this.wrapWithLengthData(message.buffer));
   }
 
   private async onConnect() {
@@ -77,20 +103,7 @@ export class LocalNetworkClient extends AbstractClient {
     await this.connectionListeners.onError(result.toString());
   }
 
-  async disconnect(): Promise<void> {
-    if (!this.socket) {
-      return;
-    }
-
-    if (this.pingInterval) {
-      clearInterval(this.pingInterval);
-    }
-    this.isUnexpedtedDisconnect = false;
-    this.socket.destroy();
-    this.socket = undefined;
-  }
-
-  private async onData(message: Buffer) {
+  private async onMessage(message: Buffer) {
     if (!this.socket) {
       this.logger.error('unable to receive data if there is no socket available');
       return;
@@ -147,19 +160,6 @@ export class LocalNetworkClient extends AbstractClient {
     }
 
     return totalLength <= buffer.length;
-  }
-
-  async send(duid: string, request: RequestMessage): Promise<void> {
-    if (!this.socket || !this.connected) {
-      this.logger.error(`failed to send request to ${duid}, socket is not online, ${JSON.stringify(request)}`);
-      return;
-    }
-
-    const localRequest = request.toLocalRequest();
-    const message = this.serializer.serialize(duid, localRequest);
-
-    this.logger.debug(`sending message ${message.messageId}, protocol:${localRequest.protocol}, method:${localRequest.method}, secure:${request.secure} to ${duid}`);
-    this.socket.write(this.wrapWithLengthData(message.buffer));
   }
 
   private wrapWithLengthData(buffer: Buffer<ArrayBufferLike>): Buffer<ArrayBufferLike> {

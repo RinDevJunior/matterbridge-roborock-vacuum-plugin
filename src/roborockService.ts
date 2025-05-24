@@ -10,7 +10,7 @@ import {
   UserData,
   RoborockIoTApi,
   ClientRouter,
-  MessageApi,
+  MessageProcessor,
   Client,
   Device,
   DeviceStatus,
@@ -34,7 +34,7 @@ export default class RoborockService {
   deviceNotify?: (messageSource: NotifyMessageTypes, homeData: any) => void;
   messageClient: ClientRouter | undefined;
   remoteDevices: Set<string> = new Set();
-  messageApi: MessageApi | undefined;
+  messageProcessor: MessageProcessor | undefined;
   ip: string | undefined;
   localClient: Client | undefined;
   clientManager: ClientManager;
@@ -65,11 +65,11 @@ export default class RoborockService {
     return this.auth(userdata);
   }
 
-  public getMessageApi(): MessageApi | undefined {
-    if (!this.messageApi) {
+  public getMessageProcessor(): MessageProcessor | undefined {
+    if (!this.messageProcessor) {
       this.logger.error('MessageApi is not initialized.');
     }
-    return this.messageApi;
+    return this.messageProcessor;
   }
 
   public setSelectedAreas(duid: string, selectedAreas: number[]): void {
@@ -94,10 +94,10 @@ export default class RoborockService {
 
     if (sltArea?.length == areas?.length || !sltArea) {
       this.logger.notice('startGlobalClean');
-      this.getMessageApi()?.startClean(duid);
+      this.getMessageProcessor()?.startClean(duid);
     } else {
       this.logger.notice('startRoomClean');
-      return this.messageApi?.startRoomClean(duid, sltArea, 1);
+      return this.messageProcessor?.startRoomClean(duid, sltArea, 1);
     }
   }
 
@@ -105,7 +105,7 @@ export default class RoborockService {
     if (this.currentMode === 2) {
       this.logger.notice('pauseClean');
       this.currentMode = 1;
-      await this.getMessageApi()?.pauseClean(duid);
+      await this.getMessageProcessor()?.pauseClean(duid);
     }
   }
 
@@ -113,7 +113,7 @@ export default class RoborockService {
     if (this.currentMode === 2) {
       this.logger.notice('stopAndGoHome');
       this.currentMode = 1;
-      await this.getMessageApi()?.gotoDock(duid);
+      await this.getMessageProcessor()?.gotoDock(duid);
     }
   }
 
@@ -121,13 +121,23 @@ export default class RoborockService {
     if (this.currentMode === 1) {
       this.logger.notice('resumeClean');
       this.currentMode = 2;
-      await this.getMessageApi()?.resumeClean(duid);
+      await this.getMessageProcessor()?.resumeClean(duid);
     }
   }
 
   public async playSoundToLocate(duid: string): Promise<void> {
     this.logger.notice('findMe');
-    await this.getMessageApi()?.findMyRobot(duid);
+    await this.getMessageProcessor()?.findMyRobot(duid);
+  }
+
+  public async customGet(duid: string, method: string): Promise<any> {
+    this.logger.debug('customSend-message', method);
+    return this.getMessageProcessor()?.getCustomMessage(duid, new RequestMessage({ method }));
+  }
+
+  public async customGetInSecure(duid: string, method: string): Promise<any> {
+    this.logger.debug('customGetInSecure-message', method);
+    return this.getMessageProcessor()?.getCustomMessage(duid, new RequestMessage({ method, secure: true }));
   }
 
   public stopService(): void {
@@ -141,8 +151,8 @@ export default class RoborockService {
       this.localClient = undefined;
     }
 
-    if (this.messageApi) {
-      this.messageApi = undefined;
+    if (this.messageProcessor) {
+      this.messageProcessor = undefined;
     }
 
     if (this.requestDeviceStatusInterval) {
@@ -159,8 +169,8 @@ export default class RoborockService {
     const self = this;
     this.logger.debug('Requesting device info for device', device.duid);
     this.requestDeviceStatusInterval = setInterval(async () => {
-      if (this.messageApi) {
-        await this.messageApi.getDeviceStatus(device.duid).then((response: DeviceStatus) => {
+      if (this.messageProcessor) {
+        await this.messageProcessor.getDeviceStatus(device.duid).then((response: DeviceStatus) => {
           if (self.deviceNotify) {
             self.deviceNotify(NotifyMessageTypes.LocalMessage, { duid: device.duid, ...response });
           }
@@ -324,9 +334,9 @@ export default class RoborockService {
     }
     const self = this;
 
-    this.messageApi = new MessageApi(this.messageClient);
-    this.messageApi.injectLogger(this.logger);
-    this.messageApi.registerListener({
+    this.messageProcessor = new MessageProcessor(this.messageClient);
+    this.messageProcessor.injectLogger(this.logger);
+    this.messageProcessor.registerListener({
       onError: (message: VacuumErrorCode) => {
         if (self.deviceNotify) {
           self.deviceNotify(NotifyMessageTypes.ErrorOccurred, { duid: device.duid, errorCode: message });
@@ -343,7 +353,7 @@ export default class RoborockService {
     try {
       if (!this.ip) {
         this.logger.debug('Requesting network info for device', device.duid);
-        const networkInfo = await this.messageApi.getNetworkInfo(device.duid);
+        const networkInfo = await this.messageProcessor.getNetworkInfo(device.duid);
         this.ip = networkInfo.ip;
       }
 

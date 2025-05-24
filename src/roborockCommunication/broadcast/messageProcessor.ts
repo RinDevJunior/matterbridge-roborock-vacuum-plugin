@@ -9,7 +9,7 @@ import { Room } from '../Zmodel/room.js';
 import { Client } from './client.js';
 import { NetworkInfo } from '../Zmodel/networkInfo.js';
 
-export class MessageApi {
+export class MessageProcessor {
   private readonly client: Client;
   private readonly messageListener: SimpleMessageListener;
   logger: AnsiLogger | undefined;
@@ -57,12 +57,12 @@ export class MessageApi {
     return this.client.send(duid, request);
   }
 
-  public async startClean(duid: string) {
+  public async startClean(duid: string): Promise<void> {
     const request = new RequestMessage({ method: 'app_start' });
     return this.client.send(duid, request);
   }
 
-  public async startRoomClean(duid: string, roomIds: number[], repeat: number) {
+  public async startRoomClean(duid: string, roomIds: number[], repeat: number): Promise<void> {
     const request = new RequestMessage({
       method: 'app_segment_clean',
       params: [{ segments: roomIds, repeat: repeat }],
@@ -70,27 +70,33 @@ export class MessageApi {
     return this.client.send(duid, request);
   }
 
-  public async pauseClean(duid: string) {
+  public async pauseClean(duid: string): Promise<void> {
     const request = new RequestMessage({ method: 'app_pause' });
     return this.client.send(duid, request);
   }
 
-  public async resumeClean(duid: string) {
+  public async resumeClean(duid: string): Promise<void> {
     const request = new RequestMessage({ method: 'app_resume' });
     return this.client.send(duid, request);
   }
 
-  public async stopClean(duid: string) {
+  public async stopClean(duid: string): Promise<void> {
     const request = new RequestMessage({ method: 'app_stop' });
     return this.client.send(duid, request);
   }
 
-  public async sendCustomMessage(duid: string, def: RequestMessage) {
+  public async sendCustomMessage(duid: string, def: RequestMessage): Promise<void> {
     const request = new RequestMessage(def);
     return this.client.send(duid, request);
   }
 
-  public async findMyRobot(duid: string) {
+  public async getCustomMessage(duid: string, def: RequestMessage): Promise<any> {
+    const response = this.client.get<any>(duid, def);
+    this.logger?.warn('XXXXXXX: ', JSON.stringify(response));
+    return response;
+  }
+
+  public async findMyRobot(duid: string): Promise<void> {
     const request = new RequestMessage({ method: 'find_me' });
     return this.client.send(duid, request);
   }
