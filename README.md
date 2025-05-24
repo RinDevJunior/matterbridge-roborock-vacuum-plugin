@@ -14,15 +14,11 @@
 
 Matterbridge Roborock platform plugin is a plugin using the dynamic platform which supports integrate Matterbridge with Roborock Vacuum.
 
-If you like this project and find it useful, please consider giving it a star on GitHub at https://github.com/Luligu/matterbridge-example-dynamic-platform and sponsoring it.
-
-<a href="https://www.buymeacoffee.com/luligugithub">
-  <img src="bmc-button.svg" alt="Buy me a coffee" width="120">
-</a>
+If you like this project and find it useful, please consider giving it a star on GitHub at [https://github.com/Luligu/matterbridge-example-dynamic-platform](https://github.com/RinDevJunior/matterbridge-roborock-vacuum-plugin).
 
 ---
 
-# READ THIS FIRST: This project is under development and not ready to go live yet. Require matterbridge@3.0.3
+# READ THIS FIRST: This project is under development and does not support all vacuums yet. Require matterbridge@3.0.3
 
 ## Known Issue
 Currently vacuum show as two devices in home kit ('Not my top priority now')
