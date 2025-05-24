@@ -1,5 +1,5 @@
 import assert from 'node:assert';
-import { AnsiLogger } from 'node-ansi-logger';
+import { AnsiLogger } from 'matterbridge/logger';
 import ClientManager from './clientManager.js';
 import { NotifyMessageTypes } from './notifyMessageTypes.js';
 import { ResponseMessage } from './roborockCommunication/broadcast/model/responseMessage.js';

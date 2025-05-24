@@ -2,7 +2,7 @@ import { RoboticVacuumCleaner } from 'matterbridge';
 import RoomMap from './model/RoomMap.js';
 import { Device } from './roborockCommunication/index.js';
 import { getOperationalStates, getSupportedAreas, getSupportedCleanModes, getSupportedRunModes } from './initialData/index.js';
-import { AnsiLogger } from 'node-ansi-logger';
+import { AnsiLogger } from 'matterbridge/logger';
 import { BehaviorFactoryResult } from './behaviorFactory.js';
 import { ModeBase, RvcOperationalState, ServiceArea } from 'matterbridge/matter/clusters';
 
@@ -37,7 +37,7 @@ export class RoborockVacuumCleaner extends RoboticVacuumCleaner {
     this.rrHomeId = device.rrHomeId;
   }
 
-  configurateHandler(behaviorHandler: BehaviorFactoryResult): void {
+  public configurateHandler(behaviorHandler: BehaviorFactoryResult): void {
     this.addCommandHandler('identify', async ({ request: { identifyTime } }) => {
       behaviorHandler.executeCommand('PlaySoundToLocate', identifyTime as number);
     });

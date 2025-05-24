@@ -1,10 +1,10 @@
 import mqtt, { ErrorWithReasonCode, IConnackPacket, ISubscriptionGrant, MqttClient as MqttLibClient } from 'mqtt';
 import { CryptoUtils } from '../../helper/cryptoHelper.js';
-import { AnsiLogger } from 'node-ansi-logger';
 import { RequestMessage } from '../model/requestMessage.js';
 import { AbstractClient } from '../abstractClient.js';
 import { MessageContext } from '../model/messageContext.js';
 import { Rriot, UserData } from '../../Zmodel/userData.js';
+import { AnsiLogger } from 'matterbridge/logger';
 
 export class MQTTClient extends AbstractClient {
   private readonly rriot: Rriot;

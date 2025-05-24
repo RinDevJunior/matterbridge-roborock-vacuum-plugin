@@ -1,4 +1,4 @@
-import { AnsiLogger } from 'node-ansi-logger';
+import { AnsiLogger } from 'matterbridge/logger';
 import { AbstractConnectionListener } from './listener/abstractConnectionListener.js';
 import { AbstractMessageListener } from './listener/abstractMessageListener.js';
 import { RequestMessage } from './model/requestMessage.js';
@@ -28,7 +28,7 @@ export class ClientRouter implements Client {
     this.mqttClient.registerMessageListener(this.messageListeners);
   }
 
-  public registerDevice(duid: string, localKey: string, pv: string) {
+  public registerDevice(duid: string, localKey: string, pv: string): void {
     this.context.registerDevice(duid, localKey, pv);
   }
 
@@ -41,7 +41,7 @@ export class ClientRouter implements Client {
     return localClient;
   }
 
-  public unregisterClient(duid: string) {
+  public unregisterClient(duid: string): void {
     this.localClients.delete(duid);
   }
 

@@ -1,4 +1,4 @@
-import { AnsiLogger } from 'node-ansi-logger';
+import { AnsiLogger } from 'matterbridge/logger';
 import { MessageDeserializer } from '../helper/messageDeserializer.js';
 import { MessageSerializer } from '../helper/messageSerializer.js';
 import { AbstractConnectionListener } from './listener/abstractConnectionListener.js';
@@ -43,7 +43,7 @@ export abstract class AbstractClient implements Client {
     });
   }
 
-  public registerDevice(duid: string, localKey: string, pv: string) {
+  public registerDevice(duid: string, localKey: string, pv: string): void {
     this.context.registerDevice(duid, localKey, pv);
   }
 

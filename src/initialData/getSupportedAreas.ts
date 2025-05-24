@@ -1,4 +1,4 @@
-import { AnsiLogger } from 'node-ansi-logger';
+import { AnsiLogger } from 'matterbridge/logger';
 import { ServiceArea } from 'matterbridge/matter/clusters';
 import RoomMap from '../model/RoomMap.js';
 import { Room } from '../roborockCommunication/Zmodel/room.js';

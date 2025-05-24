@@ -1,5 +1,5 @@
 import { AxiosStatic } from 'axios';
-import { AnsiLogger } from 'node-ansi-logger';
+import { AnsiLogger } from 'matterbridge/logger';
 
 declare module 'axios' {
   interface AxiosStatic {

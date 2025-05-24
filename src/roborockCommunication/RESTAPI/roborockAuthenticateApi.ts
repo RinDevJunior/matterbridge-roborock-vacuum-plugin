@@ -1,6 +1,6 @@
 import axios, { AxiosInstance, AxiosStatic } from 'axios';
 import crypto from 'crypto';
-import { AnsiLogger } from 'node-ansi-logger';
+import { AnsiLogger } from 'matterbridge/logger';
 import { URLSearchParams } from 'node:url';
 import { AuthenticateResponse } from '../Zmodel/authenticateResponse.js';
 import { BaseUrl } from '../Zmodel/baseURL.js';

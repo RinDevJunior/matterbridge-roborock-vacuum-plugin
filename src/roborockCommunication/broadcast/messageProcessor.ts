@@ -1,4 +1,4 @@
-import { AnsiLogger } from 'node-ansi-logger';
+import { AnsiLogger } from 'matterbridge/logger';
 import { CloudMessageResult } from '../Zmodel/messageResult.js';
 import { RoomInfo } from '../Zmodel/roomInfo.js';
 import { AbstractMessageHandler } from './listener/abstractMessageHandler.js';

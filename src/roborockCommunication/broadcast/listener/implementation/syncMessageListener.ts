@@ -1,4 +1,4 @@
-import { AnsiLogger } from 'node-ansi-logger';
+import { AnsiLogger } from 'matterbridge/logger';
 import { DpsPayload } from '../../model/dps.js';
 import { Protocol } from '../../model/protocol.js';
 import { ResponseMessage } from '../../model/responseMessage.js';
@@ -12,7 +12,7 @@ export class SyncMessageListener implements AbstractMessageListener {
     this.logger = logger;
   }
 
-  public waitFor(messageId: number, resolve: (response: ResponseMessage) => void, reject: () => void) {
+  public waitFor(messageId: number, resolve: (response: ResponseMessage) => void, reject: () => void): void {
     this.pending.set(messageId, resolve);
 
     setTimeout(() => {

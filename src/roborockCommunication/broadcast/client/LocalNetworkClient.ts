@@ -2,7 +2,7 @@ import { Socket } from 'node:net';
 import { clearInterval } from 'node:timers';
 import { Protocol } from '../model/protocol.js';
 import { RequestMessage } from '../model/requestMessage.js';
-import { AnsiLogger } from 'node-ansi-logger';
+import { AnsiLogger } from 'matterbridge/logger';
 import { AbstractClient } from '../abstractClient.js';
 import { MessageContext } from '../model/messageContext.js';
 import { Sequence } from '../../helper/sequence.js';
@@ -57,7 +57,7 @@ export class LocalNetworkClient extends AbstractClient {
     this.socket.write(this.wrapWithLengthData(message.buffer));
   }
 
-  private async onConnect() {
+  private async onConnect(): Promise<void> {
     this.connected = true;
     const address = this.socket?.address();
     this.logger.debug(`${this.duid} connected to ${this.ip}, address: ${JSON.stringify(address)}`);
@@ -81,7 +81,7 @@ export class LocalNetworkClient extends AbstractClient {
     await this.connectionListeners.onDisconnected();
   }
 
-  private async onError(result: any) {
+  private async onError(result: any): Promise<void> {
     this.logger.error('Socket connection error: ' + result);
     this.connected = false;
 
@@ -93,7 +93,7 @@ export class LocalNetworkClient extends AbstractClient {
     await this.connectionListeners.onError(result.toString());
   }
 
-  private async onMessage(message: Buffer) {
+  private async onMessage(message: Buffer): Promise<void> {
     if (!this.socket) {
       this.logger.error('unable to receive data if there is no socket available');
       return;
@@ -135,7 +135,7 @@ export class LocalNetworkClient extends AbstractClient {
     }
   }
 
-  private isMessageComplete(buffer: Buffer) {
+  private isMessageComplete(buffer: Buffer): boolean {
     let totalLength = 0;
     let offset = 0;
 
@@ -158,7 +158,7 @@ export class LocalNetworkClient extends AbstractClient {
     return Buffer.concat([lengthBuffer, buffer]);
   }
 
-  private async sendHelloMessage() {
+  private async sendHelloMessage(): Promise<void> {
     const request = new RequestMessage({
       protocol: Protocol.hello_request,
       messageId: this.messageIdSeq.next(),
@@ -167,7 +167,7 @@ export class LocalNetworkClient extends AbstractClient {
     await this.send(this.duid, request);
   }
 
-  private async sendPingRequest() {
+  private async sendPingRequest(): Promise<void> {
     const request = new RequestMessage({
       protocol: Protocol.ping_request,
       messageId: this.messageIdSeq.next(),

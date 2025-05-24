@@ -1,5 +1,5 @@
+import { AnsiLogger } from 'matterbridge/logger';
 import { Behavior, MaybePromise } from 'matterbridge/matter';
-import { AnsiLogger } from 'node-ansi-logger';
 
 export type DeviceCommandHandler = (...args: any[]) => MaybePromise;
 

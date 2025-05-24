@@ -1,6 +1,6 @@
-import { AnsiLogger } from 'node-ansi-logger';
 import { ClientRouter } from './roborockCommunication/broadcast/clientRouter.js';
 import { UserData } from './roborockCommunication/index.js';
+import { AnsiLogger } from 'matterbridge/logger';
 
 export default class ClientManager {
   private readonly clients = new Map<string, ClientRouter>();
@@ -17,7 +17,7 @@ export default class ClientManager {
     return <ClientRouter>this.clients.get(username);
   }
 
-  public destroy(username: string) {
+  public destroy(username: string): void {
     this.clients.delete(username);
   }
 }
