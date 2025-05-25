@@ -89,11 +89,9 @@ export class RoborockMatterbridgePlatform extends MatterbridgeDynamicPlatform {
     const password = this.config.password as string;
 
     const userData = await this.roborockService.loginWithPassword(username, password);
-    this.log.debug('Login successful:', JSON.stringify(userData));
-
+    this.log.debug('Initializing - userData:', JSON.stringify(userData));
     const devices = await this.roborockService.listDevices(username);
-
-    this.log.notice('Scan device with duid result: ', JSON.stringify(devices));
+    this.log.notice('Initializing - devices: ', JSON.stringify(devices));
 
     let vacuum: Device | undefined = undefined;
     if ((this.config.whiteList as string[]).length > 0) {
@@ -104,7 +102,7 @@ export class RoborockMatterbridgePlatform extends MatterbridgeDynamicPlatform {
     }
 
     if (!vacuum) {
-      this.log.error('No supported devices found');
+      this.log.error('Initializing: No supported devices found');
       return;
     }
     await this.roborockService.initializeMessageClient(username, vacuum, userData);
@@ -129,19 +127,22 @@ export class RoborockMatterbridgePlatform extends MatterbridgeDynamicPlatform {
   async onConfigurateDevice(): Promise<void> {
     this.log.info('onConfigurateDevice start');
     if (this.platformRunner === undefined || this.roborockService === undefined) {
-      this.log.error('PlatformRunner or RoborockService is undefined');
+      this.log.error('Initializing: PlatformRunner or RoborockService is undefined');
       return;
     }
     const vacuum = this.devices.get(this.serialNumber as string);
     const username = this.config.username as string;
     if (!vacuum || !username) {
-      this.log.error('No supported devices found');
+      this.log.error('Initializing: No supported devices found');
       return;
     }
 
     const self = this;
     await this.roborockService.initializeMessageClientForLocal(vacuum);
     const roomMap = await this.platformRunner.getRoomMapFromDevice(vacuum);
+
+    this.log.debug('Initializing - roomMap: ', JSON.stringify(roomMap));
+
     const behaviorHandler = configurateBehavior(vacuum.data.model, vacuum.duid, this.roborockService, this.log);
 
     this.roborockService.setSupportedAreas(vacuum.duid, getSupportedAreas(vacuum.rooms, roomMap, this.log));

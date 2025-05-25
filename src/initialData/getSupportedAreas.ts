@@ -24,7 +24,7 @@ export function getSupportedAreas(rooms: Room[], roomMap: RoomMap | undefined, l
   log?.debug('getSupportedAreas', JSON.stringify(rooms));
   log?.debug('getSupportedAreas', JSON.stringify(roomMap));
 
-  if (!rooms || rooms.length === 0 || !roomMap) {
+  if (!rooms || rooms.length === 0 || !roomMap?.rooms || roomMap.rooms.length == 0) {
     log?.error('No rooms found');
     return [
       {

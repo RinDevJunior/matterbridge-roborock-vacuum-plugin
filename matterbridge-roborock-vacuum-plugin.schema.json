@@ -17,7 +17,7 @@
       "ui:widget": "hidden"
     },
     "whiteList": {
-      "description": "Only THE FIRST ONE device with DUID in the list will be exposed. If the list is empty, THE FIRST device will be exposed.",
+      "description": "(ONLY SET IF YOU HAVE MULTIPLE VACUUMS) Only THE FIRST ONE device with DUID in the list will be exposed. If the list is empty, THE FIRST device will be exposed.",
       "type": "array",
       "items": {
         "type": "string"
