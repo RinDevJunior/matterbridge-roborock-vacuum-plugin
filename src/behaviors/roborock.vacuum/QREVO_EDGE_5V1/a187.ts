@@ -35,6 +35,14 @@ const RvcCleanMode: Record<number, string> = {
   [8]: 'Custom',
 };
 
+const RoborockCleanMode: Record<number, number> = {
+  [4]: 100, //'Smart Plan',
+  [5]: 105, //'Mop',
+  [6]: 102, //'Vacuum',
+  [7]: 102, //'Mop & Vacuum',
+  [8]: 106, //'Custom',
+};
+
 export function setCommandHandlerA187(duid: string, handler: BehaviorDeviceGeneric<DeviceCommands>, logger: AnsiLogger, roborockService: RoborockService): void {
   handler.setCommandHandler('changeToMode', async (newMode: number) => {
     const activity = RvcRunMode[newMode] || RvcCleanMode[newMode];
@@ -49,7 +57,9 @@ export function setCommandHandlerA187(duid: string, handler: BehaviorDeviceGener
       case 'Vacuum':
       case 'Mop & Vacuum':
       case 'Custom': {
-        logger.notice('BehaviorA187-ChangeCleanMode to: ', activity);
+        const roborockCleanMode = RoborockCleanMode[newMode];
+        logger.notice(`BehaviorA187-ChangeCleanMode to: ${activity}, code: ${roborockCleanMode}`);
+        await roborockService.changeCleanMode(duid, roborockCleanMode);
         return;
       }
       default:
@@ -59,8 +69,8 @@ export function setCommandHandlerA187(duid: string, handler: BehaviorDeviceGener
   });
 
   handler.setCommandHandler('selectAreas', async (newAreas: number[]) => {
-    logger.notice('BehaviorA187-selectAreas: ', newAreas);
-    roborockService.setSelectedAreas(duid, newAreas);
+    logger.notice(`BehaviorA187-selectAreas: ${newAreas}`);
+    roborockService.setSelectedAreas(duid, newAreas ?? []);
   });
 
   handler.setCommandHandler('pause', async () => {

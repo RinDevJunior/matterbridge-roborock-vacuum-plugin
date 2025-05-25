@@ -52,8 +52,8 @@ export function setDefaultCommandHandler(duid: string, handler: BehaviorDeviceGe
   });
 
   handler.setCommandHandler('selectAreas', async (newAreas: number[]) => {
-    logger.notice('DefaultBehavior-selectAreas: ', newAreas);
-    roborockService.setSelectedAreas(duid, newAreas);
+    logger.notice(`DefaultBehavior-selectAreas: ${newAreas}`);
+    roborockService.setSelectedAreas(duid, newAreas ?? []);
   });
 
   handler.setCommandHandler('pause', async () => {

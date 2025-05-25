@@ -233,12 +233,9 @@ export class PlatformRunner {
       return;
     }
 
+    device.schema = homeData.products.find((prd) => prd.id == device.productId || prd.model == device.data.model)?.schema ?? [];
     this.platform.log.debug('updateFromHomeData-homeData:', JSON.stringify(homeData));
     this.platform.log.debug('updateFromHomeData-device:', JSON.stringify(device));
-
-    device.schema = homeData.products.find((prd) => prd.id == device.productId || prd.model == device.data.model)?.schema ?? [];
-
-    this.platform.log.debug('updateFromHomeData-device.schema:', JSON.stringify(device.schema));
 
     const batteryLevel = getVacuumProperty(device, 'battery');
     if (batteryLevel) {
@@ -248,13 +245,11 @@ export class PlatformRunner {
 
     const state = getVacuumProperty(device, 'state');
     const matterState = state_to_matter_state(state);
-    this.platform.log.debug('updateFromHomeData-state:', state);
-    this.platform.log.debug('updateFromHomeData-matterState:', matterState);
+    this.platform.log.debug(`updateFromHomeData-state: ${state}, matterState: ${matterState}`);
     if (!state || !matterState) {
       return;
     }
-    this.platform.log.debug('updateFromHomeData-state:', OperationStatusCode[state]);
-    this.platform.log.debug('updateFromHomeData-matterState:', RvcRunMode.ModeTag[matterState]);
+    this.platform.log.debug(`updateFromHomeData-operational-state: ${OperationStatusCode[state]}, matterState: ${RvcRunMode.ModeTag[matterState]}`);
 
     if (matterState) {
       platform.robot.updateAttribute(RvcRunMode.Cluster.id, 'currentMode', getRunningMode(deviceData.model, matterState), platform.log);

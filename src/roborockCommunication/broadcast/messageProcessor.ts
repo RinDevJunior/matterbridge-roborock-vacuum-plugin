@@ -100,4 +100,9 @@ export class MessageProcessor {
     const request = new RequestMessage({ method: 'find_me' });
     return this.client.send(duid, request);
   }
+
+  public async changeCleanMode(duid: string, mode: number) {
+    const request = new RequestMessage({ method: 'set_custom_mode', params: [mode] });
+    return this.client.send(duid, request);
+  }
 }
