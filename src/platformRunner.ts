@@ -13,6 +13,7 @@ import { DpsPayload } from './roborockCommunication/broadcast/model/dps.js';
 import { RoborockVacuumCleaner } from './rvc.js';
 import { parseDockingStationStatus } from './model/DockingStationStatus.js';
 import { Device, Home } from './roborockCommunication/index.js';
+import { OperationStatusCode } from './roborockCommunication/Zenum/operationStatusCode.js';
 
 export class PlatformRunner {
   platform: RoborockMatterbridgePlatform;
@@ -252,6 +253,7 @@ export class PlatformRunner {
     if (!state) {
       return;
     }
+    this.platform.log.debug('updateFromHomeData-state:', OperationStatusCode[state]);
 
     if (matterState) {
       platform.robot.updateAttribute(RvcRunMode.Cluster.id, 'currentMode', getRunningMode(deviceData.model, matterState), platform.log);
