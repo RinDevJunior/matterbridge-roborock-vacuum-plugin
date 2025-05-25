@@ -50,7 +50,6 @@ export function setCommandHandlerA187(duid: string, handler: BehaviorDeviceGener
       case 'Mop & Vacuum':
       case 'Custom': {
         logger.notice('BehaviorA187-ChangeCleanMode to: ', activity);
-        roborockService.setCleanMode(duid, newMode);
         return;
       }
       default:

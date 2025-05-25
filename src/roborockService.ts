@@ -44,7 +44,6 @@ export default class RoborockService {
   //These are properties that are used to store the state of the device
   private supportedAreas: Map<string, ServiceArea.Area[]> = new Map();
   private selectedAreas: Map<string, number[]> = new Map();
-  private currentMode: number = 1; // 1: Idle, 2: Cleaning, 3: Mapping
 
   constructor(
     authenticateApiSupplier: Factory<void, RoborockAuthenticateApi> = (logger) => new RoborockAuthenticateApi(logger),
@@ -81,16 +80,9 @@ export default class RoborockService {
     this.supportedAreas.set(duid, supportedAreas);
   }
 
-  public setCleanMode(duid: string, mode: number): void {
-    //TODO
-    this.logger.debug('setCleanMode', mode);
-  }
-
   public async startClean(duid: string): Promise<void> {
-    if (this.currentMode === 2) return;
     const areas = this.supportedAreas.get(duid);
     const sltArea = this.selectedAreas.get(duid);
-    this.currentMode = 2;
 
     if (sltArea?.length == areas?.length || !sltArea) {
       this.logger.notice('startGlobalClean');
@@ -102,27 +94,18 @@ export default class RoborockService {
   }
 
   public async pauseClean(duid: string): Promise<void> {
-    if (this.currentMode === 2) {
-      this.logger.notice('pauseClean');
-      this.currentMode = 1;
-      await this.getMessageProcessor()?.pauseClean(duid);
-    }
+    this.logger.notice('pauseClean');
+    await this.getMessageProcessor()?.pauseClean(duid);
   }
 
   public async stopAndGoHome(duid: string): Promise<void> {
-    if (this.currentMode === 2) {
-      this.logger.notice('stopAndGoHome');
-      this.currentMode = 1;
-      await this.getMessageProcessor()?.gotoDock(duid);
-    }
+    this.logger.notice('stopAndGoHome');
+    await this.getMessageProcessor()?.gotoDock(duid);
   }
 
   public async resumeClean(duid: string): Promise<void> {
-    if (this.currentMode === 1) {
-      this.logger.notice('resumeClean');
-      this.currentMode = 2;
-      await this.getMessageProcessor()?.resumeClean(duid);
-    }
+    this.logger.notice('resumeClean');
+    await this.getMessageProcessor()?.resumeClean(duid);
   }
 
   public async playSoundToLocate(duid: string): Promise<void> {

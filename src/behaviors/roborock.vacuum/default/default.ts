@@ -43,7 +43,6 @@ export function setDefaultCommandHandler(duid: string, handler: BehaviorDeviceGe
       case 'Mop':
       case 'Vacuum': {
         logger.notice('DefaultBehavior-ChangeCleanMode to: ', activity);
-        roborockService.setCleanMode(duid, newMode);
         return;
       }
       default:
