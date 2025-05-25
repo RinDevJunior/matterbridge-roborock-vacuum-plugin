@@ -14,7 +14,7 @@
 
 Matterbridge Roborock platform plugin is a plugin using the dynamic platform which supports integrate Matterbridge with Roborock Vacuum.
 
-If you like this project and find it useful, please consider giving it a star on GitHub at [https://github.com/Luligu/matterbridge-example-dynamic-platform](https://github.com/RinDevJunior/matterbridge-roborock-vacuum-plugin).
+If you like this project and find it useful, please consider giving it a star on GitHub at [https://github.com/RinDevJunior/matterbridge-roborock-vacuum-plugin](https://github.com/RinDevJunior/matterbridge-roborock-vacuum-plugin).
 
 ---
 
