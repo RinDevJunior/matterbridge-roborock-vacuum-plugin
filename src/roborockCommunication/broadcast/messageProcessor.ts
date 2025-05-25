@@ -8,6 +8,7 @@ import { DeviceStatus } from '../Zmodel/deviceStatus.js';
 import { Room } from '../Zmodel/room.js';
 import { Client } from './client.js';
 import { NetworkInfo } from '../Zmodel/networkInfo.js';
+import { Protocol } from './model/protocol.js';
 
 export class MessageProcessor {
   private readonly client: Client;
@@ -101,8 +102,8 @@ export class MessageProcessor {
     return this.client.send(duid, request);
   }
 
-  public async changeCleanMode(duid: string, mode: number) {
-    const request = new RequestMessage({ method: 'set_custom_mode', params: [mode] });
-    return this.client.send(duid, request);
+  public async changeCleanMode(duid: string, suctionPower: number, waterFlow: number): Promise<void> {
+    //await this.client.send(duid, new RequestMessage({ method: 'rpc_request', params: [suctionPower], protocol: Protocol.suction_power }));
+    //await this.client.send(duid, new RequestMessage({ method: 'rpc_request', params: [waterFlow], protocol: Protocol.water_box_mode }));
   }
 }

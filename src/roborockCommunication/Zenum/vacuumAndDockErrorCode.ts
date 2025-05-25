@@ -65,20 +65,4 @@ export enum DockErrorCode {
   CleaningTankFullOrBlocked = 53, // Cleaning tank full or blocked
 }
 
-//TODO: correct this
-export enum FAN_SPEEDS {
-  LOW = 101,
-  MEDIUM = 102,
-  HIGH = 103,
-  MAX = 104,
-  OFF = 105, // also known as mop mode
-}
-
-export enum WATER_GRADES {
-  OFF = 200,
-  LOW = 201,
-  MEDIUM = 202,
-  HIGH = 203,
-}
-
 export const SUPPORTED_ATTACHMENTS = ['WATERTANK', 'MOP'];

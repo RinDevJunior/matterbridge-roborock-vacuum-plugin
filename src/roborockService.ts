@@ -84,9 +84,9 @@ export default class RoborockService {
     return this.supportedAreas.get(duid);
   }
 
-  public async changeCleanMode(duid: string, mode: number): Promise<void> {
+  public async changeCleanMode(duid: string, { suctionPower, waterFlow }: { suctionPower: number; waterFlow: number }): Promise<void> {
     this.logger.notice('changeCleanMode');
-    return this.messageProcessor?.changeCleanMode(duid, mode);
+    return this.messageProcessor?.changeCleanMode(duid, suctionPower, waterFlow);
   }
 
   public async startClean(duid: string): Promise<void> {
