@@ -29,16 +29,16 @@ export default class RoomMap {
       return {
         id: entry[0],
         globalId: Number(entry[1]),
-        displayName: rooms.find((r) => r.id == Number(entry[1]))?.name,
+        displayName: rooms.find((r) => Number(r.id) == Number(entry[1]))?.name,
       };
     });
   }
 
   getGlobalId(id: number): number | undefined {
-    return this.rooms.find((r) => r.id == id)?.globalId;
+    return this.rooms.find((r) => Number(r.id) == Number(id))?.globalId;
   }
 
   getRoomId(globalId: number): number | undefined {
-    return this.rooms.find((r) => r.globalId == globalId)?.id;
+    return this.rooms.find((r) => Number(r.globalId) == Number(globalId))?.id;
   }
 }

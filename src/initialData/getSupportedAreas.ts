@@ -57,5 +57,39 @@ export function getSupportedAreas(rooms: Room[], roomMap: RoomMap | undefined, l
     };
   });
 
-  return supportedAreas;
+  const duplicated = findDuplicatedAreaIds(supportedAreas, log);
+
+  return duplicated
+    ? [
+        {
+          areaId: 1,
+          mapId: null,
+          areaInfo: {
+            locationInfo: {
+              locationName: 'Unknown',
+              floorNumber: null,
+              areaType: null,
+            },
+            landmarkInfo: null,
+          },
+        },
+      ]
+    : supportedAreas;
+}
+
+function findDuplicatedAreaIds(areas: ServiceArea.Area[], log?: AnsiLogger): boolean {
+  const seen = new Set<number>();
+  const duplicates: number[] = [];
+  for (const area of areas) {
+    if (seen.has(area.areaId)) {
+      duplicates.push(area.areaId);
+    } else {
+      seen.add(area.areaId);
+    }
+  }
+  if (duplicates.length > 0 && log) {
+    const duplicated = areas.filter((x) => duplicates.includes(x.areaId));
+    log.error(`Duplicated areaId(s) found: ${JSON.stringify(duplicated)}`);
+  }
+  return duplicates.length > 0;
 }
