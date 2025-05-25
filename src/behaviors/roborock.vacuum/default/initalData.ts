@@ -54,6 +54,14 @@ export function getDefaultOperationalStates(): RvcOperationalState.OperationalSt
       operationalStateLabel: 'Error',
     },
     {
+      operationalStateId: RvcOperationalState.OperationalState.SeekingCharger,
+      operationalStateLabel: 'SeekingCharger',
+    },
+    {
+      operationalStateId: RvcOperationalState.OperationalState.Charging,
+      operationalStateLabel: 'Charging',
+    },
+    {
       operationalStateId: RvcOperationalState.OperationalState.Docked,
       operationalStateLabel: 'Docked',
     },
