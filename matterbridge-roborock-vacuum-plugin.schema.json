@@ -38,6 +38,11 @@
       "type": "number",
       "default": 60
     },
+    "enableExperimentalFeature": {
+      "description": "Enable the experimental feature",
+      "type": "boolean",
+      "default": false
+    },
     "debug": {
       "description": "Enable the debug for the plugin (development only)",
       "type": "boolean",

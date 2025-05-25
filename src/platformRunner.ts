@@ -11,7 +11,7 @@ import { CloudMessageResult } from './roborockCommunication/Zmodel/messageResult
 import { Protocol } from './roborockCommunication/broadcast/model/protocol.js';
 import { DpsPayload } from './roborockCommunication/broadcast/model/dps.js';
 import { RoborockVacuumCleaner } from './rvc.js';
-import { parseDockingStationStatus } from './model/DockingStationStatus.js';
+import { hasDockingStationError, parseDockingStationStatus } from './model/DockingStationStatus.js';
 import { Device, Home } from './roborockCommunication/index.js';
 import { OperationStatusCode } from './roborockCommunication/Zenum/operationStatusCode.js';
 
@@ -204,9 +204,15 @@ export class PlatformRunner {
 
   private async processAdditionalProps(robot: RoborockVacuumCleaner, message: CloudMessageResult): Promise<void> {
     //dss -> DockingStationStatus
-    if (message.dss !== undefined) {
+    const platform = this.platform;
+    if (platform.config.enableExperimentalFeature && message.dss !== undefined) {
       const dss = parseDockingStationStatus(message.dss);
       this.platform.log.debug('DockingStationStatus:', JSON.stringify(dss));
+
+      //Experimental feature
+      if (dss && hasDockingStationError(dss)) {
+        platform.robot!.updateAttribute(RvcOperationalState.Cluster.id, 'operationalState', RvcOperationalState.OperationalState.Error, platform.log);
+      }
     }
 
     if (message.fan_power !== undefined) {
@@ -223,13 +229,9 @@ export class PlatformRunner {
     const platform = this.platform;
     if (platform.robot === undefined) return;
     const device = homeData.devices.find((d: Device) => d.duid === platform.robot?.serialNumber);
-    if (!device) {
-      platform.log.error('Device not found in home data');
-      return;
-    }
     const deviceData = platform.robot?.device.data;
-    if (deviceData === undefined) {
-      platform.log.error('Device data is undefined');
+    if (!device || deviceData === undefined) {
+      platform.log.error('Device not found in home data');
       return;
     }
 
@@ -245,11 +247,10 @@ export class PlatformRunner {
 
     const state = getVacuumProperty(device, 'state');
     const matterState = state_to_matter_state(state);
-    this.platform.log.debug(`updateFromHomeData-state: ${state}, matterState: ${matterState}`);
     if (!state || !matterState) {
       return;
     }
-    this.platform.log.debug(`updateFromHomeData-operational-state: ${OperationStatusCode[state]}, matterState: ${RvcRunMode.ModeTag[matterState]}`);
+    this.platform.log.debug(`updateFromHomeData-RvcRunMode code: ${state} name: ${OperationStatusCode[state]}, matterState: ${RvcRunMode.ModeTag[matterState]}`);
 
     if (matterState) {
       platform.robot.updateAttribute(RvcRunMode.Cluster.id, 'currentMode', getRunningMode(deviceData.model, matterState), platform.log);
@@ -257,6 +258,7 @@ export class PlatformRunner {
 
     const operationalStateId = state_to_matter_operational_status(state);
     if (operationalStateId) {
+      this.platform.log.debug(`updateFromHomeData-OperationalState: ${RvcOperationalState.OperationalState[operationalStateId]}`);
       platform.robot!.updateAttribute(RvcOperationalState.Cluster.id, 'operationalState', operationalStateId, platform.log);
     }
 

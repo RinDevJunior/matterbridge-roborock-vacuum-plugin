@@ -6,6 +6,7 @@ export type DockingStationStatus = {
   clearWaterBoxStatus: number;
   isUpdownWaterReady: number;
 };
+//{"cleanFluidStatus":0,"waterBoxFilterStatus":0,"dustBagStatus":2,"dirtyWaterBoxStatus":2,"clearWaterBoxStatus":2,"isUpdownWaterReady":0}
 
 export enum DockingStationStatusType {
   Unknown = 0,
@@ -22,4 +23,15 @@ export function parseDockingStationStatus(dss: number): DockingStationStatus {
     clearWaterBoxStatus: (dss >> 2) & 0b11,
     isUpdownWaterReady: dss & 0b11,
   };
+}
+
+export function hasDockingStationError(status: DockingStationStatus): boolean {
+  return (
+    status.cleanFluidStatus === DockingStationStatusType.Error ||
+    status.waterBoxFilterStatus === DockingStationStatusType.Error ||
+    status.dustBagStatus === DockingStationStatusType.Error ||
+    status.dirtyWaterBoxStatus === DockingStationStatusType.Error ||
+    status.clearWaterBoxStatus === DockingStationStatusType.Error ||
+    status.isUpdownWaterReady === DockingStationStatusType.Error
+  );
 }

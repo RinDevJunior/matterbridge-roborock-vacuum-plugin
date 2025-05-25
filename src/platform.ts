@@ -34,6 +34,7 @@ export class RoborockMatterbridgePlatform extends MatterbridgeDynamicPlatform {
     this.log.info('Initializing platform:', this.config.name);
     if (config.whiteList === undefined) config.whiteList = [];
     if (config.blackList === undefined) config.blackList = [];
+    if (config.enableExperimentalFeature === undefined) config.enableExperimentalFeature = false;
 
     this.clientManager = new ClientManager(this.log);
     this.devices = new Map<string, Device>();
