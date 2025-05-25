@@ -250,10 +250,11 @@ export class PlatformRunner {
     const matterState = state_to_matter_state(state);
     this.platform.log.debug('updateFromHomeData-state:', state);
     this.platform.log.debug('updateFromHomeData-matterState:', matterState);
-    if (!state) {
+    if (!state || !matterState) {
       return;
     }
     this.platform.log.debug('updateFromHomeData-state:', OperationStatusCode[state]);
+    this.platform.log.debug('updateFromHomeData-matterState:', RvcRunMode.ModeTag[matterState]);
 
     if (matterState) {
       platform.robot.updateAttribute(RvcRunMode.Cluster.id, 'currentMode', getRunningMode(deviceData.model, matterState), platform.log);
