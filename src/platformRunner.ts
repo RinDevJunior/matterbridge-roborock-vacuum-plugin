@@ -113,7 +113,10 @@ export class PlatformRunner {
           }
 
           const currentRoom = data.cleaning_info?.segment_id ?? -1;
-          if (currentRoom !== -1) {
+          const currentMappedAreas = this.platform.roborockService?.getSupportedAreas(duid);
+          const isMappedArea = currentMappedAreas?.some((x) => x.areaId == currentRoom);
+
+          if (currentRoom !== -1 && isMappedArea) {
             const roomMap = await this.getRoomMap();
             this.platform.log.debug('RoomMap:', JSON.stringify(roomMap));
             this.platform.log.debug('CurrentRoom:', currentRoom);

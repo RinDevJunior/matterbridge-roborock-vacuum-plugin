@@ -80,6 +80,10 @@ export default class RoborockService {
     this.supportedAreas.set(duid, supportedAreas);
   }
 
+  public getSupportedAreas(duid: string): ServiceArea.Area[] | undefined {
+    return this.supportedAreas.get(duid);
+  }
+
   public async startClean(duid: string): Promise<void> {
     const areas = this.supportedAreas.get(duid);
     const sltArea = this.selectedAreas.get(duid);
