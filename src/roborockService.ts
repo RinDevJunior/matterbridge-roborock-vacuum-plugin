@@ -72,7 +72,7 @@ export default class RoborockService {
   }
 
   public setSelectedAreas(duid: string, selectedAreas: number[]): void {
-    this.logger.debug('setSelectedAreas', selectedAreas);
+    this.logger.debug('XXXXXX - setSelectedAreas', selectedAreas);
     this.selectedAreas.set(duid, selectedAreas);
   }
 
@@ -92,33 +92,34 @@ export default class RoborockService {
   public async startClean(duid: string): Promise<void> {
     const areas = this.supportedAreas.get(duid);
     const sltArea = this.selectedAreas.get(duid);
+    this.logger.debug('startClean', JSON.stringify({ duid, areas, sltArea }));
 
-    if (sltArea?.length == areas?.length || !sltArea) {
+    if (sltArea?.length == areas?.length || !sltArea || !areas) {
       this.logger.notice('startGlobalClean');
       this.getMessageProcessor()?.startClean(duid);
     } else {
-      this.logger.notice('startRoomClean');
+      this.logger.debug('startRoomClean', JSON.stringify({ duid, sltArea }));
       return this.messageProcessor?.startRoomClean(duid, sltArea, 1);
     }
   }
 
   public async pauseClean(duid: string): Promise<void> {
-    this.logger.notice('pauseClean');
+    this.logger.debug('pauseClean');
     await this.getMessageProcessor()?.pauseClean(duid);
   }
 
   public async stopAndGoHome(duid: string): Promise<void> {
-    this.logger.notice('stopAndGoHome');
+    this.logger.debug('stopAndGoHome');
     await this.getMessageProcessor()?.gotoDock(duid);
   }
 
   public async resumeClean(duid: string): Promise<void> {
-    this.logger.notice('resumeClean');
+    this.logger.debug('resumeClean');
     await this.getMessageProcessor()?.resumeClean(duid);
   }
 
   public async playSoundToLocate(duid: string): Promise<void> {
-    this.logger.notice('findMe');
+    this.logger.debug('findMe');
     await this.getMessageProcessor()?.findMyRobot(duid);
   }
 

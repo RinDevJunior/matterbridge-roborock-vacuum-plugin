@@ -43,6 +43,7 @@ export class RoborockVacuumCleaner extends RoboticVacuumCleaner {
     });
 
     this.addCommandHandler('selectAreas', async ({ request }: { request: ServiceArea.SelectAreasRequest }) => {
+      this.log.info(`XXXXXX - Selecting areas: ${request.newAreas.join(', ')}`);
       behaviorHandler.executeCommand('selectAreas', request.newAreas);
     });
 

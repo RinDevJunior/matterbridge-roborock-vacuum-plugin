@@ -133,7 +133,7 @@ export class PlatformRunner {
 
           const currentCleanMode = getCurrentCleanMode(data.fan_power, data.water_box_mode, deviceData.model);
           if (currentCleanMode) {
-            platform.robot.updateAttribute(RvcCleanMode.Cluster.id, 'currentCleanMode', currentCleanMode, platform.log);
+            platform.robot.updateAttribute(RvcCleanMode.Cluster.id, 'currentMode', currentCleanMode, platform.log);
           }
 
           this.processAdditionalProps(platform.robot, data);
