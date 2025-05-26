@@ -22,6 +22,28 @@ export namespace BehaviorRoborockA187 {
   }
 }
 
+//suction_power
+export enum VacuumSuctionPowerA187 {
+  Quiet = 101,
+  Balanced = 102,
+  Turbo = 103,
+  Max = 104,
+  Off = 105,
+  Custom = 106,
+  MaxPlus = 108,
+  Smart = 110,
+}
+
+//water_box_mode
+export enum MopWaterFlowA187 {
+  Off = 200,
+  Low = 201,
+  Medium = 202,
+  High = 203,
+  Custom = 204,
+  Smart = 209,
+}
+
 const RvcRunMode: Record<number, string> = {
   [1]: 'Idle', //DO NOT HANDLE HERE,
   [2]: 'Cleaning',
@@ -31,16 +53,16 @@ const RvcCleanMode: Record<number, string> = {
   [4]: 'Smart Plan',
   [5]: 'Mop',
   [6]: 'Vacuum',
-  [7]: 'Mop & Vacuum',
+  [7]: 'Vac & Mop',
   [8]: 'Custom',
 };
 
-const RoborockCleanMode: Record<number, number> = {
-  [4]: 100, //'Smart Plan',
-  [5]: 105, //'Mop',
-  [6]: 102, //'Vacuum',
-  [7]: 102, //'Mop & Vacuum',
-  [8]: 106, //'Custom',
+const CleanSetting: Record<number, { suctionPower: VacuumSuctionPowerA187; waterFlow: MopWaterFlowA187 }> = {
+  [4]: { suctionPower: VacuumSuctionPowerA187.Smart, waterFlow: MopWaterFlowA187.Smart },
+  [5]: { suctionPower: VacuumSuctionPowerA187.Off, waterFlow: MopWaterFlowA187.Medium },
+  [6]: { suctionPower: VacuumSuctionPowerA187.Balanced, waterFlow: MopWaterFlowA187.Off },
+  [7]: { suctionPower: VacuumSuctionPowerA187.Balanced, waterFlow: MopWaterFlowA187.Medium },
+  [8]: { suctionPower: VacuumSuctionPowerA187.Custom, waterFlow: MopWaterFlowA187.Custom },
 };
 
 export function setCommandHandlerA187(duid: string, handler: BehaviorDeviceGeneric<DeviceCommands>, logger: AnsiLogger, roborockService: RoborockService): void {
@@ -57,9 +79,9 @@ export function setCommandHandlerA187(duid: string, handler: BehaviorDeviceGener
       case 'Vacuum':
       case 'Mop & Vacuum':
       case 'Custom': {
-        const roborockCleanMode = RoborockCleanMode[newMode];
-        logger.notice(`BehaviorA187-ChangeCleanMode to: ${activity}, code: ${roborockCleanMode}`);
-        await roborockService.changeCleanMode(duid, roborockCleanMode);
+        const setting = CleanSetting[newMode];
+        logger.notice(`BehaviorA187-ChangeCleanMode to: ${activity}, code: ${JSON.stringify(setting)}`);
+        await roborockService.changeCleanMode(duid, setting);
         return;
       }
       default:

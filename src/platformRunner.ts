@@ -1,9 +1,9 @@
-import { RvcRunMode, PowerSource, ServiceArea, RvcOperationalState } from 'matterbridge/matter/clusters';
+import { RvcRunMode, PowerSource, ServiceArea, RvcOperationalState, RvcCleanMode } from 'matterbridge/matter/clusters';
 import { getVacuumProperty } from './helper.js';
 import { getRunningMode } from './initialData/getSupportedRunModes.js';
 import { CloudMessageModel } from './model/CloudMessageModel.js';
 import { RoborockMatterbridgePlatform } from './platform.js';
-import { state_to_matter_operational_status, state_to_matter_state } from './share/function.js';
+import { getCurrentCleanMode, state_to_matter_operational_status, state_to_matter_state } from './share/function.js';
 import RoomMap from './model/RoomMap.js';
 import { getBatteryState, getBatteryStatus, getOperationalErrorState } from './initialData/index.js';
 import { NotifyMessageTypes } from './notifyMessageTypes.js';
@@ -131,6 +131,11 @@ export class PlatformRunner {
             platform.robot.updateAttribute(PowerSource.Cluster.id, 'batChargeLevel', getBatteryStatus(batteryLevel), platform.log);
           }
 
+          const currentCleanMode = getCurrentCleanMode(data.fan_power, data.water_box_mode, deviceData.model);
+          if (currentCleanMode) {
+            platform.robot.updateAttribute(RvcCleanMode.Cluster.id, 'currentMode', currentCleanMode, platform.log);
+          }
+
           this.processAdditionalProps(platform.robot, data);
         }
         break;
@@ -195,7 +200,7 @@ export class PlatformRunner {
           break;
         }
         default: {
-          platform.log.notice(`Unknown message type: ${messageType} ,`, JSON.stringify(data));
+          platform.log.notice(`Unknown message type: ${Protocol[messageType] ?? messageType} ,`, JSON.stringify(data));
           break;
         }
       }
