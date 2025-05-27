@@ -123,3 +123,35 @@ export function getCurrentCleanMode(fan_power: number | undefined, water_box_mod
     }
   }
 }
+
+export function getCurrentCleanModeFromFanPower(fan_power: number | undefined, model: string): number | undefined {
+  if (!fan_power) return undefined;
+  switch (model) {
+    case DeviceModel.QREVO_EDGE_5V1: {
+      if (fan_power == VacuumSuctionPowerA187.Smart) return 4; // 'Smart Plan',
+      if (fan_power == VacuumSuctionPowerA187.Custom) return 8; // 'Custom',
+      if (fan_power == VacuumSuctionPowerA187.Off)
+        return 5; // 'Mop',
+      else return undefined;
+    }
+    default: {
+      return undefined;
+    }
+  }
+}
+
+export function getCurrentCleanModeFromWaterBoxMode(water_box_mode: number | undefined, model: string): number | undefined {
+  if (!water_box_mode) return undefined;
+  switch (model) {
+    case DeviceModel.QREVO_EDGE_5V1: {
+      if (water_box_mode == MopWaterFlowA187.Smart) return 4; // 'Smart Plan',
+      if (water_box_mode == MopWaterFlowA187.Custom) return 8; // 'Custom',
+      if (water_box_mode == MopWaterFlowA187.Off)
+        return 6; // 'Vacuum',
+      else return undefined;
+    }
+    default: {
+      return undefined;
+    }
+  }
+}

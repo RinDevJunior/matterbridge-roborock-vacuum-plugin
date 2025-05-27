@@ -3,7 +3,13 @@ import { getVacuumProperty } from './helper.js';
 import { getRunningMode } from './initialData/getSupportedRunModes.js';
 import { CloudMessageModel } from './model/CloudMessageModel.js';
 import { RoborockMatterbridgePlatform } from './platform.js';
-import { getCurrentCleanMode, state_to_matter_operational_status, state_to_matter_state } from './share/function.js';
+import {
+  getCurrentCleanMode,
+  getCurrentCleanModeFromFanPower,
+  getCurrentCleanModeFromWaterBoxMode,
+  state_to_matter_operational_status,
+  state_to_matter_state,
+} from './share/function.js';
 import RoomMap from './model/RoomMap.js';
 import { getBatteryState, getBatteryStatus, getOperationalErrorState } from './initialData/index.js';
 import { NotifyMessageTypes } from './notifyMessageTypes.js';
@@ -191,6 +197,23 @@ export class PlatformRunner {
             const message = { duid: duid, statusType: { ...roboStatus } };
             platform.log.debug('rpc_response:', JSON.stringify(message));
             await self.updateFromMQTTMessage(NotifyMessageTypes.LocalMessage, message, true);
+          }
+          break;
+        }
+        case Protocol.suction_power: {
+          const fanPower = data.dps[messageType] as number;
+          const currentCleanMode = getCurrentCleanModeFromFanPower(fanPower, model);
+          if (currentCleanMode) {
+            platform.robot!.updateAttribute(RvcCleanMode.Cluster.id, 'currentMode', currentCleanMode, platform.log);
+          }
+          break;
+        }
+
+        case Protocol.water_box_mode: {
+          const water_box_mode = data.dps[messageType] as number;
+          const currentCleanMode = getCurrentCleanModeFromWaterBoxMode(water_box_mode, model);
+          if (currentCleanMode) {
+            platform.robot!.updateAttribute(RvcCleanMode.Cluster.id, 'currentMode', currentCleanMode, platform.log);
           }
           break;
         }
