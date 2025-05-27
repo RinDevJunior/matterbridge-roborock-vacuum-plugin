@@ -23,7 +23,7 @@ jobs:
         run: npm ci
 
       - name: Install dependencies
-        run: npm run precondition && npm run deepCleanB
+        run: npm run precondition && npm run deepClean && npm install && npm link matterbridge
 
       - name: Build (optional)
         run: npm run build

@@ -1,13 +1,15 @@
 {
   "name": "matterbridge-roborock-vacuum-plugin",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "description": "Matterbridge Roborock Vacuum Plugin",
   "author": "https://github.com/RinDevJunior",
   "license": "MIT",
   "homepage": "https://github.com/RinDevJunior/matterbridge-roborock-vacuum-plugin",
   "type": "module",
   "main": "dist/index.js",
-  "types": "dist/index.d.ts",
+  "publishConfig": {
+    "access": "public"
+  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/RinDevJunior/matterbridge-roborock-vacuum-plugin.git"
