@@ -21,10 +21,9 @@
   },
   "keywords": [
     "matterbridge",
-    "homebridge",
+    "roborock",
     "matter",
     "matter.js",
-    "example",
     "plugin"
   ],
   "engines": {
