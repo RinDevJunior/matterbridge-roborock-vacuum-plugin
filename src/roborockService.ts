@@ -94,7 +94,7 @@ export default class RoborockService {
     const sltArea = this.selectedAreas.get(duid);
     this.logger.debug('startClean', JSON.stringify({ duid, areas, sltArea }));
 
-    if (sltArea?.length == areas?.length || !sltArea || !areas) {
+    if (sltArea?.length == areas?.length || !sltArea || !areas || sltArea.length === 0 || areas.length === 0) {
       this.logger.notice('startGlobalClean');
       this.getMessageProcessor()?.startClean(duid);
     } else {

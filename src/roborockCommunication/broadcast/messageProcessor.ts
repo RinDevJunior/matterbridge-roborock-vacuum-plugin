@@ -103,6 +103,7 @@ export class MessageProcessor {
   }
 
   public async changeCleanMode(duid: string, suctionPower: number, waterFlow: number): Promise<void> {
+    this.logger?.notice(`Change clean mode for ${duid} to suctionPower: ${suctionPower}, waterFlow: ${waterFlow}`);
     await this.client.send(duid, new RequestMessage({ method: 'set_custom_mode', params: [suctionPower] }));
     await this.client.send(duid, new RequestMessage({ method: 'set_water_box_custom_mode', params: [waterFlow] }));
   }
