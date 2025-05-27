@@ -3,13 +3,7 @@ import { getVacuumProperty } from './helper.js';
 import { getRunningMode } from './initialData/getSupportedRunModes.js';
 import { CloudMessageModel } from './model/CloudMessageModel.js';
 import { RoborockMatterbridgePlatform } from './platform.js';
-import {
-  getCurrentCleanMode,
-  getCurrentCleanModeFromFanPower,
-  getCurrentCleanModeFromWaterBoxMode,
-  state_to_matter_operational_status,
-  state_to_matter_state,
-} from './share/function.js';
+import { state_to_matter_operational_status, state_to_matter_state } from './share/function.js';
 import RoomMap from './model/RoomMap.js';
 import { getBatteryState, getBatteryStatus, getOperationalErrorState } from './initialData/index.js';
 import { NotifyMessageTypes } from './notifyMessageTypes.js';
@@ -20,6 +14,7 @@ import { RoborockVacuumCleaner } from './rvc.js';
 import { hasDockingStationError, parseDockingStationStatus } from './model/DockingStationStatus.js';
 import { Device, Home } from './roborockCommunication/index.js';
 import { OperationStatusCode } from './roborockCommunication/Zenum/operationStatusCode.js';
+import { getCurrentCleanModeFromFanPowerFunc, getCurrentCleanModeFromWaterBoxModeFunc, getCurrentCleanModeFunc } from './share/runtimeHelper.js';
 
 export class PlatformRunner {
   platform: RoborockMatterbridgePlatform;
@@ -137,7 +132,7 @@ export class PlatformRunner {
             platform.robot.updateAttribute(PowerSource.Cluster.id, 'batChargeLevel', getBatteryStatus(batteryLevel), platform.log);
           }
 
-          const currentCleanMode = getCurrentCleanMode(data.fan_power, data.water_box_mode, deviceData.model);
+          const currentCleanMode = getCurrentCleanModeFunc(deviceData.model)(data.fan_power, data.water_box_mode);
           if (currentCleanMode) {
             platform.robot.updateAttribute(RvcCleanMode.Cluster.id, 'currentMode', currentCleanMode, platform.log);
           }
@@ -202,7 +197,7 @@ export class PlatformRunner {
         }
         case Protocol.suction_power: {
           const fanPower = data.dps[messageType] as number;
-          const currentCleanMode = getCurrentCleanModeFromFanPower(fanPower, model);
+          const currentCleanMode = getCurrentCleanModeFromFanPowerFunc(model)(fanPower);
           if (currentCleanMode) {
             platform.robot!.updateAttribute(RvcCleanMode.Cluster.id, 'currentMode', currentCleanMode, platform.log);
           }
@@ -211,7 +206,7 @@ export class PlatformRunner {
 
         case Protocol.water_box_mode: {
           const water_box_mode = data.dps[messageType] as number;
-          const currentCleanMode = getCurrentCleanModeFromWaterBoxMode(water_box_mode, model);
+          const currentCleanMode = getCurrentCleanModeFromWaterBoxModeFunc(model)(water_box_mode);
           if (currentCleanMode) {
             platform.robot!.updateAttribute(RvcCleanMode.Cluster.id, 'currentMode', currentCleanMode, platform.log);
           }

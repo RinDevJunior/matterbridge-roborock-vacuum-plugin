@@ -1,7 +1,5 @@
 import { OperationStatusCode } from '../roborockCommunication/Zenum/operationStatusCode.js';
 import { RvcRunMode, RvcOperationalState } from 'matterbridge/matter/clusters';
-import { DeviceModel } from '../roborockCommunication/Zmodel/deviceModel.js';
-import { MopWaterFlowA187, VacuumSuctionPowerA187 } from '../behaviors/roborock.vacuum/QREVO_EDGE_5V1/a187.js';
 
 export function state_to_matter_state(state: number | undefined): RvcRunMode.ModeTag | undefined {
   if (state === null) {
@@ -104,54 +102,5 @@ export function state_to_matter_operational_status(state: number | undefined): R
     case OperationStatusCode.Charging:
     default:
       return RvcOperationalState.OperationalState.Docked;
-  }
-}
-
-export function getCurrentCleanMode(fan_power: number | undefined, water_box_mode: number | undefined, model: string): number | undefined {
-  if (!fan_power || !water_box_mode) return undefined;
-  switch (model) {
-    case DeviceModel.QREVO_EDGE_5V1: {
-      if (fan_power == VacuumSuctionPowerA187.Smart || water_box_mode == MopWaterFlowA187.Smart) return 4; // 'Smart Plan',
-      if (fan_power == VacuumSuctionPowerA187.Custom || water_box_mode == MopWaterFlowA187.Custom) return 8; // 'Custom',
-      if (fan_power == VacuumSuctionPowerA187.Off) return 5; // 'Mop',
-      if (water_box_mode == MopWaterFlowA187.Off)
-        return 6; // 'Vacuum',
-      else return 7; //Vac & Mop
-    }
-    default: {
-      return undefined;
-    }
-  }
-}
-
-export function getCurrentCleanModeFromFanPower(fan_power: number | undefined, model: string): number | undefined {
-  if (!fan_power) return undefined;
-  switch (model) {
-    case DeviceModel.QREVO_EDGE_5V1: {
-      if (fan_power == VacuumSuctionPowerA187.Smart) return 4; // 'Smart Plan',
-      if (fan_power == VacuumSuctionPowerA187.Custom) return 8; // 'Custom',
-      if (fan_power == VacuumSuctionPowerA187.Off)
-        return 5; // 'Mop',
-      else return undefined;
-    }
-    default: {
-      return undefined;
-    }
-  }
-}
-
-export function getCurrentCleanModeFromWaterBoxMode(water_box_mode: number | undefined, model: string): number | undefined {
-  if (!water_box_mode) return undefined;
-  switch (model) {
-    case DeviceModel.QREVO_EDGE_5V1: {
-      if (water_box_mode == MopWaterFlowA187.Smart) return 4; // 'Smart Plan',
-      if (water_box_mode == MopWaterFlowA187.Custom) return 8; // 'Custom',
-      if (water_box_mode == MopWaterFlowA187.Off)
-        return 6; // 'Vacuum',
-      else return undefined;
-    }
-    default: {
-      return undefined;
-    }
   }
 }
