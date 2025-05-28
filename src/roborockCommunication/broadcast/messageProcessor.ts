@@ -102,9 +102,19 @@ export class MessageProcessor {
     return this.client.send(duid, request);
   }
 
-  public async changeCleanMode(duid: string, suctionPower: number, waterFlow: number): Promise<void> {
+  public async changeCleanMode(duid: string, suctionPower: number, waterFlow: number, mopRoute: number): Promise<void> {
     this.logger?.notice(`Change clean mode for ${duid} to suctionPower: ${suctionPower}, waterFlow: ${waterFlow}`);
-    await this.client.send(duid, new RequestMessage({ method: 'set_custom_mode', params: [suctionPower] }));
-    await this.client.send(duid, new RequestMessage({ method: 'set_water_box_custom_mode', params: [waterFlow] }));
+
+    if (mopRoute && mopRoute != 0) {
+      await this.client.send(duid, new RequestMessage({ method: 'set_mop_mode', params: [mopRoute] }));
+    }
+
+    if (suctionPower && suctionPower != 0) {
+      await this.client.send(duid, new RequestMessage({ method: 'set_custom_mode', params: [suctionPower] }));
+    }
+
+    if (waterFlow && waterFlow != 0) {
+      await this.client.send(duid, new RequestMessage({ method: 'set_water_box_custom_mode', params: [waterFlow] }));
+    }
   }
 }

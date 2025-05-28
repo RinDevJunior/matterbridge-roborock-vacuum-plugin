@@ -12,7 +12,7 @@ export function state_to_matter_state(state: number | undefined): RvcRunMode.Mod
     case OperationStatusCode.ReturningDock:
     case OperationStatusCode.ManualMode:
     case OperationStatusCode.SpotCleaning:
-    case OperationStatusCode.Docking:
+    case OperationStatusCode.ReturnToDock:
     case OperationStatusCode.GoTo:
     case OperationStatusCode.ZoneClean:
     case OperationStatusCode.RoomClean:
@@ -38,7 +38,6 @@ export function state_to_matter_state(state: number | undefined): RvcRunMode.Mod
 
     case OperationStatusCode.Idle:
     case OperationStatusCode.Sleeping:
-    case OperationStatusCode.Docking:
     case OperationStatusCode.Charging:
     case OperationStatusCode.FullyCharged:
     default:
@@ -71,7 +70,7 @@ export function state_to_matter_operational_status(state: number | undefined): R
     case OperationStatusCode.RobotStatusMopping:
     case OperationStatusCode.WashingTheMop:
     case OperationStatusCode.WashingTheMop2:
-    case OperationStatusCode.Docking:
+    case OperationStatusCode.ReturnToDock:
     case OperationStatusCode.GoingToWashTheMop:
     case OperationStatusCode.BackToDockWashingDuster:
     case OperationStatusCode.EmptyingDustContainer:

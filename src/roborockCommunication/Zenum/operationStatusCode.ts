@@ -14,7 +14,7 @@ export enum OperationStatusCode {
   InError = 12,
   ShuttingDown = 13,
   Updating = 14,
-  Docking = 15,
+  ReturnToDock = 15,
   GoTo = 16,
   ZoneClean = 17,
   RoomClean = 18,

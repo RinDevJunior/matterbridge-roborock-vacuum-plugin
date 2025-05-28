@@ -44,6 +44,16 @@ export enum MopWaterFlowA187 {
   Smart = 209,
 }
 
+//set_mop_mode
+export enum MopRouteA187 {
+  Fast = 304,
+  Standard = 300,
+  Deep = 301,
+  Custom = 302,
+  DeepPlus = 303,
+  Smart = 306,
+}
+
 const RvcRunMode: Record<number, string> = {
   [1]: 'Idle', //DO NOT HANDLE HERE,
   [2]: 'Cleaning',
@@ -57,12 +67,12 @@ const RvcCleanMode: Record<number, string> = {
   [8]: 'Custom',
 };
 
-const CleanSetting: Record<number, { suctionPower: VacuumSuctionPowerA187; waterFlow: MopWaterFlowA187 }> = {
-  [4]: { suctionPower: VacuumSuctionPowerA187.Smart, waterFlow: MopWaterFlowA187.Smart },
-  [5]: { suctionPower: VacuumSuctionPowerA187.Off, waterFlow: MopWaterFlowA187.Medium },
-  [6]: { suctionPower: VacuumSuctionPowerA187.Balanced, waterFlow: MopWaterFlowA187.Off },
-  [7]: { suctionPower: VacuumSuctionPowerA187.Balanced, waterFlow: MopWaterFlowA187.Medium },
-  [8]: { suctionPower: VacuumSuctionPowerA187.Custom, waterFlow: MopWaterFlowA187.Custom },
+const CleanSetting: Record<number, { suctionPower: number; waterFlow: number; mopRoute: number }> = {
+  [4]: { suctionPower: 0, waterFlow: 0, mopRoute: MopRouteA187.Smart }, //'Smart Plan'
+  [5]: { suctionPower: VacuumSuctionPowerA187.Off, waterFlow: MopWaterFlowA187.Medium, mopRoute: MopRouteA187.Custom }, //'Mop'
+  [6]: { suctionPower: VacuumSuctionPowerA187.Balanced, waterFlow: MopWaterFlowA187.Off, mopRoute: MopRouteA187.Custom }, //'Vacuum'
+  [7]: { suctionPower: VacuumSuctionPowerA187.Balanced, waterFlow: MopWaterFlowA187.Medium, mopRoute: MopRouteA187.Custom }, //'Vac & Mop'
+  [8]: { suctionPower: VacuumSuctionPowerA187.Custom, waterFlow: MopWaterFlowA187.Custom, mopRoute: MopRouteA187.Custom }, // 'Custom'
 };
 
 export function setCommandHandlerA187(duid: string, handler: BehaviorDeviceGeneric<DeviceCommands>, logger: AnsiLogger, roborockService: RoborockService): void {
@@ -77,7 +87,7 @@ export function setCommandHandlerA187(duid: string, handler: BehaviorDeviceGener
       case 'Smart Plan':
       case 'Mop':
       case 'Vacuum':
-      case 'Mop & Vacuum':
+      case 'Vac & Mop':
       case 'Custom': {
         const setting = CleanSetting[newMode];
         logger.notice(`BehaviorA187-ChangeCleanMode to: ${activity}, code: ${JSON.stringify(setting)}`);

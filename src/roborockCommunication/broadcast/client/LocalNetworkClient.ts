@@ -46,7 +46,7 @@ export class LocalNetworkClient extends AbstractClient {
 
   public async send(duid: string, request: RequestMessage): Promise<void> {
     if (!this.socket || !this.connected) {
-      this.logger.error(`failed to send request to ${duid}, socket is not online, ${JSON.stringify(request)}`);
+      this.logger.error(`${duid}: socket is not online, ${JSON.stringify(request)}`);
       return;
     }
 

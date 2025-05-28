@@ -59,6 +59,7 @@ export class MQTTClient extends AbstractClient {
 
   public async send(duid: string, request: RequestMessage): Promise<void> {
     if (!this.client || !this.connected) {
+      this.logger.error(`${duid}: mqtt is not available, ${JSON.stringify(request)}`);
       return;
     }
 
