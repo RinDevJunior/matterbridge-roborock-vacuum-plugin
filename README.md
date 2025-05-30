@@ -25,6 +25,12 @@ Currently vacuum show as two devices in home kit ('Not my top priority now')
 
 ## Prerequisites
 
+If you like this project and find it useful, please consider giving it a star on GitHub at [https://github.com/RinDevJunior/matterbridge-roborock-vacuum-plugin](https://github.com/RinDevJunior/matterbridge-roborock-vacuum-plugin).
+
+**💬 Need help? Join our Discord for support and discussions:**  
+👉 [Join the Matterbridge Roborock Discord](https://discord.gg/NHMDKdzm)
+
+
 ### Matterbridge
 
 See the guidelines on [Matterbridge](https://github.com/Luligu/matterbridge/blob/main/README.md) for more information.
