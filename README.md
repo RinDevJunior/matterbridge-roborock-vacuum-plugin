@@ -28,6 +28,16 @@
 
 ---
 
+
+### ⚠️ Important Notes
+
+- **Matterbridge must be run in child bridge mode** for proper operation.
+- **Use one Matterbridge instance per Roborock vacuum.**  
+  If you have more than one vacuum, please run separate instances.
+
+  More details available here: [Discussion #264](https://github.com/Luligu/matterbridge/discussions/264)
+
+---
 ### 🚧 Project Status
 
 - **Under active development**
