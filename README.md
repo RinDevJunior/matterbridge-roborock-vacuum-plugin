@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="https://github.com/Luligu/matterbridge/blob/main/frontend/public/matterbridge%2064x64.png" alt="Matterbridge Logo" width="64" height="64" />
+  <img src="./logo.png" alt="Matterbridge Roborock Platform Plugin Logo" width="64" height="64" />
 </p>
 
 <h1 align="center">Matterbridge Roborock Platform Plugin</h1>
