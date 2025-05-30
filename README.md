@@ -70,13 +70,13 @@ This plugin is built on top of the official dynamic platform example:
 ### 📸 Screenshot
 
 <p align="center">
-  <img src="./screenshot/IMG_1.PNG" alt="Screenshot1" width="585" height="1266" />
-  <img src="./screenshot/IMG_2.PNG" alt="Screenshot2" width="585" height="1266" />
+  <img src="./screenshot/IMG_1.PNG" alt="Screenshot1" width="292" height="633" />
+  <img src="./screenshot/IMG_2.PNG" alt="Screenshot2" width="292" height="633" />
 </p>
 <p align="center">
-  <img src="./screenshot/IMG_3.PNG" alt="Screenshot3" width="585" height="1266" />
-  <img src="./screenshot/IMG_4.PNG" alt="Screenshot4" width="585" height="1266" />
+  <img src="./screenshot/IMG_3.PNG" alt="Screenshot3" width="292" height="633" />
+  <img src="./screenshot/IMG_4.PNG" alt="Screenshot4" width="292" height="633" />
 </p>
 <p align="center">
-  <img src="./screenshot/IMG_5.PNG" alt="Screenshot5" width="585" height="1266" />
+  <img src="./screenshot/IMG_5.PNG" alt="Screenshot5" width="292" height="633" />
 </p>
