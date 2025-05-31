@@ -34,11 +34,11 @@ export default class RoomMap {
     });
   }
 
-  getGlobalId(id: number): number | undefined {
-    return this.rooms.find((r) => Number(r.id) == Number(id))?.globalId;
-  }
+  // getGlobalId(id: number): number | undefined {
+  //   return this.rooms.find((r) => Number(r.id) == Number(id))?.globalId;
+  // }
 
-  getRoomId(globalId: number): number | undefined {
-    return this.rooms.find((r) => Number(r.globalId) == Number(globalId))?.id;
-  }
+  // getRoomId(globalId: number): number | undefined {
+  //   return this.rooms.find((r) => Number(r.globalId) == Number(globalId))?.id;
+  // }
 }
