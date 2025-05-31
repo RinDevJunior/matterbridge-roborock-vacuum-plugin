@@ -34,9 +34,21 @@
 - **Matterbridge must be run in child bridge mode** for proper operation.
 - **Use one Matterbridge instance per Roborock vacuum.**  
   If you have more than one vacuum, please run separate instances.
+  Please put the **duid** of device you want to use into **whiteList** section in the plugin configuration popup.
+
 
   More details available here: [Discussion #264](https://github.com/Luligu/matterbridge/discussions/264)
 
+---
+### 🆔 How to Get Your DUID
+
+To get the **DUID** for your devices. Follow the steps below to retrieve it:
+
+1. **Start Matterbridge** with the plugin enabled.
+2. **Watch the Docker console logs directly** (not the Matterbridge UI logs, as they may be truncated).
+3. Look for the log message that says:
+   ```text
+   Initializing - devices: [...]
 ---
 ### 🚧 Project Status
 
