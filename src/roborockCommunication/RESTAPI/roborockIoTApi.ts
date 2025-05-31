@@ -1,6 +1,6 @@
 import axios, { AxiosInstance } from 'axios';
 import crypto from 'crypto';
-import { AnsiLogger } from 'matterbridge/logger';
+import { AnsiLogger, debugStringify } from 'matterbridge/logger';
 import { ApiResponse } from '../Zmodel/apiResponse.js';
 import { Home } from '../Zmodel/home.js';
 import { UserData } from '../Zmodel/userData.js';
@@ -26,7 +26,7 @@ export class RoborockIoTApi {
         const hmac = crypto.createHmac('sha256', userdata.rriot.h).update(data).digest('base64');
         config.headers['Authorization'] = `Hawk id="${userdata.rriot.u}", s="${userdata.rriot.s}", ts="${timestamp}", nonce="${nonce}", mac="${hmac}"`;
       } catch (error) {
-        this.logger.error('Failed to initialize RESTAPI' + JSON.stringify(error));
+        this.logger.error(`Failed to initialize RESTAPI ${error ? debugStringify(error) : 'undefined'}`);
       }
       return config;
     });

@@ -4,7 +4,7 @@ import { RequestMessage } from '../model/requestMessage.js';
 import { AbstractClient } from '../abstractClient.js';
 import { MessageContext } from '../model/messageContext.js';
 import { Rriot, UserData } from '../../Zmodel/userData.js';
-import { AnsiLogger } from 'matterbridge/logger';
+import { AnsiLogger, debugStringify } from 'matterbridge/logger';
 
 export class MQTTClient extends AbstractClient {
   private readonly rriot: Rriot;
@@ -59,7 +59,7 @@ export class MQTTClient extends AbstractClient {
 
   public async send(duid: string, request: RequestMessage): Promise<void> {
     if (!this.client || !this.connected) {
-      this.logger.error(`${duid}: mqtt is not available, ${JSON.stringify(request)}`);
+      this.logger.error(`${duid}: mqtt is not available, ${debugStringify(request)}`);
       return;
     }
 

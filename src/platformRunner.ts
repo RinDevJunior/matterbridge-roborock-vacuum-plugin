@@ -15,6 +15,7 @@ import { hasDockingStationError, parseDockingStationStatus } from './model/Docki
 import { Device, Home } from './roborockCommunication/index.js';
 import { OperationStatusCode } from './roborockCommunication/Zenum/operationStatusCode.js';
 import { getCurrentCleanModeFromFanPowerFunc, getCurrentCleanModeFromWaterBoxModeFunc, getCurrentCleanModeFunc } from './share/runtimeHelper.js';
+import { debugStringify } from 'matterbridge/logger';
 
 export class PlatformRunner {
   platform: RoborockMatterbridgePlatform;
@@ -71,7 +72,7 @@ export class PlatformRunner {
     }
 
     if (!tracked) {
-      platform.log.debug(`${messageSource} updateFromMQTTMessage: ${JSON.stringify(messageData)}`);
+      platform.log.debug(`${messageSource} updateFromMQTTMessage: ${debugStringify(messageData)}`);
     }
 
     const duid = messageData.duid;
@@ -120,7 +121,7 @@ export class PlatformRunner {
 
           if (currentRoom !== -1 && isMappedArea) {
             const roomMap = await this.getRoomMap();
-            this.platform.log.debug('RoomMap:', JSON.stringify(roomMap));
+            this.platform.log.debug(`RoomMap: ${roomMap ? debugStringify(roomMap) : 'undefined'}`);
             this.platform.log.debug('CurrentRoom:', currentRoom);
             platform.robot.updateAttribute(ServiceArea.Cluster.id, 'currentArea', currentRoom, platform.log);
           }
@@ -183,14 +184,14 @@ export class PlatformRunner {
           const response = data.dps[messageType] as DpsPayload;
           //ignore network info
           if (!self.isStatusUpdate(response.result)) {
-            platform.log.notice('Ignore message:', JSON.stringify(data));
+            platform.log.notice('Ignore message:', debugStringify(data));
             return;
           }
 
           const roboStatus = response.result[0] as CloudMessageResult;
           if (roboStatus) {
             const message = { duid: duid, statusType: { ...roboStatus } };
-            platform.log.debug('rpc_response:', JSON.stringify(message));
+            platform.log.debug('rpc_response:', debugStringify(message));
             await self.updateFromMQTTMessage(NotifyMessageTypes.LocalMessage, message, true);
           }
           break;
@@ -218,7 +219,7 @@ export class PlatformRunner {
           break;
         }
         default: {
-          platform.log.notice(`Unknown message type: ${Protocol[messageType] ?? messageType} ,`, JSON.stringify(data));
+          platform.log.notice(`Unknown message type: ${Protocol[messageType] ?? messageType} ,`, debugStringify(data));
           break;
         }
       }
@@ -230,7 +231,7 @@ export class PlatformRunner {
     const platform = this.platform;
     if (platform.config.enableExperimentalFeature && message.dss !== undefined) {
       const dss = parseDockingStationStatus(message.dss);
-      this.platform.log.debug('DockingStationStatus:', JSON.stringify(dss));
+      this.platform.log.debug('DockingStationStatus:', debugStringify(dss));
 
       //Experimental feature
       if (dss && hasDockingStationError(dss)) {
@@ -259,8 +260,8 @@ export class PlatformRunner {
     }
 
     device.schema = homeData.products.find((prd) => prd.id == device.productId || prd.model == device.data.model)?.schema ?? [];
-    this.platform.log.debug('updateFromHomeData-homeData:', JSON.stringify(homeData));
-    this.platform.log.debug('updateFromHomeData-device:', JSON.stringify(device));
+    this.platform.log.debug('updateFromHomeData-homeData:', debugStringify(homeData));
+    this.platform.log.debug('updateFromHomeData-device:', debugStringify(device));
 
     const batteryLevel = getVacuumProperty(device, 'battery');
     if (batteryLevel) {

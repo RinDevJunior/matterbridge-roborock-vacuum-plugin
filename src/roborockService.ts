@@ -1,5 +1,5 @@
 import assert from 'node:assert';
-import { AnsiLogger } from 'matterbridge/logger';
+import { AnsiLogger, debugStringify } from 'matterbridge/logger';
 import ClientManager from './clientManager.js';
 import { NotifyMessageTypes } from './notifyMessageTypes.js';
 import { ResponseMessage } from './roborockCommunication/broadcast/model/responseMessage.js';
@@ -92,13 +92,13 @@ export default class RoborockService {
   public async startClean(duid: string): Promise<void> {
     const areas = this.supportedAreas.get(duid);
     const sltArea = this.selectedAreas.get(duid);
-    this.logger.debug('startClean', JSON.stringify({ duid, areas, sltArea }));
+    this.logger.debug('startClean', debugStringify({ duid, areas, sltArea }));
 
     if (sltArea?.length == areas?.length || !sltArea || !areas || sltArea.length === 0 || areas.length === 0) {
       this.logger.notice('startGlobalClean');
       this.getMessageProcessor()?.startClean(duid);
     } else {
-      this.logger.debug('startRoomClean', JSON.stringify({ duid, sltArea }));
+      this.logger.debug('startRoomClean', debugStringify({ duid, sltArea }));
       return this.messageProcessor?.startRoomClean(duid, sltArea, 1);
     }
   }

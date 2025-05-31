@@ -1,5 +1,5 @@
 import { MaybePromise } from 'matterbridge/matter';
-import { AnsiLogger } from 'matterbridge/logger';
+import { AnsiLogger, debugStringify } from 'matterbridge/logger';
 import { BehaviorDeviceGeneric, BehaviorRoborock, DeviceCommands } from '../../BehaviorDeviceGeneric.js';
 import RoborockService from '../../../roborockService.js';
 
@@ -90,7 +90,7 @@ export function setCommandHandlerA187(duid: string, handler: BehaviorDeviceGener
       case 'Vac & Mop':
       case 'Custom': {
         const setting = CleanSetting[newMode];
-        logger.notice(`BehaviorA187-ChangeCleanMode to: ${activity}, code: ${JSON.stringify(setting)}`);
+        logger.notice(`BehaviorA187-ChangeCleanMode to: ${activity}, code: ${debugStringify(setting)}`);
         await roborockService.changeCleanMode(duid, setting);
         return;
       }

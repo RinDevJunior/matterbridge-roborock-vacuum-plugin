@@ -1,4 +1,4 @@
-import { AnsiLogger } from 'matterbridge/logger';
+import { AnsiLogger, debugStringify } from 'matterbridge/logger';
 import { CloudMessageResult } from '../Zmodel/messageResult.js';
 import { RoomInfo } from '../Zmodel/roomInfo.js';
 import { AbstractMessageHandler } from './listener/abstractMessageHandler.js';
@@ -8,7 +8,6 @@ import { DeviceStatus } from '../Zmodel/deviceStatus.js';
 import { Room } from '../Zmodel/room.js';
 import { Client } from './client.js';
 import { NetworkInfo } from '../Zmodel/networkInfo.js';
-import { Protocol } from './model/protocol.js';
 
 export class MessageProcessor {
   private readonly client: Client;
@@ -44,7 +43,7 @@ export class MessageProcessor {
     const request = new RequestMessage({ method: 'get_status' });
     const response = await this.client.get<CloudMessageResult>(duid, request);
 
-    this.logger?.debug('Device status: ', JSON.stringify(response));
+    this.logger?.debug('Device status: ', debugStringify(response));
     return new DeviceStatus(response);
   }
 
@@ -93,7 +92,7 @@ export class MessageProcessor {
 
   public async getCustomMessage(duid: string, def: RequestMessage): Promise<any> {
     const response = this.client.get<any>(duid, def);
-    this.logger?.warn('XXXXXXX: ', JSON.stringify(response));
+    this.logger?.warn('XXXXXXX: ', debugStringify(response));
     return response;
   }
 

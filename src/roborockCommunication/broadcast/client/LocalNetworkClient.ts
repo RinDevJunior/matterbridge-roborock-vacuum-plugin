@@ -2,7 +2,7 @@ import { Socket } from 'node:net';
 import { clearInterval } from 'node:timers';
 import { Protocol } from '../model/protocol.js';
 import { RequestMessage } from '../model/requestMessage.js';
-import { AnsiLogger } from 'matterbridge/logger';
+import { AnsiLogger, debugStringify } from 'matterbridge/logger';
 import { AbstractClient } from '../abstractClient.js';
 import { MessageContext } from '../model/messageContext.js';
 import { Sequence } from '../../helper/sequence.js';
@@ -46,7 +46,7 @@ export class LocalNetworkClient extends AbstractClient {
 
   public async send(duid: string, request: RequestMessage): Promise<void> {
     if (!this.socket || !this.connected) {
-      this.logger.error(`${duid}: socket is not online, ${JSON.stringify(request)}`);
+      this.logger.error(`${duid}: socket is not online, ${debugStringify(request)}`);
       return;
     }
 
@@ -60,7 +60,7 @@ export class LocalNetworkClient extends AbstractClient {
   private async onConnect(): Promise<void> {
     this.connected = true;
     const address = this.socket?.address();
-    this.logger.debug(`${this.duid} connected to ${this.ip}, address: ${JSON.stringify(address)}`);
+    this.logger.debug(`${this.duid} connected to ${this.ip}, address: ${address ? debugStringify(address) : 'undefined'}`);
     await this.sendHelloMessage();
     this.pingInterval = setInterval(this.sendPingRequest.bind(this), 5000);
     await this.connectionListeners.onConnected();

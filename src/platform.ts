@@ -1,7 +1,7 @@
 import './extensions/index.js';
 import { Matterbridge, MatterbridgeDynamicPlatform, PlatformConfig } from 'matterbridge';
 import * as axios from 'axios';
-import { AnsiLogger, LogLevel } from 'matterbridge/logger';
+import { AnsiLogger, debugStringify, LogLevel } from 'matterbridge/logger';
 import RoborockService from './roborockService.js';
 import { PLUGIN_NAME } from './settings.js';
 import ClientManager from './clientManager.js';
@@ -90,9 +90,9 @@ export class RoborockMatterbridgePlatform extends MatterbridgeDynamicPlatform {
     const password = this.config.password as string;
 
     const userData = await this.roborockService.loginWithPassword(username, password);
-    this.log.debug('Initializing - userData:', JSON.stringify(userData));
+    this.log.debug('Initializing - userData:', debugStringify(userData));
     const devices = await this.roborockService.listDevices(username);
-    this.log.notice('Initializing - devices: ', JSON.stringify(devices));
+    this.log.notice('Initializing - devices: ', debugStringify(devices));
 
     let vacuum: Device | undefined = undefined;
     if ((this.config.whiteList as string[]).length > 0) {
@@ -142,7 +142,7 @@ export class RoborockMatterbridgePlatform extends MatterbridgeDynamicPlatform {
     await this.roborockService.initializeMessageClientForLocal(vacuum);
     const roomMap = await this.platformRunner.getRoomMapFromDevice(vacuum);
 
-    this.log.debug('Initializing - roomMap: ', JSON.stringify(roomMap));
+    this.log.debug('Initializing - roomMap: ', debugStringify(roomMap));
 
     const behaviorHandler = configurateBehavior(vacuum.data.model, vacuum.duid, this.roborockService, this.log);
 
@@ -150,12 +150,7 @@ export class RoborockMatterbridgePlatform extends MatterbridgeDynamicPlatform {
     this.robot = new RoborockVacuumCleaner(username, vacuum, roomMap, this.log);
     this.robot.configurateHandler(behaviorHandler);
 
-    // const xxx = this.roborockService.customGet(vacuum.duid, 'get_custom_mode');
-    // this.log.error('XXXXXXX: ', JSON.stringify(xxx));
-    // const yyyy = this.roborockService.customGetInSecure(vacuum.duid, 'get_custom_mode');
-    // this.log.error('XXXXXXX: ', JSON.stringify(yyyy));
-
-    this.log.info('vacuum:', JSON.stringify(vacuum));
+    this.log.info('vacuum:', debugStringify(vacuum));
 
     this.setSelectDevice(this.robot.serialNumber ?? '', this.robot.deviceName ?? '', undefined, 'hub');
     if (this.validateDevice(this.robot.deviceName ?? '')) {
