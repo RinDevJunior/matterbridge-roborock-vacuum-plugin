@@ -90,10 +90,8 @@ export class MessageProcessor {
     return this.client.send(duid, request);
   }
 
-  public async getCustomMessage(duid: string, def: RequestMessage): Promise<any> {
-    const response = this.client.get<any>(duid, def);
-    this.logger?.warn('XXXXXXX: ', debugStringify(response));
-    return response;
+  public getCustomMessage(duid: string, def: RequestMessage): Promise<any> {
+    return this.client.get<any>(duid, def);
   }
 
   public async findMyRobot(duid: string): Promise<void> {
@@ -101,8 +99,16 @@ export class MessageProcessor {
     return this.client.send(duid, request);
   }
 
-  public async changeCleanMode(duid: string, suctionPower: number, waterFlow: number, mopRoute: number): Promise<void> {
-    this.logger?.notice(`Change clean mode for ${duid} to suctionPower: ${suctionPower}, waterFlow: ${waterFlow}`);
+  public async changeCleanMode(duid: string, suctionPower: number, waterFlow: number, mopRoute: number, distance_off: number): Promise<void> {
+    this.logger?.notice(`Change clean mode for ${duid} to suctionPower: ${suctionPower}, waterFlow: ${waterFlow}, mopRoute: ${mopRoute}, distance_off: ${distance_off}`);
+
+    const currentMopMode = await this.getCustomMessage(duid, new RequestMessage({ method: 'get_custom_mode' }));
+
+    //110 == AI/Smart Plan
+    //302 == Custom
+    if (currentMopMode == 110) {
+      await this.client.send(duid, new RequestMessage({ method: 'set_mop_mode', params: [302] }));
+    }
 
     if (mopRoute && mopRoute != 0) {
       await this.client.send(duid, new RequestMessage({ method: 'set_mop_mode', params: [mopRoute] }));
@@ -112,7 +118,10 @@ export class MessageProcessor {
       await this.client.send(duid, new RequestMessage({ method: 'set_custom_mode', params: [suctionPower] }));
     }
 
-    if (waterFlow && waterFlow != 0) {
+    //207 == CustomizeWithDistanceOff
+    if (waterFlow && waterFlow == 207 && distance_off && distance_off != 0) {
+      await this.client.send(duid, new RequestMessage({ method: 'set_water_box_custom_mode', params: { 'water_box_mode': waterFlow, 'distance_off': distance_off } }));
+    } else if (waterFlow && waterFlow != 0) {
       await this.client.send(duid, new RequestMessage({ method: 'set_water_box_custom_mode', params: [waterFlow] }));
     }
   }

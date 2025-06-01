@@ -2,7 +2,7 @@
   "title": "Matterbridge Roborock Vacuum Plugin",
   "description": "matterbridge-roborock-vacuum-plugin v. 1.0.7-rc03 by https://github.com/RinDevJunior",
   "type": "object",
-  "required": [],
+  "required": ["username", "password"],
   "properties": {
     "name": {
       "description": "Plugin name",
@@ -17,7 +17,7 @@
       "ui:widget": "hidden"
     },
     "whiteList": {
-      "description": "(ONLY SET IF YOU HAVE MULTIPLE VACUUMS) Only THE FIRST ONE device with DUID in the list will be exposed. If the list is empty, THE FIRST device will be exposed.",
+      "description": "(ONLY SET IF YOU HAVE MULTIPLE VACUUMS) Only THE FIRST ONE device with <Name>-<duid> in the list will be exposed. If the list is empty, THE FIRST device will be exposed.",
       "type": "array",
       "items": {
         "type": "string"
@@ -31,7 +31,8 @@
     },
     "password": {
       "description": "Roborock password (required for the plugin to work)",
-      "type": "string"
+      "type": "string",
+      "ui:widget": "password"
     },
     "refreshInterval": {
       "description": "Refresh interval in seconds (default: 60)",
@@ -43,6 +44,103 @@
       "type": "boolean",
       "default": false
     },
+    "cleanModeSettings": {
+      "description": "Configure default cleaning parameters for vacuum.",
+      "type": "object",
+      "properties": {
+        "vacuuming": {
+          "description": "Vacuuming only",
+          "type": "object",
+          "properties": {
+            "fanMode": {
+              "type": "string",
+              "description": "Suction power mode to use in Vacuuming only mode (e.g., 'Quiet', 'Balanced', 'Turbo', 'Max', 'MaxPlus').",
+              "default": "Balanced"
+            },
+            "mopRouteMode": {
+              "type": "string",
+              "description": "Mop route intensity to use in Vacuuming only mode (e.g., 'Standard', 'Deep', 'DeepPlus', 'Fast').",
+              "default": "Standard"
+            }
+          }
+        },
+        "mopping": {
+          "description": "Mopping only",
+          "type": "object",
+          "properties": {
+            "waterFlowMode": {
+              "type": "string",
+              "description": "Water flow mode to use in Mopping only mode (e.g., 'Low', 'Medium', 'High', 'CustomizeWithDistanceOff').",
+              "default": "Medium"
+            },
+            "mopRouteMode": {
+              "type": "string",
+              "description": "Mop route intensity to use in Mopping only mode (e.g., 'Standard', 'Deep', 'DeepPlus', 'Fast').",
+              "default": "Standard"
+            }
+          },
+          "allOf": [
+            {
+              "if": {
+                "properties": {
+                  "waterFlowMode": { "const": "CustomizeWithDistanceOff" }
+                }
+              },
+              "then": {
+                "properties": {
+                  "distanceOff": {
+                    "type": "number",
+                    "description": "Distance Off - Default = 25",
+                    "default": 25
+                  }
+                },
+                "required": ["distanceOff"]
+              }
+            }
+          ]
+        },
+        "vacmop": {
+          "description": "Vacuuming and Mopping",
+          "type": "object",
+          "properties": {
+            "fanMode": {
+              "type": "string",
+              "description": "Suction power mode to use in Vacuuming and Mopping mode (e.g., 'Quiet', 'Balanced', 'Turbo', 'Max', 'MaxPlus').",
+              "default": "Balanced"
+            },
+            "waterFlowMode": {
+              "type": "string",
+              "description": "Water flow mode to use in Vacuuming and Mopping mode (e.g., 'Low', 'Medium', 'High', 'CustomizeWithDistanceOff').",
+              "default": "Medium"
+            },
+            "mopRouteMode": {
+              "type": "string",
+              "description": "Mop route intensity to use in Vacuuming and Mopping mode (e.g., 'Standard', 'Deep', 'DeepPlus', 'Fast').",
+              "default": "Standard"
+            }
+          },
+          "allOf": [
+            {
+              "if": {
+                "properties": {
+                  "waterFlowMode": { "const": "CustomizeWithDistanceOff" }
+                }
+              },
+              "then": {
+                "properties": {
+                  "distanceOff": {
+                    "type": "number",
+                    "description": "Distance Off - Default = 25",
+                    "default": 25
+                  }
+                },
+                "required": ["distanceOff"]
+              }
+            }
+          ]
+        }
+      }
+    },
     "debug": {
       "description": "Enable the debug for the plugin (development only)",
       "type": "boolean",
@@ -53,5 +151,20 @@
       "type": "boolean",
       "default": false
     }
-  }
+  },
+  "dependencies": {
+    "cleanModeSettings": ["enableExperimentalFeature"]
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": { "enableExperimentalFeature": { "const": false } }
+      },
+      "then": {
+        "properties": {
+          "cleanModeSettings": false
+        }
+      }
+    }
+  ]
 }

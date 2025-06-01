@@ -84,9 +84,12 @@ export default class RoborockService {
     return this.supportedAreas.get(duid);
   }
 
-  public async changeCleanMode(duid: string, { suctionPower, waterFlow, mopRoute }: { suctionPower: number; waterFlow: number; mopRoute: number }): Promise<void> {
+  public async changeCleanMode(
+    duid: string,
+    { suctionPower, waterFlow, distance_off, mopRoute }: { suctionPower: number; waterFlow: number; distance_off: number; mopRoute: number },
+  ): Promise<void> {
     this.logger.notice('changeCleanMode');
-    return this.messageProcessor?.changeCleanMode(duid, suctionPower, waterFlow, mopRoute);
+    return this.messageProcessor?.changeCleanMode(duid, suctionPower, waterFlow, mopRoute, distance_off);
   }
 
   public async startClean(duid: string): Promise<void> {
@@ -131,6 +134,10 @@ export default class RoborockService {
   public async customGetInSecure(duid: string, method: string): Promise<any> {
     this.logger.debug('customGetInSecure-message', method);
     return this.getMessageProcessor()?.getCustomMessage(duid, new RequestMessage({ method, secure: true }));
+  }
+
+  public async customSend(duid: string, request: any): Promise<void> {
+    return this.getMessageProcessor()?.sendCustomMessage(duid, request);
   }
 
   public stopService(): void {
