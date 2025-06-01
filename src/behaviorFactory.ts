@@ -4,6 +4,7 @@ import { EndpointCommandsA187, setCommandHandlerA187 } from './behaviors/roboroc
 import RoborockService from './roborockService.js';
 import { DefaultEndpointCommands, setDefaultCommandHandler } from './behaviors/roborock.vacuum/default/default.js';
 import { DeviceModel } from './roborockCommunication/Zmodel/deviceModel.js';
+import { EndpointCommandsA27, setCommandHandlerA27 } from './behaviors/roborock.vacuum/S7_MAXV/a27.js';
 
 export type BehaviorFactoryResult = BehaviorDeviceGeneric<DefaultEndpointCommands> | BehaviorDeviceGeneric<EndpointCommandsA187>;
 
@@ -12,6 +13,12 @@ export function configurateBehavior(model: string, duid: string, roborockService
     case DeviceModel.QREVO_EDGE_5V1: {
       const deviceHandler = new BehaviorDeviceGeneric<EndpointCommandsA187>(logger);
       setCommandHandlerA187(duid, deviceHandler, logger, roborockService);
+      return deviceHandler;
+    }
+
+    case DeviceModel.S7_MAXV: {
+      const deviceHandler = new BehaviorDeviceGeneric<EndpointCommandsA27>(logger);
+      setCommandHandlerA27(duid, deviceHandler, logger, roborockService);
       return deviceHandler;
     }
 
