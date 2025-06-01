@@ -42,13 +42,23 @@
 ---
 ### 🆔 How to Get Your DUID
 
-To get the **DUID** for your devices. Follow the steps below to retrieve it:
+To get the **DUID** for your devices, you have two options:
 
+**Option 1: From Matterbridge Logs**
 1. **Start Matterbridge** with the plugin enabled.
 2. **Watch the Docker console logs directly** (not the Matterbridge UI logs, as they may be truncated).
 3. Look for the log message that says:
    ```text
    Initializing - devices: [...]
+   ```
+
+**Option 2: From the Roborock App**
+1. Open the **Roborock app** on your phone.
+2. Go to your **Device**.
+3. Tap **Settings** > **Product Info**.
+4. Find the **DID** field. The value will look like `rr_xxxxxxx`.
+5. **Remove the `rr_` prefix** from the DID value. The remaining string is your DUID.
+
 ---
 ### 🚧 Project Status
 
