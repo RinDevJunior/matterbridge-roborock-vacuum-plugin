@@ -16,8 +16,9 @@ export class RoborockVacuumCleaner extends RoboticVacuumCleaner {
     const cleanModes = getSupportedCleanModes(device.data.model);
     const supportedRunModes = getSupportedRunModes(device.data.model);
     const supportedAreas = getSupportedAreas(device.rooms, roomMap, log);
+    const deviceName = `${device.name}-${device.duid}`.replace(/\s+/g, '');
     super(
-      device.name, //name
+      deviceName, //name
       device.duid, //serial
       supportedRunModes[0].mode, //currentRunMode
       supportedRunModes, //supportedRunModes

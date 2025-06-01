@@ -21,7 +21,6 @@ export class RoborockMatterbridgePlatform extends MatterbridgeDynamicPlatform {
   platformRunner: PlatformRunner | undefined;
   devices: Map<string, Device>;
   serialNumber: string | undefined;
-  whiteList: string[];
 
   constructor(matterbridge: Matterbridge, log: AnsiLogger, config: PlatformConfig) {
     super(matterbridge, log, config);
@@ -36,10 +35,6 @@ export class RoborockMatterbridgePlatform extends MatterbridgeDynamicPlatform {
     if (config.whiteList === undefined) config.whiteList = [];
     if (config.blackList === undefined) config.blackList = [];
     if (config.enableExperimentalFeature === undefined) config.enableExperimentalFeature = false;
-    this.whiteList = config.whiteList as string[];
-
-    //reset default whitelist
-    config.whiteList = [];
 
     this.clientManager = new ClientManager(this.log);
     this.devices = new Map<string, Device>();
@@ -100,15 +95,16 @@ export class RoborockMatterbridgePlatform extends MatterbridgeDynamicPlatform {
     this.log.notice('Initializing - devices: ', debugStringify(devices));
 
     let vacuum: Device | undefined = undefined;
-    if (this.whiteList.length > 0) {
-      const firstDUID = this.whiteList[0];
-      vacuum = devices.find((d) => d.duid == firstDUID);
+    if ((this.config.whiteList as string[]).length > 0) {
+      const firstDUID = (this.config.whiteList as string[])[0];
+      const duid = firstDUID.split('-')[1];
+      vacuum = devices.find((d) => d.duid == duid);
     } else {
       vacuum = devices.find((d) => isSupportedDevice(d.data.model));
     }
 
     if (!vacuum) {
-      this.log.error('Initializing: No supported devices found');
+      this.log.error('Initializing: No device found');
       return;
     }
     await this.roborockService.initializeMessageClient(username, vacuum, userData);

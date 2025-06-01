@@ -85,7 +85,7 @@ export function setCommandHandlerA27(duid: string, handler: BehaviorDeviceGeneri
       case 'Custom': {
         const setting = CleanSetting[newMode];
         logger.notice(`BehaviorA27-ChangeCleanMode to: ${activity}, code: ${debugStringify(setting)}`);
-        await roborockService.changeCleanMode(duid, setting);
+        //await roborockService.changeCleanMode(duid, setting);
         return;
       }
       default:
