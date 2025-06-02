@@ -2,6 +2,7 @@ import { MaybePromise } from 'matterbridge/matter';
 import { AnsiLogger, debugStringify } from 'matterbridge/logger';
 import { BehaviorDeviceGeneric, BehaviorRoborock, DeviceCommands } from '../../BehaviorDeviceGeneric.js';
 import RoborockService from '../../../roborockService.js';
+import { CleanModeSettings } from '../../../model/CleanModeSettings.js';
 
 export interface EndpointCommandsA27 extends DeviceCommands {
   selectAreas: (newAreas: any) => MaybePromise;
@@ -63,14 +64,20 @@ const RvcCleanMode: Record<number, string> = {
   [8]: 'Custom',
 };
 
-const CleanSetting: Record<number, { suctionPower: number; waterFlow: number; mopRoute: number }> = {
-  [5]: { suctionPower: VacuumSuctionPowerA27.Off, waterFlow: MopWaterFlowA27.Medium, mopRoute: MopRouteA27.Custom }, //'Mop'
-  [6]: { suctionPower: VacuumSuctionPowerA27.Balanced, waterFlow: MopWaterFlowA27.Off, mopRoute: MopRouteA27.Custom }, //'Vacuum'
-  [7]: { suctionPower: VacuumSuctionPowerA27.Balanced, waterFlow: MopWaterFlowA27.Medium, mopRoute: MopRouteA27.Custom }, //'Vac & Mop'
-  [8]: { suctionPower: VacuumSuctionPowerA27.Custom, waterFlow: MopWaterFlowA27.Custom, mopRoute: MopRouteA27.Custom }, // 'Custom'
+const CleanSetting: Record<number, { suctionPower: number; waterFlow: number; distance_off: number; mopRoute: number }> = {
+  [5]: { suctionPower: VacuumSuctionPowerA27.Off, waterFlow: MopWaterFlowA27.Medium, distance_off: 0, mopRoute: MopRouteA27.Standard }, //'Mop'
+  [6]: { suctionPower: VacuumSuctionPowerA27.Balanced, waterFlow: MopWaterFlowA27.Off, distance_off: 0, mopRoute: MopRouteA27.Standard }, //'Vacuum'
+  [7]: { suctionPower: VacuumSuctionPowerA27.Balanced, waterFlow: MopWaterFlowA27.Medium, distance_off: 0, mopRoute: MopRouteA27.Standard }, //'Vac & Mop'
+  [8]: { suctionPower: VacuumSuctionPowerA27.Custom, waterFlow: MopWaterFlowA27.Custom, distance_off: 0, mopRoute: MopRouteA27.Custom }, // 'Custom'
 };
 
-export function setCommandHandlerA27(duid: string, handler: BehaviorDeviceGeneric<DeviceCommands>, logger: AnsiLogger, roborockService: RoborockService): void {
+export function setCommandHandlerA27(
+  duid: string,
+  handler: BehaviorDeviceGeneric<DeviceCommands>,
+  logger: AnsiLogger,
+  roborockService: RoborockService,
+  cleanModeSettings: CleanModeSettings | undefined,
+): void {
   handler.setCommandHandler('changeToMode', async (newMode: number) => {
     const activity = RvcRunMode[newMode] || RvcCleanMode[newMode];
     switch (activity) {
@@ -81,11 +88,18 @@ export function setCommandHandlerA27(duid: string, handler: BehaviorDeviceGeneri
       }
       case 'Mop':
       case 'Vacuum':
-      case 'Vac & Mop':
+      case 'Vac & Mop': {
+        const setting = cleanModeSettings ? getSettingFromCleanMode(activity, cleanModeSettings) : CleanSetting[newMode];
+        logger.notice(`BehaviorA27-ChangeCleanMode to: ${activity}, setting: ${debugStringify(setting ?? {})}`);
+        if (setting) {
+          await roborockService.changeCleanMode(duid, setting);
+        }
+        return;
+      }
       case 'Custom': {
         const setting = CleanSetting[newMode];
-        logger.notice(`BehaviorA27-ChangeCleanMode to: ${activity}, code: ${debugStringify(setting)}`);
-        //await roborockService.changeCleanMode(duid, setting);
+        logger.notice(`BehaviorA27-ChangeCleanMode to: ${activity}, setting: ${debugStringify(setting)}`);
+        await roborockService.changeCleanMode(duid, setting);
         return;
       }
       default:
@@ -93,6 +107,45 @@ export function setCommandHandlerA27(duid: string, handler: BehaviorDeviceGeneri
         return;
     }
   });
+
+  const getSettingFromCleanMode = (
+    activity: string,
+    cleanModeSettings?: CleanModeSettings,
+  ): { suctionPower: number; waterFlow: number; distance_off: number; mopRoute: number } | undefined => {
+    switch (activity) {
+      case 'Mop': {
+        const mopSetting = cleanModeSettings?.mopping;
+        const waterFlow = MopWaterFlowA27[mopSetting?.waterFlowMode as keyof typeof MopWaterFlowA27] ?? MopWaterFlowA27.Medium;
+        return {
+          suctionPower: VacuumSuctionPowerA27.Off,
+          waterFlow,
+          distance_off: 0,
+          mopRoute: MopRouteA27[mopSetting?.mopRouteMode as keyof typeof MopRouteA27] ?? MopRouteA27.Standard,
+        };
+      }
+      case 'Vacuum': {
+        const vacuumSetting = cleanModeSettings?.vacuuming;
+        return {
+          suctionPower: VacuumSuctionPowerA27[vacuumSetting?.fanMode as keyof typeof VacuumSuctionPowerA27] ?? VacuumSuctionPowerA27.Balanced,
+          waterFlow: MopWaterFlowA27.Off,
+          distance_off: 0,
+          mopRoute: MopRouteA27[vacuumSetting?.mopRouteMode as keyof typeof MopRouteA27] ?? MopRouteA27.Standard,
+        };
+      }
+      case 'Vac & Mop': {
+        const vacmopSetting = cleanModeSettings?.vacmop;
+        const waterFlow = MopWaterFlowA27[vacmopSetting?.waterFlowMode as keyof typeof MopWaterFlowA27] ?? MopWaterFlowA27.Medium;
+        return {
+          suctionPower: VacuumSuctionPowerA27[vacmopSetting?.fanMode as keyof typeof VacuumSuctionPowerA27] ?? VacuumSuctionPowerA27.Balanced,
+          waterFlow,
+          distance_off: 0,
+          mopRoute: MopRouteA27[vacmopSetting?.mopRouteMode as keyof typeof MopRouteA27] ?? MopRouteA27.Standard,
+        };
+      }
+      default:
+        return undefined;
+    }
+  };
 
   handler.setCommandHandler('selectAreas', async (newAreas: number[]) => {
     logger.notice(`BehaviorA27-selectAreas: ${newAreas}`);

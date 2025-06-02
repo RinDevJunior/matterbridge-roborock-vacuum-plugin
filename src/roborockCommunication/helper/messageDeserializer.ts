@@ -7,6 +7,7 @@ import { ResponseMessage } from '../broadcast/model/responseMessage.js';
 import { CryptoUtils, MessageUtils } from './cryptoHelper.js';
 import { Protocol } from '../broadcast/model/protocol.js';
 import { MessageContext } from '../broadcast/model/messageContext.js';
+import { AnsiLogger } from 'matterbridge/logger';
 
 export interface Message {
   version: string;
@@ -22,9 +23,11 @@ export interface Message {
 export class MessageDeserializer {
   private readonly context: MessageContext;
   private readonly mqttMessageParser: Parser;
+  private readonly logger: AnsiLogger;
 
-  constructor(context: MessageContext) {
+  constructor(context: MessageContext, logger: AnsiLogger) {
     this.context = context;
+    this.logger = logger;
 
     this.mqttMessageParser = new Parser()
       .endianess('big')
@@ -42,7 +45,7 @@ export class MessageDeserializer {
       .uint32('crc32');
   }
 
-  deserialize(duid: string, message: Buffer<ArrayBufferLike>): ResponseMessage {
+  public deserialize(duid: string, message: Buffer<ArrayBufferLike>): ResponseMessage {
     const version = message.toString('latin1', 0, 3);
     if (version !== '1.0' && version !== 'A01') {
       throw new Error('unknown protocol version ' + version);
@@ -51,8 +54,7 @@ export class MessageDeserializer {
     const crc32 = CRC32.buf(message.subarray(0, message.length - 4)) >>> 0;
     const expectedCrc32 = message.readUint32BE(message.length - 4);
     if (crc32 != expectedCrc32) {
-      //throw new Error(`Wrong CRC32 ${crc32}, expected ${expectedCrc32}`);
-      //ignore the error for now
+      this.logger.error(`Wrong CRC32 ${crc32}, expected ${expectedCrc32}`);
       return new ResponseMessage(duid, { dps: { id: 0, result: null } });
     }
     const localKey = this.context.getLocalKey(duid);
@@ -77,7 +79,7 @@ export class MessageDeserializer {
     if (data.protocol == Protocol.rpc_response || data.protocol == Protocol.general_request) {
       return this.deserializeProtocolRpcResponse(duid, data);
     } else {
-      //throw new Error('unknown protocol: ' + data.protocol);
+      this.logger.error('unknown protocol: ' + data.protocol);
       return new ResponseMessage(duid, { dps: { id: 0, result: null } });
     }
   }

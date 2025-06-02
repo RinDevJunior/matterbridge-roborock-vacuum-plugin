@@ -24,8 +24,8 @@ export abstract class AbstractClient implements Client {
 
   protected constructor(logger: AnsiLogger, context: MessageContext) {
     this.context = context;
-    this.serializer = new MessageSerializer(this.context);
-    this.deserializer = new MessageDeserializer(this.context);
+    this.serializer = new MessageSerializer(this.context, logger);
+    this.deserializer = new MessageDeserializer(this.context, logger);
 
     this.syncMessageListener = new SyncMessageListener(logger);
     this.messageListeners.register(this.syncMessageListener);

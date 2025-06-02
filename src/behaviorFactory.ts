@@ -25,7 +25,7 @@ export function configurateBehavior(
 
     case DeviceModel.S7_MAXV: {
       const deviceHandler = new BehaviorDeviceGeneric<EndpointCommandsA27>(logger);
-      setCommandHandlerA27(duid, deviceHandler, logger, roborockService);
+      setCommandHandlerA27(duid, deviceHandler, logger, roborockService, cleanModeSettings);
       return deviceHandler;
     }
 
