@@ -15,21 +15,21 @@ export interface Message {
   random: number;
   timestamp: number;
   protocol: number;
-  payloadLen: number;
+  payloadLen?: number;
   payload: Buffer<ArrayBufferLike>;
   crc32: number;
 }
 
 export class MessageDeserializer {
   private readonly context: MessageContext;
-  private readonly mqttMessageParser: Parser;
+  private readonly messageParser: Parser;
   private readonly logger: AnsiLogger;
 
   constructor(context: MessageContext, logger: AnsiLogger) {
     this.context = context;
     this.logger = logger;
 
-    this.mqttMessageParser = new Parser()
+    this.messageParser = new Parser()
       .endianess('big')
       .string('version', {
         length: 3,
@@ -52,14 +52,13 @@ export class MessageDeserializer {
     }
 
     const crc32 = CRC32.buf(message.subarray(0, message.length - 4)) >>> 0;
-    const expectedCrc32 = message.readUint32BE(message.length - 4);
+    const expectedCrc32 = message.readUInt32BE(message.length - 4);
     if (crc32 != expectedCrc32) {
-      this.logger.error(`Wrong CRC32 ${crc32}, expected ${expectedCrc32}`);
-      return new ResponseMessage(duid, { dps: { id: 0, result: null } });
+      throw new Error(`Wrong CRC32 ${crc32}, expected ${expectedCrc32}`);
     }
     const localKey = this.context.getLocalKey(duid);
     assert(localKey, 'unable to retrieve local key for ' + duid);
-    const data: Message = this.mqttMessageParser.parse(message);
+    const data: Message = this.messageParser.parse(message);
 
     if (version == '1.0') {
       const aesKey = CryptoUtils.md5bin(MessageUtils.encodeTimestamp(data.timestamp) + localKey + MessageUtils.SALT);

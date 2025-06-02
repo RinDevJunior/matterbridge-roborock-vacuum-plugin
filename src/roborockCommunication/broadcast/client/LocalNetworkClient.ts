@@ -107,31 +107,32 @@ export class LocalNetworkClient extends AbstractClient {
     try {
       this.buffer.append(message);
 
-      const recvBuffer = this.buffer.get();
-      if (!this.isMessageComplete(recvBuffer)) {
+      const receivedBuffer = this.buffer.get();
+      if (!this.isMessageComplete(receivedBuffer)) {
         return;
       }
       this.buffer.reset();
 
       let offset = 0;
-      while (offset + 4 <= recvBuffer.length) {
-        const segmentLength = recvBuffer.readUInt32BE(offset);
+      while (offset + 4 <= receivedBuffer.length) {
+        const segmentLength = receivedBuffer.readUInt32BE(offset);
         if (segmentLength == 17) {
           offset += 4 + segmentLength;
           continue;
         }
 
         try {
-          const currentBuffer = recvBuffer.subarray(offset + 4, offset + segmentLength + 4);
+          const currentBuffer = receivedBuffer.subarray(offset + 4, offset + segmentLength + 4);
           const response = this.deserializer.deserialize(this.duid, currentBuffer);
           await this.messageListeners.onMessage(response);
         } catch (error) {
-          this.logger.error('unable to process message: ' + error);
+          this.logger.error('LocalNetworkClient: unable to process message with error: ' + error);
+          //unable to process message: TypeError: Cannot read properties of undefined (reading 'length')
         }
         offset += 4 + segmentLength;
       }
     } catch (error) {
-      this.logger.error('failed to read from a socket: ' + error);
+      this.logger.error('LocalNetworkClient: read socket buffer error: ' + error);
     }
   }
 
@@ -145,7 +146,7 @@ export class LocalNetworkClient extends AbstractClient {
       offset += 4 + segmentLength;
 
       if (offset > buffer.length) {
-        return false; // Data is not complete yet
+        return false;
       }
     }
 
