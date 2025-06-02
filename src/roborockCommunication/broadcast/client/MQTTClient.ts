@@ -124,7 +124,7 @@ export class MQTTClient extends AbstractClient {
       const response = this.deserializer.deserialize(duid, message);
       await this.messageListeners.onMessage(response);
     } catch (error) {
-      this.logger.error('unable to process message from queue ' + topic + ': ' + error);
+      this.logger.error('MQTTClient: unable to process message with error: ' + topic + ': ' + error);
     }
   }
 }

@@ -1,6 +1,6 @@
 {
   "name": "matterbridge-roborock-vacuum-plugin",
-  "version": "1.0.7",
+  "version": "1.0.8-rc01",
   "description": "Matterbridge Roborock Vacuum Plugin",
   "author": "https://github.com/RinDevJunior",
   "license": "MIT",

@@ -103,26 +103,32 @@ export class MessageProcessor {
     this.logger?.notice(`Change clean mode for ${duid} to suctionPower: ${suctionPower}, waterFlow: ${waterFlow}, mopRoute: ${mopRoute}, distance_off: ${distance_off}`);
 
     const currentMopMode = await this.getCustomMessage(duid, new RequestMessage({ method: 'get_custom_mode' }));
+    const smartMopMode = 110;
+    const smartMopRoute = 306;
+    const customMopMode = 106;
+    const customMopRoute = 302;
 
-    //110 == AI/Smart Plan
-    //302 == Custom
-    if (currentMopMode == 110) {
-      await this.client.send(duid, new RequestMessage({ method: 'set_mop_mode', params: [302] }));
-    }
+    if (currentMopMode == smartMopMode && mopRoute == smartMopRoute) return;
+    if (currentMopMode == customMopMode && mopRoute == customMopRoute) return;
 
-    if (mopRoute && mopRoute != 0) {
-      await this.client.send(duid, new RequestMessage({ method: 'set_mop_mode', params: [mopRoute] }));
+    //if change mode from smart plan, firstly change to custom
+    if (currentMopMode == smartMopMode) {
+      await this.client.send(duid, new RequestMessage({ method: 'set_mop_mode', params: [customMopRoute] }));
     }
 
     if (suctionPower && suctionPower != 0) {
       await this.client.send(duid, new RequestMessage({ method: 'set_custom_mode', params: [suctionPower] }));
     }
 
-    //207 == CustomizeWithDistanceOff
-    if (waterFlow && waterFlow == 207 && distance_off && distance_off != 0) {
+    const CustomizeWithDistanceOff = 207;
+    if (waterFlow && waterFlow == CustomizeWithDistanceOff && distance_off && distance_off != 0) {
       await this.client.send(duid, new RequestMessage({ method: 'set_water_box_custom_mode', params: { 'water_box_mode': waterFlow, 'distance_off': distance_off } }));
     } else if (waterFlow && waterFlow != 0) {
       await this.client.send(duid, new RequestMessage({ method: 'set_water_box_custom_mode', params: [waterFlow] }));
+    }
+
+    if (mopRoute && mopRoute != 0) {
+      await this.client.send(duid, new RequestMessage({ method: 'set_mop_mode', params: [mopRoute] }));
     }
   }
 }

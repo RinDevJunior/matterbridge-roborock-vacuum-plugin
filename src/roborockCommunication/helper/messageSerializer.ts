@@ -4,14 +4,17 @@ import crypto from 'crypto';
 import CRC32 from 'crc-32';
 import { DpsPayload, Payload } from '../broadcast/model/dps.js';
 import { MessageContext } from '../broadcast/model/messageContext.js';
+import { AnsiLogger } from 'matterbridge/logger';
 
 export class MessageSerializer {
   private readonly context: MessageContext;
+  private readonly logger: AnsiLogger;
   private seq = 1;
   private random = 4711;
 
-  constructor(context: MessageContext) {
+  constructor(context: MessageContext, logger: AnsiLogger) {
     this.context = context;
+    this.logger = logger;
   }
 
   serialize(duid: string, request: RequestMessage): { messageId: number; buffer: Buffer<ArrayBufferLike> } {
