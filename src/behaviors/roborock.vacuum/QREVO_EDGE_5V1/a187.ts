@@ -71,9 +71,9 @@ const RvcCleanMode: Record<number, string> = {
 
 const CleanSetting: Record<number, { suctionPower: number; waterFlow: number; distance_off: number; mopRoute: number }> = {
   [4]: { suctionPower: 0, waterFlow: 0, distance_off: 0, mopRoute: MopRouteA187.Smart }, //'Smart Plan'
-  [5]: { suctionPower: VacuumSuctionPowerA187.Off, waterFlow: MopWaterFlowA187.Medium, distance_off: 0, mopRoute: MopRouteA187.Custom }, //'Mop'
-  [6]: { suctionPower: VacuumSuctionPowerA187.Balanced, waterFlow: MopWaterFlowA187.Off, distance_off: 0, mopRoute: MopRouteA187.Custom }, //'Vacuum'
-  [7]: { suctionPower: VacuumSuctionPowerA187.Balanced, waterFlow: MopWaterFlowA187.Medium, distance_off: 0, mopRoute: MopRouteA187.Custom }, //'Vac & Mop'
+  [5]: { suctionPower: VacuumSuctionPowerA187.Off, waterFlow: MopWaterFlowA187.Medium, distance_off: 0, mopRoute: MopRouteA187.Standard }, //'Mop'
+  [6]: { suctionPower: VacuumSuctionPowerA187.Balanced, waterFlow: MopWaterFlowA187.Off, distance_off: 0, mopRoute: MopRouteA187.Standard }, //'Vacuum'
+  [7]: { suctionPower: VacuumSuctionPowerA187.Balanced, waterFlow: MopWaterFlowA187.Medium, distance_off: 0, mopRoute: MopRouteA187.Standard }, //'Vac & Mop'
   [8]: { suctionPower: VacuumSuctionPowerA187.Custom, waterFlow: MopWaterFlowA187.Custom, distance_off: 0, mopRoute: MopRouteA187.Custom }, // 'Custom'
 };
 

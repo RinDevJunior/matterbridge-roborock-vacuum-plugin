@@ -110,10 +110,6 @@ export class MessageProcessor {
       await this.client.send(duid, new RequestMessage({ method: 'set_mop_mode', params: [302] }));
     }
 
-    if (mopRoute && mopRoute != 0) {
-      await this.client.send(duid, new RequestMessage({ method: 'set_mop_mode', params: [mopRoute] }));
-    }
-
     if (suctionPower && suctionPower != 0) {
       await this.client.send(duid, new RequestMessage({ method: 'set_custom_mode', params: [suctionPower] }));
     }
@@ -123,6 +119,10 @@ export class MessageProcessor {
       await this.client.send(duid, new RequestMessage({ method: 'set_water_box_custom_mode', params: { 'water_box_mode': waterFlow, 'distance_off': distance_off } }));
     } else if (waterFlow && waterFlow != 0) {
       await this.client.send(duid, new RequestMessage({ method: 'set_water_box_custom_mode', params: [waterFlow] }));
+    }
+
+    if (mopRoute && mopRoute != 0) {
+      await this.client.send(duid, new RequestMessage({ method: 'set_mop_mode', params: [mopRoute] }));
     }
   }
 }
