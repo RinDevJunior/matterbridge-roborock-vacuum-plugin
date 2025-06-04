@@ -1,5 +1,6 @@
 import { DeviceSchema } from './deviceSchema.js';
 import { Room } from './room.js';
+import { Scene } from './scene.js';
 
 export interface Device {
   duid: string;
@@ -36,4 +37,6 @@ export interface Device {
     category: string;
     batteryLevel: number;
   };
+
+  scenes: Scene[];
 }
