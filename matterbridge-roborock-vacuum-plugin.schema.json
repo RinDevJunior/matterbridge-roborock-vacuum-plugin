@@ -39,108 +39,130 @@
       "type": "number",
       "default": 60
     },
-    "enableExperimentalFeature": {
-      "description": "Enable the experimental feature",
-      "type": "boolean",
-      "default": false
-    },
-    "cleanModeSettings": {
-      "description": "Configure default cleaning parameters for vacuum.",
+    "enableExperimental": {
+      "title": "Enable the experimental feature",
       "type": "object",
       "properties": {
-        "vacuuming": {
-          "description": "Vacuuming only",
-          "type": "object",
-          "properties": {
-            "fanMode": {
-              "type": "string",
-              "description": "Suction power mode to use in Vacuuming only mode (e.g., 'Quiet', 'Balanced', 'Turbo', 'Max', 'MaxPlus').",
-              "default": "Balanced"
+        "enableExperimentalFeature": {
+          "title": "Enable Custom Clean Mode",
+          "type": "boolean",
+          "default": false
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "enableExperimentalFeature": { "const": true }
             },
-            "mopRouteMode": {
-              "type": "string",
-              "description": "Mop route intensity to use in Vacuuming only mode (e.g., 'Standard', 'Deep', 'DeepPlus', 'Fast').",
-              "default": "Standard"
+            "required": ["enableExperimentalFeature"]
+          },
+          "then": {
+            "properties": {
+              "advancedFeature": {
+                "title": "Enable Advanced Feature",
+                "type": "object",
+                "properties": {
+                  "showRoutinesAsRoom": {
+                    "title": "Show Routines As Room",
+                    "type": "boolean",
+                    "default": false
+                  }
+                }
+              },
+              "cleanModeSettings": {
+                "title": "Enable Custom Clean Mode",
+                "type": "object",
+                "properties": {
+                  "enableCleanModeMapping": {
+                    "type": "boolean",
+                    "default": false
+                  }
+                },
+                "allOf": [
+                  {
+                    "if": {
+                      "properties": {
+                        "enableCleanModeMapping": { "const": true }
+                      },
+                      "required": ["enableCleanModeMapping"]
+                    },
+                    "then": {
+                      "properties": {
+                        "vacuuming": {
+                          "title": "Vacuuming only",
+                          "type": "object",
+                          "properties": {
+                            "fanMode": { "$ref": "#/$defs/fanMode", "default": "Balanced" },
+                            "mopRouteMode": { "$ref": "#/$defs/mopRouteMode" }
+                          }
+                        },
+                        "mopping": {
+                          "title": "Mopping only",
+                          "type": "object",
+                          "properties": {
+                            "waterFlowMode": { "$ref": "#/$defs/waterFlowMode" },
+                            "mopRouteMode": { "$ref": "#/$defs/mopRouteMode" }
+                          },
+                          "allOf": [
+                            {
+                              "if": {
+                                "properties": {
+                                  "waterFlowMode": { "const": "CustomizeWithDistanceOff" }
+                                }
+                              },
+                              "then": {
+                                "properties": {
+                                  "distanceOff": {
+                                    "type": "number",
+                                    "description": "Distance Off - Default = 25",
+                                    "default": 25
+                                  }
+                                },
+                                "required": ["distanceOff"]
+                              }
+                            }
+                          ]
+                        },
+                        "vacmop": {
+                          "title": "Vacuuming and Mopping",
+                          "type": "object",
+                          "properties": {
+                            "fanMode": { "$ref": "#/$defs/fanMode", "default": "Balanced" },
+                            "waterFlowMode": { "$ref": "#/$defs/waterFlowMode" },
+                            "mopRouteMode": { "$ref": "#/$defs/mopRouteMode" }
+                          },
+                          "allOf": [
+                            {
+                              "if": {
+                                "properties": {
+                                  "waterFlowMode": { "const": "CustomizeWithDistanceOff" }
+                                }
+                              },
+                              "then": {
+                                "properties": {
+                                  "distanceOff": {
+                                    "type": "number",
+                                    "description": "Distance Off - Default = 25",
+                                    "default": 25
+                                  }
+                                },
+                                "required": ["distanceOff"]
+                              }
+                            }
+                          ]
+                        }
+                      }
+                    }
+                  }
+                ]
+              }
             }
           }
-        },
-        "mopping": {
-          "description": "Mopping only",
-          "type": "object",
-          "properties": {
-            "waterFlowMode": {
-              "type": "string",
-              "description": "Water flow mode to use in Mopping only mode (e.g., 'Low', 'Medium', 'High', 'CustomizeWithDistanceOff').",
-              "default": "Medium"
-            },
-            "mopRouteMode": {
-              "type": "string",
-              "description": "Mop route intensity to use in Mopping only mode (e.g., 'Standard', 'Deep', 'DeepPlus', 'Fast').",
-              "default": "Standard"
-            }
-          },
-          "allOf": [
-            {
-              "if": {
-                "properties": {
-                  "waterFlowMode": { "const": "CustomizeWithDistanceOff" }
-                }
-              },
-              "then": {
-                "properties": {
-                  "distanceOff": {
-                    "type": "number",
-                    "description": "Distance Off - Default = 25",
-                    "default": 25
-                  }
-                },
-                "required": ["distanceOff"]
-              }
-            }
-          ]
-        },
-        "vacmop": {
-          "description": "Vacuuming and Mopping",
-          "type": "object",
-          "properties": {
-            "fanMode": {
-              "type": "string",
-              "description": "Suction power mode to use in Vacuuming and Mopping mode (e.g., 'Quiet', 'Balanced', 'Turbo', 'Max', 'MaxPlus').",
-              "default": "Balanced"
-            },
-            "waterFlowMode": {
-              "type": "string",
-              "description": "Water flow mode to use in Vacuuming and Mopping mode (e.g., 'Low', 'Medium', 'High', 'CustomizeWithDistanceOff').",
-              "default": "Medium"
-            },
-            "mopRouteMode": {
-              "type": "string",
-              "description": "Mop route intensity to use in Vacuuming and Mopping mode (e.g., 'Standard', 'Deep', 'DeepPlus', 'Fast').",
-              "default": "Standard"
-            }
-          },
-          "allOf": [
-            {
-              "if": {
-                "properties": {
-                  "waterFlowMode": { "const": "CustomizeWithDistanceOff" }
-                }
-              },
-              "then": {
-                "properties": {
-                  "distanceOff": {
-                    "type": "number",
-                    "description": "Distance Off - Default = 25",
-                    "default": 25
-                  }
-                },
-                "required": ["distanceOff"]
-              }
-            }
-          ]
         }
-      }
+      ]
     },
+
     "debug": {
       "description": "Enable the debug for the plugin (development only)",
       "type": "boolean",
@@ -152,19 +174,24 @@
       "default": false
     }
   },
-  "dependencies": {
-    "cleanModeSettings": ["enableExperimentalFeature"]
-  },
-  "allOf": [
-    {
-      "if": {
-        "properties": { "enableExperimentalFeature": { "const": false } }
-      },
-      "then": {
-        "properties": {
-          "cleanModeSettings": false
-        }
-      }
+  "$defs": {
+    "fanMode": {
+      "type": "string",
+      "description": "Suction power mode to use (e.g., 'Quiet', 'Balanced', 'Turbo', 'Max', 'MaxPlus').",
+      "enum": ["Quiet", "Balanced", "Turbo", "Max", "MaxPlus"],
+      "default": "Balanced"
+    },
+    "waterFlowMode": {
+      "type": "string",
+      "description": "Water flow mode to use (e.g., 'Low', 'Medium', 'High', 'CustomizeWithDistanceOff').",
+      "enum": ["Low", "Medium", "High", "CustomizeWithDistanceOff"],
+      "default": "Medium"
+    },
+    "mopRouteMode": {
+      "type": "string",
+      "description": "Mop route intensity to use (e.g., 'Standard', 'Deep', 'DeepPlus', 'Fast').",
+      "enum": ["Standard", "Deep", "DeepPlus", "Fast"],
+      "default": "Standard"
     }
-  ]
+  }
 }

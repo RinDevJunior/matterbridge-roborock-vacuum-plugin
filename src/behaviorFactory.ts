@@ -5,7 +5,7 @@ import RoborockService from './roborockService.js';
 import { DefaultEndpointCommands, setDefaultCommandHandler } from './behaviors/roborock.vacuum/default/default.js';
 import { DeviceModel } from './roborockCommunication/Zmodel/deviceModel.js';
 import { EndpointCommandsA27, setCommandHandlerA27 } from './behaviors/roborock.vacuum/S7_MAXV/a27.js';
-import { CleanModeSettings } from './model/CleanModeSettings.js';
+import { CleanModeSettings } from './model/ExperimentalFeatureSetting.js';
 
 export type BehaviorFactoryResult = BehaviorDeviceGeneric<DefaultEndpointCommands> | BehaviorDeviceGeneric<EndpointCommandsA187>;
 

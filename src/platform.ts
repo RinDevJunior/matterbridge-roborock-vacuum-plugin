@@ -12,7 +12,7 @@ import { configurateBehavior } from './behaviorFactory.js';
 import { NotifyMessageTypes } from './notifyMessageTypes.js';
 import { Device, RoborockAuthenticateApi, RoborockIoTApi } from './roborockCommunication/index.js';
 import { getSupportedAreas } from './initialData/index.js';
-import { CleanModeSettings } from './model/CleanModeSettings.js';
+import { CleanModeSettings, ExperimentalFeatureSetting } from './model/ExperimentalFeatureSetting.js';
 
 export class RoborockMatterbridgePlatform extends MatterbridgeDynamicPlatform {
   robot: RoborockVacuumCleaner | undefined;
@@ -118,8 +118,9 @@ export class RoborockMatterbridgePlatform extends MatterbridgeDynamicPlatform {
 
   override async onConfigure() {
     await super.onConfigure();
-    if (this.config.enableExperimentalFeature) {
-      const cleanModeSettings = this.config.cleanModeSettings as CleanModeSettings;
+    const enableExperimentalFeature = this.config.enableExperimental as ExperimentalFeatureSetting;
+    if (enableExperimentalFeature && enableExperimentalFeature.enableExperimentalFeature && enableExperimentalFeature.cleanModeSettings.enableCleanModeMapping) {
+      const cleanModeSettings = enableExperimentalFeature.cleanModeSettings as CleanModeSettings;
 
       this.log.notice(`Experimental Feature has been enable`);
       this.log.notice(`cleanModeSettings ${debugStringify(cleanModeSettings)}`);

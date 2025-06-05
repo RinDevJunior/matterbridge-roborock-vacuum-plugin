@@ -2,7 +2,7 @@ import { MaybePromise } from 'matterbridge/matter';
 import { AnsiLogger, debugStringify } from 'matterbridge/logger';
 import { BehaviorDeviceGeneric, BehaviorRoborock, DeviceCommands } from '../../BehaviorDeviceGeneric.js';
 import RoborockService from '../../../roborockService.js';
-import { CleanModeSettings } from '../../../model/CleanModeSettings.js';
+import { CleanModeSettings } from '../../../model/ExperimentalFeatureSetting.js';
 
 export interface EndpointCommandsA187 extends DeviceCommands {
   selectAreas: (newAreas: any) => MaybePromise;
