@@ -22,6 +22,7 @@ export class RoborockMatterbridgePlatform extends MatterbridgeDynamicPlatform {
   platformRunner: PlatformRunner | undefined;
   devices: Map<string, Device>;
   serialNumber: string | undefined;
+  cleanModeSettings: CleanModeSettings | undefined;
 
   constructor(matterbridge: Matterbridge, log: AnsiLogger, config: PlatformConfig) {
     super(matterbridge, log, config);
@@ -77,6 +78,14 @@ export class RoborockMatterbridgePlatform extends MatterbridgeDynamicPlatform {
       return response;
     });
 
+    const enableExperimentalFeature = this.config.enableExperimental as ExperimentalFeatureSetting;
+    if (enableExperimentalFeature && enableExperimentalFeature.enableExperimentalFeature && enableExperimentalFeature.cleanModeSettings.enableCleanModeMapping) {
+      this.cleanModeSettings = enableExperimentalFeature.cleanModeSettings as CleanModeSettings;
+      this.log.notice(`Experimental Feature has been enable`);
+      this.log.notice(`cleanModeSettings ${debugStringify(this.cleanModeSettings)}`);
+      this.log.notice(`advancedFeature ${enableExperimentalFeature.advancedFeature}`);
+    }
+
     this.platformRunner = new PlatformRunner(this);
 
     this.roborockService = new RoborockService(
@@ -118,14 +127,6 @@ export class RoborockMatterbridgePlatform extends MatterbridgeDynamicPlatform {
 
   override async onConfigure() {
     await super.onConfigure();
-    const enableExperimentalFeature = this.config.enableExperimental as ExperimentalFeatureSetting;
-    if (enableExperimentalFeature && enableExperimentalFeature.enableExperimentalFeature && enableExperimentalFeature.cleanModeSettings.enableCleanModeMapping) {
-      const cleanModeSettings = enableExperimentalFeature.cleanModeSettings as CleanModeSettings;
-
-      this.log.notice(`Experimental Feature has been enable`);
-      this.log.notice(`cleanModeSettings ${debugStringify(cleanModeSettings)}`);
-    }
-
     const self = this;
     this.rvcInterval = setInterval(
       async () => {
@@ -147,10 +148,6 @@ export class RoborockMatterbridgePlatform extends MatterbridgeDynamicPlatform {
       this.log.error('Initializing: No supported devices found');
       return;
     }
-    let cleanModeSettings: CleanModeSettings | undefined = undefined;
-    if (this.config.enableExperimentalFeature) {
-      cleanModeSettings = this.config.cleanModeSettings as CleanModeSettings;
-    }
 
     const self = this;
     await this.roborockService.initializeMessageClientForLocal(vacuum);
@@ -158,7 +155,7 @@ export class RoborockMatterbridgePlatform extends MatterbridgeDynamicPlatform {
 
     this.log.debug('Initializing - roomMap: ', debugStringify(roomMap));
 
-    const behaviorHandler = configurateBehavior(vacuum.data.model, vacuum.duid, this.roborockService, cleanModeSettings, this.log);
+    const behaviorHandler = configurateBehavior(vacuum.data.model, vacuum.duid, this.roborockService, this.cleanModeSettings, this.log);
 
     this.roborockService.setSupportedAreas(vacuum.duid, getSupportedAreas(vacuum.rooms, roomMap, this.log));
     this.robot = new RoborockVacuumCleaner(username, vacuum, roomMap, this.log);
