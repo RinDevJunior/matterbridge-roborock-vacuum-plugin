@@ -233,9 +233,11 @@ export class PlatformRunner {
       const dss = parseDockingStationStatus(message.dss);
       this.platform.log.debug('DockingStationStatus:', debugStringify(dss));
 
-      //Experimental feature
-      if (dss && hasDockingStationError(dss)) {
-        platform.robot!.updateAttribute(RvcOperationalState.Cluster.id, 'operationalState', RvcOperationalState.OperationalState.Error, platform.log);
+      const currentOperationState = robot.getAttribute(RvcOperationalState.Cluster.id, 'operationalState') as RvcOperationalState.OperationalState;
+
+      //Only update docking station status if it is not running
+      if (dss && hasDockingStationError(dss) && currentOperationState !== RvcOperationalState.OperationalState.Running) {
+        robot.updateAttribute(RvcOperationalState.Cluster.id, 'operationalState', RvcOperationalState.OperationalState.Error, platform.log);
       }
     }
 

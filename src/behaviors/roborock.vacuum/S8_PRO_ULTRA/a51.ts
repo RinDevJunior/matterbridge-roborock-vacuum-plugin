@@ -4,7 +4,7 @@ import { BehaviorDeviceGeneric, BehaviorRoborock, DeviceCommands } from '../../B
 import RoborockService from '../../../roborockService.js';
 import { CleanModeSettings } from '../../../model/ExperimentalFeatureSetting.js';
 
-export interface DefaultEndpointCommands extends DeviceCommands {
+export interface EndpointCommandsA51 extends DeviceCommands {
   selectAreas: (newAreas: number[]) => MaybePromise;
   changeToMode: (newMode: number) => MaybePromise;
   pause: () => MaybePromise;
@@ -13,18 +13,18 @@ export interface DefaultEndpointCommands extends DeviceCommands {
   PlaySoundToLocate: (identifyTime: number) => MaybePromise;
 }
 
-export class DefaultBehavior extends BehaviorRoborock {
-  declare state: DefaultBehaviorRoborock.State;
+export class BehaviorA51 extends BehaviorRoborock {
+  declare state: BehaviorRoborockA51.State;
 }
 
-export namespace DefaultBehaviorRoborock {
+export namespace BehaviorRoborockA51 {
   export class State {
-    device!: BehaviorDeviceGeneric<DefaultEndpointCommands>;
+    device!: BehaviorDeviceGeneric<EndpointCommandsA51>;
   }
 }
 
 //suction_power
-export enum VacuumSuctionPower {
+export enum VacuumSuctionPowerA51 {
   Quiet = 101,
   Balanced = 102,
   Turbo = 103,
@@ -35,7 +35,7 @@ export enum VacuumSuctionPower {
 }
 
 //water_box_mode
-export enum MopWaterFlow {
+export enum MopWaterFlowA51 {
   Off = 200,
   Low = 201,
   Medium = 202,
@@ -44,7 +44,7 @@ export enum MopWaterFlow {
 }
 
 //set_mop_mode
-export enum MopRoute {
+export enum MopRouteA51 {
   Standard = 300,
   Deep = 301,
   Custom = 302,
@@ -65,15 +65,15 @@ const RvcCleanMode: Record<number, string> = {
 };
 
 const CleanSetting: Record<number, { suctionPower: number; waterFlow: number; distance_off: number; mopRoute: number }> = {
-  [5]: { suctionPower: VacuumSuctionPower.Off, waterFlow: MopWaterFlow.Medium, distance_off: 0, mopRoute: MopRoute.Standard }, //'Mop'
-  [6]: { suctionPower: VacuumSuctionPower.Balanced, waterFlow: MopWaterFlow.Off, distance_off: 0, mopRoute: MopRoute.Standard }, //'Vacuum'
-  [7]: { suctionPower: VacuumSuctionPower.Balanced, waterFlow: MopWaterFlow.Medium, distance_off: 0, mopRoute: MopRoute.Standard }, //'Vac & Mop'
-  [8]: { suctionPower: VacuumSuctionPower.Custom, waterFlow: MopWaterFlow.Custom, distance_off: 0, mopRoute: MopRoute.Custom }, // 'Custom'
+  [5]: { suctionPower: VacuumSuctionPowerA51.Off, waterFlow: MopWaterFlowA51.Medium, distance_off: 0, mopRoute: MopRouteA51.Standard }, //'Mop'
+  [6]: { suctionPower: VacuumSuctionPowerA51.Balanced, waterFlow: MopWaterFlowA51.Off, distance_off: 0, mopRoute: MopRouteA51.Standard }, //'Vacuum'
+  [7]: { suctionPower: VacuumSuctionPowerA51.Balanced, waterFlow: MopWaterFlowA51.Medium, distance_off: 0, mopRoute: MopRouteA51.Standard }, //'Vac & Mop'
+  [8]: { suctionPower: VacuumSuctionPowerA51.Custom, waterFlow: MopWaterFlowA51.Custom, distance_off: 0, mopRoute: MopRouteA51.Custom }, // 'Custom'
 };
 
-export function setDefaultCommandHandler(
+export function setCommandHandlerA51(
   duid: string,
-  handler: BehaviorDeviceGeneric<DefaultEndpointCommands>,
+  handler: BehaviorDeviceGeneric<EndpointCommandsA51>,
   logger: AnsiLogger,
   roborockService: RoborockService,
   cleanModeSettings: CleanModeSettings | undefined,
@@ -89,7 +89,7 @@ export function setDefaultCommandHandler(
       case 'Vacuum':
       case 'Vac & Mop': {
         const setting = cleanModeSettings ? getSettingFromCleanMode(activity, cleanModeSettings) : CleanSetting[newMode];
-        logger.notice(`DefaultBehavior-ChangeCleanMode to: ${activity}, setting: ${debugStringify(setting ?? {})}`);
+        logger.notice(`BehaviorA51-ChangeCleanMode to: ${activity}, setting: ${debugStringify(setting ?? {})}`);
         if (setting) {
           await roborockService.changeCleanMode(duid, setting);
         }
@@ -97,38 +97,38 @@ export function setDefaultCommandHandler(
       }
       case 'Custom': {
         const setting = CleanSetting[newMode];
-        logger.notice(`DefaultBehavior-ChangeCleanMode to: ${activity}, setting: ${debugStringify(setting)}`);
+        logger.notice(`BehaviorA51-ChangeCleanMode to: ${activity}, setting: ${debugStringify(setting)}`);
         await roborockService.changeCleanMode(duid, setting);
         return;
       }
       default:
-        logger.notice('DefaultBehavior-changeToMode-Unknown: ', newMode);
+        logger.notice('BehaviorA51-changeToMode-Unknown: ', newMode);
         return;
     }
   });
 
   handler.setCommandHandler('selectAreas', async (newAreas: number[]) => {
-    logger.notice(`DefaultBehavior-selectAreas: ${newAreas}`);
+    logger.notice(`BehaviorA51-selectAreas: ${newAreas}`);
     roborockService.setSelectedAreas(duid, newAreas ?? []);
   });
 
   handler.setCommandHandler('pause', async () => {
-    logger.notice('DefaultBehavior-Pause');
+    logger.notice('BehaviorA51-Pause');
     await roborockService.pauseClean(duid);
   });
 
   handler.setCommandHandler('resume', async () => {
-    logger.notice('DefaultBehavior-Resume');
+    logger.notice('BehaviorA51-Resume');
     await roborockService.resumeClean(duid);
   });
 
   handler.setCommandHandler('goHome', async () => {
-    logger.notice('DefaultBehavior-GoHome');
+    logger.notice('BehaviorA51-GoHome');
     await roborockService.stopAndGoHome(duid);
   });
 
   handler.setCommandHandler('PlaySoundToLocate', async (identifyTime: number) => {
-    logger.notice('DefaultBehavior-PlaySoundToLocate');
+    logger.notice('BehaviorA51-PlaySoundToLocate');
     await roborockService.playSoundToLocate(duid);
   });
 
@@ -139,31 +139,31 @@ export function setDefaultCommandHandler(
     switch (activity) {
       case 'Mop': {
         const mopSetting = cleanModeSettings?.mopping;
-        const waterFlow = MopWaterFlow[mopSetting?.waterFlowMode as keyof typeof MopWaterFlow] ?? MopWaterFlow.Medium;
+        const waterFlow = MopWaterFlowA51[mopSetting?.waterFlowMode as keyof typeof MopWaterFlowA51] ?? MopWaterFlowA51.Medium;
         return {
-          suctionPower: VacuumSuctionPower.Off,
+          suctionPower: VacuumSuctionPowerA51.Off,
           waterFlow,
           distance_off: 0,
-          mopRoute: MopRoute[mopSetting?.mopRouteMode as keyof typeof MopRoute] ?? MopRoute.Standard,
+          mopRoute: MopRouteA51[mopSetting?.mopRouteMode as keyof typeof MopRouteA51] ?? MopRouteA51.Standard,
         };
       }
       case 'Vacuum': {
         const vacuumSetting = cleanModeSettings?.vacuuming;
         return {
-          suctionPower: VacuumSuctionPower[vacuumSetting?.fanMode as keyof typeof VacuumSuctionPower] ?? VacuumSuctionPower.Balanced,
-          waterFlow: MopWaterFlow.Off,
+          suctionPower: VacuumSuctionPowerA51[vacuumSetting?.fanMode as keyof typeof VacuumSuctionPowerA51] ?? VacuumSuctionPowerA51.Balanced,
+          waterFlow: MopWaterFlowA51.Off,
           distance_off: 0,
-          mopRoute: MopRoute[vacuumSetting?.mopRouteMode as keyof typeof MopRoute] ?? MopRoute.Standard,
+          mopRoute: MopRouteA51[vacuumSetting?.mopRouteMode as keyof typeof MopRouteA51] ?? MopRouteA51.Standard,
         };
       }
       case 'Vac & Mop': {
         const vacmopSetting = cleanModeSettings?.vacmop;
-        const waterFlow = MopWaterFlow[vacmopSetting?.waterFlowMode as keyof typeof MopWaterFlow] ?? MopWaterFlow.Medium;
+        const waterFlow = MopWaterFlowA51[vacmopSetting?.waterFlowMode as keyof typeof MopWaterFlowA51] ?? MopWaterFlowA51.Medium;
         return {
-          suctionPower: VacuumSuctionPower[vacmopSetting?.fanMode as keyof typeof VacuumSuctionPower] ?? VacuumSuctionPower.Balanced,
+          suctionPower: VacuumSuctionPowerA51[vacmopSetting?.fanMode as keyof typeof VacuumSuctionPowerA51] ?? VacuumSuctionPowerA51.Balanced,
           waterFlow,
           distance_off: 0,
-          mopRoute: MopRoute[vacmopSetting?.mopRouteMode as keyof typeof MopRoute] ?? MopRoute.Standard,
+          mopRoute: MopRouteA51[vacmopSetting?.mopRouteMode as keyof typeof MopRouteA51] ?? MopRouteA51.Standard,
         };
       }
       default:

@@ -79,7 +79,7 @@ const CleanSetting: Record<number, { suctionPower: number; waterFlow: number; di
 
 export function setCommandHandlerA187(
   duid: string,
-  handler: BehaviorDeviceGeneric<DeviceCommands>,
+  handler: BehaviorDeviceGeneric<EndpointCommandsA187>,
   logger: AnsiLogger,
   roborockService: RoborockService,
   cleanModeSettings: CleanModeSettings | undefined,

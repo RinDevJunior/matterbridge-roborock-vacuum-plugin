@@ -6,6 +6,7 @@ import { DefaultEndpointCommands, setDefaultCommandHandler } from './behaviors/r
 import { DeviceModel } from './roborockCommunication/Zmodel/deviceModel.js';
 import { EndpointCommandsA27, setCommandHandlerA27 } from './behaviors/roborock.vacuum/S7_MAXV/a27.js';
 import { CleanModeSettings } from './model/ExperimentalFeatureSetting.js';
+import { EndpointCommandsA51, setCommandHandlerA51 } from './behaviors/roborock.vacuum/S8_PRO_ULTRA/a51.js';
 
 export type BehaviorFactoryResult = BehaviorDeviceGeneric<DefaultEndpointCommands> | BehaviorDeviceGeneric<EndpointCommandsA187>;
 
@@ -29,9 +30,15 @@ export function configurateBehavior(
       return deviceHandler;
     }
 
+    case DeviceModel.S8_PRO_ULTRA: {
+      const deviceHandler = new BehaviorDeviceGeneric<EndpointCommandsA51>(logger);
+      setCommandHandlerA51(duid, deviceHandler, logger, roborockService, cleanModeSettings);
+      return deviceHandler;
+    }
+
     default: {
       const deviceHandler = new BehaviorDeviceGeneric<DefaultEndpointCommands>(logger);
-      setDefaultCommandHandler(duid, deviceHandler, logger, roborockService);
+      setDefaultCommandHandler(duid, deviceHandler, logger, roborockService, cleanModeSettings);
       return deviceHandler;
     }
   }

@@ -37,7 +37,6 @@ export function getSupportedCleanModesA27(): RvcCleanMode.ModeOption[] {
       mode: 7,
       modeTags: [{ value: RvcCleanMode.ModeTag.Mop }, { value: RvcCleanMode.ModeTag.Vacuum }, { value: RvcCleanMode.ModeTag.DeepClean }],
     },
-
     {
       label: 'Custom',
       mode: 8,
