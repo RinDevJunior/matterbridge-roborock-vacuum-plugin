@@ -46,7 +46,6 @@ export class RoborockMatterbridgePlatform extends MatterbridgeDynamicPlatform {
 
   override async onStart(reason?: string) {
     this.log.notice('onStart called with reason:', reason ?? 'none');
-    const self = this;
 
     // Wait for the platform to start
     await this.ready;
@@ -58,27 +57,7 @@ export class RoborockMatterbridgePlatform extends MatterbridgeDynamicPlatform {
       return;
     }
 
-    // Add request interceptor
     const axiosInstance = axios.default ?? axios;
-    axiosInstance.interceptors.request.use((request: any) => {
-      self.log.debug('Axios Request:', {
-        method: request.method,
-        url: request.url,
-        data: request.data,
-        headers: request.headers,
-      });
-      return request;
-    });
-
-    axiosInstance.interceptors.response.use((response: any) => {
-      self.log.debug('Axios Response:', {
-        status: response.status,
-        data: response.data,
-        headers: response.headers,
-        url: response.config.url,
-      });
-      return response;
-    });
 
     this.enableExperimentalFeature = this.config.enableExperimental as ExperimentalFeatureSetting;
     if (this.enableExperimentalFeature?.enableExperimentalFeature && this.enableExperimentalFeature?.cleanModeSettings?.enableCleanModeMapping) {
@@ -128,6 +107,7 @@ export class RoborockMatterbridgePlatform extends MatterbridgeDynamicPlatform {
 
   override async onConfigure() {
     await super.onConfigure();
+    // eslint-disable-next-line @typescript-eslint/no-this-alias
     const self = this;
     this.rvcInterval = setInterval(
       async () => {
@@ -150,6 +130,7 @@ export class RoborockMatterbridgePlatform extends MatterbridgeDynamicPlatform {
       return;
     }
 
+    // eslint-disable-next-line @typescript-eslint/no-this-alias
     const self = this;
     await this.roborockService.initializeMessageClientForLocal(vacuum);
     const roomMap = await this.platformRunner.getRoomMapFromDevice(vacuum);
@@ -176,7 +157,7 @@ export class RoborockMatterbridgePlatform extends MatterbridgeDynamicPlatform {
       await this.registerDevice(this.robot);
     }
 
-    this.roborockService.setDeviceNotify(async function (messageSource: NotifyMessageTypes, homeData: any) {
+    this.roborockService.setDeviceNotify(async function (messageSource: NotifyMessageTypes, homeData: unknown) {
       await self.platformRunner?.updateRobot(messageSource, homeData);
     });
 
@@ -189,7 +170,7 @@ export class RoborockMatterbridgePlatform extends MatterbridgeDynamicPlatform {
   override async onShutdown(reason?: string) {
     await super.onShutdown(reason);
     this.log.notice('onShutdown called with reason:', reason ?? 'none');
-    this.rvcInterval && clearInterval(this.rvcInterval);
+    if (this.rvcInterval) clearInterval(this.rvcInterval);
     if (this.roborockService) this.roborockService.stopService();
     if (this.config.unregisterOnShutdown === true) await this.unregisterAllDevices(500);
   }

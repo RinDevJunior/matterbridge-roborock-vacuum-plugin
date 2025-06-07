@@ -1,5 +1,5 @@
 import axios, { AxiosInstance } from 'axios';
-import crypto from 'crypto';
+import crypto from 'node:crypto';
 import { AnsiLogger, debugStringify } from 'matterbridge/logger';
 import { ApiResponse } from '../Zmodel/apiResponse.js';
 import { Home } from '../Zmodel/home.js';
@@ -46,7 +46,7 @@ export class RoborockIoTApi {
   }
 
   public async getHomev2(homeId: number): Promise<Home | undefined> {
-    const result = await this.api.get('v2/user/homes/' + homeId); //can be v3 also
+    const result = await this.api.get('v2/user/homes/' + homeId); // can be v3 also
 
     const apiResponse: ApiResponse<Home> = result.data;
     if (apiResponse.result) {
@@ -69,9 +69,9 @@ export class RoborockIoTApi {
     }
   }
 
-  public async startScene(sceneId: number): Promise<any> {
+  public async startScene(sceneId: number): Promise<unknown> {
     const result = await this.api.post(`user/scene/${sceneId}/execute`);
-    const apiResponse: ApiResponse<any> = result.data;
+    const apiResponse: ApiResponse<unknown> = result.data;
 
     if (apiResponse.result) {
       return apiResponse.result;

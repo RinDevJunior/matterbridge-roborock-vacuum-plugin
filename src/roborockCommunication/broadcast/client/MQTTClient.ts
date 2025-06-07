@@ -1,5 +1,5 @@
-import mqtt, { ErrorWithReasonCode, IConnackPacket, ISubscriptionGrant, MqttClient as MqttLibClient } from 'mqtt';
-import { CryptoUtils } from '../../helper/cryptoHelper.js';
+import mqtt, { ErrorWithReasonCode, IConnackPacket, MqttClient as MqttLibClient } from 'mqtt';
+import * as CryptoUtils from '../../helper/cryptoHelper.js';
 import { RequestMessage } from '../model/requestMessage.js';
 import { AbstractClient } from '../abstractClient.js';
 import { MessageContext } from '../model/messageContext.js';
@@ -30,8 +30,8 @@ export class MQTTClient extends AbstractClient {
       username: this.mqttUsername,
       password: this.mqttPassword,
       keepalive: 30,
-      log: (...args: any[]) => {
-        //this.logger.debug('MQTTClient args:: ' + args[0]);
+      log: (...args: unknown[]) => {
+        this.logger.debug('MQTTClient args:: ' + args[0]);
       },
     });
 
@@ -86,7 +86,7 @@ export class MQTTClient extends AbstractClient {
     this.client.subscribe('rr/m/o/' + this.rriot.u + '/' + this.mqttUsername + '/#', this.onSubscribe.bind(this));
   }
 
-  private async onSubscribe(err: Error | null, granted: ISubscriptionGrant[] | undefined) {
+  private async onSubscribe(err: Error | null) {
     if (!err) {
       return;
     }
@@ -114,7 +114,7 @@ export class MQTTClient extends AbstractClient {
 
   private async onMessage(topic: string, message: Buffer<ArrayBufferLike>) {
     if (!message) {
-      //Ignore empty messages
+      // Ignore empty messages
       this.logger.notice('MQTTClient received empty message from topic: ' + topic);
       return;
     }

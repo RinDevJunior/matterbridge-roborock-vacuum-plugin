@@ -4,5 +4,5 @@ export interface DeviceSchema {
   code: string;
   mode: string;
   type: string;
-  property: any;
+  property: unknown;
 }

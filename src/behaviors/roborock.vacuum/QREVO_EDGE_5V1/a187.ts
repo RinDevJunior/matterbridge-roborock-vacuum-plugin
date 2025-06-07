@@ -5,25 +5,23 @@ import RoborockService from '../../../roborockService.js';
 import { CleanModeSettings } from '../../../model/ExperimentalFeatureSetting.js';
 
 export interface EndpointCommandsA187 extends DeviceCommands {
-  selectAreas: (newAreas: any) => MaybePromise;
+  selectAreas: (newAreas: number[] | undefined) => MaybePromise;
   changeToMode: (newMode: number) => MaybePromise;
   pause: () => MaybePromise;
   resume: () => MaybePromise;
   goHome: () => MaybePromise;
-  PlaySoundToLocate: (identifyTime: number) => MaybePromise;
+  playSoundToLocate: (identifyTime: number) => MaybePromise;
 }
 
 export class BehaviorA187 extends BehaviorRoborock {
-  declare state: BehaviorRoborockA187.State;
+  declare state: BehaviorRoborockA187State;
 }
 
-export namespace BehaviorRoborockA187 {
-  export class State {
-    device!: BehaviorDeviceGeneric<EndpointCommandsA187>;
-  }
+export interface BehaviorRoborockA187State {
+  device: BehaviorDeviceGeneric<EndpointCommandsA187>;
 }
 
-//suction_power
+// suction_power
 export enum VacuumSuctionPowerA187 {
   Quiet = 101,
   Balanced = 102,
@@ -35,7 +33,7 @@ export enum VacuumSuctionPowerA187 {
   Smart = 110,
 }
 
-//water_box_mode
+// water_box_mode
 export enum MopWaterFlowA187 {
   Off = 200,
   Low = 201,
@@ -46,7 +44,7 @@ export enum MopWaterFlowA187 {
   Smart = 209,
 }
 
-//set_mop_mode
+// set_mop_mode
 export enum MopRouteA187 {
   Standard = 300,
   Deep = 301,
@@ -57,7 +55,7 @@ export enum MopRouteA187 {
 }
 
 const RvcRunMode: Record<number, string> = {
-  [1]: 'Idle', //DO NOT HANDLE HERE,
+  [1]: 'Idle', // DO NOT HANDLE HERE,
   [2]: 'Cleaning',
   [3]: 'Mapping',
 };
@@ -70,10 +68,10 @@ const RvcCleanMode: Record<number, string> = {
 };
 
 const CleanSetting: Record<number, { suctionPower: number; waterFlow: number; distance_off: number; mopRoute: number }> = {
-  [4]: { suctionPower: 0, waterFlow: 0, distance_off: 0, mopRoute: MopRouteA187.Smart }, //'Smart Plan'
-  [5]: { suctionPower: VacuumSuctionPowerA187.Off, waterFlow: MopWaterFlowA187.Medium, distance_off: 0, mopRoute: MopRouteA187.Standard }, //'Mop'
-  [6]: { suctionPower: VacuumSuctionPowerA187.Balanced, waterFlow: MopWaterFlowA187.Off, distance_off: 0, mopRoute: MopRouteA187.Standard }, //'Vacuum'
-  [7]: { suctionPower: VacuumSuctionPowerA187.Balanced, waterFlow: MopWaterFlowA187.Medium, distance_off: 0, mopRoute: MopRouteA187.Standard }, //'Vac & Mop'
+  [4]: { suctionPower: 0, waterFlow: 0, distance_off: 0, mopRoute: MopRouteA187.Smart }, // 'Smart Plan'
+  [5]: { suctionPower: VacuumSuctionPowerA187.Off, waterFlow: MopWaterFlowA187.Medium, distance_off: 0, mopRoute: MopRouteA187.Standard }, // 'Mop'
+  [6]: { suctionPower: VacuumSuctionPowerA187.Balanced, waterFlow: MopWaterFlowA187.Off, distance_off: 0, mopRoute: MopRouteA187.Standard }, // 'Vacuum'
+  [7]: { suctionPower: VacuumSuctionPowerA187.Balanced, waterFlow: MopWaterFlowA187.Medium, distance_off: 0, mopRoute: MopRouteA187.Standard }, // 'Vac & Mop'
   [8]: { suctionPower: VacuumSuctionPowerA187.Custom, waterFlow: MopWaterFlowA187.Custom, distance_off: 0, mopRoute: MopRouteA187.Custom }, // 'Custom'
 };
 
@@ -156,7 +154,7 @@ export function setCommandHandlerA187(
     }
   };
 
-  handler.setCommandHandler('selectAreas', async (newAreas: number[]) => {
+  handler.setCommandHandler('selectAreas', async (newAreas: number[] | undefined) => {
     logger.notice(`BehaviorA187-selectAreas: ${newAreas}`);
     roborockService.setSelectedAreas(duid, newAreas ?? []);
   });
@@ -176,8 +174,8 @@ export function setCommandHandlerA187(
     await roborockService.stopAndGoHome(duid);
   });
 
-  handler.setCommandHandler('PlaySoundToLocate', async (identifyTime: number) => {
-    logger.notice('BehaviorA187-PlaySoundToLocate');
+  handler.setCommandHandler('playSoundToLocate', async () => {
+    logger.notice('BehaviorA187-playSoundToLocate');
     await roborockService.playSoundToLocate(duid);
   });
 }

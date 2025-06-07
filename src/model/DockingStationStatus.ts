@@ -1,12 +1,12 @@
-export type DockingStationStatus = {
+export interface DockingStationStatus {
   cleanFluidStatus: number;
   waterBoxFilterStatus: number;
   dustBagStatus: number;
   dirtyWaterBoxStatus: number;
   clearWaterBoxStatus: number;
   isUpdownWaterReady: number;
-};
-//{"cleanFluidStatus":0,"waterBoxFilterStatus":0,"dustBagStatus":2,"dirtyWaterBoxStatus":2,"clearWaterBoxStatus":2,"isUpdownWaterReady":0}
+}
+// {"cleanFluidStatus":0,"waterBoxFilterStatus":0,"dustBagStatus":2,"dirtyWaterBoxStatus":2,"clearWaterBoxStatus":2,"isUpdownWaterReady":0}
 
 export enum DockingStationStatusType {
   Unknown = 0,

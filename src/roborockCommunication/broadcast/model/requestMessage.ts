@@ -1,19 +1,19 @@
 import { Protocol } from './protocol.js';
-import { randomInt } from 'crypto';
+import { randomInt } from 'node:crypto';
 
-export type ProtocolRequest = {
+export interface ProtocolRequest {
   messageId?: number;
   protocol?: Protocol;
   method?: string | undefined;
-  params?: any;
+  params?: unknown[] | Record<string, unknown> | undefined;
   secure?: boolean;
-};
+}
 
 export class RequestMessage {
   readonly messageId: number;
   readonly protocol: Protocol;
   readonly method: string | undefined;
-  readonly params: any;
+  readonly params: unknown[] | Record<string, unknown> | undefined;
   readonly secure: boolean;
 
   constructor(args: ProtocolRequest) {

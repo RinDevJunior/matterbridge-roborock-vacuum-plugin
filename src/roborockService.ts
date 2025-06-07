@@ -20,7 +20,14 @@ import {
   Scene,
   SceneParam,
 } from './roborockCommunication/index.js';
-import type { AbstractMessageHandler, AbstractMessageListener, AbstractConnectionListener } from './roborockCommunication/index.js';
+import type {
+  AbstractMessageHandler,
+  AbstractMessageListener,
+  AbstractConnectionListener,
+  BatteryMessage,
+  DeviceErrorMessage,
+  DeviceStatusNotify,
+} from './roborockCommunication/index.js';
 import { ServiceArea } from 'matterbridge/matter/clusters';
 export type Factory<A, T> = (logger: AnsiLogger, arg: A) => T;
 
@@ -31,9 +38,9 @@ export default class RoborockService {
 
   private iotApi?: RoborockIoTApi;
   private userdata?: UserData;
-  deviceNotify?: (messageSource: NotifyMessageTypes, homeData: any) => void;
+  deviceNotify?: (messageSource: NotifyMessageTypes, homeData: unknown) => void;
   messageClient: ClientRouter | undefined;
-  remoteDevices: Set<string> = new Set();
+  remoteDevices = new Set<string>();
   messageProcessor: MessageProcessor | undefined;
   ip: string | undefined;
   localClient: Client | undefined;
@@ -41,10 +48,10 @@ export default class RoborockService {
   refreshInterval: number;
   requestDeviceStatusInterval: NodeJS.Timeout | undefined;
 
-  //These are properties that are used to store the state of the device
-  private supportedAreas: Map<string, ServiceArea.Area[]> = new Map();
-  private supportedRoutines: Map<string, ServiceArea.Area[]> = new Map();
-  private selectedAreas: Map<string, number[]> = new Map();
+  // These are properties that are used to store the state of the device
+  private supportedAreas = new Map<string, ServiceArea.Area[]>();
+  private supportedRoutines = new Map<string, ServiceArea.Area[]>();
+  private selectedAreas = new Map<string, number[]>();
 
   constructor(
     authenticateApiSupplier: Factory<void, RoborockAuthenticateApi> = (logger) => new RoborockAuthenticateApi(logger),
@@ -122,18 +129,18 @@ export default class RoborockService {
         this.logger.warn('RoborockService - Multiple routines selected, which is not supported.', debugStringify({ duid, rt }));
       } else if (rt.length === 1) {
         this.logger.debug('RoborockService - startScene', debugStringify({ duid, rooms }));
-        return this.iotApi?.startScene(rt[0]);
+        await this.iotApi?.startScene(rt[0]);
+        return;
       } else if (rooms.length == supportedRooms.length || rooms.length === 0 || supportedRooms.length === 0) {
-
-      /**
-       * If no rooms are selected, or all selected rooms match the supported rooms,
-       */
+        /**
+         * If no rooms are selected, or all selected rooms match the supported rooms,
+         */
         this.logger.debug('RoborockService - startGlobalClean');
         this.getMessageProcessor()?.startClean(duid);
       } else if (rooms.length > 0) {
-      /**
-       * If there are rooms selected
-       */
+        /**
+         * If there are rooms selected
+         */
         this.logger.debug('RoborockService - startRoomClean', debugStringify({ duid, rooms }));
         return this.messageProcessor?.startRoomClean(duid, rooms, 1);
       } else {
@@ -163,17 +170,17 @@ export default class RoborockService {
     await this.getMessageProcessor()?.findMyRobot(duid);
   }
 
-  public async customGet(duid: string, method: string): Promise<any> {
+  public async customGet(duid: string, method: string): Promise<unknown> {
     this.logger.debug('RoborockService - customSend-message', method);
     return this.getMessageProcessor()?.getCustomMessage(duid, new RequestMessage({ method }));
   }
 
-  public async customGetInSecure(duid: string, method: string): Promise<any> {
+  public async customGetInSecure(duid: string, method: string): Promise<unknown> {
     this.logger.debug('RoborockService - customGetInSecure-message', method);
     return this.getMessageProcessor()?.getCustomMessage(duid, new RequestMessage({ method, secure: true }));
   }
 
-  public async customSend(duid: string, request: any): Promise<void> {
+  public async customSend(duid: string, request: RequestMessage): Promise<void> {
     return this.getMessageProcessor()?.sendCustomMessage(duid, request);
   }
 
@@ -198,18 +205,19 @@ export default class RoborockService {
     }
   }
 
-  public setDeviceNotify(callback: (messageSource: NotifyMessageTypes, homeData: any) => Promise<void>): void {
+  public setDeviceNotify(callback: (messageSource: NotifyMessageTypes, homeData: unknown) => Promise<void>): void {
     this.deviceNotify = callback;
   }
 
   public async activateDeviceNotify(device: Device): Promise<void> {
+    // eslint-disable-next-line @typescript-eslint/no-this-alias
     const self = this;
     this.logger.debug('Requesting device info for device', device.duid);
     this.requestDeviceStatusInterval = setInterval(async () => {
       if (this.messageProcessor) {
         await this.messageProcessor.getDeviceStatus(device.duid).then((response: DeviceStatus) => {
           if (self.deviceNotify) {
-            self.deviceNotify(NotifyMessageTypes.LocalMessage, { duid: device.duid, ...response });
+            self.deviceNotify(NotifyMessageTypes.LocalMessage, { duid: device.duid, ...response } as DeviceStatusNotify);
           }
         });
       } else {
@@ -237,7 +245,7 @@ export default class RoborockService {
     const products = new Map<string, string>();
     homeData.products.forEach((p) => products.set(p.id, p.model));
     const devices: Device[] = [...homeData.devices, ...homeData.receivedDevices];
-    //homeData.devices.length > 0 ? homeData.devices : homeData.receivedDevices;
+    // homeData.devices.length > 0 ? homeData.devices : homeData.receivedDevices;
 
     const result = devices.map((device) => {
       return {
@@ -259,7 +267,7 @@ export default class RoborockService {
 
         store: {
           username: username,
-          userData: <UserData>this.userdata,
+          userData: this.userdata as UserData,
           localKey: device.localKey,
           pv: device.pv,
           model: products.get(device.productId),
@@ -299,7 +307,7 @@ export default class RoborockService {
         },
 
         store: {
-          userData: <UserData>this.userdata,
+          userData: this.userdata as UserData,
           localKey: device.localKey,
           pv: device.pv,
           model: products.get(device.productId),
@@ -318,7 +326,7 @@ export default class RoborockService {
     return this.iotApi.getScenes(homeId);
   }
 
-  public async startScene(sceneId: number): Promise<any> {
+  public async startScene(sceneId: number): Promise<unknown> {
     assert(this.iotApi !== undefined);
     return this.iotApi.startScene(sceneId);
   }
@@ -338,6 +346,7 @@ export default class RoborockService {
       return;
     }
 
+    // eslint-disable-next-line @typescript-eslint/no-this-alias
     const self = this;
     this.messageClient = this.clientManager.get(username, userdata);
     this.messageClient.registerDevice(device.duid, device.localKey, device.pv);
@@ -358,7 +367,7 @@ export default class RoborockService {
         if (message instanceof ResponseMessage) {
           const duid = message.duid;
 
-          //ignore battery updates here
+          // ignore battery updates here
           if (message.contain(Protocol.battery)) return;
 
           if (duid && self.deviceNotify) {
@@ -383,6 +392,7 @@ export default class RoborockService {
       this.logger.error('messageClient not initialized');
       return;
     }
+    // eslint-disable-next-line @typescript-eslint/no-this-alias
     const self = this;
 
     this.messageProcessor = new MessageProcessor(this.messageClient);
@@ -390,12 +400,12 @@ export default class RoborockService {
     this.messageProcessor.registerListener({
       onError: (message: VacuumErrorCode) => {
         if (self.deviceNotify) {
-          self.deviceNotify(NotifyMessageTypes.ErrorOccurred, { duid: device.duid, errorCode: message });
+          self.deviceNotify(NotifyMessageTypes.ErrorOccurred, { duid: device.duid, errorCode: message } as DeviceErrorMessage);
         }
       },
       onBatteryUpdate: (percentage: number) => {
         if (self.deviceNotify) {
-          self.deviceNotify(NotifyMessageTypes.BatteryUpdate, { duid: device.duid, percentage });
+          self.deviceNotify(NotifyMessageTypes.BatteryUpdate, { duid: device.duid, percentage } as BatteryMessage);
         }
       },
     } as AbstractMessageHandler);

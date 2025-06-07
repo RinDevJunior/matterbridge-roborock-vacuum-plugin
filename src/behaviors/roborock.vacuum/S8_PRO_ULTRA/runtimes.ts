@@ -6,7 +6,7 @@ export function getCurrentCleanModeA51(fan_power: number | undefined, water_box_
   if (fan_power == VacuumSuctionPowerA51.Off) return 5; // 'Mop',
   if (water_box_mode == MopWaterFlowA51.Off)
     return 6; // 'Vacuum',
-  else return 7; //Vac & Mop
+  else return 7; // Vac & Mop
 }
 
 export function getCurrentCleanModeFromFanPowerA51(fan_power: number | undefined): number | undefined {

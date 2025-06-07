@@ -1,5 +1,5 @@
 import axios, { AxiosInstance, AxiosStatic } from 'axios';
-import crypto from 'crypto';
+import crypto from 'node:crypto';
 import { AnsiLogger } from 'matterbridge/logger';
 import { URLSearchParams } from 'node:url';
 import { AuthenticateResponse } from '../Zmodel/authenticateResponse.js';
@@ -71,7 +71,7 @@ export class RoborockAuthenticateApi {
     return apiResponse.data.url;
   }
 
-  private async apiForUser(username: string, baseUrl: string = 'https://usiot.roborock.com'): Promise<AxiosInstance> {
+  private async apiForUser(username: string, baseUrl = 'https://usiot.roborock.com'): Promise<AxiosInstance> {
     return this.axiosFactory.create({
       baseURL: baseUrl,
       headers: {

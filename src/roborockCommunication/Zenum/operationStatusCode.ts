@@ -1,7 +1,7 @@
 export enum OperationStatusCode {
   Unknown = 0,
   Initiating = 1,
-  Sleeping = 2, //or ChargerDisconnected
+  Sleeping = 2, // or ChargerDisconnected
   Idle = 3,
   RemoteControl = 4,
   Cleaning = 5,

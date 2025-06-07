@@ -25,7 +25,7 @@ export function getSupportedAreas(rooms: Room[], roomMap: RoomMap | undefined, l
     ];
   }
 
-  const supportedAreas: ServiceArea.Area[] = roomMap.rooms.map((room, index) => {
+  const supportedAreas: ServiceArea.Area[] = roomMap.rooms.map((room) => {
     return {
       areaId: room.id,
       mapId: null,

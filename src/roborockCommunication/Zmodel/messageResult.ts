@@ -68,5 +68,5 @@ export enum CarpetCleanMode {
   Avoid = 0,
   Ignore = 2,
   Cross = 3,
-  DynamicLift = 200, //TODO
+  DynamicLift = 200, // TODO
 }

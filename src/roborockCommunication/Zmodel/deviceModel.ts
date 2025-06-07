@@ -7,8 +7,8 @@ export enum DeviceModel {
   S6_MAXV = 'roborock.vacuum.a10',
   S6_PURE = 'roborock.vacuum.a08',
   Q7 = 'roborock.vacuum.a40',
+  Q7_PLUS = 'roborock.vacuum.axx', // TODO
   Q7_MAX = 'roborock.vacuum.a38',
-  Q7_PLUS = 'roborock.vacuum.a40',
   S7 = 'roborock.vacuum.a15',
   S7_MAXV = 'roborock.vacuum.a27',
   S7_MAXV_ULTRA = 'roborock.vacuum.a65',

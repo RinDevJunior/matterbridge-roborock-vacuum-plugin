@@ -17,3 +17,4 @@ export type { Device } from './Zmodel/device.js';
 export type { Home } from './Zmodel/home.js';
 export type { Client } from './broadcast/client.js';
 export type { SceneParam } from './Zmodel/scene.js';
+export type { BatteryMessage, DeviceErrorMessage, DeviceStatusNotify } from './Zmodel/batteryMessage.js';

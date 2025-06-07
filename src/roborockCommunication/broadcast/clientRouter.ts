@@ -60,7 +60,7 @@ export class ClientRouter implements Client {
   public connect(): void {
     this.mqttClient.connect();
 
-    this.localClients.forEach((client, duid) => {
+    this.localClients.forEach((client) => {
       client.connect();
     });
   }
@@ -68,7 +68,7 @@ export class ClientRouter implements Client {
   async disconnect(): Promise<void> {
     await this.mqttClient.disconnect();
 
-    this.localClients.forEach((client, duid) => {
+    this.localClients.forEach((client) => {
       client.disconnect();
     });
   }

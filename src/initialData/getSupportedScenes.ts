@@ -1,7 +1,7 @@
 import { AnsiLogger, debugStringify } from 'matterbridge/logger';
 import { ServiceArea } from 'matterbridge/matter/clusters';
 import { Scene } from '../roborockCommunication/index.js';
-import { randomInt } from 'crypto';
+import { randomInt } from 'node:crypto';
 
 export function getSupportedScenes(scenes: Scene[], log?: AnsiLogger): ServiceArea.Area[] {
   log?.debug('getSupportedScenes', debugStringify(scenes));
@@ -15,7 +15,7 @@ export function getSupportedScenes(scenes: Scene[], log?: AnsiLogger): ServiceAr
     .filter((s) => s.enabled && s.id)
     .map((scene) => {
       return {
-        areaId: scene.id! + randomInt(5000, 9000),
+        areaId: scene.id ?? 0 + randomInt(5000, 9000),
         mapId: null,
         areaInfo: {
           locationInfo: {
