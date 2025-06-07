@@ -1,6 +1,5 @@
-import { getSupportedAreas } from '../initialData/getSupportedAreas';
-import RoomMap from '../model/RoomMap';
-import { jest } from '@jest/globals';
+import { getSupportedAreas } from '../../initialData/getSupportedAreas';
+import RoomMap from '../../model/RoomMap';
 
 const mockLogger = {
   debug: jest.fn(),

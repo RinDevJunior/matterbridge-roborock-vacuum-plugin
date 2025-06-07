@@ -1,10 +1,8 @@
-import { setCommandHandlerA187, VacuumSuctionPowerA187, MopWaterFlowA187, MopRouteA187 } from './a187';
-import { BehaviorDeviceGeneric } from '../../BehaviorDeviceGeneric';
+import { setCommandHandlerA187, VacuumSuctionPowerA187, MopWaterFlowA187, MopRouteA187 } from '../../../../behaviors/roborock.vacuum/QREVO_EDGE_5V1/a187';
+import { BehaviorDeviceGeneric } from '../../../../behaviors/BehaviorDeviceGeneric';
 import { AnsiLogger } from 'matterbridge/logger';
-import RoborockService from '../../../roborockService';
-import { CleanModeSettings } from '../../../model/CleanModeSettings';
-import { jest } from '@jest/globals';
-import { distance } from 'jimp';
+import RoborockService from '../../../../roborockService';
+import { CleanModeSettings } from '../../../../model/ExperimentalFeatureSetting';
 
 describe('setCommandHandlerA187', () => {
   let handler: BehaviorDeviceGeneric<any>;
@@ -42,6 +40,7 @@ describe('setCommandHandlerA187', () => {
         mopRouteMode: 'Deep',
         distanceOff: 25,
       },
+      enableCleanModeMapping: true,
     };
   });
 
@@ -97,6 +96,7 @@ describe('setCommandHandlerA187', () => {
         mopRouteMode: 'Deep',
         distanceOff: 25,
       },
+      enableCleanModeMapping: true,
     });
     const [[, changeToModeHandler]] = (handler.setCommandHandler as jest.Mock).mock.calls.filter(([cmd]) => cmd === 'changeToMode');
     await (changeToModeHandler as (mode: number) => Promise<void>)(5); // 5 = Mop
@@ -153,6 +153,7 @@ describe('setCommandHandlerA187', () => {
         mopRouteMode: 'Deep',
         distanceOff: 25,
       },
+      enableCleanModeMapping: true,
     });
     const [[, changeToModeHandler]] = (handler.setCommandHandler as jest.Mock).mock.calls.filter(([cmd]) => cmd === 'changeToMode');
     await (changeToModeHandler as (mode: number) => Promise<void>)(7); // 7 = Vac & Mop

@@ -4,6 +4,7 @@ import { AnsiLogger, debugStringify } from 'matterbridge/logger';
 import { ApiResponse } from '../Zmodel/apiResponse.js';
 import { Home } from '../Zmodel/home.js';
 import { UserData } from '../Zmodel/userData.js';
+import { Scene } from '../Zmodel/scene.js';
 
 export class RoborockIoTApi {
   logger: AnsiLogger;
@@ -32,7 +33,7 @@ export class RoborockIoTApi {
     });
   }
 
-  async getHome(homeId: number): Promise<Home | undefined> {
+  public async getHome(homeId: number): Promise<Home | undefined> {
     const result = await this.api.get(`user/homes/${homeId}`);
 
     const apiResponse: ApiResponse<Home> = result.data;
@@ -44,8 +45,8 @@ export class RoborockIoTApi {
     }
   }
 
-  async getHomev2(homeId: number): Promise<Home | undefined> {
-    const result = await this.api.get('v2/user/homes/' + homeId);
+  public async getHomev2(homeId: number): Promise<Home | undefined> {
+    const result = await this.api.get('v2/user/homes/' + homeId); //can be v3 also
 
     const apiResponse: ApiResponse<Home> = result.data;
     if (apiResponse.result) {
@@ -56,14 +57,26 @@ export class RoborockIoTApi {
     }
   }
 
-  async getHomev3(homeId: number): Promise<Home | undefined> {
-    const result = await this.api.get('v3/user/homes/' + homeId);
+  public async getScenes(homeId: number): Promise<Scene[] | undefined> {
+    const result = await this.api.get('user/scene/home/' + homeId);
 
-    const apiResponse: ApiResponse<Home> = result.data;
+    const apiResponse: ApiResponse<Scene[]> = result.data;
     if (apiResponse.result) {
       return apiResponse.result;
     } else {
-      this.logger.error('Failed to retrieve the home data');
+      this.logger.error('Failed to retrieve scene');
+      return undefined;
+    }
+  }
+
+  public async startScene(sceneId: number): Promise<any> {
+    const result = await this.api.post(`user/scene/${sceneId}/execute`);
+    const apiResponse: ApiResponse<any> = result.data;
+
+    if (apiResponse.result) {
+      return apiResponse.result;
+    } else {
+      this.logger.error('Failed to execute scene');
       return undefined;
     }
   }

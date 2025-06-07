@@ -11,8 +11,9 @@ import { RoborockVacuumCleaner } from './rvc.js';
 import { configurateBehavior } from './behaviorFactory.js';
 import { NotifyMessageTypes } from './notifyMessageTypes.js';
 import { Device, RoborockAuthenticateApi, RoborockIoTApi } from './roborockCommunication/index.js';
-import { getSupportedAreas } from './initialData/index.js';
-import { CleanModeSettings } from './model/CleanModeSettings.js';
+import { getSupportedAreas, getSupportedScenes } from './initialData/index.js';
+import { CleanModeSettings, ExperimentalFeatureSetting } from './model/ExperimentalFeatureSetting.js';
+import { ServiceArea } from 'matterbridge/matter/clusters';
 
 export class RoborockMatterbridgePlatform extends MatterbridgeDynamicPlatform {
   robot: RoborockVacuumCleaner | undefined;
@@ -22,6 +23,8 @@ export class RoborockMatterbridgePlatform extends MatterbridgeDynamicPlatform {
   platformRunner: PlatformRunner | undefined;
   devices: Map<string, Device>;
   serialNumber: string | undefined;
+  cleanModeSettings: CleanModeSettings | undefined;
+  enableExperimentalFeature: ExperimentalFeatureSetting | undefined;
 
   constructor(matterbridge: Matterbridge, log: AnsiLogger, config: PlatformConfig) {
     super(matterbridge, log, config);
@@ -77,6 +80,13 @@ export class RoborockMatterbridgePlatform extends MatterbridgeDynamicPlatform {
       return response;
     });
 
+    this.enableExperimentalFeature = this.config.enableExperimental as ExperimentalFeatureSetting;
+    if (this.enableExperimentalFeature?.enableExperimentalFeature && this.enableExperimentalFeature?.cleanModeSettings?.enableCleanModeMapping) {
+      this.cleanModeSettings = this.enableExperimentalFeature.cleanModeSettings as CleanModeSettings;
+      this.log.notice(`Experimental Feature has been enable`);
+      this.log.notice(`cleanModeSettings ${debugStringify(this.cleanModeSettings)}`);
+    }
+
     this.platformRunner = new PlatformRunner(this);
 
     this.roborockService = new RoborockService(
@@ -118,13 +128,6 @@ export class RoborockMatterbridgePlatform extends MatterbridgeDynamicPlatform {
 
   override async onConfigure() {
     await super.onConfigure();
-    if (this.config.enableExperimentalFeature) {
-      const cleanModeSettings = this.config.cleanModeSettings as CleanModeSettings;
-
-      this.log.notice(`Experimental Feature has been enable`);
-      this.log.notice(`cleanModeSettings ${debugStringify(cleanModeSettings)}`);
-    }
-
     const self = this;
     this.rvcInterval = setInterval(
       async () => {
@@ -146,10 +149,6 @@ export class RoborockMatterbridgePlatform extends MatterbridgeDynamicPlatform {
       this.log.error('Initializing: No supported devices found');
       return;
     }
-    let cleanModeSettings: CleanModeSettings | undefined = undefined;
-    if (this.config.enableExperimentalFeature) {
-      cleanModeSettings = this.config.cleanModeSettings as CleanModeSettings;
-    }
 
     const self = this;
     await this.roborockService.initializeMessageClientForLocal(vacuum);
@@ -157,10 +156,17 @@ export class RoborockMatterbridgePlatform extends MatterbridgeDynamicPlatform {
 
     this.log.debug('Initializing - roomMap: ', debugStringify(roomMap));
 
-    const behaviorHandler = configurateBehavior(vacuum.data.model, vacuum.duid, this.roborockService, cleanModeSettings, this.log);
+    const behaviorHandler = configurateBehavior(vacuum.data.model, vacuum.duid, this.roborockService, this.cleanModeSettings, this.log);
 
     this.roborockService.setSupportedAreas(vacuum.duid, getSupportedAreas(vacuum.rooms, roomMap, this.log));
-    this.robot = new RoborockVacuumCleaner(username, vacuum, roomMap, this.log);
+
+    let routineAsRoom: ServiceArea.Area[] = [];
+    if (this.enableExperimentalFeature?.enableExperimentalFeature && this.enableExperimentalFeature.advancedFeature?.showRoutinesAsRoom) {
+      routineAsRoom = getSupportedScenes(vacuum.scenes, this.log);
+      this.roborockService.setSupportedScenes(vacuum.duid, routineAsRoom);
+    }
+
+    this.robot = new RoborockVacuumCleaner(username, vacuum, roomMap, routineAsRoom, this.log);
     this.robot.configurateHandler(behaviorHandler);
 
     this.log.info('vacuum:', debugStringify(vacuum));

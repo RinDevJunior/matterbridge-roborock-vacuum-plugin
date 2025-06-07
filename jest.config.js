@@ -3,6 +3,7 @@ export default {
     extensionsToTreatAsEsm: ['.ts'],
     moduleNameMapper: {
         '^(\\.{1,2}/.*)\\.js$': '$1',
+        '^test-src/(.*)$': '<rootDir>/src/$1',
     },
     transform: {
         '^.+\\.ts$': [
@@ -16,4 +17,5 @@ export default {
     transformIgnorePatterns: ['/node_modules/'],
     testPathIgnorePatterns: ['/node_modules/', '/dist/', '/frontend/'],
     coveragePathIgnorePatterns: ['/node_modules/', '/dist/', '/frontend/', '/src/mock/'],
+    setupFiles: ['./jest.setup.js']
 };

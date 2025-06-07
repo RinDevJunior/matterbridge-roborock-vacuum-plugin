@@ -2,7 +2,10 @@
     "extends": "./tsconfig.json",
     "compilerOptions": {
         // enable isolatedModules just for ts-jest
-        "isolatedModules": true
+        "isolatedModules": true,
+        "types": [
+            "jest"
+        ]
     },
     "include": [
         "**/*.spec.ts",

@@ -2,7 +2,7 @@ import { MaybePromise } from 'matterbridge/matter';
 import { AnsiLogger, debugStringify } from 'matterbridge/logger';
 import { BehaviorDeviceGeneric, BehaviorRoborock, DeviceCommands } from '../../BehaviorDeviceGeneric.js';
 import RoborockService from '../../../roborockService.js';
-import { CleanModeSettings } from '../../../model/CleanModeSettings.js';
+import { CleanModeSettings } from '../../../model/ExperimentalFeatureSetting.js';
 
 export interface EndpointCommandsA27 extends DeviceCommands {
   selectAreas: (newAreas: any) => MaybePromise;
@@ -73,7 +73,7 @@ const CleanSetting: Record<number, { suctionPower: number; waterFlow: number; di
 
 export function setCommandHandlerA27(
   duid: string,
-  handler: BehaviorDeviceGeneric<DeviceCommands>,
+  handler: BehaviorDeviceGeneric<EndpointCommandsA27>,
   logger: AnsiLogger,
   roborockService: RoborockService,
   cleanModeSettings: CleanModeSettings | undefined,

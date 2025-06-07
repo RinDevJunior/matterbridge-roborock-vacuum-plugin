@@ -2,8 +2,6 @@ import assert from 'node:assert';
 import { AnsiLogger, debugStringify } from 'matterbridge/logger';
 import ClientManager from './clientManager.js';
 import { NotifyMessageTypes } from './notifyMessageTypes.js';
-import { ResponseMessage } from './roborockCommunication/broadcast/model/responseMessage.js';
-export type Factory<A, T> = (logger: AnsiLogger, arg: A) => T;
 import { clearInterval } from 'node:timers';
 import {
   RoborockAuthenticateApi,
@@ -18,11 +16,13 @@ import {
   Protocol,
   RequestMessage,
   VacuumErrorCode,
-  AbstractMessageHandler,
-  AbstractMessageListener,
-  AbstractConnectionListener,
+  ResponseMessage,
+  Scene,
+  SceneParam,
 } from './roborockCommunication/index.js';
+import type { AbstractMessageHandler, AbstractMessageListener, AbstractConnectionListener } from './roborockCommunication/index.js';
 import { ServiceArea } from 'matterbridge/matter/clusters';
+export type Factory<A, T> = (logger: AnsiLogger, arg: A) => T;
 
 export default class RoborockService {
   private loginApi: RoborockAuthenticateApi;
@@ -43,6 +43,7 @@ export default class RoborockService {
 
   //These are properties that are used to store the state of the device
   private supportedAreas: Map<string, ServiceArea.Area[]> = new Map();
+  private supportedRoutines: Map<string, ServiceArea.Area[]> = new Map();
   private selectedAreas: Map<string, number[]> = new Map();
 
   constructor(
@@ -72,12 +73,16 @@ export default class RoborockService {
   }
 
   public setSelectedAreas(duid: string, selectedAreas: number[]): void {
-    this.logger.debug('XXXXXX - setSelectedAreas', selectedAreas);
+    this.logger.debug('RoborockService - setSelectedAreas', selectedAreas);
     this.selectedAreas.set(duid, selectedAreas);
   }
 
   public setSupportedAreas(duid: string, supportedAreas: ServiceArea.Area[]): void {
     this.supportedAreas.set(duid, supportedAreas);
+  }
+
+  public setSupportedScenes(duid: string, routineAsRooms: ServiceArea.Area[]) {
+    this.supportedRoutines.set(duid, routineAsRooms);
   }
 
   public getSupportedAreas(duid: string): ServiceArea.Area[] | undefined {
@@ -88,51 +93,83 @@ export default class RoborockService {
     duid: string,
     { suctionPower, waterFlow, distance_off, mopRoute }: { suctionPower: number; waterFlow: number; distance_off: number; mopRoute: number },
   ): Promise<void> {
-    this.logger.notice('changeCleanMode');
+    this.logger.notice('RoborockService - changeCleanMode');
     return this.messageProcessor?.changeCleanMode(duid, suctionPower, waterFlow, mopRoute, distance_off);
   }
 
   public async startClean(duid: string): Promise<void> {
-    const areas = this.supportedAreas.get(duid);
-    const sltArea = this.selectedAreas.get(duid);
-    this.logger.debug('startClean', debugStringify({ duid, areas, sltArea }));
+    const supportedRooms = this.supportedAreas.get(duid) ?? [];
+    const supportedRoutines = this.supportedRoutines.get(duid) ?? [];
+    const selected = this.selectedAreas.get(duid) ?? [];
+    this.logger.debug('RoborockService - begin cleaning', debugStringify({ duid, supportedRooms, supportedRoutines, selected }));
 
-    if (sltArea?.length == areas?.length || !sltArea || !areas || sltArea.length === 0 || areas.length === 0) {
-      this.logger.notice('startGlobalClean');
-      this.getMessageProcessor()?.startClean(duid);
+    if (supportedRoutines.length === 0) {
+      if (selected.length == supportedRooms.length || selected.length === 0 || supportedRooms.length === 0) {
+        this.logger.debug('RoborockService - startGlobalClean');
+        this.getMessageProcessor()?.startClean(duid);
+      } else {
+        this.logger.debug('RoborockService - startRoomClean', debugStringify({ duid, selected }));
+        return this.messageProcessor?.startRoomClean(duid, selected, 1);
+      }
     } else {
-      this.logger.debug('startRoomClean', debugStringify({ duid, sltArea }));
-      return this.messageProcessor?.startRoomClean(duid, sltArea, 1);
+      const rooms = selected.filter((slt) => supportedRooms.some((a: ServiceArea.Area) => a.areaId == slt));
+      const rt = selected.filter((slt) => supportedRoutines.some((a: ServiceArea.Area) => a.areaId == slt));
+
+      /**
+       * If multiple routines are selected, we log a warning. and continue with global clean
+       */
+      if (rt.length > 1) {
+        this.logger.warn('RoborockService - Multiple routines selected, which is not supported.', debugStringify({ duid, rt }));
+      } else if (rt.length === 1) {
+        this.logger.debug('RoborockService - startScene', debugStringify({ duid, rooms }));
+        return this.iotApi?.startScene(rt[0]);
+      } else if (rooms.length == supportedRooms.length || rooms.length === 0 || supportedRooms.length === 0) {
+
+      /**
+       * If no rooms are selected, or all selected rooms match the supported rooms,
+       */
+        this.logger.debug('RoborockService - startGlobalClean');
+        this.getMessageProcessor()?.startClean(duid);
+      } else if (rooms.length > 0) {
+      /**
+       * If there are rooms selected
+       */
+        this.logger.debug('RoborockService - startRoomClean', debugStringify({ duid, rooms }));
+        return this.messageProcessor?.startRoomClean(duid, rooms, 1);
+      } else {
+        this.logger.warn('RoborockService - something goes wrong.', debugStringify({ duid, rooms, rt, selected, supportedRooms, supportedRoutines }));
+        return;
+      }
     }
   }
 
   public async pauseClean(duid: string): Promise<void> {
-    this.logger.debug('pauseClean');
+    this.logger.debug('RoborockService - pauseClean');
     await this.getMessageProcessor()?.pauseClean(duid);
   }
 
   public async stopAndGoHome(duid: string): Promise<void> {
-    this.logger.debug('stopAndGoHome');
+    this.logger.debug('RoborockService - stopAndGoHome');
     await this.getMessageProcessor()?.gotoDock(duid);
   }
 
   public async resumeClean(duid: string): Promise<void> {
-    this.logger.debug('resumeClean');
+    this.logger.debug('RoborockService - resumeClean');
     await this.getMessageProcessor()?.resumeClean(duid);
   }
 
   public async playSoundToLocate(duid: string): Promise<void> {
-    this.logger.debug('findMe');
+    this.logger.debug('RoborockService - findMe');
     await this.getMessageProcessor()?.findMyRobot(duid);
   }
 
   public async customGet(duid: string, method: string): Promise<any> {
-    this.logger.debug('customSend-message', method);
+    this.logger.debug('RoborockService - customSend-message', method);
     return this.getMessageProcessor()?.getCustomMessage(duid, new RequestMessage({ method }));
   }
 
   public async customGetInSecure(duid: string, method: string): Promise<any> {
-    this.logger.debug('customGetInSecure-message', method);
+    this.logger.debug('RoborockService - customGetInSecure-message', method);
     return this.getMessageProcessor()?.getCustomMessage(duid, new RequestMessage({ method, secure: true }));
   }
 
@@ -195,9 +232,12 @@ export default class RoborockService {
       return [];
     }
 
+    const scenes = (await this.iotApi.getScenes(homeDetails.rrHomeId)) ?? [];
+
     const products = new Map<string, string>();
     homeData.products.forEach((p) => products.set(p.id, p.model));
-    const devices: Device[] = homeData.devices.length > 0 ? homeData.devices : homeData.receivedDevices;
+    const devices: Device[] = [...homeData.devices, ...homeData.receivedDevices];
+    //homeData.devices.length > 0 ? homeData.devices : homeData.receivedDevices;
 
     const result = devices.map((device) => {
       return {
@@ -207,6 +247,7 @@ export default class RoborockService {
         localKey: device.localKey,
         pv: device.pv,
         serialNumber: device.sn,
+        scenes: scenes.filter((sc) => sc.param && (JSON.parse(sc.param) as SceneParam).action.items.some((x) => x.entityId == device.duid)),
         data: {
           id: device.duid,
           firmwareVersion: device.fv,
@@ -270,6 +311,16 @@ export default class RoborockService {
       ...homeData,
       devices: dvs,
     };
+  }
+
+  public async getScenes(homeId: number): Promise<Scene[] | undefined> {
+    assert(this.iotApi !== undefined);
+    return this.iotApi.getScenes(homeId);
+  }
+
+  public async startScene(sceneId: number): Promise<any> {
+    assert(this.iotApi !== undefined);
+    return this.iotApi.startScene(sceneId);
   }
 
   public getRoomMappings(duid: string): Promise<number[][]> | undefined {
