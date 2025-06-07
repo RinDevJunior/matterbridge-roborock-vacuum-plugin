@@ -12,10 +12,10 @@ export class RoborockVacuumCleaner extends RoboticVacuumCleaner {
   rrHomeId: number;
   roomInfo: RoomMap | undefined;
 
-  constructor(username: string, device: Device, roomMap: RoomMap, log: AnsiLogger) {
+  constructor(username: string, device: Device, roomMap: RoomMap, routineAsRoom: ServiceArea.Area[], log: AnsiLogger) {
     const cleanModes = getSupportedCleanModes(device.data.model);
     const supportedRunModes = getSupportedRunModes(device.data.model);
-    const supportedAreas = getSupportedAreas(device.rooms, roomMap, log);
+    const supportedAreas = [...getSupportedAreas(device.rooms, roomMap, log), ...routineAsRoom];
     const deviceName = `${device.name}-${device.duid}`.replace(/\s+/g, '');
     super(
       deviceName, //name

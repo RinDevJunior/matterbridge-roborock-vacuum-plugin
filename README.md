@@ -68,6 +68,8 @@ To get the **DUID** for your devices, you have two options:
 
 ---
 
+**➡️ [See Supported & Tested Roborock Devices](./README_SUPPORTED.md)**
+
 ### 📦 Prerequisites
 
 - A working installation of [Matterbridge](https://github.com/Luligu/matterbridge)

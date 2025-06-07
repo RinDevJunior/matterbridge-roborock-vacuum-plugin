@@ -11,8 +11,9 @@ import { RoborockVacuumCleaner } from './rvc.js';
 import { configurateBehavior } from './behaviorFactory.js';
 import { NotifyMessageTypes } from './notifyMessageTypes.js';
 import { Device, RoborockAuthenticateApi, RoborockIoTApi } from './roborockCommunication/index.js';
-import { getSupportedAreas } from './initialData/index.js';
+import { getSupportedAreas, getSupportedScenes } from './initialData/index.js';
 import { CleanModeSettings, ExperimentalFeatureSetting } from './model/ExperimentalFeatureSetting.js';
+import { ServiceArea } from 'matterbridge/matter/clusters';
 
 export class RoborockMatterbridgePlatform extends MatterbridgeDynamicPlatform {
   robot: RoborockVacuumCleaner | undefined;
@@ -23,6 +24,7 @@ export class RoborockMatterbridgePlatform extends MatterbridgeDynamicPlatform {
   devices: Map<string, Device>;
   serialNumber: string | undefined;
   cleanModeSettings: CleanModeSettings | undefined;
+  enableExperimentalFeature: ExperimentalFeatureSetting | undefined;
 
   constructor(matterbridge: Matterbridge, log: AnsiLogger, config: PlatformConfig) {
     super(matterbridge, log, config);
@@ -78,12 +80,11 @@ export class RoborockMatterbridgePlatform extends MatterbridgeDynamicPlatform {
       return response;
     });
 
-    const enableExperimentalFeature = this.config.enableExperimental as ExperimentalFeatureSetting;
-    if (enableExperimentalFeature && enableExperimentalFeature.enableExperimentalFeature && enableExperimentalFeature.cleanModeSettings.enableCleanModeMapping) {
-      this.cleanModeSettings = enableExperimentalFeature.cleanModeSettings as CleanModeSettings;
+    this.enableExperimentalFeature = this.config.enableExperimental as ExperimentalFeatureSetting;
+    if (this.enableExperimentalFeature?.enableExperimentalFeature && this.enableExperimentalFeature?.cleanModeSettings?.enableCleanModeMapping) {
+      this.cleanModeSettings = this.enableExperimentalFeature.cleanModeSettings as CleanModeSettings;
       this.log.notice(`Experimental Feature has been enable`);
       this.log.notice(`cleanModeSettings ${debugStringify(this.cleanModeSettings)}`);
-      this.log.notice(`advancedFeature ${enableExperimentalFeature.advancedFeature}`);
     }
 
     this.platformRunner = new PlatformRunner(this);
@@ -158,7 +159,14 @@ export class RoborockMatterbridgePlatform extends MatterbridgeDynamicPlatform {
     const behaviorHandler = configurateBehavior(vacuum.data.model, vacuum.duid, this.roborockService, this.cleanModeSettings, this.log);
 
     this.roborockService.setSupportedAreas(vacuum.duid, getSupportedAreas(vacuum.rooms, roomMap, this.log));
-    this.robot = new RoborockVacuumCleaner(username, vacuum, roomMap, this.log);
+
+    let routineAsRoom: ServiceArea.Area[] = [];
+    if (this.enableExperimentalFeature?.enableExperimentalFeature && this.enableExperimentalFeature.advancedFeature?.showRoutinesAsRoom) {
+      routineAsRoom = getSupportedScenes(vacuum.scenes, this.log);
+      this.roborockService.setSupportedScenes(vacuum.duid, routineAsRoom);
+    }
+
+    this.robot = new RoborockVacuumCleaner(username, vacuum, roomMap, routineAsRoom, this.log);
     this.robot.configurateHandler(behaviorHandler);
 
     this.log.info('vacuum:', debugStringify(vacuum));

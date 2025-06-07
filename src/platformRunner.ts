@@ -184,7 +184,7 @@ export class PlatformRunner {
           const response = data.dps[messageType] as DpsPayload;
           //ignore network info
           if (!self.isStatusUpdate(response.result)) {
-            platform.log.notice('Ignore message:', debugStringify(data));
+            platform.log.debug('Ignore message:', debugStringify(data));
             return;
           }
 

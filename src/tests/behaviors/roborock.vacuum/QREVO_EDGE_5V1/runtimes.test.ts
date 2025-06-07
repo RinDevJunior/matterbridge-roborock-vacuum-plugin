@@ -1,5 +1,9 @@
-import { getCurrentCleanModeA187, getCurrentCleanModeFromFanPowerA187, getCurrentCleanModeFromWaterBoxModeA187 } from './runtimes';
-import { MopWaterFlowA187, VacuumSuctionPowerA187 } from './a187';
+import {
+  getCurrentCleanModeA187,
+  getCurrentCleanModeFromFanPowerA187,
+  getCurrentCleanModeFromWaterBoxModeA187,
+} from '../../../../behaviors/roborock.vacuum/QREVO_EDGE_5V1/runtimes';
+import { MopWaterFlowA187, VacuumSuctionPowerA187 } from '../../../../behaviors/roborock.vacuum/QREVO_EDGE_5V1/a187';
 
 describe('getCurrentCleanModeA187', () => {
   it('returns undefined if fan_power or water_box_mode is undefined', () => {
