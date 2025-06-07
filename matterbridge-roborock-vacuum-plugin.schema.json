@@ -2,7 +2,10 @@
   "title": "Matterbridge Roborock Vacuum Plugin",
   "description": "matterbridge-roborock-vacuum-plugin v. 1.0.8-rc02 by https://github.com/RinDevJunior",
   "type": "object",
-  "required": ["username", "password"],
+  "required": [
+    "username",
+    "password"
+  ],
   "properties": {
     "name": {
       "description": "Plugin name",
@@ -53,9 +56,13 @@
         {
           "if": {
             "properties": {
-              "enableExperimentalFeature": { "const": true }
+              "enableExperimentalFeature": {
+                "const": true
+              }
             },
-            "required": ["enableExperimentalFeature"]
+            "required": [
+              "enableExperimentalFeature"
+            ]
           },
           "then": {
             "properties": {
@@ -83,9 +90,13 @@
                   {
                     "if": {
                       "properties": {
-                        "enableCleanModeMapping": { "const": true }
+                        "enableCleanModeMapping": {
+                          "const": true
+                        }
                       },
-                      "required": ["enableCleanModeMapping"]
+                      "required": [
+                        "enableCleanModeMapping"
+                      ]
                     },
                     "then": {
                       "properties": {
@@ -93,22 +104,33 @@
                           "title": "Vacuuming only",
                           "type": "object",
                           "properties": {
-                            "fanMode": { "$ref": "#/$defs/fanMode", "default": "Balanced" },
-                            "mopRouteMode": { "$ref": "#/$defs/mopRouteMode" }
+                            "fanMode": {
+                              "$ref": "#/$defs/fanMode",
+                              "default": "Balanced"
+                            },
+                            "mopRouteMode": {
+                              "$ref": "#/$defs/mopRouteMode"
+                            }
                           }
                         },
                         "mopping": {
                           "title": "Mopping only",
                           "type": "object",
                           "properties": {
-                            "waterFlowMode": { "$ref": "#/$defs/waterFlowMode" },
-                            "mopRouteMode": { "$ref": "#/$defs/mopRouteMode" }
+                            "waterFlowMode": {
+                              "$ref": "#/$defs/waterFlowMode"
+                            },
+                            "mopRouteMode": {
+                              "$ref": "#/$defs/mopRouteMode"
+                            }
                           },
                           "allOf": [
                             {
                               "if": {
                                 "properties": {
-                                  "waterFlowMode": { "const": "CustomizeWithDistanceOff" }
+                                  "waterFlowMode": {
+                                    "const": "CustomizeWithDistanceOff"
+                                  }
                                 }
                               },
                               "then": {
@@ -119,7 +141,9 @@
                                     "default": 25
                                   }
                                 },
-                                "required": ["distanceOff"]
+                                "required": [
+                                  "distanceOff"
+                                ]
                               }
                             }
                           ]
@@ -128,15 +152,24 @@
                           "title": "Vacuuming and Mopping",
                           "type": "object",
                           "properties": {
-                            "fanMode": { "$ref": "#/$defs/fanMode", "default": "Balanced" },
-                            "waterFlowMode": { "$ref": "#/$defs/waterFlowMode" },
-                            "mopRouteMode": { "$ref": "#/$defs/mopRouteMode" }
+                            "fanMode": {
+                              "$ref": "#/$defs/fanMode",
+                              "default": "Balanced"
+                            },
+                            "waterFlowMode": {
+                              "$ref": "#/$defs/waterFlowMode"
+                            },
+                            "mopRouteMode": {
+                              "$ref": "#/$defs/mopRouteMode"
+                            }
                           },
                           "allOf": [
                             {
                               "if": {
                                 "properties": {
-                                  "waterFlowMode": { "const": "CustomizeWithDistanceOff" }
+                                  "waterFlowMode": {
+                                    "const": "CustomizeWithDistanceOff"
+                                  }
                                 }
                               },
                               "then": {
@@ -147,7 +180,9 @@
                                     "default": 25
                                   }
                                 },
-                                "required": ["distanceOff"]
+                                "required": [
+                                  "distanceOff"
+                                ]
                               }
                             }
                           ]
@@ -162,7 +197,6 @@
         }
       ]
     },
-
     "debug": {
       "description": "Enable the debug for the plugin (development only)",
       "type": "boolean",
@@ -178,19 +212,35 @@
     "fanMode": {
       "type": "string",
       "description": "Suction power mode to use (e.g., 'Quiet', 'Balanced', 'Turbo', 'Max', 'MaxPlus').",
-      "enum": ["Quiet", "Balanced", "Turbo", "Max", "MaxPlus"],
+      "enum": [
+        "Quiet",
+        "Balanced",
+        "Turbo",
+        "Max",
+        "MaxPlus"
+      ],
       "default": "Balanced"
     },
     "waterFlowMode": {
       "type": "string",
       "description": "Water flow mode to use (e.g., 'Low', 'Medium', 'High', 'CustomizeWithDistanceOff').",
-      "enum": ["Low", "Medium", "High", "CustomizeWithDistanceOff"],
+      "enum": [
+        "Low",
+        "Medium",
+        "High",
+        "CustomizeWithDistanceOff"
+      ],
       "default": "Medium"
     },
     "mopRouteMode": {
       "type": "string",
       "description": "Mop route intensity to use (e.g., 'Standard', 'Deep', 'DeepPlus', 'Fast').",
-      "enum": ["Standard", "Deep", "DeepPlus", "Fast"],
+      "enum": [
+        "Standard",
+        "Deep",
+        "DeepPlus",
+        "Fast"
+      ],
       "default": "Standard"
     }
   }

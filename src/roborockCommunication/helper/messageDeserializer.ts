@@ -52,7 +52,7 @@ export class MessageDeserializer {
     }
 
     const crc32 = CRC32.buf(message.subarray(0, message.length - 4)) >>> 0;
-    const expectedCrc32 = message.readUint32BE(message.length - 4);
+    const expectedCrc32 = message.readUInt32BE(message.length - 4);
     if (crc32 != expectedCrc32) {
       throw new Error(`Wrong CRC32 ${crc32}, expected ${expectedCrc32}`);
     }
