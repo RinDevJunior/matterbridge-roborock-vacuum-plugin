@@ -55,7 +55,6 @@ export function state_to_matter_operational_status(state: number | undefined): R
     case OperationStatusCode.GoTo:
     case OperationStatusCode.ZoneClean:
     case OperationStatusCode.RoomClean:
-    case OperationStatusCode.Initiating:
     case OperationStatusCode.InCall:
     case OperationStatusCode.Mapping:
     case OperationStatusCode.Patrol:
@@ -82,7 +81,6 @@ export function state_to_matter_operational_status(state: number | undefined): R
       return RvcOperationalState.OperationalState.Paused;
 
     case OperationStatusCode.ShuttingDown:
-    case OperationStatusCode.Locked:
       return RvcOperationalState.OperationalState.Stopped;
 
     case OperationStatusCode.ReturnToDock:

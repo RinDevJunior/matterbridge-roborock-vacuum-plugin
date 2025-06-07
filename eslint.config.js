@@ -9,7 +9,7 @@ import eslintPluginN from 'eslint-plugin-n';
 export default [
     {
         name: 'global ignores',
-        ignores: ['dist/', 'build/', 'node_modules/', 'coverage/', 'frontend/', 'rock-s0/'],
+        ignores: ['dist/', 'build/', 'node_modules/', 'coverage/', 'frontend/', 'rock-s0/', 'webui/', 'exampleData/'],
     },
     eslint.configs.recommended,
     ...tseslint.configs.strict,
@@ -62,6 +62,10 @@ export default [
         },
         ...tseslint.configs.disableTypeChecked,
         ...eslintPluginJest.configs['flat/recommended'],
+        rules: {
+            '@typescript-eslint/no-explicit-any': 'off',
+            '@typescript-eslint/no-non-null-assertion': 'off',
+        },
     },
     {
         name: 'node',

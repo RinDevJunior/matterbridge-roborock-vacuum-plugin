@@ -229,7 +229,12 @@ export class PlatformRunner {
   private async processAdditionalProps(robot: RoborockVacuumCleaner, message: CloudMessageResult): Promise<void> {
     //dss -> DockingStationStatus
     const platform = this.platform;
-    if (platform.config.enableExperimentalFeature && message.dss !== undefined) {
+    if (
+      platform.enableExperimentalFeature &&
+      platform.enableExperimentalFeature.enableExperimentalFeature &&
+      platform.enableExperimentalFeature.advancedFeature.includeDockStationStatus &&
+      message.dss !== undefined
+    ) {
       const dss = parseDockingStationStatus(message.dss);
       this.platform.log.debug('DockingStationStatus:', debugStringify(dss));
 
@@ -239,11 +244,6 @@ export class PlatformRunner {
       if (dss && hasDockingStationError(dss) && currentOperationState !== RvcOperationalState.OperationalState.Running) {
         robot.updateAttribute(RvcOperationalState.Cluster.id, 'operationalState', RvcOperationalState.OperationalState.Error, platform.log);
       }
-    }
-
-    if (message.fan_power !== undefined) {
-      const fanPower = message.fan_power as number;
-      //robot.updateAttribute(RvcRunMode.Cluster.id, 'fanPower', fanPower, this.platform.log);
     }
   }
 

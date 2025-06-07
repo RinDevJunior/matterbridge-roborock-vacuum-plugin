@@ -1,6 +1,6 @@
 {
   "title": "Matterbridge Roborock Vacuum Plugin",
-  "description": "matterbridge-roborock-vacuum-plugin v. 1.0.8-rc02 by https://github.com/RinDevJunior",
+  "description": "matterbridge-roborock-vacuum-plugin v. 1.0.8-rc03 by https://github.com/RinDevJunior",
   "type": "object",
   "required": [
     "username",
@@ -72,6 +72,11 @@
                 "properties": {
                   "showRoutinesAsRoom": {
                     "title": "Show Routines As Room",
+                    "type": "boolean",
+                    "default": false
+                  },
+                  "includeDockStationStatus": {
+                    "title": "Include Dock Station Status",
                     "type": "boolean",
                     "default": false
                   }
