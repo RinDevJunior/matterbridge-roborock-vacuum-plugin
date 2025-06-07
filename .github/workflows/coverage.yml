@@ -1,0 +1,50 @@
+name: Analyze code coverage
+
+on: [push, pull_request]
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Use Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          registry-url: 'https://registry.npmjs.org/'
+
+      - name: Clean cache
+        run: npm cache clean --force
+
+      - name: Verify Node.js version
+        run: node -v
+
+      - name: Verify Npm version
+        run: npm -v
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install dependencies
+        run: npm run precondition && npm run deepClean && npm install && npm link matterbridge
+
+      - name: Lint the project
+        run: npm run lint
+
+      - name: Test the project
+        run: npm run test
+
+      - name: Test with coverage
+        run: npm run test -- --coverage
+
+      - name: Upload coverage reports to Codecov
+        uses: codecov/codecov-action@v5
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          slug: RinDevJunior/matterbridge-roborock-vacuum-plugin
+
+      - name: Build (optional)
+        run: npm run build
