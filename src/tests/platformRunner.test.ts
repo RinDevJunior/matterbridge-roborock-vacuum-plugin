@@ -2,9 +2,9 @@ import { PlatformRunner } from '../platformRunner';
 import { NotifyMessageTypes } from '../notifyMessageTypes';
 import { RoborockMatterbridgePlatform } from '../platform';
 import { Home } from '../roborockCommunication';
-import fs from 'fs';
-import { fileURLToPath } from 'url';
-import path from 'path';
+import fs from 'node:fs';
+import { fileURLToPath } from 'node:url';
+import path from 'node:path';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
