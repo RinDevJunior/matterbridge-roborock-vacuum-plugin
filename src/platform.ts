@@ -1,4 +1,3 @@
-import './extensions/index.js';
 import { Matterbridge, MatterbridgeDynamicPlatform, PlatformConfig } from 'matterbridge';
 import * as axios from 'axios';
 import { AnsiLogger, debugStringify, LogLevel } from 'matterbridge/logger';
