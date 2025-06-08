@@ -31,7 +31,7 @@ describe('DockingStationStatus', () => {
       waterBoxFilterStatus: 2,
       dustBagStatus: 2,
       dirtyWaterBoxStatus: 2,
-      clearWaterBoxStatus: 2,
+      clearWaterBoxStatus: 1, // This means there is a problem with the clear water box
       isUpdownWaterReady: 1, // This means there is a problem with the updown water
     };
     expect(hasDockingStationError(status)).toBe(true);
