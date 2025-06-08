@@ -1,6 +1,6 @@
 import { RvcCleanMode, RvcOperationalState, RvcRunMode } from 'matterbridge/matter/clusters';
 
-export function getDefaultSupportedRunModes(): RvcRunMode.ModeOption[] {
+export function getSupportedRunModesA51(): RvcRunMode.ModeOption[] {
   return [
     {
       label: 'Idle',
@@ -20,7 +20,7 @@ export function getDefaultSupportedRunModes(): RvcRunMode.ModeOption[] {
   ];
 }
 
-export function getDefaultSupportedCleanModes(): RvcCleanMode.ModeOption[] {
+export function getSupportedCleanModesA51(): RvcCleanMode.ModeOption[] {
   return [
     {
       label: 'Mop',
@@ -45,7 +45,7 @@ export function getDefaultSupportedCleanModes(): RvcCleanMode.ModeOption[] {
   ];
 }
 
-export function getDefaultOperationalStates(): RvcOperationalState.OperationalStateStruct[] {
+export function getOperationalStatesA51(): RvcOperationalState.OperationalStateStruct[] {
   return [
     {
       operationalStateId: RvcOperationalState.OperationalState.Stopped,

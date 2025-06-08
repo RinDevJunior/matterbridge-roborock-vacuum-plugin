@@ -4,6 +4,7 @@ import { getDefaultOperationalStates } from '../behaviors/roborock.vacuum/defaul
 import { DeviceModel } from '../roborockCommunication/Zmodel/deviceModel.js';
 import { VacuumErrorCode } from '../roborockCommunication/Zenum/vacuumAndDockErrorCode.js';
 import { getOperationalStatesA27 } from '../behaviors/roborock.vacuum/S7_MAXV/initalData.js';
+import { getOperationalStatesA51 } from '../behaviors/roborock.vacuum/S8_PRO_ULTRA/initalData.js';
 
 export function getOperationalStates(model: string): RvcOperationalState.OperationalStateStruct[] {
   switch (model) {
@@ -11,6 +12,8 @@ export function getOperationalStates(model: string): RvcOperationalState.Operati
       return getOperationalStatesA187();
     case DeviceModel.S7_MAXV:
       return getOperationalStatesA27();
+    case DeviceModel.S8_MAXV_ULTRA:
+      return getOperationalStatesA51();
     default:
       return getDefaultOperationalStates();
   }
