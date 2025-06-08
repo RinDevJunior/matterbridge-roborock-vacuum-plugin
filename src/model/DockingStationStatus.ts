@@ -31,7 +31,7 @@ export function hasDockingStationError(status: DockingStationStatus): boolean {
     status.waterBoxFilterStatus === DockingStationStatusType.Error ||
     status.dustBagStatus === DockingStationStatusType.Error ||
     status.dirtyWaterBoxStatus === DockingStationStatusType.Error ||
-    status.clearWaterBoxStatus === DockingStationStatusType.Error ||
-    status.isUpdownWaterReady === DockingStationStatusType.Error
+    status.clearWaterBoxStatus === DockingStationStatusType.Error
+    //|| status.isUpdownWaterReady === DockingStationStatusType.Error
   );
 }

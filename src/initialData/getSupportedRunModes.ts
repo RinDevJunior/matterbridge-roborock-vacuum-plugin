@@ -3,6 +3,7 @@ import { getSupportedRunModesA187 } from '../behaviors/roborock.vacuum/QREVO_EDG
 import { getDefaultSupportedRunModes } from '../behaviors/roborock.vacuum/default/initalData.js';
 import { DeviceModel } from '../roborockCommunication/Zmodel/deviceModel.js';
 import { getSupportedRunModesA27 } from '../behaviors/roborock.vacuum/S7_MAXV/initalData.js';
+import { getSupportedRunModesA51 } from '../behaviors/roborock.vacuum/S8_PRO_ULTRA/initalData.js';
 
 export function getRunningMode(model: string | undefined, modeTag: RvcRunMode.ModeTag | undefined): number | null {
   if (!model || !modeTag) return null;
@@ -18,6 +19,8 @@ export function getSupportedRunModes(model: string): RvcRunMode.ModeOption[] {
       return getSupportedRunModesA187();
     case DeviceModel.S7_MAXV:
       return getSupportedRunModesA27();
+    case DeviceModel.S8_MAXV_ULTRA:
+      return getSupportedRunModesA51();
     default:
       return getDefaultSupportedRunModes();
   }
