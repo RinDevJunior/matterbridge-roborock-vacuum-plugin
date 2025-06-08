@@ -14,7 +14,7 @@ export default class ClientManager {
     if (!this.clients.has(username)) {
       this.clients.set(username, new ClientRouter(this.logger, userdata));
     }
-    return <ClientRouter>this.clients.get(username);
+    return this.clients.get(username) as ClientRouter;
   }
 
   public destroy(username: string): void {

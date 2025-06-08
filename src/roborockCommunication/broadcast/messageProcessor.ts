@@ -90,8 +90,8 @@ export class MessageProcessor {
     return this.client.send(duid, request);
   }
 
-  public getCustomMessage(duid: string, def: RequestMessage): Promise<any> {
-    return this.client.get<any>(duid, def);
+  public getCustomMessage(duid: string, def: RequestMessage): Promise<unknown> {
+    return this.client.get(duid, def);
   }
 
   public async findMyRobot(duid: string): Promise<void> {
@@ -111,7 +111,7 @@ export class MessageProcessor {
     if (currentMopMode == smartMopMode && mopRoute == smartMopRoute) return;
     if (currentMopMode == customMopMode && mopRoute == customMopRoute) return;
 
-    //if change mode from smart plan, firstly change to custom
+    // if change mode from smart plan, firstly change to custom
     if (currentMopMode == smartMopMode) {
       await this.client.send(duid, new RequestMessage({ method: 'set_mop_mode', params: [customMopRoute] }));
     }

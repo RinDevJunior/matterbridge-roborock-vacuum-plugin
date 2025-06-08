@@ -2,7 +2,7 @@ const token = '%[a-f0-9]{2}';
 const singleMatcher = new RegExp('(' + token + ')|([^%]+?)', 'gi');
 const multiMatcher = new RegExp('(' + token + ')+', 'gi');
 
-function decodeComponents(components: any, split: any = undefined): any {
+function decodeComponents(components: RegExpMatchArray | string[] | [], split: number | undefined = undefined): string[] {
   try {
     return [decodeURIComponent(components.join(''))];
   } catch {
@@ -35,8 +35,8 @@ function decode(input: string) {
   }
 }
 
-function customDecodeURIComponent(input: string) {
-  const replaceMap: any = {
+function customDecodeURIComponent(input: string): string {
+  const replaceMap: Record<string, string> = {
     '%FE%FF': '\uFFFD\uFFFD',
     '%FF%FE': '\uFFFD\uFFFD',
   };

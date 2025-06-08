@@ -1,10 +1,35 @@
 {
   "name": "matterbridge-roborock-vacuum-plugin",
   "type": "DynamicPlatform",
-  "version": "1.0.8-rc02",
+  "version": "1.0.8-rc03",
   "whiteList": [],
   "blackList": [],
   "useInterval": true,
+  "enableExperimental": {
+    "enableExperimentalFeature": false,
+    "advancedFeature": {
+      "showRoutinesAsRooms": false,
+      "includeDockStationStatus": false
+    },
+    "cleanModeSettings": {
+      "enableCleanModeMapping": false,
+      "vacuuming": {
+        "fanMode": "Balanced",
+        "mopRouteMode": "Standard"
+      },
+      "mopping": {
+        "waterFlowMode": "Medium",
+        "mopRouteMode": "Standard",
+        "distanceOff": 25
+      },
+      "vacmop": {
+        "fanMode": "Balanced",
+        "waterFlowMode": "Medium",
+        "mopRouteMode": "Standard",
+        "distanceOff": 25
+      }
+    }
+  },
   "debug": true,
   "unregisterOnShutdown": false,
   "enableExperimentalFeature": false

@@ -1,10 +1,9 @@
-import crypto from 'crypto';
+import crypto from 'node:crypto';
 import CRC32 from 'crc-32';
-// @ts-ignore
+// @ts-expect-error: binary-parser has no type definitions, using as-is for runtime parsing
 import { Parser } from 'binary-parser';
-import assert from 'node:assert';
 import { ResponseMessage } from '../broadcast/model/responseMessage.js';
-import { CryptoUtils, MessageUtils } from './cryptoHelper.js';
+import * as CryptoUtils from './cryptoHelper.js';
 import { Protocol } from '../broadcast/model/protocol.js';
 import { MessageContext } from '../broadcast/model/messageContext.js';
 import { AnsiLogger } from 'matterbridge/logger';
@@ -65,7 +64,7 @@ export class MessageDeserializer {
     const data: Message = this.messageParser.parse(message);
 
     if (version == '1.0') {
-      const aesKey = CryptoUtils.md5bin(MessageUtils.encodeTimestamp(data.timestamp) + localKey + MessageUtils.SALT);
+      const aesKey = CryptoUtils.md5bin(CryptoUtils.encodeTimestamp(data.timestamp) + localKey + CryptoUtils.SALT);
       const decipher = crypto.createDecipheriv('aes-128-ecb', aesKey, null);
       data.payload = Buffer.concat([decipher.update(data.payload), decipher.final()]);
     } else if (version == 'A01') {
@@ -95,10 +94,10 @@ export class MessageDeserializer {
     return new ResponseMessage(duid, dps);
   }
 
-  private parseJsonInDps(dps: any, index: Protocol) {
+  private parseJsonInDps(dps: Record<string, unknown>, index: Protocol) {
     const indexString = index.toString();
     if (dps[indexString] !== undefined) {
-      dps[indexString] = JSON.parse(dps[indexString]);
+      dps[indexString] = JSON.parse(dps[indexString] as string);
     }
   }
 }

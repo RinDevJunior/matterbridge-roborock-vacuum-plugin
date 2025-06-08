@@ -1,6 +1,6 @@
 {
   "name": "matterbridge-roborock-vacuum-plugin",
-  "version": "1.0.8-rc02",
+  "version": "1.0.8-rc03",
   "description": "Matterbridge Roborock Vacuum Plugin",
   "author": "https://github.com/RinDevJunior",
   "license": "MIT",
@@ -26,7 +26,9 @@
     "roborock",
     "matter",
     "matter.js",
-    "plugin"
+    "plugin",
+    "homekit",
+    "apple home"
   ],
   "engines": {
     "node": ">=18.0.0 <19.0.0 || >=20.0.0 <21.0.0 || >=22.0.0"
@@ -35,7 +37,7 @@
     "precondition": "npm install -g matterbridge@3.0.4",
     "deepCleanB": "npm run deepClean && npm install && npm link matterbridge && npm run build && npm run matterbridge:add",
     "start:roborock": "tsc && matterbridge -childbridge",
-    "buildpackage": "cd .. && tar --exclude-from='matterbridge-roborock-vacuum-plugin/.tarignore' -czvf matterbridge-roborock-vacuum-plugin-1.0.8-rc02.tgz matterbridge-roborock-vacuum-plugin && cd matterbridge-roborock-vacuum-plugin",
+    "buildpackage": "cd .. && tar --exclude-from='matterbridge-roborock-vacuum-plugin/.tarignore' -czvf matterbridge-roborock-vacuum-plugin-1.0.8-rc03.tgz matterbridge-roborock-vacuum-plugin && cd matterbridge-roborock-vacuum-plugin",
     "build": "tsc",
     "buildProduction": "tsc --project tsconfig.production.json",
     "watch": "tsc --watch",

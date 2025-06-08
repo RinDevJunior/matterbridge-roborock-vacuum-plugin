@@ -51,7 +51,7 @@ describe('setCommandHandlerA27', () => {
     expect(handler.setCommandHandler).toHaveBeenCalledWith('pause', expect.any(Function));
     expect(handler.setCommandHandler).toHaveBeenCalledWith('resume', expect.any(Function));
     expect(handler.setCommandHandler).toHaveBeenCalledWith('goHome', expect.any(Function));
-    expect(handler.setCommandHandler).toHaveBeenCalledWith('PlaySoundToLocate', expect.any(Function));
+    expect(handler.setCommandHandler).toHaveBeenCalledWith('playSoundToLocate', expect.any(Function));
   });
 
   it('should call startClean for Cleaning mode', async () => {
@@ -127,7 +127,7 @@ describe('setCommandHandlerA27', () => {
 
   it('should call playSoundToLocate', async () => {
     setCommandHandlerA27(duid, handler, logger, roborockService, cleanModeSettings);
-    const [[, playSoundHandler]] = (handler.setCommandHandler as jest.Mock).mock.calls.filter(([cmd]) => cmd === 'PlaySoundToLocate');
+    const [[, playSoundHandler]] = (handler.setCommandHandler as jest.Mock).mock.calls.filter(([cmd]) => cmd === 'playSoundToLocate');
     await (playSoundHandler as (arg: number) => Promise<void>)(1);
     expect(roborockService.playSoundToLocate).toHaveBeenCalledWith(duid);
   });

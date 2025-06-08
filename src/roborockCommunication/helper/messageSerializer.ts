@@ -1,6 +1,6 @@
 import { RequestMessage } from '../broadcast/model/requestMessage.js';
-import { CryptoUtils, MessageUtils } from './cryptoHelper.js';
-import crypto from 'crypto';
+import * as CryptoUtils from './cryptoHelper.js';
+import crypto from 'node:crypto';
 import CRC32 from 'crc-32';
 import { DpsPayload, Payload } from '../broadcast/model/dps.js';
 import { MessageContext } from '../broadcast/model/messageContext.js';
@@ -57,7 +57,7 @@ export class MessageSerializer {
 
     let encrypted;
     if (version == '1.0') {
-      const aesKey = CryptoUtils.md5bin(MessageUtils.encodeTimestamp(payloadData.t) + localKey + MessageUtils.SALT);
+      const aesKey = CryptoUtils.md5bin(CryptoUtils.encodeTimestamp(payloadData.t) + localKey + CryptoUtils.SALT);
       const cipher = crypto.createCipheriv('aes-128-ecb', aesKey, null);
       encrypted = Buffer.concat([cipher.update(payload), cipher.final()]);
     } else if (version == 'A01') {

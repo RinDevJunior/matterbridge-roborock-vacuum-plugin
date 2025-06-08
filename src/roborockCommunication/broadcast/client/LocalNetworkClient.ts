@@ -81,7 +81,7 @@ export class LocalNetworkClient extends AbstractClient {
     await this.connectionListeners.onDisconnected();
   }
 
-  private async onError(result: any): Promise<void> {
+  private async onError(result: Error): Promise<void> {
     this.logger.error('Socket connection error: ' + result);
     this.connected = false;
 
@@ -127,7 +127,7 @@ export class LocalNetworkClient extends AbstractClient {
           await this.messageListeners.onMessage(response);
         } catch (error) {
           this.logger.error('LocalNetworkClient: unable to process message with error: ' + error);
-          //unable to process message: TypeError: Cannot read properties of undefined (reading 'length')
+          // unable to process message: TypeError: Cannot read properties of undefined (reading 'length')
         }
         offset += 4 + segmentLength;
       }

@@ -11,6 +11,12 @@
   <a href="https://www.npmjs.com/package/matterbridge-roborock-vacuum-plugin">
     <img src="https://img.shields.io/npm/dt/matterbridge-roborock-vacuum-plugin.svg" alt="npm downloads" />
   </a>
+  <a href="https://github.com/RinDevJunior/matterbridge-roborock-vacuum-plugin/actions/workflows/publish.yml/badge.svg">
+    <img src="https://github.com/RinDevJunior/matterbridge-roborock-vacuum-plugin/actions/workflows/publish.yml/badge.svg" alt="nodejs ci" />
+  </a>
+  <a href="https://codecov.io/gh/RinDevJunior/matterbridge-roborock-vacuum-plugin">
+    <img src="https://codecov.io/gh/RinDevJunior/matterbridge-roborock-vacuum-plugin/branch/main/graph/badge.svg" alt="codecov" />
+  </a>
   <a href="https://www.npmjs.com/package/matterbridge">
     <img src="https://img.shields.io/badge/powered%20by-matterbridge-blue" alt="powered by Matterbridge" />
   </a>

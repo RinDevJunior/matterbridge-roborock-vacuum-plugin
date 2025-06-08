@@ -2,12 +2,12 @@ import { CloudMessageResult } from '../roborockCommunication/Zmodel/messageResul
 
 export interface CloudMessageModel {
   duid: string;
-  dps: {
-    [key: string]:
-      | number
-      | {
-          id: number;
-          result: CloudMessageResult[];
-        };
-  };
+  dps: Record<
+    string,
+    | number
+    | {
+        id: number;
+        result: CloudMessageResult[];
+      }
+  >;
 }

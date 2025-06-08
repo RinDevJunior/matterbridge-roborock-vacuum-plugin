@@ -6,7 +6,7 @@ export function getCurrentCleanModeDefault(fan_power: number | undefined, water_
   if (fan_power == VacuumSuctionPower.Off) return 5; // 'Mop',
   if (water_box_mode == MopWaterFlow.Off)
     return 6; // 'Vacuum',
-  else return 7; //Vac & Mop
+  else return 7; // Vac & Mop
 }
 
 export function getCurrentCleanModeFromFanPowerDefault(fan_power: number | undefined): number | undefined {

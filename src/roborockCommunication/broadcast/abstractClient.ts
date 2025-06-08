@@ -9,12 +9,13 @@ import { MessageContext } from './model/messageContext.js';
 import { ChainedConnectionListener } from './listener/implementation/chainedConnectionListener.js';
 import { ChainedMessageListener } from './listener/implementation/chainedMessageListener.js';
 import { SyncMessageListener } from './listener/implementation/syncMessageListener.js';
+import { ResponseMessage } from '../index.js';
 
 export abstract class AbstractClient implements Client {
   protected readonly connectionListeners = new ChainedConnectionListener();
   protected readonly messageListeners = new ChainedMessageListener();
 
-  protected connected: boolean = false;
+  protected connected = false;
 
   private readonly context: MessageContext;
   protected readonly serializer: MessageSerializer;
@@ -37,8 +38,8 @@ export abstract class AbstractClient implements Client {
   abstract send(duid: string, request: RequestMessage): Promise<void>;
 
   public async get<T>(duid: string, request: RequestMessage): Promise<T> {
-    return new Promise<any>((resolve, reject) => {
-      this.syncMessageListener.waitFor(request.messageId, resolve, reject);
+    return new Promise<T>((resolve, reject) => {
+      this.syncMessageListener.waitFor(request.messageId, (response: ResponseMessage) => resolve(response as unknown as T), reject);
       this.send(duid, request);
     });
   }

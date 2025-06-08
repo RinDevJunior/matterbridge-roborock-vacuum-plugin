@@ -8,6 +8,7 @@ out/
 .shouldnotcommit/
 webui/
 exampleData/
+coverage/
 
 # TypeScript cache
 *.tsbuildinfo

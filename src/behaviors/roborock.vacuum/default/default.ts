@@ -10,20 +10,18 @@ export interface DefaultEndpointCommands extends DeviceCommands {
   pause: () => MaybePromise;
   resume: () => MaybePromise;
   goHome: () => MaybePromise;
-  PlaySoundToLocate: (identifyTime: number) => MaybePromise;
+  playSoundToLocate: (identifyTime: number) => MaybePromise;
 }
 
 export class DefaultBehavior extends BehaviorRoborock {
-  declare state: DefaultBehaviorRoborock.State;
+  declare state: DefaultBehaviorRoborockState;
 }
 
-export namespace DefaultBehaviorRoborock {
-  export class State {
-    device!: BehaviorDeviceGeneric<DefaultEndpointCommands>;
-  }
+export interface DefaultBehaviorRoborockState {
+  device: BehaviorDeviceGeneric<DefaultEndpointCommands>;
 }
 
-//suction_power
+// suction_power
 export enum VacuumSuctionPower {
   Quiet = 101,
   Balanced = 102,
@@ -34,7 +32,7 @@ export enum VacuumSuctionPower {
   MaxPlus = 108,
 }
 
-//water_box_mode
+// water_box_mode
 export enum MopWaterFlow {
   Off = 200,
   Low = 201,
@@ -43,7 +41,7 @@ export enum MopWaterFlow {
   Custom = 204,
 }
 
-//set_mop_mode
+// set_mop_mode
 export enum MopRoute {
   Standard = 300,
   Deep = 301,
@@ -53,7 +51,7 @@ export enum MopRoute {
 }
 
 const RvcRunMode: Record<number, string> = {
-  [1]: 'Idle', //DO NOT HANDLE HERE,
+  [1]: 'Idle', // DO NOT HANDLE HERE,
   [2]: 'Cleaning',
   [3]: 'Mapping',
 };
@@ -65,9 +63,9 @@ const RvcCleanMode: Record<number, string> = {
 };
 
 const CleanSetting: Record<number, { suctionPower: number; waterFlow: number; distance_off: number; mopRoute: number }> = {
-  [5]: { suctionPower: VacuumSuctionPower.Off, waterFlow: MopWaterFlow.Medium, distance_off: 0, mopRoute: MopRoute.Standard }, //'Mop'
-  [6]: { suctionPower: VacuumSuctionPower.Balanced, waterFlow: MopWaterFlow.Off, distance_off: 0, mopRoute: MopRoute.Standard }, //'Vacuum'
-  [7]: { suctionPower: VacuumSuctionPower.Balanced, waterFlow: MopWaterFlow.Medium, distance_off: 0, mopRoute: MopRoute.Standard }, //'Vac & Mop'
+  [5]: { suctionPower: VacuumSuctionPower.Off, waterFlow: MopWaterFlow.Medium, distance_off: 0, mopRoute: MopRoute.Standard }, // 'Mop'
+  [6]: { suctionPower: VacuumSuctionPower.Balanced, waterFlow: MopWaterFlow.Off, distance_off: 0, mopRoute: MopRoute.Standard }, // 'Vacuum'
+  [7]: { suctionPower: VacuumSuctionPower.Balanced, waterFlow: MopWaterFlow.Medium, distance_off: 0, mopRoute: MopRoute.Standard }, // 'Vac & Mop'
   [8]: { suctionPower: VacuumSuctionPower.Custom, waterFlow: MopWaterFlow.Custom, distance_off: 0, mopRoute: MopRoute.Custom }, // 'Custom'
 };
 
@@ -127,8 +125,8 @@ export function setDefaultCommandHandler(
     await roborockService.stopAndGoHome(duid);
   });
 
-  handler.setCommandHandler('PlaySoundToLocate', async (identifyTime: number) => {
-    logger.notice('DefaultBehavior-PlaySoundToLocate');
+  handler.setCommandHandler('playSoundToLocate', async () => {
+    logger.notice('DefaultBehavior-playSoundToLocate');
     await roborockService.playSoundToLocate(duid);
   });
 

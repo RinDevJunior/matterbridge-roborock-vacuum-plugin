@@ -10,20 +10,18 @@ export interface EndpointCommandsA51 extends DeviceCommands {
   pause: () => MaybePromise;
   resume: () => MaybePromise;
   goHome: () => MaybePromise;
-  PlaySoundToLocate: (identifyTime: number) => MaybePromise;
+  playSoundToLocate: (identifyTime: number) => MaybePromise;
 }
 
 export class BehaviorA51 extends BehaviorRoborock {
-  declare state: BehaviorRoborockA51.State;
+  declare state: BehaviorRoborockA51State;
 }
 
-export namespace BehaviorRoborockA51 {
-  export class State {
-    device!: BehaviorDeviceGeneric<EndpointCommandsA51>;
-  }
+export interface BehaviorRoborockA51State {
+  device: BehaviorDeviceGeneric<EndpointCommandsA51>;
 }
 
-//suction_power
+// suction_power
 export enum VacuumSuctionPowerA51 {
   Quiet = 101,
   Balanced = 102,
@@ -34,7 +32,7 @@ export enum VacuumSuctionPowerA51 {
   MaxPlus = 108,
 }
 
-//water_box_mode
+// water_box_mode
 export enum MopWaterFlowA51 {
   Off = 200,
   Low = 201,
@@ -43,7 +41,7 @@ export enum MopWaterFlowA51 {
   Custom = 204,
 }
 
-//set_mop_mode
+// set_mop_mode
 export enum MopRouteA51 {
   Standard = 300,
   Deep = 301,
@@ -53,7 +51,7 @@ export enum MopRouteA51 {
 }
 
 const RvcRunMode: Record<number, string> = {
-  [1]: 'Idle', //DO NOT HANDLE HERE,
+  [1]: 'Idle', // DO NOT HANDLE HERE,
   [2]: 'Cleaning',
   [3]: 'Mapping',
 };
@@ -65,9 +63,9 @@ const RvcCleanMode: Record<number, string> = {
 };
 
 const CleanSetting: Record<number, { suctionPower: number; waterFlow: number; distance_off: number; mopRoute: number }> = {
-  [5]: { suctionPower: VacuumSuctionPowerA51.Off, waterFlow: MopWaterFlowA51.Medium, distance_off: 0, mopRoute: MopRouteA51.Standard }, //'Mop'
-  [6]: { suctionPower: VacuumSuctionPowerA51.Balanced, waterFlow: MopWaterFlowA51.Off, distance_off: 0, mopRoute: MopRouteA51.Standard }, //'Vacuum'
-  [7]: { suctionPower: VacuumSuctionPowerA51.Balanced, waterFlow: MopWaterFlowA51.Medium, distance_off: 0, mopRoute: MopRouteA51.Standard }, //'Vac & Mop'
+  [5]: { suctionPower: VacuumSuctionPowerA51.Off, waterFlow: MopWaterFlowA51.Medium, distance_off: 0, mopRoute: MopRouteA51.Standard }, // 'Mop'
+  [6]: { suctionPower: VacuumSuctionPowerA51.Balanced, waterFlow: MopWaterFlowA51.Off, distance_off: 0, mopRoute: MopRouteA51.Standard }, // 'Vacuum'
+  [7]: { suctionPower: VacuumSuctionPowerA51.Balanced, waterFlow: MopWaterFlowA51.Medium, distance_off: 0, mopRoute: MopRouteA51.Standard }, // 'Vac & Mop'
   [8]: { suctionPower: VacuumSuctionPowerA51.Custom, waterFlow: MopWaterFlowA51.Custom, distance_off: 0, mopRoute: MopRouteA51.Custom }, // 'Custom'
 };
 
@@ -107,7 +105,7 @@ export function setCommandHandlerA51(
     }
   });
 
-  handler.setCommandHandler('selectAreas', async (newAreas: number[]) => {
+  handler.setCommandHandler('selectAreas', async (newAreas: number[] | undefined) => {
     logger.notice(`BehaviorA51-selectAreas: ${newAreas}`);
     roborockService.setSelectedAreas(duid, newAreas ?? []);
   });
@@ -127,8 +125,8 @@ export function setCommandHandlerA51(
     await roborockService.stopAndGoHome(duid);
   });
 
-  handler.setCommandHandler('PlaySoundToLocate', async (identifyTime: number) => {
-    logger.notice('BehaviorA51-PlaySoundToLocate');
+  handler.setCommandHandler('playSoundToLocate', async () => {
+    logger.notice('BehaviorA51-playSoundToLocate');
     await roborockService.playSoundToLocate(duid);
   });
 

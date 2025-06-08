@@ -20,17 +20,17 @@ export class SimpleMessageListener implements AbstractMessageListener {
     }
 
     if (message.contain(Protocol.error) && this.handler.onError) {
-      const value = <string>message.get(Protocol.error);
+      const value = message.get(Protocol.error) as string;
       await this.handler.onError(Number(value));
     }
 
     if (message.contain(Protocol.battery) && this.handler.onBatteryUpdate) {
-      const value = <string>message.get(Protocol.battery);
+      const value = message.get(Protocol.battery) as string;
       await this.handler.onBatteryUpdate(Number(value));
     }
 
     if (message.contain(Protocol.additional_props) && this.handler.onAdditionalProps) {
-      const value = <string>message.get(Protocol.additional_props);
+      const value = message.get(Protocol.additional_props) as string;
       await this.handler.onAdditionalProps(Number(value));
     }
   }

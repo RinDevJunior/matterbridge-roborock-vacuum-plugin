@@ -23,16 +23,17 @@ export class SyncMessageListener implements AbstractMessageListener {
 
   public async onMessage(message: ResponseMessage): Promise<void> {
     if (message.contain(Protocol.rpc_response)) {
-      const dps = <DpsPayload>message.get(Protocol.rpc_response);
+      const dps = message.get(Protocol.rpc_response) as DpsPayload;
       const messageId = dps.id;
 
       const responseHandler = this.pending.get(messageId);
-      if (dps.result.length == 1 && dps.result[0] == 'ok') {
+      const result = dps.result as Record<string, unknown>;
+      if (result && result.length == 1 && result[0] == 'ok') {
         return;
       }
 
       if (responseHandler) {
-        responseHandler(dps.result);
+        responseHandler(dps.result as ResponseMessage);
       }
       this.pending.delete(messageId);
       return;
@@ -40,7 +41,7 @@ export class SyncMessageListener implements AbstractMessageListener {
 
     // map data
     if (message.contain(Protocol.map_response)) {
-      const dps = <DpsPayload>message.get(Protocol.map_response);
+      const dps = message.get(Protocol.map_response) as DpsPayload;
       this.pending.delete(dps.id);
       return;
     }

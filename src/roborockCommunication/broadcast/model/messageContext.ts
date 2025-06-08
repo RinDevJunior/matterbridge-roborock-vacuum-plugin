@@ -1,11 +1,11 @@
 import { randomBytes } from 'node:crypto';
-import { CryptoUtils } from '../../helper/cryptoHelper.js';
+import * as CryptoUtils from '../../helper/cryptoHelper.js';
 import { UserData } from '../../Zmodel/userData.js';
 
 export class MessageContext {
   private readonly endpoint: string;
   readonly nonce: Buffer;
-  private readonly devices: Map<string, { localKey: string; protocolVersion: string }> = new Map();
+  private readonly devices = new Map<string, { localKey: string; protocolVersion: string }>();
 
   constructor(userdata: UserData) {
     this.endpoint = CryptoUtils.md5bin(userdata.rriot.k).subarray(8, 14).toString('base64');

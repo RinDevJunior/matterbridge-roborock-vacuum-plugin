@@ -3,12 +3,12 @@ export class Scene {
   name: string | undefined;
   param: string | undefined;
   enabled: boolean | undefined;
-  extra: any | undefined;
+  extra: unknown | undefined;
   type: string | undefined;
 }
 
 export interface SceneParam {
-  triggers: any[];
+  triggers: unknown[];
   action: {
     type: string;
     items: SceneItem[];

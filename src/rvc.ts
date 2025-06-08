@@ -18,19 +18,19 @@ export class RoborockVacuumCleaner extends RoboticVacuumCleaner {
     const supportedAreas = [...getSupportedAreas(device.rooms, roomMap, log), ...routineAsRoom];
     const deviceName = `${device.name}-${device.duid}`.replace(/\s+/g, '');
     super(
-      deviceName, //name
-      device.duid, //serial
-      supportedRunModes[0].mode, //currentRunMode
-      supportedRunModes, //supportedRunModes
-      cleanModes[0].mode, //currentCleanMode
-      cleanModes, //supportedCleanModes
-      undefined, //currentPhase
-      undefined, //phaseList
-      RvcOperationalState.OperationalState.Docked, //operationalState
-      getOperationalStates(device.data.model), //operationalStateList
-      supportedAreas, //supportedAreas
-      undefined, //selectedAreas
-      supportedAreas[0].areaId, //currentArea
+      deviceName, // name
+      device.duid, // serial
+      supportedRunModes[0].mode, // currentRunMode
+      supportedRunModes, // supportedRunModes
+      cleanModes[0].mode, // currentCleanMode
+      cleanModes, // supportedCleanModes
+      undefined, // currentPhase
+      undefined, // phaseList
+      RvcOperationalState.OperationalState.Docked, // operationalState
+      getOperationalStates(device.data.model), // operationalStateList
+      supportedAreas, // supportedAreas
+      undefined, // selectedAreas
+      supportedAreas[0].areaId, // currentArea
     );
 
     this.username = username;
@@ -40,7 +40,7 @@ export class RoborockVacuumCleaner extends RoboticVacuumCleaner {
 
   public configurateHandler(behaviorHandler: BehaviorFactoryResult): void {
     this.addCommandHandler('identify', async ({ request: { identifyTime } }) => {
-      behaviorHandler.executeCommand('PlaySoundToLocate', identifyTime as number);
+      behaviorHandler.executeCommand('playSoundToLocate', identifyTime as number);
     });
 
     this.addCommandHandler('selectAreas', async ({ request }: { request: ServiceArea.SelectAreasRequest }) => {

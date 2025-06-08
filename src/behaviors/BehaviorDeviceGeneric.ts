@@ -1,11 +1,10 @@
 import { AnsiLogger } from 'matterbridge/logger';
 import { Behavior, MaybePromise } from 'matterbridge/matter';
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export type DeviceCommandHandler = (...args: any[]) => MaybePromise;
 
-export interface DeviceCommands {
-  [command: string]: DeviceCommandHandler;
-}
+export type DeviceCommands = Record<string, DeviceCommandHandler>;
 
 export class BehaviorDeviceGeneric<Commands extends DeviceCommands> {
   readonly commands: Partial<Commands> = {};
@@ -23,17 +22,10 @@ export class BehaviorDeviceGeneric<Commands extends DeviceCommands> {
   }
 }
 
-export class BehaviorGeneric<StateType extends {}> extends Behavior {
-  static override readonly id: string;
-  declare state: StateType;
-}
-
 export class BehaviorRoborock extends Behavior {
   static override readonly id = 'roborock.vacuum.axx';
-  declare state: BehaviorRoborock.State;
+  declare state: BehaviorRoborockState;
 }
-export namespace BehaviorRoborock {
-  export class State {
-    device!: BehaviorDeviceGeneric<DeviceCommands>;
-  }
+export interface BehaviorRoborockState {
+  device: BehaviorDeviceGeneric<DeviceCommands>;
 }
