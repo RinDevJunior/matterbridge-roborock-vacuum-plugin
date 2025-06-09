@@ -1,19 +1,17 @@
 import { RvcOperationalState } from 'matterbridge/matter/clusters';
-import { getOperationalStatesA187 } from '../behaviors/roborock.vacuum/QREVO_EDGE_5V1/initalData.js';
+import { getOperationalStatesSmart } from '../behaviors/roborock.vacuum/smart/initalData.js';
 import { getDefaultOperationalStates } from '../behaviors/roborock.vacuum/default/initalData.js';
 import { DeviceModel } from '../roborockCommunication/Zmodel/deviceModel.js';
 import { VacuumErrorCode } from '../roborockCommunication/Zenum/vacuumAndDockErrorCode.js';
-import { getOperationalStatesA27 } from '../behaviors/roborock.vacuum/S7_MAXV/initalData.js';
-import { getOperationalStatesA51 } from '../behaviors/roborock.vacuum/S8_PRO_ULTRA/initalData.js';
 
 export function getOperationalStates(model: string): RvcOperationalState.OperationalStateStruct[] {
   switch (model) {
     case DeviceModel.QREVO_EDGE_5V1:
-      return getOperationalStatesA187();
+      return getOperationalStatesSmart();
+
     case DeviceModel.S7_MAXV:
-      return getOperationalStatesA27();
     case DeviceModel.S8_MAXV_ULTRA:
-      return getOperationalStatesA51();
+    case DeviceModel.S6_PURE:
     default:
       return getDefaultOperationalStates();
   }

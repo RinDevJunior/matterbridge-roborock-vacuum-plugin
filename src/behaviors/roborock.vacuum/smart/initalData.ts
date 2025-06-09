@@ -1,7 +1,7 @@
 import { RvcCleanMode, RvcOperationalState, RvcRunMode } from 'matterbridge/matter/clusters';
-import { RvcCleanMode as RvcCleanModeDisplayMap } from './default.js';
+import { RvcCleanMode as RvcCleanModeDisplayMap } from './smart.js';
 
-export function getDefaultSupportedRunModes(): RvcRunMode.ModeOption[] {
+export function getSupportedRunModesSmart(): RvcRunMode.ModeOption[] {
   return [
     {
       label: 'Idle',
@@ -21,12 +21,17 @@ export function getDefaultSupportedRunModes(): RvcRunMode.ModeOption[] {
   ];
 }
 
-export function getDefaultSupportedCleanModes(): RvcCleanMode.ModeOption[] {
+export function getSupportedCleanModesSmart(): RvcCleanMode.ModeOption[] {
   return [
+    {
+      label: RvcCleanModeDisplayMap[4],
+      mode: 4,
+      modeTags: [{ value: RvcCleanMode.ModeTag.Mop }, { value: RvcCleanMode.ModeTag.Vacuum }, { value: RvcCleanMode.ModeTag.Auto }],
+    },
     {
       label: RvcCleanModeDisplayMap[5],
       mode: 5,
-      modeTags: [{ value: RvcCleanMode.ModeTag.Mop }, { value: RvcCleanMode.ModeTag.Vacuum }, { value: RvcCleanMode.ModeTag.Auto }],
+      modeTags: [{ value: RvcCleanMode.ModeTag.Mop }, { value: RvcCleanMode.ModeTag.Vacuum }, { value: RvcCleanMode.ModeTag.Day }],
     },
     {
       label: RvcCleanModeDisplayMap[6],
@@ -103,7 +108,7 @@ export function getDefaultSupportedCleanModes(): RvcCleanMode.ModeOption[] {
   ];
 }
 
-export function getDefaultOperationalStates(): RvcOperationalState.OperationalStateStruct[] {
+export function getOperationalStatesSmart(): RvcOperationalState.OperationalStateStruct[] {
   return [
     {
       operationalStateId: RvcOperationalState.OperationalState.Stopped,

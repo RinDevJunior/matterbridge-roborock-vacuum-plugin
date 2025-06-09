@@ -1,26 +1,24 @@
-import { MopWaterFlow, VacuumSuctionPower } from './default.js';
+import { CleanSetting, MopWaterFlow, VacuumSuctionPower } from './default.js';
 
-export function getCurrentCleanModeDefault(fan_power: number | undefined, water_box_mode: number | undefined): number | undefined {
-  if (!fan_power || !water_box_mode) return undefined;
-  if (fan_power == VacuumSuctionPower.Custom || water_box_mode == MopWaterFlow.Custom) return 8; // 'Custom',
-  if (fan_power == VacuumSuctionPower.Off) return 5; // 'Mop',
-  if (water_box_mode == MopWaterFlow.Off)
-    return 6; // 'Vacuum',
-  else return 7; // Vac & Mop
-}
+export function getCurrentCleanModeDefault(setting: { suctionPower: number; waterFlow: number; distance_off: number; mopRoute: number }): number | undefined {
+  if (!setting || typeof setting !== 'object') {
+    return undefined;
+  }
 
-export function getCurrentCleanModeFromFanPowerDefault(fan_power: number | undefined): number | undefined {
-  if (!fan_power) return undefined;
-  if (fan_power == VacuumSuctionPower.Custom) return 8; // 'Custom',
-  if (fan_power == VacuumSuctionPower.Off)
-    return 5; // 'Mop',
-  else return undefined;
-}
+  for (const [key, value] of Object.entries(CleanSetting)) {
+    if (
+      value.suctionPower === setting.suctionPower &&
+      value.waterFlow === setting.waterFlow &&
+      value.distance_off === setting.distance_off &&
+      value.mopRoute === setting.mopRoute
+    ) {
+      return Number(key);
+    }
+  }
 
-export function getCurrentCleanModeFromWaterBoxModeDefault(water_box_mode: number | undefined): number | undefined {
-  if (!water_box_mode) return undefined;
-  if (water_box_mode == MopWaterFlow.Custom) return 8; // 'Custom',
-  if (water_box_mode == MopWaterFlow.Off)
-    return 6; // 'Vacuum',
-  else return undefined;
+  if (setting.suctionPower == VacuumSuctionPower.Off) return 11; // 'Mop Default'
+  if (setting.waterFlow == MopWaterFlow.Off) return 16; // 'Vacuum Default'
+  if ((setting.suctionPower !== VacuumSuctionPower.Off && setting.waterFlow) !== MopWaterFlow.Off) return 5; // 'Vac & Mop Default'
+
+  return undefined;
 }
