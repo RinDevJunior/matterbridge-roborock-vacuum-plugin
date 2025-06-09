@@ -13,8 +13,15 @@ export function configurateBehavior(
   duid: string,
   roborockService: RoborockService,
   cleanModeSettings: CleanModeSettings | undefined,
+  forceRunAtDefault: boolean,
   logger: AnsiLogger,
 ): BehaviorFactoryResult {
+  if (forceRunAtDefault) {
+    const deviceHandler = new BehaviorDeviceGeneric<DefaultEndpointCommands>(logger);
+    setDefaultCommandHandler(duid, deviceHandler, logger, roborockService, cleanModeSettings);
+    return deviceHandler;
+  }
+
   switch (model) {
     case DeviceModel.QREVO_EDGE_5V1: {
       const deviceHandler = new BehaviorDeviceGeneric<EndpointCommandsSmart>(logger);

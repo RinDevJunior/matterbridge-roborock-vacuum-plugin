@@ -30,8 +30,8 @@ export class MQTTClient extends AbstractClient {
       username: this.mqttUsername,
       password: this.mqttPassword,
       keepalive: 30,
-      log: (...args: unknown[]) => {
-        this.logger.debug('MQTTClient args:: ' + args[0]);
+      log: () => {
+        // ...args: unknown[] -  this.logger.debug('MQTTClient args:: ' + args[0]);
       },
     });
 

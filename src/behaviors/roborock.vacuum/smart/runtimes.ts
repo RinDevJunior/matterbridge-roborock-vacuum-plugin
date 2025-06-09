@@ -1,17 +1,20 @@
-import { CleanSetting, MopWaterFlowSmart, VacuumSuctionPowerSmart } from './smart.js';
+import { CleanSetting, MopRouteSmart, MopWaterFlowSmart, VacuumSuctionPowerSmart } from './smart.js';
 
 export function getCurrentCleanModeSmart(setting: { suctionPower: number; waterFlow: number; distance_off: number; mopRoute: number }): number | undefined {
   if (!setting || typeof setting !== 'object') {
     return undefined;
   }
 
+  if (setting.suctionPower === VacuumSuctionPowerSmart.Smart || setting.waterFlow === MopWaterFlowSmart.Smart || setting.mopRoute === MopRouteSmart.Smart) {
+    return 4; // 'Smart Plan'
+  }
+
+  if (setting.suctionPower === VacuumSuctionPowerSmart.Custom || setting.waterFlow === MopWaterFlowSmart.Custom || setting.mopRoute === MopRouteSmart.Custom) {
+    return 10; // 'Vac & Mop Custom'
+  }
+
   for (const [key, value] of Object.entries(CleanSetting)) {
-    if (
-      value.suctionPower === setting.suctionPower &&
-      value.waterFlow === setting.waterFlow &&
-      value.distance_off === setting.distance_off &&
-      value.mopRoute === setting.mopRoute
-    ) {
+    if (value.suctionPower === setting.suctionPower && value.waterFlow === setting.waterFlow && value.mopRoute === setting.mopRoute) {
       return Number(key);
     }
   }

@@ -4,7 +4,11 @@ import { DeviceModel } from '../roborockCommunication/Zmodel/deviceModel.js';
 
 export type CleanModeFunc = (setting: { suctionPower: number; waterFlow: number; distance_off: number; mopRoute: number }) => number | undefined;
 
-export function getCurrentCleanModeFunc(model: string): CleanModeFunc {
+export function getCurrentCleanModeFunc(model: string, forceRunAtDefault: boolean): CleanModeFunc {
+  if (forceRunAtDefault) {
+    return getCurrentCleanModeDefault;
+  }
+
   switch (model) {
     case DeviceModel.QREVO_EDGE_5V1:
       return getCurrentCleanModeSmart;

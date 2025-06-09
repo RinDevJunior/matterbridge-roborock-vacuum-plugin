@@ -3,6 +3,7 @@ export interface ExperimentalFeatureSetting {
   advancedFeature: {
     showRoutinesAsRoom: boolean;
     includeDockStationStatus: boolean;
+    forceRunAtDefault: boolean;
   };
   cleanModeSettings: CleanModeSettings;
 }

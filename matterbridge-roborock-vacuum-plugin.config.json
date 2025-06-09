@@ -1,7 +1,7 @@
 {
   "name": "matterbridge-roborock-vacuum-plugin",
   "type": "DynamicPlatform",
-  "version": "1.0.8-rc05",
+  "version": "1.0.8-rc06",
   "whiteList": [],
   "blackList": [],
   "useInterval": true,
@@ -9,7 +9,8 @@
     "enableExperimentalFeature": false,
     "advancedFeature": {
       "showRoutinesAsRooms": false,
-      "includeDockStationStatus": false
+      "includeDockStationStatus": false,
+      "forceRunAtDefault": false
     },
     "cleanModeSettings": {
       "enableCleanModeMapping": false,

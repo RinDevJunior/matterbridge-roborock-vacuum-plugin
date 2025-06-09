@@ -1,25 +1,5 @@
-import { RvcCleanMode, RvcOperationalState, RvcRunMode } from 'matterbridge/matter/clusters';
+import { RvcCleanMode } from 'matterbridge/matter/clusters';
 import { RvcCleanMode as RvcCleanModeDisplayMap } from './smart.js';
-
-export function getSupportedRunModesSmart(): RvcRunMode.ModeOption[] {
-  return [
-    {
-      label: 'Idle',
-      mode: 1,
-      modeTags: [{ value: RvcRunMode.ModeTag.Idle }],
-    },
-    {
-      label: 'Cleaning',
-      mode: 2,
-      modeTags: [{ value: RvcRunMode.ModeTag.Cleaning }],
-    },
-    {
-      label: 'Mapping',
-      mode: 3,
-      modeTags: [{ value: RvcRunMode.ModeTag.Mapping }],
-    },
-  ];
-}
 
 export function getSupportedCleanModesSmart(): RvcCleanMode.ModeOption[] {
   return [
@@ -104,39 +84,6 @@ export function getSupportedCleanModesSmart(): RvcCleanMode.ModeOption[] {
       label: RvcCleanModeDisplayMap[19],
       mode: 19,
       modeTags: [{ value: RvcCleanMode.ModeTag.Vacuum }, { value: RvcCleanMode.ModeTag.Quick }],
-    },
-  ];
-}
-
-export function getOperationalStatesSmart(): RvcOperationalState.OperationalStateStruct[] {
-  return [
-    {
-      operationalStateId: RvcOperationalState.OperationalState.Stopped,
-      operationalStateLabel: 'Stopped',
-    },
-    {
-      operationalStateId: RvcOperationalState.OperationalState.Running,
-      operationalStateLabel: 'Running',
-    },
-    {
-      operationalStateId: RvcOperationalState.OperationalState.Paused,
-      operationalStateLabel: 'Paused',
-    },
-    {
-      operationalStateId: RvcOperationalState.OperationalState.Error,
-      operationalStateLabel: 'Error',
-    },
-    {
-      operationalStateId: RvcOperationalState.OperationalState.SeekingCharger,
-      operationalStateLabel: 'SeekingCharger',
-    },
-    {
-      operationalStateId: RvcOperationalState.OperationalState.Charging,
-      operationalStateLabel: 'Charging',
-    },
-    {
-      operationalStateId: RvcOperationalState.OperationalState.Docked,
-      operationalStateLabel: 'Docked',
     },
   ];
 }

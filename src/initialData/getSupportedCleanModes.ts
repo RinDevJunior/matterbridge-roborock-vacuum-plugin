@@ -3,7 +3,11 @@ import { getSupportedCleanModesSmart } from '../behaviors/roborock.vacuum/smart/
 import { getDefaultSupportedCleanModes } from '../behaviors/roborock.vacuum/default/initalData.js';
 import { DeviceModel } from '../roborockCommunication/Zmodel/deviceModel.js';
 
-export function getSupportedCleanModes(model: string): RvcCleanMode.ModeOption[] {
+export function getSupportedCleanModes(model: string, forceRunAtDefault: boolean): RvcCleanMode.ModeOption[] {
+  if (forceRunAtDefault) {
+    return getDefaultSupportedCleanModes();
+  }
+
   switch (model) {
     case DeviceModel.QREVO_EDGE_5V1:
       return getSupportedCleanModesSmart();

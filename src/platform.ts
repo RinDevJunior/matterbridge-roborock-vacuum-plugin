@@ -136,7 +136,14 @@ export class RoborockMatterbridgePlatform extends MatterbridgeDynamicPlatform {
 
     this.log.debug('Initializing - roomMap: ', debugStringify(roomMap));
 
-    const behaviorHandler = configurateBehavior(vacuum.data.model, vacuum.duid, this.roborockService, this.cleanModeSettings, this.log);
+    const behaviorHandler = configurateBehavior(
+      vacuum.data.model,
+      vacuum.duid,
+      this.roborockService,
+      this.cleanModeSettings,
+      this.enableExperimentalFeature?.advancedFeature?.forceRunAtDefault ?? false,
+      this.log,
+    );
 
     this.roborockService.setSupportedAreas(vacuum.duid, getSupportedAreas(vacuum.rooms, roomMap, this.log));
 
@@ -146,7 +153,7 @@ export class RoborockMatterbridgePlatform extends MatterbridgeDynamicPlatform {
       this.roborockService.setSupportedScenes(vacuum.duid, routineAsRoom);
     }
 
-    this.robot = new RoborockVacuumCleaner(username, vacuum, roomMap, routineAsRoom, this.log);
+    this.robot = new RoborockVacuumCleaner(username, vacuum, roomMap, routineAsRoom, this.enableExperimentalFeature?.advancedFeature?.forceRunAtDefault ?? false, this.log);
     this.robot.configurateHandler(behaviorHandler);
 
     this.log.info('vacuum:', debugStringify(vacuum));
