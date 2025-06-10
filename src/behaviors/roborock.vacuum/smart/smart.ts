@@ -3,6 +3,7 @@ import { AnsiLogger, debugStringify } from 'matterbridge/logger';
 import { BehaviorDeviceGeneric, BehaviorRoborock, DeviceCommands } from '../../BehaviorDeviceGeneric.js';
 import RoborockService from '../../../roborockService.js';
 import { CleanModeSettings } from '../../../model/ExperimentalFeatureSetting.js';
+import { RvcCleanMode as DefaultRvcCleanMode, CleanSetting as DefaultCleanSetting, getSettingFromCleanMode, RvcRunMode } from '../default/default.js';
 
 export interface EndpointCommandsSmart extends DeviceCommands {
   selectAreas: (newAreas: number[] | undefined) => MaybePromise;
@@ -54,55 +55,15 @@ export enum MopRouteSmart {
   Smart = 306,
 }
 
-const RvcRunMode: Record<number, string> = {
-  [1]: 'Idle', // DO NOT HANDLE HERE,
-  [2]: 'Cleaning',
-  [3]: 'Mapping',
-};
-
 export const RvcCleanMode: Record<number, string> = {
   [4]: 'Smart Plan',
-  [5]: 'Mop & Vacuum: Default',
-  [6]: 'Mop & Vacuum: Quick',
-  [7]: 'Mop & Vacuum: Max',
-  [8]: 'Mop & Vacuum: Min',
-  [9]: 'Mop & Vacuum: Quiet',
-  [10]: 'Mop & Vacuum: Custom',
-
-  [11]: 'Mop: Default',
-  [12]: 'Mop: Max',
-  [13]: 'Mop: Min',
-  [14]: 'Mop: Quick',
-  [15]: 'Mop: DeepClean',
-
-  [16]: 'Vacuum: Default',
-  [17]: 'Vacuum: Max',
-  [18]: 'Vacuum: Quiet',
-  [19]: 'Vacuum: Quick',
+  ...DefaultRvcCleanMode,
 };
 
 // { suctionPower: [ 102 ], waterFlow: 200, distance_off: 0, mopRoute: [ 102 ] }
 export const CleanSetting: Record<number, { suctionPower: number; waterFlow: number; distance_off: number; mopRoute: number }> = {
   [4]: { suctionPower: 0, waterFlow: 0, distance_off: 0, mopRoute: MopRouteSmart.Smart }, // 'Smart Plan'
-
-  [5]: { suctionPower: VacuumSuctionPowerSmart.Balanced, waterFlow: MopWaterFlowSmart.Medium, distance_off: 0, mopRoute: MopRouteSmart.Standard }, // 'Vac & Mop Default'
-  [6]: { suctionPower: VacuumSuctionPowerSmart.Balanced, waterFlow: MopWaterFlowSmart.Medium, distance_off: 0, mopRoute: MopRouteSmart.Fast }, // 'Vac & Mop Quick'
-
-  [7]: { suctionPower: VacuumSuctionPowerSmart.Max, waterFlow: MopWaterFlowSmart.Medium, distance_off: 0, mopRoute: MopRouteSmart.Standard }, // 'Vac & Mop Max'
-  [8]: { suctionPower: VacuumSuctionPowerSmart.Balanced, waterFlow: MopWaterFlowSmart.Low, distance_off: 0, mopRoute: MopRouteSmart.Standard }, // 'Vac & Mop Min'
-  [9]: { suctionPower: VacuumSuctionPowerSmart.Quiet, waterFlow: MopWaterFlowSmart.Medium, distance_off: 0, mopRoute: MopRouteSmart.Standard }, // 'Vac & Mop Quiet'
-  [10]: { suctionPower: VacuumSuctionPowerSmart.Custom, waterFlow: MopWaterFlowSmart.Custom, distance_off: 0, mopRoute: MopRouteSmart.Custom }, // 'Vac & Mop Custom'
-
-  [11]: { suctionPower: VacuumSuctionPowerSmart.Off, waterFlow: MopWaterFlowSmart.Medium, distance_off: 0, mopRoute: MopRouteSmart.Standard }, // 'Mop Default'
-  [12]: { suctionPower: VacuumSuctionPowerSmart.Off, waterFlow: MopWaterFlowSmart.High, distance_off: 0, mopRoute: MopRouteSmart.Standard }, // 'MopMax'
-  [13]: { suctionPower: VacuumSuctionPowerSmart.Off, waterFlow: MopWaterFlowSmart.Low, distance_off: 0, mopRoute: MopRouteSmart.Standard }, // 'MopMin'
-  [14]: { suctionPower: VacuumSuctionPowerSmart.Off, waterFlow: MopWaterFlowSmart.Medium, distance_off: 0, mopRoute: MopRouteSmart.Fast }, // 'MopQuick'
-  [15]: { suctionPower: VacuumSuctionPowerSmart.Off, waterFlow: MopWaterFlowSmart.Medium, distance_off: 0, mopRoute: MopRouteSmart.Deep }, // 'MopDeepClean'
-
-  [16]: { suctionPower: VacuumSuctionPowerSmart.Balanced, waterFlow: MopWaterFlowSmart.Off, distance_off: 0, mopRoute: MopRouteSmart.Standard }, // 'Vacuum Default'
-  [17]: { suctionPower: VacuumSuctionPowerSmart.Max, waterFlow: MopWaterFlowSmart.Off, distance_off: 0, mopRoute: MopRouteSmart.Standard }, // 'VacuumMax'
-  [18]: { suctionPower: VacuumSuctionPowerSmart.Quiet, waterFlow: MopWaterFlowSmart.Off, distance_off: 0, mopRoute: MopRouteSmart.Standard }, // 'VacuumQuiet'
-  [19]: { suctionPower: VacuumSuctionPowerSmart.Balanced, waterFlow: MopWaterFlowSmart.Off, distance_off: 0, mopRoute: MopRouteSmart.Fast }, // 'VacuumQuick'
+  ...DefaultCleanSetting,
 };
 
 export function setCommandHandlerSmart(
@@ -120,6 +81,13 @@ export function setCommandHandlerSmart(
         await roborockService.startClean(duid);
         break;
       }
+
+      case 'Go Vacation': {
+        logger.notice('DefaultBehavior-GoHome');
+        await roborockService.stopAndGoHome(duid);
+        break;
+      }
+
       case 'Smart Plan':
       case 'Mop & Vacuum: Custom': {
         const setting = CleanSetting[newMode];
@@ -163,49 +131,6 @@ export function setCommandHandlerSmart(
         break;
     }
   });
-
-  const getSettingFromCleanMode = (
-    activity: string,
-    cleanModeSettings?: CleanModeSettings,
-  ): { suctionPower: number; waterFlow: number; distance_off: number; mopRoute: number } | undefined => {
-    switch (activity) {
-      case 'Mop: Default': {
-        const mopSetting = cleanModeSettings?.mopping;
-        const waterFlow = MopWaterFlowSmart[mopSetting?.waterFlowMode as keyof typeof MopWaterFlowSmart] ?? MopWaterFlowSmart.Medium;
-        const distance_off = waterFlow == MopWaterFlowSmart.CustomizeWithDistanceOff ? 210 - 5 * (mopSetting?.distanceOff ?? 25) : 0;
-        return {
-          suctionPower: VacuumSuctionPowerSmart.Off,
-          waterFlow,
-          distance_off,
-          mopRoute: MopRouteSmart[mopSetting?.mopRouteMode as keyof typeof MopRouteSmart] ?? MopRouteSmart.Standard,
-        };
-      }
-
-      case 'Vacuum: Default': {
-        const vacuumSetting = cleanModeSettings?.vacuuming;
-        return {
-          suctionPower: VacuumSuctionPowerSmart[vacuumSetting?.fanMode as keyof typeof VacuumSuctionPowerSmart] ?? VacuumSuctionPowerSmart.Balanced,
-          waterFlow: MopWaterFlowSmart.Off,
-          distance_off: 0,
-          mopRoute: MopRouteSmart[vacuumSetting?.mopRouteMode as keyof typeof MopRouteSmart] ?? MopRouteSmart.Standard,
-        };
-      }
-
-      case 'Mop & Vacuum: Default': {
-        const vacmopSetting = cleanModeSettings?.vacmop;
-        const waterFlow = MopWaterFlowSmart[vacmopSetting?.waterFlowMode as keyof typeof MopWaterFlowSmart] ?? MopWaterFlowSmart.Medium;
-        const distance_off = waterFlow == MopWaterFlowSmart.CustomizeWithDistanceOff ? 210 - 5 * (vacmopSetting?.distanceOff ?? 25) : 0;
-        return {
-          suctionPower: VacuumSuctionPowerSmart[vacmopSetting?.fanMode as keyof typeof VacuumSuctionPowerSmart] ?? VacuumSuctionPowerSmart.Balanced,
-          waterFlow,
-          distance_off,
-          mopRoute: MopRouteSmart[vacmopSetting?.mopRouteMode as keyof typeof MopRouteSmart] ?? MopRouteSmart.Standard,
-        };
-      }
-      default:
-        return undefined;
-    }
-  };
 
   handler.setCommandHandler('selectAreas', async (newAreas: number[] | undefined) => {
     logger.notice(`BehaviorSmart-selectAreas: ${newAreas}`);

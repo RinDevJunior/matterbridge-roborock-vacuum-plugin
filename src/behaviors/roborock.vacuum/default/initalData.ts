@@ -51,54 +51,61 @@ export function getDefaultSupportedCleanModes(): RvcCleanMode.ModeOption[] {
     {
       label: RvcCleanModeDisplayMap[10],
       mode: 10,
-      modeTags: [{ value: RvcCleanMode.ModeTag.Mop }, { value: RvcCleanMode.ModeTag.Vacuum }, { value: RvcCleanMode.ModeTag.Vacation }],
+      modeTags: [{ value: RvcCleanMode.ModeTag.Mop }, { value: RvcCleanMode.ModeTag.Vacuum }, { value: RvcCleanMode.ModeTag.LowEnergy }],
     },
 
     {
-      label: RvcCleanModeDisplayMap[11],
-      mode: 11,
+      label: RvcCleanModeDisplayMap[31],
+      mode: 31,
       modeTags: [{ value: RvcCleanMode.ModeTag.Mop }, { value: RvcCleanMode.ModeTag.Auto }],
     },
 
     {
-      label: RvcCleanModeDisplayMap[12],
-      mode: 12,
+      label: RvcCleanModeDisplayMap[32],
+      mode: 32,
       modeTags: [{ value: RvcCleanMode.ModeTag.Mop }, { value: RvcCleanMode.ModeTag.Max }],
     },
     {
-      label: RvcCleanModeDisplayMap[13],
-      mode: 13,
+      label: RvcCleanModeDisplayMap[33],
+      mode: 33,
       modeTags: [{ value: RvcCleanMode.ModeTag.Mop }, { value: RvcCleanMode.ModeTag.Min }],
     },
     {
-      label: RvcCleanModeDisplayMap[14],
-      mode: 14,
+      label: RvcCleanModeDisplayMap[34],
+      mode: 34,
       modeTags: [{ value: RvcCleanMode.ModeTag.Mop }, { value: RvcCleanMode.ModeTag.Quick }],
     },
     {
-      label: RvcCleanModeDisplayMap[15],
-      mode: 15,
+      label: RvcCleanModeDisplayMap[35],
+      mode: 35,
       modeTags: [{ value: RvcCleanMode.ModeTag.Mop }, { value: RvcCleanMode.ModeTag.DeepClean }],
     },
+
     {
-      label: RvcCleanModeDisplayMap[16],
-      mode: 16,
+      label: RvcCleanModeDisplayMap[66],
+      mode: 66,
       modeTags: [{ value: RvcCleanMode.ModeTag.Vacuum }, { value: RvcCleanMode.ModeTag.Auto }],
     },
     {
-      label: RvcCleanModeDisplayMap[17],
-      mode: 17,
+      label: RvcCleanModeDisplayMap[67],
+      mode: 67,
       modeTags: [{ value: RvcCleanMode.ModeTag.Vacuum }, { value: RvcCleanMode.ModeTag.Max }],
     },
     {
-      label: RvcCleanModeDisplayMap[18],
-      mode: 18,
+      label: RvcCleanModeDisplayMap[68],
+      mode: 68,
       modeTags: [{ value: RvcCleanMode.ModeTag.Vacuum }, { value: RvcCleanMode.ModeTag.Quiet }],
     },
     {
-      label: RvcCleanModeDisplayMap[19],
-      mode: 19,
+      label: RvcCleanModeDisplayMap[69],
+      mode: 69,
       modeTags: [{ value: RvcCleanMode.ModeTag.Vacuum }, { value: RvcCleanMode.ModeTag.Quick }],
+    },
+
+    {
+      label: RvcCleanModeDisplayMap[99],
+      mode: 99,
+      modeTags: [{ value: RvcCleanMode.ModeTag.Mop }, { value: RvcCleanMode.ModeTag.Vacuum }, { value: RvcCleanMode.ModeTag.Vacation }],
     },
   ];
 }

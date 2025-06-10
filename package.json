@@ -100,6 +100,7 @@
   },
   "dependencies": {
     "@log4js-node/log4js-api": "^1.0.2",
+    "@types/node-persist": "^3.1.8",
     "axios": "^1.9.0",
     "binary-parser": "^2.2.1",
     "crc-32": "^1.2.2",

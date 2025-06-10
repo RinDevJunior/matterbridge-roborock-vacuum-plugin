@@ -15,8 +15,8 @@ export function getCurrentCleanModeDefault(setting: { suctionPower: number; wate
     }
   }
 
-  if (setting.suctionPower == VacuumSuctionPower.Off) return 11; // 'Mop Default'
-  if (setting.waterFlow == MopWaterFlow.Off) return 16; // 'Vacuum Default'
+  if (setting.suctionPower == VacuumSuctionPower.Off) return 31; // 'Mop Default'
+  if (setting.waterFlow == MopWaterFlow.Off) return 66; // 'Vacuum Default'
   if ((setting.suctionPower !== VacuumSuctionPower.Off && setting.waterFlow) !== MopWaterFlow.Off) return 5; // 'Vac & Mop Default'
 
   return undefined;

@@ -26,7 +26,7 @@ describe('getCurrentCleanModeSmart', () => {
         distance_off: 0,
         mopRoute: 300,
       }),
-    ).toBe(12);
+    ).toBe(32);
   });
 
   it('returns 16 for Vacuum Default if waterFlow is Off', () => {
@@ -37,7 +37,7 @@ describe('getCurrentCleanModeSmart', () => {
         distance_off: 0,
         mopRoute: 300,
       }),
-    ).toBe(16);
+    ).toBe(66);
   });
 
   it('returns 5 for Vac & Mop Default if neither suctionPower nor waterFlow is Off', () => {
