@@ -96,6 +96,15 @@ export default class RoborockService {
     return this.supportedAreas.get(duid);
   }
 
+  public async getCleanModeData(duid: string): Promise<{ suctionPower: number; waterFlow: number; distance_off: number; mopRoute: number }> {
+    this.logger.notice('RoborockService - getCleanModeData');
+    const data = await this.messageProcessor?.getCleanModeData(duid);
+    if (!data) {
+      throw new Error('Failed to retrieve clean mode data');
+    }
+    return data;
+  }
+
   public async changeCleanMode(
     duid: string,
     { suctionPower, waterFlow, distance_off, mopRoute }: { suctionPower: number; waterFlow: number; distance_off: number; mopRoute: number },
@@ -217,7 +226,9 @@ export default class RoborockService {
       if (this.messageProcessor) {
         await this.messageProcessor.getDeviceStatus(device.duid).then((response: DeviceStatus) => {
           if (self.deviceNotify) {
-            self.deviceNotify(NotifyMessageTypes.LocalMessage, { duid: device.duid, ...response } as DeviceStatusNotify);
+            const message: DeviceStatusNotify = { duid: device.duid, ...response.errorStatus, ...response.message } as DeviceStatusNotify;
+            self.logger.debug('Device status update xxx', debugStringify(message));
+            self.deviceNotify(NotifyMessageTypes.LocalMessage, message);
           }
         });
       } else {

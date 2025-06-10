@@ -40,7 +40,7 @@
 - **Matterbridge must be run in child bridge mode** for proper operation.
 - **Use one Matterbridge instance per Roborock vacuum.**  
   If you have more than one vacuum, please run separate instances.
-  Please put the **duid** of device you want to use into **whiteList** section in the plugin configuration popup.
+  Please put the <**Vacuum name**>-<**duid**> of device you want to use into **whiteList** section in the plugin configuration popup.
 
 
   More details available here: [Discussion #264](https://github.com/Luligu/matterbridge/discussions/264)
@@ -75,6 +75,10 @@ To get the **DUID** for your devices, you have two options:
 ---
 
 **➡️ [See Supported & Tested Roborock Devices](./README_SUPPORTED.md)**
+
+> 📋 **Apple Home ↔️ Roborock Clean Mode Mapping:**  
+> For a detailed table of how Apple Home clean modes map to Roborock settings, see  
+> 👉 [Apple Home ↔️ Roborock Clean Mode Mapping](./README_CLEANMODE.md)
 
 ### 📦 Prerequisites
 

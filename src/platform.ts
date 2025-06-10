@@ -13,6 +13,8 @@ import { Device, RoborockAuthenticateApi, RoborockIoTApi } from './roborockCommu
 import { getSupportedAreas, getSupportedScenes } from './initialData/index.js';
 import { CleanModeSettings, ExperimentalFeatureSetting } from './model/ExperimentalFeatureSetting.js';
 import { ServiceArea } from 'matterbridge/matter/clusters';
+import NodePersist from 'node-persist';
+import Path from 'node:path';
 
 export class RoborockMatterbridgePlatform extends MatterbridgeDynamicPlatform {
   robot: RoborockVacuumCleaner | undefined;
@@ -24,6 +26,7 @@ export class RoborockMatterbridgePlatform extends MatterbridgeDynamicPlatform {
   serialNumber: string | undefined;
   cleanModeSettings: CleanModeSettings | undefined;
   enableExperimentalFeature: ExperimentalFeatureSetting | undefined;
+  persist: NodePersist.LocalStorage;
 
   constructor(matterbridge: Matterbridge, log: AnsiLogger, config: PlatformConfig) {
     super(matterbridge, log, config);
@@ -39,6 +42,10 @@ export class RoborockMatterbridgePlatform extends MatterbridgeDynamicPlatform {
     if (config.blackList === undefined) config.blackList = [];
     if (config.enableExperimentalFeature === undefined) config.enableExperimentalFeature = false;
 
+    // Create storage for this plugin (initialised in onStart)
+    const persistDir = Path.join(this.matterbridge.matterbridgePluginDirectory, PLUGIN_NAME, 'persist');
+    this.persist = NodePersist.create({ dir: persistDir });
+
     this.clientManager = new ClientManager(this.log);
     this.devices = new Map<string, Device>();
   }
@@ -49,6 +56,8 @@ export class RoborockMatterbridgePlatform extends MatterbridgeDynamicPlatform {
     // Wait for the platform to start
     await this.ready;
     await this.clearSelect();
+
+    await this.persist.init();
 
     // Verify that the config is correct
     if (this.config.username === undefined || this.config.password === undefined) {
@@ -136,7 +145,14 @@ export class RoborockMatterbridgePlatform extends MatterbridgeDynamicPlatform {
 
     this.log.debug('Initializing - roomMap: ', debugStringify(roomMap));
 
-    const behaviorHandler = configurateBehavior(vacuum.data.model, vacuum.duid, this.roborockService, this.cleanModeSettings, this.log);
+    const behaviorHandler = configurateBehavior(
+      vacuum.data.model,
+      vacuum.duid,
+      this.roborockService,
+      this.cleanModeSettings,
+      this.enableExperimentalFeature?.advancedFeature?.forceRunAtDefault ?? false,
+      this.log,
+    );
 
     this.roborockService.setSupportedAreas(vacuum.duid, getSupportedAreas(vacuum.rooms, roomMap, this.log));
 
@@ -146,7 +162,7 @@ export class RoborockMatterbridgePlatform extends MatterbridgeDynamicPlatform {
       this.roborockService.setSupportedScenes(vacuum.duid, routineAsRoom);
     }
 
-    this.robot = new RoborockVacuumCleaner(username, vacuum, roomMap, routineAsRoom, this.log);
+    this.robot = new RoborockVacuumCleaner(username, vacuum, roomMap, routineAsRoom, this.enableExperimentalFeature?.advancedFeature?.forceRunAtDefault ?? false, this.log);
     this.robot.configurateHandler(behaviorHandler);
 
     this.log.info('vacuum:', debugStringify(vacuum));

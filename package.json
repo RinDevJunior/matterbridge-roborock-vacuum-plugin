@@ -1,6 +1,6 @@
 {
   "name": "matterbridge-roborock-vacuum-plugin",
-  "version": "1.0.8-rc05",
+  "version": "1.0.8-rc06",
   "description": "Matterbridge Roborock Vacuum Plugin",
   "author": "https://github.com/RinDevJunior",
   "license": "MIT",
@@ -37,7 +37,7 @@
     "precondition": "npm install -g matterbridge@3.0.4",
     "deepCleanB": "npm run deepClean && npm install && npm link matterbridge && npm run build && npm run matterbridge:add",
     "start:roborock": "tsc && matterbridge -childbridge",
-    "buildpackage": "cd .. && tar --exclude-from='matterbridge-roborock-vacuum-plugin/.tarignore' -czvf matterbridge-roborock-vacuum-plugin-1.0.8-rc05.tgz matterbridge-roborock-vacuum-plugin && cd matterbridge-roborock-vacuum-plugin",
+    "buildpackage": "cd .. && tar --exclude-from='matterbridge-roborock-vacuum-plugin/.tarignore' -czvf matterbridge-roborock-vacuum-plugin-1.0.8-rc06.tgz matterbridge-roborock-vacuum-plugin && cd matterbridge-roborock-vacuum-plugin",
     "build": "tsc",
     "buildProduction": "tsc --project tsconfig.production.json",
     "watch": "tsc --watch",
@@ -100,6 +100,7 @@
   },
   "dependencies": {
     "@log4js-node/log4js-api": "^1.0.2",
+    "@types/node-persist": "^3.1.8",
     "axios": "^1.9.0",
     "binary-parser": "^2.2.1",
     "crc-32": "^1.2.2",
