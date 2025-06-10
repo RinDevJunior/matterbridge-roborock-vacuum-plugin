@@ -134,19 +134,26 @@ export class PlatformRunner {
             platform.robot.updateAttribute(PowerSource.Cluster.id, 'batChargeLevel', getBatteryStatus(batteryLevel), platform.log);
           }
 
-          this.platform.log.debug(`cleaning_info: ${debugStringify(data.cleaning_info)}`);
-
-          const currentCleanMode = getCurrentCleanModeFunc(
-            deviceData.model,
-            this.platform.enableExperimentalFeature?.advancedFeature?.forceRunAtDefault ?? false,
-          )({
+          const currentCleanModeSetting = {
             suctionPower: data.cleaning_info?.fan_power ?? data.fan_power,
             waterFlow: data.cleaning_info?.water_box_status ?? data.water_box_mode,
             distance_off: data.distance_off,
             mopRoute: data.cleaning_info?.mop_mode ?? data.mop_mode,
-          });
-          if (currentCleanMode) {
-            platform.robot.updateAttribute(RvcCleanMode.Cluster.id, 'currentMode', currentCleanMode, platform.log);
+          };
+
+          this.platform.log.debug(`data: ${debugStringify(data)}`);
+          this.platform.log.debug(`currentCleanModeSetting: ${debugStringify(currentCleanModeSetting)}`);
+
+          if (currentCleanModeSetting.mopRoute && currentCleanModeSetting.suctionPower && currentCleanModeSetting.waterFlow) {
+            const currentCleanMode = getCurrentCleanModeFunc(
+              deviceData.model,
+              this.platform.enableExperimentalFeature?.advancedFeature?.forceRunAtDefault ?? false,
+            )(currentCleanModeSetting);
+            this.platform.log.debug(`Current clean mode: ${currentCleanMode}`);
+
+            if (currentCleanMode) {
+              platform.robot.updateAttribute(RvcCleanMode.Cluster.id, 'currentMode', currentCleanMode, platform.log);
+            }
           }
 
           this.processAdditionalProps(platform.robot, data);
@@ -157,7 +164,7 @@ export class PlatformRunner {
       case NotifyMessageTypes.CloudMessage: {
         const data = messageData as CloudMessageModel;
         if (!data) return;
-        this.handlerCloudMessage(data, duid, deviceData.model);
+        this.handlerCloudMessage(data, duid);
         break;
       }
 
@@ -166,7 +173,7 @@ export class PlatformRunner {
     }
   }
 
-  private handlerCloudMessage(data: CloudMessageModel, duid: string, model: string): void {
+  private handlerCloudMessage(data: CloudMessageModel, duid: string): void {
     const platform = this.platform;
     const messageTypes = Object.keys(data.dps).map(Number);
     // eslint-disable-next-line @typescript-eslint/no-this-alias
@@ -211,7 +218,25 @@ export class PlatformRunner {
         }
         case Protocol.suction_power:
         case Protocol.water_box_mode: {
-          //TODO: get clean info from device
+          await platform.roborockService?.getCleanModeData(duid).then((cleanModeData) => {
+            if (cleanModeData && platform.robot) {
+              const currentCleanMode = getCurrentCleanModeFunc(
+                platform.robot.device.data.model,
+                platform.enableExperimentalFeature?.advancedFeature?.forceRunAtDefault ?? false,
+              )({
+                suctionPower: cleanModeData.suctionPower,
+                waterFlow: cleanModeData.waterFlow,
+                distance_off: cleanModeData.distance_off,
+                mopRoute: cleanModeData.mopRoute,
+              });
+
+              platform.log.debug(`Clean mode data: ${debugStringify(cleanModeData)}`);
+              platform.log.debug(`Current clean mode: ${currentCleanMode}`);
+              if (currentCleanMode) {
+                platform.robot?.updateAttribute(RvcCleanMode.Cluster.id, 'currentMode', currentCleanMode, platform.log);
+              }
+            }
+          });
           break; // Do nothing, handled in local message
         }
         case Protocol.additional_props:

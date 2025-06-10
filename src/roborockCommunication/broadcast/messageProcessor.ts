@@ -41,7 +41,7 @@ export class MessageProcessor {
 
   public async getDeviceStatus(duid: string): Promise<DeviceStatus> {
     const request = new RequestMessage({ method: 'get_status' });
-    const response = await this.client.get<CloudMessageResult>(duid, request);
+    const response = await this.client.get<CloudMessageResult[]>(duid, request);
 
     this.logger?.debug('Device status: ', debugStringify(response));
     return new DeviceStatus(response);
@@ -97,6 +97,46 @@ export class MessageProcessor {
   public async findMyRobot(duid: string): Promise<void> {
     const request = new RequestMessage({ method: 'find_me' });
     return this.client.send(duid, request);
+  }
+
+  public async getCleanModeData(duid: string): Promise<{ suctionPower: number; waterFlow: number; distance_off: number; mopRoute: number }> {
+    const currentMopMode = await this.getCustomMessage(duid, new RequestMessage({ method: 'get_mop_mode' }));
+    const suctionPowerRaw = await this.getCustomMessage(duid, new RequestMessage({ method: 'get_custom_mode' }));
+    const waterFlowRaw = await this.getCustomMessage(duid, new RequestMessage({ method: 'get_water_box_custom_mode' }));
+
+    let suctionPower: number;
+    let waterFlow: number;
+    let mopRoute: number;
+    let distance_off = 0;
+
+    if (Array.isArray(suctionPowerRaw)) {
+      suctionPower = suctionPowerRaw[0];
+    } else {
+      suctionPower = suctionPowerRaw as number;
+    }
+
+    if (Array.isArray(currentMopMode)) {
+      mopRoute = currentMopMode[0];
+    } else {
+      mopRoute = currentMopMode as number;
+    }
+
+    if (typeof waterFlowRaw === 'object' && waterFlowRaw !== null && 'water_box_mode' in waterFlowRaw) {
+      waterFlow = waterFlowRaw.water_box_mode as number;
+
+      if ('distance_off' in waterFlowRaw) {
+        distance_off = (waterFlowRaw.distance_off as number) ?? 0;
+      }
+    } else {
+      waterFlow = waterFlowRaw as number;
+    }
+
+    return {
+      suctionPower: suctionPower,
+      waterFlow: waterFlow,
+      distance_off: distance_off,
+      mopRoute: mopRoute,
+    };
   }
 
   public async changeCleanMode(duid: string, suctionPower: number, waterFlow: number, mopRoute: number, distance_off: number): Promise<void> {
