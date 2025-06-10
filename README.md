@@ -74,11 +74,14 @@ To get the **DUID** for your devices, you have two options:
 
 ---
 
-**➡️ [See Supported & Tested Roborock Devices](./README_SUPPORTED.md)**
 
-> 📋 **Apple Home ↔️ Roborock Clean Mode Mapping:**  
-> For a detailed table of how Apple Home clean modes map to Roborock settings, see  
-> 👉 [Apple Home ↔️ Roborock Clean Mode Mapping](./README_CLEANMODE.md)
+### ➡️ [See Supported & Tested Roborock Devices](./README_SUPPORTED.md)
+
+
+📋 **Apple Home ↔️ Roborock Clean Mode Mapping:**  
+For a detailed table of how Apple Home clean modes map to Roborock settings, see  👉 [Apple Home ↔️ Roborock Clean Mode Mapping](./README_CLEANMODE.md)
+
+---
 
 ### 📦 Prerequisites
 
