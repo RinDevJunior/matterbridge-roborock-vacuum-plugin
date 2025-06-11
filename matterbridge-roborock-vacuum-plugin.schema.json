@@ -79,6 +79,11 @@
                     "title": "Force Run At Default Implementation",
                     "type": "boolean",
                     "default": false
+                  },
+                  "useVacationModeToSendVacuumToDock": {
+                    "title": "Use Vacation Mode To Send Vacuum To Dock",
+                    "type": "boolean",
+                    "default": false
                   }
                 }
               },

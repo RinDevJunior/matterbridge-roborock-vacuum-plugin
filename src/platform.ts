@@ -162,7 +162,7 @@ export class RoborockMatterbridgePlatform extends MatterbridgeDynamicPlatform {
       this.roborockService.setSupportedScenes(vacuum.duid, routineAsRoom);
     }
 
-    this.robot = new RoborockVacuumCleaner(username, vacuum, roomMap, routineAsRoom, this.enableExperimentalFeature?.advancedFeature?.forceRunAtDefault ?? false, this.log);
+    this.robot = new RoborockVacuumCleaner(username, vacuum, roomMap, routineAsRoom, this.enableExperimentalFeature, this.log);
     this.robot.configurateHandler(behaviorHandler);
 
     this.log.info('vacuum:', debugStringify(vacuum));

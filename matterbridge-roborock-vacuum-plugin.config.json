@@ -10,7 +10,8 @@
     "advancedFeature": {
       "showRoutinesAsRooms": false,
       "includeDockStationStatus": false,
-      "forceRunAtDefault": false
+      "forceRunAtDefault": false,
+      "useVacationModeToSendVacuumToDock": false
     },
     "cleanModeSettings": {
       "enableCleanModeMapping": false,
