@@ -29,6 +29,7 @@ import type {
   DeviceStatusNotify,
 } from './roborockCommunication/index.js';
 import { ServiceArea } from 'matterbridge/matter/clusters';
+import { LocalNetworkClient } from './roborockCommunication/broadcast/client/LocalNetworkClient.js';
 export type Factory<A, T> = (logger: AnsiLogger, arg: A) => T;
 
 export default class RoborockService {
@@ -227,7 +228,7 @@ export default class RoborockService {
         await this.messageProcessor.getDeviceStatus(device.duid).then((response: DeviceStatus) => {
           if (self.deviceNotify) {
             const message: DeviceStatusNotify = { duid: device.duid, ...response.errorStatus, ...response.message } as DeviceStatusNotify;
-            self.logger.debug('Device status update xxx', debugStringify(message));
+            self.logger.debug('Device status update', debugStringify(message));
             self.deviceNotify(NotifyMessageTypes.LocalMessage, message);
           }
         });
@@ -431,19 +432,25 @@ export default class RoborockService {
 
       if (this.ip) {
         this.logger.debug('initializing the local connection for this client towards ' + this.ip);
-        this.localClient = this.messageClient.registerClient(device.duid, this.ip);
+        this.localClient = this.messageClient.registerClient(device.duid, this.ip) as LocalNetworkClient;
         this.localClient.connect();
 
-        while (!this.localClient.isConnected()) {
+        let count = 0;
+        while (!this.localClient.isConnected() && count < 20) {
+          this.logger.debug('Keep waiting for local client to connect');
+          count++;
           await this.sleep(500);
         }
+
+        if (!this.localClient.isConnected()) {
+          throw new Error('Local client did not connect after 10 attempts, something is wrong');
+        }
+
         this.logger.debug('LocalClient connected');
       }
     } catch (error) {
       this.logger.error('Error requesting network info', error);
     }
-
-    this.logger.debug('Local client connected');
   }
 
   private sleep(ms: number): Promise<void> {

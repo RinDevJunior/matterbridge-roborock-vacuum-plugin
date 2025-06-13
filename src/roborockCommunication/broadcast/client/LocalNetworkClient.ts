@@ -67,7 +67,7 @@ export class LocalNetworkClient extends AbstractClient {
   }
 
   private async onDisconnect(): Promise<void> {
-    this.logger.info('Socket has disconnected.');
+    this.logger.notice('LocalNetworkClient: Socket has disconnected.');
     this.connected = false;
 
     if (this.socket) {
@@ -82,7 +82,7 @@ export class LocalNetworkClient extends AbstractClient {
   }
 
   private async onError(result: Error): Promise<void> {
-    this.logger.error('Socket connection error: ' + result);
+    this.logger.error('LocalNetworkClient: Socket connection error: ' + result);
     this.connected = false;
 
     if (this.socket) {
