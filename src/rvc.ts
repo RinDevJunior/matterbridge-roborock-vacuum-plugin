@@ -6,12 +6,14 @@ import { AnsiLogger } from 'matterbridge/logger';
 import { BehaviorFactoryResult } from './behaviorFactory.js';
 import { ModeBase, RvcOperationalState, ServiceArea } from 'matterbridge/matter/clusters';
 import { ExperimentalFeatureSetting } from './model/ExperimentalFeatureSetting.js';
+import { DockingStationStatus } from './model/DockingStationStatus.js';
 
 export class RoborockVacuumCleaner extends RoboticVacuumCleaner {
   username: string | undefined;
   device: Device;
   rrHomeId: number;
   roomInfo: RoomMap | undefined;
+  dockStationStatus: DockingStationStatus | undefined;
 
   constructor(
     username: string,

@@ -192,7 +192,10 @@ export class PlatformRunner {
 
           const operationalStateId = state_to_matter_operational_status(status);
           if (operationalStateId) {
-            platform.robot?.updateAttribute(RvcOperationalState.Cluster.id, 'operationalState', operationalStateId, platform.log);
+            const dssHasError = hasDockingStationError(platform.robot?.dockStationStatus);
+            if (!(dssHasError && self.triggerDssError())) {
+              platform.robot?.updateAttribute(RvcOperationalState.Cluster.id, 'operationalState', operationalStateId, platform.log);
+            }
           }
           break;
         }
@@ -254,7 +257,15 @@ export class PlatformRunner {
 
   private async processAdditionalProps(robot: RoborockVacuumCleaner, message: CloudMessageResult): Promise<void> {
     // dss -> DockingStationStatus
+    const dssStatus = this.getDssStatus(message);
+    if (dssStatus) {
+      this.triggerDssError();
+    }
+  }
+
+  private getDssStatus(message: CloudMessageResult): RvcOperationalState.OperationalState | undefined {
     const platform = this.platform;
+    const robot = platform.robot;
     if (
       platform.enableExperimentalFeature &&
       platform.enableExperimentalFeature.enableExperimentalFeature &&
@@ -262,15 +273,15 @@ export class PlatformRunner {
       message.dss !== undefined
     ) {
       const dss = parseDockingStationStatus(message.dss);
-      this.platform.log.debug('DockingStationStatus:', debugStringify(dss));
+      if (dss && robot) {
+        robot.dockStationStatus = dss;
+      }
 
-      const currentOperationState = robot.getAttribute(RvcOperationalState.Cluster.id, 'operationalState') as RvcOperationalState.OperationalState;
-
-      // Only update docking station status if it is not running
-      if (dss && hasDockingStationError(dss) && currentOperationState !== RvcOperationalState.OperationalState.Running) {
-        robot.updateAttribute(RvcOperationalState.Cluster.id, 'operationalState', RvcOperationalState.OperationalState.Error, platform.log);
+      if (dss && hasDockingStationError(dss)) {
+        return RvcOperationalState.OperationalState.Error;
       }
     }
+    return undefined;
   }
 
   private isStatusUpdate(result: unknown): boolean {
@@ -317,13 +328,33 @@ export class PlatformRunner {
     }
 
     const operationalStateId = state_to_matter_operational_status(state);
+
     if (operationalStateId) {
-      this.platform.log.debug(`updateFromHomeData-OperationalState: ${RvcOperationalState.OperationalState[operationalStateId]}`);
-      platform.robot.updateAttribute(RvcOperationalState.Cluster.id, 'operationalState', operationalStateId, platform.log);
+      const dssHasError = hasDockingStationError(platform.robot?.dockStationStatus);
+      this.platform.log.debug(`dssHasError: ${dssHasError}, dockStationStatus: ${debugStringify(platform.robot?.dockStationStatus ?? {})}`);
+      if (!(dssHasError && this.triggerDssError())) {
+        this.platform.log.debug(`updateFromHomeData-OperationalState: ${RvcOperationalState.OperationalState[operationalStateId]}`);
+        platform.robot.updateAttribute(RvcOperationalState.Cluster.id, 'operationalState', operationalStateId, platform.log);
+      }
     }
 
     if (batteryLevel) {
       platform.robot.updateAttribute(PowerSource.Cluster.id, 'batChargeState', getBatteryState(state, batteryLevel), platform.log);
     }
+  }
+
+  private triggerDssError(): boolean {
+    const platform = this.platform;
+    const currentOperationState = platform?.robot?.getAttribute(RvcOperationalState.Cluster.id, 'operationalState') as RvcOperationalState.OperationalState;
+    if (currentOperationState === RvcOperationalState.OperationalState.Error) {
+      return true;
+    }
+
+    if (currentOperationState === RvcOperationalState.OperationalState.Docked) {
+      platform.robot?.updateAttribute(RvcOperationalState.Cluster.id, 'operationalState', RvcOperationalState.OperationalState.Error, platform.log);
+      return true;
+    }
+
+    return false;
   }
 }
