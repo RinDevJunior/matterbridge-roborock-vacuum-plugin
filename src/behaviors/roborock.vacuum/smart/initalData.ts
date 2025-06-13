@@ -1,8 +1,9 @@
 import { RvcCleanMode } from 'matterbridge/matter/clusters';
 import { RvcCleanMode as RvcCleanModeDisplayMap } from './smart.js';
 import { getDefaultSupportedCleanModes } from '../default/initalData.js';
+import { ExperimentalFeatureSetting } from '../../../model/ExperimentalFeatureSetting.js';
 
-export function getSupportedCleanModesSmart(): RvcCleanMode.ModeOption[] {
+export function getSupportedCleanModesSmart(enableExperimentalFeature: ExperimentalFeatureSetting | undefined): RvcCleanMode.ModeOption[] {
   return [
     {
       label: RvcCleanModeDisplayMap[4],
@@ -14,6 +15,6 @@ export function getSupportedCleanModesSmart(): RvcCleanMode.ModeOption[] {
       mode: 5,
       modeTags: [{ value: RvcCleanMode.ModeTag.Mop }, { value: RvcCleanMode.ModeTag.Vacuum }, { value: RvcCleanMode.ModeTag.Day }],
     },
-    ...getDefaultSupportedCleanModes().filter((x) => x.mode !== 4 && x.mode !== 5), // Exclude modes 4 and 5 which are already defined
+    ...getDefaultSupportedCleanModes(enableExperimentalFeature).filter((x) => x.mode !== 4 && x.mode !== 5), // Exclude modes 4 and 5 which are already defined
   ];
 }

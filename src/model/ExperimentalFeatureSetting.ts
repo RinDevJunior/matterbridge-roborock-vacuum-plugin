@@ -4,6 +4,7 @@ export interface ExperimentalFeatureSetting {
     showRoutinesAsRoom: boolean;
     includeDockStationStatus: boolean;
     forceRunAtDefault: boolean;
+    useVacationModeToSendVacuumToDock: boolean;
   };
   cleanModeSettings: CleanModeSettings;
 }

@@ -1,5 +1,6 @@
 import { RvcCleanMode, RvcOperationalState, RvcRunMode } from 'matterbridge/matter/clusters';
 import { RvcCleanMode as RvcCleanModeDisplayMap } from './default.js';
+import { ExperimentalFeatureSetting } from '../../../model/ExperimentalFeatureSetting.js';
 
 export function getDefaultSupportedRunModes(): RvcRunMode.ModeOption[] {
   return [
@@ -21,8 +22,8 @@ export function getDefaultSupportedRunModes(): RvcRunMode.ModeOption[] {
   ];
 }
 
-export function getDefaultSupportedCleanModes(): RvcCleanMode.ModeOption[] {
-  return [
+export function getDefaultSupportedCleanModes(enableExperimentalFeature: ExperimentalFeatureSetting | undefined): RvcCleanMode.ModeOption[] {
+  const result = [
     {
       label: RvcCleanModeDisplayMap[5],
       mode: 5,
@@ -101,13 +102,20 @@ export function getDefaultSupportedCleanModes(): RvcCleanMode.ModeOption[] {
       mode: 69,
       modeTags: [{ value: RvcCleanMode.ModeTag.Vacuum }, { value: RvcCleanMode.ModeTag.Quick }],
     },
-
-    {
-      label: RvcCleanModeDisplayMap[99],
-      mode: 99,
-      modeTags: [{ value: RvcCleanMode.ModeTag.Mop }, { value: RvcCleanMode.ModeTag.Vacuum }, { value: RvcCleanMode.ModeTag.Vacation }],
-    },
   ];
+
+  if (enableExperimentalFeature?.advancedFeature?.useVacationModeToSendVacuumToDock ?? false) {
+    return [
+      ...result,
+      {
+        label: RvcCleanModeDisplayMap[99],
+        mode: 99,
+        modeTags: [{ value: RvcCleanMode.ModeTag.Mop }, { value: RvcCleanMode.ModeTag.Vacuum }, { value: RvcCleanMode.ModeTag.Vacation }],
+      },
+    ];
+  }
+
+  return result;
 }
 
 export function getDefaultOperationalStates(): RvcOperationalState.OperationalStateStruct[] {

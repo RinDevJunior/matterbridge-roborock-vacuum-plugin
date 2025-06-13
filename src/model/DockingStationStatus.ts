@@ -25,7 +25,11 @@ export function parseDockingStationStatus(dss: number): DockingStationStatus {
   };
 }
 
-export function hasDockingStationError(status: DockingStationStatus): boolean {
+export function hasDockingStationError(status: DockingStationStatus | undefined): boolean {
+  if (!status) {
+    return false;
+  }
+
   return (
     status.cleanFluidStatus === DockingStationStatusType.Error ||
     status.waterBoxFilterStatus === DockingStationStatusType.Error ||

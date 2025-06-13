@@ -83,7 +83,7 @@ export function setCommandHandlerSmart(
       }
 
       case 'Go Vacation': {
-        logger.notice('DefaultBehavior-GoHome');
+        logger.notice('BehaviorSmart-GoHome');
         await roborockService.stopAndGoHome(duid);
         break;
       }

@@ -5,20 +5,32 @@ import { getOperationalStates, getSupportedAreas, getSupportedCleanModes, getSup
 import { AnsiLogger } from 'matterbridge/logger';
 import { BehaviorFactoryResult } from './behaviorFactory.js';
 import { ModeBase, RvcOperationalState, ServiceArea } from 'matterbridge/matter/clusters';
+import { ExperimentalFeatureSetting } from './model/ExperimentalFeatureSetting.js';
+import { DockingStationStatus } from './model/DockingStationStatus.js';
 
 export class RoborockVacuumCleaner extends RoboticVacuumCleaner {
   username: string | undefined;
   device: Device;
   rrHomeId: number;
   roomInfo: RoomMap | undefined;
+  dockStationStatus: DockingStationStatus | undefined;
 
-  constructor(username: string, device: Device, roomMap: RoomMap, routineAsRoom: ServiceArea.Area[], forceRunAtDefault: boolean, log: AnsiLogger) {
-    const cleanModes = getSupportedCleanModes(device.data.model, forceRunAtDefault);
+  constructor(
+    username: string,
+    device: Device,
+    roomMap: RoomMap,
+    routineAsRoom: ServiceArea.Area[],
+    enableExperimentalFeature: ExperimentalFeatureSetting | undefined,
+    log: AnsiLogger,
+  ) {
+    const cleanModes = getSupportedCleanModes(device.data.model, enableExperimentalFeature);
     const supportedRunModes = getSupportedRunModes();
     const supportedAreas = [...getSupportedAreas(device.rooms, roomMap, log), ...routineAsRoom];
     const deviceName = `${device.name}-${device.duid}`.replace(/\s+/g, '');
 
-    log.debug(`Creating RoborockVacuumCleaner for device: ${deviceName}, model: ${device.data.model}, forceRunAtDefault: ${forceRunAtDefault}`);
+    log.debug(
+      `Creating RoborockVacuumCleaner for device: ${deviceName}, model: ${device.data.model}, forceRunAtDefault: ${enableExperimentalFeature?.advancedFeature?.forceRunAtDefault}`,
+    );
     log.debug(`Supported Clean Modes: ${JSON.stringify(cleanModes)}`);
     log.debug(`Supported Run Modes: ${JSON.stringify(supportedRunModes)}`);
 

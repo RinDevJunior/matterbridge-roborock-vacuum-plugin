@@ -1,6 +1,6 @@
 {
   "title": "Matterbridge Roborock Vacuum Plugin",
-  "description": "matterbridge-roborock-vacuum-plugin v. 1.0.8-rc06 by https://github.com/RinDevJunior",
+  "description": "matterbridge-roborock-vacuum-plugin v. 1.0.8-rc07 by https://github.com/RinDevJunior",
   "type": "object",
   "required": ["username", "password"],
   "properties": {
@@ -77,6 +77,11 @@
                   },
                   "forceRunAtDefault": {
                     "title": "Force Run At Default Implementation",
+                    "type": "boolean",
+                    "default": false
+                  },
+                  "useVacationModeToSendVacuumToDock": {
+                    "title": "Use Vacation Mode To Send Vacuum To Dock",
                     "type": "boolean",
                     "default": false
                   }
