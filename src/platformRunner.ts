@@ -16,6 +16,7 @@ import { BatteryMessage, Device, DeviceErrorMessage, DeviceStatusNotify, Home } 
 import { OperationStatusCode } from './roborockCommunication/Zenum/operationStatusCode.js';
 import { getCurrentCleanModeFunc } from './share/runtimeHelper.js';
 import { debugStringify } from 'matterbridge/logger';
+import { getErrorFromErrorCode } from './initialData/getOperationalStates.js';
 
 export class PlatformRunner {
   platform: RoborockMatterbridgePlatform;
@@ -95,6 +96,11 @@ export class PlatformRunner {
         if (operationalStateId) {
           platform.log.error(`Error occurred: ${message.errorCode}`);
           platform.robot.updateAttribute(RvcOperationalState.Cluster.id, 'operationalState', operationalStateId, platform.log);
+
+          // const errorState = getErrorFromErrorCode(message.errorCode);
+          // if (operationalStateId === RvcOperationalState.OperationalState.Error && errorState) {
+          //   platform.robot.updateAttribute(RvcOperationalState.Cluster.id, 'operationalError', errorState, platform.log);
+          // }
         }
         break;
       }
