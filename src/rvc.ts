@@ -56,17 +56,20 @@ export class RoborockVacuumCleaner extends RoboticVacuumCleaner {
   }
 
   public configurateHandler(behaviorHandler: BehaviorFactoryResult): void {
-    this.addCommandHandler('identify', async ({ request: { identifyTime } }) => {
-      behaviorHandler.executeCommand('playSoundToLocate', identifyTime as number);
+    this.addCommandHandler('identify', async ({ request, cluster, attributes, endpoint }) => {
+      this.log.info(`Identify command received for endpoint ${endpoint}, cluster ${cluster}, attributes ${attributes}, request: ${JSON.stringify(request)}`);
+      behaviorHandler.executeCommand('playSoundToLocate', (request as { identifyTime?: number }).identifyTime ?? 0);
     });
 
-    this.addCommandHandler('selectAreas', async ({ request }: { request: ServiceArea.SelectAreasRequest }) => {
-      this.log.info(`Selecting areas: ${request.newAreas.join(', ')}`);
-      behaviorHandler.executeCommand('selectAreas', request.newAreas);
+    this.addCommandHandler('selectAreas', async ({ request }) => {
+      const { newAreas } = request as ServiceArea.SelectAreasRequest;
+      this.log.info(`Selecting areas: ${newAreas?.join(', ')}`);
+      behaviorHandler.executeCommand('selectAreas', newAreas);
     });
 
-    this.addCommandHandler('changeToMode', async ({ request }: { request: ModeBase.ChangeToModeRequest }) => {
-      behaviorHandler.executeCommand('changeToMode', request.newMode);
+    this.addCommandHandler('changeToMode', async ({ request }) => {
+      const { newMode } = request as ModeBase.ChangeToModeRequest;
+      behaviorHandler.executeCommand('changeToMode', newMode);
     });
 
     this.addCommandHandler('pause', async () => {

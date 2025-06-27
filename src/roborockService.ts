@@ -420,6 +420,14 @@ export default class RoborockService {
           self.deviceNotify(NotifyMessageTypes.BatteryUpdate, { duid: device.duid, percentage } as BatteryMessage);
         }
       },
+      onStatusChanged: () => {
+        // status: DeviceStatus
+        // if (self.deviceNotify) {
+        //   const message: DeviceStatusNotify = { duid: device.duid, ...status.errorStatus, ...status.message } as DeviceStatusNotify;
+        //   self.logger.debug('Device status update', debugStringify(message));
+        //   self.deviceNotify(NotifyMessageTypes.LocalMessage, message);
+        // }
+      },
     } as AbstractMessageHandler);
 
     this.logger.debug('Local device', device.duid);

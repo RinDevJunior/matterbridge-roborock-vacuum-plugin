@@ -2,6 +2,7 @@ import { ResponseMessage } from '../../model/responseMessage.js';
 import { AbstractMessageListener } from '../index.js';
 import { Protocol } from '../../model/protocol.js';
 import { AbstractMessageHandler } from '../abstractMessageHandler.js';
+// import { DeviceStatus } from '../../../Zmodel/deviceStatus.js';
 
 export class SimpleMessageListener implements AbstractMessageListener {
   private handler: AbstractMessageHandler | undefined;
