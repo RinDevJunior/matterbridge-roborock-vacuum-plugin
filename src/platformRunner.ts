@@ -16,7 +16,7 @@ import { BatteryMessage, Device, DeviceErrorMessage, DeviceStatusNotify, Home } 
 import { OperationStatusCode } from './roborockCommunication/Zenum/operationStatusCode.js';
 import { getCurrentCleanModeFunc } from './share/runtimeHelper.js';
 import { debugStringify } from 'matterbridge/logger';
-import { getErrorFromErrorCode } from './initialData/getOperationalStates.js';
+// import { getErrorFromErrorCode } from './initialData/getOperationalStates.js';
 
 export class PlatformRunner {
   platform: RoborockMatterbridgePlatform;
