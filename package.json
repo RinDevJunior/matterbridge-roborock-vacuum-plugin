@@ -34,7 +34,7 @@
     "node": ">=18.0.0 <19.0.0 || >=20.0.0 <21.0.0 || >=22.0.0"
   },
   "scripts": {
-    "precondition": "npm install -g matterbridge@3.0.7",
+    "precondition": "npm install -g matterbridge@3.1.1",
     "deepCleanB": "npm run deepClean && npm install && npm link matterbridge && npm run build && npm run matterbridge:add",
     "start:roborock": "tsc && matterbridge -childbridge",
     "buildpackage": "cd .. && tar --exclude-from='matterbridge-roborock-vacuum-plugin/.tarignore' -czvf matterbridge-roborock-vacuum-plugin-1.0.8-rc09.tgz matterbridge-roborock-vacuum-plugin && cd matterbridge-roborock-vacuum-plugin",
