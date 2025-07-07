@@ -1,4 +1,4 @@
-import { RoboticVacuumCleaner } from 'matterbridge';
+import { RoboticVacuumCleaner } from 'matterbridge/devices';
 import RoomMap from './model/RoomMap.js';
 import { Device } from './roborockCommunication/index.js';
 import { getOperationalStates, getSupportedAreas, getSupportedCleanModes, getSupportedRunModes } from './initialData/index.js';
@@ -34,9 +34,11 @@ export class RoborockVacuumCleaner extends RoboticVacuumCleaner {
     log.debug(`Supported Clean Modes: ${JSON.stringify(cleanModes)}`);
     log.debug(`Supported Run Modes: ${JSON.stringify(supportedRunModes)}`);
 
+    const bridgeMode = enableExperimentalFeature?.advancedFeature.enableServerMode ? 'server' : undefined;
     super(
       deviceName, // name
       device.duid, // serial
+      bridgeMode, // mode
       supportedRunModes[0].mode, // currentRunMode
       supportedRunModes, // supportedRunModes
       cleanModes[0].mode, // currentCleanMode
