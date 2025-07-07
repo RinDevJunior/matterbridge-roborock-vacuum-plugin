@@ -1,6 +1,6 @@
 {
   "title": "Matterbridge Roborock Vacuum Plugin",
-  "description": "matterbridge-roborock-vacuum-plugin v. 1.0.8-rc09 by https://github.com/RinDevJunior",
+  "description": "matterbridge-roborock-vacuum-plugin v. 1.1.0-rc01 by https://github.com/RinDevJunior",
   "type": "object",
   "required": ["username", "password"],
   "properties": {
@@ -81,7 +81,12 @@
                     "default": false
                   },
                   "useVacationModeToSendVacuumToDock": {
-                    "title": "Use Vacation Mode To Send Vacuum To Dock",
+                    "title": "Use \"Vacation\" Mode To Send Vacuum To Dock",
+                    "type": "boolean",
+                    "default": false
+                  },
+                  "enableServerMode": {
+                    "description": "Enable the Robot Vacuum Cleaner in server mode (Each vacuum will have its own server).",
                     "type": "boolean",
                     "default": false
                   }

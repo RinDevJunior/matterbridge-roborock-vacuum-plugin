@@ -5,6 +5,7 @@ export interface ExperimentalFeatureSetting {
     includeDockStationStatus: boolean;
     forceRunAtDefault: boolean;
     useVacationModeToSendVacuumToDock: boolean;
+    enableServerMode: boolean;
   };
   cleanModeSettings: CleanModeSettings;
 }
