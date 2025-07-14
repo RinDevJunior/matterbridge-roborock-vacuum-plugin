@@ -11,5 +11,11 @@
         "**/*.spec.ts",
         "**/*.test.ts",
         "**/__test__/*"
+    ],
+    "exclude": [
+        "node_modules",
+        "dist",
+        "build",
+        "coverage",
     ]
 }

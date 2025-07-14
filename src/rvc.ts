@@ -11,7 +11,6 @@ import { DockingStationStatus } from './model/DockingStationStatus.js';
 export class RoborockVacuumCleaner extends RoboticVacuumCleaner {
   username: string | undefined;
   device: Device;
-  rrHomeId: number;
   roomInfo: RoomMap | undefined;
   dockStationStatus: DockingStationStatus | undefined;
 
@@ -54,7 +53,6 @@ export class RoborockVacuumCleaner extends RoboticVacuumCleaner {
 
     this.username = username;
     this.device = device;
-    this.rrHomeId = device.rrHomeId;
   }
 
   public configurateHandler(behaviorHandler: BehaviorFactoryResult): void {
