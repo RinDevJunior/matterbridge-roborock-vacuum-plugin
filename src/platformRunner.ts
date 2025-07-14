@@ -64,7 +64,7 @@ export class PlatformRunner {
     if (platform.roborockService === undefined) return undefined;
 
     const rooms = robot.device.rooms ?? [];
-    //if (platform.robot?.device === undefined || platform.roborockService === undefined) return undefined;
+    // if (platform.robot?.device === undefined || platform.roborockService === undefined) return undefined;
     if (robot.roomInfo === undefined) {
       const roomData = await platform.roborockService.getRoomMappings(robot.device.duid);
       robot.roomInfo = new RoomMap(roomData ?? [], rooms);
@@ -74,7 +74,7 @@ export class PlatformRunner {
     return robot.roomInfo;
   }
 
-  private async updateFromMQTTMessage(messageSource: NotifyMessageTypes, messageData: unknown, duid: string = '', tracked = false): Promise<void> {
+  private async updateFromMQTTMessage(messageSource: NotifyMessageTypes, messageData: unknown, duid = '', tracked = false): Promise<void> {
     const platform = this.platform;
     duid = duid || (messageData as DeviceStatusNotify)?.duid || '';
 

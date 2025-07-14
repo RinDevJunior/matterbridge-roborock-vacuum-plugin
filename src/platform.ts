@@ -95,8 +95,7 @@ export class RoborockMatterbridgePlatform extends MatterbridgeDynamicPlatform {
     let vacuums: Device[] = [];
     if ((this.config.whiteList as string[]).length > 0) {
       const whiteList = (this.config.whiteList ?? []) as string[];
-      for (let index = 0; index < whiteList.length; index++) {
-        const item = whiteList[index];
+      for (const item of whiteList) {
         const duid = item.split('-')[1];
         const vacuum = devices.find((d) => d.duid == duid);
         if (vacuum) {
@@ -112,8 +111,7 @@ export class RoborockMatterbridgePlatform extends MatterbridgeDynamicPlatform {
       return;
     }
 
-    for (let index = 0; index < vacuums.length; index++) {
-      const vacuum = vacuums[index];
+    for (const vacuum of vacuums) {
       await this.roborockService.initializeMessageClient(username, vacuum, userData);
       this.devices.set(vacuum.serialNumber, vacuum);
     }
