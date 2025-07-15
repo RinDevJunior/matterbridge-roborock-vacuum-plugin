@@ -86,7 +86,7 @@ describe('LocalNetworkClient', () => {
   it('disconnect() should destroy socket and clear pingInterval', async () => {
     client['socket'] = mockSocket;
     client['pingInterval'] = setInterval(() => {
-      console.log('done');
+      jest.fn();
     }, 1000);
     await client.disconnect();
     expect(mockSocket.destroy).toHaveBeenCalled();
@@ -131,7 +131,7 @@ describe('LocalNetworkClient', () => {
   it('onDisconnect() should log, set connected false, destroy socket, clear ping, call onDisconnected', async () => {
     client['socket'] = mockSocket;
     client['pingInterval'] = setInterval(() => {
-      console.log('done');
+      jest.fn();
     }, 1000);
     await (client as any).onDisconnect();
     expect(mockLogger.notice).toHaveBeenCalled();
