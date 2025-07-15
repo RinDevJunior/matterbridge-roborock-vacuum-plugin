@@ -227,7 +227,7 @@ export default class RoborockService {
       if (this.messageProcessor) {
         await this.messageProcessor.getDeviceStatus(device.duid).then((response: DeviceStatus) => {
           if (self.deviceNotify) {
-            const message: DeviceStatusNotify = { duid: device.duid, ...response.errorStatus, ...response.message } as DeviceStatusNotify;
+            const message = { duid: device.duid, ...response.errorStatus, ...response.message } as DeviceStatusNotify;
             self.logger.debug('Device status update', debugStringify(message));
             self.deviceNotify(NotifyMessageTypes.LocalMessage, message);
           }

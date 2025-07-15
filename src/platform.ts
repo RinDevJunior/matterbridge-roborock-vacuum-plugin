@@ -17,24 +17,24 @@ import NodePersist from 'node-persist';
 import Path from 'node:path';
 
 export class RoborockMatterbridgePlatform extends MatterbridgeDynamicPlatform {
-  robot: RoborockVacuumCleaner | undefined;
+  robots: Map<string, RoborockVacuumCleaner> = new Map<string, RoborockVacuumCleaner>();
   rvcInterval: NodeJS.Timeout | undefined;
   roborockService: RoborockService | undefined;
   clientManager: ClientManager;
   platformRunner: PlatformRunner | undefined;
-  devices: Map<string, Device>;
-  serialNumber: string | undefined;
+  devices: Map<string, Device> = new Map<string, Device>();
   cleanModeSettings: CleanModeSettings | undefined;
   enableExperimentalFeature: ExperimentalFeatureSetting | undefined;
   persist: NodePersist.LocalStorage;
+  rrHomeId: number | undefined;
 
   constructor(matterbridge: Matterbridge, log: AnsiLogger, config: PlatformConfig) {
     super(matterbridge, log, config);
 
     // Verify that Matterbridge is the correct version
-    if (this.verifyMatterbridgeVersion === undefined || typeof this.verifyMatterbridgeVersion !== 'function' || !this.verifyMatterbridgeVersion('3.1.2')) {
+    if (this.verifyMatterbridgeVersion === undefined || typeof this.verifyMatterbridgeVersion !== 'function' || !this.verifyMatterbridgeVersion('3.1.3')) {
       throw new Error(
-        `This plugin requires Matterbridge version >= "3.1.2". Please update Matterbridge from ${this.matterbridge.matterbridgeVersion} to the latest version in the frontend.`,
+        `This plugin requires Matterbridge version >= "3.1.3". Please update Matterbridge from ${this.matterbridge.matterbridgeVersion} to the latest version in the frontend.`,
       );
     }
     this.log.info('Initializing platform:', this.config.name);
@@ -92,22 +92,33 @@ export class RoborockMatterbridgePlatform extends MatterbridgeDynamicPlatform {
     const devices = await this.roborockService.listDevices(username);
     this.log.notice('Initializing - devices: ', debugStringify(devices));
 
-    let vacuum: Device | undefined = undefined;
+    let vacuums: Device[] = [];
     if ((this.config.whiteList as string[]).length > 0) {
-      const firstDUID = (this.config.whiteList as string[])[0];
-      const duid = firstDUID.split('-')[1];
-      vacuum = devices.find((d) => d.duid == duid);
+      const whiteList = (this.config.whiteList ?? []) as string[];
+      for (const item of whiteList) {
+        const duid = item.split('-')[1];
+        const vacuum = devices.find((d) => d.duid == duid);
+        if (vacuum) {
+          vacuums.push(vacuum);
+        }
+      }
     } else {
-      vacuum = devices.find((d) => isSupportedDevice(d.data.model));
+      vacuums = devices.filter((d) => isSupportedDevice(d.data.model));
     }
 
-    if (!vacuum) {
+    if (vacuums.length === 0) {
       this.log.error('Initializing: No device found');
       return;
     }
-    await this.roborockService.initializeMessageClient(username, vacuum, userData);
-    this.devices.set(vacuum.serialNumber, vacuum);
-    this.serialNumber = vacuum.serialNumber;
+
+    if (!this.enableExperimentalFeature || !this.enableExperimentalFeature.advancedFeature.enableServerMode) {
+      vacuums = [vacuums[0]]; // If server mode is not enabled, only use the first vacuum
+    }
+
+    for (const vacuum of vacuums) {
+      await this.roborockService.initializeMessageClient(username, vacuum, userData);
+      this.devices.set(vacuum.serialNumber, vacuum);
+    }
 
     await this.onConfigurateDevice();
     this.log.notice('onStart finished');
@@ -131,15 +142,42 @@ export class RoborockMatterbridgePlatform extends MatterbridgeDynamicPlatform {
       this.log.error('Initializing: PlatformRunner or RoborockService is undefined');
       return;
     }
-    const vacuum = this.devices.get(this.serialNumber as string);
+
     const username = this.config.username as string;
-    if (!vacuum || !username) {
+    if (this.devices.size === 0 || !username) {
       this.log.error('Initializing: No supported devices found');
       return;
     }
 
     // eslint-disable-next-line @typescript-eslint/no-this-alias
     const self = this;
+
+    for (const vacuum of this.devices.values()) {
+      await this.configurateDevice(vacuum);
+      this.rrHomeId = vacuum.rrHomeId;
+    }
+
+    this.roborockService.setDeviceNotify(async function (messageSource: NotifyMessageTypes, homeData: unknown) {
+      await self.platformRunner?.updateRobot(messageSource, homeData);
+    });
+
+    for (const robot of this.robots.values()) {
+      await this.roborockService.activateDeviceNotify(robot.device);
+    }
+
+    await this.platformRunner?.requestHomeData();
+
+    this.log.info('onConfigurateDevice finished');
+  }
+
+  private async configurateDevice(vacuum: Device) {
+    const username = this.config.username as string;
+
+    if (this.platformRunner === undefined || this.roborockService === undefined) {
+      this.log.error('Initializing: PlatformRunner or RoborockService is undefined');
+      return;
+    }
+
     await this.roborockService.initializeMessageClientForLocal(vacuum);
     const roomMap = await this.platformRunner.getRoomMapFromDevice(vacuum);
 
@@ -162,24 +200,17 @@ export class RoborockMatterbridgePlatform extends MatterbridgeDynamicPlatform {
       this.roborockService.setSupportedScenes(vacuum.duid, routineAsRoom);
     }
 
-    this.robot = new RoborockVacuumCleaner(username, vacuum, roomMap, routineAsRoom, this.enableExperimentalFeature, this.log);
-    this.robot.configurateHandler(behaviorHandler);
+    const robot = new RoborockVacuumCleaner(username, vacuum, roomMap, routineAsRoom, this.enableExperimentalFeature, this.log);
+    robot.configurateHandler(behaviorHandler);
 
     this.log.info('vacuum:', debugStringify(vacuum));
 
-    this.setSelectDevice(this.robot.serialNumber ?? '', this.robot.deviceName ?? '', undefined, 'hub');
-    if (this.validateDevice(this.robot.deviceName ?? '')) {
-      await this.registerDevice(this.robot);
+    this.setSelectDevice(robot.serialNumber ?? '', robot.deviceName ?? '', undefined, 'hub');
+    if (this.validateDevice(robot.deviceName ?? '')) {
+      await this.registerDevice(robot);
     }
 
-    this.roborockService.setDeviceNotify(async function (messageSource: NotifyMessageTypes, homeData: unknown) {
-      await self.platformRunner?.updateRobot(messageSource, homeData);
-    });
-
-    await this.roborockService.activateDeviceNotify(this.robot.device);
-    await self.platformRunner?.requestHomeData();
-
-    this.log.info('onConfigurateDevice finished');
+    this.robots.set(robot.serialNumber ?? '', robot);
   }
 
   override async onShutdown(reason?: string) {
