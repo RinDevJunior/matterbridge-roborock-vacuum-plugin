@@ -111,6 +111,10 @@ export class RoborockMatterbridgePlatform extends MatterbridgeDynamicPlatform {
       return;
     }
 
+    if (!this.enableExperimentalFeature || !this.enableExperimentalFeature.advancedFeature.enableServerMode) {
+      vacuums = [vacuums[0]]; // If server mode is not enabled, only use the first vacuum
+    }
+
     for (const vacuum of vacuums) {
       await this.roborockService.initializeMessageClient(username, vacuum, userData);
       this.devices.set(vacuum.serialNumber, vacuum);
