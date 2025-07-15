@@ -1,5 +1,4 @@
 import { MQTTClient } from '../../../../roborockCommunication/broadcast/client/MQTTClient';
-import mqtt from 'mqtt';
 
 // Pseudocode plan:
 // 1. Mock dependencies: mqtt, CryptoUtils, AbstractClient, serializer, deserializer, logger, connectionListeners, messageListeners.

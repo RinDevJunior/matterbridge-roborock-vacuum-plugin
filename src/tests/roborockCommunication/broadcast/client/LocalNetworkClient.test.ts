@@ -1,7 +1,5 @@
 import { LocalNetworkClient } from '../../../../roborockCommunication/broadcast/client/LocalNetworkClient';
-import { Socket } from 'node:net';
 import { Protocol } from '../../../../roborockCommunication/broadcast/model/protocol';
-import { RequestMessage } from '../../../../roborockCommunication/broadcast/model/requestMessage';
 
 // Pseudocode plan:
 // 1. Mock dependencies: Socket, AnsiLogger, MessageContext, RequestMessage, Protocol, serializer/deserializer.
@@ -22,7 +20,7 @@ import { RequestMessage } from '../../../../roborockCommunication/broadcast/mode
 // 11. Test wrapWithLengthData(): prepends length to buffer.
 // 12. Test sendHelloMessage() and sendPingRequest(): calls send with correct protocol.
 
-let Sket = jest.fn();
+const Sket = jest.fn();
 
 jest.mock('node:net', () => {
   const actual = jest.requireActual('node:net');
@@ -37,8 +35,8 @@ describe('LocalNetworkClient', () => {
   let mockLogger: any;
   let mockContext: any;
   let mockSocket: any;
-  let duid = 'duid1';
-  let ip = '127.0.0.1';
+  const duid = 'duid1';
+  const ip = '127.0.0.1';
 
   beforeEach(() => {
     mockLogger = {
@@ -87,7 +85,9 @@ describe('LocalNetworkClient', () => {
 
   it('disconnect() should destroy socket and clear pingInterval', async () => {
     client['socket'] = mockSocket;
-    client['pingInterval'] = setInterval(() => {}, 1000);
+    client['pingInterval'] = setInterval(() => {
+      console.log('done');
+    }, 1000);
     await client.disconnect();
     expect(mockSocket.destroy).toHaveBeenCalled();
     expect(client['socket']).toBeUndefined();
@@ -130,7 +130,9 @@ describe('LocalNetworkClient', () => {
 
   it('onDisconnect() should log, set connected false, destroy socket, clear ping, call onDisconnected', async () => {
     client['socket'] = mockSocket;
-    client['pingInterval'] = setInterval(() => {}, 1000);
+    client['pingInterval'] = setInterval(() => {
+      console.log('done');
+    }, 1000);
     await (client as any).onDisconnect();
     expect(mockLogger.notice).toHaveBeenCalled();
     expect(client['connected']).toBe(false);

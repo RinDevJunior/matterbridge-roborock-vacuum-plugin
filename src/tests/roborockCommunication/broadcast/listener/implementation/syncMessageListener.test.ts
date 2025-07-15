@@ -25,7 +25,7 @@ describe('SyncMessageListener', () => {
     const dps = { id: messageId, result: { foo: 'bar' } };
     const message = {
       contain: (proto: Protocol) => proto === Protocol.rpc_response,
-      get: (proto: Protocol) => dps,
+      get: () => dps,
     } as any;
 
     await listener.onMessage(message);
@@ -43,7 +43,7 @@ describe('SyncMessageListener', () => {
     const dps = { id: messageId, result: ['ok'] };
     const message = {
       contain: (proto: Protocol) => proto === Protocol.rpc_response,
-      get: (proto: Protocol) => dps,
+      get: () => dps,
     } as any;
 
     await listener.onMessage(message);
@@ -61,7 +61,7 @@ describe('SyncMessageListener', () => {
     const dps = { id: messageId };
     const message = {
       contain: (proto: Protocol) => proto === Protocol.map_response,
-      get: (proto: Protocol) => dps,
+      get: () => dps,
     } as any;
 
     await listener.onMessage(message);

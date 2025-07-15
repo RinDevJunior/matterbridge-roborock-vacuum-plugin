@@ -22,7 +22,8 @@ describe('ChainedConnectionListener', () => {
   it('should register listeners', () => {
     chained.register(listener1);
     chained.register(listener2);
-    // @ts-ignore
+
+    // @ts-expect-error Accessing private property for testing
     expect(chained.listeners).toEqual([listener1, listener2]);
   });
 
