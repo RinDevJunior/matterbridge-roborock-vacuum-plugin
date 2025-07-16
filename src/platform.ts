@@ -111,7 +111,7 @@ export class RoborockMatterbridgePlatform extends MatterbridgeDynamicPlatform {
       return;
     }
 
-    if (!this.enableExperimentalFeature || !this.enableExperimentalFeature.advancedFeature.enableServerMode) {
+    if (!this.enableExperimentalFeature?.enableExperimentalFeature || !this.enableExperimentalFeature?.advancedFeature?.enableServerMode) {
       vacuums = [vacuums[0]]; // If server mode is not enabled, only use the first vacuum
     }
     // else {
