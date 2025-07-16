@@ -122,7 +122,7 @@ export class RoborockMatterbridgePlatform extends MatterbridgeDynamicPlatform {
     //   vacuums = [...vacuums, cloned]; // If server mode is enabled, add the first vacuum again to ensure it is always included
     // }
 
-    //this.log.error('Initializing - vacuums: ', debugStringify(vacuums));
+    // this.log.error('Initializing - vacuums: ', debugStringify(vacuums));
 
     for (const vacuum of vacuums) {
       await this.roborockService.initializeMessageClient(username, vacuum, userData);
