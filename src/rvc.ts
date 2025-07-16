@@ -34,7 +34,7 @@ export class RoborockVacuumCleaner extends RoboticVacuumCleaner {
     log.debug(`Supported Run Modes: ${JSON.stringify(supportedRunModes)}`);
     log.debug(`Supported Areas: ${JSON.stringify(supportedAreas)}`);
 
-    const bridgeMode = enableExperimentalFeature?.advancedFeature.enableServerMode ? 'server' : undefined;
+    const bridgeMode = enableExperimentalFeature?.enableExperimentalFeature && enableExperimentalFeature?.advancedFeature?.enableServerMode ? 'server' : undefined;
     super(
       deviceName, // name
       device.duid, // serial
