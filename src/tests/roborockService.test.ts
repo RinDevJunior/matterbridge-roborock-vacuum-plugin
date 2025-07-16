@@ -344,7 +344,9 @@ describe('RoborockService - stopService', () => {
     roborockService.messageClient = mockMessageClient;
     roborockService.localClientMap.set('duid', mockLocalClient);
     roborockService.messageProcessorMap.set('duid', mockMessageProcessor);
-    roborockService.requestDeviceStatusInterval = setInterval(() => {}, 1000);
+    roborockService.requestDeviceStatusInterval = setInterval(() => {
+      jest.fn();
+    }, 1000);
   });
 
   afterEach(() => {
