@@ -2,6 +2,7 @@ import { AnsiLogger } from 'matterbridge/logger';
 import { ServiceArea } from 'matterbridge/matter/clusters';
 import RoborockService from '../roborockService';
 import { MessageProcessor } from '../roborockCommunication/broadcast/messageProcessor';
+import { Device } from '../roborockCommunication';
 
 describe('RoborockService - startClean', () => {
   let roborockService: RoborockService;
@@ -152,7 +153,15 @@ describe('RoborockService - startClean', () => {
     expect(mockLogger.debug).toHaveBeenCalledWith('RoborockService - startRoomClean', expect.anything());
     expect(mockMessageProcessor.startRoomClean).toHaveBeenCalledWith(duid, [1, 3], 1);
   });
+
+  it('should initialize and store MessageProcessor for the given duid', () => {
+    const duid = 'test-duid';
+    roborockService.initializeMessageClientForLocal({ duid } as Device);
+    const storedProcessor = roborockService['messageProcessorMap'].get(duid);
+    expect(storedProcessor).not.toBeUndefined();
+  });
 });
+
 describe('RoborockService - basic setters/getters', () => {
   let roborockService: RoborockService;
   let mockLogger: AnsiLogger;
