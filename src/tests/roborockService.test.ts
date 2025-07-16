@@ -22,7 +22,7 @@ describe('RoborockService - startClean', () => {
     } as any;
 
     roborockService = new RoborockService(jest.fn(), jest.fn(), 10, {} as any, mockLogger);
-    roborockService['messageProcessor'] = mockMessageProcessor;
+    roborockService['messageProcessorMap'] = new Map<string, MessageProcessor>([['test-duid', mockMessageProcessor]]);
   });
 
   it('should start global clean when no areas or selected areas are provided', async () => {

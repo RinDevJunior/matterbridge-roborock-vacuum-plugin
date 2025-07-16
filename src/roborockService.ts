@@ -42,9 +42,9 @@ export default class RoborockService {
   deviceNotify?: (messageSource: NotifyMessageTypes, homeData: unknown) => void;
   messageClient: ClientRouter | undefined;
   remoteDevices = new Set<string>();
-  messageProcessor: MessageProcessor | undefined;
-  ip: string | undefined;
-  localClient: Client | undefined;
+  messageProcessorMap = new Map<string, MessageProcessor>();
+  ipMap = new Map<string, string>();
+  localClientMap = new Map<string, Client>();
   clientManager: ClientManager;
   refreshInterval: number;
   requestDeviceStatusInterval: NodeJS.Timeout | undefined;
@@ -73,11 +73,12 @@ export default class RoborockService {
     return this.auth(userdata);
   }
 
-  public getMessageProcessor(): MessageProcessor | undefined {
-    if (!this.messageProcessor) {
+  public getMessageProcessor(duid: string): MessageProcessor | undefined {
+    const messageProcessor = this.messageProcessorMap.get(duid);
+    if (!messageProcessor) {
       this.logger.error('MessageApi is not initialized.');
     }
-    return this.messageProcessor;
+    return messageProcessor;
   }
 
   public setSelectedAreas(duid: string, selectedAreas: number[]): void {
@@ -99,7 +100,7 @@ export default class RoborockService {
 
   public async getCleanModeData(duid: string): Promise<{ suctionPower: number; waterFlow: number; distance_off: number; mopRoute: number }> {
     this.logger.notice('RoborockService - getCleanModeData');
-    const data = await this.messageProcessor?.getCleanModeData(duid);
+    const data = await this.getMessageProcessor(duid)?.getCleanModeData(duid);
     if (!data) {
       throw new Error('Failed to retrieve clean mode data');
     }
@@ -111,7 +112,7 @@ export default class RoborockService {
     { suctionPower, waterFlow, distance_off, mopRoute }: { suctionPower: number; waterFlow: number; distance_off: number; mopRoute: number },
   ): Promise<void> {
     this.logger.notice('RoborockService - changeCleanMode');
-    return this.messageProcessor?.changeCleanMode(duid, suctionPower, waterFlow, mopRoute, distance_off);
+    return this.getMessageProcessor(duid)?.changeCleanMode(duid, suctionPower, waterFlow, mopRoute, distance_off);
   }
 
   public async startClean(duid: string): Promise<void> {
@@ -123,10 +124,10 @@ export default class RoborockService {
     if (supportedRoutines.length === 0) {
       if (selected.length == supportedRooms.length || selected.length === 0 || supportedRooms.length === 0) {
         this.logger.debug('RoborockService - startGlobalClean');
-        this.getMessageProcessor()?.startClean(duid);
+        this.getMessageProcessor(duid)?.startClean(duid);
       } else {
         this.logger.debug('RoborockService - startRoomClean', debugStringify({ duid, selected }));
-        return this.messageProcessor?.startRoomClean(duid, selected, 1);
+        return this.getMessageProcessor(duid)?.startRoomClean(duid, selected, 1);
       }
     } else {
       const rooms = selected.filter((slt) => supportedRooms.some((a: ServiceArea.Area) => a.areaId == slt));
@@ -146,13 +147,13 @@ export default class RoborockService {
          * If no rooms are selected, or all selected rooms match the supported rooms,
          */
         this.logger.debug('RoborockService - startGlobalClean');
-        this.getMessageProcessor()?.startClean(duid);
+        this.getMessageProcessor(duid)?.startClean(duid);
       } else if (rooms.length > 0) {
         /**
          * If there are rooms selected
          */
         this.logger.debug('RoborockService - startRoomClean', debugStringify({ duid, rooms }));
-        return this.messageProcessor?.startRoomClean(duid, rooms, 1);
+        return this.getMessageProcessor(duid)?.startRoomClean(duid, rooms, 1);
       } else {
         this.logger.warn('RoborockService - something goes wrong.', debugStringify({ duid, rooms, rt, selected, supportedRooms, supportedRoutines }));
         return;
@@ -162,36 +163,36 @@ export default class RoborockService {
 
   public async pauseClean(duid: string): Promise<void> {
     this.logger.debug('RoborockService - pauseClean');
-    await this.getMessageProcessor()?.pauseClean(duid);
+    await this.getMessageProcessor(duid)?.pauseClean(duid);
   }
 
   public async stopAndGoHome(duid: string): Promise<void> {
     this.logger.debug('RoborockService - stopAndGoHome');
-    await this.getMessageProcessor()?.gotoDock(duid);
+    await this.getMessageProcessor(duid)?.gotoDock(duid);
   }
 
   public async resumeClean(duid: string): Promise<void> {
     this.logger.debug('RoborockService - resumeClean');
-    await this.getMessageProcessor()?.resumeClean(duid);
+    await this.getMessageProcessor(duid)?.resumeClean(duid);
   }
 
   public async playSoundToLocate(duid: string): Promise<void> {
     this.logger.debug('RoborockService - findMe');
-    await this.getMessageProcessor()?.findMyRobot(duid);
+    await this.getMessageProcessor(duid)?.findMyRobot(duid);
   }
 
   public async customGet(duid: string, method: string): Promise<unknown> {
     this.logger.debug('RoborockService - customSend-message', method);
-    return this.getMessageProcessor()?.getCustomMessage(duid, new RequestMessage({ method }));
+    return this.getMessageProcessor(duid)?.getCustomMessage(duid, new RequestMessage({ method }));
   }
 
   public async customGetInSecure(duid: string, method: string): Promise<unknown> {
     this.logger.debug('RoborockService - customGetInSecure-message', method);
-    return this.getMessageProcessor()?.getCustomMessage(duid, new RequestMessage({ method, secure: true }));
+    return this.getMessageProcessor(duid)?.getCustomMessage(duid, new RequestMessage({ method, secure: true }));
   }
 
   public async customSend(duid: string, request: RequestMessage): Promise<void> {
-    return this.getMessageProcessor()?.sendCustomMessage(duid, request);
+    return this.getMessageProcessor(duid)?.sendCustomMessage(duid, request);
   }
 
   public stopService(): void {
@@ -200,13 +201,21 @@ export default class RoborockService {
       this.messageClient = undefined;
     }
 
-    if (this.localClient) {
-      this.localClient.disconnect();
-      this.localClient = undefined;
+    if (this.localClientMap.size > 0) {
+      for (const [duid, client] of this.localClientMap.entries()) {
+        this.logger.debug('Disconnecting local client for device', duid);
+        client.disconnect();
+        this.localClientMap.delete(duid);
+        this.logger.debug('Local client disconnected for device', duid);
+      }
     }
 
-    if (this.messageProcessor) {
-      this.messageProcessor = undefined;
+    if (this.messageProcessorMap.size > 0) {
+      for (const [duid] of this.messageProcessorMap.entries()) {
+        this.logger.debug('Disconnecting message processor for device', duid);
+        this.messageProcessorMap.delete(duid);
+        this.logger.debug('Message processor disconnected for device', duid);
+      }
     }
 
     if (this.requestDeviceStatusInterval) {
@@ -223,9 +232,10 @@ export default class RoborockService {
     // eslint-disable-next-line @typescript-eslint/no-this-alias
     const self = this;
     this.logger.debug('Requesting device info for device', device.duid);
+    const messageProcessor = this.getMessageProcessor(device.duid);
     this.requestDeviceStatusInterval = setInterval(async () => {
-      if (this.messageProcessor) {
-        await this.messageProcessor.getDeviceStatus(device.duid).then((response: DeviceStatus) => {
+      if (messageProcessor) {
+        await messageProcessor.getDeviceStatus(device.duid).then((response: DeviceStatus) => {
           if (self.deviceNotify) {
             const message = { duid: device.duid, ...response.errorStatus, ...response.message } as DeviceStatusNotify;
             self.logger.debug('Device status update', debugStringify(message));
@@ -407,9 +417,9 @@ export default class RoborockService {
     // eslint-disable-next-line @typescript-eslint/no-this-alias
     const self = this;
 
-    this.messageProcessor = new MessageProcessor(this.messageClient);
-    this.messageProcessor.injectLogger(this.logger);
-    this.messageProcessor.registerListener({
+    const messageProcessor = new MessageProcessor(this.messageClient);
+    messageProcessor.injectLogger(this.logger);
+    messageProcessor.registerListener({
       onError: (message: VacuumErrorCode) => {
         if (self.deviceNotify) {
           self.deviceNotify(NotifyMessageTypes.ErrorOccurred, { duid: device.duid, errorCode: message } as DeviceErrorMessage);
@@ -430,30 +440,35 @@ export default class RoborockService {
       },
     } as AbstractMessageHandler);
 
+    this.messageProcessorMap.set(device.duid, messageProcessor);
+
     this.logger.debug('Local device', device.duid);
+    let localIp = this.ipMap.get(device.duid);
     try {
-      if (!this.ip) {
+      if (!localIp) {
         this.logger.debug('Requesting network info for device', device.duid);
-        const networkInfo = await this.messageProcessor.getNetworkInfo(device.duid);
-        this.ip = networkInfo.ip;
+        const networkInfo = await messageProcessor.getNetworkInfo(device.duid);
+        localIp = networkInfo.ip;
       }
 
-      if (this.ip) {
-        this.logger.debug('initializing the local connection for this client towards ' + this.ip);
-        this.localClient = this.messageClient.registerClient(device.duid, this.ip) as LocalNetworkClient;
-        this.localClient.connect();
+      if (localIp) {
+        this.logger.debug('initializing the local connection for this client towards ' + localIp);
+        const localClient = this.messageClient.registerClient(device.duid, localIp) as LocalNetworkClient;
+        localClient.connect();
 
         let count = 0;
-        while (!this.localClient.isConnected() && count < 20) {
+        while (!localClient.isConnected() && count < 20) {
           this.logger.debug('Keep waiting for local client to connect');
           count++;
-          await this.sleep(500);
+          await this.sleep(200);
         }
 
-        if (!this.localClient.isConnected()) {
+        if (!localClient.isConnected()) {
           throw new Error('Local client did not connect after 10 attempts, something is wrong');
         }
 
+        this.ipMap.set(device.duid, localIp);
+        this.localClientMap.set(device.duid, localClient);
         this.logger.debug('LocalClient connected');
       }
     } catch (error) {

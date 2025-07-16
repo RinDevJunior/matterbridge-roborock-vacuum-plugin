@@ -179,6 +179,7 @@ export class RoborockMatterbridgePlatform extends MatterbridgeDynamicPlatform {
     this.log.info('onConfigurateDevice finished');
   }
 
+  // Running in loop to configurate devices
   private async configurateDevice(vacuum: Device) {
     const username = this.config.username as string;
 
