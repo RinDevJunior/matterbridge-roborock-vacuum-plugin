@@ -13,6 +13,11 @@ jobs:
         os: [ubuntu-latest, windows-latest, macos-latest]
 
     steps:
+      - name: Cancel Previous Runs
+        uses: styfle/cancel-workflow-action@v0.12.0
+        with:
+          access_token: ${{ github.token }}
+
       - name: Checkout code
         uses: actions/checkout@v4
 
