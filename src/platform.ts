@@ -96,8 +96,8 @@ export class RoborockMatterbridgePlatform extends MatterbridgeDynamicPlatform {
     if ((this.config.whiteList as string[]).length > 0) {
       const whiteList = (this.config.whiteList ?? []) as string[];
       for (const item of whiteList) {
-        const duid = item.split('-')[1];
-        const vacuum = devices.find((d) => d.duid == duid);
+        const duid = item.split('-')[1].trim();
+        const vacuum = devices.find((d) => d.duid === duid);
         if (vacuum) {
           vacuums.push(vacuum);
         }
@@ -114,6 +114,15 @@ export class RoborockMatterbridgePlatform extends MatterbridgeDynamicPlatform {
     if (!this.enableExperimentalFeature || !this.enableExperimentalFeature.advancedFeature.enableServerMode) {
       vacuums = [vacuums[0]]; // If server mode is not enabled, only use the first vacuum
     }
+    // else {
+    //   const cloned = JSON.parse(JSON.stringify(vacuums[0])) as Device;
+    //   cloned.name = `${cloned.name} Clone`;
+    //   cloned.serialNumber = `${cloned.serialNumber}-clone`;
+
+    //   vacuums = [...vacuums, cloned]; // If server mode is enabled, add the first vacuum again to ensure it is always included
+    // }
+
+    //this.log.error('Initializing - vacuums: ', debugStringify(vacuums));
 
     for (const vacuum of vacuums) {
       await this.roborockService.initializeMessageClient(username, vacuum, userData);
@@ -192,7 +201,8 @@ export class RoborockMatterbridgePlatform extends MatterbridgeDynamicPlatform {
       this.log,
     );
 
-    this.roborockService.setSupportedAreas(vacuum.duid, getSupportedAreas(vacuum.rooms, roomMap, this.log));
+    const supportedAreas = getSupportedAreas(vacuum.rooms, roomMap, this.log);
+    this.roborockService.setSupportedAreas(vacuum.duid, supportedAreas);
 
     let routineAsRoom: ServiceArea.Area[] = [];
     if (this.enableExperimentalFeature?.enableExperimentalFeature && this.enableExperimentalFeature.advancedFeature?.showRoutinesAsRoom) {

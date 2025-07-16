@@ -2,6 +2,7 @@ import { AnsiLogger, debugStringify } from 'matterbridge/logger';
 import { ServiceArea } from 'matterbridge/matter/clusters';
 import RoomMap from '../model/RoomMap.js';
 import { Room } from '../roborockCommunication/Zmodel/room.js';
+import { randomInt } from 'node:crypto';
 
 export function getSupportedAreas(rooms: Room[], roomMap: RoomMap | undefined, log?: AnsiLogger): ServiceArea.Area[] {
   log?.debug('getSupportedAreas', debugStringify(rooms));
@@ -31,7 +32,7 @@ export function getSupportedAreas(rooms: Room[], roomMap: RoomMap | undefined, l
       mapId: null,
       areaInfo: {
         locationInfo: {
-          locationName: room.displayName ?? rooms.find((r) => r.id == room.globalId)?.name ?? 'Unknown Room',
+          locationName: room.displayName ?? rooms.find((r) => r.id == room.globalId)?.name ?? `Unknown Room ${randomInt(1000, 9999)}`,
           floorNumber: null,
           areaType: null,
         },

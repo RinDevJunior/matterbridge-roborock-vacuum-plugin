@@ -51,4 +51,31 @@ describe('getSupportedAreas', () => {
 
     expect(result.length).toEqual(8);
   });
+
+  it('returns default area when rooms and roomMap are empty', () => {
+    const result = getSupportedAreas(
+      [
+        { id: 11453731, name: 'Living room' },
+        { id: 11453727, name: 'Kitchen' },
+        { id: 11453415, name: 'Bathroom' },
+        { id: 11453409, name: 'Emile’s Room' },
+        { id: 11453404, name: 'Nadia’s Room' },
+        { id: 11453398, name: 'Hallway' },
+        { id: 11453391, name: 'Dining room' },
+        { id: 11453384, name: 'Outside' },
+      ],
+      {
+        rooms: [
+          { id: 16, globalId: 2775739, displayName: undefined },
+          { id: 17, globalId: 991195, displayName: undefined },
+          { id: 18, globalId: 991187, displayName: undefined },
+          { id: 19, globalId: 991185, displayName: undefined },
+          { id: 20, globalId: 991190, displayName: undefined },
+        ],
+      } as RoomMap,
+      mockLogger as any,
+    );
+
+    expect(result.length).toEqual(5);
+  });
 });
