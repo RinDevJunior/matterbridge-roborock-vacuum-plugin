@@ -28,3 +28,32 @@ export interface CleanModeSettings {
     distanceOff?: number;
   };
 }
+
+export function createDefaultExperimentalFeatureSetting(): ExperimentalFeatureSetting {
+  return {
+    enableExperimentalFeature: false,
+    advancedFeature: {
+      showRoutinesAsRoom: false,
+      includeDockStationStatus: false,
+      forceRunAtDefault: false,
+      useVacationModeToSendVacuumToDock: false,
+      enableServerMode: false,
+    },
+    cleanModeSettings: {
+      enableCleanModeMapping: false,
+      vacuuming: {
+        fanMode: 'Balanced',
+        mopRouteMode: 'Standard',
+      },
+      mopping: {
+        waterFlowMode: 'Medium',
+        mopRouteMode: 'Standard',
+      },
+      vacmop: {
+        fanMode: 'Balanced',
+        waterFlowMode: 'Medium',
+        mopRouteMode: 'Standard',
+      },
+    },
+  };
+}
