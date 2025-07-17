@@ -90,8 +90,21 @@ For a detailed table of how Apple Home clean modes map to Roborock settings, see
 
 ---
 
+### ⚙️ Matterbridge setting
+
+<div align="center">
+  <img src="./screenshot/IMG_6.PNG" alt="Matterbridge Configuration Screenshot" style="border-radius: 8px; max-width: 100%; box-shadow: 0 4px 12px rgba(0,0,0,0.1);" />
+</div>
+
+---
+
 ### 💬 Need Help?
 
+🛠️ **Reporting an Issue**  
+Before opening an issue, please make sure to read the instructions here:  
+[📄 How to Report an Issue](./README_REPORT_ISSUE.md)
+
+💬 **Community Support**  
 Join our Discord for support, updates, and community discussions:  
 👉 [Join the Matterbridge Roborock Discord](https://discord.gg/NHMDKdzm)
 
