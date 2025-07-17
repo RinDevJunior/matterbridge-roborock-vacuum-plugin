@@ -106,7 +106,7 @@ Before opening an issue, please make sure to read the instructions here:
 
 💬 **Community Support**  
 Join our Discord for support, updates, and community discussions:  
-👉 [Join the Matterbridge Roborock Discord](https://discord.gg/NHMDKdzm)
+👉 [Join the Matterbridge Roborock Discord](https://discord.gg/favqExHGn4)
 
 ---
 
