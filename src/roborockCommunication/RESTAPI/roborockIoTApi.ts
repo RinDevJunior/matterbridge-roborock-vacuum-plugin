@@ -68,7 +68,7 @@ export class RoborockIoTApi {
       return undefined;
     }
   }
-  
+
   public async getScenes(homeId: number): Promise<Scene[] | undefined> {
     const result = await this.api.get('user/scene/home/' + homeId);
 
