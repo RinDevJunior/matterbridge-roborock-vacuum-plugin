@@ -70,7 +70,10 @@ To get the **DUID** for your devices, you have two options:
 
 - **Under active development**
 - Requires **`matterbridge@3.1.3`**
-- ⚠️ **Known Issue:** Vacuum may appear as **two devices** in Apple Home
+- ⚠️ **Known Issue:** 
++ Vacuum may appear as **two devices** in Apple Home
++ Error: Wrong CRC32 2241274590, expected 0 -> this is normal error and not impact to plugin functionality
++ 
 
 ---
 
