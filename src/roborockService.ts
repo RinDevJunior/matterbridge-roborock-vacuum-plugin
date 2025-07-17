@@ -303,7 +303,7 @@ export default class RoborockService {
     assert(this.iotApi !== undefined);
     assert(this.userdata !== undefined);
 
-    const homeData = await this.iotApi.getHomev2(homeid);
+    const homeData = await this.iotApi.getHomev3(homeid);
 
     if (!homeData) {
       throw new Error('Failed to retrieve the home data');
