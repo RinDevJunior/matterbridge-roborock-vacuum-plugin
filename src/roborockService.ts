@@ -54,6 +54,8 @@ export default class RoborockService {
   private supportedRoutines = new Map<string, ServiceArea.Area[]>();
   private selectedAreas = new Map<string, number[]>();
 
+  private readonly vacuumNeedAPIV3 = ['roborock.vacuum.ss07'];
+
   constructor(
     authenticateApiSupplier: Factory<void, RoborockAuthenticateApi> = (logger) => new RoborockAuthenticateApi(logger),
     iotApiSupplier: Factory<UserData, RoborockIoTApi> = (logger, ud) => new RoborockIoTApi(ud, logger),
@@ -266,8 +268,18 @@ export default class RoborockService {
 
     const products = new Map<string, string>();
     homeData.products.forEach((p) => products.set(p.id, p.model));
+
+    if (homeData.products.some((p) => this.vacuumNeedAPIV3.includes(p.model))) {
+      this.logger.debug('Using v3 API for home data retrieval');
+      const homeDataV3 = await this.iotApi.getHomev3(homeDetails.rrHomeId);
+      if (!homeDataV3) {
+        throw new Error('Failed to retrieve the home data from v3 API');
+      }
+      homeData.devices = [...homeData.devices, ...homeDataV3.devices.filter((d) => !homeData.devices.some((x) => x.duid === d.duid))];
+      homeData.receivedDevices = [...homeData.receivedDevices, ...homeDataV3.receivedDevices.filter((d) => !homeData.receivedDevices.some((x) => x.duid === d.duid))];
+    }
+
     const devices: Device[] = [...homeData.devices, ...homeData.receivedDevices];
-    // homeData.devices.length > 0 ? homeData.devices : homeData.receivedDevices;
 
     const result = devices.map((device) => {
       return {
