@@ -12,6 +12,19 @@ These devices have been fully tested and are confirmed to work as expected.
 
 ---
 
+## ⚠️ Not Supported Devices
+
+This plugin does NOT support these models:
+
+| Device Name                | Model String                  |
+|----------------------------|-------------------------------|
+| Roborock Q10 Series        | `roborock.vacuum.ss07`        |
+
+**Reason:**
+Roborock recently released a new series of models, Q10. Roborock has changed the protocol for how these devices interact.
+
+---
+
 ## ⚠️ Other Supported Devices
 
 All other models listed in the code are supported, but **may have some limitations**.
