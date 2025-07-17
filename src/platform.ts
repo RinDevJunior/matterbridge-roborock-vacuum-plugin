@@ -11,7 +11,7 @@ import { configurateBehavior } from './behaviorFactory.js';
 import { NotifyMessageTypes } from './notifyMessageTypes.js';
 import { Device, RoborockAuthenticateApi, RoborockIoTApi } from './roborockCommunication/index.js';
 import { getSupportedAreas, getSupportedScenes } from './initialData/index.js';
-import { CleanModeSettings, ExperimentalFeatureSetting } from './model/ExperimentalFeatureSetting.js';
+import { CleanModeSettings, createDefaultExperimentalFeatureSetting, ExperimentalFeatureSetting } from './model/ExperimentalFeatureSetting.js';
 import { ServiceArea } from 'matterbridge/matter/clusters';
 import NodePersist from 'node-persist';
 import Path from 'node:path';
@@ -40,7 +40,7 @@ export class RoborockMatterbridgePlatform extends MatterbridgeDynamicPlatform {
     this.log.info('Initializing platform:', this.config.name);
     if (config.whiteList === undefined) config.whiteList = [];
     if (config.blackList === undefined) config.blackList = [];
-    if (config.enableExperimentalFeature === undefined) config.enableExperimentalFeature = false;
+    if (config.enableExperimental === undefined) config.enableExperimental = createDefaultExperimentalFeatureSetting() as ExperimentalFeatureSetting;
 
     // Create storage for this plugin (initialised in onStart)
     const persistDir = Path.join(this.matterbridge.matterbridgePluginDirectory, PLUGIN_NAME, 'persist');
@@ -161,16 +161,24 @@ export class RoborockMatterbridgePlatform extends MatterbridgeDynamicPlatform {
     // eslint-disable-next-line @typescript-eslint/no-this-alias
     const self = this;
 
+    const configurateSuccess = new Map<string, boolean>();
+
     for (const vacuum of this.devices.values()) {
-      await this.configurateDevice(vacuum);
-      this.rrHomeId = vacuum.rrHomeId;
+      const success = await this.configurateDevice(vacuum);
+      configurateSuccess.set(vacuum.duid, success);
+      if (success) {
+        this.rrHomeId = vacuum.rrHomeId;
+      }
     }
 
     this.roborockService.setDeviceNotify(async function (messageSource: NotifyMessageTypes, homeData: unknown) {
       await self.platformRunner?.updateRobot(messageSource, homeData);
     });
 
-    for (const robot of this.robots.values()) {
+    for (const [duid, robot] of this.robots.entries()) {
+      if (!configurateSuccess.get(duid)) {
+        continue;
+      }
       await this.roborockService.activateDeviceNotify(robot.device);
     }
 
@@ -180,15 +188,21 @@ export class RoborockMatterbridgePlatform extends MatterbridgeDynamicPlatform {
   }
 
   // Running in loop to configurate devices
-  private async configurateDevice(vacuum: Device) {
+  private async configurateDevice(vacuum: Device): Promise<boolean> {
     const username = this.config.username as string;
 
     if (this.platformRunner === undefined || this.roborockService === undefined) {
       this.log.error('Initializing: PlatformRunner or RoborockService is undefined');
-      return;
+      return false;
     }
 
-    await this.roborockService.initializeMessageClientForLocal(vacuum);
+    const connectedToLocalNetwork = await this.roborockService.initializeMessageClientForLocal(vacuum);
+
+    if (!connectedToLocalNetwork) {
+      this.log.error(`Failed to connect to local network for device: ${vacuum.name} (${vacuum.duid})`);
+      return false;
+    }
+
     const roomMap = await this.platformRunner.getRoomMapFromDevice(vacuum);
 
     this.log.debug('Initializing - roomMap: ', debugStringify(roomMap));
@@ -222,6 +236,8 @@ export class RoborockMatterbridgePlatform extends MatterbridgeDynamicPlatform {
     }
 
     this.robots.set(robot.serialNumber ?? '', robot);
+
+    return true;
   }
 
   override async onShutdown(reason?: string) {

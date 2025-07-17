@@ -408,11 +408,11 @@ export default class RoborockService {
     this.logger.debug('MessageClient connected');
   }
 
-  public async initializeMessageClientForLocal(device: Device): Promise<void> {
+  public async initializeMessageClientForLocal(device: Device): Promise<boolean> {
     this.logger.debug('Begin get local ip');
     if (this.messageClient === undefined) {
       this.logger.error('messageClient not initialized');
-      return;
+      return false;
     }
     // eslint-disable-next-line @typescript-eslint/no-this-alias
     const self = this;
@@ -448,6 +448,11 @@ export default class RoborockService {
       if (!localIp) {
         this.logger.debug('Requesting network info for device', device.duid);
         const networkInfo = await messageProcessor.getNetworkInfo(device.duid);
+        if (!networkInfo || !networkInfo.ip) {
+          this.logger.error('Failed to retrieve network info for device', device.duid);
+          return false;
+        }
+
         localIp = networkInfo.ip;
       }
 
@@ -473,7 +478,10 @@ export default class RoborockService {
       }
     } catch (error) {
       this.logger.error('Error requesting network info', error);
+      return false;
     }
+
+    return true;
   }
 
   private sleep(ms: number): Promise<void> {
