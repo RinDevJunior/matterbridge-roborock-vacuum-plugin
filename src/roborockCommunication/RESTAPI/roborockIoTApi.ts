@@ -57,6 +57,18 @@ export class RoborockIoTApi {
     }
   }
 
+  public async getHomev3(homeId: number): Promise<Home | undefined> {
+    const result = await this.api.get('v3/user/homes/' + homeId);
+
+    const apiResponse: ApiResponse<Home> = result.data;
+    if (apiResponse.result) {
+      return apiResponse.result;
+    } else {
+      this.logger.error('Failed to retrieve the home data');
+      return undefined;
+    }
+  }
+  
   public async getScenes(homeId: number): Promise<Scene[] | undefined> {
     const result = await this.api.get('user/scene/home/' + homeId);
 
