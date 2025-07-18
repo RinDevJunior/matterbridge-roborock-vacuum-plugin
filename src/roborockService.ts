@@ -428,6 +428,8 @@ export default class RoborockService {
       return false;
     }
 
+    this.logger.debug('Checking if device supports local connection', debugStringify(device));
+
     if (device.pv === 'B01') {
       this.logger.warn('Device does not support local connection', device.duid);
       this.mqttAlwaysOnDevices.set(device.duid, true);
