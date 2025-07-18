@@ -45,6 +45,7 @@ export default class RoborockService {
   messageProcessorMap = new Map<string, MessageProcessor>();
   ipMap = new Map<string, string>();
   localClientMap = new Map<string, Client>();
+  mqttAlwaysOnDevices = new Map<string, boolean>();
   clientManager: ClientManager;
   refreshInterval: number;
   requestDeviceStatusInterval: NodeJS.Timeout | undefined;
@@ -371,7 +372,7 @@ export default class RoborockService {
       return undefined;
     }
 
-    return this.messageClient.get(duid, new RequestMessage({ method: 'get_room_mapping' }));
+    return this.messageClient.get(duid, new RequestMessage({ method: 'get_room_mapping', secure: this.isRequestSecure(duid) }));
   }
 
   public async initializeMessageClient(username: string, device: Device, userdata: UserData): Promise<void> {
@@ -426,6 +427,15 @@ export default class RoborockService {
       this.logger.error('messageClient not initialized');
       return false;
     }
+
+    if (device.pv === 'B01') {
+      this.logger.warn('Device does not support local connection', device.duid);
+      this.mqttAlwaysOnDevices.set(device.duid, true);
+      return true;
+    } else {
+      this.mqttAlwaysOnDevices.set(device.duid, false);
+    }
+
     // eslint-disable-next-line @typescript-eslint/no-this-alias
     const self = this;
 
@@ -504,5 +514,9 @@ export default class RoborockService {
     this.userdata = userdata;
     this.iotApi = this.iotApiFactory(this.logger, userdata);
     return userdata;
+  }
+
+  private isRequestSecure(duid: string): boolean {
+    return this.mqttAlwaysOnDevices.get(duid) ?? false;
   }
 }
