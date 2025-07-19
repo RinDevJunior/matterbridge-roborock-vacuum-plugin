@@ -11,7 +11,7 @@
         "dont-run:dev:simple": "npm run build && node dist/app.js",
         "dont-run:dev:watch": "while true; do npm run build && node dist/app.js; echo 'Restarting in 2 seconds...'; sleep 2; done",
         "dont-run:dev:build": "nodemon --watch src --ext ts --exec \"npm run build && node dist/app.js\"",
-        "dont-run:dev:macos": "osascript -e 'tell application \"Terminal\" to do script \"cd /Users/rinnguyen/Data/vscode/matterbridge-roborock-vacuum-plugin/webui && npm run dev\"'",
+        "dont-run:dev:macos": "osascript -e 'tell application \"Terminal\" to do script \"cd /Users/rinnguyen/Data/vscode/matterbridge-roborock-vacuum-plugin/webui && npm run dev\"'"
     },
     "keywords": [],
     "author": "",

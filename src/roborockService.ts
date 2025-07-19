@@ -242,7 +242,7 @@ export default class RoborockService {
     this.deviceNotify = callback;
   }
 
-  public async activateDeviceNotify(device: Device): Promise<void> {
+  public activateDeviceNotify(device: Device): void {
     // eslint-disable-next-line @typescript-eslint/no-this-alias
     const self = this;
     this.logger.debug('Requesting device info for device', device.duid);
@@ -439,16 +439,6 @@ export default class RoborockService {
       return false;
     }
 
-    this.logger.debug('Checking if device supports local connection', debugStringify(device));
-
-    if (device.pv === 'B01') {
-      this.logger.warn('Device does not support local connection', device.duid);
-      this.mqttAlwaysOnDevices.set(device.duid, true);
-      return true;
-    } else {
-      this.mqttAlwaysOnDevices.set(device.duid, false);
-    }
-
     // eslint-disable-next-line @typescript-eslint/no-this-alias
     const self = this;
 
@@ -476,6 +466,15 @@ export default class RoborockService {
     } as AbstractMessageHandler);
 
     this.messageProcessorMap.set(device.duid, messageProcessor);
+
+    this.logger.debug('Checking if device supports local connection', debugStringify(device));
+    if (device.pv === 'B01') {
+      this.logger.warn('Device does not support local connection', device.duid);
+      this.mqttAlwaysOnDevices.set(device.duid, true);
+      return true;
+    } else {
+      this.mqttAlwaysOnDevices.set(device.duid, false);
+    }
 
     this.logger.debug('Local device', device.duid);
     let localIp = this.ipMap.get(device.duid);

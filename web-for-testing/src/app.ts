@@ -6,6 +6,18 @@ import { Device, RoborockAuthenticateApi, RoborockIoTApi, UserData } from './ext
 import axios from 'axios';
 import { Socket } from 'net';
 
+// Handle unhandled promise rejections
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('Unhandled Promise Rejection at:', promise, 'reason:', reason);
+  // Application specific logging, throwing an error, or other logic here
+});
+
+// Handle uncaught exceptions
+process.on('uncaughtException', (error) => {
+  console.error('Uncaught Exception:', error);
+  // Application specific logging, throwing an error, or other logic here
+});
+
 const app = express();
 const port = 3000;
 const log = new AnsiLogger({ logName: 'Main' });
@@ -17,7 +29,7 @@ log.setCallback((level, time, name, message) => {
 var roborockService: RoborockService;
 var clientManager: ClientManager;
 var userData: UserData;
-var devices: Device[];
+const devices: Device[] = [];
 var usname: string;
 var connected = true;
 var connectedDUID = '';
@@ -69,11 +81,14 @@ app.post('/login', async (req: Request, res: Response) => {
 
   try {
     userData = await roborockService.loginWithPassword(username, password);
-    console.warn('Login successful:', JSON.stringify(userData));
-    devices = await roborockService.listDevices(username);
+    //console.warn('Login successful:', JSON.stringify(userData));
+    const dvs = await roborockService.listDevices(username);
+
+    devices.push(...dvs);
+
     if (userData) {
       usname = username;
-      res.json({ success: true, devices, userData });
+      res.json({ success: true, devices: dvs, userData });
     } else {
       res.json({ success: false, error: 'Invalid username or password' });
     }
@@ -105,6 +120,8 @@ app.post('/run', async (req: Request, res: Response) => {
     console.warn(`${messageSource}: ${JSON.stringify(homeData)}`);
   });
   await roborockService.initializeMessageClientForLocal(device);
+
+  roborockService.activateDeviceNotify(device);
 
   connected = true;
   connectedDUID = duid;
