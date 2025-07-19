@@ -9,6 +9,10 @@ out/
 webui/
 exampleData/
 coverage/
+web-for-testing/dist/
+web-for-testing/build/
+web-for-testing/out/
+web-for-testing/src/ext
 
 # TypeScript cache
 *.tsbuildinfo
