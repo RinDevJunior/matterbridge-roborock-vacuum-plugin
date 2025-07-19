@@ -195,6 +195,17 @@ export default class RoborockService {
     return this.getMessageProcessor(duid)?.sendCustomMessage(duid, request);
   }
 
+  public async getCustomAPI(url: string): Promise<unknown> {
+    this.logger.debug('RoborockService - getCustomAPI', url);
+    assert(this.iotApi !== undefined);
+    try {
+      return await this.iotApi.getCustom(url);
+    } catch (error) {
+      this.logger.error(`Failed to get custom API with url ${url}: ${error ? debugStringify(error) : 'undefined'}`);
+      return { result: undefined, error: `Failed to get custom API with url ${url}` };
+    }
+  }
+
   public stopService(): void {
     if (this.messageClient) {
       this.messageClient.disconnect();

@@ -80,4 +80,16 @@ export class RoborockIoTApi {
       return undefined;
     }
   }
+
+  public async getCustom(url: string): Promise<unknown> {
+    const result = await this.api.get(url);
+    const apiResponse: ApiResponse<unknown> = result.data;
+
+    if (apiResponse.result) {
+      return apiResponse.result;
+    } else {
+      this.logger.error('Failed to execute scene');
+      return undefined;
+    }
+  }
 }
