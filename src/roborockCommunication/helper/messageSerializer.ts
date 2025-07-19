@@ -66,6 +66,12 @@ export class MessageSerializer {
       const iv = CryptoUtils.md5hex(this.random.toString(16).padStart(8, '0') + '726f626f726f636b2d67a6d6da').substring(8, 24);
       const cipher = crypto.createCipheriv('aes-128-cbc', encoder.encode(localKey), iv);
       encrypted = Buffer.concat([cipher.update(payload), cipher.final()]);
+    } else if (version == 'B01') {
+      const encoder = new TextEncoder();
+      const iv = CryptoUtils.md5hex(this.random.toString(16).padStart(8, '0') + '5wwh9ikChRjASpMU8cxg7o1d2E').substring(9, 25);
+      const cipher = crypto.createCipheriv('aes-128-cbc', encoder.encode(localKey), iv);
+      // pad ??
+      encrypted = Buffer.concat([cipher.update(payload), cipher.final()]);
     } else {
       throw new Error('unable to build the message: unsupported protocol version: ' + version);
     }
