@@ -33,6 +33,7 @@ const devices: Device[] = [];
 var usname: string;
 var connected = true;
 var connectedDUID = '';
+var isConnected = false;
 
 //--------------------------
 app.set('view engine', 'ejs');
@@ -80,7 +81,16 @@ app.post('/login', async (req: Request, res: Response) => {
   );
 
   try {
-    userData = await roborockService.loginWithPassword(username, password);
+    userData = await roborockService.loginWithPassword(
+      username,
+      password,
+      async () => {
+        return undefined;
+      },
+      async (userData) => {
+        console.warn('User data received:', JSON.stringify(userData));
+      },
+    );
     //console.warn('Login successful:', JSON.stringify(userData));
     const dvs = await roborockService.listDevices(username);
 
@@ -109,23 +119,24 @@ app.post('/run', async (req: Request, res: Response) => {
     return;
   }
 
-  if (connected && duid != connectedDUID && roborockService) {
-    roborockService.stopService();
+  if (!isConnected) {
+    if (connected && duid != connectedDUID && roborockService) {
+      roborockService.stopService();
+    }
+
+    await roborockService.initializeMessageClient(usname, device, userData);
+
+    roborockService.setDeviceNotify(async (messageSource, homeData) => {
+      console.warn(`${messageSource}: ${JSON.stringify(homeData)}`);
+    });
+    await roborockService.initializeMessageClientForLocal(device);
+
+    roborockService.activateDeviceNotify(device);
+
+    connected = true;
+    connectedDUID = duid;
+    isConnected = true;
   }
-
-  await roborockService.initializeMessageClient(usname, device, userData);
-  console.warn('MQTT connected');
-
-  roborockService.setDeviceNotify(async (messageSource, homeData) => {
-    console.warn(`${messageSource}: ${JSON.stringify(homeData)}`);
-  });
-  await roborockService.initializeMessageClientForLocal(device);
-
-  roborockService.activateDeviceNotify(device);
-
-  connected = true;
-  connectedDUID = duid;
-  console.warn('Local connected');
 
   if (secure) {
     const data = await roborockService.customGetInSecure(duid, command);
