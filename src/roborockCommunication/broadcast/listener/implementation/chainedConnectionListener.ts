@@ -2,25 +2,26 @@ import { AbstractConnectionListener } from '../abstractConnectionListener.js';
 
 export class ChainedConnectionListener implements AbstractConnectionListener {
   private listeners: AbstractConnectionListener[] = [];
-  register(listener: AbstractConnectionListener): void {
+
+  public register(listener: AbstractConnectionListener): void {
     this.listeners.push(listener);
   }
 
-  async onConnected(): Promise<void> {
+  public async onConnected(duid: string): Promise<void> {
     for (const listener of this.listeners) {
-      await listener.onConnected();
+      await listener.onConnected(duid);
     }
   }
 
-  async onDisconnected(): Promise<void> {
+  public async onDisconnected(duid: string): Promise<void> {
     for (const listener of this.listeners) {
-      await listener.onDisconnected();
+      await listener.onDisconnected(duid);
     }
   }
 
-  async onError(message: string): Promise<void> {
+  public async onError(duid: string, message: string): Promise<void> {
     for (const listener of this.listeners) {
-      await listener.onError(message);
+      await listener.onError(duid, message);
     }
   }
 }

@@ -20,7 +20,12 @@ export class RoborockAuthenticateApi {
     this.logger = logger;
   }
 
-  async loginWithPassword(username: string, password: string): Promise<UserData> {
+  public async loginWithUserData(username: string, userData: UserData): Promise<UserData> {
+    this.loginWithAuthToken(username, userData.token);
+    return userData;
+  }
+
+  public async loginWithPassword(username: string, password: string): Promise<UserData> {
     const api = await this.getAPIFor(username);
     const response = await api.post(
       'api/v1/login',
@@ -33,7 +38,7 @@ export class RoborockAuthenticateApi {
     return this.auth(username, response.data);
   }
 
-  async getHomeDetails(): Promise<HomeInfo | undefined> {
+  public async getHomeDetails(): Promise<HomeInfo | undefined> {
     if (!this.username || !this.authToken) {
       return undefined;
     }

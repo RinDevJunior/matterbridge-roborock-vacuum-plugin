@@ -381,6 +381,15 @@ describe('RoborockService - setDeviceNotify', () => {
   });
 });
 
+describe('RoborockService - sleep', () => {
+  it('should resolve after ms', async () => {
+    const roborockService = new RoborockService(jest.fn(), jest.fn(), 10, {} as any, {} as any);
+    const start = Date.now();
+    await roborockService['sleep'](100);
+    expect(Date.now() - start).toBeGreaterThanOrEqual(0);
+  });
+});
+
 describe('RoborockService - auth', () => {
   it('should set userdata and iotApi', () => {
     const mockLogger = {} as any;

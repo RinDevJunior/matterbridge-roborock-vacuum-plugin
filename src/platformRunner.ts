@@ -91,7 +91,7 @@ export class PlatformRunner {
     }
 
     if (!tracked) {
-      platform.log.debug(`${messageSource} updateFromMQTTMessage: ${debugStringify(messageData as DeviceStatusNotify)}`);
+      platform.log.debug(`Receive: ${messageSource} updateFromMQTTMessage: ${debugStringify(messageData as DeviceStatusNotify)}`);
     }
 
     if (!robot.serialNumber) {

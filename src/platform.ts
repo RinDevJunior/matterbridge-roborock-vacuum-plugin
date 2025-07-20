@@ -9,7 +9,7 @@ import { PlatformRunner } from './platformRunner.js';
 import { RoborockVacuumCleaner } from './rvc.js';
 import { configurateBehavior } from './behaviorFactory.js';
 import { NotifyMessageTypes } from './notifyMessageTypes.js';
-import { Device, RoborockAuthenticateApi, RoborockIoTApi } from './roborockCommunication/index.js';
+import { Device, RoborockAuthenticateApi, RoborockIoTApi, UserData } from './roborockCommunication/index.js';
 import { getSupportedAreas, getSupportedScenes } from './initialData/index.js';
 import { CleanModeSettings, createDefaultExperimentalFeatureSetting, ExperimentalFeatureSetting } from './model/ExperimentalFeatureSetting.js';
 import { ServiceArea } from 'matterbridge/matter/clusters';
@@ -32,9 +32,9 @@ export class RoborockMatterbridgePlatform extends MatterbridgeDynamicPlatform {
     super(matterbridge, log, config);
 
     // Verify that Matterbridge is the correct version
-    if (this.verifyMatterbridgeVersion === undefined || typeof this.verifyMatterbridgeVersion !== 'function' || !this.verifyMatterbridgeVersion('3.1.3')) {
+    if (this.verifyMatterbridgeVersion === undefined || typeof this.verifyMatterbridgeVersion !== 'function' || !this.verifyMatterbridgeVersion('3.1.5')) {
       throw new Error(
-        `This plugin requires Matterbridge version >= "3.1.3". Please update Matterbridge from ${this.matterbridge.matterbridgeVersion} to the latest version in the frontend.`,
+        `This plugin requires Matterbridge version >= "3.1.5". Please update Matterbridge from ${this.matterbridge.matterbridgeVersion} to the latest version in the frontend.`,
       );
     }
     this.log.info('Initializing platform:', this.config.name);
@@ -87,7 +87,27 @@ export class RoborockMatterbridgePlatform extends MatterbridgeDynamicPlatform {
     const username = this.config.username as string;
     const password = this.config.password as string;
 
-    const userData = await this.roborockService.loginWithPassword(username, password);
+    const userData = await this.roborockService.loginWithPassword(
+      username,
+      password,
+      async () => {
+        if (this.enableExperimentalFeature?.enableExperimentalFeature && this.enableExperimentalFeature.advancedFeature?.alwaysExecuteAuthentication) {
+          this.log.debug('Always execute authentication on startup');
+          return undefined;
+        }
+
+        const savedUserData = (await this.persist.getItem('userData')) as UserData | undefined;
+        if (savedUserData) {
+          this.log.debug('Loading saved userData:', debugStringify(savedUserData));
+          return savedUserData;
+        }
+        return undefined;
+      },
+      async (userData: UserData) => {
+        await this.persist.setItem('userData', userData);
+      },
+    );
+
     this.log.debug('Initializing - userData:', debugStringify(userData));
     const devices = await this.roborockService.listDevices(username);
     this.log.notice('Initializing - devices: ', debugStringify(devices));
