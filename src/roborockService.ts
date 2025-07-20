@@ -68,8 +68,23 @@ export default class RoborockService {
     this.clientManager = clientManager;
   }
 
-  public async loginWithPassword(username: string, password: string): Promise<UserData> {
-    const userdata = await this.loginApi.loginWithPassword(username, password);
+  public async loginWithPassword(
+    username: string,
+    password: string,
+    loadSavedUserData: () => Promise<UserData | undefined>,
+    savedUserData: (userData: UserData) => Promise<void>,
+  ): Promise<UserData> {
+    let userdata = await loadSavedUserData();
+
+    if (!userdata) {
+      this.logger.debug('No saved user data found, logging in with password');
+      userdata = await this.loginApi.loginWithPassword(username, password);
+      await savedUserData(userdata);
+    } else {
+      this.logger.debug('Using saved user data for login', debugStringify(userdata));
+      userdata = await this.loginApi.loginWithUserData(username, userdata);
+    }
+
     return this.auth(userdata);
   }
 
@@ -372,17 +387,6 @@ export default class RoborockService {
     const self = this;
     this.messageClient = this.clientManager.get(username, userdata);
     this.messageClient.registerDevice(device.duid, device.localKey, device.pv);
-    this.messageClient.registerConnectionListener({
-      onConnected: () => {
-        self.logger.notice('Connected to MQTT broker');
-      },
-      onDisconnected: () => {
-        self.logger.notice('Disconnected from MQTT broker');
-      },
-      onError: (message: string) => {
-        self.logger.error('Error from MQTT broker', message);
-      },
-    } as AbstractConnectionListener);
 
     this.messageClient.registerMessageListener({
       onMessage: (message: ResponseMessage) => {
@@ -449,9 +453,11 @@ export default class RoborockService {
         this.logger.debug('Requesting network info for device', device.duid);
         const networkInfo = await messageProcessor.getNetworkInfo(device.duid);
         if (!networkInfo || !networkInfo.ip) {
-          this.logger.error('Failed to retrieve network info for device', device.duid);
+          this.logger.error('Failed to retrieve network info for device', device.duid, 'Network info:', networkInfo);
           return false;
         }
+
+        this.logger.debug('Network ip for device', device.duid, 'is', networkInfo.ip);
 
         localIp = networkInfo.ip;
       }

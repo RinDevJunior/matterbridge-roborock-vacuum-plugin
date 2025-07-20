@@ -10,18 +10,21 @@ import { ChainedConnectionListener } from './listener/implementation/chainedConn
 import { ChainedMessageListener } from './listener/implementation/chainedMessageListener.js';
 import { SyncMessageListener } from './listener/implementation/syncMessageListener.js';
 import { ResponseMessage } from '../index.js';
+import { ConnectionStateListener } from './listener/implementation/connectionStateListener.js';
 
 export abstract class AbstractClient implements Client {
+  public isInDisconnectingStep: boolean = false;
+
   protected readonly connectionListeners = new ChainedConnectionListener();
   protected readonly messageListeners = new ChainedMessageListener();
-
-  protected connected = false;
-
-  private readonly context: MessageContext;
   protected readonly serializer: MessageSerializer;
   protected readonly deserializer: MessageDeserializer;
-  private readonly syncMessageListener: SyncMessageListener;
+  protected connected = false;
   protected logger: AnsiLogger;
+
+  private readonly context: MessageContext;
+  private readonly syncMessageListener: SyncMessageListener;
+  private readonly connectionStateListener: ConnectionStateListener;
 
   protected constructor(logger: AnsiLogger, context: MessageContext) {
     this.context = context;
@@ -30,6 +33,10 @@ export abstract class AbstractClient implements Client {
 
     this.syncMessageListener = new SyncMessageListener(logger);
     this.messageListeners.register(this.syncMessageListener);
+
+    this.connectionStateListener = new ConnectionStateListener(logger, this);
+    this.connectionListeners.register(this.connectionStateListener);
+
     this.logger = logger;
   }
 

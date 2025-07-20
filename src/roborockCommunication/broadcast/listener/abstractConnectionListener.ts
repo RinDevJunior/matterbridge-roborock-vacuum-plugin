@@ -1,5 +1,5 @@
 export interface AbstractConnectionListener {
-  onConnected(): Promise<void>;
-  onDisconnected(): Promise<void>;
-  onError(message: string): Promise<void>;
+  onConnected(duid: string): Promise<void>;
+  onDisconnected(duid: string): Promise<void>;
+  onError(duid: string, message: string): Promise<void>;
 }

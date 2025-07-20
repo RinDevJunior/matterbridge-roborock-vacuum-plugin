@@ -37,6 +37,8 @@ export class LocalNetworkClient extends AbstractClient {
       return;
     }
 
+    this.isInDisconnectingStep = true;
+
     if (this.pingInterval) {
       clearInterval(this.pingInterval);
     }
@@ -63,7 +65,7 @@ export class LocalNetworkClient extends AbstractClient {
     this.logger.debug(`${this.duid} connected to ${this.ip}, address: ${address ? debugStringify(address) : 'undefined'}`);
     await this.sendHelloMessage();
     this.pingInterval = setInterval(this.sendPingRequest.bind(this), 5000);
-    await this.connectionListeners.onConnected();
+    await this.connectionListeners.onConnected(this.duid);
   }
 
   private async onDisconnect(): Promise<void> {
@@ -78,7 +80,7 @@ export class LocalNetworkClient extends AbstractClient {
       clearInterval(this.pingInterval);
     }
 
-    await this.connectionListeners.onDisconnected();
+    await this.connectionListeners.onDisconnected(this.duid);
   }
 
   private async onError(result: Error): Promise<void> {
@@ -90,7 +92,7 @@ export class LocalNetworkClient extends AbstractClient {
       this.socket = undefined;
     }
 
-    await this.connectionListeners.onError(result.toString());
+    await this.connectionListeners.onError(this.duid, result.toString());
   }
 
   private async onMessage(message: Buffer): Promise<void> {
