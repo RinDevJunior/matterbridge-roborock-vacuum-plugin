@@ -7,6 +7,9 @@ import { Rriot, UserData } from '../../Zmodel/userData.js';
 import { AnsiLogger, debugStringify } from 'matterbridge/logger';
 
 export class MQTTClient extends AbstractClient {
+  protected override clientName = 'MQTTClient';
+  protected override shouldReconnect = false;
+
   private readonly rriot: Rriot;
   private readonly mqttUsername: string;
   private readonly mqttPassword: string;
@@ -18,6 +21,8 @@ export class MQTTClient extends AbstractClient {
 
     this.mqttUsername = CryptoUtils.md5hex(userdata.rriot.u + ':' + userdata.rriot.k).substring(2, 10);
     this.mqttPassword = CryptoUtils.md5hex(userdata.rriot.s + ':' + userdata.rriot.k).substring(16);
+
+    this.initializeConnectionStateListener();
   }
 
   public connect(): void {
