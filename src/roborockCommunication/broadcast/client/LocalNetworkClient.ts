@@ -9,6 +9,9 @@ import { Sequence } from '../../helper/sequence.js';
 import { ChunkBuffer } from '../../helper/chunkBuffer.js';
 
 export class LocalNetworkClient extends AbstractClient {
+  protected override clientName = 'LocalNetworkClient';
+  protected override shouldReconnect = true;
+
   private socket: Socket | undefined = undefined;
   private buffer: ChunkBuffer = new ChunkBuffer();
   private messageIdSeq: Sequence;
@@ -21,6 +24,8 @@ export class LocalNetworkClient extends AbstractClient {
     this.duid = duid;
     this.ip = ip;
     this.messageIdSeq = new Sequence(100000, 999999);
+
+    this.initializeConnectionStateListener();
   }
 
   public connect(): void {
