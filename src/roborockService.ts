@@ -20,14 +20,7 @@ import {
   Scene,
   SceneParam,
 } from './roborockCommunication/index.js';
-import type {
-  AbstractMessageHandler,
-  AbstractMessageListener,
-  AbstractConnectionListener,
-  BatteryMessage,
-  DeviceErrorMessage,
-  DeviceStatusNotify,
-} from './roborockCommunication/index.js';
+import type { AbstractMessageHandler, AbstractMessageListener, BatteryMessage, DeviceErrorMessage, DeviceStatusNotify } from './roborockCommunication/index.js';
 import { ServiceArea } from 'matterbridge/matter/clusters';
 import { LocalNetworkClient } from './roborockCommunication/broadcast/client/LocalNetworkClient.js';
 export type Factory<A, T> = (logger: AnsiLogger, arg: A) => T;

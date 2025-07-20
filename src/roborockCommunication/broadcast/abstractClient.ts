@@ -13,7 +13,7 @@ import { ResponseMessage } from '../index.js';
 import { ConnectionStateListener } from './listener/implementation/connectionStateListener.js';
 
 export abstract class AbstractClient implements Client {
-  public isInDisconnectingStep: boolean = false;
+  public isInDisconnectingStep = false;
 
   protected readonly connectionListeners = new ChainedConnectionListener();
   protected readonly messageListeners = new ChainedMessageListener();
