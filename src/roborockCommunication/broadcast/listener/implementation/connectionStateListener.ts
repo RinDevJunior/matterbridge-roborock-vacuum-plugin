@@ -5,17 +5,27 @@ import { AbstractClient } from '../../abstractClient.js';
 export class ConnectionStateListener implements AbstractConnectionListener {
   protected logger: AnsiLogger;
   protected client: AbstractClient;
-  constructor(logger: AnsiLogger, client: AbstractClient) {
+  protected clientName: string;
+  protected shouldReconnect: boolean;
+
+  constructor(logger: AnsiLogger, client: AbstractClient, clientName: string, shouldReconnect = false) {
     this.logger = logger;
     this.client = client;
+    this.clientName = clientName;
+    this.shouldReconnect = shouldReconnect;
   }
 
   public async onConnected(duid: string): Promise<void> {
-    this.logger.notice(`Device ${duid} connected to MQTT broker`);
+    this.logger.notice(`Device ${duid} connected to ${this.clientName}`);
   }
 
   public async onDisconnected(duid: string): Promise<void> {
-    this.logger.notice(`Device ${duid} disconnected from MQTT broker`);
+    if (!this.shouldReconnect) {
+      this.logger.notice(`Device ${duid} disconnected from ${this.clientName}, but re-registration is disabled.`);
+      return;
+    }
+
+    this.logger.notice(`Device ${duid} disconnected from ${this.clientName}`);
 
     const isInDisconnectingStep = this.client.isInDisconnectingStep;
     if (isInDisconnectingStep) {
@@ -23,7 +33,7 @@ export class ConnectionStateListener implements AbstractConnectionListener {
       return;
     }
 
-    this.logger.info(`Re-registering device with DUID ${duid} to MQTT broker`);
+    this.logger.info(`Re-registering device with DUID ${duid} to ${this.clientName}`);
     this.client.connect();
 
     this.client.isInDisconnectingStep = false;

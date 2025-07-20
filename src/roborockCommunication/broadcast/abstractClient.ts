@@ -22,9 +22,11 @@ export abstract class AbstractClient implements Client {
   protected connected = false;
   protected logger: AnsiLogger;
 
+  protected abstract clientName: string;
+  protected abstract shouldReconnect: boolean;
+
   private readonly context: MessageContext;
   private readonly syncMessageListener: SyncMessageListener;
-  private readonly connectionStateListener: ConnectionStateListener;
 
   protected constructor(logger: AnsiLogger, context: MessageContext) {
     this.context = context;
@@ -33,11 +35,12 @@ export abstract class AbstractClient implements Client {
 
     this.syncMessageListener = new SyncMessageListener(logger);
     this.messageListeners.register(this.syncMessageListener);
-
-    this.connectionStateListener = new ConnectionStateListener(logger, this);
-    this.connectionListeners.register(this.connectionStateListener);
-
     this.logger = logger;
+  }
+
+  protected initializeConnectionStateListener() {
+    const connectionStateListener = new ConnectionStateListener(this.logger, this, this.clientName, this.shouldReconnect);
+    this.connectionListeners.register(connectionStateListener);
   }
 
   abstract connect(): void;
