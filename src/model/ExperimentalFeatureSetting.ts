@@ -6,6 +6,7 @@ export interface ExperimentalFeatureSetting {
     forceRunAtDefault: boolean;
     useVacationModeToSendVacuumToDock: boolean;
     enableServerMode: boolean;
+    alwaysExecuteAuthentication: boolean;
   };
   cleanModeSettings: CleanModeSettings;
 }
@@ -38,6 +39,7 @@ export function createDefaultExperimentalFeatureSetting(): ExperimentalFeatureSe
       forceRunAtDefault: false,
       useVacationModeToSendVacuumToDock: false,
       enableServerMode: false,
+      alwaysExecuteAuthentication: false,
     },
     cleanModeSettings: {
       enableCleanModeMapping: false,

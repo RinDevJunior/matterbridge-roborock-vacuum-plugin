@@ -1,7 +1,7 @@
 {
   "name": "matterbridge-roborock-vacuum-plugin",
   "type": "DynamicPlatform",
-  "version": "1.1.0-rc07",
+  "version": "1.1.0-rc08",
   "whiteList": [],
   "blackList": [],
   "useInterval": true,
@@ -12,7 +12,8 @@
       "includeDockStationStatus": false,
       "forceRunAtDefault": false,
       "useVacationModeToSendVacuumToDock": false,
-      "enableServerMode": false
+      "enableServerMode": false,
+      "alwaysExecuteAuthentication": false
     },
     "cleanModeSettings": {
       "enableCleanModeMapping": false,

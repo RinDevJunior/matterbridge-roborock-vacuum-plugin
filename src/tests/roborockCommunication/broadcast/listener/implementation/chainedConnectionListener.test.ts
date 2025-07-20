@@ -30,7 +30,7 @@ describe('ChainedConnectionListener', () => {
   it('should call onConnected on all listeners', async () => {
     chained.register(listener1);
     chained.register(listener2);
-    await chained.onConnected();
+    await chained.onConnected('test-duid');
     expect(listener1.onConnected).toHaveBeenCalled();
     expect(listener2.onConnected).toHaveBeenCalled();
   });
@@ -38,7 +38,7 @@ describe('ChainedConnectionListener', () => {
   it('should call onDisconnected on all listeners', async () => {
     chained.register(listener1);
     chained.register(listener2);
-    await chained.onDisconnected();
+    await chained.onDisconnected('test-duid');
     expect(listener1.onDisconnected).toHaveBeenCalled();
     expect(listener2.onDisconnected).toHaveBeenCalled();
   });
@@ -46,14 +46,14 @@ describe('ChainedConnectionListener', () => {
   it('should call onError on all listeners with the same message', async () => {
     chained.register(listener1);
     chained.register(listener2);
-    await chained.onError('error message');
-    expect(listener1.onError).toHaveBeenCalledWith('error message');
-    expect(listener2.onError).toHaveBeenCalledWith('error message');
+    await chained.onError('test-duid', 'error message');
+    expect(listener1.onError).toHaveBeenCalledWith('test-duid', 'error message');
+    expect(listener2.onError).toHaveBeenCalledWith('test-duid', 'error message');
   });
 
   it('should work with no listeners registered', async () => {
-    await expect(chained.onConnected()).resolves.toBeUndefined();
-    await expect(chained.onDisconnected()).resolves.toBeUndefined();
-    await expect(chained.onError('msg')).resolves.toBeUndefined();
+    await expect(chained.onConnected('test-duid')).resolves.toBeUndefined();
+    await expect(chained.onDisconnected('test-duid')).resolves.toBeUndefined();
+    await expect(chained.onError('test-duid', 'msg')).resolves.toBeUndefined();
   });
 });

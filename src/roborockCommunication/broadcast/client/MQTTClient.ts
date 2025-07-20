@@ -51,6 +51,7 @@ export class MQTTClient extends AbstractClient {
       return;
     }
     try {
+      this.isInDisconnectingStep = true;
       this.client.end();
     } catch (error) {
       this.logger.error('MQTT client failed to disconnect with error: ' + error);
@@ -74,7 +75,7 @@ export class MQTTClient extends AbstractClient {
     }
 
     this.connected = true;
-    await this.connectionListeners.onConnected();
+    await this.connectionListeners.onConnected('mqtt-' + this.mqttUsername);
 
     this.subscribeToQueue();
   }
@@ -94,18 +95,19 @@ export class MQTTClient extends AbstractClient {
     this.logger.error('failed to subscribe to the queue: ' + err);
     this.connected = false;
 
-    await this.connectionListeners.onDisconnected();
+    await this.connectionListeners.onDisconnected('mqtt-' + this.mqttUsername);
   }
 
   private async onDisconnect() {
-    await this.connectionListeners.onDisconnected();
+    this.connected = false;
+    await this.connectionListeners.onDisconnected('mqtt-' + this.mqttUsername);
   }
 
   private async onError(result: Error | ErrorWithReasonCode) {
     this.logger.error('MQTT connection error: ' + result);
     this.connected = false;
 
-    await this.connectionListeners.onError(result.toString());
+    await this.connectionListeners.onError('mqtt-' + this.mqttUsername, result.toString());
   }
 
   private onReconnect() {

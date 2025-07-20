@@ -148,7 +148,7 @@ describe('LocalNetworkClient', () => {
     expect(client['connected']).toBe(false);
     expect(mockSocket.destroy).toHaveBeenCalled();
     expect(client['socket']).toBeUndefined();
-    expect(client['connectionListeners'].onError).toHaveBeenCalledWith(expect.stringContaining('fail'));
+    expect(client['connectionListeners'].onError).toHaveBeenCalledWith('duid1', expect.stringContaining('fail'));
   });
 
   it('onMessage() should log error if no socket', async () => {

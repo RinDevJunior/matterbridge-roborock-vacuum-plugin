@@ -1,11 +1,8 @@
 {
   "title": "Matterbridge Roborock Vacuum Plugin",
-  "description": "matterbridge-roborock-vacuum-plugin v. 1.1.0-rc07 by https://github.com/RinDevJunior",
+  "description": "matterbridge-roborock-vacuum-plugin v. 1.1.0-rc08 by https://github.com/RinDevJunior",
   "type": "object",
-  "required": [
-    "username",
-    "password"
-  ],
+  "required": ["username", "password"],
   "properties": {
     "name": {
       "description": "Plugin name",
@@ -60,9 +57,7 @@
                 "const": true
               }
             },
-            "required": [
-              "enableExperimentalFeature"
-            ]
+            "required": ["enableExperimentalFeature"]
           },
           "then": {
             "properties": {
@@ -94,6 +89,11 @@
                     "description": "Enable the Robot Vacuum Cleaner in server mode (Each vacuum will have its own server).",
                     "type": "boolean",
                     "default": false
+                  },
+                  "alwaysExecuteAuthentication": {
+                    "description": "Always execute authentication on startup.",
+                    "type": "boolean",
+                    "default": false
                   }
                 }
               },
@@ -114,9 +114,7 @@
                           "const": true
                         }
                       },
-                      "required": [
-                        "enableCleanModeMapping"
-                      ]
+                      "required": ["enableCleanModeMapping"]
                     },
                     "then": {
                       "properties": {
@@ -161,9 +159,7 @@
                                     "default": 25
                                   }
                                 },
-                                "required": [
-                                  "distanceOff"
-                                ]
+                                "required": ["distanceOff"]
                               }
                             }
                           ]
@@ -200,9 +196,7 @@
                                     "default": 25
                                   }
                                 },
-                                "required": [
-                                  "distanceOff"
-                                ]
+                                "required": ["distanceOff"]
                               }
                             }
                           ]
@@ -232,35 +226,19 @@
     "fanMode": {
       "type": "string",
       "description": "Suction power mode to use (e.g., 'Quiet', 'Balanced', 'Turbo', 'Max', 'MaxPlus').",
-      "enum": [
-        "Quiet",
-        "Balanced",
-        "Turbo",
-        "Max",
-        "MaxPlus"
-      ],
+      "enum": ["Quiet", "Balanced", "Turbo", "Max", "MaxPlus"],
       "default": "Balanced"
     },
     "waterFlowMode": {
       "type": "string",
       "description": "Water flow mode to use (e.g., 'Low', 'Medium', 'High', 'CustomizeWithDistanceOff').",
-      "enum": [
-        "Low",
-        "Medium",
-        "High",
-        "CustomizeWithDistanceOff"
-      ],
+      "enum": ["Low", "Medium", "High", "CustomizeWithDistanceOff"],
       "default": "Medium"
     },
     "mopRouteMode": {
       "type": "string",
       "description": "Mop route intensity to use (e.g., 'Standard', 'Deep', 'DeepPlus', 'Fast').",
-      "enum": [
-        "Standard",
-        "Deep",
-        "DeepPlus",
-        "Fast"
-      ],
+      "enum": ["Standard", "Deep", "DeepPlus", "Fast"],
       "default": "Standard"
     }
   }
