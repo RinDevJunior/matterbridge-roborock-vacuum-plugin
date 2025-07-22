@@ -7,9 +7,6 @@ export interface UserData {
   country: string;
   nickname: string;
   rriot: Rriot;
-
-  // For caching purposes
-  baseUrl: string;
 }
 
 export interface Rriot {

@@ -29,7 +29,7 @@ export class MessageProcessor {
     this.messageListener.registerListener(listener);
   }
 
-  public async getNetworkInfo(duid: string): Promise<NetworkInfo> {
+  public async getNetworkInfo(duid: string): Promise<NetworkInfo | undefined> {
     const request = new RequestMessage({ method: 'get_network_info' });
     return await this.client.get(duid, request);
   }
@@ -39,17 +39,21 @@ export class MessageProcessor {
   //   return this.client.get<CloudMessageResult[]>(duid, request).then((response) => new DeviceStatus(response[0]));
   // }
 
-  public async getDeviceStatus(duid: string): Promise<DeviceStatus> {
+  public async getDeviceStatus(duid: string): Promise<DeviceStatus | undefined> {
     const request = new RequestMessage({ method: 'get_status' });
     const response = await this.client.get<CloudMessageResult[]>(duid, request);
 
-    this.logger?.debug('Device status: ', debugStringify(response));
-    return new DeviceStatus(response);
+    if (response) {
+      this.logger?.debug('Device status: ', debugStringify(response));
+      return new DeviceStatus(response);
+    }
+
+    return undefined;
   }
 
   public async getRooms(duid: string, rooms: Room[]): Promise<RoomInfo> {
     const request = new RequestMessage({ method: 'get_room_mapping' });
-    return this.client.get<number[][]>(duid, request).then((response) => new RoomInfo(rooms, response));
+    return this.client.get<number[][] | undefined>(duid, request).then((response) => new RoomInfo(rooms, response ?? []));
   }
 
   public async gotoDock(duid: string): Promise<void> {

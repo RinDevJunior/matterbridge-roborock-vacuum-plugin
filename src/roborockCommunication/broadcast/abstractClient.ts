@@ -49,11 +49,18 @@ export abstract class AbstractClient implements Client {
   abstract disconnect(): Promise<void>;
   abstract send(duid: string, request: RequestMessage): Promise<void>;
 
-  public async get<T>(duid: string, request: RequestMessage): Promise<T> {
+  public async get<T>(duid: string, request: RequestMessage): Promise<T | undefined> {
     return new Promise<T>((resolve, reject) => {
-      this.syncMessageListener.waitFor(request.messageId, (response: ResponseMessage) => resolve(response as unknown as T), reject);
+      this.syncMessageListener.waitFor(request.messageId, request, (response: ResponseMessage) => resolve(response as unknown as T), reject);
       this.send(duid, request);
-    });
+    })
+      .then((result: T) => {
+        return result;
+      })
+      .catch((error: Error) => {
+        this.logger.error(error.message);
+        return undefined;
+      });
   }
 
   public registerDevice(duid: string, localKey: string, pv: string): void {

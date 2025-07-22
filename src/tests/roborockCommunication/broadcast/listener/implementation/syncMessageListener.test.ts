@@ -1,5 +1,6 @@
 import { SyncMessageListener } from '../../../../../roborockCommunication/broadcast/listener/implementation/syncMessageListener';
 import { Protocol } from '../../../../../roborockCommunication/broadcast/model/protocol';
+import { RequestMessage } from '../../../../../roborockCommunication/broadcast/model/requestMessage';
 
 describe('SyncMessageListener', () => {
   let listener: SyncMessageListener;
@@ -20,7 +21,7 @@ describe('SyncMessageListener', () => {
     const resolve = jest.fn();
     const reject = jest.fn();
     const messageId = 123;
-    listener.waitFor(messageId, resolve, reject);
+    listener.waitFor(messageId, { method: 'test' } as RequestMessage, resolve, reject);
 
     const dps = { id: messageId, result: { foo: 'bar' } };
     const message = {
@@ -38,7 +39,7 @@ describe('SyncMessageListener', () => {
     const resolve = jest.fn();
     const reject = jest.fn();
     const messageId = 456;
-    listener.waitFor(messageId, resolve, reject);
+    listener.waitFor(messageId, { method: 'test' } as RequestMessage, resolve, reject);
 
     const dps = { id: messageId, result: ['ok'] };
     const message = {
@@ -56,7 +57,7 @@ describe('SyncMessageListener', () => {
     const resolve = jest.fn();
     const reject = jest.fn();
     const messageId = 789;
-    listener.waitFor(messageId, resolve, reject);
+    listener.waitFor(messageId, { method: 'test' } as RequestMessage, resolve, reject);
 
     const dps = { id: messageId };
     const message = {
@@ -73,7 +74,7 @@ describe('SyncMessageListener', () => {
     const resolve = jest.fn();
     const reject = jest.fn();
     const messageId = 321;
-    listener.waitFor(messageId, resolve, reject);
+    listener.waitFor(messageId, { method: 'test' } as RequestMessage, resolve, reject);
 
     expect(listener['pending'].has(messageId)).toBe(true);
 

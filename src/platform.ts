@@ -279,8 +279,4 @@ export class RoborockMatterbridgePlatform extends MatterbridgeDynamicPlatform {
     this.log.logLevel = logLevel;
     return Promise.resolve();
   }
-
-  private sleep(ms: number): Promise<void> {
-    return new Promise((resolve) => setTimeout(resolve, ms));
-  }
 }
