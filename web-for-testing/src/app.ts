@@ -76,71 +76,25 @@ app.post('/login', async (req: Request, res: Response) => {
     log,
   );
 
-  // numlock@numlock.nu
-  const xx = {
-    uid: '886986',
-    token: 'rr5db0a953f29820:dVk354MgWfLpR9/vvCEaBw==:019818fc99677325aaa80fc2d87e7c5e',
-    rruid: 'rr5db0a953f29820',
-    region: 'eu',
-    countrycode: '46',
-    country: 'SE',
-    nickname: 'nu1mlock',
-    rriot: {
-      u: '1qfOic5YgkDNXWFWJC2UJL',
-      s: 'f5ooTP',
-      h: '35ih1IGG8l',
-      k: 'PUjoQ3NC',
-      r: {
-        r: 'EU',
-        a: 'https://api-eu.roborock.com',
-        m: 'ssl://mqtt-eu.roborock.com:8883',
-        l: 'https://wood-eu.roborock.com',
-      },
-    },
-  } as UserData;
-
-  // rinnv.spkt@gmail.com
-  const yyy = {
-    uid: '3635748',
-    token: 'rr65af7107da5840:C6MYy0rHkZ1TNm65b81ugw==:01982793fd657ad281620f6f3ff9664f',
-    rruid: 'rr65af7107da5840',
-    region: 'us',
-    countrycode: '84',
-    country: 'VN',
-    nickname: 'Ryan',
-    rriot: {
-      u: '6BtaRwE14spvanEazqX0kQ',
-      s: 'fmfr9N',
-      h: 'E8OYtA5Kf2',
-      k: 's1QuA0MS',
-      r: { r: 'US', a: 'https://api-us.roborock.com', m: 'ssl://mqtt-us-2.roborock.com:8883', l: 'https://wood-us.roborock.com' },
-    },
-  } as UserData;
-
-  //sohle.moore.4u@icloud.com
   const zzz: UserData = {
-    uid: '8870307',
-    token: 'rr660b82a8ab9820:QIjFq7tHsg49KmSsJyAyaw==:01982e0ea0c174d78d4a026639e1574f',
-    rruid: 'rr660b82a8ab9820',
+    uid: '123',
+    token: '123',
+    rruid: '123',
     region: 'eu',
     countrycode: '49',
     country: 'DE',
-    nickname: 'Zai5761735',
+    nickname: '123',
     rriot: {
-      u: '11GnoySz9KTF0XbVm5fEe1',
-      s: 'cA5Rq2',
-      h: 'M0QZLHAFBF',
-      k: 'knMTvvoV',
+      u: '123',
+      s: '123',
+      h: '123',
+      k: '123',
       r: { r: 'EU', a: 'https://api-eu.roborock.com', m: 'ssl://mqtt-eu-2.roborock.com:8883', l: 'https://wood-eu.roborock.com' },
     },
     baseUrl: 'https://api-eu.roborock.com',
   };
 
-  const userDataMap = new Map<string, UserData>([
-    ['sohle.moore.4u@icloud.com', zzz],
-    ['rinnv.spkt@gmail.com', yyy],
-    ['numlock@numlock.nu', xx],
-  ]);
+  const userDataMap = new Map<string, UserData>([['abc@xyz.com', zzz]]);
 
   const selectedUserData = userDataMap.get(username);
 
@@ -156,7 +110,6 @@ app.post('/login', async (req: Request, res: Response) => {
       },
     );
 
-    //console.warn('Login successful:', JSON.stringify(userData));
     const dvs = await roborockService.listDevices(username);
 
     devices.push(...dvs);
