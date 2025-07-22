@@ -117,7 +117,7 @@ export default class RoborockService {
   }
 
   public async getRoomIdFromMap(duid: string): Promise<number | undefined> {
-    const data: any = await this.customGet(duid, new RequestMessage({ method: 'get_map_v1' }));
+    const data = (await this.customGet(duid, new RequestMessage({ method: 'get_map_v1' }))) as { vacuumRoom: number | undefined };
     return data?.vacuumRoom;
   }
 
@@ -507,7 +507,7 @@ export default class RoborockService {
   }
 
   private onLocalClientDisconnect(duid: string): void {
-    //this.mqttAlwaysOnDevices.set(duid, true);
+    // this.mqttAlwaysOnDevices.set(duid, true);
     this.logger.debug('Local client disconnected for device', duid);
   }
 
