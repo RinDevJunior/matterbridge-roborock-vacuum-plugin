@@ -1,8 +1,8 @@
 import express, { Request, Response } from 'express';
 import RoborockService from './ext/roborockService.js';
 import ClientManager from './ext/clientManager.js';
-import { AnsiLogger } from 'node-ansi-logger';
-import { Device, RoborockAuthenticateApi, RoborockIoTApi, UserData } from './ext/roborockCommunication/index.js';
+import { AnsiLogger, LogLevel } from 'node-ansi-logger';
+import { Device, RequestMessage, RoborockAuthenticateApi, RoborockIoTApi, UserData } from './ext/roborockCommunication/index.js';
 import axios from 'axios';
 import { Socket } from 'net';
 
@@ -20,11 +20,7 @@ process.on('uncaughtException', (error) => {
 
 const app = express();
 const port = 3000;
-const log = new AnsiLogger({ logName: 'Main' });
-
-log.setCallback((level, time, name, message) => {
-  console.warn(`Callback: ${message}`);
-});
+const log = new AnsiLogger({ logName: 'Main', logLevel: LogLevel.DEBUG });
 
 var roborockService: RoborockService;
 var clientManager: ClientManager;
@@ -47,8 +43,8 @@ app.get('/', (req: Request, res: Response) => {
 app.post('/login', async (req: Request, res: Response) => {
   const { username, password } = req.body;
   console.warn(`Login attempt with username: ${username}, password: ${password}`);
-  if (!username || !password) {
-    res.json({ error: 'Username and password are required' });
+  if (!username) {
+    res.json({ error: 'Username are required' });
     return;
   }
   axios.interceptors.request.use((request: any) => {
@@ -80,21 +76,92 @@ app.post('/login', async (req: Request, res: Response) => {
     log,
   );
 
+  // numlock@numlock.nu
+  const xx = {
+    uid: '886986',
+    token: 'rr5db0a953f29820:dVk354MgWfLpR9/vvCEaBw==:019818fc99677325aaa80fc2d87e7c5e',
+    rruid: 'rr5db0a953f29820',
+    region: 'eu',
+    countrycode: '46',
+    country: 'SE',
+    nickname: 'nu1mlock',
+    rriot: {
+      u: '1qfOic5YgkDNXWFWJC2UJL',
+      s: 'f5ooTP',
+      h: '35ih1IGG8l',
+      k: 'PUjoQ3NC',
+      r: {
+        r: 'EU',
+        a: 'https://api-eu.roborock.com',
+        m: 'ssl://mqtt-eu.roborock.com:8883',
+        l: 'https://wood-eu.roborock.com',
+      },
+    },
+  } as UserData;
+
+  // rinnv.spkt@gmail.com
+  const yyy = {
+    uid: '3635748',
+    token: 'rr65af7107da5840:C6MYy0rHkZ1TNm65b81ugw==:01982793fd657ad281620f6f3ff9664f',
+    rruid: 'rr65af7107da5840',
+    region: 'us',
+    countrycode: '84',
+    country: 'VN',
+    nickname: 'Ryan',
+    rriot: {
+      u: '6BtaRwE14spvanEazqX0kQ',
+      s: 'fmfr9N',
+      h: 'E8OYtA5Kf2',
+      k: 's1QuA0MS',
+      r: { r: 'US', a: 'https://api-us.roborock.com', m: 'ssl://mqtt-us-2.roborock.com:8883', l: 'https://wood-us.roborock.com' },
+    },
+  } as UserData;
+
+  //sohle.moore.4u@icloud.com
+  const zzz: UserData = {
+    uid: '8870307',
+    token: 'rr660b82a8ab9820:QIjFq7tHsg49KmSsJyAyaw==:01982e0ea0c174d78d4a026639e1574f',
+    rruid: 'rr660b82a8ab9820',
+    region: 'eu',
+    countrycode: '49',
+    country: 'DE',
+    nickname: 'Zai5761735',
+    rriot: {
+      u: '11GnoySz9KTF0XbVm5fEe1',
+      s: 'cA5Rq2',
+      h: 'M0QZLHAFBF',
+      k: 'knMTvvoV',
+      r: { r: 'EU', a: 'https://api-eu.roborock.com', m: 'ssl://mqtt-eu-2.roborock.com:8883', l: 'https://wood-eu.roborock.com' },
+    },
+    baseUrl: 'https://api-eu.roborock.com',
+  };
+
+  const userDataMap = new Map<string, UserData>([
+    ['sohle.moore.4u@icloud.com', zzz],
+    ['rinnv.spkt@gmail.com', yyy],
+    ['numlock@numlock.nu', xx],
+  ]);
+
+  const selectedUserData = userDataMap.get(username);
+
   try {
     userData = await roborockService.loginWithPassword(
       username,
       password,
       async () => {
-        return undefined;
+        return password.length > 0 ? undefined : selectedUserData;
       },
       async (userData) => {
         console.warn('User data received:', JSON.stringify(userData));
       },
     );
+
     //console.warn('Login successful:', JSON.stringify(userData));
     const dvs = await roborockService.listDevices(username);
 
     devices.push(...dvs);
+
+    isConnected = false;
 
     if (userData) {
       usname = username;
@@ -108,7 +175,7 @@ app.post('/login', async (req: Request, res: Response) => {
 });
 
 app.post('/run', async (req: Request, res: Response) => {
-  const { duid, command, secure, userData1, device1 } = req.body;
+  const { duid, command, props, secure, userData1, device1 } = req.body;
   if (!duid || !command) {
     res.json({ error: 'Nothing to do' });
     return;
@@ -138,25 +205,27 @@ app.post('/run', async (req: Request, res: Response) => {
     isConnected = true;
   }
 
-  if (secure) {
-    const data = await roborockService.customGetInSecure(duid, command);
-    res.json({ command, data, secure: true });
-  } else {
-    const data = await roborockService.customGet(duid, command);
-    res.json({ command, data, secure: false });
-  }
+  const map_info = await roborockService.getMapInformation(duid);
+  const rooms = map_info?.maps?.[0]?.rooms ?? [];
+  console.warn(`Rooms: ${JSON.stringify(rooms)}`);
+
+  //const xx = await roborockService.getRoomIdFromMap(duid);
+  //console.warn(`Room ID: ${xx}`);
+
+  const data = await roborockService.customGet(duid, new RequestMessage({ method: command, params: props, secure }));
+  res.json({ command, data, secure: false });
 });
 
 app.post('/try-connect', async (req: Request, res: Response) => {
-  const ip = '192.168.100.1';
+  const ip = req.body.ip ?? '192.168.202.65';
   const port = 58867;
   const socket = new Socket();
   socket.on('connect', () => {
-    console.log('Connected!');
+    console.log(ip, 'Connected!');
     setTimeout(() => socket.end(), 3000);
   });
   socket.on('error', (err) => {
-    console.error('Error:', err);
+    console.error(ip, 'Error:', err);
   });
   socket.connect(port, ip);
   res.json({ result: `ok` });
