@@ -19,8 +19,9 @@ import {
   ResponseMessage,
   Scene,
   SceneParam,
+  MapInfo,
 } from './roborockCommunication/index.js';
-import type { AbstractMessageHandler, AbstractMessageListener, BatteryMessage, DeviceErrorMessage, DeviceStatusNotify } from './roborockCommunication/index.js';
+import type { AbstractMessageHandler, AbstractMessageListener, BatteryMessage, DeviceErrorMessage, DeviceStatusNotify, MultipleMap } from './roborockCommunication/index.js';
 import { ServiceArea } from 'matterbridge/matter/clusters';
 import { LocalNetworkClient } from './roborockCommunication/broadcast/client/LocalNetworkClient.js';
 export type Factory<A, T> = (logger: AnsiLogger, arg: A) => T;
@@ -115,6 +116,19 @@ export default class RoborockService {
     return data;
   }
 
+  public async getRoomIdFromMap(duid: string): Promise<number | undefined> {
+    const data = (await this.customGet(duid, new RequestMessage({ method: 'get_map_v1' }))) as { vacuumRoom: number | undefined };
+    return data?.vacuumRoom;
+  }
+
+  public async getMapInformation(duid: string): Promise<MapInfo> {
+    this.logger.debug('RoborockService - getMapInformation', duid);
+    assert(this.messageClient !== undefined);
+    return this.messageClient.get<MultipleMap[]>(duid, new RequestMessage({ method: 'get_multi_maps_list' })).then((response) => {
+      return new MapInfo(response[0]);
+    });
+  }
+
   public async changeCleanMode(
     duid: string,
     { suctionPower, waterFlow, distance_off, mopRoute }: { suctionPower: number; waterFlow: number; distance_off: number; mopRoute: number },
@@ -189,14 +203,9 @@ export default class RoborockService {
     await this.getMessageProcessor(duid)?.findMyRobot(duid);
   }
 
-  public async customGet(duid: string, method: string): Promise<unknown> {
-    this.logger.debug('RoborockService - customSend-message', method);
-    return this.getMessageProcessor(duid)?.getCustomMessage(duid, new RequestMessage({ method }));
-  }
-
-  public async customGetInSecure(duid: string, method: string): Promise<unknown> {
-    this.logger.debug('RoborockService - customGetInSecure-message', method);
-    return this.getMessageProcessor(duid)?.getCustomMessage(duid, new RequestMessage({ method, secure: true }));
+  public async customGet(duid: string, request: RequestMessage): Promise<unknown> {
+    this.logger.debug('RoborockService - customSend-message', request.method, request.params, request.secure);
+    return this.getMessageProcessor(duid)?.getCustomMessage(duid, request);
   }
 
   public async customSend(duid: string, request: RequestMessage): Promise<void> {
@@ -274,6 +283,20 @@ export default class RoborockService {
 
     const products = new Map<string, string>();
     homeData.products.forEach((p) => products.set(p.id, p.model));
+
+    // Try to get rooms from v2 API if rooms are empty
+    if (homeData.rooms.length === 0) {
+      const homeDataV2 = await this.iotApi.getHomev2(homeDetails.rrHomeId);
+      if (homeDataV2 && homeDataV2.rooms && homeDataV2.rooms.length > 0) {
+        homeData.rooms = homeDataV2.rooms;
+      } else {
+        const homeDataV3 = await this.iotApi.getHomev3(homeDetails.rrHomeId);
+        if (homeDataV3 && homeDataV3.rooms && homeDataV3.rooms.length > 0) {
+          homeData.rooms = homeDataV3.rooms;
+        }
+      }
+    }
+
     const devices: Device[] = [...homeData.devices, ...homeData.receivedDevices];
     // homeData.devices.length > 0 ? homeData.devices : homeData.receivedDevices;
 
@@ -457,7 +480,7 @@ export default class RoborockService {
 
       if (localIp) {
         this.logger.debug('initializing the local connection for this client towards ' + localIp);
-        const localClient = this.messageClient.registerClient(device.duid, localIp) as LocalNetworkClient;
+        const localClient = this.messageClient.registerClient(device.duid, localIp, this.onLocalClientDisconnect) as LocalNetworkClient;
         localClient.connect();
 
         let count = 0;
@@ -481,6 +504,11 @@ export default class RoborockService {
     }
 
     return true;
+  }
+
+  private onLocalClientDisconnect(duid: string): void {
+    // this.mqttAlwaysOnDevices.set(duid, true);
+    this.logger.debug('Local client disconnected for device', duid);
   }
 
   private sleep(ms: number): Promise<void> {

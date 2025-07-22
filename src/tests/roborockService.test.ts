@@ -2,7 +2,7 @@ import { AnsiLogger } from 'matterbridge/logger';
 import { ServiceArea } from 'matterbridge/matter/clusters';
 import RoborockService from '../roborockService';
 import { MessageProcessor } from '../roborockCommunication/broadcast/messageProcessor';
-import { Device } from '../roborockCommunication';
+import { Device, RequestMessage } from '../roborockCommunication';
 
 describe('RoborockService - startClean', () => {
   let roborockService: RoborockService;
@@ -316,18 +316,10 @@ describe('RoborockService - customGet/customGetInSecure/customSend', () => {
 
   it('customGet should call getCustomMessage', async () => {
     mockMessageProcessor.getCustomMessage.mockResolvedValue('result');
-    const result = await roborockService.customGet('duid', 'method');
-    expect(mockLogger.debug).toHaveBeenCalledWith('RoborockService - customSend-message', 'method');
+    const result = await roborockService.customGet('duid', { method: 'method', params: undefined, secure: true } as RequestMessage);
+    expect(mockLogger.debug).toHaveBeenCalledWith('RoborockService - customSend-message', 'method', undefined, true);
     expect(mockMessageProcessor.getCustomMessage).toHaveBeenCalledWith('duid', expect.any(Object));
     expect(result).toBe('result');
-  });
-
-  it('customGetInSecure should call getCustomMessage with secure', async () => {
-    mockMessageProcessor.getCustomMessage.mockResolvedValue('secureResult');
-    const result = await roborockService.customGetInSecure('duid', 'method');
-    expect(mockLogger.debug).toHaveBeenCalledWith('RoborockService - customGetInSecure-message', 'method');
-    expect(mockMessageProcessor.getCustomMessage).toHaveBeenCalledWith('duid', expect.objectContaining({ secure: true }));
-    expect(result).toBe('secureResult');
   });
 
   it('customSend should call sendCustomMessage', async () => {
