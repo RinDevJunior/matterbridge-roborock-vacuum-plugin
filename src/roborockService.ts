@@ -120,7 +120,7 @@ export default class RoborockService {
   }
 
   public async getRoomIdFromMap(duid: string): Promise<number | undefined> {
-    const data: any = await this.customGet(duid, new RequestMessage({ method: 'get_map_v1' }));
+    const data = (await this.customGet(duid, new RequestMessage({ method: 'get_map_v1' }))) as { vacuumRoom?: number };
     return data?.vacuumRoom;
   }
 
