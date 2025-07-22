@@ -46,7 +46,7 @@ export class RoborockIoTApi {
   }
 
   public async getHomev2(homeId: number): Promise<Home | undefined> {
-    const result = await this.api.get('v2/user/homes/' + homeId); // can be v3 also
+    const result = await this.api.get('v2/user/homes/' + homeId);
 
     const apiResponse: ApiResponse<Home> = result.data;
     if (apiResponse.result) {
@@ -83,6 +83,18 @@ export class RoborockIoTApi {
 
   public async startScene(sceneId: number): Promise<unknown> {
     const result = await this.api.post(`user/scene/${sceneId}/execute`);
+    const apiResponse: ApiResponse<unknown> = result.data;
+
+    if (apiResponse.result) {
+      return apiResponse.result;
+    } else {
+      this.logger.error('Failed to execute scene');
+      return undefined;
+    }
+  }
+
+  public async getCustom(url: string): Promise<unknown> {
+    const result = await this.api.get(url);
     const apiResponse: ApiResponse<unknown> = result.data;
 
     if (apiResponse.result) {

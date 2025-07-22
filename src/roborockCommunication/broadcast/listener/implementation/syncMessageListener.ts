@@ -12,12 +12,12 @@ export class SyncMessageListener implements AbstractMessageListener {
     this.logger = logger;
   }
 
-  public waitFor(messageId: number, resolve: (response: ResponseMessage) => void, reject: () => void): void {
+  public waitFor(messageId: number, resolve: (response: ResponseMessage) => void, reject: (error?: Error) => void): void {
     this.pending.set(messageId, resolve);
 
     setTimeout(() => {
       this.pending.delete(messageId);
-      reject();
+      reject(new Error(`Message timeout for messageId: ${messageId}`));
     }, 10000);
   }
 

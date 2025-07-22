@@ -23,6 +23,7 @@ export class MessageDeserializer {
   private readonly context: MessageContext;
   private readonly messageParser: Parser;
   private readonly logger: AnsiLogger;
+  private readonly supportedVersions: string[] = ['1.0', 'A01', 'B01'];
 
   constructor(context: MessageContext, logger: AnsiLogger) {
     this.context = context;
@@ -46,7 +47,7 @@ export class MessageDeserializer {
 
   public deserialize(duid: string, message: Buffer<ArrayBufferLike>): ResponseMessage {
     const version = message.toString('latin1', 0, 3);
-    if (version !== '1.0' && version !== 'A01') {
+    if (!this.supportedVersions.includes(version)) {
       throw new Error('unknown protocol version ' + version);
     }
 
@@ -70,6 +71,11 @@ export class MessageDeserializer {
     } else if (version == 'A01') {
       const iv = CryptoUtils.md5hex(data.random.toString(16).padStart(8, '0') + '726f626f726f636b2d67a6d6da').substring(8, 24);
       const decipher = crypto.createDecipheriv('aes-128-cbc', localKey, iv);
+      data.payload = Buffer.concat([decipher.update(data.payload), decipher.final()]);
+    } else if (version == 'B01') {
+      const iv = CryptoUtils.md5hex(data.random.toString(16).padStart(8, '0') + '5wwh9ikChRjASpMU8cxg7o1d2E').substring(9, 25);
+      const decipher = crypto.createDecipheriv('aes-128-cbc', localKey, iv);
+      // unpad ??
       data.payload = Buffer.concat([decipher.update(data.payload), decipher.final()]);
     }
 

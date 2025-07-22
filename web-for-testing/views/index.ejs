@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>
+        <%= title %>
+    </title>
+    <link rel="stylesheet" href="/style.css">
+</head>
+
+<body>
+    <h1>
+        <%= title %>
+    </h1>
+
+    <!-- Login Section -->
+    <section id="loginSection">
+        <h2>Login</h2>
+        <input type="text" id="username" placeholder="Username" value="abc@gmail.com" />
+        <input type="text" id="password" placeholder="Password" value="abc" />
+        <button id="loginBtn">Login</button>
+        <span id="loginStatus"></span>
+        <br><br>
+
+    </section>
+    <section id="tryToConnect">
+        <h2>Socket test</h2>
+        <br>
+        <label for="tryConnectIp">IP to try connect:</label>
+        <input type="text" id="tryConnectIp" placeholder="192.168.202.65" />
+        <button id="tryConnectBtn">Try to Connect</button>
+        <br>
+    </section>
+
+    <!-- Search Section -->
+    <section id="execute-command">
+        <h2>Execute Command</h2>
+        <input type="text" id="duid" placeholder="duid" />
+        <input type="text" id="command" placeholder="command" value="get_prop" />
+        <input type="text" id="props" placeholder="props" value='["battery"]' />
+        <label for="secure">Secure?: </label>
+        <input type="checkbox" id="secure" />
+        <button id="executeCommand">Submit</button>
+        <button id="disconnectBtn" style="margin-left:10px;">Disconnect</button>
+        <br>
+    </section>
+
+    <section id="execute-api">
+        <h2>Execute API</h2>
+        <input type="text" id="api" placeholder="api" value="user/homes/yourHomeId" />
+        <button id="executeAPI">Submit</button>
+        <br>
+    </section>
+    <section id="result">
+        <pre id="resultId" style="background:#f5f5f5;padding:10px;"></pre>
+    </section>
+    <script>
+        document.getElementById('executeAPI').onclick = async function () {
+            // Show spinner and clear result
+            let resultArea = document.getElementById('resultId');
+            // Remove old spinner if exists
+            let oldSpinner = document.getElementById('submitSpinner');
+            if (oldSpinner) oldSpinner.remove();
+            // Insert spinner above resultArea
+            let spinner = document.createElement('div');
+            spinner.id = 'submitSpinner';
+            spinner.innerHTML = '🔄 Processing...';
+            resultArea.parentNode.insertBefore(spinner, resultArea);
+            resultArea.textContent = '';
+            const api = document.getElementById('api').value;
+
+            const response = await fetch('/call-api', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ api })
+            });
+            const data = await response.json();
+            spinner.remove();
+            resultArea.innerHTML =
+                'result = <pre>' + JSON.stringify(data, null, 2) + '</pre><br>';
+        };
+
+        // Login handler
+        document.getElementById('loginBtn').onclick = async function () {
+            // Clear previous result and show spinner
+            const loginResult = document.getElementById('resultId');
+            loginResult.textContent = '';
+            loginResult.innerHTML = '<span id="loginSpinner">🔄 Logging in...</span>';
+
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            const response = await fetch('/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username, password })
+            });
+            const data = await response.json();
+            document.getElementById('loginStatus').textContent = data.success ? 'Login successful!' : (data.error || 'Login failed');
+
+            // Hide spinner and show result
+            if (data.success) {
+                loginResult.innerHTML =
+                    'devices = <pre>' + JSON.stringify(data.devices, null, 2) + '</pre><br>' +
+                    'userData = <pre>' + JSON.stringify(data.userData, null, 2) + '</pre>';
+            } else {
+                loginResult.innerHTML =
+                    'error = <pre>' + JSON.stringify(data.error, null, 2) + '</pre>';
+            }
+        };
+
+        // Search handler
+        document.getElementById('executeCommand').onclick = async function () {
+            // Show spinner and clear result
+            let resultArea = document.getElementById('resultId');
+            // Remove old spinner if exists
+            let oldSpinner = document.getElementById('submitSpinner');
+            if (oldSpinner) oldSpinner.remove();
+            // Insert spinner above resultArea
+            let spinner = document.createElement('div');
+            spinner.id = 'submitSpinner';
+            spinner.innerHTML = '🔄 Processing...';
+            resultArea.parentNode.insertBefore(spinner, resultArea);
+            resultArea.textContent = '';
+
+            const duid = document.getElementById('duid').value;
+            const command = document.getElementById('command').value;
+            const props = document.getElementById('props').value;
+            const secure = document.getElementById('secure').checked;
+            const userData = document.getElementById('userDataField') ? document.getElementById('userDataField').value : '';
+            const device = document.getElementById('deviceField') ? document.getElementById('deviceField').value : '';
+
+            const response = await fetch('/run', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ duid, command, props, secure, userData1: userData, device1: device })
+            });
+            const data = await response.json();
+            // Remove spinner after response
+            spinner.remove();
+            resultArea.innerHTML =
+                'command = ' + data.command + '</pre><br>' +
+                'secure = ' + data.secure + '</pre><br>' +
+                'result = <pre>' + JSON.stringify(data.data, null, 2) + '</pre><br>';
+        };
+
+        document.getElementById('disconnectBtn').onclick = async function () {
+            const response = await fetch('/disconnect', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' }
+            });
+            const data = await response.json();
+            document.getElementById('resultId').textContent = data.success ? 'Disconnected!' : 'Disconnect failed!';
+        };
+
+        document.getElementById('tryConnectBtn').onclick = async function () {
+            const ip = document.getElementById('tryConnectIp').value;
+            if (!ip) {
+                document.getElementById('resultId').textContent = 'Please enter an IP address!';
+                return;
+            }
+            const response = await fetch('/try-connect', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ ip })
+            });
+            const data = await response.json();
+            document.getElementById('resultId').textContent = data.result || data.error || '';
+        };
+    </script>
+</body>
+
+</html>

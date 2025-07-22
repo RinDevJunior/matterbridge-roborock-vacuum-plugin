@@ -199,7 +199,7 @@ export class RoborockMatterbridgePlatform extends MatterbridgeDynamicPlatform {
       if (!configurateSuccess.get(duid)) {
         continue;
       }
-      await this.roborockService.activateDeviceNotify(robot.device);
+      this.roborockService.activateDeviceNotify(robot.device);
     }
 
     await this.platformRunner?.requestHomeData();

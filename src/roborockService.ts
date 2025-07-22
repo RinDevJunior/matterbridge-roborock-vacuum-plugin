@@ -39,6 +39,7 @@ export default class RoborockService {
   messageProcessorMap = new Map<string, MessageProcessor>();
   ipMap = new Map<string, string>();
   localClientMap = new Map<string, Client>();
+  mqttAlwaysOnDevices = new Map<string, boolean>();
   clientManager: ClientManager;
   refreshInterval: number;
   requestDeviceStatusInterval: NodeJS.Timeout | undefined;
@@ -47,6 +48,8 @@ export default class RoborockService {
   private supportedAreas = new Map<string, ServiceArea.Area[]>();
   private supportedRoutines = new Map<string, ServiceArea.Area[]>();
   private selectedAreas = new Map<string, number[]>();
+
+  private readonly vacuumNeedAPIV3 = ['roborock.vacuum.ss07'];
 
   constructor(
     authenticateApiSupplier: Factory<void, RoborockAuthenticateApi> = (logger) => new RoborockAuthenticateApi(logger),
@@ -117,7 +120,7 @@ export default class RoborockService {
   }
 
   public async getRoomIdFromMap(duid: string): Promise<number | undefined> {
-    const data = (await this.customGet(duid, new RequestMessage({ method: 'get_map_v1' }))) as { vacuumRoom: number | undefined };
+    const data = (await this.customGet(duid, new RequestMessage({ method: 'get_map_v1' }))) as { vacuumRoom?: number };
     return data?.vacuumRoom;
   }
 
@@ -212,6 +215,17 @@ export default class RoborockService {
     return this.getMessageProcessor(duid)?.sendCustomMessage(duid, request);
   }
 
+  public async getCustomAPI(url: string): Promise<unknown> {
+    this.logger.debug('RoborockService - getCustomAPI', url);
+    assert(this.iotApi !== undefined);
+    try {
+      return await this.iotApi.getCustom(url);
+    } catch (error) {
+      this.logger.error(`Failed to get custom API with url ${url}: ${error ? debugStringify(error) : 'undefined'}`);
+      return { result: undefined, error: `Failed to get custom API with url ${url}` };
+    }
+  }
+
   public stopService(): void {
     if (this.messageClient) {
       this.messageClient.disconnect();
@@ -245,7 +259,7 @@ export default class RoborockService {
     this.deviceNotify = callback;
   }
 
-  public async activateDeviceNotify(device: Device): Promise<void> {
+  public activateDeviceNotify(device: Device): void {
     // eslint-disable-next-line @typescript-eslint/no-this-alias
     const self = this;
     this.logger.debug('Requesting device info for device', device.duid);
@@ -284,6 +298,16 @@ export default class RoborockService {
     const products = new Map<string, string>();
     homeData.products.forEach((p) => products.set(p.id, p.model));
 
+    if (homeData.products.some((p) => this.vacuumNeedAPIV3.includes(p.model))) {
+      this.logger.debug('Using v3 API for home data retrieval');
+      const homeDataV3 = await this.iotApi.getHomev3(homeDetails.rrHomeId);
+      if (!homeDataV3) {
+        throw new Error('Failed to retrieve the home data from v3 API');
+      }
+      homeData.devices = [...homeData.devices, ...homeDataV3.devices.filter((d) => !homeData.devices.some((x) => x.duid === d.duid))];
+      homeData.receivedDevices = [...homeData.receivedDevices, ...homeDataV3.receivedDevices.filter((d) => !homeData.receivedDevices.some((x) => x.duid === d.duid))];
+    }
+
     // Try to get rooms from v2 API if rooms are empty
     if (homeData.rooms.length === 0) {
       const homeDataV2 = await this.iotApi.getHomev2(homeDetails.rrHomeId);
@@ -298,7 +322,6 @@ export default class RoborockService {
     }
 
     const devices: Device[] = [...homeData.devices, ...homeData.receivedDevices];
-    // homeData.devices.length > 0 ? homeData.devices : homeData.receivedDevices;
 
     const result = devices.map((device) => {
       return {
@@ -390,7 +413,7 @@ export default class RoborockService {
       return undefined;
     }
 
-    return this.messageClient.get(duid, new RequestMessage({ method: 'get_room_mapping' }));
+    return this.messageClient.get(duid, new RequestMessage({ method: 'get_room_mapping', secure: this.isRequestSecure(duid) }));
   }
 
   public async initializeMessageClient(username: string, device: Device, userdata: UserData): Promise<void> {
@@ -434,6 +457,7 @@ export default class RoborockService {
       this.logger.error('messageClient not initialized');
       return false;
     }
+
     // eslint-disable-next-line @typescript-eslint/no-this-alias
     const self = this;
 
@@ -461,6 +485,15 @@ export default class RoborockService {
     } as AbstractMessageHandler);
 
     this.messageProcessorMap.set(device.duid, messageProcessor);
+
+    this.logger.debug('Checking if device supports local connection', debugStringify(device));
+    if (device.pv === 'B01') {
+      this.logger.warn('Device does not support local connection', device.duid);
+      this.mqttAlwaysOnDevices.set(device.duid, true);
+      return true;
+    } else {
+      this.mqttAlwaysOnDevices.set(device.duid, false);
+    }
 
     this.logger.debug('Local device', device.duid);
     let localIp = this.ipMap.get(device.duid);
@@ -507,8 +540,7 @@ export default class RoborockService {
   }
 
   private onLocalClientDisconnect(duid: string): void {
-    // this.mqttAlwaysOnDevices.set(duid, true);
-    this.logger.debug('Local client disconnected for device', duid);
+    this.mqttAlwaysOnDevices.set(duid, true);
   }
 
   private sleep(ms: number): Promise<void> {
@@ -519,5 +551,9 @@ export default class RoborockService {
     this.userdata = userdata;
     this.iotApi = this.iotApiFactory(this.logger, userdata);
     return userdata;
+  }
+
+  private isRequestSecure(duid: string): boolean {
+    return this.mqttAlwaysOnDevices.get(duid) ?? false;
   }
 }
