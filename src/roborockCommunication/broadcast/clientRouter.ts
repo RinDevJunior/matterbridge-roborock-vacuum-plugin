@@ -81,7 +81,7 @@ export class ClientRouter implements Client {
     }
   }
 
-  async get<T>(duid: string, request: RequestMessage): Promise<T> {
+  async get<T>(duid: string, request: RequestMessage): Promise<T | undefined> {
     if (request.secure) {
       return await this.mqttClient.get(duid, request);
     } else {

@@ -15,5 +15,5 @@ export interface Client {
 
   send(duid: string, request: RequestMessage): Promise<void>;
 
-  get<T>(duid: string, request: RequestMessage): Promise<T>;
+  get<T>(duid: string, request: RequestMessage): Promise<T | undefined>;
 }

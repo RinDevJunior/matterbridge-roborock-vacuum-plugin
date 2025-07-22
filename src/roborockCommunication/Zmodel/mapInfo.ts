@@ -11,12 +11,15 @@ export class MapInfo {
       this.maps.push({
         id: map.mapFlag,
         name: decodeComponent(map.name)?.toLowerCase(),
-        rooms: map.rooms.map((room: RoomInformation) => {
-          return {
-            id: room.iot_name_id,
-            name: room.iot_name,
-          } as unknown as Room;
-        }),
+        rooms:
+          map.rooms && map.rooms.length > 0
+            ? map.rooms.map((room: RoomInformation) => {
+                return {
+                  id: room.iot_name_id,
+                  name: room.iot_name,
+                } as unknown as Room;
+              })
+            : [],
       });
     });
   }

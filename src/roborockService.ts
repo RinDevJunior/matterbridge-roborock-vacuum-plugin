@@ -124,11 +124,12 @@ export default class RoborockService {
     return data?.vacuumRoom;
   }
 
-  public async getMapInformation(duid: string): Promise<MapInfo> {
+  public async getMapInformation(duid: string): Promise<MapInfo | undefined> {
     this.logger.debug('RoborockService - getMapInformation', duid);
     assert(this.messageClient !== undefined);
-    return this.messageClient.get<MultipleMap[]>(duid, new RequestMessage({ method: 'get_multi_maps_list' })).then((response) => {
-      return new MapInfo(response[0]);
+    return this.messageClient.get<MultipleMap[] | undefined>(duid, new RequestMessage({ method: 'get_multi_maps_list' })).then((response) => {
+      this.logger.debug('RoborockService - getMapInformation response', debugStringify(response ?? []));
+      return response ? new MapInfo(response[0]) : undefined;
     });
   }
 
@@ -266,8 +267,8 @@ export default class RoborockService {
     const messageProcessor = this.getMessageProcessor(device.duid);
     this.requestDeviceStatusInterval = setInterval(async () => {
       if (messageProcessor) {
-        await messageProcessor.getDeviceStatus(device.duid).then((response: DeviceStatus) => {
-          if (self.deviceNotify) {
+        await messageProcessor.getDeviceStatus(device.duid).then((response: DeviceStatus | undefined) => {
+          if (self.deviceNotify && response) {
             const message = { duid: device.duid, ...response.errorStatus, ...response.message } as DeviceStatusNotify;
             self.logger.debug('Device status update', debugStringify(message));
             self.deviceNotify(NotifyMessageTypes.LocalMessage, message);
@@ -339,6 +340,7 @@ export default class RoborockService {
           model: homeData.products.find((p) => p.id === device.productId)?.model,
           category: homeData.products.find((p) => p.id === device.productId)?.category,
           batteryLevel: device.deviceStatus?.[Protocol.battery] ?? 100,
+          schema: homeData.products.find((p) => p.id === device.productId)?.schema,
         },
 
         store: {
@@ -367,6 +369,18 @@ export default class RoborockService {
     homeData.products.forEach((p) => products.set(p.id, p.model));
     const devices: Device[] = homeData.devices.length > 0 ? homeData.devices : homeData.receivedDevices;
 
+    if (homeData.rooms.length === 0) {
+      const homeDataV3 = await this.iotApi.getHomev3(homeid);
+      if (homeDataV3 && homeDataV3.rooms && homeDataV3.rooms.length > 0) {
+        homeData.rooms = homeDataV3.rooms;
+      } else {
+        const homeDataV1 = await this.iotApi.getHome(homeid);
+        if (homeDataV1 && homeDataV1.rooms && homeDataV1.rooms.length > 0) {
+          homeData.rooms = homeDataV1.rooms;
+        }
+      }
+    }
+
     const dvs = devices.map((device) => {
       return {
         ...device,
@@ -380,6 +394,7 @@ export default class RoborockService {
           model: homeData.products.find((p) => p.id === device.productId)?.model,
           category: homeData.products.find((p) => p.id === device.productId)?.category,
           batteryLevel: device.deviceStatus?.[Protocol.battery] ?? 100,
+          schema: homeData.products.find((p) => p.id === device.productId)?.schema,
         },
 
         store: {
@@ -407,10 +422,10 @@ export default class RoborockService {
     return this.iotApi.startScene(sceneId);
   }
 
-  public getRoomMappings(duid: string): Promise<number[][]> | undefined {
+  public getRoomMappings(duid: string): Promise<number[][] | undefined> {
     if (!this.messageClient) {
       this.logger.warn('messageClient not initialized. Waititing for next execution');
-      return undefined;
+      return Promise.resolve(undefined);
     }
 
     return this.messageClient.get(duid, new RequestMessage({ method: 'get_room_mapping', secure: this.isRequestSecure(duid) }));
@@ -486,7 +501,7 @@ export default class RoborockService {
 
     this.messageProcessorMap.set(device.duid, messageProcessor);
 
-    this.logger.debug('Checking if device supports local connection', debugStringify(device));
+    this.logger.debug('Checking if device supports local connection', device.pv, device.data.model, device.duid);
     if (device.pv === 'B01') {
       this.logger.warn('Device does not support local connection', device.duid);
       this.mqttAlwaysOnDevices.set(device.duid, true);

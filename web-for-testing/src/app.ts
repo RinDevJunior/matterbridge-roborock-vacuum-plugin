@@ -5,6 +5,7 @@ import { AnsiLogger, LogLevel } from 'node-ansi-logger';
 import { Device, RequestMessage, RoborockAuthenticateApi, RoborockIoTApi, UserData } from './ext/roborockCommunication/index.js';
 import axios from 'axios';
 import { Socket } from 'net';
+import { getAccountStore } from './accountStore.js';
 
 // Handle unhandled promise rejections
 process.on('unhandledRejection', (reason, promise) => {
@@ -76,27 +77,9 @@ app.post('/login', async (req: Request, res: Response) => {
     log,
   );
 
-  const zzz: UserData = {
-    uid: '123',
-    token: '123',
-    rruid: '123',
-    region: 'eu',
-    countrycode: '49',
-    country: 'DE',
-    nickname: '123',
-    rriot: {
-      u: '123',
-      s: '123',
-      h: '123',
-      k: '123',
-      r: { r: 'EU', a: 'https://api-eu.roborock.com', m: 'ssl://mqtt-eu-2.roborock.com:8883', l: 'https://wood-eu.roborock.com' },
-    },
-    baseUrl: 'https://api-eu.roborock.com',
-  };
-
-  const userDataMap = new Map<string, UserData>([['abc@xyz.com', zzz]]);
-
+  const userDataMap = getAccountStore();
   const selectedUserData = userDataMap.get(username);
+  console.warn(`Selected user data for ${username}:`, JSON.stringify(selectedUserData));
 
   try {
     userData = await roborockService.loginWithPassword(
@@ -158,9 +141,9 @@ app.post('/run', async (req: Request, res: Response) => {
     isConnected = true;
   }
 
-  const map_info = await roborockService.getMapInformation(duid);
-  const rooms = map_info?.maps?.[0]?.rooms ?? [];
-  console.warn(`Rooms: ${JSON.stringify(rooms)}`);
+  // const map_info = await roborockService.getMapInformation(duid);
+  // const rooms = map_info?.maps?.[0]?.rooms ?? [];
+  // console.warn(`Rooms: ${JSON.stringify(rooms)}`);
 
   //const xx = await roborockService.getRoomIdFromMap(duid);
   //console.warn(`Room ID: ${xx}`);

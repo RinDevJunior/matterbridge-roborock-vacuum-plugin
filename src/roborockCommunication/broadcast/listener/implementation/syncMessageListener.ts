@@ -1,8 +1,9 @@
-import { AnsiLogger } from 'matterbridge/logger';
+import { AnsiLogger, debugStringify } from 'matterbridge/logger';
 import { DpsPayload } from '../../model/dps.js';
 import { Protocol } from '../../model/protocol.js';
 import { ResponseMessage } from '../../model/responseMessage.js';
 import { AbstractMessageListener } from '../index.js';
+import { RequestMessage } from '../../model/requestMessage.js';
 
 export class SyncMessageListener implements AbstractMessageListener {
   private readonly pending = new Map<number, (response: ResponseMessage) => void>();
@@ -12,12 +13,12 @@ export class SyncMessageListener implements AbstractMessageListener {
     this.logger = logger;
   }
 
-  public waitFor(messageId: number, resolve: (response: ResponseMessage) => void, reject: (error?: Error) => void): void {
+  public waitFor(messageId: number, request: RequestMessage, resolve: (response: ResponseMessage) => void, reject: (error?: Error) => void): void {
     this.pending.set(messageId, resolve);
 
     setTimeout(() => {
       this.pending.delete(messageId);
-      reject(new Error(`Message timeout for messageId: ${messageId}`));
+      reject(new Error(`Message timeout for messageId: ${messageId}, request: ${debugStringify(request)}`));
     }, 10000);
   }
 
