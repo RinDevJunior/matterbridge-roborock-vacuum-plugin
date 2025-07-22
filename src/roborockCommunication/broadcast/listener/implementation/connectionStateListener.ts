@@ -7,12 +7,14 @@ export class ConnectionStateListener implements AbstractConnectionListener {
   protected client: AbstractClient;
   protected clientName: string;
   protected shouldReconnect: boolean;
+  protected changeToSecureConnection: (duid: string) => void;
 
-  constructor(logger: AnsiLogger, client: AbstractClient, clientName: string, shouldReconnect = false) {
+  constructor(logger: AnsiLogger, client: AbstractClient, clientName: string, changeToSecureConnection: (duid: string) => void, shouldReconnect = false) {
     this.logger = logger;
     this.client = client;
     this.clientName = clientName;
     this.shouldReconnect = shouldReconnect;
+    this.changeToSecureConnection = changeToSecureConnection;
   }
 
   public async onConnected(duid: string): Promise<void> {
@@ -25,7 +27,13 @@ export class ConnectionStateListener implements AbstractConnectionListener {
       return;
     }
 
-    this.logger.notice(`Device ${duid} disconnected from ${this.clientName}`);
+    if (this.client.retryCount > 10) {
+      this.logger.error(`Device with DUID ${duid} has exceeded retry limit, not re-registering.`);
+      this.changeToSecureConnection && this.changeToSecureConnection(duid);
+      return;
+    }
+
+    this.client.retryCount++;
 
     const isInDisconnectingStep = this.client.isInDisconnectingStep;
     if (isInDisconnectingStep) {

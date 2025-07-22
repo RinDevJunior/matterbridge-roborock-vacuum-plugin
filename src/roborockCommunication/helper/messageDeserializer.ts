@@ -79,14 +79,14 @@ export class MessageDeserializer {
     }
 
     if (data.protocol == Protocol.rpc_response || data.protocol == Protocol.general_request) {
-      return this.deserializeProtocolRpcResponse(duid, data);
+      return this.deserializeRpcResponse(duid, data);
     } else {
       this.logger.error('unknown protocol: ' + data.protocol);
       return new ResponseMessage(duid, { dps: { id: 0, result: null } });
     }
   }
 
-  private deserializeProtocolRpcResponse(duid: string, data: Message): ResponseMessage {
+  private deserializeRpcResponse(duid: string, data: Message): ResponseMessage {
     const payload = JSON.parse(data.payload.toString());
     const dps = payload.dps;
     this.parseJsonInDps(dps, Protocol.general_request);

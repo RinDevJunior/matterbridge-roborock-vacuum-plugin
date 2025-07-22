@@ -223,6 +223,12 @@ export class RoborockMatterbridgePlatform extends MatterbridgeDynamicPlatform {
       return false;
     }
 
+    if (vacuum.rooms === undefined || vacuum.rooms.length === 0) {
+      const map_info = await this.roborockService.getMapInformation(vacuum.duid);
+      const rooms = map_info?.maps?.[0]?.rooms ?? [];
+      vacuum.rooms = rooms;
+    }
+
     const roomMap = await this.platformRunner.getRoomMapFromDevice(vacuum);
 
     this.log.debug('Initializing - roomMap: ', debugStringify(roomMap));

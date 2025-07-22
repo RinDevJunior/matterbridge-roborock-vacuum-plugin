@@ -7,6 +7,7 @@ import { Rriot, UserData } from '../../Zmodel/userData.js';
 import { AnsiLogger, debugStringify } from 'matterbridge/logger';
 
 export class MQTTClient extends AbstractClient {
+  protected override changeToSecureConnection: (duid: string) => void;
   protected override clientName = 'MQTTClient';
   protected override shouldReconnect = false;
 
@@ -23,6 +24,9 @@ export class MQTTClient extends AbstractClient {
     this.mqttPassword = CryptoUtils.md5hex(userdata.rriot.s + ':' + userdata.rriot.k).substring(16);
 
     this.initializeConnectionStateListener();
+    this.changeToSecureConnection = (duid: string) => {
+      this.logger.info(`MqttClient for ${duid} has been disconnected`);
+    };
   }
 
   public connect(): void {
