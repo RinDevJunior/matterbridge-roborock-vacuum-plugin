@@ -29,7 +29,9 @@ export class ConnectionStateListener implements AbstractConnectionListener {
 
     if (this.client.retryCount > 10) {
       this.logger.error(`Device with DUID ${duid} has exceeded retry limit, not re-registering.`);
-      this.changeToSecureConnection(duid);
+      if (this.changeToSecureConnection) {
+        this.changeToSecureConnection(duid);
+      }
       return;
     }
 

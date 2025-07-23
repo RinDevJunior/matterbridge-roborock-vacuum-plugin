@@ -32,9 +32,9 @@ export class RoborockMatterbridgePlatform extends MatterbridgeDynamicPlatform {
     super(matterbridge, log, config);
 
     // Verify that Matterbridge is the correct version
-    if (this.verifyMatterbridgeVersion === undefined || typeof this.verifyMatterbridgeVersion !== 'function' || !this.verifyMatterbridgeVersion('3.1.5')) {
+    if (this.verifyMatterbridgeVersion === undefined || typeof this.verifyMatterbridgeVersion !== 'function' || !this.verifyMatterbridgeVersion('3.1.6')) {
       throw new Error(
-        `This plugin requires Matterbridge version >= "3.1.5". Please update Matterbridge from ${this.matterbridge.matterbridgeVersion} to the latest version in the frontend.`,
+        `This plugin requires Matterbridge version >= "3.1.6". Please update Matterbridge from ${this.matterbridge.matterbridgeVersion} to the latest version in the frontend.`,
       );
     }
     this.log.info('Initializing platform:', this.config.name);
@@ -224,6 +224,7 @@ export class RoborockMatterbridgePlatform extends MatterbridgeDynamicPlatform {
     }
 
     if (vacuum.rooms === undefined || vacuum.rooms.length === 0) {
+      this.log.error(`Fetching map information for device: ${vacuum.name} (${vacuum.duid}) to get rooms`);
       const map_info = await this.roborockService.getMapInformation(vacuum.duid);
       const rooms = map_info?.maps?.[0]?.rooms ?? [];
       vacuum.rooms = rooms;

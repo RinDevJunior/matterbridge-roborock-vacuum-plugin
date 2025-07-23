@@ -36,7 +36,6 @@ export interface Device {
     model: string;
     category: string;
     batteryLevel: number;
-    // schema: DeviceSchema[];
   };
 
   scenes: Scene[];

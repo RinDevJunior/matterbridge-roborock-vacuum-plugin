@@ -340,7 +340,6 @@ export default class RoborockService {
           model: homeData.products.find((p) => p.id === device.productId)?.model,
           category: homeData.products.find((p) => p.id === device.productId)?.category,
           batteryLevel: device.deviceStatus?.[Protocol.battery] ?? 100,
-          schema: homeData.products.find((p) => p.id === device.productId)?.schema,
         },
 
         store: {
@@ -394,7 +393,6 @@ export default class RoborockService {
           model: homeData.products.find((p) => p.id === device.productId)?.model,
           category: homeData.products.find((p) => p.id === device.productId)?.category,
           batteryLevel: device.deviceStatus?.[Protocol.battery] ?? 100,
-          schema: homeData.products.find((p) => p.id === device.productId)?.schema,
         },
 
         store: {
@@ -427,7 +425,6 @@ export default class RoborockService {
       this.logger.warn('messageClient not initialized. Waititing for next execution');
       return Promise.resolve(undefined);
     }
-
     return this.messageClient.get(duid, new RequestMessage({ method: 'get_room_mapping', secure: this.isRequestSecure(duid) }));
   }
 
