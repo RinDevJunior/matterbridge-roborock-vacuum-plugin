@@ -44,11 +44,23 @@ export class PlatformRunner {
   public async getRoomMapFromDevice(device: Device): Promise<RoomMap> {
     const platform = this.platform;
     const rooms = device?.rooms ?? [];
-
+    platform.log.error(`getRoomMapFromDevice: ${debugStringify(rooms)}`);
     if (device && platform.roborockService) {
       const roomData = await platform.roborockService.getRoomMappings(device.duid);
-      return new RoomMap(roomData ?? [], rooms);
+      if (roomData !== undefined && roomData.length > 0) {
+        platform.log.error(`getRoomMapFromDevice - roomData: ${debugStringify(roomData ?? [])}`);
+        return new RoomMap(roomData ?? [], rooms);
+      }
+
+      const mapInfo = await platform.roborockService.getMapInformation(device.duid);
+      if (mapInfo && mapInfo.maps && mapInfo.maps.length > 0) {
+        platform.log.error(`getRoomMapFromDevice - mapInfo: ${debugStringify(mapInfo.maps)}`);
+
+        const roomDataMap = mapInfo.maps[0].rooms.map((r) => [r.id, parseInt(r.name)] as [number, number]);
+        return new RoomMap(roomDataMap, rooms);
+      }
     }
+
     return new RoomMap([], rooms);
   }
 
@@ -67,8 +79,20 @@ export class PlatformRunner {
     // if (platform.robot?.device === undefined || platform.roborockService === undefined) return undefined;
     if (robot.roomInfo === undefined) {
       const roomData = await platform.roborockService.getRoomMappings(robot.device.duid);
-      robot.roomInfo = new RoomMap(roomData ?? [], rooms);
-      return robot.roomInfo;
+      if (roomData !== undefined && roomData.length > 0) {
+        robot.roomInfo = new RoomMap(roomData ?? [], rooms);
+        return robot.roomInfo;
+      }
+    }
+
+    if (robot.roomInfo === undefined) {
+      const mapInfo = await platform.roborockService.getMapInformation(robot.device.duid);
+      if (mapInfo && mapInfo.maps && mapInfo.maps.length > 0) {
+        platform.log.error(`getRoomMap - mapInfo: ${debugStringify(mapInfo.maps)}`);
+
+        const roomDataMap = mapInfo.maps[0].rooms.map((r) => [r.id, parseInt(r.name)] as [number, number]);
+        robot.roomInfo = new RoomMap(roomDataMap, rooms);
+      }
     }
 
     return robot.roomInfo;
@@ -144,14 +168,22 @@ export class PlatformRunner {
             robot.updateAttribute(RvcRunMode.Cluster.id, 'currentMode', getRunningMode(state), platform.log);
           }
 
-          const currentRoom = data.cleaning_info?.segment_id ?? -1;
           const currentMappedAreas = this.platform.roborockService?.getSupportedAreas(duid);
-          const isMappedArea = currentMappedAreas?.some((x) => x.areaId == currentRoom);
+          const roomMap = await this.getRoomMap(duid);
+          const targetRoom = data.cleaning_info?.target_segment_id ?? -1;
+          const isTargetMappedArea = currentMappedAreas?.some((x) => x.areaId == targetRoom);
 
-          if (currentRoom !== -1 && isMappedArea) {
-            const roomMap = await this.getRoomMap(duid);
+          if (targetRoom !== -1 && isTargetMappedArea) {
             this.platform.log.debug(`RoomMap: ${roomMap ? debugStringify(roomMap) : 'undefined'}`);
-            this.platform.log.debug('CurrentRoom:', currentRoom);
+            this.platform.log.debug(`TargetRoom: ${targetRoom}, room name: ${roomMap?.rooms.find((x) => x.id === targetRoom)?.displayName ?? 'unknown'}`);
+            robot.updateAttribute(ServiceArea.Cluster.id, 'currentArea', targetRoom, platform.log);
+          }
+
+          const currentRoom = data.cleaning_info?.segment_id ?? -1;
+          const isMappedArea = currentMappedAreas?.some((x) => x.areaId == currentRoom);
+          if (currentRoom !== -1 && isMappedArea) {
+            this.platform.log.debug(`RoomMap: ${roomMap ? debugStringify(roomMap) : 'undefined'}`);
+            this.platform.log.debug(`CurrentRoom: ${currentRoom}, room name: ${roomMap?.rooms.find((x) => x.id === currentRoom)?.displayName ?? 'unknown'}`);
             robot.updateAttribute(ServiceArea.Cluster.id, 'currentArea', currentRoom, platform.log);
           }
 

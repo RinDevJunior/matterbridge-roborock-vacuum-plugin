@@ -9,7 +9,14 @@ export function getSupportedAreas(rooms: Room[], roomMap: RoomMap | undefined, l
   log?.debug('getSupportedAreas', roomMap ? debugStringify(roomMap) : 'undefined');
 
   if (!rooms || rooms.length === 0 || !roomMap?.rooms || roomMap.rooms.length == 0) {
-    log?.error('No rooms found');
+    if (!rooms || rooms.length === 0) {
+      log?.error('No rooms found');
+    }
+
+    if (!roomMap || !roomMap.rooms || roomMap.rooms.length == 0) {
+      log?.error('No room map found');
+    }
+
     return [
       {
         areaId: 1,

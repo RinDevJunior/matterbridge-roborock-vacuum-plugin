@@ -15,9 +15,9 @@ export class MapInfo {
           map.rooms && map.rooms.length > 0
             ? map.rooms.map((room: RoomInformation) => {
                 return {
-                  id: room.iot_name_id,
-                  name: room.iot_name,
-                } as unknown as Room;
+                  id: room.id,
+                  name: room.iot_name_id,
+                } as Room;
               })
             : [],
       });
