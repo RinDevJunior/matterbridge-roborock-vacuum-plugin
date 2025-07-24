@@ -44,10 +44,7 @@ export class PlatformRunner {
   public async getRoomMapFromDevice(device: Device): Promise<RoomMap> {
     const platform = this.platform;
     const rooms = device?.rooms ?? [];
-
-    platform.log.error('------------------------------------------------------------------------------------------------------');
     platform.log.error(`getRoomMapFromDevice: ${debugStringify(rooms)}`);
-
     if (device && platform.roborockService) {
       const roomData = await platform.roborockService.getRoomMappings(device.duid);
       if (roomData !== undefined && roomData.length > 0) {
@@ -59,16 +56,15 @@ export class PlatformRunner {
       if (mapInfo && mapInfo.maps && mapInfo.maps.length > 0) {
         platform.log.error(`getRoomMapFromDevice - mapInfo: ${debugStringify(mapInfo.maps)}`);
 
-        const roomDataMap = mapInfo.maps[0].rooms.map((r) => [r.id, parseInt(r.name)] as [number, number]);
+        const roomDataMap = mapInfo.maps[0].rooms.map((r) => [r.id, parseInt(r.iot_name_id), r.tag] as [number, number, number]);
         return new RoomMap(roomDataMap, rooms);
       }
     }
 
-    platform.log.error('------------------------------------------------------------------------------------------------------');
     return new RoomMap([], rooms);
   }
 
-  async getRoomMap(duid: string): Promise<RoomMap | undefined> {
+  private async getRoomMap(duid: string): Promise<RoomMap | undefined> {
     const platform = this.platform;
 
     const robot = platform.robots.get(duid);
@@ -94,7 +90,7 @@ export class PlatformRunner {
       if (mapInfo && mapInfo.maps && mapInfo.maps.length > 0) {
         platform.log.error(`getRoomMap - mapInfo: ${debugStringify(mapInfo.maps)}`);
 
-        const roomDataMap = mapInfo.maps[0].rooms.map((r) => [r.id, parseInt(r.name)] as [number, number]);
+        const roomDataMap = mapInfo.maps[0].rooms.map((r) => [r.id, parseInt(r.iot_name_id), r.tag] as [number, number, number]);
         robot.roomInfo = new RoomMap(roomDataMap, rooms);
       }
     }
@@ -176,6 +172,8 @@ export class PlatformRunner {
           const roomMap = await this.getRoomMap(duid);
           const targetRoom = data.cleaning_info?.target_segment_id ?? -1;
           const isTargetMappedArea = currentMappedAreas?.some((x) => x.areaId == targetRoom);
+          let target_segment_id = roomMap?.rooms.find((x) => x.alternativeId === targetRoom.toString())?.id ?? -1;
+          this.platform.log.debug(`Target segment id: ${targetRoom}, targetRoom: ${target_segment_id}`);
 
           if (targetRoom !== -1 && isTargetMappedArea) {
             this.platform.log.debug(`RoomMap: ${roomMap ? debugStringify(roomMap) : 'undefined'}`);
@@ -184,6 +182,9 @@ export class PlatformRunner {
           }
 
           const currentRoom = data.cleaning_info?.segment_id ?? -1;
+          target_segment_id = roomMap?.rooms.find((x) => x.alternativeId === currentRoom.toString())?.id ?? -1;
+          this.platform.log.debug(`Target segment id: ${currentRoom}, targetRoom: ${target_segment_id}`);
+
           const isMappedArea = currentMappedAreas?.some((x) => x.areaId == currentRoom);
           if (currentRoom !== -1 && isMappedArea) {
             this.platform.log.debug(`RoomMap: ${roomMap ? debugStringify(roomMap) : 'undefined'}`);
@@ -203,10 +204,12 @@ export class PlatformRunner {
             waterFlow: data.cleaning_info?.water_box_status ?? data.water_box_mode,
             distance_off: data.distance_off,
             mopRoute: data.cleaning_info?.mop_mode ?? data.mop_mode,
+            segment_id: data.cleaning_info?.segment_id,
+            target_segment_id: data.cleaning_info?.target_segment_id,
           };
 
           this.platform.log.debug(`data: ${debugStringify(data)}`);
-          this.platform.log.debug(`currentCleanModeSetting: ${debugStringify(currentCleanModeSetting)}`);
+          this.platform.log.notice(`currentCleanModeSetting: ${debugStringify(currentCleanModeSetting)}`);
 
           if (currentCleanModeSetting.mopRoute && currentCleanModeSetting.suctionPower && currentCleanModeSetting.waterFlow) {
             const currentCleanMode = getCurrentCleanModeFunc(
@@ -318,7 +321,7 @@ export class PlatformRunner {
           break;
         }
         default: {
-          platform.log.notice(`Unknown message type: ${Protocol[messageType] ?? messageType} ,`, debugStringify(data));
+          platform.log.notice(`Unknown message type ${messageType}, protocol: ${Protocol[messageType]}, message: ${debugStringify(data)}`);
           break;
         }
       }

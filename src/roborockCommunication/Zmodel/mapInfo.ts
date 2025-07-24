@@ -4,7 +4,7 @@ import type { MultipleMap } from './multipleMap.js';
 import { Room } from './room.js';
 
 export class MapInfo {
-  readonly maps: { id: number; name: string | undefined; rooms: Room[] }[] = [];
+  readonly maps: { id: number; name: string | undefined; rooms: { id: number; iot_name_id: string; tag: number }[] }[] = [];
 
   constructor(multimap: MultipleMap) {
     multimap.map_info.forEach((map) => {
@@ -16,8 +16,9 @@ export class MapInfo {
             ? map.rooms.map((room: RoomInformation) => {
                 return {
                   id: room.id,
-                  name: room.iot_name_id,
-                } as Room;
+                  iot_name_id: room.iot_name_id,
+                  tag: room.tag,
+                };
               })
             : [],
       });

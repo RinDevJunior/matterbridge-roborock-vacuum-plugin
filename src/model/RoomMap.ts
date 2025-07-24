@@ -22,6 +22,7 @@ export default class RoomMap {
     id: number;
     globalId: number | undefined;
     displayName: string | undefined;
+    alternativeId: string;
   }[] = [];
 
   constructor(roomData: number[][], rooms: Room[]) {
@@ -30,6 +31,7 @@ export default class RoomMap {
         id: entry[0],
         globalId: Number(entry[1]),
         displayName: rooms.find((r) => Number(r.id) == Number(entry[1]))?.name,
+        alternativeId: `${entry[0]}${entry[2]}`,
       };
     });
   }
