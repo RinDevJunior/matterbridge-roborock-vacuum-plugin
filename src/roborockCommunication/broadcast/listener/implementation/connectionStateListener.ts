@@ -21,7 +21,12 @@ export class ConnectionStateListener implements AbstractConnectionListener {
     this.logger.notice(`Device ${duid} connected to ${this.clientName}`);
   }
 
-  public async onDisconnected(duid: string): Promise<void> {
+  public async onReconnect(duid: string, message: string): Promise<void> {
+    this.logger.info(`Device ${duid} reconnected to ${this.clientName} with message: ${message}`);
+  }
+
+  public async onDisconnected(duid: string, message: string): Promise<void> {
+    this.logger.error(`Device ${duid} disconnected from ${this.clientName} with message: ${message}`);
     if (!this.shouldReconnect) {
       this.logger.notice(`Device ${duid} disconnected from ${this.clientName}, but re-registration is disabled.`);
       return;

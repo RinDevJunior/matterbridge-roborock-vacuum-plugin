@@ -32,9 +32,7 @@ export class LocalNetworkClient extends AbstractClient {
 
   public connect(): void {
     if (this.socket) {
-      this.socket.destroy();
-      this.socket = undefined;
-      return;
+      return; // Already connected
     }
 
     this.socket = new Socket();
@@ -73,11 +71,13 @@ export class LocalNetworkClient extends AbstractClient {
   }
 
   private async onConnect(): Promise<void> {
-    this.connected = true;
     const address = this.socket?.address();
     this.logger.debug(`${this.duid} connected to ${this.ip}, address: ${address ? debugStringify(address) : 'undefined'}`);
+
     await this.sendHelloMessage();
     this.pingInterval = setInterval(this.sendPingRequest.bind(this), 5000);
+
+    this.connected = true;
     await this.connectionListeners.onConnected(this.duid);
     this.retryCount = 0;
   }
@@ -94,7 +94,7 @@ export class LocalNetworkClient extends AbstractClient {
       clearInterval(this.pingInterval);
     }
 
-    await this.connectionListeners.onDisconnected(this.duid);
+    await this.connectionListeners.onDisconnected(this.duid, 'Socket has ended.');
   }
 
   private async onDisconnect(): Promise<void> {
@@ -109,7 +109,7 @@ export class LocalNetworkClient extends AbstractClient {
       clearInterval(this.pingInterval);
     }
 
-    await this.connectionListeners.onDisconnected(this.duid);
+    await this.connectionListeners.onDisconnected(this.duid, 'Socket has disconnected.');
   }
 
   private async onError(result: Error): Promise<void> {
@@ -126,7 +126,6 @@ export class LocalNetworkClient extends AbstractClient {
 
   private async onMessage(message: Buffer): Promise<void> {
     if (!this.socket) {
-      this.logger.error('unable to receive data if there is no socket available');
       return;
     }
 

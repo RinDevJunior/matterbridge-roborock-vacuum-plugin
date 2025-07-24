@@ -224,7 +224,7 @@ export class RoborockMatterbridgePlatform extends MatterbridgeDynamicPlatform {
     }
 
     if (vacuum.rooms === undefined || vacuum.rooms.length === 0) {
-      this.log.error(`Fetching map information for device: ${vacuum.name} (${vacuum.duid}) to get rooms`);
+      this.log.debug(`Fetching map information for device: ${vacuum.name} (${vacuum.duid}) to get rooms`);
       const map_info = await this.roborockService.getMapInformation(vacuum.duid);
       const rooms = map_info?.maps?.[0]?.rooms ?? [];
       vacuum.rooms = rooms;

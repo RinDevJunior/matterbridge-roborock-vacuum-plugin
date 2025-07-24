@@ -44,7 +44,10 @@ export class PlatformRunner {
   public async getRoomMapFromDevice(device: Device): Promise<RoomMap> {
     const platform = this.platform;
     const rooms = device?.rooms ?? [];
+
+    platform.log.error('------------------------------------------------------------------------------------------------------');
     platform.log.error(`getRoomMapFromDevice: ${debugStringify(rooms)}`);
+
     if (device && platform.roborockService) {
       const roomData = await platform.roborockService.getRoomMappings(device.duid);
       if (roomData !== undefined && roomData.length > 0) {
@@ -61,6 +64,7 @@ export class PlatformRunner {
       }
     }
 
+    platform.log.error('------------------------------------------------------------------------------------------------------');
     return new RoomMap([], rooms);
   }
 
