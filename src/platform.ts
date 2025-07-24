@@ -15,6 +15,7 @@ import { CleanModeSettings, createDefaultExperimentalFeatureSetting, Experimenta
 import { ServiceArea } from 'matterbridge/matter/clusters';
 import NodePersist from 'node-persist';
 import Path from 'node:path';
+import { Room } from './roborockCommunication/Zmodel/room.js';
 
 export class RoborockMatterbridgePlatform extends MatterbridgeDynamicPlatform {
   robots: Map<string, RoborockVacuumCleaner> = new Map<string, RoborockVacuumCleaner>();
@@ -227,7 +228,7 @@ export class RoborockMatterbridgePlatform extends MatterbridgeDynamicPlatform {
       this.log.error(`Fetching map information for device: ${vacuum.name} (${vacuum.duid}) to get rooms`);
       const map_info = await this.roborockService.getMapInformation(vacuum.duid);
       const rooms = map_info?.maps?.[0]?.rooms ?? [];
-      vacuum.rooms = rooms;
+      vacuum.rooms = rooms.map((room) => ({ id: room.id, name: room.displayName }) as Room);
     }
 
     const roomMap = await this.platformRunner.getRoomMapFromDevice(vacuum);

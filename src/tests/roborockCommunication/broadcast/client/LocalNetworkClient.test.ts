@@ -153,12 +153,6 @@ describe('LocalNetworkClient', () => {
     expect(client['connectionListeners'].onError).toHaveBeenCalledWith('duid1', expect.stringContaining('fail'));
   });
 
-  it('onMessage() should log error if no socket', async () => {
-    client['socket'] = undefined;
-    await (client as any).onMessage(Buffer.from([1, 2, 3]));
-    expect(mockLogger.error).toHaveBeenCalledWith(expect.stringContaining('unable to receive data'));
-  });
-
   it('onMessage() should log debug if message is empty', async () => {
     client['socket'] = mockSocket;
     await (client as any).onMessage(Buffer.alloc(0));

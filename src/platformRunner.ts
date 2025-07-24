@@ -44,20 +44,33 @@ export class PlatformRunner {
   public async getRoomMapFromDevice(device: Device): Promise<RoomMap> {
     const platform = this.platform;
     const rooms = device?.rooms ?? [];
-    platform.log.error(`getRoomMapFromDevice: ${debugStringify(rooms)}`);
+
+    platform.log.notice('-------------------------------------------0--------------------------------------------------------');
+    platform.log.notice(`getRoomMapFromDevice: ${debugStringify(rooms)}`);
+
     if (device && platform.roborockService) {
       const roomData = await platform.roborockService.getRoomMappings(device.duid);
       if (roomData !== undefined && roomData.length > 0) {
-        platform.log.error(`getRoomMapFromDevice - roomData: ${debugStringify(roomData ?? [])}`);
-        return new RoomMap(roomData ?? [], rooms);
+        platform.log.notice(`getRoomMapFromDevice - roomData: ${debugStringify(roomData ?? [])}`);
+
+        const roomMap = new RoomMap(roomData ?? [], rooms);
+
+        platform.log.notice(`getRoomMapFromDevice - roomMap: ${debugStringify(roomMap)}`);
+        platform.log.notice('-------------------------------------------1--------------------------------------------------------');
+        return roomMap;
       }
 
       const mapInfo = await platform.roborockService.getMapInformation(device.duid);
-      if (mapInfo && mapInfo.maps && mapInfo.maps.length > 0) {
-        platform.log.error(`getRoomMapFromDevice - mapInfo: ${debugStringify(mapInfo.maps)}`);
+      platform.log.notice(`getRoomMapFromDevice - mapInfo: ${mapInfo ? debugStringify(mapInfo) : 'undefined'}`);
 
+      if (mapInfo && mapInfo.maps && mapInfo.maps.length > 0) {
         const roomDataMap = mapInfo.maps[0].rooms.map((r) => [r.id, parseInt(r.iot_name_id), r.tag] as [number, number, number]);
-        return new RoomMap(roomDataMap, rooms);
+
+        const roomMap = new RoomMap(roomDataMap, rooms);
+
+        platform.log.notice(`getRoomMapFromDevice - roomMap: ${debugStringify(roomMap)}`);
+        platform.log.notice('-------------------------------------------2--------------------------------------------------------');
+        return roomMap;
       }
     }
 
@@ -168,28 +181,37 @@ export class PlatformRunner {
             robot.updateAttribute(RvcRunMode.Cluster.id, 'currentMode', getRunningMode(state), platform.log);
           }
 
-          const currentMappedAreas = this.platform.roborockService?.getSupportedAreas(duid);
-          const roomMap = await this.getRoomMap(duid);
-          const targetRoom = data.cleaning_info?.target_segment_id ?? -1;
-          const isTargetMappedArea = currentMappedAreas?.some((x) => x.areaId == targetRoom);
-          let target_segment_id = roomMap?.rooms.find((x) => x.alternativeId === targetRoom.toString())?.id ?? -1;
-          this.platform.log.debug(`Target segment id: ${targetRoom}, targetRoom: ${target_segment_id}`);
+          if (state === RvcRunMode.ModeTag.Cleaning && data.cleaning_info) {
+            // TODO: change to !data.cleaning_info
+            robot.updateAttribute(ServiceArea.Cluster.id, 'currentArea', null, platform.log);
+          } else {
+            const currentMappedAreas = this.platform.roborockService?.getSupportedAreas(duid);
+            const roomMap = await this.getRoomMap(duid);
+            const targetRoom = data.cleaning_info?.target_segment_id ?? -1;
+            const isTargetMappedArea = currentMappedAreas?.some((x) => x.areaId == targetRoom);
+            let target_segment_id = roomMap?.rooms.find((x) => x.id == targetRoom || x.alternativeId === targetRoom.toString())?.id ?? -1;
+            this.platform.log.debug(`Target segment id: ${targetRoom}, targetRoom: ${target_segment_id}`);
 
-          if (targetRoom !== -1 && isTargetMappedArea) {
-            this.platform.log.debug(`RoomMap: ${roomMap ? debugStringify(roomMap) : 'undefined'}`);
-            this.platform.log.debug(`TargetRoom: ${targetRoom}, room name: ${roomMap?.rooms.find((x) => x.id === targetRoom)?.displayName ?? 'unknown'}`);
-            robot.updateAttribute(ServiceArea.Cluster.id, 'currentArea', targetRoom, platform.log);
-          }
+            if (targetRoom !== -1 && isTargetMappedArea) {
+              this.platform.log.debug(`RoomMap: ${roomMap ? debugStringify(roomMap) : 'undefined'}`);
+              this.platform.log.debug(`TargetRoom: ${targetRoom}, room name: ${roomMap?.rooms.find((x) => x.id === targetRoom)?.displayName ?? 'unknown'}`);
+              robot.updateAttribute(ServiceArea.Cluster.id, 'currentArea', targetRoom, platform.log);
+            }
 
-          const currentRoom = data.cleaning_info?.segment_id ?? -1;
-          target_segment_id = roomMap?.rooms.find((x) => x.alternativeId === currentRoom.toString())?.id ?? -1;
-          this.platform.log.debug(`Target segment id: ${currentRoom}, targetRoom: ${target_segment_id}`);
+            const currentRoom = data.cleaning_info?.segment_id ?? -1;
+            target_segment_id = roomMap?.rooms.find((x) => x.id === currentRoom || x.alternativeId === currentRoom.toString())?.id ?? -1;
+            this.platform.log.debug(`Target segment id: ${currentRoom}, targetRoom: ${target_segment_id}`);
 
-          const isMappedArea = currentMappedAreas?.some((x) => x.areaId == currentRoom);
-          if (currentRoom !== -1 && isMappedArea) {
-            this.platform.log.debug(`RoomMap: ${roomMap ? debugStringify(roomMap) : 'undefined'}`);
-            this.platform.log.debug(`CurrentRoom: ${currentRoom}, room name: ${roomMap?.rooms.find((x) => x.id === currentRoom)?.displayName ?? 'unknown'}`);
-            robot.updateAttribute(ServiceArea.Cluster.id, 'currentArea', currentRoom, platform.log);
+            const isMappedArea = currentMappedAreas?.some((x) => x.areaId == currentRoom);
+            if (currentRoom !== -1 && isMappedArea) {
+              this.platform.log.debug(`RoomMap: ${roomMap ? debugStringify(roomMap) : 'undefined'}`);
+              this.platform.log.debug(`CurrentRoom: ${currentRoom}, room name: ${roomMap?.rooms.find((x) => x.id === currentRoom)?.displayName ?? 'unknown'}`);
+              robot.updateAttribute(ServiceArea.Cluster.id, 'currentArea', currentRoom, platform.log);
+            }
+
+            if (targetRoom == -1 && currentRoom == -1) {
+              robot.updateAttribute(ServiceArea.Cluster.id, 'currentArea', null, platform.log);
+            }
           }
 
           if (data.battery) {

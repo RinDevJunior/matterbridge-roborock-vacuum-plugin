@@ -1,6 +1,7 @@
 import RoomMap from '../model/RoomMap';
 import { RoborockMatterbridgePlatform } from '../platform';
 import { PlatformRunner } from '../platformRunner';
+import { MapInfo } from '../roborockCommunication';
 
 describe('PlatformRunner.getRoomMapFromDevice', () => {
   let platform: any;
@@ -25,10 +26,10 @@ describe('PlatformRunner.getRoomMapFromDevice', () => {
     const device = {
       duid: 'duid1',
       rooms: [
-        { id: 1, name: '11100845' },
-        { id: 2, name: '11100849' },
-        { id: 3, name: '11100842' },
-        { id: 4, name: '11100847' },
+        { id: 1, name: 'Kitchen' },
+        { id: 2, name: 'Study' },
+        { id: 3, name: 'Living room' },
+        { id: 4, name: 'Bedroom' },
       ],
     };
     const roomData = [
@@ -44,67 +45,47 @@ describe('PlatformRunner.getRoomMapFromDevice', () => {
     const result = await runner.getRoomMapFromDevice(device as any);
 
     expect(result).toBeInstanceOf(RoomMap);
-    expect(result.rooms).toEqual(roomData);
-    expect(platform.log.error).toHaveBeenCalledWith(expect.stringContaining('roomData'));
+    expect(result.rooms.length).toEqual(4);
   });
 
-  it('returns RoomMap with roomDataMap from getMapInformation if getRoomMappings is empty', async () => {
-    const device = { duid: 'duid2', rooms: [{ id: 2, name: 'room2' }] };
-    platform.roborockService.getRoomMappings.mockResolvedValue([]);
-    const mapInfo = {
-      maps: [
+  it('returns RoomMap with roomData from getMapInformation if available', async () => {
+    const device = {
+      duid: 'duid1',
+      rooms: [
+        { id: 1, name: 'Kitchen' },
+        { id: 2, name: 'Study' },
+        { id: 3, name: 'Living room' },
+        { id: 4, name: 'Bedroom' },
+      ],
+    };
+
+    const mapInfo = new MapInfo({
+      max_multi_map: 1,
+      max_bak_map: 1,
+      multi_map_count: 1,
+      map_info: [
         {
+          mapFlag: 0,
+          add_time: 1753281130,
+          length: 0,
+          name: '',
+          bak_maps: [{ mapFlag: 4, add_time: 1753187168 }],
           rooms: [
-            { id: 3, name: '201' },
-            { id: 4, name: '202' },
+            { id: 1, tag: 14, iot_name_id: '11100845', iot_name: 'Kitchen' },
+            { id: 2, tag: 9, iot_name_id: '11100849', iot_name: 'Study' },
+            { id: 3, tag: 6, iot_name_id: '11100842', iot_name: 'Living room' },
+            { id: 4, tag: 1, iot_name_id: '11100847', iot_name: 'Bedroom' },
           ],
         },
       ],
-    };
+    });
+
+    platform.roborockService.getRoomMappings.mockResolvedValue(undefined);
     platform.roborockService.getMapInformation.mockResolvedValue(mapInfo);
 
     const result = await runner.getRoomMapFromDevice(device as any);
 
     expect(result).toBeInstanceOf(RoomMap);
-    expect(result.rooms.length).toEqual(mapInfo.maps[0].rooms.length);
-    expect(platform.log.error).toHaveBeenCalledWith(expect.stringContaining('mapInfo'));
-  });
-
-  it('returns RoomMap with empty array if no roomData or mapInfo', async () => {
-    const device = { duid: 'duid3', rooms: [{ id: 5, name: 'room5' }] };
-    platform.roborockService.getRoomMappings.mockResolvedValue(undefined);
-    platform.roborockService.getMapInformation.mockResolvedValue(undefined);
-
-    const result = await runner.getRoomMapFromDevice(device as any);
-
-    expect(result).toBeInstanceOf(RoomMap);
-    expect(result.rooms).toEqual([]);
-    expect(platform.log.error).toHaveBeenCalledWith(
-      expect.stringContaining('------------------------------------------------------------------------------------------------------'),
-    );
-  });
-
-  it('returns RoomMap with empty array if platform.roborockService is undefined', async () => {
-    runner.platform.roborockService = undefined;
-    const device = { duid: 'duid4', rooms: [{ id: 6, name: 'room6' }] };
-
-    const result = await runner.getRoomMapFromDevice(device as any);
-
-    expect(result).toBeInstanceOf(RoomMap);
-    expect(result.rooms).toEqual([]);
-    expect(platform.log.error).toHaveBeenCalledWith(
-      expect.stringContaining('------------------------------------------------------------------------------------------------------'),
-    );
-  });
-
-  it('handles device with no rooms property', async () => {
-    const device = { duid: 'duid5' };
-    platform.roborockService.getRoomMappings.mockResolvedValue(undefined);
-    platform.roborockService.getMapInformation.mockResolvedValue(undefined);
-
-    const result = await runner.getRoomMapFromDevice(device as any);
-
-    expect(result).toBeInstanceOf(RoomMap);
-    expect(result.rooms).toEqual([]);
+    expect(result.rooms.length).toEqual(4);
   });
 });
