@@ -55,9 +55,7 @@ describe('LocalNetworkClient', () => {
     // Set the Socket mock implementation
     Sket.mockImplementation(() => mockSocket);
 
-    client = new LocalNetworkClient(mockLogger, mockContext, duid, ip, (duid: string) => {
-      void 0; // Mocked callback
-    });
+    client = new LocalNetworkClient(mockLogger, mockContext, duid, ip);
     // Patch serializer/deserializer for send/onMessage
     (client as any).serializer = { serialize: jest.fn().mockReturnValue({ buffer: Buffer.from([1, 2, 3]), messageId: 123 }) };
     (client as any).deserializer = { deserialize: jest.fn().mockReturnValue('deserialized') };
@@ -136,7 +134,7 @@ describe('LocalNetworkClient', () => {
       jest.fn();
     }, 1000);
     await (client as any).onDisconnect();
-    expect(mockLogger.notice).toHaveBeenCalled();
+    expect(mockLogger.error).toHaveBeenCalled();
     expect(client['connected']).toBe(false);
     expect(mockSocket.destroy).toHaveBeenCalled();
     expect(client['socket']).toBeUndefined();

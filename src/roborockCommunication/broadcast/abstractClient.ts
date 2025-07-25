@@ -25,7 +25,6 @@ export abstract class AbstractClient implements Client {
 
   protected abstract clientName: string;
   protected abstract shouldReconnect: boolean;
-  protected abstract changeToSecureConnection: (duid: string) => void;
 
   private readonly context: MessageContext;
   private readonly syncMessageListener: SyncMessageListener;
@@ -41,7 +40,7 @@ export abstract class AbstractClient implements Client {
   }
 
   protected initializeConnectionStateListener() {
-    const connectionStateListener = new ConnectionStateListener(this.logger, this, this.clientName, this.changeToSecureConnection, this.shouldReconnect);
+    const connectionStateListener = new ConnectionStateListener(this.logger, this, this.clientName, this.shouldReconnect);
     this.connectionListeners.register(connectionStateListener);
   }
 

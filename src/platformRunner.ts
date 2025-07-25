@@ -181,8 +181,7 @@ export class PlatformRunner {
             robot.updateAttribute(RvcRunMode.Cluster.id, 'currentMode', getRunningMode(state), platform.log);
           }
 
-          if (state === RvcRunMode.ModeTag.Cleaning && data.cleaning_info) {
-            // TODO: change to !data.cleaning_info
+          if (state === RvcRunMode.ModeTag.Cleaning && !data.cleaning_info) {
             robot.updateAttribute(ServiceArea.Cluster.id, 'currentArea', null, platform.log);
           } else {
             const currentMappedAreas = this.platform.roborockService?.getSupportedAreas(duid);

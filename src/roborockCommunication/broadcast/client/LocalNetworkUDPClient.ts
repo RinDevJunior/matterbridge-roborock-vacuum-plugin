@@ -1,26 +1,25 @@
 import * as dgram from 'node:dgram';
 import { Socket } from 'node:dgram';
 import { Parser } from 'binary-parser';
-import crypto from 'crypto';
+import crypto from 'node:crypto';
 import CRC32 from 'crc-32';
 import { AnsiLogger } from 'matterbridge/logger';
 import { AbstractClient } from '../abstractClient.js';
 import { RequestMessage, ResponseMessage } from '../../index.js';
 import { MessageContext } from '../model/messageContext.js';
 
+/* eslint-disable @typescript-eslint/no-explicit-any */
 export class LocalNetworkUDPClient extends AbstractClient {
   protected override clientName = 'LocalNetworkUDPClient';
   protected override shouldReconnect = false;
-  protected override changeToSecureConnection = (duid: string) => {
-    void 0;
-  };
 
   private readonly PORT = 58866;
   private server: Socket | undefined = undefined;
+
   private readonly V10Parser: Parser<any>;
   private readonly L01Parser: Parser<any>;
 
-  constructor(logger: AnsiLogger, context: MessageContext, duid: string, ip: string, inject: (duid: string) => void) {
+  constructor(logger: AnsiLogger, context: MessageContext) {
     super(logger, context);
     this.V10Parser = new Parser()
       .endianness('big')
@@ -70,7 +69,8 @@ export class LocalNetworkUDPClient extends AbstractClient {
   }
 
   public override send(duid: string, request: RequestMessage): Promise<void> {
-    throw new Error('Method not implemented.');
+    this.logger.debug(`Sending request to ${duid}: ${JSON.stringify(request)}`);
+    return Promise.resolve();
   }
 
   private async onError(result: any) {

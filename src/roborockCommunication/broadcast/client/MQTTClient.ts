@@ -9,9 +9,6 @@ import { AnsiLogger, debugStringify } from 'matterbridge/logger';
 export class MQTTClient extends AbstractClient {
   protected override clientName = 'MQTTClient';
   protected override shouldReconnect = false;
-  protected override changeToSecureConnection = (duid: string) => {
-    void 0;
-  };
 
   private readonly rriot: Rriot;
   private readonly mqttUsername: string;

@@ -20,7 +20,7 @@ export interface Message {
 
 export class MessageDeserializer {
   private readonly context: MessageContext;
-  private readonly messageParser: Parser<any>;
+  private readonly messageParser: Parser<Message>;
   private readonly logger: AnsiLogger;
   private readonly supportedVersions: string[] = ['1.0', 'A01', 'B01'];
 
