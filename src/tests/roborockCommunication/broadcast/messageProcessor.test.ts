@@ -4,18 +4,17 @@ import { RoomInfo } from '../../../roborockCommunication/Zmodel/roomInfo';
 
 describe('MessageProcessor', () => {
   let mockClient: any;
-  let mockListener: any;
   let processor: MessageProcessor;
   let mockLogger: any;
 
   beforeEach(() => {
-    mockListener = { registerListener: jest.fn() };
     mockClient = {
-      registerMessageListener: jest.fn().mockImplementation(() => {}),
+      registerMessageListener: jest.fn().mockImplementation(() => {
+        void 0;
+      }),
       get: jest.fn(),
       send: jest.fn(),
     };
-    // Patch SimpleMessageListener to return our mockListener
     processor = new MessageProcessor(mockClient);
     mockLogger = { debug: jest.fn(), notice: jest.fn() };
     processor.injectLogger(mockLogger);

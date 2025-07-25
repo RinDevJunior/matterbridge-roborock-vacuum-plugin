@@ -1,38 +1,10 @@
 import { RequestMessage, UserData } from '../../../roborockCommunication';
 import { ClientRouter } from '../../../roborockCommunication/broadcast/clientRouter';
 
-// jest.mock('./src/roborockCommunication/broadcast/client/MQTTClient', () => {
-//   return {
-//     MQTTClient: jest.fn().mockImplementation(() => ({
-//       registerConnectionListener: jest.fn(),
-//       registerMessageListener: jest.fn(),
-//       isConnected: jest.fn().mockReturnValue(true),
-//       connect: jest.fn(),
-//       disconnect: jest.fn(),
-//       send: jest.fn(),
-//       get: jest.fn(),
-//     })),
-//   };
-// });
-
-// jest.mock('./src/roborockCommunication/broadcast/client/LocalNetworkClient', () => {
-//   return {
-//     LocalNetworkClient: jest.fn().mockImplementation(() => ({
-//       registerConnectionListener: jest.fn(),
-//       registerMessageListener: jest.fn(),
-//       isConnected: jest.fn().mockReturnValue(true),
-//       connect: jest.fn(),
-//       disconnect: jest.fn(),
-//       send: jest.fn(),
-//       get: jest.fn(),
-//     })),
-//   };
-// });
-
 describe('ClientRouter', () => {
   let mockLogger: any;
   let mockUserData: UserData;
-  let mockContext: any;
+
   let mockMQTTClient: any;
   let mockLocalNetworkClient: any;
 
@@ -58,9 +30,6 @@ describe('ClientRouter', () => {
           l: 'https://wood-eu.roborock.com',
         },
       },
-    };
-    mockContext = {
-      registerDevice: jest.fn(),
     };
 
     mockMQTTClient = {
