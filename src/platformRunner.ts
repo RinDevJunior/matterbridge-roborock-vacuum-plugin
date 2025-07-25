@@ -181,35 +181,49 @@ export class PlatformRunner {
             robot.updateAttribute(RvcRunMode.Cluster.id, 'currentMode', getRunningMode(state), platform.log);
           }
 
+          if (data.state === OperationStatusCode.Idle) {
+            const selectedAreas = platform.roborockService?.getSelectedAreas(duid) ?? [];
+            robot.updateAttribute(ServiceArea.Cluster.id, 'selectedAreas', selectedAreas, platform.log);
+          }
+
           if (state === RvcRunMode.ModeTag.Cleaning && !data.cleaning_info) {
             robot.updateAttribute(ServiceArea.Cluster.id, 'currentArea', null, platform.log);
             robot.updateAttribute(ServiceArea.Cluster.id, 'selectedAreas', [], platform.log);
           } else {
             const currentMappedAreas = this.platform.roborockService?.getSupportedAreas(duid);
             const roomMap = await this.getRoomMap(duid);
-            const targetRoom = data.cleaning_info?.target_segment_id ?? -1;
-            const isTargetMappedArea = currentMappedAreas?.some((x) => x.areaId == targetRoom);
-            let target_segment_id = roomMap?.rooms.find((x) => x.id == targetRoom || x.alternativeId === targetRoom.toString())?.id ?? -1;
-            this.platform.log.debug(`Target segment id: ${targetRoom}, targetRoom: ${target_segment_id}`);
 
-            if (targetRoom !== -1 && isTargetMappedArea) {
+            // Get current room from segment_id
+            const segment_id = data.cleaning_info?.segment_id ?? -1;
+            const target_segment_id = data.cleaning_info?.target_segment_id ?? -1;
+
+            let target_room_id = roomMap?.rooms.find((x) => x.id === segment_id || x.alternativeId === segment_id.toString())?.id ?? -1;
+            this.platform.log.debug(`Target segment id: ${segment_id}, targetRoom: ${target_room_id}`);
+
+            const isMappedArea = currentMappedAreas?.some((x) => x.areaId == segment_id);
+            if (segment_id !== -1 && isMappedArea) {
               this.platform.log.debug(`RoomMap: ${roomMap ? debugStringify(roomMap) : 'undefined'}`);
-              this.platform.log.debug(`TargetRoom: ${targetRoom}, room name: ${roomMap?.rooms.find((x) => x.id === targetRoom)?.displayName ?? 'unknown'}`);
-              robot.updateAttribute(ServiceArea.Cluster.id, 'currentArea', targetRoom, platform.log);
+              this.platform.log.debug(
+                `Part1: CurrentRoom: ${segment_id}, room name: ${roomMap?.rooms.find((x) => x.id === segment_id || x.alternativeId === segment_id.toString())?.displayName ?? 'unknown'}`,
+              );
+              robot.updateAttribute(ServiceArea.Cluster.id, 'currentArea', segment_id, platform.log);
             }
 
-            const currentRoom = data.cleaning_info?.segment_id ?? -1;
-            target_segment_id = roomMap?.rooms.find((x) => x.id === currentRoom || x.alternativeId === currentRoom.toString())?.id ?? -1;
-            this.platform.log.debug(`Target segment id: ${currentRoom}, targetRoom: ${target_segment_id}`);
+            if (segment_id == -1) {
+              const isTargetMappedArea = currentMappedAreas?.some((x) => x.areaId == target_segment_id);
+              target_room_id = roomMap?.rooms.find((x) => x.id == target_segment_id || x.alternativeId === target_segment_id.toString())?.id ?? -1;
+              this.platform.log.debug(`Target segment id: ${target_segment_id}, targetRoom: ${target_room_id}`);
 
-            const isMappedArea = currentMappedAreas?.some((x) => x.areaId == currentRoom);
-            if (currentRoom !== -1 && isMappedArea) {
-              this.platform.log.debug(`RoomMap: ${roomMap ? debugStringify(roomMap) : 'undefined'}`);
-              this.platform.log.debug(`CurrentRoom: ${currentRoom}, room name: ${roomMap?.rooms.find((x) => x.id === currentRoom)?.displayName ?? 'unknown'}`);
-              robot.updateAttribute(ServiceArea.Cluster.id, 'currentArea', currentRoom, platform.log);
+              if (target_segment_id !== -1 && isTargetMappedArea) {
+                this.platform.log.debug(`RoomMap: ${roomMap ? debugStringify(roomMap) : 'undefined'}`);
+                this.platform.log.debug(
+                  `Part2: TargetRoom: ${target_segment_id}, room name: ${roomMap?.rooms.find((x) => x.id === target_segment_id || x.alternativeId === segment_id.toString())?.displayName ?? 'unknown'}`,
+                );
+                robot.updateAttribute(ServiceArea.Cluster.id, 'currentArea', target_segment_id, platform.log);
+              }
             }
 
-            if (targetRoom == -1 && currentRoom == -1) {
+            if (target_segment_id == -1 && segment_id == -1) {
               robot.updateAttribute(ServiceArea.Cluster.id, 'currentArea', null, platform.log);
             }
           }

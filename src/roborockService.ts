@@ -98,6 +98,10 @@ export default class RoborockService {
     this.selectedAreas.set(duid, selectedAreas);
   }
 
+  public getSelectedAreas(duid: string): number[] {
+    return this.selectedAreas.get(duid) ?? [];
+  }
+
   public setSupportedAreas(duid: string, supportedAreas: ServiceArea.Area[]): void {
     this.supportedAreas.set(duid, supportedAreas);
   }
