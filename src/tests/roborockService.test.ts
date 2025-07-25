@@ -2,12 +2,16 @@ import { AnsiLogger } from 'matterbridge/logger';
 import { ServiceArea } from 'matterbridge/matter/clusters';
 import RoborockService from '../roborockService';
 import { MessageProcessor } from '../roborockCommunication/broadcast/messageProcessor';
-import { Device, RequestMessage } from '../roborockCommunication';
+import { Device, MultipleMap, RequestMessage } from '../roborockCommunication';
 
 describe('RoborockService - startClean', () => {
   let roborockService: RoborockService;
   let mockLogger: AnsiLogger;
   let mockMessageProcessor: jest.Mocked<MessageProcessor>;
+  let mockLoginApi: any;
+  let mockMapInfo: any;
+  let mockMessageClient: any;
+  let mockIotApi: any;
 
   beforeEach(() => {
     mockLogger = {
@@ -22,8 +26,104 @@ describe('RoborockService - startClean', () => {
       startRoomClean: jest.fn(),
     } as any;
 
-    roborockService = new RoborockService(jest.fn(), jest.fn(), 10, {} as any, mockLogger);
+    mockLoginApi = {
+      loginWithPassword: jest.fn(),
+      loginWithUserData: jest.fn(),
+    };
+
+    mockMapInfo = jest.fn();
+    roborockService = new RoborockService(() => mockLoginApi, jest.fn(), 10, {} as any, mockLogger);
+    roborockService['auth'] = jest.fn((ud) => ud);
     roborockService['messageProcessorMap'] = new Map<string, MessageProcessor>([['test-duid', mockMessageProcessor]]);
+
+    mockIotApi = { getCustom: jest.fn() };
+    roborockService['iotApi'] = mockIotApi;
+  });
+
+  it('should return result from iotApi.getCustom', async () => {
+    mockIotApi.getCustom.mockResolvedValue({ foo: 'bar' });
+    const result = await roborockService.getCustomAPI('http://test');
+    expect(mockLogger.debug).toHaveBeenCalledWith('RoborockService - getCustomAPI', 'http://test');
+    expect(result).toEqual({ foo: 'bar' });
+  });
+
+  it('should log error and return error object if iotApi.getCustom throws', async () => {
+    mockIotApi.getCustom.mockRejectedValue(new Error('fail'));
+    const result = await roborockService.getCustomAPI('http://test');
+    expect(mockLogger.error).toHaveBeenCalledWith(expect.stringContaining('Failed to get custom API with url http://test:'));
+    expect(result).toEqual({ result: undefined, error: expect.stringContaining('Failed to get custom API with url http://test') });
+  });
+
+  it('should return MapInfo if response contains maps', async () => {
+    const mapData = [{ map_info: [{}] }] as MultipleMap[];
+    mockMessageClient = {
+      get: jest.fn(),
+    };
+    roborockService.messageClient = mockMessageClient;
+    mockMessageClient.get.mockResolvedValue(mapData);
+    mockMapInfo.mockImplementation((data) => ({ map: data }));
+
+    const result = await roborockService.getMapInformation('duid');
+    expect(mockLogger.debug).toHaveBeenCalledWith('RoborockService - getMapInformation', 'duid');
+    expect(mockLogger.debug).toHaveBeenCalledWith('RoborockService - getMapInformation response', expect.anything());
+    expect(result?.maps.length).toEqual(1);
+  });
+
+  it('should return undefined if response is empty', async () => {
+    mockMessageClient = { get: jest.fn() };
+    mockMessageClient.get.mockResolvedValue(undefined);
+    roborockService.messageClient = mockMessageClient;
+
+    const result = await roborockService.getMapInformation('duid');
+    expect(result).toBeUndefined();
+  });
+
+  it('should return vacuumRoom if present', async () => {
+    roborockService.customGet = jest.fn();
+    (roborockService.customGet as jest.Mock).mockResolvedValue({ vacuumRoom: 42 });
+    const result = await roborockService.getRoomIdFromMap('duid');
+    expect(roborockService.customGet).toHaveBeenCalledWith('duid', expect.any(Object));
+    expect(result).toBe(42);
+  });
+
+  it('should return undefined if vacuumRoom is not present', async () => {
+    roborockService.customGet = jest.fn();
+    (roborockService.customGet as jest.Mock).mockResolvedValue({});
+    const result = await roborockService.getRoomIdFromMap('duid');
+    expect(result).toBeUndefined();
+  });
+
+  it('should login with password if no saved user data', async () => {
+    const username = 'user';
+    const password = 'pass';
+    const userData = { foo: 'bar' };
+    mockLoginApi.loginWithPassword.mockResolvedValue(userData);
+    const loadSavedUserData = jest.fn().mockResolvedValue(undefined);
+    const savedUserData = jest.fn().mockResolvedValue(undefined);
+
+    const result = await roborockService.loginWithPassword(username, password, loadSavedUserData, savedUserData);
+
+    expect(mockLogger.debug).toHaveBeenCalledWith('No saved user data found, logging in with password');
+    expect(mockLoginApi.loginWithPassword).toHaveBeenCalledWith(username, password);
+    expect(savedUserData).toHaveBeenCalledWith(userData);
+    expect(roborockService['auth']).toHaveBeenCalledWith(userData);
+    expect(result).toBe(userData);
+  });
+
+  it('should login with user data if saved user data exists', async () => {
+    const username = 'user';
+    const password = 'pass';
+    const userData = { foo: 'bar' };
+    mockLoginApi.loginWithUserData.mockResolvedValue(userData);
+    const loadSavedUserData = jest.fn().mockResolvedValue(userData);
+    const savedUserData = jest.fn();
+
+    const result = await roborockService.loginWithPassword(username, password, loadSavedUserData, savedUserData);
+
+    expect(mockLogger.debug).toHaveBeenCalledWith('Using saved user data for login', expect.anything());
+    expect(mockLoginApi.loginWithUserData).toHaveBeenCalledWith(username, userData);
+    expect(roborockService['auth']).toHaveBeenCalledWith(userData);
+    expect(result).toBe(userData);
   });
 
   it('should start global clean when no areas or selected areas are provided', async () => {
