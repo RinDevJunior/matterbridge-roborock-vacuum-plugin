@@ -67,7 +67,9 @@ describe('initializeMessageClientForLocal', () => {
     mockMessageProcessor.getNetworkInfo.mockResolvedValue({ ip: '1.2.3.4' });
     jest.spyOn(service, 'getMessageProcessor').mockReturnValue(mockMessageProcessor);
     mockMessageClient.registerClient.mockReturnValue(mockLocalClient);
-    mockLocalClient.connect.mockImplementation(() => {});
+    mockLocalClient.connect.mockImplementation(() => {
+      void 0;
+    });
     mockLocalClient.isConnected.mockReturnValue(false);
     service.ipMap.delete(mockDevice.duid);
     const result = await service.initializeMessageClientForLocal(mockDevice);
