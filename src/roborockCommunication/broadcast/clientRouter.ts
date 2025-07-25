@@ -15,9 +15,9 @@ export class ClientRouter implements Client {
   protected readonly messageListeners = new ChainedMessageListener();
 
   private readonly context: MessageContext;
-  private readonly mqttClient: MQTTClient;
   private readonly localClients = new Map<string, LocalNetworkClient>();
   private readonly logger: AnsiLogger;
+  private mqttClient: MQTTClient;
 
   public constructor(logger: AnsiLogger, userdata: UserData) {
     this.context = new MessageContext(userdata);
