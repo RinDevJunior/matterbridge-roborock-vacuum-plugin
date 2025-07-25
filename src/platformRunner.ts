@@ -183,6 +183,7 @@ export class PlatformRunner {
 
           if (state === RvcRunMode.ModeTag.Cleaning && !data.cleaning_info) {
             robot.updateAttribute(ServiceArea.Cluster.id, 'currentArea', null, platform.log);
+            robot.updateAttribute(ServiceArea.Cluster.id, 'selectedAreas', [], platform.log);
           } else {
             const currentMappedAreas = this.platform.roborockService?.getSupportedAreas(duid);
             const roomMap = await this.getRoomMap(duid);
