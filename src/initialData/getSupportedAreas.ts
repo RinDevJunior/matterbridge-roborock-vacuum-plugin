@@ -4,12 +4,12 @@ import RoomMap from '../model/RoomMap.js';
 import { Room } from '../roborockCommunication/Zmodel/room.js';
 import { randomInt } from 'node:crypto';
 
-export function getSupportedAreas(rooms: Room[], roomMap: RoomMap | undefined, log?: AnsiLogger): ServiceArea.Area[] {
-  log?.debug('getSupportedAreas', debugStringify(rooms));
-  log?.debug('getSupportedAreas', roomMap ? debugStringify(roomMap) : 'undefined');
+export function getSupportedAreas(vacuumRooms: Room[], roomMap: RoomMap | undefined, log?: AnsiLogger): ServiceArea.Area[] {
+  log?.debug('getSupportedAreas-vacuum room', debugStringify(vacuumRooms));
+  log?.debug('getSupportedAreas-roomMap', roomMap ? debugStringify(roomMap) : 'undefined');
 
-  if (!rooms || rooms.length === 0 || !roomMap?.rooms || roomMap.rooms.length == 0) {
-    if (!rooms || rooms.length === 0) {
+  if (!vacuumRooms || vacuumRooms.length === 0 || !roomMap?.rooms || roomMap.rooms.length == 0) {
+    if (!vacuumRooms || vacuumRooms.length === 0) {
       log?.error('No rooms found');
     }
 
@@ -39,7 +39,7 @@ export function getSupportedAreas(rooms: Room[], roomMap: RoomMap | undefined, l
       mapId: null,
       areaInfo: {
         locationInfo: {
-          locationName: room.displayName ?? rooms.find((r) => r.id == room.globalId)?.name ?? `Unknown Room ${randomInt(1000, 9999)}`,
+          locationName: room.displayName ?? vacuumRooms.find((r) => r.id == room.globalId || r.id == room.id)?.name ?? `Unknown Room ${randomInt(1000, 9999)}`,
           floorNumber: null,
           areaType: null,
         },
@@ -47,6 +47,8 @@ export function getSupportedAreas(rooms: Room[], roomMap: RoomMap | undefined, l
       },
     };
   });
+
+  log?.debug('getSupportedAreas - supportedAreas', debugStringify(supportedAreas));
 
   const duplicated = findDuplicatedAreaIds(supportedAreas, log);
 

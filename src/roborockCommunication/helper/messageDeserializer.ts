@@ -1,6 +1,5 @@
 import crypto from 'node:crypto';
 import CRC32 from 'crc-32';
-// @ts-expect-error: binary-parser has no type definitions, using as-is for runtime parsing
 import { Parser } from 'binary-parser';
 import { ResponseMessage } from '../broadcast/model/responseMessage.js';
 import * as CryptoUtils from './cryptoHelper.js';
@@ -21,7 +20,7 @@ export interface Message {
 
 export class MessageDeserializer {
   private readonly context: MessageContext;
-  private readonly messageParser: Parser;
+  private readonly messageParser: Parser<Message>;
   private readonly logger: AnsiLogger;
   private readonly supportedVersions: string[] = ['1.0', 'A01', 'B01'];
 
@@ -30,7 +29,7 @@ export class MessageDeserializer {
     this.logger = logger;
 
     this.messageParser = new Parser()
-      .endianess('big')
+      .endianness('big')
       .string('version', {
         length: 3,
       })

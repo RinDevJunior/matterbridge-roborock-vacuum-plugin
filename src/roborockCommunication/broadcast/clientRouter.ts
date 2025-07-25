@@ -32,8 +32,8 @@ export class ClientRouter implements Client {
     this.context.registerDevice(duid, localKey, pv);
   }
 
-  public registerClient(duid: string, ip: string, onDisconnect: (duid: string) => void): Client {
-    const localClient = new LocalNetworkClient(this.logger, this.context, duid, ip, onDisconnect);
+  public registerClient(duid: string, ip: string): Client {
+    const localClient = new LocalNetworkClient(this.logger, this.context, duid, ip);
     localClient.registerConnectionListener(this.connectionListeners);
     localClient.registerMessageListener(this.messageListeners);
 

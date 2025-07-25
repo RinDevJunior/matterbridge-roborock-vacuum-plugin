@@ -4,6 +4,7 @@ export interface Map {
   length: number;
   name: string;
   rooms: RoomInformation[];
+  bak_maps: { mapFlag: number; add_time: number }[];
 }
 
 export interface RoomInformation {

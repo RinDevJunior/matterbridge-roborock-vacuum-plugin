@@ -98,6 +98,10 @@ export default class RoborockService {
     this.selectedAreas.set(duid, selectedAreas);
   }
 
+  public getSelectedAreas(duid: string): number[] {
+    return this.selectedAreas.get(duid) ?? [];
+  }
+
   public setSupportedAreas(duid: string, supportedAreas: ServiceArea.Area[]): void {
     this.supportedAreas.set(duid, supportedAreas);
   }
@@ -525,14 +529,14 @@ export default class RoborockService {
 
       if (localIp) {
         this.logger.debug('initializing the local connection for this client towards ' + localIp);
-        const localClient = this.messageClient.registerClient(device.duid, localIp, this.onLocalClientDisconnect) as LocalNetworkClient;
+        const localClient = this.messageClient.registerClient(device.duid, localIp) as LocalNetworkClient;
         localClient.connect();
 
         let count = 0;
         while (!localClient.isConnected() && count < 20) {
           this.logger.debug('Keep waiting for local client to connect');
           count++;
-          await this.sleep(200);
+          await this.sleep(500);
         }
 
         if (!localClient.isConnected()) {
@@ -549,10 +553,6 @@ export default class RoborockService {
     }
 
     return true;
-  }
-
-  private onLocalClientDisconnect(duid: string): void {
-    this.mqttAlwaysOnDevices.set(duid, true);
   }
 
   private sleep(ms: number): Promise<void> {

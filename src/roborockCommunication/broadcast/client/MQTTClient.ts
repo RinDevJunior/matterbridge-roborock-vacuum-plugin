@@ -1,4 +1,4 @@
-import mqtt, { ErrorWithReasonCode, IConnackPacket, MqttClient as MqttLibClient } from 'mqtt';
+import mqtt, { ErrorWithReasonCode, IConnackPacket, ISubscriptionGrant, MqttClient as MqttLibClient } from 'mqtt';
 import * as CryptoUtils from '../../helper/cryptoHelper.js';
 import { RequestMessage } from '../model/requestMessage.js';
 import { AbstractClient } from '../abstractClient.js';
@@ -7,14 +7,14 @@ import { Rriot, UserData } from '../../Zmodel/userData.js';
 import { AnsiLogger, debugStringify } from 'matterbridge/logger';
 
 export class MQTTClient extends AbstractClient {
-  protected override changeToSecureConnection: (duid: string) => void;
   protected override clientName = 'MQTTClient';
   protected override shouldReconnect = false;
 
   private readonly rriot: Rriot;
   private readonly mqttUsername: string;
   private readonly mqttPassword: string;
-  private client: MqttLibClient | undefined = undefined;
+  private mqttClient: MqttLibClient | undefined = undefined;
+  private keepConnectionAliveInterval: NodeJS.Timeout | undefined = undefined;
 
   public constructor(logger: AnsiLogger, context: MessageContext, userdata: UserData) {
     super(logger, context);
@@ -24,106 +24,139 @@ export class MQTTClient extends AbstractClient {
     this.mqttPassword = CryptoUtils.md5hex(userdata.rriot.s + ':' + userdata.rriot.k).substring(16);
 
     this.initializeConnectionStateListener();
-    this.changeToSecureConnection = (duid: string) => {
-      this.logger.info(`MqttClient for ${duid} has been disconnected`);
-    };
   }
 
   public connect(): void {
-    if (this.client) {
-      return;
+    if (this.mqttClient) {
+      return; // Already connected
     }
 
-    this.client = mqtt.connect(this.rriot.r.m, {
+    this.mqttClient = mqtt.connect(this.rriot.r.m, {
       clientId: this.mqttUsername,
       username: this.mqttUsername,
       password: this.mqttPassword,
       keepalive: 30,
-      log: () => {
-        // ...args: unknown[] -  this.logger.debug('MQTTClient args:: ' + args[0]);
+      log: (...args: unknown[]) => {
+        this.logger.debug(`MQTTClient args: ${debugStringify(args)}`);
       },
     });
 
-    this.client.on('connect', this.onConnect.bind(this));
-    this.client.on('error', this.onError.bind(this));
-    this.client.on('reconnect', this.onReconnect.bind(this));
-    this.client.on('close', this.onDisconnect.bind(this));
-    this.client.on('disconnect', this.onDisconnect.bind(this));
-    this.client.on('offline', this.onDisconnect.bind(this));
+    this.mqttClient.on('connect', this.onConnect.bind(this));
+    this.mqttClient.on('error', this.onError.bind(this));
+    this.mqttClient.on('reconnect', this.onReconnect.bind(this));
+    this.mqttClient.on('close', this.onClose.bind(this));
+    this.mqttClient.on('disconnect', this.onDisconnect.bind(this));
+    this.mqttClient.on('offline', this.onOffline.bind(this));
+    this.mqttClient.on('message', this.onMessage.bind(this));
 
-    // message events
-    this.client.on('message', this.onMessage.bind(this));
+    this.keepConnectionAlive();
   }
 
   public async disconnect(): Promise<void> {
-    if (!this.client || !this.connected) {
+    if (!this.mqttClient || !this.connected) {
       return;
     }
     try {
       this.isInDisconnectingStep = true;
-      this.client.end();
+      this.mqttClient.end();
     } catch (error) {
       this.logger.error('MQTT client failed to disconnect with error: ' + error);
     }
   }
 
   public async send(duid: string, request: RequestMessage): Promise<void> {
-    if (!this.client || !this.connected) {
+    if (!this.mqttClient || !this.connected) {
       this.logger.error(`${duid}: mqtt is not available, ${debugStringify(request)}`);
       return;
     }
 
     const mqttRequest = request.toMqttRequest();
     const message = this.serializer.serialize(duid, mqttRequest);
-    this.client.publish('rr/m/i/' + this.rriot.u + '/' + this.mqttUsername + '/' + duid, message.buffer, { qos: 1 });
+    this.logger.debug(`MQTTClient sending message to ${duid}: ${debugStringify(mqttRequest)}`);
+    this.mqttClient.publish(`rr/m/i/${this.rriot.u}/${this.mqttUsername}/${duid}`, message.buffer, { qos: 1 });
+    this.logger.debug(`MQTTClient published message to topic: rr/m/i/${this.rriot.u}/${this.mqttUsername}/${duid}`);
   }
 
-  private async onConnect(result: IConnackPacket) {
+  private keepConnectionAlive(): void {
+    if (this.keepConnectionAliveInterval) {
+      clearTimeout(this.keepConnectionAliveInterval);
+      this.keepConnectionAliveInterval.unref();
+    }
+
+    this.keepConnectionAliveInterval = setInterval(
+      () => {
+        if (this.mqttClient) {
+          this.mqttClient.end();
+          this.mqttClient.reconnect();
+        } else {
+          this.connect();
+        }
+      },
+      30 * 60 * 1000,
+    );
+  }
+
+  private async onConnect(result: IConnackPacket): Promise<void> {
     if (!result) {
       return;
     }
 
     this.connected = true;
     await this.connectionListeners.onConnected('mqtt-' + this.mqttUsername);
-
     this.subscribeToQueue();
   }
 
-  private subscribeToQueue() {
-    if (!this.client) {
+  private subscribeToQueue(): void {
+    if (!this.mqttClient || !this.connected) {
       return;
     }
-    this.client.subscribe('rr/m/o/' + this.rriot.u + '/' + this.mqttUsername + '/#', this.onSubscribe.bind(this));
+
+    this.mqttClient.subscribe('rr/m/o/' + this.rriot.u + '/' + this.mqttUsername + '/#', this.onSubscribe.bind(this));
   }
 
-  private async onSubscribe(err: Error | null) {
+  private async onSubscribe(err: Error | null, granted: ISubscriptionGrant[] | undefined): Promise<void> {
     if (!err) {
+      this.logger.info('onSubscribe: ' + JSON.stringify(granted));
       return;
     }
 
-    this.logger.error('failed to subscribe to the queue: ' + err);
+    this.logger.error('failed to subscribe: ' + err);
     this.connected = false;
 
-    await this.connectionListeners.onDisconnected('mqtt-' + this.mqttUsername);
+    await this.connectionListeners.onDisconnected('mqtt-' + this.mqttUsername, 'Failed to subscribe to the queue: ' + err.toString());
   }
 
-  private async onDisconnect() {
+  private async onDisconnect(): Promise<void> {
     this.connected = false;
-    await this.connectionListeners.onDisconnected('mqtt-' + this.mqttUsername);
+    await this.connectionListeners.onDisconnected('mqtt-' + this.mqttUsername, 'Disconnected from MQTT broker');
   }
 
-  private async onError(result: Error | ErrorWithReasonCode) {
+  private async onError(result: Error | ErrorWithReasonCode): Promise<void> {
     this.logger.error('MQTT connection error: ' + result);
     this.connected = false;
 
     await this.connectionListeners.onError('mqtt-' + this.mqttUsername, result.toString());
   }
 
-  private onReconnect() {
-    this.subscribeToQueue();
+  private async onClose(): Promise<void> {
+    if (this.connected) {
+      await this.connectionListeners.onDisconnected('mqtt-' + this.mqttUsername, 'MQTT connection closed');
+    }
+
+    this.connected = false;
   }
 
-  private async onMessage(topic: string, message: Buffer<ArrayBufferLike>) {
+  private async onOffline(): Promise<void> {
+    this.connected = false;
+    await this.connectionListeners.onDisconnected('mqtt-' + this.mqttUsername, 'MQTT connection offline');
+  }
+
+  private onReconnect(): void {
+    this.subscribeToQueue();
+    this.connectionListeners.onReconnect('mqtt-' + this.mqttUsername, 'Reconnected to MQTT broker');
+  }
+
+  private async onMessage(topic: string, message: Buffer<ArrayBufferLike>): Promise<void> {
     if (!message) {
       // Ignore empty messages
       this.logger.notice('MQTTClient received empty message from topic: ' + topic);

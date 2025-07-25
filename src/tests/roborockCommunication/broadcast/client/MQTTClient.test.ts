@@ -52,7 +52,7 @@ describe('MQTTClient', () => {
   let messageListeners: any;
 
   beforeEach(() => {
-    logger = { error: jest.fn(), debug: jest.fn(), notice: jest.fn() };
+    logger = { error: jest.fn(), debug: jest.fn(), notice: jest.fn(), info: jest.fn() };
     context = {};
     userdata = {
       rriot: {
@@ -68,6 +68,7 @@ describe('MQTTClient', () => {
       onConnected: jest.fn().mockResolvedValue(undefined),
       onDisconnected: jest.fn().mockResolvedValue(undefined),
       onError: jest.fn().mockResolvedValue(undefined),
+      onReconnect: jest.fn().mockResolvedValue(undefined),
     };
     messageListeners = { onMessage: jest.fn().mockResolvedValue(undefined) };
 
@@ -107,14 +108,14 @@ describe('MQTTClient', () => {
 
   it('should not connect if already connected', () => {
     const mqttClient = createMQTTClient();
-    mqttClient['client'] = client;
+    mqttClient['mqttClient'] = client;
     mqttClient.connect();
     expect(mockConnect).not.toHaveBeenCalled();
   });
 
   it('should disconnect if connected', async () => {
     const mqttClient = createMQTTClient();
-    mqttClient['client'] = client;
+    mqttClient['mqttClient'] = client;
     mqttClient['connected'] = true;
     await mqttClient.disconnect();
     expect(client.end).toHaveBeenCalled();
@@ -122,7 +123,7 @@ describe('MQTTClient', () => {
 
   it('should not disconnect if not connected', async () => {
     const mqttClient = createMQTTClient();
-    mqttClient['client'] = undefined;
+    mqttClient['mqttClient'] = undefined;
     mqttClient['connected'] = false;
     await mqttClient.disconnect();
     expect(client.end).not.toHaveBeenCalled();
@@ -130,105 +131,10 @@ describe('MQTTClient', () => {
 
   it('should log error if disconnect throws', async () => {
     const mqttClient = createMQTTClient();
-    mqttClient['client'] = {
+    mqttClient['mqttClient'] = {
       end: jest.fn(() => {
         throw new Error('fail');
       }),
-      on: jest.fn(),
-      publish: jest.fn(),
-      subscribe: jest.fn(),
-      connected: true,
-      disconnecting: false,
-      disconnected: false,
-      reconnecting: false,
-      options: {},
-      removeListener: jest.fn(),
-      removeAllListeners: jest.fn(),
-      addListener: jest.fn(),
-      emit: jest.fn(),
-      eventNames: jest.fn(),
-      getMaxListeners: jest.fn(),
-      listenerCount: jest.fn(),
-      listeners: jest.fn(),
-      off: jest.fn(),
-      once: jest.fn(),
-      prependListener: jest.fn(),
-      prependOnceListener: jest.fn(),
-      rawListeners: jest.fn(),
-      setMaxListeners: jest.fn(),
-      handleMessage: jest.fn(),
-      subscribeAsync: jest.fn(),
-      unsubscribe: jest.fn(),
-      unsubscribeAsync: jest.fn(),
-      publishAsync: jest.fn(),
-      reconnect: jest.fn(),
-      destroy: jest.fn(),
-      removeOutgoingMessage: jest.fn(),
-      connectedTime: 0,
-      disconnect: jest.fn(),
-      stream: {} as any,
-      messageIdToTopic: {},
-      outgoingStore: {} as any,
-      incomingStore: {} as any,
-      queueQoSZero: jest.fn(),
-      _resubscribeTopics: {},
-      _resubscribeTopicsList: [],
-      _resubscribeTopicsMap: {},
-      _resubscribeTopicsTimer: null,
-      _resubscribeTopicsTimeout: 0,
-      _resubscribeTopicsInProgress: false,
-      _resubscribeTopicsCallback: jest.fn(),
-      _resubscribeTopicsError: null,
-      _resubscribeTopicsErrorCallback: jest.fn(),
-      _resubscribeTopicsErrorTimer: null,
-      _resubscribeTopicsErrorTimeout: 0,
-      _resubscribeTopicsErrorInProgress: false,
-      _resubscribeTopicsErrorCallback2: jest.fn(),
-      _resubscribeTopicsError2: null,
-      _resubscribeTopicsErrorTimer2: null,
-      _resubscribeTopicsErrorTimeout2: 0,
-      _resubscribeTopicsErrorInProgress2: false,
-      _resubscribeTopicsErrorCallback3: jest.fn(),
-      _resubscribeTopicsError3: null,
-      _resubscribeTopicsErrorTimer3: null,
-      _resubscribeTopicsErrorTimeout3: 0,
-      _resubscribeTopicsErrorInProgress3: false,
-      _resubscribeTopicsErrorCallback4: jest.fn(),
-      _resubscribeTopicsError4: null,
-      _resubscribeTopicsErrorTimer4: null,
-      _resubscribeTopicsErrorTimeout4: 0,
-      _resubscribeTopicsErrorInProgress4: false,
-      _resubscribeTopicsErrorCallback5: jest.fn(),
-      _resubscribeTopicsError5: null,
-      _resubscribeTopicsErrorTimer5: null,
-      _resubscribeTopicsErrorTimeout5: 0,
-      _resubscribeTopicsErrorInProgress5: false,
-      _resubscribeTopicsErrorCallback6: jest.fn(),
-      _resubscribeTopicsError6: null,
-      _resubscribeTopicsErrorTimer6: null,
-      _resubscribeTopicsErrorTimeout6: 0,
-      _resubscribeTopicsErrorInProgress6: false,
-      _resubscribeTopicsErrorCallback7: jest.fn(),
-      _resubscribeTopicsError7: null,
-      _resubscribeTopicsErrorTimer7: null,
-      _resubscribeTopicsErrorTimeout7: 0,
-      _resubscribeTopicsErrorInProgress7: false,
-      _resubscribeTopicsErrorCallback8: jest.fn(),
-      _resubscribeTopicsError8: null,
-      _resubscribeTopicsErrorTimer8: null,
-      _resubscribeTopicsErrorTimeout8: 0,
-      _resubscribeTopicsErrorInProgress8: false,
-      _resubscribeTopicsErrorCallback9: jest.fn(),
-      _resubscribeTopicsError9: null,
-      _resubscribeTopicsErrorTimer9: null,
-      _resubscribeTopicsErrorTimeout9: 0,
-      _resubscribeTopicsErrorInProgress9: false,
-      _resubscribeTopicsErrorCallback10: jest.fn(),
-      _resubscribeTopicsError10: null,
-      _resubscribeTopicsErrorTimer10: null,
-      _resubscribeTopicsErrorTimeout10: 0,
-      _resubscribeTopicsErrorInProgress10: false,
-      // Add more properties as needed for your codebase or use a proper mock library
     } as any;
     mqttClient['connected'] = true;
     await mqttClient.disconnect();
@@ -237,7 +143,7 @@ describe('MQTTClient', () => {
 
   it('should publish message if connected', async () => {
     const mqttClient = createMQTTClient();
-    mqttClient['client'] = client;
+    mqttClient['mqttClient'] = client;
     mqttClient['connected'] = true;
     const request = { toMqttRequest: jest.fn(() => 'req') };
     await mqttClient.send('duid1', request as any);
@@ -247,7 +153,7 @@ describe('MQTTClient', () => {
 
   it('should log error if send called when not connected', async () => {
     const mqttClient = createMQTTClient();
-    mqttClient['client'] = undefined;
+    mqttClient['mqttClient'] = undefined;
     mqttClient['connected'] = false;
     const request = { toMqttRequest: jest.fn() };
     await mqttClient.send('duid1', request as any);
@@ -257,7 +163,7 @@ describe('MQTTClient', () => {
 
   it('onConnect should set connected, call onConnected, and subscribeToQueue', async () => {
     const mqttClient = createMQTTClient();
-    mqttClient['client'] = client;
+    mqttClient['mqttClient'] = client;
     mqttClient['subscribeToQueue'] = jest.fn();
     await mqttClient['onConnect']({} as any);
     expect(mqttClient['connected']).toBe(true);
@@ -267,14 +173,15 @@ describe('MQTTClient', () => {
 
   it('subscribeToQueue should call client.subscribe with correct topic', () => {
     const mqttClient = createMQTTClient();
-    mqttClient['client'] = client;
+    mqttClient['mqttClient'] = client;
+    mqttClient['connected'] = true;
     mqttClient['subscribeToQueue']();
     expect(client.subscribe).toHaveBeenCalledWith('rr/m/o/user/c6d6afb9/#', expect.any(Function));
   });
 
   it('onSubscribe should log error and call onDisconnected if error', async () => {
     const mqttClient = createMQTTClient();
-    await mqttClient['onSubscribe'](new Error('fail'));
+    await mqttClient['onSubscribe'](new Error('fail'), undefined);
     expect(logger.error).toHaveBeenCalledWith(expect.stringContaining('failed to subscribe'));
     expect(mqttClient['connected']).toBe(false);
     expect(connectionListeners.onDisconnected).toHaveBeenCalled();
@@ -282,7 +189,7 @@ describe('MQTTClient', () => {
 
   it('onSubscribe should do nothing if no error', async () => {
     const mqttClient = createMQTTClient();
-    await mqttClient['onSubscribe'](null);
+    await mqttClient['onSubscribe'](null, undefined);
     expect(logger.error).not.toHaveBeenCalled();
     expect(connectionListeners.onDisconnected).not.toHaveBeenCalled();
   });

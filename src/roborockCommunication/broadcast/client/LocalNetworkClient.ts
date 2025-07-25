@@ -9,7 +9,6 @@ import { Sequence } from '../../helper/sequence.js';
 import { ChunkBuffer } from '../../helper/chunkBuffer.js';
 
 export class LocalNetworkClient extends AbstractClient {
-  protected override changeToSecureConnection: (duid: string) => void;
   protected override clientName = 'LocalNetworkClient';
   protected override shouldReconnect = true;
 
@@ -20,29 +19,32 @@ export class LocalNetworkClient extends AbstractClient {
   duid: string;
   ip: string;
 
-  constructor(logger: AnsiLogger, context: MessageContext, duid: string, ip: string, inject: (duid: string) => void) {
+  constructor(logger: AnsiLogger, context: MessageContext, duid: string, ip: string) {
     super(logger, context);
     this.duid = duid;
     this.ip = ip;
     this.messageIdSeq = new Sequence(100000, 999999);
 
     this.initializeConnectionStateListener();
-    this.changeToSecureConnection = inject;
   }
 
   public connect(): void {
     if (this.socket) {
-      this.socket.destroy();
-      this.socket = undefined;
-      return;
+      return; // Already connected
     }
 
     this.socket = new Socket();
+
+    // Socket event listeners
     this.socket.on('close', this.onDisconnect.bind(this));
     this.socket.on('end', this.onEnd.bind(this));
     this.socket.on('error', this.onError.bind(this));
+    this.socket.on('connect', this.onConnect.bind(this));
+    this.socket.on('timeout', this.onTimeout.bind(this));
+
+    // Data event listener
     this.socket.on('data', this.onMessage.bind(this));
-    this.socket.connect(58867, this.ip, this.onConnect.bind(this));
+    this.socket.connect(58867, this.ip);
   }
 
   public async disconnect(): Promise<void> {
@@ -61,7 +63,7 @@ export class LocalNetworkClient extends AbstractClient {
 
   public async send(duid: string, request: RequestMessage): Promise<void> {
     if (!this.socket || !this.connected) {
-      this.logger.error(`${duid}: socket is not online, ${debugStringify(request)}`);
+      this.logger.error(`${duid}: socket is not online, , ${debugStringify(request)}`);
       return;
     }
 
@@ -73,17 +75,35 @@ export class LocalNetworkClient extends AbstractClient {
   }
 
   private async onConnect(): Promise<void> {
+    this.logger.debug(`LocalNetworkClient: ${this.duid} connected to ${this.ip}`);
+    this.logger.debug(`LocalNetworkClient: ${this.duid} socket writable: ${this.socket?.writable}, readable: ${this.socket?.readable}`);
     this.connected = true;
-    const address = this.socket?.address();
-    this.logger.debug(`${this.duid} connected to ${this.ip}, address: ${address ? debugStringify(address) : 'undefined'}`);
+    this.retryCount = 0;
+
     await this.sendHelloMessage();
     this.pingInterval = setInterval(this.sendPingRequest.bind(this), 5000);
     await this.connectionListeners.onConnected(this.duid);
-    this.retryCount = 0;
   }
 
   private async onEnd(): Promise<void> {
-    this.logger.notice('LocalNetworkClient: Socket has ended.');
+    await this.destroySocket('Socket has ended.');
+    await this.connectionListeners.onDisconnected(this.duid, 'Socket has ended.');
+  }
+
+  private async onDisconnect(hadError: boolean): Promise<void> {
+    await this.destroySocket(`Socket disconnected. Had error: ${hadError}`);
+
+    if (!hadError) {
+      await this.connectionListeners.onDisconnected(this.duid, 'Socket disconnected. Had no error.');
+    }
+  }
+
+  private async onTimeout(): Promise<void> {
+    this.logger.error(`LocalNetworkClient: Socket for ${this.duid} timed out.`);
+  }
+
+  private async destroySocket(message: string): Promise<void> {
+    this.logger.error(`LocalNetworkClient: Destroying socket for ${this.duid} due to: ${message}`);
     this.connected = false;
 
     if (this.socket) {
@@ -93,40 +113,26 @@ export class LocalNetworkClient extends AbstractClient {
     if (this.pingInterval) {
       clearInterval(this.pingInterval);
     }
-
-    await this.connectionListeners.onDisconnected(this.duid);
   }
 
-  private async onDisconnect(): Promise<void> {
-    this.logger.notice('LocalNetworkClient: Socket has disconnected.');
+  private async onError(error: Error): Promise<void> {
+    this.logger.error('LocalNetworkClient: Socket connection error: ' + error.message);
     this.connected = false;
 
     if (this.socket) {
       this.socket.destroy();
       this.socket = undefined;
     }
+
     if (this.pingInterval) {
       clearInterval(this.pingInterval);
     }
 
-    await this.connectionListeners.onDisconnected(this.duid);
-  }
-
-  private async onError(result: Error): Promise<void> {
-    this.logger.error('LocalNetworkClient: Socket connection error: ' + result);
-    this.connected = false;
-
-    if (this.socket) {
-      this.socket.destroy();
-      this.socket = undefined;
-    }
-
-    await this.connectionListeners.onError(this.duid, result.toString());
+    await this.connectionListeners.onError(this.duid, error.message);
   }
 
   private async onMessage(message: Buffer): Promise<void> {
     if (!this.socket) {
-      this.logger.error('unable to receive data if there is no socket available');
       return;
     }
 

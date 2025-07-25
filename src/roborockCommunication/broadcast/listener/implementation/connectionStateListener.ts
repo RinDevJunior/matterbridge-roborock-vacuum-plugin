@@ -7,21 +7,24 @@ export class ConnectionStateListener implements AbstractConnectionListener {
   protected client: AbstractClient;
   protected clientName: string;
   protected shouldReconnect: boolean;
-  protected changeToSecureConnection: (duid: string) => void;
 
-  constructor(logger: AnsiLogger, client: AbstractClient, clientName: string, changeToSecureConnection: (duid: string) => void, shouldReconnect = false) {
+  constructor(logger: AnsiLogger, client: AbstractClient, clientName: string, shouldReconnect = false) {
     this.logger = logger;
     this.client = client;
     this.clientName = clientName;
     this.shouldReconnect = shouldReconnect;
-    this.changeToSecureConnection = changeToSecureConnection;
   }
 
   public async onConnected(duid: string): Promise<void> {
     this.logger.notice(`Device ${duid} connected to ${this.clientName}`);
   }
 
-  public async onDisconnected(duid: string): Promise<void> {
+  public async onReconnect(duid: string, message: string): Promise<void> {
+    this.logger.info(`Device ${duid} reconnected to ${this.clientName} with message: ${message}`);
+  }
+
+  public async onDisconnected(duid: string, message: string): Promise<void> {
+    this.logger.error(`Device ${duid} disconnected from ${this.clientName} with message: ${message}`);
     if (!this.shouldReconnect) {
       this.logger.notice(`Device ${duid} disconnected from ${this.clientName}, but re-registration is disabled.`);
       return;
@@ -29,9 +32,6 @@ export class ConnectionStateListener implements AbstractConnectionListener {
 
     if (this.client.retryCount > 10) {
       this.logger.error(`Device with DUID ${duid} has exceeded retry limit, not re-registering.`);
-      if (this.changeToSecureConnection) {
-        this.changeToSecureConnection(duid);
-      }
       return;
     }
 
@@ -44,7 +44,10 @@ export class ConnectionStateListener implements AbstractConnectionListener {
     }
 
     this.logger.info(`Re-registering device with DUID ${duid} to ${this.clientName}`);
-    this.client.connect();
+
+    setTimeout(() => {
+      this.client.connect();
+    }, 3000);
 
     this.client.isInDisconnectingStep = false;
   }

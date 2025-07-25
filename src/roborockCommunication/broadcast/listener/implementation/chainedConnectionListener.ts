@@ -13,15 +13,21 @@ export class ChainedConnectionListener implements AbstractConnectionListener {
     }
   }
 
-  public async onDisconnected(duid: string): Promise<void> {
+  public async onDisconnected(duid: string, message: string): Promise<void> {
     for (const listener of this.listeners) {
-      await listener.onDisconnected(duid);
+      await listener.onDisconnected(duid, message);
     }
   }
 
   public async onError(duid: string, message: string): Promise<void> {
     for (const listener of this.listeners) {
       await listener.onError(duid, message);
+    }
+  }
+
+  public async onReconnect(duid: string, message: string): Promise<void> {
+    for (const listener of this.listeners) {
+      await listener.onReconnect(duid, message);
     }
   }
 }
