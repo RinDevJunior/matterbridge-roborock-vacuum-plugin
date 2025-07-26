@@ -28,10 +28,10 @@ export class SyncMessageListener implements AbstractMessageListener {
       const messageId = dps.id;
 
       const responseHandler = this.pending.get(messageId);
-      const result = dps.result as Record<string, unknown>;
-      if (result && result.length == 1 && result[0] == 'ok') {
-        return;
-      }
+      // const result = dps.result as Record<string, unknown>;
+      // if (result && result.length == 1 && result[0] == 'ok') {
+      //   return;
+      // }
 
       if (responseHandler) {
         responseHandler(dps.result as ResponseMessage);
