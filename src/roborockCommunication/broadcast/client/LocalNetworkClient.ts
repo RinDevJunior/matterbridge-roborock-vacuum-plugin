@@ -16,6 +16,7 @@ export class LocalNetworkClient extends AbstractClient {
   private buffer: ChunkBuffer = new ChunkBuffer();
   private messageIdSeq: Sequence;
   private pingInterval?: NodeJS.Timeout;
+  private keepConnectionAliveInterval: NodeJS.Timeout | undefined = undefined;
   duid: string;
   ip: string;
 
@@ -45,6 +46,8 @@ export class LocalNetworkClient extends AbstractClient {
     // Data event listener
     this.socket.on('data', this.onMessage.bind(this));
     this.socket.connect(58867, this.ip);
+
+    this.keepConnectionAlive();
   }
 
   public async disconnect(): Promise<void> {
@@ -75,35 +78,19 @@ export class LocalNetworkClient extends AbstractClient {
   }
 
   private async onConnect(): Promise<void> {
-    this.logger.debug(`LocalNetworkClient: ${this.duid} connected to ${this.ip}`);
-    this.logger.debug(`LocalNetworkClient: ${this.duid} socket writable: ${this.socket?.writable}, readable: ${this.socket?.readable}`);
-    this.connected = true;
-    this.retryCount = 0;
+    this.logger.debug(` [LocalNetworkClient]: ${this.duid} connected to ${this.ip}`);
+    this.logger.debug(` [LocalNetworkClient]: ${this.duid} socket writable: ${this.socket?.writable}, readable: ${this.socket?.readable}`);
 
     await this.sendHelloMessage();
     this.pingInterval = setInterval(this.sendPingRequest.bind(this), 5000);
+
+    this.connected = true;
+    this.retryCount = 0;
     await this.connectionListeners.onConnected(this.duid);
   }
 
-  private async onEnd(): Promise<void> {
-    await this.destroySocket('Socket has ended.');
-    await this.connectionListeners.onDisconnected(this.duid, 'Socket has ended.');
-  }
-
   private async onDisconnect(hadError: boolean): Promise<void> {
-    await this.destroySocket(`Socket disconnected. Had error: ${hadError}`);
-
-    if (!hadError) {
-      await this.connectionListeners.onDisconnected(this.duid, 'Socket disconnected. Had no error.');
-    }
-  }
-
-  private async onTimeout(): Promise<void> {
-    this.logger.error(`LocalNetworkClient: Socket for ${this.duid} timed out.`);
-  }
-
-  private async destroySocket(message: string): Promise<void> {
-    this.logger.error(`LocalNetworkClient: Destroying socket for ${this.duid} due to: ${message}`);
+    this.logger.info(` [LocalNetworkClient]: ${this.duid} socket disconnected. Had error: ${hadError}`);
     this.connected = false;
 
     if (this.socket) {
@@ -113,22 +100,20 @@ export class LocalNetworkClient extends AbstractClient {
     if (this.pingInterval) {
       clearInterval(this.pingInterval);
     }
+    await this.connectionListeners.onDisconnected(this.duid, 'Socket disconnected. Had no error.');
   }
 
   private async onError(error: Error): Promise<void> {
-    this.logger.error('LocalNetworkClient: Socket connection error: ' + error.message);
-    this.connected = false;
-
-    if (this.socket) {
-      this.socket.destroy();
-      this.socket = undefined;
-    }
-
-    if (this.pingInterval) {
-      clearInterval(this.pingInterval);
-    }
-
+    this.logger.error(` [LocalNetworkClient]: Socket error for ${this.duid}: ${error.message}`);
     await this.connectionListeners.onError(this.duid, error.message);
+  }
+
+  private async onTimeout(): Promise<void> {
+    this.logger.error(` [LocalNetworkClient]: Socket for ${this.duid} timed out.`);
+  }
+
+  private async onEnd(): Promise<void> {
+    this.logger.debug(` [LocalNetworkClient]: ${this.duid} socket ended.`);
   }
 
   private async onMessage(message: Buffer): Promise<void> {
@@ -211,5 +196,22 @@ export class LocalNetworkClient extends AbstractClient {
       messageId: this.messageIdSeq.next(),
     });
     await this.send(this.duid, request);
+  }
+
+  private keepConnectionAlive(): void {
+    if (this.keepConnectionAliveInterval) {
+      clearTimeout(this.keepConnectionAliveInterval);
+      this.keepConnectionAliveInterval.unref();
+    }
+
+    this.keepConnectionAliveInterval = setInterval(
+      () => {
+        if (this.socket === undefined || !this.connected || !this.socket.writable || this.socket.readable) {
+          this.logger.debug(` [LocalNetworkClient]: ${this.duid} socket is not writable or readable, reconnecting...`);
+          this.connect();
+        }
+      },
+      60 * 60 * 1000,
+    );
   }
 }

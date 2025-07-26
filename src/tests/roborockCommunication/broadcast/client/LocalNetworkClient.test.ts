@@ -43,6 +43,7 @@ describe('LocalNetworkClient', () => {
       debug: jest.fn(),
       error: jest.fn(),
       notice: jest.fn(),
+      info: jest.fn(),
     };
     mockContext = {};
     mockSocket = {
@@ -134,7 +135,7 @@ describe('LocalNetworkClient', () => {
       jest.fn();
     }, 1000);
     await (client as any).onDisconnect();
-    expect(mockLogger.error).toHaveBeenCalled();
+    expect(mockLogger.info).toHaveBeenCalled();
     expect(client['connected']).toBe(false);
     expect(mockSocket.destroy).toHaveBeenCalled();
     expect(client['socket']).toBeUndefined();
@@ -144,10 +145,7 @@ describe('LocalNetworkClient', () => {
   it('onError() should log, set connected false, destroy socket, call onError', async () => {
     client['socket'] = mockSocket;
     await (client as any).onError(new Error('fail'));
-    expect(mockLogger.error).toHaveBeenCalledWith(expect.stringContaining('Socket connection error'));
-    expect(client['connected']).toBe(false);
-    expect(mockSocket.destroy).toHaveBeenCalled();
-    expect(client['socket']).toBeUndefined();
+    expect(mockLogger.error).toHaveBeenCalledWith(expect.stringContaining(' [LocalNetworkClient]: Socket error for'));
     expect(client['connectionListeners'].onError).toHaveBeenCalledWith('duid1', expect.stringContaining('fail'));
   });
 
