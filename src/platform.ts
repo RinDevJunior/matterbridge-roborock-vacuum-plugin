@@ -4,7 +4,7 @@ import { AnsiLogger, debugStringify, LogLevel } from 'matterbridge/logger';
 import RoborockService from './roborockService.js';
 import { PLUGIN_NAME } from './settings.js';
 import ClientManager from './clientManager.js';
-import { isSupportedDevice } from './helper.js';
+import { getRoomMapFromDevice, isSupportedDevice } from './helper.js';
 import { PlatformRunner } from './platformRunner.js';
 import { RoborockVacuumCleaner } from './rvc.js';
 import { configurateBehavior } from './behaviorFactory.js';
@@ -231,7 +231,7 @@ export class RoborockMatterbridgePlatform extends MatterbridgeDynamicPlatform {
       vacuum.rooms = rooms.map((room) => ({ id: room.id, name: room.displayName }) as Room);
     }
 
-    const roomMap = await this.platformRunner.getRoomMapFromDevice(vacuum);
+    const roomMap = await getRoomMapFromDevice(vacuum, this);
 
     this.log.debug('Initializing - roomMap: ', debugStringify(roomMap));
 

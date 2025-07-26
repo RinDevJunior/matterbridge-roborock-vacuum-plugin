@@ -104,7 +104,7 @@ describe('MessageProcessor', () => {
 
   it('findMyRobot should call client.send', async () => {
     await processor.findMyRobot('duid');
-    expect(mockClient.send).toHaveBeenCalledWith('duid', expect.any(Object));
+    expect(mockClient.get).toHaveBeenCalledWith('duid', expect.any(Object));
   });
 
   it('getCleanModeData should parse and return correct values', async () => {

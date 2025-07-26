@@ -1,11 +1,9 @@
-import RoomMap from '../model/RoomMap';
-import { RoborockMatterbridgePlatform } from '../platform';
-import { PlatformRunner } from '../platformRunner';
+import { getRoomMapFromDevice } from '../helper';
+import { RoomMap } from '../model/RoomMap';
 import { MapInfo } from '../roborockCommunication';
 
 describe('PlatformRunner.getRoomMapFromDevice', () => {
   let platform: any;
-  let runner: PlatformRunner;
 
   beforeEach(() => {
     platform = {
@@ -19,7 +17,6 @@ describe('PlatformRunner.getRoomMapFromDevice', () => {
         getMapInformation: jest.fn(),
       },
     };
-    runner = new PlatformRunner(platform as RoborockMatterbridgePlatform);
   });
 
   it('returns RoomMap with roomData from getRoomMappings if available', async () => {
@@ -42,7 +39,7 @@ describe('PlatformRunner.getRoomMapFromDevice', () => {
     platform.roborockService.getRoomMappings.mockResolvedValue(roomData);
     platform.roborockService.getMapInformation.mockResolvedValue(undefined);
 
-    const result = await runner.getRoomMapFromDevice(device as any);
+    const result = await getRoomMapFromDevice(device as any, platform);
 
     expect(result).toBeInstanceOf(RoomMap);
     expect(result.rooms.length).toEqual(4);
@@ -83,7 +80,7 @@ describe('PlatformRunner.getRoomMapFromDevice', () => {
     platform.roborockService.getRoomMappings.mockResolvedValue(undefined);
     platform.roborockService.getMapInformation.mockResolvedValue(mapInfo);
 
-    const result = await runner.getRoomMapFromDevice(device as any);
+    const result = await getRoomMapFromDevice(device as any, platform);
 
     expect(result).toBeInstanceOf(RoomMap);
     expect(result.rooms.length).toEqual(4);

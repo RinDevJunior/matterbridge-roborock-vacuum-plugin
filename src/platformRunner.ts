@@ -1,10 +1,9 @@
 import { RvcRunMode, PowerSource, ServiceArea, RvcOperationalState, RvcCleanMode } from 'matterbridge/matter/clusters';
-import { getVacuumProperty } from './helper.js';
+import { getRoomMap, getVacuumProperty, isStatusUpdate } from './helper.js';
 import { getRunningMode } from './initialData/getSupportedRunModes.js';
 import { CloudMessageModel } from './model/CloudMessageModel.js';
 import { RoborockMatterbridgePlatform } from './platform.js';
 import { state_to_matter_operational_status, state_to_matter_state } from './share/function.js';
-import RoomMap from './model/RoomMap.js';
 import { getBatteryState, getBatteryStatus, getOperationalErrorState } from './initialData/index.js';
 import { NotifyMessageTypes } from './notifyMessageTypes.js';
 import { CloudMessageResult } from './roborockCommunication/Zmodel/messageResult.js';
@@ -39,76 +38,6 @@ export class PlatformRunner {
 
     const homeData = await platform.roborockService.getHomeDataForUpdating(platform.rrHomeId);
     await this.updateRobot(NotifyMessageTypes.HomeData, homeData);
-  }
-
-  public async getRoomMapFromDevice(device: Device): Promise<RoomMap> {
-    const platform = this.platform;
-    const rooms = device?.rooms ?? [];
-
-    platform.log.notice('-------------------------------------------0--------------------------------------------------------');
-    platform.log.notice(`getRoomMapFromDevice: ${debugStringify(rooms)}`);
-
-    if (device && platform.roborockService) {
-      const roomData = await platform.roborockService.getRoomMappings(device.duid);
-      if (roomData !== undefined && roomData.length > 0) {
-        platform.log.notice(`getRoomMapFromDevice - roomData: ${debugStringify(roomData ?? [])}`);
-
-        const roomMap = new RoomMap(roomData ?? [], rooms);
-
-        platform.log.notice(`getRoomMapFromDevice - roomMap: ${debugStringify(roomMap)}`);
-        platform.log.notice('-------------------------------------------1--------------------------------------------------------');
-        return roomMap;
-      }
-
-      const mapInfo = await platform.roborockService.getMapInformation(device.duid);
-      platform.log.notice(`getRoomMapFromDevice - mapInfo: ${mapInfo ? debugStringify(mapInfo) : 'undefined'}`);
-
-      if (mapInfo && mapInfo.maps && mapInfo.maps.length > 0) {
-        const roomDataMap = mapInfo.maps[0].rooms.map((r) => [r.id, parseInt(r.iot_name_id), r.tag] as [number, number, number]);
-
-        const roomMap = new RoomMap(roomDataMap, rooms);
-
-        platform.log.notice(`getRoomMapFromDevice - roomMap: ${debugStringify(roomMap)}`);
-        platform.log.notice('-------------------------------------------2--------------------------------------------------------');
-        return roomMap;
-      }
-    }
-
-    return new RoomMap([], rooms);
-  }
-
-  private async getRoomMap(duid: string): Promise<RoomMap | undefined> {
-    const platform = this.platform;
-
-    const robot = platform.robots.get(duid);
-    if (robot === undefined) {
-      platform.log.error(`Error6: Robot with DUID ${duid} not found`);
-      return undefined;
-    }
-
-    if (platform.roborockService === undefined) return undefined;
-
-    const rooms = robot.device.rooms ?? [];
-    // if (platform.robot?.device === undefined || platform.roborockService === undefined) return undefined;
-    if (robot.roomInfo === undefined) {
-      const roomData = await platform.roborockService.getRoomMappings(robot.device.duid);
-      if (roomData !== undefined && roomData.length > 0) {
-        robot.roomInfo = new RoomMap(roomData ?? [], rooms);
-        return robot.roomInfo;
-      }
-    }
-
-    if (robot.roomInfo === undefined) {
-      const mapInfo = await platform.roborockService.getMapInformation(robot.device.duid);
-      if (mapInfo && mapInfo.maps && mapInfo.maps.length > 0) {
-        platform.log.error(`getRoomMap - mapInfo: ${debugStringify(mapInfo.maps)}`);
-
-        const roomDataMap = mapInfo.maps[0].rooms.map((r) => [r.id, parseInt(r.iot_name_id), r.tag] as [number, number, number]);
-        robot.roomInfo = new RoomMap(roomDataMap, rooms);
-      }
-    }
-
-    return robot.roomInfo;
   }
 
   private async updateFromMQTTMessage(messageSource: NotifyMessageTypes, messageData: unknown, duid = '', tracked = false): Promise<void> {
@@ -191,7 +120,7 @@ export class PlatformRunner {
             robot.updateAttribute(ServiceArea.Cluster.id, 'selectedAreas', [], platform.log);
           } else {
             const currentMappedAreas = this.platform.roborockService?.getSupportedAreas(duid);
-            const roomMap = await this.getRoomMap(duid);
+            const roomMap = await getRoomMap(duid, this.platform);
 
             // Get current room from segment_id
             const segment_id = data.cleaning_info?.segment_id ?? -1;
@@ -311,7 +240,7 @@ export class PlatformRunner {
         case Protocol.rpc_response: {
           const response = data.dps[messageType] as DpsPayload;
           // ignore network info
-          if (!self.isStatusUpdate(response.result)) {
+          if (!isStatusUpdate(response.result)) {
             platform.log.debug('Ignore message:', debugStringify(data));
             return;
           }
@@ -396,18 +325,6 @@ export class PlatformRunner {
       }
     }
     return undefined;
-  }
-
-  private isStatusUpdate(result: unknown): boolean {
-    return (
-      Array.isArray(result) &&
-      result.length > 0 &&
-      typeof result[0] === 'object' &&
-      result[0] !== null &&
-      'msg_ver' in result[0] &&
-      (result[0] as CloudMessageResult).msg_ver !== undefined &&
-      (result[0] as CloudMessageResult).msg_ver !== null
-    );
   }
 
   private updateFromHomeData(homeData: Home): void {

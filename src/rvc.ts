@@ -1,5 +1,5 @@
 import { RoboticVacuumCleaner } from 'matterbridge/devices';
-import RoomMap from './model/RoomMap.js';
+import { RoomMap } from './model/RoomMap.js';
 import { Device } from './roborockCommunication/index.js';
 import { getOperationalStates, getSupportedAreas, getSupportedCleanModes, getSupportedRunModes } from './initialData/index.js';
 import { AnsiLogger } from 'matterbridge/logger';

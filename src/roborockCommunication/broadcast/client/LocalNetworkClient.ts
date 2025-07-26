@@ -80,12 +80,11 @@ export class LocalNetworkClient extends AbstractClient {
   private async onConnect(): Promise<void> {
     this.logger.debug(` [LocalNetworkClient]: ${this.duid} connected to ${this.ip}`);
     this.logger.debug(` [LocalNetworkClient]: ${this.duid} socket writable: ${this.socket?.writable}, readable: ${this.socket?.readable}`);
+    this.connected = true;
+    this.retryCount = 0;
 
     await this.sendHelloMessage();
     this.pingInterval = setInterval(this.sendPingRequest.bind(this), 5000);
-
-    this.connected = true;
-    this.retryCount = 0;
     await this.connectionListeners.onConnected(this.duid);
   }
 

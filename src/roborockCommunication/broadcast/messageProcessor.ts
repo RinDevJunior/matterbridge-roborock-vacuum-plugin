@@ -105,9 +105,9 @@ export class MessageProcessor {
     return this.client.get(duid, def);
   }
 
-  public async findMyRobot(duid: string): Promise<void> {
+  public async findMyRobot(duid: string): Promise<unknown> {
     const request = new RequestMessage({ method: 'find_me' });
-    return this.client.send(duid, request);
+    return this.client.get(duid, request);
   }
 
   public async getCleanModeData(duid: string): Promise<{ suctionPower: number; waterFlow: number; distance_off: number; mopRoute: number }> {
