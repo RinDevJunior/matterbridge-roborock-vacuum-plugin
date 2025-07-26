@@ -43,11 +43,10 @@ export class ConnectionStateListener implements AbstractConnectionListener {
       return;
     }
 
-    this.logger.info(`Re-registering device with DUID ${duid} to ${this.clientName}`);
-
     setTimeout(() => {
+      this.logger.info(`Re-registering device with DUID ${duid} to ${this.clientName}`);
       this.client.connect();
-    }, 3000);
+    }, 10000);
 
     this.client.isInDisconnectingStep = false;
   }

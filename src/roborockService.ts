@@ -274,7 +274,7 @@ export default class RoborockService {
         await messageProcessor.getDeviceStatus(device.duid).then((response: DeviceStatus | undefined) => {
           if (self.deviceNotify && response) {
             const message = { duid: device.duid, ...response.errorStatus, ...response.message } as DeviceStatusNotify;
-            self.logger.debug('Device status update', debugStringify(message));
+            self.logger.debug('Socket - Device status update', debugStringify(message));
             self.deviceNotify(NotifyMessageTypes.LocalMessage, message);
           }
         });
@@ -282,6 +282,26 @@ export default class RoborockService {
         self.logger.error('Local client not initialized');
       }
     }, this.refreshInterval * 1000);
+  }
+
+  public activateDeviceNotifyOverMQTT(device: Device): void {
+    // eslint-disable-next-line @typescript-eslint/no-this-alias
+    const self = this;
+    this.logger.notice('Requesting device info for device over MQTT', device.duid);
+    const messageProcessor = this.getMessageProcessor(device.duid);
+    this.requestDeviceStatusInterval = setInterval(async () => {
+      if (messageProcessor) {
+        await messageProcessor.getDeviceStatusOverMQTT(device.duid).then((response: DeviceStatus | undefined) => {
+          if (self.deviceNotify && response) {
+            const message = { duid: device.duid, ...response.errorStatus, ...response.message } as DeviceStatusNotify;
+            self.logger.debug('MQTT - Device status update', debugStringify(message));
+            self.deviceNotify(NotifyMessageTypes.LocalMessage, message);
+          }
+        });
+      } else {
+        self.logger.error('Local client not initialized');
+      }
+    }, this.refreshInterval * 500);
   }
 
   public async listDevices(username: string): Promise<Device[]> {

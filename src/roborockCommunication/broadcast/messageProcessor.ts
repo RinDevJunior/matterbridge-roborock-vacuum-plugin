@@ -34,17 +34,24 @@ export class MessageProcessor {
     return await this.client.get(duid, request);
   }
 
-  // public async getDeviceStatus(duid: string): Promise<DeviceStatus> {
-  //   const request = new RequestMessage({ method: 'get_status' });
-  //   return this.client.get<CloudMessageResult[]>(duid, request).then((response) => new DeviceStatus(response[0]));
-  // }
-
   public async getDeviceStatus(duid: string): Promise<DeviceStatus | undefined> {
     const request = new RequestMessage({ method: 'get_status' });
     const response = await this.client.get<CloudMessageResult[]>(duid, request);
 
     if (response) {
       this.logger?.debug('Device status: ', debugStringify(response));
+      return new DeviceStatus(response);
+    }
+
+    return undefined;
+  }
+
+  public async getDeviceStatusOverMQTT(duid: string): Promise<DeviceStatus | undefined> {
+    const request = new RequestMessage({ method: 'get_status', secure: true });
+    const response = await this.client.get<CloudMessageResult[]>(duid, request);
+
+    if (response) {
+      this.logger?.debug('MQTT - Device status: ', debugStringify(response));
       return new DeviceStatus(response);
     }
 
