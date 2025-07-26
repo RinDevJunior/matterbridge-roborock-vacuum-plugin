@@ -37,7 +37,7 @@ export class MQTTClient extends AbstractClient {
       password: this.mqttPassword,
       keepalive: 30,
       log: () => {
-        //...args: unknown[] this.logger.debug(`MQTTClient args: ${debugStringify(args)}`);
+        // ...args: unknown[] this.logger.debug(`MQTTClient args: ${debugStringify(args)}`);
       },
     });
 
