@@ -35,7 +35,7 @@ describe('SyncMessageListener', () => {
     expect(listener['pending'].has(messageId)).toBe(false);
   });
 
-  it('should not call resolve if result is ["ok"]', async () => {
+  it('should call resolve if result is ["ok"]', async () => {
     const resolve = jest.fn();
     const reject = jest.fn();
     const messageId = 456;
@@ -49,8 +49,8 @@ describe('SyncMessageListener', () => {
 
     await listener.onMessage(message);
 
-    expect(resolve).not.toHaveBeenCalled();
-    expect(listener['pending'].has(messageId)).toBe(true);
+    expect(resolve).toHaveBeenCalled();
+    expect(listener['pending'].has(messageId)).toBe(false);
   });
 
   it('should remove pending on map_response', async () => {
