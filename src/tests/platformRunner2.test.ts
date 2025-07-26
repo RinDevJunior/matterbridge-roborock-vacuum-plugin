@@ -1,4 +1,5 @@
-import RoomMap from '../model/RoomMap';
+import { getRoomMapFromDevice } from '../helper';
+import { RoomMap } from '../model/RoomMap';
 import { RoborockMatterbridgePlatform } from '../platform';
 import { PlatformRunner } from '../platformRunner';
 import { MapInfo } from '../roborockCommunication';
@@ -42,7 +43,7 @@ describe('PlatformRunner.getRoomMapFromDevice', () => {
     platform.roborockService.getRoomMappings.mockResolvedValue(roomData);
     platform.roborockService.getMapInformation.mockResolvedValue(undefined);
 
-    const result = await runner.getRoomMapFromDevice(device as any);
+    const result = await getRoomMapFromDevice(device as any, platform);
 
     expect(result).toBeInstanceOf(RoomMap);
     expect(result.rooms.length).toEqual(4);
@@ -83,7 +84,7 @@ describe('PlatformRunner.getRoomMapFromDevice', () => {
     platform.roborockService.getRoomMappings.mockResolvedValue(undefined);
     platform.roborockService.getMapInformation.mockResolvedValue(mapInfo);
 
-    const result = await runner.getRoomMapFromDevice(device as any);
+    const result = await getRoomMapFromDevice(device as any, platform);
 
     expect(result).toBeInstanceOf(RoomMap);
     expect(result.rooms.length).toEqual(4);

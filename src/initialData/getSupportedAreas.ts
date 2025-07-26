@@ -1,6 +1,6 @@
 import { AnsiLogger, debugStringify } from 'matterbridge/logger';
 import { ServiceArea } from 'matterbridge/matter/clusters';
-import RoomMap from '../model/RoomMap.js';
+import { RoomMap } from '../model/RoomMap.js';
 import { Room } from '../roborockCommunication/Zmodel/room.js';
 import { randomInt } from 'node:crypto';
 
