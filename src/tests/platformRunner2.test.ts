@@ -1,12 +1,9 @@
 import { getRoomMapFromDevice } from '../helper';
 import { RoomMap } from '../model/RoomMap';
-import { RoborockMatterbridgePlatform } from '../platform';
-import { PlatformRunner } from '../platformRunner';
 import { MapInfo } from '../roborockCommunication';
 
 describe('PlatformRunner.getRoomMapFromDevice', () => {
   let platform: any;
-  let runner: PlatformRunner;
 
   beforeEach(() => {
     platform = {
@@ -20,7 +17,6 @@ describe('PlatformRunner.getRoomMapFromDevice', () => {
         getMapInformation: jest.fn(),
       },
     };
-    runner = new PlatformRunner(platform as RoborockMatterbridgePlatform);
   });
 
   it('returns RoomMap with roomData from getRoomMappings if available', async () => {
