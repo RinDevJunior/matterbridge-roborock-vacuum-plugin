@@ -17,30 +17,34 @@ roomMap = {
 
 import { Room } from '../roborockCommunication/Zmodel/room.js';
 
+export interface RoomMapEntry {
+  id: number;
+  globalId: number | undefined;
+  displayName?: string;
+  alternativeId: string;
+}
+
 export class RoomMap {
-  readonly rooms: {
-    id: number;
-    globalId: number | undefined;
-    displayName: string | undefined;
-    alternativeId: string;
-  }[] = [];
+  readonly rooms: RoomMapEntry[];
 
   constructor(roomData: number[][], rooms: Room[]) {
-    this.rooms = roomData.map((entry) => {
+    this.rooms = roomData.map(([id, globalId, altId]) => {
+      const room = rooms.find((r) => Number(r.id) === Number(globalId) || Number(r.id) === Number(id));
       return {
-        id: entry[0],
-        globalId: Number(entry[1]),
-        displayName: rooms.find((r) => Number(r.id) == Number(entry[1]))?.name,
-        alternativeId: `${entry[0]}${entry[2]}`,
+        id,
+        globalId: globalId !== undefined ? Number(globalId) : undefined,
+        displayName: room?.name,
+        alternativeId: `${id}${altId}`,
       };
     });
   }
 
+  // Optionally, add utility methods for clarity
   // getGlobalId(id: number): number | undefined {
-  //   return this.rooms.find((r) => Number(r.id) == Number(id))?.globalId;
+  //   return this.rooms.find((r) => r.id === id)?.globalId;
   // }
 
   // getRoomId(globalId: number): number | undefined {
-  //   return this.rooms.find((r) => Number(r.globalId) == Number(globalId))?.id;
+  //   return this.rooms.find((r) => r.globalId === globalId)?.id;
   // }
 }

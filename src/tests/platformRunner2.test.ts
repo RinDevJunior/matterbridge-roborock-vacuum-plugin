@@ -63,15 +63,48 @@ describe('PlatformRunner.getRoomMapFromDevice', () => {
       map_info: [
         {
           mapFlag: 0,
-          add_time: 1753281130,
-          length: 0,
-          name: '',
-          bak_maps: [{ mapFlag: 4, add_time: 1753187168 }],
+          add_time: 1753511673,
+          length: 9,
+          name: 'First Map',
+          bak_maps: [{ mapFlag: 4, add_time: 1753578164 }],
           rooms: [
             { id: 1, tag: 14, iot_name_id: '11100845', iot_name: 'Kitchen' },
             { id: 2, tag: 9, iot_name_id: '11100849', iot_name: 'Study' },
-            { id: 3, tag: 6, iot_name_id: '11100842', iot_name: 'Living room' },
+            {
+              id: 3,
+              tag: 6,
+              iot_name_id: '11100842',
+              iot_name: 'Living room',
+            },
             { id: 4, tag: 1, iot_name_id: '11100847', iot_name: 'Bedroom' },
+          ],
+        },
+        {
+          mapFlag: 1,
+          add_time: 1753579596,
+          length: 10,
+          name: 'Second Map',
+          bak_maps: [{ mapFlag: 5, add_time: 1753578579 }],
+          rooms: [
+            {
+              id: 1,
+              tag: 6,
+              iot_name_id: '11100842',
+              iot_name: 'Living room',
+            },
+            {
+              id: 2,
+              tag: 3,
+              iot_name_id: '12461114',
+              iot_name: 'Guest bedroom',
+            },
+            {
+              id: 3,
+              tag: 2,
+              iot_name_id: '12461109',
+              iot_name: 'Master bedroom',
+            },
+            { id: 4, tag: 7, iot_name_id: '12461111', iot_name: 'Balcony' },
           ],
         },
       ],
@@ -83,6 +116,6 @@ describe('PlatformRunner.getRoomMapFromDevice', () => {
     const result = await getRoomMapFromDevice(device as any, platform);
 
     expect(result).toBeInstanceOf(RoomMap);
-    expect(result.rooms.length).toEqual(4);
+    expect(result.rooms.length).toEqual(7);
   });
 });

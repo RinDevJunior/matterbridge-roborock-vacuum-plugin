@@ -1,6 +1,6 @@
 {
   "name": "matterbridge-roborock-vacuum-plugin",
-  "version": "1.1.0-rc15",
+  "version": "1.1.0-rc16",
   "description": "Matterbridge Roborock Vacuum Plugin",
   "author": "https://github.com/RinDevJunior",
   "license": "MIT",
@@ -36,12 +36,12 @@
   "scripts": {
     "precondition": "npm install -g matterbridge@3.1.7",
     "deepCleanB": "npm run deepClean && npm install && npm link matterbridge && npm run build && npm run matterbridge:add",
-    "start:roborock": "tsc && matterbridge -childbridge",
-    "buildpackage": "cd .. && tar --exclude-from='matterbridge-roborock-vacuum-plugin/.tarignore' -czvf matterbridge-roborock-vacuum-plugin-1.1.0-rc15.tgz matterbridge-roborock-vacuum-plugin && cd matterbridge-roborock-vacuum-plugin",
+    "start": "tsc && matterbridge -childbridge",
+    "buildpackage": "cd .. && tar --exclude-from='matterbridge-roborock-vacuum-plugin/.tarignore' -czvf matterbridge-roborock-vacuum-plugin-1.1.0-rc16.tgz matterbridge-roborock-vacuum-plugin && cd matterbridge-roborock-vacuum-plugin",
     "build": "tsc",
     "buildProduction": "tsc --project tsconfig.production.json",
     "watch": "tsc --watch",
-    "start": "matterbridge",
+    "start-matterbridge": "matterbridge",
     "start:bridge": "matterbridge -bridge",
     "start:childbridge": "matterbridge -childbridge",
     "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js",

@@ -8,6 +8,7 @@ export { ClientRouter } from './broadcast/clientRouter.js';
 export { DeviceStatus } from './Zmodel/deviceStatus.js';
 export { ResponseMessage } from './broadcast/model/responseMessage.js';
 export { MapInfo } from './Zmodel/mapInfo.js';
+export { AdditionalPropCode } from './Zenum/additionalPropCode.js';
 
 export { Scene } from './Zmodel/scene.js';
 
