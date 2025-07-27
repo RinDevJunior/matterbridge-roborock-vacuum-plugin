@@ -375,6 +375,7 @@ export default class RoborockService {
         },
       };
     }) as Device[];
+
     return result;
   }
 
@@ -444,12 +445,14 @@ export default class RoborockService {
     return this.iotApi.startScene(sceneId);
   }
 
-  public getRoomMappings(duid: string): Promise<number[][] | undefined> {
+  public async getRoomMappings(duid: string): Promise<number[][] | undefined> {
     if (!this.messageClient) {
       this.logger.warn('messageClient not initialized. Waititing for next execution');
       return Promise.resolve(undefined);
     }
     return this.messageClient.get(duid, new RequestMessage({ method: 'get_room_mapping', secure: this.isRequestSecure(duid) }));
+
+    //return await this.getMessageProcessor(duid)?.getRooms(duid);
   }
 
   public async initializeMessageClient(username: string, device: Device, userdata: UserData): Promise<void> {

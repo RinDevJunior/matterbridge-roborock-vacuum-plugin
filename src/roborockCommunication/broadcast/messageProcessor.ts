@@ -58,9 +58,9 @@ export class MessageProcessor {
     return undefined;
   }
 
-  public async getRooms(duid: string, rooms: Room[]): Promise<RoomInfo> {
+  public async getRooms(duid: string): Promise<number[][] | undefined> {
     const request = new RequestMessage({ method: 'get_room_mapping' });
-    return this.client.get<number[][] | undefined>(duid, request).then((response) => new RoomInfo(rooms, response ?? []));
+    return this.client.get<number[][] | undefined>(duid, request); //.then((response) => new RoomInfo(rooms, response ?? []));
   }
 
   public async gotoDock(duid: string): Promise<void> {

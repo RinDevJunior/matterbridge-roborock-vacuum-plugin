@@ -8,15 +8,16 @@ export function getSupportedAreas(vacuumRooms: Room[], roomMap: RoomMap | undefi
   log?.debug('getSupportedAreas-vacuum room', debugStringify(vacuumRooms));
   log?.debug('getSupportedAreas-roomMap', roomMap ? debugStringify(roomMap) : 'undefined');
 
-  if (!vacuumRooms || vacuumRooms.length === 0 || !roomMap?.rooms || roomMap.rooms.length == 0) {
-    if (!vacuumRooms || vacuumRooms.length === 0) {
+  const noVacuumRooms = !vacuumRooms || vacuumRooms.length === 0;
+  const noRoomMap = !roomMap?.rooms || roomMap.rooms.length === 0;
+
+  if (noVacuumRooms || noRoomMap) {
+    if (noVacuumRooms) {
       log?.error('No rooms found');
     }
-
-    if (!roomMap || !roomMap.rooms || roomMap.rooms.length == 0) {
+    if (noRoomMap) {
       log?.error('No room map found');
     }
-
     return [
       {
         areaId: 1,
@@ -34,12 +35,14 @@ export function getSupportedAreas(vacuumRooms: Room[], roomMap: RoomMap | undefi
   }
 
   const supportedAreas: ServiceArea.Area[] = roomMap.rooms.map((room) => {
+    const locationName = room.displayName ?? vacuumRooms.find((r) => r.id === room.globalId || r.id === room.id)?.name ?? `Unknown Room ${randomInt(1000, 9999)}`;
+
     return {
       areaId: room.id,
       mapId: null,
       areaInfo: {
         locationInfo: {
-          locationName: room.displayName ?? vacuumRooms.find((r) => r.id == room.globalId || r.id == room.id)?.name ?? `Unknown Room ${randomInt(1000, 9999)}`,
+          locationName,
           floorNumber: null,
           areaType: null,
         },
@@ -52,27 +55,30 @@ export function getSupportedAreas(vacuumRooms: Room[], roomMap: RoomMap | undefi
 
   const duplicated = findDuplicatedAreaIds(supportedAreas, log);
 
-  return duplicated
-    ? [
-        {
-          areaId: 2,
-          mapId: null,
-          areaInfo: {
-            locationInfo: {
-              locationName: 'Unknown',
-              floorNumber: null,
-              areaType: null,
-            },
-            landmarkInfo: null,
+  if (duplicated) {
+    return [
+      {
+        areaId: 2,
+        mapId: null,
+        areaInfo: {
+          locationInfo: {
+            locationName: 'Unknown',
+            floorNumber: null,
+            areaType: null,
           },
+          landmarkInfo: null,
         },
-      ]
-    : supportedAreas;
+      },
+    ];
+  }
+
+  return supportedAreas;
 }
 
 function findDuplicatedAreaIds(areas: ServiceArea.Area[], log?: AnsiLogger): boolean {
   const seen = new Set<number>();
   const duplicates: number[] = [];
+
   for (const area of areas) {
     if (seen.has(area.areaId)) {
       duplicates.push(area.areaId);
@@ -80,9 +86,11 @@ function findDuplicatedAreaIds(areas: ServiceArea.Area[], log?: AnsiLogger): boo
       seen.add(area.areaId);
     }
   }
+
   if (duplicates.length > 0 && log) {
     const duplicated = areas.filter((x) => duplicates.includes(x.areaId));
     log.error(`Duplicated areaId(s) found: ${debugStringify(duplicated)}`);
   }
+
   return duplicates.length > 0;
 }

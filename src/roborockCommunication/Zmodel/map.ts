@@ -1,4 +1,4 @@
-export interface Map {
+export interface MapInformation {
   mapFlag: number;
   add_time: number;
   length: number;

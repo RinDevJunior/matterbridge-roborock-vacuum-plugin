@@ -47,7 +47,6 @@ export async function getRoomMap(duid: string, platform: RoborockMatterbridgePla
   if (platform.roborockService === undefined) return undefined;
 
   const rooms = robot.device.rooms ?? [];
-  // if (platform.robot?.device === undefined || platform.roborockService === undefined) return undefined;
   if (robot.roomInfo === undefined) {
     const roomData = await platform.roborockService.getRoomMappings(robot.device.duid);
     if (roomData !== undefined && roomData.length > 0) {
@@ -58,10 +57,10 @@ export async function getRoomMap(duid: string, platform: RoborockMatterbridgePla
 
   if (robot.roomInfo === undefined) {
     const mapInfo = await platform.roborockService.getMapInformation(robot.device.duid);
-    if (mapInfo && mapInfo.maps && mapInfo.maps.length > 0) {
-      platform.log.error(`getRoomMap - mapInfo: ${debugStringify(mapInfo.maps)}`);
+    if (mapInfo && mapInfo.allRooms && mapInfo.allRooms.length > 0) {
+      platform.log.error(`getRoomMap - mapInfo: ${debugStringify(mapInfo.allRooms)}`);
 
-      const roomDataMap = mapInfo.maps[0].rooms.map((r) => [r.id, parseInt(r.iot_name_id), r.tag] as [number, number, number]);
+      const roomDataMap = mapInfo.allRooms.map((r) => [r.id, parseInt(r.iot_name_id), r.tag] as [number, number, number]);
       robot.roomInfo = new RoomMap(roomDataMap, rooms);
     }
   }
@@ -73,7 +72,7 @@ export async function getRoomMapFromDevice(device: Device, platform: RoborockMat
   const rooms = device?.rooms ?? [];
 
   platform.log.notice('-------------------------------------------0--------------------------------------------------------');
-  platform.log.notice(`getRoomMapFromDevice: ${debugStringify(rooms)}`);
+  platform.log.notice(`getRoomMapFromDevice - device.rooms: ${debugStringify(rooms)}`);
 
   if (device && platform.roborockService) {
     const roomData = await platform.roborockService.getRoomMappings(device.duid);
@@ -90,8 +89,8 @@ export async function getRoomMapFromDevice(device: Device, platform: RoborockMat
     const mapInfo = await platform.roborockService.getMapInformation(device.duid);
     platform.log.notice(`getRoomMapFromDevice - mapInfo: ${mapInfo ? debugStringify(mapInfo) : 'undefined'}`);
 
-    if (mapInfo && mapInfo.maps && mapInfo.maps.length > 0) {
-      const roomDataMap = mapInfo.maps[0].rooms.map((r) => [r.id, parseInt(r.iot_name_id), r.tag] as [number, number, number]);
+    if (mapInfo && mapInfo.allRooms && mapInfo.allRooms.length > 0) {
+      const roomDataMap = mapInfo.allRooms.map((r) => [r.id, parseInt(r.iot_name_id), r.tag] as [number, number, number]);
 
       const roomMap = new RoomMap(roomDataMap, rooms);
 

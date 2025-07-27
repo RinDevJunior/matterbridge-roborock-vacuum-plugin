@@ -55,7 +55,17 @@ describe('RoborockService - startClean', () => {
   });
 
   it('should return MapInfo if response contains maps', async () => {
-    const mapData = [{ map_info: [{}] }] as MultipleMap[];
+    const mapData = [
+      {
+        map_info: [
+          {
+            rooms: [{ id: 1, iot_name_id: 'room1', tag: 0, iot_name: 'Living Room' }],
+            mapFlag: 1,
+            name: 'Living Room Map',
+          },
+        ],
+      },
+    ] as MultipleMap[];
     mockMessageClient = {
       get: jest.fn(),
     };
