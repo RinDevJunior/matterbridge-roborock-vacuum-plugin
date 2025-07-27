@@ -114,8 +114,7 @@ describe('PlatformRunner.getRoomMapFromDevice', () => {
     platform.roborockService.getMapInformation.mockResolvedValue(mapInfo);
 
     const result = await getRoomMapFromDevice(device as any, platform);
-
     expect(result).toBeInstanceOf(RoomMap);
-    expect(result.rooms.length).toEqual(7);
+    expect(result.rooms.length).toEqual(8);
   });
 });

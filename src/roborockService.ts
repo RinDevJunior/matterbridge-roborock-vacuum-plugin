@@ -24,6 +24,7 @@ import {
 import type { AbstractMessageHandler, AbstractMessageListener, BatteryMessage, DeviceErrorMessage, DeviceStatusNotify, MultipleMap } from './roborockCommunication/index.js';
 import { ServiceArea } from 'matterbridge/matter/clusters';
 import { LocalNetworkClient } from './roborockCommunication/broadcast/client/LocalNetworkClient.js';
+import { RoomIndexMap } from './model/roomIndexMap.js';
 export type Factory<A, T> = (logger: AnsiLogger, arg: A) => T;
 
 export default class RoborockService {
@@ -48,6 +49,7 @@ export default class RoborockService {
   private supportedAreas = new Map<string, ServiceArea.Area[]>();
   private supportedRoutines = new Map<string, ServiceArea.Area[]>();
   private selectedAreas = new Map<string, number[]>();
+  private supportedAreaIndexMaps = new Map<string, RoomIndexMap>();
 
   private readonly vacuumNeedAPIV3 = ['roborock.vacuum.ss07'];
 
@@ -95,7 +97,13 @@ export default class RoborockService {
 
   public setSelectedAreas(duid: string, selectedAreas: number[]): void {
     this.logger.debug('RoborockService - setSelectedAreas', selectedAreas);
-    this.selectedAreas.set(duid, selectedAreas);
+
+    const areas = selectedAreas.map((areaId) => this.supportedAreaIndexMaps.get(duid)?.getRoomIndex(areaId)) ?? [];
+
+    this.selectedAreas.set(
+      duid,
+      areas.filter((area) => area !== undefined).map((area) => area!),
+    );
   }
 
   public getSelectedAreas(duid: string): number[] {
@@ -106,12 +114,20 @@ export default class RoborockService {
     this.supportedAreas.set(duid, supportedAreas);
   }
 
+  public setSupportedAreaIndexMap(duid: string, indexMap: RoomIndexMap): void {
+    this.supportedAreaIndexMaps.set(duid, indexMap);
+  }
+
   public setSupportedScenes(duid: string, routineAsRooms: ServiceArea.Area[]) {
     this.supportedRoutines.set(duid, routineAsRooms);
   }
 
   public getSupportedAreas(duid: string): ServiceArea.Area[] | undefined {
     return this.supportedAreas.get(duid);
+  }
+
+  public getSupportedAreasIndexMap(duid: string): RoomIndexMap | undefined {
+    return this.supportedAreaIndexMaps.get(duid);
   }
 
   public async getCleanModeData(duid: string): Promise<{ suctionPower: number; waterFlow: number; distance_off: number; mopRoute: number }> {

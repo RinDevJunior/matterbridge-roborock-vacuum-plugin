@@ -35,55 +35,55 @@ describe('getRoomMapFromDevice', () => {
     jest.clearAllMocks();
   });
 
-  //   it('returns RoomMap from getRoomMappings if available', async () => {
-  //     const device = {
-  //       duid: '123',
-  //       rooms: [
-  //         {
-  //           'id': 12461114,
-  //           'name': 'Guest bedroom',
-  //         },
-  //         {
-  //           'id': 12461111,
-  //           'name': 'Balcony',
-  //         },
-  //         {
-  //           'id': 12461109,
-  //           'name': 'Master bedroom',
-  //         },
-  //         {
-  //           'id': 11100849,
-  //           'name': 'Study',
-  //         },
-  //         {
-  //           'id': 11100847,
-  //           'name': 'Bedroom',
-  //         },
-  //         {
-  //           'id': 11100845,
-  //           'name': 'Kitchen',
-  //         },
-  //         {
-  //           'id': 11100842,
-  //           'name': 'Living room',
-  //         },
-  //       ],
-  //     };
-  //     mockRoborockService.getRoomMappings.mockResolvedValue([
-  //       [1, '11100842', 6],
-  //       [2, '12461114', 3],
-  //       [3, '12461109', 2],
-  //       [4, '12461111', 7],
-  //     ]);
-  //     mockRoborockService.getMapInformation.mockResolvedValue(undefined);
+  it('returns RoomMap from getRoomMappings if available', async () => {
+    const device = {
+      duid: '123',
+      rooms: [
+        {
+          'id': 12461114,
+          'name': 'Guest bedroom',
+        },
+        {
+          'id': 12461111,
+          'name': 'Balcony',
+        },
+        {
+          'id': 12461109,
+          'name': 'Master bedroom',
+        },
+        {
+          'id': 11100849,
+          'name': 'Study',
+        },
+        {
+          'id': 11100847,
+          'name': 'Bedroom',
+        },
+        {
+          'id': 11100845,
+          'name': 'Kitchen',
+        },
+        {
+          'id': 11100842,
+          'name': 'Living room',
+        },
+      ],
+    };
+    mockRoborockService.getRoomMappings.mockResolvedValue([
+      [1, '11100842', 6],
+      [2, '12461114', 3],
+      [3, '12461109', 2],
+      [4, '12461111', 7],
+    ]);
+    mockRoborockService.getMapInformation.mockResolvedValue(undefined);
 
-  //     const result = await getRoomMapFromDevice(device as any, mockPlatform as any);
+    const result = await getRoomMapFromDevice(device as any, mockPlatform as any);
 
-  //     //console.log('Result:', result);
-  //     expect(result).toBeInstanceOf(RoomMap);
-  //     expect(mockRoborockService.getRoomMappings).toHaveBeenCalledWith('123');
-  //     expect(result.rooms.length).toBeGreaterThan(0);
-  //   });
+    //console.log('Result:', result);
+    expect(result).toBeInstanceOf(RoomMap);
+    expect(mockRoborockService.getRoomMappings).toHaveBeenCalledWith('123');
+    expect(result.rooms.length).toBeGreaterThan(0);
+  });
 
   it('returns RoomMap from getRoomMappings if available', async () => {
     const device = {

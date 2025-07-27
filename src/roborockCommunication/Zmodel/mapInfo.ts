@@ -7,7 +7,7 @@ export interface MapRoom {
   iot_name_id: string;
   tag: number;
   globalId?: number;
-  displayName: string;
+  displayName?: string;
   mapId?: number;
 }
 
@@ -40,7 +40,7 @@ export class MapInfo {
       };
     });
 
-    this.allRooms = this.allRooms.filter((room, index, self) => index === self.findIndex((r) => r.globalId === room.globalId));
+    //this.allRooms = this.allRooms.filter((room, index, self) => index === self.findIndex((r) => r.globalId === room.globalId));
   }
 
   getById(id: number): string | undefined {
