@@ -1,6 +1,5 @@
 import { MessageProcessor } from '../../../roborockCommunication/broadcast/messageProcessor';
 import { DeviceStatus } from '../../../roborockCommunication/Zmodel/deviceStatus';
-import { RoomInfo } from '../../../roborockCommunication/Zmodel/roomInfo';
 
 describe('MessageProcessor', () => {
   let mockClient: any;

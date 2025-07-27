@@ -14,7 +14,7 @@ import { hasDockingStationError, parseDockingStationStatus } from './model/Docki
 import { AdditionalPropCode, BatteryMessage, Device, DeviceErrorMessage, DeviceStatusNotify, Home } from './roborockCommunication/index.js';
 import { OperationStatusCode } from './roborockCommunication/Zenum/operationStatusCode.js';
 import { getCurrentCleanModeFunc } from './share/runtimeHelper.js';
-import { debugStringify, pl } from 'matterbridge/logger';
+import { debugStringify } from 'matterbridge/logger';
 // import { getErrorFromErrorCode } from './initialData/getOperationalStates.js';
 
 export class PlatformRunner {

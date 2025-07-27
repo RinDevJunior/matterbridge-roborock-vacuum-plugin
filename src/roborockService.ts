@@ -452,7 +452,7 @@ export default class RoborockService {
     }
     return this.messageClient.get(duid, new RequestMessage({ method: 'get_room_mapping', secure: this.isRequestSecure(duid) }));
 
-    //return await this.getMessageProcessor(duid)?.getRooms(duid);
+    // return await this.getMessageProcessor(duid)?.getRooms(duid);
   }
 
   public async initializeMessageClient(username: string, device: Device, userdata: UserData): Promise<void> {
