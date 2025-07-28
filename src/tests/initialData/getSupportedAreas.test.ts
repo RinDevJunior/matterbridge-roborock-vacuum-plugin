@@ -48,6 +48,7 @@ describe('getSupportedAreas', () => {
           { id: 23, globalId: 1474466, displayName: 'Outside' },
         ],
       } as RoomMap,
+      false, // enableMultipleMap
       mockLogger as any,
     );
 
@@ -75,6 +76,7 @@ describe('getSupportedAreas', () => {
           { id: 20, globalId: 991190, displayName: undefined },
         ],
       } as RoomMap,
+      false, // enableMultipleMap
       mockLogger as any,
     );
 
@@ -102,6 +104,7 @@ describe('getSupportedAreas', () => {
           { id: 20, globalId: 991190, displayName: undefined },
         ],
       } as RoomMap,
+      false, // enableMultipleMap
       mockLogger as any,
     );
 
@@ -127,7 +130,7 @@ describe('getSupportedAreas', () => {
         { id: 20, globalId: 991190, displayName: undefined, alternativeId: '201' },
       ],
     };
-    const { supportedAreas } = getSupportedAreas(vacuumRooms, roomMap, mockLogger as any);
+    const { supportedAreas } = getSupportedAreas(vacuumRooms, roomMap, false, mockLogger as any);
 
     expect(supportedAreas.length).toEqual(5);
   });
@@ -168,10 +171,10 @@ describe('getSupportedAreas', () => {
 
     const mockLogger1 = {
       debug: jest.fn(),
-      notice: (message: string, ...args: any[]) => console.log(`DEBUG: ${message}`, ...args),
-      error: (message: string, ...args: any[]) => console.log(`ERROR: ${message}`, ...args),
+      notice: jest.fn(),
+      error: jest.fn(),
     };
-    const { supportedAreas, supportedMaps } = getSupportedAreas(vacuumRooms, roomMap, mockLogger1 as any);
+    const { supportedAreas, supportedMaps } = getSupportedAreas(vacuumRooms, roomMap, true, mockLogger1 as any);
     expect(supportedAreas.length).toEqual(8);
     expect(supportedMaps.length).toEqual(2);
   });

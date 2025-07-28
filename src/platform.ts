@@ -33,9 +33,9 @@ export class RoborockMatterbridgePlatform extends MatterbridgeDynamicPlatform {
     super(matterbridge, log, config);
 
     // Verify that Matterbridge is the correct version
-    if (this.verifyMatterbridgeVersion === undefined || typeof this.verifyMatterbridgeVersion !== 'function' || !this.verifyMatterbridgeVersion('3.1.7')) {
+    if (this.verifyMatterbridgeVersion === undefined || typeof this.verifyMatterbridgeVersion !== 'function' || !this.verifyMatterbridgeVersion('3.1.8')) {
       throw new Error(
-        `This plugin requires Matterbridge version >= "3.1.7". Please update Matterbridge from ${this.matterbridge.matterbridgeVersion} to the latest version in the frontend.`,
+        `This plugin requires Matterbridge version >= "3.1.8". Please update Matterbridge from ${this.matterbridge.matterbridgeVersion} to the latest version in the frontend.`,
       );
     }
     this.log.info('Initializing platform:', this.config.name);
@@ -244,7 +244,9 @@ export class RoborockMatterbridgePlatform extends MatterbridgeDynamicPlatform {
       this.log,
     );
 
-    const { supportedAreas, roomIndexMap } = getSupportedAreas(vacuum.rooms, roomMap, this.log);
+    const enableMultipleMap = this.enableExperimentalFeature?.enableExperimentalFeature && this.enableExperimentalFeature.advancedFeature?.enableMultipleMap;
+
+    const { supportedAreas, roomIndexMap } = getSupportedAreas(vacuum.rooms, roomMap, enableMultipleMap, this.log);
     this.roborockService.setSupportedAreas(vacuum.duid, supportedAreas);
     this.roborockService.setSupportedAreaIndexMap(vacuum.duid, roomIndexMap);
 

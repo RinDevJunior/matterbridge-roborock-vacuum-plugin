@@ -24,7 +24,9 @@ export class RoborockVacuumCleaner extends RoboticVacuumCleaner {
   ) {
     const cleanModes = getSupportedCleanModes(device.data.model, enableExperimentalFeature);
     const supportedRunModes = getSupportedRunModes();
-    const { supportedAreas, supportedMaps } = getSupportedAreas(device.rooms, roomMap, log);
+    const enableMultipleMap = enableExperimentalFeature?.enableExperimentalFeature && enableExperimentalFeature?.advancedFeature?.enableMultipleMap;
+
+    const { supportedAreas, supportedMaps } = getSupportedAreas(device.rooms, roomMap, enableMultipleMap, log);
     const supportedAreaAndRoutines = [...supportedAreas, ...routineAsRoom];
     const deviceName = `${device.name}-${device.duid}`.replace(/\s+/g, '');
 
@@ -51,7 +53,7 @@ export class RoborockVacuumCleaner extends RoboticVacuumCleaner {
       getOperationalStates(), // operationalStateList
       supportedAreaAndRoutines, // supportedAreas
       undefined, // selectedAreas
-      undefined, //supportedAreas[0].areaId, // currentArea
+      supportedAreas[0].areaId, // currentArea
       supportedMaps, // supportedMaps
     );
 

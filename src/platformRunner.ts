@@ -137,9 +137,9 @@ export class PlatformRunner {
                 `Part1: CurrentRoom: ${segment_id}, room name: ${roomMap?.rooms.find((x) => x.id === segment_id || x.alternativeId === segment_id.toString())?.displayName ?? 'unknown'}`,
               );
 
-              const roomIndex = roomIndexMap?.getRoomIndex(segment_id) ?? null;
+              const areaId = roomIndexMap?.getAreaId(segment_id) ?? null;
 
-              robot.updateAttribute(ServiceArea.Cluster.id, 'currentArea', roomIndex, platform.log);
+              robot.updateAttribute(ServiceArea.Cluster.id, 'currentArea', areaId, platform.log);
             }
 
             if (segment_id == -1) {
@@ -152,8 +152,8 @@ export class PlatformRunner {
                 this.platform.log.debug(
                   `Part2: TargetRoom: ${target_segment_id}, room name: ${roomMap?.rooms.find((x) => x.id === target_segment_id || x.alternativeId === segment_id.toString())?.displayName ?? 'unknown'}`,
                 );
-                const roomIndex = roomIndexMap?.getRoomIndex(target_segment_id) ?? null;
-                robot.updateAttribute(ServiceArea.Cluster.id, 'currentArea', roomIndex, platform.log);
+                const areaId = roomIndexMap?.getAreaId(target_segment_id) ?? null;
+                robot.updateAttribute(ServiceArea.Cluster.id, 'currentArea', areaId, platform.log);
               }
             }
 
@@ -289,25 +289,31 @@ export class PlatformRunner {
           platform.log.notice(`Received additional properties for robot ${duid}: ${debugStringify(data)}`);
           const propCode = data.dps[Protocol.additional_props] as number;
           platform.log.debug(`DPS for additional properties: ${propCode}, AdditionalPropCode: ${AdditionalPropCode[propCode]}`);
+          const enableMultipleMap =
+            (platform.enableExperimentalFeature?.enableExperimentalFeature && platform.enableExperimentalFeature?.advancedFeature?.enableMultipleMap) ?? false;
 
-          // if (propCode === AdditionalPropCode.map_change) {
-          //   platform.log.notice('------------------------ get roomData ----------------------------');
+          if (propCode === AdditionalPropCode.map_change) {
+            platform.log.notice('------------------------ get roomData ----------------------------');
 
-          //   const roomMap = await getRoomMapFromDevice(robot.device, platform);
+            const roomMap = await getRoomMapFromDevice(robot.device, platform);
 
-          //   platform.log.notice('------------------------ Room map updated ------------------------');
-          //   const { supportedAreas, supportedMaps, roomIndexMap } = getSupportedAreas(robot.device.rooms, roomMap, platform.log);
+            platform.log.notice('------------------------ Room map updated ------------------------');
+            const { supportedAreas, supportedMaps, roomIndexMap } = getSupportedAreas(robot.device.rooms, roomMap, enableMultipleMap, platform.log);
 
-          //   platform.log.notice(`Supported areas: ${debugStringify(supportedAreas)}`);
-          //   platform.log.notice('------------------------ Supported areas updated ------------------');
+            platform.log.notice(`Supported areas: ${debugStringify(supportedAreas)}`);
+            platform.log.notice('------------------------ Supported areas updated ------------------');
 
-          //   platform.roborockService?.setSupportedAreas(duid, supportedAreas);
-          //   platform.roborockService?.setSelectedAreas(duid, []);
-          //   robot.updateAttribute(ServiceArea.Cluster.id, 'supportedAreas', supportedAreas, platform.log);
-          //   robot.updateAttribute(ServiceArea.Cluster.id, 'selectedAreas', [], platform.log);
-          //   robot.updateAttribute(ServiceArea.Cluster.id, 'currentArea', null, platform.log);
-          //   robot.updateAttribute(ServiceArea.Cluster.id, 'supportedMaps', supportedMaps, platform.log);
-          // }
+            platform.roborockService?.setSupportedAreas(duid, supportedAreas);
+            platform.roborockService?.setSelectedAreas(duid, []);
+            robot.updateAttribute(ServiceArea.Cluster.id, 'supportedAreas', supportedAreas, platform.log);
+            robot.updateAttribute(ServiceArea.Cluster.id, 'selectedAreas', [], platform.log);
+            robot.updateAttribute(ServiceArea.Cluster.id, 'currentArea', null, platform.log);
+
+            if (enableMultipleMap) {
+              platform.roborockService?.setSupportedAreaIndexMap(duid, roomIndexMap);
+              robot.updateAttribute(ServiceArea.Cluster.id, 'supportedMaps', supportedMaps, platform.log);
+            }
+          }
           break;
         }
         case Protocol.back_type: {

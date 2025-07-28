@@ -35,8 +35,11 @@ export class RoomMap {
   readonly rooms: RoomMapEntry[];
   readonly mapInfo?: MapInfo[];
 
-  constructor(roomData: MapRoom[], rooms: Room[], mapInfo: MapInfo[]) {
-    this.rooms = roomData.map(({ id, globalId, tag, mapId }) => {
+  constructor(roomData: MapRoom[], rooms: Room[], mapInfo: MapInfo[], enableMultipleMap: boolean) {
+    const mapid = mapInfo[0]?.id ?? 0;
+    const roomDataTmp = enableMultipleMap ? roomData : roomData.filter((room) => room.mapId === undefined || room.mapId === mapid);
+
+    this.rooms = roomDataTmp.map(({ id, globalId, tag, mapId }) => {
       const room = rooms.find((r) => Number(r.id) === Number(globalId) || Number(r.id) === Number(id));
       return {
         id,

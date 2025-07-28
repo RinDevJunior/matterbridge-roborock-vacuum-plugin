@@ -40,6 +40,7 @@ export function isStatusUpdate(result: unknown): boolean {
 
 export async function getRoomMap(duid: string, platform: RoborockMatterbridgePlatform): Promise<RoomMap | undefined> {
   const robot = platform.robots.get(duid);
+  const enableMultipleMap = (platform.enableExperimentalFeature?.enableExperimentalFeature && platform.enableExperimentalFeature?.advancedFeature.enableMultipleMap) ?? false;
   if (robot === undefined) {
     platform.log.error(`Error6: Robot with DUID ${duid} not found`);
     return undefined;
@@ -53,7 +54,7 @@ export async function getRoomMap(duid: string, platform: RoborockMatterbridgePla
     const mapInfo = await platform.roborockService.getMapInformation(robot.device.duid);
     if (mapInfo && mapInfo.allRooms && mapInfo.allRooms.length > 0) {
       platform.log.info(`getRoomMap - mapInfo: ${debugStringify(mapInfo.allRooms)}`);
-      robot.roomInfo = new RoomMap(mapInfo.allRooms, rooms, mapInfo.maps);
+      robot.roomInfo = new RoomMap(mapInfo.allRooms, rooms, mapInfo.maps, enableMultipleMap);
     }
   }
 
@@ -61,7 +62,7 @@ export async function getRoomMap(duid: string, platform: RoborockMatterbridgePla
     const roomData = await platform.roborockService.getRoomMappings(robot.device.duid);
     if (roomData !== undefined && roomData.length > 0) {
       const roomDataMap: MapRoom[] = roomData.map((r) => ({ id: r[0], iot_name_id: String(r[1]), globalId: r[1], tag: r[2], mapId: 0, displayName: undefined }));
-      robot.roomInfo = new RoomMap(roomDataMap, rooms, []);
+      robot.roomInfo = new RoomMap(roomDataMap, rooms, [], enableMultipleMap);
       return robot.roomInfo;
     }
   }
@@ -71,6 +72,7 @@ export async function getRoomMap(duid: string, platform: RoborockMatterbridgePla
 
 export async function getRoomMapFromDevice(device: Device, platform: RoborockMatterbridgePlatform): Promise<RoomMap> {
   const rooms = device?.rooms ?? [];
+  const enableMultipleMap = (platform.enableExperimentalFeature?.enableExperimentalFeature && platform.enableExperimentalFeature?.advancedFeature.enableMultipleMap) ?? false;
 
   platform.log.notice('-------------------------------------------0--------------------------------------------------------');
   platform.log.notice(`getRoomMapFromDevice - device.rooms: ${debugStringify(rooms)}`);
@@ -80,9 +82,9 @@ export async function getRoomMapFromDevice(device: Device, platform: RoborockMat
     platform.log.notice(`getRoomMapFromDevice - mapInfo: ${mapInfo ? debugStringify(mapInfo) : 'undefined'}`);
 
     if (mapInfo && mapInfo.allRooms && mapInfo.allRooms.length > 0) {
-      const roomDataMap = mapInfo.allRooms; //.map((r) => [r.id, parseInt(r.iot_name_id), r.tag, r.mapId] as [number, number, number, number]);
+      const roomDataMap = mapInfo.allRooms; // .map((r) => [r.id, parseInt(r.iot_name_id), r.tag, r.mapId] as [number, number, number, number]);
 
-      const roomMap = new RoomMap(roomDataMap, rooms, mapInfo.maps);
+      const roomMap = new RoomMap(roomDataMap, rooms, mapInfo.maps, enableMultipleMap);
 
       platform.log.notice(`getRoomMapFromDevice - roomMap: ${debugStringify(roomMap)}`);
       platform.log.notice('-------------------------------------------2--------------------------------------------------------');
@@ -93,7 +95,7 @@ export async function getRoomMapFromDevice(device: Device, platform: RoborockMat
     if (roomData !== undefined && roomData.length > 0) {
       platform.log.notice(`getRoomMapFromDevice - roomData: ${debugStringify(roomData ?? [])}`);
       const roomDataMap: MapRoom[] = roomData.map((r) => ({ id: r[0], iot_name_id: String(r[1]), globalId: r[1], tag: r[2], mapId: 0, displayName: undefined }));
-      const roomMap = new RoomMap(roomDataMap ?? [], rooms, []);
+      const roomMap = new RoomMap(roomDataMap ?? [], rooms, [], enableMultipleMap);
 
       platform.log.notice(`getRoomMapFromDevice - roomMap: ${debugStringify(roomMap)}`);
       platform.log.notice('-------------------------------------------1--------------------------------------------------------');
@@ -101,5 +103,5 @@ export async function getRoomMapFromDevice(device: Device, platform: RoborockMat
     }
   }
 
-  return new RoomMap([], rooms, []);
+  return new RoomMap([], rooms, [], enableMultipleMap);
 }

@@ -21,7 +21,7 @@
         "binary-parser": "^2.2.1",
         "ejs": "^3.1.10",
         "express": "^5.1.0",
-        "matterbridge": "^3.1.4",
+        "matterbridge": "^3.1.8",
         "node-ansi-logger": "^3.0.1"
     },
     "devDependencies": {

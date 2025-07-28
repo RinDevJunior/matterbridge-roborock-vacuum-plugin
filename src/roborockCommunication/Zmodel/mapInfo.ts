@@ -23,14 +23,15 @@ export class MapInfo {
 
   constructor(multimap: MultipleMap) {
     this.maps = multimap.map_info.map((mapInfo) => {
-      const rooms: MapRoom[] = mapInfo.rooms.map((room: RoomInformation) => ({
-        id: room.id,
-        globalId: parseInt(room.iot_name_id),
-        iot_name_id: room.iot_name_id,
-        tag: room.tag,
-        displayName: room.iot_name,
-        mapId: mapInfo.mapFlag,
-      }));
+      const rooms: MapRoom[] =
+        mapInfo.rooms?.map((room: RoomInformation) => ({
+          id: room.id,
+          globalId: parseInt(room.iot_name_id),
+          iot_name_id: room.iot_name_id,
+          tag: room.tag,
+          displayName: room.iot_name,
+          mapId: mapInfo.mapFlag,
+        })) ?? [];
 
       this.allRooms.push(...rooms);
       return {
@@ -40,7 +41,7 @@ export class MapInfo {
       };
     });
 
-    //this.allRooms = this.allRooms.filter((room, index, self) => index === self.findIndex((r) => r.globalId === room.globalId));
+    // this.allRooms = this.allRooms.filter((room, index, self) => index === self.findIndex((r) => r.globalId === room.globalId));
   }
 
   getById(id: number): string | undefined {

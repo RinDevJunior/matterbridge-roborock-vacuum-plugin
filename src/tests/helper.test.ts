@@ -79,7 +79,7 @@ describe('getRoomMapFromDevice', () => {
 
     const result = await getRoomMapFromDevice(device as any, mockPlatform as any);
 
-    //console.log('Result:', result);
+    // console.log('Result:', result);
     expect(result).toBeInstanceOf(RoomMap);
     expect(mockRoborockService.getRoomMappings).toHaveBeenCalledWith('123');
     expect(result.rooms.length).toBeGreaterThan(0);

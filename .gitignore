@@ -28,3 +28,4 @@ yarn-error.log*
 # Env files
 .env
 npm-shrinkwrap.json
+web-for-testing/src/accountStore.ts

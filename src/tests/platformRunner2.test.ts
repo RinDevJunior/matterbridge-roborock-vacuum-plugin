@@ -115,6 +115,114 @@ describe('PlatformRunner.getRoomMapFromDevice', () => {
 
     const result = await getRoomMapFromDevice(device as any, platform);
     expect(result).toBeInstanceOf(RoomMap);
-    expect(result.rooms.length).toEqual(8);
+    expect(result.rooms.length).toEqual(4);
+
+    platform.enableExperimentalFeature = {
+      enableExperimentalFeature: true,
+      advancedFeature: {
+        enableMultipleMap: true,
+      },
+    };
+
+    const result1 = await getRoomMapFromDevice(device as any, platform);
+    expect(result1).toBeInstanceOf(RoomMap);
+    expect(result1.rooms.length).toEqual(8);
+  });
+
+  it('returns RoomMap with empty roomData from getMapInformation if available', async () => {
+    const device = {
+      duid: 'duid1',
+      rooms: [
+        { id: 1, name: 'Kitchen' },
+        { id: 2, name: 'Study' },
+        { id: 3, name: 'Living room' },
+        { id: 4, name: 'Bedroom' },
+      ],
+    };
+
+    const mapInfo = new MapInfo({
+      max_multi_map: 4,
+      max_bak_map: 0,
+      multi_map_count: 1,
+      map_info: [
+        {
+          mapFlag: 0,
+          add_time: 1753731408,
+          length: 0,
+          name: '',
+          bak_maps: [],
+        },
+      ],
+    });
+
+    platform.roborockService.getRoomMappings.mockResolvedValue(undefined);
+    platform.roborockService.getMapInformation.mockResolvedValue(mapInfo);
+
+    const result = await getRoomMapFromDevice(device as any, platform);
+    expect(result).toBeInstanceOf(RoomMap);
+    expect(result.rooms.length).toEqual(0);
+
+    platform.enableExperimentalFeature = {
+      enableExperimentalFeature: true,
+      advancedFeature: {
+        enableMultipleMap: true,
+      },
+    };
+
+    const result1 = await getRoomMapFromDevice(device as any, platform);
+    expect(result1).toBeInstanceOf(RoomMap);
+    expect(result1.rooms.length).toEqual(0);
+  });
+
+  it('returns RoomMap with roomData from getMapInformation if available', async () => {
+    const device = {
+      duid: 'duid1',
+      rooms: [
+        { id: 1, name: 'Kitchen' },
+        { id: 2, name: 'Study' },
+        { id: 3, name: 'Living room' },
+        { id: 4, name: 'Bedroom' },
+      ],
+    };
+
+    const mapInfo = new MapInfo({
+      max_multi_map: 4,
+      max_bak_map: 0,
+      multi_map_count: 1,
+      map_info: [
+        {
+          mapFlag: 0,
+          add_time: 1753731408,
+          length: 0,
+          name: '',
+          bak_maps: [],
+        },
+      ],
+    });
+
+    const roomData = [
+      [1, '11100845', 14],
+      [2, '11100849', 9],
+      [3, '11100842', 6],
+      [4, '11100847', 1],
+    ];
+
+    platform.roborockService.getRoomMappings.mockResolvedValue(roomData);
+    platform.roborockService.getMapInformation.mockResolvedValue(mapInfo);
+
+    const result = await getRoomMapFromDevice(device as any, platform);
+    expect(result).toBeInstanceOf(RoomMap);
+    expect(result.rooms.length).toEqual(4);
+
+    platform.enableExperimentalFeature = {
+      enableExperimentalFeature: true,
+      advancedFeature: {
+        enableMultipleMap: true,
+      },
+    };
+
+    const result1 = await getRoomMapFromDevice(device as any, platform);
+    expect(result1).toBeInstanceOf(RoomMap);
+    expect(result1.rooms.length).toEqual(4);
   });
 });

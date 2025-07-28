@@ -97,12 +97,11 @@ export default class RoborockService {
 
   public setSelectedAreas(duid: string, selectedAreas: number[]): void {
     this.logger.debug('RoborockService - setSelectedAreas', selectedAreas);
-
-    const areas = selectedAreas.map((areaId) => this.supportedAreaIndexMaps.get(duid)?.getRoomIndex(areaId)) ?? [];
-
+    const roomIds = selectedAreas.map((areaId) => this.supportedAreaIndexMaps.get(duid)?.getRoomId(areaId)) ?? [];
+    this.logger.debug('RoborockService - setSelectedAreas - roomIds', roomIds);
     this.selectedAreas.set(
       duid,
-      areas.filter((area) => area !== undefined).map((area) => area!),
+      roomIds.filter((id) => id !== undefined).map((id) => id),
     );
   }
 
