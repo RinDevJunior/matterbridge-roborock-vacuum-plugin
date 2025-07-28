@@ -3,7 +3,7 @@ export interface MapInformation {
   add_time: number;
   length: number;
   name: string;
-  rooms: RoomInformation[];
+  rooms?: RoomInformation[] | undefined;
   bak_maps: { mapFlag: number; add_time: number }[];
 }
 

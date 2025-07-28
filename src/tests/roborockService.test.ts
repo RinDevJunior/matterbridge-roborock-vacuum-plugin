@@ -3,6 +3,7 @@ import { ServiceArea } from 'matterbridge/matter/clusters';
 import RoborockService from '../roborockService';
 import { MessageProcessor } from '../roborockCommunication/broadcast/messageProcessor';
 import { Device, MultipleMap, RequestMessage } from '../roborockCommunication';
+import { RoomIndexMap } from '../model/roomIndexMap';
 
 describe('RoborockService - startClean', () => {
   let roborockService: RoborockService;
@@ -282,7 +283,17 @@ describe('RoborockService - basic setters/getters', () => {
   });
 
   it('setSelectedAreas should set selected areas', () => {
+    roborockService.setSupportedAreaIndexMap(
+      'duid',
+      new RoomIndexMap(
+        new Map([
+          [1, { roomId: 1, mapId: 0 }],
+          [2, { roomId: 2, mapId: 1 }],
+        ]),
+      ),
+    );
     roborockService.setSelectedAreas('duid', [1, 2]);
+
     expect(roborockService['selectedAreas'].get('duid')).toEqual([1, 2]);
     expect(mockLogger.debug).toHaveBeenCalledWith('RoborockService - setSelectedAreas', [1, 2]);
   });

@@ -24,7 +24,10 @@ export class RoborockVacuumCleaner extends RoboticVacuumCleaner {
   ) {
     const cleanModes = getSupportedCleanModes(device.data.model, enableExperimentalFeature);
     const supportedRunModes = getSupportedRunModes();
-    const supportedAreas = [...getSupportedAreas(device.rooms, roomMap, log), ...routineAsRoom];
+    const enableMultipleMap = enableExperimentalFeature?.enableExperimentalFeature && enableExperimentalFeature?.advancedFeature?.enableMultipleMap;
+
+    const { supportedAreas, supportedMaps } = getSupportedAreas(device.rooms, roomMap, enableMultipleMap, log);
+    const supportedAreaAndRoutines = [...supportedAreas, ...routineAsRoom];
     const deviceName = `${device.name}-${device.duid}`.replace(/\s+/g, '');
 
     log.debug(
@@ -33,6 +36,7 @@ export class RoborockVacuumCleaner extends RoboticVacuumCleaner {
     log.debug(`Supported Clean Modes: ${JSON.stringify(cleanModes)}`);
     log.debug(`Supported Run Modes: ${JSON.stringify(supportedRunModes)}`);
     log.debug(`Supported Areas: ${JSON.stringify(supportedAreas)}`);
+    log.debug(`Supported Maps: ${JSON.stringify(supportedMaps)}`);
 
     const bridgeMode = enableExperimentalFeature?.enableExperimentalFeature && enableExperimentalFeature?.advancedFeature?.enableServerMode ? 'server' : undefined;
     super(
@@ -47,9 +51,10 @@ export class RoborockVacuumCleaner extends RoboticVacuumCleaner {
       undefined, // phaseList
       RvcOperationalState.OperationalState.Docked, // operationalState
       getOperationalStates(), // operationalStateList
-      supportedAreas, // supportedAreas
+      supportedAreaAndRoutines, // supportedAreas
       undefined, // selectedAreas
       supportedAreas[0].areaId, // currentArea
+      supportedMaps, // supportedMaps
     );
 
     this.username = username;

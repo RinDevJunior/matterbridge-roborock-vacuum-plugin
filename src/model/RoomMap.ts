@@ -15,6 +15,7 @@ roomMap = {
 };
 */
 
+import { MapRoom } from '../roborockCommunication/Zmodel/mapInfo.js';
 import { Room } from '../roborockCommunication/Zmodel/room.js';
 
 export interface RoomMapEntry {
@@ -22,21 +23,34 @@ export interface RoomMapEntry {
   globalId: number | undefined;
   displayName?: string;
   alternativeId: string;
+  mapId?: number;
+}
+
+export interface MapInfo {
+  id: number;
+  name: string | undefined;
 }
 
 export class RoomMap {
   readonly rooms: RoomMapEntry[];
+  readonly mapInfo?: MapInfo[];
 
-  constructor(roomData: number[][], rooms: Room[]) {
-    this.rooms = roomData.map(([id, globalId, altId]) => {
+  constructor(roomData: MapRoom[], rooms: Room[], mapInfo: MapInfo[], enableMultipleMap: boolean) {
+    const mapid = mapInfo[0]?.id ?? 0;
+    const roomDataTmp = enableMultipleMap ? roomData : roomData.filter((room) => room.mapId === undefined || room.mapId === mapid);
+
+    this.rooms = roomDataTmp.map(({ id, globalId, tag, mapId }) => {
       const room = rooms.find((r) => Number(r.id) === Number(globalId) || Number(r.id) === Number(id));
       return {
         id,
         globalId: globalId !== undefined ? Number(globalId) : undefined,
         displayName: room?.name,
-        alternativeId: `${id}${altId}`,
+        alternativeId: `${id}${tag}`,
+        mapId,
       };
     });
+
+    this.mapInfo = mapInfo;
   }
 
   // Optionally, add utility methods for clarity
