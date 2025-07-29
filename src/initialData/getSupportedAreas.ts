@@ -113,7 +113,7 @@ function processValidData(
       ? roomMap.rooms.map((room, index) => {
           const locationName = room.displayName ?? vacuumRooms.find((r) => r.id === room.globalId || r.id === room.id)?.name ?? `Unknown Room ${randomInt(1000, 9999)}`;
 
-          const areaId = index + 100;
+          const areaId = enableMultipleMap ? index + 100 : room.id;
           const mapId = enableMultipleMap ? (room.mapId ?? null) : null;
 
           indexMap.set(areaId, { roomId: room.id, mapId: room.mapId ?? null });

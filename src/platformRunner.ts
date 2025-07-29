@@ -137,8 +137,8 @@ export class PlatformRunner {
                 `Part1: CurrentRoom: ${segment_id}, room name: ${roomMap?.rooms.find((x) => x.id === segment_id || x.alternativeId === segment_id.toString())?.displayName ?? 'unknown'}`,
               );
 
-              const areaId = roomIndexMap?.getAreaId(segment_id) ?? null;
-
+              const areaId = roomIndexMap?.getAreaId(segment_id) ?? segment_id;
+              this.platform.log.notice(`AreaId: ${areaId}, segment_id: ${segment_id}`);
               robot.updateAttribute(ServiceArea.Cluster.id, 'currentArea', areaId, platform.log);
             }
 
@@ -152,7 +152,8 @@ export class PlatformRunner {
                 this.platform.log.debug(
                   `Part2: TargetRoom: ${target_segment_id}, room name: ${roomMap?.rooms.find((x) => x.id === target_segment_id || x.alternativeId === segment_id.toString())?.displayName ?? 'unknown'}`,
                 );
-                const areaId = roomIndexMap?.getAreaId(target_segment_id) ?? null;
+                const areaId = roomIndexMap?.getAreaId(target_segment_id) ?? target_room_id;
+                this.platform.log.notice(`AreaId: ${areaId}, target_segment_id: ${target_segment_id}`);
                 robot.updateAttribute(ServiceArea.Cluster.id, 'currentArea', areaId, platform.log);
               }
             }
