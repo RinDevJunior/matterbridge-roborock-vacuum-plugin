@@ -252,7 +252,7 @@ export class RoborockMatterbridgePlatform extends MatterbridgeDynamicPlatform {
 
     let routineAsRoom: ServiceArea.Area[] = [];
     if (this.enableExperimentalFeature?.enableExperimentalFeature && this.enableExperimentalFeature.advancedFeature?.showRoutinesAsRoom) {
-      routineAsRoom = getSupportedScenes(vacuum.scenes, this.log);
+      routineAsRoom = getSupportedScenes(vacuum.scenes ?? [], this.log);
       this.roborockService.setSupportedScenes(vacuum.duid, routineAsRoom);
     }
 

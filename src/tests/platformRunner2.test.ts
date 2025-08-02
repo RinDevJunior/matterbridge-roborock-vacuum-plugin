@@ -8,9 +8,9 @@ describe('PlatformRunner.getRoomMapFromDevice', () => {
   beforeEach(() => {
     platform = {
       log: {
-        error: jest.fn(),
-        debug: jest.fn(),
-        notice: jest.fn(),
+        error: jest.fn(), // .mockImplementation((message: string, ...arg: unknown[]) => console.info(message, ...arg)),
+        debug: jest.fn(), // .mockImplementation((message: string, ...arg: unknown[]) => console.info(message, ...arg)),
+        notice: jest.fn(), // .mockImplementation((message: string, ...arg: unknown[]) => console.info(message, ...arg)),
       },
       roborockService: {
         getRoomMappings: jest.fn(),

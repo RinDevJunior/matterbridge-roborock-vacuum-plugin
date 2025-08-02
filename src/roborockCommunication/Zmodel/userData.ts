@@ -1,5 +1,6 @@
 export interface UserData {
-  uid: string;
+  uid: string | number;
+  tokentype: string;
   token: string;
   rruid: string;
   region: string;

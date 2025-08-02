@@ -1,12 +1,17 @@
 import { DeviceSchema } from './deviceSchema.js';
 import { Room } from './room.js';
 import { Scene } from './scene.js';
+import { UserData } from './userData.js';
 
 export interface Device {
   duid: string;
   name: string;
   sn: string;
   serialNumber: string;
+
+  featureSet?: string;
+  newFeatureSet?: string;
+  silentOtaSwitch?: boolean;
 
   activeTime: number;
   createTime: number;
@@ -38,5 +43,12 @@ export interface Device {
     batteryLevel: number;
   };
 
-  scenes: Scene[];
+  store?: {
+    userData: UserData;
+    localKey: string;
+    pv: string;
+    model?: string;
+  };
+
+  scenes?: Scene[];
 }

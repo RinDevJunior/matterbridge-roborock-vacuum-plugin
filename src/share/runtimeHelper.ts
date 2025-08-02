@@ -2,7 +2,7 @@ import { getCurrentCleanModeDefault } from '../behaviors/roborock.vacuum/default
 import { getCurrentCleanModeSmart } from '../behaviors/roborock.vacuum/smart/runtimes.js';
 import { DeviceModel } from '../roborockCommunication/Zmodel/deviceModel.js';
 
-export type CleanModeFunc = (setting: { suctionPower: number; waterFlow: number; distance_off: number; mopRoute: number }) => number | undefined;
+export type CleanModeFunc = (setting: { suctionPower: number; waterFlow: number; distance_off: number; mopRoute: number | undefined }) => number | undefined;
 
 export function getCurrentCleanModeFunc(model: string, forceRunAtDefault: boolean): CleanModeFunc {
   if (forceRunAtDefault) {
