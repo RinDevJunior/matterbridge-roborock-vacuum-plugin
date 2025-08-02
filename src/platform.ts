@@ -69,6 +69,9 @@ export class RoborockMatterbridgePlatform extends MatterbridgeDynamicPlatform {
     const axiosInstance = axios.default ?? axios;
 
     this.enableExperimentalFeature = this.config.enableExperimental as ExperimentalFeatureSetting;
+    // Disable multiple map for more investigation
+    this.enableExperimentalFeature.advancedFeature.enableMultipleMap = false;
+
     if (this.enableExperimentalFeature?.enableExperimentalFeature && this.enableExperimentalFeature?.cleanModeSettings?.enableCleanModeMapping) {
       this.cleanModeSettings = this.enableExperimentalFeature.cleanModeSettings as CleanModeSettings;
       this.log.notice(`Experimental Feature has been enable`);
