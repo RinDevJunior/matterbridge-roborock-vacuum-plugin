@@ -24,7 +24,11 @@ export async function handleLocalMessage(data: CloudMessageResult, platform: Rob
   const roomMap = await getRoomMap(duid, platform);
   platform.log.debug(`RoomMap: ${roomMap ? debugStringify(roomMap) : 'undefined'}`);
   platform.log.debug(`Current mapped areas: ${currentMappedAreas ? debugStringify(currentMappedAreas) : 'undefined'}`);
-  platform.log.debug(`RoomIndexMap:`, roomIndexMap);
+  platform.log.debug(
+    `RoomIndexMap:
+    `,
+    roomIndexMap,
+  );
 
   const deviceData = robot.device.data;
   const state = state_to_matter_state(data.state);
@@ -149,7 +153,8 @@ async function mapRoomsToAreasFeatureOff(platform: RoborockMatterbridgePlatform,
     source_segment_id: ${source_segment_id},
     source_target_segment_id: ${source_target_segment_id},
     segment_id: ${segment_id},
-    result: ${mappedArea ? debugStringify(mappedArea) : 'undefined'}`,
+    result: ${mappedArea ? debugStringify(mappedArea) : 'undefined'}
+    `,
   );
   if (segment_id !== -1 && mappedArea) {
     robot.updateAttribute(ServiceArea.Cluster.id, 'currentArea', segment_id, platform.log);
@@ -194,7 +199,8 @@ async function mapRoomsToAreasFeatureOn(platform: RoborockMatterbridgePlatform, 
     source_target_segment_id: ${source_target_segment_id},
     segment_id: ${segment_id},
     areaId: ${areaId},
-    result: ${mappedArea ? debugStringify(mappedArea) : 'undefined'}`,
+    result: ${mappedArea ? debugStringify(mappedArea) : 'undefined'}
+    `,
   );
 
   if (areaId !== -1 && mappedArea) {

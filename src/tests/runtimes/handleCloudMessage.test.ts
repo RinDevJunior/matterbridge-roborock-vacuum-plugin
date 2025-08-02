@@ -1,5 +1,6 @@
+import { AdditionalPropCode, Protocol } from '../../roborockCommunication/index.js';
 import { handleCloudMessage } from '../../runtimes/handleCloudMessage';
-import { mapInfo, roomData } from '../testData/mockData.js';
+import { mapInfo, roomData, roomIndexMap, supportedAreas, supportedMaps } from '../testData/mockData.js';
 
 // Mocks for dependencies
 const mockUpdateAttribute = jest.fn().mockImplementation((clusterId: number, attributeName: string, value: any, log: any) => {
@@ -71,92 +72,92 @@ describe('handleCloudMessage', () => {
     jest.clearAllMocks();
   });
 
-  // it('handles status_update', async () => {
-  //   const data = { duid: 'test-duid', dps: { 121: 6, 128: 3, 139: 5 } };
-  //   await handleCloudMessage(data as any, platform as any, runner as any, duid);
-  //   await new Promise(process.nextTick);
-  //   expect(mockUpdateAttribute).toHaveBeenCalled();
-  // });
+  it('handles status_update', async () => {
+    const data = { duid: 'test-duid', dps: { 121: 6, 128: 3, 139: 5 } };
+    await handleCloudMessage(data as any, platform as any, runner as any, duid);
+    await new Promise(process.nextTick);
+    expect(mockUpdateAttribute).toHaveBeenCalled();
+  });
 
-  // it('handles rpc_response with status', async () => {
-  //   const data = {
-  //     duid: 'test-duid',
-  //     dps: {
-  //       102: {
-  //         id: 19937,
-  //         result: [
-  //           {
-  //             msg_ver: 2,
-  //             msg_seq: 2609,
-  //             state: 5,
-  //             battery: 99,
-  //             clean_time: 12,
-  //             clean_area: 0,
-  //             error_code: 0,
-  //             map_present: 1,
-  //             in_cleaning: 1,
-  //             in_returning: 0,
-  //             in_fresh_state: 0,
-  //             lab_status: 3,
-  //             water_box_status: 1,
-  //             fan_power: 101,
-  //             dnd_enabled: 0,
-  //             map_status: 3,
-  //             is_locating: 0,
-  //             lock_status: 0,
-  //             water_box_mode: 202,
-  //             distance_off: 60,
-  //             water_box_carriage_status: 0,
-  //             mop_forbidden_enable: 0,
-  //             adbumper_status: [0, 0, 0],
-  //             dock_type: 5,
-  //             dust_collection_status: 0,
-  //             auto_dust_collection: 1,
-  //             debug_mode: 0,
-  //             switch_map_mode: 0,
-  //             dock_error_status: 0,
-  //             charge_status: 1,
-  //           },
-  //         ],
-  //       },
-  //     },
-  //   };
+  it('handles rpc_response with status', async () => {
+    const data = {
+      duid: 'test-duid',
+      dps: {
+        102: {
+          id: 19937,
+          result: [
+            {
+              msg_ver: 2,
+              msg_seq: 2609,
+              state: 5,
+              battery: 99,
+              clean_time: 12,
+              clean_area: 0,
+              error_code: 0,
+              map_present: 1,
+              in_cleaning: 1,
+              in_returning: 0,
+              in_fresh_state: 0,
+              lab_status: 3,
+              water_box_status: 1,
+              fan_power: 101,
+              dnd_enabled: 0,
+              map_status: 3,
+              is_locating: 0,
+              lock_status: 0,
+              water_box_mode: 202,
+              distance_off: 60,
+              water_box_carriage_status: 0,
+              mop_forbidden_enable: 0,
+              adbumper_status: [0, 0, 0],
+              dock_type: 5,
+              dust_collection_status: 0,
+              auto_dust_collection: 1,
+              debug_mode: 0,
+              switch_map_mode: 0,
+              dock_error_status: 0,
+              charge_status: 1,
+            },
+          ],
+        },
+      },
+    };
 
-  //   await handleCloudMessage(data as any, platform as any, runner as any, duid);
-  //   await new Promise(process.nextTick);
-  //   expect(mockUpdateFromMQTTMessage).toHaveBeenCalled();
-  // });
+    await handleCloudMessage(data as any, platform as any, runner as any, duid);
+    await new Promise(process.nextTick);
+    expect(mockUpdateFromMQTTMessage).toHaveBeenCalled();
+  });
 
-  // it('handles additional_props with map_change', async () => {
-  //   mockGetRoomMapFromDevice.mockResolvedValueOnce({});
-  //   mockGetSupportedAreas.mockReturnValueOnce({
-  //     supportedAreas,
-  //     supportedMaps,
-  //     roomIndexMap,
-  //   });
-  //   const data = { dps: { [Protocol.additional_props]: AdditionalPropCode.map_change } };
-  //   await handleCloudMessage(data as any, platform as any, runner as any, duid);
+  it('handles additional_props with map_change', async () => {
+    mockGetRoomMapFromDevice.mockResolvedValueOnce({});
+    mockGetSupportedAreas.mockReturnValueOnce({
+      supportedAreas,
+      supportedMaps,
+      roomIndexMap,
+    });
+    const data = { dps: { [Protocol.additional_props]: AdditionalPropCode.map_change } };
+    await handleCloudMessage(data as any, platform as any, runner as any, duid);
 
-  //   await new Promise(process.nextTick);
-  //   expect(mockSetSupportedAreas).toHaveBeenCalled();
-  //   expect(mockSetSelectedAreas).toHaveBeenCalled();
-  //   expect(mockUpdateAttribute).toHaveBeenCalled();
-  // });
+    await new Promise(process.nextTick);
+    expect(mockSetSupportedAreas).toHaveBeenCalled();
+    expect(mockSetSelectedAreas).toHaveBeenCalled();
+    expect(mockUpdateAttribute).toHaveBeenCalled();
+  });
 
-  // it('logs error if robot not found', async () => {
-  //   const fakePlatform = { ...platform, robots: new Map() };
-  //   const data = { dps: { [Protocol.status_update]: 1 } };
-  //   await handleCloudMessage(data as any, fakePlatform as any, runner as any, duid);
-  //   await new Promise(process.nextTick);
-  //   expect(platform.log.error).toHaveBeenCalled();
-  // });
+  it('logs error if robot not found', async () => {
+    const fakePlatform = { ...platform, robots: new Map() };
+    const data = { dps: { [Protocol.status_update]: 1 } };
+    await handleCloudMessage(data as any, fakePlatform as any, runner as any, duid);
+    await new Promise(process.nextTick);
+    expect(platform.log.error).toHaveBeenCalled();
+  });
 
-  // it('handles unknown message type', async () => {
-  //   const data = { dps: { 999: 42 } };
-  //   await handleCloudMessage(data as any, platform as any, runner as any, duid);
-  //   await new Promise(process.nextTick);
-  //   expect(platform.log.notice).toHaveBeenCalled();
-  // });
+  it('handles unknown message type', async () => {
+    const data = { dps: { 999: 42 } };
+    await handleCloudMessage(data as any, platform as any, runner as any, duid);
+    await new Promise(process.nextTick);
+    expect(platform.log.notice).toHaveBeenCalled();
+  });
 
   it('handles map_change', async () => {
     const data = { dps: { 128: 4 } };
