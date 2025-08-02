@@ -71,10 +71,7 @@ describe('LocalNetworkClient', () => {
   afterEach(() => {
     jest.clearAllMocks();
     jest.useRealTimers();
-    jest;
   });
-
-  afterEach(() => {});
 
   it('should initialize fields in constructor', () => {
     expect(client.duid).toBe(duid);

@@ -1,6 +1,5 @@
 import { handleCloudMessage } from '../../runtimes/handleCloudMessage';
-import { Protocol, AdditionalPropCode } from '../../roborockCommunication';
-import { supportedAreas, supportedMaps, roomIndexMap, mapInfo, roomData } from '../testData/mockData.js';
+import { mapInfo, roomData } from '../testData/mockData.js';
 
 // Mocks for dependencies
 const mockUpdateAttribute = jest.fn().mockImplementation((clusterId: number, attributeName: string, value: any, log: any) => {

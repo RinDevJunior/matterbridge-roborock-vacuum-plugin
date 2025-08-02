@@ -1,8 +1,6 @@
 import { AnsiLogger } from 'matterbridge/logger';
-import { ServiceArea } from 'matterbridge/matter/clusters';
 import RoborockService from '../roborockService';
 import { MessageProcessor } from '../roborockCommunication/broadcast/messageProcessor';
-import { Device, MultipleMap, RequestMessage } from '../roborockCommunication';
 import { RoomIndexMap } from '../model/roomIndexMap';
 
 describe('RoborockService - startClean', () => {
@@ -10,8 +8,6 @@ describe('RoborockService - startClean', () => {
   let mockLogger: AnsiLogger;
   let mockMessageProcessor: jest.Mocked<MessageProcessor>;
   let mockLoginApi: any;
-  let mockMapInfo: any;
-  let mockMessageClient: any;
   let mockIotApi: any;
 
   beforeEach(() => {
@@ -32,7 +28,6 @@ describe('RoborockService - startClean', () => {
       loginWithUserData: jest.fn(),
     };
 
-    mockMapInfo = jest.fn();
     roborockService = new RoborockService(() => mockLoginApi, jest.fn(), 10, {} as any, mockLogger);
     roborockService['auth'] = jest.fn((ud) => ud);
     roborockService['messageProcessorMap'] = new Map<string, MessageProcessor>([['test-duid', mockMessageProcessor]]);

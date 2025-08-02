@@ -1,16 +1,5 @@
 import { getRoomMapFromDevice } from '../helper';
 import { RoomMap } from '../model/RoomMap';
-import { debugStringify } from 'matterbridge/logger';
-
-// Mocks
-// const mockLog = {
-//   notice: (message: string, ...arg: unknown[]) => console.log('NOTICE:', message, ...arg),
-//   error: (message: string, ...arg: unknown[]) => console.error('ERROR:', message, ...arg),
-//   debug: (message: string, ...arg: unknown[]) => console.debug('DEBUG:', message, ...arg),
-//   info: (message: string, ...arg: unknown[]) => console.info('INFO:', message, ...arg),
-//   warn: (message: string, ...arg: unknown[]) => console.warn('WARN:', message, ...arg),
-//   verbose: (message: string, ...arg: unknown[]) => console.log('VERBOSE:', message, ...arg),
-// };
 
 const mockLog = {
   notice: jest.fn(),
