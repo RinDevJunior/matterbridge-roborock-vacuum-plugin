@@ -44,7 +44,6 @@ export function getSupportedAreas(
       roomIndexMap: new RoomIndexMap(new Map([[1, { roomId: 1, mapId: null }]])),
     };
   }
-
   const { supportedAreas, indexMap } = processValidData(enableMultipleMap, vacuumRooms, roomMap);
   const duplicated = findDuplicatedAreaIds(supportedAreas, log);
 
@@ -117,13 +116,12 @@ function processValidData(
           const mapId = enableMultipleMap ? (room.mapId ?? null) : null;
 
           indexMap.set(areaId, { roomId: room.id, mapId: room.mapId ?? null });
-
           return {
             areaId: areaId,
             mapId: mapId,
             areaInfo: {
               locationInfo: {
-                locationName: locationName, // `${locationName} - (${areaId})  - (${room.id}) - (${room.globalId})`,
+                locationName: locationName,
                 floorNumber: room.mapId ?? null,
                 areaType: null,
               },
@@ -132,7 +130,6 @@ function processValidData(
           };
         })
       : [];
-
   return {
     supportedAreas,
     indexMap,
@@ -150,9 +147,4 @@ function getSupportedMaps(enableMultipleMap: boolean, supportedAreas: ServiceAre
   }
 
   return [];
-
-  // return supportedAreas.map((area) => ({
-  //   mapId: area.mapId ?? 0,
-  //   name: `Map ${area.mapId ?? 0}`,
-  // }));
 }

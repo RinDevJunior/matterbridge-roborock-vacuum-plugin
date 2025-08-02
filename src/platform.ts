@@ -33,9 +33,9 @@ export class RoborockMatterbridgePlatform extends MatterbridgeDynamicPlatform {
     super(matterbridge, log, config);
 
     // Verify that Matterbridge is the correct version
-    if (this.verifyMatterbridgeVersion === undefined || typeof this.verifyMatterbridgeVersion !== 'function' || !this.verifyMatterbridgeVersion('3.1.8')) {
+    if (this.verifyMatterbridgeVersion === undefined || typeof this.verifyMatterbridgeVersion !== 'function' || !this.verifyMatterbridgeVersion('3.2.0')) {
       throw new Error(
-        `This plugin requires Matterbridge version >= "3.1.8". Please update Matterbridge from ${this.matterbridge.matterbridgeVersion} to the latest version in the frontend.`,
+        `This plugin requires Matterbridge version >= "3.2.0". Please update Matterbridge from ${this.matterbridge.matterbridgeVersion} to the latest version in the frontend.`,
       );
     }
     this.log.info('Initializing platform:', this.config.name);
@@ -69,6 +69,9 @@ export class RoborockMatterbridgePlatform extends MatterbridgeDynamicPlatform {
     const axiosInstance = axios.default ?? axios;
 
     this.enableExperimentalFeature = this.config.enableExperimental as ExperimentalFeatureSetting;
+    // Disable multiple map for more investigation
+    this.enableExperimentalFeature.advancedFeature.enableMultipleMap = false;
+
     if (this.enableExperimentalFeature?.enableExperimentalFeature && this.enableExperimentalFeature?.cleanModeSettings?.enableCleanModeMapping) {
       this.cleanModeSettings = this.enableExperimentalFeature.cleanModeSettings as CleanModeSettings;
       this.log.notice(`Experimental Feature has been enable`);
@@ -252,7 +255,7 @@ export class RoborockMatterbridgePlatform extends MatterbridgeDynamicPlatform {
 
     let routineAsRoom: ServiceArea.Area[] = [];
     if (this.enableExperimentalFeature?.enableExperimentalFeature && this.enableExperimentalFeature.advancedFeature?.showRoutinesAsRoom) {
-      routineAsRoom = getSupportedScenes(vacuum.scenes, this.log);
+      routineAsRoom = getSupportedScenes(vacuum.scenes ?? [], this.log);
       this.roborockService.setSupportedScenes(vacuum.duid, routineAsRoom);
     }
 

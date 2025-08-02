@@ -1,7 +1,7 @@
 import { getCurrentCleanModeDefault } from '../default/runtimes.js';
 import { MopRouteSmart, MopWaterFlowSmart, VacuumSuctionPowerSmart } from './smart.js';
 
-export function getCurrentCleanModeSmart(setting: { suctionPower: number; waterFlow: number; distance_off: number; mopRoute: number }): number | undefined {
+export function getCurrentCleanModeSmart(setting: { suctionPower: number; waterFlow: number; distance_off: number; mopRoute: number | undefined }): number | undefined {
   if (!setting || typeof setting !== 'object') {
     return undefined;
   }
