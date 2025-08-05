@@ -36,13 +36,13 @@ export async function handleCloudMessage(data: CloudMessageModel, platform: Robo
           robot.updateAttribute(RvcRunMode.Cluster.id, 'currentMode', getRunningMode(matterState), platform.log);
         }
 
-        const operationalStateId = state_to_matter_operational_status(status);
-        if (operationalStateId) {
-          const dssHasError = hasDockingStationError(robot.dockStationStatus);
-          if (!(dssHasError && triggerDssError(robot, platform))) {
-            robot.updateAttribute(RvcOperationalState.Cluster.id, 'operationalState', operationalStateId, platform.log);
-          }
-        }
+        // const operationalStateId = state_to_matter_operational_status(status, data.clean_percent);
+        // if (operationalStateId) {
+        //   const dssHasError = hasDockingStationError(robot.dockStationStatus);
+        //   if (!(dssHasError && triggerDssError(robot, platform))) {
+        //     robot.updateAttribute(RvcOperationalState.Cluster.id, 'operationalState', operationalStateId, platform.log);
+        //   }
+        // }
         break;
       }
       case Protocol.rpc_response: {

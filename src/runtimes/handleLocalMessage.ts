@@ -1,7 +1,7 @@
 import { PowerSource, RvcCleanMode, RvcOperationalState, RvcRunMode, ServiceArea } from 'matterbridge/matter/clusters';
 import { getRunningMode } from '../initialData/getSupportedRunModes.js';
 import { CloudMessageResult } from '../roborockCommunication/Zmodel/messageResult.js';
-import { state_to_matter_state } from '../share/function.js';
+import { state_to_matter_operational_status, state_to_matter_state } from '../share/function.js';
 import { RoborockMatterbridgePlatform } from '../platform.js';
 import { OperationStatusCode } from '../roborockCommunication/Zenum/operationStatusCode.js';
 import { getRoomMap } from '../helper.js';
@@ -32,8 +32,14 @@ export async function handleLocalMessage(data: CloudMessageResult, platform: Rob
 
   const deviceData = robot.device.data;
   const state = state_to_matter_state(data.state);
+
   if (state) {
     robot.updateAttribute(RvcRunMode.Cluster.id, 'currentMode', getRunningMode(state), platform.log);
+  }
+
+  const operationalStateId = state_to_matter_operational_status(data.state, data.clean_percent);
+  if (operationalStateId) {
+    robot.updateAttribute(RvcOperationalState.Cluster.id, 'operationalState', operationalStateId, platform.log);
   }
 
   if (data.state === OperationStatusCode.Idle) {
@@ -148,12 +154,19 @@ async function mapRoomsToAreasFeatureOff(platform: RoborockMatterbridgePlatform,
   const source_target_segment_id = data.cleaning_info.target_segment_id ?? -1; // -1
   const segment_id = source_segment_id !== -1 ? source_segment_id : source_target_segment_id; // 4
   const mappedArea = currentMappedAreas?.find((x) => x.areaId == segment_id);
-  platform.log.debug(
+
+  const cleanTime = data.clean_time + (data.extra_time ?? 0); // clean_time is in seconds, extra_time is in seconds
+
+  platform.log.notice(
     `mappedArea:
     source_segment_id: ${source_segment_id},
     source_target_segment_id: ${source_target_segment_id},
     segment_id: ${segment_id},
-    result: ${mappedArea ? debugStringify(mappedArea) : 'undefined'}
+    clean_percent: ${data.clean_percent},
+    cleanTime: ${cleanTime},
+    wash_phase: ${data.wash_phase},
+    back_type: ${data.back_type},
+    result: ${mappedArea ? debugStringify(mappedArea) : 'undefined'},
     `,
   );
   if (segment_id !== -1 && mappedArea) {

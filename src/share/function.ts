@@ -2,7 +2,7 @@ import { OperationStatusCode } from '../roborockCommunication/Zenum/operationSta
 import { RvcRunMode, RvcOperationalState } from 'matterbridge/matter/clusters';
 
 export function state_to_matter_state(state: number | undefined): RvcRunMode.ModeTag | undefined {
-  if (state === null) {
+  if (state === null || state === undefined) {
     return undefined;
   }
 
@@ -45,7 +45,20 @@ export function state_to_matter_state(state: number | undefined): RvcRunMode.Mod
   }
 }
 
-export function state_to_matter_operational_status(state: number | undefined): RvcOperationalState.OperationalState | null {
+const preparingStates: number[] = [
+  OperationStatusCode.ReturnToDock,
+  OperationStatusCode.ReturningDock,
+  OperationStatusCode.WashingTheMop,
+  OperationStatusCode.WashingTheMop2,
+  OperationStatusCode.GoingToWashTheMop,
+  OperationStatusCode.EmptyingDustContainer,
+  OperationStatusCode.BackToDockWashingDuster,
+];
+
+export function state_to_matter_operational_status(state: number | undefined, clean_percent: number | undefined = undefined): RvcOperationalState.OperationalState | null {
+  if (state && preparingStates.includes(state) && clean_percent !== undefined && clean_percent < 100) {
+    return RvcOperationalState.OperationalState.Running;
+  }
   switch (state) {
     case OperationStatusCode.Initiating:
     case OperationStatusCode.RemoteControl:

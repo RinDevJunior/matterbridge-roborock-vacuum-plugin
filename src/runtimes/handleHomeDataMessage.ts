@@ -53,15 +53,15 @@ export async function updateFromHomeData(homeData: Home, platform: RoborockMatte
       robot.updateAttribute(PowerSource.Cluster.id, 'batChargeState', getBatteryState(state, batteryLevel), platform.log);
     }
 
-    const operationalStateId = state_to_matter_operational_status(state);
+    // const operationalStateId = state_to_matter_operational_status(state, undefined);
 
-    if (operationalStateId) {
-      const dssHasError = hasDockingStationError(robot.dockStationStatus);
-      platform.log.debug(`dssHasError: ${dssHasError}, dockStationStatus: ${debugStringify(robot.dockStationStatus ?? {})}`);
-      if (!(dssHasError && triggerDssError(robot, platform))) {
-        platform.log.debug(`updateFromHomeData-OperationalState: ${RvcOperationalState.OperationalState[operationalStateId]}`);
-        robot.updateAttribute(RvcOperationalState.Cluster.id, 'operationalState', operationalStateId, platform.log);
-      }
-    }
+    // if (operationalStateId) {
+    //   const dssHasError = hasDockingStationError(robot.dockStationStatus);
+    //   platform.log.debug(`dssHasError: ${dssHasError}, dockStationStatus: ${debugStringify(robot.dockStationStatus ?? {})}`);
+    //   if (!(dssHasError && triggerDssError(robot, platform))) {
+    //     platform.log.debug(`updateFromHomeData-OperationalState: ${RvcOperationalState.OperationalState[operationalStateId]}`);
+    //     robot.updateAttribute(RvcOperationalState.Cluster.id, 'operationalState', operationalStateId, platform.log);
+    //   }
+    // }
   }
 }
