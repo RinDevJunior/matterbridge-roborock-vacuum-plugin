@@ -1,37 +1,5 @@
 import { MQTTClient } from '../../../../roborockCommunication/broadcast/client/MQTTClient';
 
-// Pseudocode plan:
-// 1. Mock dependencies: mqtt, CryptoUtils, AbstractClient, serializer, deserializer, logger, connectionListeners, messageListeners.
-// 2. Test constructor: verify username/password are generated as expected.
-// 3. Test connect():
-//    - Should call mqtt.connect with correct params.
-//    - Should set up event listeners.
-//    - Should not connect if already connected.
-// 4. Test disconnect():
-//    - Should call client.end if connected.
-//    - Should not call if not connected.
-//    - Should log error if exception thrown.
-// 5. Test send():
-//    - Should publish correct topic/message if connected.
-//    - Should log error if not connected.
-// 6. Test onConnect():
-//    - Should set connected, call onConnected, subscribeToQueue.
-// 7. Test subscribeToQueue():
-//    - Should call client.subscribe with correct topic.
-// 8. Test onSubscribe():
-//    - Should log error and call onDisconnected if error.
-//    - Should do nothing if no error.
-// 9. Test onDisconnect():
-//    - Should call onDisconnected.
-// 10. Test onError():
-//    - Should log error, set connected false, call onError.
-// 11. Test onReconnect():
-//    - Should call subscribeToQueue.
-// 12. Test onMessage():
-//    - Should call deserializer and messageListeners.onMessage if message.
-//    - Should log notice if message is falsy.
-//    - Should log error if deserializer throws.
-
 const mockConnect = jest.fn();
 jest.mock('mqtt', () => {
   const actual = jest.requireActual('mqtt');

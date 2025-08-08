@@ -2,7 +2,7 @@ import { RoboticVacuumCleaner } from 'matterbridge/devices';
 import { RoomMap } from './model/RoomMap.js';
 import { Device } from './roborockCommunication/index.js';
 import { getOperationalStates, getSupportedAreas, getSupportedCleanModes, getSupportedRunModes } from './initialData/index.js';
-import { AnsiLogger } from 'matterbridge/logger';
+import { AnsiLogger, debugStringify } from 'matterbridge/logger';
 import { BehaviorFactoryResult } from './behaviorFactory.js';
 import { ModeBase, RvcOperationalState, ServiceArea } from 'matterbridge/matter/clusters';
 import { ExperimentalFeatureSetting } from './model/ExperimentalFeatureSetting.js';
@@ -63,7 +63,7 @@ export class RoborockVacuumCleaner extends RoboticVacuumCleaner {
 
   public configurateHandler(behaviorHandler: BehaviorFactoryResult): void {
     this.addCommandHandler('identify', async ({ request, cluster, attributes, endpoint }) => {
-      this.log.info(`Identify command received for endpoint ${endpoint}, cluster ${cluster}, attributes ${attributes}, request: ${JSON.stringify(request)}`);
+      this.log.info(`Identify command received for endpoint ${endpoint}, cluster ${cluster}, attributes ${debugStringify(attributes)}, request: ${JSON.stringify(request)}`);
       behaviorHandler.executeCommand('playSoundToLocate', (request as { identifyTime?: number }).identifyTime ?? 0);
     });
 

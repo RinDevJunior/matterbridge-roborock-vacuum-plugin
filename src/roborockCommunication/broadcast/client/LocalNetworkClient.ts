@@ -17,8 +17,9 @@ export class LocalNetworkClient extends AbstractClient {
   private messageIdSeq: Sequence;
   private pingInterval?: NodeJS.Timeout;
   private keepConnectionAliveInterval: NodeJS.Timeout | undefined = undefined;
-  duid: string;
-  ip: string;
+
+  public duid: string;
+  public ip: string;
 
   constructor(logger: AnsiLogger, context: MessageContext, duid: string, ip: string) {
     super(logger, context);
@@ -184,6 +185,7 @@ export class LocalNetworkClient extends AbstractClient {
     const request = new RequestMessage({
       protocol: Protocol.hello_request,
       messageId: this.messageIdSeq.next(),
+      nonce: this.context.nonce,
     });
 
     await this.send(this.duid, request);

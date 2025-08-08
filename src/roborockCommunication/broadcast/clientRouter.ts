@@ -28,8 +28,12 @@ export class ClientRouter implements Client {
     this.mqttClient.registerMessageListener(this.messageListeners);
   }
 
-  public registerDevice(duid: string, localKey: string, pv: string): void {
-    this.context.registerDevice(duid, localKey, pv);
+  public registerDevice(duid: string, localKey: string, pv: string, nonce: number | undefined): void {
+    this.context.registerDevice(duid, localKey, pv, nonce);
+  }
+
+  public updateNonce(duid: string, nonce: number): void {
+    this.context.updateNonce(duid, nonce);
   }
 
   public registerClient(duid: string, ip: string): Client {

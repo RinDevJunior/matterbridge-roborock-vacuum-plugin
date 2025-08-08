@@ -25,6 +25,7 @@ import type { AbstractMessageHandler, AbstractMessageListener, BatteryMessage, D
 import { ServiceArea } from 'matterbridge/matter/clusters';
 import { LocalNetworkClient } from './roborockCommunication/broadcast/client/LocalNetworkClient.js';
 import { RoomIndexMap } from './model/roomIndexMap.js';
+import { DpsPayload } from './roborockCommunication/broadcast/model/dps.js';
 export type Factory<A, T> = (logger: AnsiLogger, arg: A) => T;
 
 export default class RoborockService {
@@ -479,7 +480,7 @@ export default class RoborockService {
     // eslint-disable-next-line @typescript-eslint/no-this-alias
     const self = this;
     this.messageClient = this.clientManager.get(username, userdata);
-    this.messageClient.registerDevice(device.duid, device.localKey, device.pv);
+    this.messageClient.registerDevice(device.duid, device.localKey, device.pv, undefined);
 
     this.messageClient.registerMessageListener({
       onMessage: (message: ResponseMessage) => {
@@ -492,6 +493,12 @@ export default class RoborockService {
           if (duid && self.deviceNotify) {
             self.deviceNotify(NotifyMessageTypes.CloudMessage, message);
           }
+        }
+
+        if (message instanceof ResponseMessage && message.contain(Protocol.hello_response)) {
+          const dps = message.dps[Protocol.hello_response] as DpsPayload;
+          const result = dps.result as { nonce: number };
+          self.messageClient?.updateNonce(message.duid, result.nonce);
         }
       },
     } as AbstractMessageListener);
