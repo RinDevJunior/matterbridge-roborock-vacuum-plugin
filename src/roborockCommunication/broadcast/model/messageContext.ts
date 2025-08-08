@@ -1,34 +1,47 @@
-import { randomBytes } from 'node:crypto';
+import { randomBytes, randomInt } from 'node:crypto';
 import * as CryptoUtils from '../../helper/cryptoHelper.js';
 import { UserData } from '../../Zmodel/userData.js';
 
 export class MessageContext {
   private readonly endpoint: string;
-  readonly nonce: Buffer;
-  private readonly devices = new Map<string, { localKey: string; protocolVersion: string }>();
+  private readonly devices = new Map<string, { localKey: string; protocolVersion: string; nonce: number | undefined }>();
+  public readonly nonce: number;
+  public readonly serializeNonce: Buffer;
 
   constructor(userdata: UserData) {
     this.endpoint = CryptoUtils.md5bin(userdata.rriot.k).subarray(8, 14).toString('base64');
-    this.nonce = randomBytes(16);
+    this.nonce = randomInt(1000, 1000000);
+    this.serializeNonce = randomBytes(16);
   }
 
-  registerDevice(duid: string, localKey: string, pv: string) {
-    this.devices.set(duid, { localKey: localKey, protocolVersion: pv });
+  public registerDevice(duid: string, localKey: string, pv: string, nonce: number | undefined) {
+    this.devices.set(duid, { localKey: localKey, protocolVersion: pv, nonce });
   }
 
-  getNonceAsHex(): string {
-    return this.nonce.toString('hex').toUpperCase();
+  public updateNonce(duid: string, nonce: number): void {
+    const device = this.devices.get(duid);
+    if (device) {
+      device.nonce = nonce;
+    }
   }
 
-  getLocalKey(duid: string): string | undefined {
+  public getSerializeNonceAsHex(): string {
+    return this.serializeNonce.toString('hex').toUpperCase();
+  }
+
+  public getLocalKey(duid: string): string | undefined {
     return this.devices.get(duid)?.localKey;
   }
 
-  getProtocolVersion(duid: string): string | undefined {
+  public getProtocolVersion(duid: string): string | undefined {
     return this.devices.get(duid)?.protocolVersion;
   }
 
-  getEndpoint(): string {
+  public getDeviceNonce(duid: string): number | undefined {
+    return this.devices.get(duid)?.nonce;
+  }
+
+  public getEndpoint(): string {
     return this.endpoint;
   }
 }

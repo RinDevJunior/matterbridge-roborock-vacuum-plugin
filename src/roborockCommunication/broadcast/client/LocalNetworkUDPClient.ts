@@ -1,6 +1,6 @@
 import * as dgram from 'node:dgram';
 import { Socket } from 'node:dgram';
-import { Parser } from 'binary-parser';
+import { Parser } from 'binary-parser/dist/binary_parser.js';
 import crypto from 'node:crypto';
 import CRC32 from 'crc-32';
 import { AnsiLogger } from 'matterbridge/logger';
@@ -16,8 +16,8 @@ export class LocalNetworkUDPClient extends AbstractClient {
   private readonly PORT = 58866;
   private server: Socket | undefined = undefined;
 
-  private readonly V10Parser: Parser<any>;
-  private readonly L01Parser: Parser<any>;
+  private readonly V10Parser: Parser;
+  private readonly L01Parser: Parser;
 
   constructor(logger: AnsiLogger, context: MessageContext) {
     super(logger, context);

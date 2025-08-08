@@ -1,25 +1,6 @@
 import { LocalNetworkClient } from '../../../../roborockCommunication/broadcast/client/LocalNetworkClient';
 import { Protocol } from '../../../../roborockCommunication/broadcast/model/protocol';
 
-// Pseudocode plan:
-// 1. Mock dependencies: Socket, AnsiLogger, MessageContext, RequestMessage, Protocol, serializer/deserializer.
-// 2. Test constructor initializes fields correctly.
-// 3. Test connect(): should create a Socket, set up event handlers, and call socket.connect with correct params.
-// 4. Test disconnect(): should destroy socket, clear ping interval, and set socket to undefined.
-// 5. Test send():
-//    - If socket is not connected, should log error and not write.
-//    - If connected, should serialize and write the message.
-// 6. Test onConnect(): sets connected, logs, sends hello, sets ping interval, calls connectionListeners.onConnected.
-// 7. Test onDisconnect(): logs, sets connected false, destroys socket, clears ping interval, calls connectionListeners.onDisconnected.
-// 8. Test onError(): logs, sets connected false, destroys socket, calls connectionListeners.onError.
-// 9. Test onMessage():
-//    - If no socket, logs error.
-//    - If empty message, logs debug.
-//    - If valid, appends, checks completeness, deserializes, calls messageListeners.onMessage.
-// 10. Test isMessageComplete(): returns true/false for various buffer scenarios.
-// 11. Test wrapWithLengthData(): prepends length to buffer.
-// 12. Test sendHelloMessage() and sendPingRequest(): calls send with correct protocol.
-
 const Sket = jest.fn();
 
 jest.mock('node:net', () => {
