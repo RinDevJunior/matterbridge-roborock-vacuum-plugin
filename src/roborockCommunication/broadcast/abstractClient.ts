@@ -20,13 +20,13 @@ export abstract class AbstractClient implements Client {
   protected readonly messageListeners = new ChainedMessageListener();
   protected readonly serializer: MessageSerializer;
   protected readonly deserializer: MessageDeserializer;
+  protected readonly context: MessageContext;
   protected connected = false;
   protected logger: AnsiLogger;
 
   protected abstract clientName: string;
   protected abstract shouldReconnect: boolean;
 
-  private readonly context: MessageContext;
   private readonly syncMessageListener: SyncMessageListener;
 
   protected constructor(logger: AnsiLogger, context: MessageContext) {
@@ -62,8 +62,8 @@ export abstract class AbstractClient implements Client {
       });
   }
 
-  public registerDevice(duid: string, localKey: string, pv: string): void {
-    this.context.registerDevice(duid, localKey, pv);
+  public registerDevice(duid: string, localKey: string, pv: string, nonce: number | undefined): void {
+    this.context.registerDevice(duid, localKey, pv, nonce);
   }
 
   public registerConnectionListener(listener: AbstractConnectionListener): void {
