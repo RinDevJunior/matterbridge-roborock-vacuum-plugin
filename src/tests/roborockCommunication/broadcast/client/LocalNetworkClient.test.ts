@@ -52,6 +52,11 @@ describe('LocalNetworkClient', () => {
   afterEach(() => {
     jest.clearAllMocks();
     jest.useRealTimers();
+    // Clear keepConnectionAliveInterval to prevent open handle leaks
+    if (client['keepConnectionAliveInterval']) {
+      clearInterval(client['keepConnectionAliveInterval']);
+      client['keepConnectionAliveInterval'] = undefined;
+    }
   });
 
   it('should initialize fields in constructor', () => {
