@@ -2,10 +2,6 @@ import { PlatformRunner } from '../platformRunner';
 import { NotifyMessageTypes } from '../notifyMessageTypes';
 import { RoborockMatterbridgePlatform } from '../platform';
 import { RoborockVacuumCleaner } from '../rvc';
-import * as initialDataIndex from '../initialData/index';
-
-// Local mock for getOperationalErrorState
-const getOperationalErrorState = jest.fn().mockReturnValue(2);
 
 describe('PlatformRunner.updateRobot', () => {
   let platform: RoborockMatterbridgePlatform;
