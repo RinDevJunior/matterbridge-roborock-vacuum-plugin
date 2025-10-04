@@ -1,4 +1,4 @@
-import { Matterbridge, MatterbridgeDynamicPlatform, PlatformConfig } from 'matterbridge';
+import { PlatformMatterbridge, MatterbridgeDynamicPlatform, PlatformConfig } from 'matterbridge';
 import * as axios from 'axios';
 import { AnsiLogger, debugStringify, LogLevel } from 'matterbridge/logger';
 import RoborockService from './roborockService.js';
@@ -29,13 +29,13 @@ export class RoborockMatterbridgePlatform extends MatterbridgeDynamicPlatform {
   persist: NodePersist.LocalStorage;
   rrHomeId: number | undefined;
 
-  constructor(matterbridge: Matterbridge, log: AnsiLogger, config: PlatformConfig) {
+  constructor(matterbridge: PlatformMatterbridge, log: AnsiLogger, config: PlatformConfig) {
     super(matterbridge, log, config);
 
     // Verify that Matterbridge is the correct version
-    if (this.verifyMatterbridgeVersion === undefined || typeof this.verifyMatterbridgeVersion !== 'function' || !this.verifyMatterbridgeVersion('3.2.2')) {
+    if (this.verifyMatterbridgeVersion === undefined || typeof this.verifyMatterbridgeVersion !== 'function' || !this.verifyMatterbridgeVersion('3.3.0')) {
       throw new Error(
-        `This plugin requires Matterbridge version >= "3.2.2". Please update Matterbridge from ${this.matterbridge.matterbridgeVersion} to the latest version in the frontend.`,
+        `This plugin requires Matterbridge version >= "3.3.0". Please update Matterbridge from ${this.matterbridge.matterbridgeVersion} to the latest version in the frontend.`,
       );
     }
     this.log.info('Initializing platform:', this.config.name);
