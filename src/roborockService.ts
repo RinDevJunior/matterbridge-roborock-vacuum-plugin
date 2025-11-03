@@ -164,7 +164,7 @@ export default class RoborockService {
 
   public async changeCleanMode(duid: string, { suctionPower, waterFlow, distance_off, mopRoute }: CleanModeSetting): Promise<void> {
     this.logger.notice('RoborockService - changeCleanMode');
-    return this.getMessageProcessor(duid)?.changeCleanMode(duid, suctionPower, waterFlow, mopRoute, distance_off);
+    return this.getMessageProcessor(duid)?.changeCleanMode(duid, suctionPower, waterFlow, mopRoute ?? 0, distance_off);
   }
 
   public async startClean(duid: string): Promise<void> {
