@@ -1,6 +1,6 @@
-import { CleanSetting, MopRoute, MopWaterFlow, VacuumSuctionPower } from './default.js';
+import { CleanModeSetting, CleanSetting, MopRoute, MopWaterFlow, VacuumSuctionPower } from './default.js';
 
-export function getCurrentCleanModeDefault(setting: { suctionPower: number; waterFlow: number; distance_off: number; mopRoute: number | undefined }): number | undefined {
+export function getCurrentCleanModeDefault(setting: CleanModeSetting): number | undefined {
   if (!setting || typeof setting !== 'object') {
     return undefined;
   }

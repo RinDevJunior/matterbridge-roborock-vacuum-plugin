@@ -1,11 +1,13 @@
+interface Security {
+  endpoint: string;
+  nonce: string;
+}
+
 export interface DpsPayload {
   id: number;
   method?: string;
   params?: unknown[] | Record<string, unknown> | undefined;
-  security?: {
-    endpoint: string;
-    nonce: string;
-  };
+  security?: Security;
   result: unknown;
 }
 

@@ -8,6 +8,10 @@ import { ModeBase, RvcOperationalState, ServiceArea } from 'matterbridge/matter/
 import { ExperimentalFeatureSetting } from './model/ExperimentalFeatureSetting.js';
 import { DockingStationStatus } from './model/DockingStationStatus.js';
 
+interface IdentifyCommandRequest {
+  identifyTime?: number;
+}
+
 export class RoborockVacuumCleaner extends RoboticVacuumCleaner {
   username: string | undefined;
   device: Device;
@@ -64,7 +68,7 @@ export class RoborockVacuumCleaner extends RoboticVacuumCleaner {
   public configurateHandler(behaviorHandler: BehaviorFactoryResult): void {
     this.addCommandHandler('identify', async ({ request, cluster, attributes, endpoint }) => {
       this.log.info(`Identify command received for endpoint ${endpoint}, cluster ${cluster}, attributes ${debugStringify(attributes)}, request: ${JSON.stringify(request)}`);
-      behaviorHandler.executeCommand('playSoundToLocate', (request as { identifyTime?: number }).identifyTime ?? 0);
+      behaviorHandler.executeCommand('playSoundToLocate', (request as IdentifyCommandRequest).identifyTime ?? 0);
     });
 
     this.addCommandHandler('selectAreas', async ({ request }) => {

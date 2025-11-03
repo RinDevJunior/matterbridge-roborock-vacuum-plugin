@@ -1,8 +1,13 @@
 import decodeComponent from '../helper/nameDecoder.js';
 import { Room } from './room.js';
 
+interface RoomEntry {
+  id: number;
+  name: string | undefined;
+}
+
 export class RoomInfo {
-  readonly rooms: { id: number; name: string | undefined }[] = [];
+  readonly rooms: RoomEntry[] = [];
 
   constructor(roomInfo: Room[], roomData: number[][]) {
     this.rooms = roomData

@@ -1,12 +1,14 @@
+import { MapInfo } from '../initialData/getSupportedAreas.js';
+
 export class RoomIndexMap {
-  public indexMap: Map<number, { roomId: number; mapId: number | null }>;
+  public indexMap: Map<number, MapInfo>;
   public roomMap: Map<string, number>;
 
-  constructor(roomMap: Map<number, { roomId: number; mapId: number | null }>) {
+  constructor(roomMap: Map<number, MapInfo>) {
     this.indexMap = roomMap;
     this.roomMap = new Map();
-    for (const [areaId, { roomId, mapId }] of roomMap.entries()) {
-      this.roomMap.set(`${roomId}:${mapId}`, areaId);
+    for (const [areaId, r] of roomMap.entries()) {
+      this.roomMap.set(`${r.roomId}:${r.mapId}`, areaId);
     }
   }
 

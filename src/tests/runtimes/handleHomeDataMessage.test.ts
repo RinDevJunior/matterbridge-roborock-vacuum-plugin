@@ -1,3 +1,4 @@
+import { DeviceData } from '../../roborockCommunication/Zmodel/device';
 import { updateFromHomeData } from '../../runtimes/handleHomeDataMessage';
 import { homeData } from '../testData/mockData';
 import { PowerSource, RvcRunMode } from 'matterbridge/matter/clusters';
@@ -7,7 +8,7 @@ const mockUpdateAttribute = jest.fn();
 const duid = 'test-duid';
 const robot = {
   updateAttribute: mockUpdateAttribute,
-  device: { data: { model: 'test-model' } as { model: string } | undefined },
+  device: { data: { model: 'test-model' } as DeviceData | undefined },
   dockStationStatus: {},
 };
 const platform = {

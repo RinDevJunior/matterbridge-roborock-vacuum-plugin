@@ -5,12 +5,13 @@ import { Room } from '../roborockCommunication/Zmodel/room.js';
 import { randomInt } from 'node:crypto';
 import { RoomIndexMap } from '../model/roomIndexMap.js';
 
-export function getSupportedAreas(
-  vacuumRooms: Room[],
-  roomMap: RoomMap | undefined,
-  enableMultipleMap = false,
-  log?: AnsiLogger,
-): { supportedAreas: ServiceArea.Area[]; supportedMaps: ServiceArea.Map[]; roomIndexMap: RoomIndexMap } {
+export interface SupportedAreasResult {
+  supportedAreas: ServiceArea.Area[];
+  supportedMaps: ServiceArea.Map[];
+  roomIndexMap: RoomIndexMap;
+}
+
+export function getSupportedAreas(vacuumRooms: Room[], roomMap: RoomMap | undefined, enableMultipleMap = false, log?: AnsiLogger): SupportedAreasResult {
   log?.debug('getSupportedAreas-vacuum room', debugStringify(vacuumRooms));
   log?.debug('getSupportedAreas-roomMap', roomMap ? debugStringify(roomMap) : 'undefined');
 
@@ -80,9 +81,14 @@ export function getSupportedAreas(
   };
 }
 
+interface SupportedArea {
+  areaId: number;
+  mapId: number;
+}
+
 function findDuplicatedAreaIds(areas: ServiceArea.Area[], log?: AnsiLogger): boolean {
   const seen = new Set<string>();
-  const duplicates: { areaId: number; mapId: number }[] = [];
+  const duplicates: SupportedArea[] = [];
 
   for (const area of areas) {
     const key = `${area.areaId}=${area.mapId}`;
@@ -101,12 +107,18 @@ function findDuplicatedAreaIds(areas: ServiceArea.Area[], log?: AnsiLogger): boo
   return duplicates.length > 0;
 }
 
-function processValidData(
-  enableMultipleMap: boolean,
-  vacuumRooms: Room[],
-  roomMap?: RoomMap,
-): { supportedAreas: ServiceArea.Area[]; indexMap: Map<number, { roomId: number; mapId: number | null }> } {
-  const indexMap = new Map<number, { roomId: number; mapId: number | null }>();
+export interface MapInfo {
+  roomId: number;
+  mapId: number | null;
+}
+
+interface ProcessedData {
+  supportedAreas: ServiceArea.Area[];
+  indexMap: Map<number, MapInfo>;
+}
+
+function processValidData(enableMultipleMap: boolean, vacuumRooms: Room[], roomMap?: RoomMap): ProcessedData {
+  const indexMap = new Map<number, MapInfo>();
   const supportedAreas: ServiceArea.Area[] =
     roomMap?.rooms !== undefined && roomMap.rooms.length > 0
       ? roomMap.rooms.map((room, index) => {

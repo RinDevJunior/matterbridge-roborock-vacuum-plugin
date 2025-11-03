@@ -54,15 +54,17 @@ export interface CloudMessageResult {
   repeat?: number;
   kct?: number;
   subdivision_sets?: number;
-  cleaning_info?: {
-    target_segment_id: number;
-    segment_id: number;
-    fan_power: number;
-    water_box_status: number;
-    mop_mode: number;
-  };
+  cleaning_info?: CleanInformation;
   exit_dock?: number;
   seq_type?: number;
+}
+
+interface CleanInformation {
+  target_segment_id: number;
+  segment_id: number;
+  fan_power: number;
+  water_box_status: number;
+  mop_mode: number;
 }
 
 export enum CarpetCleanMode {

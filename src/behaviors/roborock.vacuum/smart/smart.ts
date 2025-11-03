@@ -3,7 +3,7 @@ import { AnsiLogger, debugStringify } from 'matterbridge/logger';
 import { BehaviorDeviceGeneric, BehaviorRoborock, DeviceCommands } from '../../BehaviorDeviceGeneric.js';
 import RoborockService from '../../../roborockService.js';
 import { CleanModeSettings } from '../../../model/ExperimentalFeatureSetting.js';
-import { RvcCleanMode as DefaultRvcCleanMode, CleanSetting as DefaultCleanSetting, getSettingFromCleanMode, RvcRunMode } from '../default/default.js';
+import { RvcCleanMode as DefaultRvcCleanMode, CleanSetting as DefaultCleanSetting, getSettingFromCleanMode, RvcRunMode, CleanModeSetting } from '../default/default.js';
 
 export interface EndpointCommandsSmart extends DeviceCommands {
   selectAreas: (newAreas: number[] | undefined) => MaybePromise;
@@ -61,7 +61,7 @@ export const RvcCleanMode: Record<number, string> = {
 };
 
 // { suctionPower: [ 102 ], waterFlow: 200, distance_off: 0, mopRoute: [ 102 ] }
-export const CleanSetting: Record<number, { suctionPower: number; waterFlow: number; distance_off: number; mopRoute: number }> = {
+export const CleanSetting: Record<number, CleanModeSetting> = {
   [4]: { suctionPower: 0, waterFlow: 0, distance_off: 0, mopRoute: MopRouteSmart.Smart }, // 'Smart Plan'
   ...DefaultCleanSetting,
 };
