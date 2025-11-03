@@ -7,12 +7,14 @@ export class Scene {
   type: string | undefined;
 }
 
+interface ActionInformation {
+  type: string;
+  items: SceneItem[];
+}
+
 export interface SceneParam {
   triggers: unknown[];
-  action: {
-    type: string;
-    items: SceneItem[];
-  };
+  action: ActionInformation;
   matchType: string;
 }
 

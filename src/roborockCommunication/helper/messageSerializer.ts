@@ -7,6 +7,11 @@ import { MessageContext } from '../broadcast/model/messageContext.js';
 import { AnsiLogger } from 'matterbridge/logger';
 import { Protocol } from '../broadcast/model/protocol.js';
 
+interface SerializeResult {
+  messageId: number;
+  buffer: Buffer<ArrayBufferLike>;
+}
+
 export class MessageSerializer {
   private readonly context: MessageContext;
   private readonly logger: AnsiLogger;
@@ -18,7 +23,7 @@ export class MessageSerializer {
     this.logger = logger;
   }
 
-  public serialize(duid: string, request: RequestMessage): { messageId: number; buffer: Buffer<ArrayBufferLike> } {
+  public serialize(duid: string, request: RequestMessage): SerializeResult {
     const messageId = request.messageId;
     const buffer = this.buildBuffer(duid, messageId, request);
     return { messageId: messageId, buffer: buffer };

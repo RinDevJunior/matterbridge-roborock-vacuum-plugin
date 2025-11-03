@@ -1,34 +1,42 @@
+export interface AdvancedFeature {
+  showRoutinesAsRoom: boolean;
+  includeDockStationStatus: boolean;
+  forceRunAtDefault: boolean;
+  useVacationModeToSendVacuumToDock: boolean;
+  enableServerMode: boolean;
+  alwaysExecuteAuthentication: boolean;
+  enableMultipleMap: boolean;
+}
+
 export interface ExperimentalFeatureSetting {
   enableExperimentalFeature: boolean;
-  advancedFeature: {
-    showRoutinesAsRoom: boolean;
-    includeDockStationStatus: boolean;
-    forceRunAtDefault: boolean;
-    useVacationModeToSendVacuumToDock: boolean;
-    enableServerMode: boolean;
-    alwaysExecuteAuthentication: boolean;
-    enableMultipleMap: boolean;
-  };
+  advancedFeature: AdvancedFeature;
   cleanModeSettings: CleanModeSettings;
+}
+
+interface VacuumingCleanModeSetting {
+  fanMode: 'Balanced' | string;
+  mopRouteMode: 'Standard' | string;
+}
+
+interface MoppingCleanModeSetting {
+  waterFlowMode: 'Medium' | string;
+  mopRouteMode: 'Standard' | string;
+  distanceOff?: number;
+}
+
+interface VacMopCleanModeSetting {
+  fanMode: 'Balanced' | string;
+  waterFlowMode: 'Medium' | string;
+  mopRouteMode: 'Standard' | string;
+  distanceOff?: number;
 }
 
 export interface CleanModeSettings {
   enableCleanModeMapping: boolean;
-  vacuuming?: {
-    fanMode: 'Balanced' | string;
-    mopRouteMode: 'Standard' | string;
-  };
-  mopping?: {
-    waterFlowMode: 'Medium' | string;
-    mopRouteMode: 'Standard' | string;
-    distanceOff?: number;
-  };
-  vacmop?: {
-    fanMode: 'Balanced' | string;
-    waterFlowMode: 'Medium' | string;
-    mopRouteMode: 'Standard' | string;
-    distanceOff?: number;
-  };
+  vacuuming?: VacuumingCleanModeSetting;
+  mopping?: MoppingCleanModeSetting;
+  vacmop?: VacMopCleanModeSetting;
 }
 
 export function createDefaultExperimentalFeatureSetting(): ExperimentalFeatureSetting {

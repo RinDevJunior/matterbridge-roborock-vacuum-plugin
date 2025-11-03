@@ -79,7 +79,14 @@ export const RvcCleanMode: Record<number, string> = {
   [99]: 'Go Vacation',
 };
 
-export const CleanSetting: Record<number, { suctionPower: number; waterFlow: number; distance_off: number; mopRoute: number }> = {
+export interface CleanModeSetting {
+  suctionPower: number;
+  waterFlow: number;
+  distance_off: number;
+  mopRoute: number | undefined;
+}
+
+export const CleanSetting: Record<number, CleanModeSetting> = {
   [5]: { suctionPower: VacuumSuctionPower.Balanced, waterFlow: MopWaterFlow.Medium, distance_off: 0, mopRoute: MopRoute.Standard }, // 'Vac & Mop Default'
   [6]: { suctionPower: VacuumSuctionPower.Balanced, waterFlow: MopWaterFlow.Medium, distance_off: 0, mopRoute: MopRoute.Fast }, // 'Vac & Mop Quick'
 
@@ -192,10 +199,7 @@ export function setDefaultCommandHandler(
   });
 }
 
-export const getSettingFromCleanMode = (
-  activity: string,
-  cleanModeSettings?: CleanModeSettings,
-): { suctionPower: number; waterFlow: number; distance_off: number; mopRoute: number } | undefined => {
+export const getSettingFromCleanMode = (activity: string, cleanModeSettings?: CleanModeSettings): CleanModeSetting | undefined => {
   switch (activity) {
     case 'Mop: Default': {
       const mopSetting = cleanModeSettings?.mopping;

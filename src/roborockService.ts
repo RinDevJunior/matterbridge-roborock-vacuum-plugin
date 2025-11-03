@@ -26,7 +26,16 @@ import { ServiceArea } from 'matterbridge/matter/clusters';
 import { LocalNetworkClient } from './roborockCommunication/broadcast/client/LocalNetworkClient.js';
 import { RoomIndexMap } from './model/roomIndexMap.js';
 import { DpsPayload } from './roborockCommunication/broadcast/model/dps.js';
+import { CleanModeSetting } from './behaviors/roborock.vacuum/default/default.js';
 export type Factory<A, T> = (logger: AnsiLogger, arg: A) => T;
+
+interface MapRoomResponse {
+  vacuumRoom?: number;
+}
+
+interface Security {
+  nonce: number;
+}
 
 export default class RoborockService {
   private loginApi: RoborockAuthenticateApi;
@@ -130,7 +139,7 @@ export default class RoborockService {
     return this.supportedAreaIndexMaps.get(duid);
   }
 
-  public async getCleanModeData(duid: string): Promise<{ suctionPower: number; waterFlow: number; distance_off: number; mopRoute: number }> {
+  public async getCleanModeData(duid: string): Promise<CleanModeSetting> {
     this.logger.notice('RoborockService - getCleanModeData');
     const data = await this.getMessageProcessor(duid)?.getCleanModeData(duid);
     if (!data) {
@@ -140,7 +149,7 @@ export default class RoborockService {
   }
 
   public async getRoomIdFromMap(duid: string): Promise<number | undefined> {
-    const data = (await this.customGet(duid, new RequestMessage({ method: 'get_map_v1' }))) as { vacuumRoom?: number };
+    const data = (await this.customGet(duid, new RequestMessage({ method: 'get_map_v1' }))) as MapRoomResponse;
     return data?.vacuumRoom;
   }
 
@@ -153,10 +162,7 @@ export default class RoborockService {
     });
   }
 
-  public async changeCleanMode(
-    duid: string,
-    { suctionPower, waterFlow, distance_off, mopRoute }: { suctionPower: number; waterFlow: number; distance_off: number; mopRoute: number },
-  ): Promise<void> {
+  public async changeCleanMode(duid: string, { suctionPower, waterFlow, distance_off, mopRoute }: CleanModeSetting): Promise<void> {
     this.logger.notice('RoborockService - changeCleanMode');
     return this.getMessageProcessor(duid)?.changeCleanMode(duid, suctionPower, waterFlow, mopRoute, distance_off);
   }
@@ -497,7 +503,7 @@ export default class RoborockService {
 
         if (message instanceof ResponseMessage && message.contain(Protocol.hello_response)) {
           const dps = message.dps[Protocol.hello_response] as DpsPayload;
-          const result = dps.result as { nonce: number };
+          const result = dps.result as Security;
           self.messageClient?.updateNonce(message.duid, result.nonce);
         }
       },

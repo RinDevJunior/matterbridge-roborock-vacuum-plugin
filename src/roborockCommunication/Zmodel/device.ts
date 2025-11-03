@@ -3,6 +3,22 @@ import { Room } from './room.js';
 import { Scene } from './scene.js';
 import { UserData } from './userData.js';
 
+export interface DeviceData {
+  id: string;
+  firmwareVersion: string;
+  serialNumber: string;
+  model: string;
+  category: string;
+  batteryLevel: number;
+}
+
+interface DeviceInformation {
+  userData: UserData;
+  localKey: string;
+  pv: string;
+  model?: string;
+}
+
 export interface Device {
   duid: string;
   name: string;
@@ -15,40 +31,20 @@ export interface Device {
 
   activeTime: number;
   createTime: number;
-
   localKey: string;
 
   /** The protocol version of the robot. */
   pv: string;
   online: boolean;
-
   productId: string;
-
   rrHomeId: number;
-
   /** The firmware version of the robot. */
   fv: string;
 
   deviceStatus: Record<string, number>;
   rooms: Room[];
-
   schema: DeviceSchema[];
-
-  data: {
-    id: string;
-    firmwareVersion: string;
-    serialNumber: string;
-    model: string;
-    category: string;
-    batteryLevel: number;
-  };
-
-  store?: {
-    userData: UserData;
-    localKey: string;
-    pv: string;
-    model?: string;
-  };
-
+  data: DeviceData;
+  store?: DeviceInformation;
   scenes?: Scene[];
 }

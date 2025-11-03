@@ -196,7 +196,7 @@ describe('handleLocalMessage -- FF OFF', () => {
         [4, 4],
       ]),
 
-      getAreaId(roomId: number): { roomId: number; mapId: number } | undefined {
+      getAreaId(roomId: number): Area | undefined {
         const index = this.roomMap.get(roomId);
         if (index === undefined) {
           return undefined;
@@ -220,3 +220,8 @@ describe('handleLocalMessage -- FF OFF', () => {
     expect(mockUpdateAttribute).toHaveBeenCalledWith(ServiceArea.Cluster.id, 'currentArea', 4, mockLog);
   });
 });
+
+interface Area {
+  roomId: number;
+  mapId: number;
+}

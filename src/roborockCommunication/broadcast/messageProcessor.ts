@@ -6,6 +6,7 @@ import { RequestMessage } from './model/requestMessage.js';
 import { DeviceStatus } from '../Zmodel/deviceStatus.js';
 import { Client } from './client.js';
 import { NetworkInfo } from '../Zmodel/networkInfo.js';
+import { CleanModeSetting } from '../../behaviors/roborock.vacuum/default/default.js';
 
 export class MessageProcessor {
   private readonly client: Client;
@@ -108,7 +109,7 @@ export class MessageProcessor {
     return this.client.get(duid, request);
   }
 
-  public async getCleanModeData(duid: string): Promise<{ suctionPower: number; waterFlow: number; distance_off: number; mopRoute: number }> {
+  public async getCleanModeData(duid: string): Promise<CleanModeSetting> {
     const currentMopMode = await this.getCustomMessage(duid, new RequestMessage({ method: 'get_mop_mode' }));
     const suctionPowerRaw = await this.getCustomMessage(duid, new RequestMessage({ method: 'get_custom_mode' }));
     const waterFlowRaw = await this.getCustomMessage(duid, new RequestMessage({ method: 'get_water_box_custom_mode' }));
@@ -145,7 +146,7 @@ export class MessageProcessor {
       waterFlow: waterFlow,
       distance_off: distance_off,
       mopRoute: mopRoute,
-    };
+    } satisfies CleanModeSetting;
   }
 
   public async changeCleanMode(duid: string, suctionPower: number, waterFlow: number, mopRoute: number, distance_off: number): Promise<void> {

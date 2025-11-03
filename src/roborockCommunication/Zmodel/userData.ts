@@ -10,15 +10,17 @@ export interface UserData {
   rriot: Rriot;
 }
 
+interface r {
+  r: string;
+  a: string;
+  m: string;
+  l: string;
+}
+
 export interface Rriot {
   u: string;
   s: string;
   h: string;
   k: string;
-  r: {
-    r: string;
-    a: string;
-    m: string;
-    l: string;
-  };
+  r: r;
 }

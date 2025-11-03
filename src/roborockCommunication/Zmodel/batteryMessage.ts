@@ -11,4 +11,6 @@ export interface DeviceErrorMessage {
   errorCode: VacuumErrorCode;
 }
 
-export type DeviceStatusNotify = { duid: string } & DeviceStatus & CloudMessageResult;
+export interface DeviceStatusNotify extends DeviceStatus, CloudMessageResult {
+  duid: string;
+}

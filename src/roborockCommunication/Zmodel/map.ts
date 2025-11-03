@@ -1,10 +1,15 @@
+interface MapBackupInformation {
+  mapFlag: number;
+  add_time: number;
+}
+
 export interface MapInformation {
   mapFlag: number;
   add_time: number;
   length: number;
   name: string;
   rooms?: RoomInformation[] | undefined;
-  bak_maps: { mapFlag: number; add_time: number }[];
+  bak_maps: MapBackupInformation[];
 }
 
 export interface RoomInformation {

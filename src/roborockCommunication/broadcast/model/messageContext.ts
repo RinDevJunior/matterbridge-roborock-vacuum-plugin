@@ -2,9 +2,15 @@ import { randomBytes, randomInt } from 'node:crypto';
 import * as CryptoUtils from '../../helper/cryptoHelper.js';
 import { UserData } from '../../Zmodel/userData.js';
 
+interface DeviceInfo {
+  localKey: string;
+  protocolVersion: string;
+  nonce: number | undefined;
+}
+
 export class MessageContext {
   private readonly endpoint: string;
-  private readonly devices = new Map<string, { localKey: string; protocolVersion: string; nonce: number | undefined }>();
+  private readonly devices = new Map<string, DeviceInfo>();
   public readonly nonce: number;
   public readonly serializeNonce: Buffer;
 
