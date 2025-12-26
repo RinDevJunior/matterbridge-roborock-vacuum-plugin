@@ -180,7 +180,7 @@ export class RoborockAuthenticateApi {
   }
 
   private async apiForUser(username: string, baseUrl = 'https://usiot.roborock.com'): Promise<AxiosInstance> {
-    return this.axiosFactory.create({
+    const instance = this.axiosFactory.create({
       baseURL: baseUrl,
       headers: {
         header_clientid: crypto.createHash('md5').update(username).update(this.deviceId).digest('base64'),
@@ -188,6 +188,34 @@ export class RoborockAuthenticateApi {
         header_clientlang: 'en',
       },
     });
+
+    // Add request interceptor for debugging
+    instance.interceptors.request.use((config) => {
+      this.logger.debug('=== HTTP Request ===');
+      this.logger.debug(`URL: ${config.baseURL}${config.url}`);
+      this.logger.debug(`Method: ${config.method?.toUpperCase()}`);
+      this.logger.debug(`Params: ${JSON.stringify(config.params)}`);
+      this.logger.debug(`Data: ${JSON.stringify(config.data)}`);
+      this.logger.debug(`Headers: ${JSON.stringify(config.headers)}`);
+      return config;
+    });
+
+    // Add response interceptor for debugging
+    instance.interceptors.response.use(
+      (response) => {
+        this.logger.debug('=== HTTP Response ===');
+        this.logger.debug(`Status: ${response.status}`);
+        this.logger.debug(`Data: ${JSON.stringify(response.data)}`);
+        return response;
+      },
+      (error) => {
+        this.logger.debug('=== HTTP Error ===');
+        this.logger.debug(`Error: ${JSON.stringify(error.response?.data ?? error.message)}`);
+        return Promise.reject(error);
+      },
+    );
+
+    return instance;
   }
 
   private auth(username: string, response: AuthenticateResponse<UserData>): UserData {
