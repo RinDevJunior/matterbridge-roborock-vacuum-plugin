@@ -9,6 +9,7 @@ export { DeviceStatus } from './Zmodel/deviceStatus.js';
 export { ResponseMessage } from './broadcast/model/responseMessage.js';
 export { MapInfo } from './Zmodel/mapInfo.js';
 export { AdditionalPropCode } from './Zenum/additionalPropCode.js';
+export { RoborockAuthErrorCode } from './Zmodel/authV4Types.js';
 
 export { Scene } from './Zmodel/scene.js';
 
@@ -21,3 +22,4 @@ export type { Client } from './broadcast/client.js';
 export type { SceneParam } from './Zmodel/scene.js';
 export type { BatteryMessage, DeviceErrorMessage, DeviceStatusNotify } from './Zmodel/batteryMessage.js';
 export type { MultipleMap } from './Zmodel/multipleMap.js';
+export type { AuthFlowState } from './Zmodel/authV4Types.js';

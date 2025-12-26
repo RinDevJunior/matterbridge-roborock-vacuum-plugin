@@ -9,7 +9,7 @@ import { PlatformRunner } from './platformRunner.js';
 import { RoborockVacuumCleaner } from './rvc.js';
 import { configurateBehavior } from './behaviorFactory.js';
 import { NotifyMessageTypes } from './notifyMessageTypes.js';
-import { Device, RoborockAuthenticateApi, RoborockIoTApi, UserData } from './roborockCommunication/index.js';
+import { Device, RoborockAuthenticateApi, RoborockIoTApi, UserData, AuthFlowState } from './roborockCommunication/index.js';
 import { getSupportedAreas, getSupportedScenes } from './initialData/index.js';
 import { CleanModeSettings, createDefaultExperimentalFeatureSetting, ExperimentalFeatureSetting } from './model/ExperimentalFeatureSetting.js';
 import { ServiceArea } from 'matterbridge/matter/clusters';
@@ -61,8 +61,8 @@ export class RoborockMatterbridgePlatform extends MatterbridgeDynamicPlatform {
     await this.persist.init();
 
     // Verify that the config is correct
-    if (this.config.username === undefined || this.config.password === undefined) {
-      this.log.error('"username" and "password" are required in the config');
+    if (this.config.username === undefined) {
+      this.log.error('"username" (email address) is required in the config');
       return;
     }
 
@@ -89,28 +89,21 @@ export class RoborockMatterbridgePlatform extends MatterbridgeDynamicPlatform {
     );
 
     const username = this.config.username as string;
-    const password = this.config.password as string;
+    const verificationCode = this.config.verificationCode as string | undefined;
 
-    const userData = await this.roborockService.loginWithPassword(
-      username,
-      password,
-      async () => {
-        if (this.enableExperimentalFeature?.enableExperimentalFeature && this.enableExperimentalFeature.advancedFeature?.alwaysExecuteAuthentication) {
-          this.log.debug('Always execute authentication on startup');
-          return undefined;
-        }
+    // Authenticate using 2FA flow
+    let userData: UserData | undefined;
+    try {
+      userData = await this.authenticate2FA(username, verificationCode);
+    } catch (error) {
+      this.log.error(`Authentication failed: ${error instanceof Error ? error.message : String(error)}`);
+      return;
+    }
 
-        const savedUserData = (await this.persist.getItem('userData')) as UserData | undefined;
-        if (savedUserData) {
-          this.log.debug('Loading saved userData:', debugStringify(savedUserData));
-          return savedUserData;
-        }
-        return undefined;
-      },
-      async (userData: UserData) => {
-        await this.persist.setItem('userData', userData);
-      },
-    );
+    if (!userData) {
+      // Code was requested, waiting for user to enter it in config
+      return;
+    }
 
     this.log.debug('Initializing - userData:', debugStringify(userData));
     const devices = await this.roborockService.listDevices(username);
@@ -286,5 +279,90 @@ export class RoborockMatterbridgePlatform extends MatterbridgeDynamicPlatform {
     this.log.notice(`Change ${PLUGIN_NAME} log level: ${logLevel} (was ${this.log.logLevel})`);
     this.log.logLevel = logLevel;
     return Promise.resolve();
+  }
+
+  /**
+   * Authenticate using 2FA verification code flow
+   * @param username - The user's email address
+   * @param verificationCode - The verification code from config (if provided)
+   * @returns UserData on successful authentication, undefined if waiting for code
+   */
+  private async authenticate2FA(username: string, verificationCode: string | undefined): Promise<UserData | undefined> {
+    if (!this.roborockService) {
+      throw new Error('RoborockService is not initialized');
+    }
+
+    // Step 1: Try to use cached token (unless forced re-auth)
+    if (!this.enableExperimentalFeature?.advancedFeature?.alwaysExecuteAuthentication) {
+      const savedUserData = (await this.persist.getItem('userData')) as UserData | undefined;
+      if (savedUserData) {
+        this.log.debug('Found saved userData, attempting to use cached token');
+        try {
+          const userData = await this.roborockService.loginWithCachedToken(username, savedUserData);
+          this.log.notice('Successfully authenticated with cached token');
+          return userData;
+        } catch (error) {
+          this.log.warn(`Cached token invalid or expired: ${error instanceof Error ? error.message : String(error)}`);
+          await this.persist.removeItem('userData');
+          // Continue to request new code
+        }
+      }
+    }
+
+    // Step 2: No cached token - check if verification code was provided
+    if (!verificationCode || verificationCode.trim() === '') {
+      // No code provided - request one (with rate limiting)
+      const authState = (await this.persist.getItem('authFlowState')) as AuthFlowState | undefined;
+      const now = Date.now();
+      const RATE_LIMIT_MS = 60000; // 1 minute between code requests
+
+      if (authState?.codeRequestedAt && now - authState.codeRequestedAt < RATE_LIMIT_MS) {
+        const waitSeconds = Math.ceil((RATE_LIMIT_MS - (now - authState.codeRequestedAt)) / 1000);
+        this.log.warn(`Please wait ${waitSeconds} seconds before requesting another code.`);
+        this.log.notice('============================================');
+        this.log.notice('ACTION REQUIRED: Enter verification code');
+        this.log.notice(`A verification code was previously sent to: ${username}`);
+        this.log.notice('Enter the 6-digit code in the plugin configuration');
+        this.log.notice('under the "verificationCode" field, then restart the plugin.');
+        this.log.notice('============================================');
+        return undefined;
+      }
+
+      // Request a new verification code
+      try {
+        this.log.notice(`Requesting verification code for: ${username}`);
+        await this.roborockService.requestVerificationCode(username);
+
+        // Save state to prevent rapid re-requests
+        await this.persist.setItem('authFlowState', {
+          email: username,
+          codeRequestedAt: now,
+        } as AuthFlowState);
+
+        this.log.notice('============================================');
+        this.log.notice('ACTION REQUIRED: Enter verification code');
+        this.log.notice(`A verification code has been sent to: ${username}`);
+        this.log.notice('Enter the 6-digit code in the plugin configuration');
+        this.log.notice('under the "verificationCode" field, then restart the plugin.');
+        this.log.notice('============================================');
+      } catch (error) {
+        this.log.error(`Failed to request verification code: ${error instanceof Error ? error.message : String(error)}`);
+        throw error;
+      }
+
+      return undefined;
+    }
+
+    // Step 3: Code provided - complete login
+    this.log.notice('Attempting login with verification code...');
+
+    const userData = await this.roborockService.loginWithVerificationCode(username, verificationCode.trim(), async (ud: UserData) => {
+      await this.persist.setItem('userData', ud);
+      // Clear auth flow state on successful login
+      await this.persist.removeItem('authFlowState');
+    });
+
+    this.log.notice('Authentication successful!');
+    return userData;
   }
 }

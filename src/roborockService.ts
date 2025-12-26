@@ -77,6 +77,9 @@ export default class RoborockService {
     this.clientManager = clientManager;
   }
 
+  /**
+   * @deprecated Use requestVerificationCode and loginWithVerificationCode instead
+   */
   public async loginWithPassword(
     username: string,
     password: string,
@@ -95,6 +98,38 @@ export default class RoborockService {
     }
 
     return this.auth(userdata);
+  }
+
+  /**
+   * Request a verification code to be sent to the user's email
+   * @param email - The user's email address
+   */
+  public async requestVerificationCode(email: string): Promise<void> {
+    return this.loginApi.requestCodeV4(email);
+  }
+
+  /**
+   * Login with a verification code received via email
+   * @param email - The user's email address
+   * @param code - The 6-digit verification code
+   * @param savedUserData - Callback to save the user data after successful login
+   * @returns UserData on successful authentication
+   */
+  public async loginWithVerificationCode(email: string, code: string, savedUserData: (userData: UserData) => Promise<void>): Promise<UserData> {
+    const userdata = await this.loginApi.loginWithCodeV4(email, code);
+    await savedUserData(userdata);
+    return this.auth(userdata);
+  }
+
+  /**
+   * Login with cached user data (token reuse)
+   * @param username - The user's email address
+   * @param userData - The cached user data with token
+   * @returns UserData on successful validation
+   */
+  public async loginWithCachedToken(username: string, userData: UserData): Promise<UserData> {
+    const validatedUserData = await this.loginApi.loginWithUserData(username, userData);
+    return this.auth(validatedUserData);
   }
 
   public getMessageProcessor(duid: string): MessageProcessor | undefined {

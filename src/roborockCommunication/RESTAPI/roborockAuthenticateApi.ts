@@ -6,6 +6,7 @@ import { AuthenticateResponse } from '../Zmodel/authenticateResponse.js';
 import { BaseUrl } from '../Zmodel/baseURL.js';
 import { HomeInfo } from '../Zmodel/homeInfo.js';
 import { UserData } from '../Zmodel/userData.js';
+import { RoborockAuthErrorCode } from '../Zmodel/authV4Types.js';
 
 export class RoborockAuthenticateApi {
   private readonly logger: AnsiLogger;
@@ -13,6 +14,10 @@ export class RoborockAuthenticateApi {
   private deviceId: string;
   private username?: string;
   private authToken?: string;
+  // Cached values from base URL lookup for v4 login
+  private cachedBaseUrl?: string;
+  private cachedCountry?: string;
+  private cachedCountryCode?: string;
 
   constructor(logger: AnsiLogger, axiosFactory: AxiosStatic = axios) {
     this.deviceId = crypto.randomUUID();
@@ -25,6 +30,9 @@ export class RoborockAuthenticateApi {
     return userData;
   }
 
+  /**
+   * @deprecated Use requestCodeV4 and loginWithCodeV4 instead
+   */
   public async loginWithPassword(username: string, password: string): Promise<UserData> {
     const api = await this.getAPIFor(username);
     const response = await api.post(
@@ -36,6 +44,65 @@ export class RoborockAuthenticateApi {
       }).toString(),
     );
     return this.auth(username, response.data);
+  }
+
+  /**
+   * Request a verification code to be sent to the user's email
+   * @param email - The user's email address
+   * @throws Error if the account is not found, rate limited, or other API error
+   */
+  public async requestCodeV4(email: string): Promise<void> {
+    const api = await this.getAPIFor(email);
+    const response = await api.post(
+      'api/v4/email/code/send',
+      JSON.stringify({
+        username: email,
+        type: 'auth',
+      }),
+      {
+        headers: { 'Content-Type': 'application/json' },
+      },
+    );
+
+    const apiResponse: AuthenticateResponse<unknown> = response.data;
+
+    if (apiResponse.code === RoborockAuthErrorCode.ACCOUNT_NOT_FOUND) {
+      throw new Error(`Account not found for email: ${email}`);
+    }
+    if (apiResponse.code === RoborockAuthErrorCode.RATE_LIMITED) {
+      throw new Error('Rate limited. Please wait before requesting another code.');
+    }
+    if (apiResponse.code !== RoborockAuthErrorCode.SUCCESS && apiResponse.code !== undefined) {
+      throw new Error(`Failed to send verification code: ${apiResponse.msg} (code: ${apiResponse.code})`);
+    }
+
+    this.logger.debug('Verification code requested successfully');
+  }
+
+  /**
+   * Login with a verification code received via email
+   * @param email - The user's email address
+   * @param code - The 6-digit verification code
+   * @returns UserData on successful authentication
+   * @throws Error if the code is invalid, rate limited, or other API error
+   */
+  public async loginWithCodeV4(email: string, code: string): Promise<UserData> {
+    const api = await this.getAPIFor(email);
+
+    const response = await api.post(
+      'api/v4/auth/email/login/code',
+      JSON.stringify({
+        username: email,
+        verifycode: code,
+        country: this.cachedCountry ?? '',
+        countryCode: this.cachedCountryCode ?? '',
+      }),
+      {
+        headers: { 'Content-Type': 'application/json' },
+      },
+    );
+
+    return this.authV4(email, response.data);
   }
 
   public async getHomeDetails(): Promise<HomeInfo | undefined> {
@@ -53,12 +120,27 @@ export class RoborockAuthenticateApi {
     return apiResponse.data;
   }
 
+  /**
+   * Get cached country info from the last base URL lookup
+   */
+  public getCachedCountryInfo(): { country?: string; countryCode?: string } {
+    return {
+      country: this.cachedCountry,
+      countryCode: this.cachedCountryCode,
+    };
+  }
+
   private async getAPIFor(username: string): Promise<AxiosInstance> {
     const baseUrl = await this.getBaseUrl(username);
     return this.apiForUser(username, baseUrl);
   }
 
   private async getBaseUrl(username: string): Promise<string> {
+    // Return cached URL if available for the same user
+    if (this.cachedBaseUrl && this.username === username) {
+      return this.cachedBaseUrl;
+    }
+
     const api = await this.apiForUser(username);
     const response = await api.post(
       'api/v1/getUrlByEmail',
@@ -72,6 +154,12 @@ export class RoborockAuthenticateApi {
     if (!apiResponse.data) {
       throw new Error('Failed to retrieve base URL: ' + apiResponse.msg);
     }
+
+    // Cache the base URL and country info for v4 login
+    this.cachedBaseUrl = apiResponse.data.url;
+    this.cachedCountry = apiResponse.data.country;
+    this.cachedCountryCode = apiResponse.data.countrycode;
+    this.username = username;
 
     return apiResponse.data.url;
   }
@@ -93,6 +181,26 @@ export class RoborockAuthenticateApi {
     }
 
     this.loginWithAuthToken(username, userdata.token);
+    return userdata;
+  }
+
+  /**
+   * Handle v4 authentication response with specific error code handling
+   */
+  private authV4(email: string, response: AuthenticateResponse<UserData>): UserData {
+    if (response.code === RoborockAuthErrorCode.INVALID_CODE) {
+      throw new Error('Invalid verification code. Please check and try again.');
+    }
+    if (response.code === RoborockAuthErrorCode.RATE_LIMITED) {
+      throw new Error('Rate limited. Please wait before trying again.');
+    }
+
+    const userdata = response.data;
+    if (!userdata || !userdata.token) {
+      throw new Error('Authentication failed: ' + response.msg + ' code: ' + response.code);
+    }
+
+    this.loginWithAuthToken(email, userdata.token);
     return userdata;
   }
 
