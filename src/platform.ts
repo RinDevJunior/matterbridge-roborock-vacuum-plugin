@@ -1,5 +1,6 @@
 import { PlatformMatterbridge, MatterbridgeDynamicPlatform, PlatformConfig } from 'matterbridge';
 import * as axios from 'axios';
+import crypto from 'node:crypto';
 import { AnsiLogger, debugStringify, LogLevel } from 'matterbridge/logger';
 import RoborockService from './roborockService.js';
 import { PLUGIN_NAME } from './settings.js';
@@ -80,8 +81,18 @@ export class RoborockMatterbridgePlatform extends MatterbridgeDynamicPlatform {
 
     this.platformRunner = new PlatformRunner(this);
 
+    // Load or generate deviceId for consistent authentication
+    let deviceId = (await this.persist.getItem('deviceId')) as string | undefined;
+    if (!deviceId) {
+      deviceId = crypto.randomUUID();
+      await this.persist.setItem('deviceId', deviceId);
+      this.log.debug('Generated new deviceId:', deviceId);
+    } else {
+      this.log.debug('Using cached deviceId:', deviceId);
+    }
+
     this.roborockService = new RoborockService(
-      () => new RoborockAuthenticateApi(this.log, axiosInstance),
+      () => new RoborockAuthenticateApi(this.log, axiosInstance, deviceId),
       (logger, ud) => new RoborockIoTApi(ud, logger),
       (this.config.refreshInterval as number) ?? 60,
       this.clientManager,

@@ -19,8 +19,8 @@ export class RoborockAuthenticateApi {
   private cachedCountry?: string;
   private cachedCountryCode?: string;
 
-  constructor(logger: AnsiLogger, axiosFactory: AxiosStatic = axios) {
-    this.deviceId = crypto.randomUUID();
+  constructor(logger: AnsiLogger, axiosFactory: AxiosStatic = axios, deviceId?: string) {
+    this.deviceId = deviceId ?? crypto.randomUUID();
     this.axiosFactory = axiosFactory;
     this.logger = logger;
   }
@@ -192,7 +192,7 @@ export class RoborockAuthenticateApi {
     // Add request interceptor for debugging
     instance.interceptors.request.use((config) => {
       this.logger.debug('=== HTTP Request ===');
-      this.logger.debug(`URL: ${config.baseURL}${config.url}`);
+      this.logger.debug(`URL: ${config.baseURL}/${config.url}`);
       this.logger.debug(`Method: ${config.method?.toUpperCase()}`);
       this.logger.debug(`Params: ${JSON.stringify(config.params)}`);
       this.logger.debug(`Data: ${JSON.stringify(config.data)}`);
