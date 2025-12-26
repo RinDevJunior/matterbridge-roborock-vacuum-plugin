@@ -55,12 +55,13 @@ export class RoborockAuthenticateApi {
     const api = await this.getAPIFor(email);
     const response = await api.post(
       'api/v4/email/code/send',
-      JSON.stringify({
-        username: email,
-        type: 'auth',
-      }),
+      new URLSearchParams({
+        email: email,
+        type: 'login',
+        platform: '',
+      }).toString(),
       {
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       },
     );
 
@@ -91,14 +92,16 @@ export class RoborockAuthenticateApi {
 
     const response = await api.post(
       'api/v4/auth/email/login/code',
-      JSON.stringify({
-        username: email,
-        verifycode: code,
+      new URLSearchParams({
+        email: email,
+        code: code,
         country: this.cachedCountry ?? '',
         countryCode: this.cachedCountryCode ?? '',
-      }),
+        majorVersion: '14',
+        minorVersion: '0',
+      }).toString(),
       {
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       },
     );
 
