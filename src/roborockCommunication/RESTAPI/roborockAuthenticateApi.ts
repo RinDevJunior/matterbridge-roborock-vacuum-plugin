@@ -59,9 +59,11 @@ export class RoborockAuthenticateApi {
         email: email,
         type: 'login',
         platform: '',
-      }).toString(),
+      }),
       {
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
       },
     );
 
@@ -90,20 +92,30 @@ export class RoborockAuthenticateApi {
   public async loginWithCodeV4(email: string, code: string): Promise<UserData> {
     const api = await this.getAPIFor(email);
 
-    const response = await api.post(
-      'api/v4/auth/email/login/code',
-      new URLSearchParams({
+    // Generate x_mercy_ks (random 16-char alphanumeric string)
+    const xMercyKs = this.generateRandomString(16);
+
+    // Get signed key from API
+    const xMercyK = await this.signKeyV3(api, xMercyKs);
+
+    const response = await api.post('api/v4/auth/email/login/code', null, {
+      params: {
         email: email,
         code: code,
         country: this.cachedCountry ?? '',
         countryCode: this.cachedCountryCode ?? '',
         majorVersion: '14',
         minorVersion: '0',
-      }).toString(),
-      {
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       },
-    );
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+        'x-mercy-ks': xMercyKs,
+        'x-mercy-k': xMercyK,
+        header_appversion: '4.54.02',
+        header_phonesystem: 'iOS',
+        header_phonemodel: 'iPhone16,1',
+      },
+    });
 
     return this.authV4(email, response.data);
   }
@@ -173,6 +185,7 @@ export class RoborockAuthenticateApi {
       headers: {
         header_clientid: crypto.createHash('md5').update(username).update(this.deviceId).digest('base64'),
         Authorization: this.authToken,
+        header_clientlang: 'en',
       },
     });
   }
@@ -210,5 +223,34 @@ export class RoborockAuthenticateApi {
   private loginWithAuthToken(username: string, token: string): void {
     this.username = username;
     this.authToken = token;
+  }
+
+  /**
+   * Generate a random alphanumeric string of specified length
+   */
+  private generateRandomString(length: number): string {
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+    let result = '';
+    const randomBytes = crypto.randomBytes(length);
+    for (let i = 0; i < length; i++) {
+      result += chars[randomBytes[i] % chars.length];
+    }
+    return result;
+  }
+
+  /**
+   * Sign a key using the v3 API endpoint
+   */
+  private async signKeyV3(api: AxiosInstance, s: string): Promise<string> {
+    const response = await api.post('api/v3/key/sign', null, {
+      params: { s },
+    });
+
+    const apiResponse: AuthenticateResponse<{ k: string }> = response.data;
+    if (!apiResponse.data?.k) {
+      throw new Error('Failed to sign key: ' + apiResponse.msg);
+    }
+
+    return apiResponse.data.k;
   }
 }
