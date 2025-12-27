@@ -10,7 +10,7 @@ import { PlatformRunner } from './platformRunner.js';
 import { RoborockVacuumCleaner } from './rvc.js';
 import { configurateBehavior } from './behaviorFactory.js';
 import { NotifyMessageTypes } from './notifyMessageTypes.js';
-import { Device, RoborockAuthenticateApi, RoborockIoTApi, UserData, AuthFlowState } from './roborockCommunication/index.js';
+import { Device, RoborockAuthenticateApi, RoborockIoTApi, UserData, AuthenticateFlowState } from './roborockCommunication/index.js';
 import { getSupportedAreas, getSupportedScenes } from './initialData/index.js';
 import { CleanModeSettings, createDefaultExperimentalFeatureSetting, ExperimentalFeatureSetting } from './model/ExperimentalFeatureSetting.js';
 import { ServiceArea } from 'matterbridge/matter/clusters';
@@ -303,7 +303,6 @@ export class RoborockMatterbridgePlatform extends MatterbridgeDynamicPlatform {
       throw new Error('RoborockService is not initialized');
     }
 
-    // Step 1: Try to use cached token (unless forced re-auth)
     if (!this.enableExperimentalFeature?.advancedFeature?.alwaysExecuteAuthentication) {
       const savedUserData = (await this.persist.getItem('userData')) as UserData | undefined;
       if (savedUserData) {
@@ -320,10 +319,8 @@ export class RoborockMatterbridgePlatform extends MatterbridgeDynamicPlatform {
       }
     }
 
-    // Step 2: No cached token - check if verification code was provided
     if (!verificationCode || verificationCode.trim() === '') {
-      // No code provided - request one (with rate limiting)
-      const authState = (await this.persist.getItem('authFlowState')) as AuthFlowState | undefined;
+      const authState = (await this.persist.getItem('authenticateFlowState')) as AuthenticateFlowState | undefined;
       const now = Date.now();
       const RATE_LIMIT_MS = 60000; // 1 minute between code requests
 
@@ -339,16 +336,14 @@ export class RoborockMatterbridgePlatform extends MatterbridgeDynamicPlatform {
         return undefined;
       }
 
-      // Request a new verification code
       try {
         this.log.notice(`Requesting verification code for: ${username}`);
         await this.roborockService.requestVerificationCode(username);
 
-        // Save state to prevent rapid re-requests
-        await this.persist.setItem('authFlowState', {
+        await this.persist.setItem('authenticateFlowState', {
           email: username,
           codeRequestedAt: now,
-        } as AuthFlowState);
+        } as AuthenticateFlowState);
 
         this.log.notice('============================================');
         this.log.notice('ACTION REQUIRED: Enter verification code');
@@ -364,13 +359,11 @@ export class RoborockMatterbridgePlatform extends MatterbridgeDynamicPlatform {
       return undefined;
     }
 
-    // Step 3: Code provided - complete login
     this.log.notice('Attempting login with verification code...');
 
-    const userData = await this.roborockService.loginWithVerificationCode(username, verificationCode.trim(), async (ud: UserData) => {
-      await this.persist.setItem('userData', ud);
-      // Clear auth flow state on successful login
-      await this.persist.removeItem('authFlowState');
+    const userData = await this.roborockService.loginWithVerificationCode(username, verificationCode.trim(), async (data: UserData) => {
+      await this.persist.setItem('userData', data);
+      await this.persist.removeItem('authenticateFlowState');
     });
 
     this.log.notice('Authentication successful!');

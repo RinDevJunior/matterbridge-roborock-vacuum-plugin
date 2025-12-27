@@ -6,7 +6,7 @@ import { AuthenticateResponse } from '../Zmodel/authenticateResponse.js';
 import { BaseUrl } from '../Zmodel/baseURL.js';
 import { HomeInfo } from '../Zmodel/homeInfo.js';
 import { UserData } from '../Zmodel/userData.js';
-import { RoborockAuthErrorCode } from '../Zmodel/authV4Types.js';
+import { AuthenticateResponseCode } from '../Zenum/authenticateResponseCode.js';
 
 export class RoborockAuthenticateApi {
   private readonly logger: AnsiLogger;
@@ -69,13 +69,13 @@ export class RoborockAuthenticateApi {
 
     const apiResponse: AuthenticateResponse<unknown> = response.data;
 
-    if (apiResponse.code === RoborockAuthErrorCode.ACCOUNT_NOT_FOUND) {
+    if (apiResponse.code === AuthenticateResponseCode.AccountNotFound) {
       throw new Error(`Account not found for email: ${email}`);
     }
-    if (apiResponse.code === RoborockAuthErrorCode.RATE_LIMITED) {
+    if (apiResponse.code === AuthenticateResponseCode.RateLimited) {
       throw new Error('Rate limited. Please wait before requesting another code.');
     }
-    if (apiResponse.code !== RoborockAuthErrorCode.SUCCESS && apiResponse.code !== undefined) {
+    if (apiResponse.code !== AuthenticateResponseCode.Success && apiResponse.code !== undefined) {
       throw new Error(`Failed to send verification code: ${apiResponse.msg} (code: ${apiResponse.code})`);
     }
 
@@ -151,7 +151,6 @@ export class RoborockAuthenticateApi {
   }
 
   private async getBaseUrl(username: string): Promise<string> {
-    // Return cached URL if available for the same user
     if (this.cachedBaseUrl && this.username === username) {
       return this.cachedBaseUrl;
     }
@@ -170,7 +169,6 @@ export class RoborockAuthenticateApi {
       throw new Error('Failed to retrieve base URL: ' + apiResponse.msg);
     }
 
-    // Cache the base URL and country info for v4 login
     this.cachedBaseUrl = apiResponse.data.url;
     this.cachedCountry = apiResponse.data.country;
     this.cachedCountryCode = apiResponse.data.countrycode;
@@ -189,7 +187,6 @@ export class RoborockAuthenticateApi {
       },
     });
 
-    // Add request interceptor for debugging
     instance.interceptors.request.use((config) => {
       this.logger.debug('=== HTTP Request ===');
       this.logger.debug(`URL: ${config.baseURL}/${config.url}`);
@@ -200,7 +197,6 @@ export class RoborockAuthenticateApi {
       return config;
     });
 
-    // Add response interceptor for debugging
     instance.interceptors.response.use(
       (response) => {
         this.logger.debug('=== HTTP Response ===');
@@ -232,10 +228,10 @@ export class RoborockAuthenticateApi {
    * Handle v4 authentication response with specific error code handling
    */
   private authV4(email: string, response: AuthenticateResponse<UserData>): UserData {
-    if (response.code === RoborockAuthErrorCode.INVALID_CODE) {
+    if (response.code === AuthenticateResponseCode.InvalidCode) {
       throw new Error('Invalid verification code. Please check and try again.');
     }
-    if (response.code === RoborockAuthErrorCode.RATE_LIMITED) {
+    if (response.code === AuthenticateResponseCode.RateLimited) {
       throw new Error('Rate limited. Please wait before trying again.');
     }
 
