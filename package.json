@@ -1,6 +1,6 @@
 {
   "name": "matterbridge-roborock-vacuum-plugin",
-  "version": "1.1.1-rc09",
+  "version": "1.1.1-rc10",
   "description": "Matterbridge Roborock Vacuum Plugin",
   "author": "https://github.com/RinDevJunior",
   "license": "MIT",
@@ -37,7 +37,7 @@
     "precondition": "npm install -g matterbridge@3.4.5",
     "deepCleanB": "npm run deepClean && npm install && npm link matterbridge && npm run build && npm run matterbridge:add",
     "start": "tsc && matterbridge -childbridge",
-    "buildpackage": "cd .. && tar --exclude-from='matterbridge-roborock-vacuum-plugin/.tarignore' -czvf matterbridge-roborock-vacuum-plugin-1.1.1-rc09.tgz matterbridge-roborock-vacuum-plugin && cd matterbridge-roborock-vacuum-plugin",
+    "buildpackage": "cd .. && tar --exclude-from='matterbridge-roborock-vacuum-plugin/.tarignore' -czvf matterbridge-roborock-vacuum-plugin-1.1.1-rc10.tgz matterbridge-roborock-vacuum-plugin && cd matterbridge-roborock-vacuum-plugin",
     "build": "tsc",
     "buildProduction": "tsc --project tsconfig.production.json",
     "watch": "tsc --watch",

@@ -49,7 +49,7 @@
               "maxLength": 6
             }
           },
-          "required": ["authenticationMethod", "verificationCode"]
+          "required": ["authenticationMethod"]
         },
         {
           "title": "Password",
