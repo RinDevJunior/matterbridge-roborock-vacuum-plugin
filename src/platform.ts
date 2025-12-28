@@ -12,7 +12,7 @@ import { configurateBehavior } from './behaviorFactory.js';
 import { NotifyMessageTypes } from './notifyMessageTypes.js';
 import { Device, RoborockAuthenticateApi, RoborockIoTApi, UserData, AuthenticateFlowState } from './roborockCommunication/index.js';
 import { getSupportedAreas, getSupportedScenes } from './initialData/index.js';
-import { CleanModeSettings, createDefaultExperimentalFeatureSetting, ExperimentalFeatureSetting } from './model/ExperimentalFeatureSetting.js';
+import { AuthenticationPayload, CleanModeSettings, createDefaultExperimentalFeatureSetting, ExperimentalFeatureSetting } from './model/ExperimentalFeatureSetting.js';
 import { ServiceArea } from 'matterbridge/matter/clusters';
 import NodePersist from 'node-persist';
 import Path from 'node:path';
@@ -100,12 +100,28 @@ export class RoborockMatterbridgePlatform extends MatterbridgeDynamicPlatform {
     );
 
     const username = this.config.username as string;
-    const verificationCode = this.config.verificationCode as string | undefined;
+
+    this.log.debug(`config: ${debugStringify(this.config)}`);
+
+    const authenticationPayload = this.config.authentication as AuthenticationPayload;
+    const password = authenticationPayload.password ?? '';
+    const verificationCode = authenticationPayload.verificationCode ?? '';
+    const authenticationMethod = authenticationPayload.authenticationMethod as 'VerificationCode' | 'Password';
+
+    this.log.debug(`Authentication method: ${authenticationMethod}`);
+    this.log.debug(`Username: ${username}`);
+    this.log.debug(`Password provided: ${password !== ''}`);
+    this.log.debug(`Verification code provided: ${verificationCode !== ''}`);
 
     // Authenticate using 2FA flow
     let userData: UserData | undefined;
     try {
-      userData = await this.authenticate2FA(username, verificationCode);
+      if (authenticationMethod === 'VerificationCode') {
+        this.log.debug('Using verification code from config for authentication');
+        userData = await this.authenticate2FA(username, verificationCode);
+      } else {
+        userData = await this.authenticateWithPassword(username, password);
+      }
     } catch (error) {
       this.log.error(`Authentication failed: ${error instanceof Error ? error.message : String(error)}`);
       return;
@@ -290,6 +306,37 @@ export class RoborockMatterbridgePlatform extends MatterbridgeDynamicPlatform {
     this.log.notice(`Change ${PLUGIN_NAME} log level: ${logLevel} (was ${this.log.logLevel})`);
     this.log.logLevel = logLevel;
     return Promise.resolve();
+  }
+
+  private async authenticateWithPassword(username: string, password: string): Promise<UserData> {
+    if (!this.roborockService) {
+      throw new Error('RoborockService is not initialized');
+    }
+
+    this.log.notice('Attempting login with password...');
+
+    const userData = await this.roborockService.loginWithPassword(
+      username,
+      password,
+      async () => {
+        if (this.enableExperimentalFeature?.enableExperimentalFeature && this.enableExperimentalFeature.advancedFeature?.alwaysExecuteAuthentication) {
+          this.log.debug('Always execute authentication on startup');
+          return undefined;
+        }
+
+        const savedUserData = (await this.persist.getItem('userData')) as UserData | undefined;
+        if (savedUserData) {
+          this.log.debug('Loading saved userData:', debugStringify(savedUserData));
+          return savedUserData;
+        }
+        return undefined;
+      },
+      async (userData: UserData) => {
+        await this.persist.setItem('userData', userData);
+      },
+    );
+    this.log.notice('Authentication successful!');
+    return userData;
   }
 
   /**

@@ -35,6 +35,11 @@
       }
     }
   },
+  "authentication": {
+    "authenticationMethod": "VerificationCode",
+    "verificationCode": "",
+    "password": ""
+  },
   "debug": true,
   "unregisterOnShutdown": false,
   "enableExperimentalFeature": false

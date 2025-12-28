@@ -29,16 +29,48 @@
       "description": "Roborock account email address",
       "type": "string"
     },
-    "verificationCode": {
-      "description": "6-digit verification code sent to your email. Leave empty to request a new code, then restart the plugin after entering the code.",
-      "type": "string",
-      "maxLength": 6
+    "authentication": {
+      "description": "Authentication method to use",
+      "type": "object",
+      "oneOf": [
+        {
+          "title": "Verification Code",
+          "type": "object",
+          "properties": {
+            "authenticationMethod": {
+              "const": "VerificationCode",
+              "type": "string",
+              "default": "VerificationCode",
+              "readOnly": true
+            },
+            "verificationCode": {
+              "description": "6-digit verification code sent to your email. Leave empty to request a new code, then restart the plugin after entering the code.",
+              "type": "string",
+              "maxLength": 6
+            }
+          },
+          "required": ["authenticationMethod", "verificationCode"]
+        },
+        {
+          "title": "Password",
+          "type": "object",
+          "properties": {
+            "authenticationMethod": {
+              "const": "Password",
+              "type": "string",
+              "readOnly": true
+            },
+            "password": {
+              "description": "[DEPRECATED] Password login is no longer supported. Use verification code instead.",
+              "type": "string",
+              "ui:widget": "password"
+            }
+          },
+          "required": ["authenticationMethod", "password"]
+        }
+      ]
     },
-    "password": {
-      "description": "[DEPRECATED] Password login is no longer supported. Use verification code instead.",
-      "type": "string",
-      "ui:widget": "password"
-    },
+
     "refreshInterval": {
       "description": "Refresh interval in seconds (default: 60)",
       "type": "number",

@@ -8,6 +8,12 @@ export interface AdvancedFeature {
   enableMultipleMap: boolean;
 }
 
+export interface AuthenticationPayload {
+  authenticationMethod: 'VerificationCode' | 'Password';
+  verificationCode?: string;
+  password?: string;
+}
+
 export interface ExperimentalFeatureSetting {
   enableExperimentalFeature: boolean;
   advancedFeature: AdvancedFeature;
