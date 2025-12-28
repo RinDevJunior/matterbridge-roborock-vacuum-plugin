@@ -11,6 +11,14 @@ describe('RoborockAuthenticateApi', () => {
     mockAxiosInstance = {
       post: jest.fn(),
       get: jest.fn(),
+      interceptors: {
+        request: {
+          use: jest.fn(),
+        },
+        response: {
+          use: jest.fn(),
+        },
+      },
     };
     mockAxiosFactory = {
       create: jest.fn(() => mockAxiosInstance),

@@ -1,7 +1,7 @@
 {
   "name": "matterbridge-roborock-vacuum-plugin",
   "type": "DynamicPlatform",
-  "version": "1.1.1-rc08",
+  "version": "1.1.1-rc09",
   "whiteList": [],
   "blackList": [],
   "useInterval": true,
@@ -34,6 +34,11 @@
         "distanceOff": 25
       }
     }
+  },
+  "authentication": {
+    "authenticationMethod": "VerificationCode",
+    "verificationCode": "",
+    "password": ""
   },
   "debug": true,
   "unregisterOnShutdown": false,
