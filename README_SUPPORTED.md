@@ -7,6 +7,7 @@
 | Roborock Qrevo Edge 5V1    | `QREVO_EDGE_5V1`       | `roborock.vacuum.a187`        |                  |
 | Roborock S8 Pro Ultra      | `S8_PRO_ULTRA`         | `roborock.vacuum.a70`         |                  |
 | Roborock S7 MaxV           | `S7_MAXV`              | `roborock.vacuum.a27`         |                  |
+| Roborock Qrevo Plus        | `QREVO_PLUS`           | `roborock.vacuum.a123`        |                  |
 
 These devices have been fully tested and are confirmed to work as expected.
 

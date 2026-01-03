@@ -11,6 +11,7 @@ export function getSupportedCleanModes(model: string, enableExperimentalFeature:
 
   switch (model) {
     case DeviceModel.QREVO_EDGE_5V1:
+    case DeviceModel.QREVO_PLUS:
       return getSupportedCleanModesSmart(enableExperimentalFeature);
 
     case DeviceModel.S7_MAXV:
