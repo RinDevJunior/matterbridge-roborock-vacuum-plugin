@@ -23,7 +23,8 @@ export function configurateBehavior(
   }
 
   switch (model) {
-    case DeviceModel.QREVO_EDGE_5V1: {
+    case DeviceModel.QREVO_EDGE_5V1:
+    case DeviceModel.QREVO_PLUS: {
       const deviceHandler = new BehaviorDeviceGeneric<EndpointCommandsSmart>(logger);
       setCommandHandlerSmart(duid, deviceHandler, logger, roborockService, cleanModeSettings);
       return deviceHandler;
