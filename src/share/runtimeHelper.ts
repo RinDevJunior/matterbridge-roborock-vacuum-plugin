@@ -12,6 +12,7 @@ export function getCurrentCleanModeFunc(model: string, forceRunAtDefault: boolea
 
   switch (model) {
     case DeviceModel.QREVO_EDGE_5V1:
+    case DeviceModel.QREVO_PLUS:
       return getCurrentCleanModeSmart;
 
     case DeviceModel.S7_MAXV:
