@@ -91,12 +91,22 @@ export class RoborockMatterbridgePlatform extends MatterbridgeDynamicPlatform {
       this.log.debug('Using cached deviceId:', deviceId);
     }
 
+    const region = (this.config.region as string)?.toUpperCase() ?? 'US';
+    let baseUrl = 'https://usiot.roborock.com';
+    if (region === 'EU') {
+      baseUrl = 'https://euiot.roborock.com';
+    } else if (region === 'CN') {
+      baseUrl = 'https://iot.roborock.com';
+    }
+    this.log.notice(`Using region: ${region} (${baseUrl})`);
+
     this.roborockService = new RoborockService(
-      () => new RoborockAuthenticateApi(this.log, axiosInstance, deviceId),
+      (logger, url) => new RoborockAuthenticateApi(this.log, axiosInstance, deviceId, url),
       (logger, ud) => new RoborockIoTApi(ud, logger),
       (this.config.refreshInterval as number) ?? 60,
       this.clientManager,
       this.log,
+      baseUrl,
     );
 
     const username = this.config.username as string;

@@ -64,14 +64,15 @@ export default class RoborockService {
   private readonly vacuumNeedAPIV3 = ['roborock.vacuum.ss07'];
 
   constructor(
-    authenticateApiSupplier: Factory<void, RoborockAuthenticateApi> = (logger) => new RoborockAuthenticateApi(logger),
+    authenticateApiSupplier: (logger: AnsiLogger, baseUrl: string) => RoborockAuthenticateApi = (logger, baseUrl) => new RoborockAuthenticateApi(logger, undefined, undefined, baseUrl),
     iotApiSupplier: Factory<UserData, RoborockIoTApi> = (logger, ud) => new RoborockIoTApi(ud, logger),
     refreshInterval: number,
     clientManager: ClientManager,
     logger: AnsiLogger,
+    baseUrl = 'https://usiot.roborock.com',
   ) {
     this.logger = logger;
-    this.loginApi = authenticateApiSupplier(logger);
+    this.loginApi = authenticateApiSupplier(logger, baseUrl);
     this.iotApiFactory = iotApiSupplier;
     this.refreshInterval = refreshInterval;
     this.clientManager = clientManager;

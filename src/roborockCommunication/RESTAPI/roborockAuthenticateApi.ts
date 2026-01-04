@@ -14,15 +14,17 @@ export class RoborockAuthenticateApi {
   private deviceId: string;
   private username?: string;
   private authToken?: string;
+  private readonly baseUrl: string;
   // Cached values from base URL lookup for v4 login
   private cachedBaseUrl?: string;
   private cachedCountry?: string;
   private cachedCountryCode?: string;
 
-  constructor(logger: AnsiLogger, axiosFactory: AxiosStatic = axios, deviceId?: string) {
+  constructor(logger: AnsiLogger, axiosFactory: AxiosStatic = axios, deviceId?: string, baseUrl = 'https://usiot.roborock.com') {
     this.deviceId = deviceId ?? crypto.randomUUID();
     this.axiosFactory = axiosFactory;
     this.logger = logger;
+    this.baseUrl = baseUrl;
   }
 
   public async loginWithUserData(username: string, userData: UserData): Promise<UserData> {
@@ -98,12 +100,28 @@ export class RoborockAuthenticateApi {
     // Get signed key from API
     const xMercyK = await this.signKeyV3(api, xMercyKs);
 
+    // Fallback for missing country info to avoid 1002 parameter error
+    let country = this.cachedCountry;
+    let countryCode = this.cachedCountryCode;
+    if (!country || !countryCode) {
+      if (this.baseUrl.includes('euiot')) {
+        country = country || 'Germany';
+        countryCode = countryCode || 'DE';
+      } else if (this.baseUrl.includes('usiot')) {
+        country = country || 'United States';
+        countryCode = countryCode || 'US';
+      } else if (this.baseUrl.includes('iot.roborock.com')) {
+        country = country || 'China';
+        countryCode = countryCode || 'CN';
+      }
+    }
+
     const response = await api.post('api/v4/auth/email/login/code', null, {
       params: {
         email: email,
         code: code,
-        country: this.cachedCountry ?? '',
-        countryCode: this.cachedCountryCode ?? '',
+        country: country ?? '',
+        countryCode: countryCode ?? '',
         majorVersion: '14',
         minorVersion: '0',
       },
@@ -177,7 +195,7 @@ export class RoborockAuthenticateApi {
     return apiResponse.data.url;
   }
 
-  private async apiForUser(username: string, baseUrl = 'https://usiot.roborock.com'): Promise<AxiosInstance> {
+  private async apiForUser(username: string, baseUrl = this.baseUrl): Promise<AxiosInstance> {
     const instance = this.axiosFactory.create({
       baseURL: baseUrl,
       headers: {
