@@ -30,6 +30,12 @@ export class RoborockMatterbridgePlatform extends MatterbridgeDynamicPlatform {
   persist: NodePersist.LocalStorage;
   rrHomeId: number | undefined;
 
+  private regionUrls: Record<string, string> = {
+    US: 'https://usiot.roborock.com',
+    EU: 'https://euiot.roborock.com',
+    CN: 'https://iot.roborock.com',
+  };
+
   constructor(matterbridge: PlatformMatterbridge, log: AnsiLogger, config: PlatformConfig) {
     super(matterbridge, log, config);
 
@@ -92,12 +98,8 @@ export class RoborockMatterbridgePlatform extends MatterbridgeDynamicPlatform {
     }
 
     const region = (this.config.region as string)?.toUpperCase() ?? 'US';
-    let baseUrl = 'https://usiot.roborock.com';
-    if (region === 'EU') {
-      baseUrl = 'https://euiot.roborock.com';
-    } else if (region === 'CN') {
-      baseUrl = 'https://iot.roborock.com';
-    }
+    // use regionmap to get baseUrl
+    const baseUrl = this.regionUrls[region] ?? this.regionUrls['US'];
     this.log.notice(`Using region: ${region} (${baseUrl})`);
 
     this.roborockService = new RoborockService(

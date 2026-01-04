@@ -64,7 +64,8 @@ export default class RoborockService {
   private readonly vacuumNeedAPIV3 = ['roborock.vacuum.ss07'];
 
   constructor(
-    authenticateApiSupplier: (logger: AnsiLogger, baseUrl: string) => RoborockAuthenticateApi = (logger, baseUrl) => new RoborockAuthenticateApi(logger, undefined, undefined, baseUrl),
+    authenticateApiSupplier: (logger: AnsiLogger, baseUrl: string) => RoborockAuthenticateApi = (logger, baseUrl) =>
+      new RoborockAuthenticateApi(logger, undefined, undefined, baseUrl),
     iotApiSupplier: Factory<UserData, RoborockIoTApi> = (logger, ud) => new RoborockIoTApi(ud, logger),
     refreshInterval: number,
     clientManager: ClientManager,
