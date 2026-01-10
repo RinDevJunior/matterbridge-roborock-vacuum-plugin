@@ -1,3 +1,33 @@
+import { getSupportedAreas } from '../../initialData/getSupportedAreas.js';
+import { RoomMap } from '../../model/RoomMap.js';
+
+describe('getSupportedAreas', () => {
+  test('returns Unknown area when vacuumRooms missing or roomMap missing', () => {
+    const res = getSupportedAreas([], undefined, false, { error: jest.fn(), debug: jest.fn() } as any);
+    expect(res.supportedAreas.length).toBe(1);
+    expect(res.supportedAreas[0].areaInfo.locationInfo.locationName).toContain('Unknown');
+  });
+
+  test('detect duplicated areas returns duplicated sentinel', () => {
+    const rooms = [
+      { id: 1, iot_name_id: '1', globalId: 1, tag: 0, mapId: null, displayName: undefined },
+      { id: 1, iot_name_id: '1', globalId: 1, tag: 0, mapId: null, displayName: undefined },
+    ];
+    const roomMap: any = { rooms };
+    const vacuumRooms = [{ id: 1, name: 'R1' }];
+    const res = getSupportedAreas(vacuumRooms as any, roomMap, false, { error: jest.fn(), debug: jest.fn() } as any);
+    expect(res.supportedAreas.length).toBe(1);
+    expect(res.supportedAreas[0].areaInfo.locationInfo.locationName).toContain('Duplicated');
+  });
+
+  test('enableMultipleMap returns supportedMaps', () => {
+    const vacuumRooms = [{ id: 1, name: 'R1' } as any];
+    const roomMap: any = { rooms: [{ id: 10, iot_name_id: '10', globalId: 10, tag: 0, mapId: 7, displayName: 'RoomX' }], mapInfo: [{ id: 7, name: 'Level 7' }] };
+    const res = getSupportedAreas(vacuumRooms as any, roomMap as any, true, { error: jest.fn(), debug: jest.fn() } as any);
+    expect(res.supportedMaps.length).toBeGreaterThanOrEqual(1);
+    expect(res.roomIndexMap).toBeDefined();
+  });
+});
 import { getSupportedAreas } from '../../initialData/getSupportedAreas';
 import { RoomMap } from '../../model/RoomMap';
 import { Room } from '../../roborockCommunication/Zmodel/room';

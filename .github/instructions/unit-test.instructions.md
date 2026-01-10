@@ -71,3 +71,7 @@ applyTo: '**/*.test.ts'
 - Use dependency injection or mocking frameworks as per the project's conventions.
 - Keep test modules single-purpose and focused on specific functionality.
 - Avoid duplicating test setup logic; use shared utilities or fixtures.
+
+## Pre commands execution
+
+- Always clean the terminal or console output before running tests to avoid confusion from previous logs.

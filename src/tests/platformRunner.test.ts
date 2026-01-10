@@ -155,7 +155,18 @@ describe('PlatformRunner.updateRobot', () => {
     expect(robotMock.updateAttribute).toHaveBeenCalledWith(expect.any(Number), 'batPercentRemaining', 120, expect.any(Object));
     expect(robotMock.updateAttribute).toHaveBeenCalledWith(expect.any(Number), 'batChargeLevel', expect.any(Number), expect.any(Object));
   });
+  it('should call updateFromMQTTMessage when messageSource is not HomeData', async () => {
+    robotMock.device.data = { model: 'test-model' };
+    robotMock.serialNumber = '123456';
 
+    const updateFromMQTTMessageSpy = jest.spyOn(runner as any, 'updateFromMQTTMessage');
+    const batteryMessage = { percentage: 70, duid: '123456' };
+
+    await runner.updateRobot(NotifyMessageTypes.BatteryUpdate, batteryMessage);
+
+    expect(updateFromMQTTMessageSpy).toHaveBeenCalledWith(NotifyMessageTypes.BatteryUpdate, batteryMessage);
+    updateFromMQTTMessageSpy.mockRestore();
+  });
   it('should handle NotifyMessageTypes.ErrorOccurred', async () => {
     const errorMessage = { errorCode: 1 };
     robotMock.device.data = { model: 'test-model' };
@@ -184,5 +195,157 @@ describe('PlatformRunner.updateRobot', () => {
     robotMock.device.data = { model: 'test-model' };
     await runner['updateFromMQTTMessage'](NotifyMessageTypes.BatteryUpdate, { percentage: 50 }, '123456');
     expect(platform.log.error).toHaveBeenCalledWith('Robot serial number is undefined');
+  });
+
+  it('should handle LocalMessage when robot is not found', async () => {
+    const localMessage = { duid: '999999', data: {} };
+    await runner['updateFromMQTTMessage'](NotifyMessageTypes.LocalMessage, localMessage, '999999');
+    expect(platform.log.error).toHaveBeenCalledWith('Error1: Robot with DUID 999999 not found');
+  });
+
+  it('should handle LocalMessage successfully when robot and data are available', async () => {
+    robotMock.device.data = { model: 'test-model' };
+    robotMock.serialNumber = '123456';
+
+    const localMessage = { duid: '123456', result: 'test-result' };
+
+    // Clear previous error calls
+    platform.log.error.mockClear();
+
+    // This will call the actual handleLocalMessage function
+    await runner['updateFromMQTTMessage'](NotifyMessageTypes.LocalMessage, localMessage, '123456');
+
+    // Verify no error was logged (which would happen on the error path)
+    expect(platform.log.error).not.toHaveBeenCalled();
+  });
+
+  it('should handle LocalMessage error path when robot becomes unavailable', async () => {
+    // This tests the error path inside the LocalMessage case where robot is undefined
+    robotMock.device.data = { model: 'test-model' };
+    robotMock.serialNumber = '123456';
+
+    // Mock platform.robots.get to return undefined on second call (simulating robot disappearing)
+    const originalGet = platform.robots.get.bind(platform.robots);
+    let callCount = 0;
+    platform.robots.get = jest.fn((key: string) => {
+      callCount++;
+      if (callCount === 1) return originalGet(key); // First call returns robot
+      return undefined; // Second call returns undefined
+    });
+
+    const localMessage = { duid: '123456', data: { result: 'test' } };
+    await runner['updateFromMQTTMessage'](NotifyMessageTypes.LocalMessage, localMessage, '123456');
+
+    expect(platform.log.error).toHaveBeenCalledWith('Error2: Robot with DUID 123456 not found');
+  });
+
+  it('should handle default case for unknown message types', async () => {
+    robotMock.device.data = { model: 'test-model' };
+    robotMock.serialNumber = '123456';
+
+    // Use a message type that hits the default case
+    await runner['updateFromMQTTMessage'](999 as any, {}, '123456');
+
+    // Should complete without error
+    expect(robotMock.updateAttribute).not.toHaveBeenCalled();
+  });
+});
+
+describe('PlatformRunner.requestHomeData', () => {
+  let platform: RoborockMatterbridgePlatform;
+  let runner: PlatformRunner;
+
+  it('should return early if no robots exist', async () => {
+    platform = {
+      robots: new Map(),
+      rrHomeId: '12345',
+      roborockService: { getHomeDataForUpdating: jest.fn() },
+      log: { error: jest.fn(), debug: jest.fn(), notice: jest.fn() },
+    } as unknown as RoborockMatterbridgePlatform;
+
+    runner = new PlatformRunner(platform);
+    await runner.requestHomeData();
+
+    expect(platform.roborockService?.getHomeDataForUpdating).not.toHaveBeenCalled();
+  });
+
+  it('should return early if rrHomeId is not set (undefined)', async () => {
+    platform = {
+      robots: new Map([['123', {} as any]]),
+      rrHomeId: undefined,
+      roborockService: { getHomeDataForUpdating: jest.fn() },
+      log: { error: jest.fn(), debug: jest.fn(), notice: jest.fn() },
+    } as unknown as RoborockMatterbridgePlatform;
+
+    runner = new PlatformRunner(platform);
+    await runner.requestHomeData();
+
+    expect(platform.roborockService?.getHomeDataForUpdating).not.toHaveBeenCalled();
+  });
+
+  it('should return early if rrHomeId is falsy (empty string)', async () => {
+    platform = {
+      robots: new Map([['123', {} as any]]),
+      rrHomeId: '',
+      roborockService: { getHomeDataForUpdating: jest.fn() },
+      log: { error: jest.fn(), debug: jest.fn(), notice: jest.fn() },
+    } as unknown as RoborockMatterbridgePlatform;
+
+    runner = new PlatformRunner(platform);
+    await runner.requestHomeData();
+
+    expect(platform.roborockService?.getHomeDataForUpdating).not.toHaveBeenCalled();
+  });
+
+  it('should return early if roborockService is undefined', async () => {
+    platform = {
+      robots: new Map([['123', {} as any]]),
+      rrHomeId: '12345',
+      roborockService: undefined,
+      log: { error: jest.fn(), debug: jest.fn(), notice: jest.fn() },
+    } as unknown as RoborockMatterbridgePlatform;
+
+    runner = new PlatformRunner(platform);
+    await runner.requestHomeData();
+
+    // No service call should be made
+    expect(platform.roborockService).toBeUndefined();
+  });
+
+  it('should return early if homeData is undefined', async () => {
+    const getHomeDataMock = jest.fn().mockResolvedValue(undefined);
+    platform = {
+      robots: new Map([['123', {} as any]]),
+      rrHomeId: '12345',
+      roborockService: { getHomeDataForUpdating: getHomeDataMock },
+      log: { error: jest.fn(), debug: jest.fn(), notice: jest.fn() },
+    } as unknown as RoborockMatterbridgePlatform;
+
+    runner = new PlatformRunner(platform);
+    const updateRobotSpy = jest.spyOn(runner, 'updateRobot');
+
+    await runner.requestHomeData();
+
+    expect(getHomeDataMock).toHaveBeenCalledWith('12345');
+    expect(updateRobotSpy).not.toHaveBeenCalled();
+  });
+
+  it('should call updateRobot when homeData is available', async () => {
+    const homeData = { devices: [], products: [] };
+    const getHomeDataMock = jest.fn().mockResolvedValue(homeData);
+    platform = {
+      robots: new Map([['123', {} as any]]),
+      rrHomeId: '12345',
+      roborockService: { getHomeDataForUpdating: getHomeDataMock },
+      log: { error: jest.fn(), debug: jest.fn(), notice: jest.fn() },
+    } as unknown as RoborockMatterbridgePlatform;
+
+    runner = new PlatformRunner(platform);
+    const updateRobotSpy = jest.spyOn(runner, 'updateRobot').mockResolvedValue();
+
+    await runner.requestHomeData();
+
+    expect(getHomeDataMock).toHaveBeenCalledWith('12345');
+    expect(updateRobotSpy).toHaveBeenCalledWith(NotifyMessageTypes.HomeData, homeData);
   });
 });

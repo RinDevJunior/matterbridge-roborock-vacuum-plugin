@@ -1,3 +1,78 @@
+import { getVacuumProperty, isSupportedDevice, isStatusUpdate, getRoomMap, getRoomMapFromDevice } from '../helper.js';
+
+describe('helper utilities', () => {
+  test('getVacuumProperty returns undefined with no device', () => {
+    expect(getVacuumProperty(undefined as any, 'p')).toBeUndefined();
+  });
+
+  test('getVacuumProperty reads via schema id and direct property', () => {
+    const device: any = {
+      schema: [{ code: 'prop', id: '1' }],
+      deviceStatus: { '1': '42', prop2: '7' },
+    };
+
+    expect(getVacuumProperty(device, 'prop')).toBe(42);
+    expect(getVacuumProperty(device, 'prop2')).toBe(7);
+  });
+
+  test('isSupportedDevice', () => {
+    expect(isSupportedDevice('roborock.vacuum.s5')).toBe(true);
+    expect(isSupportedDevice('other.model')).toBe(false);
+  });
+
+  test('isStatusUpdate positive and negative', () => {
+    expect(isStatusUpdate([{ msg_ver: '1' }])).toBe(true);
+    expect(isStatusUpdate([])).toBe(false);
+    expect(isStatusUpdate([null as any])).toBe(false);
+    expect(isStatusUpdate([{}])).toBe(false);
+  });
+
+  test('getRoomMap handles missing robot and missing roborockService', async () => {
+    const platform: any = { robots: new Map(), enableExperimentalFeature: undefined, log: { error: jest.fn(), info: jest.fn() } };
+    const res = await getRoomMap('nope', platform);
+    expect(res).toBeUndefined();
+    expect(platform.log.error).toHaveBeenCalled();
+
+    // robot present but no service
+    const robot: any = { device: { duid: 'd1', rooms: [] } };
+    platform.robots.set('d1', robot);
+    const res2 = await getRoomMap('d1', platform);
+    expect(res2).toBeUndefined();
+  });
+
+  test('getRoomMapFromDevice returns RoomMap variants', async () => {
+    const device: any = { duid: 'd2', rooms: [] };
+    const platform: any = {
+      enableExperimentalFeature: undefined,
+      log: { debug: jest.fn(), notice: jest.fn() },
+      roborockService: {
+        getMapInformation: async () => ({ allRooms: [{ id: 1, iot_name_id: '1', tag: 0, mapId: 0, displayName: 'R1' }], maps: [] }),
+        getRoomMappings: async () => undefined,
+      },
+    };
+
+    const rmap = await getRoomMapFromDevice(device, platform);
+    expect(rmap).toBeDefined();
+
+    // when no map info but room mappings present
+    const platform2: any = {
+      enableExperimentalFeature: undefined,
+      log: { debug: jest.fn(), notice: jest.fn() },
+      roborockService: { getMapInformation: async () => undefined, getRoomMappings: async () => [[1, 1, 0]] },
+    };
+    const rmap2 = await getRoomMapFromDevice(device, platform2);
+    expect(rmap2).toBeDefined();
+
+    // when neither present returns empty RoomMap
+    const platform3: any = {
+      enableExperimentalFeature: undefined,
+      log: { debug: jest.fn(), notice: jest.fn() },
+      roborockService: { getMapInformation: async () => undefined, getRoomMappings: async () => undefined },
+    };
+    const rmap3 = await getRoomMapFromDevice(device, platform3);
+    expect(rmap3).toBeDefined();
+  });
+});
 import { getRoomMapFromDevice } from '../helper';
 import { RoomMap } from '../model/RoomMap';
 

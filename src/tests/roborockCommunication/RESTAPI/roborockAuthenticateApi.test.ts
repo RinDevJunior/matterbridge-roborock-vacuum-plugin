@@ -7,7 +7,7 @@ describe('RoborockAuthenticateApi', () => {
   let api: any;
 
   beforeEach(() => {
-    mockLogger = { info: jest.fn(), error: jest.fn() };
+    mockLogger = { info: jest.fn(), error: jest.fn(), debug: jest.fn() };
     mockAxiosInstance = {
       post: jest.fn(),
       get: jest.fn(),
@@ -140,5 +140,276 @@ describe('RoborockAuthenticateApi', () => {
     api['loginWithAuthToken']('user', 'tok');
     expect(api['username']).toBe('user');
     expect(api['authToken']).toBe('tok');
+  });
+
+  describe('requestCodeV4', () => {
+    it('should successfully request verification code', async () => {
+      jest.spyOn(api as any, 'getAPIFor').mockResolvedValue(mockAxiosInstance);
+      mockAxiosInstance.post.mockResolvedValue({ data: { code: 200 } });
+
+      await api.requestCodeV4('test@example.com');
+      expect(mockAxiosInstance.post).toHaveBeenCalledWith(
+        'api/v4/email/code/send',
+        expect.any(URLSearchParams),
+        expect.objectContaining({ headers: { 'Content-Type': 'application/x-www-form-urlencoded' } }),
+      );
+      expect(mockLogger.debug).toHaveBeenCalledWith('Verification code requested successfully');
+    });
+
+    it('should throw error if account not found', async () => {
+      jest.spyOn(api as any, 'getAPIFor').mockResolvedValue(mockAxiosInstance);
+      mockAxiosInstance.post.mockResolvedValue({ data: { code: 2008 } }); // AccountNotFound
+
+      await expect(api.requestCodeV4('notfound@example.com')).rejects.toThrow('Account not found for email');
+    });
+
+    it('should throw error if rate limited', async () => {
+      jest.spyOn(api as any, 'getAPIFor').mockResolvedValue(mockAxiosInstance);
+      mockAxiosInstance.post.mockResolvedValue({ data: { code: 9002 } }); // RateLimited
+
+      await expect(api.requestCodeV4('rate@example.com')).rejects.toThrow('Rate limited');
+    });
+
+    it('should throw error for other failures', async () => {
+      jest.spyOn(api as any, 'getAPIFor').mockResolvedValue(mockAxiosInstance);
+      mockAxiosInstance.post.mockResolvedValue({ data: { code: 500, msg: 'Server error' } });
+
+      await expect(api.requestCodeV4('fail@example.com')).rejects.toThrow('Failed to send verification code');
+    });
+  });
+
+  describe('loginWithCodeV4', () => {
+    it('should successfully login with code', async () => {
+      jest.spyOn(api as any, 'getAPIFor').mockResolvedValue(mockAxiosInstance);
+      jest.spyOn(api as any, 'generateRandomString').mockReturnValue('1234567890abcdef');
+
+      const signedKey = 'signedKey123';
+      const userData = { token: 'userToken', rriot: {} };
+
+      mockAxiosInstance.post
+        .mockResolvedValueOnce({ data: { data: { k: signedKey }, code: 200 } }) // signKeyV3
+        .mockResolvedValueOnce({ data: { data: userData, code: 200 } }); // actual login
+
+      jest.spyOn(api as any, 'auth').mockReturnValue(userData);
+
+      const result = await api.loginWithCodeV4('test@example.com', '123456');
+      expect(result).toBe(userData);
+      expect(mockAxiosInstance.post).toHaveBeenCalledTimes(2);
+    });
+
+    it('should throw error when authentication returns no user data', async () => {
+      jest.spyOn(api as any, 'getAPIFor').mockResolvedValue(mockAxiosInstance);
+      jest.spyOn(api as any, 'generateRandomString').mockReturnValue('1234567890abcdef');
+
+      const signedKey = 'signedKey123';
+
+      mockAxiosInstance.post
+        .mockResolvedValueOnce({ data: { data: { k: signedKey }, code: 200 } }) // signKeyV3
+        .mockResolvedValueOnce({ data: { data: null, code: 500, msg: 'Server error' } }); // login fails
+
+      await expect(api.loginWithCodeV4('test@example.com', '123456')).rejects.toThrow('Authentication failed: Server error code: 500');
+    });
+  });
+
+  describe('Country fallback logic', () => {
+    it('should use fallback for euiot when country/countryCode not cached', async () => {
+      api['cachedCountry'] = undefined;
+      api['cachedCountryCode'] = undefined;
+      api['baseUrl'] = 'https://euiot.example.com';
+
+      jest.spyOn(api as any, 'signKeyV3').mockResolvedValue('signedKey');
+      jest.spyOn(api as any, 'getAPIFor').mockResolvedValue(mockAxiosInstance);
+      jest.spyOn(api as any, 'generateRandomString').mockReturnValue('randStr');
+
+      const userData = { token: 'tok', rriot: {} };
+      mockAxiosInstance.post.mockResolvedValue({ data: { data: userData, code: 200 } });
+      jest.spyOn(api as any, 'authV4').mockReturnValue(userData);
+
+      await api.loginWithCodeV4('test@example.com', '123456');
+
+      // The request should include fallback country 'Germany' and countryCode 'DE' in params
+      expect(mockAxiosInstance.post).toHaveBeenCalledWith(
+        'api/v4/auth/email/login/code',
+        null,
+        expect.objectContaining({
+          params: expect.objectContaining({
+            country: 'Germany',
+            countryCode: 'DE',
+          }),
+        }),
+      );
+    });
+
+    it('should use fallback for usiot when country/countryCode not cached', async () => {
+      api['cachedCountry'] = undefined;
+      api['cachedCountryCode'] = undefined;
+      api['baseUrl'] = 'https://usiot.example.com';
+
+      jest.spyOn(api as any, 'signKeyV3').mockResolvedValue('signedKey');
+      jest.spyOn(api as any, 'getAPIFor').mockResolvedValue(mockAxiosInstance);
+      jest.spyOn(api as any, 'generateRandomString').mockReturnValue('randStr');
+
+      const userData = { token: 'tok', rriot: {} };
+      mockAxiosInstance.post.mockResolvedValue({ data: { data: userData, code: 200 } });
+      jest.spyOn(api as any, 'authV4').mockReturnValue(userData);
+
+      await api.loginWithCodeV4('test@example.com', '123456');
+
+      expect(mockAxiosInstance.post).toHaveBeenCalledWith(
+        'api/v4/auth/email/login/code',
+        null,
+        expect.objectContaining({
+          params: expect.objectContaining({
+            country: 'United States',
+            countryCode: 'US',
+          }),
+        }),
+      );
+    });
+
+    it('should use fallback for cniot when country/countryCode not cached', async () => {
+      api['cachedCountry'] = undefined;
+      api['cachedCountryCode'] = undefined;
+      api['baseUrl'] = 'https://cniot.example.com';
+
+      jest.spyOn(api as any, 'signKeyV3').mockResolvedValue('signedKey');
+      jest.spyOn(api as any, 'getAPIFor').mockResolvedValue(mockAxiosInstance);
+      jest.spyOn(api as any, 'generateRandomString').mockReturnValue('randStr');
+
+      const userData = { token: 'tok', rriot: {} };
+      mockAxiosInstance.post.mockResolvedValue({ data: { data: userData, code: 200 } });
+      jest.spyOn(api as any, 'authV4').mockReturnValue(userData);
+
+      await api.loginWithCodeV4('test@example.com', '123456');
+
+      expect(mockAxiosInstance.post).toHaveBeenCalledWith(
+        'api/v4/auth/email/login/code',
+        null,
+        expect.objectContaining({
+          params: expect.objectContaining({
+            country: 'China',
+            countryCode: 'CN',
+          }),
+        }),
+      );
+    });
+
+    it('should use fallback for ruiot when country/countryCode not cached', async () => {
+      api['cachedCountry'] = undefined;
+      api['cachedCountryCode'] = undefined;
+      api['baseUrl'] = 'https://ruiot.example.com';
+
+      jest.spyOn(api as any, 'signKeyV3').mockResolvedValue('signedKey');
+      jest.spyOn(api as any, 'getAPIFor').mockResolvedValue(mockAxiosInstance);
+      jest.spyOn(api as any, 'generateRandomString').mockReturnValue('randStr');
+
+      const userData = { token: 'tok', rriot: {} };
+      mockAxiosInstance.post.mockResolvedValue({ data: { data: userData, code: 200 } });
+      jest.spyOn(api as any, 'authV4').mockReturnValue(userData);
+
+      await api.loginWithCodeV4('test@example.com', '123456');
+
+      expect(mockAxiosInstance.post).toHaveBeenCalledWith(
+        'api/v4/auth/email/login/code',
+        null,
+        expect.objectContaining({
+          params: expect.objectContaining({
+            country: 'Russia',
+            countryCode: 'RU',
+          }),
+        }),
+      );
+    });
+  });
+
+  describe('Interceptor logging', () => {
+    it('should log request and response via interceptors', async () => {
+      // Call apiForUser to trigger interceptor setup
+      await api['apiForUser']('user', 'http://test.com');
+
+      const requestInterceptor = mockAxiosInstance.interceptors.request.use.mock.calls[0][0];
+      const responseInterceptor = mockAxiosInstance.interceptors.response.use.mock.calls[0][0];
+
+      // Test request interceptor
+      const config = {
+        baseURL: 'http://test.com',
+        url: '/api/test',
+        method: 'POST',
+        params: { key: 'value' },
+        data: { foo: 'bar' },
+        headers: { 'Content-Type': 'application/json' },
+      };
+      const result = requestInterceptor(config);
+      expect(result).toBe(config);
+      expect(mockLogger.debug).toHaveBeenCalledWith('=== HTTP Request ===');
+      expect(mockLogger.debug).toHaveBeenCalledWith('URL: http://test.com//api/test');
+
+      // Test response interceptor
+      const response = {
+        status: 200,
+        data: { success: true },
+      };
+      const responseResult = responseInterceptor(response);
+      expect(responseResult).toBe(response);
+      expect(mockLogger.debug).toHaveBeenCalledWith('=== HTTP Response ===');
+      expect(mockLogger.debug).toHaveBeenCalledWith('Status: 200');
+    });
+
+    it('should log error via error interceptor', async () => {
+      // Call apiForUser to trigger interceptor setup
+      await api['apiForUser']('user', 'http://test.com');
+
+      const errorInterceptor = mockAxiosInstance.interceptors.response.use.mock.calls[0][1];
+
+      const error = {
+        response: {
+          data: { error: 'test error' },
+        },
+        message: 'Request failed',
+      };
+
+      await expect(errorInterceptor(error)).rejects.toBe(error);
+      expect(mockLogger.debug).toHaveBeenCalledWith('=== HTTP Error ===');
+      expect(mockLogger.debug).toHaveBeenCalledWith(expect.stringContaining('test error'));
+    });
+
+    it('should log error message when response is missing', async () => {
+      // Call apiForUser to trigger interceptor setup
+      await api['apiForUser']('user', 'http://test.com');
+
+      const errorInterceptor = mockAxiosInstance.interceptors.response.use.mock.calls[0][1];
+
+      const error = {
+        message: 'Network error',
+      };
+
+      await expect(errorInterceptor(error)).rejects.toBe(error);
+      expect(mockLogger.debug).toHaveBeenCalledWith('=== HTTP Error ===');
+      expect(mockLogger.debug).toHaveBeenCalledWith(expect.stringContaining('Network error'));
+    });
+  });
+
+  describe('getBaseUrl caching', () => {
+    it('should return cached baseUrl when username matches', async () => {
+      api['cachedBaseUrl'] = 'http://cached.url';
+      api['username'] = 'user123';
+
+      const result = await api['getBaseUrl']('user123');
+      expect(result).toBe('http://cached.url');
+      // Verify apiForUser was not called
+      expect(mockAxiosInstance.post).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('getAPIFor', () => {
+    it('should call getBaseUrl and apiForUser', async () => {
+      jest.spyOn(api as any, 'getBaseUrl').mockResolvedValue('http://test.url');
+      jest.spyOn(api as any, 'apiForUser').mockResolvedValue(mockAxiosInstance);
+
+      const result = await api['getAPIFor']('user');
+      expect(result).toBe(mockAxiosInstance);
+      expect(api['getBaseUrl']).toHaveBeenCalledWith('user');
+      expect(api['apiForUser']).toHaveBeenCalledWith('user', 'http://test.url');
+    });
   });
 });

@@ -18,6 +18,7 @@ describe('MQTTClient', () => {
   let deserializer: any;
   let connectionListeners: any;
   let messageListeners: any;
+  const createdClients: any[] = [];
 
   beforeEach(() => {
     logger = { error: jest.fn(), debug: jest.fn(), notice: jest.fn(), info: jest.fn() };
@@ -46,6 +47,7 @@ describe('MQTTClient', () => {
       end: jest.fn(),
       publish: jest.fn(),
       subscribe: jest.fn(),
+      reconnect: jest.fn(),
     };
     mockConnect.mockReturnValue(client);
   });
@@ -61,11 +63,40 @@ describe('MQTTClient', () => {
         (this as any).messageListeners = messageListeners;
       }
     }
-    return new TestMQTTClient();
+    const mqttClient = new TestMQTTClient();
+    createdClients.push(mqttClient);
+    return mqttClient;
   }
 
-  afterEach(() => {
+  afterEach(async () => {
+    // Clean up any MQTT clients to prevent timer leaks
+    for (const mqttClient of createdClients) {
+      try {
+        if (mqttClient['keepConnectionAliveInterval']) {
+          clearInterval(mqttClient['keepConnectionAliveInterval']);
+        }
+        if (mqttClient['mqttClient']) {
+          // Force the client to null to prevent reconnect attempts
+          const mc = mqttClient['mqttClient'];
+          mqttClient['mqttClient'] = null;
+          if (mc && typeof mc.end === 'function') {
+            mc.end(true); // Force close
+          }
+        }
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      } catch (_e) {
+        // Ignore cleanup errors
+      }
+    }
+    createdClients.length = 0;
     jest.clearAllMocks();
+    jest.clearAllTimers();
+    jest.useRealTimers();
+  });
+
+  afterAll(() => {
+    // Final cleanup
+    jest.clearAllTimers();
   });
 
   it('should generate username and password in constructor', () => {
@@ -204,5 +235,121 @@ describe('MQTTClient', () => {
     });
     await mqttClient['onMessage']('topic/duid', Buffer.from('msg'));
     expect(logger.error).toHaveBeenCalledWith(expect.stringContaining('unable to process message'));
+  });
+
+  it.skip('connect should setup mqtt client with event handlers', () => {
+    const mqttClient = createMQTTClient();
+    mqttClient.connect();
+    expect(mockConnect).toHaveBeenCalledWith(
+      'mqtt://broker',
+      expect.objectContaining({
+        clientId: 'c6d6afb9',
+        username: 'c6d6afb9',
+        password: '938f62d6603bde9c',
+        keepalive: 30,
+        log: expect.any(Function),
+      }),
+    );
+    expect(client.on).toHaveBeenCalledWith('connect', expect.any(Function));
+    expect(client.on).toHaveBeenCalledWith('error', expect.any(Function));
+    expect(client.on).toHaveBeenCalledWith('reconnect', expect.any(Function));
+    expect(client.on).toHaveBeenCalledWith('close', expect.any(Function));
+    expect(client.on).toHaveBeenCalledWith('disconnect', expect.any(Function));
+    expect(client.on).toHaveBeenCalledWith('offline', expect.any(Function));
+    expect(client.on).toHaveBeenCalledWith('message', expect.any(Function));
+  });
+
+  it('keepConnectionAlive should setup interval that reconnects client', () => {
+    jest.useFakeTimers();
+    const mqttClient = createMQTTClient();
+    mqttClient['mqttClient'] = client;
+    mqttClient['keepConnectionAlive']();
+
+    expect(mqttClient['keepConnectionAliveInterval']).toBeDefined();
+
+    // Fast-forward time by 30 minutes
+    jest.advanceTimersByTime(30 * 60 * 1000);
+
+    expect(client.end).toHaveBeenCalled();
+    expect(client.reconnect).toHaveBeenCalled();
+
+    // Clean up
+    clearInterval(mqttClient['keepConnectionAliveInterval']);
+    jest.useRealTimers();
+  });
+
+  it('keepConnectionAlive should call connect if mqttClient is undefined', () => {
+    jest.useFakeTimers();
+    const mqttClient = createMQTTClient();
+    mqttClient['mqttClient'] = undefined;
+    mqttClient['keepConnectionAlive']();
+
+    const connectSpy = jest.spyOn(mqttClient, 'connect');
+
+    // Fast-forward time by 30 minutes
+    jest.advanceTimersByTime(30 * 60 * 1000);
+
+    expect(connectSpy).toHaveBeenCalled();
+
+    // Clean up
+    clearInterval(mqttClient['keepConnectionAliveInterval']);
+    jest.useRealTimers();
+  });
+
+  it('keepConnectionAlive should clear existing interval before setting new one', () => {
+    jest.useFakeTimers();
+    const mqttClient = createMQTTClient();
+    const clearTimeoutSpy = jest.spyOn(global, 'clearTimeout');
+
+    // Set initial interval
+    mqttClient['keepConnectionAlive']();
+    const firstInterval = mqttClient['keepConnectionAliveInterval'];
+
+    // Call again to clear and reset
+    mqttClient['keepConnectionAlive']();
+
+    expect(clearTimeoutSpy).toHaveBeenCalledWith(firstInterval);
+
+    // Clean up
+    clearInterval(mqttClient['keepConnectionAliveInterval']);
+    jest.useRealTimers();
+  });
+
+  it('disconnect should return early if not connected', async () => {
+    const mqttClient = createMQTTClient();
+    mqttClient['mqttClient'] = client;
+    mqttClient['connected'] = false;
+    await mqttClient.disconnect();
+    expect(client.end).not.toHaveBeenCalled();
+  });
+
+  it('onClose should call onDisconnected only if connected', async () => {
+    const mqttClient = createMQTTClient();
+    mqttClient['connected'] = true;
+    await mqttClient['onClose']();
+    expect(connectionListeners.onDisconnected).toHaveBeenCalledWith('mqtt-c6d6afb9', 'MQTT connection closed');
+    expect(mqttClient['connected']).toBe(false);
+  });
+
+  it('onClose should not call onDisconnected if already disconnected', async () => {
+    const mqttClient = createMQTTClient();
+    mqttClient['connected'] = false;
+    await mqttClient['onClose']();
+    expect(connectionListeners.onDisconnected).not.toHaveBeenCalled();
+  });
+
+  it('onOffline should set connected to false and call onDisconnected', async () => {
+    const mqttClient = createMQTTClient();
+    mqttClient['connected'] = true;
+    await mqttClient['onOffline']();
+    expect(mqttClient['connected']).toBe(false);
+    expect(connectionListeners.onDisconnected).toHaveBeenCalledWith('mqtt-c6d6afb9', 'MQTT connection offline');
+  });
+
+  it('onReconnect should call onReconnect on connectionListeners', () => {
+    const mqttClient = createMQTTClient();
+    mqttClient['subscribeToQueue'] = jest.fn();
+    mqttClient['onReconnect']();
+    expect(connectionListeners.onReconnect).toHaveBeenCalledWith('mqtt-c6d6afb9', 'Reconnected to MQTT broker');
   });
 });

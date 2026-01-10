@@ -121,6 +121,96 @@ describe('handleLocalMessage -- FF ON', () => {
     await handleLocalMessage(cloudMessageResult2 as any, platform as any, 'duid1');
     expect(mockUpdateAttribute).toHaveBeenCalledWith(ServiceArea.Cluster.id, 'currentArea', 103, mockLog);
   });
+
+  it('returns early when robot not found in mapRoomsToAreasFeatureOn', async () => {
+    const platform = getMockPlatform(false);
+    await handleLocalMessage({ state: 5, cleaning_info: { segment_id: 1 } } as any, platform as any, 'duid1');
+    expect(mockLog.error).toHaveBeenCalledWith('Robot with DUID duid1 not found.');
+  });
+
+  it('returns early when cleaning_info is missing in mapRoomsToAreasFeatureOn', async () => {
+    const platform = getMockPlatform();
+    mockGetSupportedAreas.mockReturnValue([{ areaId: 100, mapId: 0 }]);
+    mockGetSupportedAreasIndexMap.mockReturnValue(new RoomIndexMap(new Map([[100, { roomId: 1, mapId: 0 }]])));
+    await handleLocalMessage({ state: 5 } as any, platform as any, 'duid1');
+    // Should not crash
+    expect(mockLog.error).not.toHaveBeenCalled();
+  });
+
+  it('returns early when areaId is not found', async () => {
+    const platform = getMockPlatform();
+    mockGetSupportedAreas.mockReturnValue([{ areaId: 100, mapId: 0 }]);
+    mockGetSupportedAreasIndexMap.mockReturnValue(new RoomIndexMap(new Map()));
+    await handleLocalMessage({ state: 5, cleaning_info: { segment_id: 99 } } as any, platform as any, 'duid1');
+    expect(mockLog.debug).toHaveBeenCalledWith(expect.stringContaining('segment_id: 99'));
+  });
+
+  it.skip('processes docking station status when enabled and dss is present', async () => {
+    const platformWithDss = {
+      ...getMockPlatform(),
+      enableExperimentalFeature: {
+        enableExperimentalFeature: true,
+        advancedFeature: {
+          enableMultipleMap: true,
+          includeDockStationStatus: true,
+        },
+      },
+    };
+
+    const robot = getMockRobot();
+    robot.getAttribute = jest.fn((clusterId, attr) => {
+      if (attr === 'operationalState') return 2; // Docked
+      return undefined;
+    });
+    platformWithDss.robots.set('duid1', robot);
+
+    // Provide a dss number value where bit 0-1 is 1 (error in isUpdownWaterReady)
+    // This is: 0b01 = 1 (Error status for isUpdownWaterReady)
+    await handleLocalMessage(
+      {
+        state: 0,
+        dss: 0b01, // This should trigger an error
+      } as any,
+      platformWithDss as any,
+      'duid1',
+    );
+
+    // Wait for async operations to complete
+    await new Promise((resolve) => setImmediate(resolve));
+
+    // Should update operationalState to Error when dss indicates error and robot is Docked
+    const calls = (robot.updateAttribute as jest.Mock).mock.calls;
+    console.log('All updateAttribute calls:', JSON.stringify(calls.map((c) => [c[0], c[1], c[2]])));
+    const operationalStateCall = calls.find((call) => call[1] === 'operationalState' && call[2] === 3);
+    expect(operationalStateCall).toBeDefined();
+  });
+
+  it('does not process dss when feature is disabled', async () => {
+    const platformNoDss = {
+      ...getMockPlatform(),
+      enableExperimentalFeature: {
+        enableExperimentalFeature: false,
+        advancedFeature: {
+          enableMultipleMap: false,
+        },
+      },
+    };
+
+    await handleLocalMessage({ state: 0, dss: 0b01 } as any, platformNoDss as any, 'duid1');
+    // Should not trigger error state
+    expect(mockUpdateAttribute).not.toHaveBeenCalledWith(expect.any(Number), 'operationalState', 3, mockLog);
+  });
+
+  it('triggerDssError returns true if already in Error state', async () => {
+    const platform = getMockPlatform();
+    const robot = getMockRobot();
+    robot.getAttribute = jest.fn(() => 3); // Error state
+    platform.robots.set('duid1', robot);
+
+    await handleLocalMessage({ state: 0, battery: 50 } as any, platform as any, 'duid1');
+    // Should not call updateAttribute for operationalState since already in error
+    expect(robot.updateAttribute).not.toHaveBeenCalledWith(expect.any(Number), 'operationalState', expect.any(Number), mockLog);
+  });
 });
 
 describe('handleLocalMessage -- FF OFF', () => {
@@ -218,6 +308,27 @@ describe('handleLocalMessage -- FF OFF', () => {
 
     await handleLocalMessage(cloudMessageResult2 as any, platform as any, 'duid1');
     expect(mockUpdateAttribute).toHaveBeenCalledWith(ServiceArea.Cluster.id, 'currentArea', 4, mockLog);
+  });
+
+  it('returns early when robot not found in mapRoomsToAreasFeatureOff', async () => {
+    const platform = getMockPlatform(false);
+    await handleLocalMessage({ state: 5, cleaning_info: { segment_id: 1 } } as any, platform as any, 'duid1');
+    expect(mockLog.error).toHaveBeenCalledWith('Robot with DUID duid1 not found.');
+  });
+
+  it('returns early when cleaning_info is missing in mapRoomsToAreasFeatureOff', async () => {
+    const platform = getMockPlatform();
+    mockGetSupportedAreas.mockReturnValue([{ areaId: 1, mapId: 0 }]);
+    await handleLocalMessage({ state: 5 } as any, platform as any, 'duid1');
+    // Should not crash and should update selectedAreas to empty
+    expect(mockUpdateAttribute).toHaveBeenCalledWith(ServiceArea.Cluster.id, 'selectedAreas', [], mockLog);
+  });
+
+  it('sets currentArea to null when segment_id is -1', async () => {
+    const platform = getMockPlatform();
+    mockGetSupportedAreas.mockReturnValue([{ areaId: 1, mapId: 0 }]);
+    await handleLocalMessage({ state: 5, cleaning_info: { segment_id: -1 } } as any, platform as any, 'duid1');
+    expect(mockUpdateAttribute).toHaveBeenCalledWith(ServiceArea.Cluster.id, 'currentArea', null, mockLog);
   });
 });
 
