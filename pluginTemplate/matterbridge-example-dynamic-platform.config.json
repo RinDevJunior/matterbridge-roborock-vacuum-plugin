@@ -1,0 +1,10 @@
+{
+  "name": "matterbridge-example-dynamic-platform",
+  "type": "DynamicPlatform",
+  "whiteList": [],
+  "blackList": [],
+  "useInterval": true,
+  "enableServerRvc": true,
+  "debug": false,
+  "unregisterOnShutdown": false
+}

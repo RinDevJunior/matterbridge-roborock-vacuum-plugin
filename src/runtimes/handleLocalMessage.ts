@@ -2,7 +2,7 @@ import { PowerSource, RvcCleanMode, RvcOperationalState, RvcRunMode, ServiceArea
 import { getRunningMode } from '../initialData/getSupportedRunModes.js';
 import { CloudMessageResult } from '../roborockCommunication/Zmodel/messageResult.js';
 import { state_to_matter_state } from '../share/function.js';
-import { RoborockMatterbridgePlatform } from '../platform.js';
+import { RoborockMatterbridgePlatform } from '../module.js';
 import { OperationStatusCode } from '../roborockCommunication/Zenum/operationStatusCode.js';
 import { getRoomMap } from '../helper.js';
 import { debugStringify } from 'matterbridge/logger';

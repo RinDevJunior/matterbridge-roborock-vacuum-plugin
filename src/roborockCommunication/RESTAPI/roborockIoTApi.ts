@@ -1,4 +1,7 @@
 import axios, { AxiosInstance } from 'axios';
+import type { AxiosError } from 'axios';
+import axiosRetry from 'axios-retry';
+import https from 'node:https';
 import crypto from 'node:crypto';
 import { AnsiLogger, debugStringify } from 'matterbridge/logger';
 import { ApiResponse } from '../Zmodel/apiResponse.js';
@@ -13,7 +16,26 @@ export class RoborockIoTApi {
   constructor(userdata: UserData, logger: AnsiLogger) {
     this.logger = logger;
 
-    this.api = axios.create({ baseURL: userdata.rriot.r.a });
+    this.api = axios.create({ baseURL: userdata.rriot.r.a, timeout: 10000, maxRedirects: 5, httpsAgent: new https.Agent({ keepAlive: true }) });
+
+    // Retry transient network errors (including ECONNRESET) with exponential backoff
+    try {
+      axiosRetry(this.api, {
+        retries: 3,
+        retryDelay: axiosRetry.exponentialDelay,
+        retryCondition: (error: unknown) => {
+          const errTyped = error as { code?: string; message?: string } | AxiosError;
+          const isNetwork = axiosRetry.isNetworkOrIdempotentRequestError(errTyped as unknown as Error);
+          const code = (errTyped as { code?: string })?.code as string | undefined;
+          const isEconnreset = code === 'ECONNRESET';
+          const isTimedOut = code === 'ETIMEDOUT' || code === 'ECONNABORTED' || /timeout/i.test((errTyped as { message?: string })?.message ?? '');
+          return Boolean(isNetwork || isEconnreset || isTimedOut);
+        },
+      });
+    } catch (err: unknown) {
+      this.logger.error(`Failed to configure axios-retry: ${err ? debugStringify(err) : 'unknown'}`);
+    }
+
     this.api.interceptors.request.use((config) => {
       try {
         const timestamp = Math.floor(Date.now() / 1000);
@@ -34,73 +56,91 @@ export class RoborockIoTApi {
   }
 
   public async getHome(homeId: number): Promise<Home | undefined> {
-    const result = await this.api.get(`user/homes/${homeId}`);
-
-    const apiResponse: ApiResponse<Home> = result.data;
-    if (apiResponse.result) {
-      return apiResponse.result;
-    } else {
+    try {
+      const result = await this.api.get(`user/homes/${homeId}`);
+      const apiResponse: ApiResponse<Home> = result.data;
+      if (apiResponse.result) {
+        return apiResponse.result;
+      }
       this.logger.error('Failed to retrieve the home data');
+      return undefined;
+    } catch (error) {
+      this.logger.error(`getHome failed: ${error ? debugStringify(error) : 'unknown'}`);
       return undefined;
     }
   }
 
   public async getHomev2(homeId: number): Promise<Home | undefined> {
-    const result = await this.api.get('v2/user/homes/' + homeId);
-
-    const apiResponse: ApiResponse<Home> = result.data;
-    if (apiResponse.result) {
-      return apiResponse.result;
-    } else {
+    try {
+      const result = await this.api.get('v2/user/homes/' + homeId);
+      const apiResponse: ApiResponse<Home> = result.data;
+      if (apiResponse.result) {
+        return apiResponse.result;
+      }
       this.logger.error('Failed to retrieve the home data');
+      return undefined;
+    } catch (error) {
+      this.logger.error(`getHomev2 failed: ${error ? debugStringify(error) : 'unknown'}`);
       return undefined;
     }
   }
 
   public async getHomev3(homeId: number): Promise<Home | undefined> {
-    const result = await this.api.get('v3/user/homes/' + homeId); // can be v3 also
-
-    const apiResponse: ApiResponse<Home> = result.data;
-    if (apiResponse.result) {
-      return apiResponse.result;
-    } else {
+    try {
+      const result = await this.api.get('v3/user/homes/' + homeId); // can be v3 also
+      const apiResponse: ApiResponse<Home> = result.data;
+      if (apiResponse.result) {
+        return apiResponse.result;
+      }
       this.logger.error('Failed to retrieve the home data');
+      return undefined;
+    } catch (error) {
+      this.logger.error(`getHomev3 failed: ${error ? debugStringify(error) : 'unknown'}`);
       return undefined;
     }
   }
 
   public async getScenes(homeId: number): Promise<Scene[] | undefined> {
-    const result = await this.api.get('user/scene/home/' + homeId);
-
-    const apiResponse: ApiResponse<Scene[]> = result.data;
-    if (apiResponse.result) {
-      return apiResponse.result;
-    } else {
+    try {
+      const result = await this.api.get('user/scene/home/' + homeId);
+      const apiResponse: ApiResponse<Scene[]> = result.data;
+      if (apiResponse.result) {
+        return apiResponse.result;
+      }
       this.logger.error('Failed to retrieve scene');
+      return undefined;
+    } catch (error) {
+      this.logger.error(`getScenes failed: ${error ? debugStringify(error) : 'unknown'}`);
       return undefined;
     }
   }
 
   public async startScene(sceneId: number): Promise<unknown> {
-    const result = await this.api.post(`user/scene/${sceneId}/execute`);
-    const apiResponse: ApiResponse<unknown> = result.data;
-
-    if (apiResponse.result) {
-      return apiResponse.result;
-    } else {
+    try {
+      const result = await this.api.post(`user/scene/${sceneId}/execute`);
+      const apiResponse: ApiResponse<unknown> = result.data;
+      if (apiResponse.result) {
+        return apiResponse.result;
+      }
       this.logger.error('Failed to execute scene');
+      return undefined;
+    } catch (error) {
+      this.logger.error(`startScene failed: ${error ? debugStringify(error) : 'unknown'}`);
       return undefined;
     }
   }
 
   public async getCustom(url: string): Promise<unknown> {
-    const result = await this.api.get(url);
-    const apiResponse: ApiResponse<unknown> = result.data;
-
-    if (apiResponse.result) {
-      return apiResponse.result;
-    } else {
+    try {
+      const result = await this.api.get(url);
+      const apiResponse: ApiResponse<unknown> = result.data;
+      if (apiResponse.result) {
+        return apiResponse.result;
+      }
       this.logger.error('Failed to execute scene');
+      return undefined;
+    } catch (error) {
+      this.logger.error(`getCustom failed: ${error ? debugStringify(error) : 'unknown'}`);
       return undefined;
     }
   }

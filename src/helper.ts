@@ -1,6 +1,6 @@
 import { debugStringify } from 'matterbridge/logger';
 import { RoomMap } from './model/RoomMap.js';
-import { RoborockMatterbridgePlatform } from './platform.js';
+import { RoborockMatterbridgePlatform } from './module.js';
 import { Device } from './roborockCommunication/index.js';
 import { CloudMessageResult } from './roborockCommunication/Zmodel/messageResult.js';
 import { MapRoom } from './roborockCommunication/Zmodel/mapInfo.js';

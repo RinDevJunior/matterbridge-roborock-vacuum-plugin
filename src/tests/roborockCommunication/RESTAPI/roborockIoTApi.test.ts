@@ -103,4 +103,43 @@ describe('RoborockIoTApi', () => {
     expect(result).toBeUndefined();
     expect(mockLogger.error).toHaveBeenCalledWith('Failed to execute scene');
   });
+
+  it('should create axios instance with timeout, redirects and httpsAgent', () => {
+    expect(axios.create).toHaveBeenCalled();
+    const cfg = (axios.create as jest.Mock).mock.calls[0][0];
+    expect(cfg).toMatchObject({ baseURL: 'http://base.url', timeout: 10000, maxRedirects: 5 });
+    expect(cfg.httpsAgent).toBeDefined();
+  });
+
+  it('getHomev2 should log error and return undefined on exception', async () => {
+    mockAxiosInstance.get.mockRejectedValue(new Error('network error'));
+    const result = await api.getHomev2(2);
+    expect(result).toBeUndefined();
+    expect(mockLogger.error).toHaveBeenCalledWith(expect.stringContaining('getHomev2 failed'));
+  });
+
+  it('startScene should log error and return undefined on exception', async () => {
+    mockAxiosInstance.post.mockRejectedValue(new Error('post failure'));
+    const result = await api.startScene(5);
+    expect(result).toBeUndefined();
+    expect(mockLogger.error).toHaveBeenCalledWith(expect.stringContaining('startScene failed'));
+  });
+
+  it('getHomev2 handles ETIMEDOUT error and logs', async () => {
+    const err: any = new Error('timeout');
+    err.code = 'ETIMEDOUT';
+    mockAxiosInstance.get.mockRejectedValueOnce(err);
+    const result = await api.getHomev2(2);
+    expect(result).toBeUndefined();
+    expect(mockLogger.error).toHaveBeenCalledWith(expect.stringContaining('getHomev2 failed'));
+  });
+
+  it('getHomev2 handles ECONNRESET error and logs', async () => {
+    const err: any = new Error('socket hang up');
+    err.code = 'ECONNRESET';
+    mockAxiosInstance.get.mockRejectedValueOnce(err);
+    const result = await api.getHomev2(2);
+    expect(result).toBeUndefined();
+    expect(mockLogger.error).toHaveBeenCalledWith(expect.stringContaining('getHomev2 failed'));
+  });
 });

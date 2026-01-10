@@ -438,14 +438,14 @@ export default class RoborockService {
     return result;
   }
 
-  public async getHomeDataForUpdating(homeid: number): Promise<Home> {
+  public async getHomeDataForUpdating(homeid: number): Promise<Home | undefined> {
     assert(this.iotApi !== undefined);
     assert(this.userdata !== undefined);
 
     const homeData = await this.iotApi.getHomev2(homeid);
 
     if (!homeData) {
-      throw new Error('Failed to retrieve the home data');
+      return undefined;
     }
 
     const products = new Map<string, string>();

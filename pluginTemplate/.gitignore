@@ -1,0 +1,20 @@
+# .gitignore
+# This file specifies intentionally untracked directories and files that Git should ignore.
+
+# Specific directories that should be ignored
+.vscode/
+coverage/
+dist/
+jest/
+node_modules/
+temp/
+
+# Specific files that should be ignored
+*.backup
+*.heapsnapshot
+*.heapprofile
+*.tsbuildinfo
+*.tgz
+*.log
+
+# Package specific directories and files that should be ignored

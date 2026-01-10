@@ -1,6 +1,6 @@
 import { PowerSource, RvcOperationalState } from 'matterbridge/matter/clusters';
 import { CloudMessageModel } from './model/CloudMessageModel.js';
-import { RoborockMatterbridgePlatform } from './platform.js';
+import { RoborockMatterbridgePlatform } from './module.js';
 import { getBatteryStatus, getOperationalErrorState } from './initialData/index.js';
 import { NotifyMessageTypes } from './notifyMessageTypes.js';
 import { CloudMessageResult } from './roborockCommunication/Zmodel/messageResult.js';
@@ -30,6 +30,7 @@ export class PlatformRunner {
     if (platform.roborockService === undefined) return;
 
     const homeData = await platform.roborockService.getHomeDataForUpdating(platform.rrHomeId);
+    if (homeData === undefined) return;
     await this.updateRobot(NotifyMessageTypes.HomeData, homeData);
   }
 

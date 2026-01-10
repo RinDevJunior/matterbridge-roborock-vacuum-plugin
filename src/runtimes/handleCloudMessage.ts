@@ -1,7 +1,7 @@
 import { getRunningMode } from '../initialData/getSupportedRunModes.js';
 import { CloudMessageModel } from '../model/CloudMessageModel.js';
 import { hasDockingStationError } from '../model/DockingStationStatus.js';
-import { RoborockMatterbridgePlatform } from '../platform.js';
+import { RoborockMatterbridgePlatform } from '../module.js';
 import { AdditionalPropCode, DeviceStatusNotify, Protocol } from '../roborockCommunication/index.js';
 import { state_to_matter_operational_status, state_to_matter_state } from '../share/function.js';
 import { RvcCleanMode, RvcOperationalState, RvcRunMode, ServiceArea } from 'matterbridge/matter/clusters';

@@ -95,6 +95,8 @@ applyTo: '**/*.ts'
 
 ## Testing Expectations
 
+- Rerun unit tests and linters before after changes.
+- If there are no tests, add new unit tests to cover your changes.
 - Add or update unit tests with the project's framework and naming style.
 - Expand integration or end-to-end suites when behavior crosses modules or platform APIs.
 - Run targeted test scripts for quick feedback before submitting.

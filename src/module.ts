@@ -1,7 +1,8 @@
-import { PlatformMatterbridge, MatterbridgeDynamicPlatform, PlatformConfig } from 'matterbridge';
+import { PlatformMatterbridge, MatterbridgeDynamicPlatform, PlatformConfig, MatterbridgeEndpoint, bridgedNode } from 'matterbridge';
 import * as axios from 'axios';
 import crypto from 'node:crypto';
 import { AnsiLogger, debugStringify, LogLevel } from 'matterbridge/logger';
+import { isValidNumber, isValidString } from 'matterbridge/utils';
 import RoborockService from './roborockService.js';
 import { PLUGIN_NAME } from './settings.js';
 import ClientManager from './clientManager.js';
@@ -13,11 +14,26 @@ import { NotifyMessageTypes } from './notifyMessageTypes.js';
 import { Device, RoborockAuthenticateApi, RoborockIoTApi, UserData, AuthenticateFlowState } from './roborockCommunication/index.js';
 import { getSupportedAreas, getSupportedScenes } from './initialData/index.js';
 import { AuthenticationPayload, CleanModeSettings, createDefaultExperimentalFeatureSetting, ExperimentalFeatureSetting } from './model/ExperimentalFeatureSetting.js';
-import { ServiceArea } from 'matterbridge/matter/clusters';
+import { BridgedDeviceBasicInformation, Descriptor, ServiceArea } from 'matterbridge/matter/clusters';
 import NodePersist from 'node-persist';
 import Path from 'node:path';
 import { Room } from './roborockCommunication/Zmodel/room.js';
 import { getBaseUrl } from './initialData/regionUrls.js';
+import { UINT16_MAX, UINT32_MAX } from 'matterbridge/matter';
+
+export type RoborockPluginPlatformConfig = PlatformConfig & {
+  whiteList: string[];
+  blackList: string[];
+  useInterval: boolean;
+  refreshInterval: number;
+  debug: boolean;
+  authentication: AuthenticationPayload;
+  enableExperimental: ExperimentalFeatureSetting;
+};
+
+export default function initializePlugin(matterbridge: PlatformMatterbridge, log: AnsiLogger, config: PlatformConfig): RoborockMatterbridgePlatform {
+  return new RoborockMatterbridgePlatform(matterbridge, log, config as RoborockPluginPlatformConfig);
+}
 
 export class RoborockMatterbridgePlatform extends MatterbridgeDynamicPlatform {
   robots: Map<string, RoborockVacuumCleaner> = new Map<string, RoborockVacuumCleaner>();
@@ -31,24 +47,27 @@ export class RoborockMatterbridgePlatform extends MatterbridgeDynamicPlatform {
   persist: NodePersist.LocalStorage;
   rrHomeId: number | undefined;
 
-  constructor(matterbridge: PlatformMatterbridge, log: AnsiLogger, config: PlatformConfig) {
+  constructor(
+    matterbridge: PlatformMatterbridge,
+    log: AnsiLogger,
+    override config: RoborockPluginPlatformConfig,
+  ) {
     super(matterbridge, log, config);
 
     // Verify that Matterbridge is the correct version
     if (this.verifyMatterbridgeVersion === undefined || typeof this.verifyMatterbridgeVersion !== 'function' || !this.verifyMatterbridgeVersion('3.4.6')) {
       throw new Error(
-        `This plugin requires Matterbridge version >= "3.3.6". Please update Matterbridge from ${this.matterbridge.matterbridgeVersion} to the latest version in the frontend.`,
+        `This plugin requires Matterbridge version >= "3.4.6". Please update Matterbridge from ${this.matterbridge.matterbridgeVersion} to the latest version in the frontend.`,
       );
     }
     this.log.info('Initializing platform:', this.config.name);
     if (config.whiteList === undefined) config.whiteList = [];
     if (config.blackList === undefined) config.blackList = [];
-    if (config.enableExperimental === undefined) config.enableExperimental = createDefaultExperimentalFeatureSetting() as ExperimentalFeatureSetting;
+    if (config.enableExperimental === undefined) config.enableExperimental = createDefaultExperimentalFeatureSetting();
 
     // Create storage for this plugin (initialised in onStart)
     const persistDir = Path.join(this.matterbridge.matterbridgePluginDirectory, PLUGIN_NAME, 'persist');
     this.persist = NodePersist.create({ dir: persistDir });
-
     this.clientManager = new ClientManager(this.log);
     this.devices = new Map<string, Device>();
   }
@@ -70,12 +89,12 @@ export class RoborockMatterbridgePlatform extends MatterbridgeDynamicPlatform {
 
     const axiosInstance = axios.default ?? axios;
 
-    this.enableExperimentalFeature = this.config.enableExperimental as ExperimentalFeatureSetting;
+    this.enableExperimentalFeature = this.config.enableExperimental;
     // Disable multiple map for more investigation
     this.enableExperimentalFeature.advancedFeature.enableMultipleMap = false;
 
     if (this.enableExperimentalFeature?.enableExperimentalFeature && this.enableExperimentalFeature?.cleanModeSettings?.enableCleanModeMapping) {
-      this.cleanModeSettings = this.enableExperimentalFeature.cleanModeSettings as CleanModeSettings;
+      this.cleanModeSettings = this.enableExperimentalFeature.cleanModeSettings;
       this.log.notice(`Experimental Feature has been enable`);
       this.log.notice(`cleanModeSettings ${debugStringify(this.cleanModeSettings)}`);
     }
@@ -100,7 +119,7 @@ export class RoborockMatterbridgePlatform extends MatterbridgeDynamicPlatform {
     this.roborockService = new RoborockService(
       (_, url) => new RoborockAuthenticateApi(this.log, axiosInstance, deviceId, url),
       (logger, ud) => new RoborockIoTApi(ud, logger),
-      (this.config.refreshInterval as number) ?? 60,
+      this.config.refreshInterval ?? 60,
       this.clientManager,
       this.log,
       baseUrl,
@@ -110,7 +129,7 @@ export class RoborockMatterbridgePlatform extends MatterbridgeDynamicPlatform {
 
     this.log.debug(`config: ${debugStringify(this.config)}`);
 
-    const authenticationPayload = this.config.authentication as AuthenticationPayload;
+    const authenticationPayload = this.config.authentication;
     const password = authenticationPayload.password ?? '';
     const verificationCode = authenticationPayload.verificationCode ?? '';
     const authenticationMethod = authenticationPayload.authenticationMethod as 'VerificationCode' | 'Password';
@@ -144,8 +163,8 @@ export class RoborockMatterbridgePlatform extends MatterbridgeDynamicPlatform {
     this.log.notice('Initializing - devices: ', debugStringify(devices));
 
     let vacuums: Device[] = [];
-    if ((this.config.whiteList as string[]).length > 0) {
-      const whiteList = (this.config.whiteList ?? []) as string[];
+    if (this.config.whiteList.length > 0) {
+      const whiteList = this.config.whiteList ?? [];
       for (const item of whiteList) {
         const duid = item.split('-')[1].trim();
         const vacuum = devices.find((d) => d.duid === duid);
@@ -190,7 +209,11 @@ export class RoborockMatterbridgePlatform extends MatterbridgeDynamicPlatform {
     const self = this;
     this.rvcInterval = setInterval(
       async () => {
-        self.platformRunner?.requestHomeData();
+        try {
+          await self.platformRunner?.requestHomeData();
+        } catch (error) {
+          self.log.error(`requestHomeData (interval) failed: ${error ? error : 'unknown'}`);
+        }
       },
       ((this.config.refreshInterval as number) ?? 60) * 1000 + 100,
     );
@@ -233,7 +256,11 @@ export class RoborockMatterbridgePlatform extends MatterbridgeDynamicPlatform {
       this.roborockService.activateDeviceNotify(robot.device);
     }
 
-    await this.platformRunner?.requestHomeData();
+    try {
+      await this.platformRunner?.requestHomeData();
+    } catch (error) {
+      this.log.error(`requestHomeData (initial) failed: ${error ? error : 'unknown'}`);
+    }
 
     this.log.info('onConfigurateDevice finished');
   }
@@ -290,13 +317,9 @@ export class RoborockMatterbridgePlatform extends MatterbridgeDynamicPlatform {
     robot.configurateHandler(behaviorHandler);
 
     this.log.info('vacuum:', debugStringify(vacuum));
-
-    this.setSelectDevice(robot.serialNumber ?? '', robot.deviceName ?? '', undefined, 'hub');
     if (this.validateDevice(robot.deviceName ?? '')) {
-      await this.registerDevice(robot);
+      await this.addDevice(robot);
     }
-
-    this.robots.set(robot.serialNumber ?? '', robot);
 
     return true;
   }
@@ -422,5 +445,59 @@ export class RoborockMatterbridgePlatform extends MatterbridgeDynamicPlatform {
 
     this.log.notice('Authentication successful!');
     return userData;
+  }
+
+  async addDevice(device: MatterbridgeEndpoint): Promise<MatterbridgeEndpoint | undefined> {
+    if (!device.serialNumber || !device.deviceName) return;
+    this.setSelectDevice(device.serialNumber, device.deviceName, undefined, 'hub');
+
+    const vacuumFirmwareData = (device as RoborockVacuumCleaner).device.data;
+    const hardwareVersionString = vacuumFirmwareData.firmwareVersion ?? (device as RoborockVacuumCleaner).device.fv ?? this.matterbridge.matterbridgeVersion;
+
+    if (this.validateDevice(device.deviceName)) {
+      device.softwareVersion = parseInt(this.version.replace(/\D/g, ''));
+      device.softwareVersionString = this.version === '' ? 'Unknown' : this.version;
+      device.hardwareVersion = parseInt(hardwareVersionString.replace(/\D/g, ''));
+      device.hardwareVersionString = hardwareVersionString;
+      device.softwareVersion = isValidNumber(device.softwareVersion, 0, UINT32_MAX) ? device.softwareVersion : undefined;
+      device.softwareVersionString = isValidString(device.softwareVersionString) ? device.softwareVersionString.slice(0, 64) : undefined;
+      device.hardwareVersion = isValidNumber(device.hardwareVersion, 0, UINT16_MAX) ? device.hardwareVersion : undefined;
+      device.hardwareVersionString = isValidString(device.hardwareVersionString) ? device.hardwareVersionString.slice(0, 64) : undefined;
+      const options = device.getClusterServerOptions(BridgedDeviceBasicInformation.Cluster.id);
+      if (options) {
+        options.softwareVersion = device.softwareVersion || 1;
+        options.softwareVersionString = device.softwareVersionString || '1.0.0';
+        options.hardwareVersion = device.hardwareVersion || 1;
+        options.hardwareVersionString = device.hardwareVersionString || '1.0.0';
+      }
+      // We need to add bridgedNode device type and BridgedDeviceBasicInformation cluster for single class devices that doesn't add it in childbridge mode.
+      if (device.mode === undefined && !device.deviceTypes.has(bridgedNode.code)) {
+        device.deviceTypes.set(bridgedNode.code, bridgedNode);
+        const options = device.getClusterServerOptions(Descriptor.Cluster.id);
+        if (options) {
+          const deviceTypeList = options.deviceTypeList as { deviceType: number; revision: number }[];
+          if (!deviceTypeList.find((dt) => dt.deviceType === bridgedNode.code)) {
+            deviceTypeList.push({ deviceType: bridgedNode.code, revision: bridgedNode.revision });
+          }
+        }
+        device.createDefaultBridgedDeviceBasicInformationClusterServer(
+          device.deviceName,
+          device.serialNumber,
+          device.vendorId,
+          device.vendorName,
+          device.productName,
+          device.softwareVersion,
+          device.softwareVersionString,
+          device.hardwareVersion,
+          device.hardwareVersionString,
+        );
+      }
+
+      await this.registerDevice(device);
+      this.robots.set(device.serialNumber, device as RoborockVacuumCleaner);
+      return device;
+    } else {
+      return undefined;
+    }
   }
 }

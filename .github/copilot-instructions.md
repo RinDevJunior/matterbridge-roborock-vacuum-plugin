@@ -10,6 +10,9 @@ description: Aligns Copilot with the coding style and architecture of the Matter
 This file is the **primary instruction entry point** for GitHub Copilot.
 Its purpose is to **route tasks to the correct child instruction file**.
 
+This plugin is implemented based on the pluginTemplate provided by Matterbridge and follows its architecture and coding style.
+The example code is available at: root\pluginTemplate folder.
+
 Copilot MUST follow the rules below before generating any code.
 
 ---
@@ -161,5 +164,9 @@ If task classification is unclear:
 - This file exists only to guide selection, not implementation details
 
 ---
+
+## Troubleshooting
+
+- after run `npm install`, run `npm run deepCleanB` to fix potential build issues.
 
 End of root Copilot instructions.
