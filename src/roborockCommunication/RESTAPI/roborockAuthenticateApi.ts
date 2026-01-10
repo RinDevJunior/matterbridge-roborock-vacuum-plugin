@@ -110,9 +110,12 @@ export class RoborockAuthenticateApi {
       } else if (this.baseUrl.includes('usiot')) {
         country = country || 'United States';
         countryCode = countryCode || 'US';
-      } else if (this.baseUrl.includes('iot.roborock.com')) {
+      } else if (this.baseUrl.includes('cniot')) {
         country = country || 'China';
         countryCode = countryCode || 'CN';
+      } else if (this.baseUrl.includes('ruiot')) {
+        country = country || 'Russia';
+        countryCode = countryCode || 'RU';
       }
     }
 

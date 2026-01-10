@@ -17,6 +17,7 @@ import { ServiceArea } from 'matterbridge/matter/clusters';
 import NodePersist from 'node-persist';
 import Path from 'node:path';
 import { Room } from './roborockCommunication/Zmodel/room.js';
+import { getBaseUrl } from './initialData/regionUrls.js';
 
 export class RoborockMatterbridgePlatform extends MatterbridgeDynamicPlatform {
   robots: Map<string, RoborockVacuumCleaner> = new Map<string, RoborockVacuumCleaner>();
@@ -29,13 +30,6 @@ export class RoborockMatterbridgePlatform extends MatterbridgeDynamicPlatform {
   enableExperimentalFeature: ExperimentalFeatureSetting | undefined;
   persist: NodePersist.LocalStorage;
   rrHomeId: number | undefined;
-
-  private regionUrls: Record<string, string> = {
-    US: 'https://usiot.roborock.com',
-    EU: 'https://euiot.roborock.com',
-    CN: 'https://cniot.roborock.com',
-    RU: 'https://ruiot.roborock.com',
-  };
 
   constructor(matterbridge: PlatformMatterbridge, log: AnsiLogger, config: PlatformConfig) {
     super(matterbridge, log, config);
@@ -98,13 +92,13 @@ export class RoborockMatterbridgePlatform extends MatterbridgeDynamicPlatform {
       this.log.debug('Using cached deviceId:', deviceId);
     }
 
-    const region = (this.config.region as string)?.toUpperCase() ?? 'US';
-    // use regionmap to get baseUrl
-    const baseUrl = this.regionUrls[region] ?? this.regionUrls['US'];
+    const configRegion = this.config.region as string | undefined;
+    const region = configRegion?.toUpperCase() ?? 'US';
+    const baseUrl = getBaseUrl(configRegion);
     this.log.notice(`Using region: ${region} (${baseUrl})`);
 
     this.roborockService = new RoborockService(
-      (logger, url) => new RoborockAuthenticateApi(this.log, axiosInstance, deviceId, url),
+      (_, url) => new RoborockAuthenticateApi(this.log, axiosInstance, deviceId, url),
       (logger, ud) => new RoborockIoTApi(ud, logger),
       (this.config.refreshInterval as number) ?? 60,
       this.clientManager,
