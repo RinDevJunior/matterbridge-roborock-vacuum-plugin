@@ -749,18 +749,10 @@ describe('RoborockService - New Login Methods', () => {
 
       service.messageClient = mockMessageClient;
 
-      const mockDevice: Device = {
-        duid: 'device1',
-        name: 'Test Device',
-        localKey: 'local-key',
-        pv: '1.0',
-        data: { model: 'roborock.vacuum.s5' },
-      } as Device;
-
       service.messageProcessorMap.set('device1', mockMessageProcessor);
 
       // Trigger the method that registers the listener
-      const handler = mockMessageProcessor.registerListener.mock.calls?.[0]?.[0];
+      // const handler = mockMessageProcessor.registerListener.mock.calls?.[0]?.[0];
 
       // If we can't get the handler this way, we need to manually test it
       // For now, just ensure the map was set correctly
@@ -874,7 +866,6 @@ describe('RoborockService - New Login Methods', () => {
     });
 
     it('should handle startClean with single routine selected', async () => {
-      const mockScene = { id: 1, name: 'Clean Living Room' };
       const routine1 = { id: 101, name: 'Routine 1', flag: 2, icon: 'icon', category: 'routine', areaId: 101 };
 
       (service as any).iotApi = mockIotApi;
@@ -927,7 +918,6 @@ describe('RoborockService - New Login Methods', () => {
     });
 
     it('should handle initializeMessageClientForLocal with connection timeout error', async () => {
-      const mockNetworkInfo = { ip: '192.168.1.100' };
       const mockLocalClient: any = {
         connect: jest.fn(),
         isConnected: jest.fn().mockReturnValue(false),
@@ -939,12 +929,6 @@ describe('RoborockService - New Login Methods', () => {
         isConnected: jest.fn().mockReturnValue(true),
         registerMessageListener: jest.fn(),
         registerClient: jest.fn().mockReturnValue(mockLocalClient),
-      };
-
-      const mockMessageProcessor: any = {
-        getNetworkInfo: (jest.fn() as any).mockResolvedValue(mockNetworkInfo),
-        injectLogger: jest.fn(),
-        registerListener: jest.fn(),
       };
 
       service.messageClient = mockMessageClient;

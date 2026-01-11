@@ -1,6 +1,6 @@
 import { LocalNetworkClient } from '../../../../roborockCommunication/broadcast/client/LocalNetworkClient';
 import { Protocol } from '../../../../roborockCommunication/broadcast/model/protocol';
-import { EventEmitter } from 'events';
+import { EventEmitter } from 'node:events';
 
 const Sket = jest.fn();
 

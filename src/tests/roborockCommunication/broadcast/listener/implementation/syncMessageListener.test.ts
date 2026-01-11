@@ -101,7 +101,7 @@ describe('SyncMessageListener', () => {
 
   it('should handle messages that do not contain rpc_response or map_response', async () => {
     const message = {
-      contain: (proto: Protocol) => false,
+      contain: () => false,
       get: () => null,
     } as any;
 
