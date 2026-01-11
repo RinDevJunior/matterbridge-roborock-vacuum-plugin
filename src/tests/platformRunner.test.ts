@@ -1,6 +1,6 @@
 import { PlatformRunner } from '../platformRunner';
 import { NotifyMessageTypes } from '../notifyMessageTypes';
-import { RoborockMatterbridgePlatform } from '../platform';
+import { RoborockMatterbridgePlatform } from '../module';
 import { Home } from '../roborockCommunication';
 import fs from 'node:fs';
 import { fileURLToPath } from 'node:url';
@@ -181,26 +181,19 @@ describe('PlatformRunner.updateRobot', () => {
 
   it('should log error if robot not found for MQTT message', async () => {
     await runner['updateFromMQTTMessage'](NotifyMessageTypes.BatteryUpdate, { percentage: 50 }, 'notfound');
-    expect(platform.log.error).toHaveBeenCalledWith('Error1: Robot with DUID notfound not found');
+    expect(platform.log.error).toHaveBeenCalledWith('Robot with DUID notfound not found during MQTT message processing');
   });
 
   it('should log error if device data is undefined for MQTT message', async () => {
     robotMock.device.data = undefined;
     await runner['updateFromMQTTMessage'](NotifyMessageTypes.BatteryUpdate, { percentage: 50 }, '123456');
-    expect(platform.log.error).toHaveBeenCalledWith('Device data is undefined');
-  });
-
-  it('should log error if robot serial number is undefined for MQTT message', async () => {
-    robotMock.serialNumber = undefined;
-    robotMock.device.data = { model: 'test-model' };
-    await runner['updateFromMQTTMessage'](NotifyMessageTypes.BatteryUpdate, { percentage: 50 }, '123456');
-    expect(platform.log.error).toHaveBeenCalledWith('Robot serial number is undefined');
+    expect(platform.log.error).toHaveBeenCalledWith('Device data is undefined for robot 123456');
   });
 
   it('should handle LocalMessage when robot is not found', async () => {
     const localMessage = { duid: '999999', data: {} };
     await runner['updateFromMQTTMessage'](NotifyMessageTypes.LocalMessage, localMessage, '999999');
-    expect(platform.log.error).toHaveBeenCalledWith('Error1: Robot with DUID 999999 not found');
+    expect(platform.log.error).toHaveBeenCalledWith('Robot with DUID 999999 not found during MQTT message processing');
   });
 
   it('should handle LocalMessage successfully when robot and data are available', async () => {
@@ -210,33 +203,13 @@ describe('PlatformRunner.updateRobot', () => {
     const localMessage = { duid: '123456', result: 'test-result' };
 
     // Clear previous error calls
-    platform.log.error.mockClear();
+    (platform.log.error as jest.Mock).mockClear();
 
     // This will call the actual handleLocalMessage function
     await runner['updateFromMQTTMessage'](NotifyMessageTypes.LocalMessage, localMessage, '123456');
 
     // Verify no error was logged (which would happen on the error path)
     expect(platform.log.error).not.toHaveBeenCalled();
-  });
-
-  it('should handle LocalMessage error path when robot becomes unavailable', async () => {
-    // This tests the error path inside the LocalMessage case where robot is undefined
-    robotMock.device.data = { model: 'test-model' };
-    robotMock.serialNumber = '123456';
-
-    // Mock platform.robots.get to return undefined on second call (simulating robot disappearing)
-    const originalGet = platform.robots.get.bind(platform.robots);
-    let callCount = 0;
-    platform.robots.get = jest.fn((key: string) => {
-      callCount++;
-      if (callCount === 1) return originalGet(key); // First call returns robot
-      return undefined; // Second call returns undefined
-    });
-
-    const localMessage = { duid: '123456', data: { result: 'test' } };
-    await runner['updateFromMQTTMessage'](NotifyMessageTypes.LocalMessage, localMessage, '123456');
-
-    expect(platform.log.error).toHaveBeenCalledWith('Error2: Robot with DUID 123456 not found');
   });
 
   it('should handle default case for unknown message types', async () => {

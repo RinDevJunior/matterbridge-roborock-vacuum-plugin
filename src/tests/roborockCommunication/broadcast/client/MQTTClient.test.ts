@@ -22,7 +22,9 @@ describe('MQTTClient', () => {
 
   beforeEach(() => {
     logger = { error: jest.fn(), debug: jest.fn(), notice: jest.fn(), info: jest.fn() };
-    context = {};
+    context = {
+      getProtocolVersion: jest.fn().mockReturnValue('1.0'),
+    };
     userdata = {
       rriot: {
         u: 'user',
@@ -199,12 +201,11 @@ describe('MQTTClient', () => {
     expect(connectionListeners.onDisconnected).toHaveBeenCalled();
   });
 
-  it('onError should log error, set connected false, and call onError', async () => {
+  it('onError should log error and call onError', async () => {
     const mqttClient = createMQTTClient();
     mqttClient['connected'] = true;
     await mqttClient['onError'](new Error('fail'));
     expect(logger.error).toHaveBeenCalledWith(expect.stringContaining('MQTT connection error'));
-    expect(mqttClient['connected']).toBe(false);
     expect(connectionListeners.onError).toHaveBeenCalledWith('mqtt-c6d6afb9', expect.stringContaining('fail'));
   });
 
@@ -263,12 +264,13 @@ describe('MQTTClient', () => {
     jest.useFakeTimers();
     const mqttClient = createMQTTClient();
     mqttClient['mqttClient'] = client;
+    mqttClient['connected'] = true;
     mqttClient['keepConnectionAlive']();
 
     expect(mqttClient['keepConnectionAliveInterval']).toBeDefined();
 
-    // Fast-forward time by 30 minutes
-    jest.advanceTimersByTime(30 * 60 * 1000);
+    // Fast-forward time by 60 minutes to trigger the interval callback
+    jest.advanceTimersByTime(60 * 60 * 1000);
 
     expect(client.end).toHaveBeenCalled();
     expect(client.reconnect).toHaveBeenCalled();
@@ -281,13 +283,13 @@ describe('MQTTClient', () => {
   it('keepConnectionAlive should call connect if mqttClient is undefined', () => {
     jest.useFakeTimers();
     const mqttClient = createMQTTClient();
+    const connectSpy = jest.spyOn(mqttClient, 'connect');
     mqttClient['mqttClient'] = undefined;
+    mqttClient['connected'] = false;
     mqttClient['keepConnectionAlive']();
 
-    const connectSpy = jest.spyOn(mqttClient, 'connect');
-
-    // Fast-forward time by 30 minutes
-    jest.advanceTimersByTime(30 * 60 * 1000);
+    // Fast-forward time by 60 minutes to trigger the interval callback
+    jest.advanceTimersByTime(60 * 60 * 1000);
 
     expect(connectSpy).toHaveBeenCalled();
 

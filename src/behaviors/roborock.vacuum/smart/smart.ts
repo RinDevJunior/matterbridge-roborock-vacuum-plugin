@@ -1,6 +1,6 @@
 import { MaybePromise } from 'matterbridge/matter';
 import { AnsiLogger, debugStringify } from 'matterbridge/logger';
-import { BehaviorDeviceGeneric, BehaviorRoborock, DeviceCommands } from '../../BehaviorDeviceGeneric.js';
+import { BehaviorDeviceGeneric, BehaviorRoborock, CommandNames, DeviceCommands } from '../../BehaviorDeviceGeneric.js';
 import RoborockService from '../../../roborockService.js';
 import { CleanModeSettings } from '../../../model/ExperimentalFeatureSetting.js';
 import { RvcCleanMode as DefaultRvcCleanMode, CleanSetting as DefaultCleanSetting, getSettingFromCleanMode, RvcRunMode, CleanModeSetting } from '../default/default.js';
@@ -66,6 +66,15 @@ export const CleanSetting: Record<number, CleanModeSetting> = {
   ...DefaultCleanSetting,
 };
 
+/**
+ * Register command handlers for smart device behavior.
+ * Smart models support additional 'Smart Plan' mode and enhanced clean mode mappings.
+ * @param duid - Device unique identifier
+ * @param handler - Behavior handler to register commands on
+ * @param logger - Logger instance for command execution logging
+ * @param roborockService - Service for device communication
+ * @param cleanModeSettings - Optional custom clean mode configuration
+ */
 export function setCommandHandlerSmart(
   duid: string,
   handler: BehaviorDeviceGeneric<EndpointCommandsSmart>,
@@ -73,7 +82,7 @@ export function setCommandHandlerSmart(
   roborockService: RoborockService,
   cleanModeSettings: CleanModeSettings | undefined,
 ): void {
-  handler.setCommandHandler('changeToMode', async (newMode: number) => {
+  handler.setCommandHandler(CommandNames.CHANGE_TO_MODE, async (newMode: number) => {
     const activity = RvcRunMode[newMode] || RvcCleanMode[newMode];
     switch (activity) {
       case 'Cleaning': {
@@ -132,27 +141,27 @@ export function setCommandHandlerSmart(
     }
   });
 
-  handler.setCommandHandler('selectAreas', async (newAreas: number[] | undefined) => {
+  handler.setCommandHandler(CommandNames.SELECT_AREAS, async (newAreas: number[] | undefined) => {
     logger.notice(`BehaviorSmart-selectAreas: ${newAreas}`);
     roborockService.setSelectedAreas(duid, newAreas ?? []);
   });
 
-  handler.setCommandHandler('pause', async () => {
+  handler.setCommandHandler(CommandNames.PAUSE, async () => {
     logger.notice('BehaviorSmart-Pause');
     await roborockService.pauseClean(duid);
   });
 
-  handler.setCommandHandler('resume', async () => {
+  handler.setCommandHandler(CommandNames.RESUME, async () => {
     logger.notice('BehaviorSmart-Resume');
     await roborockService.resumeClean(duid);
   });
 
-  handler.setCommandHandler('goHome', async () => {
+  handler.setCommandHandler(CommandNames.GO_HOME, async () => {
     logger.notice('BehaviorSmart-GoHome');
     await roborockService.stopAndGoHome(duid);
   });
 
-  handler.setCommandHandler('playSoundToLocate', async () => {
+  handler.setCommandHandler(CommandNames.PLAY_SOUND_TO_LOCATE, async () => {
     logger.notice('BehaviorSmart-playSoundToLocate');
     await roborockService.playSoundToLocate(duid);
   });

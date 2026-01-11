@@ -1,5 +1,11 @@
 import { CleanModeSetting, CleanSetting, MopRoute, MopWaterFlow, VacuumSuctionPower } from './default.js';
 
+/**
+ * Determine current clean mode based on device settings.
+ * Maps suction power, water flow, and mop route to a clean mode identifier.
+ * @param setting - Clean mode settings from device
+ * @returns Clean mode identifier or undefined if no match found
+ */
 export function getCurrentCleanModeDefault(setting: CleanModeSetting): number | undefined {
   if (!setting || typeof setting !== 'object') {
     return undefined;
@@ -15,9 +21,9 @@ export function getCurrentCleanModeDefault(setting: CleanModeSetting): number | 
     }
   }
 
-  if (setting.suctionPower == VacuumSuctionPower.Off) return 31; // 'Mop Default'
-  if (setting.waterFlow == MopWaterFlow.Off) return 66; // 'Vacuum Default'
-  if ((setting.suctionPower !== VacuumSuctionPower.Off && setting.waterFlow) !== MopWaterFlow.Off) return 5; // 'Vac & Mop Default'
+  if (setting.suctionPower === VacuumSuctionPower.Off) return 31; // 'Mop Default'
+  if (setting.waterFlow === MopWaterFlow.Off) return 66; // 'Vacuum Default'
+  if (setting.suctionPower !== VacuumSuctionPower.Off && setting.waterFlow !== MopWaterFlow.Off) return 5; // 'Vac & Mop Default'
 
   return undefined;
 }

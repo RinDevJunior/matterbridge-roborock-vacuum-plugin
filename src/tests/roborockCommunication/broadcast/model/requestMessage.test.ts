@@ -37,9 +37,14 @@ describe('RequestMessage', () => {
     expect(req.timestamp).toBeGreaterThan(0);
   });
 
-  test('toMqttRequest returns this', () => {
+  test('toMqttRequest returns new instance with same data', () => {
     const req = new RequestMessage({ method: 'test' });
-    expect(req.toMqttRequest()).toBe(req);
+    const mqttReq = req.toMqttRequest();
+    expect(mqttReq).toBeInstanceOf(RequestMessage);
+    expect(mqttReq.method).toBe(req.method);
+    expect(mqttReq.messageId).toBe(req.messageId);
+    expect(mqttReq.nonce).toBe(req.nonce);
+    expect(mqttReq.timestamp).toBe(req.timestamp);
   });
 
   test('toLocalRequest converts rpc_request to general_request', () => {

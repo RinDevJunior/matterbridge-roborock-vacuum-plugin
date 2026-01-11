@@ -1,6 +1,7 @@
 import { ServiceArea } from 'matterbridge/matter/clusters';
 import { Home, MapInfo } from '../../roborockCommunication/index.js';
 import { CloudMessageResult } from '../../roborockCommunication/Zmodel/messageResult.js';
+import { DeviceModel } from '../../roborockCommunication/Zmodel/deviceModel.js';
 
 export const supportedAreas: ServiceArea.Area[] = [
   { areaId: 100, mapId: 0, areaInfo: { locationInfo: { locationName: 'Kitchen', floorNumber: 0, areaType: null }, landmarkInfo: null } },
@@ -312,7 +313,7 @@ export const homeData: Home = {
         id: 'test-duid',
         firmwareVersion: '02.28.34',
         serialNumber: 'RCIEBS50900224',
-        model: 'test-model',
+        model: DeviceModel.Q5,
         category: 'robot.vacuum.cleaner',
         batteryLevel: 100,
       },

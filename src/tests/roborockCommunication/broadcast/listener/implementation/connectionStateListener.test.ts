@@ -36,7 +36,8 @@ describe('ConnectionStateListener', () => {
   test('onDisconnected without reconnect does not call connect', async () => {
     const logger = makeLogger();
     const client = makeClient();
-    const listener = new ConnectionStateListener(logger, client, 'TEST', false);
+    const listener = new ConnectionStateListener(logger, client, 'TEST');
+    // Don't call start() to leave shouldReconnect as false
 
     await listener.onDisconnected('DUID2', 'bye');
     expect(logger.__calls.error.length).toBeGreaterThan(0);
@@ -48,7 +49,8 @@ describe('ConnectionStateListener', () => {
     jest.useFakeTimers();
     const logger = makeLogger();
     const client = makeClient({ retryCount: 0, isInDisconnectingStep: false });
-    const listener = new ConnectionStateListener(logger, client, 'TEST', true);
+    const listener = new ConnectionStateListener(logger, client, 'TEST');
+    listener.start(); // Enable reconnection
 
     await listener.onDisconnected('DUID3', 'lost');
     expect(client.retryCount).toBe(1);
@@ -62,7 +64,8 @@ describe('ConnectionStateListener', () => {
   test('onDisconnected with retryCount > 10 does not reconnect', async () => {
     const logger = makeLogger();
     const client = makeClient({ retryCount: 11 });
-    const listener = new ConnectionStateListener(logger, client, 'TEST', true);
+    const listener = new ConnectionStateListener(logger, client, 'TEST');
+    listener.start(); // Enable reconnection
 
     await listener.onDisconnected('DUID4', 'lost');
     expect(logger.__calls.error.some((s) => s.includes('exceeded retry limit'))).toBe(true);
@@ -72,7 +75,8 @@ describe('ConnectionStateListener', () => {
   test('onDisconnected when in disconnecting step skips re-registration', async () => {
     const logger = makeLogger();
     const client = makeClient({ retryCount: 0, isInDisconnectingStep: true });
-    const listener = new ConnectionStateListener(logger, client, 'TEST', true);
+    const listener = new ConnectionStateListener(logger, client, 'TEST');
+    listener.start(); // Enable reconnection
 
     await listener.onDisconnected('DUID5', 'lost');
     expect(logger.__calls.info.some((s) => s.includes('disconnecting step'))).toBe(true);

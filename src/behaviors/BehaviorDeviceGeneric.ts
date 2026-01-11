@@ -1,8 +1,19 @@
 import { AnsiLogger } from 'matterbridge/logger';
 import { Behavior, MaybePromise } from 'matterbridge/matter';
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export type DeviceCommandHandler = (...args: any[]) => MaybePromise;
+// Command names as constants to avoid typos and improve maintainability
+// Shared across all device types (default, type1, type2, etc.)
+export const CommandNames = {
+  IDENTIFY: 'identify',
+  SELECT_AREAS: 'selectAreas',
+  CHANGE_TO_MODE: 'changeToMode',
+  PAUSE: 'pause',
+  RESUME: 'resume',
+  GO_HOME: 'goHome',
+  PLAY_SOUND_TO_LOCATE: 'playSoundToLocate',
+} as const;
+
+export type DeviceCommandHandler = (...args: never[]) => MaybePromise;
 
 export type DeviceCommands = Record<string, DeviceCommandHandler>;
 

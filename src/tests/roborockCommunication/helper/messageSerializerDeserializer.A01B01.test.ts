@@ -17,13 +17,21 @@ describe('MessageSerializer/Deserializer A01 & B01', () => {
     const serializer = new MessageSerializer(ctx, logger);
     const deserializer = new MessageDeserializer(ctx, logger);
 
-    const req = new RequestMessage({ messageId: 7, protocol: Protocol.rpc_response, method: 'm', params: { a: 1 }, nonce: 12345, timestamp: Math.floor(Date.now() / 1000) });
+    const req = new RequestMessage({
+      messageId: 7,
+      protocol: Protocol.rpc_response,
+      // for A01 builder provide dps directly
+      dps: { [Protocol.rpc_response]: JSON.stringify({ id: 7, result: null }) },
+      nonce: 12345,
+      timestamp: Math.floor(Date.now() / 1000),
+    });
     const res = serializer.serialize(duid, req);
     expect(res).toHaveProperty('buffer');
 
     const out = deserializer.deserialize(duid, res.buffer);
-    expect(out.contain(Protocol.rpc_response)).toBe(true);
+    // ensure rpc_response dps exists and has an id
     const got: any = out.get(Protocol.rpc_response);
+    expect(got).toBeDefined();
     expect(got.id).toBeDefined();
   });
 
@@ -37,13 +45,21 @@ describe('MessageSerializer/Deserializer A01 & B01', () => {
     const serializer = new MessageSerializer(ctx, logger);
     const deserializer = new MessageDeserializer(ctx, logger);
 
-    const req = new RequestMessage({ messageId: 9, protocol: Protocol.rpc_response, method: 'm', params: { b: 2 }, nonce: 22222, timestamp: Math.floor(Date.now() / 1000) });
+    const req = new RequestMessage({
+      messageId: 9,
+      protocol: Protocol.rpc_response,
+      // for B01 builder provide dps directly
+      dps: { [Protocol.rpc_response]: JSON.stringify({ id: 9, result: null }) },
+      nonce: 22222,
+      timestamp: Math.floor(Date.now() / 1000),
+    });
     const res = serializer.serialize(duid, req);
     expect(res).toHaveProperty('buffer');
 
     const out = deserializer.deserialize(duid, res.buffer);
-    expect(out.contain(Protocol.rpc_response)).toBe(true);
+    // ensure rpc_response dps exists and has an id
     const got: any = out.get(Protocol.rpc_response);
+    expect(got).toBeDefined();
     expect(got.id).toBeDefined();
   });
 });

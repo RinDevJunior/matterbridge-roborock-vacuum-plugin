@@ -69,7 +69,7 @@ export class ClientRouter implements Client {
     });
   }
 
-  async disconnect(): Promise<void> {
+  public async disconnect(): Promise<void> {
     await this.mqttClient.disconnect();
 
     this.localClients.forEach((client) => {
@@ -77,7 +77,7 @@ export class ClientRouter implements Client {
     });
   }
 
-  async send(duid: string, request: RequestMessage): Promise<void> {
+  public async send(duid: string, request: RequestMessage): Promise<void> {
     if (request.secure) {
       await this.mqttClient.send(duid, request);
     } else {
@@ -85,7 +85,7 @@ export class ClientRouter implements Client {
     }
   }
 
-  async get<T>(duid: string, request: RequestMessage): Promise<T | undefined> {
+  public async get<T>(duid: string, request: RequestMessage): Promise<T | undefined> {
     if (request.secure) {
       return await this.mqttClient.get(duid, request);
     } else {
@@ -95,7 +95,7 @@ export class ClientRouter implements Client {
 
   private getClient(duid: string): Client {
     const localClient = this.localClients.get(duid);
-    if (localClient === undefined || !localClient.isConnected()) {
+    if (localClient === undefined || !localClient.isConnected() || !localClient.isReady()) {
       return this.mqttClient;
     } else {
       return localClient;

@@ -1,5 +1,5 @@
 import { RvcRunMode } from 'matterbridge/matter/clusters';
-import { getDefaultSupportedRunModes } from '../behaviors/roborock.vacuum/default/initalData.js';
+import { getDefaultSupportedRunModes } from '../behaviors/roborock.vacuum/default/initialData.js';
 
 export function getRunningMode(modeTag: RvcRunMode.ModeTag | undefined): number | null {
   if (!modeTag) return null;

@@ -5,10 +5,10 @@ import { AbstractClient } from '../abstractClient.js';
 import { MessageContext } from '../model/messageContext.js';
 import { Rriot, UserData } from '../../Zmodel/userData.js';
 import { AnsiLogger, debugStringify } from 'matterbridge/logger';
+import { KEEPALIVE_INTERVAL_MS } from '../../../constants/index.js';
 
 export class MQTTClient extends AbstractClient {
   protected override clientName = 'MQTTClient';
-  protected override shouldReconnect = false;
 
   private readonly rriot: Rriot;
   private readonly mqttUsername: string;
@@ -26,10 +26,16 @@ export class MQTTClient extends AbstractClient {
     this.initializeConnectionStateListener();
   }
 
-  public connect(): void {
+  public override isConnected(): boolean {
+    return this.connected;
+  }
+
+  public override connect(): void {
     if (this.mqttClient) {
       return; // Already connected
     }
+
+    super.connect();
 
     this.mqttClient = mqtt.connect(this.rriot.r.m, {
       clientId: this.mqttUsername,
@@ -52,13 +58,15 @@ export class MQTTClient extends AbstractClient {
     this.keepConnectionAlive();
   }
 
-  public async disconnect(): Promise<void> {
+  public override async disconnect(): Promise<void> {
     if (!this.mqttClient || !this.connected) {
-      return;
+      return Promise.resolve();
     }
     try {
-      this.isInDisconnectingStep = true;
+      await super.disconnect();
       this.mqttClient.end();
+      this.mqttClient = undefined;
+      this.connected = false;
     } catch (error) {
       this.logger.error('MQTT client failed to disconnect with error: ' + error);
     }
@@ -69,12 +77,11 @@ export class MQTTClient extends AbstractClient {
       this.logger.error(`${duid}: mqtt is not available, ${debugStringify(request)}`);
       return;
     }
-
     const mqttRequest = request.toMqttRequest();
     const message = this.serializer.serialize(duid, mqttRequest);
     this.logger.debug(`MQTTClient sending message to ${duid}: ${debugStringify(mqttRequest)}`);
     this.mqttClient.publish(`rr/m/i/${this.rriot.u}/${this.mqttUsername}/${duid}`, message.buffer, { qos: 1 });
-    this.logger.debug(`MQTTClient published message to topic: rr/m/i/${this.rriot.u}/${this.mqttUsername}/${duid}`);
+    this.logger.debug(`MQTTClient sent message to ${duid}`);
   }
 
   private keepConnectionAlive(): void {
@@ -83,17 +90,14 @@ export class MQTTClient extends AbstractClient {
       this.keepConnectionAliveInterval.unref();
     }
 
-    this.keepConnectionAliveInterval = setInterval(
-      () => {
-        if (this.mqttClient) {
-          this.mqttClient.end();
-          this.mqttClient.reconnect();
-        } else {
-          this.connect();
-        }
-      },
-      30 * 60 * 1000,
-    );
+    this.keepConnectionAliveInterval = setInterval(() => {
+      if (this.mqttClient) {
+        this.mqttClient.end();
+        this.mqttClient.reconnect();
+      } else {
+        this.connect();
+      }
+    }, KEEPALIVE_INTERVAL_MS);
   }
 
   private async onConnect(result: IConnackPacket): Promise<void> {
@@ -108,15 +112,16 @@ export class MQTTClient extends AbstractClient {
 
   private subscribeToQueue(): void {
     if (!this.mqttClient || !this.connected) {
+      this.logger.error('MQTTClient: cannot subscribe, client not connected');
       return;
     }
 
     this.mqttClient.subscribe('rr/m/o/' + this.rriot.u + '/' + this.mqttUsername + '/#', this.onSubscribe.bind(this));
   }
 
-  private async onSubscribe(err: Error | null, granted: ISubscriptionGrant[] | undefined): Promise<void> {
+  private async onSubscribe(err: Error | null, subscription: ISubscriptionGrant[] | undefined): Promise<void> {
     if (!err) {
-      this.logger.info('onSubscribe: ' + JSON.stringify(granted));
+      this.logger.info('onSubscribe: ' + JSON.stringify(subscription));
       return;
     }
 
@@ -133,8 +138,6 @@ export class MQTTClient extends AbstractClient {
 
   private async onError(result: Error | ErrorWithReasonCode): Promise<void> {
     this.logger.error('MQTT connection error: ' + result);
-    this.connected = false;
-
     await this.connectionListeners.onError('mqtt-' + this.mqttUsername, result.toString());
   }
 
@@ -168,7 +171,8 @@ export class MQTTClient extends AbstractClient {
       const response = this.deserializer.deserialize(duid, message);
       await this.messageListeners.onMessage(response);
     } catch (error) {
-      this.logger.error('MQTTClient: unable to process message with error: ' + topic + ': ' + error);
+      const errMsg = error instanceof Error ? (error.stack ?? error.message) : String(error);
+      this.logger.error(`MQTTClient: unable to process message ${topic}: ${errMsg}`);
     }
   }
 }

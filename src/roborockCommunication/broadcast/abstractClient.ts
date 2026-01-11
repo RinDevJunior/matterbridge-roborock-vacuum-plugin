@@ -23,11 +23,12 @@ export abstract class AbstractClient implements Client {
   protected readonly context: MessageContext;
   protected connected = false;
   protected logger: AnsiLogger;
+  protected connectionStateListener: ConnectionStateListener | undefined;
 
   protected abstract clientName: string;
-  protected abstract shouldReconnect: boolean;
 
   private readonly syncMessageListener: SyncMessageListener;
+  private noResponseNeededMethods = ['find_me'];
 
   protected constructor(logger: AnsiLogger, context: MessageContext) {
     this.context = context;
@@ -40,17 +41,32 @@ export abstract class AbstractClient implements Client {
   }
 
   protected initializeConnectionStateListener() {
-    const connectionStateListener = new ConnectionStateListener(this.logger, this, this.clientName, this.shouldReconnect);
-    this.connectionListeners.register(connectionStateListener);
+    this.connectionStateListener = new ConnectionStateListener(this.logger, this, this.clientName);
+    this.connectionListeners.register(this.connectionStateListener);
   }
 
-  abstract connect(): void;
-  abstract disconnect(): Promise<void>;
   abstract send(duid: string, request: RequestMessage): Promise<void>;
+
+  public connect(): void {
+    if (this.connectionStateListener) {
+      this.connectionStateListener.start();
+    }
+  }
+
+  public disconnect(): Promise<void> {
+    if (this.connectionStateListener) {
+      this.connectionStateListener.stop();
+    }
+    return Promise.resolve();
+  }
 
   public async get<T>(duid: string, request: RequestMessage): Promise<T | undefined> {
     return new Promise<T>((resolve, reject) => {
-      this.syncMessageListener.waitFor(request.messageId, request, (response: ResponseMessage) => resolve(response as unknown as T), reject);
+      const pv = this.context.getProtocolVersion(duid);
+      request.version = request.version ?? pv;
+      if (request.method && !this.noResponseNeededMethods.includes(request.method)) {
+        this.syncMessageListener.waitFor(request.messageId, request, (response: ResponseMessage) => resolve(response as unknown as T), reject);
+      }
       this.send(duid, request);
     })
       .then((result: T) => {

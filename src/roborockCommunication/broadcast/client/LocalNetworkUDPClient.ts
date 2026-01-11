@@ -8,11 +8,8 @@ import { AbstractClient } from '../abstractClient.js';
 import { RequestMessage, ResponseMessage } from '../../index.js';
 import { MessageContext } from '../model/messageContext.js';
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
 export class LocalNetworkUDPClient extends AbstractClient {
   protected override clientName = 'LocalNetworkUDPClient';
-  protected override shouldReconnect = false;
-
   private readonly PORT = 58866;
   private server: Socket | undefined = undefined;
 
@@ -42,7 +39,7 @@ export class LocalNetworkUDPClient extends AbstractClient {
     this.logger = logger;
   }
 
-  public connect(): void {
+  public override connect(): void {
     try {
       this.server = dgram.createSocket('udp4');
       this.server.bind(this.PORT);
@@ -55,7 +52,7 @@ export class LocalNetworkUDPClient extends AbstractClient {
     }
   }
 
-  public disconnect(): Promise<void> {
+  public override disconnect(): Promise<void> {
     if (this.server) {
       return new Promise<void>((resolve) => {
         this.server?.close(() => {
@@ -73,7 +70,7 @@ export class LocalNetworkUDPClient extends AbstractClient {
     return Promise.resolve();
   }
 
-  private async onError(result: any) {
+  private async onError(result: Error): Promise<void> {
     this.logger.error(`UDP socket error: ${result}`);
 
     if (this.server) {
@@ -150,7 +147,7 @@ export class LocalNetworkUDPClient extends AbstractClient {
       const decrypted = Buffer.concat([decipher.update(ciphertext), decipher.final()]);
       return decrypted.toString('utf8');
     } catch (e: unknown) {
-      const message = e && typeof e === 'object' && 'message' in e ? (e as any).message : String(e);
+      const message = e && typeof e === 'object' && 'message' in e ? (e as Error).message : String(e);
       throw new Error('failed to decrypt: ' + message + ' / iv: ' + iv.toString('hex') + ' / tag: ' + tag.toString('hex') + ' / encrypted: ' + ciphertext.toString('hex'));
     }
   }

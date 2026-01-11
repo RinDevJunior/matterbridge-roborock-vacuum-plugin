@@ -27,6 +27,7 @@ applyTo: '**/*.ts'
 - Use kebab-case filenames (e.g., `user-session.ts`, `data-service.ts`) unless told otherwise.
 - Keep tests, types, and helpers near their implementation when it aids discovery.
 - Reuse or extend shared utilities before adding new ones.
+- Test files must be located in `src/test` or alongside implementation files as per project conventions.
 
 ## Naming & Style
 

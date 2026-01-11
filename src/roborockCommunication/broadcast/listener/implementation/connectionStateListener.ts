@@ -1,18 +1,26 @@
 import { AnsiLogger } from 'matterbridge/logger';
 import { AbstractConnectionListener } from '../abstractConnectionListener.js';
 import { AbstractClient } from '../../abstractClient.js';
+import { RECONNECT_DELAY_MS, MAX_RETRY_COUNT } from '../../../../constants/index.js';
 
 export class ConnectionStateListener implements AbstractConnectionListener {
   protected logger: AnsiLogger;
   protected client: AbstractClient;
   protected clientName: string;
-  protected shouldReconnect: boolean;
+  protected shouldReconnect = false;
 
-  constructor(logger: AnsiLogger, client: AbstractClient, clientName: string, shouldReconnect = false) {
+  constructor(logger: AnsiLogger, client: AbstractClient, clientName: string) {
     this.logger = logger;
     this.client = client;
     this.clientName = clientName;
-    this.shouldReconnect = shouldReconnect;
+  }
+
+  public start(): void {
+    this.shouldReconnect = true;
+  }
+
+  public stop(): void {
+    this.shouldReconnect = false;
   }
 
   public async onConnected(duid: string): Promise<void> {
@@ -30,7 +38,7 @@ export class ConnectionStateListener implements AbstractConnectionListener {
       return;
     }
 
-    if (this.client.retryCount > 10) {
+    if (this.client.retryCount > MAX_RETRY_COUNT) {
       this.logger.error(`Device with DUID ${duid} has exceeded retry limit, not re-registering.`);
       return;
     }
@@ -46,7 +54,7 @@ export class ConnectionStateListener implements AbstractConnectionListener {
     setTimeout(() => {
       this.logger.info(`Re-registering device with DUID ${duid} to ${this.clientName}`);
       this.client.connect();
-    }, 10000);
+    }, RECONNECT_DELAY_MS);
 
     this.client.isInDisconnectingStep = false;
   }

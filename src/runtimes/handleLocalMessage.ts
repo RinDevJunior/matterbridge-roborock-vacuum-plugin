@@ -10,12 +10,20 @@ import { getBatteryState, getBatteryStatus } from '../initialData/index.js';
 import { getCurrentCleanModeFunc } from '../share/runtimeHelper.js';
 import { RoborockVacuumCleaner } from '../rvc.js';
 import { hasDockingStationError, parseDockingStationStatus } from '../model/DockingStationStatus.js';
+import { INVALID_SEGMENT_ID } from '../constants/index.js';
 
+/**
+ * Process local network messages and update robot attributes.
+ * Handles run mode, battery level, clean mode settings, and area mapping.
+ * @param data - Message result from local network communication
+ * @param platform - Platform instance for logging and service access
+ * @param duid - Device unique identifier (defaults to empty string)
+ */
 export async function handleLocalMessage(data: CloudMessageResult, platform: RoborockMatterbridgePlatform, duid = ''): Promise<void> {
   const robot = platform.robots.get(duid);
 
   if (!robot) {
-    platform.log.error(`Robot with DUID ${duid} not found.`);
+    platform.log.error(`Robot not found: ${duid}`);
     return;
   }
 
@@ -85,6 +93,13 @@ export async function handleLocalMessage(data: CloudMessageResult, platform: Rob
   processAdditionalProps(robot, data, duid, platform);
 }
 
+/**
+ * Trigger docking station status error if conditions are met.
+ * Checks current operational state and updates to Error state if appropriate.
+ * @param robot - Robot vacuum cleaner instance
+ * @param platform - Platform instance for logging
+ * @returns True if error was triggered, false otherwise
+ */
 export function triggerDssError(robot: RoborockVacuumCleaner, platform: RoborockMatterbridgePlatform): boolean {
   const currentOperationState = robot.getAttribute(RvcOperationalState.Cluster.id, 'operationalState') as RvcOperationalState.OperationalState;
   if (currentOperationState === RvcOperationalState.OperationalState.Error) {
@@ -107,10 +122,17 @@ async function processAdditionalProps(robot: RoborockVacuumCleaner, message: Clo
   }
 }
 
+/**
+ * Get docking station status from message and update robot state.
+ * @param message - Cloud message result containing docking station status
+ * @param duid - Device unique identifier
+ * @param platform - Platform instance
+ * @returns Error operational state if docking station has error, undefined otherwise
+ */
 function getDssStatus(message: CloudMessageResult, duid: string, platform: RoborockMatterbridgePlatform): RvcOperationalState.OperationalState | undefined {
   const robot = platform.robots.get(duid);
   if (robot === undefined) {
-    platform.log.error(`Error4: Robot with DUID ${duid} not found`);
+    platform.log.error(`Robot not found: ${duid}`);
     return undefined;
   }
 
@@ -132,11 +154,17 @@ function getDssStatus(message: CloudMessageResult, duid: string, platform: Robor
   return undefined;
 }
 
+/**
+ * Map room segments to service areas when multiple map feature is disabled.
+ * @param platform - Platform instance
+ * @param duid - Device unique identifier
+ * @param data - Cloud message result with cleaning info
+ */
 async function mapRoomsToAreasFeatureOff(platform: RoborockMatterbridgePlatform, duid: string, data: CloudMessageResult): Promise<void> {
   const currentMappedAreas = platform.roborockService?.getSupportedAreas(duid);
   const robot = platform.robots.get(duid);
   if (!robot) {
-    platform.log.error(`Robot with DUID ${duid} not found.`);
+    platform.log.error(`Robot not found: ${duid}`);
     return;
   }
 
@@ -144,9 +172,9 @@ async function mapRoomsToAreasFeatureOff(platform: RoborockMatterbridgePlatform,
     return;
   }
 
-  const source_segment_id = data.cleaning_info.segment_id ?? -1; // 4
-  const source_target_segment_id = data.cleaning_info.target_segment_id ?? -1; // -1
-  const segment_id = source_segment_id !== -1 ? source_segment_id : source_target_segment_id; // 4
+  const source_segment_id = data.cleaning_info.segment_id ?? INVALID_SEGMENT_ID; // 4
+  const source_target_segment_id = data.cleaning_info.target_segment_id ?? INVALID_SEGMENT_ID; // -1
+  const segment_id = source_segment_id !== INVALID_SEGMENT_ID ? source_segment_id : source_target_segment_id; // 4
   const mappedArea = currentMappedAreas?.find((x) => x.areaId == segment_id);
   platform.log.debug(
     `mappedArea:
@@ -156,19 +184,25 @@ async function mapRoomsToAreasFeatureOff(platform: RoborockMatterbridgePlatform,
     result: ${mappedArea ? debugStringify(mappedArea) : 'undefined'}
     `,
   );
-  if (segment_id !== -1 && mappedArea) {
+  if (segment_id !== INVALID_SEGMENT_ID && mappedArea) {
     robot.updateAttribute(ServiceArea.Cluster.id, 'currentArea', segment_id, platform.log);
   }
 
-  if (segment_id == -1) {
+  if (segment_id === INVALID_SEGMENT_ID) {
     robot.updateAttribute(ServiceArea.Cluster.id, 'currentArea', null, platform.log);
   }
 }
 
+/**
+ * Map room segments to service areas when multiple map feature is enabled.
+ * @param platform - Platform instance
+ * @param duid - Device unique identifier
+ * @param data - Cloud message result with cleaning info
+ */
 async function mapRoomsToAreasFeatureOn(platform: RoborockMatterbridgePlatform, duid: string, data: CloudMessageResult): Promise<void> {
   const robot = platform.robots.get(duid);
   if (!robot) {
-    platform.log.error(`Robot with DUID ${duid} not found.`);
+    platform.log.error(`Robot not found: ${duid}`);
     return;
   }
 
@@ -178,9 +212,9 @@ async function mapRoomsToAreasFeatureOn(platform: RoborockMatterbridgePlatform, 
 
   const currentMappedAreas = platform.roborockService?.getSupportedAreas(duid);
   const roomIndexMap = platform.roborockService?.getSupportedAreasIndexMap(duid);
-  const source_segment_id = data.cleaning_info.segment_id ?? -1; // 4
-  const source_target_segment_id = data.cleaning_info.target_segment_id ?? -1; // -1
-  const segment_id = source_segment_id !== -1 ? source_segment_id : source_target_segment_id; // 4
+  const source_segment_id = data.cleaning_info.segment_id ?? INVALID_SEGMENT_ID; // 4
+  const source_target_segment_id = data.cleaning_info.target_segment_id ?? INVALID_SEGMENT_ID; // -1
+  const segment_id = source_segment_id !== INVALID_SEGMENT_ID ? source_segment_id : source_target_segment_id; // 4
   const areaId = roomIndexMap?.getAreaId(segment_id, 0);
 
   if (!areaId) {
@@ -203,7 +237,7 @@ async function mapRoomsToAreasFeatureOn(platform: RoborockMatterbridgePlatform, 
     `,
   );
 
-  if (areaId !== -1 && mappedArea) {
+  if (areaId !== INVALID_SEGMENT_ID && mappedArea) {
     robot.updateAttribute(ServiceArea.Cluster.id, 'currentArea', areaId, platform.log); // need to be 107
   }
 }

@@ -16,7 +16,7 @@ describe('getSupportedScenes', () => {
     ];
     const result = getSupportedScenes(scenes as any, mockLogger);
     expect(result.length).toBe(1);
-    expect(result[0].areaId).toBe(10);
-    expect(result[0].areaInfo.locationInfo.locationName).toBe('Scene: Routine A');
+    expect(result[0]?.areaId).toBe(5010); // 5000 + 10
+    expect(result[0]?.areaInfo?.locationInfo?.locationName).toBe('Scene: Routine A');
   });
 });

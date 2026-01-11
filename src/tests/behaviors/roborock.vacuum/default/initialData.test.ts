@@ -1,7 +1,7 @@
-import { getDefaultSupportedRunModes, getDefaultSupportedCleanModes, getDefaultOperationalStates } from '../../../../behaviors/roborock.vacuum/default/initalData';
+import { getDefaultSupportedRunModes, getDefaultSupportedCleanModes, getDefaultOperationalStates } from '../../../../behaviors/roborock.vacuum/default/initialData';
 import { ExperimentalFeatureSetting } from '../../../../model/ExperimentalFeatureSetting';
 
-describe('default initalData helpers', () => {
+describe('default initialData helpers', () => {
   test('getDefaultSupportedRunModes returns expected modes', () => {
     const modes = getDefaultSupportedRunModes();
     expect(Array.isArray(modes)).toBe(true);

@@ -1,14 +1,12 @@
 import { AnsiLogger } from 'matterbridge/logger';
 import RoborockService from '../roborockService';
-import { MessageProcessor } from '../roborockCommunication/broadcast/messageProcessor';
-import { RoomIndexMap } from '../model/roomIndexMap';
+import { RoomIndexMap } from '../model/RoomIndexMap.js';
+import ClientManager from '../services/clientManager.js';
 
 describe('RoborockService - startClean', () => {
   let roborockService: RoborockService;
   let mockLogger: AnsiLogger;
-  let mockMessageProcessor: jest.Mocked<MessageProcessor>;
-  let mockLoginApi: any;
-  let mockIotApi: any;
+  let clientManager: ClientManager;
 
   beforeEach(() => {
     mockLogger = {
@@ -18,22 +16,15 @@ describe('RoborockService - startClean', () => {
       warn: jest.fn(),
     } as any;
 
-    mockMessageProcessor = {
-      startClean: jest.fn(),
-      startRoomClean: jest.fn(),
-    } as any;
+    clientManager = {} as ClientManager;
 
-    mockLoginApi = {
-      loginWithPassword: jest.fn(),
-      loginWithUserData: jest.fn(),
-    };
-
-    roborockService = new RoborockService(() => mockLoginApi, jest.fn(), 10, {} as any, mockLogger);
-    roborockService['auth'] = jest.fn((ud) => ud);
-    roborockService['messageProcessorMap'] = new Map<string, MessageProcessor>([['test-duid', mockMessageProcessor]]);
-
-    mockIotApi = { getCustom: jest.fn() };
-    roborockService['iotApi'] = mockIotApi;
+    roborockService = new RoborockService(
+      undefined, // default auth factory
+      undefined, // default IoT factory
+      10,
+      clientManager,
+      mockLogger,
+    );
   });
 
   it('setSelectedAreas should set selected areas', () => {
@@ -55,7 +46,8 @@ describe('RoborockService - startClean', () => {
     );
     roborockService.setSelectedAreas('duid', [106, 108]);
 
-    expect(roborockService['selectedAreas'].get('duid')).toEqual([3, 5]);
-    expect(mockLogger.debug).toHaveBeenCalledWith('RoborockService - setSelectedAreas - roomIds', [3, 5]);
+    // Use public API to verify selected areas instead of accessing private state
+    expect(roborockService.getSelectedAreas('duid')).toEqual([3, 5]);
+    expect(mockLogger.debug).toHaveBeenCalledWith('AreaManagementService - setSelectedAreas - roomIds', [3, 5]);
   });
 });

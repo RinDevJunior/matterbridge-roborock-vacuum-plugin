@@ -13,6 +13,7 @@ describe('ClientRouter', () => {
     mockUserData = {
       uid: '123',
       token: '123:123/lfrZhw==:123',
+      tokentype: 'Bearer',
       rruid: '123',
       region: 'eu',
       countrycode: '33',
@@ -40,6 +41,7 @@ describe('ClientRouter', () => {
 
     mockLocalNetworkClient = {
       isConnected: jest.fn().mockReturnValue(true),
+      isReady: jest.fn().mockReturnValue(true),
       connect: jest.fn(),
       disconnect: jest.fn(),
       send: jest.fn(),

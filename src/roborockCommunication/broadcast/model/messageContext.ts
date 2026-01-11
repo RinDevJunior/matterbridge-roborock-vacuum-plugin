@@ -31,6 +31,13 @@ export class MessageContext {
     }
   }
 
+  public updateProtocolVersion(duid: string, pv: string): void {
+    const device = this.devices.get(duid);
+    if (device) {
+      device.protocolVersion = pv;
+    }
+  }
+
   public getSerializeNonceAsHex(): string {
     return this.serializeNonce.toString('hex').toUpperCase();
   }

@@ -18,6 +18,8 @@ describe('SimpleMessageListener', () => {
       contain: jest.fn(),
       get: jest.fn(),
     };
+    // compatibility: some tests/mocks use `contain`, implementation expects `isForProtocol`
+    message.isForProtocol = (proto: Protocol) => message.contain(proto);
     listener.registerListener(handler);
   });
 
