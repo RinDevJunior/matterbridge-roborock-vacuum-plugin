@@ -53,6 +53,7 @@ applyTo: '**/*.test.ts'
 - Use assertions that provide clear failure messages.
 - Cover both positive and negative scenarios, including edge cases.
 - Avoid testing implementation details; focus on observable behavior.
+- Always use static imports
 
 ## Test Coverage
 

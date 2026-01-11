@@ -197,4 +197,41 @@ describe('handleCloudMessage', () => {
     await new Promise(process.nextTick);
     expect(platform.log.notice).toHaveBeenCalled();
   });
+
+  it('handles rpc_response with status result', async () => {
+    const data = {
+      dps: {
+        [Protocol.rpc_response]: {
+          result: 'status',
+        },
+      },
+    };
+    await handleCloudMessage(data as any, platform as any, runner as any, duid);
+    await new Promise(process.nextTick);
+    expect(platform.log.debug).toHaveBeenCalled();
+  });
+
+  it('handles suction_power message', async () => {
+    const data = {
+      dps: {
+        [Protocol.suction_power]: 100,
+      },
+    };
+    mockGetCleanModeData.mockResolvedValue({ suctionPower: 100, waterFlow: 50, distance_off: 0, mopRoute: 0 });
+    await handleCloudMessage(data as any, platform as any, runner as any, duid);
+    await new Promise(process.nextTick);
+    expect(mockGetCleanModeData).toHaveBeenCalledWith(duid);
+  });
+
+  it('handles water_box_mode message', async () => {
+    const data = {
+      dps: {
+        [Protocol.water_box_mode]: 200,
+      },
+    };
+    mockGetCleanModeData.mockResolvedValue({ suctionPower: 100, waterFlow: 200, distance_off: 0, mopRoute: 0 });
+    await handleCloudMessage(data as any, platform as any, runner as any, duid);
+    await new Promise(process.nextTick);
+    expect(mockGetCleanModeData).toHaveBeenCalledWith(duid);
+  });
 });

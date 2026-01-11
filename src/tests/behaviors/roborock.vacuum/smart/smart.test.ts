@@ -212,4 +212,25 @@ describe('setCommandHandlerSmart', () => {
     await (playSoundHandler as (arg: number) => Promise<void>)(1);
     expect(roborockService.playSoundToLocate).toHaveBeenCalledWith(duid);
   });
+
+  it('should handle Go Vacation mode', async () => {
+    setCommandHandlerSmart(duid, handler, logger, roborockService, cleanModeSettings);
+    const [[, changeToModeHandler]] = (handler.setCommandHandler as jest.Mock).mock.calls.filter(([cmd]) => cmd === 'changeToMode');
+    await (changeToModeHandler as (mode: number) => Promise<void>)(99); // 99 = Go Vacation
+    expect(roborockService.stopAndGoHome).toHaveBeenCalledWith(duid);
+  });
+
+  it('should handle Mop & Vacuum: Quick mode', async () => {
+    setCommandHandlerSmart(duid, handler, logger, roborockService, cleanModeSettings);
+    const [[, changeToModeHandler]] = (handler.setCommandHandler as jest.Mock).mock.calls.filter(([cmd]) => cmd === 'changeToMode');
+    await (changeToModeHandler as (mode: number) => Promise<void>)(6); // 6 = Mop & Vacuum: Quick
+    expect(roborockService.changeCleanMode).toHaveBeenCalled();
+  });
+
+  it('should handle unknown mode', async () => {
+    setCommandHandlerSmart(duid, handler, logger, roborockService, cleanModeSettings);
+    const [[, changeToModeHandler]] = (handler.setCommandHandler as jest.Mock).mock.calls.filter(([cmd]) => cmd === 'changeToMode');
+    await (changeToModeHandler as (mode: number) => Promise<void>)(9999); // Unknown mode
+    expect(logger.notice).toHaveBeenCalledWith('BehaviorSmart-changeToMode-Unknown: ', 9999);
+  });
 });

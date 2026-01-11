@@ -83,4 +83,29 @@ describe('SyncMessageListener', () => {
     expect(reject).toHaveBeenCalled();
     expect(listener['pending'].has(messageId)).toBe(false);
   });
+
+  it('should not call resolve if no pending handler exists', async () => {
+    const resolve = jest.fn();
+    const messageId = 999;
+
+    const dps = { id: messageId, result: { foo: 'bar' } };
+    const message = {
+      contain: (proto: Protocol) => proto === Protocol.rpc_response,
+      get: () => dps,
+    } as any;
+
+    await listener.onMessage(message);
+
+    expect(resolve).not.toHaveBeenCalled();
+  });
+
+  it('should handle messages that do not contain rpc_response or map_response', async () => {
+    const message = {
+      contain: (proto: Protocol) => false,
+      get: () => null,
+    } as any;
+
+    await listener.onMessage(message);
+    // Should complete without error
+  });
 });

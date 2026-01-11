@@ -131,4 +131,109 @@ describe('setDefaultCommandHandler', () => {
     await (playSoundHandler as (arg: number) => Promise<void>)(1);
     expect(roborockService.playSoundToLocate).toHaveBeenCalledWith(duid);
   });
+
+  it('should handle Go Vacation mode', async () => {
+    setDefaultCommandHandler(duid, handler, logger, roborockService, cleanModeSettings);
+    const [[, changeToModeHandler]] = (handler.setCommandHandler as jest.Mock).mock.calls.filter(([cmd]) => cmd === 'changeToMode');
+    await (changeToModeHandler as (mode: number) => Promise<void>)(99); // 99 = Go Vacation
+    expect(roborockService.stopAndGoHome).toHaveBeenCalledWith(duid);
+  });
+
+  it('should handle Mop & Vacuum: Quick mode', async () => {
+    setDefaultCommandHandler(duid, handler, logger, roborockService, cleanModeSettings);
+    const [[, changeToModeHandler]] = (handler.setCommandHandler as jest.Mock).mock.calls.filter(([cmd]) => cmd === 'changeToMode');
+    await (changeToModeHandler as (mode: number) => Promise<void>)(6); // 6 = Mop & Vacuum: Quick
+    expect(roborockService.changeCleanMode).toHaveBeenCalled();
+  });
+
+  it('should handle Vacuum: Max mode', async () => {
+    setDefaultCommandHandler(duid, handler, logger, roborockService, cleanModeSettings);
+    const [[, changeToModeHandler]] = (handler.setCommandHandler as jest.Mock).mock.calls.filter(([cmd]) => cmd === 'changeToMode');
+    await (changeToModeHandler as (mode: number) => Promise<void>)(67); // 67 = Vacuum: Max
+    expect(roborockService.changeCleanMode).toHaveBeenCalled();
+  });
+
+  it('should handle Mop: Min mode', async () => {
+    setDefaultCommandHandler(duid, handler, logger, roborockService, cleanModeSettings);
+    const [[, changeToModeHandler]] = (handler.setCommandHandler as jest.Mock).mock.calls.filter(([cmd]) => cmd === 'changeToMode');
+    await (changeToModeHandler as (mode: number) => Promise<void>)(33); // 33 = Mop: Min
+    expect(roborockService.changeCleanMode).toHaveBeenCalled();
+  });
+
+  it('should handle unknown mode', async () => {
+    setDefaultCommandHandler(duid, handler, logger, roborockService, cleanModeSettings);
+    const [[, changeToModeHandler]] = (handler.setCommandHandler as jest.Mock).mock.calls.filter(([cmd]) => cmd === 'changeToMode');
+    await (changeToModeHandler as (mode: number) => Promise<void>)(9999); // Unknown mode
+    expect(logger.notice).toHaveBeenCalledWith('DefaultBehavior-changeToMode-Unknown: ', 9999);
+  });
+
+  it('should handle cleanModeSettings being undefined for Default modes', async () => {
+    setDefaultCommandHandler(duid, handler, logger, roborockService, undefined);
+    const [[, changeToModeHandler]] = (handler.setCommandHandler as jest.Mock).mock.calls.filter(([cmd]) => cmd === 'changeToMode');
+    await (changeToModeHandler as (mode: number) => Promise<void>)(31); // 31 = Mop Default
+    expect(roborockService.changeCleanMode).toHaveBeenCalled();
+  });
+
+  it('should handle Vacuum: Min mode', async () => {
+    setDefaultCommandHandler(duid, handler, logger, roborockService, cleanModeSettings);
+    const [[, changeToModeHandler]] = (handler.setCommandHandler as jest.Mock).mock.calls.filter(([cmd]) => cmd === 'changeToMode');
+    await (changeToModeHandler as (mode: number) => Promise<void>)(68); // 68 = Vacuum: Quiet (Min in list)
+    expect(roborockService.changeCleanMode).toHaveBeenCalled();
+  });
+
+  it('should handle Mop: DeepClean mode', async () => {
+    setDefaultCommandHandler(duid, handler, logger, roborockService, cleanModeSettings);
+    const [[, changeToModeHandler]] = (handler.setCommandHandler as jest.Mock).mock.calls.filter(([cmd]) => cmd === 'changeToMode');
+    await (changeToModeHandler as (mode: number) => Promise<void>)(35); // 35 = Mop: DeepClean
+    expect(roborockService.changeCleanMode).toHaveBeenCalled();
+  });
+
+  it('should handle Mop & Vacuum: Max mode', async () => {
+    setDefaultCommandHandler(duid, handler, logger, roborockService, cleanModeSettings);
+    const [[, changeToModeHandler]] = (handler.setCommandHandler as jest.Mock).mock.calls.filter(([cmd]) => cmd === 'changeToMode');
+    await (changeToModeHandler as (mode: number) => Promise<void>)(7); // 7 = Mop & Vacuum: Max
+    expect(roborockService.changeCleanMode).toHaveBeenCalled();
+  });
+
+  it('should handle Mop & Vacuum: Min mode', async () => {
+    setDefaultCommandHandler(duid, handler, logger, roborockService, cleanModeSettings);
+    const [[, changeToModeHandler]] = (handler.setCommandHandler as jest.Mock).mock.calls.filter(([cmd]) => cmd === 'changeToMode');
+    await (changeToModeHandler as (mode: number) => Promise<void>)(8); // 8 = Mop & Vacuum: Min
+    expect(roborockService.changeCleanMode).toHaveBeenCalled();
+  });
+
+  it('should handle Mop & Vacuum: Quiet mode', async () => {
+    setDefaultCommandHandler(duid, handler, logger, roborockService, cleanModeSettings);
+    const [[, changeToModeHandler]] = (handler.setCommandHandler as jest.Mock).mock.calls.filter(([cmd]) => cmd === 'changeToMode');
+    await (changeToModeHandler as (mode: number) => Promise<void>)(9); // 9 = Mop & Vacuum: Quiet
+    expect(roborockService.changeCleanMode).toHaveBeenCalled();
+  });
+
+  it('should handle Vacuum: Quick mode', async () => {
+    setDefaultCommandHandler(duid, handler, logger, roborockService, cleanModeSettings);
+    const [[, changeToModeHandler]] = (handler.setCommandHandler as jest.Mock).mock.calls.filter(([cmd]) => cmd === 'changeToMode');
+    await (changeToModeHandler as (mode: number) => Promise<void>)(69); // 69 = Vacuum: Quick
+    expect(roborockService.changeCleanMode).toHaveBeenCalled();
+  });
+
+  it('should handle Mop: Quick mode', async () => {
+    setDefaultCommandHandler(duid, handler, logger, roborockService, cleanModeSettings);
+    const [[, changeToModeHandler]] = (handler.setCommandHandler as jest.Mock).mock.calls.filter(([cmd]) => cmd === 'changeToMode');
+    await (changeToModeHandler as (mode: number) => Promise<void>)(34); // 34 = Mop: Quick
+    expect(roborockService.changeCleanMode).toHaveBeenCalled();
+  });
+
+  it('should handle Mop & Vacuum: Custom mode', async () => {
+    setDefaultCommandHandler(duid, handler, logger, roborockService, cleanModeSettings);
+    const [[, changeToModeHandler]] = (handler.setCommandHandler as jest.Mock).mock.calls.filter(([cmd]) => cmd === 'changeToMode');
+    await (changeToModeHandler as (mode: number) => Promise<void>)(10); // 10 = Mop & Vacuum: Custom
+    expect(roborockService.changeCleanMode).toHaveBeenCalled();
+  });
+
+  it('should handle Mop: Max mode', async () => {
+    setDefaultCommandHandler(duid, handler, logger, roborockService, cleanModeSettings);
+    const [[, changeToModeHandler]] = (handler.setCommandHandler as jest.Mock).mock.calls.filter(([cmd]) => cmd === 'changeToMode');
+    await (changeToModeHandler as (mode: number) => Promise<void>)(32); // 32 = Mop: Max
+    expect(roborockService.changeCleanMode).toHaveBeenCalled();
+  });
 });

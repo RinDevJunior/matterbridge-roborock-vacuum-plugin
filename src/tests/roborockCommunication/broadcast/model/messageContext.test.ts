@@ -21,4 +21,17 @@ describe('MessageContext', () => {
     expect(ctx.getDeviceNonce('d1')).toBe(42);
     expect(ctx.getLocalKey('no')).toBeUndefined();
   });
+
+  test('updateNonce should not throw for non-existent device', () => {
+    const ctx = new MessageContext(userdata);
+    expect(() => ctx.updateNonce('nonexistent', 100)).not.toThrow();
+    expect(ctx.getDeviceNonce('nonexistent')).toBeUndefined();
+  });
+
+  test('should return undefined for all getters on non-existent device', () => {
+    const ctx = new MessageContext(userdata);
+    expect(ctx.getLocalKey('missing')).toBeUndefined();
+    expect(ctx.getProtocolVersion('missing')).toBeUndefined();
+    expect(ctx.getDeviceNonce('missing')).toBeUndefined();
+  });
 });
