@@ -79,7 +79,7 @@ export async function handleLocalMessage(data: CloudMessageResult, platform: Rob
   };
 
   platform.log.debug(`data: ${debugStringify(data)}`);
-  platform.log.notice(`currentCleanModeSetting: ${debugStringify(currentCleanModeSetting)}`);
+  platform.log.debug(`currentCleanModeSetting: ${debugStringify(currentCleanModeSetting)}`);
 
   if (currentCleanModeSetting.mopRoute && currentCleanModeSetting.suctionPower && currentCleanModeSetting.waterFlow) {
     const currentCleanMode = getCurrentCleanModeFunc(deviceData.model, platform.enableExperimentalFeature?.advancedFeature?.forceRunAtDefault ?? false)(currentCleanModeSetting);

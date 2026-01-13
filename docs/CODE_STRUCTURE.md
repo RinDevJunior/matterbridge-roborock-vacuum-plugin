@@ -1,7 +1,7 @@
 # Matterbridge Roborock Vacuum Plugin - Code Structure
 
 **Version:** 1.1.1-rc14  
-**Last Updated:** January 12, 2026  
+**Last Updated:** January 13, 2026  
 **Test Coverage:** 95.74% (873 tests passed)
 
 ---
@@ -75,31 +75,146 @@ This plugin integrates Roborock vacuum cleaners into the Matter ecosystem via Ma
 
 ## Directory Structure
 
+src/
+
 ### Root Structure
 
 ```
-src/
+
 ├── module.ts                    # Main platform entry point
 ├── platformRunner.ts            # Orchestrates device updates
-├── roborockService.ts          # Service facade
-├── behaviorFactory.ts          # Behavior creation
-├── helper.ts                   # Utility functions
-├── settings.ts                 # Plugin configuration
-├── rvc.ts                      # RVC (Robot Vacuum Cleaner) class
-├── behaviors/                  # Device behavior implementations
-├── constants/                  # Constant definitions
-├── domain/                     # Domain models (entities/VOs)
-├── errors/                     # Custom error classes
-├── initialData/                # Initial data fetchers
-├── model/                      # Data models
-├── roborockCommunication/      # Communication layer
-├── runtimes/                   # Message runtime handlers
-├── services/                   # Service layer
-├── share/                      # Shared utilities
-├── tests/                      # Unit tests
-└── types/                      # TypeScript type definitions
+├── roborockService.ts           # Service facade
+├── behaviorFactory.ts           # Behavior creation
+├── helper.ts                    # Utility functions
+├── notifyMessageTypes.ts        # Message type enums
+├── settings.ts                  # Plugin configuration
+├── rvc.ts                       # RVC (Robot Vacuum Cleaner) class
+├── behaviors/                   # Device behavior implementations
+│   ├── BehaviorDeviceGeneric.ts
+│   └── roborock.vacuum/
+│       ├── default/
+│       │   ├── default.ts
+│       │   ├── initialData.ts
+│       │   └── runtimes.ts
+│       └── smart/
+│           ├── smart.ts
+│           ├── initialData.ts
+│           └── runtimes.ts
+├── constants/                   # Constant definitions
+│   ├── battery.ts
+│   ├── device.ts
+│   ├── distance.ts
+│   ├── ids.ts
+│   ├── index.ts
+│   └── timeouts.ts
+├── domain/                      # Domain models (entities/VOs)
+│   ├── index.ts
+│   ├── entities/
+│   │   ├── index.ts
+│   │   ├── RoomEntity.ts
+│   │   ├── CleaningRoutine.ts
+│   │   ├── CleaningSession.ts
+│   │   └── VacuumDevice.ts
+│   └── valueObjects/
+│       ├── index.ts
+│       ├── DeviceIdentifier.ts
+│       ├── Coordinates.ts
+│       ├── BatteryStatus.ts
+│       └── CleaningArea.ts
+├── errors/                      # Custom error classes
+│   ├── AuthenticationError.ts
+│   ├── BaseError.ts
+│   ├── CommunicationError.ts
+│   ├── ConfigurationError.ts
+│   ├── DeviceError.ts
+│   ├── ValidationError.ts
+│   └── index.ts
+├── initialData/                 # Initial data fetchers
+│   ├── getBatteryStatus.ts
+│   ├── getOperationalStates.ts
+│   ├── getSupportedAreas.ts
+│   ├── getSupportedCleanModes.ts
+│   ├── getSupportedRunModes.ts
+│   ├── getSupportedScenes.ts
+│   ├── index.ts
+│   └── regionUrls.ts
+├── model/                       # Data models
+│   ├── CloudMessageModel.ts
+│   ├── DockingStationStatus.ts
+│   ├── ExperimentalFeatureSetting.ts
+│   ├── RoomIndexMap.ts
+│   └── RoomMap.ts
+├── roborockCommunication/       # Communication layer
+│   ├── RESTAPI/
+│   │   ├── roborockAuthenticateApi.ts
+│   │   └── roborockIoTApi.ts
+│   ├── broadcast/
+│   │   ├── abstractClient.ts
+│   │   ├── clientRouter.ts
+│   │   ├── messageProcessor.ts
+│   │   ├── model/
+│   │   ├── client/
+│   │   │   ├── MQTTClient.ts
+│   │   │   └── LocalNetworkClient.ts
+│   │   └── listener/
+│   │       └── implementation/
+│   ├── builder/
+│   │   ├── A01MessageBodyBuilder.ts
+│   │   ├── B01MessageBodyBuilder.ts
+│   │   ├── L01MessageBodyBuilder.ts
+│   │   ├── V01MessageBodyBuilder.ts
+│   │   └── UnknownMessageBodyBuilder.ts
+│   ├── helper/
+│   ├── serializer/
+│   │   ├── A01Serializer.ts
+│   │   ├── B01Serializer.ts
+│   │   ├── L01Serializer.ts
+│   │   ├── V01Serializer.ts
+│   │   └── Serializer.ts
+│   ├── Zenum/
+│   └── Zmodel/
+├── runtimes/                    # Message runtime handlers
+│   ├── handleCloudMessage.ts
+│   ├── handleHomeDataMessage.ts
+│   └── handleLocalMessage.ts
+├── services/                    # Service layer
+│   ├── areaManagementService.ts
+│   ├── authenticationService.ts
+│   ├── clientManager.ts
+│   ├── connectionService.ts
+│   ├── deviceManagementService.ts
+│   ├── index.ts
+│   ├── messageRoutingService.ts
+│   ├── pollingService.ts
+│   └── serviceContainer.ts
+├── share/                       # Shared utilities
+│   ├── function.ts
+│   └── runtimeHelper.ts
+├── tests/                       # Unit tests
+│   ├── behaviors/
+│   ├── errors/
+│   ├── helpers/
+│   ├── initialData/
+│   ├── model/
+│   ├── roborockCommunication/
+│   ├── runtimes/
+│   ├── services/
+│   ├── share/
+│   ├── testData/
+│   ├── helper.test.ts
+│   ├── platform.region.test.ts
+│   ├── platformRunner*.test.ts
+│   └── roborockService*.test.ts
+├── types/                       # TypeScript type definitions
+│   ├── MessagePayloads.ts
+│   ├── callbacks.ts
+│   ├── communication.ts
+│   ├── config.ts
+│   ├── device.ts
+│   ├── factories.ts
+│   ├── index.ts
+│   └── state.ts
 ```
-
 ### Key Configuration Files
 
 - **package.json** - Project metadata, dependencies, scripts
@@ -1026,5 +1141,5 @@ Stop polling → Close MQTT clients → Unregister devices → Cleanup resources
 
 ---
 
-**Document Version:** 2.0  
-**Last Updated:** January 12, 2026
+**Document Version:** 2.1  
+**Last Updated:** January 13, 2026

@@ -468,7 +468,7 @@ describe('MessageRoutingService', () => {
 
     it('should complete full cleaning workflow', async () => {
       const selectedRooms = [16, 17];
-      const supportedRooms = [16, 17, 18];
+      const supportedRooms: ServiceArea.Area[] = [{ areaId: 16 } as ServiceArea.Area, { areaId: 17 } as ServiceArea.Area, { areaId: 18 } as ServiceArea.Area];
 
       // Start room clean
       await messageService.startClean(testDuid, selectedRooms, supportedRooms, []);

@@ -28,7 +28,7 @@ export abstract class AbstractClient implements Client {
   protected abstract clientName: string;
 
   private readonly syncMessageListener: SyncMessageListener;
-  private noResponseNeededMethods = ['find_me'];
+  private noResponseNeededMethods: string[] = [];
 
   protected constructor(logger: AnsiLogger, context: MessageContext) {
     this.context = context;
