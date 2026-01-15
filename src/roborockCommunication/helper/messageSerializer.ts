@@ -35,7 +35,7 @@ export class MessageSerializer {
   private buildBuffer(duid: string, messageId: number, request: RequestMessage): Buffer<ArrayBufferLike> {
     const version = request.version ?? this.context.getProtocolVersion(duid);
     if (!version || !this.supportedVersions.includes(version)) {
-      throw new Error('unknown protocol: ' + version);
+      throw new Error('[MessageSerializer] unknown protocol: ' + version);
     }
     let encrypted;
     if (this.protocolsWithoutPayload.includes(request.protocol)) {

@@ -91,9 +91,10 @@ export class LocalNetworkClient extends AbstractClient {
     const message = this.serializer.serialize(duid, localRequest);
 
     this.logger.debug(
-      `sending message ${message.messageId}, protocol version: ${localRequest.version}, protocol:${Protocol[localRequest.protocol]}, method:${localRequest.method}, secure:${request.secure} to ${duid}`,
+      `[LocalNetworkClient] sending message ${message.messageId}, protocol version: ${localRequest.version}, protocol:${Protocol[localRequest.protocol]}, method:${localRequest.method}, secure:${request.secure} to ${duid}`,
     );
     this.socket.write(this.wrapWithLengthData(message.buffer));
+    this.logger.debug(`[LocalNetworkClient] sent message ${message.messageId} to ${duid}`);
   }
 
   private async onConnect(): Promise<void> {
@@ -146,7 +147,7 @@ export class LocalNetworkClient extends AbstractClient {
     }
 
     if (!message || message.length == 0) {
-      this.logger.debug('LocalNetworkClient received empty message from socket.');
+      this.logger.debug('[LocalNetworkClient] received empty message from socket.');
       return;
     }
 
@@ -169,16 +170,16 @@ export class LocalNetworkClient extends AbstractClient {
 
         try {
           const currentBuffer = receivedBuffer.subarray(offset + 4, offset + segmentLength + 4);
-          const response = this.deserializer.deserialize(this.duid, currentBuffer);
+          const response = this.deserializer.deserialize(this.duid, currentBuffer, '[LocalNetworkClient]');
           await this.messageListeners.onMessage(response);
         } catch (error) {
           const errMsg = error instanceof Error ? (error.stack ?? error.message) : String(error);
-          this.logger.error(`LocalNetworkClient: unable to process message with error: ${errMsg}`);
+          this.logger.error(`[LocalNetworkClient]: unable to process message with error: ${errMsg}`);
         }
         offset += 4 + segmentLength;
       }
     } catch (error) {
-      this.logger.error('LocalNetworkClient: read socket buffer error: ' + error);
+      this.logger.error('[LocalNetworkClient]: read socket buffer error: ' + error);
     }
   }
 

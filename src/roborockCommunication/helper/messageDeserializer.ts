@@ -49,12 +49,14 @@ export class MessageDeserializer {
       .uint32('crc32');
   }
 
-  public deserialize(duid: string, message: Buffer<ArrayBufferLike>): ResponseMessage {
+  public deserialize(duid: string, message: Buffer<ArrayBufferLike>, from: string): ResponseMessage {
     const rawHeader: HeaderMessage = this.headerMessageParser.parse(message);
     const header = new HeaderMessage(rawHeader.version, rawHeader.seq, rawHeader.nonce, rawHeader.timestamp, rawHeader.protocol);
 
+    this.logger.debug(`[${from}][MessageDeserializer] deserialized header: ${JSON.stringify(header)}`);
+
     if (!this.supportedVersions.includes(header.version)) {
-      throw new Error('unknown protocol: ' + header.version);
+      throw new Error(`[${from}][MessageDeserializer] unknown protocol: ${header.version}`);
     }
 
     if (this.protocolsWithoutPayload.includes(header.protocol)) {

@@ -139,7 +139,7 @@ describe('MQTTClient', () => {
     } as any;
     mqttClient['connected'] = true;
     await mqttClient.disconnect();
-    expect(logger.error).toHaveBeenCalledWith(expect.stringContaining('MQTT client failed to disconnect'));
+    expect(logger.error).toHaveBeenCalledWith(expect.stringContaining('[MQTTClient] client failed to disconnect with error:'));
   });
 
   it('should publish message if connected', async () => {
@@ -219,7 +219,7 @@ describe('MQTTClient', () => {
   it('onMessage should call deserializer and messageListeners.onMessage if message', async () => {
     const mqttClient = createMQTTClient();
     await mqttClient['onMessage']('rr/m/o/user/c6d6afb9/duid1', Buffer.from('msg'));
-    expect(deserializer.deserialize).toHaveBeenCalledWith('duid1', Buffer.from('msg'));
+    expect(deserializer.deserialize).toHaveBeenCalledWith('duid1', Buffer.from('msg'), '[MQTTClient]');
     expect(messageListeners.onMessage).toHaveBeenCalledWith('deserialized');
   });
 

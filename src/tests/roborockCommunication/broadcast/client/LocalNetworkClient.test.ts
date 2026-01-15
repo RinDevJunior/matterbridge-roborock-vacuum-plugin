@@ -157,7 +157,7 @@ describe('LocalNetworkClient', () => {
   it('onMessage() should log debug if message is empty', async () => {
     client['socket'] = mockSocket;
     await (client as any).onMessage(Buffer.alloc(0));
-    expect(mockLogger.debug).toHaveBeenCalledWith('LocalNetworkClient received empty message from socket.');
+    expect(mockLogger.debug).toHaveBeenCalledWith('[LocalNetworkClient] received empty message from socket.');
   });
 
   it('onMessage() should process complete message and call onMessage', async () => {

@@ -68,7 +68,7 @@ export class MQTTClient extends AbstractClient {
       this.mqttClient = undefined;
       this.connected = false;
     } catch (error) {
-      this.logger.error('MQTT client failed to disconnect with error: ' + error);
+      this.logger.error('[MQTTClient] client failed to disconnect with error: ' + error);
     }
   }
 
@@ -79,9 +79,9 @@ export class MQTTClient extends AbstractClient {
     }
     const mqttRequest = request.toMqttRequest();
     const message = this.serializer.serialize(duid, mqttRequest);
-    this.logger.debug(`MQTTClient sending message to ${duid}: ${debugStringify(mqttRequest)}`);
+    this.logger.debug(`[MQTTClient] sending message to ${duid}: ${debugStringify(mqttRequest)}`);
     this.mqttClient.publish(`rr/m/i/${this.rriot.u}/${this.mqttUsername}/${duid}`, message.buffer, { qos: 1 });
-    this.logger.debug(`MQTTClient sent message to ${duid}`);
+    this.logger.debug(`[MQTTClient] sent message to ${duid}`);
   }
 
   private keepConnectionAlive(): void {
@@ -112,7 +112,7 @@ export class MQTTClient extends AbstractClient {
 
   private subscribeToQueue(): void {
     if (!this.mqttClient || !this.connected) {
-      this.logger.error('MQTTClient: cannot subscribe, client not connected');
+      this.logger.error('[MQTTClient] cannot subscribe, client not connected');
       return;
     }
 
@@ -162,17 +162,17 @@ export class MQTTClient extends AbstractClient {
   private async onMessage(topic: string, message: Buffer<ArrayBufferLike>): Promise<void> {
     if (!message) {
       // Ignore empty messages
-      this.logger.notice('MQTTClient received empty message from topic: ' + topic);
+      this.logger.notice('[MQTTClient] received empty message from topic: ' + topic);
       return;
     }
 
     try {
       const duid = topic.split('/').slice(-1)[0];
-      const response = this.deserializer.deserialize(duid, message);
+      const response = this.deserializer.deserialize(duid, message, '[MQTTClient]');
       await this.messageListeners.onMessage(response);
     } catch (error) {
       const errMsg = error instanceof Error ? (error.stack ?? error.message) : String(error);
-      this.logger.error(`MQTTClient: unable to process message ${topic}: ${errMsg}`);
+      this.logger.error(`[MQTTClient]: unable to process message ${topic}: ${errMsg}`);
     }
   }
 }
