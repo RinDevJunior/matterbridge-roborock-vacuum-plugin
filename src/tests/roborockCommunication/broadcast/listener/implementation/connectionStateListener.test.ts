@@ -38,7 +38,7 @@ describe('ConnectionStateListener', () => {
     const client = makeClient();
     const listener = new ConnectionStateListener(logger, client, 'TEST');
     await listener.onConnected('DUID1');
-    expect(logger.__calls.notice.length).toBeGreaterThan(0);
+    expect(logger.__calls.info.length).toBeGreaterThan(0);
   });
 
   test('logs error on onError', async () => {
