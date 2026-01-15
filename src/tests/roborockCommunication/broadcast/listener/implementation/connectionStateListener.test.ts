@@ -1,7 +1,7 @@
 import { jest } from '@jest/globals';
-
 import { ConnectionStateListener } from '../../../../../roborockCommunication/broadcast/listener/implementation/connectionStateListener';
 
+// --- Helpers ---
 function makeLogger() {
   const calls: { notice: string[]; info: string[]; error: string[] } = { notice: [], info: [], error: [] };
   return {
@@ -16,72 +16,106 @@ function makeClient(overrides: Partial<any> = {}) {
   return {
     retryCount: overrides.retryCount ?? 0,
     isInDisconnectingStep: overrides.isInDisconnectingStep ?? false,
-    connect: jest.fn(),
+    isConnected: overrides.isConnected ?? (() => false),
+    connect: overrides.connect ?? jest.fn(),
   } as any;
 }
 
 describe('ConnectionStateListener', () => {
-  test('onConnected and onError log appropriately', async () => {
+  // --- Reconnect/Retry Logic ---
+
+  test('resets retryCount to 0 on reconnect', async () => {
+    const logger = makeLogger();
+    const client = makeClient({ retryCount: 5 });
+    const listener = new ConnectionStateListener(logger, client, 'TEST');
+    await listener.onReconnect('DUID6', 'reconnected');
+    expect(client.retryCount).toBe(0);
+    expect(logger.__calls.info.some((s: string) => s.includes('reconnected'))).toBe(true);
+  });
+
+  test('resets retryCount to 0 and logs on connected', async () => {
     const logger = makeLogger();
     const client = makeClient();
     const listener = new ConnectionStateListener(logger, client, 'TEST');
-
     await listener.onConnected('DUID1');
     expect(logger.__calls.notice.length).toBeGreaterThan(0);
-
-    await listener.onError('DUID1', 'boom');
-    expect(logger.__calls.error.some((s) => s.includes('boom'))).toBe(true);
   });
 
-  test('onDisconnected without reconnect does not call connect', async () => {
+  test('logs error on onError', async () => {
+    const logger = makeLogger();
+    const client = makeClient();
+    const listener = new ConnectionStateListener(logger, client, 'TEST');
+    await listener.onError('DUID1', 'boom');
+    expect(logger.__calls.error.some((s: string) => s.includes('boom'))).toBe(true);
+  });
+
+  // --- Disconnection/Reconnection Policy ---
+
+  test('does not reconnect if shouldReconnect is false', async () => {
     const logger = makeLogger();
     const client = makeClient();
     const listener = new ConnectionStateListener(logger, client, 'TEST');
     // Don't call start() to leave shouldReconnect as false
-
     await listener.onDisconnected('DUID2', 'bye');
     expect(logger.__calls.error.length).toBeGreaterThan(0);
-    expect(logger.__calls.notice.some((s) => s.includes('re-registration is disabled'))).toBe(true);
+    expect(logger.__calls.notice.some((s: string) => s.includes('re-registration is disabled'))).toBe(true);
     expect(client.connect).not.toHaveBeenCalled();
   });
 
-  test('onDisconnected with reconnect schedules connect and increments retryCount', async () => {
+  test('schedules manual reconnect after 30s if still disconnected', async () => {
     jest.useFakeTimers();
     const logger = makeLogger();
-    const client = makeClient({ retryCount: 0, isInDisconnectingStep: false });
+    let connected = false;
+    const client = makeClient({
+      retryCount: 0,
+      isInDisconnectingStep: false,
+      isConnected: () => connected,
+      connect: jest.fn(() => {
+        connected = true;
+      }),
+    });
     const listener = new ConnectionStateListener(logger, client, 'TEST');
-    listener.start(); // Enable reconnection
-
-    await listener.onDisconnected('DUID3', 'lost');
-    expect(client.retryCount).toBe(1);
-    // connect is scheduled after 10000ms
+    listener.start();
+    await listener.onDisconnected('DUID7', 'lost');
+    jest.advanceTimersByTime(29000);
     expect(client.connect).not.toHaveBeenCalled();
-    jest.advanceTimersByTime(10000);
+    jest.advanceTimersByTime(1000);
     expect(client.connect).toHaveBeenCalled();
     jest.useRealTimers();
   });
 
-  test('onDisconnected with retryCount > 10 does not reconnect', async () => {
+  test('increments retryCount and schedules reconnect after 30s', async () => {
+    jest.useFakeTimers();
+    const logger = makeLogger();
+    const client = makeClient({ retryCount: 0, isInDisconnectingStep: false });
+    const listener = new ConnectionStateListener(logger, client, 'TEST');
+    listener.start();
+    await listener.onDisconnected('DUID3', 'lost');
+    expect(client.retryCount).toBe(1);
+    expect(client.connect).not.toHaveBeenCalled();
+    jest.advanceTimersByTime(30000);
+    expect(client.connect).toHaveBeenCalled();
+    jest.useRealTimers();
+  });
+
+  test('does not reconnect if retryCount > 10', async () => {
     const logger = makeLogger();
     const client = makeClient({ retryCount: 11 });
     const listener = new ConnectionStateListener(logger, client, 'TEST');
-    listener.start(); // Enable reconnection
-
+    listener.start();
     await listener.onDisconnected('DUID4', 'lost');
-    expect(logger.__calls.error.some((s) => s.includes('exceeded retry limit'))).toBe(true);
+    expect(logger.__calls.error.some((s: string) => s.includes('exceeded retry limit'))).toBe(true);
     expect(client.connect).not.toHaveBeenCalled();
   });
 
-  test('onDisconnected when in disconnecting step skips re-registration', async () => {
+  test('skips re-registration if in disconnecting step', async () => {
     const logger = makeLogger();
     const client = makeClient({ retryCount: 0, isInDisconnectingStep: true });
     const listener = new ConnectionStateListener(logger, client, 'TEST');
-    listener.start(); // Enable reconnection
-
+    listener.start();
     await listener.onDisconnected('DUID5', 'lost');
-    expect(logger.__calls.info.some((s) => s.includes('disconnecting step'))).toBe(true);
+    expect(logger.__calls.info.some((s: string) => s.includes('disconnecting step'))).toBe(true);
     expect(client.connect).not.toHaveBeenCalled();
-    // isInDisconnectingStep should remain true because the early-return path was taken
     expect(client.isInDisconnectingStep).toBe(true);
   });
 });

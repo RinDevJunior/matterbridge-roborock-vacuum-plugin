@@ -4,15 +4,20 @@
  */
 
 /**
+ * Delay before manual reconnect is triggered if MQTT auto-reconnect fails (30 seconds).
+ */
+export const MANUAL_RECONNECT_DELAY_MS = 30000;
+
+/**
  * Timeout for synchronous message requests (10 seconds).
  * If no response is received within this time, the request fails.
  */
-export const MESSAGE_TIMEOUT_MS = 10_000;
+export const MESSAGE_TIMEOUT_MS = 10000;
 
 /**
  * Delay before attempting to reconnect after disconnection (10 seconds).
  */
-export const RECONNECT_DELAY_MS = 10_000;
+export const RECONNECT_DELAY_MS = 10000;
 
 /**
  * Interval for MQTT keepalive messages (60 minutes).
@@ -24,7 +29,7 @@ export const KEEPALIVE_INTERVAL_MS = 60 * 60 * 1000;
  * Minimum time between verification code requests (1 minute).
  * Rate limiting for 2FA code generation.
  */
-export const VERIFICATION_CODE_RATE_LIMIT_MS = 60_000;
+export const VERIFICATION_CODE_RATE_LIMIT_MS = 60000;
 
 /**
  * Default refresh interval for home data requests (60 seconds).
@@ -44,7 +49,7 @@ export const MAX_RETRY_COUNT = 10;
 /**
  * Timeout for hello/ping response from device (30 seconds).
  */
-export const HELLO_RESPONSE_TIMEOUT_MS = 30_000;
+export const HELLO_RESPONSE_TIMEOUT_MS = 30000;
 
 /**
  * Delay between connection retry attempts (500ms).
