@@ -34,7 +34,6 @@
 
 ---
 
-
 ### ⚠️ Important Notes
 
 - **Matterbridge must be run in child bridge mode** for proper operation.
@@ -42,15 +41,16 @@
   If you have more than one vacuum, please run separate instances.
   Please put the <**Vacuum name**>-<**duid**> of device you want to use into **whiteList** section in the plugin configuration popup.
 
-
   More details available here: [Discussion #264](https://github.com/Luligu/matterbridge/discussions/264)
 
 ---
+
 ### 🆔 How to Get Your DUID
 
 To get the **DUID** for your devices, you have two options:
 
 **Option 1: From Matterbridge Logs**
+
 1. **Start Matterbridge** with the plugin enabled.
 2. **Watch the Docker console logs directly** (not the Matterbridge UI logs, as they may be truncated).
 3. Look for the log message that says:
@@ -59,6 +59,7 @@ To get the **DUID** for your devices, you have two options:
    ```
 
 **Option 2: From the Roborock App**
+
 1. Open the **Roborock app** on your phone.
 2. Go to your **Device**.
 3. Tap **Settings** > **Product Info**.
@@ -66,23 +67,21 @@ To get the **DUID** for your devices, you have two options:
 5. **Remove the `rr_` prefix** from the DID value. The remaining string is your DUID.
 
 ---
+
 ### 🚧 Project Status
 
 - **Under active development**
 - Requires **`matterbridge@3.1.7`**
-- ⚠️ **Known Issue:** 
-+ Vacuum may appear as **two devices** in Apple Home
-+ Error: Wrong CRC32 2241274590, expected 0 -> this is normal error and not impact to plugin functionality
-+ 
+- ⚠️ **Known Issue:**
 
----
-
+* Vacuum may appear as **two devices** in Apple Home
+* Error: Wrong CRC32 2241274590, expected 0 -> this is normal error and not impact to plugin functionality
+* ---
 
 ### ➡️ [See Supported & Tested Roborock Devices](./README_SUPPORTED.md)
 
-
 📋 **Apple Home ↔️ Roborock Clean Mode Mapping:**  
-For a detailed table of how Apple Home clean modes map to Roborock settings, see  👉 [Apple Home ↔️ Roborock Clean Mode Mapping](./README_CLEANMODE.md)
+For a detailed table of how Apple Home clean modes map to Roborock settings, see 👉 [Apple Home ↔️ Roborock Clean Mode Mapping](./README_CLEANMODE.md)
 
 ---
 

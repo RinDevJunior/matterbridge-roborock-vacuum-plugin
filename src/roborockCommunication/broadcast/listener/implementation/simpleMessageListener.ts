@@ -4,6 +4,7 @@ import { Protocol } from '../../model/protocol.js';
 import { AbstractMessageHandler } from '../abstractMessageHandler.js';
 
 export class SimpleMessageListener implements AbstractMessageListener {
+  private readonly ignoredProtocols: Protocol[] = [Protocol.rpc_response, Protocol.map_response];
   private handler: AbstractMessageHandler | undefined;
 
   public registerListener(handler: AbstractMessageHandler): void {
@@ -11,7 +12,7 @@ export class SimpleMessageListener implements AbstractMessageListener {
   }
 
   public async onMessage(message: ResponseMessage): Promise<void> {
-    if (!this.handler || message.isForProtocol(Protocol.rpc_response) || message.isForProtocol(Protocol.map_response)) {
+    if (!this.handler || message.isForProtocols(this.ignoredProtocols)) {
       return;
     }
 

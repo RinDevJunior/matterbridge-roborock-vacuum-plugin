@@ -1,21 +1,10 @@
 {
-    "extends": "./tsconfig.json",
-    "compilerOptions": {
-        // enable isolatedModules just for ts-jest
-        "isolatedModules": true,
-        "types": [
-            "jest"
-        ]
-    },
-    "include": [
-        "**/*.spec.ts",
-        "**/*.test.ts",
-        "**/__test__/*"
-    ],
-    "exclude": [
-        "node_modules",
-        "dist",
-        "build",
-        "coverage",
-    ]
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    // enable isolatedModules just for ts-jest
+    "isolatedModules": true,
+    "types": ["jest"]
+  },
+  "include": ["**/*.spec.ts", "**/*.test.ts", "**/__test__/*"],
+  "exclude": ["node_modules", "dist", "build", "coverage"]
 }

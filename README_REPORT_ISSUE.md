@@ -10,8 +10,8 @@
 
 ### 🔄 Steps to Reproduce
 
-1. Apply the configuration shown above.  
-2. Restart **Matterbridge**.  
+1. Apply the configuration shown above.
+2. Restart **Matterbridge**.
 3. Reproduce the issue you're encountering.
 
 ---

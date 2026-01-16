@@ -2,12 +2,12 @@
 
 ## ✅ Tested Devices
 
-| Device Name                | Model Enum Key         | Model String                  |    Thank         |
-|----------------------------|------------------------|-------------------------------|------------------|
-| Roborock Qrevo Edge 5V1    | `QREVO_EDGE_5V1`       | `roborock.vacuum.a187`        |                  |
-| Roborock S8 Pro Ultra      | `S8_PRO_ULTRA`         | `roborock.vacuum.a70`         |                  |
-| Roborock S7 MaxV           | `S7_MAXV`              | `roborock.vacuum.a27`         |                  |
-| Roborock Qrevo Plus        | `QREVO_PLUS`           | `roborock.vacuum.a123`        |                  |
+| Device Name             | Model Enum Key   | Model String           | Thank |
+| ----------------------- | ---------------- | ---------------------- | ----- |
+| Roborock Qrevo Edge 5V1 | `QREVO_EDGE_5V1` | `roborock.vacuum.a187` |       |
+| Roborock S8 Pro Ultra   | `S8_PRO_ULTRA`   | `roborock.vacuum.a70`  |       |
+| Roborock S7 MaxV        | `S7_MAXV`        | `roborock.vacuum.a27`  |       |
+| Roborock Qrevo Plus     | `QREVO_PLUS`     | `roborock.vacuum.a123` |       |
 
 These devices have been fully tested and are confirmed to work as expected.
 
@@ -17,9 +17,9 @@ These devices have been fully tested and are confirmed to work as expected.
 
 This plugin does NOT support these models:
 
-| Device Name                | Model String                  |
-|----------------------------|-------------------------------|
-| Roborock Q10 Series        | `roborock.vacuum.ss07`        |
+| Device Name         | Model String           |
+| ------------------- | ---------------------- |
+| Roborock Q10 Series | `roborock.vacuum.ss07` |
 
 **Reason:**
 Roborock recently released a new series of models, Q10. Roborock has changed the protocol for how these devices interact.

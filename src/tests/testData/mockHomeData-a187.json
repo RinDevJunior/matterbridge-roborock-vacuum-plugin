@@ -1,286 +1,286 @@
 {
-    "id": 1234,
-    "name": "My Home",
-    "lon": null,
-    "lat": null,
-    "geoName": null,
-    "products": [
+  "id": 1234,
+  "name": "My Home",
+  "lon": null,
+  "lat": null,
+  "geoName": null,
+  "products": [
+    {
+      "id": "654321",
+      "name": "Roborock Qrevo Edge Series",
+      "model": "roborock.vacuum.a187",
+      "iconUrl": null,
+      "attribute": null,
+      "capability": 0,
+      "category": "robot.vacuum.cleaner",
+      "schema": [
         {
-            "id": "654321",
-            "name": "Roborock Qrevo Edge Series",
-            "model": "roborock.vacuum.a187",
-            "iconUrl": null,
-            "attribute": null,
-            "capability": 0,
-            "category": "robot.vacuum.cleaner",
-            "schema": [
-                {
-                    "id": 101,
-                    "name": "rpc_request",
-                    "code": "rpc_request",
-                    "mode": "rw",
-                    "type": "RAW",
-                    "property": null
-                },
-                {
-                    "id": 102,
-                    "name": "rpc_response",
-                    "code": "rpc_response",
-                    "mode": "rw",
-                    "type": "RAW",
-                    "property": null
-                },
-                {
-                    "id": 120,
-                    "name": "错误代码",
-                    "code": "error_code",
-                    "mode": "ro",
-                    "type": "ENUM",
-                    "property": "{\"range\": [\"\"]}"
-                },
-                {
-                    "id": 121,
-                    "name": "设备状态",
-                    "code": "state",
-                    "mode": "ro",
-                    "type": "ENUM",
-                    "property": "{\"range\": [\"\"]}"
-                },
-                {
-                    "id": 122,
-                    "name": "设备电量",
-                    "code": "battery",
-                    "mode": "ro",
-                    "type": "ENUM",
-                    "property": "{\"range\": [\"\"]}"
-                },
-                {
-                    "id": 123,
-                    "name": "清扫模式",
-                    "code": "fan_power",
-                    "mode": "rw",
-                    "type": "ENUM",
-                    "property": "{\"range\": [\"\"]}"
-                },
-                {
-                    "id": 124,
-                    "name": "拖地模式",
-                    "code": "water_box_mode",
-                    "mode": "rw",
-                    "type": "ENUM",
-                    "property": "{\"range\": [\"\"]}"
-                },
-                {
-                    "id": 125,
-                    "name": "主刷寿命",
-                    "code": "main_brush_life",
-                    "mode": "rw",
-                    "type": "VALUE",
-                    "property": "{\"max\": 100, \"min\": 0, \"step\": 1, \"unit\": \"null\", \"scale\": 1}"
-                },
-                {
-                    "id": 126,
-                    "name": "边刷寿命",
-                    "code": "side_brush_life",
-                    "mode": "rw",
-                    "type": "VALUE",
-                    "property": "{\"max\": 100, \"min\": 0, \"step\": 1, \"unit\": \"null\", \"scale\": 1}"
-                },
-                {
-                    "id": 127,
-                    "name": "滤网寿命",
-                    "code": "filter_life",
-                    "mode": "rw",
-                    "type": "VALUE",
-                    "property": "{\"max\": 100, \"min\": 0, \"step\": 1, \"unit\": \"null\", \"scale\": 1}"
-                },
-                {
-                    "id": 128,
-                    "name": "额外状态",
-                    "code": "additional_props",
-                    "mode": "ro",
-                    "type": "RAW",
-                    "property": null
-                },
-                {
-                    "id": 130,
-                    "name": "完成事件",
-                    "code": "task_complete",
-                    "mode": "ro",
-                    "type": "RAW",
-                    "property": null
-                },
-                {
-                    "id": 131,
-                    "name": "电量不足任务取消",
-                    "code": "task_cancel_low_power",
-                    "mode": "ro",
-                    "type": "RAW",
-                    "property": null
-                },
-                {
-                    "id": 132,
-                    "name": "运动中任务取消",
-                    "code": "task_cancel_in_motion",
-                    "mode": "ro",
-                    "type": "RAW",
-                    "property": null
-                },
-                {
-                    "id": 133,
-                    "name": "充电状态",
-                    "code": "charge_status",
-                    "mode": "ro",
-                    "type": "RAW",
-                    "property": null
-                },
-                {
-                    "id": 134,
-                    "name": "烘干状态",
-                    "code": "drying_status",
-                    "mode": "ro",
-                    "type": "RAW",
-                    "property": null
-                },
-                {
-                    "id": 135,
-                    "name": "离线原因细分",
-                    "code": "offline_status",
-                    "mode": "ro",
-                    "type": "RAW",
-                    "property": null
-                },
-                {
-                    "id": 139,
-                    "name": "回基站目的",
-                    "code": "back_type",
-                    "mode": "ro",
-                    "type": "RAW",
-                    "property": null
-                }
-            ]
+          "id": 101,
+          "name": "rpc_request",
+          "code": "rpc_request",
+          "mode": "rw",
+          "type": "RAW",
+          "property": null
+        },
+        {
+          "id": 102,
+          "name": "rpc_response",
+          "code": "rpc_response",
+          "mode": "rw",
+          "type": "RAW",
+          "property": null
+        },
+        {
+          "id": 120,
+          "name": "错误代码",
+          "code": "error_code",
+          "mode": "ro",
+          "type": "ENUM",
+          "property": "{\"range\": [\"\"]}"
+        },
+        {
+          "id": 121,
+          "name": "设备状态",
+          "code": "state",
+          "mode": "ro",
+          "type": "ENUM",
+          "property": "{\"range\": [\"\"]}"
+        },
+        {
+          "id": 122,
+          "name": "设备电量",
+          "code": "battery",
+          "mode": "ro",
+          "type": "ENUM",
+          "property": "{\"range\": [\"\"]}"
+        },
+        {
+          "id": 123,
+          "name": "清扫模式",
+          "code": "fan_power",
+          "mode": "rw",
+          "type": "ENUM",
+          "property": "{\"range\": [\"\"]}"
+        },
+        {
+          "id": 124,
+          "name": "拖地模式",
+          "code": "water_box_mode",
+          "mode": "rw",
+          "type": "ENUM",
+          "property": "{\"range\": [\"\"]}"
+        },
+        {
+          "id": 125,
+          "name": "主刷寿命",
+          "code": "main_brush_life",
+          "mode": "rw",
+          "type": "VALUE",
+          "property": "{\"max\": 100, \"min\": 0, \"step\": 1, \"unit\": \"null\", \"scale\": 1}"
+        },
+        {
+          "id": 126,
+          "name": "边刷寿命",
+          "code": "side_brush_life",
+          "mode": "rw",
+          "type": "VALUE",
+          "property": "{\"max\": 100, \"min\": 0, \"step\": 1, \"unit\": \"null\", \"scale\": 1}"
+        },
+        {
+          "id": 127,
+          "name": "滤网寿命",
+          "code": "filter_life",
+          "mode": "rw",
+          "type": "VALUE",
+          "property": "{\"max\": 100, \"min\": 0, \"step\": 1, \"unit\": \"null\", \"scale\": 1}"
+        },
+        {
+          "id": 128,
+          "name": "额外状态",
+          "code": "additional_props",
+          "mode": "ro",
+          "type": "RAW",
+          "property": null
+        },
+        {
+          "id": 130,
+          "name": "完成事件",
+          "code": "task_complete",
+          "mode": "ro",
+          "type": "RAW",
+          "property": null
+        },
+        {
+          "id": 131,
+          "name": "电量不足任务取消",
+          "code": "task_cancel_low_power",
+          "mode": "ro",
+          "type": "RAW",
+          "property": null
+        },
+        {
+          "id": 132,
+          "name": "运动中任务取消",
+          "code": "task_cancel_in_motion",
+          "mode": "ro",
+          "type": "RAW",
+          "property": null
+        },
+        {
+          "id": 133,
+          "name": "充电状态",
+          "code": "charge_status",
+          "mode": "ro",
+          "type": "RAW",
+          "property": null
+        },
+        {
+          "id": 134,
+          "name": "烘干状态",
+          "code": "drying_status",
+          "mode": "ro",
+          "type": "RAW",
+          "property": null
+        },
+        {
+          "id": 135,
+          "name": "离线原因细分",
+          "code": "offline_status",
+          "mode": "ro",
+          "type": "RAW",
+          "property": null
+        },
+        {
+          "id": 139,
+          "name": "回基站目的",
+          "code": "back_type",
+          "mode": "ro",
+          "type": "RAW",
+          "property": null
         }
-    ],
-    "devices": [
+      ]
+    }
+  ],
+  "devices": [
+    {
+      "duid": "123456",
+      "name": "Roborock Qrevo Edge Series",
+      "attribute": null,
+      "activeTime": 1746940587,
+      "createTime": 1746940587,
+      "localKey": "111111",
+      "runtimeEnv": null,
+      "timeZoneId": "Asia/Ho_Chi_Minh",
+      "iconUrl": "",
+      "productId": "654321",
+      "lon": null,
+      "lat": null,
+      "share": false,
+      "shareTime": null,
+      "online": true,
+      "fv": "02.27.26",
+      "pv": "1.0",
+      "roomId": null,
+      "tuyaUuid": null,
+      "tuyaMigrated": false,
+      "extra": null,
+      "setting": null,
+      "sn": "66666",
+      "cid": "",
+      "featureSet": "2247397454282751",
+      "newFeatureSet": "00000000082834C1C2FA8F5C7EDEFFFE",
+      "deviceStatus": {
+        "120": 0,
+        "121": 5,
+        "122": 98,
+        "123": 110,
+        "124": 209,
+        "125": 98,
+        "126": 94,
+        "127": 95,
+        "128": 1,
+        "133": 1,
+        "134": 0,
+        "135": 0,
+        "139": 0
+      },
+      "silentOtaSwitch": true,
+      "f": false,
+      "rrHomeId": 3645093,
+      "rooms": [
         {
-            "duid": "123456",
-            "name": "Roborock Qrevo Edge Series",
-            "attribute": null,
-            "activeTime": 1746940587,
-            "createTime": 1746940587,
-            "localKey": "111111",
-            "runtimeEnv": null,
-            "timeZoneId": "Asia/Ho_Chi_Minh",
-            "iconUrl": "",
-            "productId": "654321",
-            "lon": null,
-            "lat": null,
-            "share": false,
-            "shareTime": null,
-            "online": true,
-            "fv": "02.27.26",
-            "pv": "1.0",
-            "roomId": null,
-            "tuyaUuid": null,
-            "tuyaMigrated": false,
-            "extra": null,
-            "setting": null,
-            "sn": "66666",
-            "cid": "",
-            "featureSet": "2247397454282751",
-            "newFeatureSet": "00000000082834C1C2FA8F5C7EDEFFFE",
-            "deviceStatus": {
-                "120": 0,
-                "121": 5,
-                "122": 98,
-                "123": 110,
-                "124": 209,
-                "125": 98,
-                "126": 94,
-                "127": 95,
-                "128": 1,
-                "133": 1,
-                "134": 0,
-                "135": 0,
-                "139": 0
-            },
-            "silentOtaSwitch": true,
-            "f": false,
-            "rrHomeId": 3645093,
-            "rooms": [
-                {
-                    "id": 11100849,
-                    "name": "Study"
-                },
-                {
-                    "id": 11100847,
-                    "name": "Bedroom"
-                },
-                {
-                    "id": 11100845,
-                    "name": "Kitchen"
-                },
-                {
-                    "id": 11100842,
-                    "name": "Living room"
-                }
-            ],
-            "serialNumber": "66666",
-            "data": {
-                "id": "123456",
-                "firmwareVersion": "02.27.26",
-                "serialNumber": "66666",
-                "model": "roborock.vacuum.a187",
-                "category": "robot.vacuum.cleaner",
-                "batteryLevel": 98
-            },
-            "store": {
-                "userData": {
-                    "uid": 3635748,
-                    "tokentype": "",
-                    "token": "1:2+3==:4",
-                    "rruid": "1",
-                    "region": "us",
-                    "countrycode": "84",
-                    "country": "VN",
-                    "nickname": "Ryan",
-                    "rriot": {
-                        "u": "1",
-                        "s": "2",
-                        "h": "3",
-                        "k": "4",
-                        "r": {
-                            "r": "US",
-                            "a": "https://api-us.roborock.com",
-                            "m": "ssl://mqtt-us-2.roborock.com:8883",
-                            "l": "https://wood-us.roborock.com"
-                        }
-                    },
-                    "tuyaDeviceState": 0
-                },
-                "localKey": "",
-                "pv": "1.0",
-                "model": "roborock.vacuum.a187"
+          "id": 11100849,
+          "name": "Study"
+        },
+        {
+          "id": 11100847,
+          "name": "Bedroom"
+        },
+        {
+          "id": 11100845,
+          "name": "Kitchen"
+        },
+        {
+          "id": 11100842,
+          "name": "Living room"
+        }
+      ],
+      "serialNumber": "66666",
+      "data": {
+        "id": "123456",
+        "firmwareVersion": "02.27.26",
+        "serialNumber": "66666",
+        "model": "roborock.vacuum.a187",
+        "category": "robot.vacuum.cleaner",
+        "batteryLevel": 98
+      },
+      "store": {
+        "userData": {
+          "uid": 3635748,
+          "tokentype": "",
+          "token": "1:2+3==:4",
+          "rruid": "1",
+          "region": "us",
+          "countrycode": "84",
+          "country": "VN",
+          "nickname": "Ryan",
+          "rriot": {
+            "u": "1",
+            "s": "2",
+            "h": "3",
+            "k": "4",
+            "r": {
+              "r": "US",
+              "a": "https://api-us.roborock.com",
+              "m": "ssl://mqtt-us-2.roborock.com:8883",
+              "l": "https://wood-us.roborock.com"
             }
-        }
-    ],
-    "receivedDevices": [],
-    "rooms": [
-        {
-            "id": 11100849,
-            "name": "Study"
+          },
+          "tuyaDeviceState": 0
         },
-        {
-            "id": 11100847,
-            "name": "Bedroom"
-        },
-        {
-            "id": 11100845,
-            "name": "Kitchen"
-        },
-        {
-            "id": 11100842,
-            "name": "Living room"
-        }
-    ]
+        "localKey": "",
+        "pv": "1.0",
+        "model": "roborock.vacuum.a187"
+      }
+    }
+  ],
+  "receivedDevices": [],
+  "rooms": [
+    {
+      "id": 11100849,
+      "name": "Study"
+    },
+    {
+      "id": 11100847,
+      "name": "Bedroom"
+    },
+    {
+      "id": 11100845,
+      "name": "Kitchen"
+    },
+    {
+      "id": 11100842,
+      "name": "Living room"
+    }
+  ]
 }

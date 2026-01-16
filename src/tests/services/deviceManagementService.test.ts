@@ -687,7 +687,7 @@ describe('DeviceManagementService', () => {
 
       await deviceService.initializeMessageClient('test@example.com', mockDevice, mockUserData);
 
-      expect(callOrder).toEqual(['getClient', 'registerDevice', 'registerListener', 'registerListener', 'connect']);
+      expect(callOrder).toEqual(['getClient', 'registerDevice', 'registerListener', 'registerListener', 'registerListener', 'connect']);
     });
   });
 

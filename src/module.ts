@@ -51,6 +51,7 @@ export class RoborockMatterbridgePlatform extends MatterbridgeDynamicPlatform {
   enableExperimentalFeature: ExperimentalFeatureSetting | undefined;
   persist: NodePersist.LocalStorage;
   rrHomeId: number | undefined;
+  private isStartPluginCompleted: boolean = false;
 
   constructor(
     matterbridge: PlatformMatterbridge,
@@ -60,9 +61,9 @@ export class RoborockMatterbridgePlatform extends MatterbridgeDynamicPlatform {
     super(matterbridge, log, config);
 
     // Verify that Matterbridge is the correct version
-    if (this.verifyMatterbridgeVersion === undefined || typeof this.verifyMatterbridgeVersion !== 'function' || !this.verifyMatterbridgeVersion('3.4.6')) {
+    if (this.verifyMatterbridgeVersion === undefined || typeof this.verifyMatterbridgeVersion !== 'function' || !this.verifyMatterbridgeVersion('3.4.7')) {
       throw new Error(
-        `This plugin requires Matterbridge version >= "3.4.6". Please update Matterbridge from ${this.matterbridge.matterbridgeVersion} to the latest version in the frontend.`,
+        `This plugin requires Matterbridge version >= "3.4.7". Please update Matterbridge from ${this.matterbridge.matterbridgeVersion} to the latest version in the frontend.`,
       );
     }
     this.log.info('Initializing platform:', this.config.name);
@@ -77,13 +78,12 @@ export class RoborockMatterbridgePlatform extends MatterbridgeDynamicPlatform {
     this.devices = new Map<string, Device>();
   }
 
-  override async onStart(reason?: string) {
+  public override async onStart(reason?: string) {
     this.log.notice('onStart called with reason:', reason ?? 'none');
 
     // Wait for the platform to start
     await this.ready;
     await this.clearSelect();
-
     await this.persist.init();
 
     // Verify that the config is correct
@@ -92,16 +92,72 @@ export class RoborockMatterbridgePlatform extends MatterbridgeDynamicPlatform {
       return;
     }
 
-    const axiosInstance = axios.default ?? axios;
+    // Start device discovery and authentication
+    const shouldContinue = await this.startDeviceDiscovery();
+    if (!shouldContinue) {
+      this.log.error('Device discovery failed to start.');
+      this.isStartPluginCompleted = false;
+      return;
+    }
 
+    await this.onConfigureDevice();
+
+    // Mark startup as complete
+    this.log.notice('onStart finished');
+    this.isStartPluginCompleted = true;
+  }
+
+  public override async onConfigure() {
+    this.log.notice('onConfigure called');
+    if (!this.isStartPluginCompleted) {
+      return;
+    }
+    await super.onConfigure();
+
+    this.rvcInterval = setInterval(
+      async () => {
+        try {
+          await this.platformRunner?.requestHomeData();
+        } catch (error) {
+          this.log.error(`requestHomeData (interval) failed: ${error instanceof Error ? error.message : String(error)}`);
+        }
+      },
+      ((this.config.refreshInterval as number) ?? DEFAULT_REFRESH_INTERVAL_SECONDS) * 1000 + REFRESH_INTERVAL_BUFFER_MS,
+    );
+  }
+
+  public override async onShutdown(reason?: string) {
+    this.log.notice('onShutdown called with reason:', reason ?? 'none');
+
+    await super.onShutdown(reason);
+    if (this.rvcInterval) clearInterval(this.rvcInterval);
+    if (this.roborockService) this.roborockService.stopService();
+    if (this.config.unregisterOnShutdown === true) await this.unregisterAllDevices(UNREGISTER_DEVICES_DELAY_MS);
+    this.isStartPluginCompleted = false;
+  }
+
+  public override async onChangeLoggerLevel(logLevel: LogLevel): Promise<void> {
+    this.log.notice(`Change ${PLUGIN_NAME} log level: ${logLevel} (was ${this.log.logLevel})`);
+    this.log.logLevel = logLevel;
+    return Promise.resolve();
+  }
+
+  /**
+   * Start the device discovery and authentication process.
+   * Initializes the RoborockService and authenticates the user.
+   * @return True if initialization is successful, false otherwise.
+   */
+  private async startDeviceDiscovery(): Promise<boolean> {
     this.enableExperimentalFeature = this.config.enableExperimental;
     // Disable multiple map for more investigation
     this.enableExperimentalFeature.advancedFeature.enableMultipleMap = false;
 
     if (this.enableExperimentalFeature?.enableExperimentalFeature && this.enableExperimentalFeature?.cleanModeSettings?.enableCleanModeMapping) {
       this.cleanModeSettings = this.enableExperimentalFeature.cleanModeSettings;
-      this.log.notice(`Experimental Feature has been enable`);
-      this.log.notice(`cleanModeSettings ${debugStringify(this.cleanModeSettings)}`);
+      this.log.notice(
+        `Experimental Feature enabled,
+         Clean Mode Settings: ${debugStringify(this.cleanModeSettings)}`,
+      );
     }
 
     this.platformRunner = new PlatformRunner(this);
@@ -116,53 +172,13 @@ export class RoborockMatterbridgePlatform extends MatterbridgeDynamicPlatform {
       this.log.debug('Using cached deviceId:', deviceId);
     }
 
-    const configRegion = this.config.region as string | undefined;
-    const region = configRegion?.toUpperCase() ?? 'US';
-    const baseUrl = getBaseUrl(configRegion);
-    this.log.notice(`Using region: ${region} (${baseUrl})`);
-
-    this.roborockService = new RoborockService(
-      (_, url) => new RoborockAuthenticateApi(this.log, axiosInstance, deviceId, url),
-      (logger, ud) => new RoborockIoTApi(ud, logger),
-      this.config.refreshInterval ?? 60,
-      this.clientManager,
-      this.log,
-      baseUrl,
-    );
+    const { shouldContinue, userData } = await this.authenticate(deviceId);
+    if (!shouldContinue || !userData || !this.roborockService) {
+      this.log.info('Authentication incomplete, waiting for user action.');
+      return false;
+    }
 
     const username = this.config.username as string;
-
-    this.log.debug(`config: ${debugStringify(this.config)}`);
-
-    const authenticationPayload = this.config.authentication;
-    const password = authenticationPayload.password ?? '';
-    const verificationCode = authenticationPayload.verificationCode ?? '';
-    const authenticationMethod = authenticationPayload.authenticationMethod as 'VerificationCode' | 'Password';
-
-    this.log.debug(`Authentication method: ${authenticationMethod}`);
-    this.log.debug(`Username: ${username}`);
-    this.log.debug(`Password provided: ${password !== ''}`);
-    this.log.debug(`Verification code provided: ${verificationCode !== ''}`);
-
-    // Authenticate using 2FA flow
-    let userData: UserData | undefined;
-    try {
-      if (authenticationMethod === 'VerificationCode') {
-        this.log.debug('Using verification code from config for authentication');
-        userData = await this.authenticate2FA(username, verificationCode);
-      } else {
-        userData = await this.authenticateWithPassword(username, password);
-      }
-    } catch (error) {
-      this.log.error(`Authentication failed: ${error instanceof Error ? error.message : String(error)}`);
-      return;
-    }
-
-    if (!userData) {
-      // Code was requested, waiting for user to enter it in config
-      return;
-    }
-
     this.log.debug('Initializing - userData:', debugStringify(userData));
     const devices = await this.roborockService.listDevices(username);
     this.log.notice('Initializing - devices: ', debugStringify(devices));
@@ -183,7 +199,7 @@ export class RoborockMatterbridgePlatform extends MatterbridgeDynamicPlatform {
 
     if (vacuums.length === 0) {
       this.log.error('Initializing: No device found');
-      return;
+      return false;
     }
 
     if (!this.enableExperimentalFeature?.enableExperimentalFeature || !this.enableExperimentalFeature?.advancedFeature?.enableServerMode) {
@@ -194,30 +210,67 @@ export class RoborockMatterbridgePlatform extends MatterbridgeDynamicPlatform {
       await this.roborockService.initializeMessageClient(username, vacuum, userData);
       this.devices.set(vacuum.serialNumber, vacuum);
     }
-
-    await this.onConfigureDevice();
-    this.log.notice('onStart finished');
+    return true;
   }
 
-  override async onConfigure() {
-    await super.onConfigure();
-    this.rvcInterval = setInterval(
-      async () => {
-        try {
-          await this.platformRunner?.requestHomeData();
-        } catch (error) {
-          this.log.error(`requestHomeData (interval) failed: ${error instanceof Error ? error.message : String(error)}`);
-        }
-      },
-      ((this.config.refreshInterval as number) ?? DEFAULT_REFRESH_INTERVAL_SECONDS) * 1000 + REFRESH_INTERVAL_BUFFER_MS,
+  private async authenticate(deviceId: string): Promise<{ shouldContinue: boolean; userData?: UserData }> {
+    const axiosInstance = axios.default ?? axios;
+    const configRegion = this.config.region as string | undefined;
+    const region = configRegion?.toUpperCase() ?? 'US';
+    const baseUrl = getBaseUrl(configRegion);
+    this.log.debug(`Using region: ${region} (${baseUrl})`);
+
+    this.roborockService = new RoborockService(
+      (_, url) => new RoborockAuthenticateApi(this.log, axiosInstance, deviceId, url),
+      (logger, ud) => new RoborockIoTApi(ud, logger),
+      this.config.refreshInterval ?? 60,
+      this.clientManager,
+      this.log,
+      baseUrl,
     );
+
+    const username = this.config.username as string;
+
+    this.log.debug(`config: ${debugStringify(this.config)}`);
+
+    const authenticationPayload = this.config.authentication;
+    const password = authenticationPayload.password ?? '';
+    const verificationCode = authenticationPayload.verificationCode ?? '';
+    const authenticationMethod = authenticationPayload.authenticationMethod as 'VerificationCode' | 'Password';
+
+    this.log.debug(
+      `Authentication method: ${authenticationMethod},
+      Username: ${username},
+      Password provided: ${password !== ''},
+      Verification code provided: ${verificationCode !== ''}`,
+    );
+
+    // Authenticate using 2FA flow
+    let userData: UserData | undefined;
+    try {
+      if (authenticationMethod === 'VerificationCode') {
+        this.log.debug('Using verification code from config for authentication');
+        userData = await this.authenticate2FA(username, verificationCode);
+      } else {
+        userData = await this.authenticateWithPassword(username, password);
+      }
+    } catch (error) {
+      this.log.error(`Authentication failed: ${error instanceof Error ? error.message : String(error)}`);
+      return { shouldContinue: false };
+    }
+
+    if (!userData) {
+      // Code was requested, waiting for user to enter it in config
+      return { shouldContinue: false };
+    }
+    return { shouldContinue: true, userData };
   }
 
   /**
    * Configure all discovered devices.
    * Sets up device connections, room mappings, and notification handlers.
    */
-  async onConfigureDevice(): Promise<void> {
+  private async onConfigureDevice(): Promise<void> {
     this.log.info('onConfigureDevice start');
     if (this.platformRunner === undefined || this.roborockService === undefined) {
       this.log.error('Initializing: PlatformRunner or RoborockService is undefined');
@@ -263,8 +316,6 @@ export class RoborockMatterbridgePlatform extends MatterbridgeDynamicPlatform {
   /**
    * Configure a single device for use with the platform.
    * Establishes local connection, fetches room maps, and creates Matter endpoint.
-   * @param vacuum - The device to configure
-   * @returns True if configuration successful, false otherwise
    */
   private async configureDevice(vacuum: Device): Promise<boolean> {
     const username = this.config.username as string;
@@ -322,20 +373,6 @@ export class RoborockMatterbridgePlatform extends MatterbridgeDynamicPlatform {
     }
 
     return true;
-  }
-
-  override async onShutdown(reason?: string) {
-    await super.onShutdown(reason);
-    this.log.notice('onShutdown called with reason:', reason ?? 'none');
-    if (this.rvcInterval) clearInterval(this.rvcInterval);
-    if (this.roborockService) this.roborockService.stopService();
-    if (this.config.unregisterOnShutdown === true) await this.unregisterAllDevices(UNREGISTER_DEVICES_DELAY_MS);
-  }
-
-  override async onChangeLoggerLevel(logLevel: LogLevel): Promise<void> {
-    this.log.notice(`Change ${PLUGIN_NAME} log level: ${logLevel} (was ${this.log.logLevel})`);
-    this.log.logLevel = logLevel;
-    return Promise.resolve();
   }
 
   private async authenticateWithPassword(username: string, password: string): Promise<UserData> {
@@ -456,7 +493,7 @@ export class RoborockMatterbridgePlatform extends MatterbridgeDynamicPlatform {
    * @param device - The device endpoint to add
    * @returns The added device endpoint, or undefined if validation fails
    */
-  async addDevice(device: MatterbridgeEndpoint): Promise<MatterbridgeEndpoint | undefined> {
+  private async addDevice(device: MatterbridgeEndpoint): Promise<MatterbridgeEndpoint | undefined> {
     if (!device.serialNumber || !device.deviceName) {
       this.log.warn('Cannot add device: missing serialNumber or deviceName');
       return undefined;

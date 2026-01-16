@@ -13,12 +13,16 @@ export class ResponseMessage {
     this.header = header;
   }
 
-  public get(index: number | string | Protocol): unknown | undefined {
+  public get(index: Protocol): unknown | undefined {
     return this.body?.get(index);
   }
 
-  public isForProtocol(protocol: number | string | Protocol): boolean {
+  public isForProtocol(protocol: Protocol): boolean {
     return this.header && this.header.isForProtocol(protocol);
+  }
+
+  public isForProtocols(protocols: Protocol[]): boolean {
+    return this.header && protocols.some((protocol) => this.header.isForProtocol(protocol));
   }
 
   public isForStatus(status: number): boolean {

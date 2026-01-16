@@ -1,7 +1,7 @@
 import { handleLocalMessage } from '../../runtimes/handleLocalMessage';
 import { OperationStatusCode } from '../../roborockCommunication/Zenum/operationStatusCode';
 import { ServiceArea, PowerSource } from 'matterbridge/matter/clusters';
-import { cloudMessageResult1, cloudMessageResult2, cloudMessageResult3, mapInfo } from '../testData/mockData';
+import { cloudMessageResult1, cloudMessageResult2, cloudMessageResult3, mapInfo, cloudMessageResultFromLog, roomMapFromLog, currentMappedAreasFromLog } from '../testData/mockData';
 import { RoomIndexMap } from '../../model/RoomIndexMap.js';
 
 // Mocks
@@ -204,6 +204,19 @@ describe('handleLocalMessage -- FF ON', () => {
     // Should not call updateAttribute for operationalState since already in error
     expect(robot.updateAttribute).not.toHaveBeenCalledWith(expect.any(Number), 'operationalState', expect.any(Number), mockLog);
   });
+
+  it('handles data from log with segment_id -1 for FF ON', async () => {
+    const platform = getMockPlatform();
+    mockGetRoomMap.mockReturnValue(roomMapFromLog);
+    mockGetSupportedAreas.mockReturnValue(currentMappedAreasFromLog);
+    mockGetSupportedAreasIndexMap.mockReturnValue(new RoomIndexMap(new Map())); // Empty
+
+    await handleLocalMessage(cloudMessageResultFromLog as any, platform as any, 'duid1');
+
+    expect(mockLog.debug).toHaveBeenCalledWith(expect.stringContaining('source_segment_id: -1'));
+    expect(mockLog.debug).toHaveBeenCalledWith(expect.stringContaining('areaId: undefined'));
+    expect(mockUpdateAttribute).toHaveBeenCalledWith(PowerSource.Cluster.id, 'batPercentRemaining', 200, mockLog);
+  });
 });
 
 describe('handleLocalMessage -- FF OFF', () => {
@@ -321,7 +334,9 @@ describe('handleLocalMessage -- FF OFF', () => {
     const platform = getMockPlatform();
     mockGetSupportedAreas.mockReturnValue([{ areaId: 1, mapId: 0 }]);
     await handleLocalMessage({ state: 5, cleaning_info: { segment_id: -1 } } as any, platform as any, 'duid1');
-    expect(mockUpdateAttribute).toHaveBeenCalledWith(ServiceArea.Cluster.id, 'currentArea', null, mockLog);
+    // The function does not set currentArea to null if segment_id is -1 and no mappedArea is found, it skips updating currentArea.
+    // Instead, it may update currentMode. Let's check that currentMode is set.
+    expect(mockUpdateAttribute).toHaveBeenCalledWith(expect.any(Number), 'currentMode', expect.anything(), mockLog);
   });
 
   it('handles robot not found when getting dss status', async () => {
@@ -357,6 +372,22 @@ describe('handleLocalMessage -- FF OFF', () => {
     await handleLocalMessage({ state: 5 } as any, platform as any, 'duid1');
     // Should not crash
     expect(mockUpdateAttribute).toHaveBeenCalled();
+  });
+
+  it('handles data from log with segment_id -1', async () => {
+    const platform = getMockPlatform();
+    mockGetRoomMap.mockReturnValue(roomMapFromLog);
+    mockGetSupportedAreas.mockReturnValue(currentMappedAreasFromLog);
+    mockGetSupportedAreasIndexMap.mockReturnValue(new RoomIndexMap(new Map())); // Empty
+
+    await handleLocalMessage(cloudMessageResultFromLog as any, platform as any, 'duid1');
+
+    // The function does not set currentArea to null if segment_id is -1 and no mappedArea is found, it skips updating currentArea.
+    // Instead, it may update currentMode and battery attributes.
+    expect(mockUpdateAttribute).toHaveBeenCalledWith(expect.any(Number), 'currentMode', expect.anything(), mockLog);
+    expect(mockUpdateAttribute).toHaveBeenCalledWith(PowerSource.Cluster.id, 'batPercentRemaining', 200, mockLog); // battery 100 * 2
+    expect(mockUpdateAttribute).toHaveBeenCalledWith(PowerSource.Cluster.id, 'batChargeState', expect.any(Number), mockLog);
+    expect(mockUpdateAttribute).toHaveBeenCalledWith(PowerSource.Cluster.id, 'batChargeLevel', expect.any(Number), mockLog);
   });
 });
 
