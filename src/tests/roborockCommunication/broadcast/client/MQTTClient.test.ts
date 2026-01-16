@@ -54,11 +54,10 @@ describe('MQTTClient', () => {
     mockConnect.mockReturnValue(client);
   });
 
-  function createMQTTClient() {
-    // Pass dependencies via constructor if possible, or use a factory/mockable subclass for testing
+  function createMQTTClient(mockSyncMessageListener?: any) {
     class TestMQTTClient extends MQTTClient {
       constructor() {
-        super(logger, context, userdata);
+        super(logger, context, userdata, mockSyncMessageListener);
         (this as any).serializer = serializer;
         (this as any).deserializer = deserializer;
         (this as any).connectionListeners = connectionListeners;
@@ -143,20 +142,32 @@ describe('MQTTClient', () => {
   });
 
   it('should publish message if connected', async () => {
-    const mqttClient = createMQTTClient();
+    const mockSyncMessageListener = {
+      waitFor: jest.fn((_msgId: number, _req: any, resolve: any, _reject: any) => resolve(undefined)),
+      pending: new Map(),
+      logger,
+      onMessage: jest.fn(),
+    };
+    const mqttClient = createMQTTClient(mockSyncMessageListener);
     mqttClient['mqttClient'] = client;
     mqttClient['connected'] = true;
-    const request = { toMqttRequest: jest.fn(() => 'req') };
+    const request = { toMqttRequest: jest.fn(() => 'req'), method: 'test' };
     await mqttClient.send('duid1', request as any);
     expect(serializer.serialize).toHaveBeenCalledWith('duid1', 'req');
     expect(client.publish).toHaveBeenCalledWith('rr/m/i/user/c6d6afb9/duid1', Buffer.from('msg'), { qos: 1 });
   });
 
   it('should log error if send called when not connected', async () => {
-    const mqttClient = createMQTTClient();
+    const mockSyncMessageListener = {
+      waitFor: jest.fn((_msgId: number, _req: any, resolve: any, _reject: any) => resolve(undefined)),
+      pending: new Map(),
+      logger,
+      onMessage: jest.fn(),
+    };
+    const mqttClient = createMQTTClient(mockSyncMessageListener);
     mqttClient['mqttClient'] = undefined;
     mqttClient['connected'] = false;
-    const request = { toMqttRequest: jest.fn() };
+    const request = { toMqttRequest: jest.fn(), method: 'test' };
     await mqttClient.send('duid1', request as any);
     expect(logger.error).toHaveBeenCalled();
     expect(client.publish).not.toHaveBeenCalled();
@@ -219,7 +230,7 @@ describe('MQTTClient', () => {
   it('onMessage should call deserializer and messageListeners.onMessage if message', async () => {
     const mqttClient = createMQTTClient();
     await mqttClient['onMessage']('rr/m/o/user/c6d6afb9/duid1', Buffer.from('msg'));
-    expect(deserializer.deserialize).toHaveBeenCalledWith('duid1', Buffer.from('msg'), '[MQTTClient]');
+    expect(deserializer.deserialize).toHaveBeenCalledWith('duid1', Buffer.from('msg'), 'MQTTClient');
     expect(messageListeners.onMessage).toHaveBeenCalledWith('deserialized');
   });
 

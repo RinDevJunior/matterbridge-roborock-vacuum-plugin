@@ -65,7 +65,7 @@ export class LocalNetworkUDPClient extends AbstractClient {
     return Promise.resolve();
   }
 
-  public override send(duid: string, request: RequestMessage): Promise<void> {
+  protected override sendInternal(duid: string, request: RequestMessage): Promise<void> {
     this.logger.debug(`Sending request to ${duid}: ${JSON.stringify(request)}`);
     return Promise.resolve();
   }

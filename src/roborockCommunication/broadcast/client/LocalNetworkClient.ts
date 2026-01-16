@@ -10,6 +10,7 @@ import { ChunkBuffer } from '../../helper/chunkBuffer.js';
 import { PingResponseListener } from '../listener/implementation/pingResponseListener.js';
 import { ProtocolVersion } from '../../Zenum/protocolVersion.js';
 import { ResponseMessage } from '../../index.js';
+import { SyncMessageListener } from '../listener/implementation/syncMessageListener.js';
 
 export class LocalNetworkClient extends AbstractClient {
   protected override clientName = 'LocalNetworkClient';
@@ -23,8 +24,8 @@ export class LocalNetworkClient extends AbstractClient {
   public duid: string;
   public ip: string;
 
-  constructor(logger: AnsiLogger, context: MessageContext, duid: string, ip: string) {
-    super(logger, context);
+  constructor(logger: AnsiLogger, context: MessageContext, duid: string, ip: string, syncMessageListener?: SyncMessageListener) {
+    super(logger, context, syncMessageListener);
     this.duid = duid;
     this.ip = ip;
     this.messageIdSeq = new Sequence(100000, 999999);
@@ -75,7 +76,7 @@ export class LocalNetworkClient extends AbstractClient {
     this.socket = undefined;
   }
 
-  public async send(duid: string, request: RequestMessage): Promise<void> {
+  protected async sendInternal(duid: string, request: RequestMessage): Promise<void> {
     if (!this.socket || !this.isConnected()) {
       this.logger.error(`${duid}: socket is not online, , ${debugStringify(request)}`);
       return;
@@ -170,7 +171,7 @@ export class LocalNetworkClient extends AbstractClient {
 
         try {
           const currentBuffer = receivedBuffer.subarray(offset + 4, offset + segmentLength + 4);
-          const response = this.deserializer.deserialize(this.duid, currentBuffer, '[LocalNetworkClient]');
+          const response = this.deserializer.deserialize(this.duid, currentBuffer, 'LocalNetworkClient');
           await this.messageListeners.onMessage(response);
         } catch (error) {
           const errMsg = error instanceof Error ? (error.stack ?? error.message) : String(error);

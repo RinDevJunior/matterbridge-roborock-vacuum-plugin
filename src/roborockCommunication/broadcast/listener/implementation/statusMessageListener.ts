@@ -1,16 +1,16 @@
+import { AnsiLogger } from 'matterbridge/logger';
 import { NotifyMessageTypes } from '../../../../notifyMessageTypes.js';
 import { DeviceNotifyCallback } from '../../../../types/index.js';
 import { AbstractMessageListener, Protocol, ResponseMessage } from '../../../index.js';
 
 export class StatusMessageListener implements AbstractMessageListener {
-  private readonly duid: string;
-  private readonly callback: DeviceNotifyCallback | undefined;
-  private readonly shouldIgnoreProtocols = [Protocol.battery, Protocol.ping_response, Protocol.map_response, Protocol.rpc_response];
+  private readonly shouldIgnoreProtocols = [Protocol.battery, Protocol.ping_response, Protocol.map_response];
 
-  constructor(duid: string, callback: DeviceNotifyCallback | undefined) {
-    this.duid = duid;
-    this.callback = callback;
-  }
+  constructor(
+    private readonly duid: string,
+    private readonly logger: AnsiLogger,
+    private readonly callback: DeviceNotifyCallback | undefined,
+  ) {}
 
   public async onMessage(message: ResponseMessage): Promise<void> {
     if (this.shouldIgnoreProtocols.some((protocol) => message.isForProtocol(protocol))) {
@@ -18,6 +18,7 @@ export class StatusMessageListener implements AbstractMessageListener {
     }
 
     if (this.callback) {
+      this.logger.debug(`StatusMessageListener invoking callback for device ${this.duid} with message: ${JSON.stringify(message)}`);
       this.callback(NotifyMessageTypes.CloudMessage, message);
     }
   }

@@ -15,9 +15,10 @@ import { SimpleMessageHandler } from '../roborockCommunication/broadcast/handler
 export class DeviceManagementService {
   // State management
   messageClient: ClientRouter | undefined;
-  deviceNotify: DeviceNotifyCallback | undefined;
   ipMap = new Map<string, string>();
   localClientMap = new Map<string, Client>();
+
+  private deviceNotify: DeviceNotifyCallback | undefined;
 
   constructor(
     private readonly iotApiFactory: Factory<UserData, RoborockIoTApi>,
@@ -29,14 +30,19 @@ export class DeviceManagementService {
     private userdata?: UserData,
   ) {}
 
+  /** Set callback for device status updates. */
+  public setDeviceNotify(callback?: DeviceNotifyCallback): void {
+    this.deviceNotify = callback;
+  }
+
   /** Set IoT API instance after authentication. */
-  setAuthentication(userdata: UserData): void {
+  public setAuthentication(userdata: UserData): void {
     this.userdata = userdata;
     this.iotApi = this.iotApiFactory(this.logger, userdata);
   }
 
   /** Wait for connection with retry logic. Returns attempt count. */
-  async waitForConnection(checkConnection: () => boolean, maxAttempts = MAX_CONNECTION_ATTEMPTS, delayMs = CONNECTION_RETRY_DELAY_MS): Promise<number> {
+  public async waitForConnection(checkConnection: () => boolean, maxAttempts = MAX_CONNECTION_ATTEMPTS, delayMs = CONNECTION_RETRY_DELAY_MS): Promise<number> {
     let attempts = 0;
     while (!checkConnection() && attempts < maxAttempts) {
       await this.sleep(delayMs);
@@ -64,10 +70,12 @@ export class DeviceManagementService {
         throw new DeviceNotFoundError('No home found for user');
       }
 
-      const homeData = await this.iotApi.getHomev2(homeDetails.rrHomeId);
+      const homeData = await this.iotApi.getHomeWithProducts(homeDetails.rrHomeId);
       if (!homeData) {
         throw new DeviceError('Failed to retrieve home data', undefined, { homeId: homeDetails.rrHomeId });
       }
+
+      this.logger.debug(`Processing home data for home ID: ${homeDetails.rrHomeId}`);
 
       const products = new Map<string, string>();
       homeData.products.forEach((p) => products.set(p.id, p.model));
@@ -198,7 +206,7 @@ export class DeviceManagementService {
       this.messageClient = this.clientManager.get(username, userdata);
       this.messageClient.registerDevice(device.duid, device.localKey, device.pv, undefined);
 
-      this.messageClient.registerMessageListener(new StatusMessageListener(device.duid, this.deviceNotify?.bind(this)));
+      this.messageClient.registerMessageListener(new StatusMessageListener(device.duid, this.logger, this.deviceNotify?.bind(this)));
       this.messageClient.registerMessageListener(new PingResponseListener(device.duid));
 
       this.messageClient.connect();

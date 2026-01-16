@@ -219,7 +219,7 @@ describe('SyncMessageListener', () => {
 
     // Verify the log sequence
     expect(logger.debug).toHaveBeenCalledWith('Waiting for response to messageId: 24477, method: get_multi_maps_list');
-    expect(logger.debug).toHaveBeenCalledWith('Processing response with protocol 4');
+    expect(logger.debug).toHaveBeenCalledWith('Processing response with protocol general_request');
     expect(logger.debug).toHaveBeenCalledWith('Resolved messageId: 24477');
 
     // Verify the fix works - resolve should be called with the map data

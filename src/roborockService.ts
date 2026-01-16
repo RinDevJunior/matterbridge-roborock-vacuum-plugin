@@ -131,6 +131,7 @@ export default class RoborockService {
   public setDeviceNotify(callback: (messageSource: NotifyMessageTypes, homeData: unknown) => Promise<void>): void {
     this.deviceNotify = callback;
     this.pollingService.setDeviceNotify(callback);
+    this.deviceService.setDeviceNotify(callback);
   }
 
   /** Start polling device status via local network. */
