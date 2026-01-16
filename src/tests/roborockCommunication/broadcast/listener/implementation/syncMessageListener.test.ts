@@ -29,6 +29,7 @@ describe('SyncMessageListener', () => {
       contain: (proto: Protocol) => proto === Protocol.rpc_response,
       get: () => dps,
       isForProtocol: (proto: Protocol) => proto === Protocol.rpc_response,
+      isForProtocols: (protos: Protocol[]) => protos.includes(Protocol.rpc_response),
     } as any;
 
     await listener.onMessage(message);
@@ -48,6 +49,7 @@ describe('SyncMessageListener', () => {
       contain: (proto: Protocol) => proto === Protocol.rpc_response,
       get: () => dps,
       isForProtocol: (proto: Protocol) => proto === Protocol.rpc_response,
+      isForProtocols: (protos: Protocol[]) => protos.includes(Protocol.rpc_response),
     } as any;
 
     await listener.onMessage(message);
@@ -67,11 +69,12 @@ describe('SyncMessageListener', () => {
       contain: (proto: Protocol) => proto === Protocol.map_response,
       get: () => dps,
       isForProtocol: (proto: Protocol) => proto === Protocol.map_response,
+      isForProtocols: (protos: Protocol[]) => protos.includes(Protocol.map_response),
     } as any;
 
     await listener.onMessage(message);
 
-    expect(listener['pending'].has(messageId)).toBe(false);
+    expect(listener['pending'].has(messageId)).toBe(true);
   });
 
   it('should call reject after timeout if not resolved', () => {
@@ -97,6 +100,7 @@ describe('SyncMessageListener', () => {
       contain: (proto: Protocol) => proto === Protocol.rpc_response,
       get: () => dps,
       isForProtocol: (proto: Protocol) => proto === Protocol.rpc_response,
+      isForProtocols: (protos: Protocol[]) => protos.includes(Protocol.rpc_response),
     } as any;
 
     await listener.onMessage(message);
@@ -109,6 +113,7 @@ describe('SyncMessageListener', () => {
       contain: () => false,
       get: () => null,
       isForProtocol: () => false,
+      isForProtocols: () => false,
     } as any;
 
     await listener.onMessage(message);

@@ -10,6 +10,7 @@ import { StatusMessageListener } from '../roborockCommunication/broadcast/listen
 import { ProtocolVersion } from '../roborockCommunication/Zenum/protocolVersion.js';
 import { MessageRoutingService } from './index.js';
 import { SimpleMessageHandler } from '../roborockCommunication/broadcast/handler/simpleMessageHandler.js';
+import { MapResponseListener } from '../roborockCommunication/broadcast/listener/implementation/mapResponseListener.js';
 
 /** Handles device discovery, initialization, and lifecycle. */
 export class DeviceManagementService {
@@ -208,6 +209,7 @@ export class DeviceManagementService {
 
       this.messageClient.registerMessageListener(new StatusMessageListener(device.duid, this.logger, this.deviceNotify?.bind(this)));
       this.messageClient.registerMessageListener(new PingResponseListener(device.duid));
+      this.messageClient.registerMessageListener(new MapResponseListener(device.duid, this.logger));
 
       this.messageClient.connect();
 

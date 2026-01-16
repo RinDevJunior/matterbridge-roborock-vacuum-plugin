@@ -1,10 +1,12 @@
+import { AbstractMessageHandler, ResponseMessage } from '../../../../../roborockCommunication';
 import { SimpleMessageListener } from '../../../../../roborockCommunication/broadcast/listener/implementation/simpleMessageListener';
+import { HeaderMessage } from '../../../../../roborockCommunication/broadcast/model/headerMessage';
 import { Protocol } from '../../../../../roborockCommunication/broadcast/model/protocol';
 
 describe('SimpleMessageListener', () => {
   let listener: SimpleMessageListener;
   let handler: any;
-  let message: any;
+  let message: jest.Mocked<ResponseMessage>;
 
   beforeEach(() => {
     listener = new SimpleMessageListener();
@@ -15,21 +17,24 @@ describe('SimpleMessageListener', () => {
       onAdditionalProps: jest.fn().mockResolvedValue(undefined),
     };
     message = {
-      contain: jest.fn(),
       get: jest.fn(),
-    };
-    // compatibility: some tests/mocks use `contain`, implementation expects `isForProtocol`
-    message.isForProtocol = (proto: Protocol) => message.contain(proto);
+      isForProtocol: jest.fn(),
+      isForProtocols: jest.fn(),
+      isForStatus: jest.fn(),
+      duid: '',
+      body: undefined,
+      header: {} as HeaderMessage,
+    } satisfies jest.Mocked<ResponseMessage>;
     listener.registerListener(handler);
   });
 
   it('should do nothing if no handler registered', async () => {
     const l = new SimpleMessageListener();
-    await expect(l.onMessage(message)).resolves.toBeUndefined();
+    await expect(l.onMessage(message as ResponseMessage)).resolves.toBeUndefined();
   });
 
   it('should do nothing if message is rpc_response or map_response', async () => {
-    message.contain.mockImplementation((proto: Protocol) => proto === Protocol.rpc_response || proto === Protocol.map_response);
+    message.isForProtocols.mockImplementation((protos: Protocol[]) => protos.includes(Protocol.rpc_response) || protos.includes(Protocol.map_response)).mockReturnValue(true);
     await listener.onMessage(message);
     expect(handler.onStatusChanged).not.toHaveBeenCalled();
     expect(handler.onError).not.toHaveBeenCalled();
@@ -38,36 +43,36 @@ describe('SimpleMessageListener', () => {
   });
 
   it('should call onStatusChanged if status_update present', async () => {
-    message.contain.mockImplementation((proto: Protocol) => proto === Protocol.status_update);
+    message.isForProtocol.mockImplementation((proto: Protocol) => proto === Protocol.status_update).mockReturnValue(true);
     await listener.onMessage(message);
     expect(handler.onStatusChanged).toHaveBeenCalled();
   });
 
   it('should call onError if error present', async () => {
-    message.contain.mockImplementation((proto: Protocol) => proto === Protocol.error);
+    message.isForProtocol.mockImplementation((proto: Protocol) => proto === Protocol.error).mockReturnValue(true);
     message.get.mockReturnValue('42');
     await listener.onMessage(message);
     expect(handler.onError).toHaveBeenCalledWith(42);
   });
 
   it('should call onBatteryUpdate if battery present', async () => {
-    message.contain.mockImplementation((proto: Protocol) => proto === Protocol.battery);
+    message.isForProtocol.mockImplementation((proto: Protocol) => proto === Protocol.battery).mockReturnValue(true);
     message.get.mockReturnValue('77');
     await listener.onMessage(message);
     expect(handler.onBatteryUpdate).toHaveBeenCalledWith(77);
   });
 
   it('should call onAdditionalProps if additional_props present', async () => {
-    message.contain.mockImplementation((proto: Protocol) => proto === Protocol.additional_props);
+    message.isForProtocol.mockImplementation((proto: Protocol) => proto === Protocol.additional_props).mockReturnValue(true);
     message.get.mockReturnValue('99');
     await listener.onMessage(message);
     expect(handler.onAdditionalProps).toHaveBeenCalledWith(99);
   });
 
   it('should not call handler methods if they are undefined', async () => {
-    const handlerPartial = {};
-    listener.registerListener(handlerPartial as any);
-    message.contain.mockReturnValue(true);
+    const handlerPartial = {} as AbstractMessageHandler;
+    listener.registerListener(handlerPartial);
+    message.isForProtocol.mockReturnValue(true);
     await expect(listener.onMessage(message)).resolves.toBeUndefined();
   });
 });

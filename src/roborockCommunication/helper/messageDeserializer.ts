@@ -22,8 +22,9 @@ export class MessageDeserializer {
     Protocol.ping_request,
     Protocol.ping_response,
     Protocol.general_response,
-    Protocol.map_response,
   ];
+  private readonly ignoredProtocols: Protocol[] = [Protocol.map_response];
+
   private readonly messageProcessorFactory = new MessageProcessorFactory();
 
   constructor(context: MessageContext, logger: AnsiLogger) {
@@ -59,7 +60,7 @@ export class MessageDeserializer {
       throw new Error(`[${from}][MessageDeserializer] unknown protocol: ${header.version}`);
     }
 
-    if (this.protocolsWithoutPayload.includes(header.protocol)) {
+    if (this.protocolsWithoutPayload.includes(header.protocol) || this.ignoredProtocols.includes(header.protocol)) {
       return new ResponseMessage(duid, header);
     }
 

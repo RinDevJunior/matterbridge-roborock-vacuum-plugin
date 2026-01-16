@@ -15,9 +15,6 @@ import { INVALID_SEGMENT_ID } from '../constants/index.js';
 /**
  * Process local network messages and update robot attributes.
  * Handles run mode, battery level, clean mode settings, and area mapping.
- * @param data - Message result from local network communication
- * @param platform - Platform instance for logging and service access
- * @param duid - Device unique identifier (defaults to empty string)
  */
 export async function handleLocalMessage(data: CloudMessageResult, platform: RoborockMatterbridgePlatform, duid = ''): Promise<void> {
   const robot = platform.robots.get(duid);
@@ -30,12 +27,13 @@ export async function handleLocalMessage(data: CloudMessageResult, platform: Rob
   const currentMappedAreas = platform.roborockService?.getSupportedAreas(duid);
   const roomIndexMap = platform.roborockService?.getSupportedAreasIndexMap(duid);
   const roomMap = await getRoomMap(duid, platform);
-  platform.log.debug(`RoomMap: ${roomMap ? debugStringify(roomMap) : 'undefined'}`);
-  platform.log.debug(`Current mapped areas: ${currentMappedAreas ? debugStringify(currentMappedAreas) : 'undefined'}`);
   platform.log.debug(
-    `RoomIndexMap:
+    `Precondition Data:
+    Device: ${duid}
+    RoomMap: ${roomMap ? debugStringify(roomMap) : 'undefined'}
+    Current mapped areas: ${currentMappedAreas ? debugStringify(currentMappedAreas) : 'undefined'}
+    RoomIndexMap: ${roomIndexMap ? debugStringify(roomIndexMap) : 'undefined'}
     `,
-    roomIndexMap,
   );
 
   const deviceData = robot.device.data;
@@ -78,11 +76,14 @@ export async function handleLocalMessage(data: CloudMessageResult, platform: Rob
     target_segment_id: data.cleaning_info?.target_segment_id,
   };
 
-  platform.log.debug(`data: ${debugStringify(data)}`);
-  platform.log.debug(`currentCleanModeSetting: ${debugStringify(currentCleanModeSetting)}`);
+  platform.log.debug(
+    `Message: ${debugStringify(data)}
+     Current Clean Mode Setting: ${debugStringify(currentCleanModeSetting)}`,
+  );
 
   if (currentCleanModeSetting.mopRoute && currentCleanModeSetting.suctionPower && currentCleanModeSetting.waterFlow) {
-    const currentCleanMode = getCurrentCleanModeFunc(deviceData.model, platform.enableExperimentalFeature?.advancedFeature?.forceRunAtDefault ?? false)(currentCleanModeSetting);
+    const forceRunAtDefault = platform.enableExperimentalFeature?.advancedFeature?.forceRunAtDefault ?? false;
+    const currentCleanMode = getCurrentCleanModeFunc(deviceData.model, forceRunAtDefault)(currentCleanModeSetting);
     platform.log.debug(`Current clean mode: ${currentCleanMode}`);
 
     if (currentCleanMode) {
@@ -96,9 +97,6 @@ export async function handleLocalMessage(data: CloudMessageResult, platform: Rob
 /**
  * Trigger docking station status error if conditions are met.
  * Checks current operational state and updates to Error state if appropriate.
- * @param robot - Robot vacuum cleaner instance
- * @param platform - Platform instance for logging
- * @returns True if error was triggered, false otherwise
  */
 export function triggerDssError(robot: RoborockVacuumCleaner, platform: RoborockMatterbridgePlatform): boolean {
   const currentOperationState = robot.getAttribute(RvcOperationalState.Cluster.id, 'operationalState') as RvcOperationalState.OperationalState;
@@ -124,10 +122,6 @@ async function processAdditionalProps(robot: RoborockVacuumCleaner, message: Clo
 
 /**
  * Get docking station status from message and update robot state.
- * @param message - Cloud message result containing docking station status
- * @param duid - Device unique identifier
- * @param platform - Platform instance
- * @returns Error operational state if docking station has error, undefined otherwise
  */
 function getDssStatus(message: CloudMessageResult, duid: string, platform: RoborockMatterbridgePlatform): RvcOperationalState.OperationalState | undefined {
   const robot = platform.robots.get(duid);
@@ -156,9 +150,6 @@ function getDssStatus(message: CloudMessageResult, duid: string, platform: Robor
 
 /**
  * Map room segments to service areas when multiple map feature is disabled.
- * @param platform - Platform instance
- * @param duid - Device unique identifier
- * @param data - Cloud message result with cleaning info
  */
 async function mapRoomsToAreasFeatureOff(platform: RoborockMatterbridgePlatform, duid: string, data: CloudMessageResult): Promise<void> {
   const currentMappedAreas = platform.roborockService?.getSupportedAreas(duid);
@@ -169,6 +160,7 @@ async function mapRoomsToAreasFeatureOff(platform: RoborockMatterbridgePlatform,
   }
 
   if (!data.cleaning_info) {
+    platform.log.debug('No cleaning_info found, skipping area mapping.');
     return;
   }
 
@@ -176,12 +168,24 @@ async function mapRoomsToAreasFeatureOff(platform: RoborockMatterbridgePlatform,
   const source_target_segment_id = data.cleaning_info.target_segment_id ?? INVALID_SEGMENT_ID; // -1
   const segment_id = source_segment_id !== INVALID_SEGMENT_ID ? source_segment_id : source_target_segment_id; // 4
   const mappedArea = currentMappedAreas?.find((x) => x.areaId == segment_id);
+
+  if (!mappedArea) {
+    platform.log.debug(
+      `No mapped area found, skipping area mapping.
+        source_segment_id: ${source_segment_id}, 
+        source_target_segment_id: ${source_target_segment_id}, 
+        segment_id: ${segment_id}, 
+        mappedArea: ${mappedArea}`,
+    );
+    return;
+  }
+
   platform.log.debug(
-    `mappedArea:
-    source_segment_id: ${source_segment_id},
-    source_target_segment_id: ${source_target_segment_id},
-    segment_id: ${segment_id},
-    result: ${mappedArea ? debugStringify(mappedArea) : 'undefined'}
+    `Mapped area found:
+      source_segment_id: ${source_segment_id},
+      source_target_segment_id: ${source_target_segment_id},
+      segment_id: ${segment_id},
+      result: ${debugStringify(mappedArea)}
     `,
   );
   if (segment_id !== INVALID_SEGMENT_ID && mappedArea) {
@@ -195,9 +199,6 @@ async function mapRoomsToAreasFeatureOff(platform: RoborockMatterbridgePlatform,
 
 /**
  * Map room segments to service areas when multiple map feature is enabled.
- * @param platform - Platform instance
- * @param duid - Device unique identifier
- * @param data - Cloud message result with cleaning info
  */
 async function mapRoomsToAreasFeatureOn(platform: RoborockMatterbridgePlatform, duid: string, data: CloudMessageResult): Promise<void> {
   const robot = platform.robots.get(duid);
@@ -207,6 +208,7 @@ async function mapRoomsToAreasFeatureOn(platform: RoborockMatterbridgePlatform, 
   }
 
   if (!data.cleaning_info) {
+    platform.log.debug('No cleaning_info found, skipping area mapping.');
     return;
   }
 
@@ -217,23 +219,26 @@ async function mapRoomsToAreasFeatureOn(platform: RoborockMatterbridgePlatform, 
   const segment_id = source_segment_id !== INVALID_SEGMENT_ID ? source_segment_id : source_target_segment_id; // 4
   const areaId = roomIndexMap?.getAreaId(segment_id, 0);
 
-  if (!areaId) {
-    platform.log.debug(`
-      source_segment_id: ${source_segment_id}, 
-      source_target_segment_id: ${source_target_segment_id}, 
-      segment_id: ${segment_id}, 
-      areaId: ${areaId}`);
+  const mappedArea = currentMappedAreas?.find((x) => x.areaId == areaId);
+
+  if (!areaId || areaId === INVALID_SEGMENT_ID || !mappedArea) {
+    platform.log.debug(
+      `No areaId found, skipping area mapping.
+        source_segment_id: ${source_segment_id}, 
+        source_target_segment_id: ${source_target_segment_id}, 
+        segment_id: ${segment_id}, 
+        areaId: ${areaId}`,
+    );
     return;
   }
 
-  const mappedArea = currentMappedAreas?.find((x) => x.areaId == areaId);
   platform.log.debug(
-    `mappedArea:
-    source_segment_id: ${source_segment_id},
-    source_target_segment_id: ${source_target_segment_id},
-    segment_id: ${segment_id},
-    areaId: ${areaId},
-    result: ${mappedArea ? debugStringify(mappedArea) : 'undefined'}
+    `Mapped area found:
+      source_segment_id: ${source_segment_id},
+      source_target_segment_id: ${source_target_segment_id},
+      segment_id: ${segment_id},
+      areaId: ${areaId},
+      result: ${debugStringify(mappedArea)}
     `,
   );
 

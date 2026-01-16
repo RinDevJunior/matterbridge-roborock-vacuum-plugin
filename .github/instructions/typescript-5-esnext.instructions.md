@@ -30,6 +30,7 @@ applyTo: '**/*.ts'
 - Test files must be located in `src/test` or alongside implementation files as per project conventions.
 
 ## Coding Practices
+
 - Apply TDD: write tests before implementation when feasible for fixes or features.
 - Favor composition over inheritance; use interfaces and types for contracts.
 - Add `public`, `private`, or `protected` access modifiers explicitly.

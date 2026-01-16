@@ -225,4 +225,32 @@ describe('PlatformRunner.getRoomMapFromDevice', () => {
     expect(result1).toBeInstanceOf(RoomMap);
     expect(result1.rooms.length).toEqual(4);
   });
+
+  it('handles undefined tag in room data from getMapInformation', async () => {
+    const device = {
+      duid: 'duid1',
+      rooms: [{ id: 16, name: 'Garage' }],
+    };
+    const mapInfo = {
+      allRooms: [
+        {
+          id: 16,
+          iot_name_id: '12231095',
+          tag: undefined, // Simulate API response with undefined tag
+          displayName: 'Garage',
+          mapId: 0,
+        },
+      ],
+      maps: [],
+    };
+
+    platform.roborockService.getRoomMappings.mockResolvedValue(undefined);
+    platform.roborockService.getMapInformation.mockResolvedValue(mapInfo);
+
+    const result = await getRoomMapFromDevice(device as any, platform);
+
+    expect(result).toBeInstanceOf(RoomMap);
+    expect(result.rooms.length).toEqual(1);
+    expect(result.rooms[0].alternativeId).toEqual('16'); // Should be just the id when tag is undefined
+  });
 });
