@@ -1,6 +1,6 @@
 import { MaybePromise } from 'matterbridge/matter';
 import { AnsiLogger, debugStringify } from 'matterbridge/logger';
-import { BehaviorDeviceGeneric, BehaviorRoborock, DeviceCommands } from '../../BehaviorDeviceGeneric.js';
+import { BehaviorDeviceGeneric, BehaviorRoborock, CommandNames, DeviceCommands } from '../../BehaviorDeviceGeneric.js';
 import RoborockService from '../../../roborockService.js';
 import { CleanModeSettings } from '../../../model/ExperimentalFeatureSetting.js';
 
@@ -108,6 +108,15 @@ export const CleanSetting: Record<number, CleanModeSetting> = {
   [69]: { suctionPower: VacuumSuctionPower.Balanced, waterFlow: MopWaterFlow.Off, distance_off: 0, mopRoute: MopRoute.Fast }, // 'VacuumQuick'
 };
 
+/**
+ * Register command handlers for default device behavior.
+ * Sets up handlers for mode changes, area selection, pause/resume, and navigation.
+ * @param duid - Device unique identifier
+ * @param handler - Behavior handler to register commands on
+ * @param logger - Logger instance for command execution logging
+ * @param roborockService - Service for device communication
+ * @param cleanModeSettings - Optional custom clean mode configuration
+ */
 export function setDefaultCommandHandler(
   duid: string,
   handler: BehaviorDeviceGeneric<DefaultEndpointCommands>,
@@ -115,7 +124,7 @@ export function setDefaultCommandHandler(
   roborockService: RoborockService,
   cleanModeSettings: CleanModeSettings | undefined,
 ): void {
-  handler.setCommandHandler('changeToMode', async (newMode: number) => {
+  handler.setCommandHandler(CommandNames.CHANGE_TO_MODE, async (newMode: number) => {
     const activity = RvcRunMode[newMode] || RvcCleanMode[newMode];
     switch (activity) {
       case 'Cleaning': {
@@ -173,38 +182,50 @@ export function setDefaultCommandHandler(
     }
   });
 
-  handler.setCommandHandler('selectAreas', async (newAreas: number[]) => {
+  handler.setCommandHandler(CommandNames.SELECT_AREAS, async (newAreas: number[]) => {
     logger.notice(`DefaultBehavior-selectAreas: ${newAreas}`);
     roborockService.setSelectedAreas(duid, newAreas ?? []);
   });
 
-  handler.setCommandHandler('pause', async () => {
+  handler.setCommandHandler(CommandNames.PAUSE, async () => {
     logger.notice('DefaultBehavior-Pause');
     await roborockService.pauseClean(duid);
   });
 
-  handler.setCommandHandler('resume', async () => {
+  handler.setCommandHandler(CommandNames.RESUME, async () => {
     logger.notice('DefaultBehavior-Resume');
     await roborockService.resumeClean(duid);
   });
 
-  handler.setCommandHandler('goHome', async () => {
+  handler.setCommandHandler(CommandNames.GO_HOME, async () => {
     logger.notice('DefaultBehavior-GoHome');
     await roborockService.stopAndGoHome(duid);
   });
 
-  handler.setCommandHandler('playSoundToLocate', async () => {
+  handler.setCommandHandler(CommandNames.PLAY_SOUND_TO_LOCATE, async () => {
     logger.notice('DefaultBehavior-playSoundToLocate');
     await roborockService.playSoundToLocate(duid);
   });
 }
 
+const DISTANCE_OFF_BASE = 210;
+const DISTANCE_OFF_MULTIPLIER = 5;
+const DISTANCE_OFF_DEFAULT = 25;
+
+/**
+ * Get clean mode settings from activity name and user configuration.
+ * Maps user-friendly activity names to device-specific power/water/route settings.
+ * @param activity - Activity name (e.g., 'Mop: Default', 'Vacuum: Default')
+ * @param cleanModeSettings - Optional user-configured clean mode settings
+ * @returns Clean mode setting configuration or undefined if activity not recognized
+ */
 export const getSettingFromCleanMode = (activity: string, cleanModeSettings?: CleanModeSettings): CleanModeSetting | undefined => {
   switch (activity) {
     case 'Mop: Default': {
       const mopSetting = cleanModeSettings?.mopping;
       const waterFlow = MopWaterFlow[mopSetting?.waterFlowMode as keyof typeof MopWaterFlow] ?? MopWaterFlow.Medium;
-      const distance_off = waterFlow == MopWaterFlow.CustomizeWithDistanceOff ? 210 - 5 * (mopSetting?.distanceOff ?? 25) : 0;
+      const distance_off =
+        waterFlow === MopWaterFlow.CustomizeWithDistanceOff ? DISTANCE_OFF_BASE - DISTANCE_OFF_MULTIPLIER * (mopSetting?.distanceOff ?? DISTANCE_OFF_DEFAULT) : 0;
       return {
         suctionPower: VacuumSuctionPower.Off,
         waterFlow,
@@ -224,7 +245,8 @@ export const getSettingFromCleanMode = (activity: string, cleanModeSettings?: Cl
     case 'Mop & Vacuum: Default': {
       const vacmopSetting = cleanModeSettings?.vacmop;
       const waterFlow = MopWaterFlow[vacmopSetting?.waterFlowMode as keyof typeof MopWaterFlow] ?? MopWaterFlow.Medium;
-      const distance_off = waterFlow == MopWaterFlow.CustomizeWithDistanceOff ? 210 - 5 * (vacmopSetting?.distanceOff ?? 25) : 0;
+      const distance_off =
+        waterFlow === MopWaterFlow.CustomizeWithDistanceOff ? DISTANCE_OFF_BASE - DISTANCE_OFF_MULTIPLIER * (vacmopSetting?.distanceOff ?? DISTANCE_OFF_DEFAULT) : 0;
       return {
         suctionPower: VacuumSuctionPower[vacmopSetting?.fanMode as keyof typeof VacuumSuctionPower] ?? VacuumSuctionPower.Balanced,
         waterFlow,

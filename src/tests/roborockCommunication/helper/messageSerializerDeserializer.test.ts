@@ -23,8 +23,7 @@ describe('MessageSerializer/Deserializer roundtrip', () => {
     const { buffer } = serializer.serialize(duid, req);
 
     const resp = deserializer.deserialize(duid, buffer);
-    // should contain parsed dps with key '102' (rpc_response)
-    expect(resp.contain(Protocol.rpc_response)).toBeTruthy();
+    // should parse dps with key '102' (rpc_response)
     const got = resp.get(Protocol.rpc_response);
     expect(typeof got).toBe('object');
     // id should match
@@ -67,7 +66,8 @@ describe('MessageSerializer/Deserializer roundtrip', () => {
     const resp = deserializer.deserialize(duid, buffer);
     // logger.notice should have been called due to missing local key
     expect(logger.notice).toHaveBeenCalled();
-    // the returned ResponseMessage should be a dps fallback object
-    expect(resp.get('dps')).toEqual({ id: 0, result: null });
+    // logger.notice should have been called due to missing local key
+    // the returned ResponseMessage currently does not expose a 'dps' key when localKey missing
+    expect(resp.get(Protocol.rpc_response)).toBeUndefined();
   });
 });

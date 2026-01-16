@@ -2,7 +2,7 @@ import { handleLocalMessage } from '../../runtimes/handleLocalMessage';
 import { OperationStatusCode } from '../../roborockCommunication/Zenum/operationStatusCode';
 import { ServiceArea, PowerSource } from 'matterbridge/matter/clusters';
 import { cloudMessageResult1, cloudMessageResult2, cloudMessageResult3, mapInfo } from '../testData/mockData';
-import { RoomIndexMap } from '../../model/roomIndexMap';
+import { RoomIndexMap } from '../../model/RoomIndexMap.js';
 
 // Mocks
 const mockUpdateAttribute = jest.fn();
@@ -57,7 +57,7 @@ describe('handleLocalMessage -- FF ON', () => {
   it('logs error if robot not found', async () => {
     const platform = getMockPlatform(false);
     await handleLocalMessage({ state: 0 } as any, platform as any, 'duid1');
-    expect(mockLog.error).toHaveBeenCalledWith('Robot with DUID duid1 not found.');
+    expect(mockLog.error).toHaveBeenCalledWith('Robot not found: duid1');
   });
 
   it('updates selectedAreas on Idle', async () => {
@@ -127,7 +127,7 @@ describe('handleLocalMessage -- FF ON', () => {
   it('returns early when robot not found in mapRoomsToAreasFeatureOn', async () => {
     const platform = getMockPlatform(false);
     await handleLocalMessage({ state: 5, cleaning_info: { segment_id: 1 } } as any, platform as any, 'duid1');
-    expect(mockLog.error).toHaveBeenCalledWith('Robot with DUID duid1 not found.');
+    expect(mockLog.error).toHaveBeenCalledWith('Robot not found: duid1');
   });
 
   it('returns early when cleaning_info is missing in mapRoomsToAreasFeatureOn', async () => {
@@ -231,7 +231,7 @@ describe('handleLocalMessage -- FF OFF', () => {
   it('logs error if robot not found', async () => {
     const platform = getMockPlatform(false);
     await handleLocalMessage({ state: 0 } as any, platform as any, 'duid1');
-    expect(mockLog.error).toHaveBeenCalledWith('Robot with DUID duid1 not found.');
+    expect(mockLog.error).toHaveBeenCalledWith('Robot not found: duid1');
   });
 
   it('updates selectedAreas on Idle', async () => {
@@ -306,7 +306,7 @@ describe('handleLocalMessage -- FF OFF', () => {
   it('returns early when robot not found in mapRoomsToAreasFeatureOff', async () => {
     const platform = getMockPlatform(false);
     await handleLocalMessage({ state: 5, cleaning_info: { segment_id: 1 } } as any, platform as any, 'duid1');
-    expect(mockLog.error).toHaveBeenCalledWith('Robot with DUID duid1 not found.');
+    expect(mockLog.error).toHaveBeenCalledWith('Robot not found: duid1');
   });
 
   it('returns early when cleaning_info is missing in mapRoomsToAreasFeatureOff', async () => {
@@ -327,13 +327,13 @@ describe('handleLocalMessage -- FF OFF', () => {
   it('handles robot not found when getting dss status', async () => {
     const platform = getMockPlatform(false);
     await handleLocalMessage({ state: 5, dss: 1 } as any, platform as any, 'duid1');
-    expect(mockLog.error).toHaveBeenCalledWith('Robot with DUID duid1 not found.');
+    expect(mockLog.error).toHaveBeenCalledWith('Robot not found: duid1');
   });
 
   it('handles robot not found in mapRoomsToAreasFeatureOff', async () => {
     const platform = getMockPlatform(false);
     await handleLocalMessage({ state: 5, cleaning_info: { segment_id: 1 } } as any, platform as any, 'duid1');
-    expect(mockLog.error).toHaveBeenCalledWith('Robot with DUID duid1 not found.');
+    expect(mockLog.error).toHaveBeenCalledWith('Robot not found: duid1');
   });
 
   it('handles robot not found in mapRoomsToAreasFeatureOn', async () => {
@@ -343,7 +343,7 @@ describe('handleLocalMessage -- FF OFF', () => {
       advancedFeature: { enableMultipleMap: true },
     };
     await handleLocalMessage({ state: 5, cleaning_info: { segment_id: 1 } } as any, platform as any, 'duid1');
-    expect(mockLog.error).toHaveBeenCalledWith('Robot with DUID duid1 not found.');
+    expect(mockLog.error).toHaveBeenCalledWith('Robot not found: duid1');
   });
 
   it('handles missing cleaning_info in mapRoomsToAreasFeatureOn', async () => {

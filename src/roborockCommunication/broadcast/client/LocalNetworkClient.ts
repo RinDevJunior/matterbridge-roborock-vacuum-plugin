@@ -7,16 +7,18 @@ import { AbstractClient } from '../abstractClient.js';
 import { MessageContext } from '../model/messageContext.js';
 import { Sequence } from '../../helper/sequence.js';
 import { ChunkBuffer } from '../../helper/chunkBuffer.js';
+import { PingResponseListener } from '../listener/implementation/pingResponseListener.js';
+import { ProtocolVersion } from '../../Zenum/protocolVersion.js';
+import { ResponseMessage } from '../../index.js';
 
 export class LocalNetworkClient extends AbstractClient {
   protected override clientName = 'LocalNetworkClient';
-  protected override shouldReconnect = true;
 
   private socket: Socket | undefined = undefined;
   private buffer: ChunkBuffer = new ChunkBuffer();
   private messageIdSeq: Sequence;
   private pingInterval?: NodeJS.Timeout;
-  private keepConnectionAliveInterval: NodeJS.Timeout | undefined = undefined;
+  private pingResponseListener: PingResponseListener;
 
   public duid: string;
   public ip: string;
@@ -27,14 +29,24 @@ export class LocalNetworkClient extends AbstractClient {
     this.ip = ip;
     this.messageIdSeq = new Sequence(100000, 999999);
 
-    this.initializeConnectionStateListener();
+    this.pingResponseListener = new PingResponseListener(this.duid);
+    this.messageListeners.register(this.pingResponseListener);
   }
 
-  public connect(): void {
+  public isReady(): boolean {
+    return this.connected;
+  }
+
+  public override isConnected(): boolean {
+    return !!this.socket && this.socket.readyState === 'open' && !this.socket.destroyed;
+  }
+
+  public override connect(): void {
     if (this.socket) {
       return; // Already connected
     }
 
+    super.connect();
     this.socket = new Socket();
 
     // Socket event listeners
@@ -47,16 +59,14 @@ export class LocalNetworkClient extends AbstractClient {
     // Data event listener
     this.socket.on('data', this.onMessage.bind(this));
     this.socket.connect(58867, this.ip);
-
-    this.keepConnectionAlive();
   }
 
-  public async disconnect(): Promise<void> {
+  public override async disconnect(): Promise<void> {
     if (!this.socket) {
-      return;
+      return Promise.resolve();
     }
 
-    this.isInDisconnectingStep = true;
+    await super.disconnect();
 
     if (this.pingInterval) {
       clearInterval(this.pingInterval);
@@ -66,32 +76,35 @@ export class LocalNetworkClient extends AbstractClient {
   }
 
   public async send(duid: string, request: RequestMessage): Promise<void> {
-    if (!this.socket || !this.connected) {
+    if (!this.socket || !this.isConnected()) {
       this.logger.error(`${duid}: socket is not online, , ${debugStringify(request)}`);
       return;
     }
 
-    const localRequest = request.toLocalRequest();
+    if (!request.isForProtocol(Protocol.hello_request) && !this.connected) {
+      this.logger.error(`${duid}: socket is not connected, cannot send request, ${debugStringify(request)}`);
+      return;
+    }
+
+    const protocolVersion = request.version ?? this.context.getProtocolVersion(duid);
+    const localRequest = request.toLocalRequest(protocolVersion);
     const message = this.serializer.serialize(duid, localRequest);
 
-    this.logger.debug(`sending message ${message.messageId}, protocol:${localRequest.protocol}, method:${localRequest.method}, secure:${request.secure} to ${duid}`);
+    this.logger.debug(
+      `[LocalNetworkClient] sending message ${message.messageId}, protocol version: ${localRequest.version}, protocol:${Protocol[localRequest.protocol]}, method:${localRequest.method}, secure:${request.secure} to ${duid}`,
+    );
     this.socket.write(this.wrapWithLengthData(message.buffer));
+    this.logger.debug(`[LocalNetworkClient] sent message ${message.messageId} to ${duid}`);
   }
 
   private async onConnect(): Promise<void> {
     this.logger.debug(` [LocalNetworkClient]: ${this.duid} connected to ${this.ip}`);
     this.logger.debug(` [LocalNetworkClient]: ${this.duid} socket writable: ${this.socket?.writable}, readable: ${this.socket?.readable}`);
-    this.connected = true;
-    this.retryCount = 0;
-
-    await this.sendHelloMessage();
-    this.pingInterval = setInterval(this.sendPingRequest.bind(this), 5000);
-    await this.connectionListeners.onConnected(this.duid);
+    await this.trySendHelloRequest();
   }
 
   private async onDisconnect(hadError: boolean): Promise<void> {
     this.logger.info(` [LocalNetworkClient]: ${this.duid} socket disconnected. Had error: ${hadError}`);
-    this.connected = false;
 
     if (this.socket) {
       this.socket.destroy();
@@ -100,12 +113,24 @@ export class LocalNetworkClient extends AbstractClient {
     if (this.pingInterval) {
       clearInterval(this.pingInterval);
     }
-    await this.connectionListeners.onDisconnected(this.duid, 'Socket disconnected. Had no error.');
+    if (!this.connected) {
+      await this.connectionListeners.onDisconnected(this.duid, 'Socket disconnected. Had no error.');
+    }
+    this.connected = false;
   }
 
   private async onError(error: Error): Promise<void> {
     this.logger.error(` [LocalNetworkClient]: Socket error for ${this.duid}: ${error.message}`);
-    await this.connectionListeners.onError(this.duid, error.message);
+
+    if (this.socket) {
+      this.socket.destroy();
+      this.socket = undefined;
+    }
+
+    if (!this.connected) {
+      await this.connectionListeners.onDisconnected(this.duid, `Socket error: ${error.message}`);
+    }
+    this.connected = false;
   }
 
   private async onTimeout(): Promise<void> {
@@ -122,7 +147,7 @@ export class LocalNetworkClient extends AbstractClient {
     }
 
     if (!message || message.length == 0) {
-      this.logger.debug('LocalNetworkClient received empty message from socket.');
+      this.logger.debug('[LocalNetworkClient] received empty message from socket.');
       return;
     }
 
@@ -145,16 +170,16 @@ export class LocalNetworkClient extends AbstractClient {
 
         try {
           const currentBuffer = receivedBuffer.subarray(offset + 4, offset + segmentLength + 4);
-          const response = this.deserializer.deserialize(this.duid, currentBuffer);
+          const response = this.deserializer.deserialize(this.duid, currentBuffer, '[LocalNetworkClient]');
           await this.messageListeners.onMessage(response);
         } catch (error) {
-          this.logger.error('LocalNetworkClient: unable to process message with error: ' + error);
-          // unable to process message: TypeError: Cannot read properties of undefined (reading 'length')
+          const errMsg = error instanceof Error ? (error.stack ?? error.message) : String(error);
+          this.logger.error(`[LocalNetworkClient]: unable to process message with error: ${errMsg}`);
         }
         offset += 4 + segmentLength;
       }
     } catch (error) {
-      this.logger.error('LocalNetworkClient: read socket buffer error: ' + error);
+      this.logger.error('[LocalNetworkClient]: read socket buffer error: ' + error);
     }
   }
 
@@ -181,38 +206,53 @@ export class LocalNetworkClient extends AbstractClient {
     return Buffer.concat([lengthBuffer, buffer]);
   }
 
-  private async sendHelloMessage(): Promise<void> {
+  private async trySendHelloRequest(): Promise<void> {
+    const isV1 = await this.sendHelloMessage(ProtocolVersion.V1);
+    if (!isV1) {
+      await this.sendHelloMessage(ProtocolVersion.L01);
+    }
+  }
+
+  private async sendHelloMessage(version: ProtocolVersion): Promise<boolean> {
     const request = new RequestMessage({
+      version: version,
       protocol: Protocol.hello_request,
       messageId: this.messageIdSeq.next(),
       nonce: this.context.nonce,
     });
 
     await this.send(this.duid, request);
+
+    try {
+      const response = await this.pingResponseListener.waitFor();
+      await this.processHelloResponse(response);
+      return true;
+    } catch (error) {
+      this.logger.error(` [LocalNetworkClient]: ${this.duid} failed to receive hello response: ${error}`);
+      return false;
+    }
+  }
+
+  private async processHelloResponse(response: ResponseMessage): Promise<void> {
+    this.logger.info(` [LocalNetworkClient]: ${this.duid} received hello response: ${debugStringify(response)}`);
+
+    if (response.header === undefined) {
+      this.logger.error(` [LocalNetworkClient]: ${this.duid} hello response missing header.`);
+      return;
+    }
+
+    this.context.updateNonce(this.duid, response.header.nonce);
+    this.context.updateProtocolVersion(this.duid, response.header.version);
+    this.connected = true;
+    this.pingInterval = setInterval(this.sendPingRequest.bind(this), 5000);
   }
 
   private async sendPingRequest(): Promise<void> {
     const request = new RequestMessage({
+      version: this.context.getProtocolVersion(this.duid),
       protocol: Protocol.ping_request,
       messageId: this.messageIdSeq.next(),
     });
     await this.send(this.duid, request);
-  }
-
-  private keepConnectionAlive(): void {
-    if (this.keepConnectionAliveInterval) {
-      clearTimeout(this.keepConnectionAliveInterval);
-      this.keepConnectionAliveInterval.unref();
-    }
-
-    this.keepConnectionAliveInterval = setInterval(
-      () => {
-        if (this.socket === undefined || !this.connected || !this.socket.writable || this.socket.readable) {
-          this.logger.debug(` [LocalNetworkClient]: ${this.duid} socket is not writable or readable, reconnecting...`);
-          this.connect();
-        }
-      },
-      60 * 60 * 1000,
-    );
   }
 }

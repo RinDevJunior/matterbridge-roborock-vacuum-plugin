@@ -1,8 +1,9 @@
 import { Protocol } from '../../model/protocol.js';
 import { ResponseMessage } from '../../model/responseMessage.js';
 import { AbstractMessageListener } from '../abstractMessageListener.js';
+import { HELLO_RESPONSE_TIMEOUT_MS } from '../../../../constants/index.js';
 
-export class GeneralSyncMessageListener implements AbstractMessageListener {
+export class PingResponseListener implements AbstractMessageListener {
   private readonly duid: string;
 
   private handler?: (data: ResponseMessage) => void;
@@ -16,14 +17,13 @@ export class GeneralSyncMessageListener implements AbstractMessageListener {
     return new Promise<ResponseMessage>((resolve, reject) => {
       this.handler = resolve;
       this.timer = setTimeout(() => {
-        reject('no ping response received for ' + this.duid + ' within ' + 30 + 'second');
-      }, 30 * 1000);
+        reject('no ping response for ' + this.duid + ' within ' + HELLO_RESPONSE_TIMEOUT_MS / 1000 + ' second');
+      }, HELLO_RESPONSE_TIMEOUT_MS);
     });
   }
 
   public async onMessage(message: ResponseMessage): Promise<void> {
-    if (message.contain(Protocol.hello_response)) {
-      // trigger our waiters that we have received the response.
+    if (message.isForProtocol(Protocol.hello_response)) {
       if (this.handler) {
         this.handler(message);
       }

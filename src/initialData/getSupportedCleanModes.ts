@@ -1,6 +1,6 @@
 import { RvcCleanMode } from 'matterbridge/matter/clusters';
-import { getSupportedCleanModesSmart } from '../behaviors/roborock.vacuum/smart/initalData.js';
-import { getDefaultSupportedCleanModes } from '../behaviors/roborock.vacuum/default/initalData.js';
+import { getSupportedCleanModesSmart } from '../behaviors/roborock.vacuum/smart/initialData.js';
+import { getDefaultSupportedCleanModes } from '../behaviors/roborock.vacuum/default/initialData.js';
 import { DeviceModel } from '../roborockCommunication/Zmodel/deviceModel.js';
 import { ExperimentalFeatureSetting } from '../model/ExperimentalFeatureSetting.js';
 

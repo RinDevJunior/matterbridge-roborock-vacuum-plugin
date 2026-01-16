@@ -20,7 +20,6 @@ class TestClient extends AbstractClient {
     this.connected = false;
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   async send(_duid: string, _request: RequestMessage): Promise<void> {
     // Simulating send
   }
@@ -61,7 +60,6 @@ describe('AbstractClient', () => {
 
     // Spy on waitFor to manually resolve
     const listener = (client as any).syncMessageListener;
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     listener.waitFor = jest.fn((_msgId: number, _req: RequestMessage, resolve: any, _reject: any) => {
       // Immediately resolve without timeout
       resolve(mockResponse);

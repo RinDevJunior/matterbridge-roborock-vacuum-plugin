@@ -5,11 +5,11 @@ import { AnsiLogger, debugStringify, LogLevel } from 'matterbridge/logger';
 import { isValidNumber, isValidString } from 'matterbridge/utils';
 import RoborockService from './roborockService.js';
 import { PLUGIN_NAME } from './settings.js';
-import ClientManager from './clientManager.js';
+import ClientManager from './services/clientManager.js';
 import { getRoomMapFromDevice, isSupportedDevice } from './helper.js';
 import { PlatformRunner } from './platformRunner.js';
 import { RoborockVacuumCleaner } from './rvc.js';
-import { configurateBehavior } from './behaviorFactory.js';
+import { configureBehavior } from './behaviorFactory.js';
 import { NotifyMessageTypes } from './notifyMessageTypes.js';
 import { Device, RoborockAuthenticateApi, RoborockIoTApi, UserData, AuthenticateFlowState } from './roborockCommunication/index.js';
 import { getSupportedAreas, getSupportedScenes } from './initialData/index.js';
@@ -20,6 +20,7 @@ import Path from 'node:path';
 import { Room } from './roborockCommunication/Zmodel/room.js';
 import { getBaseUrl } from './initialData/regionUrls.js';
 import { UINT16_MAX, UINT32_MAX } from 'matterbridge/matter';
+import { VERIFICATION_CODE_RATE_LIMIT_MS, DEFAULT_REFRESH_INTERVAL_SECONDS, REFRESH_INTERVAL_BUFFER_MS, UNREGISTER_DEVICES_DELAY_MS } from './constants/index.js';
 
 export type RoborockPluginPlatformConfig = PlatformConfig & {
   whiteList: string[];
@@ -35,6 +36,10 @@ export default function initializePlugin(matterbridge: PlatformMatterbridge, log
   return new RoborockMatterbridgePlatform(matterbridge, log, config as RoborockPluginPlatformConfig);
 }
 
+/**
+ * Matterbridge platform for Roborock vacuum cleaners.
+ * Handles device discovery, authentication, and Matter protocol integration.
+ */
 export class RoborockMatterbridgePlatform extends MatterbridgeDynamicPlatform {
   robots: Map<string, RoborockVacuumCleaner> = new Map<string, RoborockVacuumCleaner>();
   rvcInterval: NodeJS.Timeout | undefined;
@@ -184,43 +189,36 @@ export class RoborockMatterbridgePlatform extends MatterbridgeDynamicPlatform {
     if (!this.enableExperimentalFeature?.enableExperimentalFeature || !this.enableExperimentalFeature?.advancedFeature?.enableServerMode) {
       vacuums = [vacuums[0]]; // If server mode is not enabled, only use the first vacuum
     }
-    // else {
-    //   const cloned = JSON.parse(JSON.stringify(vacuums[0])) as Device;
-    //   cloned.name = `${cloned.name} Clone`;
-    //   cloned.serialNumber = `${cloned.serialNumber}-clone`;
-
-    //   vacuums = [...vacuums, cloned]; // If server mode is enabled, add the first vacuum again to ensure it is always included
-    // }
-
-    // this.log.error('Initializing - vacuums: ', debugStringify(vacuums));
 
     for (const vacuum of vacuums) {
       await this.roborockService.initializeMessageClient(username, vacuum, userData);
       this.devices.set(vacuum.serialNumber, vacuum);
     }
 
-    await this.onConfigurateDevice();
+    await this.onConfigureDevice();
     this.log.notice('onStart finished');
   }
 
   override async onConfigure() {
     await super.onConfigure();
-    // eslint-disable-next-line @typescript-eslint/no-this-alias
-    const self = this;
     this.rvcInterval = setInterval(
       async () => {
         try {
-          await self.platformRunner?.requestHomeData();
+          await this.platformRunner?.requestHomeData();
         } catch (error) {
-          self.log.error(`requestHomeData (interval) failed: ${error ? error : 'unknown'}`);
+          this.log.error(`requestHomeData (interval) failed: ${error instanceof Error ? error.message : String(error)}`);
         }
       },
-      ((this.config.refreshInterval as number) ?? 60) * 1000 + 100,
+      ((this.config.refreshInterval as number) ?? DEFAULT_REFRESH_INTERVAL_SECONDS) * 1000 + REFRESH_INTERVAL_BUFFER_MS,
     );
   }
 
-  async onConfigurateDevice(): Promise<void> {
-    this.log.info('onConfigurateDevice start');
+  /**
+   * Configure all discovered devices.
+   * Sets up device connections, room mappings, and notification handlers.
+   */
+  async onConfigureDevice(): Promise<void> {
+    this.log.info('onConfigureDevice start');
     if (this.platformRunner === undefined || this.roborockService === undefined) {
       this.log.error('Initializing: PlatformRunner or RoborockService is undefined');
       return;
@@ -232,25 +230,22 @@ export class RoborockMatterbridgePlatform extends MatterbridgeDynamicPlatform {
       return;
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-this-alias
-    const self = this;
-
-    const configurateSuccess = new Map<string, boolean>();
+    const configureSuccess = new Map<string, boolean>();
 
     for (const vacuum of this.devices.values()) {
-      const success = await this.configurateDevice(vacuum);
-      configurateSuccess.set(vacuum.duid, success);
+      const success = await this.configureDevice(vacuum);
+      configureSuccess.set(vacuum.duid, success);
       if (success) {
         this.rrHomeId = vacuum.rrHomeId;
       }
     }
 
-    this.roborockService.setDeviceNotify(async function (messageSource: NotifyMessageTypes, homeData: unknown) {
-      await self.platformRunner?.updateRobot(messageSource, homeData);
+    this.roborockService.setDeviceNotify(async (messageSource: NotifyMessageTypes, homeData: unknown) => {
+      await this.platformRunner?.updateRobot(messageSource, homeData);
     });
 
     for (const [duid, robot] of this.robots.entries()) {
-      if (!configurateSuccess.get(duid)) {
+      if (!configureSuccess.get(duid)) {
         continue;
       }
       this.roborockService.activateDeviceNotify(robot.device);
@@ -259,14 +254,19 @@ export class RoborockMatterbridgePlatform extends MatterbridgeDynamicPlatform {
     try {
       await this.platformRunner?.requestHomeData();
     } catch (error) {
-      this.log.error(`requestHomeData (initial) failed: ${error ? error : 'unknown'}`);
+      this.log.error(`requestHomeData (initial) failed: ${error instanceof Error ? error.message : String(error)}`);
     }
 
-    this.log.info('onConfigurateDevice finished');
+    this.log.info('onConfigureDevice finished');
   }
 
-  // Running in loop to configurate devices
-  private async configurateDevice(vacuum: Device): Promise<boolean> {
+  /**
+   * Configure a single device for use with the platform.
+   * Establishes local connection, fetches room maps, and creates Matter endpoint.
+   * @param vacuum - The device to configure
+   * @returns True if configuration successful, false otherwise
+   */
+  private async configureDevice(vacuum: Device): Promise<boolean> {
     const username = this.config.username as string;
 
     if (this.platformRunner === undefined || this.roborockService === undefined) {
@@ -292,7 +292,7 @@ export class RoborockMatterbridgePlatform extends MatterbridgeDynamicPlatform {
 
     this.log.debug('Initializing - roomMap: ', debugStringify(roomMap));
 
-    const behaviorHandler = configurateBehavior(
+    const behaviorHandler = configureBehavior(
       vacuum.data.model,
       vacuum.duid,
       this.roborockService,
@@ -314,7 +314,7 @@ export class RoborockMatterbridgePlatform extends MatterbridgeDynamicPlatform {
     }
 
     const robot = new RoborockVacuumCleaner(username, vacuum, roomMap, routineAsRoom, this.enableExperimentalFeature, this.log);
-    robot.configurateHandler(behaviorHandler);
+    robot.configureHandler(behaviorHandler);
 
     this.log.info('vacuum:', debugStringify(vacuum));
     if (this.validateDevice(robot.deviceName ?? '')) {
@@ -329,7 +329,7 @@ export class RoborockMatterbridgePlatform extends MatterbridgeDynamicPlatform {
     this.log.notice('onShutdown called with reason:', reason ?? 'none');
     if (this.rvcInterval) clearInterval(this.rvcInterval);
     if (this.roborockService) this.roborockService.stopService();
-    if (this.config.unregisterOnShutdown === true) await this.unregisterAllDevices(500);
+    if (this.config.unregisterOnShutdown === true) await this.unregisterAllDevices(UNREGISTER_DEVICES_DELAY_MS);
   }
 
   override async onChangeLoggerLevel(logLevel: LogLevel): Promise<void> {
@@ -399,17 +399,11 @@ export class RoborockMatterbridgePlatform extends MatterbridgeDynamicPlatform {
     if (!verificationCode || verificationCode.trim() === '') {
       const authState = (await this.persist.getItem('authenticateFlowState')) as AuthenticateFlowState | undefined;
       const now = Date.now();
-      const RATE_LIMIT_MS = 60000; // 1 minute between code requests
 
-      if (authState?.codeRequestedAt && now - authState.codeRequestedAt < RATE_LIMIT_MS) {
-        const waitSeconds = Math.ceil((RATE_LIMIT_MS - (now - authState.codeRequestedAt)) / 1000);
+      if (authState?.codeRequestedAt && now - authState.codeRequestedAt < VERIFICATION_CODE_RATE_LIMIT_MS) {
+        const waitSeconds = Math.ceil((VERIFICATION_CODE_RATE_LIMIT_MS - (now - authState.codeRequestedAt)) / 1000);
         this.log.warn(`Please wait ${waitSeconds} seconds before requesting another code.`);
-        this.log.notice('============================================');
-        this.log.notice('ACTION REQUIRED: Enter verification code');
-        this.log.notice(`A verification code was previously sent to: ${username}`);
-        this.log.notice('Enter the 6-digit code in the plugin configuration');
-        this.log.notice('under the "verificationCode" field, then restart the plugin.');
-        this.log.notice('============================================');
+        this.logVerificationCodeBanner(username, true);
         return undefined;
       }
 
@@ -422,12 +416,7 @@ export class RoborockMatterbridgePlatform extends MatterbridgeDynamicPlatform {
           codeRequestedAt: now,
         } as AuthenticateFlowState);
 
-        this.log.notice('============================================');
-        this.log.notice('ACTION REQUIRED: Enter verification code');
-        this.log.notice(`A verification code has been sent to: ${username}`);
-        this.log.notice('Enter the 6-digit code in the plugin configuration');
-        this.log.notice('under the "verificationCode" field, then restart the plugin.');
-        this.log.notice('============================================');
+        this.logVerificationCodeBanner(username, false);
       } catch (error) {
         this.log.error(`Failed to request verification code: ${error instanceof Error ? error.message : String(error)}`);
         throw error;
@@ -447,8 +436,31 @@ export class RoborockMatterbridgePlatform extends MatterbridgeDynamicPlatform {
     return userData;
   }
 
+  /**
+   * Log verification code instructions banner.
+   * @param email - User's email address
+   * @param wasPreviouslySent - Whether the code was sent previously
+   */
+  private logVerificationCodeBanner(email: string, wasPreviouslySent: boolean): void {
+    this.log.notice('============================================');
+    this.log.notice('ACTION REQUIRED: Enter verification code');
+    this.log.notice(`A verification code ${wasPreviouslySent ? 'was previously sent' : 'has been sent'} to: ${email}`);
+    this.log.notice('Enter the 6-digit code in the plugin configuration');
+    this.log.notice('under the "verificationCode" field, then restart the plugin.');
+    this.log.notice('============================================');
+  }
+
+  /**
+   * Add a device to the Matter bridge.
+   * Configures version information and registers the device with Matterbridge.
+   * @param device - The device endpoint to add
+   * @returns The added device endpoint, or undefined if validation fails
+   */
   async addDevice(device: MatterbridgeEndpoint): Promise<MatterbridgeEndpoint | undefined> {
-    if (!device.serialNumber || !device.deviceName) return;
+    if (!device.serialNumber || !device.deviceName) {
+      this.log.warn('Cannot add device: missing serialNumber or deviceName');
+      return undefined;
+    }
     this.setSelectDevice(device.serialNumber, device.deviceName, undefined, 'hub');
 
     const vacuumFirmwareData = (device as RoborockVacuumCleaner).device.data;

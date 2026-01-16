@@ -1,13 +1,14 @@
 import { SyncMessageListener } from '../../../../../roborockCommunication/broadcast/listener/implementation/syncMessageListener';
 import { Protocol } from '../../../../../roborockCommunication/broadcast/model/protocol';
 import { RequestMessage } from '../../../../../roborockCommunication/broadcast/model/requestMessage';
+import { ResponseMessage } from '../../../../../roborockCommunication/broadcast/model/responseMessage';
 
 describe('SyncMessageListener', () => {
   let listener: SyncMessageListener;
   let logger: any;
 
   beforeEach(() => {
-    logger = { info: jest.fn(), error: jest.fn(), debug: jest.fn(), warn: jest.fn() };
+    logger = { info: jest.fn(), error: jest.fn(), debug: jest.fn(), warn: jest.fn(), fatal: jest.fn(), notice: jest.fn() };
     listener = new SyncMessageListener(logger);
     jest.useFakeTimers();
   });
@@ -27,6 +28,7 @@ describe('SyncMessageListener', () => {
     const message = {
       contain: (proto: Protocol) => proto === Protocol.rpc_response,
       get: () => dps,
+      isForProtocol: (proto: Protocol) => proto === Protocol.rpc_response,
     } as any;
 
     await listener.onMessage(message);
@@ -45,6 +47,7 @@ describe('SyncMessageListener', () => {
     const message = {
       contain: (proto: Protocol) => proto === Protocol.rpc_response,
       get: () => dps,
+      isForProtocol: (proto: Protocol) => proto === Protocol.rpc_response,
     } as any;
 
     await listener.onMessage(message);
@@ -63,6 +66,7 @@ describe('SyncMessageListener', () => {
     const message = {
       contain: (proto: Protocol) => proto === Protocol.map_response,
       get: () => dps,
+      isForProtocol: (proto: Protocol) => proto === Protocol.map_response,
     } as any;
 
     await listener.onMessage(message);
@@ -92,6 +96,7 @@ describe('SyncMessageListener', () => {
     const message = {
       contain: (proto: Protocol) => proto === Protocol.rpc_response,
       get: () => dps,
+      isForProtocol: (proto: Protocol) => proto === Protocol.rpc_response,
     } as any;
 
     await listener.onMessage(message);
@@ -103,9 +108,212 @@ describe('SyncMessageListener', () => {
     const message = {
       contain: () => false,
       get: () => null,
+      isForProtocol: () => false,
     } as any;
 
     await listener.onMessage(message);
     // Should complete without error
+  });
+
+  it('111 - should handle real rpc_response data', async () => {
+    const resolve = jest.fn();
+    const reject = jest.fn();
+    const messageId = 111;
+    listener.waitFor(messageId, { method: 'test' } as RequestMessage, resolve, reject);
+
+    const dpsData = { id: messageId, result: { foo: 'bar' } };
+    const message = new ResponseMessage(
+      'YBqkooSOUKiJd5HiCFOAS',
+      { version: '1.0', seq: 932, nonce: 29, timestamp: 1768267610, protocol: 102, isForProtocol: (p: Protocol) => p === Protocol.rpc_response } as any,
+      { data: { 121: 5 }, get: (index: number | string | Protocol) => dpsData } as any,
+    );
+
+    await listener.onMessage(message);
+
+    expect(resolve).toHaveBeenCalledWith(dpsData.result);
+    expect(listener['pending'].has(messageId)).toBe(false);
+  });
+
+  it('222 - should handle real rpc_response with wifi info', async () => {
+    const resolve = jest.fn();
+    const reject = jest.fn();
+    const messageId = 222;
+    listener.waitFor(messageId, { method: 'test' } as RequestMessage, resolve, reject);
+
+    const dpsData = { id: messageId, result: { ssid: 'ahihi', ip: '192.168.202.8', mac: '24:9e:7d:07:d6:4a', bssid: '20:23:51:1f:7c:8a', rssi: -39 } };
+    const message = new ResponseMessage(
+      'YBqkooSOUKiJd5HiCFOAS',
+      { version: '1.0', seq: 922, nonce: 28, timestamp: 1768267511, protocol: 102, isForProtocol: (p: Protocol) => p === Protocol.rpc_response } as any,
+      {
+        data: { 102: { id: 25201, result: { ssid: 'ahihi', ip: '192.168.202.8', mac: '24:9e:7d:07:d6:4a', bssid: '20:23:51:1f:7c:8a', rssi: -39 } } },
+        get: (index: number | string | Protocol) => dpsData,
+      } as any,
+    );
+
+    await listener.onMessage(message);
+
+    expect(resolve).toHaveBeenCalledWith(dpsData.result);
+    expect(listener['pending'].has(messageId)).toBe(false);
+  });
+
+  it('should handle protocol 4 (general_request) with data in key 102 - get_multi_maps_list', async () => {
+    const resolve = jest.fn();
+    const reject = jest.fn();
+    const messageId = 24477;
+    listener.waitFor(messageId, { method: 'get_multi_maps_list' } as RequestMessage, resolve, reject);
+
+    const mapResult = [
+      {
+        max_multi_map: 1,
+        max_bak_map: 1,
+        multi_map_count: 1,
+        map_info: [
+          {
+            mapFlag: 0,
+            add_time: 1768269938,
+            length: 9,
+            name: 'First Map',
+            bak_maps: [{ mapFlag: 4, add_time: 1753578164 }],
+            rooms: [
+              { id: 1, tag: 14, iot_name_id: '11100845', iot_name: 'Kitchen' },
+              { id: 2, tag: 9, iot_name_id: '11100849', iot_name: 'Study' },
+              { id: 3, tag: 6, iot_name_id: '11100842', iot_name: 'Living room' },
+              { id: 4, tag: 1, iot_name_id: '11100847', iot_name: 'Bedroom' },
+            ],
+            furnitures: [],
+          },
+        ],
+      },
+    ];
+
+    const dpsData = { id: messageId, result: mapResult };
+
+    // Simulate: Header has protocol 4, but data is stored in key 102
+    const message = new ResponseMessage(
+      'YBqkooSOUKiJd5HiCFOAS',
+      {
+        version: '1.0',
+        seq: 2739,
+        nonce: 3968393129,
+        timestamp: 1768302178,
+        protocol: 4,
+        isForProtocol: (p: Protocol) => p === Protocol.general_request,
+      } as any,
+      {
+        data: { 102: { id: messageId, result: mapResult } },
+        get: (index: number | string | Protocol) => {
+          // When checking for protocol 102 (rpc_response), return the actual data
+          if (index === Protocol.rpc_response || index === 102 || index === '102') {
+            return dpsData;
+          }
+          // When checking for protocol 4 (general_request), return undefined (data not stored here)
+          if (index === Protocol.general_request || index === 4 || index === '4') {
+            return undefined;
+          }
+          return undefined;
+        },
+      } as any,
+    );
+
+    await listener.onMessage(message);
+
+    // Verify the log sequence
+    expect(logger.debug).toHaveBeenCalledWith('Waiting for response to messageId: 24477, method: get_multi_maps_list');
+    expect(logger.debug).toHaveBeenCalledWith('Processing response with protocol 4');
+    expect(logger.debug).toHaveBeenCalledWith('Resolved messageId: 24477');
+
+    // Verify the fix works - resolve should be called with the map data
+    expect(resolve).toHaveBeenCalledWith(mapResult);
+    expect(listener['pending'].has(messageId)).toBe(false);
+  });
+
+  it('should handle protocol 4 (general_request) with data in key 102 - get_room_mapping', async () => {
+    const resolve = jest.fn();
+    const reject = jest.fn();
+    const messageId = 31338;
+    listener.waitFor(messageId, { method: 'get_room_mapping' } as RequestMessage, resolve, reject);
+
+    const roomMapping = [
+      [1, '11100845', 14],
+      [2, '11100849', 9],
+      [3, '11100842', 6],
+      [4, '11100847', 1],
+    ];
+
+    const dpsData = { id: messageId, result: roomMapping };
+
+    // Simulate: Header has protocol 4, but data is stored in key 102
+    const message = new ResponseMessage(
+      'YBqkooSOUKiJd5HiCFOAS',
+      {
+        version: '1.0',
+        seq: 2742,
+        nonce: 126605685,
+        timestamp: 1768302198,
+        protocol: 4,
+        isForProtocol: (p: Protocol) => p === Protocol.general_request,
+      } as any,
+      {
+        data: { 102: { id: messageId, result: roomMapping } },
+        get: (index: number | string | Protocol) => {
+          // When checking for protocol 102 (rpc_response), return the actual data
+          if (index === Protocol.rpc_response || index === 102 || index === '102') {
+            return dpsData;
+          }
+          // When checking for protocol 4 (general_request), return undefined
+          if (index === Protocol.general_request || index === 4 || index === '4') {
+            return undefined;
+          }
+          return undefined;
+        },
+      } as any,
+    );
+
+    await listener.onMessage(message);
+
+    expect(resolve).toHaveBeenCalledWith(roomMapping);
+    expect(listener['pending'].has(messageId)).toBe(false);
+  });
+
+  it('BROKEN CODE TEST - should fail if code only checks protocol 4 key instead of 102', async () => {
+    // This test demonstrates the BUG - if code tries message.get(4) instead of message.get(102)
+    const resolve = jest.fn();
+    const reject = jest.fn();
+    const messageId = 99999;
+    listener.waitFor(messageId, { method: 'test' } as RequestMessage, resolve, reject);
+
+    const testData = { id: messageId, result: { test: 'data' } };
+
+    // Message with protocol 4 in header, but data ONLY in key 102 (not in key 4)
+    const message = new ResponseMessage(
+      'YBqkooSOUKiJd5HiCFOAS',
+      {
+        version: '1.0',
+        seq: 1,
+        nonce: 1,
+        timestamp: 1,
+        protocol: 4,
+        isForProtocol: (p: Protocol) => p === Protocol.general_request,
+      } as any,
+      {
+        data: { 102: testData }, // Data ONLY in key 102
+        get: (index: number | string | Protocol) => {
+          // ONLY return data for key 102, NOT for key 4
+          if (index === Protocol.rpc_response || index === 102 || index === '102') {
+            return testData;
+          }
+          return undefined; // Key 4 returns undefined
+        },
+      } as any,
+    );
+
+    await listener.onMessage(message);
+
+    // With the FIX, this should resolve successfully
+    expect(resolve).toHaveBeenCalledWith({ test: 'data' });
+
+    // Without the FIX (if code only checks protocol 4), resolve would NOT be called
+    // and logger.warn would show "Response missing DPS payload"
+    expect(logger.warn).not.toHaveBeenCalledWith(expect.stringContaining('Response missing DPS payload'));
   });
 });

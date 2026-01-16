@@ -3,7 +3,29 @@ import { ServiceArea } from 'matterbridge/matter/clusters';
 import { RoomMap } from '../model/RoomMap.js';
 import { Room } from '../roborockCommunication/Zmodel/room.js';
 import { randomInt } from 'node:crypto';
-import { RoomIndexMap } from '../model/roomIndexMap.js';
+import { RoomIndexMap } from '../model/RoomIndexMap.js';
+import { DEFAULT_AREA_ID_UNKNOWN, DEFAULT_AREA_ID_ERROR, MULTIPLE_MAP_AREA_ID_OFFSET, RANDOM_ROOM_MIN, RANDOM_ROOM_MAX } from '../constants/index.js';
+
+/**
+ * Create a fallback service area for error cases.
+ * @param areaId - Unique identifier for the area
+ * @param reason - Reason for the fallback area creation
+ * @returns Fallback service area configuration
+ */
+function createFallbackArea(areaId: number, reason: string): ServiceArea.Area {
+  return {
+    areaId,
+    mapId: null,
+    areaInfo: {
+      locationInfo: {
+        locationName: `Unknown - ${reason}`,
+        floorNumber: null,
+        areaType: null,
+      },
+      landmarkInfo: null,
+    },
+  };
+}
 
 export interface SupportedAreasResult {
   supportedAreas: ServiceArea.Area[];
@@ -11,6 +33,15 @@ export interface SupportedAreasResult {
   roomIndexMap: RoomIndexMap;
 }
 
+/**
+ * Convert vacuum rooms and room map to Matter ServiceArea areas.
+ * Handles single and multiple map configurations.
+ * @param vacuumRooms - Rooms configured on the vacuum
+ * @param roomMap - Parsed room map data
+ * @param enableMultipleMap - Whether multiple map support is enabled
+ * @param log - Optional logger instance
+ * @returns Supported areas, maps, and room index mapping
+ */
 export function getSupportedAreas(vacuumRooms: Room[], roomMap: RoomMap | undefined, enableMultipleMap = false, log?: AnsiLogger): SupportedAreasResult {
   log?.debug('getSupportedAreas-vacuum room', debugStringify(vacuumRooms));
   log?.debug('getSupportedAreas-roomMap', roomMap ? debugStringify(roomMap) : 'undefined');
@@ -27,22 +58,9 @@ export function getSupportedAreas(vacuumRooms: Room[], roomMap: RoomMap | undefi
     }
 
     return {
-      supportedAreas: [
-        {
-          areaId: 1,
-          mapId: null,
-          areaInfo: {
-            locationInfo: {
-              locationName: 'Unknown',
-              floorNumber: null,
-              areaType: null,
-            },
-            landmarkInfo: null,
-          },
-        },
-      ],
+      supportedAreas: [createFallbackArea(DEFAULT_AREA_ID_UNKNOWN, 'No Rooms')],
       supportedMaps: [],
-      roomIndexMap: new RoomIndexMap(new Map([[1, { roomId: 1, mapId: null }]])),
+      roomIndexMap: new RoomIndexMap(new Map([[DEFAULT_AREA_ID_UNKNOWN, { roomId: DEFAULT_AREA_ID_UNKNOWN, mapId: null }]])),
     };
   }
   const { supportedAreas, indexMap } = processValidData(enableMultipleMap, vacuumRooms, roomMap);
@@ -50,22 +68,9 @@ export function getSupportedAreas(vacuumRooms: Room[], roomMap: RoomMap | undefi
 
   if (duplicated) {
     return {
-      supportedAreas: [
-        {
-          areaId: 2,
-          mapId: null,
-          areaInfo: {
-            locationInfo: {
-              locationName: 'Unknown - Duplicated Areas Found',
-              floorNumber: null,
-              areaType: null,
-            },
-            landmarkInfo: null,
-          },
-        },
-      ],
+      supportedAreas: [createFallbackArea(DEFAULT_AREA_ID_ERROR, 'Duplicated Areas Found')],
       supportedMaps: [],
-      roomIndexMap: new RoomIndexMap(new Map([[2, { roomId: 2, mapId: null }]])),
+      roomIndexMap: new RoomIndexMap(new Map([[DEFAULT_AREA_ID_ERROR, { roomId: DEFAULT_AREA_ID_ERROR, mapId: null }]])),
     };
   }
 
@@ -122,9 +127,10 @@ function processValidData(enableMultipleMap: boolean, vacuumRooms: Room[], roomM
   const supportedAreas: ServiceArea.Area[] =
     roomMap?.rooms !== undefined && roomMap.rooms.length > 0
       ? roomMap.rooms.map((room, index) => {
-          const locationName = room.displayName ?? vacuumRooms.find((r) => r.id === room.globalId || r.id === room.id)?.name ?? `Unknown Room ${randomInt(1000, 9999)}`;
+          const locationName =
+            room.displayName ?? vacuumRooms.find((r) => r.id === room.globalId || r.id === room.id)?.name ?? `Unknown Room ${randomInt(RANDOM_ROOM_MIN, RANDOM_ROOM_MAX)}`;
 
-          const areaId = enableMultipleMap ? index + 100 : room.id;
+          const areaId = enableMultipleMap ? index + MULTIPLE_MAP_AREA_ID_OFFSET : room.id;
           const mapId = enableMultipleMap ? (room.mapId ?? null) : null;
 
           indexMap.set(areaId, { roomId: room.id, mapId: room.mapId ?? null });

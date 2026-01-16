@@ -1,21 +1,30 @@
-import crypto from 'node:crypto';
 import CRC32 from 'crc-32';
 import { ResponseMessage } from '../broadcast/model/responseMessage.js';
-import * as CryptoUtils from './cryptoHelper.js';
 import { Protocol } from '../broadcast/model/protocol.js';
 import { MessageContext } from '../broadcast/model/messageContext.js';
 import { AnsiLogger } from 'matterbridge/logger';
 import { Parser } from 'binary-parser/dist/binary_parser.js';
 import { ContentMessage } from '../broadcast/model/contentMessage.js';
 import { HeaderMessage } from '../broadcast/model/headerMessage.js';
-import { DpsPayload } from '../broadcast/model/dps.js';
+import { ResponseBody } from '../broadcast/model/responseBody.js';
+import { ProtocolVersion } from '../Zenum/protocolVersion.js';
+import { MessageProcessorFactory } from './messageProcessorFactory.js';
 
 export class MessageDeserializer {
   private readonly context: MessageContext;
   private readonly headerMessageParser: Parser;
   private readonly contentMessageParser: Parser;
   private readonly logger: AnsiLogger;
-  private readonly supportedVersions: string[] = ['1.0', 'A01', 'B01'];
+  private readonly supportedVersions: string[] = [ProtocolVersion.V1, ProtocolVersion.A01, ProtocolVersion.B01, ProtocolVersion.L01];
+  private readonly protocolsWithoutPayload: Protocol[] = [
+    Protocol.hello_request,
+    Protocol.hello_response,
+    Protocol.ping_request,
+    Protocol.ping_response,
+    Protocol.general_response,
+    Protocol.map_response,
+  ];
+  private readonly messageProcessorFactory = new MessageProcessorFactory();
 
   constructor(context: MessageContext, logger: AnsiLogger) {
     this.context = context;
@@ -40,22 +49,18 @@ export class MessageDeserializer {
       .uint32('crc32');
   }
 
-  public deserialize(duid: string, message: Buffer<ArrayBufferLike>): ResponseMessage {
-    // check message header
-    const header: HeaderMessage = this.headerMessageParser.parse(message);
+  public deserialize(duid: string, message: Buffer<ArrayBufferLike>, from: string): ResponseMessage {
+    const rawHeader: HeaderMessage = this.headerMessageParser.parse(message);
+    const header = new HeaderMessage(rawHeader.version, rawHeader.seq, rawHeader.nonce, rawHeader.timestamp, rawHeader.protocol);
+
+    this.logger.debug(`[${from}][MessageDeserializer] deserialized header: ${JSON.stringify(header)}`);
+
     if (!this.supportedVersions.includes(header.version)) {
-      throw new Error('unknown protocol version ' + header.version);
+      throw new Error(`[${from}][MessageDeserializer] unknown protocol: ${header.version}`);
     }
 
-    if (header.protocol === Protocol.hello_response || header.protocol === Protocol.ping_response) {
-      const dpsValue: DpsPayload = {
-        id: header.seq,
-        result: {
-          version: header.version,
-          nonce: header.nonce,
-        },
-      };
-      return new ResponseMessage(duid, { [header.protocol.toString()]: dpsValue });
+    if (this.protocolsWithoutPayload.includes(header.protocol)) {
+      return new ResponseMessage(duid, header);
     }
 
     // parse message content
@@ -71,43 +76,29 @@ export class MessageDeserializer {
     const localKey = this.context.getLocalKey(duid);
     if (!localKey) {
       this.logger.notice(`Unable to retrieve local key for ${duid}, it should be from other vacuums`);
-      return new ResponseMessage(duid, { dps: { id: 0, result: null } });
+      return new ResponseMessage(duid, header);
     }
 
-    if (header.version == '1.0') {
-      const aesKey = CryptoUtils.md5bin(CryptoUtils.encodeTimestamp(header.timestamp) + localKey + CryptoUtils.SALT);
-      const decipher = crypto.createDecipheriv('aes-128-ecb', aesKey, null);
-      data.payload = Buffer.concat([decipher.update(data.payload), decipher.final()]);
-    } else if (header.version == 'A01') {
-      const iv = CryptoUtils.md5hex(header.nonce.toString(16).padStart(8, '0') + '726f626f726f636b2d67a6d6da').substring(8, 24);
-      const decipher = crypto.createDecipheriv('aes-128-cbc', localKey, iv);
-      data.payload = Buffer.concat([decipher.update(data.payload), decipher.final()]);
-    } else if (header.version == 'B01') {
-      const iv = CryptoUtils.md5hex(header.nonce.toString(16).padStart(8, '0') + '5wwh9ikChRjASpMU8cxg7o1d2E').substring(9, 25);
-      const decipher = crypto.createDecipheriv('aes-128-cbc', localKey, iv);
-      // unpad ??
-      data.payload = Buffer.concat([decipher.update(data.payload), decipher.final()]);
-    }
+    const connectNonce = this.context.nonce;
+    const ackNonce = this.context.getDeviceNonce(duid);
 
-    // map visualization not support
-    if (header.protocol == Protocol.map_response) {
-      return new ResponseMessage(duid, { dps: { id: 0, result: null } });
-    }
+    const messageProcessor = this.messageProcessorFactory.getMessageProcessor(header.version);
+    data.payload = messageProcessor.decode(data.payload, localKey, header.timestamp, header.seq, header.nonce, connectNonce, ackNonce);
 
-    if (header.protocol == Protocol.rpc_response || header.protocol == Protocol.general_request) {
-      return this.deserializeRpcResponse(duid, data);
+    if (header.isForProtocol(Protocol.rpc_response) || header.isForProtocol(Protocol.general_request)) {
+      return this.deserializeRpcResponse(duid, data, header);
     } else {
       this.logger.error('unknown protocol: ' + header.protocol);
-      return new ResponseMessage(duid, { dps: { id: 0, result: null } });
+      return new ResponseMessage(duid, header);
     }
   }
 
-  private deserializeRpcResponse(duid: string, data: ContentMessage): ResponseMessage {
+  private deserializeRpcResponse(duid: string, data: ContentMessage, header: HeaderMessage): ResponseMessage {
     const payload = JSON.parse(data.payload.toString());
     const dps = payload.dps;
     this.parseJsonInDps(dps, Protocol.general_request);
     this.parseJsonInDps(dps, Protocol.rpc_response);
-    return new ResponseMessage(duid, dps);
+    return new ResponseMessage(duid, header, new ResponseBody(dps));
   }
 
   private parseJsonInDps(dps: Record<string, unknown>, index: Protocol) {

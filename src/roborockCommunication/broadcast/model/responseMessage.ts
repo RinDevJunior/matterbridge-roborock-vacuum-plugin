@@ -1,19 +1,23 @@
-import { Dps, DpsPayload } from './dps.js';
+import { HeaderMessage } from './headerMessage.js';
+import { Protocol } from './protocol.js';
+import { ResponseBody } from './responseBody.js';
 
 export class ResponseMessage {
   readonly duid: string;
-  readonly dps: Dps;
+  readonly body?: ResponseBody;
+  readonly header: HeaderMessage;
 
-  constructor(duid: string, dps: Dps) {
+  constructor(duid: string, header: HeaderMessage, body?: ResponseBody) {
     this.duid = duid;
-    this.dps = dps;
+    this.body = body;
+    this.header = header;
   }
 
-  contain(index: number | string): boolean {
-    return this.dps[index.toString()] !== undefined;
+  public get(index: number | string | Protocol): unknown | undefined {
+    return this.body?.get(index);
   }
 
-  get(index: number | string): string | DpsPayload {
-    return this.dps[index.toString()];
+  public isForProtocol(protocol: number | string | Protocol): boolean {
+    return this.header && this.header.isForProtocol(protocol);
   }
 }

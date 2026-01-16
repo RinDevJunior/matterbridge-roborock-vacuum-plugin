@@ -1,8 +1,14 @@
 import { RvcCleanMode } from 'matterbridge/matter/clusters';
 import { RvcCleanMode as RvcCleanModeDisplayMap } from './smart.js';
-import { getDefaultSupportedCleanModes } from '../default/initalData.js';
+import { getDefaultSupportedCleanModes } from '../default/initialData.js';
 import { ExperimentalFeatureSetting } from '../../../model/ExperimentalFeatureSetting.js';
 
+/**
+ * Get supported clean modes for smart vacuum models.
+ * Adds 'Smart Plan' mode (4) and day mode (5) to the default clean modes.
+ * @param enableExperimentalFeature - Experimental feature settings
+ * @returns Array of supported clean mode configurations for smart models
+ */
 export function getSupportedCleanModesSmart(enableExperimentalFeature: ExperimentalFeatureSetting | undefined): RvcCleanMode.ModeOption[] {
   return [
     {

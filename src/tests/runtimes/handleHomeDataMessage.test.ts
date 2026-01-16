@@ -180,7 +180,7 @@ describe('updateFromHomeData', () => {
     });
 
     await updateFromHomeData(homeData, customPlatform as any);
-    expect(platform.log.error).toHaveBeenCalledWith(expect.stringContaining('Robot with DUID test-duid not found'));
+    expect(platform.log.error).toHaveBeenCalledWith(expect.stringContaining('Robot not found: test-duid'));
   });
 
   it('should update batChargeState when batteryLevel exists', async () => {

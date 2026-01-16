@@ -16,17 +16,25 @@ import { getSupportedAreas } from '../initialData/getSupportedAreas.js';
 import { PlatformRunner } from '../platformRunner.js';
 import { RoborockVacuumCleaner } from '../rvc.js';
 
+/**
+ * Process cloud MQTT messages and update robot state.
+ * Handles status updates, RPC responses, clean mode changes, and map updates.
+ * @param data - Cloud message containing DPS (Data Point System) payload
+ * @param platform - Platform instance for logging and service access
+ * @param runner - Platform runner for state updates
+ * @param duid - Device unique identifier
+ */
 export async function handleCloudMessage(data: CloudMessageModel, platform: RoborockMatterbridgePlatform, runner: PlatformRunner, duid: string): Promise<void> {
   const messageTypes = Object.keys(data.dps).map(Number);
   const robot = platform.robots.get(duid);
   if (robot === undefined) {
-    platform.log.error(`Error3: Robot with DUID ${duid} not found`);
+    platform.log.error(`Robot not found: ${duid}`);
     return;
   }
 
   // Known: 122, 121, 102,
   // Unknown: 128, 139
-  messageTypes.forEach(async (messageType) => {
+  for (const messageType of messageTypes) {
     switch (messageType) {
       case Protocol.status_update: {
         const status = Number(data.dps[messageType]);
@@ -98,7 +106,8 @@ export async function handleCloudMessage(data: CloudMessageModel, platform: Robo
         break;
       }
       case Protocol.back_type: {
-        // TODO: check if this is needed
+        // Protocol.back_type messages are currently not processed as they don't contain
+        // actionable state updates. Future implementation may handle dock type changes.
         break;
       }
       default: {
@@ -106,9 +115,16 @@ export async function handleCloudMessage(data: CloudMessageModel, platform: Robo
         break;
       }
     }
-  });
+  }
 }
 
+/**
+ * Handle map change events from device.
+ * Updates supported areas and maps when the device's map configuration changes.
+ * @param robot - Robot vacuum cleaner instance
+ * @param platform - Platform instance
+ * @param duid - Device unique identifier
+ */
 export async function handleMapChange(robot: RoborockVacuumCleaner, platform: RoborockMatterbridgePlatform, duid: string): Promise<void> {
   const enableMultipleMap = (platform.enableExperimentalFeature?.enableExperimentalFeature && platform.enableExperimentalFeature?.advancedFeature?.enableMultipleMap) ?? false;
   if (!enableMultipleMap) return;

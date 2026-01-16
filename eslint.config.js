@@ -29,6 +29,12 @@ export default [
       'no-console': 'warn',
       'no-undef': 'off',
       'spaced-comment': ['error', 'always'],
+      '@typescript-eslint/no-unused-vars': [
+        'error',
+        {
+          'args': 'none',
+        },
+      ],
     },
   },
   {

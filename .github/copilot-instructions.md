@@ -28,6 +28,7 @@ Child instruction files:
 
 - `instructions/unit-test.instructions.md` → Unit test implementation
 - `instructions/typescript-5-esnext.instructions.md` → Application / business logic implementation
+- `instructions/typescript-5-esnext.instructions.md` -> unit test implementation
 
 Copilot must select **exactly one** child instruction set per task.
 

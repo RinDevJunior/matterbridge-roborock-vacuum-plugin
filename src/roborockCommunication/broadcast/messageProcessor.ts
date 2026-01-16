@@ -34,7 +34,7 @@ export class MessageProcessor {
   }
 
   public async getDeviceStatus(duid: string): Promise<DeviceStatus | undefined> {
-    const request = new RequestMessage({ method: 'get_status' });
+    const request = new RequestMessage({ method: 'get_prop', params: ['get_status'] });
     const response = await this.client.get<CloudMessageResult[]>(duid, request);
 
     if (response) {
@@ -46,7 +46,7 @@ export class MessageProcessor {
   }
 
   public async getDeviceStatusOverMQTT(duid: string): Promise<DeviceStatus | undefined> {
-    const request = new RequestMessage({ method: 'get_status', secure: true });
+    const request = new RequestMessage({ method: 'get_prop', params: ['get_status'], secure: true });
     const response = await this.client.get<CloudMessageResult[]>(duid, request);
 
     if (response) {
@@ -100,8 +100,21 @@ export class MessageProcessor {
     return this.client.send(duid, request);
   }
 
-  public getCustomMessage(duid: string, def: RequestMessage): Promise<unknown> {
-    return this.client.get(duid, def);
+  /**
+   * Execute a custom GET request to the device.
+   * @param duid - Device unique identifier
+   * @param def - The request message definition
+   * @returns Response data typed as T (defaults to unknown for flexibility)
+   *
+   * @example
+   * // With explicit type
+   * const mapData = await getCustomMessage<MapRoomResponse>(duid, request);
+   *
+   * // Type inferred as unknown
+   * const result = await getCustomMessage(duid, request);
+   */
+  public getCustomMessage<T = unknown>(duid: string, def: RequestMessage): Promise<T> {
+    return this.client.get(duid, def) as Promise<T>;
   }
 
   public async findMyRobot(duid: string): Promise<unknown> {

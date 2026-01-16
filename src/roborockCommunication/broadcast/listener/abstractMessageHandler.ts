@@ -1,3 +1,4 @@
+import { ResponseMessage } from '../../index.js';
 import { VacuumErrorCode } from '../../Zenum/vacuumAndDockErrorCode.js';
 
 /*
@@ -6,6 +7,6 @@ import { VacuumErrorCode } from '../../Zenum/vacuumAndDockErrorCode.js';
 export interface AbstractMessageHandler {
   onError(error: VacuumErrorCode): Promise<void>;
   onBatteryUpdate(percentage: number): Promise<void>;
-  onStatusChanged(): Promise<void>;
+  onStatusChanged(message: ResponseMessage): Promise<void>;
   onAdditionalProps(value: number): Promise<void>;
 }

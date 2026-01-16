@@ -1,6 +1,12 @@
 import { OperationStatusCode } from '../roborockCommunication/Zenum/operationStatusCode.js';
 import { RvcRunMode, RvcOperationalState } from 'matterbridge/matter/clusters';
 
+/**
+ * Convert device operational status code to Matter run mode tag.
+ * Maps various cleaning, mapping, and idle states to appropriate Matter mode tags.
+ * @param state - The device operational status code
+ * @returns Matter run mode tag (Cleaning, Mapping, or Idle). Returns undefined for null, defaults to Idle for undefined/unknown states.
+ */
 export function state_to_matter_state(state: number | undefined): RvcRunMode.ModeTag | undefined {
   if (state === null) {
     return undefined;
@@ -45,6 +51,12 @@ export function state_to_matter_state(state: number | undefined): RvcRunMode.Mod
   }
 }
 
+/**
+ * Convert device operational status code to Matter operational state.
+ * Maps device states to Running, Error, Paused, Stopped, SeekingCharger, or Docked states.
+ * @param state - The device operational status code
+ * @returns Matter operational state, or null for docked/idle states
+ */
 export function state_to_matter_operational_status(state: number | undefined): RvcOperationalState.OperationalState | null {
   switch (state) {
     case OperationStatusCode.Initiating:

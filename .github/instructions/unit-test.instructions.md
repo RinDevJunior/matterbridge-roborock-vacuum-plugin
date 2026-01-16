@@ -54,6 +54,9 @@ applyTo: '**/*.test.ts'
 - Cover both positive and negative scenarios, including edge cases.
 - Avoid testing implementation details; focus on observable behavior.
 - Always use static imports
+- If implementation contains interval/timer logic, use timer mocks to control time in tests.
+- Clean up interval/timer mocks after each test to prevent side effects.
+- Test files must be located in `src/test` or alongside implementation files as per project conventions.
 
 ## Test Coverage
 

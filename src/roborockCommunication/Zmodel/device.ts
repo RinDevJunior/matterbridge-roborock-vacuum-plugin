@@ -1,3 +1,4 @@
+import { DeviceModel } from './deviceModel.js';
 import { DeviceSchema } from './deviceSchema.js';
 import { Room } from './room.js';
 import { Scene } from './scene.js';
@@ -7,7 +8,7 @@ export interface DeviceData {
   id: string;
   firmwareVersion: string;
   serialNumber: string;
-  model: string;
+  model: DeviceModel;
   category: string;
   batteryLevel: number;
 }

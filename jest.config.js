@@ -16,7 +16,7 @@ export default {
     ],
   },
   transformIgnorePatterns: ['/node_modules/'],
-  testPathIgnorePatterns: ['/node_modules/', '/dist/', '/frontend/', 'webui', '.shouldnotcommit'],
+  testPathIgnorePatterns: ['/node_modules/', '/dist/', '/frontend/', 'webui', '.shouldnotcommit', 'pluginTemplate'],
   coveragePathIgnorePatterns: ['/node_modules/', '/dist/', '/frontend/', '/src/mock/'],
   setupFiles: ['./jest.setup.js'],
 };

@@ -1,4 +1,4 @@
-import { getSupportedCleanModesSmart } from '../../../../behaviors/roborock.vacuum/smart/initalData';
+import { getSupportedCleanModesSmart } from '../../../../behaviors/roborock.vacuum/smart/initialData';
 import { createDefaultExperimentalFeatureSetting } from '../../../../model/ExperimentalFeatureSetting';
 
 describe('getSupportedCleanModesSmart', () => {

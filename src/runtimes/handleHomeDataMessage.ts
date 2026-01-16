@@ -10,6 +10,12 @@ import { getRunningMode } from '../initialData/getSupportedRunModes.js';
 import { hasDockingStationError } from '../model/DockingStationStatus.js';
 import { triggerDssError } from './handleLocalMessage.js';
 
+/**
+ * Update robot states from home data polling response.
+ * Synchronizes battery level, charge state, run mode, and operational state from cloud API.
+ * @param homeData - Home data from Roborock cloud API containing device states
+ * @param platform - Platform instance for robot access and logging
+ */
 export async function updateFromHomeData(homeData: Home, platform: RoborockMatterbridgePlatform): Promise<void> {
   if (platform.robots.size === 0) return;
   const devices = homeData.devices.filter((d: Device) => platform.robots.has(d.duid));
@@ -17,7 +23,7 @@ export async function updateFromHomeData(homeData: Home, platform: RoborockMatte
   for (const device of devices) {
     const robot = platform.robots.get(device.duid);
     if (robot === undefined) {
-      platform.log.error(`Error5: Robot with DUID ${device.duid} not found`);
+      platform.log.error(`Robot not found: ${device.duid}`);
       continue;
     }
 

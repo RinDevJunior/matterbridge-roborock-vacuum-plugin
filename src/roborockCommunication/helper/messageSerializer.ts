@@ -1,11 +1,11 @@
 import { RequestMessage } from '../broadcast/model/requestMessage.js';
-import * as CryptoUtils from './cryptoHelper.js';
-import crypto from 'node:crypto';
 import CRC32 from 'crc-32';
-import { DpsPayload, Payload } from '../broadcast/model/dps.js';
 import { MessageContext } from '../broadcast/model/messageContext.js';
 import { AnsiLogger } from 'matterbridge/logger';
 import { Protocol } from '../broadcast/model/protocol.js';
+import { ProtocolVersion } from '../Zenum/protocolVersion.js';
+import { MessageProcessorFactory } from './messageProcessorFactory.js';
+import { MessageBodyBuilderFactory } from './messageBodyBuilderFactory.js';
 
 interface SerializeResult {
   messageId: number;
@@ -16,7 +16,10 @@ export class MessageSerializer {
   private readonly context: MessageContext;
   private readonly logger: AnsiLogger;
   private sequence = 1;
-  private readonly supportedVersions: string[] = ['1.0', 'A01', 'B01'];
+  private readonly supportedVersions: string[] = [ProtocolVersion.V1, ProtocolVersion.A01, ProtocolVersion.B01, ProtocolVersion.L01];
+  private readonly protocolsWithoutPayload: Protocol[] = [Protocol.hello_request, Protocol.ping_request];
+  private readonly messageProcessorFactory = new MessageProcessorFactory();
+  private readonly messageBodyBuilderFactory = new MessageBodyBuilderFactory();
 
   constructor(context: MessageContext, logger: AnsiLogger) {
     this.context = context;
@@ -29,61 +32,26 @@ export class MessageSerializer {
     return { messageId: messageId, buffer: buffer };
   }
 
-  private buildPayload(messageId: number, request: RequestMessage): Payload {
-    const data: DpsPayload = {
-      id: messageId,
-      method: request.method ?? '',
-      params: request.params,
-      security: undefined,
-      result: undefined,
-    };
-
-    if (request.secure) {
-      data.security = {
-        endpoint: this.context.getEndpoint(),
-        nonce: this.context.getSerializeNonceAsHex(),
-      };
-    }
-    return {
-      dps: {
-        [request.protocol]: JSON.stringify(data),
-      },
-      t: request.timestamp,
-    };
-  }
-
   private buildBuffer(duid: string, messageId: number, request: RequestMessage): Buffer<ArrayBufferLike> {
-    const version = this.context.getProtocolVersion(duid);
+    const version = request.version ?? this.context.getProtocolVersion(duid);
     if (!version || !this.supportedVersions.includes(version)) {
-      throw new Error('unknown protocol version ' + version);
+      throw new Error('[MessageSerializer] unknown protocol: ' + version);
     }
     let encrypted;
-    if (request.protocol === Protocol.hello_response || request.protocol === Protocol.ping_response) {
+    if (this.protocolsWithoutPayload.includes(request.protocol)) {
       encrypted = Buffer.alloc(0);
-    }
-
-    const localKey = this.context.getLocalKey(duid);
-    const payloadData = this.buildPayload(messageId, request);
-    const payload = JSON.stringify(payloadData);
-
-    if (version == '1.0') {
-      const aesKey = CryptoUtils.md5bin(CryptoUtils.encodeTimestamp(payloadData.t) + localKey + CryptoUtils.SALT);
-      const cipher = crypto.createCipheriv('aes-128-ecb', aesKey, null);
-      encrypted = Buffer.concat([cipher.update(payload), cipher.final()]);
-    } else if (version == 'A01') {
-      // 726f626f726f636b2d67a6d6da is in version 4.0 of the roborock app
-      const encoder = new TextEncoder();
-      const iv = CryptoUtils.md5hex(request.nonce.toString(16).padStart(8, '0') + '726f626f726f636b2d67a6d6da').substring(8, 24);
-      const cipher = crypto.createCipheriv('aes-128-cbc', encoder.encode(localKey), iv);
-      encrypted = Buffer.concat([cipher.update(payload), cipher.final()]);
-    } else if (version == 'B01') {
-      const encoder = new TextEncoder();
-      const iv = CryptoUtils.md5hex(request.nonce.toString(16).padStart(8, '0') + '5wwh9ikChRjASpMU8cxg7o1d2E').substring(9, 25);
-      const cipher = crypto.createCipheriv('aes-128-cbc', encoder.encode(localKey), iv);
-      // pad ??
-      encrypted = Buffer.concat([cipher.update(payload), cipher.final()]);
     } else {
-      throw new Error('unable to build the message: unsupported protocol version: ' + version);
+      const localKey = this.context.getLocalKey(duid);
+      if (!localKey) {
+        throw new Error('no local key for device ' + duid);
+      }
+
+      const messageBodyBuilder = this.messageBodyBuilderFactory.getMessageBodyBuilder(version, request.body !== undefined);
+      const messageProcessor = this.messageProcessorFactory.getMessageProcessor(version);
+      const payloadData = messageBodyBuilder.buildPayload(request, this.context);
+      const connectNonce = this.context.nonce;
+      const ackNonce = this.context.getDeviceNonce(duid);
+      encrypted = messageProcessor.encode(payloadData, localKey, request.timestamp, this.sequence, request.nonce, connectNonce, ackNonce);
     }
 
     const msg = Buffer.alloc(23 + encrypted.length);

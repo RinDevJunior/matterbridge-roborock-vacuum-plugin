@@ -11,25 +11,30 @@ export class SimpleMessageListener implements AbstractMessageListener {
   }
 
   public async onMessage(message: ResponseMessage): Promise<void> {
-    if (!this.handler || message.contain(Protocol.rpc_response) || message.contain(Protocol.map_response)) {
+    if (!this.handler || message.isForProtocol(Protocol.rpc_response) || message.isForProtocol(Protocol.map_response)) {
       return;
     }
 
-    if (message.contain(Protocol.status_update) && this.handler.onStatusChanged) {
-      await this.handler.onStatusChanged();
+    if (message.isForProtocol(Protocol.status_update) && this.handler.onStatusChanged) {
+      await this.handler.onStatusChanged(message);
     }
 
-    if (message.contain(Protocol.error) && this.handler.onError) {
+    if (message.isForProtocol(Protocol.error) && this.handler.onError) {
       const value = message.get(Protocol.error) as string;
       await this.handler.onError(Number(value));
     }
 
-    if (message.contain(Protocol.battery) && this.handler.onBatteryUpdate) {
+    if (message.isForProtocol(Protocol.battery) && this.handler.onBatteryUpdate) {
       const value = message.get(Protocol.battery) as string;
       await this.handler.onBatteryUpdate(Number(value));
     }
 
-    if (message.contain(Protocol.additional_props) && this.handler.onAdditionalProps) {
+    if (message.isForProtocol(Protocol.general_response) && this.handler.onBatteryUpdate) {
+      const value = message.get(Protocol.battery) as string;
+      await this.handler.onBatteryUpdate(Number(value));
+    }
+
+    if (message.isForProtocol(Protocol.additional_props) && this.handler.onAdditionalProps) {
       const value = message.get(Protocol.additional_props) as string;
       await this.handler.onAdditionalProps(Number(value));
     }

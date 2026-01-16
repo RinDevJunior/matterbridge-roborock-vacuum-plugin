@@ -24,9 +24,28 @@ applyTo: '**/*.ts'
 ## Project Organization
 
 - Follow the repository's folder and responsibility layout for new code.
-- Use kebab-case filenames (e.g., `user-session.ts`, `data-service.ts`) unless told otherwise.
+- Use camelCase filenames (e.g., `userSession.ts`, `dataService.ts`) unless told otherwise.
 - Keep tests, types, and helpers near their implementation when it aids discovery.
 - Reuse or extend shared utilities before adding new ones.
+- Test files must be located in `src/test` or alongside implementation files as per project conventions.
+
+## Coding Practices
+- Apply TDD: write tests before implementation when feasible for fixes or features.
+- Favor composition over inheritance; use interfaces and types for contracts.
+- Add `public`, `private`, or `protected` access modifiers explicitly.
+- Use `readonly` for properties that should not change after initialization.
+- Prefer `const` and `let` over `var`; use `const` by default.
+- Destructure objects and arrays to extract needed values.
+- Use template literals for string interpolation and multi-line strings.
+- Leverage modern ESNext features like optional chaining, nullish coalescing, and top-level await.
+- Avoid deep nesting by early returns or guard clauses.
+- Use `for...of` loops or array methods (`map`, `filter`, `reduce`) instead of traditional `for` loops when iterating collections.
+- Handle asynchronous code with `async/await` instead of raw Promises when possible.
+- Use `try/catch` blocks around `await` calls that may fail.
+- Prefer `Map`, `Set`, and other built-in data structures over plain objects for collections when appropriate.
+- Avoid using `eval`, `with`, or other dynamic code features.
+- Keep functions focused on a single task; extract helpers for complex logic.
+- Read the project's structure from `docs\CODE_STRUCTURE.md` to understand module boundaries and responsibilities.
 
 ## Naming & Style
 
@@ -111,6 +130,5 @@ applyTo: '**/*.ts'
 
 ## Documentation & Comments
 
-- Add JSDoc to public APIs; include `@remarks` or `@example` when helpful.
 - Write comments that capture intent, and remove stale notes during refactors.
 - Update architecture or design docs when introducing significant patterns.
