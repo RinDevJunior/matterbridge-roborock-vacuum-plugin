@@ -20,4 +20,8 @@ export class ResponseMessage {
   public isForProtocol(protocol: number | string | Protocol): boolean {
     return this.header && this.header.isForProtocol(protocol);
   }
+
+  public isForStatus(status: number): boolean {
+    return this.body !== undefined && this.body.get(status) !== undefined;
+  }
 }

@@ -6,6 +6,7 @@ import { MessageContext } from '../model/messageContext.js';
 import { Rriot, UserData } from '../../Zmodel/userData.js';
 import { AnsiLogger, debugStringify } from 'matterbridge/logger';
 import { KEEPALIVE_INTERVAL_MS } from '../../../constants/index.js';
+import { SyncMessageListener } from '../listener/implementation/syncMessageListener.js';
 
 export class MQTTClient extends AbstractClient {
   protected override clientName = 'MQTTClient';
@@ -16,8 +17,8 @@ export class MQTTClient extends AbstractClient {
   private mqttClient: MqttLibClient | undefined = undefined;
   private keepConnectionAliveInterval: NodeJS.Timeout | undefined = undefined;
 
-  public constructor(logger: AnsiLogger, context: MessageContext, userdata: UserData) {
-    super(logger, context);
+  public constructor(logger: AnsiLogger, context: MessageContext, userdata: UserData, syncMessageListener?: SyncMessageListener) {
+    super(logger, context, syncMessageListener);
     this.rriot = userdata.rriot;
 
     this.mqttUsername = CryptoUtils.md5hex(userdata.rriot.u + ':' + userdata.rriot.k).substring(2, 10);
@@ -72,7 +73,7 @@ export class MQTTClient extends AbstractClient {
     }
   }
 
-  public async send(duid: string, request: RequestMessage): Promise<void> {
+  protected async sendInternal(duid: string, request: RequestMessage): Promise<void> {
     if (!this.mqttClient || !this.connected) {
       this.logger.error(`${duid}: mqtt is not available, ${debugStringify(request)}`);
       return;
@@ -168,7 +169,7 @@ export class MQTTClient extends AbstractClient {
 
     try {
       const duid = topic.split('/').slice(-1)[0];
-      const response = this.deserializer.deserialize(duid, message, '[MQTTClient]');
+      const response = this.deserializer.deserialize(duid, message, 'MQTTClient');
       await this.messageListeners.onMessage(response);
     } catch (error) {
       const errMsg = error instanceof Error ? (error.stack ?? error.message) : String(error);

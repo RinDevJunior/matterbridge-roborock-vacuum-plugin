@@ -12,6 +12,7 @@ import { Scene } from '../Zmodel/scene.js';
 export class RoborockIoTApi {
   logger: AnsiLogger;
   private readonly api: AxiosInstance;
+  private readonly vacuumNeedAPIV3 = ['roborock.vacuum.ss07'];
 
   constructor(userdata: UserData, logger: AnsiLogger) {
     this.logger = logger;
@@ -53,6 +54,38 @@ export class RoborockIoTApi {
       }
       return config;
     });
+  }
+
+  public async getHomeWithProducts(homeId: number): Promise<Home | undefined> {
+    const homeData = await this.getHome(homeId);
+    if (!homeData) {
+      this.logger.error('Failed to retrieve the home data');
+      return undefined;
+    }
+
+    if (homeData.products.some((p) => this.vacuumNeedAPIV3.includes(p.model))) {
+      this.logger.debug('Using v3 API for home data retrieval');
+      const homeDataV3 = await this.getHomev3(homeId);
+      if (!homeDataV3) {
+        throw new Error('Failed to retrieve the home data from v3 API');
+      }
+      homeData.devices = [...homeData.devices, ...homeDataV3.devices.filter((d) => !homeData.devices.some((x) => x.duid === d.duid))];
+      homeData.receivedDevices = [...homeData.receivedDevices, ...homeDataV3.receivedDevices.filter((d) => !homeData.receivedDevices.some((x) => x.duid === d.duid))];
+    }
+
+    if (homeData.rooms.length === 0) {
+      const homeDataV2 = await this.getHomev2(homeId);
+      if (homeDataV2 && homeDataV2.rooms && homeDataV2.rooms.length > 0) {
+        homeData.rooms = homeDataV2.rooms;
+      } else {
+        const homeDataV3 = await this.getHomev3(homeId);
+        if (homeDataV3 && homeDataV3.rooms && homeDataV3.rooms.length > 0) {
+          homeData.rooms = homeDataV3.rooms;
+        }
+      }
+    }
+
+    return homeData;
   }
 
   public async getHome(homeId: number): Promise<Home | undefined> {

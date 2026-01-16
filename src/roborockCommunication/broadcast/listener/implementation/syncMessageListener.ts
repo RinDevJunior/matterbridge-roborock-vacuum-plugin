@@ -8,11 +8,7 @@ import { MESSAGE_TIMEOUT_MS } from '../../../../constants/index.js';
 
 export class SyncMessageListener implements AbstractMessageListener {
   private readonly pending = new Map<number, (response: ResponseMessage) => void>();
-  logger: AnsiLogger;
-
-  constructor(logger: AnsiLogger) {
-    this.logger = logger;
-  }
+  constructor(private readonly logger: AnsiLogger) {}
 
   public waitFor(messageId: number, request: RequestMessage, resolve: (response: ResponseMessage) => void, reject: (error?: Error) => void): void {
     this.logger.debug(`Waiting for response to messageId: ${messageId}, method: ${request.method}`);
@@ -25,9 +21,14 @@ export class SyncMessageListener implements AbstractMessageListener {
   }
 
   public async onMessage(message: ResponseMessage): Promise<void> {
-    // Handle general_request (protocol 4 - device uses request protocol for responses), general_response (protocol 5) and rpc_response (protocol 102)
+    // Handle general_request
+    // general_request (protocol 4 - device uses request protocol for responses),
+    // general_response (protocol 5)
+    // rpc_response (protocol 102)
     if (message.isForProtocol(Protocol.general_request) || message.isForProtocol(Protocol.general_response) || message.isForProtocol(Protocol.rpc_response)) {
-      this.logger.debug(`Processing response with protocol ${message.header?.protocol}`);
+      const protocolNum = message.header?.protocol;
+      const protocolName = Object.entries(Protocol).find(([, v]) => v === protocolNum)?.[0] ?? protocolNum;
+      this.logger.debug(`Processing response with protocol ${protocolName}`);
 
       // Data is always stored in key 102 (rpc_response), regardless of header protocol
       // This is because the deserializer parses all general_request/general_response messages
@@ -42,8 +43,18 @@ export class SyncMessageListener implements AbstractMessageListener {
         dps = message.get(Protocol.general_response) as DpsPayload;
       }
 
+      if (!dps && message.isForProtocol(Protocol.rpc_response)) {
+        dps = message.get(Protocol.rpc_response) as DpsPayload;
+      }
+
+      if (!dps && message.isForProtocol(Protocol.rpc_response) && (message.isForStatus(Protocol.suction_power) || message.isForStatus(Protocol.water_box_mode))) {
+        // skip message handling for status updates because they will be handled at statusMessageListener
+        return;
+      }
+
       if (!dps) {
-        this.logger.warn(`Response missing DPS payload for protocol ${message.header?.protocol}`);
+        this.logger.warn(`Response missing DPS payload for protocol ${protocolName}`);
+        this.logger.warn(`Full message: ${debugStringify(message)}`);
         return;
       }
 

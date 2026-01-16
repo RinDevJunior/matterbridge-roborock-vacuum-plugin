@@ -30,12 +30,12 @@ export abstract class AbstractClient implements Client {
   private readonly syncMessageListener: SyncMessageListener;
   private noResponseNeededMethods: string[] = [];
 
-  protected constructor(logger: AnsiLogger, context: MessageContext) {
+  protected constructor(logger: AnsiLogger, context: MessageContext, syncMessageListener?: SyncMessageListener) {
     this.context = context;
     this.serializer = new MessageSerializer(this.context, logger);
     this.deserializer = new MessageDeserializer(this.context, logger);
 
-    this.syncMessageListener = new SyncMessageListener(logger);
+    this.syncMessageListener = syncMessageListener ?? new SyncMessageListener(logger);
     this.messageListeners.register(this.syncMessageListener);
     this.logger = logger;
   }
@@ -45,7 +45,30 @@ export abstract class AbstractClient implements Client {
     this.connectionListeners.register(this.connectionStateListener);
   }
 
-  abstract send(duid: string, request: RequestMessage): Promise<void>;
+  /**
+   * Sends a request and waits for a response using syncMessageListener.
+   * Override this if you need custom send logic, but call super.send for response waiting.
+   */
+  public async send<T = ResponseMessage>(duid: string, request: RequestMessage): Promise<T | undefined> {
+    return new Promise<T>((resolve, reject) => {
+      const pv = this.context.getProtocolVersion(duid);
+      request.version = request.version ?? pv;
+      if (request.method && !this.noResponseNeededMethods.includes(request.method)) {
+        this.syncMessageListener.waitFor(request.messageId, request, (response: ResponseMessage) => resolve(response as unknown as T), reject);
+      }
+      this.sendInternal(duid, request);
+    })
+      .then((result: T) => result)
+      .catch((error: Error) => {
+        this.logger.error(error.message);
+        return undefined;
+      });
+  }
+
+  /**
+   * Internal send logic to be implemented by subclasses (e.g., actual network send).
+   */
+  protected abstract sendInternal(duid: string, request: RequestMessage): void;
 
   public connect(): void {
     if (this.connectionStateListener) {
@@ -67,7 +90,7 @@ export abstract class AbstractClient implements Client {
       if (request.method && !this.noResponseNeededMethods.includes(request.method)) {
         this.syncMessageListener.waitFor(request.messageId, request, (response: ResponseMessage) => resolve(response as unknown as T), reject);
       }
-      this.send(duid, request);
+      this.sendInternal(duid, request);
     })
       .then((result: T) => {
         return result;

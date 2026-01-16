@@ -44,7 +44,16 @@ describe('LocalNetworkClient', () => {
 
     Sket.mockImplementation(() => mockSocket);
 
-    client = new LocalNetworkClient(mockLogger, mockContext, duid, ip);
+    // Inject a mock SyncMessageListener for testability
+    const mockSyncMessageListener = {
+      waitFor: jest.fn((_msgId: number, _req: any, resolve: any, _reject: any) => resolve(undefined)),
+      pending: new Map(),
+      logger: mockLogger,
+      onMessage: jest.fn(),
+    };
+    client = new LocalNetworkClient(mockLogger, mockContext, duid, ip, mockSyncMessageListener as any);
+    // Expose for test assertions
+    (client as any)._mockSyncMessageListener = mockSyncMessageListener;
     (client as any).serializer = { serialize: jest.fn().mockReturnValue({ buffer: Buffer.from([1, 2, 3]), messageId: 123 }) };
     (client as any).deserializer = { deserialize: jest.fn().mockReturnValue('deserialized') };
     (client as any).messageListeners = { onMessage: jest.fn() };
@@ -58,9 +67,9 @@ describe('LocalNetworkClient', () => {
   afterEach(() => {
     jest.clearAllMocks();
     jest.useRealTimers();
-    if (client['keepConnectionAliveInterval']) {
-      clearInterval(client['keepConnectionAliveInterval']);
-      client['keepConnectionAliveInterval'] = undefined;
+    if ((client as any).keepConnectionAliveInterval) {
+      clearInterval((client as any).keepConnectionAliveInterval);
+      (client as any).keepConnectionAliveInterval = undefined;
     }
     if (client['pingInterval']) {
       clearInterval(client['pingInterval']);
@@ -107,8 +116,9 @@ describe('LocalNetworkClient', () => {
   it('send() should log error if socket is not connected', async () => {
     client['socket'] = undefined;
     client['connected'] = false;
-    await client.send(duid, { toLocalRequest: jest.fn(), secure: false } as any);
-    expect(mockLogger.error).toHaveBeenCalled();
+    const req = { toLocalRequest: jest.fn(), secure: false, isForProtocol: jest.fn().mockReturnValue(false), version: '1.0', method: 'test' };
+    await client.send(duid, req as any);
+    expect(mockLogger.error).toHaveBeenCalledWith(expect.stringContaining('socket is not online'));
     expect(mockSocket.write).not.toHaveBeenCalled();
   });
 
@@ -117,11 +127,13 @@ describe('LocalNetworkClient', () => {
     mockSocket.destroyed = false;
     client['socket'] = mockSocket;
     client['connected'] = true;
-    const req = { toLocalRequest: jest.fn().mockReturnValue({}), secure: false, isForProtocol: jest.fn().mockReturnValue(false), version: '1.0' };
+    const req = { toLocalRequest: jest.fn().mockReturnValue({}), secure: false, isForProtocol: jest.fn().mockReturnValue(false), version: '1.0', method: 'test' };
     await client.send(duid, req as any);
     expect(client['serializer'].serialize).toHaveBeenCalled();
     expect(mockSocket.write).toHaveBeenCalledWith(expect.any(Buffer));
     expect(mockLogger.debug).toHaveBeenCalled();
+    // Ensure waitFor is called if send logic expects it (if not, this will pass regardless)
+    // expect((client as any)._mockSyncMessageListener.waitFor).toHaveBeenCalled();
   });
 
   it('onConnect() should set connected, log, send hello, set ping, call onConnected', async () => {
@@ -220,7 +232,13 @@ describe('LocalNetworkClient', () => {
   it('send() should handle when socket exists but not connected', async () => {
     client['socket'] = mockSocket;
     client['connected'] = false;
-    const req = { toLocalRequest: jest.fn().mockReturnValue({ protocol: Protocol.ping_request }), secure: false };
+    const req = {
+      toLocalRequest: jest.fn().mockReturnValue({ protocol: Protocol.ping_request }),
+      secure: false,
+      isForProtocol: jest.fn().mockReturnValue(false),
+      version: '1.0',
+      method: 'test',
+    };
     await client.send(duid, req as any);
     expect(mockLogger.error).toHaveBeenCalledWith(expect.stringContaining('socket is not online'));
     expect(mockSocket.write).not.toHaveBeenCalled();
@@ -229,7 +247,13 @@ describe('LocalNetworkClient', () => {
   it('send() should handle when connected but socket is undefined', async () => {
     client['socket'] = undefined;
     client['connected'] = true;
-    const req = { toLocalRequest: jest.fn().mockReturnValue({ protocol: Protocol.ping_request }), secure: false };
+    const req = {
+      toLocalRequest: jest.fn().mockReturnValue({ protocol: Protocol.ping_request }),
+      secure: false,
+      isForProtocol: jest.fn().mockReturnValue(false),
+      version: '1.0',
+      method: 'test',
+    };
     await client.send(duid, req as any);
     expect(mockLogger.error).toHaveBeenCalledWith(expect.stringContaining('socket is not online'));
   });
