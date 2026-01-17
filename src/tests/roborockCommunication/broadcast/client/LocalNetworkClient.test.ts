@@ -1,10 +1,14 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { LocalNetworkClient } from '../../../../roborockCommunication/broadcast/client/LocalNetworkClient';
-import { Protocol } from '../../../../roborockCommunication/broadcast/model/protocol';
-import { EventEmitter } from 'node:events';
+// Extend globalThis for test-only properties
+declare global {
+  var mockSocketInstance: any;
 
-// Vitest ESM hoisting workaround: vi.mock must be first, then all imports
+  var Sket: any;
+}
+import { LocalNetworkClient } from '@/roborockCommunication/broadcast/client/LocalNetworkClient.js';
+import { Protocol } from '@/roborockCommunication/index.js';
+import EventEmitter from 'node:events';
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+
 vi.mock('node:net', async () => {
   const { EventEmitter } = await import('node:events');
   const actual = await import('node:net');
@@ -22,10 +26,6 @@ vi.mock('node:net', async () => {
     Socket: Sket,
   };
 });
-
-import { LocalNetworkClient } from '../../../../roborockCommunication/broadcast/client/LocalNetworkClient';
-import { Protocol } from '../../../../roborockCommunication/broadcast/model/protocol';
-import { EventEmitter } from 'node:events';
 
 describe('LocalNetworkClient', () => {
   let client: LocalNetworkClient;

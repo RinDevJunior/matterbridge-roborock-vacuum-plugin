@@ -1,5 +1,4 @@
 // @ts-check
-
 import eslint from '@eslint/js';
 import tseslint from 'typescript-eslint';
 import eslintPluginPrettier from 'eslint-plugin-prettier/recommended';
@@ -9,7 +8,7 @@ import pluginVitest from '@vitest/eslint-plugin';
 export default [
   {
     name: 'global ignores',
-    ignores: ['dist/', 'build/', 'node_modules/', 'coverage/', 'frontend/', 'rock-s0/', 'webui/', 'exampleData/', '.shouldnotcommit/', 'web-for-testing/', 'pluginTemplate/'],
+    ignores: ['dist/', 'build/', 'node_modules/', 'coverage/', 'exampleData/', 'web-for-testing/', 'vite.config.ts'],
   },
   eslint.configs.recommended,
   ...tseslint.configs.strict,
@@ -38,6 +37,16 @@ export default [
     },
   },
   {
+    name: 'node',
+    files: ['**/*.ts'],
+    plugins: {
+      n: eslintPluginN,
+    },
+    rules: {
+      'n/prefer-node-protocol': 'error',
+    },
+  },
+  {
     name: 'javascript',
     files: ['**/*.js'],
     ...tseslint.configs.disableTypeChecked,
@@ -45,7 +54,7 @@ export default [
   {
     name: 'typescript',
     files: ['**/*.ts'],
-    ignores: ['**/__test__/*', '**/*.test.ts', '**/*.spec.ts'],
+    ignores: ['**/*.test.ts', '**/*.spec.ts', '**/tests/**/*.ts'],
     languageOptions: {
       ecmaVersion: 'latest',
       sourceType: 'module',
@@ -60,24 +69,15 @@ export default [
     },
   },
   {
-    name: 'node',
-    files: ['**/*.ts'],
-    plugins: {
-      n: eslintPluginN,
-    },
-    rules: {
-      'n/prefer-node-protocol': 'error',
-    },
-  },
-  {
-    name: 'Vitest Test Files',
-    files: ['src/**/*.spec.ts', 'src/**/*.test.ts'],
+    name: 'vitest',
+    files: ['**/*.spec.ts', '**/*.test.ts', 'src/tests/**/*.ts'],
     languageOptions: {
+      sourceType: 'module',
+      ecmaVersion: 'latest',
       parser: tseslint.parser,
       parserOptions: {
-        project: './tsconfig.jest.json', // Or your shared tsconfig
-        sourceType: 'module',
-        ecmaVersion: 'latest',
+        project: './tsconfig.vitest.json',
+        tsconfigRootDir: import.meta.dirname,
       },
     },
     plugins: {

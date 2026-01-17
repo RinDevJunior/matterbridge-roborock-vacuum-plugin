@@ -1,7 +1,7 @@
+import { NotifyMessageTypes } from '@/notifyMessageTypes.js';
+import { SimpleMessageHandler } from '@/roborockCommunication/broadcast/handler/simpleMessageHandler.js';
+import { VacuumErrorCode } from '@/roborockCommunication/index.js';
 import { describe, it, expect, vi } from 'vitest';
-import { NotifyMessageTypes } from '../../../../notifyMessageTypes';
-import { VacuumErrorCode } from '../../../../roborockCommunication';
-import { SimpleMessageHandler } from '../../../../roborockCommunication/broadcast/handler/simpleMessageHandler';
 
 describe('SimpleMessageHandler', () => {
   const duid = 'test-duid';

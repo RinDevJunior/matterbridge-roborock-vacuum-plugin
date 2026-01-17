@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import RoborockService from '../roborockService';
+import RoborockService from '../roborockService.js';
 import ClientManager from '../services/clientManager.js';
 
 describe('initializeMessageClientForLocal', () => {

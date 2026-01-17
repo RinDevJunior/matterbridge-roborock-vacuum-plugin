@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { state_to_matter_state, state_to_matter_operational_status } from '../../share/function';
-import { OperationStatusCode } from '../../roborockCommunication/Zenum/operationStatusCode';
+import { state_to_matter_state, state_to_matter_operational_status } from '../../share/function.js';
+import { OperationStatusCode } from '../../roborockCommunication/Zenum/operationStatusCode.js';
 import { RvcRunMode, RvcOperationalState } from 'matterbridge/matter/clusters';
 
 describe('share/function helpers', () => {

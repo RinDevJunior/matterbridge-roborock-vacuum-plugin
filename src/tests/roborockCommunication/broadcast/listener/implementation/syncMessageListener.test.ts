@@ -1,8 +1,6 @@
+import { SyncMessageListener } from '@/roborockCommunication/broadcast/listener/implementation/syncMessageListener.js';
+import { RequestMessage, Protocol, ResponseMessage } from '@/roborockCommunication/index.js';
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { SyncMessageListener } from '../../../../../roborockCommunication/broadcast/listener/implementation/syncMessageListener';
-import { Protocol } from '../../../../../roborockCommunication/broadcast/model/protocol';
-import { RequestMessage } from '../../../../../roborockCommunication/broadcast/model/requestMessage';
-import { ResponseMessage } from '../../../../../roborockCommunication/broadcast/model/responseMessage';
 
 describe('SyncMessageListener', () => {
   let listener: SyncMessageListener;

@@ -1,5 +1,5 @@
+import { getSupportedScenes } from '@/initialData/getSupportedScenes.js';
 import { describe, it, expect, vi } from 'vitest';
-import { getSupportedScenes } from '../../initialData/getSupportedScenes';
 
 describe('getSupportedScenes', () => {
   it('returns empty array and logs error when scenes missing', () => {

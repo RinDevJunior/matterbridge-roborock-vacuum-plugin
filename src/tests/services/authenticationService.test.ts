@@ -1,7 +1,7 @@
 import { AnsiLogger } from 'matterbridge/logger';
 import { AuthenticationService } from '../../services/authenticationService.js';
-import { AuthenticationError } from '../../errors/AuthenticationError';
-import type { UserData } from '../../roborockCommunication';
+import { AuthenticationError } from '../../errors/AuthenticationError.js';
+import type { UserData } from '../../roborockCommunication/index.js';
 import { vi, describe, beforeEach, it, expect } from 'vitest';
 
 // Mock the authenticate API

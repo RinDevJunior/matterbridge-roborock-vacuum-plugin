@@ -36,6 +36,8 @@
 
 ### ⚠️ Important Notes
 
+Requires matterbridge@3.4.7
+
 - **Matterbridge must be run in child bridge mode** for proper operation.
 - **Use one Matterbridge instance per Roborock vacuum.**  
   If you have more than one vacuum, please run separate instances.

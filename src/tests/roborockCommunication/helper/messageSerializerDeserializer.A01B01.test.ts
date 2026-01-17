@@ -1,9 +1,9 @@
 import { describe, test, expect, vi } from 'vitest';
-import { MessageSerializer } from '../../../roborockCommunication/helper/messageSerializer';
-import { MessageDeserializer } from '../../../roborockCommunication/helper/messageDeserializer';
-import { MessageContext } from '../../../roborockCommunication/broadcast/model/messageContext';
-import { RequestMessage } from '../../../roborockCommunication/broadcast/model/requestMessage';
-import { Protocol } from '../../../roborockCommunication/broadcast/model/protocol';
+import { MessageSerializer } from '../../../roborockCommunication/helper/messageSerializer.js';
+import { MessageDeserializer } from '../../../roborockCommunication/helper/messageDeserializer.js';
+import { MessageContext } from '../../../roborockCommunication/broadcast/model/messageContext.js';
+import { RequestMessage } from '../../../roborockCommunication/broadcast/model/requestMessage.js';
+import { Protocol } from '../../../roborockCommunication/broadcast/model/protocol.js';
 
 const logger: any = { debug: vi.fn(), notice: vi.fn(), error: vi.fn() };
 
@@ -29,7 +29,7 @@ describe('MessageSerializer/Deserializer A01 & B01', () => {
     const res = serializer.serialize(duid, req);
     expect(res).toHaveProperty('buffer');
 
-    const out = deserializer.deserialize(duid, res.buffer);
+    const out = deserializer.deserialize(duid, res.buffer, 'local');
     // ensure rpc_response dps exists and has an id
     const got: any = out.get(Protocol.rpc_response);
     expect(got).toBeDefined();
@@ -57,7 +57,7 @@ describe('MessageSerializer/Deserializer A01 & B01', () => {
     const res = serializer.serialize(duid, req);
     expect(res).toHaveProperty('buffer');
 
-    const out = deserializer.deserialize(duid, res.buffer);
+    const out = deserializer.deserialize(duid, res.buffer, 'local');
     // ensure rpc_response dps exists and has an id
     const got: any = out.get(Protocol.rpc_response);
     expect(got).toBeDefined();

@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
-import { RoborockAuthenticateApi } from '../../../roborockCommunication/RESTAPI/roborockAuthenticateApi';
-import { AuthenticateResponseCode } from '../../../roborockCommunication/Zenum/authenticateResponseCode';
+import { RoborockAuthenticateApi } from '@/roborockCommunication/RESTAPI/roborockAuthenticateApi.js';
+import { AuthenticateResponseCode } from '@/roborockCommunication/Zenum/authenticateResponseCode.js';
 
 describe('RoborockAuthenticateApi private helpers', () => {
   const logger = { debug: vi.fn() } as any;

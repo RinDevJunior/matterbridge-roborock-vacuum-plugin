@@ -1,5 +1,4 @@
-import { RequestMessage } from '../../../../roborockCommunication/broadcast/model/requestMessage';
-import { Protocol } from '../../../../roborockCommunication/broadcast/model/protocol';
+import { RequestMessage, Protocol } from '@/roborockCommunication/index.js';
 import { describe, it, expect } from 'vitest';
 
 describe('RequestMessage', () => {

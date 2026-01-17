@@ -1,5 +1,5 @@
 ---
-description: 'Guidelines for TypeScript Development targeting TypeScript 5.x and ESNext output'
+description: 'Guidelines for developing unit tests in TypeScript projects.'
 applyTo: '**/*.test.ts'
 ---
 
@@ -17,7 +17,7 @@ applyTo: '**/*.test.ts'
 ## Test Organization
 
 - Place test files alongside implementation files or in a dedicated `src/tests` folder.
-- Name test files with a `.test.ts` suffix (e.g., `user-service.test.ts`).
+- Name test files with a `.test.ts` suffix (e.g., `userService.test.ts`).
 - Group related tests using `describe` blocks to improve readability.
 - Use `beforeEach` and `afterEach` hooks for setup and teardown logic.
 - Reuse shared test utilities and mocks from the codebase.
@@ -46,7 +46,7 @@ applyTo: '**/*.test.ts'
 - Write tests that are deterministic and produce the same result every time they run.
 - Use Arrange-Act-Assert (AAA) pattern to structure test cases.
 - Write tests that are independent and can run in any order.
-- Use the testing framework and assertion library established in the project (e.g., Jest, Mocha, Chai).
+- Use vitest as the test framework (do not use jest).
 - Write tests that are easy to read and understand; prioritize clarity over cleverness.
 - Use `async/await` for asynchronous tests; avoid mixing with callbacks.
 - Mock external dependencies and side effects to ensure test isolation.

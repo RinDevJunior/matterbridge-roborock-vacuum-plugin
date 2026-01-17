@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { getCurrentCleanModeSmart } from '../../../../behaviors/roborock.vacuum/smart/runtimes';
-import { MopWaterFlowSmart, VacuumSuctionPowerSmart } from '../../../../behaviors/roborock.vacuum/smart/smart';
+import { getCurrentCleanModeSmart } from '@/behaviors/roborock.vacuum/smart/runtimes.js';
+import { MopWaterFlowSmart, VacuumSuctionPowerSmart } from '@/behaviors/roborock.vacuum/smart/smart.js';
 
 describe('getCurrentCleanModeSmart', () => {
   it('returns undefined if input is undefined', () => {

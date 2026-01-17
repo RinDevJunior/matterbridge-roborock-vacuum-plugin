@@ -6,8 +6,11 @@
 // This Vitest configuration is designed for a TypeScript project.
 
 import { defineConfig } from 'vitest/config';
+import { fileURLToPath } from 'node:url';
+import tsconfigPaths from 'vite-tsconfig-paths';
 
 export default defineConfig({
+  plugins: [tsconfigPaths()],
   test: {
     include: ['src/**/*.test.ts', 'src/**/*.spec.ts'],
     exclude: ['dist', 'node_modules', 'src/pluginTemplate/**'],
@@ -35,6 +38,11 @@ export default defineConfig({
         functions: 100,
         lines: 100,
       },
+    },
+  },
+  resolve: {
+    alias: {
+      '@/': fileURLToPath(new URL('./src/', import.meta.url)),
     },
   },
 });

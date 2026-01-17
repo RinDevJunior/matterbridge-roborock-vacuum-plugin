@@ -1,6 +1,6 @@
 import { describe, it, beforeEach, expect, vi } from 'vitest';
 import { AdditionalPropCode, Protocol } from '../../roborockCommunication/index.js';
-import { handleCloudMessage } from '../../runtimes/handleCloudMessage';
+import { handleCloudMessage } from '../../runtimes/handleCloudMessage.js';
 import { mapInfo, roomData, roomIndexMap, supportedAreas, supportedMaps } from '../testData/mockData.js';
 
 // Mocks for dependencies
@@ -15,11 +15,11 @@ const mockUpdateFromMQTTMessage = vi.fn();
 const mockGetRoomMapFromDevice = vi.fn();
 const mockGetSupportedAreas = vi.fn();
 
-vi.mock('./src/helper', () => ({
+vi.mock('../helper.js', () => ({
   getRoomMapFromDevice: (...args: any[]) => mockGetRoomMapFromDevice(...args),
   isStatusUpdate: (result: any) => result === 'status',
 }));
-vi.mock('./src/initialData/getSupportedAreas', () => ({
+vi.mock('../initialData/getSupportedAreas.js', () => ({
   getSupportedAreas: (...args: any[]) => mockGetSupportedAreas(...args),
 }));
 
