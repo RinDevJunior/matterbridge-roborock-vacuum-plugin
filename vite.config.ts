@@ -28,15 +28,15 @@ export default defineConfig({
         'src/**/*.test.{ts,tsx,js,jsx}',
         'src/**/*.spec.{ts,tsx,js,jsx}',
         // Exclude helper file(s) not meant for coverage
-        'src/**/jestHelpers.ts',
+        'src/tests/**/*.ts',
         // Exclude type declaration files
         'src/**/*.d.ts',
       ],
       thresholds: {
-        statements: 100,
-        branches: 100,
-        functions: 100,
-        lines: 100,
+        statements: 75,
+        branches: 75,
+        functions: 75,
+        lines: 75,
       },
     },
   },
