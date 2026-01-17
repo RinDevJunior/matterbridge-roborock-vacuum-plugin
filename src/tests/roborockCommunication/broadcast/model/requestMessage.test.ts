@@ -1,8 +1,9 @@
 import { RequestMessage } from '../../../../roborockCommunication/broadcast/model/requestMessage';
 import { Protocol } from '../../../../roborockCommunication/broadcast/model/protocol';
+import { describe, it, expect } from 'vitest';
 
 describe('RequestMessage', () => {
-  test('constructor uses provided values', () => {
+  it('constructor uses provided values', () => {
     const req = new RequestMessage({
       messageId: 1234,
       protocol: Protocol.rpc_request,
@@ -22,7 +23,7 @@ describe('RequestMessage', () => {
     expect(req.timestamp).toBe(9999);
   });
 
-  test('constructor uses defaults when values not provided', () => {
+  it('constructor uses defaults when values not provided', () => {
     const req = new RequestMessage({});
 
     expect(typeof req.messageId).toBe('number');
@@ -37,7 +38,7 @@ describe('RequestMessage', () => {
     expect(req.timestamp).toBeGreaterThan(0);
   });
 
-  test('toMqttRequest returns new instance with same data', () => {
+  it('toMqttRequest returns new instance with same data', () => {
     const req = new RequestMessage({ method: 'test' });
     const mqttReq = req.toMqttRequest();
     expect(mqttReq).toBeInstanceOf(RequestMessage);
@@ -47,7 +48,7 @@ describe('RequestMessage', () => {
     expect(mqttReq.timestamp).toBe(req.timestamp);
   });
 
-  test('toLocalRequest converts rpc_request to general_request', () => {
+  it('toLocalRequest converts rpc_request to general_request', () => {
     const req = new RequestMessage({
       messageId: 111,
       protocol: Protocol.rpc_request,
@@ -67,7 +68,7 @@ describe('RequestMessage', () => {
     expect(local.timestamp).toBe(8888);
   });
 
-  test('toLocalRequest returns this for non-rpc protocols', () => {
+  it('toLocalRequest returns this for non-rpc protocols', () => {
     const req = new RequestMessage({
       protocol: Protocol.general_request,
       method: 'otherMethod',

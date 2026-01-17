@@ -1,3 +1,4 @@
+import { describe, it, expect, vi } from 'vitest';
 import { MessageSerializer } from '../../../roborockCommunication/helper/messageSerializer';
 import { MessageDeserializer } from '../../../roborockCommunication/helper/messageDeserializer';
 import { MessageContext } from '../../../roborockCommunication/broadcast/model/messageContext';
@@ -6,7 +7,7 @@ import { Protocol } from '../../../roborockCommunication/broadcast/model/protoco
 
 const mkUser = () => ({ rriot: { k: 'some-key-for-test-000' } }) as any;
 
-const logger: any = { error: jest.fn(), notice: jest.fn(), debug: jest.fn() };
+const logger: any = { error: vi.fn(), notice: vi.fn(), debug: vi.fn() };
 
 describe('MessageSerializer/Deserializer roundtrip', () => {
   it('serializes and deserializes a 1.0 rpc_response payload', () => {

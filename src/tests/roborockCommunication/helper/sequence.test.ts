@@ -1,3 +1,4 @@
+import { describe, it, expect } from 'vitest';
 import { Sequence } from '../../../roborockCommunication/helper/sequence';
 
 describe('Sequence', () => {

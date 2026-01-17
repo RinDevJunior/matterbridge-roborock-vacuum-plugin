@@ -1,16 +1,15 @@
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { ChainedMessageListener } from '../../../../../roborockCommunication/broadcast/listener/implementation/chainedMessageListener';
-import { AbstractMessageListener } from '../../../../../roborockCommunication/broadcast/listener/abstractMessageListener';
 
 describe('ChainedMessageListener', () => {
   let chained: ChainedMessageListener;
-  let listener1: jest.Mocked<AbstractMessageListener>;
-  let listener2: jest.Mocked<AbstractMessageListener>;
+  let listener1: { onMessage: ReturnType<typeof vi.fn<(message: any) => Promise<void>>> }, listener2: { onMessage: ReturnType<typeof vi.fn<(message: any) => Promise<void>>> };
   const message = { foo: 'bar' } as any;
 
   beforeEach(() => {
     chained = new ChainedMessageListener();
-    listener1 = { onMessage: jest.fn().mockResolvedValue(undefined) } as any;
-    listener2 = { onMessage: jest.fn().mockResolvedValue(undefined) } as any;
+    listener1 = { onMessage: vi.fn<(message: any) => Promise<void>>() };
+    listener2 = { onMessage: vi.fn<(message: any) => Promise<void>>() };
   });
 
   it('should call onMessage on all registered listeners', async () => {

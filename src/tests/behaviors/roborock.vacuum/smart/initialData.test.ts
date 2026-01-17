@@ -1,3 +1,4 @@
+import { describe, it, expect } from 'vitest';
 import { getSupportedCleanModesSmart } from '../../../../behaviors/roborock.vacuum/smart/initialData';
 import { createDefaultExperimentalFeatureSetting } from '../../../../model/ExperimentalFeatureSetting';
 

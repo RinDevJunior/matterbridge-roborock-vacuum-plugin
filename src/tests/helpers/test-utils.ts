@@ -4,6 +4,7 @@
  */
 
 import type { AnsiLogger } from 'matterbridge/logger';
+import { vi } from 'vitest';
 
 /**
  * Creates a mock AnsiLogger for testing purposes.
@@ -20,12 +21,12 @@ import type { AnsiLogger } from 'matterbridge/logger';
  */
 export function createMockLogger(): AnsiLogger {
   return {
-    debug: jest.fn(),
-    info: jest.fn(),
-    notice: jest.fn(),
-    warn: jest.fn(),
-    error: jest.fn(),
-    fatal: jest.fn(),
+    debug: vi.fn(),
+    info: vi.fn(),
+    notice: vi.fn(),
+    warn: vi.fn(),
+    error: vi.fn(),
+    fatal: vi.fn(),
   } as unknown as AnsiLogger;
 }
 

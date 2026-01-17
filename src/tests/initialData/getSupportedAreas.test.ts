@@ -1,11 +1,19 @@
 import { getSupportedAreas } from '../../initialData/getSupportedAreas.js';
 import { RoomMap } from '../../model/RoomMap.js';
+import { describe, it, expect, beforeEach, vi, test } from 'vitest';
+import type { Room } from '../../roborockCommunication/Zmodel/room.js';
 
-describe('getSupportedAreas', () => {
-  test('returns Unknown area when vacuumRooms missing or roomMap missing', () => {
-    const res = getSupportedAreas([], undefined, false, { error: jest.fn(), debug: jest.fn() } as any);
+const mockLogger = {
+  debug: vi.fn(),
+  error: vi.fn(),
+  notice: vi.fn(),
+};
+
+describe('getSupportedAreas (legacy)', () => {
+  it('returns Unknown area when vacuumRooms missing or roomMap missing', () => {
+    const res = getSupportedAreas([], undefined, false, { error: vi.fn(), debug: vi.fn() } as any);
     expect(res.supportedAreas.length).toBe(1);
-    expect(res.supportedAreas[0].areaInfo.locationInfo.locationName).toContain('Unknown');
+    expect(res.supportedAreas[0]?.areaInfo?.locationInfo?.locationName).toContain('Unknown');
   });
 
   test('detect duplicated areas returns duplicated sentinel', () => {
@@ -15,35 +23,26 @@ describe('getSupportedAreas', () => {
     ];
     const roomMap: any = { rooms };
     const vacuumRooms = [{ id: 1, name: 'R1' }];
-    const res = getSupportedAreas(vacuumRooms as any, roomMap, false, { error: jest.fn(), debug: jest.fn() } as any);
+    const res = getSupportedAreas(vacuumRooms as any, roomMap, false, { error: vi.fn(), debug: vi.fn() } as any);
     expect(res.supportedAreas.length).toBe(1);
-    expect(res.supportedAreas[0].areaInfo.locationInfo.locationName).toContain('Duplicated');
+    expect(res.supportedAreas[0]?.areaInfo?.locationInfo?.locationName).toContain('Duplicated');
   });
 
   test('enableMultipleMap returns supportedMaps', () => {
     const vacuumRooms = [{ id: 1, name: 'R1' } as any];
     const roomMap: any = { rooms: [{ id: 10, iot_name_id: '10', globalId: 10, tag: 0, mapId: 7, displayName: 'RoomX' }], mapInfo: [{ id: 7, name: 'Level 7' }] };
-    const res = getSupportedAreas(vacuumRooms as any, roomMap as any, true, { error: jest.fn(), debug: jest.fn() } as any);
+    const res = getSupportedAreas(vacuumRooms as any, roomMap as any, true, { error: vi.fn(), debug: vi.fn() } as any);
     expect(res.supportedMaps.length).toBeGreaterThanOrEqual(1);
     expect(res.roomIndexMap).toBeDefined();
   });
 });
-import { getSupportedAreas } from '../../initialData/getSupportedAreas';
-import { RoomMap } from '../../model/RoomMap';
-import { Room } from '../../roborockCommunication/Zmodel/room';
-
-const mockLogger = {
-  debug: jest.fn(),
-  error: jest.fn(),
-  notice: jest.fn(),
-};
 
 describe('getSupportedAreas', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
-  it('returns default area when rooms and roomMap are empty', () => {
+  it('returns default area when rooms and roomMap are empty (case 1)', () => {
     const { supportedAreas } = getSupportedAreas(
       [
         { id: 2775739, name: 'Garage' },
@@ -85,7 +84,7 @@ describe('getSupportedAreas', () => {
     expect(supportedAreas.length).toEqual(8);
   });
 
-  it('returns default area when rooms and roomMap are empty', () => {
+  it('returns default area when rooms and roomMap are empty (case 2)', () => {
     const { supportedAreas } = getSupportedAreas(
       [
         { id: 11453731, name: 'Living room' },
@@ -99,13 +98,13 @@ describe('getSupportedAreas', () => {
       ],
       {
         rooms: [
-          { id: 16, globalId: 2775739, displayName: undefined },
-          { id: 17, globalId: 991195, displayName: undefined },
-          { id: 18, globalId: 991187, displayName: undefined },
-          { id: 19, globalId: 991185, displayName: undefined },
-          { id: 20, globalId: 991190, displayName: undefined },
+          { id: 16, globalId: 2775739, displayName: '', alternativeId: '16' },
+          { id: 17, globalId: 991195, displayName: '', alternativeId: '17' },
+          { id: 18, globalId: 991187, displayName: '', alternativeId: '18' },
+          { id: 19, globalId: 991185, displayName: '', alternativeId: '19' },
+          { id: 20, globalId: 991190, displayName: '', alternativeId: '20' },
         ],
-      } as RoomMap,
+      } as any,
       false, // enableMultipleMap
       mockLogger as any,
     );
@@ -113,7 +112,7 @@ describe('getSupportedAreas', () => {
     expect(supportedAreas.length).toEqual(5);
   });
 
-  it('returns default area when rooms and roomMap are empty', () => {
+  it('returns default area when rooms and roomMap are empty (case 3)', () => {
     const { supportedAreas } = getSupportedAreas(
       [
         { id: 11453731, name: 'Living room' },
@@ -127,13 +126,13 @@ describe('getSupportedAreas', () => {
       ],
       {
         rooms: [
-          { id: 16, globalId: 2775739, displayName: undefined },
-          { id: 17, globalId: 991195, displayName: undefined },
-          { id: 18, globalId: 991187, displayName: undefined },
-          { id: 19, globalId: 991185, displayName: undefined },
-          { id: 20, globalId: 991190, displayName: undefined },
+          { id: 16, globalId: 2775739, displayName: '', alternativeId: '16' },
+          { id: 17, globalId: 991195, displayName: '', alternativeId: '17' },
+          { id: 18, globalId: 991187, displayName: '', alternativeId: '18' },
+          { id: 19, globalId: 991185, displayName: '', alternativeId: '19' },
+          { id: 20, globalId: 991190, displayName: '', alternativeId: '20' },
         ],
-      } as RoomMap,
+      } as any,
       false, // enableMultipleMap
       mockLogger as any,
     );
@@ -141,7 +140,7 @@ describe('getSupportedAreas', () => {
     expect(supportedAreas.length).toEqual(5);
   });
 
-  it('returns default area when rooms and roomMap are empty', () => {
+  it('returns default area when rooms and roomMap are empty (case 4)', () => {
     const vacuumRooms: Room[] = [
       { id: 11100845, name: 'Kitchen' },
       { id: 11100849, name: 'Study' },
@@ -153,11 +152,11 @@ describe('getSupportedAreas', () => {
     ];
     const roomMap: RoomMap = {
       rooms: [
-        { id: 16, globalId: 2775739, displayName: undefined, alternativeId: '161' },
-        { id: 17, globalId: 991195, displayName: undefined, alternativeId: '171' },
-        { id: 18, globalId: 991187, displayName: undefined, alternativeId: '181' },
-        { id: 19, globalId: 991185, displayName: undefined, alternativeId: '191' },
-        { id: 20, globalId: 991190, displayName: undefined, alternativeId: '201' },
+        { id: 16, globalId: 2775739, displayName: '', alternativeId: '161' },
+        { id: 17, globalId: 991195, displayName: '', alternativeId: '171' },
+        { id: 18, globalId: 991187, displayName: '', alternativeId: '181' },
+        { id: 19, globalId: 991185, displayName: '', alternativeId: '191' },
+        { id: 20, globalId: 991190, displayName: '', alternativeId: '201' },
       ],
     };
     const { supportedAreas } = getSupportedAreas(vacuumRooms, roomMap, false, mockLogger as any);
@@ -200,9 +199,9 @@ describe('getSupportedAreas', () => {
     };
 
     const mockLogger1 = {
-      debug: jest.fn(),
-      notice: jest.fn(),
-      error: jest.fn(),
+      debug: vi.fn(),
+      notice: vi.fn(),
+      error: vi.fn(),
     };
     const { supportedAreas, supportedMaps } = getSupportedAreas(vacuumRooms, roomMap, true, mockLogger1 as any);
     expect(supportedAreas.length).toEqual(8);

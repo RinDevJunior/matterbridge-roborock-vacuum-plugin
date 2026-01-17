@@ -1,3 +1,4 @@
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { AnsiLogger } from 'matterbridge/logger';
 import RoborockService from '../roborockService';
 import { RoomIndexMap } from '../model/RoomIndexMap.js';
@@ -10,10 +11,10 @@ describe('RoborockService - startClean', () => {
 
   beforeEach(() => {
     mockLogger = {
-      debug: jest.fn(),
-      notice: jest.fn(),
-      error: jest.fn(),
-      warn: jest.fn(),
+      debug: vi.fn(),
+      notice: vi.fn(),
+      error: vi.fn(),
+      warn: vi.fn(),
     } as any;
 
     clientManager = {} as ClientManager;

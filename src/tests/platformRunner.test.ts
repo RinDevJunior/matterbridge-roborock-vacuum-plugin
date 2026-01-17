@@ -1,3 +1,4 @@
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { PlatformRunner } from '../platformRunner';
 import { NotifyMessageTypes } from '../notifyMessageTypes';
 import { RoborockMatterbridgePlatform } from '../module';
@@ -11,9 +12,9 @@ import { RvcOperationalState } from 'matterbridge/matter/clusters';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-let getOperationalErrorState = jest.fn().mockReturnValue(2);
+let getOperationalErrorState = vi.fn().mockReturnValue(2);
 
-jest.mock('./src/initialData/index', () => ({
+vi.mock('./src/initialData/index', () => ({
   ...initialDataIndex,
   getOperationalErrorState,
 }));
@@ -25,8 +26,8 @@ describe('PlatformRunner.updateRobot', () => {
 
   beforeEach(() => {
     robotMock = {
-      updateAttribute: jest.fn(),
-      getAttribute: jest.fn(),
+      updateAttribute: vi.fn(),
+      getAttribute: vi.fn(),
       device: {
         data: { model: 'test-model' },
         duid: '123456',
@@ -43,9 +44,9 @@ describe('PlatformRunner.updateRobot', () => {
     platform = {
       robots: robots,
       log: {
-        error: jest.fn(),
-        debug: jest.fn(),
-        notice: jest.fn(),
+        error: vi.fn(),
+        debug: vi.fn(),
+        notice: vi.fn(),
       },
       enableExperimentalFeature: undefined,
     } as unknown as RoborockMatterbridgePlatform;
@@ -159,7 +160,7 @@ describe('PlatformRunner.updateRobot', () => {
     robotMock.device.data = { model: 'test-model' };
     robotMock.serialNumber = '123456';
 
-    const updateFromMQTTMessageSpy = jest.spyOn(runner as any, 'updateFromMQTTMessage');
+    const updateFromMQTTMessageSpy = vi.spyOn(runner as any, 'updateFromMQTTMessage');
     const batteryMessage = { percentage: 70, duid: '123456' };
 
     await runner.updateRobot(NotifyMessageTypes.BatteryUpdate, batteryMessage);
@@ -171,7 +172,7 @@ describe('PlatformRunner.updateRobot', () => {
     const errorMessage = { errorCode: 1 };
     robotMock.device.data = { model: 'test-model' };
     robotMock.serialNumber = '123456';
-    getOperationalErrorState = jest.fn().mockReturnValue(RvcOperationalState.OperationalState.Error);
+    getOperationalErrorState = vi.fn().mockReturnValue(RvcOperationalState.OperationalState.Error);
 
     await runner['updateFromMQTTMessage'](NotifyMessageTypes.ErrorOccurred, errorMessage, '123456');
 
@@ -203,7 +204,7 @@ describe('PlatformRunner.updateRobot', () => {
     const localMessage = { duid: '123456', result: 'test-result' };
 
     // Clear previous error calls
-    (platform.log.error as jest.Mock).mockClear();
+    (platform.log.error as ReturnType<typeof vi.fn>).mockClear();
 
     // This will call the actual handleLocalMessage function
     await runner['updateFromMQTTMessage'](NotifyMessageTypes.LocalMessage, localMessage, '123456');
@@ -232,8 +233,8 @@ describe('PlatformRunner.requestHomeData', () => {
     platform = {
       robots: new Map(),
       rrHomeId: '12345',
-      roborockService: { getHomeDataForUpdating: jest.fn() },
-      log: { error: jest.fn(), debug: jest.fn(), notice: jest.fn() },
+      roborockService: { getHomeDataForUpdating: vi.fn() },
+      log: { error: vi.fn(), debug: vi.fn(), notice: vi.fn() },
     } as unknown as RoborockMatterbridgePlatform;
 
     runner = new PlatformRunner(platform);
@@ -246,8 +247,8 @@ describe('PlatformRunner.requestHomeData', () => {
     platform = {
       robots: new Map([['123', {} as any]]),
       rrHomeId: undefined,
-      roborockService: { getHomeDataForUpdating: jest.fn() },
-      log: { error: jest.fn(), debug: jest.fn(), notice: jest.fn() },
+      roborockService: { getHomeDataForUpdating: vi.fn() },
+      log: { error: vi.fn(), debug: vi.fn(), notice: vi.fn() },
     } as unknown as RoborockMatterbridgePlatform;
 
     runner = new PlatformRunner(platform);
@@ -260,8 +261,8 @@ describe('PlatformRunner.requestHomeData', () => {
     platform = {
       robots: new Map([['123', {} as any]]),
       rrHomeId: '',
-      roborockService: { getHomeDataForUpdating: jest.fn() },
-      log: { error: jest.fn(), debug: jest.fn(), notice: jest.fn() },
+      roborockService: { getHomeDataForUpdating: vi.fn() },
+      log: { error: vi.fn(), debug: vi.fn(), notice: vi.fn() },
     } as unknown as RoborockMatterbridgePlatform;
 
     runner = new PlatformRunner(platform);
@@ -275,7 +276,7 @@ describe('PlatformRunner.requestHomeData', () => {
       robots: new Map([['123', {} as any]]),
       rrHomeId: '12345',
       roborockService: undefined,
-      log: { error: jest.fn(), debug: jest.fn(), notice: jest.fn() },
+      log: { error: vi.fn(), debug: vi.fn(), notice: vi.fn() },
     } as unknown as RoborockMatterbridgePlatform;
 
     runner = new PlatformRunner(platform);
@@ -286,16 +287,16 @@ describe('PlatformRunner.requestHomeData', () => {
   });
 
   it('should return early if homeData is undefined', async () => {
-    const getHomeDataMock = jest.fn().mockResolvedValue(undefined);
+    const getHomeDataMock = vi.fn().mockResolvedValue(undefined);
     platform = {
       robots: new Map([['123', {} as any]]),
       rrHomeId: '12345',
       roborockService: { getHomeDataForUpdating: getHomeDataMock },
-      log: { error: jest.fn(), debug: jest.fn(), notice: jest.fn() },
+      log: { error: vi.fn(), debug: vi.fn(), notice: vi.fn() },
     } as unknown as RoborockMatterbridgePlatform;
 
     runner = new PlatformRunner(platform);
-    const updateRobotSpy = jest.spyOn(runner, 'updateRobot');
+    const updateRobotSpy = vi.spyOn(runner, 'updateRobot');
 
     await runner.requestHomeData();
 
@@ -305,16 +306,16 @@ describe('PlatformRunner.requestHomeData', () => {
 
   it('should call updateRobot when homeData is available', async () => {
     const homeData = { devices: [], products: [] };
-    const getHomeDataMock = jest.fn().mockResolvedValue(homeData);
+    const getHomeDataMock = vi.fn().mockResolvedValue(homeData);
     platform = {
       robots: new Map([['123', {} as any]]),
       rrHomeId: '12345',
       roborockService: { getHomeDataForUpdating: getHomeDataMock },
-      log: { error: jest.fn(), debug: jest.fn(), notice: jest.fn() },
+      log: { error: vi.fn(), debug: vi.fn(), notice: vi.fn() },
     } as unknown as RoborockMatterbridgePlatform;
 
     runner = new PlatformRunner(platform);
-    const updateRobotSpy = jest.spyOn(runner, 'updateRobot').mockResolvedValue();
+    const updateRobotSpy = vi.spyOn(runner, 'updateRobot').mockResolvedValue();
 
     await runner.requestHomeData();
 

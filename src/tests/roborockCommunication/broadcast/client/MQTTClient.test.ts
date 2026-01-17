@@ -1,11 +1,16 @@
+import { describe, it, expect, beforeEach, afterEach, vi, afterAll } from 'vitest';
 import { MQTTClient } from '../../../../roborockCommunication/broadcast/client/MQTTClient';
 
-const mockConnect = jest.fn();
-jest.mock('mqtt', () => {
-  const actual = jest.requireActual('mqtt');
+declare global {
+  var mockConnect: ReturnType<typeof vi.fn>;
+}
+
+vi.mock('mqtt', async () => {
+  const actual = await vi.importActual<any>('mqtt');
+  globalThis.mockConnect = vi.fn();
   return {
     ...actual,
-    connect: mockConnect,
+    connect: globalThis.mockConnect,
   };
 });
 
@@ -21,10 +26,8 @@ describe('MQTTClient', () => {
   const createdClients: any[] = [];
 
   beforeEach(() => {
-    logger = { error: jest.fn(), debug: jest.fn(), notice: jest.fn(), info: jest.fn() };
-    context = {
-      getProtocolVersion: jest.fn().mockReturnValue('1.0'),
-    };
+    logger = { error: vi.fn(), debug: vi.fn(), notice: vi.fn(), info: vi.fn() };
+    context = {};
     userdata = {
       rriot: {
         u: 'user',
@@ -33,25 +36,25 @@ describe('MQTTClient', () => {
         r: { m: 'mqtt://broker' },
       },
     };
-    serializer = { serialize: jest.fn(() => ({ buffer: Buffer.from('msg') })) };
-    deserializer = { deserialize: jest.fn(() => 'deserialized') };
+    serializer = { serialize: vi.fn(() => ({ buffer: Buffer.from('msg') })) };
+    deserializer = { deserialize: vi.fn(() => 'deserialized') };
     connectionListeners = {
-      onConnected: jest.fn().mockResolvedValue(undefined),
-      onDisconnected: jest.fn().mockResolvedValue(undefined),
-      onError: jest.fn().mockResolvedValue(undefined),
-      onReconnect: jest.fn().mockResolvedValue(undefined),
+      onConnected: vi.fn().mockResolvedValue(undefined),
+      onDisconnected: vi.fn().mockResolvedValue(undefined),
+      onError: vi.fn().mockResolvedValue(undefined),
+      onReconnect: vi.fn().mockResolvedValue(undefined),
     };
-    messageListeners = { onMessage: jest.fn().mockResolvedValue(undefined) };
+    messageListeners = { onMessage: vi.fn().mockResolvedValue(undefined) };
 
     // Mock mqtt client instance
     client = {
-      on: jest.fn(),
-      end: jest.fn(),
-      publish: jest.fn(),
-      subscribe: jest.fn(),
-      reconnect: jest.fn(),
+      on: vi.fn(),
+      end: vi.fn(),
+      publish: vi.fn(),
+      subscribe: vi.fn(),
+      reconnect: vi.fn(),
     };
-    mockConnect.mockReturnValue(client);
+    globalThis.mockConnect.mockReturnValue(client);
   });
 
   function createMQTTClient(mockSyncMessageListener?: any) {
@@ -84,20 +87,19 @@ describe('MQTTClient', () => {
             mc.end(true); // Force close
           }
         }
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
       } catch (_e) {
         // Ignore cleanup errors
       }
     }
     createdClients.length = 0;
-    jest.clearAllMocks();
-    jest.clearAllTimers();
-    jest.useRealTimers();
+    vi.clearAllMocks();
+    vi.clearAllTimers();
+    vi.useRealTimers();
   });
 
   afterAll(() => {
     // Final cleanup
-    jest.clearAllTimers();
+    vi.clearAllTimers();
   });
 
   it('should generate username and password in constructor', () => {
@@ -110,7 +112,7 @@ describe('MQTTClient', () => {
     const mqttClient = createMQTTClient();
     mqttClient['mqttClient'] = client;
     mqttClient.connect();
-    expect(mockConnect).not.toHaveBeenCalled();
+    expect(globalThis.mockConnect).not.toHaveBeenCalled();
   });
 
   it('should disconnect if connected', async () => {
@@ -132,7 +134,7 @@ describe('MQTTClient', () => {
   it('should log error if disconnect throws', async () => {
     const mqttClient = createMQTTClient();
     mqttClient['mqttClient'] = {
-      end: jest.fn(() => {
+      end: vi.fn(() => {
         throw new Error('fail');
       }),
     } as any;
@@ -143,31 +145,31 @@ describe('MQTTClient', () => {
 
   it('should publish message if connected', async () => {
     const mockSyncMessageListener = {
-      waitFor: jest.fn((_msgId: number, _req: any, resolve: any, _reject: any) => resolve(undefined)),
+      waitFor: vi.fn((_msgId: number, _req: any, resolve: any, _reject: any) => resolve(undefined)),
       pending: new Map(),
       logger,
-      onMessage: jest.fn(),
+      onMessage: vi.fn(),
     };
     const mqttClient = createMQTTClient(mockSyncMessageListener);
     mqttClient['mqttClient'] = client;
     mqttClient['connected'] = true;
-    const request = { toMqttRequest: jest.fn(() => 'req'), method: 'test' };
-    await mqttClient.send('duid1', request as any);
+    const request = { toMqttRequest: vi.fn(() => 'req'), method: 'test' };
+    await (mqttClient as any).sendInternal('duid1', request as any);
     expect(serializer.serialize).toHaveBeenCalledWith('duid1', 'req');
     expect(client.publish).toHaveBeenCalledWith('rr/m/i/user/c6d6afb9/duid1', Buffer.from('msg'), { qos: 1 });
   });
 
   it('should log error if send called when not connected', async () => {
     const mockSyncMessageListener = {
-      waitFor: jest.fn((_msgId: number, _req: any, resolve: any, _reject: any) => resolve(undefined)),
+      waitFor: vi.fn((_msgId: number, _req: any, resolve: any, _reject: any) => resolve(undefined)),
       pending: new Map(),
       logger,
-      onMessage: jest.fn(),
+      onMessage: vi.fn(),
     };
     const mqttClient = createMQTTClient(mockSyncMessageListener);
     mqttClient['mqttClient'] = undefined;
     mqttClient['connected'] = false;
-    const request = { toMqttRequest: jest.fn(), method: 'test' };
+    const request = { toMqttRequest: vi.fn(), method: 'test' };
     await mqttClient.send('duid1', request as any);
     expect(logger.error).toHaveBeenCalled();
     expect(client.publish).not.toHaveBeenCalled();
@@ -176,7 +178,7 @@ describe('MQTTClient', () => {
   it('onConnect should set connected, call onConnected, and subscribeToQueue', async () => {
     const mqttClient = createMQTTClient();
     mqttClient['mqttClient'] = client;
-    mqttClient['subscribeToQueue'] = jest.fn();
+    mqttClient['subscribeToQueue'] = vi.fn();
     await mqttClient['onConnect']({} as any);
     expect(mqttClient['connected']).toBe(true);
     expect(connectionListeners.onConnected).toHaveBeenCalled();
@@ -222,7 +224,7 @@ describe('MQTTClient', () => {
 
   it('onReconnect should call subscribeToQueue', () => {
     const mqttClient = createMQTTClient();
-    mqttClient['subscribeToQueue'] = jest.fn();
+    mqttClient['subscribeToQueue'] = vi.fn();
     mqttClient['onReconnect']();
     expect(mqttClient['subscribeToQueue']).toHaveBeenCalled();
   });
@@ -253,7 +255,7 @@ describe('MQTTClient', () => {
     const mqttClient = createMQTTClient();
 
     // Reset the mock before calling connect
-    mockConnect.mockClear();
+    globalThis.mockConnect.mockClear();
 
     mqttClient.connect();
 
@@ -272,7 +274,7 @@ describe('MQTTClient', () => {
   });
 
   it('keepConnectionAlive should setup interval that reconnects client', () => {
-    jest.useFakeTimers();
+    vi.useFakeTimers();
     const mqttClient = createMQTTClient();
     mqttClient['mqttClient'] = client;
     mqttClient['connected'] = true;
@@ -281,38 +283,38 @@ describe('MQTTClient', () => {
     expect(mqttClient['keepConnectionAliveInterval']).toBeDefined();
 
     // Fast-forward time by 60 minutes to trigger the interval callback
-    jest.advanceTimersByTime(60 * 60 * 1000);
+    vi.advanceTimersByTime(60 * 60 * 1000);
 
     expect(client.end).toHaveBeenCalled();
     expect(client.reconnect).toHaveBeenCalled();
 
     // Clean up
     clearInterval(mqttClient['keepConnectionAliveInterval']);
-    jest.useRealTimers();
+    vi.useRealTimers();
   });
 
   it('keepConnectionAlive should call connect if mqttClient is undefined', () => {
-    jest.useFakeTimers();
+    vi.useFakeTimers();
     const mqttClient = createMQTTClient();
-    const connectSpy = jest.spyOn(mqttClient, 'connect');
+    const connectSpy = vi.spyOn(mqttClient, 'connect');
     mqttClient['mqttClient'] = undefined;
     mqttClient['connected'] = false;
     mqttClient['keepConnectionAlive']();
 
     // Fast-forward time by 60 minutes to trigger the interval callback
-    jest.advanceTimersByTime(60 * 60 * 1000);
+    vi.advanceTimersByTime(60 * 60 * 1000);
 
     expect(connectSpy).toHaveBeenCalled();
 
     // Clean up
     clearInterval(mqttClient['keepConnectionAliveInterval']);
-    jest.useRealTimers();
+    vi.useRealTimers();
   });
 
   it('keepConnectionAlive should clear existing interval before setting new one', () => {
-    jest.useFakeTimers();
+    vi.useFakeTimers();
     const mqttClient = createMQTTClient();
-    const clearTimeoutSpy = jest.spyOn(global, 'clearTimeout');
+    const clearTimeoutSpy = vi.spyOn(global, 'clearTimeout');
 
     // Set initial interval
     mqttClient['keepConnectionAlive']();
@@ -325,7 +327,7 @@ describe('MQTTClient', () => {
 
     // Clean up
     clearInterval(mqttClient['keepConnectionAliveInterval']);
-    jest.useRealTimers();
+    vi.useRealTimers();
   });
 
   it('disconnect should return early if not connected', async () => {
@@ -361,7 +363,7 @@ describe('MQTTClient', () => {
 
   it('onReconnect should call onReconnect on connectionListeners', () => {
     const mqttClient = createMQTTClient();
-    mqttClient['subscribeToQueue'] = jest.fn();
+    mqttClient['subscribeToQueue'] = vi.fn();
     mqttClient['onReconnect']();
     expect(connectionListeners.onReconnect).toHaveBeenCalledWith('mqtt-c6d6afb9', 'Reconnected to MQTT broker');
   });

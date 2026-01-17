@@ -1,24 +1,25 @@
+import { describe, it, beforeEach, expect, vi } from 'vitest';
 import { AdditionalPropCode, Protocol } from '../../roborockCommunication/index.js';
 import { handleCloudMessage } from '../../runtimes/handleCloudMessage';
 import { mapInfo, roomData, roomIndexMap, supportedAreas, supportedMaps } from '../testData/mockData.js';
 
 // Mocks for dependencies
-const mockUpdateAttribute = jest.fn().mockImplementation((clusterId: number, attributeName: string, value: any, log: any) => {
+const mockUpdateAttribute = vi.fn().mockImplementation((clusterId: number, attributeName: string, value: any, log: any) => {
   log.debug(`Mock updateAttribute called with clusterId: ${clusterId}, attributeName: ${attributeName}, value: ${value}`);
 });
-const mockSetSupportedAreas = jest.fn();
-const mockSetSelectedAreas = jest.fn();
-const mockSetSupportedAreaIndexMap = jest.fn();
-const mockGetCleanModeData = jest.fn();
-const mockUpdateFromMQTTMessage = jest.fn();
-const mockGetRoomMapFromDevice = jest.fn();
-const mockGetSupportedAreas = jest.fn();
+const mockSetSupportedAreas = vi.fn();
+const mockSetSelectedAreas = vi.fn();
+const mockSetSupportedAreaIndexMap = vi.fn();
+const mockGetCleanModeData = vi.fn();
+const mockUpdateFromMQTTMessage = vi.fn();
+const mockGetRoomMapFromDevice = vi.fn();
+const mockGetSupportedAreas = vi.fn();
 
-jest.mock('./src/helper', () => ({
+vi.mock('./src/helper', () => ({
   getRoomMapFromDevice: (...args: any[]) => mockGetRoomMapFromDevice(...args),
   isStatusUpdate: (result: any) => result === 'status',
 }));
-jest.mock('./src/initialData/getSupportedAreas', () => ({
+vi.mock('./src/initialData/getSupportedAreas', () => ({
   getSupportedAreas: (...args: any[]) => mockGetSupportedAreas(...args),
 }));
 
@@ -44,19 +45,20 @@ const robot = {
 const platform = {
   robots: new Map([[duid, robot]]),
   log: {
-    error: jest.fn(),
-    debug: jest.fn(),
-    notice: jest.fn(),
-    /* eslint-disable no-console */
-    fatal: jest.fn().mockImplementation((message: string, ...arg: unknown[]) => console.info(message, ...arg)),
+    error: vi.fn(),
+    debug: vi.fn(),
+    notice: vi.fn(),
+    fatal: vi.fn().mockImplementation((_message: string, ..._arg: unknown[]) => {
+      /* intentionally empty for test */
+    }),
   },
   roborockService: {
     getCleanModeData: mockGetCleanModeData,
     setSupportedAreas: mockSetSupportedAreas,
     setSelectedAreas: mockSetSelectedAreas,
     setSupportedAreaIndexMap: mockSetSupportedAreaIndexMap,
-    getMapInformation: jest.fn().mockResolvedValue(mapInfo),
-    getRoomMappings: jest.fn().mockResolvedValue(roomData),
+    getMapInformation: vi.fn().mockResolvedValue(mapInfo),
+    getRoomMappings: vi.fn().mockResolvedValue(roomData),
   },
   enableExperimentalFeature: {
     enableExperimentalFeature: true,
@@ -69,7 +71,7 @@ const runner = { updateFromMQTTMessage: mockUpdateFromMQTTMessage };
 
 describe('handleCloudMessage', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   it('handles status_update', async () => {

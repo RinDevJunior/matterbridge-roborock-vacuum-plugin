@@ -1,5 +1,6 @@
 import { MessageProcessor } from '../../../roborockCommunication/broadcast/messageProcessor';
 import { DeviceStatus } from '../../../roborockCommunication/Zmodel/deviceStatus';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 
 describe('MessageProcessor', () => {
   let mockClient: any;
@@ -8,19 +9,19 @@ describe('MessageProcessor', () => {
 
   beforeEach(() => {
     mockClient = {
-      registerMessageListener: jest.fn().mockImplementation(() => {
+      registerMessageListener: vi.fn().mockImplementation(() => {
         void 0;
       }),
-      get: jest.fn(),
-      send: jest.fn(),
+      get: vi.fn(),
+      send: vi.fn(),
     };
     processor = new MessageProcessor(mockClient);
-    mockLogger = { debug: jest.fn(), notice: jest.fn() };
+    mockLogger = { debug: vi.fn(), notice: vi.fn() };
     processor.injectLogger(mockLogger);
   });
 
   afterEach(() => {
-    jest.restoreAllMocks();
+    vi.restoreAllMocks();
   });
 
   it('should inject logger', () => {
@@ -118,7 +119,7 @@ describe('MessageProcessor', () => {
   });
 
   it('changeCleanMode should call logger.notice and client.send as needed', async () => {
-    mockLogger.notice = jest.fn();
+    mockLogger.notice = vi.fn();
     mockClient.get.mockResolvedValueOnce(110); // currentMopMode
     await processor.changeCleanMode('duid', 101, 207, 306, 5);
     expect(mockLogger.notice).toHaveBeenCalled();

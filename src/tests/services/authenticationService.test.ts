@@ -2,14 +2,15 @@ import { AnsiLogger } from 'matterbridge/logger';
 import { AuthenticationService } from '../../services/authenticationService.js';
 import { AuthenticationError } from '../../errors/AuthenticationError';
 import type { UserData } from '../../roborockCommunication';
+import { vi, describe, beforeEach, it, expect } from 'vitest';
 
 // Mock the authenticate API
 const mockAuthApi = {
-  requestCodeV4: jest.fn(),
-  loginWithCodeV4: jest.fn(),
-  loginWithPassword: jest.fn(),
-  loginWithUserData: jest.fn(),
-  getHomeDetails: jest.fn(),
+  requestCodeV4: vi.fn(),
+  loginWithCodeV4: vi.fn(),
+  loginWithPassword: vi.fn(),
+  loginWithUserData: vi.fn(),
+  getHomeDetails: vi.fn(),
 };
 
 describe('AuthenticationService', () => {
@@ -18,16 +19,16 @@ describe('AuthenticationService', () => {
 
   beforeEach(() => {
     mockLogger = {
-      debug: jest.fn(),
-      error: jest.fn(),
-      warn: jest.fn(),
-      notice: jest.fn(),
+      debug: vi.fn(),
+      error: vi.fn(),
+      warn: vi.fn(),
+      notice: vi.fn(),
     } as any;
 
     authService = new AuthenticationService(mockAuthApi as any, mockLogger);
 
     // Reset all mocks
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   describe('requestVerificationCode', () => {
@@ -71,7 +72,7 @@ describe('AuthenticationService', () => {
 
     it('should login successfully with verification code', async () => {
       mockAuthApi.loginWithCodeV4.mockResolvedValue(mockUserData);
-      const saveCallback = jest.fn();
+      const saveCallback = vi.fn();
 
       const result = await authService.loginWithVerificationCode('test@example.com', '123456', saveCallback);
 
@@ -84,13 +85,13 @@ describe('AuthenticationService', () => {
     it('should handle invalid verification code', async () => {
       mockAuthApi.loginWithCodeV4.mockRejectedValue(new Error('Invalid code'));
 
-      await expect(authService.loginWithVerificationCode('test@example.com', 'wrong', jest.fn())).rejects.toThrow(AuthenticationError);
+      await expect(authService.loginWithVerificationCode('test@example.com', 'wrong', vi.fn())).rejects.toThrow(AuthenticationError);
     });
 
     it('should validate verification code format', async () => {
-      await expect(authService.loginWithVerificationCode('test@example.com', '', jest.fn())).rejects.toThrow(AuthenticationError);
+      await expect(authService.loginWithVerificationCode('test@example.com', '', vi.fn())).rejects.toThrow(AuthenticationError);
 
-      await expect(authService.loginWithVerificationCode('test@example.com', '12345', jest.fn())).rejects.toThrow(AuthenticationError);
+      await expect(authService.loginWithVerificationCode('test@example.com', '12345', vi.fn())).rejects.toThrow(AuthenticationError);
 
       // Implementation may still call API, so we don't check if API was called
     });
@@ -98,7 +99,7 @@ describe('AuthenticationService', () => {
     it('should handle network errors during code login', async () => {
       mockAuthApi.loginWithCodeV4.mockRejectedValue(new Error('Connection failed'));
 
-      await expect(authService.loginWithVerificationCode('test@example.com', '123456', jest.fn())).rejects.toThrow(AuthenticationError);
+      await expect(authService.loginWithVerificationCode('test@example.com', '123456', vi.fn())).rejects.toThrow(AuthenticationError);
 
       expect(mockLogger.error).toHaveBeenCalledWith('Failed to login with verification code:', expect.any(Object));
     });
@@ -114,8 +115,8 @@ describe('AuthenticationService', () => {
     } as UserData;
 
     it('should use cached user data when available', async () => {
-      const loadCallback = jest.fn().mockResolvedValue(mockUserData);
-      const saveCallback = jest.fn();
+      const loadCallback = vi.fn().mockResolvedValue(mockUserData);
+      const saveCallback = vi.fn();
       mockAuthApi.loginWithUserData.mockResolvedValue(mockUserData);
 
       const result = await authService.loginWithPassword('test@example.com', 'password123', loadCallback, saveCallback);
@@ -127,8 +128,8 @@ describe('AuthenticationService', () => {
     });
 
     it('should login with password when no cached data', async () => {
-      const loadCallback = jest.fn().mockResolvedValue(undefined);
-      const saveCallback = jest.fn();
+      const loadCallback = vi.fn().mockResolvedValue(undefined);
+      const saveCallback = vi.fn();
       mockAuthApi.loginWithPassword.mockResolvedValue(mockUserData);
 
       const result = await authService.loginWithPassword('test@example.com', 'password123', loadCallback, saveCallback);
@@ -140,8 +141,8 @@ describe('AuthenticationService', () => {
     });
 
     it('should fallback to password when cached data fails', async () => {
-      const loadCallback = jest.fn().mockResolvedValue(mockUserData);
-      const saveCallback = jest.fn();
+      const loadCallback = vi.fn().mockResolvedValue(mockUserData);
+      const saveCallback = vi.fn();
 
       // Cached login fails, but doesn't trigger fallback
       mockAuthApi.loginWithUserData.mockRejectedValue(new Error('Token expired'));
@@ -153,8 +154,8 @@ describe('AuthenticationService', () => {
     });
 
     it('should handle authentication failures', async () => {
-      const loadCallback = jest.fn().mockResolvedValue(undefined);
-      const saveCallback = jest.fn();
+      const loadCallback = vi.fn().mockResolvedValue(undefined);
+      const saveCallback = vi.fn();
       mockAuthApi.loginWithPassword.mockRejectedValue(new Error('Invalid credentials'));
 
       await expect(authService.loginWithPassword('test@example.com', 'wrongpassword', loadCallback, saveCallback)).rejects.toThrow(AuthenticationError);
@@ -163,8 +164,8 @@ describe('AuthenticationService', () => {
     });
 
     it('should validate input parameters', async () => {
-      const loadCallback = jest.fn();
-      const saveCallback = jest.fn();
+      const loadCallback = vi.fn();
+      const saveCallback = vi.fn();
 
       await expect(authService.loginWithPassword('', 'password', loadCallback, saveCallback)).rejects.toThrow(AuthenticationError);
 
@@ -234,7 +235,7 @@ describe('AuthenticationService', () => {
     it('should handle malformed API responses', async () => {
       mockAuthApi.loginWithPassword.mockResolvedValue(null);
 
-      const result = await authService.loginWithPassword('test@example.com', 'password123', jest.fn().mockResolvedValue(undefined), jest.fn());
+      const result = await authService.loginWithPassword('test@example.com', 'password123', vi.fn().mockResolvedValue(undefined), vi.fn());
       expect(result).toBeNull();
     });
 
@@ -243,12 +244,14 @@ describe('AuthenticationService', () => {
       originalError.stack = 'Original stack trace';
       mockAuthApi.loginWithPassword.mockRejectedValue(originalError);
 
+      let caughtError;
       try {
-        await authService.loginWithPassword('test@example.com', 'password123', jest.fn().mockResolvedValue(undefined), jest.fn());
+        await authService.loginWithPassword('test@example.com', 'password123', vi.fn().mockResolvedValue(undefined), vi.fn());
       } catch (error) {
-        expect(error).toBeInstanceOf(AuthenticationError);
-        expect((error as AuthenticationError).metadata?.originalError).toBe('Specific API error');
+        caughtError = error;
       }
+      expect(caughtError).toBeInstanceOf(AuthenticationError);
+      expect((caughtError as AuthenticationError).metadata?.originalError).toBe('Specific API error');
     });
   });
 
@@ -268,7 +271,7 @@ describe('AuthenticationService', () => {
 
       // Step 2: Login with verification code
       mockAuthApi.loginWithCodeV4.mockResolvedValue(userData);
-      const saveCallback = jest.fn();
+      const saveCallback = vi.fn();
       const result = await authService.loginWithVerificationCode('test@example.com', '123456', saveCallback);
 
       expect(result).toBe(userData);
@@ -276,8 +279,8 @@ describe('AuthenticationService', () => {
     });
 
     it('should handle authentication retry scenarios', async () => {
-      const loadCallback = jest.fn().mockResolvedValue(undefined);
-      const saveCallback = jest.fn();
+      const loadCallback = vi.fn().mockResolvedValue(undefined);
+      const saveCallback = vi.fn();
       const userData: UserData = { uid: 'retry-uid', token: 'retry-token' } as UserData;
 
       // First attempt fails

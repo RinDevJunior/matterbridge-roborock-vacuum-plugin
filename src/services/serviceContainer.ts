@@ -23,12 +23,11 @@ export interface ServiceContainerConfig {
 /** DI container managing service lifecycle. Services are lazily created and cached. */
 export class ServiceContainer {
   // Cached service instances (singletons)
-  private authenticationService?: AuthenticationService;
-  private deviceManagementService?: DeviceManagementService;
-  private areaManagementService?: AreaManagementService;
-  private messageRoutingService?: MessageRoutingService;
-  private pollingService?: PollingService;
-
+  private authenticationService: AuthenticationService | undefined;
+  private deviceManagementService: DeviceManagementService | undefined;
+  private areaManagementService: AreaManagementService | undefined;
+  private messageRoutingService: MessageRoutingService | undefined;
+  private pollingService: PollingService | undefined;
   // Shared infrastructure
   private readonly loginApi: RoborockAuthenticateApi;
   private readonly authenticateApiFactory: (logger: AnsiLogger, baseUrl: string) => RoborockAuthenticateApi;

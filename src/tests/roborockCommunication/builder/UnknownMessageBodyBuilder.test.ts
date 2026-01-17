@@ -1,3 +1,4 @@
+import { describe, it, expect } from 'vitest';
 import { UnknownMessageBodyBuilder } from '../../../roborockCommunication/builder/UnknownMessageBodyBuilder';
 import { RequestMessage } from '../../../roborockCommunication/broadcast/model/requestMessage';
 import { MessageContext } from '../../../roborockCommunication/broadcast/model/messageContext';

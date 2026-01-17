@@ -1,10 +1,11 @@
+import { describe, test, expect, vi } from 'vitest';
 import { MessageSerializer } from '../../../roborockCommunication/helper/messageSerializer';
 import { MessageDeserializer } from '../../../roborockCommunication/helper/messageDeserializer';
 import { MessageContext } from '../../../roborockCommunication/broadcast/model/messageContext';
 import { RequestMessage } from '../../../roborockCommunication/broadcast/model/requestMessage';
 import { Protocol } from '../../../roborockCommunication/broadcast/model/protocol';
 
-const logger: any = { debug: jest.fn(), notice: jest.fn(), error: jest.fn() };
+const logger: any = { debug: vi.fn(), notice: vi.fn(), error: vi.fn() };
 
 describe('MessageSerializer/Deserializer A01 & B01', () => {
   test('A01 roundtrip rpc_response', () => {

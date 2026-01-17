@@ -1,36 +1,36 @@
 {
-    "name": "web",
-    "version": "1.0.0",
-    "description": "",
-    "main": "/src/app.ts",
-    "scripts": {
-        "copy-src": "cd src && rm -rf ext && cd .. && cpx '../src/**/!(*.test).ts' src/ext/",
-        "build": "rm -rf dist && tsc",
-        "start": "node dist/app.js",
-        "dev": "node watch.mjs",
-        "dont-run:dev:simple": "npm run build && node dist/app.js",
-        "dont-run:dev:watch": "while true; do npm run build && node dist/app.js; echo 'Restarting in 2 seconds...'; sleep 2; done",
-        "dont-run:dev:build": "nodemon --watch src --ext ts --exec \"npm run build && node dist/app.js\"",
-        "dont-run:dev:macos": "osascript -e 'tell application \"Terminal\" to do script \"cd /Users/rinnguyen/Data/vscode/matterbridge-roborock-vacuum-plugin/webui && npm run dev\"'"
-    },
-    "keywords": [],
-    "author": "",
-    "license": "ISC",
-    "type": "module",
-    "dependencies": {
-        "binary-parser": "^2.2.1",
-        "ejs": "^3.1.10",
-        "express": "^5.1.0",
-        "matterbridge": "^3.1.8",
-        "node-ansi-logger": "^3.0.1"
-    },
-    "devDependencies": {
-        "@types/express": "^5.0.2",
-        "@types/node": "^22.15.21",
-        "cpx": "^1.5.0",
-        "nodemon": "^3.1.10",
-        "ts-node": "^10.9.2",
-        "tsx": "^4.19.4",
-        "typescript": "^5.8.3"
-    }
+  "name": "web",
+  "version": "1.0.0",
+  "description": "",
+  "main": "/src/app.ts",
+  "scripts": {
+    "copy-src": "cd src && rm -rf ext && cd .. && cpx '../src/**/!(*.test).ts' src/ext/",
+    "build": "rm -rf dist && tsc",
+    "start": "node dist/app.js",
+    "dev": "node watch.mjs",
+    "dont-run:dev:simple": "npm run build && node dist/app.js",
+    "dont-run:dev:watch": "while true; do npm run build && node dist/app.js; echo 'Restarting in 2 seconds...'; sleep 2; done",
+    "dont-run:dev:build": "nodemon --watch src --ext ts --exec \"npm run build && node dist/app.js\"",
+    "dont-run:dev:macos": "osascript -e 'tell application \"Terminal\" to do script \"cd /Users/rinnguyen/Data/vscode/matterbridge-roborock-vacuum-plugin/webui && npm run dev\"'"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "module",
+  "dependencies": {
+    "binary-parser": "^2.2.1",
+    "ejs": "^3.1.10",
+    "express": "^5.1.0",
+    "matterbridge": "^3.1.8",
+    "node-ansi-logger": "^3.0.1"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.2",
+    "@types/node": "^22.15.21",
+    "cpx": "^1.5.0",
+    "nodemon": "^3.1.10",
+    "ts-node": "^10.9.2",
+    "tsx": "^4.19.4",
+    "typescript": "^5.8.3"
+  }
 }

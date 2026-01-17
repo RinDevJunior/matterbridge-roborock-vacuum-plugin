@@ -1,3 +1,4 @@
+import { describe, it, expect } from 'vitest';
 import { md5hex, md5bin, encodeTimestamp, SALT, decryptECB } from '../../../roborockCommunication/helper/cryptoHelper';
 import crypto from 'node:crypto';
 

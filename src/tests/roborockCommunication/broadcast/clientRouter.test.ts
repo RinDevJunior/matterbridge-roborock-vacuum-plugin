@@ -1,5 +1,6 @@
 import { RequestMessage, UserData } from '../../../roborockCommunication';
 import { ClientRouter } from '../../../roborockCommunication/broadcast/clientRouter';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 
 describe('ClientRouter', () => {
   let mockLogger: any;
@@ -9,7 +10,7 @@ describe('ClientRouter', () => {
   let mockLocalNetworkClient: any;
 
   beforeEach(() => {
-    mockLogger = { debug: jest.fn(), notice: jest.fn() };
+    mockLogger = { debug: vi.fn(), notice: vi.fn() };
     mockUserData = {
       uid: '123',
       token: '123:123/lfrZhw==:123',
@@ -34,25 +35,25 @@ describe('ClientRouter', () => {
     };
 
     mockMQTTClient = {
-      isConnected: jest.fn().mockReturnValue(true),
-      connect: jest.fn(),
-      disconnect: jest.fn(),
+      isConnected: vi.fn().mockReturnValue(true),
+      connect: vi.fn(),
+      disconnect: vi.fn(),
     };
 
     mockLocalNetworkClient = {
-      isConnected: jest.fn().mockReturnValue(true),
-      isReady: jest.fn().mockReturnValue(true),
-      connect: jest.fn(),
-      disconnect: jest.fn(),
-      send: jest.fn(),
-      get: jest.fn(),
+      isConnected: vi.fn().mockReturnValue(true),
+      isReady: vi.fn().mockReturnValue(true),
+      connect: vi.fn(),
+      disconnect: vi.fn(),
+      send: vi.fn(),
+      get: vi.fn(),
     };
   });
 
   it('registerConnectionListener should call connectionListeners.register', () => {
     const router = new ClientRouter(mockLogger, mockUserData);
     const listener = {};
-    const spy = jest.spyOn(router['connectionListeners'], 'register');
+    const spy = vi.spyOn(router['connectionListeners'], 'register');
     router.registerConnectionListener(listener as any);
     expect(spy).toHaveBeenCalledWith(listener);
   });
@@ -60,7 +61,7 @@ describe('ClientRouter', () => {
   it('registerMessageListener should call messageListeners.register', () => {
     const router = new ClientRouter(mockLogger, mockUserData);
     const listener = {};
-    const spy = jest.spyOn(router['messageListeners'], 'register');
+    const spy = vi.spyOn(router['messageListeners'], 'register');
     router.registerMessageListener(listener as any);
     expect(spy).toHaveBeenCalledWith(listener);
   });
@@ -68,7 +69,7 @@ describe('ClientRouter', () => {
   it('isConnected should return mqttClient.isConnected', () => {
     const router = new ClientRouter(mockLogger, mockUserData);
     mockMQTTClient = {
-      isConnected: jest.fn().mockReturnValue(true),
+      isConnected: vi.fn().mockReturnValue(true),
     };
     router['mqttClient'] = mockMQTTClient;
     expect(router.isConnected()).toBe(true);
@@ -90,9 +91,9 @@ describe('ClientRouter', () => {
     const router = new ClientRouter(mockLogger, mockUserData);
     router.registerClient('duid', '127.0.0.1');
     mockMQTTClient = {
-      isConnected: jest.fn().mockReturnValue(false),
-      connect: jest.fn(),
-      disconnect: jest.fn(),
+      isConnected: vi.fn().mockReturnValue(false),
+      connect: vi.fn(),
+      disconnect: vi.fn(),
     };
     router['mqttClient'] = mockMQTTClient;
 
@@ -105,10 +106,10 @@ describe('ClientRouter', () => {
 
   it('send should use mqttClient for secure requests', async () => {
     mockMQTTClient = {
-      isConnected: jest.fn().mockReturnValue(false),
-      connect: jest.fn(),
-      disconnect: jest.fn(),
-      send: jest.fn(),
+      isConnected: vi.fn().mockReturnValue(false),
+      connect: vi.fn(),
+      disconnect: vi.fn(),
+      send: vi.fn(),
     };
 
     const router = new ClientRouter(mockLogger, mockUserData);
@@ -133,11 +134,11 @@ describe('ClientRouter', () => {
     const request: RequestMessage = { secure: true } as any;
 
     mockMQTTClient = {
-      isConnected: jest.fn().mockReturnValue(false),
-      connect: jest.fn(),
-      disconnect: jest.fn(),
-      send: jest.fn(),
-      get: jest.fn(),
+      isConnected: vi.fn().mockReturnValue(false),
+      connect: vi.fn(),
+      disconnect: vi.fn(),
+      send: vi.fn(),
+      get: vi.fn(),
     };
     router['mqttClient'] = mockMQTTClient;
     await router.get('duid', request);

@@ -1,4 +1,4 @@
-import { jest } from '@jest/globals';
+import { vi, describe, it, expect } from 'vitest';
 import { ConnectionStateListener } from '../../../../../roborockCommunication/broadcast/listener/implementation/connectionStateListener';
 
 // --- Helpers ---
@@ -17,14 +17,14 @@ function makeClient(overrides: Partial<any> = {}) {
     retryCount: overrides.retryCount ?? 0,
     isInDisconnectingStep: overrides.isInDisconnectingStep ?? false,
     isConnected: overrides.isConnected ?? (() => false),
-    connect: overrides.connect ?? jest.fn(),
+    connect: overrides.connect ?? vi.fn(),
   } as any;
 }
 
 describe('ConnectionStateListener', () => {
   // --- Reconnect/Retry Logic ---
 
-  test('resets retryCount to 0 on reconnect', async () => {
+  it('resets retryCount to 0 on reconnect', async () => {
     const logger = makeLogger();
     const client = makeClient({ retryCount: 5 });
     const listener = new ConnectionStateListener(logger, client, 'TEST');
@@ -33,7 +33,7 @@ describe('ConnectionStateListener', () => {
     expect(logger.__calls.info.some((s: string) => s.includes('reconnected'))).toBe(true);
   });
 
-  test('resets retryCount to 0 and logs on connected', async () => {
+  it('resets retryCount to 0 and logs on connected', async () => {
     const logger = makeLogger();
     const client = makeClient();
     const listener = new ConnectionStateListener(logger, client, 'TEST');
@@ -41,7 +41,7 @@ describe('ConnectionStateListener', () => {
     expect(logger.__calls.info.length).toBeGreaterThan(0);
   });
 
-  test('logs error on onError', async () => {
+  it('logs error on onError', async () => {
     const logger = makeLogger();
     const client = makeClient();
     const listener = new ConnectionStateListener(logger, client, 'TEST');
@@ -51,7 +51,7 @@ describe('ConnectionStateListener', () => {
 
   // --- Disconnection/Reconnection Policy ---
 
-  test('does not reconnect if shouldReconnect is false', async () => {
+  it('does not reconnect if shouldReconnect is false', async () => {
     const logger = makeLogger();
     const client = makeClient();
     const listener = new ConnectionStateListener(logger, client, 'TEST');
@@ -62,30 +62,30 @@ describe('ConnectionStateListener', () => {
     expect(client.connect).not.toHaveBeenCalled();
   });
 
-  test('schedules manual reconnect after 30s if still disconnected', async () => {
-    jest.useFakeTimers();
+  it('schedules manual reconnect after 30s if still disconnected', async () => {
+    vi.useFakeTimers();
     const logger = makeLogger();
     let connected = false;
     const client = makeClient({
       retryCount: 0,
       isInDisconnectingStep: false,
       isConnected: () => connected,
-      connect: jest.fn(() => {
+      connect: vi.fn(() => {
         connected = true;
       }),
     });
     const listener = new ConnectionStateListener(logger, client, 'TEST');
     listener.start();
     await listener.onDisconnected('DUID7', 'lost');
-    jest.advanceTimersByTime(29000);
+    vi.advanceTimersByTime(29000);
     expect(client.connect).not.toHaveBeenCalled();
-    jest.advanceTimersByTime(1000);
+    vi.advanceTimersByTime(1000);
     expect(client.connect).toHaveBeenCalled();
-    jest.useRealTimers();
+    vi.useRealTimers();
   });
 
-  test('increments retryCount and schedules reconnect after 30s', async () => {
-    jest.useFakeTimers();
+  it('increments retryCount and schedules reconnect after 30s', async () => {
+    vi.useFakeTimers();
     const logger = makeLogger();
     const client = makeClient({ retryCount: 0, isInDisconnectingStep: false });
     const listener = new ConnectionStateListener(logger, client, 'TEST');
@@ -93,12 +93,12 @@ describe('ConnectionStateListener', () => {
     await listener.onDisconnected('DUID3', 'lost');
     expect(client.retryCount).toBe(1);
     expect(client.connect).not.toHaveBeenCalled();
-    jest.advanceTimersByTime(30000);
+    vi.advanceTimersByTime(30000);
     expect(client.connect).toHaveBeenCalled();
-    jest.useRealTimers();
+    vi.useRealTimers();
   });
 
-  test('does not reconnect if retryCount > 10', async () => {
+  it('does not reconnect if retryCount > 10', async () => {
     const logger = makeLogger();
     const client = makeClient({ retryCount: 11 });
     const listener = new ConnectionStateListener(logger, client, 'TEST');
@@ -108,7 +108,7 @@ describe('ConnectionStateListener', () => {
     expect(client.connect).not.toHaveBeenCalled();
   });
 
-  test('skips re-registration if in disconnecting step', async () => {
+  it('skips re-registration if in disconnecting step', async () => {
     const logger = makeLogger();
     const client = makeClient({ retryCount: 0, isInDisconnectingStep: true });
     const listener = new ConnectionStateListener(logger, client, 'TEST');

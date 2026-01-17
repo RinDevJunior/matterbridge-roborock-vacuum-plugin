@@ -1,3 +1,4 @@
+import { describe, test, expect } from 'vitest';
 import { DeviceStatus } from '../../../roborockCommunication/Zmodel/deviceStatus';
 import { VacuumErrorCode, DockErrorCode } from '../../../roborockCommunication/Zenum/vacuumAndDockErrorCode';
 

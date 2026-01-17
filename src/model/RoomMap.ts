@@ -28,7 +28,7 @@ export class RoomMap {
         id,
         globalId: globalId !== undefined ? Number(globalId) : undefined,
         displayName: room?.name ?? `Room ${id}`,
-        alternativeId: `${id}${tag}`,
+        alternativeId: `${id}${tag ?? ''}`,
         mapId,
       };
     });

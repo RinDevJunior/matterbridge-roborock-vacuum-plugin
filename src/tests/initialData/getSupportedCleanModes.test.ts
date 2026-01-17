@@ -1,3 +1,4 @@
+import { describe, it, expect } from 'vitest';
 import { getSupportedCleanModes } from '../../initialData/getSupportedCleanModes';
 import { DeviceModel } from '../../roborockCommunication/Zmodel/deviceModel';
 import { createDefaultExperimentalFeatureSetting } from '../../model/ExperimentalFeatureSetting';

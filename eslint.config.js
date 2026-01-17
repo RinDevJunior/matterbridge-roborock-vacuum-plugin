@@ -2,9 +2,9 @@
 
 import eslint from '@eslint/js';
 import tseslint from 'typescript-eslint';
-import eslintPluginJest from 'eslint-plugin-jest';
 import eslintPluginPrettier from 'eslint-plugin-prettier/recommended';
 import eslintPluginN from 'eslint-plugin-n';
+import pluginVitest from '@vitest/eslint-plugin';
 
 export default [
   {
@@ -60,20 +60,6 @@ export default [
     },
   },
   {
-    name: 'jest',
-    files: ['**/__test__/*', '**/*.test.ts', '**/*.spec.ts'],
-    plugins: {
-      '@typescript-eslint': tseslint.plugin,
-      jest: eslintPluginJest,
-    },
-    ...tseslint.configs.disableTypeChecked,
-    ...eslintPluginJest.configs['flat/recommended'],
-    rules: {
-      '@typescript-eslint/no-explicit-any': 'off',
-      '@typescript-eslint/no-non-null-assertion': 'off',
-    },
-  },
-  {
     name: 'node',
     files: ['**/*.ts'],
     plugins: {
@@ -81,6 +67,32 @@ export default [
     },
     rules: {
       'n/prefer-node-protocol': 'error',
+    },
+  },
+  {
+    name: 'Vitest Test Files',
+    files: ['src/**/*.spec.ts', 'src/**/*.test.ts'],
+    languageOptions: {
+      parser: tseslint.parser,
+      parserOptions: {
+        project: './tsconfig.jest.json', // Or your shared tsconfig
+        sourceType: 'module',
+        ecmaVersion: 'latest',
+      },
+    },
+    plugins: {
+      vitest: pluginVitest,
+    },
+    rules: {
+      // Override/add rules specific to test files here
+      'no-unused-vars': 'off', // Disable base rule for unused variables in test files
+      '@typescript-eslint/no-unused-vars': 'off', // Disable TypeScript rule for unused variables in test files
+      '@typescript-eslint/no-explicit-any': 'off', // Allow 'any' type in test files
+      '@typescript-eslint/no-empty-function': 'off', // Allow empty functions in test files
+      'jsdoc/require-jsdoc': 'off', // Disable JSDoc rule in test files
+
+      // Recommended Vitest rules
+      ...pluginVitest.configs.recommended.rules,
     },
   },
 ];

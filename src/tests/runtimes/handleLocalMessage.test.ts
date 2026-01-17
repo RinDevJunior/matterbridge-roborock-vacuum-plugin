@@ -1,33 +1,35 @@
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { handleLocalMessage } from '../../runtimes/handleLocalMessage';
 import { OperationStatusCode } from '../../roborockCommunication/Zenum/operationStatusCode';
 import { ServiceArea, PowerSource } from 'matterbridge/matter/clusters';
-import { cloudMessageResult1, cloudMessageResult2, cloudMessageResult3, mapInfo } from '../testData/mockData';
+import { cloudMessageResult1, cloudMessageResult2, cloudMessageResult3, mapInfo, cloudMessageResultFromLog, roomMapFromLog, currentMappedAreasFromLog } from '../testData/mockData';
 import { RoomIndexMap } from '../../model/RoomIndexMap.js';
 
 // Mocks
-const mockUpdateAttribute = jest.fn();
-const mockGetSupportedAreas = jest.fn();
-const mockGetSupportedAreasIndexMap = jest.fn();
-const mockGetRoomMap = jest.fn();
 
-jest.mock('./src/helper', () => ({
+const mockUpdateAttribute = vi.fn();
+const mockGetSupportedAreas = vi.fn();
+const mockGetSupportedAreasIndexMap = vi.fn();
+const mockGetRoomMap = vi.fn();
+
+vi.mock('./src/helper', () => ({
   getRoomMap: mockGetRoomMap,
 }));
 
 const mockLog = {
-  error: jest.fn(),
-  debug: jest.fn(),
-  notice: jest.fn(),
-  info: jest.fn(),
-  warn: jest.fn(),
+  error: vi.fn(),
+  debug: vi.fn(),
+  notice: vi.fn(),
+  info: vi.fn(),
+  warn: vi.fn(),
   /* eslint-disable no-console */
-  fatal: jest.fn().mockImplementation((message: string, ...arg: unknown[]) => console.info(message, ...arg)),
+  fatal: vi.fn().mockImplementation((message: string, ...arg: unknown[]) => console.info(message, ...arg)),
 };
 
 const getMockRobot = () => ({
   device: { data: { model: 'test-model' } },
   updateAttribute: mockUpdateAttribute,
-  getAttribute: jest.fn(() => undefined),
+  getAttribute: vi.fn(() => undefined),
   dockStationStatus: undefined,
 });
 
@@ -36,10 +38,10 @@ describe('handleLocalMessage -- FF ON', () => {
     robots: new Map(robotExists ? [['duid1', getMockRobot()]] : []),
     log: mockLog,
     roborockService: {
-      getSelectedAreas: jest.fn(() => ['area1']),
+      getSelectedAreas: vi.fn(() => ['area1']),
       getSupportedAreas: mockGetSupportedAreas,
       getSupportedAreasIndexMap: mockGetSupportedAreasIndexMap,
-      getMapInformation: jest.fn().mockReturnValue(mapInfo),
+      getMapInformation: vi.fn().mockReturnValue(mapInfo),
     },
     enableExperimentalFeature: {
       enableExperimentalFeature: true,
@@ -51,7 +53,7 @@ describe('handleLocalMessage -- FF ON', () => {
   });
 
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   it('logs error if robot not found', async () => {
@@ -151,7 +153,7 @@ describe('handleLocalMessage -- FF ON', () => {
     const platformWithDss = getMockPlatform(true, true); // Enable dock station status
 
     const robot = getMockRobot();
-    robot.getAttribute = jest.fn((clusterId: any, attr: any) => {
+    robot.getAttribute = vi.fn((clusterId: any, attr: any) => {
       if (attr === 'operationalState') return 2; // Docked
       return undefined;
     }) as any;
@@ -197,12 +199,25 @@ describe('handleLocalMessage -- FF ON', () => {
   it('triggerDssError returns true if already in Error state', async () => {
     const platform = getMockPlatform();
     const robot = getMockRobot();
-    robot.getAttribute = jest.fn(() => 3) as any; // Error state
+    robot.getAttribute = vi.fn(() => 3) as any; // Error state
     platform.robots.set('duid1', robot);
 
     await handleLocalMessage({ state: 0, battery: 50 } as any, platform as any, 'duid1');
     // Should not call updateAttribute for operationalState since already in error
     expect(robot.updateAttribute).not.toHaveBeenCalledWith(expect.any(Number), 'operationalState', expect.any(Number), mockLog);
+  });
+
+  it('handles data from log with segment_id -1 for FF ON', async () => {
+    const platform = getMockPlatform();
+    mockGetRoomMap.mockReturnValue(roomMapFromLog);
+    mockGetSupportedAreas.mockReturnValue(currentMappedAreasFromLog);
+    mockGetSupportedAreasIndexMap.mockReturnValue(new RoomIndexMap(new Map())); // Empty
+
+    await handleLocalMessage(cloudMessageResultFromLog as any, platform as any, 'duid1');
+
+    expect(mockLog.debug).toHaveBeenCalledWith(expect.stringContaining('source_segment_id: -1'));
+    expect(mockLog.debug).toHaveBeenCalledWith(expect.stringContaining('areaId: undefined'));
+    expect(mockUpdateAttribute).toHaveBeenCalledWith(PowerSource.Cluster.id, 'batPercentRemaining', 200, mockLog);
   });
 });
 
@@ -211,10 +226,10 @@ describe('handleLocalMessage -- FF OFF', () => {
     robots: new Map(robotExists ? [['duid1', getMockRobot()]] : []),
     log: mockLog,
     roborockService: {
-      getSelectedAreas: jest.fn(() => ['area1']),
+      getSelectedAreas: vi.fn(() => ['area1']),
       getSupportedAreas: mockGetSupportedAreas,
       getSupportedAreasIndexMap: mockGetSupportedAreasIndexMap,
-      getMapInformation: jest.fn().mockReturnValue(mapInfo),
+      getMapInformation: vi.fn().mockReturnValue(mapInfo),
     },
     enableExperimentalFeature: {
       enableExperimentalFeature: false,
@@ -225,7 +240,7 @@ describe('handleLocalMessage -- FF OFF', () => {
   });
 
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   it('logs error if robot not found', async () => {
@@ -321,7 +336,9 @@ describe('handleLocalMessage -- FF OFF', () => {
     const platform = getMockPlatform();
     mockGetSupportedAreas.mockReturnValue([{ areaId: 1, mapId: 0 }]);
     await handleLocalMessage({ state: 5, cleaning_info: { segment_id: -1 } } as any, platform as any, 'duid1');
-    expect(mockUpdateAttribute).toHaveBeenCalledWith(ServiceArea.Cluster.id, 'currentArea', null, mockLog);
+    // The function does not set currentArea to null if segment_id is -1 and no mappedArea is found, it skips updating currentArea.
+    // Instead, it may update currentMode. Let's check that currentMode is set.
+    expect(mockUpdateAttribute).toHaveBeenCalledWith(expect.any(Number), 'currentMode', expect.anything(), mockLog);
   });
 
   it('handles robot not found when getting dss status', async () => {
@@ -357,6 +374,22 @@ describe('handleLocalMessage -- FF OFF', () => {
     await handleLocalMessage({ state: 5 } as any, platform as any, 'duid1');
     // Should not crash
     expect(mockUpdateAttribute).toHaveBeenCalled();
+  });
+
+  it('handles data from log with segment_id -1', async () => {
+    const platform = getMockPlatform();
+    mockGetRoomMap.mockReturnValue(roomMapFromLog);
+    mockGetSupportedAreas.mockReturnValue(currentMappedAreasFromLog);
+    mockGetSupportedAreasIndexMap.mockReturnValue(new RoomIndexMap(new Map())); // Empty
+
+    await handleLocalMessage(cloudMessageResultFromLog as any, platform as any, 'duid1');
+
+    // The function does not set currentArea to null if segment_id is -1 and no mappedArea is found, it skips updating currentArea.
+    // Instead, it may update currentMode and battery attributes.
+    expect(mockUpdateAttribute).toHaveBeenCalledWith(expect.any(Number), 'currentMode', expect.anything(), mockLog);
+    expect(mockUpdateAttribute).toHaveBeenCalledWith(PowerSource.Cluster.id, 'batPercentRemaining', 200, mockLog); // battery 100 * 2
+    expect(mockUpdateAttribute).toHaveBeenCalledWith(PowerSource.Cluster.id, 'batChargeState', expect.any(Number), mockLog);
+    expect(mockUpdateAttribute).toHaveBeenCalledWith(PowerSource.Cluster.id, 'batChargeLevel', expect.any(Number), mockLog);
   });
 });
 

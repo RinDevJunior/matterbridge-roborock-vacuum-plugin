@@ -1,3 +1,4 @@
+import { describe, it, expect } from 'vitest';
 import { ChunkBuffer } from '../../../roborockCommunication/helper/chunkBuffer';
 
 describe('ChunkBuffer', () => {

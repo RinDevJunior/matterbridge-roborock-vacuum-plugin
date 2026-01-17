@@ -1,16 +1,31 @@
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { LocalNetworkClient } from '../../../../roborockCommunication/broadcast/client/LocalNetworkClient';
 import { Protocol } from '../../../../roborockCommunication/broadcast/model/protocol';
 import { EventEmitter } from 'node:events';
 
-const Sket = jest.fn();
-
-jest.mock('node:net', () => {
-  const actual = jest.requireActual('node:net');
+// Vitest ESM hoisting workaround: vi.mock must be first, then all imports
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+vi.mock('node:net', async () => {
+  const { EventEmitter } = await import('node:events');
+  const actual = await import('node:net');
+  class Sket extends EventEmitter {
+    constructor() {
+      super();
+      if (globalThis.mockSocketInstance) {
+        return globalThis.mockSocketInstance;
+      }
+    }
+  }
+  globalThis.Sket = Sket;
   return {
     ...actual,
     Socket: Sket,
   };
 });
+
+import { LocalNetworkClient } from '../../../../roborockCommunication/broadcast/client/LocalNetworkClient';
+import { Protocol } from '../../../../roborockCommunication/broadcast/model/protocol';
+import { EventEmitter } from 'node:events';
 
 describe('LocalNetworkClient', () => {
   let client: LocalNetworkClient;
@@ -22,56 +37,52 @@ describe('LocalNetworkClient', () => {
 
   beforeEach(() => {
     mockLogger = {
-      debug: jest.fn(),
-      error: jest.fn(),
-      notice: jest.fn(),
-      info: jest.fn(),
+      debug: vi.fn(),
+      error: vi.fn(),
+      notice: vi.fn(),
+      info: vi.fn(),
     };
     mockContext = {
       nonce: Buffer.from([1, 2, 3, 4]),
-      getProtocolVersion: jest.fn().mockReturnValue('1.0'),
+      getProtocolVersion: vi.fn().mockReturnValue('1.0'),
     };
 
     // Create a more realistic socket mock using EventEmitter
     mockSocket = Object.assign(new EventEmitter(), {
-      connect: jest.fn(),
-      destroy: jest.fn(),
-      write: jest.fn(),
-      address: jest.fn().mockReturnValue({ address: '127.0.0.1', port: 58867 }),
+      connect: vi.fn(),
+      destroy: vi.fn(),
+      write: vi.fn(),
+      address: vi.fn().mockReturnValue({ address: '127.0.0.1', port: 58867 }),
       writable: true,
       readable: true,
     });
 
-    Sket.mockImplementation(() => mockSocket);
+    globalThis.mockSocketInstance = mockSocket;
 
     // Inject a mock SyncMessageListener for testability
     const mockSyncMessageListener = {
-      waitFor: jest.fn((_msgId: number, _req: any, resolve: any, _reject: any) => resolve(undefined)),
+      waitFor: vi.fn((_msgId: number, _req: any, resolve: any, _reject: any) => resolve(undefined)),
       pending: new Map(),
       logger: mockLogger,
-      onMessage: jest.fn(),
+      onMessage: vi.fn(),
     };
     client = new LocalNetworkClient(mockLogger, mockContext, duid, ip, mockSyncMessageListener as any);
     // Expose for test assertions
     (client as any)._mockSyncMessageListener = mockSyncMessageListener;
-    (client as any).serializer = { serialize: jest.fn().mockReturnValue({ buffer: Buffer.from([1, 2, 3]), messageId: 123 }) };
-    (client as any).deserializer = { deserialize: jest.fn().mockReturnValue('deserialized') };
-    (client as any).messageListeners = { onMessage: jest.fn() };
+    (client as any).serializer = { serialize: vi.fn().mockReturnValue({ buffer: Buffer.from([1, 2, 3]), messageId: 123 }) };
+    (client as any).deserializer = { deserialize: vi.fn().mockReturnValue('deserialized') };
+    (client as any).messageListeners = { onMessage: vi.fn() };
     (client as any).connectionListeners = {
-      onConnected: jest.fn(),
-      onDisconnected: jest.fn(),
-      onError: jest.fn(),
+      onConnected: vi.fn(),
+      onDisconnected: vi.fn(),
+      onError: vi.fn(),
     };
   });
 
   afterEach(() => {
-    jest.clearAllMocks();
-    jest.useRealTimers();
-    if ((client as any).keepConnectionAliveInterval) {
-      clearInterval((client as any).keepConnectionAliveInterval);
-      (client as any).keepConnectionAliveInterval = undefined;
-    }
-    if (client['pingInterval']) {
+    vi.clearAllMocks();
+    vi.useRealTimers();
+    if (client && client['pingInterval']) {
       clearInterval(client['pingInterval']);
       client['pingInterval'] = undefined;
     }
@@ -85,7 +96,7 @@ describe('LocalNetworkClient', () => {
 
   it('connect() should return early if socket already exists', () => {
     client['socket'] = mockSocket;
-    const connectSpy = jest.spyOn(mockSocket, 'connect');
+    const connectSpy = vi.spyOn(mockSocket, 'connect');
     client.connect();
     expect(connectSpy).not.toHaveBeenCalled();
   });
@@ -101,7 +112,7 @@ describe('LocalNetworkClient', () => {
   it('disconnect() should destroy socket and clear pingInterval', async () => {
     client['socket'] = mockSocket;
     client['pingInterval'] = setInterval(() => {
-      jest.fn();
+      vi.fn();
     }, 1000);
     await client.disconnect();
     expect(mockSocket.destroy).toHaveBeenCalled();
@@ -116,7 +127,7 @@ describe('LocalNetworkClient', () => {
   it('send() should log error if socket is not connected', async () => {
     client['socket'] = undefined;
     client['connected'] = false;
-    const req = { toLocalRequest: jest.fn(), secure: false, isForProtocol: jest.fn().mockReturnValue(false), version: '1.0', method: 'test' };
+    const req = { toLocalRequest: vi.fn(), secure: false, isForProtocol: vi.fn().mockReturnValue(false), version: '1.0', method: 'test' };
     await client.send(duid, req as any);
     expect(mockLogger.error).toHaveBeenCalledWith(expect.stringContaining('socket is not online'));
     expect(mockSocket.write).not.toHaveBeenCalled();
@@ -127,7 +138,7 @@ describe('LocalNetworkClient', () => {
     mockSocket.destroyed = false;
     client['socket'] = mockSocket;
     client['connected'] = true;
-    const req = { toLocalRequest: jest.fn().mockReturnValue({}), secure: false, isForProtocol: jest.fn().mockReturnValue(false), version: '1.0', method: 'test' };
+    const req = { toLocalRequest: vi.fn().mockReturnValue({}), secure: false, isForProtocol: vi.fn().mockReturnValue(false), version: '1.0', method: 'test' };
     await client.send(duid, req as any);
     expect(client['serializer'].serialize).toHaveBeenCalled();
     expect(mockSocket.write).toHaveBeenCalledWith(expect.any(Buffer));
@@ -138,8 +149,8 @@ describe('LocalNetworkClient', () => {
 
   it('onConnect() should set connected, log, send hello, set ping, call onConnected', async () => {
     client['socket'] = mockSocket;
-    jest.useFakeTimers();
-    const trySendHelloSpy = jest.spyOn(client as any, 'trySendHelloRequest').mockResolvedValue(undefined);
+    vi.useFakeTimers();
+    const trySendHelloSpy = vi.spyOn(client as any, 'trySendHelloRequest').mockResolvedValue(undefined);
     await (client as any).onConnect();
     expect(mockLogger.debug).toHaveBeenCalled();
     expect(trySendHelloSpy).toHaveBeenCalled();
@@ -148,7 +159,7 @@ describe('LocalNetworkClient', () => {
   it('onDisconnect() should log, set connected false, destroy socket, clear ping, call onDisconnected', async () => {
     client['socket'] = mockSocket;
     client['pingInterval'] = setInterval(() => {
-      jest.fn();
+      vi.fn();
     }, 1000);
     await (client as any).onDisconnect();
     expect(mockLogger.info).toHaveBeenCalled();
@@ -176,11 +187,11 @@ describe('LocalNetworkClient', () => {
     client['socket'] = mockSocket;
     // Compose a buffer with a single segment of length 3 (after 4 bytes)
     const payload = Buffer.from([0, 0, 0, 3, 10, 20, 30]);
-    (client as any).isMessageComplete = jest.fn().mockReturnValue(true);
+    (client as any).isMessageComplete = vi.fn().mockReturnValue(true);
     (client as any).buffer = {
-      append: jest.fn(),
-      get: jest.fn().mockReturnValue(payload),
-      reset: jest.fn(),
+      append: vi.fn(),
+      get: vi.fn().mockReturnValue(payload),
+      reset: vi.fn(),
     };
     await (client as any).onMessage(payload);
     expect(client['deserializer'].deserialize).toHaveBeenCalled();
@@ -211,8 +222,8 @@ describe('LocalNetworkClient', () => {
     mockSocket.destroyed = false;
     client['socket'] = mockSocket;
     client['connected'] = true;
-    client['pingResponseListener'].waitFor = jest.fn().mockResolvedValue({ header: { nonce: 123, version: '1.0' } });
-    const sendSpy = jest.spyOn(client, 'send').mockResolvedValue(undefined);
+    client['pingResponseListener'].waitFor = vi.fn().mockResolvedValue({ header: { nonce: 123, version: '1.0' } });
+    const sendSpy = vi.spyOn(client, 'send').mockResolvedValue(undefined);
     await (client as any).sendHelloMessage('1.0');
     expect(sendSpy).toHaveBeenCalledWith(duid, expect.objectContaining({ protocol: Protocol.hello_request }));
   });
@@ -222,7 +233,7 @@ describe('LocalNetworkClient', () => {
     mockSocket.destroyed = false;
     client['socket'] = mockSocket;
     client['connected'] = true;
-    const sendSpy = jest.spyOn(client, 'send').mockResolvedValue(undefined);
+    const sendSpy = vi.spyOn(client, 'send').mockResolvedValue(undefined);
     await (client as any).sendPingRequest();
     expect(sendSpy).toHaveBeenCalledWith(duid, expect.objectContaining({ protocol: Protocol.ping_request }));
   });
@@ -233,9 +244,9 @@ describe('LocalNetworkClient', () => {
     client['socket'] = mockSocket;
     client['connected'] = false;
     const req = {
-      toLocalRequest: jest.fn().mockReturnValue({ protocol: Protocol.ping_request }),
+      toLocalRequest: vi.fn().mockReturnValue({ protocol: Protocol.ping_request }),
       secure: false,
-      isForProtocol: jest.fn().mockReturnValue(false),
+      isForProtocol: vi.fn().mockReturnValue(false),
       version: '1.0',
       method: 'test',
     };
@@ -248,9 +259,9 @@ describe('LocalNetworkClient', () => {
     client['socket'] = undefined;
     client['connected'] = true;
     const req = {
-      toLocalRequest: jest.fn().mockReturnValue({ protocol: Protocol.ping_request }),
+      toLocalRequest: vi.fn().mockReturnValue({ protocol: Protocol.ping_request }),
       secure: false,
-      isForProtocol: jest.fn().mockReturnValue(false),
+      isForProtocol: vi.fn().mockReturnValue(false),
       version: '1.0',
       method: 'test',
     };
@@ -260,7 +271,7 @@ describe('LocalNetworkClient', () => {
 
   it('onDisconnect() should handle when socket already destroyed', async () => {
     client['socket'] = undefined;
-    client['pingInterval'] = setInterval(() => jest.fn(), 1000);
+    client['pingInterval'] = setInterval(() => vi.fn(), 1000);
     await (client as any).onDisconnect(false);
     expect(client['connected']).toBe(false);
     expect(client['connectionListeners'].onDisconnected).toHaveBeenCalled();
@@ -290,11 +301,11 @@ describe('LocalNetworkClient', () => {
       Buffer.from([0, 0, 0, 3]), // second segment length = 3
       Buffer.from([10, 20, 30]), // 3 bytes of data
     ]);
-    (client as any).isMessageComplete = jest.fn().mockReturnValue(true);
+    (client as any).isMessageComplete = vi.fn().mockReturnValue(true);
     (client as any).buffer = {
-      append: jest.fn(),
-      get: jest.fn().mockReturnValue(buffer),
-      reset: jest.fn(),
+      append: vi.fn(),
+      get: vi.fn().mockReturnValue(buffer),
+      reset: vi.fn(),
     };
     await (client as any).onMessage(buffer);
     // Should process only the second segment (skip length 17)
@@ -304,13 +315,13 @@ describe('LocalNetworkClient', () => {
   it('onMessage() should handle deserialization error', async () => {
     client['socket'] = mockSocket;
     const payload = Buffer.from([0, 0, 0, 3, 10, 20, 30]);
-    (client as any).isMessageComplete = jest.fn().mockReturnValue(true);
+    (client as any).isMessageComplete = vi.fn().mockReturnValue(true);
     (client as any).buffer = {
-      append: jest.fn(),
-      get: jest.fn().mockReturnValue(payload),
-      reset: jest.fn(),
+      append: vi.fn(),
+      get: vi.fn().mockReturnValue(payload),
+      reset: vi.fn(),
     };
-    (client as any).deserializer.deserialize = jest.fn().mockImplementation(() => {
+    (client as any).deserializer.deserialize = vi.fn().mockImplementation(() => {
       throw new Error('Deserialization failed');
     });
     await (client as any).onMessage(payload);
@@ -321,11 +332,11 @@ describe('LocalNetworkClient', () => {
     client['socket'] = mockSocket;
     const payload = Buffer.from([0, 0, 0, 3, 10, 20, 30]);
     (client as any).buffer = {
-      append: jest.fn().mockImplementation(() => {
+      append: vi.fn().mockImplementation(() => {
         throw new Error('Buffer append failed');
       }),
-      get: jest.fn(),
-      reset: jest.fn(),
+      get: vi.fn(),
+      reset: vi.fn(),
     };
     await (client as any).onMessage(payload);
     expect(mockLogger.error).toHaveBeenCalledWith(expect.stringContaining('read socket buffer error'));

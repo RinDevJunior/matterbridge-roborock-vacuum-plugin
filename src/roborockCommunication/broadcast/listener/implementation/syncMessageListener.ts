@@ -8,6 +8,7 @@ import { MESSAGE_TIMEOUT_MS } from '../../../../constants/index.js';
 
 export class SyncMessageListener implements AbstractMessageListener {
   private readonly pending = new Map<number, (response: ResponseMessage) => void>();
+  private readonly acceptedProtocols: Protocol[] = [Protocol.general_request, Protocol.general_response, Protocol.rpc_response];
   constructor(private readonly logger: AnsiLogger) {}
 
   public waitFor(messageId: number, request: RequestMessage, resolve: (response: ResponseMessage) => void, reject: (error?: Error) => void): void {
@@ -25,7 +26,7 @@ export class SyncMessageListener implements AbstractMessageListener {
     // general_request (protocol 4 - device uses request protocol for responses),
     // general_response (protocol 5)
     // rpc_response (protocol 102)
-    if (message.isForProtocol(Protocol.general_request) || message.isForProtocol(Protocol.general_response) || message.isForProtocol(Protocol.rpc_response)) {
+    if (message.isForProtocols(this.acceptedProtocols)) {
       const protocolNum = message.header?.protocol;
       const protocolName = Object.entries(Protocol).find(([, v]) => v === protocolNum)?.[0] ?? protocolNum;
       this.logger.debug(`Processing response with protocol ${protocolName}`);
@@ -47,7 +48,8 @@ export class SyncMessageListener implements AbstractMessageListener {
         dps = message.get(Protocol.rpc_response) as DpsPayload;
       }
 
-      if (!dps && message.isForProtocol(Protocol.rpc_response) && (message.isForStatus(Protocol.suction_power) || message.isForStatus(Protocol.water_box_mode))) {
+      const statusProtocolNumbers = [Protocol.suction_power, Protocol.water_box_mode];
+      if (message.isForProtocol(Protocol.rpc_response) && statusProtocolNumbers.some((p) => message.isForProtocol(p))) {
         // skip message handling for status updates because they will be handled at statusMessageListener
         return;
       }
@@ -67,13 +69,6 @@ export class SyncMessageListener implements AbstractMessageListener {
         this.logger.warn(`No handler found for messageId: ${messageId}`);
       }
       this.pending.delete(messageId);
-      return;
-    }
-
-    // map data
-    if (message.isForProtocol(Protocol.map_response)) {
-      const dps = message.get(Protocol.map_response) as DpsPayload;
-      this.pending.delete(dps.id);
       return;
     }
   }

@@ -1,4 +1,5 @@
 import { ChainedConnectionListener } from '../../../../../roborockCommunication/broadcast/listener/implementation/chainedConnectionListener';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 
 describe('ChainedConnectionListener', () => {
   let chained: ChainedConnectionListener;
@@ -8,14 +9,14 @@ describe('ChainedConnectionListener', () => {
   beforeEach(() => {
     chained = new ChainedConnectionListener();
     listener1 = {
-      onConnected: jest.fn().mockResolvedValue(undefined),
-      onDisconnected: jest.fn().mockResolvedValue(undefined),
-      onError: jest.fn().mockResolvedValue(undefined),
+      onConnected: vi.fn().mockResolvedValue(undefined),
+      onDisconnected: vi.fn().mockResolvedValue(undefined),
+      onError: vi.fn().mockResolvedValue(undefined),
     };
     listener2 = {
-      onConnected: jest.fn().mockResolvedValue(undefined),
-      onDisconnected: jest.fn().mockResolvedValue(undefined),
-      onError: jest.fn().mockResolvedValue(undefined),
+      onConnected: vi.fn().mockResolvedValue(undefined),
+      onDisconnected: vi.fn().mockResolvedValue(undefined),
+      onError: vi.fn().mockResolvedValue(undefined),
     };
   });
 

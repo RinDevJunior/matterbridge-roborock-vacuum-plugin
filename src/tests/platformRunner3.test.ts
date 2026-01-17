@@ -1,3 +1,4 @@
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { PlatformRunner } from '../platformRunner';
 import { NotifyMessageTypes } from '../notifyMessageTypes';
 import { RoborockMatterbridgePlatform } from '../platform';
@@ -10,8 +11,8 @@ describe('PlatformRunner.updateRobot', () => {
 
   beforeEach(() => {
     robotMock = {
-      updateAttribute: jest.fn(),
-      getAttribute: jest.fn(),
+      updateAttribute: vi.fn(),
+      getAttribute: vi.fn(),
       device: {
         data: { model: 'test-model' },
         duid: '123456',
@@ -28,9 +29,9 @@ describe('PlatformRunner.updateRobot', () => {
     platform = {
       robots: robots,
       log: {
-        error: jest.fn(),
-        debug: jest.fn(),
-        notice: jest.fn(),
+        error: vi.fn(),
+        debug: vi.fn(),
+        notice: vi.fn(),
       },
       enableExperimentalFeature: undefined,
     } as unknown as RoborockMatterbridgePlatform;

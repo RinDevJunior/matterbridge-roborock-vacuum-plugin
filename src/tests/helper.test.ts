@@ -1,3 +1,4 @@
+import { describe, it, test, expect, vi, beforeEach } from 'vitest';
 import { getVacuumProperty, isSupportedDevice, isStatusUpdate, getRoomMap, getRoomMapFromDevice } from '../helper.js';
 
 describe('helper utilities', () => {
@@ -28,7 +29,7 @@ describe('helper utilities', () => {
   });
 
   test('getRoomMap handles missing robot and missing roborockService', async () => {
-    const platform: any = { robots: new Map(), enableExperimentalFeature: undefined, log: { error: jest.fn(), info: jest.fn() } };
+    const platform: any = { robots: new Map(), enableExperimentalFeature: undefined, log: { error: vi.fn(), info: vi.fn() } };
     const res = await getRoomMap('nope', platform);
     expect(res).toBeUndefined();
     expect(platform.log.error).toHaveBeenCalled();
@@ -40,11 +41,11 @@ describe('helper utilities', () => {
     expect(res2).toBeUndefined();
   });
 
-  test('getRoomMapFromDevice returns RoomMap variants', async () => {
+  test('getRoomMapFromDevice returns RoomMap variants (case 1)', async () => {
     const device: any = { duid: 'd2', rooms: [] };
     const platform: any = {
       enableExperimentalFeature: undefined,
-      log: { debug: jest.fn(), notice: jest.fn() },
+      log: { debug: vi.fn(), notice: vi.fn() },
       roborockService: {
         getMapInformation: async () => ({ allRooms: [{ id: 1, iot_name_id: '1', tag: 0, mapId: 0, displayName: 'R1' }], maps: [] }),
         getRoomMappings: async () => undefined,
@@ -57,7 +58,7 @@ describe('helper utilities', () => {
     // when no map info but room mappings present
     const platform2: any = {
       enableExperimentalFeature: undefined,
-      log: { debug: jest.fn(), notice: jest.fn() },
+      log: { debug: vi.fn(), notice: vi.fn() },
       roborockService: { getMapInformation: async () => undefined, getRoomMappings: async () => [[1, 1, 0]] },
     };
     const rmap2 = await getRoomMapFromDevice(device, platform2);
@@ -66,7 +67,7 @@ describe('helper utilities', () => {
     // when neither present returns empty RoomMap
     const platform3: any = {
       enableExperimentalFeature: undefined,
-      log: { debug: jest.fn(), notice: jest.fn() },
+      log: { debug: vi.fn(), notice: vi.fn() },
       roborockService: { getMapInformation: async () => undefined, getRoomMappings: async () => undefined },
     };
     const rmap3 = await getRoomMapFromDevice(device, platform3);
@@ -77,17 +78,17 @@ import { getRoomMapFromDevice } from '../helper';
 import { RoomMap } from '../model/RoomMap';
 
 const mockLog = {
-  notice: jest.fn(),
-  error: jest.fn(),
-  debug: jest.fn(),
-  info: jest.fn(),
-  warn: jest.fn(),
-  verbose: jest.fn(),
+  notice: vi.fn(),
+  error: vi.fn(),
+  debug: vi.fn(),
+  info: vi.fn(),
+  warn: vi.fn(),
+  verbose: vi.fn(),
 };
 
 const mockRoborockService = {
-  getRoomMappings: jest.fn(),
-  getMapInformation: jest.fn(),
+  getRoomMappings: vi.fn(),
+  getMapInformation: vi.fn(),
 };
 
 const mockPlatform = {
@@ -97,10 +98,10 @@ const mockPlatform = {
 
 describe('getRoomMapFromDevice', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
-  it('returns RoomMap from getRoomMappings if available', async () => {
+  it('returns RoomMap from getRoomMappings if available (case 1)', async () => {
     const device = {
       duid: '123',
       rooms: [
@@ -150,7 +151,7 @@ describe('getRoomMapFromDevice', () => {
     expect(result.rooms.length).toBeGreaterThan(0);
   });
 
-  it('returns RoomMap from getRoomMappings if available', async () => {
+  it('returns RoomMap from getRoomMappings if available (case 2)', async () => {
     const device = {
       duid: '123',
       rooms: [

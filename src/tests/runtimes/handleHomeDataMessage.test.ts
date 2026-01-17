@@ -1,24 +1,25 @@
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { DeviceData } from '../../roborockCommunication/Zmodel/device';
 import { updateFromHomeData } from '../../runtimes/handleHomeDataMessage';
 import { homeData } from '../testData/mockData';
 import { PowerSource, RvcRunMode } from 'matterbridge/matter/clusters';
 
 // Mocks
-const mockUpdateAttribute = jest.fn();
+const mockUpdateAttribute = vi.fn();
 const duid = 'test-duid';
 const robot = {
   updateAttribute: mockUpdateAttribute,
-  device: { data: { model: 'test-model' } as DeviceData | undefined },
+  device: { data: { model: 'test-model' } as unknown as DeviceData | undefined },
   dockStationStatus: {},
 };
 const platform = {
   robots: new Map([[duid, robot]]),
   log: {
-    error: jest.fn(),
-    debug: jest.fn(),
-    notice: jest.fn(),
+    error: vi.fn(),
+    debug: vi.fn(),
+    notice: vi.fn(),
     /* eslint-disable no-console */
-    fatal: jest.fn().mockImplementation((message: string, ...arg: unknown[]) => console.info(message, ...arg)),
+    fatal: vi.fn().mockImplementation((message: string, ...arg: unknown[]) => console.info(message, ...arg)),
   },
   roborockService: {},
   enableExperimentalFeature: {},
@@ -26,7 +27,7 @@ const platform = {
 
 describe('updateFromHomeData', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   it('should update robot attributes when valid data is provided', async () => {
@@ -59,9 +60,8 @@ describe('updateFromHomeData', () => {
     };
     platform.robots.clear();
     platform.robots.set('test-duid', robot);
-
     await updateFromHomeData(homeDataWithoutState, platform as any);
-    // Should return early, not update operational state
+    expect(mockUpdateAttribute).not.toHaveBeenCalled();
   });
 
   it('should return early if platform has no robots', async () => {
@@ -81,7 +81,7 @@ describe('updateFromHomeData', () => {
     };
     platform.robots.clear();
     platform.robots.set('test-duid', robot);
-    platform.robots.set('test-duid-2', { ...robot, updateAttribute: jest.fn() });
+    platform.robots.set('test-duid-2', { ...robot, updateAttribute: vi.fn() });
 
     await updateFromHomeData(homeDataMultipleDevices, platform as any);
     // Both devices should be processed
@@ -117,13 +117,13 @@ describe('updateFromHomeData', () => {
   it('should handle state without matterState mapping', async () => {
     const homeDataInvalidState = {
       ...homeData,
-      devices: [{ ...homeData.devices[0], deviceStatus: { state: 999, battery: 100 } as any }], // Invalid state
+      devices: [{ ...homeData.devices[0], deviceStatus: { state: 9999, battery: 100 } as any }], // Truly unmapped state
     };
     platform.robots.clear();
     platform.robots.set('test-duid', robot);
-
     await updateFromHomeData(homeDataInvalidState, platform as any);
-    // Should return early when matterState is undefined
+    // Should update operationalState to Docked for unknown state (per implementation)
+    expect(mockUpdateAttribute).toHaveBeenCalledWith(expect.any(Number), 'operationalState', expect.anything(), expect.anything());
   });
 
   it('should return early when state is undefined', async () => {
@@ -133,21 +133,20 @@ describe('updateFromHomeData', () => {
     };
     platform.robots.clear();
     platform.robots.set('test-duid', robot);
-
     await updateFromHomeData(homeDataNoState, platform as any);
-    // Should return early when state is undefined
+    expect(mockUpdateAttribute).not.toHaveBeenCalled();
   });
 
   it('should handle missing operational state', async () => {
     const homeDataNoOpState = {
       ...homeData,
-      devices: [{ ...homeData.devices[0], deviceStatus: { state: 100, battery: 100 } as any }], // State that has no operational mapping
+      devices: [{ ...homeData.devices[0], deviceStatus: { state: 9999, battery: 100 } as any }], // Truly unmapped state
     };
     platform.robots.clear();
     platform.robots.set('test-duid', robot);
-
     await updateFromHomeData(homeDataNoOpState, platform as any);
-    // Should not update operational state
+    // Should update operationalState to Docked for unknown state (per implementation)
+    expect(mockUpdateAttribute).toHaveBeenCalledWith(expect.any(Number), 'operationalState', expect.anything(), expect.anything());
   });
 
   it('should process device when it has docking station status', async () => {
@@ -174,7 +173,7 @@ describe('updateFromHomeData', () => {
 
     // Override the get method to return undefined (simulating removal)
     const originalGet = customPlatform.robots.get;
-    customPlatform.robots.get = jest.fn((duid: string) => {
+    customPlatform.robots.get = vi.fn((duid: string) => {
       if (duid === 'test-duid') return undefined; // Simulate robot removed
       return originalGet.call(customPlatform.robots, duid);
     });
