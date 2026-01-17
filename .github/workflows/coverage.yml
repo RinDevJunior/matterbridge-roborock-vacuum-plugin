@@ -44,7 +44,13 @@ jobs:
         run: npm run lint
 
       - name: Test the project
-        run: npm run test
+        run: npm run test:report
+
+      - name: Upload test results to Codecov
+        if: ${{ !cancelled() }}
+        uses: codecov/test-results-action@v1
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
 
       - name: Test with coverage
         run: npm run test -- --coverage

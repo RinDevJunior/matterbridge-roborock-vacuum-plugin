@@ -45,6 +45,7 @@
     "watch": "tsc --watch",
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
+    "test:report": "vitest run --reporter=junit --outputFile=test-report.junit.xml",
     "start-matterbridge": "matterbridge",
     "start:bridge": "matterbridge -bridge",
     "start:childbridge": "matterbridge -childbridge",
