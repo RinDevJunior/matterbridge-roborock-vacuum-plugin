@@ -124,16 +124,19 @@ export class RoborockVacuumCleaner extends RoboticVacuumCleaner {
     const supportedAreaAndRoutines = [...supportedAreas, ...routineAsRoom];
     const deviceName = `${device.name}-${device.duid}`.replace(/\s+/g, '');
 
-    log.debug(
-      `Creating RoborockVacuumCleaner for device: ${deviceName}, model: ${device.data.model}, forceRunAtDefault: ${enableExperimentalFeature?.advancedFeature?.forceRunAtDefault}`,
-    );
-    log.debug(`Supported Clean Modes: ${debugStringify(cleanModes)}`);
-    log.debug(`Supported Run Modes: ${debugStringify(supportedRunModes)}`);
-    log.debug(`Supported Areas: ${debugStringify(supportedAreas)}`);
-    log.debug(`Supported Maps: ${debugStringify(supportedMaps)}`);
-
     const bridgeMode: 'server' | 'matter' | undefined =
       enableExperimentalFeature?.enableExperimentalFeature && enableExperimentalFeature?.advancedFeature?.enableServerMode ? 'server' : undefined;
+
+    log.debug(
+      `Creating RoborockVacuumCleaner for device: ${deviceName}, 
+      model: ${device.data.model}, 
+      forceRunAtDefault: ${enableExperimentalFeature?.advancedFeature?.forceRunAtDefault}
+      bridgeMode: ${bridgeMode},
+      Supported Clean Modes: ${debugStringify(cleanModes)},
+      Supported Run Modes: ${debugStringify(supportedRunModes)},
+      Supported Areas: ${debugStringify(supportedAreas)},
+      Supported Maps: ${debugStringify(supportedMaps)}`,
+    );
 
     return {
       cleanModes,
