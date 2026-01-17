@@ -2,7 +2,6 @@ import { describe, it, expect, beforeEach, afterEach, vi, afterAll } from 'vites
 import { MQTTClient } from '../../../../roborockCommunication/broadcast/client/MQTTClient';
 
 declare global {
-  // eslint-disable-next-line no-var
   var mockConnect: ReturnType<typeof vi.fn>;
 }
 

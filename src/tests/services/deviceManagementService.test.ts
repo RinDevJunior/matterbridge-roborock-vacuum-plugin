@@ -544,13 +544,14 @@ describe('DeviceManagementService', () => {
       deviceService.stopService();
 
       expect(mockClientRouter.disconnect).toHaveBeenCalled();
-      if (mockLocalClient) {
-        expect(mockLocalClient.disconnect).toHaveBeenCalled();
-      }
       expect(deviceService.messageClient).toBeUndefined();
       expect(deviceService.localClientMap.size).toBe(0);
       expect(deviceService.ipMap.size).toBe(0);
       expect(mockLogger.notice).toHaveBeenCalledWith('Device management service stopped');
+
+      // Always assert disconnect (mockLocalClient is always set in beforeEach)
+      expect(mockLocalClient).toBeDefined();
+      expect(mockLocalClient?.disconnect).toHaveBeenCalled();
     });
 
     it('should handle errors during cleanup gracefully', () => {
