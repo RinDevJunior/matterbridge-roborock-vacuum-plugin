@@ -44,6 +44,7 @@
     "type-check": "tsc --noEmit",
     "watch": "tsc --watch",
     "test": "vitest run",
+    "test:coverage": "vitest run --coverage",
     "start-matterbridge": "matterbridge",
     "start:bridge": "matterbridge -bridge",
     "start:childbridge": "matterbridge -childbridge",

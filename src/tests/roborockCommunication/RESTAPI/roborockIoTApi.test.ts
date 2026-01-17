@@ -4,13 +4,65 @@ import { RoborockIoTApi } from '../../../roborockCommunication/RESTAPI/roborockI
 import MockAdapter from 'axios-mock-adapter';
 
 describe('RoborockIoTApi', () => {
+  describe('getHomeWithProducts', () => {
+    it('returns home data as-is if no v3 or v2 logic triggered', async () => {
+      const home = { id: 1, products: [{ model: 'other.model' }], devices: [], receivedDevices: [], rooms: [{}] };
+      vi.spyOn(api, 'getHome').mockResolvedValue(home as any);
+      const result = await api.getHomeWithProducts(1);
+      expect(result).toBe(home);
+    });
+
+    it('merges v3 devices/receivedDevices if v3 logic triggered', async () => {
+      const home = { id: 1, products: [{ model: 'roborock.vacuum.ss07' }], devices: [{ duid: 'a' }], receivedDevices: [{ duid: 'b' }], rooms: [{}] };
+      const v3 = { devices: [{ duid: 'c' }], receivedDevices: [{ duid: 'd' }], rooms: [{}] };
+      vi.spyOn(api, 'getHome').mockResolvedValue({ ...home } as any);
+      vi.spyOn(api, 'getHomev3').mockResolvedValue(v3 as any);
+      const result = await api.getHomeWithProducts(1);
+      expect(result?.devices).toContainEqual({ duid: 'a' });
+      expect(result?.devices).toContainEqual({ duid: 'c' });
+      expect(result?.receivedDevices).toContainEqual({ duid: 'b' });
+      expect(result?.receivedDevices).toContainEqual({ duid: 'd' });
+    });
+
+    it('throws if v3 API is needed but fails', async () => {
+      const home = { id: 1, products: [{ model: 'roborock.vacuum.ss07' }], devices: [], receivedDevices: [], rooms: [{}] };
+      vi.spyOn(api, 'getHome').mockResolvedValue(home as any);
+      vi.spyOn(api, 'getHomev3').mockResolvedValue(undefined);
+      await expect(api.getHomeWithProducts(1)).rejects.toThrow('Failed to retrieve the home data from v3 API');
+    });
+
+    it('merges v2 rooms if rooms are empty and v2 returns rooms', async () => {
+      const home = { id: 1, products: [{ model: 'other.model' }], devices: [], receivedDevices: [], rooms: [] };
+      const v2 = { rooms: [{ id: 99 }] };
+      vi.spyOn(api, 'getHome').mockResolvedValue({ ...home } as any);
+      vi.spyOn(api, 'getHomev2').mockResolvedValue(v2 as any);
+      const result = await api.getHomeWithProducts(1);
+      expect(result?.rooms).toContainEqual({ id: 99 });
+    });
+
+    it('returns home if rooms are empty and v2 returns no rooms', async () => {
+      const home = { id: 1, products: [{ model: 'other.model' }], devices: [], receivedDevices: [], rooms: [] };
+      vi.spyOn(api, 'getHome').mockResolvedValue({ ...home } as any);
+      vi.spyOn(api, 'getHomev2').mockResolvedValue(undefined);
+      const result = await api.getHomeWithProducts(1);
+      expect(result).toBeDefined();
+      expect(result?.rooms).toEqual([]);
+    });
+
+    it('returns undefined and logs if getHome returns undefined', async () => {
+      vi.spyOn(api, 'getHome').mockResolvedValue(undefined);
+      const result = await api.getHomeWithProducts(1);
+      expect(result).toBeUndefined();
+      expect(mockLogger.error).toHaveBeenCalledWith('Failed to retrieve the home data');
+    });
+  });
   let mockLogger: any;
   let mockAxiosInstance: MockAdapter;
   let mockUserData: any;
   let api: RoborockIoTApi;
 
   beforeEach(() => {
-    mockLogger = { error: vi.fn() };
+    mockLogger = { error: vi.fn(), debug: vi.fn() };
     mockAxiosInstance = new MockAdapter(axios);
     mockUserData = {
       rriot: {
