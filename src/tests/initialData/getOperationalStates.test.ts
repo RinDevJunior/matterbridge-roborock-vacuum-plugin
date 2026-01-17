@@ -1,39 +1,40 @@
+import { describe, it, expect } from 'vitest';
 import { getOperationalErrorState, getErrorFromErrorCode, getErrorFromDSS } from '../../initialData/getOperationalStates.js';
 import { VacuumErrorCode } from '../../roborockCommunication/Zenum/vacuumAndDockErrorCode.js';
 import { DockingStationStatusType } from '../../model/DockingStationStatus.js';
 
 describe('getOperationalStates', () => {
-  test('getOperationalErrorState returns undefined for None and Error for others', () => {
+  it('getOperationalErrorState returns undefined for None and Error for others', () => {
     expect(getOperationalErrorState(VacuumErrorCode.None)).toBeUndefined();
-    expect(getOperationalErrorState(VacuumErrorCode.Unknown || (999 as any))).toBeDefined();
+    expect(getOperationalErrorState(999 as any)).toBeDefined();
   });
 
-  test('getErrorFromErrorCode returns struct when error present', () => {
-    const res = getErrorFromErrorCode(VacuumErrorCode.Unknown || (1 as any));
+  it('getErrorFromErrorCode returns struct when error present', () => {
+    const res = getErrorFromErrorCode(1 as any);
     expect(res).toBeDefined();
     expect(res?.errorStateDetails).toContain('Error code');
   });
 
-  test('getErrorFromDSS handles undefined status', () => {
+  it('getErrorFromDSS handles undefined status', () => {
     const noStatus = getErrorFromDSS(undefined as any);
     expect(noStatus).toBeDefined();
     expect(noStatus?.errorStateLabel).toContain('No Docking Station Status');
   });
 
-  test('getErrorFromDSS returns undefined when no errors present', () => {
+  it('getErrorFromDSS returns undefined when no errors present', () => {
     const status: any = {
-      cleanFluidStatus: DockingStationStatusType.Normal,
-      waterBoxFilterStatus: DockingStationStatusType.Normal,
-      dustBagStatus: DockingStationStatusType.Normal,
-      dirtyWaterBoxStatus: DockingStationStatusType.Normal,
-      clearWaterBoxStatus: DockingStationStatusType.Normal,
-      isUpdownWaterReady: DockingStationStatusType.Normal,
+      cleanFluidStatus: DockingStationStatusType.OK,
+      waterBoxFilterStatus: DockingStationStatusType.OK,
+      dustBagStatus: DockingStationStatusType.OK,
+      dirtyWaterBoxStatus: DockingStationStatusType.OK,
+      clearWaterBoxStatus: DockingStationStatusType.OK,
+      isUpdownWaterReady: DockingStationStatusType.OK,
     };
     const err = getErrorFromDSS(status);
     expect(err).toBeUndefined();
   });
 
-  test('getErrorFromDSS handles cleanFluidStatus error', () => {
+  it('getErrorFromDSS handles cleanFluidStatus error', () => {
     const status: any = {
       cleanFluidStatus: DockingStationStatusType.Error,
       waterBoxFilterStatus: 0,
@@ -48,7 +49,7 @@ describe('getOperationalStates', () => {
     expect(err?.errorStateDetails).toContain('clean fluid');
   });
 
-  test('getErrorFromDSS handles waterBoxFilterStatus error', () => {
+  it('getErrorFromDSS handles waterBoxFilterStatus error', () => {
     const status: any = {
       cleanFluidStatus: 0,
       waterBoxFilterStatus: DockingStationStatusType.Error,
@@ -62,7 +63,7 @@ describe('getOperationalStates', () => {
     expect(err?.errorStateLabel).toBe('Water Box Filter Error');
   });
 
-  test('getErrorFromDSS handles dustBagStatus error', () => {
+  it('getErrorFromDSS handles dustBagStatus error', () => {
     const status: any = {
       cleanFluidStatus: 0,
       waterBoxFilterStatus: 0,
@@ -76,7 +77,7 @@ describe('getOperationalStates', () => {
     expect(err?.errorStateLabel).toBe('Dust Bag Error');
   });
 
-  test('getErrorFromDSS handles dirtyWaterBoxStatus error', () => {
+  it('getErrorFromDSS handles dirtyWaterBoxStatus error', () => {
     const status: any = {
       cleanFluidStatus: 0,
       waterBoxFilterStatus: 0,
@@ -90,7 +91,7 @@ describe('getOperationalStates', () => {
     expect(err?.errorStateLabel).toBe('Dirty Water Box Error');
   });
 
-  test('getErrorFromDSS handles clearWaterBoxStatus error', () => {
+  it('getErrorFromDSS handles clearWaterBoxStatus error', () => {
     const status: any = {
       cleanFluidStatus: 0,
       waterBoxFilterStatus: 0,

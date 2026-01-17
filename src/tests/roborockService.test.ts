@@ -1,3 +1,4 @@
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { AnsiLogger } from 'matterbridge/logger';
 import RoborockService from '../roborockService.js';
 import { ServiceContainer } from '../services/serviceContainer.js';
@@ -13,107 +14,107 @@ import { PollingService } from '../services/pollingService.js';
 
 describe('RoborockService - Comprehensive Coverage', () => {
   let service: RoborockService;
-  let mockLogger: jest.Mocked<AnsiLogger>;
-  let mockClientManager: jest.Mocked<ClientManager>;
-  let mockContainer: jest.Mocked<ServiceContainer>;
-  let mockAuthService: jest.Mocked<AuthenticationService>;
-  let mockDeviceService: jest.Mocked<DeviceManagementService>;
-  let mockAreaService: jest.Mocked<AreaManagementService>;
-  let mockMessageService: jest.Mocked<MessageRoutingService>;
-  let mockPollingService: jest.Mocked<PollingService>;
+  let mockLogger: vi.Mocked<AnsiLogger>;
+  let mockClientManager: vi.Mocked<ClientManager>;
+  let mockContainer: vi.Mocked<ServiceContainer>;
+  let mockAuthService: vi.Mocked<AuthenticationService>;
+  let mockDeviceService: vi.Mocked<DeviceManagementService>;
+  let mockAreaService: vi.Mocked<AreaManagementService>;
+  let mockMessageService: vi.Mocked<MessageRoutingService>;
+  let mockPollingService: vi.Mocked<PollingService>;
   let mockUserData: UserData;
   let mockDevice: Device;
 
   beforeEach(() => {
     mockLogger = {
-      debug: jest.fn(),
-      info: jest.fn(),
-      warn: jest.fn(),
-      error: jest.fn(),
-      notice: jest.fn(),
+      debug: vi.fn(),
+      info: vi.fn(),
+      warn: vi.fn(),
+      error: vi.fn(),
+      notice: vi.fn(),
     } as any;
 
     mockClientManager = {
-      get: jest.fn(),
-      has: jest.fn(),
-      remove: jest.fn(),
+      get: vi.fn(),
+      has: vi.fn(),
+      remove: vi.fn(),
     } as any;
 
     mockAuthService = {
-      requestVerificationCode: jest.fn(),
-      loginWithVerificationCode: jest.fn(),
-      loginWithCachedToken: jest.fn(),
-      loginWithPassword: jest.fn(),
+      requestVerificationCode: vi.fn(),
+      loginWithVerificationCode: vi.fn(),
+      loginWithCachedToken: vi.fn(),
+      loginWithPassword: vi.fn(),
     } as any;
 
     mockDeviceService = {
-      listDevices: jest.fn(),
-      getHomeDataForUpdating: jest.fn(),
-      initializeMessageClient: jest.fn(),
-      initializeMessageClientForLocal: jest.fn(),
-      setDeviceNotify: jest.fn(),
-      activateDeviceNotify: jest.fn(),
-      activateDeviceNotifyOverMQTT: jest.fn(),
-      stopService: jest.fn(),
-      setAuthentication: jest.fn(),
+      listDevices: vi.fn(),
+      getHomeDataForUpdating: vi.fn(),
+      initializeMessageClient: vi.fn(),
+      initializeMessageClientForLocal: vi.fn(),
+      setDeviceNotify: vi.fn(),
+      activateDeviceNotify: vi.fn(),
+      activateDeviceNotifyOverMQTT: vi.fn(),
+      stopService: vi.fn(),
+      setAuthentication: vi.fn(),
       messageClient: undefined,
       messageProcessorMap: new Map(),
       mqttAlwaysOnDevices: new Map(),
     } as any;
 
     mockAreaService = {
-      setSelectedAreas: jest.fn(),
-      getSelectedAreas: jest.fn().mockReturnValue([]),
-      setSupportedAreas: jest.fn(),
-      setSupportedAreaIndexMap: jest.fn(),
-      setSupportedScenes: jest.fn(),
-      getSupportedAreas: jest.fn().mockReturnValue([]),
-      getSupportedAreasIndexMap: jest.fn(),
-      getSupportedRoutines: jest.fn().mockReturnValue([]),
-      getMapInformation: jest.fn(),
-      getRoomMappings: jest.fn(),
-      getScenes: jest.fn(),
-      startScene: jest.fn(),
-      setMessageClient: jest.fn(),
-      setIotApi: jest.fn(),
-      clearAll: jest.fn(),
+      setSelectedAreas: vi.fn(),
+      getSelectedAreas: vi.fn().mockReturnValue([]),
+      setSupportedAreas: vi.fn(),
+      setSupportedAreaIndexMap: vi.fn(),
+      setSupportedScenes: vi.fn(),
+      getSupportedAreas: vi.fn().mockReturnValue([]),
+      getSupportedAreasIndexMap: vi.fn(),
+      getSupportedRoutines: vi.fn().mockReturnValue([]),
+      getMapInformation: vi.fn(),
+      getRoomMappings: vi.fn(),
+      getScenes: vi.fn(),
+      startScene: vi.fn(),
+      setMessageClient: vi.fn(),
+      setIotApi: vi.fn(),
+      clearAll: vi.fn(),
     } as any;
 
     mockMessageService = {
-      getMessageProcessor: jest.fn(),
-      getCleanModeData: jest.fn(),
-      getRoomIdFromMap: jest.fn(),
-      changeCleanMode: jest.fn(),
-      startClean: jest.fn(),
-      pauseClean: jest.fn(),
-      stopAndGoHome: jest.fn(),
-      resumeClean: jest.fn(),
-      playSoundToLocate: jest.fn(),
-      customGet: jest.fn(),
-      customSend: jest.fn(),
-      registerMessageProcessor: jest.fn(),
-      setMqttAlwaysOn: jest.fn(),
-      getMqttAlwaysOn: jest.fn().mockReturnValue(false),
-      setIotApi: jest.fn(),
-      clearAll: jest.fn(),
+      getMessageProcessor: vi.fn(),
+      getCleanModeData: vi.fn(),
+      getRoomIdFromMap: vi.fn(),
+      changeCleanMode: vi.fn(),
+      startClean: vi.fn(),
+      pauseClean: vi.fn(),
+      stopAndGoHome: vi.fn(),
+      resumeClean: vi.fn(),
+      playSoundToLocate: vi.fn(),
+      customGet: vi.fn(),
+      customSend: vi.fn(),
+      registerMessageProcessor: vi.fn(),
+      setMqttAlwaysOn: vi.fn(),
+      getMqttAlwaysOn: vi.fn().mockReturnValue(false),
+      setIotApi: vi.fn(),
+      clearAll: vi.fn(),
     } as any;
 
     mockPollingService = {
-      setDeviceNotify: jest.fn(),
-      activateDeviceNotifyOverLocal: jest.fn(),
-      activateDeviceNotifyOverMQTT: jest.fn(),
-      stopPolling: jest.fn(),
-      shutdown: jest.fn(),
+      setDeviceNotify: vi.fn(),
+      activateDeviceNotifyOverLocal: vi.fn(),
+      activateDeviceNotifyOverMQTT: vi.fn(),
+      stopPolling: vi.fn(),
+      shutdown: vi.fn(),
     } as any;
 
     mockContainer = {
-      getAuthenticationService: jest.fn().mockReturnValue(mockAuthService),
-      getDeviceManagementService: jest.fn().mockReturnValue(mockDeviceService),
-      getAreaManagementService: jest.fn().mockReturnValue(mockAreaService),
-      getMessageRoutingService: jest.fn().mockReturnValue(mockMessageService),
-      getPollingService: jest.fn().mockReturnValue(mockPollingService),
-      setUserData: jest.fn(),
-      getIotApi: jest.fn(),
+      getAuthenticationService: vi.fn().mockReturnValue(mockAuthService),
+      getDeviceManagementService: vi.fn().mockReturnValue(mockDeviceService),
+      getAreaManagementService: vi.fn().mockReturnValue(mockAreaService),
+      getMessageRoutingService: vi.fn().mockReturnValue(mockMessageService),
+      getPollingService: vi.fn().mockReturnValue(mockPollingService),
+      setUserData: vi.fn(),
+      getIotApi: vi.fn(),
     } as any;
 
     mockUserData = {
@@ -154,7 +155,7 @@ describe('RoborockService - Comprehensive Coverage', () => {
     });
 
     it('should login with verification code and set user data', async () => {
-      const saveCallback = jest.fn();
+      const saveCallback = vi.fn();
       mockAuthService.loginWithVerificationCode.mockResolvedValue(mockUserData);
 
       const result = await service.loginWithVerificationCode('test@example.com', '123456', saveCallback);
@@ -175,8 +176,8 @@ describe('RoborockService - Comprehensive Coverage', () => {
     });
 
     it('should login with password and set user data', async () => {
-      const loadCallback = jest.fn().mockResolvedValue(undefined);
-      const saveCallback = jest.fn();
+      const loadCallback = vi.fn().mockResolvedValue(undefined);
+      const saveCallback = vi.fn();
       mockAuthService.loginWithPassword.mockResolvedValue(mockUserData);
 
       const result = await service.loginWithPassword('user@test.com', 'password', loadCallback, saveCallback);
@@ -209,7 +210,7 @@ describe('RoborockService - Comprehensive Coverage', () => {
     });
 
     it('should initialize message client and register processor', async () => {
-      mockDeviceService.messageClient = { on: jest.fn(), request: jest.fn() } as any;
+      mockDeviceService.messageClient = { on: vi.fn(), request: vi.fn() } as any;
 
       await service.initializeMessageClient('test@example.com', mockDevice, mockUserData);
 
@@ -219,7 +220,7 @@ describe('RoborockService - Comprehensive Coverage', () => {
     });
 
     it('should initialize local client and sync MQTT status', async () => {
-      mockDeviceService.messageClient = { on: jest.fn(), request: jest.fn() } as any;
+      mockDeviceService.messageClient = { on: vi.fn(), request: vi.fn() } as any;
       mockDeviceService.initializeMessageClientForLocal.mockResolvedValue(true);
 
       const result = await service.initializeMessageClientForLocal(mockDevice);
@@ -231,7 +232,7 @@ describe('RoborockService - Comprehensive Coverage', () => {
     });
 
     it('should set device notify callback', async () => {
-      const callback = jest.fn();
+      const callback = vi.fn();
 
       service.setDeviceNotify(callback);
 
@@ -470,7 +471,7 @@ describe('RoborockService - Comprehensive Coverage', () => {
 
     it('should execute custom API get', async () => {
       const mockIotApi = {
-        getCustom: jest.fn().mockResolvedValue({ result: 'success' }),
+        getCustom: vi.fn().mockResolvedValue({ result: 'success' }),
       } as any;
       mockContainer.getIotApi.mockReturnValue(mockIotApi);
 
@@ -495,8 +496,8 @@ describe('RoborockService - Comprehensive Coverage', () => {
     });
 
     it('should create service with custom factories', () => {
-      const customAuthFactory = jest.fn(() => ({}) as any);
-      const customIotFactory = jest.fn(() => ({}) as any);
+      const customAuthFactory = vi.fn(() => ({}) as any);
+      const customIotFactory = vi.fn(() => ({}) as any);
 
       const customService = new RoborockService(customAuthFactory, customIotFactory, 30000, mockClientManager, mockLogger);
 

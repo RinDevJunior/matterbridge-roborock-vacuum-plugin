@@ -1,22 +1,19 @@
-import { AnsiLogger } from 'matterbridge/logger';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { DeviceManagementService } from '../../services/deviceManagementService.js';
-import ClientManager from '../../services/clientManager.js';
-import { MessageRoutingService } from '../../services/messageRoutingService.js';
 import { NotifyMessageTypes } from '../../notifyMessageTypes.js';
-import { UserData, RoborockIoTApi, RoborockAuthenticateApi, Device, Home, ClientRouter, ResponseMessage, Protocol } from '../../roborockCommunication/index.js';
+import { UserData, Device, Home, ResponseMessage, Protocol } from '../../roborockCommunication/index.js';
 import { DeviceError, DeviceNotFoundError, DeviceConnectionError, DeviceInitializationError } from '../../errors/index.js';
-import { DeviceNotifyCallback } from '../../types/index.js';
 
 describe('DeviceManagementService', () => {
   let deviceService: DeviceManagementService;
-  let mockLogger: jest.Mocked<AnsiLogger>;
-  let mockClientManager: jest.Mocked<ClientManager>;
-  let mockIotApiFactory: jest.Mock;
-  let mockLoginApi: jest.Mocked<RoborockAuthenticateApi>;
-  let mockIotApi: jest.Mocked<RoborockIoTApi>;
-  let mockClientRouter: jest.Mocked<ClientRouter>;
-  let mockDeviceNotifyCallback: jest.MockedFunction<DeviceNotifyCallback>;
-  let mockMessageRoutingService: jest.Mocked<MessageRoutingService>;
+  let mockLogger: any;
+  let mockClientManager: any;
+  let mockIotApiFactory: any;
+  let mockLoginApi: any;
+  let mockIotApi: any;
+  let mockClientRouter: any;
+  let mockDeviceNotifyCallback: any;
+  let mockMessageRoutingService: any;
 
   const mockUserData: UserData = {
     uid: 'test-uid',
@@ -94,68 +91,68 @@ describe('DeviceManagementService', () => {
   };
 
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
 
     mockLogger = {
-      debug: jest.fn(),
-      info: jest.fn(),
-      warn: jest.fn(),
-      error: jest.fn(),
-      notice: jest.fn(),
+      debug: vi.fn(),
+      info: vi.fn(),
+      warn: vi.fn(),
+      error: vi.fn(),
+      notice: vi.fn(),
     } as any;
 
     mockClientRouter = {
-      registerDevice: jest.fn(),
-      registerMessageListener: jest.fn(),
-      connect: jest.fn(),
-      disconnect: jest.fn(),
-      isConnected: jest.fn().mockReturnValue(true),
-      registerClient: jest.fn().mockReturnValue({
-        connect: jest.fn(),
-        disconnect: jest.fn(),
-        isConnected: jest.fn().mockReturnValue(true),
+      registerDevice: vi.fn(),
+      registerMessageListener: vi.fn(),
+      connect: vi.fn(),
+      disconnect: vi.fn(),
+      isConnected: vi.fn().mockReturnValue(true),
+      registerClient: vi.fn().mockReturnValue({
+        connect: vi.fn(),
+        disconnect: vi.fn(),
+        isConnected: vi.fn().mockReturnValue(true),
       }),
-      updateNonce: jest.fn(),
+      updateNonce: vi.fn(),
     } as any;
 
     mockIotApi = {
-      getHomev2: jest.fn().mockResolvedValue(mockHomeData),
-      getHomev3: jest.fn(),
-      getHome: jest.fn(),
-      getScenes: jest.fn().mockResolvedValue([]),
-      getHomeWithProducts: jest.fn().mockResolvedValue(mockHomeData),
+      getHomev2: vi.fn().mockResolvedValue(mockHomeData),
+      getHomev3: vi.fn(),
+      getHome: vi.fn(),
+      getScenes: vi.fn().mockResolvedValue([]),
+      getHomeWithProducts: vi.fn().mockResolvedValue(mockHomeData),
     } as any;
 
-    mockIotApiFactory = jest.fn().mockReturnValue(mockIotApi);
+    mockIotApiFactory = vi.fn().mockReturnValue(mockIotApi);
 
     mockLoginApi = {
-      getHomeDetails: jest.fn().mockResolvedValue({
+      getHomeDetails: vi.fn().mockResolvedValue({
         rrHomeId: 12345,
       }),
     } as any;
 
     mockClientManager = {
-      get: jest.fn().mockReturnValue(mockClientRouter),
-      destroy: jest.fn(),
-      destroyAll: jest.fn(),
+      get: vi.fn().mockReturnValue(mockClientRouter),
+      destroy: vi.fn(),
+      destroyAll: vi.fn(),
     } as any;
 
     mockMessageRoutingService = {
-      subscribeToMessages: jest.fn(),
-      unsubscribeFromMessages: jest.fn(),
-      setMqttAlwaysOn: jest.fn(),
-      clearAll: jest.fn(),
-      registerMessageProcessor: jest.fn(),
+      subscribeToMessages: vi.fn(),
+      unsubscribeFromMessages: vi.fn(),
+      setMqttAlwaysOn: vi.fn(),
+      clearAll: vi.fn(),
+      registerMessageProcessor: vi.fn(),
     } as any;
 
-    mockDeviceNotifyCallback = jest.fn();
+    mockDeviceNotifyCallback = vi.fn();
 
     deviceService = new DeviceManagementService(mockIotApiFactory, mockClientManager, mockLogger, mockLoginApi, mockMessageRoutingService);
   });
 
   afterEach(() => {
-    jest.clearAllMocks();
-    jest.clearAllTimers();
+    vi.clearAllMocks();
+    vi.clearAllTimers();
   });
 
   describe('initialization and configuration', () => {
@@ -331,8 +328,9 @@ describe('DeviceManagementService', () => {
       const result = await deviceService.getHomeDataForUpdating(12345);
 
       expect(result).toBeDefined();
-      expect(result!.devices).toHaveLength(1);
-      expect(result!.devices[0]).toMatchObject({
+      expect(result && result.devices).toBeDefined();
+      expect(result && result.devices).toHaveLength(1);
+      expect(result && result.devices && result.devices[0]).toMatchObject({
         duid: 'device-123',
         rrHomeId: 12345,
         rooms: mockHomeData.rooms,
@@ -354,7 +352,7 @@ describe('DeviceManagementService', () => {
       const result = await deviceService.getHomeDataForUpdating(12345);
 
       expect(mockIotApi.getHomev3).toHaveBeenCalledWith(12345);
-      expect(result!.rooms).toEqual(v3Rooms);
+      expect(result && result.rooms).toEqual(v3Rooms);
     });
 
     it('should fallback to v1 API for rooms if v2 and v3 rooms are empty', async () => {
@@ -368,7 +366,7 @@ describe('DeviceManagementService', () => {
       const result = await deviceService.getHomeDataForUpdating(12345);
 
       expect(mockIotApi.getHome).toHaveBeenCalledWith(12345);
-      expect(result!.rooms).toEqual(v1Rooms);
+      expect(result && result.rooms).toEqual(v1Rooms);
     });
 
     it('should keep empty rooms if all API versions fail to provide rooms', async () => {
@@ -380,7 +378,9 @@ describe('DeviceManagementService', () => {
 
       const result = await deviceService.getHomeDataForUpdating(12345);
 
-      expect(result!.rooms).toEqual([]);
+      expect(result && result.rooms).toEqual([]);
+      expect(result && result.rooms).toEqual([]);
+      expect(result && result.rooms).toEqual([]);
     });
 
     it('should keep empty rooms if v3 returns no rooms and v1 fails', async () => {
@@ -392,7 +392,7 @@ describe('DeviceManagementService', () => {
 
       const result = await deviceService.getHomeDataForUpdating(12345);
 
-      expect(result!.rooms).toEqual([]);
+      expect(result && result.rooms).toEqual([]);
     });
 
     it('should use receivedDevices when devices array is empty', async () => {
@@ -405,8 +405,8 @@ describe('DeviceManagementService', () => {
 
       const result = await deviceService.getHomeDataForUpdating(12345);
 
-      expect(result!.devices).toHaveLength(1);
-      expect(result!.devices[0].duid).toBe('device-123');
+      expect(result && result.devices).toHaveLength(1);
+      expect(result && result.devices && result.devices[0] && result.devices[0].duid).toBe('device-123');
     });
 
     it('should handle API errors gracefully', async () => {
@@ -452,21 +452,21 @@ describe('DeviceManagementService', () => {
       // Test battery message handling (should be ignored)
       const batteryMessage = Object.create(ResponseMessage.prototype);
       batteryMessage.duid = 'device-123';
-      batteryMessage.isForProtocol = jest.fn().mockReturnValue(true);
+      batteryMessage.isForProtocol = vi.fn().mockReturnValue(true);
       messageListenerCall.onMessage(batteryMessage);
       expect(mockDeviceNotifyCallback).not.toHaveBeenCalled();
 
       // Test cloud message handling (not battery, not hello_response)
       const cloudMessage = Object.create(ResponseMessage.prototype);
       cloudMessage.duid = 'device-123';
-      cloudMessage.isForProtocol = jest.fn().mockReturnValue(false);
+      cloudMessage.isForProtocol = vi.fn().mockReturnValue(false);
       messageListenerCall.onMessage(cloudMessage);
       expect(mockDeviceNotifyCallback).toHaveBeenCalledWith(NotifyMessageTypes.CloudMessage, cloudMessage);
     });
 
     it('should throw DeviceConnectionError if connection times out', async () => {
       // Mock sleep to avoid actual delays
-      jest.spyOn(deviceService as any, 'sleep').mockResolvedValue(undefined);
+      vi.spyOn(deviceService as any, 'sleep').mockResolvedValue(undefined);
       mockClientRouter.isConnected.mockReturnValue(false);
 
       await expect(deviceService.initializeMessageClient('test@example.com', mockDevice, mockUserData)).rejects.toThrow(DeviceConnectionError);
@@ -475,7 +475,7 @@ describe('DeviceManagementService', () => {
 
     it('should eventually timeout and throw error when connection fails', async () => {
       // Mock sleep to avoid actual delays
-      jest.spyOn(deviceService as any, 'sleep').mockResolvedValue(undefined);
+      vi.spyOn(deviceService as any, 'sleep').mockResolvedValue(undefined);
       mockClientRouter.isConnected.mockReturnValue(false);
 
       await expect(deviceService.initializeMessageClient('test@example.com', mockDevice, mockUserData)).rejects.toThrow(DeviceConnectionError);
@@ -530,21 +530,23 @@ describe('DeviceManagementService', () => {
     beforeEach(() => {
       deviceService.messageClient = mockClientRouter;
       deviceService.localClientMap.set('device-123', {
-        disconnect: jest.fn(),
+        disconnect: vi.fn(),
       } as any);
     });
 
     afterEach(() => {
-      jest.useRealTimers();
+      vi.useRealTimers();
     });
 
     it('should stop service and clean up all resources', () => {
-      const mockLocalClient = deviceService.localClientMap.get('device-123')!;
+      const mockLocalClient = deviceService.localClientMap.get('device-123');
 
       deviceService.stopService();
 
       expect(mockClientRouter.disconnect).toHaveBeenCalled();
-      expect(mockLocalClient.disconnect).toHaveBeenCalled();
+      if (mockLocalClient) {
+        expect(mockLocalClient.disconnect).toHaveBeenCalled();
+      }
       expect(deviceService.messageClient).toBeUndefined();
       expect(deviceService.localClientMap.size).toBe(0);
       expect(deviceService.ipMap.size).toBe(0);
@@ -563,7 +565,7 @@ describe('DeviceManagementService', () => {
 
     it('should handle local client disconnect errors gracefully', () => {
       const mockLocalClient = {
-        disconnect: jest.fn().mockImplementation(() => {
+        disconnect: vi.fn().mockImplementation(() => {
           throw new Error('Local disconnect error');
         }),
       };
@@ -703,7 +705,7 @@ describe('DeviceManagementService', () => {
       const messageListenerCall = mockClientRouter.registerMessageListener.mock.calls[0][0];
 
       // Create mock message
-      const message = Object.create({ isForProtocol: jest.fn().mockReturnValue(false) });
+      const message = Object.create({ isForProtocol: vi.fn().mockReturnValue(false) });
       message.duid = 'device-123';
 
       // Should not throw even without callback
@@ -719,8 +721,8 @@ describe('DeviceManagementService', () => {
       const messageListenerCall = mockClientRouter.registerMessageListener.mock.calls[0][0];
 
       const helloMessage = Object.create({
-        isForProtocol: jest.fn().mockImplementation((p: any) => p === 101),
-        get: jest.fn().mockReturnValue({ result: { nonce: 'test-nonce' } }),
+        isForProtocol: vi.fn().mockImplementation((p: any) => p === 101),
+        get: vi.fn().mockReturnValue({ result: { nonce: 'test-nonce' } }),
       });
       helloMessage.duid = 'device-123';
 

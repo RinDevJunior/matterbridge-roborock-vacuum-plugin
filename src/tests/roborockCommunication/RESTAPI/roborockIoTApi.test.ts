@@ -1,3 +1,4 @@
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import axios from 'axios';
 import { RoborockIoTApi } from '../../../roborockCommunication/RESTAPI/roborockIoTApi';
 import MockAdapter from 'axios-mock-adapter';
@@ -9,7 +10,7 @@ describe('RoborockIoTApi', () => {
   let api: RoborockIoTApi;
 
   beforeEach(() => {
-    mockLogger = { error: jest.fn() };
+    mockLogger = { error: vi.fn() };
     mockAxiosInstance = new MockAdapter(axios);
     mockUserData = {
       rriot: {
@@ -23,7 +24,7 @@ describe('RoborockIoTApi', () => {
   });
 
   afterEach(() => {
-    jest.restoreAllMocks();
+    vi.restoreAllMocks();
   });
 
   it('should initialize logger and api', () => {

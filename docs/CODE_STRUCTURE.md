@@ -29,7 +29,7 @@ This plugin integrates Roborock vacuum cleaners into the Matter ecosystem via Ma
 
 - TypeScript 5.x targeting ESNext
 - Matterbridge 3.4.6
-- Jest for unit testing
+- Vitest for unit testing
 - MQTT for real-time device communication
 - REST API for Roborock cloud services
 
@@ -224,7 +224,7 @@ src/
 
 - **package.json** - Project metadata, dependencies, scripts
 - **tsconfig.json** - TypeScript configuration (ES2022 target)
-- **jest.config.js** - Jest test configuration
+- **vitest.config.ts** - Vitest test configuration
 - **eslint.config.js** - ESLint rules
 - **prettier.config.js** - Code formatting rules
 
@@ -847,14 +847,14 @@ src/tests/
 
 **3. Mock Strategy**
 
-- Jest mocks for external services
+- Vitest mocks for external services
 - Mock data in `testData/mockData.ts`
 - Dependency injection for testability
 
 **4. Skipped Tests**
 None - all previously skipped tests have been fixed
 
-- Connection timeout tests in DeviceManagementService: Fixed using `jest.spyOn`
+- Connection timeout tests in DeviceManagementService: Fixed using `vi.spyOn`
 - All 873 tests passing
 
 ### Test Commands
@@ -1142,7 +1142,7 @@ npm run deepCleanB        # Full rebuild
 ### Development Dependencies
 
 - **TypeScript:** 5.7.3
-- **Jest:** 30.0.0-alpha.9
+- **Vitest:** See package.json
 - **ESLint:** 9.18.0
 - **Prettier:** 3.4.2
 

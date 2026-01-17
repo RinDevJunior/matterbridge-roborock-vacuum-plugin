@@ -1,4 +1,4 @@
-import { jest } from '@jest/globals';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { AbstractClient } from '../../../roborockCommunication/broadcast/abstractClient';
 import { MessageContext } from '../../../roborockCommunication/broadcast/model/messageContext';
 import { RequestMessage } from '../../../roborockCommunication/broadcast/model/requestMessage';
@@ -53,58 +53,58 @@ describe('AbstractClient', () => {
     client = new TestClient(logger, context);
   });
 
-  test('get resolves when syncMessageListener receives response', async () => {
-    jest.useFakeTimers();
+  it('get resolves when syncMessageListener receives response', async () => {
+    vi.useFakeTimers();
     const request = { messageId: 123, method: 'test_method' } as any;
     const mockResponse = { data: 'response_data' } as any;
 
     // Spy on waitFor to manually resolve
     const listener = (client as any).syncMessageListener;
-    listener.waitFor = jest.fn((_msgId: number, _req: RequestMessage, resolve: any, _reject: any) => {
+    listener.waitFor = vi.fn((_msgId: number, _req: RequestMessage, resolve: any, _reject: any) => {
       // Immediately resolve without timeout
       resolve(mockResponse);
     });
 
     const result = await client.get<any>('DUID123', request);
     expect(result).toEqual(mockResponse);
-    jest.useRealTimers();
+    vi.useRealTimers();
   });
 
-  test('get returns undefined when error occurs', async () => {
-    jest.useFakeTimers();
+  it('get returns undefined when error occurs', async () => {
+    vi.useFakeTimers();
     const request = { messageId: 456, method: 'failing_method' } as any;
 
     // Spy on waitFor to manually reject
     const listener = (client as any).syncMessageListener;
-    listener.waitFor = jest.fn((msgId: number, req: RequestMessage, resolve: any, reject: any) => {
+    listener.waitFor = vi.fn((msgId: number, req: RequestMessage, resolve: any, reject: any) => {
       reject(new Error('test error'));
     });
 
     const result = await client.get<any>('DUID456', request);
     expect(result).toBeUndefined();
     expect(logger.__calls.error.some((m: string) => m.includes('test error'))).toBe(true);
-    jest.useRealTimers();
+    vi.useRealTimers();
   });
 
-  test('registerDevice delegates to context', () => {
-    const spy = jest.spyOn(context, 'registerDevice');
+  it('registerDevice delegates to context', () => {
+    const spy = vi.spyOn(context, 'registerDevice');
     client.registerDevice('DUID789', 'localKey123', '1.0', 12345);
     expect(spy).toHaveBeenCalledWith('DUID789', 'localKey123', '1.0', 12345);
   });
 
-  test('registerConnectionListener adds listener to chain', () => {
-    const listener = { onConnected: jest.fn() } as any;
+  it('registerConnectionListener adds listener to chain', () => {
+    const listener = { onConnected: vi.fn() } as any;
     client.registerConnectionListener(listener);
     expect((client as any).connectionListeners.listeners).toContain(listener);
   });
 
-  test('registerMessageListener adds listener to chain', () => {
-    const listener = { onMessage: jest.fn() } as any;
+  it('registerMessageListener adds listener to chain', () => {
+    const listener = { onMessage: vi.fn() } as any;
     client.registerMessageListener(listener);
     expect((client as any).messageListeners.listeners).toContain(listener);
   });
 
-  test('isConnected returns connection state', () => {
+  it('isConnected returns connection state', () => {
     expect(client.isConnected()).toBe(false);
     client.connect();
     expect(client.isConnected()).toBe(true);

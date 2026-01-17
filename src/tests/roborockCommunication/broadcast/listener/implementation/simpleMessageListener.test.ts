@@ -2,29 +2,30 @@ import { AbstractMessageHandler, ResponseMessage } from '../../../../../roborock
 import { SimpleMessageListener } from '../../../../../roborockCommunication/broadcast/listener/implementation/simpleMessageListener';
 import { HeaderMessage } from '../../../../../roborockCommunication/broadcast/model/headerMessage';
 import { Protocol } from '../../../../../roborockCommunication/broadcast/model/protocol';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 
 describe('SimpleMessageListener', () => {
   let listener: SimpleMessageListener;
   let handler: any;
-  let message: jest.Mocked<ResponseMessage>;
+  let message: any;
 
   beforeEach(() => {
     listener = new SimpleMessageListener();
     handler = {
-      onStatusChanged: jest.fn().mockResolvedValue(undefined),
-      onError: jest.fn().mockResolvedValue(undefined),
-      onBatteryUpdate: jest.fn().mockResolvedValue(undefined),
-      onAdditionalProps: jest.fn().mockResolvedValue(undefined),
+      onStatusChanged: vi.fn().mockResolvedValue(undefined),
+      onError: vi.fn().mockResolvedValue(undefined),
+      onBatteryUpdate: vi.fn().mockResolvedValue(undefined),
+      onAdditionalProps: vi.fn().mockResolvedValue(undefined),
     };
     message = {
-      get: jest.fn(),
-      isForProtocol: jest.fn(),
-      isForProtocols: jest.fn(),
-      isForStatus: jest.fn(),
+      get: vi.fn(),
+      isForProtocol: vi.fn(),
+      isForProtocols: vi.fn(),
+      isForStatus: vi.fn(),
       duid: '',
       body: undefined,
       header: {} as HeaderMessage,
-    } satisfies jest.Mocked<ResponseMessage>;
+    };
     listener.registerListener(handler);
   });
 

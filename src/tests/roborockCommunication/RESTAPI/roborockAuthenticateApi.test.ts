@@ -1,3 +1,4 @@
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { RoborockAuthenticateApi } from '../../../roborockCommunication/RESTAPI/roborockAuthenticateApi';
 
 describe('RoborockAuthenticateApi', () => {
@@ -7,21 +8,21 @@ describe('RoborockAuthenticateApi', () => {
   let api: any;
 
   beforeEach(() => {
-    mockLogger = { info: jest.fn(), error: jest.fn(), debug: jest.fn() };
+    mockLogger = { info: vi.fn(), error: vi.fn(), debug: vi.fn() };
     mockAxiosInstance = {
-      post: jest.fn(),
-      get: jest.fn(),
+      post: vi.fn(),
+      get: vi.fn(),
       interceptors: {
         request: {
-          use: jest.fn(),
+          use: vi.fn(),
         },
         response: {
-          use: jest.fn(),
+          use: vi.fn(),
         },
       },
     };
     mockAxiosFactory = {
-      create: jest.fn(() => mockAxiosInstance),
+      create: vi.fn(() => mockAxiosInstance),
     };
     api = new RoborockAuthenticateApi(mockLogger, mockAxiosFactory);
   });
@@ -33,7 +34,7 @@ describe('RoborockAuthenticateApi', () => {
   });
 
   it('loginWithUserData should call loginWithAuthToken and return userData', async () => {
-    const spy = jest.spyOn(api as any, 'loginWithAuthToken');
+    const spy = vi.spyOn(api as any, 'loginWithAuthToken');
     const userData = { token: 'abc', other: 'data' };
     const result = await api.loginWithUserData('user', userData);
     expect(spy).toHaveBeenCalledWith('user', 'abc');
@@ -43,9 +44,9 @@ describe('RoborockAuthenticateApi', () => {
   it('loginWithPassword should call auth and return userData', async () => {
     const userData = { token: 'tok', other: 'data' };
     const response = { data: { data: userData } };
-    jest.spyOn(api as any, 'getAPIFor').mockResolvedValue(mockAxiosInstance);
+    vi.spyOn(api as any, 'getAPIFor').mockResolvedValue(mockAxiosInstance);
     mockAxiosInstance.post.mockResolvedValue(response);
-    jest.spyOn(api as any, 'auth').mockReturnValue(userData);
+    vi.spyOn(api as any, 'auth').mockReturnValue(userData);
 
     const result = await api.loginWithPassword('user', 'pass');
     expect(result).toBe(userData);
@@ -56,9 +57,9 @@ describe('RoborockAuthenticateApi', () => {
 
   it('loginWithPassword should throw error if token missing', async () => {
     const response = { data: { data: null, msg: 'fail', code: 401 } };
-    jest.spyOn(api as any, 'getAPIFor').mockResolvedValue(mockAxiosInstance);
+    vi.spyOn(api as any, 'getAPIFor').mockResolvedValue(mockAxiosInstance);
     mockAxiosInstance.post.mockResolvedValue(response);
-    jest.spyOn(api as any, 'auth').mockImplementation(() => {
+    vi.spyOn(api as any, 'auth').mockImplementation(() => {
       throw new Error('Authentication failed: fail code: 401');
     });
 
@@ -75,7 +76,7 @@ describe('RoborockAuthenticateApi', () => {
   it('getHomeDetails should throw error if response.data missing', async () => {
     api['username'] = 'user';
     api['authToken'] = 'tok';
-    jest.spyOn(api as any, 'getAPIFor').mockResolvedValue(mockAxiosInstance);
+    vi.spyOn(api as any, 'getAPIFor').mockResolvedValue(mockAxiosInstance);
     mockAxiosInstance.get.mockResolvedValue({ data: { data: null } });
 
     await expect(api.getHomeDetails()).rejects.toThrow('Failed to retrieve the home details');
@@ -85,7 +86,7 @@ describe('RoborockAuthenticateApi', () => {
     api['username'] = 'user';
     api['authToken'] = 'tok';
     const homeInfo = { home: 'info' };
-    jest.spyOn(api as any, 'getAPIFor').mockResolvedValue(mockAxiosInstance);
+    vi.spyOn(api as any, 'getAPIFor').mockResolvedValue(mockAxiosInstance);
     mockAxiosInstance.get.mockResolvedValue({ data: { data: homeInfo } });
 
     const result = await api.getHomeDetails();
@@ -93,14 +94,14 @@ describe('RoborockAuthenticateApi', () => {
   });
 
   it('getBaseUrl should throw error if response.data missing', async () => {
-    jest.spyOn(api as any, 'apiForUser').mockResolvedValue(mockAxiosInstance);
+    vi.spyOn(api as any, 'apiForUser').mockResolvedValue(mockAxiosInstance);
     mockAxiosInstance.post.mockResolvedValue({ data: { data: null, msg: 'fail' } });
 
     await expect(api['getBaseUrl']('user')).rejects.toThrow('Failed to retrieve base URL: fail');
   });
 
   it('getBaseUrl should return url if present', async () => {
-    jest.spyOn(api as any, 'apiForUser').mockResolvedValue(mockAxiosInstance);
+    vi.spyOn(api as any, 'apiForUser').mockResolvedValue(mockAxiosInstance);
     mockAxiosInstance.post.mockResolvedValue({ data: { data: { url: 'http://base.url' } } });
 
     const result = await api['getBaseUrl']('user');
@@ -110,7 +111,7 @@ describe('RoborockAuthenticateApi', () => {
   it('apiForUser should create AxiosInstance with correct headers', async () => {
     const username = 'user';
     const baseUrl = 'http://base.url';
-    const spy = jest.spyOn(mockAxiosFactory, 'create');
+    const spy = vi.spyOn(mockAxiosFactory, 'create');
     await api['apiForUser'](username, baseUrl);
     expect(spy).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -124,7 +125,7 @@ describe('RoborockAuthenticateApi', () => {
   });
 
   it('auth should call loginWithAuthToken and return userData', () => {
-    const spy = jest.spyOn(api as any, 'loginWithAuthToken');
+    const spy = vi.spyOn(api as any, 'loginWithAuthToken');
     const response = { data: { token: 'tok', other: 'data' }, msg: '', code: 0 };
     const result = api['auth']('user', response);
     expect(spy).toHaveBeenCalledWith('user', 'tok');
@@ -144,7 +145,7 @@ describe('RoborockAuthenticateApi', () => {
 
   describe('requestCodeV4', () => {
     it('should successfully request verification code', async () => {
-      jest.spyOn(api as any, 'getAPIFor').mockResolvedValue(mockAxiosInstance);
+      vi.spyOn(api as any, 'getAPIFor').mockResolvedValue(mockAxiosInstance);
       mockAxiosInstance.post.mockResolvedValue({ data: { code: 200 } });
 
       await api.requestCodeV4('test@example.com');
@@ -157,21 +158,21 @@ describe('RoborockAuthenticateApi', () => {
     });
 
     it('should throw error if account not found', async () => {
-      jest.spyOn(api as any, 'getAPIFor').mockResolvedValue(mockAxiosInstance);
+      vi.spyOn(api as any, 'getAPIFor').mockResolvedValue(mockAxiosInstance);
       mockAxiosInstance.post.mockResolvedValue({ data: { code: 2008 } }); // AccountNotFound
 
       await expect(api.requestCodeV4('notfound@example.com')).rejects.toThrow('Account not found for email');
     });
 
     it('should throw error if rate limited', async () => {
-      jest.spyOn(api as any, 'getAPIFor').mockResolvedValue(mockAxiosInstance);
+      vi.spyOn(api as any, 'getAPIFor').mockResolvedValue(mockAxiosInstance);
       mockAxiosInstance.post.mockResolvedValue({ data: { code: 9002 } }); // RateLimited
 
       await expect(api.requestCodeV4('rate@example.com')).rejects.toThrow('Rate limited');
     });
 
     it('should throw error for other failures', async () => {
-      jest.spyOn(api as any, 'getAPIFor').mockResolvedValue(mockAxiosInstance);
+      vi.spyOn(api as any, 'getAPIFor').mockResolvedValue(mockAxiosInstance);
       mockAxiosInstance.post.mockResolvedValue({ data: { code: 500, msg: 'Server error' } });
 
       await expect(api.requestCodeV4('fail@example.com')).rejects.toThrow('Failed to send verification code');
@@ -180,8 +181,8 @@ describe('RoborockAuthenticateApi', () => {
 
   describe('loginWithCodeV4', () => {
     it('should successfully login with code', async () => {
-      jest.spyOn(api as any, 'getAPIFor').mockResolvedValue(mockAxiosInstance);
-      jest.spyOn(api as any, 'generateRandomString').mockReturnValue('1234567890abcdef');
+      vi.spyOn(api as any, 'getAPIFor').mockResolvedValue(mockAxiosInstance);
+      vi.spyOn(api as any, 'generateRandomString').mockReturnValue('1234567890abcdef');
 
       const signedKey = 'signedKey123';
       const userData = { token: 'userToken', rriot: {} };
@@ -190,7 +191,7 @@ describe('RoborockAuthenticateApi', () => {
         .mockResolvedValueOnce({ data: { data: { k: signedKey }, code: 200 } }) // signKeyV3
         .mockResolvedValueOnce({ data: { data: userData, code: 200 } }); // actual login
 
-      jest.spyOn(api as any, 'auth').mockReturnValue(userData);
+      vi.spyOn(api as any, 'auth').mockReturnValue(userData);
 
       const result = await api.loginWithCodeV4('test@example.com', '123456');
       expect(result).toBe(userData);
@@ -198,8 +199,8 @@ describe('RoborockAuthenticateApi', () => {
     });
 
     it('should throw error when authentication returns no user data', async () => {
-      jest.spyOn(api as any, 'getAPIFor').mockResolvedValue(mockAxiosInstance);
-      jest.spyOn(api as any, 'generateRandomString').mockReturnValue('1234567890abcdef');
+      vi.spyOn(api as any, 'getAPIFor').mockResolvedValue(mockAxiosInstance);
+      vi.spyOn(api as any, 'generateRandomString').mockReturnValue('1234567890abcdef');
 
       const signedKey = 'signedKey123';
 
@@ -217,13 +218,13 @@ describe('RoborockAuthenticateApi', () => {
       api['cachedCountryCode'] = undefined;
       api['baseUrl'] = 'https://euiot.example.com';
 
-      jest.spyOn(api as any, 'signKeyV3').mockResolvedValue('signedKey');
-      jest.spyOn(api as any, 'getAPIFor').mockResolvedValue(mockAxiosInstance);
-      jest.spyOn(api as any, 'generateRandomString').mockReturnValue('randStr');
+      vi.spyOn(api as any, 'signKeyV3').mockResolvedValue('signedKey');
+      vi.spyOn(api as any, 'getAPIFor').mockResolvedValue(mockAxiosInstance);
+      vi.spyOn(api as any, 'generateRandomString').mockReturnValue('randStr');
 
       const userData = { token: 'tok', rriot: {} };
       mockAxiosInstance.post.mockResolvedValue({ data: { data: userData, code: 200 } });
-      jest.spyOn(api as any, 'authV4').mockReturnValue(userData);
+      vi.spyOn(api as any, 'authV4').mockReturnValue(userData);
 
       await api.loginWithCodeV4('test@example.com', '123456');
 
@@ -245,13 +246,13 @@ describe('RoborockAuthenticateApi', () => {
       api['cachedCountryCode'] = undefined;
       api['baseUrl'] = 'https://usiot.example.com';
 
-      jest.spyOn(api as any, 'signKeyV3').mockResolvedValue('signedKey');
-      jest.spyOn(api as any, 'getAPIFor').mockResolvedValue(mockAxiosInstance);
-      jest.spyOn(api as any, 'generateRandomString').mockReturnValue('randStr');
+      vi.spyOn(api as any, 'signKeyV3').mockResolvedValue('signedKey');
+      vi.spyOn(api as any, 'getAPIFor').mockResolvedValue(mockAxiosInstance);
+      vi.spyOn(api as any, 'generateRandomString').mockReturnValue('randStr');
 
       const userData = { token: 'tok', rriot: {} };
       mockAxiosInstance.post.mockResolvedValue({ data: { data: userData, code: 200 } });
-      jest.spyOn(api as any, 'authV4').mockReturnValue(userData);
+      vi.spyOn(api as any, 'authV4').mockReturnValue(userData);
 
       await api.loginWithCodeV4('test@example.com', '123456');
 
@@ -272,13 +273,13 @@ describe('RoborockAuthenticateApi', () => {
       api['cachedCountryCode'] = undefined;
       api['baseUrl'] = 'https://cniot.example.com';
 
-      jest.spyOn(api as any, 'signKeyV3').mockResolvedValue('signedKey');
-      jest.spyOn(api as any, 'getAPIFor').mockResolvedValue(mockAxiosInstance);
-      jest.spyOn(api as any, 'generateRandomString').mockReturnValue('randStr');
+      vi.spyOn(api as any, 'signKeyV3').mockResolvedValue('signedKey');
+      vi.spyOn(api as any, 'getAPIFor').mockResolvedValue(mockAxiosInstance);
+      vi.spyOn(api as any, 'generateRandomString').mockReturnValue('randStr');
 
       const userData = { token: 'tok', rriot: {} };
       mockAxiosInstance.post.mockResolvedValue({ data: { data: userData, code: 200 } });
-      jest.spyOn(api as any, 'authV4').mockReturnValue(userData);
+      vi.spyOn(api as any, 'authV4').mockReturnValue(userData);
 
       await api.loginWithCodeV4('test@example.com', '123456');
 
@@ -299,13 +300,13 @@ describe('RoborockAuthenticateApi', () => {
       api['cachedCountryCode'] = undefined;
       api['baseUrl'] = 'https://ruiot.example.com';
 
-      jest.spyOn(api as any, 'signKeyV3').mockResolvedValue('signedKey');
-      jest.spyOn(api as any, 'getAPIFor').mockResolvedValue(mockAxiosInstance);
-      jest.spyOn(api as any, 'generateRandomString').mockReturnValue('randStr');
+      vi.spyOn(api as any, 'signKeyV3').mockResolvedValue('signedKey');
+      vi.spyOn(api as any, 'getAPIFor').mockResolvedValue(mockAxiosInstance);
+      vi.spyOn(api as any, 'generateRandomString').mockReturnValue('randStr');
 
       const userData = { token: 'tok', rriot: {} };
       mockAxiosInstance.post.mockResolvedValue({ data: { data: userData, code: 200 } });
-      jest.spyOn(api as any, 'authV4').mockReturnValue(userData);
+      vi.spyOn(api as any, 'authV4').mockReturnValue(userData);
 
       await api.loginWithCodeV4('test@example.com', '123456');
 
@@ -403,8 +404,8 @@ describe('RoborockAuthenticateApi', () => {
 
   describe('getAPIFor', () => {
     it('should call getBaseUrl and apiForUser', async () => {
-      jest.spyOn(api as any, 'getBaseUrl').mockResolvedValue('http://test.url');
-      jest.spyOn(api as any, 'apiForUser').mockResolvedValue(mockAxiosInstance);
+      vi.spyOn(api as any, 'getBaseUrl').mockResolvedValue('http://test.url');
+      vi.spyOn(api as any, 'apiForUser').mockResolvedValue(mockAxiosInstance);
 
       const result = await api['getAPIFor']('user');
       expect(result).toBe(mockAxiosInstance);

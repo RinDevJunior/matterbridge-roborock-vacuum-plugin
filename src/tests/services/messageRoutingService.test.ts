@@ -1,3 +1,4 @@
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { AnsiLogger } from 'matterbridge/logger';
 import { MessageRoutingService } from '../../services/messageRoutingService.js';
 import { MessageProcessor, RequestMessage, RoborockIoTApi } from '../../roborockCommunication/index.js';
@@ -7,43 +8,53 @@ import { ServiceArea } from 'matterbridge/matter/clusters';
 
 describe('MessageRoutingService', () => {
   let messageService: MessageRoutingService;
-  let mockLogger: jest.Mocked<AnsiLogger>;
-  let mockIotApi: jest.Mocked<RoborockIoTApi>;
-  let mockProcessor: jest.Mocked<MessageProcessor>;
+  let mockLogger: ReturnType<typeof createMockLogger>;
+  let mockIotApi: ReturnType<typeof createMockIotApi>;
+  let mockProcessor: ReturnType<typeof createMockProcessor>;
+
+  function createMockLogger() {
+    return {
+      debug: vi.fn(),
+      info: vi.fn(),
+      warn: vi.fn(),
+      error: vi.fn(),
+      notice: vi.fn(),
+    } as unknown as AnsiLogger;
+  }
+
+  function createMockIotApi() {
+    return {
+      getMapRoomDetail: vi.fn(),
+      getCleaningSummaryForUpdatingDevice: vi.fn(),
+      startScene: vi.fn(),
+    } as unknown as RoborockIoTApi;
+  }
+
+  function createMockProcessor() {
+    return {
+      getCleanModeData: vi.fn(),
+      changeCleanMode: vi.fn(),
+      getRooms: vi.fn(),
+      startClean: vi.fn(),
+      startRoomClean: vi.fn(),
+      pauseClean: vi.fn(),
+      resumeClean: vi.fn(),
+      gotoDock: vi.fn(),
+      findMyRobot: vi.fn(),
+      getCustomMessage: vi.fn(),
+      sendCustomMessage: vi.fn(),
+    } as unknown as MessageProcessor;
+  }
 
   beforeEach(() => {
-    mockLogger = {
-      debug: jest.fn(),
-      info: jest.fn(),
-      warn: jest.fn(),
-      error: jest.fn(),
-      notice: jest.fn(),
-    } as unknown as jest.Mocked<AnsiLogger>;
-
-    mockIotApi = {
-      getMapRoomDetail: jest.fn(),
-      getCleaningSummaryForUpdatingDevice: jest.fn(),
-    } as unknown as jest.Mocked<RoborockIoTApi>;
-
-    mockProcessor = {
-      getCleanModeData: jest.fn(),
-      changeCleanMode: jest.fn(),
-      getRooms: jest.fn(),
-      startClean: jest.fn(),
-      startRoomClean: jest.fn(),
-      pauseClean: jest.fn(),
-      resumeClean: jest.fn(),
-      gotoDock: jest.fn(),
-      findMyRobot: jest.fn(),
-      getCustomMessage: jest.fn(),
-      sendCustomMessage: jest.fn(),
-    } as unknown as jest.Mocked<MessageProcessor>;
-
+    mockLogger = createMockLogger();
+    mockIotApi = createMockIotApi();
+    mockProcessor = createMockProcessor();
     messageService = new MessageRoutingService(mockLogger);
   });
 
   afterEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   describe('Initialization', () => {
@@ -83,7 +94,7 @@ describe('MessageRoutingService', () => {
     });
 
     it('should allow multiple processors to be registered', () => {
-      const mockProcessor2 = { ...mockProcessor } as jest.Mocked<MessageProcessor>;
+      const mockProcessor2 = createMockProcessor();
       messageService.registerMessageProcessor('device-1', mockProcessor);
       messageService.registerMessageProcessor('device-2', mockProcessor2);
 
@@ -243,7 +254,7 @@ describe('MessageRoutingService', () => {
     it('should start routine clean when routine is selected', async () => {
       const selectedRoutines = [1];
       const supportedRoutines: ServiceArea.Area[] = [{ areaId: 1 } as ServiceArea.Area, { areaId: 2 } as ServiceArea.Area, { areaId: 3 } as ServiceArea.Area];
-      mockIotApi.startScene = jest.fn().mockResolvedValue(undefined);
+      mockIotApi.startScene = vi.fn().mockResolvedValue(undefined);
       messageService.setIotApi(mockIotApi);
 
       await messageService.startClean(testDuid, selectedRoutines, [], supportedRoutines);

@@ -1,3 +1,4 @@
+import { describe, it, expect } from 'vitest';
 import { parseDockingStationStatus, hasDockingStationError, DockingStationStatusType, DockingStationStatus } from '../../model/DockingStationStatus';
 
 describe('DockingStationStatus', () => {

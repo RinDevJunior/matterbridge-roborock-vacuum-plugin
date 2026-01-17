@@ -1,3 +1,4 @@
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { AnsiLogger } from 'matterbridge/logger';
 import { ServiceContainer, ServiceContainerConfig } from '../../services/serviceContainer.js';
 import ClientManager from '../../services/clientManager.js';
@@ -9,41 +10,41 @@ import { MessageRoutingService } from '../../services/messageRoutingService.js';
 
 describe('ServiceContainer', () => {
   let container: ServiceContainer;
-  let mockLogger: jest.Mocked<AnsiLogger>;
-  let mockClientManager: jest.Mocked<ClientManager>;
-  let mockAuthApi: jest.Mocked<RoborockAuthenticateApi>;
-  let mockIotApi: jest.Mocked<RoborockIoTApi>;
+  let mockLogger: AnsiLogger;
+  let mockClientManager: ClientManager;
+  let mockAuthApi: RoborockAuthenticateApi;
+  let mockIotApi: RoborockIoTApi;
   let config: ServiceContainerConfig;
   let mockUserData: UserData;
 
   beforeEach(() => {
     mockLogger = {
-      debug: jest.fn(),
-      info: jest.fn(),
-      warn: jest.fn(),
-      error: jest.fn(),
-      notice: jest.fn(),
+      debug: vi.fn(),
+      info: vi.fn(),
+      warn: vi.fn(),
+      error: vi.fn(),
+      notice: vi.fn(),
     } as any;
 
     mockClientManager = {
-      get: jest.fn(),
-      has: jest.fn(),
-      remove: jest.fn(),
+      get: vi.fn(),
+      has: vi.fn(),
+      remove: vi.fn(),
     } as any;
 
     mockAuthApi = {
-      getUserDetails: jest.fn(),
-      loginWithPassword: jest.fn(),
-      sendEmailCode: jest.fn(),
-      loginWithCode: jest.fn(),
+      getUserDetails: vi.fn(),
+      loginWithPassword: vi.fn(),
+      sendEmailCode: vi.fn(),
+      loginWithCode: vi.fn(),
     } as any;
 
     mockIotApi = {
-      getHomev2: jest.fn(),
-      getHomev3: jest.fn(),
-      getHome: jest.fn(),
-      getRoomMapping: jest.fn(),
-      subscribeToMQTT: jest.fn(),
+      getHomev2: vi.fn(),
+      getHomev3: vi.fn(),
+      getHome: vi.fn(),
+      getRoomMapping: vi.fn(),
+      subscribeToMQTT: vi.fn(),
     } as any;
 
     mockUserData = {
@@ -67,8 +68,8 @@ describe('ServiceContainer', () => {
     config = {
       baseUrl: 'https://test.roborock.com',
       refreshInterval: 30000,
-      authenticateApiFactory: jest.fn(() => mockAuthApi),
-      iotApiFactory: jest.fn(() => mockIotApi),
+      authenticateApiFactory: vi.fn(() => mockAuthApi),
+      iotApiFactory: vi.fn(() => mockIotApi),
     };
 
     container = new ServiceContainer(mockLogger, mockClientManager, config);
@@ -76,6 +77,7 @@ describe('ServiceContainer', () => {
 
   afterEach(() => {
     container.destroy();
+    vi.clearAllMocks();
   });
 
   describe('initialization', () => {
@@ -112,7 +114,7 @@ describe('ServiceContainer', () => {
 
     it('should update existing DeviceManagementService when user data is set', () => {
       const deviceService = container.getDeviceManagementService();
-      const setAuthSpy = jest.spyOn(deviceService, 'setAuthentication');
+      const setAuthSpy = vi.spyOn(deviceService, 'setAuthentication');
 
       container.setUserData(mockUserData);
 
@@ -121,7 +123,7 @@ describe('ServiceContainer', () => {
 
     it('should update existing AreaManagementService when user data is set', () => {
       const areaService = container.getAreaManagementService();
-      const setIotApiSpy = jest.spyOn(areaService, 'setIotApi');
+      const setIotApiSpy = vi.spyOn(areaService, 'setIotApi');
 
       container.setUserData(mockUserData);
 
@@ -130,7 +132,7 @@ describe('ServiceContainer', () => {
 
     it('should update existing MessageRoutingService when user data is set', () => {
       const messageService = container.getMessageRoutingService();
-      const setIotApiSpy = jest.spyOn(messageService, 'setIotApi');
+      const setIotApiSpy = vi.spyOn(messageService, 'setIotApi');
 
       container.setUserData(mockUserData);
 

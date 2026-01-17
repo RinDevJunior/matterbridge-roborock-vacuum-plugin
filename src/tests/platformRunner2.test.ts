@@ -1,3 +1,4 @@
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { getRoomMapFromDevice } from '../helper';
 import { RoomMap } from '../model/RoomMap';
 import { MapInfo } from '../roborockCommunication';
@@ -8,13 +9,13 @@ describe('PlatformRunner.getRoomMapFromDevice', () => {
   beforeEach(() => {
     platform = {
       log: {
-        error: jest.fn(),
-        debug: jest.fn(),
-        notice: jest.fn(),
+        error: vi.fn(),
+        debug: vi.fn(),
+        notice: vi.fn(),
       },
       roborockService: {
-        getRoomMappings: jest.fn(),
-        getMapInformation: jest.fn(),
+        getRoomMappings: vi.fn(),
+        getMapInformation: vi.fn(),
       },
     };
   });
@@ -45,7 +46,7 @@ describe('PlatformRunner.getRoomMapFromDevice', () => {
     expect(result.rooms.length).toEqual(4);
   });
 
-  it('returns RoomMap with roomData from getMapInformation if available', async () => {
+  it('returns RoomMap with roomData from getMapInformation if available (case 1)', async () => {
     const device = {
       duid: 'duid1',
       rooms: [

@@ -1,3 +1,4 @@
+import { describe, it, expect } from 'vitest';
 import { DockInfo } from '../../../roborockCommunication/Zmodel/dockInfo';
 import { DockType } from '../../../roborockCommunication/Zenum/dockType';
 

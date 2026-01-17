@@ -1,3 +1,4 @@
+import { describe, it, expect, vi } from 'vitest';
 import { MessageDeserializer } from '../../../roborockCommunication/helper/messageDeserializer';
 import { MessageContext } from '../../../roborockCommunication/broadcast/model/messageContext';
 import { AnsiLogger } from 'matterbridge/logger';
@@ -18,7 +19,7 @@ function buildHeaderBuffer(version: string, seq: number, nonce: number, timestam
 describe('MessageDeserializer (basic)', () => {
   it('returns ResponseMessage for protocols without payload', () => {
     const ctx = new MessageContext(mkUser());
-    const logger = { notice: jest.fn(), error: jest.fn(), debug: jest.fn() } as unknown as AnsiLogger;
+    const logger = { notice: vi.fn(), error: vi.fn(), debug: vi.fn() } as unknown as AnsiLogger;
     const d = new MessageDeserializer(ctx, logger);
     const duid = 'DTEST';
     const headerBuf = buildHeaderBuffer('1.0', 1, 2, 3, Protocol.hello_request);

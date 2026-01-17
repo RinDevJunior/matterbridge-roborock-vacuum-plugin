@@ -1,19 +1,20 @@
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { AnsiLogger } from 'matterbridge/logger';
 import ClientManager from '../../services/clientManager.js';
 import { UserData } from '../../roborockCommunication/index.js';
 
 describe('ClientManager', () => {
   let clientManager: ClientManager;
-  let mockLogger: jest.Mocked<AnsiLogger>;
+  let mockLogger: AnsiLogger;
   let mockUserData: UserData;
 
   beforeEach(() => {
     mockLogger = {
-      debug: jest.fn(),
-      info: jest.fn(),
-      warn: jest.fn(),
-      error: jest.fn(),
-      notice: jest.fn(),
+      debug: vi.fn(),
+      info: vi.fn(),
+      warn: vi.fn(),
+      error: vi.fn(),
+      notice: vi.fn(),
     } as any;
 
     mockUserData = {
@@ -33,7 +34,7 @@ describe('ClientManager', () => {
   });
 
   afterEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   describe('basic functionality', () => {
@@ -70,7 +71,7 @@ describe('ClientManager', () => {
       expect(client).toBeDefined();
 
       // Mock the disconnect method
-      jest.spyOn(client, 'disconnect').mockResolvedValue(undefined);
+      vi.spyOn(client, 'disconnect').mockResolvedValue(undefined);
 
       clientManager.destroy(username);
 
@@ -85,8 +86,8 @@ describe('ClientManager', () => {
       const client2 = clientManager.get(user2, mockUserData);
 
       // Mock disconnect methods
-      jest.spyOn(client1, 'disconnect').mockResolvedValue(undefined);
-      jest.spyOn(client2, 'disconnect').mockResolvedValue(undefined);
+      vi.spyOn(client1, 'disconnect').mockResolvedValue(undefined);
+      vi.spyOn(client2, 'disconnect').mockResolvedValue(undefined);
 
       clientManager.destroyAll();
 

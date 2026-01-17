@@ -1,3 +1,4 @@
+import { describe, it, expect } from 'vitest';
 import { getBaseUrl } from '../initialData/regionUrls';
 
 describe('platform region mapping logic', () => {

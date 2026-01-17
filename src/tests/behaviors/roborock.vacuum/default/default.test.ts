@@ -1,3 +1,4 @@
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { BehaviorDeviceGeneric } from '../../../../behaviors/BehaviorDeviceGeneric.js';
 import { AnsiLogger } from 'matterbridge/logger';
 import RoborockService from '../../../../roborockService.js';
@@ -7,28 +8,28 @@ import { MopRoute, MopWaterFlow, setDefaultCommandHandler, VacuumSuctionPower } 
 describe('setDefaultCommandHandler', () => {
   let handler: BehaviorDeviceGeneric<any>;
   let logger: AnsiLogger;
-  let roborockService: jest.Mocked<RoborockService>;
+  let roborockService: vi.Mocked<RoborockService>;
   let cleanModeSettings: CleanModeSettings;
   const duid = 'test-duid';
 
   beforeEach(() => {
     handler = {
-      setCommandHandler: jest.fn(),
+      setCommandHandler: vi.fn(),
     } as any;
 
     logger = {
-      notice: jest.fn(),
-      warn: jest.fn(),
+      notice: vi.fn(),
+      warn: vi.fn(),
     } as any;
 
     roborockService = {
-      startClean: jest.fn(),
-      changeCleanMode: jest.fn(),
-      setSelectedAreas: jest.fn(),
-      pauseClean: jest.fn(),
-      resumeClean: jest.fn(),
-      stopAndGoHome: jest.fn(),
-      playSoundToLocate: jest.fn(),
+      startClean: vi.fn(),
+      changeCleanMode: vi.fn(),
+      setSelectedAreas: vi.fn(),
+      pauseClean: vi.fn(),
+      resumeClean: vi.fn(),
+      stopAndGoHome: vi.fn(),
+      playSoundToLocate: vi.fn(),
     } as any;
 
     cleanModeSettings = {

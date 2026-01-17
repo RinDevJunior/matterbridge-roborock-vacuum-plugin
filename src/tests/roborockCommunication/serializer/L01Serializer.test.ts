@@ -1,3 +1,4 @@
+import { describe, it, expect } from 'vitest';
 import { L01Serializer } from '../../../roborockCommunication/serializer/L01Serializer';
 
 describe('L01Serializer', () => {

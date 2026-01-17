@@ -1,4 +1,4 @@
-import { AnsiLogger } from 'matterbridge/logger';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { AreaManagementService } from '../../services/areaManagementService.js';
 import { RoomIndexMap } from '../../model/RoomIndexMap.js';
 import { RoborockIoTApi, ClientRouter, Scene } from '../../roborockCommunication/index.js';
@@ -8,9 +8,9 @@ import { MapInfo } from '../../initialData/getSupportedAreas.js';
 
 describe('AreaManagementService', () => {
   let areaService: AreaManagementService;
-  let mockLogger: jest.Mocked<AnsiLogger>;
-  let mockIotApi: jest.Mocked<RoborockIoTApi>;
-  let mockMessageClient: jest.Mocked<ClientRouter>;
+  let mockLogger: any;
+  let mockIotApi: any;
+  let mockMessageClient: any;
 
   const mockDeviceId = 'test-device-1';
   const mockAreas: ServiceArea.Area[] = [{ areaId: 0, mapId: 1 } as ServiceArea.Area, { areaId: 1, mapId: 1 } as ServiceArea.Area, { areaId: 2, mapId: 1 } as ServiceArea.Area];
@@ -18,29 +18,38 @@ describe('AreaManagementService', () => {
   const mockRoutines: ServiceArea.Area[] = [{ areaId: 100, mapId: 1 } as ServiceArea.Area, { areaId: 101, mapId: 1 } as ServiceArea.Area];
 
   beforeEach(() => {
-    mockLogger = {
-      debug: jest.fn(),
-      info: jest.fn(),
-      warn: jest.fn(),
-      error: jest.fn(),
-      notice: jest.fn(),
-    } as unknown as jest.Mocked<AnsiLogger>;
-
-    mockIotApi = {
-      getScenes: jest.fn(),
-      startScene: jest.fn(),
-    } as unknown as jest.Mocked<RoborockIoTApi>;
-
-    mockMessageClient = {
-      get: jest.fn(),
-      send: jest.fn(),
-    } as unknown as jest.Mocked<ClientRouter>;
-
+    mockLogger = createMockLogger() as unknown as import('matterbridge/logger').AnsiLogger;
+    mockIotApi = createMockIotApi() as unknown as import('../../roborockCommunication/index.js').RoborockIoTApi;
+    mockMessageClient = createMockMessageClient() as unknown as import('../../roborockCommunication/index.js').ClientRouter;
     areaService = new AreaManagementService(mockLogger, mockIotApi, mockMessageClient);
   });
 
+  function createMockLogger() {
+    return {
+      debug: vi.fn(),
+      info: vi.fn(),
+      warn: vi.fn(),
+      error: vi.fn(),
+      notice: vi.fn(),
+    };
+  }
+
+  function createMockIotApi() {
+    return {
+      getScenes: vi.fn(),
+      startScene: vi.fn(),
+    };
+  }
+
+  function createMockMessageClient() {
+    return {
+      get: vi.fn(),
+      send: vi.fn(),
+    };
+  }
+
   afterEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   describe('Initialization', () => {
@@ -49,24 +58,27 @@ describe('AreaManagementService', () => {
     });
 
     it('should initialize with logger only', () => {
-      const serviceWithoutDeps = new AreaManagementService(mockLogger);
+      const serviceWithoutDeps = new AreaManagementService(mockLogger as import('matterbridge/logger').AnsiLogger);
       expect(serviceWithoutDeps).toBeDefined();
     });
 
     it('should initialize with logger and iotApi', () => {
-      const service = new AreaManagementService(mockLogger, mockIotApi);
+      const service = new AreaManagementService(
+        mockLogger as import('matterbridge/logger').AnsiLogger,
+        mockIotApi as import('../../roborockCommunication/index.js').RoborockIoTApi,
+      );
       expect(service).toBeDefined();
     });
 
     it('should set IoT API after initialization', () => {
-      const service = new AreaManagementService(mockLogger);
+      const service = new AreaManagementService(mockLogger as import('matterbridge/logger').AnsiLogger);
       const newIotApi = {} as RoborockIoTApi;
 
       expect(() => service.setIotApi(newIotApi)).not.toThrow();
     });
 
     it('should set message client after initialization', () => {
-      const service = new AreaManagementService(mockLogger);
+      const service = new AreaManagementService(mockLogger as import('matterbridge/logger').AnsiLogger);
       const newMessageClient = {} as ClientRouter;
 
       expect(() => service.setMessageClient(newMessageClient)).not.toThrow();

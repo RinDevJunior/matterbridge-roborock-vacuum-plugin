@@ -24,6 +24,6 @@
     "noImplicitOverride": true,
     "skipLibCheck": true
   },
-  "include": ["src/**/*.ts"],
+  "include": ["src/**/*.ts", "src/vite.config.ts"],
   "exclude": ["**/*.spec.ts", "**/*.test.ts", "**/__test__/*"]
 }

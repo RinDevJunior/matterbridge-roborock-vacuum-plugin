@@ -1,15 +1,16 @@
+import { describe, it, expect, vi } from 'vitest';
 import { getSupportedScenes } from '../../initialData/getSupportedScenes';
 
 describe('getSupportedScenes', () => {
   it('returns empty array and logs error when scenes missing', () => {
-    const mockLogger: any = { error: jest.fn(), debug: jest.fn() };
+    const mockLogger: any = { error: vi.fn(), debug: vi.fn() };
     const result = getSupportedScenes([], mockLogger);
     expect(result).toEqual([]);
     expect(mockLogger.error).toHaveBeenCalledWith('No scenes found');
   });
 
   it('maps enabled scenes to ServiceArea.Area entries', () => {
-    const mockLogger: any = { error: jest.fn(), debug: jest.fn() };
+    const mockLogger: any = { error: vi.fn(), debug: vi.fn() };
     const scenes = [
       { id: 10, name: 'Routine A', enabled: true },
       { id: 0, name: 'Routine B', enabled: false },

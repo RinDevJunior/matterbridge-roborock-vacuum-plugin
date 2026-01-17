@@ -1,3 +1,4 @@
+import { describe, it, expect } from 'vitest';
 import { MessageBodyBuilderFactory } from '../../../roborockCommunication/helper/messageBodyBuilderFactory';
 import { ProtocolVersion } from '../../../roborockCommunication/Zenum/protocolVersion';
 import { RequestMessage } from '../../../roborockCommunication/broadcast/model/requestMessage';

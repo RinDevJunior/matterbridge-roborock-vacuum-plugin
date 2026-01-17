@@ -1,3 +1,4 @@
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { AnsiLogger } from 'matterbridge/logger';
 import { PollingService } from '../../services/pollingService.js';
 import { MessageRoutingService } from '../../services/messageRoutingService.js';
@@ -7,9 +8,9 @@ import { NotifyMessageTypes } from '../../notifyMessageTypes.js';
 
 describe('PollingService', () => {
   let service: PollingService;
-  let mockLogger: jest.Mocked<AnsiLogger>;
-  let mockMessageRoutingService: jest.Mocked<MessageRoutingService>;
-  let mockMessageProcessor: jest.Mocked<MessageProcessor>;
+  let mockLogger: AnsiLogger;
+  let mockMessageRoutingService: MessageRoutingService;
+  let mockMessageProcessor: MessageProcessor;
   const TEST_REFRESH_INTERVAL = 100;
 
   const mockDevice: Device = {
@@ -19,52 +20,60 @@ describe('PollingService', () => {
   } as Device;
 
   beforeEach(() => {
-    jest.clearAllMocks();
-    jest.useFakeTimers();
+    vi.clearAllMocks();
+    vi.useFakeTimers();
 
     mockLogger = {
-      debug: jest.fn(),
-      notice: jest.fn(),
-      warn: jest.fn(),
-      error: jest.fn(),
-      info: jest.fn(),
-    } as unknown as jest.Mocked<AnsiLogger>;
+      debug: vi.fn(),
+      notice: vi.fn(),
+      warn: vi.fn(),
+      error: vi.fn(),
+      info: vi.fn(),
+    } as unknown as import('matterbridge/logger').AnsiLogger;
 
     mockMessageProcessor = {
-      getDeviceStatus: jest.fn(),
-      getDeviceStatusOverMQTT: jest.fn(),
-    } as unknown as jest.Mocked<MessageProcessor>;
+      getDeviceStatus: vi.fn(async (_duid?: string) => undefined),
+      getDeviceStatusOverMQTT: vi.fn(async (_duid?: string) => undefined),
+      logger: mockLogger,
+      injectLogger: vi.fn(),
+      registerListener: vi.fn(),
+    } as unknown as import('../../roborockCommunication/index.js').MessageProcessor;
 
     mockMessageRoutingService = {
-      getMessageProcessor: jest.fn().mockReturnValue(mockMessageProcessor),
-      getCleanModeData: jest.fn(),
-      getRoomIdFromMap: jest.fn(),
-      changeCleanMode: jest.fn(),
-      startClean: jest.fn(),
-      pauseClean: jest.fn(),
-      stopAndGoHome: jest.fn(),
-      resumeClean: jest.fn(),
-      playSoundToLocate: jest.fn(),
-      customGet: jest.fn(),
-      customSend: jest.fn(),
-      registerMessageProcessor: jest.fn(),
-      setMqttAlwaysOn: jest.fn(),
-      getMqttAlwaysOn: jest.fn(),
-      setIotApi: jest.fn(),
-      clearAll: jest.fn(),
-    } as any;
+      getMessageProcessor: vi.fn().mockReturnValue(mockMessageProcessor),
+      getCleanModeData: vi.fn(),
+      getRoomIdFromMap: vi.fn(),
+      changeCleanMode: vi.fn(),
+      startClean: vi.fn(),
+      pauseClean: vi.fn(),
+      stopAndGoHome: vi.fn(),
+      resumeClean: vi.fn(),
+      playSoundToLocate: vi.fn(),
+      customGet: vi.fn(),
+      customSend: vi.fn(),
+      registerMessageProcessor: vi.fn(),
+      setMqttAlwaysOn: vi.fn(),
+      setIotApi: vi.fn(),
+      clearAll: vi.fn(),
+      messageProcessorMap: new Map(),
+      mqttAlwaysOnDevices: new Set(),
+      logger: mockLogger,
+      isRequestSecure: vi.fn(),
+      getMqttClient: vi.fn(),
+      getMqttAlwaysOn: vi.fn(),
+    } as unknown as import('../../services/messageRoutingService.js').MessageRoutingService;
 
     service = new PollingService(TEST_REFRESH_INTERVAL, mockLogger, mockMessageRoutingService);
   });
 
   afterEach(() => {
     service.stopPolling();
-    jest.useRealTimers();
+    vi.useRealTimers();
   });
 
   describe('setDeviceNotify', () => {
     it('should set the device notification callback', () => {
-      const mockCallback = jest.fn();
+      const mockCallback = vi.fn();
       service.setDeviceNotify(mockCallback);
       expect(service['deviceNotify']).toBe(mockCallback);
     });
@@ -79,7 +88,7 @@ describe('PollingService', () => {
     });
 
     it('should activate polling and start interval', () => {
-      const mockCallback = jest.fn();
+      const mockCallback = vi.fn();
       service.setDeviceNotify(mockCallback);
 
       service.activateDeviceNotifyOverLocal(mockDevice);
@@ -89,7 +98,7 @@ describe('PollingService', () => {
     });
 
     it('should clear existing interval before creating new one', () => {
-      const mockCallback = jest.fn();
+      const mockCallback = vi.fn();
       service.setDeviceNotify(mockCallback);
 
       service.activateDeviceNotifyOverLocal(mockDevice);
@@ -102,17 +111,17 @@ describe('PollingService', () => {
     });
 
     it('should poll device status at correct intervals', async () => {
-      const mockCallback = jest.fn();
+      const mockCallback = vi.fn();
       const mockResponse = {
         errorStatus: { error: 0 },
         message: { state: 8, battery: 100 },
       };
-      mockMessageProcessor.getDeviceStatus.mockResolvedValue(mockResponse as never);
+      mockMessageProcessor.getDeviceStatus = vi.fn().mockResolvedValue(mockResponse as never);
       service.setDeviceNotify(mockCallback);
 
       service.activateDeviceNotifyOverLocal(mockDevice);
 
-      await jest.advanceTimersByTimeAsync(TEST_REFRESH_INTERVAL * LOCAL_REFRESH_INTERVAL_MULTIPLIER);
+      await vi.advanceTimersByTimeAsync(TEST_REFRESH_INTERVAL * LOCAL_REFRESH_INTERVAL_MULTIPLIER);
 
       expect(mockMessageProcessor.getDeviceStatus).toHaveBeenCalledWith(mockDevice.duid);
       expect(mockCallback).toHaveBeenCalledWith(NotifyMessageTypes.LocalMessage, {
@@ -124,18 +133,18 @@ describe('PollingService', () => {
     });
 
     it('should handle multiple polling cycles', async () => {
-      const mockCallback = jest.fn();
+      const mockCallback = vi.fn();
       const mockResponse = {
         errorStatus: { error: 0 },
         message: { state: 8 },
       };
-      mockMessageProcessor.getDeviceStatus.mockResolvedValue(mockResponse as never);
+      mockMessageProcessor.getDeviceStatus = vi.fn().mockResolvedValue(mockResponse as never);
       service.setDeviceNotify(mockCallback);
 
       service.activateDeviceNotifyOverLocal(mockDevice);
 
       for (let i = 0; i < 3; i++) {
-        await jest.advanceTimersByTimeAsync(TEST_REFRESH_INTERVAL * LOCAL_REFRESH_INTERVAL_MULTIPLIER);
+        await vi.advanceTimersByTimeAsync(TEST_REFRESH_INTERVAL * LOCAL_REFRESH_INTERVAL_MULTIPLIER);
       }
 
       expect(mockMessageProcessor.getDeviceStatus).toHaveBeenCalledTimes(3);
@@ -143,40 +152,40 @@ describe('PollingService', () => {
     });
 
     it('should log error when message processor is not found', async () => {
-      const mockCallback = jest.fn();
+      const mockCallback = vi.fn();
       service.setDeviceNotify(mockCallback);
-      mockMessageRoutingService.getMessageProcessor.mockReturnValue(undefined as any);
+      mockMessageRoutingService.getMessageProcessor = vi.fn().mockReturnValue(undefined as any);
 
       service.activateDeviceNotifyOverLocal(mockDevice);
 
-      await jest.advanceTimersByTimeAsync(TEST_REFRESH_INTERVAL * LOCAL_REFRESH_INTERVAL_MULTIPLIER);
+      await vi.advanceTimersByTimeAsync(TEST_REFRESH_INTERVAL * LOCAL_REFRESH_INTERVAL_MULTIPLIER);
 
       expect(mockLogger.error).toHaveBeenCalledWith('Local Polling - No message processor for device:', mockDevice.duid);
       expect(mockCallback).not.toHaveBeenCalled();
     });
 
     it('should handle getDeviceStatus errors gracefully', async () => {
-      const mockCallback = jest.fn();
+      const mockCallback = vi.fn();
       const testError = new Error('Network timeout');
-      mockMessageProcessor.getDeviceStatus.mockRejectedValue(testError);
+      mockMessageProcessor.getDeviceStatus = vi.fn().mockRejectedValue(testError);
       service.setDeviceNotify(mockCallback);
 
       service.activateDeviceNotifyOverLocal(mockDevice);
 
-      await jest.advanceTimersByTimeAsync(TEST_REFRESH_INTERVAL * LOCAL_REFRESH_INTERVAL_MULTIPLIER);
+      await vi.advanceTimersByTimeAsync(TEST_REFRESH_INTERVAL * LOCAL_REFRESH_INTERVAL_MULTIPLIER);
 
       expect(mockLogger.error).toHaveBeenCalledWith('Failed to get device status:', testError);
       expect(mockCallback).not.toHaveBeenCalled();
     });
 
     it('should handle null/undefined response from getDeviceStatus', async () => {
-      const mockCallback = jest.fn();
-      mockMessageProcessor.getDeviceStatus.mockResolvedValue(null as never);
+      const mockCallback = vi.fn();
+      mockMessageProcessor.getDeviceStatus = vi.fn().mockResolvedValue(null as never);
       service.setDeviceNotify(mockCallback);
 
       service.activateDeviceNotifyOverLocal(mockDevice);
 
-      await jest.advanceTimersByTimeAsync(TEST_REFRESH_INTERVAL * LOCAL_REFRESH_INTERVAL_MULTIPLIER);
+      await vi.advanceTimersByTimeAsync(TEST_REFRESH_INTERVAL * LOCAL_REFRESH_INTERVAL_MULTIPLIER);
 
       expect(mockCallback).not.toHaveBeenCalled();
     });
@@ -191,7 +200,7 @@ describe('PollingService', () => {
     });
 
     it('should activate MQTT polling and start interval', () => {
-      const mockCallback = jest.fn();
+      const mockCallback = vi.fn();
       service.setDeviceNotify(mockCallback);
 
       service.activateDeviceNotifyOverMQTT(mockDevice);
@@ -201,7 +210,7 @@ describe('PollingService', () => {
     });
 
     it('should clear existing interval before creating new one', () => {
-      const mockCallback = jest.fn();
+      const mockCallback = vi.fn();
       service.setDeviceNotify(mockCallback);
 
       service.activateDeviceNotifyOverMQTT(mockDevice);
@@ -214,17 +223,17 @@ describe('PollingService', () => {
     });
 
     it('should poll device status over MQTT at correct intervals', async () => {
-      const mockCallback = jest.fn();
+      const mockCallback = vi.fn();
       const mockResponse = {
         errorStatus: { error: 0 },
         message: { state: 5, battery: 85 },
       };
-      mockMessageProcessor.getDeviceStatusOverMQTT.mockResolvedValue(mockResponse as never);
+      mockMessageProcessor.getDeviceStatusOverMQTT = vi.fn().mockResolvedValue(mockResponse as never);
       service.setDeviceNotify(mockCallback);
 
       service.activateDeviceNotifyOverMQTT(mockDevice);
 
-      await jest.advanceTimersByTimeAsync(TEST_REFRESH_INTERVAL * MQTT_REFRESH_INTERVAL_MULTIPLIER);
+      await vi.advanceTimersByTimeAsync(TEST_REFRESH_INTERVAL * MQTT_REFRESH_INTERVAL_MULTIPLIER);
 
       expect(mockMessageProcessor.getDeviceStatusOverMQTT).toHaveBeenCalledWith(mockDevice.duid);
       expect(mockCallback).toHaveBeenCalledWith(NotifyMessageTypes.LocalMessage, {
@@ -236,18 +245,18 @@ describe('PollingService', () => {
     });
 
     it('should handle multiple MQTT polling cycles', async () => {
-      const mockCallback = jest.fn();
+      const mockCallback = vi.fn();
       const mockResponse = {
         errorStatus: { error: 0 },
         message: { state: 5 },
       };
-      mockMessageProcessor.getDeviceStatusOverMQTT.mockResolvedValue(mockResponse as never);
+      mockMessageProcessor.getDeviceStatusOverMQTT = vi.fn().mockResolvedValue(mockResponse as never);
       service.setDeviceNotify(mockCallback);
 
       service.activateDeviceNotifyOverMQTT(mockDevice);
 
       for (let i = 0; i < 3; i++) {
-        await jest.advanceTimersByTimeAsync(TEST_REFRESH_INTERVAL * MQTT_REFRESH_INTERVAL_MULTIPLIER);
+        await vi.advanceTimersByTimeAsync(TEST_REFRESH_INTERVAL * MQTT_REFRESH_INTERVAL_MULTIPLIER);
       }
 
       expect(mockMessageProcessor.getDeviceStatusOverMQTT).toHaveBeenCalledTimes(3);
@@ -255,40 +264,40 @@ describe('PollingService', () => {
     });
 
     it('should log error when message processor is not found', async () => {
-      const mockCallback = jest.fn();
+      const mockCallback = vi.fn();
       service.setDeviceNotify(mockCallback);
-      mockMessageRoutingService.getMessageProcessor.mockReturnValue(undefined as any);
+      mockMessageRoutingService.getMessageProcessor = vi.fn().mockReturnValue(undefined as any);
 
       service.activateDeviceNotifyOverMQTT(mockDevice);
 
-      await jest.advanceTimersByTimeAsync(TEST_REFRESH_INTERVAL * MQTT_REFRESH_INTERVAL_MULTIPLIER);
+      await vi.advanceTimersByTimeAsync(TEST_REFRESH_INTERVAL * MQTT_REFRESH_INTERVAL_MULTIPLIER);
 
       expect(mockLogger.error).toHaveBeenCalledWith('MQTT - No message processor for device:', mockDevice.duid);
       expect(mockCallback).not.toHaveBeenCalled();
     });
 
     it('should handle getDeviceStatusOverMQTT errors gracefully', async () => {
-      const mockCallback = jest.fn();
+      const mockCallback = vi.fn();
       const testError = new Error('MQTT connection lost');
-      mockMessageProcessor.getDeviceStatusOverMQTT.mockRejectedValue(testError);
+      mockMessageProcessor.getDeviceStatusOverMQTT = vi.fn().mockRejectedValue(testError);
       service.setDeviceNotify(mockCallback);
 
       service.activateDeviceNotifyOverMQTT(mockDevice);
 
-      await jest.advanceTimersByTimeAsync(TEST_REFRESH_INTERVAL * MQTT_REFRESH_INTERVAL_MULTIPLIER);
+      await vi.advanceTimersByTimeAsync(TEST_REFRESH_INTERVAL * MQTT_REFRESH_INTERVAL_MULTIPLIER);
 
       expect(mockLogger.error).toHaveBeenCalledWith('Failed to get device status over MQTT:', testError);
       expect(mockCallback).not.toHaveBeenCalled();
     });
 
     it('should handle null/undefined response from getDeviceStatusOverMQTT', async () => {
-      const mockCallback = jest.fn();
-      mockMessageProcessor.getDeviceStatusOverMQTT.mockResolvedValue(undefined as never);
+      const mockCallback = vi.fn();
+      mockMessageProcessor.getDeviceStatusOverMQTT = vi.fn().mockResolvedValue(undefined as never);
       service.setDeviceNotify(mockCallback);
 
       service.activateDeviceNotifyOverMQTT(mockDevice);
 
-      await jest.advanceTimersByTimeAsync(TEST_REFRESH_INTERVAL * MQTT_REFRESH_INTERVAL_MULTIPLIER);
+      await vi.advanceTimersByTimeAsync(TEST_REFRESH_INTERVAL * MQTT_REFRESH_INTERVAL_MULTIPLIER);
 
       expect(mockCallback).not.toHaveBeenCalled();
     });
@@ -296,7 +305,7 @@ describe('PollingService', () => {
 
   describe('stopPolling', () => {
     it('should clear the polling interval', () => {
-      const mockCallback = jest.fn();
+      const mockCallback = vi.fn();
       service.setDeviceNotify(mockCallback);
       service.activateDeviceNotifyOverLocal(mockDevice);
 
@@ -315,8 +324,8 @@ describe('PollingService', () => {
     });
 
     it('should prevent further polling after stopPolling is called', async () => {
-      const mockCallback = jest.fn();
-      mockMessageProcessor.getDeviceStatus.mockResolvedValue({
+      const mockCallback = vi.fn();
+      mockMessageProcessor.getDeviceStatus = vi.fn().mockResolvedValue({
         errorStatus: { error: 0 },
         message: { state: 8 },
       } as never);
@@ -325,7 +334,7 @@ describe('PollingService', () => {
       service.activateDeviceNotifyOverLocal(mockDevice);
       service.stopPolling();
 
-      await jest.advanceTimersByTimeAsync(TEST_REFRESH_INTERVAL * LOCAL_REFRESH_INTERVAL_MULTIPLIER * 3);
+      await vi.advanceTimersByTimeAsync(TEST_REFRESH_INTERVAL * LOCAL_REFRESH_INTERVAL_MULTIPLIER * 3);
 
       expect(mockMessageProcessor.getDeviceStatus).not.toHaveBeenCalled();
     });
@@ -333,7 +342,7 @@ describe('PollingService', () => {
 
   describe('shutdown', () => {
     it('should stop polling and clear deviceNotify callback', async () => {
-      const mockCallback = jest.fn();
+      const mockCallback = vi.fn();
       service.setDeviceNotify(mockCallback);
       service.activateDeviceNotifyOverLocal(mockDevice);
 
@@ -349,8 +358,8 @@ describe('PollingService', () => {
     });
 
     it('should prevent polling after shutdown', async () => {
-      const mockCallback = jest.fn();
-      mockMessageProcessor.getDeviceStatus.mockResolvedValue({
+      const mockCallback = vi.fn();
+      mockMessageProcessor.getDeviceStatus = vi.fn().mockResolvedValue({
         errorStatus: { error: 0 },
         message: { state: 8 },
       } as never);
@@ -359,7 +368,7 @@ describe('PollingService', () => {
       service.activateDeviceNotifyOverLocal(mockDevice);
       await service.shutdown();
 
-      await jest.advanceTimersByTimeAsync(TEST_REFRESH_INTERVAL * LOCAL_REFRESH_INTERVAL_MULTIPLIER * 3);
+      await vi.advanceTimersByTimeAsync(TEST_REFRESH_INTERVAL * LOCAL_REFRESH_INTERVAL_MULTIPLIER * 3);
 
       expect(mockMessageProcessor.getDeviceStatus).not.toHaveBeenCalled();
     });
@@ -367,7 +376,7 @@ describe('PollingService', () => {
 
   describe('integration scenarios', () => {
     it('should switch from local to MQTT polling', async () => {
-      const mockCallback = jest.fn();
+      const mockCallback = vi.fn();
       const localResponse = {
         errorStatus: { error: 0 },
         message: { state: 8 },
@@ -376,24 +385,24 @@ describe('PollingService', () => {
         errorStatus: { error: 0 },
         message: { state: 5 },
       };
-      mockMessageProcessor.getDeviceStatus.mockResolvedValue(localResponse as never);
-      mockMessageProcessor.getDeviceStatusOverMQTT.mockResolvedValue(mqttResponse as never);
+      mockMessageProcessor.getDeviceStatus = vi.fn().mockResolvedValue(localResponse as never);
+      mockMessageProcessor.getDeviceStatusOverMQTT = vi.fn().mockResolvedValue(mqttResponse as never);
       service.setDeviceNotify(mockCallback);
 
       service.activateDeviceNotifyOverLocal(mockDevice);
-      await jest.advanceTimersByTimeAsync(TEST_REFRESH_INTERVAL * LOCAL_REFRESH_INTERVAL_MULTIPLIER);
+      await vi.advanceTimersByTimeAsync(TEST_REFRESH_INTERVAL * LOCAL_REFRESH_INTERVAL_MULTIPLIER);
 
       expect(mockMessageProcessor.getDeviceStatus).toHaveBeenCalledTimes(1);
 
       service.activateDeviceNotifyOverMQTT(mockDevice);
-      await jest.advanceTimersByTimeAsync(TEST_REFRESH_INTERVAL * MQTT_REFRESH_INTERVAL_MULTIPLIER);
+      await vi.advanceTimersByTimeAsync(TEST_REFRESH_INTERVAL * MQTT_REFRESH_INTERVAL_MULTIPLIER);
 
       expect(mockMessageProcessor.getDeviceStatusOverMQTT).toHaveBeenCalledTimes(1);
       expect(mockMessageProcessor.getDeviceStatus).toHaveBeenCalledTimes(1);
     });
 
     it('should handle rapid activation/deactivation cycles', () => {
-      const mockCallback = jest.fn();
+      const mockCallback = vi.fn();
       service.setDeviceNotify(mockCallback);
 
       for (let i = 0; i < 5; i++) {

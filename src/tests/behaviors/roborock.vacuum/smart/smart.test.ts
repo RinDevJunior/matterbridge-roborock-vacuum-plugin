@@ -1,3 +1,4 @@
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { setCommandHandlerSmart, VacuumSuctionPowerSmart, MopWaterFlowSmart, MopRouteSmart } from '../../../../behaviors/roborock.vacuum/smart/smart';
 import { BehaviorDeviceGeneric } from '../../../../behaviors/BehaviorDeviceGeneric';
 import { AnsiLogger } from 'matterbridge/logger';
@@ -7,28 +8,28 @@ import { CleanModeSettings } from '../../../../model/ExperimentalFeatureSetting'
 describe('setCommandHandlerSmart', () => {
   let handler: BehaviorDeviceGeneric<any>;
   let logger: AnsiLogger;
-  let roborockService: jest.Mocked<RoborockService>;
+  let roborockService: vi.Mocked<RoborockService>;
   let cleanModeSettings: CleanModeSettings;
   const duid = 'test-duid';
 
   beforeEach(() => {
     handler = {
-      setCommandHandler: jest.fn(),
+      setCommandHandler: vi.fn(),
     } as any;
 
     logger = {
-      notice: jest.fn(),
-      warn: jest.fn(),
+      notice: vi.fn(),
+      warn: vi.fn(),
     } as any;
 
     roborockService = {
-      startClean: jest.fn(),
-      changeCleanMode: jest.fn(),
-      setSelectedAreas: jest.fn(),
-      pauseClean: jest.fn(),
-      resumeClean: jest.fn(),
-      stopAndGoHome: jest.fn(),
-      playSoundToLocate: jest.fn(),
+      startClean: vi.fn(),
+      changeCleanMode: vi.fn(),
+      setSelectedAreas: vi.fn(),
+      pauseClean: vi.fn(),
+      resumeClean: vi.fn(),
+      stopAndGoHome: vi.fn(),
+      playSoundToLocate: vi.fn(),
     } as any;
 
     cleanModeSettings = {
@@ -56,14 +57,14 @@ describe('setCommandHandlerSmart', () => {
 
   it('should call startClean for Cleaning mode', async () => {
     setCommandHandlerSmart(duid, handler, logger, roborockService, cleanModeSettings);
-    const [[, changeToModeHandler]] = (handler.setCommandHandler as jest.Mock).mock.calls.filter(([cmd]) => cmd === 'changeToMode');
+    const [[, changeToModeHandler]] = (handler.setCommandHandler as ReturnType<typeof vi.fn>).mock.calls.filter(([cmd]) => cmd === 'changeToMode');
     await (changeToModeHandler as (mode: number) => Promise<void>)(2); // 2 = Cleaning
     expect(roborockService.startClean).toHaveBeenCalledWith(duid);
   });
 
   it('should call changeCleanMode for Smart Plan', async () => {
     setCommandHandlerSmart(duid, handler, logger, roborockService, cleanModeSettings);
-    const [[, changeToModeHandler]] = (handler.setCommandHandler as jest.Mock).mock.calls.filter(([cmd]) => cmd === 'changeToMode');
+    const [[, changeToModeHandler]] = (handler.setCommandHandler as ReturnType<typeof vi.fn>).mock.calls.filter(([cmd]) => cmd === 'changeToMode');
     await (changeToModeHandler as (mode: number) => Promise<void>)(4); // 4 = Smart Plan
     expect(roborockService.changeCleanMode).toHaveBeenCalledWith(duid, {
       suctionPower: 0,
@@ -75,7 +76,7 @@ describe('setCommandHandlerSmart', () => {
 
   it('should call changeCleanMode for Mop with correct values', async () => {
     setCommandHandlerSmart(duid, handler, logger, roborockService, undefined);
-    const [[, changeToModeHandler]] = (handler.setCommandHandler as jest.Mock).mock.calls.filter(([cmd]) => cmd === 'changeToMode');
+    const [[, changeToModeHandler]] = (handler.setCommandHandler as ReturnType<typeof vi.fn>).mock.calls.filter(([cmd]) => cmd === 'changeToMode');
     await (changeToModeHandler as (mode: number) => Promise<void>)(31); // 31 = Mop Default
     // mopping: { waterFlowMode: 'High', mopRouteMode: 'Fast', distanceOff: 85 },
     expect(roborockService.changeCleanMode).toHaveBeenCalledWith(duid, {
@@ -98,7 +99,7 @@ describe('setCommandHandlerSmart', () => {
       },
       enableCleanModeMapping: true,
     });
-    const [[, changeToModeHandler]] = (handler.setCommandHandler as jest.Mock).mock.calls.filter(([cmd]) => cmd === 'changeToMode');
+    const [[, changeToModeHandler]] = (handler.setCommandHandler as ReturnType<typeof vi.fn>).mock.calls.filter(([cmd]) => cmd === 'changeToMode');
     await (changeToModeHandler as (mode: number) => Promise<void>)(31); // 31 = Mop Default
     // vacuuming: { fanMode: 'Max', mopRouteMode: 'DeepPlus' },
     expect(roborockService.changeCleanMode).toHaveBeenCalledWith(duid, {
@@ -111,7 +112,7 @@ describe('setCommandHandlerSmart', () => {
 
   it('should call changeCleanMode for Vacuum with correct values', async () => {
     setCommandHandlerSmart(duid, handler, logger, roborockService, undefined);
-    const [[, changeToModeHandler]] = (handler.setCommandHandler as jest.Mock).mock.calls.filter(([cmd]) => cmd === 'changeToMode');
+    const [[, changeToModeHandler]] = (handler.setCommandHandler as ReturnType<typeof vi.fn>).mock.calls.filter(([cmd]) => cmd === 'changeToMode');
     await (changeToModeHandler as (mode: number) => Promise<void>)(66); // 66 = Vacuum Default
     // vacuuming: { fanMode: 'Max', mopRouteMode: 'DeepPlus' },
     expect(roborockService.changeCleanMode).toHaveBeenCalledWith(duid, {
@@ -124,7 +125,7 @@ describe('setCommandHandlerSmart', () => {
 
   it('should call changeCleanMode for Vacuum with custom values', async () => {
     setCommandHandlerSmart(duid, handler, logger, roborockService, cleanModeSettings);
-    const [[, changeToModeHandler]] = (handler.setCommandHandler as jest.Mock).mock.calls.filter(([cmd]) => cmd === 'changeToMode');
+    const [[, changeToModeHandler]] = (handler.setCommandHandler as ReturnType<typeof vi.fn>).mock.calls.filter(([cmd]) => cmd === 'changeToMode');
     await (changeToModeHandler as (mode: number) => Promise<void>)(66); // 66 = Vacuum Default
     // vacuuming: { fanMode: 'Max', mopRouteMode: 'DeepPlus' },
     expect(roborockService.changeCleanMode).toHaveBeenCalledWith(duid, {
@@ -137,7 +138,7 @@ describe('setCommandHandlerSmart', () => {
 
   it('should call changeCleanMode for Vac & Mop with correct values', async () => {
     setCommandHandlerSmart(duid, handler, logger, roborockService, undefined);
-    const [[, changeToModeHandler]] = (handler.setCommandHandler as jest.Mock).mock.calls.filter(([cmd]) => cmd === 'changeToMode');
+    const [[, changeToModeHandler]] = (handler.setCommandHandler as ReturnType<typeof vi.fn>).mock.calls.filter(([cmd]) => cmd === 'changeToMode');
     await (changeToModeHandler as (mode: number) => Promise<void>)(5); // 5 = Vac & Mop Default
     /*
     vacmop: {
@@ -180,35 +181,35 @@ describe('setCommandHandlerSmart', () => {
 
   it('should call setSelectedAreas', async () => {
     setCommandHandlerSmart(duid, handler, logger, roborockService, cleanModeSettings);
-    const [[, selectAreasHandler]] = (handler.setCommandHandler as jest.Mock).mock.calls.filter(([cmd]) => cmd === 'selectAreas');
+    const [[, selectAreasHandler]] = (handler.setCommandHandler as ReturnType<typeof vi.fn>).mock.calls.filter(([cmd]) => cmd === 'selectAreas');
     await (selectAreasHandler as (areas: number[]) => Promise<void>)([1, 2, 3]);
     expect(roborockService.setSelectedAreas).toHaveBeenCalledWith(duid, [1, 2, 3]);
   });
 
   it('should call pauseClean', async () => {
     setCommandHandlerSmart(duid, handler, logger, roborockService, cleanModeSettings);
-    const [[, pauseHandler]] = (handler.setCommandHandler as jest.Mock).mock.calls.filter(([cmd]) => cmd === 'pause');
+    const [[, pauseHandler]] = (handler.setCommandHandler as ReturnType<typeof vi.fn>).mock.calls.filter(([cmd]) => cmd === 'pause');
     await (pauseHandler as () => Promise<void>)();
     expect(roborockService.pauseClean).toHaveBeenCalledWith(duid);
   });
 
   it('should call resumeClean', async () => {
     setCommandHandlerSmart(duid, handler, logger, roborockService, cleanModeSettings);
-    const [[, resumeHandler]] = (handler.setCommandHandler as jest.Mock).mock.calls.filter(([cmd]) => cmd === 'resume');
+    const [[, resumeHandler]] = (handler.setCommandHandler as ReturnType<typeof vi.fn>).mock.calls.filter(([cmd]) => cmd === 'resume');
     await (resumeHandler as () => Promise<void>)();
     expect(roborockService.resumeClean).toHaveBeenCalledWith(duid);
   });
 
   it('should call stopAndGoHome', async () => {
     setCommandHandlerSmart(duid, handler, logger, roborockService, cleanModeSettings);
-    const [[, goHomeHandler]] = (handler.setCommandHandler as jest.Mock).mock.calls.filter(([cmd]) => cmd === 'goHome');
+    const [[, goHomeHandler]] = (handler.setCommandHandler as ReturnType<typeof vi.fn>).mock.calls.filter(([cmd]) => cmd === 'goHome');
     await (goHomeHandler as () => Promise<void>)();
     expect(roborockService.stopAndGoHome).toHaveBeenCalledWith(duid);
   });
 
   it('should call playSoundToLocate', async () => {
     setCommandHandlerSmart(duid, handler, logger, roborockService, cleanModeSettings);
-    const [[, playSoundHandler]] = (handler.setCommandHandler as jest.Mock).mock.calls.filter(([cmd]) => cmd === 'playSoundToLocate');
+    const [[, playSoundHandler]] = (handler.setCommandHandler as ReturnType<typeof vi.fn>).mock.calls.filter(([cmd]) => cmd === 'playSoundToLocate');
     await (playSoundHandler as (arg: number) => Promise<void>)(1);
     expect(roborockService.playSoundToLocate).toHaveBeenCalledWith(duid);
   });

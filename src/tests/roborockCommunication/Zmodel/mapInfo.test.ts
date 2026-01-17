@@ -1,3 +1,4 @@
+import { describe, test, expect } from 'vitest';
 import { MapInfo } from '../../../roborockCommunication/Zmodel/mapInfo';
 
 describe('MapInfo parsing', () => {
