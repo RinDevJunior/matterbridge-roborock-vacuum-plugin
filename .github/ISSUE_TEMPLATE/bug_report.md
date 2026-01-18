@@ -20,8 +20,9 @@ Steps to reproduce the issue with the plugin:
 **Expected behavior**
 A clear and concise description of what you expected to happen when using the plugin.
 
-**Screenshots or Logs**
-If applicable, please attach the logs file download from Setting -> Download -> Matterbridge log
+**Debug file**
+Please always add the debug file to help explain your problem.
+[How to download the log](https://github.com/Luligu/matterbridge/blob/main/README.md#how-to-send-the-debug-log-files)
 
 **Environment (please complete the following information):**
 
