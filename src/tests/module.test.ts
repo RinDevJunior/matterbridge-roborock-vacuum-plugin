@@ -39,9 +39,86 @@ class TestRoborockMatterbridgePlatform extends RoborockMatterbridgePlatform {
   public async testStartDeviceDiscovery() {
     return this['startDeviceDiscovery']();
   }
+  public async testAuthenticate(deviceId: string) {
+    return this['authenticate'](deviceId);
+  }
+  public async testOnConfigureDevice() {
+    return this['onConfigureDevice']();
+  }
+  public async testConfigureDevice(vacuum: any) {
+    return this['configureDevice'](vacuum);
+  }
+  public testLogVerificationCodeBanner(email: string, wasPreviouslySent: boolean) {
+    return this['logVerificationCodeBanner'](email, wasPreviouslySent);
+  }
+  public async testAddDevice(device: any) {
+    return this['addDevice'](device);
+  }
 }
 
+let platform: RoborockMatterbridgePlatform;
+let mockLogger: AnsiLogger;
+let mockMatterbridge: PlatformMatterbridge;
+let config: RoborockPluginPlatformConfig;
+
 describe('RoborockMatterbridgePlatform', () => {
+  describe('private methods', () => {
+    let testPlatform: TestRoborockMatterbridgePlatform;
+    beforeEach(() => {
+      testPlatform = new TestRoborockMatterbridgePlatform(mockMatterbridge, mockLogger, config);
+    });
+
+    it('startDeviceDiscovery returns false if authenticate fails', async () => {
+      testPlatform['authenticate'] = vi.fn().mockResolvedValue({ shouldContinue: false });
+      testPlatform.roborockService = { listDevices: vi.fn().mockResolvedValue([]) } as any;
+      const result = await testPlatform.testStartDeviceDiscovery();
+      expect(result).toBe(false);
+    });
+
+    it('authenticate returns shouldContinue false if error', async () => {
+      testPlatform.roborockService = undefined;
+      const result = await testPlatform.testAuthenticate('deviceId');
+      expect(result.shouldContinue).toBe(false);
+    });
+
+    it('onConfigureDevice logs error if platformRunner or roborockService undefined', async () => {
+      testPlatform.platformRunner = undefined;
+      testPlatform.roborockService = undefined;
+      await testPlatform.testOnConfigureDevice();
+      expect(mockLogger.error).toHaveBeenCalledWith('Initializing: PlatformRunner or RoborockService is undefined');
+    });
+
+    it('configureDevice returns false if platformRunner or roborockService undefined', async () => {
+      testPlatform.platformRunner = undefined;
+      testPlatform.roborockService = undefined;
+      const result = await testPlatform.testConfigureDevice({});
+      expect(result).toBe(false);
+    });
+
+    it('authenticateWithPassword throws if roborockService is not initialized', async () => {
+      testPlatform.roborockService = undefined;
+      await expect(testPlatform.testAuthenticateWithPassword('user', 'pw')).rejects.toThrow('RoborockService is not initialized');
+    });
+
+    it('authenticate2FA throws if roborockService is not initialized', async () => {
+      testPlatform.roborockService = undefined;
+      await expect(testPlatform.testAuthenticate2FA('user', 'code')).rejects.toThrow('RoborockService is not initialized');
+    });
+
+    it('logVerificationCodeBanner logs correct messages', () => {
+      testPlatform.testLogVerificationCodeBanner('test@example.com', false);
+      expect(mockLogger.notice).toHaveBeenCalledWith(expect.stringContaining('ACTION REQUIRED'));
+      testPlatform.testLogVerificationCodeBanner('test@example.com', true);
+      expect(mockLogger.notice).toHaveBeenCalledWith(expect.stringContaining('was previously sent'));
+    });
+
+    it('addDevice returns undefined if serialNumber or deviceName missing', async () => {
+      const device = { serialNumber: undefined, deviceName: undefined };
+      const result = await testPlatform.testAddDevice(device);
+      expect(result).toBeUndefined();
+    });
+  });
+
   it('should set deviceId in persist if not present', async () => {
     platform = new RoborockMatterbridgePlatform(mockMatterbridge, mockLogger, config);
     platform.persist.getItem = vi.fn().mockResolvedValueOnce(undefined);
@@ -163,10 +240,18 @@ describe('RoborockMatterbridgePlatform', () => {
     superOnShutdown.mockRestore();
   });
 
-  let platform: RoborockMatterbridgePlatform;
-  let mockLogger: AnsiLogger;
-  let mockMatterbridge: PlatformMatterbridge;
-  let config: RoborockPluginPlatformConfig;
+  it('should call super.onShutdown and handle missing resources', async () => {
+    platform = new RoborockMatterbridgePlatform(mockMatterbridge, mockLogger, config);
+    platform.rvcInterval = undefined;
+    platform.roborockService = undefined;
+    platform.config.unregisterOnShutdown = false;
+    const superOnShutdown = vi.spyOn(MatterbridgeDynamicPlatform.prototype, 'onShutdown').mockResolvedValue(undefined);
+    await platform.onShutdown('test');
+    expect(superOnShutdown).toHaveBeenCalledWith('test');
+    expect(platform.rvcInterval).toBeUndefined();
+    expect(platform.roborockService).toBeUndefined();
+    superOnShutdown.mockRestore();
+  });
 
   beforeEach(() => {
     mockLogger = createMockLogger();
