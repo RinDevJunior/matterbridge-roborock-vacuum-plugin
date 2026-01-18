@@ -30,4 +30,17 @@ describe('runtimes.getCurrentCleanModeDefault', () => {
     const s = { suctionPower: VacuumSuctionPower.Balanced, waterFlow: MopWaterFlow.Medium, mopRoute: MopRoute.Standard } as any;
     expect(getCurrentCleanModeDefault(s)).toBe(5);
   });
+
+  it('returns undefined for completely invalid input', () => {
+    expect(getCurrentCleanModeDefault(undefined as any)).toBeUndefined();
+    expect(getCurrentCleanModeDefault(null as any)).toBeUndefined();
+    expect(getCurrentCleanModeDefault(123 as any)).toBeUndefined();
+    expect(getCurrentCleanModeDefault('bad' as any)).toBeUndefined();
+  });
+
+  it('returns 5 if no CleanSetting match and not covered by other rules', () => {
+    // Use values that do not match any CleanSetting and do not trigger custom/off/other rules
+    const s = { suctionPower: 999, waterFlow: 888, mopRoute: 777 } as any;
+    expect(getCurrentCleanModeDefault(s)).toBe(5);
+  });
 });

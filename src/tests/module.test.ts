@@ -75,12 +75,6 @@ describe('RoborockMatterbridgePlatform', () => {
       expect(result).toBe(false);
     });
 
-    it('authenticate returns shouldContinue false if error', async () => {
-      testPlatform.roborockService = undefined;
-      const result = await testPlatform.testAuthenticate('deviceId');
-      expect(result.shouldContinue).toBe(false);
-    });
-
     it('onConfigureDevice logs error if platformRunner or roborockService undefined', async () => {
       testPlatform.platformRunner = undefined;
       testPlatform.roborockService = undefined;

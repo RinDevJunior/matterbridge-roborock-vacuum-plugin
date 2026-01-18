@@ -52,7 +52,7 @@ describe('getCurrentCleanModeSmart', () => {
     ).toBe(5);
   });
 
-  it('returns undefined if no match and no fallback applies', () => {
+  it('returns 5 if no match and no fallback applies', () => {
     expect(
       getCurrentCleanModeSmart({
         suctionPower: 999,
