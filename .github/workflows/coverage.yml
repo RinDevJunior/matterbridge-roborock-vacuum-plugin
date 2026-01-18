@@ -1,13 +1,18 @@
 name: Analyze code coverage
 
+permissions:
+  contents: read
+  pull-requests: read
+
 on:
   push:
     branches:
       - main
-      - dev
+  pull_request:
+    types: [opened, synchronize, reopened, edited]
 
 jobs:
-  publish:
+  coverage:
     runs-on: ubuntu-latest
 
     steps:

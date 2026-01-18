@@ -11,13 +11,6 @@ export type BehaviorFactoryResult = BehaviorDeviceGeneric<DefaultEndpointCommand
 /**
  * Configure device behavior handler based on model capabilities.
  * Creates and initializes the appropriate command handler for the device model.
- * @param model - Device model identifier
- * @param duid - Device unique identifier
- * @param roborockService - Roborock service instance for device communication
- * @param cleanModeSettings - Custom cleaning mode settings
- * @param forceRunAtDefault - Force use of default behavior regardless of model
- * @param logger - Logger instance
- * @returns Configured behavior handler (Default or Smart)
  */
 export function configureBehavior(
   model: string,
