@@ -1,5 +1,9 @@
 name: Analyze code coverage
 
+permissions:
+  contents: read
+  pull-requests: read
+
 on:
   push:
     branches:
