@@ -1,5 +1,6 @@
-import { describe, it, test, expect, vi, beforeEach } from 'vitest';
 import { getVacuumProperty, isSupportedDevice, isStatusUpdate, getRoomMap, getRoomMapFromDevice } from '../helper.js';
+import { RoomMap } from '../model/RoomMap.js';
+import { describe, it, test, expect, vi, beforeEach } from 'vitest';
 
 describe('helper utilities', () => {
   test('getVacuumProperty returns undefined with no device', () => {
@@ -74,8 +75,6 @@ describe('helper utilities', () => {
     expect(rmap3).toBeDefined();
   });
 });
-import { getRoomMapFromDevice } from '../helper';
-import { RoomMap } from '../model/RoomMap';
 
 const mockLog = {
   notice: vi.fn(),

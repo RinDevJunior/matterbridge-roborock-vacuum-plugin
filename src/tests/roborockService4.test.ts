@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import RoborockService from '../roborockService';
-import type ClientManager from '../services/clientManager';
+import RoborockService from '../roborockService.js';
+import type ClientManager from '../services/clientManager.js';
 import type { AnsiLogger } from 'matterbridge/logger';
 
 describe('getHomeDataForUpdating', () => {

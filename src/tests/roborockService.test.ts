@@ -14,14 +14,14 @@ import { PollingService } from '../services/pollingService.js';
 
 describe('RoborockService - Comprehensive Coverage', () => {
   let service: RoborockService;
-  let mockLogger: vi.Mocked<AnsiLogger>;
-  let mockClientManager: vi.Mocked<ClientManager>;
-  let mockContainer: vi.Mocked<ServiceContainer>;
-  let mockAuthService: vi.Mocked<AuthenticationService>;
-  let mockDeviceService: vi.Mocked<DeviceManagementService>;
-  let mockAreaService: vi.Mocked<AreaManagementService>;
-  let mockMessageService: vi.Mocked<MessageRoutingService>;
-  let mockPollingService: vi.Mocked<PollingService>;
+  let mockLogger: AnsiLogger;
+  let mockClientManager: ClientManager;
+  let mockContainer: ServiceContainer;
+  let mockAuthService: AuthenticationService;
+  let mockDeviceService: DeviceManagementService;
+  let mockAreaService: AreaManagementService;
+  let mockMessageService: MessageRoutingService;
+  let mockPollingService: PollingService;
   let mockUserData: UserData;
   let mockDevice: Device;
 
@@ -32,20 +32,20 @@ describe('RoborockService - Comprehensive Coverage', () => {
       warn: vi.fn(),
       error: vi.fn(),
       notice: vi.fn(),
-    } as any;
+    } as unknown as AnsiLogger;
 
     mockClientManager = {
       get: vi.fn(),
-      has: vi.fn(),
-      remove: vi.fn(),
-    } as any;
+      destroy: vi.fn(),
+      destroyAll: vi.fn(),
+    } as unknown as ClientManager;
 
     mockAuthService = {
       requestVerificationCode: vi.fn(),
       loginWithVerificationCode: vi.fn(),
       loginWithCachedToken: vi.fn(),
       loginWithPassword: vi.fn(),
-    } as any;
+    } as unknown as AuthenticationService;
 
     mockDeviceService = {
       listDevices: vi.fn(),
@@ -53,24 +53,23 @@ describe('RoborockService - Comprehensive Coverage', () => {
       initializeMessageClient: vi.fn(),
       initializeMessageClientForLocal: vi.fn(),
       setDeviceNotify: vi.fn(),
-      activateDeviceNotify: vi.fn(),
       activateDeviceNotifyOverMQTT: vi.fn(),
       stopService: vi.fn(),
       setAuthentication: vi.fn(),
       messageClient: undefined,
       messageProcessorMap: new Map(),
       mqttAlwaysOnDevices: new Map(),
-    } as any;
+    } as unknown as DeviceManagementService;
 
     mockAreaService = {
       setSelectedAreas: vi.fn(),
-      getSelectedAreas: vi.fn().mockReturnValue([]),
+      getSelectedAreas: vi.fn(),
       setSupportedAreas: vi.fn(),
       setSupportedAreaIndexMap: vi.fn(),
       setSupportedScenes: vi.fn(),
-      getSupportedAreas: vi.fn().mockReturnValue([]),
+      getSupportedAreas: vi.fn(),
       getSupportedAreasIndexMap: vi.fn(),
-      getSupportedRoutines: vi.fn().mockReturnValue([]),
+      getSupportedRoutines: vi.fn(),
       getMapInformation: vi.fn(),
       getRoomMappings: vi.fn(),
       getScenes: vi.fn(),
@@ -78,7 +77,7 @@ describe('RoborockService - Comprehensive Coverage', () => {
       setMessageClient: vi.fn(),
       setIotApi: vi.fn(),
       clearAll: vi.fn(),
-    } as any;
+    } as unknown as AreaManagementService;
 
     mockMessageService = {
       getMessageProcessor: vi.fn(),
@@ -94,10 +93,10 @@ describe('RoborockService - Comprehensive Coverage', () => {
       customSend: vi.fn(),
       registerMessageProcessor: vi.fn(),
       setMqttAlwaysOn: vi.fn(),
-      getMqttAlwaysOn: vi.fn().mockReturnValue(false),
+      getMqttAlwaysOn: vi.fn(),
       setIotApi: vi.fn(),
       clearAll: vi.fn(),
-    } as any;
+    } as unknown as MessageRoutingService;
 
     mockPollingService = {
       setDeviceNotify: vi.fn(),
@@ -105,7 +104,7 @@ describe('RoborockService - Comprehensive Coverage', () => {
       activateDeviceNotifyOverMQTT: vi.fn(),
       stopPolling: vi.fn(),
       shutdown: vi.fn(),
-    } as any;
+    } as unknown as PollingService;
 
     mockContainer = {
       getAuthenticationService: vi.fn().mockReturnValue(mockAuthService),
@@ -115,7 +114,7 @@ describe('RoborockService - Comprehensive Coverage', () => {
       getPollingService: vi.fn().mockReturnValue(mockPollingService),
       setUserData: vi.fn(),
       getIotApi: vi.fn(),
-    } as any;
+    } as unknown as ServiceContainer;
 
     mockUserData = {
       uid: 'test-uid',
@@ -156,7 +155,7 @@ describe('RoborockService - Comprehensive Coverage', () => {
 
     it('should login with verification code and set user data', async () => {
       const saveCallback = vi.fn();
-      mockAuthService.loginWithVerificationCode.mockResolvedValue(mockUserData);
+      (mockAuthService.loginWithVerificationCode as ReturnType<typeof vi.fn>).mockResolvedValue(mockUserData);
 
       const result = await service.loginWithVerificationCode('test@example.com', '123456', saveCallback);
 
@@ -166,7 +165,7 @@ describe('RoborockService - Comprehensive Coverage', () => {
     });
 
     it('should login with cached token and set user data', async () => {
-      mockAuthService.loginWithCachedToken.mockResolvedValue(mockUserData);
+      (mockAuthService.loginWithCachedToken as ReturnType<typeof vi.fn>).mockResolvedValue(mockUserData);
 
       const result = await service.loginWithCachedToken('test@example.com', mockUserData);
 
@@ -178,7 +177,7 @@ describe('RoborockService - Comprehensive Coverage', () => {
     it('should login with password and set user data', async () => {
       const loadCallback = vi.fn().mockResolvedValue(undefined);
       const saveCallback = vi.fn();
-      mockAuthService.loginWithPassword.mockResolvedValue(mockUserData);
+      (mockAuthService.loginWithPassword as ReturnType<typeof vi.fn>).mockResolvedValue(mockUserData);
 
       const result = await service.loginWithPassword('user@test.com', 'password', loadCallback, saveCallback);
 
@@ -191,7 +190,7 @@ describe('RoborockService - Comprehensive Coverage', () => {
   describe('Device Management Methods', () => {
     it('should list devices', async () => {
       const devices = [mockDevice];
-      mockDeviceService.listDevices.mockResolvedValue(devices);
+      (mockDeviceService.listDevices as ReturnType<typeof vi.fn>).mockResolvedValue(devices);
 
       const result = await service.listDevices('test@example.com');
 
@@ -201,7 +200,7 @@ describe('RoborockService - Comprehensive Coverage', () => {
 
     it('should get home data for updating', async () => {
       const homeData = { id: 1, name: 'My Home' } as any;
-      mockDeviceService.getHomeDataForUpdating.mockResolvedValue(homeData);
+      (mockDeviceService.getHomeDataForUpdating as ReturnType<typeof vi.fn>).mockResolvedValue(homeData);
 
       const result = await service.getHomeDataForUpdating(1);
 
@@ -221,7 +220,7 @@ describe('RoborockService - Comprehensive Coverage', () => {
 
     it('should initialize local client and sync MQTT status', async () => {
       mockDeviceService.messageClient = { on: vi.fn(), request: vi.fn() } as any;
-      mockDeviceService.initializeMessageClientForLocal.mockResolvedValue(true);
+      (mockDeviceService.initializeMessageClientForLocal as ReturnType<typeof vi.fn>).mockResolvedValue(true);
 
       const result = await service.initializeMessageClientForLocal(mockDevice);
 
@@ -270,7 +269,7 @@ describe('RoborockService - Comprehensive Coverage', () => {
     });
 
     it('should get selected areas', () => {
-      mockAreaService.getSelectedAreas.mockReturnValue([1, 2]);
+      (mockAreaService.getSelectedAreas as ReturnType<typeof vi.fn>).mockReturnValue([1, 2]);
 
       const result = service.getSelectedAreas('device-123');
 
@@ -304,7 +303,7 @@ describe('RoborockService - Comprehensive Coverage', () => {
 
     it('should get supported areas', () => {
       const areas = [{ rawValue: 1, label: 'Kitchen' } as unknown as ServiceArea.Area];
-      mockAreaService.getSupportedAreas.mockReturnValue(areas);
+      (mockAreaService.getSupportedAreas as ReturnType<typeof vi.fn>).mockReturnValue(areas);
 
       const result = service.getSupportedAreas('device-123');
 
@@ -314,7 +313,7 @@ describe('RoborockService - Comprehensive Coverage', () => {
 
     it('should get supported areas index map', () => {
       const indexMap = { 1: 10 } as unknown as RoomIndexMap;
-      mockAreaService.getSupportedAreasIndexMap.mockReturnValue(indexMap);
+      (mockAreaService.getSupportedAreasIndexMap as ReturnType<typeof vi.fn>).mockReturnValue(indexMap);
 
       const result = service.getSupportedAreasIndexMap('device-123');
 
@@ -327,7 +326,7 @@ describe('RoborockService - Comprehensive Coverage', () => {
       mockDeviceService.messageClient = mockClient;
       service.messageClient = mockClient;
       const mapInfo = { name: 'map1' } as any;
-      mockAreaService.getMapInformation.mockResolvedValue(mapInfo);
+      (mockAreaService.getMapInformation as ReturnType<typeof vi.fn>).mockResolvedValue(mapInfo);
 
       const result = await service.getMapInformation('device-123');
 
@@ -339,12 +338,12 @@ describe('RoborockService - Comprehensive Coverage', () => {
     it('should get room mappings with MQTT status', async () => {
       const mockClient = {} as any;
       service.messageClient = mockClient;
-      mockMessageService.getMqttAlwaysOn.mockReturnValue(true);
+      (mockMessageService.getMqttAlwaysOn as ReturnType<typeof vi.fn>).mockReturnValue(true);
       const mappings = [
         [1, 2],
         [3, 4],
       ];
-      mockAreaService.getRoomMappings.mockResolvedValue(mappings);
+      (mockAreaService.getRoomMappings as ReturnType<typeof vi.fn>).mockResolvedValue(mappings);
 
       const result = await service.getRoomMappings('device-123');
 
@@ -355,7 +354,7 @@ describe('RoborockService - Comprehensive Coverage', () => {
 
     it('should get scenes', async () => {
       const scenes = [{ id: 1, name: 'Scene 1' }] as any;
-      mockAreaService.getScenes.mockResolvedValue(scenes);
+      (mockAreaService.getScenes as ReturnType<typeof vi.fn>).mockResolvedValue(scenes);
 
       const result = await service.getScenes(123);
 
@@ -365,7 +364,7 @@ describe('RoborockService - Comprehensive Coverage', () => {
 
     it('should start scene', async () => {
       const sceneResult = { status: 'started' };
-      mockAreaService.startScene.mockResolvedValue(sceneResult);
+      (mockAreaService.startScene as ReturnType<typeof vi.fn>).mockResolvedValue(sceneResult);
 
       const result = await service.startScene(456);
 
@@ -377,7 +376,7 @@ describe('RoborockService - Comprehensive Coverage', () => {
   describe('Message Routing Methods', () => {
     it('should get message processor', () => {
       const processor = {} as MessageProcessor;
-      mockMessageService.getMessageProcessor.mockReturnValue(processor);
+      (mockMessageService.getMessageProcessor as ReturnType<typeof vi.fn>).mockReturnValue(processor);
 
       const result = service.getMessageProcessor('device-123');
 
@@ -387,7 +386,7 @@ describe('RoborockService - Comprehensive Coverage', () => {
 
     it('should get clean mode data', async () => {
       const cleanMode = { fanSpeed: 100, mopMode: 2 } as any;
-      mockMessageService.getCleanModeData.mockResolvedValue(cleanMode);
+      (mockMessageService.getCleanModeData as ReturnType<typeof vi.fn>).mockResolvedValue(cleanMode);
 
       const result = await service.getCleanModeData('device-123');
 
@@ -396,7 +395,7 @@ describe('RoborockService - Comprehensive Coverage', () => {
     });
 
     it('should get room ID from map', async () => {
-      mockMessageService.getRoomIdFromMap.mockResolvedValue(5);
+      (mockMessageService.getRoomIdFromMap as ReturnType<typeof vi.fn>).mockResolvedValue(5);
 
       const result = await service.getRoomIdFromMap('device-123');
 
@@ -417,9 +416,9 @@ describe('RoborockService - Comprehensive Coverage', () => {
       const supportedRooms = [{ rawValue: 1, label: 'Kitchen' } as unknown as ServiceArea.Area];
       const supportedRoutines = [{ rawValue: 10, label: 'Quick' } as unknown as ServiceArea.Area];
 
-      mockAreaService.getSelectedAreas.mockReturnValue(selectedAreas);
-      mockAreaService.getSupportedAreas.mockReturnValue(supportedRooms);
-      mockAreaService.getSupportedRoutines.mockReturnValue(supportedRoutines);
+      (mockAreaService.getSelectedAreas as ReturnType<typeof vi.fn>).mockReturnValue(selectedAreas);
+      (mockAreaService.getSupportedAreas as ReturnType<typeof vi.fn>).mockReturnValue(supportedRooms);
+      (mockAreaService.getSupportedRoutines as ReturnType<typeof vi.fn>).mockReturnValue(supportedRoutines);
 
       await service.startClean('device-123');
 
@@ -453,7 +452,7 @@ describe('RoborockService - Comprehensive Coverage', () => {
     it('should execute custom get', async () => {
       const request = {} as any;
       const response = { data: 'test' };
-      mockMessageService.customGet.mockResolvedValue(response);
+      (mockMessageService.customGet as ReturnType<typeof vi.fn>).mockResolvedValue(response);
 
       const result = await service.customGet('device-123', request);
 
@@ -473,7 +472,7 @@ describe('RoborockService - Comprehensive Coverage', () => {
       const mockIotApi = {
         getCustom: vi.fn().mockResolvedValue({ result: 'success' }),
       } as any;
-      mockContainer.getIotApi.mockReturnValue(mockIotApi);
+      (mockContainer.getIotApi as ReturnType<typeof vi.fn>).mockReturnValue(mockIotApi);
 
       const result = await service.getCustomAPI('/custom/endpoint');
 
@@ -482,7 +481,7 @@ describe('RoborockService - Comprehensive Coverage', () => {
     });
 
     it('should throw error when getting custom API without IoT API', async () => {
-      mockContainer.getIotApi.mockReturnValue(undefined);
+      (mockContainer.getIotApi as ReturnType<typeof vi.fn>).mockReturnValue(undefined);
 
       await expect(service.getCustomAPI('/test')).rejects.toThrow('IoT API not initialized. Please login first.');
     });

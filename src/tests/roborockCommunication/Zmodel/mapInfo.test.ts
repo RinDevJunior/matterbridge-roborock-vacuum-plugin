@@ -1,5 +1,5 @@
 import { describe, test, expect } from 'vitest';
-import { MapInfo } from '../../../roborockCommunication/Zmodel/mapInfo';
+import { MapInfo } from '../../../roborockCommunication/Zmodel/mapInfo.js';
 
 describe('MapInfo parsing', () => {
   test('constructs maps and rooms from multipleMap', () => {

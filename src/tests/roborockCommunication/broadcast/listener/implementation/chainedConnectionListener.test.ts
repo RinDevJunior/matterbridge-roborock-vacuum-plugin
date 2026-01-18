@@ -1,4 +1,4 @@
-import { ChainedConnectionListener } from '../../../../../roborockCommunication/broadcast/listener/implementation/chainedConnectionListener';
+import { ChainedConnectionListener } from '@/roborockCommunication/broadcast/listener/implementation/chainedConnectionListener.js';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 
 describe('ChainedConnectionListener', () => {
@@ -39,7 +39,7 @@ describe('ChainedConnectionListener', () => {
   it('should call onDisconnected on all listeners', async () => {
     chained.register(listener1);
     chained.register(listener2);
-    await chained.onDisconnected('test-duid');
+    await chained.onDisconnected('test-duid', 'disconnect message');
     expect(listener1.onDisconnected).toHaveBeenCalled();
     expect(listener2.onDisconnected).toHaveBeenCalled();
   });
@@ -54,7 +54,7 @@ describe('ChainedConnectionListener', () => {
 
   it('should work with no listeners registered', async () => {
     await expect(chained.onConnected('test-duid')).resolves.toBeUndefined();
-    await expect(chained.onDisconnected('test-duid')).resolves.toBeUndefined();
-    await expect(chained.onError('test-duid', 'msg')).resolves.toBeUndefined();
+    await expect(chained.onDisconnected('test-duid', 'disconnect message')).resolves.toBeUndefined();
+    await expect(chained.onError('test-duid', 'error message')).resolves.toBeUndefined();
   });
 });

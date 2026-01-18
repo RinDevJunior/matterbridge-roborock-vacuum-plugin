@@ -2,3 +2,5 @@
 .vscode/
 docs/
 web-for-testing/
+src/tests/
+.tarignore

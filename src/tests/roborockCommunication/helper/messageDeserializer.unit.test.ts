@@ -1,8 +1,8 @@
+import { MessageContext } from '@/roborockCommunication/broadcast/model/messageContext.js';
+import { MessageDeserializer } from '@/roborockCommunication/helper/messageDeserializer.js';
+import { Protocol } from '@/roborockCommunication/index.js';
 import { describe, it, expect, vi } from 'vitest';
-import { MessageDeserializer } from '../../../roborockCommunication/helper/messageDeserializer';
-import { MessageContext } from '../../../roborockCommunication/broadcast/model/messageContext';
 import { AnsiLogger } from 'matterbridge/logger';
-import { Protocol } from '../../../roborockCommunication/broadcast/model/protocol';
 
 const mkUser = () => ({ rriot: { k: 'test-key' } }) as any;
 
@@ -23,7 +23,7 @@ describe('MessageDeserializer (basic)', () => {
     const d = new MessageDeserializer(ctx, logger);
     const duid = 'DTEST';
     const headerBuf = buildHeaderBuffer('1.0', 1, 2, 3, Protocol.hello_request);
-    const resp = d.deserialize(duid, headerBuf);
+    const resp = d.deserialize(duid, headerBuf, 'local');
     expect(resp.duid).toBe(duid);
     expect(resp.header.version).toBe('1.0');
     expect(resp.header.protocol).toBe(Protocol.hello_request);

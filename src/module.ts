@@ -60,10 +60,12 @@ export class RoborockMatterbridgePlatform extends MatterbridgeDynamicPlatform {
   ) {
     super(matterbridge, log, config);
 
+    const requiredMatterbridgeVersion = '3.4.7';
     // Verify that Matterbridge is the correct version
-    if (this.verifyMatterbridgeVersion === undefined || typeof this.verifyMatterbridgeVersion !== 'function' || !this.verifyMatterbridgeVersion('3.4.7')) {
+    if (this.verifyMatterbridgeVersion === undefined || typeof this.verifyMatterbridgeVersion !== 'function' || !this.verifyMatterbridgeVersion(requiredMatterbridgeVersion)) {
       throw new Error(
-        `This plugin requires Matterbridge version >= "3.4.7". Please update Matterbridge from ${this.matterbridge.matterbridgeVersion} to the latest version in the frontend.`,
+        `This plugin requires Matterbridge version >= "${requiredMatterbridgeVersion}".
+        Please update Matterbridge from ${this.matterbridge.matterbridgeVersion} to the latest version in the frontend.`,
       );
     }
     this.log.info('Initializing platform:', this.config.name);
@@ -130,8 +132,14 @@ export class RoborockMatterbridgePlatform extends MatterbridgeDynamicPlatform {
     this.log.notice('onShutdown called with reason:', reason ?? 'none');
 
     await super.onShutdown(reason);
-    if (this.rvcInterval) clearInterval(this.rvcInterval);
-    if (this.roborockService) this.roborockService.stopService();
+    if (this.rvcInterval) {
+      clearInterval(this.rvcInterval);
+      this.rvcInterval = undefined;
+    }
+    if (this.roborockService) {
+      this.roborockService.stopService();
+      this.roborockService = undefined;
+    }
     if (this.config.unregisterOnShutdown === true) await this.unregisterAllDevices(UNREGISTER_DEVICES_DELAY_MS);
     this.isStartPluginCompleted = false;
   }

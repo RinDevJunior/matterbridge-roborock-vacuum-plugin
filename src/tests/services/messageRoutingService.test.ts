@@ -22,15 +22,15 @@ describe('MessageRoutingService', () => {
     } as unknown as AnsiLogger;
   }
 
-  function createMockIotApi() {
+  function createMockIotApi(): any {
     return {
       getMapRoomDetail: vi.fn(),
       getCleaningSummaryForUpdatingDevice: vi.fn(),
       startScene: vi.fn(),
-    } as unknown as RoborockIoTApi;
+    };
   }
 
-  function createMockProcessor() {
+  function createMockProcessor(): any {
     return {
       getCleanModeData: vi.fn(),
       changeCleanMode: vi.fn(),
@@ -43,7 +43,7 @@ describe('MessageRoutingService', () => {
       findMyRobot: vi.fn(),
       getCustomMessage: vi.fn(),
       sendCustomMessage: vi.fn(),
-    } as unknown as MessageProcessor;
+    };
   }
 
   beforeEach(() => {
@@ -64,12 +64,12 @@ describe('MessageRoutingService', () => {
     });
 
     it('should initialize with logger and iotApi', () => {
-      const service = new MessageRoutingService(mockLogger, mockIotApi);
+      const service = new MessageRoutingService(mockLogger, mockIotApi as RoborockIoTApi);
       expect(service).toBeDefined();
     });
 
     it('should set iotApi after initialization', () => {
-      messageService.setIotApi(mockIotApi);
+      messageService.setIotApi(mockIotApi as RoborockIoTApi);
       expect(() => messageService.setIotApi(mockIotApi)).not.toThrow();
     });
   });
@@ -78,7 +78,7 @@ describe('MessageRoutingService', () => {
     const testDuid = 'test-device-123';
 
     it('should register a message processor', () => {
-      messageService.registerMessageProcessor(testDuid, mockProcessor);
+      messageService.registerMessageProcessor(testDuid, mockProcessor as MessageProcessor);
       expect(() => messageService.getMessageProcessor(testDuid)).not.toThrow();
     });
 
@@ -95,8 +95,8 @@ describe('MessageRoutingService', () => {
 
     it('should allow multiple processors to be registered', () => {
       const mockProcessor2 = createMockProcessor();
-      messageService.registerMessageProcessor('device-1', mockProcessor);
-      messageService.registerMessageProcessor('device-2', mockProcessor2);
+      messageService.registerMessageProcessor('device-1', mockProcessor as MessageProcessor);
+      messageService.registerMessageProcessor('device-2', mockProcessor2 as MessageProcessor);
 
       expect(messageService.getMessageProcessor('device-1')).toBe(mockProcessor);
       expect(messageService.getMessageProcessor('device-2')).toBe(mockProcessor2);
@@ -134,7 +134,7 @@ describe('MessageRoutingService', () => {
     };
 
     beforeEach(() => {
-      messageService.registerMessageProcessor(testDuid, mockProcessor);
+      messageService.registerMessageProcessor(testDuid, mockProcessor as MessageProcessor);
     });
 
     it('should retrieve clean mode data successfully', async () => {
@@ -165,7 +165,7 @@ describe('MessageRoutingService', () => {
     };
 
     beforeEach(() => {
-      messageService.registerMessageProcessor(testDuid, mockProcessor);
+      messageService.registerMessageProcessor(testDuid, mockProcessor as MessageProcessor);
     });
 
     it('should retrieve room ID from map successfully', async () => {
@@ -202,7 +202,7 @@ describe('MessageRoutingService', () => {
     const testDuid = 'test-device-clean-mode';
 
     beforeEach(() => {
-      messageService.registerMessageProcessor(testDuid, mockProcessor);
+      messageService.registerMessageProcessor(testDuid, mockProcessor as MessageProcessor);
     });
 
     it('should change clean mode successfully', async () => {
@@ -230,7 +230,7 @@ describe('MessageRoutingService', () => {
     const testDuid = 'test-device-start-clean';
 
     beforeEach(() => {
-      messageService.registerMessageProcessor(testDuid, mockProcessor);
+      messageService.registerMessageProcessor(testDuid, mockProcessor as MessageProcessor);
     });
 
     it('should start global clean when no areas selected', async () => {
@@ -300,7 +300,7 @@ describe('MessageRoutingService', () => {
     const testDuid = 'test-device-pause';
 
     beforeEach(() => {
-      messageService.registerMessageProcessor(testDuid, mockProcessor);
+      messageService.registerMessageProcessor(testDuid, mockProcessor as MessageProcessor);
     });
 
     it('should pause cleaning operation', async () => {
@@ -319,7 +319,7 @@ describe('MessageRoutingService', () => {
     const testDuid = 'test-device-resume';
 
     beforeEach(() => {
-      messageService.registerMessageProcessor(testDuid, mockProcessor);
+      messageService.registerMessageProcessor(testDuid, mockProcessor as MessageProcessor);
     });
 
     it('should resume cleaning operation', async () => {
@@ -338,7 +338,7 @@ describe('MessageRoutingService', () => {
     const testDuid = 'test-device-stop';
 
     beforeEach(() => {
-      messageService.registerMessageProcessor(testDuid, mockProcessor);
+      messageService.registerMessageProcessor(testDuid, mockProcessor as MessageProcessor);
     });
 
     it('should stop cleaning and return to dock', async () => {
@@ -357,7 +357,7 @@ describe('MessageRoutingService', () => {
     const testDuid = 'test-device-locate';
 
     beforeEach(() => {
-      messageService.registerMessageProcessor(testDuid, mockProcessor);
+      messageService.registerMessageProcessor(testDuid, mockProcessor as MessageProcessor);
     });
 
     it('should play sound to locate vacuum', async () => {
@@ -378,7 +378,7 @@ describe('MessageRoutingService', () => {
     const mockResponse = { status: 'cleaning' };
 
     beforeEach(() => {
-      messageService.registerMessageProcessor(testDuid, mockProcessor);
+      messageService.registerMessageProcessor(testDuid, mockProcessor as MessageProcessor);
     });
 
     it('should execute custom GET request with typed response', async () => {
@@ -418,7 +418,7 @@ describe('MessageRoutingService', () => {
     const mockRequest = new RequestMessage({ method: 'set_mop_mode', params: [302] });
 
     beforeEach(() => {
-      messageService.registerMessageProcessor(testDuid, mockProcessor);
+      messageService.registerMessageProcessor(testDuid, mockProcessor as MessageProcessor);
     });
 
     it('should send custom command successfully', async () => {
@@ -445,8 +445,8 @@ describe('MessageRoutingService', () => {
       const testDuid1 = 'device-1';
       const testDuid2 = 'device-2';
 
-      messageService.registerMessageProcessor(testDuid1, mockProcessor);
-      messageService.registerMessageProcessor(testDuid2, mockProcessor);
+      messageService.registerMessageProcessor(testDuid1, mockProcessor as MessageProcessor);
+      messageService.registerMessageProcessor(testDuid2, mockProcessor as MessageProcessor);
       messageService.setMqttAlwaysOn(testDuid1, true);
 
       messageService.clearAll();

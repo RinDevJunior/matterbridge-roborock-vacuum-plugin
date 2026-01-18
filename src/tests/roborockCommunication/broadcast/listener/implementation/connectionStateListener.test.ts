@@ -1,5 +1,5 @@
+import { ConnectionStateListener } from '@/roborockCommunication/broadcast/listener/implementation/connectionStateListener.js';
 import { vi, describe, it, expect } from 'vitest';
-import { ConnectionStateListener } from '../../../../../roborockCommunication/broadcast/listener/implementation/connectionStateListener';
 
 // --- Helpers ---
 function makeLogger() {

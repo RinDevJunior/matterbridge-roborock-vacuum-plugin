@@ -1,7 +1,7 @@
+import { AbstractClient } from '@/roborockCommunication/broadcast/abstractClient.js';
+import { MessageContext } from '@/roborockCommunication/broadcast/model/messageContext.js';
+import { RequestMessage } from '@/roborockCommunication/index.js';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { AbstractClient } from '../../../roborockCommunication/broadcast/abstractClient';
-import { MessageContext } from '../../../roborockCommunication/broadcast/model/messageContext';
-import { RequestMessage } from '../../../roborockCommunication/broadcast/model/requestMessage';
 
 class TestClient extends AbstractClient {
   protected clientName = 'TestClient';
@@ -12,16 +12,16 @@ class TestClient extends AbstractClient {
     this.initializeConnectionStateListener();
   }
 
-  connect(): void {
+  override connect(): void {
     this.connected = true;
   }
 
-  async disconnect(): Promise<void> {
+  override async disconnect(): Promise<void> {
     this.connected = false;
   }
 
-  async send(_duid: string, _request: RequestMessage): Promise<void> {
-    // Simulating send
+  protected override sendInternal(duid: string, request: RequestMessage): void {
+    throw new Error('Method not implemented.');
   }
 }
 

@@ -1,5 +1,5 @@
+import { getBaseUrl } from '@/initialData/regionUrls.js';
 import { describe, it, expect } from 'vitest';
-import { getBaseUrl } from '../initialData/regionUrls';
 
 describe('platform region mapping logic', () => {
   it('is case-insensitive and returns US for "us"', () => {

@@ -1,9 +1,9 @@
 import { describe, it, expect, vi } from 'vitest';
-import { MessageSerializer } from '../../../roborockCommunication/helper/messageSerializer';
-import { MessageDeserializer } from '../../../roborockCommunication/helper/messageDeserializer';
-import { MessageContext } from '../../../roborockCommunication/broadcast/model/messageContext';
-import { RequestMessage } from '../../../roborockCommunication/broadcast/model/requestMessage';
-import { Protocol } from '../../../roborockCommunication/broadcast/model/protocol';
+import { MessageSerializer } from '../../../roborockCommunication/helper/messageSerializer.js';
+import { MessageDeserializer } from '../../../roborockCommunication/helper/messageDeserializer.js';
+import { MessageContext } from '../../../roborockCommunication/broadcast/model/messageContext.js';
+import { RequestMessage } from '../../../roborockCommunication/broadcast/model/requestMessage.js';
+import { Protocol } from '../../../roborockCommunication/broadcast/model/protocol.js';
 
 const mkUser = () => ({ rriot: { k: 'some-key-for-test-000' } }) as any;
 
@@ -23,12 +23,11 @@ describe('MessageSerializer/Deserializer roundtrip', () => {
     const req = new RequestMessage({ messageId: 54321, protocol: Protocol.rpc_response, nonce: 2222, timestamp: 1600000000 });
     const { buffer } = serializer.serialize(duid, req);
 
-    const resp = deserializer.deserialize(duid, buffer);
+    const resp = deserializer.deserialize(duid, buffer, 'local');
     // should parse dps with key '102' (rpc_response)
     const got = resp.get(Protocol.rpc_response);
     expect(typeof got).toBe('object');
-    // id should match
-    // @ts-expect-error Accessing property on unknown type
+    // id should match the one we set
     expect((got as any).id).toBe(54321);
   });
 
@@ -47,7 +46,7 @@ describe('MessageSerializer/Deserializer roundtrip', () => {
     const bad = Buffer.from(buffer);
     bad[10] = (bad[10] + 1) & 0xff;
 
-    expect(() => deserializer.deserialize(duid, bad)).toThrow(/Wrong CRC32/);
+    expect(() => deserializer.deserialize(duid, bad, 'local')).toThrow(/Wrong CRC32/);
   });
 
   it('returns empty dps when localKey missing', () => {
@@ -64,7 +63,7 @@ describe('MessageSerializer/Deserializer roundtrip', () => {
     const ctx2 = new MessageContext(userdata);
     const deserializer = new MessageDeserializer(ctx2, logger);
 
-    const resp = deserializer.deserialize(duid, buffer);
+    const resp = deserializer.deserialize(duid, buffer, 'local');
     // logger.notice should have been called due to missing local key
     expect(logger.notice).toHaveBeenCalled();
     // logger.notice should have been called due to missing local key

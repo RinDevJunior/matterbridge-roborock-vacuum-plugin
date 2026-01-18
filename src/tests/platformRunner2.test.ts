@@ -1,7 +1,7 @@
+import { getRoomMapFromDevice } from '@/helper.js';
+import { RoomMap } from '@/model/RoomMap.js';
+import { MapInfo } from '@/roborockCommunication/index.js';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { getRoomMapFromDevice } from '../helper';
-import { RoomMap } from '../model/RoomMap';
-import { MapInfo } from '../roborockCommunication';
 
 describe('PlatformRunner.getRoomMapFromDevice', () => {
   let platform: any;

@@ -1,5 +1,4 @@
-import { RequestMessage, UserData } from '../../../roborockCommunication';
-import { ClientRouter } from '../../../roborockCommunication/broadcast/clientRouter';
+import { UserData, ClientRouter, RequestMessage } from '@/roborockCommunication/index.js';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 
 describe('ClientRouter', () => {

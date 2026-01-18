@@ -1,6 +1,6 @@
 import { describe, test, expect } from 'vitest';
-import { VacuumError } from '../../../roborockCommunication/Zmodel/vacuumError';
-import { VacuumErrorCode, DockErrorCode } from '../../../roborockCommunication/Zenum/vacuumAndDockErrorCode';
+import { VacuumError } from '../../../roborockCommunication/Zmodel/vacuumError.js';
+import { VacuumErrorCode, DockErrorCode } from '../../../roborockCommunication/Zenum/vacuumAndDockErrorCode.js';
 
 describe('VacuumError helpers', () => {
   test('no error when both codes are zero', () => {

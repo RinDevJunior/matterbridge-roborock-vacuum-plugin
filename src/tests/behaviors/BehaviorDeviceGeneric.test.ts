@@ -1,10 +1,10 @@
 import { describe, it, expect, vi } from 'vitest';
-import { BehaviorDeviceGeneric } from '../../behaviors/BehaviorDeviceGeneric';
+import { BehaviorDeviceGeneric } from '../../behaviors/BehaviorDeviceGeneric.js';
 
 describe('BehaviorDeviceGeneric', () => {
   it('registers and executes a command handler', async () => {
     const log: any = { error: vi.fn(), debug: vi.fn(), notice: vi.fn() };
-    const b = new BehaviorDeviceGeneric<typeof handlers>(log);
+    const b = new BehaviorDeviceGeneric<any>(log);
 
     const handler = vi.fn(async (x: number) => x + 1);
     b.setCommandHandler('inc' as any, handler as any);

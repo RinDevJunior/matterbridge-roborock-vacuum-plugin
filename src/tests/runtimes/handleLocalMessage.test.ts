@@ -1,8 +1,16 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { handleLocalMessage } from '../../runtimes/handleLocalMessage';
-import { OperationStatusCode } from '../../roborockCommunication/Zenum/operationStatusCode';
+import { handleLocalMessage } from '../../runtimes/handleLocalMessage.js';
+import { OperationStatusCode } from '../../roborockCommunication/Zenum/operationStatusCode.js';
 import { ServiceArea, PowerSource } from 'matterbridge/matter/clusters';
-import { cloudMessageResult1, cloudMessageResult2, cloudMessageResult3, mapInfo, cloudMessageResultFromLog, roomMapFromLog, currentMappedAreasFromLog } from '../testData/mockData';
+import {
+  cloudMessageResult1,
+  cloudMessageResult2,
+  cloudMessageResult3,
+  mapInfo,
+  cloudMessageResultFromLog,
+  roomMapFromLog,
+  currentMappedAreasFromLog,
+} from '../testData/mockData.js';
 import { RoomIndexMap } from '../../model/RoomIndexMap.js';
 
 // Mocks
@@ -12,7 +20,7 @@ const mockGetSupportedAreas = vi.fn();
 const mockGetSupportedAreasIndexMap = vi.fn();
 const mockGetRoomMap = vi.fn();
 
-vi.mock('./src/helper', () => ({
+vi.mock('../helper.js', () => ({
   getRoomMap: mockGetRoomMap,
 }));
 

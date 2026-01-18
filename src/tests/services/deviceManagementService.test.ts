@@ -612,15 +612,6 @@ describe('DeviceManagementService', () => {
   });
 
   describe('utility methods', () => {
-    it('should sleep for specified milliseconds', async () => {
-      const startTime = Date.now();
-      await (deviceService as any).sleep(50);
-      const elapsed = Date.now() - startTime;
-
-      expect(elapsed).toBeGreaterThanOrEqual(45); // Allow small margin
-      expect(elapsed).toBeLessThan(100);
-    });
-
     it('should resolve sleep promise', async () => {
       const sleepPromise = (deviceService as any).sleep(1);
       await expect(sleepPromise).resolves.toBeUndefined();

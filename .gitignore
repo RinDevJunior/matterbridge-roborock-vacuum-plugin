@@ -15,6 +15,7 @@ web-for-testing/out/
 web-for-testing/src/ext
 jest/
 
+
 # TypeScript cache
 *.tsbuildinfo
 
@@ -30,3 +31,4 @@ yarn-error.log*
 .env
 npm-shrinkwrap.json
 web-for-testing/src/accountStore.ts
+test-report.junit.xml

@@ -1,10 +1,11 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { AreaManagementService } from '../../services/areaManagementService.js';
+import { AreaManagementService } from '@/services/areaManagementService.js';
 import { RoomIndexMap } from '../../model/RoomIndexMap.js';
 import { RoborockIoTApi, ClientRouter, Scene } from '../../roborockCommunication/index.js';
 import { ServiceArea } from 'matterbridge/matter/clusters';
 import { DeviceError } from '../../errors/index.js';
 import { MapInfo } from '../../initialData/getSupportedAreas.js';
+import { AnsiLogger } from 'matterbridge/logger';
 
 describe('AreaManagementService', () => {
   let areaService: AreaManagementService;
@@ -18,9 +19,9 @@ describe('AreaManagementService', () => {
   const mockRoutines: ServiceArea.Area[] = [{ areaId: 100, mapId: 1 } as ServiceArea.Area, { areaId: 101, mapId: 1 } as ServiceArea.Area];
 
   beforeEach(() => {
-    mockLogger = createMockLogger() as unknown as import('matterbridge/logger').AnsiLogger;
-    mockIotApi = createMockIotApi() as unknown as import('../../roborockCommunication/index.js').RoborockIoTApi;
-    mockMessageClient = createMockMessageClient() as unknown as import('../../roborockCommunication/index.js').ClientRouter;
+    mockLogger = createMockLogger() as unknown as AnsiLogger;
+    mockIotApi = createMockIotApi() as unknown as RoborockIoTApi;
+    mockMessageClient = createMockMessageClient() as unknown as ClientRouter;
     areaService = new AreaManagementService(mockLogger, mockIotApi, mockMessageClient);
   });
 
@@ -58,27 +59,24 @@ describe('AreaManagementService', () => {
     });
 
     it('should initialize with logger only', () => {
-      const serviceWithoutDeps = new AreaManagementService(mockLogger as import('matterbridge/logger').AnsiLogger);
+      const serviceWithoutDeps = new AreaManagementService(mockLogger as AnsiLogger);
       expect(serviceWithoutDeps).toBeDefined();
     });
 
     it('should initialize with logger and iotApi', () => {
-      const service = new AreaManagementService(
-        mockLogger as import('matterbridge/logger').AnsiLogger,
-        mockIotApi as import('../../roborockCommunication/index.js').RoborockIoTApi,
-      );
+      const service = new AreaManagementService(mockLogger as AnsiLogger, mockIotApi as RoborockIoTApi);
       expect(service).toBeDefined();
     });
 
     it('should set IoT API after initialization', () => {
-      const service = new AreaManagementService(mockLogger as import('matterbridge/logger').AnsiLogger);
+      const service = new AreaManagementService(mockLogger as AnsiLogger);
       const newIotApi = {} as RoborockIoTApi;
 
       expect(() => service.setIotApi(newIotApi)).not.toThrow();
     });
 
     it('should set message client after initialization', () => {
-      const service = new AreaManagementService(mockLogger as import('matterbridge/logger').AnsiLogger);
+      const service = new AreaManagementService(mockLogger as AnsiLogger);
       const newMessageClient = {} as ClientRouter;
 
       expect(() => service.setMessageClient(newMessageClient)).not.toThrow();

@@ -1,5 +1,5 @@
+import { parseDockingStationStatus, DockingStationStatus, DockingStationStatusType, hasDockingStationError } from '@/model/DockingStationStatus.js';
 import { describe, it, expect } from 'vitest';
-import { parseDockingStationStatus, hasDockingStationError, DockingStationStatusType, DockingStationStatus } from '../../model/DockingStationStatus';
 
 describe('DockingStationStatus', () => {
   it('should parse docking station status correctly', () => {

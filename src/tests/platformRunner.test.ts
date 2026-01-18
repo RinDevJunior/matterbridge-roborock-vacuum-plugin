@@ -1,20 +1,20 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { PlatformRunner } from '../platformRunner';
-import { NotifyMessageTypes } from '../notifyMessageTypes';
-import { RoborockMatterbridgePlatform } from '../module';
-import { Home } from '../roborockCommunication';
+import { PlatformRunner } from '../platformRunner.js';
+import { NotifyMessageTypes } from '../notifyMessageTypes.js';
+import { RoborockMatterbridgePlatform } from '../module.js';
+import { Home } from '../roborockCommunication/index.js';
 import fs from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
-import { RoborockVacuumCleaner } from '../rvc';
-import * as initialDataIndex from '../initialData/index';
+import { RoborockVacuumCleaner } from '../rvc.js';
+import * as initialDataIndex from '../initialData/index.js';
 import { RvcOperationalState } from 'matterbridge/matter/clusters';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 let getOperationalErrorState = vi.fn().mockReturnValue(2);
 
-vi.mock('./src/initialData/index', () => ({
+vi.mock('./initialData/index.js', () => ({
   ...initialDataIndex,
   getOperationalErrorState,
 }));

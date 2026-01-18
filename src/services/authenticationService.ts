@@ -1,5 +1,5 @@
 import { AnsiLogger } from 'matterbridge/logger';
-import { RoborockAuthenticateApi, UserData } from '../roborockCommunication/index.js';
+import { RoborockAuthenticateApi, UserData } from '@/roborockCommunication/index.js';
 import { AuthenticationError, InvalidCredentialsError, VerificationCodeExpiredError, TokenExpiredError } from '../errors/index.js';
 
 /** Callback to save user data. */

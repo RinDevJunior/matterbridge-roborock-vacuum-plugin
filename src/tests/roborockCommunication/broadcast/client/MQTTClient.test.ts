@@ -1,5 +1,5 @@
+import { MQTTClient } from '@/roborockCommunication/broadcast/client/MQTTClient.js';
 import { describe, it, expect, beforeEach, afterEach, vi, afterAll } from 'vitest';
-import { MQTTClient } from '../../../../roborockCommunication/broadcast/client/MQTTClient';
 
 declare global {
   var mockConnect: ReturnType<typeof vi.fn>;

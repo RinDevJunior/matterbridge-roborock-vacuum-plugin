@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { ChunkBuffer } from '../../../roborockCommunication/helper/chunkBuffer';
+import { ChunkBuffer } from '../../../roborockCommunication/helper/chunkBuffer.js';
 
 describe('ChunkBuffer', () => {
   it('starts empty and appends/resets correctly', () => {

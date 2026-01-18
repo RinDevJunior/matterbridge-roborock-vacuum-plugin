@@ -1,8 +1,8 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { AnsiLogger } from 'matterbridge/logger';
-import RoborockService from '../roborockService';
-import { Device } from '../roborockCommunication';
+import RoborockService from '../roborockService.js';
 import ClientManager from '../services/clientManager.js';
+import { Device } from '@/roborockCommunication/index.js';
 
 vi.useFakeTimers();
 

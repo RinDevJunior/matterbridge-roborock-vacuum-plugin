@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { DeviceData } from '../../roborockCommunication/Zmodel/device';
-import { updateFromHomeData } from '../../runtimes/handleHomeDataMessage';
-import { homeData } from '../testData/mockData';
+import { DeviceData } from '../../roborockCommunication/Zmodel/device.js';
+import { updateFromHomeData } from '../../runtimes/handleHomeDataMessage.js';
+import { homeData } from '../testData/mockData.js';
 import { PowerSource, RvcRunMode } from 'matterbridge/matter/clusters';
 
 // Mocks
