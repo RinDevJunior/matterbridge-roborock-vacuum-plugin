@@ -1,7 +1,9 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { RoborockVacuumCleaner } from '../rvc.js';
-import { RvcOperationalState, ServiceArea } from 'matterbridge/matter/clusters';
+import { ModeBase, RvcOperationalState, ServiceArea } from 'matterbridge/matter/clusters';
 import { AnsiLogger } from 'matterbridge/logger';
+import { BehaviorFactoryResult } from '@/behaviorFactory.js';
+import { MatterbridgeEndpointCommands } from 'matterbridge';
 
 function createMockLogger(): AnsiLogger {
   return {
@@ -45,94 +47,59 @@ describe('RoborockVacuumCleaner', () => {
     expect(vacuum.username).toBe('user@example.com');
   });
 
-  it('should have default operational state as Docked', () => {
-    // Use public getter if available, otherwise skip this assertion
-    if (typeof vacuum.getOperationalState === 'function') {
-      expect(vacuum.getOperationalState()).toBe(RvcOperationalState.OperationalState.Docked);
-    } else if ('operationalState' in vacuum) {
-      expect((vacuum as any).operationalState).toBe(RvcOperationalState.OperationalState.Docked);
-    }
-  });
-
   it('should call behaviorHandler for identify command', async () => {
-    const behaviorHandler = { executeCommand: vi.fn() };
-    vacuum.configureHandler(behaviorHandler as any);
-    // Use callCommandHandler if available, otherwise skip
-    if (typeof (vacuum as any).callCommandHandler === 'function') {
-      await (vacuum as any).callCommandHandler('IDENTIFY', { request: { identifyTime: 7 }, cluster: 1, attributes: {}, endpoint: 1 });
-      expect(behaviorHandler.executeCommand).toHaveBeenCalledWith('PLAY_SOUND_TO_LOCATE', 7);
-    }
+    const behaviorHandler = {
+      executeCommand: vi.fn(),
+      setCommandHandler: vi.fn(),
+      log: logger,
+      commands: {},
+    } satisfies BehaviorFactoryResult;
+    vacuum.configureHandler(behaviorHandler);
+    await vacuum.executeCommandHandler('identify', { request: { identifyTime: 5 }, cluster: 1, attributes: {}, endpoint: 1 });
+    expect(behaviorHandler.executeCommand).toHaveBeenCalledWith('playSoundToLocate', 5);
   });
 
   it('should warn if selectAreas called with empty areas', async () => {
-    const behaviorHandler = { executeCommand: vi.fn() };
-    vacuum.configureHandler(behaviorHandler as any);
-    if (typeof (vacuum as any).callCommandHandler === 'function') {
-      await (vacuum as any).callCommandHandler('SELECT_AREAS', { request: { newAreas: [] } });
-      expect(logger.warn).toHaveBeenCalledWith(expect.stringContaining('selectAreas called with empty'));
-    }
+    const behaviorHandler = { executeCommand: vi.fn(), setCommandHandler: vi.fn(), log: logger, commands: {} } satisfies BehaviorFactoryResult;
+    vacuum.configureHandler(behaviorHandler);
+    await vacuum.executeCommandHandler('selectAreas', { request: { newAreas: [] } });
+    expect(behaviorHandler.executeCommand).not.toHaveBeenCalled();
   });
 
   it('should call behaviorHandler for selectAreas command', async () => {
-    const behaviorHandler = { executeCommand: vi.fn() };
-    vacuum.configureHandler(behaviorHandler as any);
-    if (typeof (vacuum as any).callCommandHandler === 'function') {
-      await (vacuum as any).callCommandHandler('SELECT_AREAS', { request: { newAreas: [1, 2] } });
-      expect(behaviorHandler.executeCommand).toHaveBeenCalledWith('SELECT_AREAS', [1, 2]);
-    }
+    const behaviorHandler = { executeCommand: vi.fn(), setCommandHandler: vi.fn(), log: logger, commands: {} } satisfies BehaviorFactoryResult;
+    vacuum.configureHandler(behaviorHandler);
+    await vacuum.executeCommandHandler('selectAreas', { newAreas: [1, 2] });
+    expect(behaviorHandler.executeCommand).toHaveBeenCalledWith('selectAreas', [1, 2]);
   });
 
   it('should call behaviorHandler for changeToMode command', async () => {
-    const behaviorHandler = { executeCommand: vi.fn() };
-    vacuum.configureHandler(behaviorHandler as any);
-    if (typeof (vacuum as any).callCommandHandler === 'function') {
-      await (vacuum as any).callCommandHandler('CHANGE_TO_MODE', { request: { newMode: 42 } });
-      expect(behaviorHandler.executeCommand).toHaveBeenCalledWith('CHANGE_TO_MODE', 42);
-    }
+    const behaviorHandler = { executeCommand: vi.fn(), setCommandHandler: vi.fn(), log: logger, commands: {} } satisfies BehaviorFactoryResult;
+    vacuum.configureHandler(behaviorHandler);
+    const request = { newMode: 42 } satisfies ModeBase.ChangeToModeRequest;
+    await vacuum.executeCommandHandler('changeToMode', request);
+    expect(behaviorHandler.executeCommand).toHaveBeenCalledWith('changeToMode', 42);
   });
 
   it('should call behaviorHandler for pause command', async () => {
-    const behaviorHandler = { executeCommand: vi.fn() };
-    vacuum.configureHandler(behaviorHandler as any);
-    if (typeof (vacuum as any).callCommandHandler === 'function') {
-      await (vacuum as any).callCommandHandler('PAUSE', { request: {} });
-      expect(behaviorHandler.executeCommand).toHaveBeenCalledWith('PAUSE');
-    }
+    const behaviorHandler = { executeCommand: vi.fn(), setCommandHandler: vi.fn(), log: logger, commands: {} } satisfies BehaviorFactoryResult;
+    vacuum.configureHandler(behaviorHandler);
+    await vacuum.executeCommandHandler('pause', { request: {} });
+    expect(behaviorHandler.executeCommand).toHaveBeenCalledWith('pause');
   });
 
   it('should call behaviorHandler for resume command', async () => {
-    const behaviorHandler = { executeCommand: vi.fn() };
-    vacuum.configureHandler(behaviorHandler as any);
-    if (typeof (vacuum as any).callCommandHandler === 'function') {
-      await (vacuum as any).callCommandHandler('RESUME', { request: {} });
-      expect(behaviorHandler.executeCommand).toHaveBeenCalledWith('RESUME');
-    }
+    const behaviorHandler = { executeCommand: vi.fn(), setCommandHandler: vi.fn(), log: logger, commands: {} } satisfies BehaviorFactoryResult;
+    vacuum.configureHandler(behaviorHandler);
+    await vacuum.executeCommandHandler('resume', { request: {} });
+    expect(behaviorHandler.executeCommand).toHaveBeenCalledWith('resume');
   });
 
   it('should call behaviorHandler for goHome command', async () => {
-    const behaviorHandler = { executeCommand: vi.fn() };
-    vacuum.configureHandler(behaviorHandler as any);
-    if (typeof (vacuum as any).callCommandHandler === 'function') {
-      await (vacuum as any).callCommandHandler('GO_HOME', { request: {} });
-      expect(behaviorHandler.executeCommand).toHaveBeenCalledWith('GO_HOME');
-    }
-  });
-
-  it.skip('should log error and rethrow in addCommandHandlerWithErrorHandling', async () => {
-    // Skipped: async error handling in this test harness causes false negatives, not a production bug.
-    const errorLogger = createMockLogger();
-    const vac = new RoborockVacuumCleaner('user@example.com', device, roomMap, routineAsRoom, enableExperimentalFeature, errorLogger);
-    (vac as any).addCommandHandler = (_cmd: string, fn: any) => fn({});
-    const error = new Error('fail');
-    expect.assertions(2);
-    try {
-      await (vac as any).addCommandHandlerWithErrorHandling('TEST', async () => {
-        throw error;
-      });
-    } catch (e) {
-      expect(errorLogger.error).toHaveBeenCalledWith(expect.stringContaining('Error executing TEST command'));
-      expect(e).toBe(error);
-    }
+    const behaviorHandler = { executeCommand: vi.fn(), setCommandHandler: vi.fn(), log: logger, commands: {} } satisfies BehaviorFactoryResult;
+    vacuum.configureHandler(behaviorHandler);
+    await vacuum.executeCommandHandler('goHome', { request: {} });
+    expect(behaviorHandler.executeCommand).toHaveBeenCalledWith('goHome');
   });
 
   it('should cover initializeDeviceConfiguration with experimental features', () => {

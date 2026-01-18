@@ -132,8 +132,14 @@ export class RoborockMatterbridgePlatform extends MatterbridgeDynamicPlatform {
     this.log.notice('onShutdown called with reason:', reason ?? 'none');
 
     await super.onShutdown(reason);
-    if (this.rvcInterval) clearInterval(this.rvcInterval);
-    if (this.roborockService) this.roborockService.stopService();
+    if (this.rvcInterval) {
+      clearInterval(this.rvcInterval);
+      this.rvcInterval = undefined;
+    }
+    if (this.roborockService) {
+      this.roborockService.stopService();
+      this.roborockService = undefined;
+    }
     if (this.config.unregisterOnShutdown === true) await this.unregisterAllDevices(UNREGISTER_DEVICES_DELAY_MS);
     this.isStartPluginCompleted = false;
   }
