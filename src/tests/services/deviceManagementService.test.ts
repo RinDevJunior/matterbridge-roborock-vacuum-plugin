@@ -516,7 +516,7 @@ describe('DeviceManagementService', () => {
       const result = await deviceService.initializeMessageClientForLocal(b01Device);
 
       expect(result).toBe(true);
-      expect(mockLogger.debug).toHaveBeenCalledWith('Device uses B01 protocol, skipping local connection');
+      expect(mockLogger.debug).toHaveBeenCalledWith('Device: device-123 uses B01 protocol, switch to use UDPClient');
     });
   });
 

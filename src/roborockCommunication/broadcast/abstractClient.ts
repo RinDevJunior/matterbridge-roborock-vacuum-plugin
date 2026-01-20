@@ -40,6 +40,8 @@ export abstract class AbstractClient implements Client {
     this.logger = logger;
   }
 
+  abstract isReady(): boolean;
+
   protected initializeConnectionStateListener() {
     this.connectionStateListener = new ConnectionStateListener(this.logger, this, this.clientName);
     this.connectionListeners.register(this.connectionStateListener);
