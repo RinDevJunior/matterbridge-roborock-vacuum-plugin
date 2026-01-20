@@ -1,8 +1,9 @@
 import { MaybePromise } from 'matterbridge/matter';
 import { AnsiLogger, debugStringify } from 'matterbridge/logger';
 import { BehaviorDeviceGeneric, BehaviorRoborock, CommandNames, DeviceCommands } from '../../BehaviorDeviceGeneric.js';
-import RoborockService from '../../../roborockService.js';
-import { CleanModeSettings } from '../../../model/ExperimentalFeatureSetting.js';
+import RoborockService from '@/roborockService.js';
+import { CleanModeSettings } from '@/model/ExperimentalFeatureSetting.js';
+import { CleanModeDTO, RvcRunMode } from '@/behaviors/index.js';
 
 export interface DefaultEndpointCommands extends DeviceCommands {
   selectAreas: (newAreas: number[]) => MaybePromise;
@@ -51,13 +52,7 @@ export enum MopRoute {
   Fast = 304,
 }
 
-export const RvcRunMode: Record<number, string> = {
-  [1]: 'Idle', // DO NOT HANDLE HERE,
-  [2]: 'Cleaning',
-  [3]: 'Mapping',
-};
-
-export const RvcCleanMode: Record<number, string> = {
+export const DefaultRvcCleanMode: Record<number, string> = {
   [5]: 'Mop & Vacuum: Default',
   [6]: 'Mop & Vacuum: Quick',
   [7]: 'Mop & Vacuum: Max',
@@ -79,14 +74,7 @@ export const RvcCleanMode: Record<number, string> = {
   [99]: 'Go Vacation',
 };
 
-export interface CleanModeSetting {
-  suctionPower: number;
-  waterFlow: number;
-  distance_off: number;
-  mopRoute: number | undefined;
-}
-
-export const CleanSetting: Record<number, CleanModeSetting> = {
+export const DefaultCleanSetting: Record<number, CleanModeDTO> = {
   [5]: { suctionPower: VacuumSuctionPower.Balanced, waterFlow: MopWaterFlow.Medium, distance_off: 0, mopRoute: MopRoute.Standard }, // 'Vac & Mop Default'
   [6]: { suctionPower: VacuumSuctionPower.Balanced, waterFlow: MopWaterFlow.Medium, distance_off: 0, mopRoute: MopRoute.Fast }, // 'Vac & Mop Quick'
 
@@ -111,11 +99,6 @@ export const CleanSetting: Record<number, CleanModeSetting> = {
 /**
  * Register command handlers for default device behavior.
  * Sets up handlers for mode changes, area selection, pause/resume, and navigation.
- * @param duid - Device unique identifier
- * @param handler - Behavior handler to register commands on
- * @param logger - Logger instance for command execution logging
- * @param roborockService - Service for device communication
- * @param cleanModeSettings - Optional custom clean mode configuration
  */
 export function setDefaultCommandHandler(
   duid: string,
@@ -125,7 +108,7 @@ export function setDefaultCommandHandler(
   cleanModeSettings: CleanModeSettings | undefined,
 ): void {
   handler.setCommandHandler(CommandNames.CHANGE_TO_MODE, async (newMode: number) => {
-    const activity = RvcRunMode[newMode] || RvcCleanMode[newMode];
+    const activity = RvcRunMode[newMode] || DefaultRvcCleanMode[newMode];
     switch (activity) {
       case 'Cleaning': {
         logger.notice('DefaultBehavior-ChangeRunMode to: ', activity);
@@ -140,7 +123,7 @@ export function setDefaultCommandHandler(
       }
 
       case 'Mop & Vacuum: Custom': {
-        const setting = CleanSetting[newMode];
+        const setting = DefaultCleanSetting[newMode];
         logger.notice(`DefaultBehavior-ChangeCleanMode to: ${activity}, setting: ${debugStringify(setting)}`);
         await roborockService.changeCleanMode(duid, setting);
         break;
@@ -149,7 +132,7 @@ export function setDefaultCommandHandler(
       case 'Mop & Vacuum: Default':
       case 'Mop: Default':
       case 'Vacuum: Default': {
-        const setting = cleanModeSettings ? (getSettingFromCleanMode(activity, cleanModeSettings) ?? CleanSetting[newMode]) : CleanSetting[newMode];
+        const setting = getSettingFromCleanMode(activity, cleanModeSettings) ?? DefaultCleanSetting[newMode];
         logger.notice(`DefaultBehavior-ChangeCleanMode to: ${activity}, setting: ${debugStringify(setting ?? {})}`);
         if (setting) {
           await roborockService.changeCleanMode(duid, setting);
@@ -169,7 +152,7 @@ export function setDefaultCommandHandler(
       case 'Vacuum: Min':
       case 'Vacuum: Quiet':
       case 'Vacuum: Quick': {
-        const setting = CleanSetting[newMode];
+        const setting = DefaultCleanSetting[newMode];
         logger.notice(`DefaultBehavior-ChangeCleanMode to: ${activity}, setting: ${debugStringify(setting ?? {})}`);
         if (setting) {
           await roborockService.changeCleanMode(duid, setting);
@@ -215,43 +198,42 @@ const DISTANCE_OFF_DEFAULT = 25;
 /**
  * Get clean mode settings from activity name and user configuration.
  * Maps user-friendly activity names to device-specific power/water/route settings.
- * @param activity - Activity name (e.g., 'Mop: Default', 'Vacuum: Default')
- * @param cleanModeSettings - Optional user-configured clean mode settings
- * @returns Clean mode setting configuration or undefined if activity not recognized
  */
-export const getSettingFromCleanMode = (activity: string, cleanModeSettings?: CleanModeSettings): CleanModeSetting | undefined => {
+export const getSettingFromCleanMode = (activity: string, cleanModeSettings?: CleanModeSettings): CleanModeDTO | undefined => {
+  if (!cleanModeSettings || !cleanModeSettings.mopping || !cleanModeSettings.vacuuming || !cleanModeSettings.vacmop) {
+    return undefined;
+  }
   switch (activity) {
     case 'Mop: Default': {
-      const mopSetting = cleanModeSettings?.mopping;
-      const waterFlow = MopWaterFlow[mopSetting?.waterFlowMode as keyof typeof MopWaterFlow] ?? MopWaterFlow.Medium;
-      const distance_off =
-        waterFlow === MopWaterFlow.CustomizeWithDistanceOff ? DISTANCE_OFF_BASE - DISTANCE_OFF_MULTIPLIER * (mopSetting?.distanceOff ?? DISTANCE_OFF_DEFAULT) : 0;
+      const mopSetting = cleanModeSettings.mopping;
+      const waterFlow = MopWaterFlow[mopSetting.waterFlowMode as keyof typeof MopWaterFlow] ?? MopWaterFlow.Medium;
+      const distance_off = waterFlow === MopWaterFlow.CustomizeWithDistanceOff ? DISTANCE_OFF_BASE - DISTANCE_OFF_MULTIPLIER * (mopSetting.distanceOff ?? DISTANCE_OFF_DEFAULT) : 0;
       return {
         suctionPower: VacuumSuctionPower.Off,
         waterFlow,
         distance_off,
-        mopRoute: MopRoute[mopSetting?.mopRouteMode as keyof typeof MopRoute] ?? MopRoute.Standard,
+        mopRoute: MopRoute[mopSetting.mopRouteMode as keyof typeof MopRoute] ?? MopRoute.Standard,
       };
     }
     case 'Vacuum: Default': {
-      const vacuumSetting = cleanModeSettings?.vacuuming;
+      const vacuumSetting = cleanModeSettings.vacuuming;
       return {
-        suctionPower: VacuumSuctionPower[vacuumSetting?.fanMode as keyof typeof VacuumSuctionPower] ?? VacuumSuctionPower.Balanced,
+        suctionPower: VacuumSuctionPower[vacuumSetting.fanMode as keyof typeof VacuumSuctionPower] ?? VacuumSuctionPower.Balanced,
         waterFlow: MopWaterFlow.Off,
         distance_off: 0,
-        mopRoute: MopRoute[vacuumSetting?.mopRouteMode as keyof typeof MopRoute] ?? MopRoute.Standard,
+        mopRoute: MopRoute[vacuumSetting.mopRouteMode as keyof typeof MopRoute] ?? MopRoute.Standard,
       };
     }
     case 'Mop & Vacuum: Default': {
-      const vacmopSetting = cleanModeSettings?.vacmop;
-      const waterFlow = MopWaterFlow[vacmopSetting?.waterFlowMode as keyof typeof MopWaterFlow] ?? MopWaterFlow.Medium;
+      const vacmopSetting = cleanModeSettings.vacmop;
+      const waterFlow = MopWaterFlow[vacmopSetting.waterFlowMode as keyof typeof MopWaterFlow] ?? MopWaterFlow.Medium;
       const distance_off =
-        waterFlow === MopWaterFlow.CustomizeWithDistanceOff ? DISTANCE_OFF_BASE - DISTANCE_OFF_MULTIPLIER * (vacmopSetting?.distanceOff ?? DISTANCE_OFF_DEFAULT) : 0;
+        waterFlow === MopWaterFlow.CustomizeWithDistanceOff ? DISTANCE_OFF_BASE - DISTANCE_OFF_MULTIPLIER * (vacmopSetting.distanceOff ?? DISTANCE_OFF_DEFAULT) : 0;
       return {
-        suctionPower: VacuumSuctionPower[vacmopSetting?.fanMode as keyof typeof VacuumSuctionPower] ?? VacuumSuctionPower.Balanced,
+        suctionPower: VacuumSuctionPower[vacmopSetting.fanMode as keyof typeof VacuumSuctionPower] ?? VacuumSuctionPower.Balanced,
         waterFlow,
         distance_off,
-        mopRoute: MopRoute[vacmopSetting?.mopRouteMode as keyof typeof MopRoute] ?? MopRoute.Standard,
+        mopRoute: MopRoute[vacmopSetting.mopRouteMode as keyof typeof MopRoute] ?? MopRoute.Standard,
       };
     }
     default:

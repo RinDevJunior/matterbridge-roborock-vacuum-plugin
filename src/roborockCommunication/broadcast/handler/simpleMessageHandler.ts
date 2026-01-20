@@ -1,9 +1,6 @@
-import { NotifyMessageTypes } from '../../../notifyMessageTypes.js';
-import { DeviceNotifyCallback } from '../../../types/communication.js';
-import { BatteryMessage, DeviceErrorMessage } from '../../index.js';
-import { VacuumErrorCode } from '../../Zenum/vacuumAndDockErrorCode.js';
-import { AbstractMessageHandler } from '../listener/abstractMessageHandler.js';
-import { ResponseMessage } from '../model/responseMessage.js';
+import { NotifyMessageTypes } from '@/notifyMessageTypes.js';
+import { DeviceNotifyCallback } from '@/types/index.js';
+import { VacuumErrorCode, AbstractMessageHandler, ResponseMessage } from '../../index.js';
 
 export class SimpleMessageHandler implements AbstractMessageHandler {
   private readonly deviceNotify: DeviceNotifyCallback | undefined;
@@ -15,11 +12,11 @@ export class SimpleMessageHandler implements AbstractMessageHandler {
   }
 
   public async onError(error: VacuumErrorCode): Promise<void> {
-    this.deviceNotify?.(NotifyMessageTypes.ErrorOccurred, { duid: this.duid, errorCode: error } as DeviceErrorMessage);
+    this.deviceNotify?.(NotifyMessageTypes.ErrorOccurred, { duid: this.duid, errorCode: error });
   }
 
   public async onBatteryUpdate(percentage: number): Promise<void> {
-    this.deviceNotify?.(NotifyMessageTypes.BatteryUpdate, { duid: this.duid, percentage } as BatteryMessage);
+    this.deviceNotify?.(NotifyMessageTypes.BatteryUpdate, { duid: this.duid, percentage });
   }
 
   public async onStatusChanged(message: ResponseMessage): Promise<void> {

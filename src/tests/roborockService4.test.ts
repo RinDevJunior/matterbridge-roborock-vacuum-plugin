@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import RoborockService from '../roborockService.js';
-import type ClientManager from '../services/clientManager.js';
+import type { ClientManager } from '../services/index.js';
 import type { AnsiLogger } from 'matterbridge/logger';
 
 describe('getHomeDataForUpdating', () => {
@@ -10,7 +10,7 @@ describe('getHomeDataForUpdating', () => {
   const homeid = 123;
 
   beforeEach(() => {
-    mockLogger = { debug: vi.fn(), error: vi.fn(), warn: vi.fn() } as any;
+    mockLogger = { debug: vi.fn(), error: vi.fn(), warn: vi.fn() } as unknown as AnsiLogger;
     clientManager = {} as ClientManager;
 
     service = new RoborockService(

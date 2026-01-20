@@ -1,10 +1,6 @@
 import { AnsiLogger, debugStringify } from 'matterbridge/logger';
-import { DpsPayload } from '../../model/dps.js';
-import { Protocol } from '../../model/protocol.js';
-import { ResponseMessage } from '../../model/responseMessage.js';
-import { AbstractMessageListener } from '../index.js';
-import { RequestMessage } from '../../model/requestMessage.js';
-import { MESSAGE_TIMEOUT_MS } from '../../../../constants/index.js';
+import { MESSAGE_TIMEOUT_MS } from '@/constants/index.js';
+import { DpsPayload, Protocol, RequestMessage, ResponseMessage, AbstractMessageListener } from '../../index.js';
 
 export class SyncMessageListener implements AbstractMessageListener {
   private readonly pending = new Map<number, (response: ResponseMessage) => void>();
@@ -34,22 +30,22 @@ export class SyncMessageListener implements AbstractMessageListener {
       // Data is always stored in key 102 (rpc_response), regardless of header protocol
       // This is because the deserializer parses all general_request/general_response messages
       // and stores them under the rpc_response key (102)
-      let dps: DpsPayload | undefined = message.get(Protocol.rpc_response) as DpsPayload;
+      let dps = message.get<DpsPayload>(Protocol.rpc_response);
 
       // Fallback: try other protocols if not found in 102
       if (!dps && message.isForProtocol(Protocol.general_request)) {
-        dps = message.get(Protocol.general_request) as DpsPayload;
+        dps = message.get<DpsPayload>(Protocol.general_request);
       }
       if (!dps && message.isForProtocol(Protocol.general_response)) {
-        dps = message.get(Protocol.general_response) as DpsPayload;
+        dps = message.get<DpsPayload>(Protocol.general_response);
       }
 
       if (!dps && message.isForProtocol(Protocol.rpc_response)) {
-        dps = message.get(Protocol.rpc_response) as DpsPayload;
+        dps = message.get<DpsPayload>(Protocol.rpc_response);
       }
 
       const statusProtocolNumbers = [Protocol.suction_power, Protocol.water_box_mode];
-      if (message.isForProtocol(Protocol.rpc_response) && statusProtocolNumbers.some((p) => message.isForProtocol(p))) {
+      if (message.isForProtocol(Protocol.rpc_response) && message.isForStatuses(statusProtocolNumbers)) {
         // skip message handling for status updates because they will be handled at statusMessageListener
         return;
       }

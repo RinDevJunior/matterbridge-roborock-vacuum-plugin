@@ -3,7 +3,7 @@ import { UserData } from '../roborockCommunication/index.js';
 import { AnsiLogger } from 'matterbridge/logger';
 
 /** Manages ClientRouter instances per user with caching and cleanup. */
-export default class ClientManager {
+export class ClientManager {
   private readonly clients = new Map<string, ClientRouter>();
   private logger: AnsiLogger;
 

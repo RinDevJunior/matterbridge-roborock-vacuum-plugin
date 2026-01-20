@@ -1,6 +1,4 @@
-import { Protocol } from '../../model/protocol.js';
-import { ResponseMessage } from '../../model/responseMessage.js';
-import { AbstractMessageListener } from '../abstractMessageListener.js';
+import { Protocol, ResponseMessage, AbstractMessageListener } from '../../index.js';
 import { AnsiLogger, debugStringify } from 'matterbridge/logger';
 
 export class MapResponseListener implements AbstractMessageListener {

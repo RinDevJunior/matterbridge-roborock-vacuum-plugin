@@ -1,7 +1,7 @@
 import { AnsiLogger } from 'matterbridge/logger';
-import { NotifyMessageTypes } from '../../../../notifyMessageTypes.js';
-import { DeviceNotifyCallback } from '../../../../types/index.js';
-import { AbstractMessageListener, Protocol, ResponseMessage } from '../../../index.js';
+import { NotifyMessageTypes } from '@/notifyMessageTypes.js';
+import { DeviceNotifyCallback } from '@/types/index.js';
+import { Protocol, ResponseMessage, AbstractMessageListener } from '../../index.js';
 
 export class StatusMessageListener implements AbstractMessageListener {
   private readonly shouldIgnoreProtocols = [Protocol.battery, Protocol.ping_response, Protocol.map_response];

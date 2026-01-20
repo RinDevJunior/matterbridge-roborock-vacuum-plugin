@@ -1,4 +1,5 @@
-import { CleanModeSetting, CleanSetting, MopRoute, MopWaterFlow, VacuumSuctionPower } from './default.js';
+import { CleanModeDTO } from '@/behaviors/CleanModeDTO.js';
+import { DefaultCleanSetting as CleanSetting, MopRoute, MopWaterFlow, VacuumSuctionPower } from './default.js';
 
 /**
  * Determine current clean mode based on device settings.
@@ -6,7 +7,7 @@ import { CleanModeSetting, CleanSetting, MopRoute, MopWaterFlow, VacuumSuctionPo
  * @param setting - Clean mode settings from device
  * @returns Clean mode identifier or undefined if no match found
  */
-export function getCurrentCleanModeDefault(setting: CleanModeSetting): number | undefined {
+export function getCurrentCleanModeDefault(setting: CleanModeDTO): number | undefined {
   if (!setting || typeof setting !== 'object') {
     return undefined;
   }

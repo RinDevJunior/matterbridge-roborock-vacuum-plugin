@@ -1,6 +1,6 @@
 import { randomBytes, randomInt } from 'node:crypto';
-import * as CryptoUtils from '../../helper/cryptoHelper.js';
-import { UserData } from '../../Zmodel/userData.js';
+import * as CryptoUtils from '../../helper/index.js';
+import { UserData } from '../../Zmodel/index.js';
 
 interface DeviceInfo {
   localKey: string;

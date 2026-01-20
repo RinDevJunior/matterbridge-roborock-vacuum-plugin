@@ -1,16 +1,10 @@
 import { AnsiLogger } from 'matterbridge/logger';
-import { MessageDeserializer } from '../helper/messageDeserializer.js';
-import { MessageSerializer } from '../helper/messageSerializer.js';
-import { AbstractConnectionListener } from './listener/abstractConnectionListener.js';
-import { AbstractMessageListener } from './listener/abstractMessageListener.js';
-import { RequestMessage } from './model/requestMessage.js';
+import { MessageDeserializer, MessageSerializer } from '../helper/index.js';
+import { AbstractConnectionListener, AbstractMessageListener } from './listener/index.js';
+import { RequestMessage, MessageContext } from './model/index.js';
 import { Client } from './client.js';
-import { MessageContext } from './model/messageContext.js';
-import { ChainedConnectionListener } from './listener/implementation/chainedConnectionListener.js';
-import { ChainedMessageListener } from './listener/implementation/chainedMessageListener.js';
-import { SyncMessageListener } from './listener/implementation/syncMessageListener.js';
+import { ChainedConnectionListener, ChainedMessageListener, ConnectionStateListener, SyncMessageListener } from './listener/implementation/index.js';
 import { ResponseMessage } from '../index.js';
-import { ConnectionStateListener } from './listener/implementation/connectionStateListener.js';
 
 export abstract class AbstractClient implements Client {
   public isInDisconnectingStep = false;
@@ -39,6 +33,8 @@ export abstract class AbstractClient implements Client {
     this.messageListeners.register(this.syncMessageListener);
     this.logger = logger;
   }
+
+  abstract isReady(): boolean;
 
   protected initializeConnectionStateListener() {
     this.connectionStateListener = new ConnectionStateListener(this.logger, this, this.clientName);

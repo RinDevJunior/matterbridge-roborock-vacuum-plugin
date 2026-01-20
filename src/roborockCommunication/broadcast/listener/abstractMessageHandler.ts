@@ -1,5 +1,4 @@
-import { ResponseMessage } from '../../index.js';
-import { VacuumErrorCode } from '../../Zenum/vacuumAndDockErrorCode.js';
+import { ResponseMessage, VacuumErrorCode } from '../../index.js';
 
 /*
   Skeleton only, implementation is no needed

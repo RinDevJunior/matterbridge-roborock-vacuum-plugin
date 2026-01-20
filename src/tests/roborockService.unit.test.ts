@@ -1,8 +1,8 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { AnsiLogger } from 'matterbridge/logger';
-import RoborockService from '../roborockService.js';
-import { RoomIndexMap } from '../model/RoomIndexMap.js';
-import ClientManager from '../services/clientManager.js';
+import RoborockService from '@/roborockService.js';
+import { RoomIndexMap } from '@/model/RoomIndexMap.js';
+import { ClientManager } from '@/services/index.js';
 
 const logger: any = { debug: vi.fn(), error: vi.fn(), notice: vi.fn(), warn: vi.fn() };
 

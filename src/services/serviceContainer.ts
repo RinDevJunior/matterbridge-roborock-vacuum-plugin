@@ -1,12 +1,7 @@
 import { AnsiLogger } from 'matterbridge/logger';
-import { MessageProcessor, RoborockAuthenticateApi, RoborockIoTApi, UserData } from '../roborockCommunication/index.js';
-import type { Factory } from '../types/index.js';
-import { AuthenticationService } from './authenticationService.js';
-import { DeviceManagementService } from './deviceManagementService.js';
-import { AreaManagementService } from './areaManagementService.js';
-import { MessageRoutingService } from './messageRoutingService.js';
-import { PollingService } from './pollingService.js';
-import ClientManager from './clientManager.js';
+import { MessageProcessor, RoborockAuthenticateApi, RoborockIoTApi, UserData } from '@/roborockCommunication/index.js';
+import type { Factory } from '@/types/index.js';
+import { ClientManager, PollingService, MessageRoutingService, AreaManagementService, DeviceManagementService, AuthenticationService } from './index.js';
 
 /** Configuration for ServiceContainer. */
 export interface ServiceContainerConfig {

@@ -9,6 +9,6 @@ export class ResponseBody {
   }
 
   public get(index: number | string | Protocol): unknown | undefined {
-    return this.data !== undefined ? this.data[index.toString()] : undefined;
+    return this.data !== undefined && this.data !== null ? this.data[index.toString()] : undefined;
   }
 }

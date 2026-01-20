@@ -2,7 +2,7 @@ import { AnsiLogger } from 'matterbridge/logger';
 import { ServiceArea } from 'matterbridge/matter/clusters';
 import { RoborockAuthenticateApi, UserData, RoborockIoTApi, ClientRouter, MessageProcessor, Device, Home, RequestMessage, Scene, MapInfo } from './roborockCommunication/index.js';
 import { RoomIndexMap } from './model/RoomIndexMap.js';
-import { CleanModeSetting } from './behaviors/roborock.vacuum/default/default.js';
+import { CleanModeDTO } from './behaviors/index.js';
 import type { Factory } from './types/index.js';
 import { NotifyMessageTypes } from './notifyMessageTypes.js';
 import {
@@ -232,7 +232,7 @@ export default class RoborockService {
   }
 
   /** Get current cleaning mode settings. */
-  public async getCleanModeData(duid: string): Promise<CleanModeSetting> {
+  public async getCleanModeData(duid: string): Promise<CleanModeDTO> {
     return this.messageService.getCleanModeData(duid);
   }
 
@@ -242,7 +242,7 @@ export default class RoborockService {
   }
 
   /** Change cleaning mode settings. */
-  public async changeCleanMode(duid: string, settings: CleanModeSetting): Promise<void> {
+  public async changeCleanMode(duid: string, settings: CleanModeDTO): Promise<void> {
     return this.messageService.changeCleanMode(duid, settings);
   }
 

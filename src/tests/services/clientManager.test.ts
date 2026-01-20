@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { AnsiLogger } from 'matterbridge/logger';
-import ClientManager from '../../services/clientManager.js';
-import { UserData } from '../../roborockCommunication/index.js';
+import { ClientManager } from '@/services/index.js';
+import { UserData } from '@/roborockCommunication/index.js';
 
 describe('ClientManager', () => {
   let clientManager: ClientManager;
@@ -15,7 +15,7 @@ describe('ClientManager', () => {
       warn: vi.fn(),
       error: vi.fn(),
       notice: vi.fn(),
-    } as any;
+    } as unknown as AnsiLogger;
 
     mockUserData = {
       uid: 'test-uid',
@@ -28,7 +28,7 @@ describe('ClientManager', () => {
         h: 'host',
         k: 'test-key',
       },
-    } as UserData;
+    } as unknown as UserData;
 
     clientManager = new ClientManager(mockLogger);
   });

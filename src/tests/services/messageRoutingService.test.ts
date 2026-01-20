@@ -3,8 +3,8 @@ import { AnsiLogger } from 'matterbridge/logger';
 import { MessageRoutingService } from '../../services/messageRoutingService.js';
 import { MessageProcessor, RequestMessage, RoborockIoTApi } from '../../roborockCommunication/index.js';
 import { DeviceError } from '../../errors/index.js';
-import { CleanModeSetting } from '../../behaviors/roborock.vacuum/default/default.js';
 import { ServiceArea } from 'matterbridge/matter/clusters';
+import { CleanModeDTO } from '@/behaviors/index.js';
 
 describe('MessageRoutingService', () => {
   let messageService: MessageRoutingService;
@@ -126,7 +126,7 @@ describe('MessageRoutingService', () => {
 
   describe('getCleanModeData', () => {
     const testDuid = 'test-device-456';
-    const mockCleanMode: CleanModeSetting = {
+    const mockCleanMode: CleanModeDTO = {
       suctionPower: 100,
       waterFlow: 200,
       distance_off: 0,
@@ -206,7 +206,7 @@ describe('MessageRoutingService', () => {
     });
 
     it('should change clean mode successfully', async () => {
-      const settings: CleanModeSetting = { suctionPower: 105, waterFlow: 203, mopRoute: 302, distance_off: 0 };
+      const settings: CleanModeDTO = { suctionPower: 105, waterFlow: 203, mopRoute: 302, distance_off: 0 };
       await messageService.changeCleanMode(testDuid, settings);
 
       expect(mockProcessor.changeCleanMode).toHaveBeenCalledWith(testDuid, 105, 203, 302, 0);
@@ -214,14 +214,14 @@ describe('MessageRoutingService', () => {
     });
 
     it('should handle zero values in clean mode', async () => {
-      const settings: CleanModeSetting = { suctionPower: 0, waterFlow: 0, mopRoute: 0, distance_off: 0 };
+      const settings: CleanModeDTO = { suctionPower: 0, waterFlow: 0, mopRoute: 0, distance_off: 0 };
       await messageService.changeCleanMode(testDuid, settings);
 
       expect(mockProcessor.changeCleanMode).toHaveBeenCalledWith(testDuid, 0, 0, 0, 0);
     });
 
     it('should throw DeviceError when processor not found', async () => {
-      const settings: CleanModeSetting = { suctionPower: 105, waterFlow: 203, mopRoute: 302, distance_off: 0 };
+      const settings: CleanModeDTO = { suctionPower: 105, waterFlow: 203, mopRoute: 302, distance_off: 0 };
       await expect(messageService.changeCleanMode('unknown-device', settings)).rejects.toThrow(DeviceError);
     });
   });
@@ -499,7 +499,7 @@ describe('MessageRoutingService', () => {
     });
 
     it('should handle clean mode adjustment workflow', async () => {
-      const mockCleanMode: CleanModeSetting = {
+      const mockCleanMode: CleanModeDTO = {
         suctionPower: 101,
         waterFlow: 202,
         distance_off: 0,
@@ -513,7 +513,7 @@ describe('MessageRoutingService', () => {
       expect(currentMode).toEqual(mockCleanMode);
 
       // Change clean mode
-      const settings: CleanModeSetting = { suctionPower: 105, waterFlow: 203, mopRoute: 302, distance_off: 0 };
+      const settings: CleanModeDTO = { suctionPower: 105, waterFlow: 203, mopRoute: 302, distance_off: 0 };
       await messageService.changeCleanMode(testDuid, settings);
       expect(mockProcessor.changeCleanMode).toHaveBeenCalledWith(testDuid, 105, 203, 302, 0);
     });

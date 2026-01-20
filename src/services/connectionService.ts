@@ -1,16 +1,10 @@
 import { AnsiLogger } from 'matterbridge/logger';
-import ClientManager from './clientManager.js';
-import { Device, UserData, ClientRouter, Protocol, ResponseMessage } from '../roborockCommunication/index.js';
-import type { AbstractMessageListener } from '../roborockCommunication/index.js';
-import { LocalNetworkClient } from '../roborockCommunication/broadcast/client/LocalNetworkClient.js';
-import { DpsPayload } from '../roborockCommunication/broadcast/model/dps.js';
-import type { Security } from '../types/index.js';
-import { DeviceConnectionError, DeviceInitializationError, DeviceError } from '../errors/index.js';
-import { CONNECTION_RETRY_DELAY_MS, MAX_CONNECTION_ATTEMPTS } from '../constants/index.js';
-import { NotifyMessageTypes } from '../notifyMessageTypes.js';
-
-/** Callback for device notifications. */
-export type DeviceNotifyCallback = (messageSource: NotifyMessageTypes, homeData: unknown) => Promise<void>;
+import { ClientManager } from './index.js';
+import { DpsPayload, LocalNetworkClient, Device, UserData, ClientRouter, Protocol, ResponseMessage, AbstractMessageListener } from '@/roborockCommunication/index.js';
+import type { DeviceNotifyCallback, Security } from '@/types/index.js';
+import { DeviceConnectionError, DeviceInitializationError, DeviceError } from '@/errors/index.js';
+import { CONNECTION_RETRY_DELAY_MS, MAX_CONNECTION_ATTEMPTS } from '@/constants/index.js';
+import { NotifyMessageTypes } from '@/notifyMessageTypes.js';
 
 /** Manages device connections (MQTT and local network). */
 export class ConnectionService {
@@ -68,7 +62,7 @@ export class ConnectionService {
           }
 
           if (message instanceof ResponseMessage && message.isForProtocol(Protocol.hello_response)) {
-            const dps = message.get(Protocol.hello_response) as DpsPayload;
+            const dps = message.get<DpsPayload>(Protocol.hello_response);
             const result = dps.result as Security;
             this.messageClient?.updateNonce(message.duid, result.nonce);
           }

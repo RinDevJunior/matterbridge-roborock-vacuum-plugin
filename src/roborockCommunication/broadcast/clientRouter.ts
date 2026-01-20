@@ -1,21 +1,17 @@
 import { AnsiLogger } from 'matterbridge/logger';
-import { AbstractConnectionListener } from './listener/abstractConnectionListener.js';
-import { AbstractMessageListener } from './listener/abstractMessageListener.js';
-import { RequestMessage } from './model/requestMessage.js';
+import { AbstractConnectionListener, AbstractMessageListener, ChainedConnectionListener, ChainedMessageListener } from './listener/index.js';
+import { MessageContext, RequestMessage } from './model/index.js';
 import { UserData } from '../Zmodel/userData.js';
 import { Client } from './client.js';
-import { ChainedConnectionListener } from './listener/implementation/chainedConnectionListener.js';
-import { ChainedMessageListener } from './listener/implementation/chainedMessageListener.js';
-import { MessageContext } from './model/messageContext.js';
-import { LocalNetworkClient } from './client/LocalNetworkClient.js';
-import { MQTTClient } from './client/MQTTClient.js';
+import { LocalNetworkClient, MQTTClient } from './client/index.js';
+import { AbstractClient } from './abstractClient.js';
 
 export class ClientRouter implements Client {
   protected readonly connectionListeners = new ChainedConnectionListener();
   protected readonly messageListeners = new ChainedMessageListener();
 
   private readonly context: MessageContext;
-  private readonly localClients = new Map<string, LocalNetworkClient>();
+  private readonly localClients = new Map<string, AbstractClient>();
   private readonly logger: AnsiLogger;
   private mqttClient: MQTTClient;
 

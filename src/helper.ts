@@ -111,8 +111,11 @@ export async function getRoomMapFromDevice(device: Device, platform: RoborockMat
 
   // Try to get map information first
   const mapInfo = await platform.roborockService.getMapInformation(device.duid);
-  platform.log.debug(`getRoomMapFromDevice - mapInfo: ${mapInfo ? debugStringify(mapInfo) : 'undefined'}`);
-  platform.log.debug(`getRoomMapFromDevice - rooms: ${debugStringify(rooms)}`);
+  platform.log.debug(
+    `getRoomMapFromDevice
+    - mapInfo: ${mapInfo ? debugStringify(mapInfo) : 'undefined'}
+    - rooms: ${debugStringify(rooms)}`,
+  );
 
   if (mapInfo && mapInfo.allRooms && mapInfo.allRooms.length > 0) {
     return new RoomMap(mapInfo.allRooms, rooms, mapInfo.maps, enableMultipleMap);

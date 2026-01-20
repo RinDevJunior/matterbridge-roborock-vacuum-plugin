@@ -79,12 +79,10 @@ This plugin integrates Roborock vacuum cleaners into the Matter ecosystem via Ma
 
 ## Directory Structure
 
-src/
-
 ### Root Structure
 
 ```
-
+src/
 ├── module.ts                    # Main platform entry point
 ├── platformRunner.ts            # Orchestrates device updates
 ├── roborockService.ts           # Service facade
@@ -111,20 +109,6 @@ src/
 │   ├── ids.ts
 │   ├── index.ts
 │   └── timeouts.ts
-├── domain/                      # Domain models (entities/VOs)
-│   ├── index.ts
-│   ├── entities/
-│   │   ├── index.ts
-│   │   ├── RoomEntity.ts
-│   │   ├── CleaningRoutine.ts
-│   │   ├── CleaningSession.ts
-│   │   └── VacuumDevice.ts
-│   └── valueObjects/
-│       ├── index.ts
-│       ├── DeviceIdentifier.ts
-│       ├── Coordinates.ts
-│       ├── BatteryStatus.ts
-│       └── CleaningArea.ts
 ├── errors/                      # Custom error classes
 │   ├── AuthenticationError.ts
 │   ├── BaseError.ts
@@ -161,7 +145,19 @@ src/
 │   │   │   ├── MQTTClient.ts
 │   │   │   └── LocalNetworkClient.ts
 │   │   └── listener/
+│   │       ├── abstractConnectionListener.ts
+│   │       ├── abstractMessageHandler.ts
+│   │       ├── abstractMessageListener.ts
+│   │       ├── index.ts
 │   │       └── implementation/
+│   │           ├── chainedConnectionListener.ts
+│   │           ├── chainedMessageListener.ts
+│   │           ├── connectionStateListener.ts
+│   │           ├── mapResponseListener.ts
+│   │           ├── pingResponseListener.ts
+│   │           ├── simpleMessageListener.ts
+│   │           ├── statusMessageListener.ts
+│   │           └── syncMessageListener.ts
 │   ├── builder/
 │   │   ├── A01MessageBodyBuilder.ts
 │   │   ├── B01MessageBodyBuilder.ts
@@ -169,6 +165,14 @@ src/
 │   │   ├── V01MessageBodyBuilder.ts
 │   │   └── UnknownMessageBodyBuilder.ts
 │   ├── helper/
+│   │   ├── chunkBuffer.ts
+│   │   ├── cryptoHelper.ts
+│   │   ├── messageBodyBuilderFactory.ts
+│   │   ├── messageDeserializer.ts
+│   │   ├── messageProcessorFactory.ts
+│   │   ├── messageSerializer.ts
+│   │   ├── nameDecoder.ts
+│   │   └── sequence.ts
 │   ├── serializer/
 │   │   ├── A01Serializer.ts
 │   │   ├── B01Serializer.ts
@@ -448,21 +452,59 @@ Located in: [src/roborockCommunication/](../src/roborockCommunication/)
 
 ```
 roborockCommunication/
-├── RESTAPI/                    # REST API clients
+├── RESTAPI/           # REST API clients
 │   ├── roborockAuthenticateApi.ts
 │   └── roborockIoTApi.ts
-├── broadcast/                  # MQTT communication
-│   ├── client/                # Client implementations
-│   ├── listener/              # Message listeners
-│   ├── model/                 # Message models
+│
+├── broadcast/         # MQTT communication
+│   ├── client/        # Client implementations
+│   │   ├── MQTTClient.ts
+│   │   └── LocalNetworkClient.ts
+│   ├── listener/      # Message listeners
+│   │   ├── abstractConnectionListener.ts
+│   │   ├── abstractMessageHandler.ts
+│   │   ├── abstractMessageListener.ts
+│   │   ├── index.ts
+│   │   └── implementation/
+│   │       ├── chainedConnectionListener.ts
+│   │       ├── chainedMessageListener.ts
+│   │       ├── connectionStateListener.ts
+│   │       ├── mapResponseListener.ts
+│   │       ├── pingResponseListener.ts
+│   │       ├── simpleMessageListener.ts
+│   │       ├── statusMessageListener.ts
+│   │       └── syncMessageListener.ts
+│   ├── model/        # Message models
 │   ├── abstractClient.ts
 │   ├── clientRouter.ts
 │   └── messageProcessor.ts
-├── builder/                    # Message builders
-├── helper/                     # Communication helpers
-├── serializer/                 # Protocol serializers
-├── Zenum/                     # Enumerations
-└── Zmodel/                    # Data models
+│
+├── builder/           # Message builders
+│   ├── A01MessageBodyBuilder.ts
+│   ├── B01MessageBodyBuilder.ts
+│   ├── L01MessageBodyBuilder.ts
+│   ├── V01MessageBodyBuilder.ts
+│   └── UnknownMessageBodyBuilder.ts
+│
+├── helper/            # Communication helpers
+│   ├── chunkBuffer.ts
+│   ├── cryptoHelper.ts
+│   ├── messageBodyBuilderFactory.ts
+│   ├── messageDeserializer.ts
+│   ├── messageProcessorFactory.ts
+│   ├── messageSerializer.ts
+│   ├── nameDecoder.ts
+│   └── sequence.ts
+│
+├── serializer/        # Protocol serializers
+│   ├── A01Serializer.ts
+│   ├── B01Serializer.ts
+│   ├── L01Serializer.ts
+│   ├── V01Serializer.ts
+│   └── Serializer.ts
+│
+├── Zenum/             # Enumerations
+└── Zmodel/            # Data models
 ```
 
 ### **REST API Layer**

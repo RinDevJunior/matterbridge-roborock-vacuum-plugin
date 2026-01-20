@@ -1,12 +1,15 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { AnsiLogger } from 'matterbridge/logger';
-import { ServiceContainer, ServiceContainerConfig } from '../../services/serviceContainer.js';
-import ClientManager from '../../services/clientManager.js';
-import { RoborockAuthenticateApi, RoborockIoTApi, UserData } from '../../roborockCommunication/index.js';
-import { AuthenticationService } from '../../services/authenticationService.js';
-import { DeviceManagementService } from '../../services/deviceManagementService.js';
-import { AreaManagementService } from '../../services/areaManagementService.js';
-import { MessageRoutingService } from '../../services/messageRoutingService.js';
+import { RoborockAuthenticateApi, RoborockIoTApi, UserData } from '@/roborockCommunication/index.js';
+import {
+  ClientManager,
+  ServiceContainer,
+  ServiceContainerConfig,
+  AuthenticationService,
+  DeviceManagementService,
+  AreaManagementService,
+  MessageRoutingService,
+} from '@/services/index.js';
 
 describe('ServiceContainer', () => {
   let container: ServiceContainer;

@@ -1,12 +1,7 @@
 import { AnsiLogger, debugStringify } from 'matterbridge/logger';
-import { CloudMessageResult } from '../Zmodel/messageResult.js';
-import { AbstractMessageHandler } from './listener/abstractMessageHandler.js';
-import { SimpleMessageListener } from './listener/index.js';
-import { RequestMessage } from './model/requestMessage.js';
-import { DeviceStatus } from '../Zmodel/deviceStatus.js';
+import { RequestMessage, CloudMessageResult, DeviceStatus, NetworkInfo, AbstractMessageHandler, SimpleMessageListener } from '../index.js';
 import { Client } from './client.js';
-import { NetworkInfo } from '../Zmodel/networkInfo.js';
-import { CleanModeSetting } from '../../behaviors/roborock.vacuum/default/default.js';
+import { CleanModeDTO } from '@/behaviors/index.js';
 
 export class MessageProcessor {
   private readonly client: Client;
@@ -122,7 +117,7 @@ export class MessageProcessor {
     return this.client.get(duid, request);
   }
 
-  public async getCleanModeData(duid: string): Promise<CleanModeSetting> {
+  public async getCleanModeData(duid: string): Promise<CleanModeDTO> {
     const currentMopMode = await this.getCustomMessage(duid, new RequestMessage({ method: 'get_mop_mode' }));
     const suctionPowerRaw = await this.getCustomMessage(duid, new RequestMessage({ method: 'get_custom_mode' }));
     const waterFlowRaw = await this.getCustomMessage(duid, new RequestMessage({ method: 'get_water_box_custom_mode' }));
@@ -159,7 +154,7 @@ export class MessageProcessor {
       waterFlow: waterFlow,
       distance_off: distance_off,
       mopRoute: mopRoute,
-    } satisfies CleanModeSetting;
+    } satisfies CleanModeDTO;
   }
 
   public async changeCleanMode(duid: string, suctionPower: number, waterFlow: number, mopRoute: number, distance_off: number): Promise<void> {

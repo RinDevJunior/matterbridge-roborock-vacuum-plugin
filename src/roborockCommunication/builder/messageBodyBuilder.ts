@@ -1,5 +1,4 @@
-import { MessageContext } from '../broadcast/model/messageContext.js';
-import { RequestMessage } from '../broadcast/model/requestMessage.js';
+import { MessageContext, RequestMessage } from '../broadcast/model/index.js';
 
 export interface MessageBodyBuilder {
   buildPayload(request: RequestMessage, context: MessageContext): string;

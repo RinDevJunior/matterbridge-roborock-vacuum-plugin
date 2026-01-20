@@ -1,8 +1,8 @@
 import { AnsiLogger, debugStringify } from 'matterbridge/logger';
 import { ServiceArea } from 'matterbridge/matter/clusters';
-import { MessageProcessor, RequestMessage, RoborockIoTApi } from '../roborockCommunication/index.js';
-import type { CleanModeSetting } from '../behaviors/roborock.vacuum/default/default.js';
-import { DeviceError } from '../errors/index.js';
+import { MessageProcessor, RequestMessage, RoborockIoTApi } from '@/roborockCommunication/index.js';
+import type { CleanModeDTO } from '@/behaviors/index.js';
+import { DeviceError } from '@/errors/index.js';
 
 /** Response from map room queries. */
 interface MapRoomResponse {
@@ -56,7 +56,7 @@ export class MessageRoutingService {
   }
 
   /** Get current cleaning mode settings. */
-  async getCleanModeData(duid: string): Promise<CleanModeSetting> {
+  async getCleanModeData(duid: string): Promise<CleanModeDTO> {
     this.logger.notice('MessageRoutingService - getCleanModeData');
     const data = await this.getMessageProcessor(duid).getCleanModeData(duid);
     if (!data) {
@@ -72,7 +72,7 @@ export class MessageRoutingService {
   }
 
   /** Change cleaning mode settings. */
-  async changeCleanMode(duid: string, { suctionPower, waterFlow, distance_off, mopRoute }: CleanModeSetting): Promise<void> {
+  async changeCleanMode(duid: string, { suctionPower, waterFlow, distance_off, mopRoute }: CleanModeDTO): Promise<void> {
     this.logger.notice('MessageRoutingService - changeCleanMode');
     return this.getMessageProcessor(duid).changeCleanMode(duid, suctionPower, waterFlow, mopRoute ?? 0, distance_off);
   }

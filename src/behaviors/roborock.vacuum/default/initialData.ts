@@ -1,6 +1,6 @@
 import { RvcCleanMode, RvcOperationalState, RvcRunMode } from 'matterbridge/matter/clusters';
-import { RvcCleanMode as RvcCleanModeDisplayMap } from './default.js';
-import { ExperimentalFeatureSetting } from '../../../model/ExperimentalFeatureSetting.js';
+import { DefaultRvcCleanMode as RvcCleanModeDisplayMap } from './default.js';
+import { ExperimentalFeatureSetting } from '@/model/index.js';
 
 export function getDefaultSupportedRunModes(): RvcRunMode.ModeOption[] {
   return [

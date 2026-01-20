@@ -1,10 +1,10 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { AnsiLogger, LogLevel } from 'matterbridge/logger';
-import { PlatformMatterbridge } from 'matterbridge';
-import { RoborockMatterbridgePlatform, RoborockPluginPlatformConfig } from '../module.js';
-import { MatterbridgeDynamicPlatform } from 'matterbridge';
+import { PlatformMatterbridge, MatterbridgeDynamicPlatform } from 'matterbridge';
 import NodePersist from 'node-persist';
+import { RoborockMatterbridgePlatform, RoborockPluginPlatformConfig } from '@/module.js';
 import RoborockService from '@/roborockService.js';
+import { RoomMap } from '@/model/RoomMap.js';
 
 // Mocks
 vi.mock('node-persist', () => ({
@@ -70,7 +70,7 @@ describe('RoborockMatterbridgePlatform', () => {
 
     it('startDeviceDiscovery returns false if authenticate fails', async () => {
       testPlatform['authenticate'] = vi.fn().mockResolvedValue({ shouldContinue: false });
-      testPlatform.roborockService = { listDevices: vi.fn().mockResolvedValue([]) } as any;
+      testPlatform.roborockService = { listDevices: vi.fn().mockResolvedValue([]) } as unknown as RoborockService;
       const result = await testPlatform.testStartDeviceDiscovery();
       expect(result).toBe(false);
     });
@@ -301,5 +301,244 @@ describe('RoborockMatterbridgePlatform', () => {
     platform = new RoborockMatterbridgePlatform(mockMatterbridge, mockLogger, config);
     await platform.onChangeLoggerLevel(LogLevel.DEBUG);
     expect(platform.log.logLevel).toBe('debug');
+  });
+
+  // --- FULL COVERAGE TESTS ---
+  const mockUserData = { token: 'token', userId: 'id' };
+  const mockVacuum = {
+    duid: 'duid-1',
+    serialNumber: 'serial-1',
+    name: 'Vacuum',
+    data: { model: 'model', firmwareVersion: '1.2.3' },
+    rooms: [{ id: 1, name: 'Room1' }],
+    scenes: [],
+    rrHomeId: 123,
+  };
+  const mockRobot = {
+    deviceName: 'Vacuum',
+    serialNumber: 'serial-1',
+    device: mockVacuum,
+    getClusterServerOptions: vi.fn(() => ({ deviceTypeList: [] })),
+    deviceTypes: new Map(),
+    createDefaultBridgedDeviceBasicInformationClusterServer: vi.fn(),
+    mode: undefined,
+    vendorId: 1,
+    vendorName: 'Roborock',
+    productName: 'Vacuum',
+  };
+
+  it('should authenticate with password (success path)', async () => {
+    platform = new RoborockMatterbridgePlatform(mockMatterbridge, mockLogger, config);
+    platform.roborockService = {
+      loginWithPassword: vi.fn().mockResolvedValue(mockUserData),
+    } as any;
+    platform.persist.getItem = vi.fn().mockResolvedValue(undefined);
+    platform.persist.setItem = vi.fn();
+    platform.enableExperimentalFeature = { enableExperimentalFeature: false, advancedFeature: {} } as any;
+    const result = await platform['authenticateWithPassword']('user', 'pw');
+    expect(result).toEqual(mockUserData);
+  });
+
+  it('should authenticate with password (alwaysExecuteAuthentication)', async () => {
+    platform = new RoborockMatterbridgePlatform(mockMatterbridge, mockLogger, config);
+    platform.roborockService = {
+      loginWithPassword: vi.fn().mockResolvedValue(mockUserData),
+    } as any;
+    platform.persist.getItem = vi.fn().mockResolvedValue(undefined);
+    platform.persist.setItem = vi.fn();
+    platform.enableExperimentalFeature = { enableExperimentalFeature: true, advancedFeature: { alwaysExecuteAuthentication: true } } as any;
+    const result = await platform['authenticateWithPassword']('user', 'pw');
+    expect(result).toEqual(mockUserData);
+  });
+
+  it('should authenticate2FA with cached token', async () => {
+    platform = new RoborockMatterbridgePlatform(mockMatterbridge, mockLogger, config);
+    platform.roborockService = {
+      loginWithCachedToken: vi.fn().mockResolvedValue(mockUserData),
+    } as any;
+    platform.persist.getItem = vi.fn().mockResolvedValueOnce(mockUserData);
+    platform.enableExperimentalFeature = { advancedFeature: {} } as any;
+    const result = await platform['authenticate2FA']('user', '123456');
+    expect(result).toEqual(mockUserData);
+  });
+
+  it('should authenticate2FA with expired cached token and request code', async () => {
+    platform = new RoborockMatterbridgePlatform(mockMatterbridge, mockLogger, config);
+    platform.roborockService = {
+      loginWithCachedToken: vi.fn().mockRejectedValue(new Error('fail')),
+      requestVerificationCode: vi.fn().mockResolvedValue(undefined),
+    } as any;
+    let called = false;
+    platform.persist.getItem = vi.fn().mockResolvedValueOnce(mockUserData).mockResolvedValueOnce(undefined);
+    platform.persist.removeItem = vi.fn();
+    platform.persist.setItem = vi.fn();
+    platform.enableExperimentalFeature = { advancedFeature: {} } as any;
+    platform['logVerificationCodeBanner'] = vi.fn(() => {
+      called = true;
+    });
+    await expect(platform['authenticate2FA']('user', undefined)).resolves.toBeUndefined();
+    expect(called).toBe(true);
+  });
+
+  it('should authenticate2FA and hit rate limit', async () => {
+    platform = new RoborockMatterbridgePlatform(mockMatterbridge, mockLogger, config);
+    platform.roborockService = {
+      requestVerificationCode: vi.fn(),
+    } as any;
+    const now = Date.now();
+    platform.persist.getItem = vi.fn().mockResolvedValue({ codeRequestedAt: now });
+    platform.enableExperimentalFeature = { advancedFeature: {} } as any;
+    platform['logVerificationCodeBanner'] = vi.fn();
+    await expect(platform['authenticate2FA']('user', undefined)).resolves.toBeUndefined();
+    expect(platform['logVerificationCodeBanner']).toHaveBeenCalled();
+  });
+
+  it('should authenticate2FA and request code (no rate limit)', async () => {
+    platform = new RoborockMatterbridgePlatform(mockMatterbridge, mockLogger, config);
+    platform.roborockService = {
+      requestVerificationCode: vi.fn().mockResolvedValue(undefined),
+    } as any;
+    platform.persist.getItem = vi.fn().mockResolvedValue(undefined);
+    platform.persist.setItem = vi.fn();
+    platform.enableExperimentalFeature = { advancedFeature: {} } as any;
+    platform['logVerificationCodeBanner'] = vi.fn();
+    await expect(platform['authenticate2FA']('user', undefined)).resolves.toBeUndefined();
+    expect(platform.roborockService?.requestVerificationCode).toHaveBeenCalled();
+  });
+
+  it('should authenticate2FA with verification code', async () => {
+    platform = new RoborockMatterbridgePlatform(mockMatterbridge, mockLogger, config);
+    platform.roborockService = {
+      loginWithVerificationCode: vi.fn().mockResolvedValue(mockUserData),
+    } as any;
+    platform.persist.getItem = vi.fn().mockResolvedValue(undefined);
+    platform.persist.setItem = vi.fn();
+    platform.persist.removeItem = vi.fn();
+    platform.enableExperimentalFeature = { advancedFeature: {} } as any;
+    const result = await platform['authenticate2FA']('user', '123456');
+    expect(result).toEqual(mockUserData);
+  });
+
+  it('should cover authenticate method for both methods', async () => {
+    platform = new RoborockMatterbridgePlatform(mockMatterbridge, mockLogger, config);
+    platform['authenticate2FA'] = vi.fn().mockResolvedValue(mockUserData);
+    platform['authenticateWithPassword'] = vi.fn().mockResolvedValue(mockUserData);
+    platform.roborockService = {} as any;
+    platform.config.authentication = { authenticationMethod: 'VerificationCode' } as any;
+    const result = await platform['authenticate']('deviceId');
+    expect(result.shouldContinue).toBe(true);
+    platform.config.authentication = { authenticationMethod: 'Password' } as any;
+    const result2 = await platform['authenticate']('deviceId');
+    expect(result2.shouldContinue).toBe(true);
+  });
+
+  it('should cover authenticate method error and no userData', async () => {
+    platform = new RoborockMatterbridgePlatform(mockMatterbridge, mockLogger, config);
+    platform['authenticate2FA'] = vi.fn().mockRejectedValue(new Error('fail'));
+    platform['authenticateWithPassword'] = vi.fn().mockResolvedValue(undefined);
+    platform.roborockService = {} as any;
+    platform.config.authentication = { authenticationMethod: 'VerificationCode' } as any;
+    const result = await platform['authenticate']('deviceId');
+    expect(result.shouldContinue).toBe(false);
+    platform.config.authentication = { authenticationMethod: 'Password' } as any;
+    const result2 = await platform['authenticate']('deviceId');
+    expect(result2.shouldContinue).toBe(false);
+  });
+
+  it('should cover configureDevice full path', async () => {
+    const helper = await import('@/helper.js');
+    const spy = vi.spyOn(helper, 'getRoomMapFromDevice').mockResolvedValue(new RoomMap([], [], [], false));
+
+    platform = new RoborockMatterbridgePlatform(mockMatterbridge, mockLogger, config);
+    platform.platformRunner = {} as any;
+    platform.roborockService = {
+      initializeMessageClientForLocal: vi.fn().mockResolvedValue(true),
+      getMapInformation: vi.fn().mockResolvedValue({ allRooms: [{ globalId: 1, displayName: 'Room1' }] }),
+      setSupportedAreas: vi.fn(),
+      setSupportedAreaIndexMap: vi.fn(),
+      setSupportedScenes: vi.fn(),
+    } as any;
+    platform.enableExperimentalFeature = {
+      enableExperimentalFeature: true,
+      advancedFeature: { showRoutinesAsRoom: true, enableMultipleMap: true, forceRunAtDefault: false },
+      cleanModeSettings: { enableCleanModeMapping: true },
+    } as any;
+    platform.cleanModeSettings = { enableCleanModeMapping: true } as any;
+    platform.validateDevice = vi.fn().mockReturnValue(true);
+    platform['addDevice'] = vi.fn().mockResolvedValue(mockRobot);
+    const vacuum = { ...mockVacuum, rooms: undefined, scenes: [{}] };
+    const result = await platform['configureDevice'](vacuum as any);
+    expect(result).toBe(true);
+
+    spy.mockRestore();
+  });
+
+  it('should cover configureDevice negative paths', async () => {
+    platform = new RoborockMatterbridgePlatform(mockMatterbridge, mockLogger, config);
+    platform.platformRunner = undefined;
+    platform.roborockService = undefined;
+    const result = await platform['configureDevice'](mockVacuum as any);
+    expect(result).toBe(false);
+    platform.platformRunner = {} as any;
+    platform.roborockService = { initializeMessageClientForLocal: vi.fn().mockResolvedValue(false) } as any;
+    const result2 = await platform['configureDevice'](mockVacuum as any);
+    expect(result2).toBe(false);
+  });
+
+  it('should cover addDevice all branches', async () => {
+    platform = new RoborockMatterbridgePlatform(mockMatterbridge, mockLogger, config);
+    platform.validateDevice = vi.fn().mockReturnValue(true);
+    platform.version = '1.2.3';
+    const device = {
+      ...mockRobot,
+      getClusterServerOptions: vi.fn(() => ({ deviceTypeList: [] })),
+      deviceTypes: new Map(),
+      mode: undefined,
+      createDefaultBridgedDeviceBasicInformationClusterServer: vi.fn(),
+      get softwareVersion() {
+        return 1;
+      },
+      set softwareVersion(v) {},
+      get hardwareVersion() {
+        return 1;
+      },
+      set hardwareVersion(v) {},
+      get softwareVersionString() {
+        return '1.2.3';
+      },
+      set softwareVersionString(v) {},
+      get hardwareVersionString() {
+        return '1.2.3';
+      },
+      set hardwareVersionString(v) {},
+      vendorId: 1,
+      vendorName: 'Roborock',
+      productName: 'Vacuum',
+      deviceName: 'Vacuum',
+      serialNumber: 'serial-1',
+      device: mockVacuum,
+    };
+    platform.setSelectDevice = vi.fn();
+    platform.registerDevice = vi.fn();
+    platform.robots = new Map();
+    const result = await platform['addDevice'](device as any);
+    expect(result).toBe(device);
+    platform.validateDevice = vi.fn().mockReturnValue(false);
+    const result2 = await platform['addDevice'](device as any);
+    expect(result2).toBeUndefined();
+  });
+
+  it('should cover onConfigureDevice negative branches', async () => {
+    platform = new RoborockMatterbridgePlatform(mockMatterbridge, mockLogger, config);
+    platform.platformRunner = undefined;
+    platform.roborockService = undefined;
+    await platform['onConfigureDevice']();
+    expect(mockLogger.error).toHaveBeenCalledWith('Initializing: PlatformRunner or RoborockService is undefined');
+
+    platform.platformRunner = {} as any;
+    platform.roborockService = {} as any;
+    platform.devices = new Map();
+    await platform['onConfigureDevice']();
+    expect(mockLogger.error).toHaveBeenCalledWith('Initializing: No supported devices found');
   });
 });

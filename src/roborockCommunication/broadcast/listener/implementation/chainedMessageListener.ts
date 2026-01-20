@@ -1,5 +1,4 @@
-import { ResponseMessage } from '../../model/responseMessage.js';
-import { AbstractMessageListener } from '../abstractMessageListener.js';
+import { ResponseMessage, AbstractMessageListener } from '../../index.js';
 
 export class ChainedMessageListener implements AbstractMessageListener {
   private listeners: AbstractMessageListener[] = [];

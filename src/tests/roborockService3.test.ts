@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { AnsiLogger } from 'matterbridge/logger';
-import RoborockService from '../roborockService.js';
-import ClientManager from '../services/clientManager.js';
+import RoborockService from '@/roborockService.js';
+import { ClientManager } from '@/services/index.js';
 
 describe('RoborockService - listDevices', () => {
   let roborockService: RoborockService;
@@ -9,7 +9,7 @@ describe('RoborockService - listDevices', () => {
   let clientManager: ClientManager;
 
   beforeEach(() => {
-    mockLogger = { debug: vi.fn(), error: vi.fn() } as any;
+    mockLogger = { debug: vi.fn(), error: vi.fn() } as unknown as AnsiLogger;
     clientManager = {} as ClientManager;
 
     roborockService = new RoborockService(

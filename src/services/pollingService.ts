@@ -3,9 +3,7 @@ import { Device, DeviceStatusNotify } from '../roborockCommunication/index.js';
 import { LOCAL_REFRESH_INTERVAL_MULTIPLIER, MQTT_REFRESH_INTERVAL_MULTIPLIER } from '../constants/index.js';
 import { NotifyMessageTypes } from '../notifyMessageTypes.js';
 import { MessageRoutingService } from './messageRoutingService.js';
-
-/** Callback for device status notifications. */
-export type DeviceNotifyCallback = (messageSource: NotifyMessageTypes, homeData: unknown) => Promise<void>;
+import { DeviceNotifyCallback } from '@/types/index.js';
 
 /** Polls device status via local network or MQTT. */
 export class PollingService {

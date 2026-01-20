@@ -1,5 +1,4 @@
-import { SyncMessageListener } from '@/roborockCommunication/broadcast/listener/implementation/syncMessageListener.js';
-import { RequestMessage, Protocol, ResponseMessage } from '@/roborockCommunication/index.js';
+import { RequestMessage, Protocol, ResponseMessage, SyncMessageListener, ResponseBody, HeaderMessage } from '@/roborockCommunication/index.js';
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 
 describe('SyncMessageListener', () => {
@@ -24,12 +23,7 @@ describe('SyncMessageListener', () => {
     listener.waitFor(messageId, { method: 'test' } as RequestMessage, resolve, reject);
 
     const dps = { id: messageId, result: { foo: 'bar' } };
-    const message = {
-      contain: (proto: Protocol) => proto === Protocol.rpc_response,
-      get: () => dps,
-      isForProtocol: (proto: Protocol) => proto === Protocol.rpc_response,
-      isForProtocols: (protos: Protocol[]) => protos.includes(Protocol.rpc_response),
-    } as any;
+    const message = new ResponseMessage('YBqkooSOUKiJd5HiCFOAS', new HeaderMessage('1.0', 932, 29, 1768267610, 102), new ResponseBody({ 102: dps }));
 
     await listener.onMessage(message);
 
@@ -44,12 +38,7 @@ describe('SyncMessageListener', () => {
     listener.waitFor(messageId, { method: 'test' } as RequestMessage, resolve, reject);
 
     const dps = { id: messageId, result: ['ok'] };
-    const message = {
-      contain: (proto: Protocol) => proto === Protocol.rpc_response,
-      get: () => dps,
-      isForProtocol: (proto: Protocol) => proto === Protocol.rpc_response,
-      isForProtocols: (protos: Protocol[]) => protos.includes(Protocol.rpc_response),
-    } as any;
+    const message = new ResponseMessage('YBqkooSOUKiJd5HiCFOAS', new HeaderMessage('1.0', 932, 29, 1768267610, 102), new ResponseBody({ 102: dps }));
 
     await listener.onMessage(message);
 
@@ -95,13 +84,7 @@ describe('SyncMessageListener', () => {
     const messageId = 999;
 
     const dps = { id: messageId, result: { foo: 'bar' } };
-    const message = {
-      contain: (proto: Protocol) => proto === Protocol.rpc_response,
-      get: () => dps,
-      isForProtocol: (proto: Protocol) => proto === Protocol.rpc_response,
-      isForProtocols: (protos: Protocol[]) => protos.includes(Protocol.rpc_response),
-    } as any;
-
+    const message = new ResponseMessage('YBqkooSOUKiJd5HiCFOAS', new HeaderMessage('1.0', 932, 29, 1768267610, 102), new ResponseBody({ 102: dps }));
     await listener.onMessage(message);
 
     expect(resolve).not.toHaveBeenCalled();
@@ -117,7 +100,6 @@ describe('SyncMessageListener', () => {
 
     await listener.onMessage(message);
     expect(true).toBe(true);
-    // Should complete without error
   });
 
   it('111 - should handle real rpc_response data', async () => {
@@ -126,17 +108,59 @@ describe('SyncMessageListener', () => {
     const messageId = 111;
     listener.waitFor(messageId, { method: 'test' } as RequestMessage, resolve, reject);
 
-    const dpsData = { id: messageId, result: { foo: 'bar' } };
-    const message = new ResponseMessage(
-      'YBqkooSOUKiJd5HiCFOAS',
-      { version: '1.0', seq: 932, nonce: 29, timestamp: 1768267610, protocol: 102, isForProtocol: (p: Protocol) => p === Protocol.rpc_response } as any,
-      { data: { 121: 5 }, get: (index: number | string | Protocol) => dpsData } as any,
-    );
+    const dpsData = { id: messageId, result: { 999: 'bar' } };
+    const message = new ResponseMessage('YBqkooSOUKiJd5HiCFOAS', new HeaderMessage('1.0', 932, 29, 1768267610, 102), new ResponseBody({ 102: dpsData }));
 
     await listener.onMessage(message);
 
     expect(resolve).toHaveBeenCalledWith(dpsData.result);
     expect(listener['pending'].has(messageId)).toBe(false);
+  });
+
+  it('111 - should handle real general_request data', async () => {
+    const resolve = vi.fn();
+    const reject = vi.fn();
+    const messageId = 111;
+    listener.waitFor(messageId, { method: 'test' } as RequestMessage, resolve, reject);
+
+    const dpsData = { id: messageId, result: { foo: 'bar' } };
+    const message = new ResponseMessage('YBqkooSOUKiJd5HiCFOAS', new HeaderMessage('1.0', 932, 29, 1768267610, 4), new ResponseBody({ 4: dpsData }));
+
+    await listener.onMessage(message);
+
+    expect(resolve).toHaveBeenCalledWith(dpsData.result);
+    expect(listener['pending'].has(messageId)).toBe(false);
+  });
+
+  it('111 - should handle real general_response data', async () => {
+    const resolve = vi.fn();
+    const reject = vi.fn();
+    const messageId = 111;
+    listener.waitFor(messageId, { method: 'test' } as RequestMessage, resolve, reject);
+
+    const dpsData = { id: messageId, result: { foo: 'bar' } };
+    const message = new ResponseMessage('YBqkooSOUKiJd5HiCFOAS', new HeaderMessage('1.0', 932, 29, 1768267610, 5), new ResponseBody({ 5: dpsData }));
+
+    await listener.onMessage(message);
+
+    expect(resolve).toHaveBeenCalledWith(dpsData.result);
+    expect(listener['pending'].has(messageId)).toBe(false);
+  });
+
+  it('111 - should handle real rpc_response for status change', async () => {
+    const resolve = vi.fn();
+    const message = new ResponseMessage(
+      'YBqkooSOUKiJd5HiCFOAS',
+      new HeaderMessage('1.0', 932, 29, 1768267610, 102),
+      new ResponseBody({
+        123: 5, // suction_power
+        124: 3, // water_box_mode
+      }),
+    );
+
+    await listener.onMessage(message);
+
+    expect(resolve).not.toHaveBeenCalledWith();
   });
 
   it('222 - should handle real rpc_response with wifi info', async () => {
@@ -146,14 +170,7 @@ describe('SyncMessageListener', () => {
     listener.waitFor(messageId, { method: 'test' } as RequestMessage, resolve, reject);
 
     const dpsData = { id: messageId, result: { ssid: 'ahihi', ip: '192.168.202.8', mac: '24:9e:7d:07:d6:4a', bssid: '20:23:51:1f:7c:8a', rssi: -39 } };
-    const message = new ResponseMessage(
-      'YBqkooSOUKiJd5HiCFOAS',
-      { version: '1.0', seq: 922, nonce: 28, timestamp: 1768267511, protocol: 102, isForProtocol: (p: Protocol) => p === Protocol.rpc_response } as any,
-      {
-        data: { 102: { id: 25201, result: { ssid: 'ahihi', ip: '192.168.202.8', mac: '24:9e:7d:07:d6:4a', bssid: '20:23:51:1f:7c:8a', rssi: -39 } } },
-        get: (index: number | string | Protocol) => dpsData,
-      } as any,
-    );
+    const message = new ResponseMessage('YBqkooSOUKiJd5HiCFOAS', new HeaderMessage('1.0', 922, 28, 1768267511, 102), new ResponseBody({ 102: dpsData }));
 
     await listener.onMessage(message);
 
@@ -205,7 +222,7 @@ describe('SyncMessageListener', () => {
         isForProtocol: (p: Protocol) => p === Protocol.general_request,
       } as any,
       {
-        data: { 102: { id: messageId, result: mapResult } },
+        data: { 102: dpsData },
         get: (index: number | string | Protocol) => {
           // When checking for protocol 102 (rpc_response), return the actual data
           if (index === Protocol.rpc_response || index === 102 || index === '102') {
@@ -303,7 +320,6 @@ describe('SyncMessageListener', () => {
       {
         data: { 102: testData }, // Data ONLY in key 102
         get: (index: number | string | Protocol) => {
-          // ONLY return data for key 102, NOT for key 4
           if (index === Protocol.rpc_response || index === 102 || index === '102') {
             return testData;
           }
@@ -314,11 +330,7 @@ describe('SyncMessageListener', () => {
 
     await listener.onMessage(message);
 
-    // With the FIX, this should resolve successfully
     expect(resolve).toHaveBeenCalledWith({ test: 'data' });
-
-    // Without the FIX (if code only checks protocol 4), resolve would NOT be called
-    // and logger.warn would show "Response missing DPS payload"
     expect(logger.warn).not.toHaveBeenCalledWith(expect.stringContaining('Response missing DPS payload'));
   });
 });

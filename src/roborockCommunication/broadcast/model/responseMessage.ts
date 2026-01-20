@@ -13,8 +13,8 @@ export class ResponseMessage {
     this.header = header;
   }
 
-  public get(index: Protocol): unknown | undefined {
-    return this.body?.get(index);
+  public get<T>(index: Protocol): T {
+    return this.body?.get(index) as T;
   }
 
   public isForProtocol(protocol: Protocol): boolean {
@@ -27,5 +27,9 @@ export class ResponseMessage {
 
   public isForStatus(status: number): boolean {
     return this.body !== undefined && this.body.get(status) !== undefined;
+  }
+
+  public isForStatuses(statuses: number[]): boolean {
+    return statuses.some((status) => this.isForStatus(status));
   }
 }

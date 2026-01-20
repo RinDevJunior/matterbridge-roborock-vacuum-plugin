@@ -1,12 +1,9 @@
 import mqtt, { ErrorWithReasonCode, IConnackPacket, ISubscriptionGrant, MqttClient as MqttLibClient } from 'mqtt';
 import * as CryptoUtils from '../../helper/cryptoHelper.js';
-import { RequestMessage } from '../model/requestMessage.js';
-import { AbstractClient } from '../abstractClient.js';
-import { MessageContext } from '../model/messageContext.js';
-import { Rriot, UserData } from '../../Zmodel/userData.js';
+import { SyncMessageListener, Rriot, UserData, RequestMessage, MessageContext } from '@/roborockCommunication/index.js';
 import { AnsiLogger, debugStringify } from 'matterbridge/logger';
-import { KEEPALIVE_INTERVAL_MS } from '../../../constants/index.js';
-import { SyncMessageListener } from '../listener/implementation/syncMessageListener.js';
+import { KEEPALIVE_INTERVAL_MS } from '@/constants/index.js';
+import { AbstractClient } from '../abstractClient.js';
 
 export class MQTTClient extends AbstractClient {
   protected override clientName = 'MQTTClient';
@@ -25,6 +22,10 @@ export class MQTTClient extends AbstractClient {
     this.mqttPassword = CryptoUtils.md5hex(userdata.rriot.s + ':' + userdata.rriot.k).substring(16);
 
     this.initializeConnectionStateListener();
+  }
+
+  public override isReady(): boolean {
+    return this.mqttClient !== undefined && this.connected;
   }
 
   public override isConnected(): boolean {

@@ -1,6 +1,4 @@
-import { AbstractClient } from '@/roborockCommunication/broadcast/abstractClient.js';
-import { MessageContext } from '@/roborockCommunication/broadcast/model/messageContext.js';
-import { RequestMessage } from '@/roborockCommunication/index.js';
+import { AbstractClient, MessageContext, RequestMessage } from '@/roborockCommunication/index.js';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 
 class TestClient extends AbstractClient {
@@ -10,6 +8,10 @@ class TestClient extends AbstractClient {
   constructor(logger: any, context: MessageContext) {
     super(logger, context);
     this.initializeConnectionStateListener();
+  }
+
+  override isReady(): boolean {
+    return true;
   }
 
   override connect(): void {

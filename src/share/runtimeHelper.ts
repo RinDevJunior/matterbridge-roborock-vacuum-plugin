@@ -1,10 +1,8 @@
-import { CleanModeSetting } from '../behaviors/roborock.vacuum/default/default.js';
-import { getCurrentCleanModeDefault } from '../behaviors/roborock.vacuum/default/runtimes.js';
-import { getCurrentCleanModeSmart } from '../behaviors/roborock.vacuum/smart/runtimes.js';
-import { DeviceModel } from '../roborockCommunication/Zmodel/deviceModel.js';
-import { SMART_MODELS } from '../constants/index.js';
+import { CleanModeDTO, getCurrentCleanModeSmart, getCurrentCleanModeDefault } from '../behaviors/index.js';
+import { DeviceModel } from '@/roborockCommunication/index.js';
+import { SMART_MODELS } from '@/constants/index.js';
 
-export type CleanModeFunc = (setting: CleanModeSetting) => number | undefined;
+export type CleanModeFunc = (setting: CleanModeDTO) => number | undefined;
 
 /**
  * Get the appropriate clean mode function based on device model.

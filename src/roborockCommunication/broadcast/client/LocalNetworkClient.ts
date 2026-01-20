@@ -1,16 +1,18 @@
 import { Socket } from 'node:net';
 import { clearInterval } from 'node:timers';
-import { Protocol } from '../model/protocol.js';
-import { RequestMessage } from '../model/requestMessage.js';
 import { AnsiLogger, debugStringify } from 'matterbridge/logger';
+import {
+  Protocol,
+  RequestMessage,
+  MessageContext,
+  ResponseMessage,
+  ProtocolVersion,
+  PingResponseListener,
+  SyncMessageListener,
+  Sequence,
+  ChunkBuffer,
+} from '@/roborockCommunication/index.js';
 import { AbstractClient } from '../abstractClient.js';
-import { MessageContext } from '../model/messageContext.js';
-import { Sequence } from '../../helper/sequence.js';
-import { ChunkBuffer } from '../../helper/chunkBuffer.js';
-import { PingResponseListener } from '../listener/implementation/pingResponseListener.js';
-import { ProtocolVersion } from '../../Zenum/protocolVersion.js';
-import { ResponseMessage } from '../../index.js';
-import { SyncMessageListener } from '../listener/implementation/syncMessageListener.js';
 
 export class LocalNetworkClient extends AbstractClient {
   protected override clientName = 'LocalNetworkClient';

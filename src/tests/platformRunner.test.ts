@@ -1,14 +1,14 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { PlatformRunner } from '../platformRunner.js';
-import { NotifyMessageTypes } from '../notifyMessageTypes.js';
-import { RoborockMatterbridgePlatform } from '../module.js';
-import { Home } from '../roborockCommunication/index.js';
 import fs from 'node:fs';
-import { fileURLToPath } from 'node:url';
 import path from 'node:path';
-import { RoborockVacuumCleaner } from '../rvc.js';
-import * as initialDataIndex from '../initialData/index.js';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { RvcOperationalState } from 'matterbridge/matter/clusters';
+import { fileURLToPath } from 'node:url';
+import { PlatformRunner } from '@/platformRunner.js';
+import { NotifyMessageTypes } from '@/notifyMessageTypes.js';
+import { RoborockMatterbridgePlatform } from '@/module.js';
+import { Home } from '@/roborockCommunication/index.js';
+import { RoborockVacuumCleaner } from '@/rvc.js';
+import * as initialDataIndex from '@/initialData/index.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);

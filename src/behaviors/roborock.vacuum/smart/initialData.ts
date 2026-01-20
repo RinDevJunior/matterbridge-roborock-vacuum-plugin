@@ -1,5 +1,5 @@
 import { RvcCleanMode } from 'matterbridge/matter/clusters';
-import { RvcCleanMode as RvcCleanModeDisplayMap } from './smart.js';
+import { SmartRvcCleanMode as RvcCleanModeDisplayMap } from './smart.js';
 import { getDefaultSupportedCleanModes } from '../default/initialData.js';
 import { ExperimentalFeatureSetting } from '../../../model/ExperimentalFeatureSetting.js';
 

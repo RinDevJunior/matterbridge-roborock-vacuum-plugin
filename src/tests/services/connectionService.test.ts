@@ -1,11 +1,8 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { ConnectionService } from '../../services/connectionService.js';
-import ClientManager from '../../services/clientManager.js';
-import { Device, UserData, Protocol, ResponseMessage } from '../../roborockCommunication/index.js';
-import { DpsPayload } from '../../roborockCommunication/broadcast/model/dps.js';
-import { DeviceConnectionError, DeviceInitializationError } from '../../errors/index.js';
-import { NotifyMessageTypes } from '../../notifyMessageTypes.js';
-import { HeaderMessage } from '../../roborockCommunication/broadcast/model/headerMessage.js';
+import { ClientManager, ConnectionService } from '@/services/index.js';
+import { Device, UserData, Protocol, ResponseMessage, DpsPayload, HeaderMessage } from '@/roborockCommunication/index.js';
+import { DeviceConnectionError, DeviceInitializationError } from '@/errors/index.js';
+import { NotifyMessageTypes } from '@/notifyMessageTypes.js';
 
 describe('ConnectionService', () => {
   let service: ConnectionService;

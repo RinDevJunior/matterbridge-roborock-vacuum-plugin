@@ -1,7 +1,32 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+
+const mockLocalNetworkUDPClient = {
+  connect: vi.fn(),
+  registerListener: vi.fn(),
+};
+
+const mockMessageProcessor = {
+  injectLogger: vi.fn(),
+  registerListener: vi.fn(),
+  getNetworkInfo: vi.fn(),
+};
+
+vi.mock('../../roborockCommunication/index.js', async () => {
+  const actual = await vi.importActual('../../roborockCommunication/index.js');
+  return {
+    ...actual,
+    LocalNetworkUDPClient: vi.fn(function () {
+      return mockLocalNetworkUDPClient;
+    }),
+    MessageProcessor: vi.fn(function () {
+      return mockMessageProcessor;
+    }),
+  };
+});
+
 import { DeviceManagementService } from '../../services/deviceManagementService.js';
 import { NotifyMessageTypes } from '../../notifyMessageTypes.js';
-import { UserData, Device, Home, ResponseMessage, Protocol } from '../../roborockCommunication/index.js';
+import { UserData, Device, Home, ResponseMessage, Protocol, ProtocolVersion } from '@/roborockCommunication/index.js';
 import { DeviceError, DeviceNotFoundError, DeviceConnectionError, DeviceInitializationError } from '../../errors/index.js';
 
 describe('DeviceManagementService', () => {
@@ -38,9 +63,9 @@ describe('DeviceManagementService', () => {
     name: 'Test Vacuum',
     productId: 'prod-456',
     localKey: 'local-key-789',
-    pv: 'A01',
+    pv: '1.0',
     sn: 'SN12345',
-    fv: '1.0.0',
+    fv: '1.0',
     rrHomeId: 12345,
     rooms: [],
     scenes: [],
@@ -147,6 +172,18 @@ describe('DeviceManagementService', () => {
 
     mockDeviceNotifyCallback = vi.fn();
 
+    mockLocalNetworkUDPClient.connect.mockClear();
+    mockLocalNetworkUDPClient.registerListener.mockClear();
+    mockMessageProcessor.injectLogger.mockClear();
+    mockMessageProcessor.registerListener.mockClear();
+    mockMessageProcessor.getNetworkInfo.mockClear();
+
+    mockLocalNetworkUDPClient.connect.mockClear();
+    mockLocalNetworkUDPClient.registerListener.mockClear();
+    mockMessageProcessor.injectLogger.mockClear();
+    mockMessageProcessor.registerListener.mockClear();
+    mockMessageProcessor.getNetworkInfo.mockClear();
+
     deviceService = new DeviceManagementService(mockIotApiFactory, mockClientManager, mockLogger, mockLoginApi, mockMessageRoutingService);
   });
 
@@ -216,7 +253,7 @@ describe('DeviceManagementService', () => {
         scenes: [],
         data: {
           id: 'device-123',
-          firmwareVersion: '1.0.0',
+          firmwareVersion: '1.0',
           serialNumber: 'SN12345',
           category: 'vacuum',
           batteryLevel: 85,
@@ -224,7 +261,7 @@ describe('DeviceManagementService', () => {
         store: {
           userData: mockUserData,
           localKey: 'local-key-789',
-          pv: 'A01',
+          pv: '1.0',
           model: 's5_max',
         },
       });
@@ -336,7 +373,7 @@ describe('DeviceManagementService', () => {
         rooms: mockHomeData.rooms,
         data: expect.objectContaining({
           id: 'device-123',
-          firmwareVersion: '1.0.0',
+          firmwareVersion: '1.0',
           serialNumber: 'SN12345',
         }),
       });
@@ -434,7 +471,7 @@ describe('DeviceManagementService', () => {
       await deviceService.initializeMessageClient('test@example.com', mockDevice, mockUserData);
 
       expect(mockClientManager.get).toHaveBeenCalledWith('test@example.com', mockUserData);
-      expect(mockClientRouter.registerDevice).toHaveBeenCalledWith('device-123', 'local-key-789', 'A01', undefined);
+      expect(mockClientRouter.registerDevice).toHaveBeenCalledWith('device-123', 'local-key-789', '1.0', undefined);
       expect(mockClientRouter.registerMessageListener).toHaveBeenCalled();
       expect(mockClientRouter.connect).toHaveBeenCalled();
       expect(deviceService.messageClient).toBe(mockClientRouter);
@@ -507,16 +544,6 @@ describe('DeviceManagementService', () => {
 
       expect(result).toBe(false);
       expect(mockLogger.error).toHaveBeenCalledWith('messageClient not initialized');
-    });
-
-    it('should handle B01 protocol devices (MQTT-only)', async () => {
-      deviceService.messageClient = mockClientRouter;
-      const b01Device = { ...mockDevice, pv: 'B01' };
-
-      const result = await deviceService.initializeMessageClientForLocal(b01Device);
-
-      expect(result).toBe(true);
-      expect(mockLogger.debug).toHaveBeenCalledWith('Device uses B01 protocol, skipping local connection');
     });
   });
 
@@ -594,20 +621,6 @@ describe('DeviceManagementService', () => {
       // Stop service
       deviceService.stopService();
       expect(deviceService.messageClient).toBeUndefined();
-    });
-
-    it('should handle MQTT-only workflow for B01 devices', async () => {
-      const b01Device = { ...mockDevice, pv: 'B01' };
-      const homeDataWithB01 = { ...mockHomeData, devices: [b01Device] };
-      mockIotApi.getHomev2.mockResolvedValue(homeDataWithB01);
-
-      deviceService.setAuthentication(mockUserData);
-
-      const devices = await deviceService.listDevices('test@example.com');
-      await deviceService.initializeMessageClient('test@example.com', devices[0], mockUserData);
-      const localResult = await deviceService.initializeMessageClientForLocal(devices[0]);
-
-      expect(localResult).toBe(false);
     });
   });
 
@@ -743,6 +756,43 @@ describe('DeviceManagementService', () => {
       // Verify the method was called successfully
       expect(newUserData.uid).toBe('new-uid');
       expect(newUserData.rruid).toBe(mockUserData.rruid);
+    });
+  });
+
+  describe('initializeMessageClientForLocal B01 case', () => {
+    it('should initialize UDP client for B01 protocol device', async () => {
+      const b01Device = { ...mockDevice, pv: ProtocolVersion.B01 };
+
+      deviceService.messageClient = mockClientRouter;
+
+      const result = await deviceService.initializeMessageClientForLocal(b01Device);
+
+      expect(result).toBe(true);
+
+      expect(mockMessageProcessor.registerListener).toHaveBeenCalled();
+
+      expect(mockMessageRoutingService.registerMessageProcessor).toHaveBeenCalledWith(b01Device.duid, mockMessageProcessor);
+
+      expect(mockMessageRoutingService.setMqttAlwaysOn).toHaveBeenCalledWith(b01Device.duid, true);
+
+      expect(mockLocalNetworkUDPClient.registerListener).toHaveBeenCalled();
+
+      expect(mockLocalNetworkUDPClient.connect).toHaveBeenCalled();
+
+      // Test the listener
+      const listener = mockLocalNetworkUDPClient.registerListener.mock.calls[0][0];
+
+      await listener.onMessage(b01Device.duid, '192.168.1.100');
+
+      expect(deviceService.ipMap.get(b01Device.duid)).toBe('192.168.1.100');
+
+      expect(mockClientRouter.registerClient).toHaveBeenCalledWith(b01Device.duid, '192.168.1.100');
+
+      const localClient = mockClientRouter.registerClient.mock.results[0].value;
+
+      expect(localClient.connect).toHaveBeenCalled();
+
+      expect(deviceService.localClientMap.get(b01Device.duid)).toBe(localClient);
     });
   });
 });

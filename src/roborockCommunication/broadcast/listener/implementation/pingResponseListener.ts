@@ -1,7 +1,5 @@
-import { Protocol } from '../../model/protocol.js';
-import { ResponseMessage } from '../../model/responseMessage.js';
-import { AbstractMessageListener } from '../abstractMessageListener.js';
-import { HELLO_RESPONSE_TIMEOUT_MS } from '../../../../constants/index.js';
+import { Protocol, ResponseMessage, AbstractMessageListener } from '../../index.js';
+import { HELLO_RESPONSE_TIMEOUT_MS } from '@/constants/index.js';
 
 export class PingResponseListener implements AbstractMessageListener {
   private readonly duid: string;

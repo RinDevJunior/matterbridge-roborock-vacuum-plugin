@@ -1,5 +1,4 @@
-import { CleanModeSetting } from '../default/default.js';
-import { getCurrentCleanModeDefault } from '../default/runtimes.js';
+import { CleanModeDTO, getCurrentCleanModeDefault } from '@/behaviors/index.js';
 import { MopRouteSmart, MopWaterFlowSmart, VacuumSuctionPowerSmart } from './smart.js';
 
 /**
@@ -8,7 +7,7 @@ import { MopRouteSmart, MopWaterFlowSmart, VacuumSuctionPowerSmart } from './sma
  * @param setting - Clean mode settings from device
  * @returns Clean mode identifier or undefined if no match found
  */
-export function getCurrentCleanModeSmart(setting: CleanModeSetting): number | undefined {
+export function getCurrentCleanModeSmart(setting: CleanModeDTO): number | undefined {
   if (!setting || typeof setting !== 'object') {
     return undefined;
   }

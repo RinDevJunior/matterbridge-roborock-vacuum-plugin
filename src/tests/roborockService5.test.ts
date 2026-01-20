@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import RoborockService from '../roborockService.js';
-import ClientManager from '../services/clientManager.js';
+import { ClientManager } from '@/services/index.js';
 
 describe('initializeMessageClientForLocal', () => {
   let service: RoborockService;

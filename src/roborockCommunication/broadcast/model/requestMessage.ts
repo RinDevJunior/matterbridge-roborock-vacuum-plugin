@@ -1,4 +1,4 @@
-import { ProtocolVersion } from '../../Zenum/protocolVersion.js';
+import { ProtocolVersion } from '../../Zenum/index.js';
 import { Protocol } from './protocol.js';
 import { randomInt } from 'node:crypto';
 
