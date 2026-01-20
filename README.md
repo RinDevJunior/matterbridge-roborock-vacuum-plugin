@@ -73,7 +73,7 @@ To get the **DUID** for your devices, you have two options:
 ### 🚧 Project Status
 
 - **Under active development**
-- Requires **`matterbridge@3.1.7`**
+- Requires **`matterbridge@3.4.7`**
 - ⚠️ **Known Issue:**
 
 * Vacuum may appear as **two devices** in Apple Home
