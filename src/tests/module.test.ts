@@ -100,9 +100,9 @@ describe('RoborockMatterbridgePlatform', () => {
     });
 
     it('logVerificationCodeBanner logs correct messages', () => {
-      testPlatform.testLogVerificationCodeBanner('test..example.com', false);
+      testPlatform.testLogVerificationCodeBanner('test@example.com', false);
       expect(mockLogger.notice).toHaveBeenCalledWith(expect.stringContaining('ACTION REQUIRED'));
-      testPlatform.testLogVerificationCodeBanner('test..example.com', true);
+      testPlatform.testLogVerificationCodeBanner('test@example.com', true);
       expect(mockLogger.notice).toHaveBeenCalledWith(expect.stringContaining('was previously sent'));
     });
 
@@ -257,7 +257,7 @@ describe('RoborockMatterbridgePlatform', () => {
     } as any;
     config = {
       name: 'Test Platform',
-      username: 'test..example.com',
+      username: 'test@example.com',
       whiteList: [],
       blackList: [],
       useInterval: false,
