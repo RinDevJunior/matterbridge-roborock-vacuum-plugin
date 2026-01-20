@@ -250,7 +250,7 @@ describe('RoborockMatterbridgePlatform', () => {
   beforeEach(() => {
     mockLogger = createMockLogger();
     mockMatterbridge = {
-      matterbridgeVersion: '3.4.7',
+      matterbridgeVersion: '3.5.0',
       matterbridgePluginDirectory: '/tmp',
       matterbridgeDirectory: '/tmp',
       verifyMatterbridgeVersion: () => true,

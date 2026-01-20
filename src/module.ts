@@ -60,7 +60,7 @@ export class RoborockMatterbridgePlatform extends MatterbridgeDynamicPlatform {
   ) {
     super(matterbridge, log, config);
 
-    const requiredMatterbridgeVersion = '3.4.7';
+    const requiredMatterbridgeVersion = '3.5.0';
     // Verify that Matterbridge is the correct version
     if (this.verifyMatterbridgeVersion === undefined || typeof this.verifyMatterbridgeVersion !== 'function' || !this.verifyMatterbridgeVersion(requiredMatterbridgeVersion)) {
       throw new Error(
