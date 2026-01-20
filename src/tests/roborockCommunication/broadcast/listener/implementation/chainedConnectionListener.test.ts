@@ -1,4 +1,4 @@
-import { ChainedConnectionListener } from '@/roborockCommunication/broadcast/listener/implementation/chainedConnectionListener.js';
+import { ChainedConnectionListener } from '../../../../../roborockCommunication/broadcast/listener/implementation/chainedConnectionListener.js';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 
 describe('ChainedConnectionListener', () => {
@@ -24,8 +24,7 @@ describe('ChainedConnectionListener', () => {
     chained.register(listener1);
     chained.register(listener2);
 
-    // @ts-expect-error Accessing private property for testing
-    expect(chained.listeners).toEqual([listener1, listener2]);
+    expect(chained['listeners']).toEqual([listener1, listener2]);
   });
 
   it('should call onConnected on all listeners', async () => {

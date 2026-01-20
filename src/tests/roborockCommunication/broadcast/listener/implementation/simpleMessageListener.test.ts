@@ -1,6 +1,6 @@
-import { SimpleMessageListener } from '@/roborockCommunication/broadcast/listener/index.js';
-import { HeaderMessage } from '@/roborockCommunication/broadcast/model/headerMessage.js';
-import { ResponseMessage, Protocol, AbstractMessageHandler } from '@/roborockCommunication/index.js';
+import { SimpleMessageListener } from '../../../../../roborockCommunication/broadcast/listener/index.js';
+import { HeaderMessage } from '../../../../../roborockCommunication/broadcast/model/headerMessage.js';
+import { ResponseMessage, Protocol, AbstractMessageHandler } from '../../../../../roborockCommunication/index.js';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 
 describe('SimpleMessageListener', () => {

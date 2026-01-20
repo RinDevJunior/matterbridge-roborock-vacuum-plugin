@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { RvcRunMode } from 'matterbridge/matter/clusters';
-import { getSupportedRunModes } from '@/initialData/index.js';
-import { getRunningMode } from '@/initialData/getSupportedRunModes.js';
+import { getSupportedRunModes } from '../../initialData/index.js';
+import { getRunningMode } from '../../initialData/getSupportedRunModes.js';
 
 describe('getSupportedRunModes helpers', () => {
   it('getSupportedRunModes returns array containing Idle mapping', () => {

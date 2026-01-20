@@ -1,6 +1,6 @@
-import { MessageContext } from '@/roborockCommunication/broadcast/model/messageContext.js';
-import { L01MessageBodyBuilder } from '@/roborockCommunication/builder/L01MessageBodyBuilder.js';
-import { RequestMessage, Protocol } from '@/roborockCommunication/index.js';
+import { MessageContext } from '../../../roborockCommunication/broadcast/model/messageContext.js';
+import { L01MessageBodyBuilder } from '../../../roborockCommunication/builder/L01MessageBodyBuilder.js';
+import { RequestMessage, Protocol } from '../../../roborockCommunication/index.js';
 import { describe, it, expect } from 'vitest';
 
 const mkUser = () => ({ rriot: { k: 'test-key' } }) as any;

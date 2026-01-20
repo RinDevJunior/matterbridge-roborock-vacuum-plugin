@@ -1,6 +1,6 @@
-import { HeaderMessage } from '@/roborockCommunication/broadcast/model/headerMessage.js';
-import { ResponseBody } from '@/roborockCommunication/broadcast/model/responseBody.js';
-import { ResponseMessage, Protocol } from '@/roborockCommunication/index.js';
+import { HeaderMessage } from '../../../../roborockCommunication/broadcast/model/headerMessage.js';
+import { ResponseBody } from '../../../../roborockCommunication/broadcast/model/responseBody.js';
+import { ResponseMessage, Protocol } from '../../../../roborockCommunication/index.js';
 import { describe, it, expect } from 'vitest';
 
 describe('ResponseMessage', () => {

@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { getDefaultSupportedRunModes, getDefaultSupportedCleanModes, getDefaultOperationalStates } from '@/behaviors/roborock.vacuum/default/initialData.js';
-import { ExperimentalFeatureSetting } from '@/model/ExperimentalFeatureSetting.js';
+import { getDefaultSupportedRunModes, getDefaultSupportedCleanModes, getDefaultOperationalStates } from '../../../../behaviors/roborock.vacuum/default/initialData.js';
+import { ExperimentalFeatureSetting } from '../../../../model/ExperimentalFeatureSetting.js';
 
 describe('default initialData helpers', () => {
   it('getDefaultSupportedRunModes returns expected modes', () => {

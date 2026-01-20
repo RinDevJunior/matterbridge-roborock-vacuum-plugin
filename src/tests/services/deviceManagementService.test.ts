@@ -3,6 +3,7 @@ import { DeviceManagementService } from '../../services/deviceManagementService.
 import { NotifyMessageTypes } from '../../notifyMessageTypes.js';
 import { UserData, Device, Home, ResponseMessage, Protocol } from '../../roborockCommunication/index.js';
 import { DeviceError, DeviceNotFoundError, DeviceConnectionError, DeviceInitializationError } from '../../errors/index.js';
+import { NetworkInfo, RPC_Request_Segments } from '../../roborockCommunication/broadcast/model/protocol.js';
 
 describe('DeviceManagementService', () => {
   let deviceService: DeviceManagementService;
@@ -597,17 +598,24 @@ describe('DeviceManagementService', () => {
     });
 
     it('should handle MQTT-only workflow for B01 devices', async () => {
-      const b01Device = { ...mockDevice, pv: 'B01' };
+      const b01Device = {
+        ...mockDevice,
+        duid: 'device-b01',
+        pv: 'B01',
+        deviceStatus: {
+          [Protocol.battery]: 85,
+          [Protocol.rpc_request]: {
+            [RPC_Request_Segments.network_info]: { ipAddress: '192.168.1.100', mac: '00:11:22:33:44:55', wifiName: 'TestWiFi', signal: 75 } satisfies NetworkInfo,
+          },
+        },
+      };
       const homeDataWithB01 = { ...mockHomeData, devices: [b01Device] };
       mockIotApi.getHomev2.mockResolvedValue(homeDataWithB01);
-
       deviceService.setAuthentication(mockUserData);
+      await deviceService.initializeMessageClient('test@example.com', b01Device, mockUserData);
+      const localResult = await deviceService.initializeMessageClientForLocal(b01Device);
 
-      const devices = await deviceService.listDevices('test@example.com');
-      await deviceService.initializeMessageClient('test@example.com', devices[0], mockUserData);
-      const localResult = await deviceService.initializeMessageClientForLocal(devices[0]);
-
-      expect(localResult).toBe(false);
+      expect(localResult).toBe(true);
     });
   });
 

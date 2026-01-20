@@ -4,8 +4,8 @@ declare global {
 
   var Sket: any;
 }
-import { LocalNetworkClient } from '@/roborockCommunication/broadcast/client/LocalNetworkClient.js';
-import { Protocol } from '@/roborockCommunication/index.js';
+import { LocalNetworkClient } from '../../../../roborockCommunication/broadcast/client/LocalNetworkClient.js';
+import { Protocol } from '../../../../roborockCommunication/index.js';
 import EventEmitter from 'node:events';
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 

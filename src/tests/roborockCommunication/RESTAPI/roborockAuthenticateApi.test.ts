@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { RoborockAuthenticateApi } from '@/roborockCommunication/RESTAPI/roborockAuthenticateApi.js';
+import { RoborockAuthenticateApi } from '../../../roborockCommunication/RESTAPI/roborockAuthenticateApi.js';
 
 describe('RoborockAuthenticateApi', () => {
   let mockLogger: any;
@@ -148,7 +148,7 @@ describe('RoborockAuthenticateApi', () => {
       vi.spyOn(api as any, 'getAPIFor').mockResolvedValue(mockAxiosInstance);
       mockAxiosInstance.post.mockResolvedValue({ data: { code: 200 } });
 
-      await api.requestCodeV4('test@example.com');
+      await api.requestCodeV4('test../../../..example.com');
       expect(mockAxiosInstance.post).toHaveBeenCalledWith(
         'api/v4/email/code/send',
         expect.any(URLSearchParams),
@@ -161,21 +161,21 @@ describe('RoborockAuthenticateApi', () => {
       vi.spyOn(api as any, 'getAPIFor').mockResolvedValue(mockAxiosInstance);
       mockAxiosInstance.post.mockResolvedValue({ data: { code: 2008 } }); // AccountNotFound
 
-      await expect(api.requestCodeV4('notfound@example.com')).rejects.toThrow('Account not found for email');
+      await expect(api.requestCodeV4('notfound../../../..example.com')).rejects.toThrow('Account not found for email');
     });
 
     it('should throw error if rate limited', async () => {
       vi.spyOn(api as any, 'getAPIFor').mockResolvedValue(mockAxiosInstance);
       mockAxiosInstance.post.mockResolvedValue({ data: { code: 9002 } }); // RateLimited
 
-      await expect(api.requestCodeV4('rate@example.com')).rejects.toThrow('Rate limited');
+      await expect(api.requestCodeV4('rate../../../..example.com')).rejects.toThrow('Rate limited');
     });
 
     it('should throw error for other failures', async () => {
       vi.spyOn(api as any, 'getAPIFor').mockResolvedValue(mockAxiosInstance);
       mockAxiosInstance.post.mockResolvedValue({ data: { code: 500, msg: 'Server error' } });
 
-      await expect(api.requestCodeV4('fail@example.com')).rejects.toThrow('Failed to send verification code');
+      await expect(api.requestCodeV4('fail../../../..example.com')).rejects.toThrow('Failed to send verification code');
     });
   });
 
@@ -193,7 +193,7 @@ describe('RoborockAuthenticateApi', () => {
 
       vi.spyOn(api as any, 'auth').mockReturnValue(userData);
 
-      const result = await api.loginWithCodeV4('test@example.com', '123456');
+      const result = await api.loginWithCodeV4('test../../../..example.com', '123456');
       expect(result).toBe(userData);
       expect(mockAxiosInstance.post).toHaveBeenCalledTimes(2);
     });
@@ -208,7 +208,7 @@ describe('RoborockAuthenticateApi', () => {
         .mockResolvedValueOnce({ data: { data: { k: signedKey }, code: 200 } }) // signKeyV3
         .mockResolvedValueOnce({ data: { data: null, code: 500, msg: 'Server error' } }); // login fails
 
-      await expect(api.loginWithCodeV4('test@example.com', '123456')).rejects.toThrow('Authentication failed: Server error code: 500');
+      await expect(api.loginWithCodeV4('test../../../..example.com', '123456')).rejects.toThrow('Authentication failed: Server error code: 500');
     });
   });
 
@@ -226,7 +226,7 @@ describe('RoborockAuthenticateApi', () => {
       mockAxiosInstance.post.mockResolvedValue({ data: { data: userData, code: 200 } });
       vi.spyOn(api as any, 'authV4').mockReturnValue(userData);
 
-      await api.loginWithCodeV4('test@example.com', '123456');
+      await api.loginWithCodeV4('test../../../..example.com', '123456');
 
       // The request should include fallback country 'Germany' and countryCode 'DE' in params
       expect(mockAxiosInstance.post).toHaveBeenCalledWith(
@@ -254,7 +254,7 @@ describe('RoborockAuthenticateApi', () => {
       mockAxiosInstance.post.mockResolvedValue({ data: { data: userData, code: 200 } });
       vi.spyOn(api as any, 'authV4').mockReturnValue(userData);
 
-      await api.loginWithCodeV4('test@example.com', '123456');
+      await api.loginWithCodeV4('test../../../..example.com', '123456');
 
       expect(mockAxiosInstance.post).toHaveBeenCalledWith(
         'api/v4/auth/email/login/code',
@@ -281,7 +281,7 @@ describe('RoborockAuthenticateApi', () => {
       mockAxiosInstance.post.mockResolvedValue({ data: { data: userData, code: 200 } });
       vi.spyOn(api as any, 'authV4').mockReturnValue(userData);
 
-      await api.loginWithCodeV4('test@example.com', '123456');
+      await api.loginWithCodeV4('test../../../..example.com', '123456');
 
       expect(mockAxiosInstance.post).toHaveBeenCalledWith(
         'api/v4/auth/email/login/code',
@@ -308,7 +308,7 @@ describe('RoborockAuthenticateApi', () => {
       mockAxiosInstance.post.mockResolvedValue({ data: { data: userData, code: 200 } });
       vi.spyOn(api as any, 'authV4').mockReturnValue(userData);
 
-      await api.loginWithCodeV4('test@example.com', '123456');
+      await api.loginWithCodeV4('test../../../..example.com', '123456');
 
       expect(mockAxiosInstance.post).toHaveBeenCalledWith(
         'api/v4/auth/email/login/code',

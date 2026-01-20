@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { getCurrentCleanModeDefault } from '@/behaviors/roborock.vacuum/default/runtimes.js';
-import { VacuumSuctionPower, MopRoute, MopWaterFlow } from '@/behaviors/roborock.vacuum/default/default.js';
+import { getCurrentCleanModeDefault } from '../../../../behaviors/roborock.vacuum/default/runtimes.js';
+import { VacuumSuctionPower, MopRoute, MopWaterFlow } from '../../../../behaviors/roborock.vacuum/default/default.js';
 
 describe('runtimes.getCurrentCleanModeDefault', () => {
   it('returns 10 when any value is Custom', () => {

@@ -35,7 +35,7 @@
     "node": ">=20.0.0 <21.0.0 || >=22.0.0 <23.0.0 || >=24.0.0 <25.0.0"
   },
   "scripts": {
-    "precondition": "npm install -g matterbridge@3.4.7",
+    "precondition": "npm install -g matterbridge@3.5.0",
     "build:local": "npm run deepClean && npm install && npm link matterbridge && npm run build && npm run matterbridge:add",
     "build:production": "tsc --project tsconfig.production.json",
     "start": "tsc && matterbridge -childbridge",

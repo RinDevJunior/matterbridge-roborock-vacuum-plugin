@@ -1,6 +1,6 @@
-import { MessageContext } from '@/roborockCommunication/broadcast/model/messageContext.js';
-import { MessageDeserializer } from '@/roborockCommunication/helper/messageDeserializer.js';
-import { Protocol } from '@/roborockCommunication/index.js';
+import { MessageContext } from '../../../roborockCommunication/broadcast/model/messageContext.js';
+import { MessageDeserializer } from '../../../roborockCommunication/helper/messageDeserializer.js';
+import { Protocol } from '../../../roborockCommunication/index.js';
 import { describe, it, expect, vi } from 'vitest';
 import { AnsiLogger } from 'matterbridge/logger';
 

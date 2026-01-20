@@ -1,4 +1,4 @@
-import { MessageProcessor, DeviceStatus } from '@/roborockCommunication/index.js';
+import { MessageProcessor, DeviceStatus } from '../../../roborockCommunication/index.js';
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 
 describe('MessageProcessor', () => {

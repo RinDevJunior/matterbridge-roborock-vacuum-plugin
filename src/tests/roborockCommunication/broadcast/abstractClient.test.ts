@@ -1,6 +1,6 @@
-import { AbstractClient } from '@/roborockCommunication/broadcast/abstractClient.js';
-import { MessageContext } from '@/roborockCommunication/broadcast/model/messageContext.js';
-import { RequestMessage } from '@/roborockCommunication/index.js';
+import { AbstractClient } from '../../../roborockCommunication/broadcast/abstractClient.js';
+import { MessageContext } from '../../../roborockCommunication/broadcast/model/messageContext.js';
+import { RequestMessage } from '../../../roborockCommunication/index.js';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 
 class TestClient extends AbstractClient {

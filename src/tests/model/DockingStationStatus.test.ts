@@ -1,4 +1,4 @@
-import { parseDockingStationStatus, DockingStationStatus, DockingStationStatusType, hasDockingStationError } from '@/model/DockingStationStatus.js';
+import { parseDockingStationStatus, DockingStationStatus, DockingStationStatusType, hasDockingStationError } from '../../model/DockingStationStatus.js';
 import { describe, it, expect } from 'vitest';
 
 describe('DockingStationStatus', () => {

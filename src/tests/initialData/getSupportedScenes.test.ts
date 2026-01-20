@@ -1,4 +1,4 @@
-import { getSupportedScenes } from '@/initialData/getSupportedScenes.js';
+import { getSupportedScenes } from '../../initialData/getSupportedScenes.js';
 import { describe, it, expect, vi } from 'vitest';
 
 describe('getSupportedScenes', () => {

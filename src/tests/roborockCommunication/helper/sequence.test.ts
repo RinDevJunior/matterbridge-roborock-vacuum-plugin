@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { Sequence } from '@/roborockCommunication/helper/sequence.js';
+import { Sequence } from '../../../roborockCommunication/helper/sequence.js';
 
 describe('Sequence', () => {
   it('should initialize with min and max values', () => {

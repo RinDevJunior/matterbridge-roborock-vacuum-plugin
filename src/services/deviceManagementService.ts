@@ -12,6 +12,7 @@ import { SimpleMessageHandler } from '../roborockCommunication/broadcast/handler
 import { MapResponseListener } from '../roborockCommunication/broadcast/listener/implementation/mapResponseListener.js';
 import { LocalNetworkUDPClient } from '../roborockCommunication/broadcast/client/LocalNetworkUDPClient.js';
 import { AbstractUDPMessageListener } from '../roborockCommunication/broadcast/listener/abstractUDPMessageListener.js';
+import { NetworkInfo, RPC_Request_Segments } from '../roborockCommunication/broadcast/model/protocol.js';
 
 /** Handles device discovery, initialization, and lifecycle. */
 export class DeviceManagementService {
@@ -102,7 +103,7 @@ export class DeviceManagementService {
             serialNumber: device.sn,
             model: homeData.products.find((p) => p.id === device.productId)?.model,
             category: homeData.products.find((p) => p.id === device.productId)?.category,
-            batteryLevel: device.deviceStatus?.[Protocol.battery] ?? 100,
+            batteryLevel: Number(device.deviceStatus?.[Protocol.battery] ?? 100),
           },
           store: {
             username: username,
@@ -252,26 +253,25 @@ export class DeviceManagementService {
       this.logger.debug(`Device: ${device.duid} uses B01 protocol, switch to use UDPClient`);
       this.messageRoutingService.setMqttAlwaysOn(device.duid, true);
       const localNetworkUDPClient = new LocalNetworkUDPClient(this.logger);
+      const networkInfo =
+        device.deviceStatus && device.deviceStatus[Protocol.rpc_request]
+          ? ((device.deviceStatus[Protocol.rpc_request] as Record<number, unknown>)[RPC_Request_Segments.network_info] as NetworkInfo)
+          : undefined;
+      if (networkInfo && networkInfo.ipAddress) {
+        this.logger.debug(`Device ${device.duid} has network info IP: ${networkInfo.ipAddress}, setting up UDP listener`);
+        const success = await this.setupLocalClient(device.duid, networkInfo.ipAddress);
+        if (success) {
+          return true;
+        }
+
+        this.logger.error(`Failed to set up local client for device ${device.duid} at IP ${networkInfo.ipAddress} via B01 setup.
+          Continuing to listen for broadcasts.`);
+      }
 
       localNetworkUDPClient.registerListener({
         onMessage: async (duid: string, ip: string): Promise<void> => {
-          try {
-            this.logger.debug(`Received UDP broadcast from device ${duid} at IP ${ip}`);
-            this.ipMap.set(duid, ip);
-            const localClient = this.messageClient?.registerClient(duid, ip);
-            if (!localClient) {
-              this.logger.error(`Failed to create local client for device ${duid} at IP ${ip} via UDPMessageListener`);
-              return;
-            }
-
-            localClient.connect();
-            await this.waitForConnection(() => localClient.isConnected());
-
-            this.localClientMap.set(duid, localClient);
-            this.logger.debug(`Local connection established for device ${duid} at ${ip} via UDPMessageListener`);
-          } catch (error) {
-            this.logger.error(`Error handling UDP message for device ${duid} at IP ${ip}:`, error);
-          }
+          this.logger.debug(`Received UDP broadcast from device ${duid} at IP ${ip}`);
+          await this.setupLocalClient(duid, ip);
         },
       } as AbstractUDPMessageListener);
 
@@ -279,46 +279,27 @@ export class DeviceManagementService {
       return true;
     }
 
-    try {
-      // Get device IP address from network info
-      let localIp = this.ipMap.get(device.duid);
+    // Get device IP address from network info
+    let localIp = this.ipMap.get(device.duid);
 
-      if (!localIp) {
-        this.logger.debug(`Device ${device.duid} IP not cached, fetching from device`);
-        const networkInfo = await messageProcessor.getNetworkInfo(device.duid);
+    if (!localIp) {
+      this.logger.debug(`Device ${device.duid} IP not cached, fetching from device`);
+      const networkInfo = await messageProcessor.getNetworkInfo(device.duid);
 
-        if (!networkInfo || !networkInfo.ip) {
-          this.logger.warn('Failed to get network info, using MQTT only for device:', device.duid);
-          return false;
-        }
-
-        this.logger.debug(`Device ${device.duid} is on local network, attempting local connection at IP ${networkInfo.ip}`);
-        localIp = networkInfo.ip;
+      if (!networkInfo || !networkInfo.ip) {
+        this.logger.warn('Failed to get network info, using MQTT only for device:', device.duid);
+        return false;
       }
 
-      if (localIp) {
-        // Create local network client via messageClient
-        this.logger.debug(`Initializing local connection for device ${device.duid} at IP ${localIp}`);
-        const localClient = this.messageClient.registerClient(device.duid, localIp);
-        localClient.connect();
-
-        // Wait for connection
-        try {
-          await this.waitForConnection(() => localClient.isConnected());
-        } catch {
-          throw new DeviceConnectionError(device.duid, `Local client did not connect: ${localIp} via LocalNetworkClient`);
-        }
-
-        this.ipMap.set(device.duid, localIp);
-        this.localClientMap.set(device.duid, localClient);
-        this.logger.debug(`Local connection established for device ${device.duid} at ${localIp}`);
-      }
-
-      return true;
-    } catch (error) {
-      this.logger.error('Failed to initialize local connection:', error);
-      return false;
+      this.logger.debug(`Device ${device.duid} is on local network, attempting local connection at IP ${networkInfo.ip}`);
+      localIp = networkInfo.ip;
     }
+
+    if (localIp) {
+      return await this.setupLocalClient(device.duid, localIp);
+    }
+
+    return false;
   }
 
   /**
@@ -359,5 +340,29 @@ export class DeviceManagementService {
    */
   private sleep(ms: number): Promise<void> {
     return new Promise((resolve) => setTimeout(resolve, ms));
+  }
+
+  /**
+   * Helper: Set up a local client for the given device and IP.
+   */
+  private async setupLocalClient(duid: string, ip: string): Promise<boolean> {
+    try {
+      const localClient = this.messageClient?.registerClient(duid, ip);
+      if (!localClient) {
+        this.logger.error(`Failed to create local client for device ${duid} at IP ${ip}`);
+        return false;
+      }
+
+      localClient.connect();
+      await this.waitForConnection(() => localClient.isConnected());
+
+      this.ipMap.set(duid, ip);
+      this.localClientMap.set(duid, localClient);
+      this.logger.debug(`Local connection established for device ${duid} at ${ip}`);
+      return true;
+    } catch (error) {
+      this.logger.error(`Error setting up local client for device ${duid} at IP ${ip}:`, error);
+      return false;
+    }
   }
 }

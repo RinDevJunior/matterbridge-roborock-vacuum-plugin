@@ -1,6 +1,6 @@
 import { describe, test, expect } from 'vitest';
-import { DeviceStatus } from '@/roborockCommunication/Zmodel/deviceStatus.js';
-import { VacuumErrorCode, DockErrorCode } from '@/roborockCommunication/Zenum/vacuumAndDockErrorCode.js';
+import { DeviceStatus } from '../../../roborockCommunication/Zmodel/deviceStatus.js';
+import { VacuumErrorCode, DockErrorCode } from '../../../roborockCommunication/Zenum/vacuumAndDockErrorCode.js';
 
 describe('DeviceStatus model', () => {
   test('parses battery and no-error correctly', () => {
