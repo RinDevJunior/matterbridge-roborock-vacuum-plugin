@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { getSupportedCleanModesSmart } from '@/behaviors/roborock.vacuum/smart/initialData.js';
-import { createDefaultExperimentalFeatureSetting } from '@/model/ExperimentalFeatureSetting.js';
+import { getSupportedCleanModesSmart } from '../../../../behaviors/roborock.vacuum/smart/initialData.js';
+import { createDefaultExperimentalFeatureSetting } from '../../../../model/ExperimentalFeatureSetting.js';
 
 describe('getSupportedCleanModesSmart', () => {
   it('includes modes 4 and 5 and excludes duplicates from default list', () => {

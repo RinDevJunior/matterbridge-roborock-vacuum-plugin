@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { AreaManagementService } from '@/services/areaManagementService.js';
+import { AreaManagementService } from '../../services/areaManagementService.js';
 import { RoomIndexMap } from '../../model/RoomIndexMap.js';
 import { RoborockIoTApi, ClientRouter, Scene } from '../../roborockCommunication/index.js';
 import { ServiceArea } from 'matterbridge/matter/clusters';

@@ -1,9 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { RoborockVacuumCleaner } from '../rvc.js';
-import { ModeBase, RvcOperationalState, ServiceArea } from 'matterbridge/matter/clusters';
+import { RoborockVacuumCleaner } from '../roborockVacuumCleaner.js';
+import { ModeBase } from 'matterbridge/matter/clusters';
 import { AnsiLogger } from 'matterbridge/logger';
-import { BehaviorFactoryResult } from '@/behaviorFactory.js';
-import { MatterbridgeEndpointCommands } from 'matterbridge';
+import { BehaviorFactoryResult } from '../behaviorFactory.js';
 
 function createMockLogger(): AnsiLogger {
   return {

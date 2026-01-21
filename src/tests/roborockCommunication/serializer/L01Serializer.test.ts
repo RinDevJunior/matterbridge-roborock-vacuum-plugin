@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { L01Serializer } from '@/roborockCommunication/serializer/L01Serializer.js';
+import { L01Serializer } from '../../../roborockCommunication/serializer/L01Serializer.js';
 
 describe('L01Serializer', () => {
   it('throws when connectNonce or ackNonce missing', () => {

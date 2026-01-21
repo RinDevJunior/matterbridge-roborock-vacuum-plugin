@@ -1,7 +1,7 @@
-import { MessageContext } from '@/roborockCommunication/broadcast/model/messageContext.js';
-import { MessageBodyBuilderFactory } from '@/roborockCommunication/helper/messageBodyBuilderFactory.js';
-import { RequestMessage } from '@/roborockCommunication/index.js';
-import { ProtocolVersion } from '@/roborockCommunication/Zenum/protocolVersion.js';
+import { MessageContext } from '../../../roborockCommunication/broadcast/model/messageContext.js';
+import { MessageBodyBuilderFactory } from '../../../roborockCommunication/helper/messageBodyBuilderFactory.js';
+import { RequestMessage } from '../../../roborockCommunication/index.js';
+import { ProtocolVersion } from '../../../roborockCommunication/Zenum/protocolVersion.js';
 import { describe, it, expect } from 'vitest';
 
 const mkUser = () => ({ rriot: { k: 'test-key' } }) as any;

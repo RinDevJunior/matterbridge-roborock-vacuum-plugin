@@ -1,4 +1,4 @@
-import { ConnectionStateListener } from '@/roborockCommunication/broadcast/listener/implementation/connectionStateListener.js';
+import { ConnectionStateListener } from '../../../../../roborockCommunication/broadcast/listener/implementation/connectionStateListener.js';
 import { vi, describe, it, expect } from 'vitest';
 
 // --- Helpers ---

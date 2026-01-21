@@ -3,7 +3,7 @@ import { BehaviorDeviceGeneric } from '../../../../behaviors/BehaviorDeviceGener
 import { AnsiLogger } from 'matterbridge/logger';
 import RoborockService from '../../../../roborockService.js';
 import { CleanModeSettings } from '../../../../model/ExperimentalFeatureSetting.js';
-import { MopRoute, MopWaterFlow, setDefaultCommandHandler, VacuumSuctionPower } from '@/behaviors/roborock.vacuum/default/default.js';
+import { MopRoute, MopWaterFlow, setDefaultCommandHandler, VacuumSuctionPower } from '../../../../behaviors/roborock.vacuum/default/default.js';
 
 describe('setDefaultCommandHandler', () => {
   let handler: BehaviorDeviceGeneric<any> & { setCommandHandler: ReturnType<typeof vi.fn> };

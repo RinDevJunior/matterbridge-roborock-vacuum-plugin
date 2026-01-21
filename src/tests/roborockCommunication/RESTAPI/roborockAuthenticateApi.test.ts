@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { RoborockAuthenticateApi } from '@/roborockCommunication/RESTAPI/roborockAuthenticateApi.js';
+import { RoborockAuthenticateApi } from '../../../roborockCommunication/RESTAPI/roborockAuthenticateApi.js';
 
 describe('RoborockAuthenticateApi', () => {
   let mockLogger: any;

@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import crypto from 'node:crypto';
-import { md5hex, md5bin, encodeTimestamp, SALT, decryptECB } from '@/roborockCommunication/helper/cryptoHelper.js';
+import { md5hex, md5bin, encodeTimestamp, SALT, decryptECB } from '../../../roborockCommunication/helper/cryptoHelper.js';
 
 describe('cryptoHelper', () => {
   it('computes md5 hex and binary consistently', () => {

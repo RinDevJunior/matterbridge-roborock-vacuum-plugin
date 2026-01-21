@@ -1,4 +1,4 @@
-import { getBaseUrl } from '@/initialData/regionUrls.js';
+import { getBaseUrl } from '../initialData/regionUrls.js';
 import { describe, it, expect } from 'vitest';
 
 describe('platform region mapping logic', () => {

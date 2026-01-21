@@ -6,7 +6,7 @@ import { Home } from '../roborockCommunication/index.js';
 import fs from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
-import { RoborockVacuumCleaner } from '../rvc.js';
+import { RoborockVacuumCleaner } from '../roborockVacuumCleaner.js';
 import * as initialDataIndex from '../initialData/index.js';
 import { RvcOperationalState } from 'matterbridge/matter/clusters';
 

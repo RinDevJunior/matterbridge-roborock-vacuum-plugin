@@ -4,7 +4,7 @@ import { PlatformMatterbridge } from 'matterbridge';
 import { RoborockMatterbridgePlatform, RoborockPluginPlatformConfig } from '../module.js';
 import { MatterbridgeDynamicPlatform } from 'matterbridge';
 import NodePersist from 'node-persist';
-import RoborockService from '@/roborockService.js';
+import RoborockService from '../roborockService.js';
 
 // Mocks
 vi.mock('node-persist', () => ({
@@ -19,14 +19,36 @@ vi.mock('node-persist', () => ({
 }));
 
 function createMockLogger(): AnsiLogger {
-  return {
+  const logger = {
     debug: vi.fn(),
     info: vi.fn(),
     warn: vi.fn(),
     error: vi.fn(),
     notice: vi.fn(),
     logLevel: 'info',
+    log: vi.fn((level: LogLevel, message: string, ...parameters: unknown[]) => {
+      switch (level) {
+        case LogLevel.DEBUG:
+          logger.debug(message, ...parameters);
+          break;
+        case LogLevel.INFO:
+          logger.info(message, ...parameters);
+          break;
+        case LogLevel.WARN:
+          logger.warn(message, ...parameters);
+          break;
+        case LogLevel.ERROR:
+          logger.error(message, ...parameters);
+          break;
+        case LogLevel.NOTICE:
+          logger.notice(message, ...parameters);
+          break;
+        default:
+          break;
+      }
+    }),
   } as unknown as AnsiLogger;
+  return logger;
 }
 
 class TestRoborockMatterbridgePlatform extends RoborockMatterbridgePlatform {
@@ -250,7 +272,7 @@ describe('RoborockMatterbridgePlatform', () => {
   beforeEach(() => {
     mockLogger = createMockLogger();
     mockMatterbridge = {
-      matterbridgeVersion: '3.4.7',
+      matterbridgeVersion: '3.5.0',
       matterbridgePluginDirectory: '/tmp',
       matterbridgeDirectory: '/tmp',
       verifyMatterbridgeVersion: () => true,

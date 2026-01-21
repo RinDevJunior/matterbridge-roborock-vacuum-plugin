@@ -1,5 +1,5 @@
-import { SyncMessageListener } from '@/roborockCommunication/broadcast/listener/implementation/syncMessageListener.js';
-import { RequestMessage, Protocol, ResponseMessage } from '@/roborockCommunication/index.js';
+import { SyncMessageListener } from '../../../../../roborockCommunication/broadcast/listener/implementation/syncMessageListener.js';
+import { RequestMessage, Protocol, ResponseMessage } from '../../../../../roborockCommunication/index.js';
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 
 describe('SyncMessageListener', () => {

@@ -8,7 +8,8 @@ import { PLUGIN_NAME } from './settings.js';
 import ClientManager from './services/clientManager.js';
 import { getRoomMapFromDevice, isSupportedDevice } from './helper.js';
 import { PlatformRunner } from './platformRunner.js';
-import { RoborockVacuumCleaner } from './rvc.js';
+import { FilterLogger } from './filterLogger.js';
+import { RoborockVacuumCleaner } from './roborockVacuumCleaner.js';
 import { configureBehavior } from './behaviorFactory.js';
 import { NotifyMessageTypes } from './notifyMessageTypes.js';
 import { Device, RoborockAuthenticateApi, RoborockIoTApi, UserData, AuthenticateFlowState } from './roborockCommunication/index.js';
@@ -55,12 +56,12 @@ export class RoborockMatterbridgePlatform extends MatterbridgeDynamicPlatform {
 
   constructor(
     matterbridge: PlatformMatterbridge,
-    log: AnsiLogger,
+    logger: AnsiLogger,
     override config: RoborockPluginPlatformConfig,
   ) {
-    super(matterbridge, log, config);
+    super(matterbridge, new FilterLogger(logger), config);
 
-    const requiredMatterbridgeVersion = '3.4.7';
+    const requiredMatterbridgeVersion = '3.5.0';
     // Verify that Matterbridge is the correct version
     if (this.verifyMatterbridgeVersion === undefined || typeof this.verifyMatterbridgeVersion !== 'function' || !this.verifyMatterbridgeVersion(requiredMatterbridgeVersion)) {
       throw new Error(

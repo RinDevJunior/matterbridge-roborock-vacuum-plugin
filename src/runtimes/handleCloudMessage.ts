@@ -14,7 +14,7 @@ import { NotifyMessageTypes } from '../notifyMessageTypes.js';
 import { getCurrentCleanModeFunc } from '../share/runtimeHelper.js';
 import { getSupportedAreas } from '../initialData/getSupportedAreas.js';
 import { PlatformRunner } from '../platformRunner.js';
-import { RoborockVacuumCleaner } from '../rvc.js';
+import { RoborockVacuumCleaner } from '../roborockVacuumCleaner.js';
 
 /**
  * Process cloud MQTT messages and update robot state.

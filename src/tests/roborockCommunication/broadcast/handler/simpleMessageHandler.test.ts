@@ -1,6 +1,6 @@
-import { NotifyMessageTypes } from '@/notifyMessageTypes.js';
-import { SimpleMessageHandler } from '@/roborockCommunication/broadcast/handler/simpleMessageHandler.js';
-import { VacuumErrorCode } from '@/roborockCommunication/index.js';
+import { NotifyMessageTypes } from '../../../../notifyMessageTypes.js';
+import { SimpleMessageHandler } from '../../../../roborockCommunication/broadcast/handler/simpleMessageHandler.js';
+import { VacuumErrorCode } from '../../../../roborockCommunication/index.js';
 import { describe, it, expect, vi } from 'vitest';
 
 describe('SimpleMessageHandler', () => {

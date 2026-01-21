@@ -8,7 +8,7 @@ import { getRoomMap } from '../helper.js';
 import { debugStringify } from 'matterbridge/logger';
 import { getBatteryState, getBatteryStatus } from '../initialData/index.js';
 import { getCurrentCleanModeFunc } from '../share/runtimeHelper.js';
-import { RoborockVacuumCleaner } from '../rvc.js';
+import { RoborockVacuumCleaner } from '../roborockVacuumCleaner.js';
 import { hasDockingStationError, parseDockingStationStatus } from '../model/DockingStationStatus.js';
 import { INVALID_SEGMENT_ID } from '../constants/index.js';
 

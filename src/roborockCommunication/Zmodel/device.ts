@@ -42,7 +42,7 @@ export interface Device {
   /** The firmware version of the robot. */
   fv: string;
 
-  deviceStatus: Record<string, number>;
+  deviceStatus: Record<string, unknown>;
   rooms: Room[];
   schema: DeviceSchema[];
   data: DeviceData;

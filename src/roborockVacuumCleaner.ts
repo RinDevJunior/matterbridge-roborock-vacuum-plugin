@@ -51,7 +51,7 @@ export class RoborockVacuumCleaner extends RoboticVacuumCleaner {
       undefined,
       undefined,
       RvcOperationalState.OperationalState.Docked,
-      getOperationalStates(),
+      deviceConfig.operationalState,
       deviceConfig.supportedAreaAndRoutines,
       undefined,
       deviceConfig.supportedAreas[0].areaId,
@@ -119,6 +119,7 @@ export class RoborockVacuumCleaner extends RoboticVacuumCleaner {
     const cleanModes = getSupportedCleanModes(device.data.model, enableExperimentalFeature);
     const supportedRunModes = getSupportedRunModes();
     const enableMultipleMap = enableExperimentalFeature?.enableExperimentalFeature && enableExperimentalFeature?.advancedFeature?.enableMultipleMap;
+    const operationalState = getOperationalStates();
 
     const { supportedAreas, supportedMaps } = getSupportedAreas(device.rooms, roomMap, enableMultipleMap, log);
     const supportedAreaAndRoutines = [...supportedAreas, ...routineAsRoom];
@@ -135,7 +136,8 @@ export class RoborockVacuumCleaner extends RoboticVacuumCleaner {
       Supported Clean Modes: ${debugStringify(cleanModes)},
       Supported Run Modes: ${debugStringify(supportedRunModes)},
       Supported Areas: ${debugStringify(supportedAreas)},
-      Supported Maps: ${debugStringify(supportedMaps)}`,
+      Supported Maps: ${debugStringify(supportedMaps)}
+      Supported Operational States: ${debugStringify(operationalState)}`,
     );
 
     return {
@@ -146,6 +148,7 @@ export class RoborockVacuumCleaner extends RoboticVacuumCleaner {
       supportedAreaAndRoutines,
       deviceName,
       bridgeMode,
+      operationalState,
     };
   }
 

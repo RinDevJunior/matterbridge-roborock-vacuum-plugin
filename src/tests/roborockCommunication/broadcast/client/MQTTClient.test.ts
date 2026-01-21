@@ -1,4 +1,4 @@
-import { MQTTClient } from '@/roborockCommunication/broadcast/client/MQTTClient.js';
+import { MQTTClient } from '../../../../roborockCommunication/broadcast/client/MQTTClient.js';
 import { describe, it, expect, beforeEach, afterEach, vi, afterAll } from 'vitest';
 
 declare global {
