@@ -19,14 +19,36 @@ vi.mock('node-persist', () => ({
 }));
 
 function createMockLogger(): AnsiLogger {
-  return {
+  const logger = {
     debug: vi.fn(),
     info: vi.fn(),
     warn: vi.fn(),
     error: vi.fn(),
     notice: vi.fn(),
     logLevel: 'info',
+    log: vi.fn((level: LogLevel, message: string, ...parameters: unknown[]) => {
+      switch (level) {
+        case LogLevel.DEBUG:
+          logger.debug(message, ...parameters);
+          break;
+        case LogLevel.INFO:
+          logger.info(message, ...parameters);
+          break;
+        case LogLevel.WARN:
+          logger.warn(message, ...parameters);
+          break;
+        case LogLevel.ERROR:
+          logger.error(message, ...parameters);
+          break;
+        case LogLevel.NOTICE:
+          logger.notice(message, ...parameters);
+          break;
+        default:
+          break;
+      }
+    }),
   } as unknown as AnsiLogger;
+  return logger;
 }
 
 class TestRoborockMatterbridgePlatform extends RoborockMatterbridgePlatform {

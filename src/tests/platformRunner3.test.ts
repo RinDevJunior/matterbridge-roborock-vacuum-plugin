@@ -1,7 +1,7 @@
 import { RoborockMatterbridgePlatform } from '../module.js';
 import { NotifyMessageTypes } from '../notifyMessageTypes.js';
 import { PlatformRunner } from '../platformRunner.js';
-import { RoborockVacuumCleaner } from '../rvc.js';
+import { RoborockVacuumCleaner } from '../roborockVacuumCleaner.js';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 
 describe('PlatformRunner.updateRobot', () => {

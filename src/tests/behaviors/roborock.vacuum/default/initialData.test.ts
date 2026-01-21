@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { getDefaultSupportedRunModes, getDefaultSupportedCleanModes, getDefaultOperationalStates } from '../../../../behaviors/roborock.vacuum/default/initialData.js';
 import { ExperimentalFeatureSetting } from '../../../../model/ExperimentalFeatureSetting.js';
+import { RvcOperationalState } from 'matterbridge/matter/clusters';
 
 describe('default initialData helpers', () => {
   it('getDefaultSupportedRunModes returns expected modes', () => {
@@ -25,8 +26,18 @@ describe('default initialData helpers', () => {
 
   it('getDefaultOperationalStates contains Error and Charging labels', () => {
     const states = getDefaultOperationalStates();
-    const labels = states.map((s) => s.operationalStateLabel);
-    expect(labels).toEqual(expect.arrayContaining(['Error', 'Charging']));
+    const labels = states.map((s) => s.operationalStateId);
+    expect(labels).toEqual(
+      expect.arrayContaining([
+        RvcOperationalState.OperationalState.Stopped,
+        RvcOperationalState.OperationalState.Running,
+        RvcOperationalState.OperationalState.Paused,
+        RvcOperationalState.OperationalState.Error,
+        RvcOperationalState.OperationalState.SeekingCharger,
+        RvcOperationalState.OperationalState.Charging,
+        RvcOperationalState.OperationalState.Docked,
+      ]),
+    );
     const ids = states.map((s) => s.operationalStateId);
     expect(ids.length).toBeGreaterThanOrEqual(3);
   });

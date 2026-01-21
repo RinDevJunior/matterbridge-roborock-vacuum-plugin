@@ -122,31 +122,24 @@ export function getDefaultOperationalStates(): RvcOperationalState.OperationalSt
   return [
     {
       operationalStateId: RvcOperationalState.OperationalState.Stopped,
-      operationalStateLabel: 'Stopped',
     },
     {
       operationalStateId: RvcOperationalState.OperationalState.Running,
-      operationalStateLabel: 'Running',
     },
     {
       operationalStateId: RvcOperationalState.OperationalState.Paused,
-      operationalStateLabel: 'Paused',
     },
     {
       operationalStateId: RvcOperationalState.OperationalState.Error,
-      operationalStateLabel: 'Error',
     },
     {
       operationalStateId: RvcOperationalState.OperationalState.SeekingCharger,
-      operationalStateLabel: 'SeekingCharger',
     },
     {
       operationalStateId: RvcOperationalState.OperationalState.Charging,
-      operationalStateLabel: 'Charging',
     },
     {
       operationalStateId: RvcOperationalState.OperationalState.Docked,
-      operationalStateLabel: 'Docked',
     },
   ];
 }
