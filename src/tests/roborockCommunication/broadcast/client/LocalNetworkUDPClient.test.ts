@@ -415,6 +415,5 @@ describe('LocalNetworkUDPClient', () => {
       expect(mockListener.onMessage).toHaveBeenCalledWith('duid-2', '192.168.1.2');
       expect(mockListener.onMessage).toHaveBeenCalledWith('duid-3', '192.168.1.3');
     });
-
   });
 });
