@@ -1,7 +1,7 @@
 # Matterbridge Roborock Vacuum Plugin - Code Structure
 
-**Version:** 1.1.1-rc14  
-**Last Updated:** January 13, 2026  
+**Version:** 1.1.3-rc03
+**Last Updated:** January 22, 2026
 **Test Coverage:** 95.74% (873 tests passed)
 
 ---
@@ -88,11 +88,12 @@ src/
 ├── module.ts                    # Main platform entry point
 ├── platformRunner.ts            # Orchestrates device updates
 ├── roborockService.ts           # Service facade
+├── roborockVacuumCleaner.ts     # RVC (Robot Vacuum Cleaner) class
 ├── behaviorFactory.ts           # Behavior creation
+├── filterLogger.ts              # Logger with sensitive data filtering
 ├── helper.ts                    # Utility functions
 ├── notifyMessageTypes.ts        # Message type enums
 ├── settings.ts                  # Plugin configuration
-├── rvc.ts                       # RVC (Robot Vacuum Cleaner) class
 ├── behaviors/                   # Device behavior implementations
 │   ├── BehaviorDeviceGeneric.ts
 │   └── roborock.vacuum/
@@ -110,29 +111,16 @@ src/
 │   ├── distance.ts
 │   ├── ids.ts
 │   ├── index.ts
+│   ├── sensitiveDataRegexReplacements.ts
 │   └── timeouts.ts
-├── domain/                      # Domain models (entities/VOs)
-│   ├── index.ts
-│   ├── entities/
-│   │   ├── index.ts
-│   │   ├── RoomEntity.ts
-│   │   ├── CleaningRoutine.ts
-│   │   ├── CleaningSession.ts
-│   │   └── VacuumDevice.ts
-│   └── valueObjects/
-│       ├── index.ts
-│       ├── DeviceIdentifier.ts
-│       ├── Coordinates.ts
-│       ├── BatteryStatus.ts
-│       └── CleaningArea.ts
 ├── errors/                      # Custom error classes
 │   ├── AuthenticationError.ts
 │   ├── BaseError.ts
 │   ├── CommunicationError.ts
 │   ├── ConfigurationError.ts
 │   ├── DeviceError.ts
-│   ├── ValidationError.ts
-│   └── index.ts
+│   ├── index.ts
+│   └── ValidationError.ts
 ├── initialData/                 # Initial data fetchers
 │   ├── getBatteryStatus.ts
 │   ├── getOperationalStates.ts
@@ -158,8 +146,9 @@ src/
 │   │   ├── messageProcessor.ts
 │   │   ├── model/
 │   │   ├── client/
-│   │   │   ├── MQTTClient.ts
-│   │   │   └── LocalNetworkClient.ts
+│   │   │   ├── LocalNetworkClient.ts
+│   │   │   ├── LocalNetworkUDPClient.ts
+│   │   │   └── MQTTClient.ts
 │   │   └── listener/
 │   │       └── implementation/
 │   ├── builder/
@@ -210,13 +199,13 @@ src/
 │   ├── platformRunner*.test.ts
 │   └── roborockService*.test.ts
 ├── types/                       # TypeScript type definitions
-│   ├── MessagePayloads.ts
 │   ├── callbacks.ts
 │   ├── communication.ts
 │   ├── config.ts
 │   ├── device.ts
 │   ├── factories.ts
 │   ├── index.ts
+│   ├── MessagePayloads.ts
 │   └── state.ts
 ```
 
@@ -270,7 +259,7 @@ clientManager: ClientManager                // MQTT client manager
 MQTT/Cloud → PlatformRunner → Runtime Handlers → Robot Update
 ```
 
-### 3. **RoborockVacuumCleaner** ([rvc.ts](../src/rvc.ts))
+### 3. **RoborockVacuumCleaner** ([roborockVacuumCleaner.ts](../src/roborockVacuumCleaner.ts))
 
 **Responsibility:** Represents a single Roborock device in Matter ecosystem
 
@@ -877,6 +866,7 @@ npm run test:verbose         # Verbose output
 - **device.ts** - Device type identifiers
 - **distance.ts** - Distance/measurement constants
 - **ids.ts** - Cluster and endpoint IDs
+- **sensitiveDataRegexReplacements.ts** - Regex patterns for masking sensitive data in logs
 - **timeouts.ts** - Timeout durations
 
 **Key Timeouts:**
@@ -957,17 +947,9 @@ BaseError
 
 ---
 
-## Domain Models
+## Models
 
-### Entities ([src/domain/entities/](../src/domain/entities/))
-
-**Purpose:** Core business entities with identity
-
-### Value Objects ([src/domain/valueObjects/](../src/domain/valueObjects/))
-
-**Purpose:** Immutable value types
-
-### Models ([src/model/](../src/model/))
+Located in: [src/model/](../src/model/)
 
 **Key Models:**
 
@@ -1202,7 +1184,7 @@ Stop polling → Close MQTT clients → Unregister devices → Cleanup resources
 - Follows Matterbridge architecture and coding style
 - TypeScript 5.x with ESNext output
 - Comprehensive test coverage (95.74%)
-- Active development (v1.1.1-rc14)
+- Active development (v1.1.3-rc03)
 
 ### Recent Improvements (January 2026)
 
@@ -1234,5 +1216,5 @@ Stop polling → Close MQTT clients → Unregister devices → Cleanup resources
 
 ---
 
-**Document Version:** 2.1  
-**Last Updated:** January 13, 2026
+**Document Version:** 2.2
+**Last Updated:** January 22, 2026
