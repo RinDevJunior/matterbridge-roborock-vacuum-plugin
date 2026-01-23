@@ -11,7 +11,7 @@ function createMockMessage(isHello = true) {
   } as unknown as ResponseMessage;
 }
 
-describe('PingResponseListener', () => {
+describe('PingResponseListener (basic behavior)', () => {
   let listener: PingResponseListener;
 
   beforeEach(() => {

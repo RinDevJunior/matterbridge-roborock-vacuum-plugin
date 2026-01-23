@@ -3,8 +3,9 @@ import { handleCloudMessage } from '../../runtimes/handleCloudMessage.js';
 import { Protocol, AdditionalPropCode } from '../../roborockCommunication/index.js';
 import { OperationStatusCode } from '../../roborockCommunication/Zenum/operationStatusCode.js';
 import { NotifyMessageTypes } from '../../notifyMessageTypes.js';
+import { mapInfo, roomData, roomIndexMap, supportedAreas, supportedMaps } from '../testData/mockData.js';
 
-describe('handleCloudMessage', () => {
+describe('handleCloudMessage (integration)', () => {
   let platform: any;
   let runner: any;
   let duid: string;
@@ -59,10 +60,6 @@ describe('handleCloudMessage', () => {
     expect(robot.updateAttribute).toHaveBeenCalled();
   });
 });
-import { describe, it, beforeEach, expect, vi } from 'vitest';
-import { AdditionalPropCode, Protocol } from '../../roborockCommunication/index.js';
-import { handleCloudMessage } from '../../runtimes/handleCloudMessage.js';
-import { mapInfo, roomData, roomIndexMap, supportedAreas, supportedMaps } from '../testData/mockData.js';
 
 // Mocks for dependencies
 const mockUpdateAttribute = vi.fn().mockImplementation((clusterId: number, attributeName: string, value: any, log: any) => {

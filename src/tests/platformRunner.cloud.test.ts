@@ -29,7 +29,9 @@ describe('PlatformRunner CloudMessage handling', () => {
     } as any;
 
     runner = new PlatformRunner(platform as any);
-    (handleCloudMessage as unknown as jest.Mock) && (handleCloudMessage as any).mockClear?.();
+    if ((handleCloudMessage as any)?.mockClear) {
+      (handleCloudMessage as any).mockClear();
+    }
   });
 
   it('calls handleCloudMessage when CloudMessage is received and robot exists', async () => {

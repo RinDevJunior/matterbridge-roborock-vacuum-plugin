@@ -1,8 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { AnsiLogger, LogLevel } from 'matterbridge/logger';
+import { AnsiLogger } from 'matterbridge/logger';
 import { PlatformMatterbridge } from 'matterbridge';
 import { RoborockMatterbridgePlatform } from '../module.js';
-import { BridgedDeviceBasicInformation, Descriptor, bridgedNode } from 'matterbridge/matter/clusters';
 
 function createMockLogger(): AnsiLogger {
   const logger = {

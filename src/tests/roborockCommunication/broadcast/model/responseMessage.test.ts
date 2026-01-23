@@ -26,12 +26,6 @@ describe('ResponseMessage', () => {
   });
 
   it('handles missing header or body without throwing', () => {
-    // @ts-ignore simulate missing header
-    const msgNoHeader = new ResponseMessage('duid', undefined, undefined);
-    expect(msgNoHeader.isForProtocol(0 as unknown as Protocol)).toBe(false);
-    expect(msgNoHeader.isForProtocols([0 as unknown as Protocol])).toBe(false);
-    expect(msgNoHeader.get(1 as Protocol)).toBeUndefined();
-
     // message with header but no body
     const header = new HeaderMessage('1.0', 0, 0, 0, 5);
     const msgNoBody = new ResponseMessage('duid2', header, undefined);

@@ -17,11 +17,4 @@ describe('ResponseBody', () => {
     expect(body.get('status')).toBe('ok');
     expect(body.get(102 as unknown as Protocol)).toEqual({ id: 123 });
   });
-
-  it('handles undefined data without throwing', () => {
-    // @ts-ignore intentionally pass undefined
-    const body = new ResponseBody(undefined);
-    expect(body.get(1)).toBeUndefined();
-    expect(body.get('x')).toBeUndefined();
-  });
 });

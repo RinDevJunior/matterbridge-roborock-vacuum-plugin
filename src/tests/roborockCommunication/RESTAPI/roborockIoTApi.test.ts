@@ -1,12 +1,13 @@
 import axios from 'axios';
 import { vi, describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { RoborockIoTApi } from '../../../../src/roborockCommunication/RESTAPI/roborockIoTApi.js';
+import MockAdapter from 'axios-mock-adapter';
 
 const makeUserData = () => ({ rriot: { r: { a: 'https://api.example' }, u: 'uid', s: 's', h: 'hmac' } });
 
 const makeLogger = () => ({ error: vi.fn(), debug: vi.fn() });
 
-describe('RoborockIoTApi', () => {
+describe('RoborockIoTApi (additional)', () => {
   beforeEach(() => {
     vi.restoreAllMocks();
   });
@@ -113,10 +114,6 @@ describe('RoborockIoTApi', () => {
     expect(res?.rooms).toEqual(homeV2.rooms);
   });
 });
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import axios from 'axios';
-import { RoborockIoTApi } from '../../../roborockCommunication/RESTAPI/roborockIoTApi.js';
-import MockAdapter from 'axios-mock-adapter';
 
 describe('RoborockIoTApi', () => {
   describe('getHomeWithProducts', () => {

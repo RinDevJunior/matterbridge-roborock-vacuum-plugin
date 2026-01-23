@@ -1,5 +1,5 @@
 import mqtt from 'mqtt';
-import { vi, describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { vi, describe, it, expect, beforeEach, afterEach, afterAll } from 'vitest';
 import { MQTTClient } from '../../../../roborockCommunication/broadcast/client/MQTTClient.js';
 import { MessageContext } from '../../../../roborockCommunication/broadcast/model/messageContext.js';
 import { RequestMessage } from '../../../../roborockCommunication/broadcast/model/requestMessage.js';
@@ -12,7 +12,7 @@ function makeLogger() {
   return { debug: vi.fn(), info: vi.fn(), notice: vi.fn(), error: vi.fn() } as any;
 }
 
-describe('MQTTClient', () => {
+describe('MQTTClient (additional)', () => {
   let userdata: any;
   let context: MessageContext;
   let logger: any;
@@ -91,8 +91,6 @@ describe('MQTTClient', () => {
     vi.restoreAllMocks();
   });
 });
-import { MQTTClient } from '../../../../roborockCommunication/broadcast/client/MQTTClient.js';
-import { describe, it, expect, beforeEach, afterEach, vi, afterAll } from 'vitest';
 
 declare global {
   var mockConnect: ReturnType<typeof vi.fn>;

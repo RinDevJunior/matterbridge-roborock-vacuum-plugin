@@ -1,8 +1,12 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { AnsiLogger } from 'matterbridge/logger';
 import { MessageRoutingService } from '../../services/messageRoutingService.js';
+import { MessageProcessor, RequestMessage, RoborockIoTApi } from '../../roborockCommunication/index.js';
+import { DeviceError } from '../../errors/index.js';
+import { CleanModeSetting } from '../../behaviors/roborock.vacuum/default/default.js';
+import { ServiceArea } from 'matterbridge/matter/clusters';
 
-describe('MessageRoutingService', () => {
+describe('MessageRoutingService (integration)', () => {
   let logger: any;
 
   beforeEach(() => {
@@ -67,13 +71,6 @@ describe('MessageRoutingService', () => {
     await expect(service.getCleanModeData(duid)).rejects.toThrow();
   });
 });
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { AnsiLogger } from 'matterbridge/logger';
-import { MessageRoutingService } from '../../services/messageRoutingService.js';
-import { MessageProcessor, RequestMessage, RoborockIoTApi } from '../../roborockCommunication/index.js';
-import { DeviceError } from '../../errors/index.js';
-import { CleanModeSetting } from '../../behaviors/roborock.vacuum/default/default.js';
-import { ServiceArea } from 'matterbridge/matter/clusters';
 
 describe('MessageRoutingService', () => {
   let messageService: MessageRoutingService;

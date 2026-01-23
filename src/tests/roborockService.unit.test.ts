@@ -1,5 +1,10 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { AnsiLogger } from 'matterbridge/logger';
 import RoborockService from '../roborockService.js';
+import { RoomIndexMap } from '../model/RoomIndexMap.js';
+import ClientManager from '../services/clientManager.js';
+
+const logger: any = { debug: vi.fn(), error: vi.fn(), notice: vi.fn(), warn: vi.fn() };
 
 describe('RoborockService (unit)', () => {
   let logger: any;
@@ -47,13 +52,6 @@ describe('RoborockService (unit)', () => {
     await expect(svc.getCustomAPI('/some')).rejects.toThrow(/IoT API not initialized/);
   });
 });
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { AnsiLogger } from 'matterbridge/logger';
-import RoborockService from '../roborockService.js';
-import { RoomIndexMap } from '../model/RoomIndexMap.js';
-import ClientManager from '../services/clientManager.js';
-
-const logger: any = { debug: vi.fn(), error: vi.fn(), notice: vi.fn(), warn: vi.fn() };
 
 describe('RoborockService basic behaviors', () => {
   let svc: RoborockService;

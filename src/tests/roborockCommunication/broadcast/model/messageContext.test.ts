@@ -1,5 +1,6 @@
 import { MessageContext } from '../../../../roborockCommunication/broadcast/model/messageContext.js';
 import { describe, it, expect } from 'vitest';
+import { UserData } from '../../../../roborockCommunication/index.js';
 
 describe('MessageContext', () => {
   const userdata: any = { rriot: { k: 'secretkey' } };
@@ -32,10 +33,8 @@ describe('MessageContext', () => {
   });
 
   it('constructor throws when userdata is missing required fields', () => {
-    // @ts-ignore intentionally malformed userdata
-    expect(() => new MessageContext({})).toThrow();
-    // @ts-ignore missing k
-    expect(() => new MessageContext({ rriot: {} })).toThrow();
+    expect(() => new MessageContext({} as UserData)).toThrow();
+    expect(() => new MessageContext({ rriot: {} } as UserData)).toThrow();
   });
 
   it('updateProtocolVersion handles non-existent and existing devices', () => {
