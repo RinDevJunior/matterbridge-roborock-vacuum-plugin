@@ -143,7 +143,7 @@ export class MQTTClient extends AbstractClient {
 
   private async onError(result: Error | ErrorWithReasonCode): Promise<void> {
     this.logger.error(`MQTT connection error: ${debugStringify(result)}`);
-    await this.connectionListeners.onError(`mqtt-${this.mqttUsername}`, debugStringify(result));
+    await this.connectionListeners.onError(`mqtt-${this.mqttUsername}`, `MQTT connection error: ${debugStringify(result)}`);
   }
 
   private async onClose(): Promise<void> {

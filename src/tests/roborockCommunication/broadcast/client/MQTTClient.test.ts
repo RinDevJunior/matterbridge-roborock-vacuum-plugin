@@ -219,7 +219,7 @@ describe('MQTTClient', () => {
     mqttClient['connected'] = true;
     await mqttClient['onError'](new Error('fail'));
     expect(logger.error).toHaveBeenCalledWith(expect.stringContaining('MQTT connection error'));
-    expect(connectionListeners.onError).toHaveBeenCalledWith('mqtt-c6d6afb9', expect.stringContaining('fail'));
+    expect(connectionListeners.onError).toHaveBeenCalledWith('mqtt-c6d6afb9', expect.stringContaining('MQTT connection error'));
   });
 
   it('onReconnect should call subscribeToQueue', () => {
