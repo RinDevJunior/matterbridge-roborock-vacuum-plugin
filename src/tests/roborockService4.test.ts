@@ -1,24 +1,26 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import RoborockService from '../roborockService.js';
-import type ClientManager from '../services/clientManager.js';
+import { RoborockService } from '../roborockService.js';
 import type { AnsiLogger } from 'matterbridge/logger';
 
 describe('getHomeDataForUpdating', () => {
   let service: RoborockService;
   let mockLogger: AnsiLogger;
-  let clientManager: ClientManager;
   const homeid = 123;
 
   beforeEach(() => {
     mockLogger = { debug: vi.fn(), error: vi.fn(), warn: vi.fn() } as any;
-    clientManager = {} as ClientManager;
 
     service = new RoborockService(
-      undefined, // default auth factory
-      undefined, // default IoT factory
-      10,
-      clientManager,
+      {
+        authenticateApiFactory: () => undefined as any,
+        iotApiFactory: () => undefined as any,
+        refreshInterval: 10,
+        baseUrl: 'https://api.roborock.com',
+        persist: {} as any,
+        configManager: {} as any,
+      },
       mockLogger,
+      {} as any,
     );
   });
 

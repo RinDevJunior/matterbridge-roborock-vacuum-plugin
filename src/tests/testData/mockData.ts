@@ -1,7 +1,5 @@
 import { ServiceArea } from 'matterbridge/matter/clusters';
-import { Home, MapInfo } from '../../roborockCommunication/index.js';
-import { CloudMessageResult } from '../../roborockCommunication/Zmodel/messageResult.js';
-import { DeviceModel } from '../../roborockCommunication/Zmodel/deviceModel.js';
+import { CloudMessageResult, DeviceModel, Home, MapInfo } from '../../roborockCommunication/models/index.js';
 
 export const supportedAreas: ServiceArea.Area[] = [
   { areaId: 100, mapId: 0, areaInfo: { locationInfo: { locationName: 'Kitchen', floorNumber: 0, areaType: null }, landmarkInfo: null } },
@@ -319,6 +317,7 @@ export const homeData: Home = {
       },
       store: {
         userData: {
+          username: 'test-user',
           uid: 3635748,
           tokentype: '',
           token: 'rr65af7107da5840:txP8ZF7dj8v7xUMkoFMzZA==:01981b12f83a7723a1cbef8c8e89a7e1',

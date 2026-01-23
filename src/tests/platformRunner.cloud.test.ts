@@ -26,6 +26,9 @@ describe('PlatformRunner CloudMessage handling', () => {
     platform = {
       robots,
       log: { error: vi.fn(), debug: vi.fn(), notice: vi.fn() },
+      registry: {
+        getRobot: (duid: string) => robots.get(duid),
+      },
     } as any;
 
     runner = new PlatformRunner(platform as any);

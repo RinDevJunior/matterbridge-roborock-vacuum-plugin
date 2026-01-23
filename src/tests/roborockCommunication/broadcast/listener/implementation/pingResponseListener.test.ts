@@ -1,7 +1,7 @@
-import { PingResponseListener } from '../../../../../roborockCommunication/broadcast/listener/implementation/pingResponseListener.js';
-import { ResponseMessage, Protocol } from '../../../../../roborockCommunication/index.js';
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { HELLO_RESPONSE_TIMEOUT_MS } from '../../../../../constants/timeouts.js';
+import { Protocol, ResponseMessage } from '../../../../../roborockCommunication/models/index.js';
+import { PingResponseListener } from '../../../../../roborockCommunication/routing/listeners/implementation/pingResponseListener.js';
 
 const DUID = 'test-duid';
 

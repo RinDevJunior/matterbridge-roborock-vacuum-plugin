@@ -1,8 +1,6 @@
-import { MessageSerializer } from '../../../roborockCommunication/helper/messageSerializer.js';
-import { MessageContext } from '../../../roborockCommunication/broadcast/model/messageContext.js';
-import { RequestMessage } from '../../../roborockCommunication/broadcast/model/requestMessage.js';
-import { Protocol } from '../../../roborockCommunication/broadcast/model/protocol.js';
 import { describe, it, expect, vi, afterEach } from 'vitest';
+import { MessageContext, Protocol, RequestMessage } from '../../../roborockCommunication/models/index.js';
+import { MessageSerializer } from '../../../roborockCommunication/protocol/serializers/messageSerializer.js';
 
 describe('MessageSerializer', () => {
   afterEach(() => {

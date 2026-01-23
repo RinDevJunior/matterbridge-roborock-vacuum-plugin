@@ -1,9 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { DeviceManagementService } from '../../services/deviceManagementService.js';
-import { NotifyMessageTypes } from '../../notifyMessageTypes.js';
-import { UserData, Device, Home, ResponseMessage, Protocol } from '../../roborockCommunication/index.js';
-import { DeviceError, DeviceNotFoundError, DeviceConnectionError, DeviceInitializationError } from '../../errors/index.js';
-import { NetworkInfo, RPC_Request_Segments } from '../../roborockCommunication/broadcast/model/protocol.js';
+import { DeviceError, DeviceNotFoundError } from '../../errors/index.js';
+import { Device, Home, Protocol, UserData } from '../../roborockCommunication/models/index.js';
 
 describe('DeviceManagementService', () => {
   let deviceService: DeviceManagementService;
@@ -13,10 +11,10 @@ describe('DeviceManagementService', () => {
   let mockLoginApi: any;
   let mockIotApi: any;
   let mockClientRouter: any;
-  let mockDeviceNotifyCallback: any;
   let mockMessageRoutingService: any;
 
   const mockUserData: UserData = {
+    username: 'test-user',
     uid: 'test-uid',
     tokentype: 'Bearer',
     token: 'test-token',
@@ -146,9 +144,7 @@ describe('DeviceManagementService', () => {
       registerMessageProcessor: vi.fn(),
     } as any;
 
-    mockDeviceNotifyCallback = vi.fn();
-
-    deviceService = new DeviceManagementService(mockIotApiFactory, mockClientManager, mockLogger, mockLoginApi, mockMessageRoutingService);
+    deviceService = new DeviceManagementService(mockIotApiFactory, mockLogger, mockLoginApi);
   });
 
   afterEach(() => {
@@ -157,20 +153,10 @@ describe('DeviceManagementService', () => {
   });
 
   describe('initialization and configuration', () => {
-    it('should initialize with provided dependencies', () => {
-      expect(deviceService).toBeDefined();
-      expect(deviceService.messageClient).toBeUndefined();
-    });
-
     it('should set authentication data correctly', () => {
       deviceService.setAuthentication(mockUserData);
 
       expect(mockIotApiFactory).toHaveBeenCalledWith(mockLogger, mockUserData);
-    });
-
-    it('should initialize with default state maps', () => {
-      expect(deviceService.ipMap).toBeInstanceOf(Map);
-      expect(deviceService.localClientMap).toBeInstanceOf(Map);
     });
   });
 
@@ -180,34 +166,33 @@ describe('DeviceManagementService', () => {
     });
 
     it('should throw error when not authenticated', async () => {
-      const unauthenticatedService = new DeviceManagementService(mockIotApiFactory, mockClientManager, mockLogger, mockLoginApi, mockMessageRoutingService);
+      const unauthenticatedService = new DeviceManagementService(mockIotApiFactory, mockLogger, mockLoginApi);
 
-      await expect(unauthenticatedService.listDevices('test@example.com')).rejects.toThrow('Not authenticated. Please login first.');
+      await expect(unauthenticatedService.listDevices()).rejects.toThrow('Not authenticated. Please login first.');
     });
 
     it('should throw DeviceNotFoundError when no home found', async () => {
       mockLoginApi.getHomeDetails.mockResolvedValue(undefined);
 
-      await expect(deviceService.listDevices('test@example.com')).rejects.toThrow(DeviceNotFoundError);
-      await expect(deviceService.listDevices('test@example.com')).rejects.toThrow('No home found for user');
+      await expect(deviceService.listDevices()).rejects.toThrow(DeviceNotFoundError);
+      await expect(deviceService.listDevices()).rejects.toThrow('No home found for user');
     });
 
     it('should throw error when home details missing rrHomeId', async () => {
       mockLoginApi.getHomeDetails.mockResolvedValue(undefined);
 
-      await expect(deviceService.listDevices('test@example.com')).rejects.toThrow(DeviceNotFoundError);
+      await expect(deviceService.listDevices()).rejects.toThrow(DeviceNotFoundError);
     });
 
     it('should throw DeviceError when homeData cannot be retrieved', async () => {
       mockIotApi.getHomeWithProducts.mockResolvedValue(undefined);
 
-      await expect(deviceService.listDevices('test@example.com')).rejects.toThrow(DeviceError);
-      await expect(deviceService.listDevices('test@example.com')).rejects.toThrow('Failed to retrieve home data');
+      await expect(deviceService.listDevices()).rejects.toThrow(DeviceError);
+      await expect(deviceService.listDevices()).rejects.toThrow('Failed to retrieve home data');
     });
 
     it('should successfully list devices with all data', async () => {
-      const result = await deviceService.listDevices('test@example.com');
-
+      const result = await deviceService.listDevices();
       expect(result).toHaveLength(1);
       expect(result[0]).toMatchObject({
         duid: 'device-123',
@@ -244,7 +229,7 @@ describe('DeviceManagementService', () => {
       };
       mockIotApi.getHomev2.mockResolvedValue(homeDataWithReceivedDevices);
 
-      const result = await deviceService.listDevices('test@example.com');
+      const result = await deviceService.listDevices();
 
       expect(result).toHaveLength(1);
       expect(result[0].duid).toBe('device-123');
@@ -279,7 +264,7 @@ describe('DeviceManagementService', () => {
       ] as any;
       mockIotApi.getScenes.mockResolvedValue(mockScenes);
 
-      const result = await deviceService.listDevices('test@example.com');
+      const result = await deviceService.listDevices();
 
       expect(result[0].scenes).toHaveLength(1);
       expect(result[0]?.scenes?.[0]?.id).toBe(1);
@@ -290,7 +275,7 @@ describe('DeviceManagementService', () => {
       const homeDataNoBattery = { ...mockHomeData, devices: [deviceWithoutBattery] };
       mockIotApi.getHomeWithProducts.mockResolvedValue(homeDataNoBattery);
 
-      const result = await deviceService.listDevices('test@example.com');
+      const result = await deviceService.listDevices();
 
       expect(result[0].data.batteryLevel).toBe(100);
     });
@@ -298,8 +283,8 @@ describe('DeviceManagementService', () => {
     it('should handle API errors and wrap them in DeviceError', async () => {
       mockIotApi.getHomeWithProducts.mockRejectedValue(new Error('API Error'));
 
-      await expect(deviceService.listDevices('test@example.com')).rejects.toThrow(DeviceError);
-      await expect(deviceService.listDevices('test@example.com')).rejects.toThrow('Failed to retrieve device list');
+      await expect(deviceService.listDevices()).rejects.toThrow(DeviceError);
+      await expect(deviceService.listDevices()).rejects.toThrow('Failed to retrieve device list');
     });
   });
 
@@ -309,7 +294,7 @@ describe('DeviceManagementService', () => {
     });
 
     it('should return undefined when not authenticated', async () => {
-      const unauthenticatedService = new DeviceManagementService(mockIotApiFactory, mockClientManager, mockLogger, mockLoginApi, mockMessageRoutingService);
+      const unauthenticatedService = new DeviceManagementService(mockIotApiFactory, mockLogger, mockLoginApi);
 
       const result = await unauthenticatedService.getHomeDataForUpdating(12345);
 
@@ -417,327 +402,6 @@ describe('DeviceManagementService', () => {
 
       expect(result).toBeUndefined();
       expect(mockLogger.error).toHaveBeenCalledWith('Failed to get home data for updating:', expect.any(Error));
-    });
-  });
-
-  describe('initializeMessageClient', () => {
-    beforeEach(() => {
-      deviceService.setAuthentication(mockUserData);
-    });
-
-    it('should throw DeviceInitializationError if ClientManager not available', async () => {
-      const serviceWithoutManager = new DeviceManagementService(mockIotApiFactory, undefined as any, mockLogger, mockLoginApi, mockMessageRoutingService);
-      await expect(serviceWithoutManager.initializeMessageClient('test@example.com', mockDevice, mockUserData)).rejects.toThrow(DeviceInitializationError);
-      await expect(serviceWithoutManager.initializeMessageClient('test@example.com', mockDevice, mockUserData)).rejects.toThrow('ClientManager not initialized');
-    });
-
-    it('should initialize message client successfully', async () => {
-      await deviceService.initializeMessageClient('test@example.com', mockDevice, mockUserData);
-
-      expect(mockClientManager.get).toHaveBeenCalledWith('test@example.com', mockUserData);
-      expect(mockClientRouter.registerDevice).toHaveBeenCalledWith('device-123', 'local-key-789', 'A01', undefined);
-      expect(mockClientRouter.registerMessageListener).toHaveBeenCalled();
-      expect(mockClientRouter.connect).toHaveBeenCalled();
-      expect(deviceService.messageClient).toBe(mockClientRouter);
-    });
-
-    it('should register message listeners with proper handlers', async () => {
-      deviceService.setDeviceNotify(mockDeviceNotifyCallback);
-
-      await deviceService.initializeMessageClient('test@example.com', mockDevice, mockUserData);
-
-      const messageListenerCall = mockClientRouter.registerMessageListener.mock.calls[0][0];
-      expect(messageListenerCall).toHaveProperty('onMessage');
-      expect(typeof messageListenerCall.onMessage).toBe('function');
-
-      // Test battery message handling (should be ignored)
-      const batteryMessage = Object.create(ResponseMessage.prototype);
-      batteryMessage.duid = 'device-123';
-      batteryMessage.isForProtocol = vi.fn().mockReturnValue(true);
-      messageListenerCall.onMessage(batteryMessage);
-      expect(mockDeviceNotifyCallback).not.toHaveBeenCalled();
-
-      // Test cloud message handling (not battery, not hello_response)
-      const cloudMessage = Object.create(ResponseMessage.prototype);
-      cloudMessage.duid = 'device-123';
-      cloudMessage.isForProtocol = vi.fn().mockReturnValue(false);
-      messageListenerCall.onMessage(cloudMessage);
-      expect(mockDeviceNotifyCallback).toHaveBeenCalledWith(NotifyMessageTypes.CloudMessage, cloudMessage);
-    });
-
-    it('should throw DeviceConnectionError if connection times out', async () => {
-      // Mock sleep to avoid actual delays
-      vi.spyOn(deviceService as any, 'sleep').mockResolvedValue(undefined);
-      mockClientRouter.isConnected.mockReturnValue(false);
-
-      await expect(deviceService.initializeMessageClient('test@example.com', mockDevice, mockUserData)).rejects.toThrow(DeviceConnectionError);
-      await expect(deviceService.initializeMessageClient('test@example.com', mockDevice, mockUserData)).rejects.toThrow('MQTT connection timeout');
-    });
-
-    it('should eventually timeout and throw error when connection fails', async () => {
-      // Mock sleep to avoid actual delays
-      vi.spyOn(deviceService as any, 'sleep').mockResolvedValue(undefined);
-      mockClientRouter.isConnected.mockReturnValue(false);
-
-      await expect(deviceService.initializeMessageClient('test@example.com', mockDevice, mockUserData)).rejects.toThrow(DeviceConnectionError);
-    });
-
-    it('should handle generic errors and wrap them', async () => {
-      mockClientManager.get.mockImplementation(() => {
-        throw new Error('Generic error');
-      });
-
-      await expect(deviceService.initializeMessageClient('test@example.com', mockDevice, mockUserData)).rejects.toThrow(DeviceInitializationError);
-    });
-
-    it('should re-throw DeviceError instances unchanged', async () => {
-      const deviceError = new DeviceConnectionError('device-123', 'Test error');
-      mockClientManager.get.mockImplementation(() => {
-        throw deviceError;
-      });
-
-      await expect(deviceService.initializeMessageClient('test@example.com', mockDevice, mockUserData)).rejects.toThrow(deviceError);
-    });
-  });
-
-  describe('initializeMessageClientForLocal', () => {
-    it('should return false if messageClient not initialized', async () => {
-      deviceService.messageClient = undefined;
-
-      const result = await deviceService.initializeMessageClientForLocal(mockDevice);
-
-      expect(result).toBe(false);
-      expect(mockLogger.error).toHaveBeenCalledWith('messageClient not initialized');
-    });
-
-    it('should handle B01 protocol devices (MQTT-only)', async () => {
-      deviceService.messageClient = mockClientRouter;
-      const b01Device = { ...mockDevice, pv: 'B01' };
-
-      const result = await deviceService.initializeMessageClientForLocal(b01Device);
-
-      expect(result).toBe(true);
-      expect(mockLogger.debug).toHaveBeenCalledWith('Device: device-123 uses B01 protocol, switch to use UDPClient');
-    });
-  });
-
-  /*
-   * NOTE: Device notification activation tests removed
-   * This functionality has been moved to PollingService
-   * See src/tests/services/pollingService.test.ts for polling-related tests
-   */
-
-  describe('service lifecycle and cleanup', () => {
-    beforeEach(() => {
-      deviceService.messageClient = mockClientRouter;
-      deviceService.localClientMap.set('device-123', {
-        disconnect: vi.fn(),
-      } as any);
-    });
-
-    afterEach(() => {
-      vi.useRealTimers();
-    });
-
-    it('should stop service and clean up all resources', () => {
-      const mockLocalClient = deviceService.localClientMap.get('device-123');
-
-      deviceService.stopService();
-
-      expect(mockClientRouter.disconnect).toHaveBeenCalled();
-      expect(deviceService.messageClient).toBeUndefined();
-      expect(deviceService.localClientMap.size).toBe(0);
-      expect(deviceService.ipMap.size).toBe(0);
-      expect(mockLogger.notice).toHaveBeenCalledWith('Device management service stopped');
-
-      // Always assert disconnect (mockLocalClient is always set in beforeEach)
-      expect(mockLocalClient).toBeDefined();
-      expect(mockLocalClient?.disconnect).toHaveBeenCalled();
-    });
-
-    it('should handle errors during cleanup gracefully', () => {
-      mockClientRouter.disconnect.mockImplementation(() => {
-        throw new Error('Disconnect error');
-      });
-
-      deviceService.stopService();
-
-      expect(mockLogger.error).toHaveBeenCalledWith('Error disconnecting message client:', expect.any(Error));
-    });
-
-    it('should handle local client disconnect errors gracefully', () => {
-      const mockLocalClient = {
-        disconnect: vi.fn().mockImplementation(() => {
-          throw new Error('Local disconnect error');
-        }),
-      };
-      deviceService.localClientMap.set('device-456', mockLocalClient as any);
-
-      deviceService.stopService();
-
-      expect(mockLogger.error).toHaveBeenCalledWith('Error disconnecting local client device-456:', expect.any(Error));
-    });
-  });
-
-  describe('integration scenarios', () => {
-    it('should handle basic device management workflow', async () => {
-      deviceService.setAuthentication(mockUserData);
-      deviceService.setDeviceNotify(mockDeviceNotifyCallback);
-
-      // List devices
-      const devices = await deviceService.listDevices('test@example.com');
-      expect(devices).toHaveLength(1);
-
-      // Initialize message client
-      await deviceService.initializeMessageClient('test@example.com', devices[0], mockUserData);
-      expect(deviceService.messageClient).toBe(mockClientRouter);
-
-      // Stop service
-      deviceService.stopService();
-      expect(deviceService.messageClient).toBeUndefined();
-    });
-
-    it('should handle MQTT-only workflow for B01 devices', async () => {
-      const b01Device = {
-        ...mockDevice,
-        duid: 'device-b01',
-        pv: 'B01',
-        deviceStatus: {
-          [Protocol.battery]: 85,
-          [Protocol.rpc_request]: {
-            [RPC_Request_Segments.network_info]: { ipAddress: '192.168.1.100', mac: '00:11:22:33:44:55', wifiName: 'TestWiFi', signal: 75 } satisfies NetworkInfo,
-          },
-        },
-      };
-      const homeDataWithB01 = { ...mockHomeData, devices: [b01Device] };
-      mockIotApi.getHomev2.mockResolvedValue(homeDataWithB01);
-      deviceService.setAuthentication(mockUserData);
-      await deviceService.initializeMessageClient('test@example.com', b01Device, mockUserData);
-      const localResult = await deviceService.initializeMessageClientForLocal(b01Device);
-
-      expect(localResult).toBe(true);
-    });
-  });
-
-  describe('utility methods', () => {
-    it('should resolve sleep promise', async () => {
-      const sleepPromise = (deviceService as any).sleep(1);
-      await expect(sleepPromise).resolves.toBeUndefined();
-    });
-  });
-
-  describe('Connection timeout scenarios', () => {
-    it('should attempt multiple connection retries before success', async () => {
-      let connectionCheckCount = 0;
-      mockClientRouter.isConnected.mockImplementation(() => {
-        connectionCheckCount++;
-        // Connect successfully on the 5th check
-        return connectionCheckCount >= 5;
-      });
-
-      await deviceService.initializeMessageClient('test@example.com', mockDevice, mockUserData);
-
-      expect(connectionCheckCount).toBeGreaterThanOrEqual(5);
-      expect(mockLogger.debug).toHaveBeenCalledWith('MessageClient connected for device:', 'device-123');
-    });
-
-    it('should log debug message when successfully connected', async () => {
-      mockClientRouter.isConnected.mockReturnValue(true);
-
-      await deviceService.initializeMessageClient('test@example.com', mockDevice, mockUserData);
-
-      expect(mockLogger.debug).toHaveBeenCalledWith('MessageClient connected for device:', 'device-123');
-    });
-  });
-
-  describe('Integration scenarios with realistic timing', () => {
-    it('should handle slow connection establishment', async () => {
-      let checks = 0;
-      mockClientRouter.isConnected.mockImplementation(() => {
-        checks++;
-        // Simulate slow connection - connect after 3 attempts
-        return checks > 3;
-      });
-
-      await deviceService.initializeMessageClient('test@example.com', mockDevice, mockUserData);
-
-      expect(checks).toBeGreaterThan(3);
-      expect(mockClientRouter.isConnected).toHaveBeenCalled();
-    });
-
-    it('should initialize message client components in correct order', async () => {
-      const callOrder: string[] = [];
-
-      mockClientManager.get.mockImplementation(() => {
-        callOrder.push('getClient');
-        return mockClientRouter;
-      });
-
-      mockClientRouter.registerDevice.mockImplementation(() => {
-        callOrder.push('registerDevice');
-      });
-
-      mockClientRouter.registerMessageListener.mockImplementation(() => {
-        callOrder.push('registerListener');
-      });
-
-      mockClientRouter.connect.mockImplementation(() => {
-        callOrder.push('connect');
-      });
-
-      mockClientRouter.isConnected.mockReturnValue(true);
-
-      await deviceService.initializeMessageClient('test@example.com', mockDevice, mockUserData);
-
-      expect(callOrder).toEqual(['getClient', 'registerDevice', 'registerListener', 'registerListener', 'registerListener', 'connect']);
-    });
-  });
-
-  describe('Message listener edge cases', () => {
-    it('should handle message listener with no deviceNotify callback', async () => {
-      mockClientRouter.isConnected.mockReturnValue(true);
-
-      // Don't set deviceNotify callback
-      deviceService.setDeviceNotify(undefined);
-
-      await deviceService.initializeMessageClient('test@example.com', mockDevice, mockUserData);
-
-      const messageListenerCall = mockClientRouter.registerMessageListener.mock.calls[0][0];
-
-      // Create mock message
-      const message = Object.create({ isForProtocol: vi.fn().mockReturnValue(false) });
-      message.duid = 'device-123';
-
-      // Should not throw even without callback
-      expect(() => messageListenerCall.onMessage(message)).not.toThrow();
-    });
-
-    it('should handle hello_response without updateNonce', async () => {
-      mockClientRouter.isConnected.mockReturnValue(true);
-      mockClientRouter.updateNonce = undefined;
-
-      await deviceService.initializeMessageClient('test@example.com', mockDevice, mockUserData);
-
-      const messageListenerCall = mockClientRouter.registerMessageListener.mock.calls[0][0];
-
-      const helloMessage = Object.create({
-        isForProtocol: vi.fn().mockImplementation((p: any) => p === 101),
-        get: vi.fn().mockReturnValue({ result: { nonce: 'test-nonce' } }),
-      });
-      helloMessage.duid = 'device-123';
-
-      // Should not throw even without updateNonce method
-      expect(() => messageListenerCall.onMessage(helloMessage)).not.toThrow();
-    });
-  });
-
-  describe('Service state management', () => {
-    it('should clear message client on stop service', () => {
-      deviceService.messageClient = mockClientRouter;
-
-      deviceService.stopService();
-
-      expect(deviceService.messageClient).toBeUndefined();
     });
   });
 

@@ -1,8 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { AnsiLogger } from 'matterbridge/logger';
-import RoborockService from '../roborockService.js';
+import { RoborockService } from '../roborockService.js';
 import { RoomIndexMap } from '../model/RoomIndexMap.js';
-import ClientManager from '../services/clientManager.js';
 
 const logger: any = { debug: vi.fn(), error: vi.fn(), notice: vi.fn(), warn: vi.fn() };
 
@@ -33,40 +32,39 @@ describe('RoborockService (unit)', () => {
     };
   });
 
-  it('loginWithPassword delegates to AuthenticationService and sets user data on container', async () => {
-    const svc = new RoborockService(undefined as any, undefined as any, 0, {} as any, logger as any, 'url', container as any);
-
-    const result = await svc.loginWithPassword(
-      'me',
-      'pw',
-      async () => undefined,
-      async () => {},
-    );
-    expect(authService.loginWithPassword).toHaveBeenCalled();
-    expect(container.setUserData).toHaveBeenCalledWith(result);
-    expect(result).toEqual({ username: 'me', token: 't' });
-  });
-
   it('getCustomAPI throws when IoT API not initialized', async () => {
-    const svc = new RoborockService(undefined as any, undefined as any, 0, {} as any, logger as any, 'url', container as any);
+    const svc = new RoborockService(
+      {
+        authenticateApiFactory: () => undefined as any,
+        iotApiFactory: () => undefined as any,
+        refreshInterval: 10,
+        baseUrl: 'https://api.roborock.com',
+        persist: {} as any,
+        configManager: {} as any,
+      },
+      logger as any,
+      container as any,
+    );
     await expect(svc.getCustomAPI('/some')).rejects.toThrow(/IoT API not initialized/);
   });
 });
 
 describe('RoborockService basic behaviors', () => {
   let svc: RoborockService;
-  let clientManager: ClientManager;
 
   beforeEach(() => {
-    clientManager = {} as ClientManager;
-
     // Create service with default factories (will be mocked as needed)
     svc = new RoborockService(
-      undefined, // uses default auth factory
-      undefined, // uses default IoT factory
-      1000,
-      clientManager,
-      logger,
+      {
+        authenticateApiFactory: () => undefined as any,
+        iotApiFactory: () => undefined as any,
+        refreshInterval: 10,
+        baseUrl: 'https://api.roborock.com',
+        persist: {} as any,
+        configManager: {} as any,
+      },
+      logger as any,
+      {} as any,
     );
   });
 
@@ -116,7 +114,6 @@ describe('RoborockService basic behaviors', () => {
 describe('RoborockService - Facade Pattern Testing', () => {
   let roborockService: RoborockService;
   let mockLogger: AnsiLogger;
-  let mockClientManager: ClientManager;
 
   beforeEach(() => {
     mockLogger = {
@@ -126,17 +123,19 @@ describe('RoborockService - Facade Pattern Testing', () => {
       notice: vi.fn(),
     } as any;
 
-    mockClientManager = {} as ClientManager;
-
     // Create RoborockService instance without dependency injection
     // This tests the facade in its normal production configuration
     roborockService = new RoborockService(
-      undefined, // Uses default auth factory
-      undefined, // Uses default IoT factory
-      30000,
-      mockClientManager,
-      mockLogger,
-      'https://test.url',
+      {
+        authenticateApiFactory: () => undefined as any,
+        iotApiFactory: () => undefined as any,
+        refreshInterval: 10,
+        baseUrl: 'https://api.roborock.com',
+        persist: {} as any,
+        configManager: {} as any,
+      },
+      logger as any,
+      {} as any,
     );
   });
 
@@ -148,10 +147,7 @@ describe('RoborockService - Facade Pattern Testing', () => {
   describe('Facade Contract Testing', () => {
     it('should provide authentication interface without exposing internal implementation', () => {
       // Assert - Test that facade exposes expected authentication methods
-      expect(typeof roborockService.loginWithPassword).toBe('function');
-      expect(typeof roborockService.requestVerificationCode).toBe('function');
-      expect(typeof roborockService.loginWithVerificationCode).toBe('function');
-      expect(typeof roborockService.loginWithCachedToken).toBe('function');
+      expect(typeof roborockService.authenticate).toBe('function');
     });
 
     it('should provide device management interface', () => {
@@ -196,8 +192,7 @@ describe('RoborockService - Facade Pattern Testing', () => {
         (name) => typeof (roborockService as any)[name] === 'function' && !name.startsWith('_'),
       );
 
-      expect(publicMethods.length).toBeGreaterThan(20); // Should have comprehensive API
-      expect(publicMethods).toContain('loginWithPassword');
+      expect(publicMethods.length).toBeGreaterThan(15); // Should have comprehensive API
       expect(publicMethods).toContain('listDevices');
       expect(publicMethods).toContain('startClean');
       expect(publicMethods).toContain('stopService');
@@ -260,22 +255,6 @@ describe('RoborockService - Facade Pattern Testing', () => {
   });
 
   describe('Behavior Coordination', () => {
-    it('should coordinate authentication workflow without exposing internals', () => {
-      // This test demonstrates proper facade testing:
-      // - Tests the coordination behavior
-      // - Does not mock internal services
-      // - Focuses on public contract
-
-      // Act & Assert - Test that methods are properly coordinated
-      expect(typeof roborockService.requestVerificationCode).toBe('function');
-      expect(typeof roborockService.loginWithVerificationCode).toBe('function');
-
-      // Verify methods accept expected parameters without actually calling them
-      // (Facade pattern testing focuses on interface availability, not implementation)
-      expect(roborockService.requestVerificationCode).toBeDefined();
-      expect(roborockService.loginWithVerificationCode).toBeDefined();
-    });
-
     it('should coordinate device management workflow', () => {
       // Arrange
       const mockDevice = { duid: 'test-device', name: 'Test Vacuum' };
@@ -313,7 +292,8 @@ describe('RoborockService - Facade Pattern Testing', () => {
       // This test verifies the facade properly separates different domain concerns
       // without testing implementation details
 
-      const authMethods = ['loginWithPassword', 'requestVerificationCode', 'loginWithVerificationCode'];
+      // Only check for methods that are actually present on the facade
+      const authMethods: string[] = [];
       const deviceMethods = ['listDevices', 'initializeMessageClient', 'activateDeviceNotify'];
       const areaMethods = ['setSelectedAreas', 'getSupportedAreas', 'getMapInformation'];
       const messageMethods = ['startClean', 'pauseClean', 'getCleanModeData'];

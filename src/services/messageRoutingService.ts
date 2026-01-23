@@ -1,8 +1,10 @@
 import { AnsiLogger, debugStringify } from 'matterbridge/logger';
 import { ServiceArea } from 'matterbridge/matter/clusters';
-import { MessageProcessor, RequestMessage, RoborockIoTApi } from '../roborockCommunication/index.js';
 import type { CleanModeSetting } from '../behaviors/roborock.vacuum/default/default.js';
 import { DeviceError } from '../errors/index.js';
+import { MessageProcessor } from '../roborockCommunication/mqtt/messageProcessor.js';
+import { RoborockIoTApi } from '../roborockCommunication/api/iotClient.js';
+import { RequestMessage } from '../roborockCommunication/models/index.js';
 
 /** Response from map room queries. */
 interface MapRoomResponse {

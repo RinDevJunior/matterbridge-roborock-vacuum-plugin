@@ -2,11 +2,14 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { AnsiLogger } from 'matterbridge/logger';
 import { ServiceContainer, ServiceContainerConfig } from '../../services/serviceContainer.js';
 import ClientManager from '../../services/clientManager.js';
-import { RoborockAuthenticateApi, RoborockIoTApi, UserData } from '../../roborockCommunication/index.js';
 import { AuthenticationService } from '../../services/authenticationService.js';
 import { DeviceManagementService } from '../../services/deviceManagementService.js';
 import { AreaManagementService } from '../../services/areaManagementService.js';
 import { MessageRoutingService } from '../../services/messageRoutingService.js';
+import { RoborockAuthenticateApi } from '../../roborockCommunication/api/authClient.js';
+import { RoborockIoTApi } from '../../roborockCommunication/api/iotClient.js';
+import { UserData } from '../../roborockCommunication/models/index.js';
+import { localStorageMock } from '../testData/localStorageMock.js';
 
 describe('ServiceContainer', () => {
   let container: ServiceContainer;
@@ -70,9 +73,11 @@ describe('ServiceContainer', () => {
       refreshInterval: 30000,
       authenticateApiFactory: vi.fn(() => mockAuthApi),
       iotApiFactory: vi.fn(() => mockIotApi),
+      persist: { storage: localStorageMock } as any,
+      configManager: {} as any,
     };
 
-    container = new ServiceContainer(mockLogger, mockClientManager, config);
+    container = new ServiceContainer(mockLogger, config);
   });
 
   afterEach(() => {
@@ -95,9 +100,11 @@ describe('ServiceContainer', () => {
       const defaultConfig = {
         baseUrl: 'https://default.com',
         refreshInterval: 10000,
+        persist: {} as any,
+        configManager: {} as any,
       };
 
-      const defaultContainer = new ServiceContainer(mockLogger, mockClientManager, defaultConfig);
+      const defaultContainer = new ServiceContainer(mockLogger, defaultConfig);
 
       expect(defaultContainer).toBeInstanceOf(ServiceContainer);
       defaultContainer.destroy();

@@ -1,29 +1,31 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { AnsiLogger } from 'matterbridge/logger';
-import RoborockService from '../roborockService.js';
-import ClientManager from '../services/clientManager.js';
+import { RoborockService } from '../roborockService.js';
 
 describe('RoborockService - listDevices', () => {
   let roborockService: RoborockService;
   let mockLogger: AnsiLogger;
-  let clientManager: ClientManager;
 
   beforeEach(() => {
     mockLogger = { debug: vi.fn(), error: vi.fn() } as any;
-    clientManager = {} as ClientManager;
 
     roborockService = new RoborockService(
-      undefined, // default auth factory
-      undefined, // default IoT factory
-      10,
-      clientManager,
+      {
+        authenticateApiFactory: () => undefined as any,
+        iotApiFactory: () => undefined as any,
+        refreshInterval: 10,
+        baseUrl: 'https://api.roborock.com',
+        persist: {} as any,
+        configManager: {} as any,
+      },
       mockLogger,
+      {} as any,
     );
   });
 
   it('should throw if not authenticated', async () => {
     // Without authentication, listDevices should throw
-    await expect(roborockService.listDevices('user')).rejects.toThrow();
+    await expect(roborockService.listDevices()).rejects.toThrow();
   });
 
   it('should throw if homeDetails is missing', async () => {
@@ -36,7 +38,7 @@ describe('RoborockService - listDevices', () => {
     roborockService = Object.create(roborockService, {
       deviceService: { value: mockDeviceService },
     });
-    await expect(roborockService.listDevices('user')).rejects.toThrow('No home found for user');
+    await expect(roborockService.listDevices()).rejects.toThrow('No home found for user');
   });
 
   it('should return empty array if homeData is missing', async () => {
@@ -47,7 +49,7 @@ describe('RoborockService - listDevices', () => {
     roborockService = Object.create(roborockService, {
       deviceService: { value: mockDeviceService },
     });
-    const result = await roborockService.listDevices('user');
+    const result = await roborockService.listDevices();
     expect(result).toEqual([]);
   });
 
@@ -60,7 +62,7 @@ describe('RoborockService - listDevices', () => {
     roborockService = Object.create(roborockService, {
       deviceService: { value: mockDeviceService },
     });
-    const result = await roborockService.listDevices('user');
+    const result = await roborockService.listDevices();
     expect(result).toEqual(mockDevices);
   });
 
@@ -72,7 +74,7 @@ describe('RoborockService - listDevices', () => {
     roborockService = Object.create(roborockService, {
       deviceService: { value: mockDeviceService },
     });
-    await expect(roborockService.listDevices('user')).rejects.toThrow('getHomev3 failed');
+    await expect(roborockService.listDevices()).rejects.toThrow('getHomev3 failed');
   });
 
   it('should merge v3 devices and receivedDevices if v3 API is needed', async () => {
@@ -87,7 +89,7 @@ describe('RoborockService - listDevices', () => {
     roborockService = Object.create(roborockService, {
       deviceService: { value: mockDeviceService },
     });
-    const result = await roborockService.listDevices('user');
+    const result = await roborockService.listDevices();
     expect(result).toEqual(mergedDevices);
   });
 
@@ -100,7 +102,7 @@ describe('RoborockService - listDevices', () => {
     roborockService = Object.create(roborockService, {
       deviceService: { value: mockDeviceService },
     });
-    const result = await roborockService.listDevices('user');
+    const result = await roborockService.listDevices();
     expect(result[0].data.batteryLevel ?? 100).toBe(100);
   });
 
@@ -114,7 +116,7 @@ describe('RoborockService - listDevices', () => {
     roborockService = Object.create(roborockService, {
       deviceService: { value: mockDeviceService },
     });
-    const result = await roborockService.listDevices('user');
+    const result = await roborockService.listDevices();
     expect(result[0].scenes).toEqual(scenes);
   });
 
@@ -127,7 +129,7 @@ describe('RoborockService - listDevices', () => {
     roborockService = Object.create(roborockService, {
       deviceService: { value: mockDeviceService },
     });
-    const result = await roborockService.listDevices('user');
+    const result = await roborockService.listDevices();
     expect(result[0].rooms).toEqual([{ id: 1, name: 'Living Room' }]);
   });
 });

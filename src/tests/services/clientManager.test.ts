@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { AnsiLogger } from 'matterbridge/logger';
 import ClientManager from '../../services/clientManager.js';
-import { UserData } from '../../roborockCommunication/index.js';
+import { UserData } from '../../roborockCommunication/models/index.js';
 
 describe('ClientManager', () => {
   let clientManager: ClientManager;
@@ -18,6 +18,7 @@ describe('ClientManager', () => {
     } as any;
 
     mockUserData = {
+      username: 'test-user',
       uid: 'test-uid',
       tokentype: 'Bearer',
       token: 'test-token',
@@ -43,10 +44,8 @@ describe('ClientManager', () => {
     });
 
     it('should create and cache ClientRouter for new user', () => {
-      const username = 'test@example.com';
-
-      const result1 = clientManager.get(username, mockUserData);
-      const result2 = clientManager.get(username, mockUserData);
+      const result1 = clientManager.get(mockUserData);
+      const result2 = clientManager.get(mockUserData);
 
       expect(result1).toBeDefined();
       expect(result1).toBe(result2); // Should return same cached instance
@@ -56,8 +55,8 @@ describe('ClientManager', () => {
       const user1 = 'test1@example.com';
       const user2 = 'test2@example.com';
 
-      const client1 = clientManager.get(user1, mockUserData);
-      const client2 = clientManager.get(user2, mockUserData);
+      const client1 = clientManager.get({ ...mockUserData, username: user1 });
+      const client2 = clientManager.get({ ...mockUserData, username: user2 });
 
       expect(client1).toBeDefined();
       expect(client2).toBeDefined();
@@ -67,7 +66,7 @@ describe('ClientManager', () => {
     it('should handle destroy for specific user', () => {
       const username = 'test@example.com';
 
-      const client = clientManager.get(username, mockUserData);
+      const client = clientManager.get({ ...mockUserData, username });
       expect(client).toBeDefined();
 
       // Mock the disconnect method
@@ -82,8 +81,8 @@ describe('ClientManager', () => {
       const user1 = 'test1@example.com';
       const user2 = 'test2@example.com';
 
-      const client1 = clientManager.get(user1, mockUserData);
-      const client2 = clientManager.get(user2, mockUserData);
+      const client1 = clientManager.get({ ...mockUserData, username: user1 });
+      const client2 = clientManager.get({ ...mockUserData, username: user2 });
 
       // Mock disconnect methods
       vi.spyOn(client1, 'disconnect').mockResolvedValue(undefined);
@@ -97,10 +96,10 @@ describe('ClientManager', () => {
 
     it('should handle edge cases gracefully', () => {
       // Test with empty string
-      expect(() => clientManager.get('', mockUserData)).toThrow('Username cannot be empty');
+      expect(() => clientManager.get({ ...mockUserData, username: '' })).toThrow('Username cannot be empty');
 
       // Test with whitespace
-      expect(() => clientManager.get('  ', mockUserData)).toThrow('Username cannot be empty');
+      expect(() => clientManager.get({ ...mockUserData, username: '  ' })).toThrow('Username cannot be empty');
 
       // Test destroy non-existent user
       expect(() => {

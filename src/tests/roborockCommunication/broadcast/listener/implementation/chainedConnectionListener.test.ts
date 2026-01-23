@@ -1,5 +1,5 @@
-import { ChainedConnectionListener } from '../../../../../roborockCommunication/broadcast/listener/implementation/chainedConnectionListener.js';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { ChainedConnectionListener } from '../../../../../roborockCommunication/routing/listeners/implementation/chainedConnectionListener.js';
 
 describe('ChainedConnectionListener', () => {
   let chained: ChainedConnectionListener;

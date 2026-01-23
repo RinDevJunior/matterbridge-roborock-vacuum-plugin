@@ -1,11 +1,12 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { ConnectionService } from '../../services/connectionService.js';
 import ClientManager from '../../services/clientManager.js';
-import { Device, UserData, Protocol, ResponseMessage } from '../../roborockCommunication/index.js';
-import { DpsPayload } from '../../roborockCommunication/broadcast/model/dps.js';
 import { DeviceConnectionError, DeviceInitializationError } from '../../errors/index.js';
 import { NotifyMessageTypes } from '../../notifyMessageTypes.js';
-import { HeaderMessage } from '../../roborockCommunication/broadcast/model/headerMessage.js';
+import { Device, DpsPayload, HeaderMessage, Protocol, ResponseMessage, UserData } from '../../roborockCommunication/models/index.js';
+import { ClientRouter } from '../../roborockCommunication/routing/clientRouter.js';
+import { AnsiLogger } from 'matterbridge/logger';
+import { MessageRoutingService } from '../../services/messageRoutingService.js';
 
 describe('ConnectionService', () => {
   let service: ConnectionService;
@@ -13,6 +14,7 @@ describe('ConnectionService', () => {
   let mockLogger: ReturnType<typeof createMockLogger>;
   let mockClientRouter: ReturnType<typeof createMockClientRouter>;
   let mockLocalClient: ReturnType<typeof createMockLocalClient>;
+  let mockMessageRoutingService: ReturnType<typeof createMockMessageRoutingService>;
 
   const mockDevice: Device = {
     duid: 'test-duid-123',
@@ -33,7 +35,12 @@ describe('ConnectionService', () => {
     mockClientRouter = createMockClientRouter();
     mockLocalClient = createMockLocalClient();
     mockClientManager = createMockClientManager(mockClientRouter);
-    service = new ConnectionService(mockClientManager as unknown as ClientManager, mockLogger as unknown as import('matterbridge/logger').AnsiLogger);
+    mockMessageRoutingService = createMockMessageRoutingService();
+    service = new ConnectionService(
+      mockClientManager as unknown as ClientManager,
+      mockLogger as unknown as AnsiLogger,
+      mockMessageRoutingService as unknown as MessageRoutingService,
+    );
   });
 
   function createMockLogger() {
@@ -43,45 +50,7 @@ describe('ConnectionService', () => {
       warn: vi.fn(),
       error: vi.fn(),
       info: vi.fn(),
-      _extLog: vi.fn(),
-      _logName: '',
-      _logFilePath: '',
-      _logFileSize: 0,
-      _logFileMaxSize: 0,
-      _logFileStream: undefined,
-      _logFileWrite: vi.fn(),
-      _logFileRotate: vi.fn(),
-      _logFileCheck: vi.fn(),
-      _logFileCleanup: vi.fn(),
-      _logFileWriteQueue: [],
-      _logFileWriteInProgress: false,
-      _logFileWriteScheduled: false,
-      _logFileWritePromise: Promise.resolve(),
-      _logFileWriteResolve: vi.fn(),
-      _logFileWriteReject: vi.fn(),
-      _logFileWriteError: undefined,
-      _logFileWriteErrorCount: 0,
-      _logFileWriteErrorMax: 0,
-      _logFileWriteErrorTimeout: 0,
-      _logFileWriteErrorTimer: undefined,
-      _logFileWriteErrorPromise: Promise.resolve(),
-      _logFileWriteErrorResolve: vi.fn(),
-      _logFileWriteErrorReject: vi.fn(),
-      _logFileWriteErrorHandler: vi.fn(),
-      _logFileWriteErrorHandlerTimeout: 0,
-      _logFileWriteErrorHandlerTimer: undefined,
-      _logFileWriteErrorHandlerPromise: Promise.resolve(),
-      _logFileWriteErrorHandlerResolve: vi.fn(),
-      _logFileWriteErrorHandlerReject: vi.fn(),
-      _logFileWriteErrorHandlerError: undefined,
-      _logFileWriteErrorHandlerErrorCount: 0,
-      _logFileWriteErrorHandlerErrorMax: 0,
-      _logFileWriteErrorHandlerErrorTimeout: 0,
-      _logFileWriteErrorHandlerErrorTimer: undefined,
-      _logFileWriteErrorHandlerErrorPromise: Promise.resolve(),
-      _logFileWriteErrorHandlerErrorResolve: vi.fn(),
-      _logFileWriteErrorHandlerErrorReject: vi.fn(),
-    };
+    } satisfies Partial<AnsiLogger>;
   }
 
   function createMockClientRouter() {
@@ -126,6 +95,10 @@ describe('ConnectionService', () => {
     };
   }
 
+  function createMockMessageRoutingService() {
+    return {} satisfies Partial<MessageRoutingService>;
+  }
+
   describe('setDeviceNotify', () => {
     it('should set the device notification callback', () => {
       const mockCallback = vi.fn();
@@ -140,7 +113,7 @@ describe('ConnectionService', () => {
       const attempts = await service.waitForConnection(checkConnection, 5, 0);
 
       expect(attempts).toBe(0);
-      expect(checkConnection).toHaveBeenCalledTimes(1);
+      expect(checkConnection).toHaveBeenCalledTimes(2);
     });
 
     it('should retry until connection is established', async () => {
@@ -153,14 +126,14 @@ describe('ConnectionService', () => {
       const attempts = await service.waitForConnection(checkConnection, 5, 0);
 
       expect(attempts).toBe(2);
-      expect(checkConnection).toHaveBeenCalledTimes(3);
+      expect(checkConnection).toHaveBeenCalledTimes(4);
     });
 
     it('should throw error when max attempts exceeded', async () => {
       const checkConnection = vi.fn().mockReturnValue(false);
 
       await expect(service.waitForConnection(checkConnection, 3, 0)).rejects.toThrow('Connection timeout after 3 attempts');
-      expect(checkConnection).toHaveBeenCalledTimes(4);
+      expect(checkConnection).toHaveBeenCalledTimes(5);
     });
 
     it('should use default max attempts and delay', async () => {
@@ -168,23 +141,27 @@ describe('ConnectionService', () => {
       const attempts = await service.waitForConnection(checkConnection);
 
       expect(attempts).toBe(0);
-      expect(checkConnection).toHaveBeenCalledTimes(1);
+      expect(checkConnection).toHaveBeenCalledTimes(2);
     });
   });
 
   describe('initializeMessageClient', () => {
     it('should throw DeviceInitializationError when ClientManager is not initialized', async () => {
-      const serviceWithoutManager = new ConnectionService(undefined as unknown as ClientManager, mockLogger as unknown as import('matterbridge/logger').AnsiLogger);
+      const serviceWithoutManager = new ConnectionService(
+        undefined as unknown as ClientManager,
+        mockLogger as unknown as AnsiLogger,
+        mockMessageRoutingService as unknown as MessageRoutingService,
+      );
 
-      await expect(serviceWithoutManager.initializeMessageClient('test@example.com', mockDevice, mockUserData)).rejects.toThrow(DeviceInitializationError);
+      await expect(serviceWithoutManager.initializeMessageClient(mockDevice, mockUserData)).rejects.toThrow(DeviceInitializationError);
     });
 
     it('should successfully initialize MQTT client and connect', async () => {
       mockClientRouter.isConnected.mockReturnValue(true);
 
-      await service.initializeMessageClient('test@example.com', mockDevice, mockUserData);
+      await service.initializeMessageClient(mockDevice, mockUserData);
 
-      expect(mockClientManager.get).toHaveBeenCalledWith('test@example.com', mockUserData);
+      expect(mockClientManager.get).toHaveBeenCalledWith(mockUserData);
       expect(mockClientRouter.registerDevice).toHaveBeenCalledWith(mockDevice.duid, mockDevice.localKey, mockDevice.pv, undefined);
       expect(mockClientRouter.registerMessageListener).toHaveBeenCalled();
       expect(mockClientRouter.connect).toHaveBeenCalled();
@@ -196,7 +173,7 @@ describe('ConnectionService', () => {
       const mockCallback = vi.fn();
       service.setDeviceNotify(mockCallback);
 
-      await service.initializeMessageClient('test@example.com', mockDevice, mockUserData);
+      await service.initializeMessageClient(mockDevice, mockUserData);
 
       const listenerCall = mockClientRouter.registerMessageListener.mock.calls[0][0];
       expect(listenerCall).toHaveProperty('onMessage');
@@ -214,7 +191,7 @@ describe('ConnectionService', () => {
       const mockCallback = vi.fn();
       service.setDeviceNotify(mockCallback);
 
-      await service.initializeMessageClient('test@example.com', mockDevice, mockUserData);
+      await service.initializeMessageClient(mockDevice, mockUserData);
 
       const listenerCall = mockClientRouter.registerMessageListener.mock.calls[0][0];
       const mockMessage = new ResponseMessage(mockDevice.duid, new HeaderMessage('1.0', 2, 0, Date.now(), 0));
@@ -225,25 +202,10 @@ describe('ConnectionService', () => {
       expect(mockCallback).not.toHaveBeenCalled();
     });
 
-    it('should handle hello_response protocol and update nonce', async () => {
-      mockClientRouter.isConnected.mockReturnValue(true);
-
-      await service.initializeMessageClient('test@example.com', mockDevice, mockUserData);
-
-      const listenerCall = mockClientRouter.registerMessageListener.mock.calls[0][0];
-      const mockMessage = new ResponseMessage(mockDevice.duid, new HeaderMessage('1.0', 3, 0, Date.now(), 0));
-      mockMessage.isForProtocol = vi.fn((protocol: Protocol) => protocol === Protocol.hello_response);
-      mockMessage.get = vi.fn().mockReturnValue({ result: { nonce: 'test-nonce-456' } } as DpsPayload);
-
-      listenerCall.onMessage(mockMessage);
-
-      expect(mockClientRouter.updateNonce).toHaveBeenCalledWith(mockDevice.duid, 'test-nonce-456');
-    });
-
     it('should not call deviceNotify when callback is not set', async () => {
       mockClientRouter.isConnected.mockReturnValue(true);
 
-      await service.initializeMessageClient('test@example.com', mockDevice, mockUserData);
+      await service.initializeMessageClient(mockDevice, mockUserData);
 
       const listenerCall = mockClientRouter.registerMessageListener.mock.calls[0][0];
       const mockMessage = new ResponseMessage(mockDevice.duid, new HeaderMessage('1.0', 4, 0, Date.now(), 0));
@@ -256,7 +218,7 @@ describe('ConnectionService', () => {
       mockClientRouter.isConnected.mockReturnValue(false);
       vi.spyOn(service as any, 'waitForConnection').mockRejectedValue(new Error('Connection timeout'));
 
-      await expect(service.initializeMessageClient('test@example.com', mockDevice, mockUserData)).rejects.toThrow(DeviceConnectionError);
+      await expect(service.initializeMessageClient(mockDevice, mockUserData)).rejects.toThrow(DeviceConnectionError);
       expect(mockLogger.error).toHaveBeenCalled();
     });
 
@@ -265,7 +227,7 @@ describe('ConnectionService', () => {
         throw new Error('Unexpected error');
       });
 
-      await expect(service.initializeMessageClient('test@example.com', mockDevice, mockUserData)).rejects.toThrow(DeviceInitializationError);
+      await expect(service.initializeMessageClient(mockDevice, mockUserData)).rejects.toThrow(DeviceInitializationError);
       expect(mockLogger.error).toHaveBeenCalledWith('Failed to initialize message client:', expect.any(Error));
     });
 
@@ -273,56 +235,7 @@ describe('ConnectionService', () => {
       mockClientRouter.isConnected.mockReturnValue(false);
       vi.spyOn(service as any, 'waitForConnection').mockRejectedValue(new Error('Connection timeout'));
 
-      await expect(service.initializeMessageClient('test@example.com', mockDevice, mockUserData)).rejects.toThrow(DeviceConnectionError);
-    });
-  });
-
-  describe('registerLocalClient', () => {
-    beforeEach(() => {
-      service.messageClient = mockClientRouter as unknown as import('../../roborockCommunication/broadcast/clientRouter.js').ClientRouter;
-    });
-
-    it('should throw DeviceConnectionError when message client is not initialized', async () => {
-      service.messageClient = undefined;
-
-      await expect(service.registerLocalClient(mockDevice, '192.168.1.100')).rejects.toThrow(DeviceConnectionError);
-    });
-
-    it('should successfully register and connect local client', async () => {
-      mockClientRouter.registerClient.mockReturnValue(mockLocalClient);
-      mockLocalClient.isConnected.mockReturnValue(true);
-
-      const result = await service.registerLocalClient(mockDevice, '192.168.1.100');
-
-      expect(mockLogger.debug).toHaveBeenCalledWith('Initializing the local connection for this client towards 192.168.1.100');
-      expect(mockClientRouter.registerClient).toHaveBeenCalledWith(mockDevice.duid, '192.168.1.100');
-      expect(mockLocalClient.connect).toHaveBeenCalled();
-      expect(mockLogger.notice).toHaveBeenCalledWith(`Local connection established for device ${mockDevice.duid} at 192.168.1.100`);
-      expect(result).toBe(mockLocalClient);
-    });
-
-    it('should throw DeviceConnectionError when local client fails to connect', async () => {
-      mockClientRouter.registerClient.mockReturnValue(mockLocalClient);
-      mockLocalClient.isConnected.mockReturnValue(false);
-      vi.spyOn(service as any, 'waitForConnection').mockRejectedValue(new Error('Connection timeout'));
-
-      await expect(service.registerLocalClient(mockDevice, '192.168.1.100')).rejects.toThrow(DeviceConnectionError);
-    });
-
-    it('should include IP address in error context', async () => {
-      mockClientRouter.registerClient.mockReturnValue(mockLocalClient);
-      mockLocalClient.isConnected.mockReturnValue(false);
-      vi.spyOn(service as any, 'waitForConnection').mockRejectedValue(new Error('Connection timeout'));
-
-      let caughtError;
-      try {
-        await service.registerLocalClient(mockDevice, '192.168.1.100');
-        expect(false).toBe(true); // Should have thrown DeviceConnectionError
-      } catch (error) {
-        caughtError = error;
-      }
-      expect(caughtError).toBeInstanceOf(DeviceConnectionError);
-      expect((caughtError as DeviceConnectionError).metadata).toMatchObject({ ip: '192.168.1.100' });
+      await expect(service.initializeMessageClient(mockDevice, mockUserData)).rejects.toThrow(DeviceConnectionError);
     });
   });
 
@@ -332,14 +245,14 @@ describe('ConnectionService', () => {
     });
 
     it('should return the message client when initialized', () => {
-      service.messageClient = mockClientRouter as unknown as import('../../roborockCommunication/broadcast/clientRouter.js').ClientRouter;
+      service.messageClient = mockClientRouter as unknown as ClientRouter;
       expect(service.getMessageClient()).toBe(mockClientRouter);
     });
   });
 
   describe('shutdown', () => {
     it('should clear message client and device notify callback', async () => {
-      service.messageClient = mockClientRouter as unknown as import('../../roborockCommunication/broadcast/clientRouter.js').ClientRouter;
+      service.messageClient = mockClientRouter as unknown as ClientRouter;
       service.deviceNotify = vi.fn();
 
       await service.shutdown();
@@ -361,23 +274,10 @@ describe('ConnectionService', () => {
         return connectionAttempts >= 2;
       });
 
-      await service.initializeMessageClient('test@example.com', mockDevice, mockUserData);
+      await service.initializeMessageClient(mockDevice, mockUserData);
 
       expect(mockClientRouter.isConnected).toHaveBeenCalled();
       expect(mockLogger.debug).toHaveBeenCalledWith('MessageClient connected for device:', mockDevice.duid);
-    });
-
-    it('should handle local client registration after MQTT initialization', async () => {
-      mockClientRouter.isConnected.mockReturnValue(true);
-      await service.initializeMessageClient('test@example.com', mockDevice, mockUserData);
-
-      mockClientRouter.registerClient.mockReturnValue(mockLocalClient);
-      mockLocalClient.isConnected.mockReturnValue(true);
-
-      const localClient = await service.registerLocalClient(mockDevice, '192.168.1.100');
-
-      expect(localClient).toBe(mockLocalClient);
-      expect(service.getMessageClient()).toBe(mockClientRouter);
     });
   });
 });

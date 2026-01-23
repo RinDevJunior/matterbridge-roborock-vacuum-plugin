@@ -1,7 +1,7 @@
 import { getSupportedAreas } from '../../initialData/getSupportedAreas.js';
 import { RoomMap } from '../../model/RoomMap.js';
 import { describe, it, expect, beforeEach, vi, test } from 'vitest';
-import type { Room } from '../../roborockCommunication/Zmodel/room.js';
+import type { Room } from '../../roborockCommunication/models/room.js';
 
 const mockLogger = {
   debug: vi.fn(),

@@ -1,7 +1,7 @@
 import { MaybePromise } from 'matterbridge/matter';
 import { AnsiLogger, debugStringify } from 'matterbridge/logger';
 import { BehaviorDeviceGeneric, BehaviorRoborock, CommandNames, DeviceCommands } from '../../BehaviorDeviceGeneric.js';
-import RoborockService from '../../../roborockService.js';
+import { RoborockService } from '../../../roborockService.js';
 import { CleanModeSettings } from '../../../model/ExperimentalFeatureSetting.js';
 
 export interface DefaultEndpointCommands extends DeviceCommands {

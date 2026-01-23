@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { getBatteryStatus, getBatteryState } from '../../initialData/getBatteryStatus.js';
-import { OperationStatusCode } from '../../roborockCommunication/Zenum/operationStatusCode.js';
+import { OperationStatusCode } from '../../roborockCommunication/enums/operationStatusCode.js';
 
 describe('getBatteryStatus', () => {
   it('battery level undefined -> Ok', () => {

@@ -1,15 +1,13 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { AnsiLogger } from 'matterbridge/logger';
-import RoborockService from '../roborockService.js';
-import ClientManager from '../services/clientManager.js';
-import { Device } from '../roborockCommunication/index.js';
+import { RoborockService } from '../roborockService.js';
+import { Device } from '../roborockCommunication/models/index.js';
 
 vi.useFakeTimers();
 
 describe('RoborockService - activateDeviceNotify', () => {
   let roborockService: RoborockService;
   let mockLogger: AnsiLogger;
-  let clientManager: ClientManager;
 
   beforeEach(() => {
     mockLogger = {
@@ -19,14 +17,17 @@ describe('RoborockService - activateDeviceNotify', () => {
       warn: vi.fn(),
     } as any;
 
-    clientManager = {} as ClientManager;
-
     roborockService = new RoborockService(
-      undefined, // default auth factory
-      undefined, // default IoT factory
-      1, // refreshInterval = 1
-      clientManager,
+      {
+        authenticateApiFactory: () => undefined as any,
+        iotApiFactory: () => undefined as any,
+        refreshInterval: 10,
+        baseUrl: 'https://api.roborock.com',
+        persist: {} as any,
+        configManager: {} as any,
+      },
       mockLogger,
+      {} as any,
     );
   });
 

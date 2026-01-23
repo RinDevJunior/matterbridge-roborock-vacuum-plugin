@@ -26,6 +26,19 @@ describe('PlatformRunner.updateRobot', () => {
     const robots = new Map<string, RoborockVacuumCleaner>();
     robots.set('123456', robotMock);
 
+    // Mock registry with robotsMap and getRobot
+    const registry = {
+      robotsMap: robots,
+      getRobot: (duid: string) => robots.get(duid),
+    };
+
+    // Mock configManager with isMultipleMapEnabled
+    const configManager = {
+      get isMultipleMapEnabled() {
+        return false;
+      },
+    };
+
     platform = {
       robots: robots,
       log: {
@@ -33,6 +46,8 @@ describe('PlatformRunner.updateRobot', () => {
         debug: vi.fn(),
         notice: vi.fn(),
       },
+      registry: registry,
+      configManager: configManager,
       enableExperimentalFeature: undefined,
     } as unknown as RoborockMatterbridgePlatform;
 

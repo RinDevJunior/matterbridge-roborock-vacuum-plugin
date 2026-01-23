@@ -1,6 +1,5 @@
-import { MessageContext } from '../../../../roborockCommunication/broadcast/model/messageContext.js';
 import { describe, it, expect } from 'vitest';
-import { UserData } from '../../../../roborockCommunication/index.js';
+import { MessageContext, UserData } from '../../../../roborockCommunication/models/index.js';
 
 describe('MessageContext', () => {
   const userdata: any = { rriot: { k: 'secretkey' } };

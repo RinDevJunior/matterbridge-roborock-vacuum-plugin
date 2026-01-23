@@ -1,9 +1,7 @@
 import { debugStringify } from 'matterbridge/logger';
 import { RoomMap } from './model/RoomMap.js';
 import { RoborockMatterbridgePlatform } from './module.js';
-import { Device } from './roborockCommunication/index.js';
-import { CloudMessageResult } from './roborockCommunication/Zmodel/messageResult.js';
-import { MapRoom } from './roborockCommunication/Zmodel/mapInfo.js';
+import { CloudMessageResult, Device, MapRoom } from './roborockCommunication/models/index.js';
 
 /** Get vacuum property by schema code or property name. */
 export function getVacuumProperty(device: Device, property: string): number | undefined {
@@ -57,7 +55,7 @@ function createRoomDataMap(roomData: number[][]): MapRoom[] {
 
 /** Get room map for device (uses cache or fetches from API). */
 export async function getRoomMap(duid: string, platform: RoborockMatterbridgePlatform): Promise<RoomMap | undefined> {
-  const robot = platform.robots.get(duid);
+  const robot = platform.registry.getRobot(duid);
   if (!robot) {
     platform.log.error(`Robot with DUID ${duid} not found`);
     return undefined;
@@ -67,7 +65,7 @@ export async function getRoomMap(duid: string, platform: RoborockMatterbridgePla
     return undefined;
   }
 
-  const enableMultipleMap = (platform.enableExperimentalFeature?.enableExperimentalFeature && platform.enableExperimentalFeature?.advancedFeature.enableMultipleMap) ?? false;
+  const enableMultipleMap = platform.configManager.isMultipleMapEnabled;
   const rooms = robot.device.rooms ?? [];
 
   // Return cached room info if available
@@ -103,7 +101,7 @@ export async function getRoomMap(duid: string, platform: RoborockMatterbridgePla
  */
 export async function getRoomMapFromDevice(device: Device, platform: RoborockMatterbridgePlatform): Promise<RoomMap> {
   const rooms = device?.rooms ?? [];
-  const enableMultipleMap = (platform.enableExperimentalFeature?.enableExperimentalFeature && platform.enableExperimentalFeature?.advancedFeature.enableMultipleMap) ?? false;
+  const enableMultipleMap = platform.configManager.isMultipleMapEnabled;
 
   if (!device || !platform.roborockService) {
     return new RoomMap([], rooms, [], enableMultipleMap);

@@ -1,0 +1,14 @@
+import { MessageContext, RequestMessage } from '../../models/index.js';
+import { MessageBodyBuilder } from './messageBodyBuilder.js';
+
+export class UnknownMessageBodyBuilder implements MessageBodyBuilder {
+  buildPayload(request: RequestMessage, context: MessageContext): string {
+    if (!request.body) {
+      throw new Error('Cannot build payload for unknown protocol without body');
+    }
+
+    const payload = JSON.parse(request.body);
+    payload.t = request.timestamp;
+    return JSON.stringify(payload);
+  }
+}

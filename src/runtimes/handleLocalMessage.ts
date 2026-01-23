@@ -1,9 +1,9 @@
 import { PowerSource, RvcCleanMode, RvcOperationalState, RvcRunMode, ServiceArea } from 'matterbridge/matter/clusters';
 import { getRunningMode } from '../initialData/getSupportedRunModes.js';
-import { CloudMessageResult } from '../roborockCommunication/Zmodel/messageResult.js';
+import { CloudMessageResult } from '../roborockCommunication/models/index.js';
 import { state_to_matter_state } from '../share/function.js';
 import { RoborockMatterbridgePlatform } from '../module.js';
-import { OperationStatusCode } from '../roborockCommunication/Zenum/operationStatusCode.js';
+import { OperationStatusCode } from '../roborockCommunication/enums/index.js';
 import { getRoomMap } from '../helper.js';
 import { debugStringify } from 'matterbridge/logger';
 import { getBatteryState, getBatteryStatus } from '../initialData/index.js';
@@ -17,7 +17,7 @@ import { INVALID_SEGMENT_ID } from '../constants/index.js';
  * Handles run mode, battery level, clean mode settings, and area mapping.
  */
 export async function handleLocalMessage(data: CloudMessageResult, platform: RoborockMatterbridgePlatform, duid = ''): Promise<void> {
-  const robot = platform.robots.get(duid);
+  const robot = platform.registry.getRobot(duid);
 
   if (!robot) {
     platform.log.error(`Robot not found: ${duid}`);
@@ -52,7 +52,7 @@ export async function handleLocalMessage(data: CloudMessageResult, platform: Rob
     robot.updateAttribute(ServiceArea.Cluster.id, 'currentArea', null, platform.log);
     robot.updateAttribute(ServiceArea.Cluster.id, 'selectedAreas', [], platform.log);
   } else {
-    const isMultipleMapEnable = platform.enableExperimentalFeature?.enableExperimentalFeature && platform.enableExperimentalFeature?.advancedFeature?.enableMultipleMap;
+    const isMultipleMapEnable = platform.configManager.isMultipleMapEnabled;
     if (isMultipleMapEnable) {
       await mapRoomsToAreasFeatureOn(platform, duid, data);
     } else {
@@ -82,7 +82,7 @@ export async function handleLocalMessage(data: CloudMessageResult, platform: Rob
   );
 
   if (currentCleanModeSetting.mopRoute && currentCleanModeSetting.suctionPower && currentCleanModeSetting.waterFlow) {
-    const forceRunAtDefault = platform.enableExperimentalFeature?.advancedFeature?.forceRunAtDefault ?? false;
+    const forceRunAtDefault = platform.configManager.forceRunAtDefault;
     const currentCleanMode = getCurrentCleanModeFunc(deviceData.model, forceRunAtDefault)(currentCleanModeSetting);
     platform.log.debug(`Current clean mode: ${currentCleanMode}`);
 
@@ -124,18 +124,13 @@ async function processAdditionalProps(robot: RoborockVacuumCleaner, message: Clo
  * Get docking station status from message and update robot state.
  */
 function getDssStatus(message: CloudMessageResult, duid: string, platform: RoborockMatterbridgePlatform): RvcOperationalState.OperationalState | undefined {
-  const robot = platform.robots.get(duid);
+  const robot = platform.registry.getRobot(duid);
   if (robot === undefined) {
     platform.log.error(`Robot not found: ${duid}`);
     return undefined;
   }
 
-  if (
-    platform.enableExperimentalFeature &&
-    platform.enableExperimentalFeature.enableExperimentalFeature &&
-    platform.enableExperimentalFeature.advancedFeature.includeDockStationStatus &&
-    message.dss !== undefined
-  ) {
+  if (platform.configManager.includeDockStationStatus && message.dss !== undefined) {
     const dss = parseDockingStationStatus(message.dss);
     if (dss && robot) {
       robot.dockStationStatus = dss;
@@ -153,7 +148,7 @@ function getDssStatus(message: CloudMessageResult, duid: string, platform: Robor
  */
 async function mapRoomsToAreasFeatureOff(platform: RoborockMatterbridgePlatform, duid: string, data: CloudMessageResult): Promise<void> {
   const currentMappedAreas = platform.roborockService?.getSupportedAreas(duid);
-  const robot = platform.robots.get(duid);
+  const robot = platform.registry.getRobot(duid);
   if (!robot) {
     platform.log.error(`Robot not found: ${duid}`);
     return;
@@ -201,7 +196,7 @@ async function mapRoomsToAreasFeatureOff(platform: RoborockMatterbridgePlatform,
  * Map room segments to service areas when multiple map feature is enabled.
  */
 async function mapRoomsToAreasFeatureOn(platform: RoborockMatterbridgePlatform, duid: string, data: CloudMessageResult): Promise<void> {
-  const robot = platform.robots.get(duid);
+  const robot = platform.registry.getRobot(duid);
   if (!robot) {
     platform.log.error(`Robot not found: ${duid}`);
     return;

@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { getCurrentCleanModeFunc } from '../../share/runtimeHelper.js';
 import { getCurrentCleanModeDefault } from '../../behaviors/roborock.vacuum/default/runtimes.js';
 import { getCurrentCleanModeSmart } from '../../behaviors/roborock.vacuum/smart/runtimes.js';
-import { DeviceModel } from '../../roborockCommunication/Zmodel/deviceModel.js';
+import { DeviceModel } from '../../roborockCommunication/models/index.js';
 
 describe('runtimeHelper.getCurrentCleanModeFunc', () => {
   it('forceRunAtDefault returns default function', () => {

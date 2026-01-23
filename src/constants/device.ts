@@ -1,9 +1,4 @@
-/**
- * Device-related constants including model lists and capabilities.
- * @module constants/device
- */
-
-import { DeviceModel } from '../roborockCommunication/Zmodel/deviceModel.js';
+import { DeviceModel } from '../roborockCommunication/models/index.js';
 
 /**
  * Set of device models that support smart planning features.

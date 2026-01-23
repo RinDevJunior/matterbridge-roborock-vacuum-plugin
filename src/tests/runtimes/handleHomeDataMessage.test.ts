@@ -1,8 +1,8 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { DeviceData } from '../../roborockCommunication/Zmodel/device.js';
 import { updateFromHomeData } from '../../runtimes/handleHomeDataMessage.js';
 import { homeData } from '../testData/mockData.js';
 import { PowerSource, RvcRunMode } from 'matterbridge/matter/clusters';
+import { DeviceData } from '../../roborockCommunication/models/index.js';
 
 // Mocks
 const mockUpdateAttribute = vi.fn();
@@ -12,8 +12,18 @@ const robot = {
   device: { data: { model: 'test-model' } as unknown as DeviceData | undefined },
   dockStationStatus: {},
 };
+const robots = new Map([[duid, robot]]);
+const registry = {
+  get robotsMap() {
+    return robots;
+  },
+  getRobot: (id: string) => robots.get(id),
+  hasDevices: () => robots.size > 0,
+  registerRobot: vi.fn(),
+};
 const platform = {
-  robots: new Map([[duid, robot]]),
+  robots,
+  registry,
   log: {
     error: vi.fn(),
     debug: vi.fn(),
@@ -166,19 +176,24 @@ describe('updateFromHomeData', () => {
 
   it('should log error and continue when robot is removed during processing', async () => {
     // Create a custom platform that removes robot during get()
+    const robots = new Map([['test-duid', robot]]);
     const customPlatform = {
-      robots: new Map([['test-duid', robot]]),
+      robots,
       log: platform.log,
       roborockService: {},
       enableExperimentalFeature: {},
+      registry: {
+        get robotsMap() {
+          return robots;
+        },
+        getRobot: (id: string) => {
+          if (id === 'test-duid') return undefined; // Simulate robot removed
+          return robots.get(id);
+        },
+        hasDevices: () => robots.size > 0,
+        registerRobot: vi.fn(),
+      },
     };
-
-    // Override the get method to return undefined (simulating removal)
-    const originalGet = customPlatform.robots.get;
-    customPlatform.robots.get = vi.fn((duid: string) => {
-      if (duid === 'test-duid') return undefined; // Simulate robot removed
-      return originalGet.call(customPlatform.robots, duid);
-    });
 
     await updateFromHomeData(homeData, customPlatform as any);
     expect(platform.log.error).toHaveBeenCalledWith(expect.stringContaining('Robot not found: test-duid'));

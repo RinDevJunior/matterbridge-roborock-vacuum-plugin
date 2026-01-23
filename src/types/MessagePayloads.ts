@@ -5,9 +5,8 @@
  */
 
 import { CloudMessageModel } from '../model/CloudMessageModel.js';
-import { CloudMessageResult } from '../roborockCommunication/Zmodel/messageResult.js';
-import { Home } from '../roborockCommunication/index.js';
 import { NotifyMessageTypes } from '../notifyMessageTypes.js';
+import { CloudMessageResult, Home } from '../roborockCommunication/models/index.js';
 
 /**
  * Local network message payload.

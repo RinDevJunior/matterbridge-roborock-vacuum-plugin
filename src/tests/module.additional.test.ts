@@ -19,6 +19,8 @@ function createMockLogger(): AnsiLogger {
 describe('module additional tests', () => {
   let mockLogger: AnsiLogger;
   let mockMatterbridge: PlatformMatterbridge;
+  let mockRegistry: any;
+  let mockConfigManager: any;
 
   beforeEach(() => {
     mockLogger = createMockLogger();
@@ -28,6 +30,26 @@ describe('module additional tests', () => {
       matterbridgeDirectory: '/tmp',
       verifyMatterbridgeVersion: () => true,
     } as any;
+    mockRegistry = {
+      robotsMap: new Map(),
+      devicesMap: new Map(),
+      getRobot: (duid: string) => mockRegistry.robotsMap.get(duid),
+      registerRobot: vi.fn((robot: any) => {
+        if (robot && robot.serialNumber) {
+          mockRegistry.robotsMap.set(robot.serialNumber, robot);
+        }
+      }),
+      clear: () => {
+        mockRegistry.robotsMap.clear();
+        mockRegistry.devicesMap.clear();
+      },
+    };
+    mockConfigManager = {
+      get isMultipleMapEnabled() {
+        return false;
+      },
+      cleanModeSettings: undefined,
+    };
   });
 
   // Note: environment sets up Matterbridge helpers on the prototype, so
@@ -47,6 +69,10 @@ describe('module additional tests', () => {
       persistDirectory: '/tmp',
     } as any);
 
+    // Patch registry and configManager
+    (platform as any).registry = mockRegistry;
+    (platform as any).configManager = mockConfigManager;
+
     const device: any = {
       serialNumber: 'SN123',
       deviceName: 'Vacuum 1',
@@ -62,7 +88,7 @@ describe('module additional tests', () => {
 
     const result = await (platform as any).addDevice(device as any);
     expect(result).toBeDefined();
-    expect(platform.robots.has('SN123')).toBe(true);
+    expect(platform.registry.robotsMap.has('SN123')).toBe(true);
     // bridged node should be registered in deviceTypes map
     expect((device.deviceTypes as Map<number, any>).size).toBeGreaterThan(0);
   });

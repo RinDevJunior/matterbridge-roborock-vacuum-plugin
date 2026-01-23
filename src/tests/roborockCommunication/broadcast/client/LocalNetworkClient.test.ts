@@ -4,10 +4,10 @@ declare global {
 
   var Sket: any;
 }
-import { LocalNetworkClient } from '../../../../roborockCommunication/broadcast/client/LocalNetworkClient.js';
-import { Protocol } from '../../../../roborockCommunication/index.js';
 import EventEmitter from 'node:events';
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { LocalNetworkClient } from '../../../../roborockCommunication/local/localClient.js';
+import { Protocol } from '../../../../roborockCommunication/models/index.js';
 
 vi.mock('node:net', async () => {
   const { EventEmitter } = await import('node:events');

@@ -1,8 +1,7 @@
 import mqtt from 'mqtt';
 import { vi, describe, it, expect, beforeEach, afterEach, afterAll } from 'vitest';
-import { MQTTClient } from '../../../../roborockCommunication/broadcast/client/MQTTClient.js';
-import { MessageContext } from '../../../../roborockCommunication/broadcast/model/messageContext.js';
-import { RequestMessage } from '../../../../roborockCommunication/broadcast/model/requestMessage.js';
+import { MessageContext, RequestMessage } from '../../../../roborockCommunication/models/index.js';
+import { MQTTClient } from '../../../../roborockCommunication/mqtt/mqttClient.js';
 
 function makeUserdata() {
   return { rriot: { r: { m: 'mqtt://broker.example' }, u: 'testuser', k: 'key123', s: 'secret' } } as any;

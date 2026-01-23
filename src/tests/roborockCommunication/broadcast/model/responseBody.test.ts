@@ -1,6 +1,5 @@
-import { ResponseBody } from '../../../../roborockCommunication/broadcast/model/responseBody.js';
-import { Protocol } from '../../../../roborockCommunication/broadcast/model/protocol.js';
 import { describe, it, expect } from 'vitest';
+import { Protocol, ResponseBody } from '../../../../roborockCommunication/models/index.js';
 
 describe('ResponseBody', () => {
   it('returns undefined for missing fields and various index types', () => {

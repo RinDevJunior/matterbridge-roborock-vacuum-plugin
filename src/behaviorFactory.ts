@@ -1,6 +1,6 @@
 import { AnsiLogger } from 'matterbridge/logger';
 import { BehaviorDeviceGeneric } from './behaviors/BehaviorDeviceGeneric.js';
-import RoborockService from './roborockService.js';
+import { RoborockService } from './roborockService.js';
 import { DefaultEndpointCommands, setDefaultCommandHandler } from './behaviors/roborock.vacuum/default/default.js';
 import { CleanModeSettings } from './model/ExperimentalFeatureSetting.js';
 import { EndpointCommandsSmart, setCommandHandlerSmart } from './behaviors/roborock.vacuum/smart/smart.js';

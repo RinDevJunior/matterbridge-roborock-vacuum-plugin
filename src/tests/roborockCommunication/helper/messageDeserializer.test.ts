@@ -1,8 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import CRC32 from 'crc-32';
-
-import { MessageDeserializer } from '../../../roborockCommunication/helper/messageDeserializer.js';
-import { Protocol } from '../../../roborockCommunication/broadcast/model/protocol.js';
+import { MessageDeserializer } from '../../../roborockCommunication/protocol/deserializers/messageDeserializer.js';
+import { Protocol } from '../../../roborockCommunication/models/index.js';
 
 describe('MessageDeserializer', () => {
   let logger: any;

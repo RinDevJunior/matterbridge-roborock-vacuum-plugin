@@ -1,25 +1,8 @@
-/**
- * Device builder utility for creating test device objects.
- * Provides a fluent API for constructing Device instances with sensible defaults.
- * @module tests/helpers/device-builder
- */
-
-import type { Device, UserData } from '../../roborockCommunication/index.js';
-import { DeviceModel } from '../../roborockCommunication/Zmodel/deviceModel.js';
-import { Protocol } from '../../roborockCommunication/index.js';
+import { Device, DeviceModel, Protocol, UserData } from '../../roborockCommunication/models/index.js';
 
 /**
  * Fluent builder for creating Device objects in tests.
  * Provides sensible defaults for all required fields.
- *
- * @example
- * ```typescript
- * const device = new DeviceBuilder()
- *   .withDuid('test-device-123')
- *   .withModel(DeviceModel.Q5)
- *   .withBattery(85)
- *   .build();
- * ```
  */
 export class DeviceBuilder {
   private device: Partial<Device> = {
@@ -185,6 +168,7 @@ export class DeviceBuilder {
    */
   private createDefaultUserData(): UserData {
     return {
+      username: 'test-user',
       uid: 123456,
       tokentype: 'test',
       token: 'test-token-123',

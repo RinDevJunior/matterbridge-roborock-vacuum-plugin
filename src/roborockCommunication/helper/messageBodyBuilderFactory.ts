@@ -1,10 +1,10 @@
-import { A01MessageBodyBuilder } from '../builder/A01MessageBodyBuilder.js';
-import { B01MessageBodyBuilder } from '../builder/B01MessageBodyBuilder.js';
-import { L01MessageBodyBuilder } from '../builder/L01MessageBodyBuilder.js';
-import { MessageBodyBuilder } from '../builder/messageBodyBuilder.js';
-import { UnknownMessageBodyBuilder } from '../builder/UnknownMessageBodyBuilder.js';
-import { V01MessageBodyBuilder } from '../builder/V01MessageBodyBuilder.js';
-import { ProtocolVersion } from '../Zenum/protocolVersion.js';
+import { ProtocolVersion } from '../enums/index.js';
+import { A01MessageBodyBuilder } from '../protocol/builders/A01MessageBodyBuilder.js';
+import { B01MessageBodyBuilder } from '../protocol/builders/B01MessageBodyBuilder.js';
+import { L01MessageBodyBuilder } from '../protocol/builders/L01MessageBodyBuilder.js';
+import { MessageBodyBuilder } from '../protocol/builders/messageBodyBuilder.js';
+import { UnknownMessageBodyBuilder } from '../protocol/builders/UnknownMessageBodyBuilder.js';
+import { V01MessageBodyBuilder } from '../protocol/builders/V01MessageBodyBuilder.js';
 
 export class MessageBodyBuilderFactory {
   private readonly builders: Record<string, MessageBodyBuilder>;

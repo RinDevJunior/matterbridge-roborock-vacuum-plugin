@@ -2,6 +2,13 @@
 
 Project-specific instructions for Claude Code.
 
+## Claude Response Expection
+
+- Be concise. No explanations unless I ask.
+- Output code only. No prose.
+- Update `docs\claude_history.md` to track execution process.
+- Update `docs\to_do.md` what plan to do and what completed.
+
 ## Task Classification
 
 Before making any code changes, classify the user request as one of:

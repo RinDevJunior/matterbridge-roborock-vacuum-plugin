@@ -1,12 +1,11 @@
 import { describe, it, expect } from 'vitest';
 
 import { MessageProcessorFactory } from '../../../roborockCommunication/helper/messageProcessorFactory.js';
-import { ProtocolVersion } from '../../../roborockCommunication/Zenum/protocolVersion.js';
-import { A01Serializer } from '../../../roborockCommunication/serializer/A01Serializer.js';
-import { B01Serializer } from '../../../roborockCommunication/serializer/B01Serializer.js';
-import { L01Serializer } from '../../../roborockCommunication/serializer/L01Serializer.js';
-import { V01Serializer } from '../../../roborockCommunication/serializer/V01Serializer.js';
-
+import { ProtocolVersion } from '../../../roborockCommunication/enums/protocolVersion.js';
+import { V01Serializer } from '../../../roborockCommunication/protocol/serializers/V01Serializer.js';
+import { A01Serializer } from '../../../roborockCommunication/protocol/serializers/A01Serializer.js';
+import { B01Serializer } from '../../../roborockCommunication/protocol/serializers/B01Serializer.js';
+import { L01Serializer } from '../../../roborockCommunication/protocol/serializers/L01Serializer.js';
 describe('MessageProcessorFactory', () => {
   it('returns correct serializer instances for known protocol versions', () => {
     const f = new MessageProcessorFactory();

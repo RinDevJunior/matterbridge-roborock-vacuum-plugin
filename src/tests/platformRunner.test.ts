@@ -2,13 +2,14 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { PlatformRunner } from '../platformRunner.js';
 import { NotifyMessageTypes } from '../notifyMessageTypes.js';
 import { RoborockMatterbridgePlatform } from '../module.js';
-import { Home } from '../roborockCommunication/index.js';
 import fs from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 import { RoborockVacuumCleaner } from '../roborockVacuumCleaner.js';
 import * as initialDataIndex from '../initialData/index.js';
 import { RvcOperationalState } from 'matterbridge/matter/clusters';
+import { Home } from '../roborockCommunication/models/index.js';
+import { DeviceRegistry } from '../platform/deviceRegistry.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -41,6 +42,21 @@ describe('PlatformRunner.updateRobot', () => {
     const robots = new Map<string, RoborockVacuumCleaner>();
     robots.set('123456', robotMock);
 
+    // Mock registry with robotsMap and getRobot
+    const registry = {
+      robotsMap: robots,
+      getRobot: (duid: string) => robots.get(duid),
+      hasDevices: vi.fn(() => true),
+      registerRobot: vi.fn(),
+    };
+
+    // Mock configManager with isMultipleMapEnabled
+    const configManager = {
+      get isMultipleMapEnabled() {
+        return false;
+      },
+    };
+
     platform = {
       robots: robots,
       log: {
@@ -48,6 +64,8 @@ describe('PlatformRunner.updateRobot', () => {
         debug: vi.fn(),
         notice: vi.fn(),
       },
+      registry: registry,
+      configManager: configManager,
       enableExperimentalFeature: undefined,
     } as unknown as RoborockMatterbridgePlatform;
 
@@ -231,7 +249,7 @@ describe('PlatformRunner.requestHomeData', () => {
 
   it('should return early if no robots exist', async () => {
     platform = {
-      robots: new Map(),
+      registry: { robotsMap: new Map() },
       rrHomeId: '12345',
       roborockService: { getHomeDataForUpdating: vi.fn() },
       log: { error: vi.fn(), debug: vi.fn(), notice: vi.fn() },
@@ -245,7 +263,7 @@ describe('PlatformRunner.requestHomeData', () => {
 
   it('should return early if rrHomeId is not set (undefined)', async () => {
     platform = {
-      robots: new Map([['123', {} as any]]),
+      registry: { robotsMap: new Map([['123', {} as any]]) },
       rrHomeId: undefined,
       roborockService: { getHomeDataForUpdating: vi.fn() },
       log: { error: vi.fn(), debug: vi.fn(), notice: vi.fn() },
@@ -259,7 +277,7 @@ describe('PlatformRunner.requestHomeData', () => {
 
   it('should return early if rrHomeId is falsy (empty string)', async () => {
     platform = {
-      robots: new Map([['123', {} as any]]),
+      registry: { robotsMap: new Map([['123', {} as any]]) },
       rrHomeId: '',
       roborockService: { getHomeDataForUpdating: vi.fn() },
       log: { error: vi.fn(), debug: vi.fn(), notice: vi.fn() },
@@ -273,7 +291,7 @@ describe('PlatformRunner.requestHomeData', () => {
 
   it('should return early if roborockService is undefined', async () => {
     platform = {
-      robots: new Map([['123', {} as any]]),
+      registry: { robotsMap: new Map([['123', {} as any]]) },
       rrHomeId: '12345',
       roborockService: undefined,
       log: { error: vi.fn(), debug: vi.fn(), notice: vi.fn() },
@@ -289,7 +307,7 @@ describe('PlatformRunner.requestHomeData', () => {
   it('should return early if homeData is undefined', async () => {
     const getHomeDataMock = vi.fn().mockResolvedValue(undefined);
     platform = {
-      robots: new Map([['123', {} as any]]),
+      registry: { robotsMap: new Map([['123', {} as any]]) },
       rrHomeId: '12345',
       roborockService: { getHomeDataForUpdating: getHomeDataMock },
       log: { error: vi.fn(), debug: vi.fn(), notice: vi.fn() },
@@ -308,7 +326,7 @@ describe('PlatformRunner.requestHomeData', () => {
     const homeData = { devices: [], products: [] };
     const getHomeDataMock = vi.fn().mockResolvedValue(homeData);
     platform = {
-      robots: new Map([['123', {} as any]]),
+      registry: { robotsMap: new Map([['123', {} as any]]) },
       rrHomeId: '12345',
       roborockService: { getHomeDataForUpdating: getHomeDataMock },
       log: { error: vi.fn(), debug: vi.fn(), notice: vi.fn() },

@@ -1,9 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
-import { MessageSerializer } from '../../../roborockCommunication/helper/messageSerializer.js';
-import { MessageDeserializer } from '../../../roborockCommunication/helper/messageDeserializer.js';
-import { MessageContext } from '../../../roborockCommunication/broadcast/model/messageContext.js';
-import { RequestMessage } from '../../../roborockCommunication/broadcast/model/requestMessage.js';
-import { Protocol } from '../../../roborockCommunication/broadcast/model/protocol.js';
+import { MessageContext, Protocol, RequestMessage } from '../../../roborockCommunication/models/index.js';
+import { MessageSerializer } from '../../../roborockCommunication/protocol/serializers/messageSerializer.js';
+import { MessageDeserializer } from '../../../roborockCommunication/protocol/deserializers/messageDeserializer.js';
 
 const mkUser = () => ({ rriot: { k: 'some-key-for-test-000' } }) as any;
 

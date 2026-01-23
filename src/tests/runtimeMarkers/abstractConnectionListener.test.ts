@@ -1,5 +1,5 @@
 import { expect, test } from 'vitest';
-import * as mod from '../../roborockCommunication/broadcast/listener/abstractConnectionListener.js';
+import * as mod from '../../roborockCommunication/routing/listeners/abstractConnectionListener.js';
 
 test('abstractConnectionListener runtime marker present', () => {
   expect(mod).toBeDefined();

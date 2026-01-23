@@ -1,4 +1,4 @@
-import { CloudMessageResult } from '../roborockCommunication/Zmodel/messageResult.js';
+import { CloudMessageResult } from '../roborockCommunication/models/index.js';
 
 interface CloudMessageDpsEntry {
   id: number;

@@ -1,24 +1,26 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import RoborockService from '../roborockService.js';
-import ClientManager from '../services/clientManager.js';
+import { RoborockService } from '../roborockService.js';
 
 describe('initializeMessageClientForLocal', () => {
   let service: RoborockService;
   let mockLogger: any;
   let mockDevice: any;
-  let clientManager: ClientManager;
 
   beforeEach(() => {
     mockLogger = { debug: vi.fn(), error: vi.fn(), warn: vi.fn() };
-    clientManager = {} as ClientManager;
     mockDevice = { duid: 'd1', pv: 'pv', data: { model: 'm1' }, localKey: 'lk' };
 
     service = new RoborockService(
-      undefined, // default auth factory
-      undefined, // default IoT factory
-      10,
-      clientManager,
+      {
+        authenticateApiFactory: () => undefined as any,
+        iotApiFactory: () => undefined as any,
+        refreshInterval: 10,
+        baseUrl: 'https://api.roborock.com',
+        persist: {} as any,
+        configManager: {} as any,
+      },
       mockLogger,
+      {} as any,
     );
   });
 

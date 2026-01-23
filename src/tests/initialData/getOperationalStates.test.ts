@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { getOperationalErrorState, getErrorFromErrorCode, getErrorFromDSS } from '../../initialData/getOperationalStates.js';
-import { VacuumErrorCode } from '../../roborockCommunication/Zenum/vacuumAndDockErrorCode.js';
+import { VacuumErrorCode } from '../../roborockCommunication/enums/vacuumAndDockErrorCode.js';
 import { DockingStationStatusType } from '../../model/DockingStationStatus.js';
 
 describe('getOperationalStates', () => {

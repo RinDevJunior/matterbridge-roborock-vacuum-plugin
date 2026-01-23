@@ -1,6 +1,6 @@
 import { AnsiLogger } from 'matterbridge/logger';
 import { ServiceArea } from 'matterbridge/matter/clusters';
-import { RoborockAuthenticateApi, UserData, RoborockIoTApi, ClientRouter, MessageProcessor, Device, Home, RequestMessage, Scene, MapInfo } from './roborockCommunication/index.js';
+import { LocalStorage } from 'node-persist';
 import { RoomIndexMap } from './model/RoomIndexMap.js';
 import { CleanModeSetting } from './behaviors/roborock.vacuum/default/default.js';
 import type { Factory } from './types/index.js';
@@ -13,46 +13,55 @@ import {
   AreaManagementService,
   MessageRoutingService,
   PollingService,
-  ClientManager,
-  SaveUserDataCallback,
+  ConnectionService,
 } from './services/index.js';
+import { RoborockAuthenticateApi } from './roborockCommunication/api/authClient.js';
+import { Device, Home, MapInfo, RequestMessage, Scene, UserData } from './roborockCommunication/models/index.js';
+import { RoborockIoTApi } from './roborockCommunication/api/iotClient.js';
+import { MessageProcessor } from './roborockCommunication/mqtt/messageProcessor.js';
+import { PlatformConfigManager } from './platform/platformConfig.js';
+
+export interface RoborockServiceConfig {
+  authenticateApiFactory?: (logger: AnsiLogger, baseUrl: string) => RoborockAuthenticateApi;
+  iotApiFactory?: Factory<UserData, RoborockIoTApi>;
+  refreshInterval: number;
+  baseUrl: string;
+  persist: LocalStorage;
+  configManager: PlatformConfigManager;
+  container?: ServiceContainer;
+}
 
 /** Facade coordinating Auth, Device, Area, and Message services via ServiceContainer. */
-export default class RoborockService {
+export class RoborockService {
   private readonly container: ServiceContainer;
   private readonly authService: AuthenticationService;
   private readonly deviceService: DeviceManagementService;
   private readonly areaService: AreaManagementService;
   private readonly messageService: MessageRoutingService;
   private readonly pollingService: PollingService;
+  private readonly connectionService: ConnectionService;
 
-  // Public properties exposed for backward compatibility
-  public messageClient: ClientRouter | undefined;
   public deviceNotify?: (messageSource: NotifyMessageTypes, homeData: unknown) => void;
 
   constructor(
-    authenticateApiSupplier: (logger: AnsiLogger, baseUrl: string) => RoborockAuthenticateApi = (logger, baseUrl) =>
-      new RoborockAuthenticateApi(logger, undefined, undefined, baseUrl),
-    iotApiSupplier: Factory<UserData, RoborockIoTApi> = (logger, ud) => new RoborockIoTApi(ud, logger),
-    refreshInterval: number,
-    clientManager: ClientManager,
-    logger: AnsiLogger,
-    baseUrl = 'https://usiot.roborock.com',
-    // Allow injecting ServiceContainer for testing
-    container?: ServiceContainer,
+    params: RoborockServiceConfig,
+    private logger: AnsiLogger,
+    private configManager: PlatformConfigManager,
   ) {
-    if (container) {
+    if (params.container) {
       // Use injected container (for testing)
-      this.container = container;
+      this.container = params.container;
     } else {
       // Create service container with configuration (production)
       const config: ServiceContainerConfig = {
-        baseUrl,
-        refreshInterval,
-        authenticateApiFactory: authenticateApiSupplier,
-        iotApiFactory: iotApiSupplier,
+        baseUrl: params.baseUrl,
+        refreshInterval: params.refreshInterval,
+        authenticateApiFactory: params.authenticateApiFactory,
+        iotApiFactory: params.iotApiFactory,
+        persist: params.persist,
+        configManager: params.configManager,
       };
-      this.container = new ServiceContainer(logger, clientManager, config);
+      this.container = new ServiceContainer(logger, config);
     }
 
     // Get service instances
@@ -61,41 +70,49 @@ export default class RoborockService {
     this.areaService = this.container.getAreaManagementService();
     this.messageService = this.container.getMessageRoutingService();
     this.pollingService = this.container.getPollingService();
+    this.connectionService = this.container.getConnectionService();
   }
 
   // ============================================================================
   // Authentication Methods (delegate to AuthenticationService)
   // ============================================================================
 
-  /** Login with username and password. */
-  public async loginWithPassword(
-    username: string,
-    password: string,
-    loadSavedUserData: () => Promise<UserData | undefined>,
-    savedUserData: (userData: UserData) => Promise<void>,
-  ): Promise<UserData> {
-    const userdata = await this.authService.loginWithPassword(username, password, loadSavedUserData, savedUserData);
-    this.container.setUserData(userdata);
-    return userdata;
-  }
+  public async authenticate(): Promise<{ userData: UserData | undefined; shouldContinue: boolean }> {
+    if (!this.configManager) {
+      throw new Error('PlatformConfigManager not provided. Cannot authenticate.');
+    }
 
-  /** Request verification code for email login. */
-  public async requestVerificationCode(email: string): Promise<void> {
-    return this.authService.requestVerificationCode(email);
-  }
+    const username = this.configManager.username;
+    const password = this.configManager.password;
+    const verificationCode = this.configManager.verificationCode;
+    const method = this.configManager.authenticationMethod;
 
-  /** Authenticate with email and verification code. */
-  public async loginWithVerificationCode(email: string, code: string, savedUserData: SaveUserDataCallback): Promise<UserData> {
-    const userdata = await this.authService.loginWithVerificationCode(email, code, savedUserData);
-    this.container.setUserData(userdata);
-    return userdata;
-  }
+    this.logger.debug(
+      `Authenticating method: ${method},
+      Username: ${username},
+      Password: ${password ? '******' : '<not provided>'},
+      Verification Code: ${verificationCode ? '******' : '<not provided>'}`,
+    );
+    let userData: UserData | undefined;
+    try {
+      if (method === 'VerificationCode') {
+        userData = await this.authService.authenticate2FAFlow(username, verificationCode);
+      } else {
+        userData = await this.authService.authenticateWithPasswordFlow(username, password);
+      }
+    } catch (error) {
+      this.logger.error(`Authentication failed: ${(error as Error).message}`);
+      return { userData: undefined, shouldContinue: false };
+    }
 
-  /** Authenticate using cached token from previous login. */
-  public async loginWithCachedToken(username: string, userData: UserData): Promise<UserData> {
-    const userdata = await this.authService.loginWithCachedToken(username, userData);
-    this.container.setUserData(userdata);
-    return userdata;
+    if (!userData) {
+      this.logger.info('Authentication incomplete. Further action required (e.g., 2FA).');
+      return { userData: undefined, shouldContinue: false };
+    }
+
+    this.logger.info(`Authentication successful for user: ${userData.nickname} (${userData.username})`);
+    this.container.setUserData(userData);
+    return { userData, shouldContinue: true };
   }
 
   // ============================================================================
@@ -103,8 +120,8 @@ export default class RoborockService {
   // ============================================================================
 
   /** List all devices for the user's account. */
-  public async listDevices(username: string): Promise<Device[]> {
-    return this.deviceService.listDevices(username);
+  public async listDevices(): Promise<Device[]> {
+    return this.deviceService.listDevices();
   }
 
   /** Get home data for periodic updates. */
@@ -113,17 +130,15 @@ export default class RoborockService {
   }
 
   /** Initialize MQTT client for cloud communication. */
-  public async initializeMessageClient(username: string, device: Device, userdata: UserData): Promise<void> {
-    await this.deviceService.initializeMessageClient(username, device, userdata);
-    this.messageClient = this.deviceService.messageClient;
-    this.areaService.setMessageClient(this.messageClient);
+  public async initializeMessageClient(device: Device, userdata: UserData): Promise<void> {
+    await this.connectionService.initializeMessageClient(device, userdata);
+    this.container.synchronizeMessageClients();
   }
 
   /** Initialize local network connection for a device. */
   public async initializeMessageClientForLocal(device: Device): Promise<boolean> {
-    const result = await this.deviceService.initializeMessageClientForLocal(device);
-    this.messageClient = this.deviceService.messageClient;
-    this.areaService.setMessageClient(this.messageClient);
+    const result = await this.connectionService.initializeMessageClientForLocal(device);
+    this.container.synchronizeMessageClients();
     return result;
   }
 
@@ -131,7 +146,7 @@ export default class RoborockService {
   public setDeviceNotify(callback: (messageSource: NotifyMessageTypes, homeData: unknown) => Promise<void>): void {
     this.deviceNotify = callback;
     this.pollingService.setDeviceNotify(callback);
-    this.deviceService.setDeviceNotify(callback);
+    this.connectionService.setDeviceNotify(callback);
   }
 
   /** Start polling device status via local network. */
@@ -150,7 +165,6 @@ export default class RoborockService {
     this.pollingService.stopPolling();
     this.areaService.clearAll();
     this.messageService.clearAll();
-    this.messageClient = undefined;
   }
 
   // ============================================================================

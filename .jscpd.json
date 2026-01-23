@@ -1,0 +1,8 @@
+{
+  "path": ["src"],
+  "extensions": ["ts", "js"],
+  "minTokens": 80,
+  "ignore": ["**/*.spec.ts", "**/*.test.ts", "**/dist/**", "**/node_modules/**", "**/web-for-testing/**", "**/tests/**"],
+  "reporters": ["console", "html"],
+  "threshold": 5
+}

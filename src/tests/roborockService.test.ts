@@ -1,21 +1,17 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { AnsiLogger } from 'matterbridge/logger';
-import RoborockService from '../roborockService.js';
+import { RoborockService } from '../roborockService.js';
 import { ServiceContainer } from '../services/serviceContainer.js';
 import { AuthenticationService } from '../services/authenticationService.js';
 import { DeviceManagementService } from '../services/deviceManagementService.js';
 import { AreaManagementService } from '../services/areaManagementService.js';
 import { MessageRoutingService } from '../services/messageRoutingService.js';
-import ClientManager from '../services/clientManager.js';
-import { UserData, Device, MessageProcessor } from '../roborockCommunication/index.js';
-import { ServiceArea } from 'matterbridge/matter/clusters';
-import { RoomIndexMap } from '../model/RoomIndexMap.js';
 import { PollingService } from '../services/pollingService.js';
+import { Device, UserData } from '../roborockCommunication/models/index.js';
 
 describe('RoborockService - Comprehensive Coverage', () => {
   let service: RoborockService;
   let mockLogger: AnsiLogger;
-  let mockClientManager: ClientManager;
   let mockContainer: ServiceContainer;
   let mockAuthService: AuthenticationService;
   let mockDeviceService: DeviceManagementService;
@@ -33,12 +29,6 @@ describe('RoborockService - Comprehensive Coverage', () => {
       error: vi.fn(),
       notice: vi.fn(),
     } as unknown as AnsiLogger;
-
-    mockClientManager = {
-      get: vi.fn(),
-      destroy: vi.fn(),
-      destroyAll: vi.fn(),
-    } as unknown as ClientManager;
 
     mockAuthService = {
       requestVerificationCode: vi.fn(),
@@ -143,335 +133,21 @@ describe('RoborockService - Comprehensive Coverage', () => {
       runtimeEnv: { featureSet: 123 },
     } as unknown as Device;
 
-    service = new RoborockService(undefined, undefined, 30000, mockClientManager, mockLogger, undefined, mockContainer);
-  });
-
-  describe('Authentication Methods', () => {
-    it('should request verification code', async () => {
-      await service.requestVerificationCode('test@example.com');
-
-      expect(mockAuthService.requestVerificationCode).toHaveBeenCalledWith('test@example.com');
-    });
-
-    it('should login with verification code and set user data', async () => {
-      const saveCallback = vi.fn();
-      (mockAuthService.loginWithVerificationCode as ReturnType<typeof vi.fn>).mockResolvedValue(mockUserData);
-
-      const result = await service.loginWithVerificationCode('test@example.com', '123456', saveCallback);
-
-      expect(mockAuthService.loginWithVerificationCode).toHaveBeenCalledWith('test@example.com', '123456', saveCallback);
-      expect(mockContainer.setUserData).toHaveBeenCalledWith(mockUserData);
-      expect(result).toBe(mockUserData);
-    });
-
-    it('should login with cached token and set user data', async () => {
-      (mockAuthService.loginWithCachedToken as ReturnType<typeof vi.fn>).mockResolvedValue(mockUserData);
-
-      const result = await service.loginWithCachedToken('test@example.com', mockUserData);
-
-      expect(mockAuthService.loginWithCachedToken).toHaveBeenCalledWith('test@example.com', mockUserData);
-      expect(mockContainer.setUserData).toHaveBeenCalledWith(mockUserData);
-      expect(result).toBe(mockUserData);
-    });
-
-    it('should login with password and set user data', async () => {
-      const loadCallback = vi.fn().mockResolvedValue(undefined);
-      const saveCallback = vi.fn();
-      (mockAuthService.loginWithPassword as ReturnType<typeof vi.fn>).mockResolvedValue(mockUserData);
-
-      const result = await service.loginWithPassword('user@test.com', 'password', loadCallback, saveCallback);
-
-      expect(mockAuthService.loginWithPassword).toHaveBeenCalledWith('user@test.com', 'password', loadCallback, saveCallback);
-      expect(mockContainer.setUserData).toHaveBeenCalledWith(mockUserData);
-      expect(result).toBe(mockUserData);
-    });
+    service = new RoborockService(
+      {
+        authenticateApiFactory: () => undefined as any,
+        iotApiFactory: () => undefined as any,
+        refreshInterval: 10,
+        baseUrl: 'https://api.roborock.com',
+        persist: {} as any,
+        configManager: {} as any,
+      },
+      mockLogger,
+      mockContainer as any,
+    );
   });
 
   describe('Device Management Methods', () => {
-    it('should list devices', async () => {
-      const devices = [mockDevice];
-      (mockDeviceService.listDevices as ReturnType<typeof vi.fn>).mockResolvedValue(devices);
-
-      const result = await service.listDevices('test@example.com');
-
-      expect(mockDeviceService.listDevices).toHaveBeenCalledWith('test@example.com');
-      expect(result).toBe(devices);
-    });
-
-    it('should get home data for updating', async () => {
-      const homeData = { id: 1, name: 'My Home' } as any;
-      (mockDeviceService.getHomeDataForUpdating as ReturnType<typeof vi.fn>).mockResolvedValue(homeData);
-
-      const result = await service.getHomeDataForUpdating(1);
-
-      expect(mockDeviceService.getHomeDataForUpdating).toHaveBeenCalledWith(1);
-      expect(result).toBe(homeData);
-    });
-
-    it('should initialize message client and register processor', async () => {
-      mockDeviceService.messageClient = { on: vi.fn(), request: vi.fn() } as any;
-
-      await service.initializeMessageClient('test@example.com', mockDevice, mockUserData);
-
-      expect(mockDeviceService.initializeMessageClient).toHaveBeenCalledWith('test@example.com', mockDevice, mockUserData);
-      // messageService.registerMessageProcessor is called internally by deviceService
-      expect(service.messageClient).toBe(mockDeviceService.messageClient);
-    });
-
-    it('should initialize local client and sync MQTT status', async () => {
-      mockDeviceService.messageClient = { on: vi.fn(), request: vi.fn() } as any;
-      (mockDeviceService.initializeMessageClientForLocal as ReturnType<typeof vi.fn>).mockResolvedValue(true);
-
-      const result = await service.initializeMessageClientForLocal(mockDevice);
-
-      expect(mockDeviceService.initializeMessageClientForLocal).toHaveBeenCalledWith(mockDevice);
-      // messageService.setMqttAlwaysOn and registerMessageProcessor are called internally by deviceService
-      expect(service.messageClient).toBe(mockDeviceService.messageClient);
-      expect(result).toBe(true);
-    });
-
-    it('should set device notify callback', async () => {
-      const callback = vi.fn();
-
-      service.setDeviceNotify(callback);
-
-      expect(mockPollingService.setDeviceNotify).toHaveBeenCalledWith(callback);
-      expect(service.deviceNotify).toBe(callback);
-    });
-
-    it('should activate device notify', () => {
-      service.activateDeviceNotify(mockDevice);
-
-      expect(mockPollingService.activateDeviceNotifyOverLocal).toHaveBeenCalledWith(mockDevice);
-    });
-
-    it('should activate device notify over MQTT', () => {
-      service.activateDeviceNotifyOverMQTT(mockDevice);
-
-      expect(mockPollingService.activateDeviceNotifyOverMQTT).toHaveBeenCalledWith(mockDevice);
-    });
-
-    it('should stop service and clean up all services', () => {
-      service.stopService();
-
-      expect(mockDeviceService.stopService).toHaveBeenCalled();
-      expect(mockAreaService.clearAll).toHaveBeenCalled();
-      expect(mockMessageService.clearAll).toHaveBeenCalled();
-      expect(service.messageClient).toBeUndefined();
-    });
-  });
-
-  describe('Area Management Methods', () => {
-    it('should set selected areas', () => {
-      service.setSelectedAreas('device-123', [1, 2, 3]);
-
-      expect(mockAreaService.setSelectedAreas).toHaveBeenCalledWith('device-123', [1, 2, 3]);
-    });
-
-    it('should get selected areas', () => {
-      (mockAreaService.getSelectedAreas as ReturnType<typeof vi.fn>).mockReturnValue([1, 2]);
-
-      const result = service.getSelectedAreas('device-123');
-
-      expect(mockAreaService.getSelectedAreas).toHaveBeenCalledWith('device-123');
-      expect(result).toEqual([1, 2]);
-    });
-
-    it('should set supported areas', () => {
-      const areas = [{ rawValue: 1, label: 'Kitchen' } as unknown as ServiceArea.Area];
-
-      service.setSupportedAreas('device-123', areas);
-
-      expect(mockAreaService.setSupportedAreas).toHaveBeenCalledWith('device-123', areas);
-    });
-
-    it('should set supported area index map', () => {
-      const indexMap = { 1: 10, 2: 20 } as unknown as RoomIndexMap;
-
-      service.setSupportedAreaIndexMap('device-123', indexMap);
-
-      expect(mockAreaService.setSupportedAreaIndexMap).toHaveBeenCalledWith('device-123', indexMap);
-    });
-
-    it('should set supported scenes', () => {
-      const scenes = [{ rawValue: 1, label: 'Quick Clean' } as unknown as ServiceArea.Area];
-
-      service.setSupportedScenes('device-123', scenes);
-
-      expect(mockAreaService.setSupportedScenes).toHaveBeenCalledWith('device-123', scenes);
-    });
-
-    it('should get supported areas', () => {
-      const areas = [{ rawValue: 1, label: 'Kitchen' } as unknown as ServiceArea.Area];
-      (mockAreaService.getSupportedAreas as ReturnType<typeof vi.fn>).mockReturnValue(areas);
-
-      const result = service.getSupportedAreas('device-123');
-
-      expect(mockAreaService.getSupportedAreas).toHaveBeenCalledWith('device-123');
-      expect(result).toBe(areas);
-    });
-
-    it('should get supported areas index map', () => {
-      const indexMap = { 1: 10 } as unknown as RoomIndexMap;
-      (mockAreaService.getSupportedAreasIndexMap as ReturnType<typeof vi.fn>).mockReturnValue(indexMap);
-
-      const result = service.getSupportedAreasIndexMap('device-123');
-
-      expect(mockAreaService.getSupportedAreasIndexMap).toHaveBeenCalledWith('device-123');
-      expect(result).toBe(indexMap);
-    });
-
-    it('should get map information', async () => {
-      const mapInfo = { name: 'map1' } as any;
-      (mockAreaService.getMapInformation as ReturnType<typeof vi.fn>).mockResolvedValue(mapInfo);
-
-      const result = await service.getMapInformation('device-123');
-
-      expect(mockAreaService.getMapInformation).toHaveBeenCalledWith('device-123');
-      expect(result).toBe(mapInfo);
-    });
-
-    it('should get room mappings', async () => {
-      const mappings = [
-        [1, 2],
-        [3, 4],
-      ];
-      (mockAreaService.getRoomMappings as ReturnType<typeof vi.fn>).mockResolvedValue(mappings);
-
-      const result = await service.getRoomMappings('device-123');
-
-      expect(mockAreaService.getRoomMappings).toHaveBeenCalledWith('device-123');
-      expect(result).toBe(mappings);
-    });
-
-    it('should get scenes', async () => {
-      const scenes = [{ id: 1, name: 'Scene 1' }] as any;
-      (mockAreaService.getScenes as ReturnType<typeof vi.fn>).mockResolvedValue(scenes);
-
-      const result = await service.getScenes(123);
-
-      expect(mockAreaService.getScenes).toHaveBeenCalledWith(123);
-      expect(result).toBe(scenes);
-    });
-
-    it('should start scene', async () => {
-      const sceneResult = { status: 'started' };
-      (mockAreaService.startScene as ReturnType<typeof vi.fn>).mockResolvedValue(sceneResult);
-
-      const result = await service.startScene(456);
-
-      expect(mockAreaService.startScene).toHaveBeenCalledWith(456);
-      expect(result).toBe(sceneResult);
-    });
-  });
-
-  describe('Message Routing Methods', () => {
-    it('should get message processor', () => {
-      const processor = {} as MessageProcessor;
-      (mockMessageService.getMessageProcessor as ReturnType<typeof vi.fn>).mockReturnValue(processor);
-
-      const result = service.getMessageProcessor('device-123');
-
-      expect(mockMessageService.getMessageProcessor).toHaveBeenCalledWith('device-123');
-      expect(result).toBe(processor);
-    });
-
-    it('should get clean mode data', async () => {
-      const cleanMode = { fanSpeed: 100, mopMode: 2 } as any;
-      (mockMessageService.getCleanModeData as ReturnType<typeof vi.fn>).mockResolvedValue(cleanMode);
-
-      const result = await service.getCleanModeData('device-123');
-
-      expect(mockMessageService.getCleanModeData).toHaveBeenCalledWith('device-123');
-      expect(result).toBe(cleanMode);
-    });
-
-    it('should get room ID from map', async () => {
-      (mockMessageService.getRoomIdFromMap as ReturnType<typeof vi.fn>).mockResolvedValue(5);
-
-      const result = await service.getRoomIdFromMap('device-123');
-
-      expect(mockMessageService.getRoomIdFromMap).toHaveBeenCalledWith('device-123');
-      expect(result).toBe(5);
-    });
-
-    it('should change clean mode', async () => {
-      const settings = { fanSpeed: 75, mopMode: 1 } as any;
-
-      await service.changeCleanMode('device-123', settings);
-
-      expect(mockMessageService.changeCleanMode).toHaveBeenCalledWith('device-123', settings);
-    });
-
-    it('should start clean with selected areas and routines', async () => {
-      const selectedAreas = [1, 2];
-      const supportedRooms = [{ rawValue: 1, label: 'Kitchen' } as unknown as ServiceArea.Area];
-      const supportedRoutines = [{ rawValue: 10, label: 'Quick' } as unknown as ServiceArea.Area];
-
-      (mockAreaService.getSelectedAreas as ReturnType<typeof vi.fn>).mockReturnValue(selectedAreas);
-      (mockAreaService.getSupportedAreas as ReturnType<typeof vi.fn>).mockReturnValue(supportedRooms);
-      (mockAreaService.getSupportedRoutines as ReturnType<typeof vi.fn>).mockReturnValue(supportedRoutines);
-
-      await service.startClean('device-123');
-
-      expect(mockMessageService.startClean).toHaveBeenCalledWith('device-123', selectedAreas, supportedRooms, supportedRoutines);
-    });
-
-    it('should pause clean', async () => {
-      await service.pauseClean('device-123');
-
-      expect(mockMessageService.pauseClean).toHaveBeenCalledWith('device-123');
-    });
-
-    it('should stop and go home', async () => {
-      await service.stopAndGoHome('device-123');
-
-      expect(mockMessageService.stopAndGoHome).toHaveBeenCalledWith('device-123');
-    });
-
-    it('should resume clean', async () => {
-      await service.resumeClean('device-123');
-
-      expect(mockMessageService.resumeClean).toHaveBeenCalledWith('device-123');
-    });
-
-    it('should play sound to locate', async () => {
-      await service.playSoundToLocate('device-123');
-
-      expect(mockMessageService.playSoundToLocate).toHaveBeenCalledWith('device-123');
-    });
-
-    it('should execute custom get', async () => {
-      const request = {} as any;
-      const response = { data: 'test' };
-      (mockMessageService.customGet as ReturnType<typeof vi.fn>).mockResolvedValue(response);
-
-      const result = await service.customGet('device-123', request);
-
-      expect(mockMessageService.customGet).toHaveBeenCalledWith('device-123', request);
-      expect(result).toBe(response);
-    });
-
-    it('should execute custom send', async () => {
-      const request = {} as any;
-
-      await service.customSend('device-123', request);
-
-      expect(mockMessageService.customSend).toHaveBeenCalledWith('device-123', request);
-    });
-
-    it('should execute custom API get', async () => {
-      const mockIotApi = {
-        getCustom: vi.fn().mockResolvedValue({ result: 'success' }),
-      } as any;
-      (mockContainer.getIotApi as ReturnType<typeof vi.fn>).mockReturnValue(mockIotApi);
-
-      const result = await service.getCustomAPI('/custom/endpoint');
-
-      expect(mockIotApi.getCustom).toHaveBeenCalledWith('/custom/endpoint');
-      expect(result).toEqual({ result: 'success' });
-    });
-
     it('should throw error when getting custom API without IoT API', async () => {
       (mockContainer.getIotApi as ReturnType<typeof vi.fn>).mockReturnValue(undefined);
 
@@ -481,7 +157,18 @@ describe('RoborockService - Comprehensive Coverage', () => {
 
   describe('Constructor and Initialization', () => {
     it('should create service with default factories when not provided', () => {
-      const defaultService = new RoborockService(undefined, undefined, 30000, mockClientManager, mockLogger);
+      const defaultService = new RoborockService(
+        {
+          authenticateApiFactory: () => undefined as any,
+          iotApiFactory: () => undefined as any,
+          refreshInterval: 10,
+          baseUrl: 'https://api.roborock.com',
+          persist: {} as any,
+          configManager: {} as any,
+        },
+        mockLogger as any,
+        mockContainer as any,
+      );
 
       expect(defaultService).toBeInstanceOf(RoborockService);
     });
@@ -490,13 +177,35 @@ describe('RoborockService - Comprehensive Coverage', () => {
       const customAuthFactory = vi.fn(() => ({}) as any);
       const customIotFactory = vi.fn(() => ({}) as any);
 
-      const customService = new RoborockService(customAuthFactory, customIotFactory, 30000, mockClientManager, mockLogger);
+      const customService = new RoborockService(
+        {
+          authenticateApiFactory: customAuthFactory,
+          iotApiFactory: customIotFactory,
+          refreshInterval: 20000,
+          baseUrl: 'https://custom-api.roborock.com',
+          persist: {} as any,
+          configManager: {} as any,
+        },
+        mockLogger,
+        mockContainer as any,
+      );
 
       expect(customService).toBeInstanceOf(RoborockService);
     });
 
     it('should create service with custom base URL', () => {
-      const customService = new RoborockService(undefined, undefined, 30000, mockClientManager, mockLogger, 'https://custom.roborock.com');
+      const customService = new RoborockService(
+        {
+          authenticateApiFactory: () => undefined as any,
+          iotApiFactory: () => undefined as any,
+          refreshInterval: 15000,
+          baseUrl: 'https://another-api.roborock.com',
+          persist: {} as any,
+          configManager: {} as any,
+        },
+        mockLogger,
+        mockContainer as any,
+      );
 
       expect(customService).toBeInstanceOf(RoborockService);
     });

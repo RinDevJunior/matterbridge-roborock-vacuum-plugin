@@ -1,9 +1,11 @@
 import { AnsiLogger, debugStringify } from 'matterbridge/logger';
 import { ServiceArea } from 'matterbridge/matter/clusters';
 import { RoomIndexMap } from '../model/RoomIndexMap.js';
-import { RoborockIoTApi, ClientRouter, RequestMessage, MultipleMap, MapInfo, Scene } from '../roborockCommunication/index.js';
 import { DeviceError } from '../errors/index.js';
 import { MessageRoutingService } from './index.js';
+import { RoborockIoTApi } from '../roborockCommunication/api/iotClient.js';
+import { ClientRouter } from '../roborockCommunication/routing/clientRouter.js';
+import { MapInfo, MultipleMap, RequestMessage, Scene } from '../roborockCommunication/models/index.js';
 
 /** Manages cleaning areas, rooms, maps, and scenes. */
 export class AreaManagementService {

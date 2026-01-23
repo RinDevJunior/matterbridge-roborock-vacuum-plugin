@@ -1,10 +1,12 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { AnsiLogger } from 'matterbridge/logger';
 import { MessageRoutingService } from '../../services/messageRoutingService.js';
-import { MessageProcessor, RequestMessage, RoborockIoTApi } from '../../roborockCommunication/index.js';
 import { DeviceError } from '../../errors/index.js';
 import { CleanModeSetting } from '../../behaviors/roborock.vacuum/default/default.js';
 import { ServiceArea } from 'matterbridge/matter/clusters';
+import { RoborockIoTApi } from '../../roborockCommunication/api/iotClient.js';
+import { MessageProcessor } from '../../roborockCommunication/mqtt/messageProcessor.js';
+import { RequestMessage } from '../../roborockCommunication/models/index.js';
 
 describe('MessageRoutingService (integration)', () => {
   let logger: any;

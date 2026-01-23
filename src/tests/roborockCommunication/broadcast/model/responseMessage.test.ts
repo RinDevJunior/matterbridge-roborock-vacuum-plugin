@@ -1,7 +1,5 @@
-import { HeaderMessage } from '../../../../roborockCommunication/broadcast/model/headerMessage.js';
-import { ResponseBody } from '../../../../roborockCommunication/broadcast/model/responseBody.js';
-import { ResponseMessage, Protocol } from '../../../../roborockCommunication/index.js';
 import { describe, it, expect } from 'vitest';
+import { HeaderMessage, Protocol, ResponseBody, ResponseMessage } from '../../../../roborockCommunication/models/index.js';
 
 describe('ResponseMessage', () => {
   it('stores duid and dps and exposes contain/get', () => {

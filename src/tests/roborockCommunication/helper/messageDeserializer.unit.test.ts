@@ -1,8 +1,7 @@
-import { MessageContext } from '../../../roborockCommunication/broadcast/model/messageContext.js';
-import { MessageDeserializer } from '../../../roborockCommunication/helper/messageDeserializer.js';
-import { Protocol } from '../../../roborockCommunication/index.js';
 import { describe, it, expect, vi } from 'vitest';
 import { AnsiLogger } from 'matterbridge/logger';
+import { MessageContext, Protocol } from '../../../roborockCommunication/models/index.js';
+import { MessageDeserializer } from '../../../roborockCommunication/protocol/deserializers/messageDeserializer.js';
 
 const mkUser = () => ({ rriot: { k: 'test-key' } }) as any;
 

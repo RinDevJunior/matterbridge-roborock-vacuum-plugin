@@ -1,14 +1,14 @@
 import { PowerSource, RvcOperationalState, RvcRunMode } from 'matterbridge/matter/clusters';
 import { getVacuumProperty } from '../helper.js';
 import { RoborockMatterbridgePlatform } from '../module.js';
-import { Device, Home } from '../roborockCommunication/index.js';
 import { debugStringify } from 'matterbridge/logger';
 import { getBatteryState, getBatteryStatus } from '../initialData/index.js';
 import { state_to_matter_operational_status, state_to_matter_state } from '../share/function.js';
-import { OperationStatusCode } from '../roborockCommunication/Zenum/operationStatusCode.js';
+import { OperationStatusCode } from '../roborockCommunication/enums/index.js';
 import { getRunningMode } from '../initialData/getSupportedRunModes.js';
 import { hasDockingStationError } from '../model/DockingStationStatus.js';
 import { triggerDssError } from './handleLocalMessage.js';
+import { Device, Home } from '../roborockCommunication/models/index.js';
 
 /**
  * Update robot states from home data polling response.
@@ -17,11 +17,11 @@ import { triggerDssError } from './handleLocalMessage.js';
  * @param platform - Platform instance for robot access and logging
  */
 export async function updateFromHomeData(homeData: Home, platform: RoborockMatterbridgePlatform): Promise<void> {
-  if (platform.robots.size === 0) return;
-  const devices = homeData.devices.filter((d: Device) => platform.robots.has(d.duid));
+  if (platform.registry.robotsMap.size === 0) return;
+  const devices = homeData.devices.filter((d: Device) => platform.registry.robotsMap.has(d.duid));
 
   for (const device of devices) {
-    const robot = platform.robots.get(device.duid);
+    const robot = platform.registry.getRobot(device.duid);
     if (robot === undefined) {
       platform.log.error(`Robot not found: ${device.duid}`);
       continue;

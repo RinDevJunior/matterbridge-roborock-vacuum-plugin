@@ -2,9 +2,10 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { AnsiLogger } from 'matterbridge/logger';
 import { PollingService } from '../../services/pollingService.js';
 import { MessageRoutingService } from '../../services/messageRoutingService.js';
-import { Device, MessageProcessor } from '../../roborockCommunication/index.js';
 import { LOCAL_REFRESH_INTERVAL_MULTIPLIER, MQTT_REFRESH_INTERVAL_MULTIPLIER } from '../../constants/index.js';
 import { NotifyMessageTypes } from '../../notifyMessageTypes.js';
+import { MessageProcessor } from '../../roborockCommunication/mqtt/messageProcessor.js';
+import { Device } from '../../roborockCommunication/models/index.js';
 
 describe('PollingService', () => {
   let service: PollingService;
@@ -29,7 +30,7 @@ describe('PollingService', () => {
       warn: vi.fn(),
       error: vi.fn(),
       info: vi.fn(),
-    } as unknown as import('matterbridge/logger').AnsiLogger;
+    } as unknown as AnsiLogger;
 
     mockMessageProcessor = {
       getDeviceStatus: vi.fn(async (_duid?: string) => undefined),
@@ -37,7 +38,7 @@ describe('PollingService', () => {
       logger: mockLogger,
       injectLogger: vi.fn(),
       registerListener: vi.fn(),
-    } as unknown as import('../../roborockCommunication/index.js').MessageProcessor;
+    } as unknown as MessageProcessor;
 
     mockMessageRoutingService = {
       getMessageProcessor: vi.fn().mockReturnValue(mockMessageProcessor),
@@ -61,7 +62,7 @@ describe('PollingService', () => {
       isRequestSecure: vi.fn(),
       getMqttClient: vi.fn(),
       getMqttAlwaysOn: vi.fn(),
-    } as unknown as import('../../services/messageRoutingService.js').MessageRoutingService;
+    } as unknown as MessageRoutingService;
 
     service = new PollingService(TEST_REFRESH_INTERVAL, mockLogger, mockMessageRoutingService);
   });
