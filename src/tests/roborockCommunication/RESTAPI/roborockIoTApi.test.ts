@@ -1,3 +1,118 @@
+import axios from 'axios';
+import { vi, describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { RoborockIoTApi } from '../../../../src/roborockCommunication/RESTAPI/roborockIoTApi.js';
+
+const makeUserData = () => ({ rriot: { r: { a: 'https://api.example' }, u: 'uid', s: 's', h: 'hmac' } });
+
+const makeLogger = () => ({ error: vi.fn(), debug: vi.fn() });
+
+describe('RoborockIoTApi', () => {
+  beforeEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it('getHome returns result when API returns a result', async () => {
+    const userdata = makeUserData();
+    const logger = makeLogger();
+
+    const expected = { id: 1, products: [], devices: [], receivedDevices: [], rooms: [] };
+
+    const mockApi: any = {
+      get: vi.fn().mockResolvedValue({ data: { result: expected } }),
+      interceptors: { request: { use: vi.fn() } },
+    };
+
+    vi.spyOn(axios, 'create').mockImplementation(() => mockApi);
+
+    const api = new RoborockIoTApi(userdata as any, logger as any);
+    const res = await api.getHome(1);
+    expect(res).toEqual(expected);
+    expect(mockApi.get).toHaveBeenCalledWith('user/homes/1');
+  });
+
+  it('getHomeWithProducts uses v3 API and merges devices when product requires v3', async () => {
+    const userdata = makeUserData();
+    const logger = makeLogger();
+
+    const homeV1 = {
+      id: 2,
+      products: [{ model: 'roborock.vacuum.ss07' }],
+      devices: [{ duid: 'a' }],
+      receivedDevices: [{ duid: 'ra' }],
+      rooms: [],
+    };
+
+    const homeV3 = {
+      id: 2,
+      products: [],
+      devices: [{ duid: 'b' }],
+      receivedDevices: [{ duid: 'rb' }],
+      rooms: [],
+    };
+
+    const mockApi: any = {
+      get: vi.fn((url: string) => {
+        if (url === 'user/homes/2') return Promise.resolve({ data: { result: homeV1 } });
+        if (url === 'v3/user/homes/2') return Promise.resolve({ data: { result: homeV3 } });
+        return Promise.resolve({ data: {} });
+      }),
+      interceptors: { request: { use: vi.fn() } },
+    };
+
+    vi.spyOn(axios, 'create').mockImplementation(() => mockApi);
+
+    const api = new RoborockIoTApi(userdata as any, logger as any);
+    const res = await api.getHomeWithProducts(2);
+
+    expect(res).toBeDefined();
+    expect(res?.devices).toEqual([{ duid: 'a' }, { duid: 'b' }]);
+    expect(res?.receivedDevices).toEqual([{ duid: 'ra' }, { duid: 'rb' }]);
+    expect(mockApi.get).toHaveBeenCalledWith('user/homes/2');
+    expect(mockApi.get).toHaveBeenCalledWith('v3/user/homes/2');
+  });
+
+  it('getHomeWithProducts fills rooms from v2 when v1 has no rooms', async () => {
+    const userdata = makeUserData();
+    const logger = makeLogger();
+
+    const homeV1 = {
+      id: 3,
+      products: [],
+      devices: [],
+      receivedDevices: [],
+      rooms: [],
+    };
+
+    const homeV2 = {
+      id: 3,
+      products: [],
+      devices: [],
+      receivedDevices: [],
+      rooms: [{ id: 11, name: 'Living' }],
+    };
+
+    const mockApi: any = {
+      get: vi.fn((url: string) => {
+        if (url === 'user/homes/3') return Promise.resolve({ data: { result: homeV1 } });
+        if (url === 'v2/user/homes/3') return Promise.resolve({ data: { result: homeV2 } });
+        return Promise.resolve({ data: {} });
+      }),
+      interceptors: { request: { use: vi.fn() } },
+    };
+
+    vi.spyOn(axios, 'create').mockImplementation(() => mockApi);
+
+    const api = new RoborockIoTApi(userdata as any, logger as any);
+    const res = await api.getHomeWithProducts(3);
+
+    expect(res).toBeDefined();
+    expect(res?.rooms).toEqual(homeV2.rooms);
+  });
+});
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import axios from 'axios';
 import { RoborockIoTApi } from '../../../roborockCommunication/RESTAPI/roborockIoTApi.js';

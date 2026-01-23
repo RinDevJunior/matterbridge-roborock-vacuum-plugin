@@ -31,6 +31,36 @@ describe('MessageContext', () => {
     expect(ctx.getDeviceNonce('nonexistent')).toBeUndefined();
   });
 
+  it('constructor throws when userdata is missing required fields', () => {
+    // @ts-ignore intentionally malformed userdata
+    expect(() => new MessageContext({})).toThrow();
+    // @ts-ignore missing k
+    expect(() => new MessageContext({ rriot: {} })).toThrow();
+  });
+
+  it('updateProtocolVersion handles non-existent and existing devices', () => {
+    const ctx = new MessageContext(userdata);
+    // should not throw for non-existent device
+    expect(() => ctx.updateProtocolVersion('no', '2.0')).not.toThrow();
+    expect(ctx.getProtocolVersion('no')).toBeUndefined();
+
+    // register and then update
+    ctx.registerDevice('d2', 'lk2', '1.0', 0);
+    expect(ctx.getProtocolVersion('d2')).toBe('1.0');
+    ctx.updateProtocolVersion('d2', '2.0');
+    expect(ctx.getProtocolVersion('d2')).toBe('2.0');
+  });
+
+  it('re-registering a device replaces stored values', () => {
+    const ctx = new MessageContext(userdata);
+    ctx.registerDevice('d3', 'lkA', '1.0', 1);
+    expect(ctx.getLocalKey('d3')).toBe('lkA');
+    ctx.registerDevice('d3', 'lkB', '2.0', 2);
+    expect(ctx.getLocalKey('d3')).toBe('lkB');
+    expect(ctx.getProtocolVersion('d3')).toBe('2.0');
+    expect(ctx.getDeviceNonce('d3')).toBe(2);
+  });
+
   it('should return undefined for all getters on non-existent device', () => {
     const ctx = new MessageContext(userdata);
     expect(ctx.getLocalKey('missing')).toBeUndefined();

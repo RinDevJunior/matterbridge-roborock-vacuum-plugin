@@ -1,3 +1,96 @@
+import mqtt from 'mqtt';
+import { vi, describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { MQTTClient } from '../../../../roborockCommunication/broadcast/client/MQTTClient.js';
+import { MessageContext } from '../../../../roborockCommunication/broadcast/model/messageContext.js';
+import { RequestMessage } from '../../../../roborockCommunication/broadcast/model/requestMessage.js';
+
+function makeUserdata() {
+  return { rriot: { r: { m: 'mqtt://broker.example' }, u: 'testuser', k: 'key123', s: 'secret' } } as any;
+}
+
+function makeLogger() {
+  return { debug: vi.fn(), info: vi.fn(), notice: vi.fn(), error: vi.fn() } as any;
+}
+
+describe('MQTTClient', () => {
+  let userdata: any;
+  let context: MessageContext;
+  let logger: any;
+
+  beforeEach(() => {
+    vi.restoreAllMocks();
+    userdata = makeUserdata();
+    context = new MessageContext(userdata);
+    logger = makeLogger();
+  });
+
+  it('isReady/isConnected reflect internal state', () => {
+    const client = new MQTTClient(logger, context, userdata);
+    expect(client.isConnected()).toBe(false);
+    expect(client.isReady()).toBe(false);
+
+    (client as any).mqttClient = {};
+    (client as any).connected = true;
+
+    expect(client.isConnected()).toBe(true);
+    expect(client.isReady()).toBe(true);
+  });
+
+  it('connect calls mqtt.connect and registers event handlers', () => {
+    const mockMqttClient: any = { on: vi.fn(), end: vi.fn(), reconnect: vi.fn(), publish: vi.fn(), subscribe: vi.fn() };
+
+    // prevent keepAlive timer from running
+    vi.spyOn(MQTTClient.prototype as any, 'keepConnectionAlive').mockImplementation(() => {});
+
+    const spyConnect = vi.spyOn(mqtt, 'connect').mockImplementation(() => mockMqttClient as any);
+
+    const client = new MQTTClient(logger, context, userdata);
+    client.connect();
+
+    expect(spyConnect).toHaveBeenCalledWith(
+      userdata.rriot.r.m,
+      expect.objectContaining({ clientId: expect.any(String), username: expect.any(String), password: expect.any(String) }),
+    );
+
+    // ensure handlers were attached
+    expect(mockMqttClient.on).toHaveBeenCalled();
+  });
+
+  it('sendInternal logs error when not connected', async () => {
+    const client = new MQTTClient(logger, context, userdata);
+    const req = new RequestMessage({ method: 'test' });
+
+    await (client as any).sendInternal('duid-1', req);
+
+    expect(logger.error).toHaveBeenCalled();
+  });
+
+  it('sendInternal publishes when connected', async () => {
+    const mockMqttClient: any = { on: vi.fn(), end: vi.fn(), reconnect: vi.fn(), publish: vi.fn(), subscribe: vi.fn() };
+
+    vi.spyOn(MQTTClient.prototype as any, 'keepConnectionAlive').mockImplementation(() => {});
+    vi.spyOn(mqtt, 'connect').mockImplementation(() => mockMqttClient as any);
+
+    const client = new MQTTClient(logger, context, userdata);
+
+    // prepare serializer mock
+    (client as any).mqttClient = mockMqttClient;
+    (client as any).connected = true;
+    (client as any).serializer = { serialize: vi.fn().mockReturnValue({ buffer: Buffer.from('payload') }) };
+
+    const req = new RequestMessage({ method: 'test' });
+    await (client as any).sendInternal('my-duid', req);
+
+    expect(mockMqttClient.publish).toHaveBeenCalledTimes(1);
+    const topicArg = mockMqttClient.publish.mock.calls[0][0];
+    expect(topicArg).toContain(userdata.rriot.u);
+    expect(topicArg).toContain('my-duid');
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+});
 import { MQTTClient } from '../../../../roborockCommunication/broadcast/client/MQTTClient.js';
 import { describe, it, expect, beforeEach, afterEach, vi, afterAll } from 'vitest';
 

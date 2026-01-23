@@ -1,3 +1,72 @@
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+
+import { MessageRoutingService } from '../../services/messageRoutingService.js';
+
+describe('MessageRoutingService', () => {
+  let logger: any;
+
+  beforeEach(() => {
+    logger = { debug: vi.fn(), notice: vi.fn(), warn: vi.fn() };
+  });
+
+  it('throws when getting an unregistered MessageProcessor', () => {
+    const service = new MessageRoutingService(logger as any);
+    expect(() => service.getMessageProcessor('missing')).toThrow();
+  });
+
+  it('registers and returns a MessageProcessor', () => {
+    const service = new MessageRoutingService(logger as any);
+    const duid = 'dev1';
+    const mp = { some: 'processor' } as any;
+    service.registerMessageProcessor(duid, mp);
+    expect(service.getMessageProcessor(duid)).toBe(mp);
+  });
+
+  it('sets and reads MQTT-only flag', () => {
+    const service = new MessageRoutingService(logger as any);
+    const duid = 'dev-mqtt';
+    expect(service.getMqttAlwaysOn(duid)).toBe(false);
+    service.setMqttAlwaysOn(duid, true);
+    expect(service.getMqttAlwaysOn(duid)).toBe(true);
+  });
+
+  it('uses IoT API to start a single selected routine', async () => {
+    const duid = 'dev-routine';
+    const selected = [42];
+    const supportedRooms: any[] = [];
+    const supportedRoutines = [{ areaId: 42 }];
+
+    const iotApi = { startScene: vi.fn(async () => {}) } as any;
+    const service = new MessageRoutingService(logger as any, iotApi);
+
+    await service.startClean(duid, selected, supportedRooms, supportedRoutines as any);
+    expect(iotApi.startScene).toHaveBeenCalledWith(selected[0]);
+  });
+
+  it('falls back to global clean when multiple routines selected', async () => {
+    const duid = 'dev-multi';
+    const selected = [1, 2];
+    const supportedRooms: any[] = [];
+    const supportedRoutines = [{ areaId: 1 }, { areaId: 2 }];
+
+    const startClean = vi.fn(async () => {});
+    const mp: any = { startClean };
+
+    const service = new MessageRoutingService(logger as any);
+    service.registerMessageProcessor(duid, mp);
+
+    await service.startClean(duid, selected, supportedRooms, supportedRoutines as any);
+    expect(startClean).toHaveBeenCalled();
+  });
+
+  it('throws when getCleanModeData returns no data', async () => {
+    const duid = 'dev-nodata';
+    const mp: any = { getCleanModeData: vi.fn(async () => undefined) };
+    const service = new MessageRoutingService(logger as any);
+    service.registerMessageProcessor(duid, mp);
+    await expect(service.getCleanModeData(duid)).rejects.toThrow();
+  });
+});
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { AnsiLogger } from 'matterbridge/logger';
 import { MessageRoutingService } from '../../services/messageRoutingService.js';

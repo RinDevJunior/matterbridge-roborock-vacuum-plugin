@@ -1,7 +1,7 @@
-import { HELLO_RESPONSE_TIMEOUT_MS } from '../../../../../constants/timeouts.js';
 import { PingResponseListener } from '../../../../../roborockCommunication/broadcast/listener/implementation/pingResponseListener.js';
-import { Protocol, ResponseMessage } from '../../../../../roborockCommunication/index.js';
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { ResponseMessage, Protocol } from '../../../../../roborockCommunication/index.js';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { HELLO_RESPONSE_TIMEOUT_MS } from '../../../../../constants/timeouts.js';
 
 const DUID = 'test-duid';
 
@@ -10,6 +10,73 @@ function createMockMessage(isHello = true) {
     isForProtocol: vi.fn().mockImplementation((proto) => isHello && proto === Protocol.hello_response),
   } as unknown as ResponseMessage;
 }
+
+describe('PingResponseListener', () => {
+  let listener: PingResponseListener;
+
+  beforeEach(() => {
+    listener = new PingResponseListener('device-1');
+    vi.useFakeTimers();
+  });
+
+  afterEach(() => {
+    vi.clearAllTimers();
+    vi.useRealTimers();
+  });
+
+  it('resolves when a hello_response is received', async () => {
+    const message = new ResponseMessage('device-1', {
+      version: '1.0',
+      seq: 1,
+      nonce: 1,
+      timestamp: 1,
+      protocol: Protocol.hello_response,
+      isForProtocol: (p: Protocol) => p === Protocol.hello_response,
+    } as any);
+
+    const p = listener.waitFor();
+
+    // deliver the matching message
+    await listener.onMessage(message);
+
+    await expect(p).resolves.toBe(message);
+  });
+
+  it('rejects after timeout if no hello_response received', async () => {
+    const nonMatching = new ResponseMessage('device-1', {
+      version: '1.0',
+      seq: 2,
+      nonce: 2,
+      timestamp: 2,
+      protocol: Protocol.ping_response,
+      isForProtocol: (p: Protocol) => p === Protocol.ping_response,
+    } as any);
+
+    const p = listener.waitFor();
+
+    // deliver a non-matching message (should be ignored)
+    await listener.onMessage(nonMatching);
+
+    // advance timers to trigger the rejection (HELLO_RESPONSE_TIMEOUT_MS)
+    vi.advanceTimersByTime(30000);
+
+    await expect(p).rejects.toThrow(/no ping response/);
+  });
+
+  it('ignores messages when no handler is registered', async () => {
+    const message = new ResponseMessage('device-1', {
+      version: '1.0',
+      seq: 3,
+      nonce: 3,
+      timestamp: 3,
+      protocol: Protocol.hello_response,
+      isForProtocol: (p: Protocol) => p === Protocol.hello_response,
+    } as any);
+
+    // call onMessage without waitFor() being called first
+    await expect(listener.onMessage(message)).resolves.toBeUndefined();
+  });
+});
 
 describe('PingResponseListener', () => {
   beforeEach(() => {

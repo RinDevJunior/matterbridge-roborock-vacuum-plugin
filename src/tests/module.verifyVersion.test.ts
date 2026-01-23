@@ -1,0 +1,42 @@
+import { describe, it, expect } from 'vitest';
+import { AnsiLogger } from 'matterbridge/logger';
+import { RoborockMatterbridgePlatform } from '../module.js';
+
+function makeLogger() {
+  return {
+    debug: () => {},
+    info: () => {},
+    warn: () => {},
+    error: () => {},
+    notice: () => {},
+    logLevel: 'info',
+  } as unknown as AnsiLogger;
+}
+
+describe('RoborockMatterbridgePlatform - version checks', () => {
+  it('throws if verifyMatterbridgeVersion is undefined', () => {
+    const mockMatterbridge: any = {
+      matterbridgeVersion: '3.4.0',
+      matterbridgePluginDirectory: '/tmp',
+      matterbridgeDirectory: '/tmp',
+      verifyMatterbridgeVersion: undefined,
+    };
+
+    const config: any = { name: 'Test Platform', persistDirectory: '/tmp' };
+
+    expect(() => new RoborockMatterbridgePlatform(mockMatterbridge, makeLogger(), config)).toThrow();
+  });
+
+  it('throws if verifyMatterbridgeVersion returns false', () => {
+    const mockMatterbridge: any = {
+      matterbridgeVersion: '3.4.0',
+      matterbridgePluginDirectory: '/tmp',
+      matterbridgeDirectory: '/tmp',
+      verifyMatterbridgeVersion: () => false,
+    };
+
+    const config: any = { name: 'Test Platform', persistDirectory: '/tmp' };
+
+    expect(() => new RoborockMatterbridgePlatform(mockMatterbridge, makeLogger(), config)).toThrow();
+  });
+});

@@ -1,3 +1,52 @@
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+import RoborockService from '../roborockService.js';
+
+describe('RoborockService (unit)', () => {
+  let logger: any;
+  let container: any;
+  let authService: any;
+
+  beforeEach(() => {
+    logger = { debug: vi.fn(), notice: vi.fn(), error: vi.fn() };
+
+    authService = {
+      loginWithPassword: vi.fn(async (u: string, p: string) => ({ username: u, token: 't' })),
+      loginWithVerificationCode: vi.fn(),
+      loginWithCachedToken: vi.fn(),
+      requestVerificationCode: vi.fn(),
+    };
+
+    // Minimal container mock used by RoborockService when injected
+    container = {
+      getAuthenticationService: () => authService,
+      getDeviceManagementService: () => ({}),
+      getAreaManagementService: () => ({ getSelectedAreas: () => [], getSupportedAreas: () => [] }),
+      getMessageRoutingService: () => ({}),
+      getPollingService: () => ({ setDeviceNotify: vi.fn(), activateDeviceNotifyOverLocal: vi.fn(), activateDeviceNotifyOverMQTT: vi.fn(), stopPolling: vi.fn() }),
+      setUserData: vi.fn(),
+      getIotApi: () => undefined,
+    };
+  });
+
+  it('loginWithPassword delegates to AuthenticationService and sets user data on container', async () => {
+    const svc = new RoborockService(undefined as any, undefined as any, 0, {} as any, logger as any, 'url', container as any);
+
+    const result = await svc.loginWithPassword(
+      'me',
+      'pw',
+      async () => undefined,
+      async () => {},
+    );
+    expect(authService.loginWithPassword).toHaveBeenCalled();
+    expect(container.setUserData).toHaveBeenCalledWith(result);
+    expect(result).toEqual({ username: 'me', token: 't' });
+  });
+
+  it('getCustomAPI throws when IoT API not initialized', async () => {
+    const svc = new RoborockService(undefined as any, undefined as any, 0, {} as any, logger as any, 'url', container as any);
+    await expect(svc.getCustomAPI('/some')).rejects.toThrow(/IoT API not initialized/);
+  });
+});
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { AnsiLogger } from 'matterbridge/logger';
 import RoborockService from '../roborockService.js';
