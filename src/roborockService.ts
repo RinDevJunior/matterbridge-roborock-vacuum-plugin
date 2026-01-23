@@ -67,16 +67,13 @@ export default class RoborockService {
   // Authentication Methods (delegate to AuthenticationService)
   // ============================================================================
 
-  /**
-   * @deprecated Use requestVerificationCode and loginWithVerificationCode instead
-   */
+  /** Login with username and password. */
   public async loginWithPassword(
     username: string,
     password: string,
     loadSavedUserData: () => Promise<UserData | undefined>,
     savedUserData: (userData: UserData) => Promise<void>,
   ): Promise<UserData> {
-    // eslint-disable-next-line @typescript-eslint/no-deprecated
     const userdata = await this.authService.loginWithPassword(username, password, loadSavedUserData, savedUserData);
     this.container.setUserData(userdata);
     return userdata;

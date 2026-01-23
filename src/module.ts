@@ -394,7 +394,6 @@ export class RoborockMatterbridgePlatform extends MatterbridgeDynamicPlatform {
 
     this.log.notice('Attempting login with password...');
 
-    // eslint-disable-next-line @typescript-eslint/no-deprecated
     const userData = await this.roborockService.loginWithPassword(
       username,
       password,

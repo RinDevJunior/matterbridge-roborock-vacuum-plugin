@@ -46,7 +46,7 @@ export class PollingService {
 
         const response = await messageProcessor.getDeviceStatus(device.duid);
         if (response && this.deviceNotify) {
-          const message = Object.assign({ duid: device.duid }, response.errorStatus ?? {}, response.message ?? {}) as DeviceStatusNotify;
+          const message = Object.assign({ duid: device.duid }, response.errorStatus ?? {}, response.message ?? {}) as unknown as DeviceStatusNotify;
           this.logger.debug('Local Polling - Device status update:', debugStringify(message));
           this.deviceNotify(NotifyMessageTypes.LocalMessage, message);
         }
@@ -78,7 +78,7 @@ export class PollingService {
 
         const response = await messageProcessor.getDeviceStatusOverMQTT(device.duid);
         if (response && this.deviceNotify) {
-          const message = Object.assign({ duid: device.duid }, response.errorStatus ?? {}, response.message ?? {}) as DeviceStatusNotify;
+          const message = Object.assign({ duid: device.duid }, response.errorStatus ?? {}, response.message ?? {}) as unknown as DeviceStatusNotify;
           this.logger.debug('MQTT - Device status update', debugStringify(message));
           this.deviceNotify(NotifyMessageTypes.LocalMessage, message);
         }

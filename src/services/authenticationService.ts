@@ -85,14 +85,12 @@ export class AuthenticationService {
     }
   }
 
-  /** @deprecated Use verification code login instead. */
   async loginWithPassword(username: string, password: string, loadSavedUserData: LoadUserDataCallback, saveUserData: SaveUserDataCallback): Promise<UserData> {
     try {
       let userdata = await loadSavedUserData();
 
       if (!userdata) {
         this.logger.debug('No saved user data found, logging in with password');
-        // eslint-disable-next-line @typescript-eslint/no-deprecated
         userdata = await this.loginApi.loginWithPassword(username, password);
 
         try {

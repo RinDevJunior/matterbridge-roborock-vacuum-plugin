@@ -34,7 +34,7 @@ describe('SyncMessageListener', () => {
     await listener.onMessage(message);
 
     expect(resolve).toHaveBeenCalledWith(dps.result);
-    expect(listener.pending.has(messageId)).toBe(false);
+    expect(listener['pending'].has(messageId)).toBe(false);
   });
 
   it('should call resolve if result is ["ok"]', async () => {
@@ -54,7 +54,7 @@ describe('SyncMessageListener', () => {
     await listener.onMessage(message);
 
     expect(resolve).toHaveBeenCalled();
-    expect(listener.pending.has(messageId)).toBe(false);
+    expect(listener['pending'].has(messageId)).toBe(false);
   });
 
   it('should remove pending on map_response', async () => {
@@ -73,7 +73,7 @@ describe('SyncMessageListener', () => {
 
     await listener.onMessage(message);
 
-    expect(listener.pending.has(messageId)).toBe(true);
+    expect(listener['pending'].has(messageId)).toBe(true);
   });
 
   it('should call reject after timeout if not resolved', () => {
@@ -82,12 +82,12 @@ describe('SyncMessageListener', () => {
     const messageId = 321;
     listener.waitFor(messageId, { method: 'test' } as RequestMessage, resolve, reject);
 
-    expect(listener.pending.has(messageId)).toBe(true);
+    expect(listener['pending'].has(messageId)).toBe(true);
 
     vi.advanceTimersByTime(10000);
 
     expect(reject).toHaveBeenCalled();
-    expect(listener.pending.has(messageId)).toBe(false);
+    expect(listener['pending'].has(messageId)).toBe(false);
   });
 
   it('should not call resolve if no pending handler exists', async () => {
@@ -136,7 +136,7 @@ describe('SyncMessageListener', () => {
     await listener.onMessage(message);
 
     expect(resolve).toHaveBeenCalledWith(dpsData.result);
-    expect(listener.pending.has(messageId)).toBe(false);
+    expect(listener['pending'].has(messageId)).toBe(false);
   });
 
   it('222 - should handle real rpc_response with wifi info', async () => {
@@ -158,7 +158,7 @@ describe('SyncMessageListener', () => {
     await listener.onMessage(message);
 
     expect(resolve).toHaveBeenCalledWith(dpsData.result);
-    expect(listener.pending.has(messageId)).toBe(false);
+    expect(listener['pending'].has(messageId)).toBe(false);
   });
 
   it('should handle protocol 4 (general_request) with data in key 102 - get_multi_maps_list', async () => {
@@ -229,7 +229,7 @@ describe('SyncMessageListener', () => {
 
     // Verify the fix works - resolve should be called with the map data
     expect(resolve).toHaveBeenCalledWith(mapResult);
-    expect(listener.pending.has(messageId)).toBe(false);
+    expect(listener['pending'].has(messageId)).toBe(false);
   });
 
   it('should handle protocol 4 (general_request) with data in key 102 - get_room_mapping', async () => {
@@ -277,7 +277,7 @@ describe('SyncMessageListener', () => {
     await listener.onMessage(message);
 
     expect(resolve).toHaveBeenCalledWith(roomMapping);
-    expect(listener.pending.has(messageId)).toBe(false);
+    expect(listener['pending'].has(messageId)).toBe(false);
   });
 
   it('BROKEN CODE TEST - should fail if code only checks protocol 4 key instead of 102', async () => {

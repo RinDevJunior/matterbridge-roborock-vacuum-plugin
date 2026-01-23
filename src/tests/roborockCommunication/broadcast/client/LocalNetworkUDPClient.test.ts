@@ -308,7 +308,7 @@ describe('LocalNetworkUDPClient', () => {
       mockSocket.emit = (event: string, ...args: unknown[]) => {
         if (event === 'message') {
           // Wrap the call to catch async errors
-          client.onMessage(args[0] as Buffer).catch((e: unknown) => {
+          client['onMessage'](args[0] as Buffer).catch((e: unknown) => {
             caughtError = e instanceof Error ? e : new Error(String(e));
           });
           return true;

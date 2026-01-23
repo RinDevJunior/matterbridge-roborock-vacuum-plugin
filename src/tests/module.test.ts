@@ -53,28 +53,28 @@ function createMockLogger(): AnsiLogger {
 
 class TestRoborockMatterbridgePlatform extends RoborockMatterbridgePlatform {
   public async testAuthenticateWithPassword(username: string, password: string) {
-    return this.authenticateWithPassword(username, password);
+    return this['authenticateWithPassword'](username, password);
   }
   public async testAuthenticate2FA(username: string, code: string) {
-    return this.authenticate2FA(username, code);
+    return this['authenticate2FA'](username, code);
   }
   public async testStartDeviceDiscovery() {
-    return this.startDeviceDiscovery();
+    return this['startDeviceDiscovery']();
   }
   public async testAuthenticate(deviceId: string) {
-    return this.authenticate(deviceId);
+    return this['authenticate'](deviceId);
   }
   public async testOnConfigureDevice() {
-    return this.onConfigureDevice();
+    return this['onConfigureDevice']();
   }
   public async testConfigureDevice(vacuum: any) {
-    return this.configureDevice(vacuum);
+    return this['configureDevice'](vacuum);
   }
   public testLogVerificationCodeBanner(email: string, wasPreviouslySent: boolean) {
-    this.logVerificationCodeBanner(email, wasPreviouslySent);
+    this['logVerificationCodeBanner'](email, wasPreviouslySent);
   }
   public async testAddDevice(device: any) {
-    return this.addDevice(device);
+    return this['addDevice'](device);
   }
 }
 
@@ -91,7 +91,7 @@ describe('RoborockMatterbridgePlatform', () => {
     });
 
     it('startDeviceDiscovery returns false if authenticate fails', async () => {
-      testPlatform.authenticate = vi.fn().mockResolvedValue({ shouldContinue: false });
+      testPlatform['authenticate'] = vi.fn().mockResolvedValue({ shouldContinue: false });
       testPlatform.roborockService = { listDevices: vi.fn().mockResolvedValue([]) } as any;
       const result = await testPlatform.testStartDeviceDiscovery();
       expect(result).toBe(false);
@@ -140,8 +140,8 @@ describe('RoborockMatterbridgePlatform', () => {
     platform.persist.getItem = vi.fn().mockResolvedValueOnce(undefined);
     platform.persist.setItem = vi.fn().mockResolvedValue(undefined);
     platform.roborockService = { listDevices: vi.fn().mockResolvedValue([]) } as any;
-    platform.authenticate = vi.fn().mockResolvedValue({ shouldContinue: false });
-    await platform.startDeviceDiscovery();
+    platform['authenticate'] = vi.fn().mockResolvedValue({ shouldContinue: false });
+    await platform['startDeviceDiscovery']();
     expect(platform.persist.setItem).toHaveBeenCalledWith('deviceId', expect.any(String));
   });
   it('should set deviceId in persist if not present (fixed async)', async () => {
@@ -151,7 +151,7 @@ describe('RoborockMatterbridgePlatform', () => {
     (persist.setItem as any) = vi.fn().mockResolvedValue(undefined);
     platform.roborockService = { listDevices: vi.fn().mockResolvedValue([]) } as unknown as RoborockService;
     (platform as any).authenticate = vi.fn().mockResolvedValue({ shouldContinue: false });
-    await platform.startDeviceDiscovery();
+    await platform['startDeviceDiscovery']();
     expect(persist.setItem as any).toHaveBeenCalledWith('deviceId', expect.any(String));
   });
 
@@ -159,8 +159,8 @@ describe('RoborockMatterbridgePlatform', () => {
     platform = new RoborockMatterbridgePlatform(mockMatterbridge, mockLogger, config);
     platform.persist.getItem = vi.fn().mockResolvedValueOnce('cached-device-id');
     platform.roborockService = { listDevices: vi.fn().mockResolvedValue([]) } as any;
-    platform.authenticate = vi.fn().mockResolvedValue({ shouldContinue: false });
-    await platform.startDeviceDiscovery();
+    platform['authenticate'] = vi.fn().mockResolvedValue({ shouldContinue: false });
+    await platform['startDeviceDiscovery']();
     expect(platform.persist.setItem).not.toHaveBeenCalledWith('deviceId', expect.any(String));
   });
   it('should use cached deviceId if present (fixed async)', async () => {
@@ -170,44 +170,44 @@ describe('RoborockMatterbridgePlatform', () => {
     (persist.setItem as any) = vi.fn();
     platform.roborockService = { listDevices: vi.fn().mockResolvedValue([]) } as unknown as RoborockService;
     (platform as any).authenticate = vi.fn().mockResolvedValue({ shouldContinue: false });
-    await platform.startDeviceDiscovery();
+    await platform['startDeviceDiscovery']();
     expect(persist.setItem as any).not.toHaveBeenCalledWith('deviceId', expect.any(String));
   });
 
   it('should log and throw error in authenticateWithPassword if service not initialized', async () => {
     platform = new RoborockMatterbridgePlatform(mockMatterbridge, mockLogger, config);
-    await expect(platform.authenticateWithPassword('user', 'pw')).rejects.toThrow('RoborockService is not initialized');
+    await expect(platform['authenticateWithPassword']('user', 'pw')).rejects.toThrow('RoborockService is not initialized');
   });
   it('should log and throw error in authenticateWithPassword if service not initialized (fixed async)', async () => {
     platform = new TestRoborockMatterbridgePlatform(mockMatterbridge, mockLogger, config);
-    await expect(platform.authenticateWithPassword('user', 'pw')).rejects.toThrow('RoborockService is not initialized');
+    await expect(platform['authenticateWithPassword']('user', 'pw')).rejects.toThrow('RoborockService is not initialized');
   });
 
   it('should log and throw error in authenticate2FA if service not initialized', async () => {
     platform = new RoborockMatterbridgePlatform(mockMatterbridge, mockLogger, config);
-    await expect(platform.authenticate2FA('user', '123456')).rejects.toThrow('RoborockService is not initialized');
+    await expect(platform['authenticate2FA']('user', '123456')).rejects.toThrow('RoborockService is not initialized');
   });
   it('should log and throw error in authenticate2FA if service not initialized (fixed async)', async () => {
     platform = new TestRoborockMatterbridgePlatform(mockMatterbridge, mockLogger, config);
-    await expect(platform.authenticate2FA('user', '123456')).rejects.toThrow('RoborockService is not initialized');
+    await expect(platform['authenticate2FA']('user', '123456')).rejects.toThrow('RoborockService is not initialized');
   });
 
   it('should return shouldContinue false if authenticateWithPassword throws', async () => {
     platform = new RoborockMatterbridgePlatform(mockMatterbridge, mockLogger, config);
     platform.roborockService = { loginWithPassword: vi.fn().mockRejectedValue(new Error('fail')) } as any;
-    await expect(platform.authenticateWithPassword('user', 'pw')).rejects.toThrow('fail');
+    await expect(platform['authenticateWithPassword']('user', 'pw')).rejects.toThrow('fail');
   });
   it('should return shouldContinue false if authenticateWithPassword throws (fixed async)', async () => {
     platform = new TestRoborockMatterbridgePlatform(mockMatterbridge, mockLogger, config);
     platform.roborockService = { loginWithPassword: vi.fn().mockRejectedValue(new Error('fail')) } as unknown as RoborockService;
-    await expect(platform.authenticateWithPassword('user', 'pw')).rejects.toThrow('fail');
+    await expect(platform['authenticateWithPassword']('user', 'pw')).rejects.toThrow('fail');
   });
 
   it('should return shouldContinue false if authenticate2FA throws', async () => {
     platform = new RoborockMatterbridgePlatform(mockMatterbridge, mockLogger, config);
     platform.roborockService = { loginWithVerificationCode: vi.fn().mockRejectedValue(new Error('fail')) } as any;
     platform.persist.getItem = vi.fn().mockResolvedValue(undefined);
-    await expect(platform.authenticate2FA('user', '123456')).rejects.toThrow('fail');
+    await expect(platform['authenticate2FA']('user', '123456')).rejects.toThrow('fail');
   });
 
   it('should log error if username is missing in onStart', async () => {
@@ -220,7 +220,7 @@ describe('RoborockMatterbridgePlatform', () => {
 
   it('should not call super.onConfigure if isStartPluginCompleted is false', async () => {
     platform = new RoborockMatterbridgePlatform(mockMatterbridge, mockLogger, config);
-    platform.isStartPluginCompleted = false;
+    platform['isStartPluginCompleted'] = false;
     const superOnConfigure = vi.spyOn(MatterbridgeDynamicPlatform.prototype, 'onConfigure');
     await platform.onConfigure();
     expect(superOnConfigure).not.toHaveBeenCalled();
@@ -229,7 +229,7 @@ describe('RoborockMatterbridgePlatform', () => {
 
   it('should call super.onConfigure and set interval if isStartPluginCompleted is true', async () => {
     platform = new RoborockMatterbridgePlatform(mockMatterbridge, mockLogger, config);
-    platform.isStartPluginCompleted = true;
+    platform['isStartPluginCompleted'] = true;
     const superOnConfigure = vi.spyOn(MatterbridgeDynamicPlatform.prototype, 'onConfigure').mockResolvedValue(undefined);
     await platform.onConfigure();
     expect(superOnConfigure).toHaveBeenCalled();
@@ -252,7 +252,7 @@ describe('RoborockMatterbridgePlatform', () => {
     expect(platform.rvcInterval).toBeUndefined();
     expect(platform.roborockService).toBeUndefined();
     expect(platform.unregisterAllDevices).toHaveBeenCalled();
-    expect(platform.isStartPluginCompleted).toBe(false);
+    expect(platform['isStartPluginCompleted']).toBe(false);
     superOnShutdown.mockRestore();
   });
 
@@ -343,7 +343,7 @@ describe('RoborockMatterbridgePlatform', () => {
       testPlatform = new TestRoborockMatterbridgePlatform(mockMatterbridge, mockLogger, configWithVerificationCode);
 
       const mockUserData = { uid: 123, token: 'test-token', rruid: 'rr123', region: 'us' };
-      testPlatform.authenticate2FA = vi.fn().mockResolvedValue(mockUserData);
+      testPlatform['authenticate2FA'] = vi.fn().mockResolvedValue(mockUserData);
 
       const result = await testPlatform.testAuthenticate('device-id-123');
 
@@ -362,7 +362,7 @@ describe('RoborockMatterbridgePlatform', () => {
       testPlatform = new TestRoborockMatterbridgePlatform(mockMatterbridge, mockLogger, configWithPassword);
 
       const mockUserData = { uid: 123, token: 'test-token', rruid: 'rr123', region: 'us' };
-      testPlatform.authenticateWithPassword = vi.fn().mockResolvedValue(mockUserData);
+      testPlatform['authenticateWithPassword'] = vi.fn().mockResolvedValue(mockUserData);
 
       const result = await testPlatform.testAuthenticate('device-id-123');
 
@@ -371,7 +371,7 @@ describe('RoborockMatterbridgePlatform', () => {
     });
 
     it('should return shouldContinue false when userData is undefined', async () => {
-      testPlatform.authenticate2FA = vi.fn().mockResolvedValue(undefined);
+      testPlatform['authenticate2FA'] = vi.fn().mockResolvedValue(undefined);
       const configWithVerificationCode = {
         ...config,
         authentication: {
@@ -380,7 +380,7 @@ describe('RoborockMatterbridgePlatform', () => {
         },
       };
       testPlatform = new TestRoborockMatterbridgePlatform(mockMatterbridge, mockLogger, configWithVerificationCode);
-      testPlatform.authenticate2FA = vi.fn().mockResolvedValue(undefined);
+      testPlatform['authenticate2FA'] = vi.fn().mockResolvedValue(undefined);
 
       const result = await testPlatform.testAuthenticate('device-id-123');
 
@@ -396,7 +396,7 @@ describe('RoborockMatterbridgePlatform', () => {
         },
       };
       testPlatform = new TestRoborockMatterbridgePlatform(mockMatterbridge, mockLogger, configWithPassword);
-      testPlatform.authenticateWithPassword = vi.fn().mockRejectedValue(new Error('Auth failed'));
+      testPlatform['authenticateWithPassword'] = vi.fn().mockRejectedValue(new Error('Auth failed'));
 
       const result = await testPlatform.testAuthenticate('device-id-123');
 
@@ -579,7 +579,7 @@ describe('RoborockMatterbridgePlatform', () => {
       };
 
       testPlatform.persist.getItem = vi.fn().mockResolvedValue('cached-device-id');
-      testPlatform.authenticate = vi.fn().mockResolvedValue({ shouldContinue: true, userData: mockUserData });
+      testPlatform['authenticate'] = vi.fn().mockResolvedValue({ shouldContinue: true, userData: mockUserData });
       testPlatform.roborockService = {
         listDevices: vi.fn().mockResolvedValue([mockDevice]),
         initializeMessageClient: vi.fn().mockResolvedValue(undefined),
@@ -595,7 +595,7 @@ describe('RoborockMatterbridgePlatform', () => {
       const mockUserData = { uid: 123, token: 'test-token', rruid: 'rr123', region: 'us' };
 
       testPlatform.persist.getItem = vi.fn().mockResolvedValue('cached-device-id');
-      testPlatform.authenticate = vi.fn().mockResolvedValue({ shouldContinue: true, userData: mockUserData });
+      testPlatform['authenticate'] = vi.fn().mockResolvedValue({ shouldContinue: true, userData: mockUserData });
       testPlatform.roborockService = {
         listDevices: vi.fn().mockResolvedValue([]),
       } as any;
@@ -620,7 +620,7 @@ describe('RoborockMatterbridgePlatform', () => {
       ];
 
       testPlatform.persist.getItem = vi.fn().mockResolvedValue('cached-device-id');
-      testPlatform.authenticate = vi.fn().mockResolvedValue({ shouldContinue: true, userData: mockUserData });
+      testPlatform['authenticate'] = vi.fn().mockResolvedValue({ shouldContinue: true, userData: mockUserData });
       testPlatform.roborockService = {
         listDevices: vi.fn().mockResolvedValue(mockDevices),
         initializeMessageClient: vi.fn().mockResolvedValue(undefined),
@@ -655,7 +655,7 @@ describe('RoborockMatterbridgePlatform', () => {
       };
 
       testPlatform.persist.getItem = vi.fn().mockResolvedValue('cached-device-id');
-      testPlatform.authenticate = vi.fn().mockResolvedValue({ shouldContinue: true, userData: mockUserData });
+      testPlatform['authenticate'] = vi.fn().mockResolvedValue({ shouldContinue: true, userData: mockUserData });
       testPlatform.roborockService = {
         listDevices: vi.fn().mockResolvedValue([mockDevice]),
         initializeMessageClient: vi.fn().mockResolvedValue(undefined),
@@ -703,7 +703,7 @@ describe('RoborockMatterbridgePlatform', () => {
         setDeviceNotify: vi.fn(),
         activateDeviceNotify: vi.fn(),
       } as any;
-      testPlatform.configureDevice = vi.fn().mockResolvedValue(true);
+      testPlatform['configureDevice'] = vi.fn().mockResolvedValue(true);
       testPlatform.robots.set('test-duid', { device: mockDevice } as any);
 
       await testPlatform.testOnConfigureDevice();
@@ -731,7 +731,7 @@ describe('RoborockMatterbridgePlatform', () => {
         setDeviceNotify: vi.fn(),
         activateDeviceNotify: vi.fn(),
       } as any;
-      testPlatform.configureDevice = vi.fn().mockResolvedValue(true);
+      testPlatform['configureDevice'] = vi.fn().mockResolvedValue(true);
       testPlatform.robots.set('test-duid', { device: mockDevice } as any);
 
       await testPlatform.testOnConfigureDevice();
@@ -853,7 +853,7 @@ describe('RoborockMatterbridgePlatform', () => {
       vi.useFakeTimers();
 
       platform = new RoborockMatterbridgePlatform(mockMatterbridge, mockLogger, config);
-      platform.isStartPluginCompleted = true;
+      platform['isStartPluginCompleted'] = true;
       platform.platformRunner = {
         requestHomeData: vi.fn().mockRejectedValue(new Error('Interval error')),
       } as any;
@@ -882,12 +882,12 @@ describe('RoborockMatterbridgePlatform', () => {
       Object.defineProperty(platform, 'ready', { value: Promise.resolve(), writable: true });
       platform.clearSelect = vi.fn().mockResolvedValue(undefined);
       platform.persist.init = vi.fn().mockResolvedValue(undefined);
-      platform.startDeviceDiscovery = vi.fn().mockResolvedValue(true);
-      platform.onConfigureDevice = vi.fn().mockResolvedValue(undefined);
+      platform['startDeviceDiscovery'] = vi.fn().mockResolvedValue(true);
+      platform['onConfigureDevice'] = vi.fn().mockResolvedValue(undefined);
 
       await platform.onStart('test reason');
 
-      expect(platform.isStartPluginCompleted).toBe(true);
+      expect(platform['isStartPluginCompleted']).toBe(true);
       expect(mockLogger.notice).toHaveBeenCalledWith('onStart finished');
     });
 
@@ -897,11 +897,11 @@ describe('RoborockMatterbridgePlatform', () => {
       Object.defineProperty(platform, 'ready', { value: Promise.resolve(), writable: true });
       platform.clearSelect = vi.fn().mockResolvedValue(undefined);
       platform.persist.init = vi.fn().mockResolvedValue(undefined);
-      platform.startDeviceDiscovery = vi.fn().mockResolvedValue(false);
+      platform['startDeviceDiscovery'] = vi.fn().mockResolvedValue(false);
 
       await platform.onStart('test reason');
 
-      expect(platform.isStartPluginCompleted).toBe(false);
+      expect(platform['isStartPluginCompleted']).toBe(false);
       expect(mockLogger.error).toHaveBeenCalledWith('Device discovery failed to start.');
     });
   });

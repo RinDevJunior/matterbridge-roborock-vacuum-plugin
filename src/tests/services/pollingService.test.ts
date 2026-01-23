@@ -75,7 +75,7 @@ describe('PollingService', () => {
     it('should set the device notification callback', () => {
       const mockCallback = vi.fn();
       service.setDeviceNotify(mockCallback);
-      expect(service.deviceNotify).toBe(mockCallback);
+      expect(service['deviceNotify']).toBe(mockCallback);
     });
   });
 
@@ -94,7 +94,7 @@ describe('PollingService', () => {
       service.activateDeviceNotifyOverLocal(mockDevice);
 
       expect(mockLogger.debug).toHaveBeenCalledWith('Activating device status polling for:', mockDevice.duid);
-      expect(service.localRequestDeviceStatusInterval).toBeDefined();
+      expect(service['localRequestDeviceStatusInterval']).toBeDefined();
     });
 
     it('should clear existing interval before creating new one', () => {
@@ -102,10 +102,10 @@ describe('PollingService', () => {
       service.setDeviceNotify(mockCallback);
 
       service.activateDeviceNotifyOverLocal(mockDevice);
-      const firstInterval = service.localRequestDeviceStatusInterval;
+      const firstInterval = service['localRequestDeviceStatusInterval'];
 
       service.activateDeviceNotifyOverLocal(mockDevice);
-      const secondInterval = service.localRequestDeviceStatusInterval;
+      const secondInterval = service['localRequestDeviceStatusInterval'];
 
       expect(firstInterval).not.toBe(secondInterval);
     });
@@ -206,7 +206,7 @@ describe('PollingService', () => {
       service.activateDeviceNotifyOverMQTT(mockDevice);
 
       expect(mockLogger.notice).toHaveBeenCalledWith('Requesting device info for device over MQTT', mockDevice.duid);
-      expect(service.mqttRequestDeviceStatusInterval).toBeDefined();
+      expect(service['mqttRequestDeviceStatusInterval']).toBeDefined();
     });
 
     it('should clear existing interval before creating new one', () => {
@@ -214,10 +214,10 @@ describe('PollingService', () => {
       service.setDeviceNotify(mockCallback);
 
       service.activateDeviceNotifyOverMQTT(mockDevice);
-      const firstInterval = service.mqttRequestDeviceStatusInterval;
+      const firstInterval = service['mqttRequestDeviceStatusInterval'];
 
       service.activateDeviceNotifyOverMQTT(mockDevice);
-      const secondInterval = service.mqttRequestDeviceStatusInterval;
+      const secondInterval = service['mqttRequestDeviceStatusInterval'];
 
       expect(firstInterval).not.toBe(secondInterval);
     });
@@ -309,20 +309,20 @@ describe('PollingService', () => {
       service.setDeviceNotify(mockCallback);
       service.activateDeviceNotifyOverLocal(mockDevice);
 
-      expect(service.localRequestDeviceStatusInterval).toBeDefined();
+      expect(service['localRequestDeviceStatusInterval']).toBeDefined();
 
       service.stopPolling();
 
-      expect(service.localRequestDeviceStatusInterval).toBeUndefined();
-      expect(service.mqttRequestDeviceStatusInterval).toBeUndefined();
+      expect(service['localRequestDeviceStatusInterval']).toBeUndefined();
+      expect(service['mqttRequestDeviceStatusInterval']).toBeUndefined();
     });
 
     it('should handle calling stopPolling when no interval is active', () => {
       expect(() => {
         service.stopPolling();
       }).not.toThrow();
-      expect(service.localRequestDeviceStatusInterval).toBeUndefined();
-      expect(service.mqttRequestDeviceStatusInterval).toBeUndefined();
+      expect(service['localRequestDeviceStatusInterval']).toBeUndefined();
+      expect(service['mqttRequestDeviceStatusInterval']).toBeUndefined();
     });
 
     it('should prevent further polling after stopPolling is called', async () => {
@@ -350,9 +350,9 @@ describe('PollingService', () => {
 
       await service.shutdown();
 
-      expect(service.localRequestDeviceStatusInterval).toBeUndefined();
-      expect(service.mqttRequestDeviceStatusInterval).toBeUndefined();
-      expect(service.deviceNotify).toBeUndefined();
+      expect(service['localRequestDeviceStatusInterval']).toBeUndefined();
+      expect(service['mqttRequestDeviceStatusInterval']).toBeUndefined();
+      expect(service['deviceNotify']).toBeUndefined();
     });
 
     it('should handle shutdown when nothing is active', async () => {
@@ -412,8 +412,8 @@ describe('PollingService', () => {
         service.stopPolling();
       }
 
-      expect(service.localRequestDeviceStatusInterval).toBeUndefined();
-      expect(service.mqttRequestDeviceStatusInterval).toBeUndefined();
+      expect(service['localRequestDeviceStatusInterval']).toBeUndefined();
+      expect(service['mqttRequestDeviceStatusInterval']).toBeUndefined();
     });
   });
 });

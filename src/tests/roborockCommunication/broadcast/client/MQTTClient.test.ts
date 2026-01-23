@@ -104,41 +104,41 @@ describe('MQTTClient', () => {
 
   it('should generate username and password in constructor', () => {
     const mqttClient = createMQTTClient();
-    expect(mqttClient.mqttUsername).toBe('c6d6afb9');
-    expect(mqttClient.mqttPassword).toBe('938f62d6603bde9c');
+    expect(mqttClient['mqttUsername']).toBe('c6d6afb9');
+    expect(mqttClient['mqttPassword']).toBe('938f62d6603bde9c');
   });
 
   it('should not connect if already connected', () => {
     const mqttClient = createMQTTClient();
-    mqttClient.mqttClient = client;
+    mqttClient['mqttClient'] = client;
     mqttClient.connect();
     expect(globalThis.mockConnect).not.toHaveBeenCalled();
   });
 
   it('should disconnect if connected', async () => {
     const mqttClient = createMQTTClient();
-    mqttClient.mqttClient = client;
-    mqttClient.connected = true;
+    mqttClient['mqttClient'] = client;
+    mqttClient['connected'] = true;
     await mqttClient.disconnect();
     expect(client.end).toHaveBeenCalled();
   });
 
   it('should not disconnect if not connected', async () => {
     const mqttClient = createMQTTClient();
-    mqttClient.mqttClient = undefined;
-    mqttClient.connected = false;
+    mqttClient['mqttClient'] = undefined;
+    mqttClient['connected'] = false;
     await mqttClient.disconnect();
     expect(client.end).not.toHaveBeenCalled();
   });
 
   it('should log error if disconnect throws', async () => {
     const mqttClient = createMQTTClient();
-    mqttClient.mqttClient = {
+    mqttClient['mqttClient'] = {
       end: vi.fn(() => {
         throw new Error('fail');
       }),
     } as any;
-    mqttClient.connected = true;
+    mqttClient['connected'] = true;
     await mqttClient.disconnect();
     expect(logger.error).toHaveBeenCalledWith(expect.stringContaining('[MQTTClient] client failed to disconnect with error:'));
   });
@@ -151,8 +151,8 @@ describe('MQTTClient', () => {
       onMessage: vi.fn(),
     };
     const mqttClient = createMQTTClient(mockSyncMessageListener);
-    mqttClient.mqttClient = client;
-    mqttClient.connected = true;
+    mqttClient['mqttClient'] = client;
+    mqttClient['connected'] = true;
     const request = { toMqttRequest: vi.fn(() => 'req'), method: 'test' };
     await (mqttClient as any).sendInternal('duid1', request as any);
     expect(serializer.serialize).toHaveBeenCalledWith('duid1', 'req');
@@ -167,8 +167,8 @@ describe('MQTTClient', () => {
       onMessage: vi.fn(),
     };
     const mqttClient = createMQTTClient(mockSyncMessageListener);
-    mqttClient.mqttClient = undefined;
-    mqttClient.connected = false;
+    mqttClient['mqttClient'] = undefined;
+    mqttClient['connected'] = false;
     const request = { toMqttRequest: vi.fn(), method: 'test' };
     await mqttClient.send('duid1', request as any);
     expect(logger.error).toHaveBeenCalled();
@@ -177,68 +177,68 @@ describe('MQTTClient', () => {
 
   it('onConnect should set connected, call onConnected, and subscribeToQueue', async () => {
     const mqttClient = createMQTTClient();
-    mqttClient.mqttClient = client;
-    mqttClient.subscribeToQueue = vi.fn();
-    await mqttClient.onConnect({} as any);
-    expect(mqttClient.connected).toBe(true);
+    mqttClient['mqttClient'] = client;
+    mqttClient['subscribeToQueue'] = vi.fn();
+    await mqttClient['onConnect']({} as any);
+    expect(mqttClient['connected']).toBe(true);
     expect(connectionListeners.onConnected).toHaveBeenCalled();
-    expect(mqttClient.subscribeToQueue).toHaveBeenCalled();
+    expect(mqttClient['subscribeToQueue']).toHaveBeenCalled();
   });
 
   it('subscribeToQueue should call client.subscribe with correct topic', () => {
     const mqttClient = createMQTTClient();
-    mqttClient.mqttClient = client;
-    mqttClient.connected = true;
-    mqttClient.subscribeToQueue();
+    mqttClient['mqttClient'] = client;
+    mqttClient['connected'] = true;
+    mqttClient['subscribeToQueue']();
     expect(client.subscribe).toHaveBeenCalledWith('rr/m/o/user/c6d6afb9/#', expect.any(Function));
   });
 
   it('onSubscribe should log error and call onDisconnected if error', async () => {
     const mqttClient = createMQTTClient();
-    await mqttClient.onSubscribe(new Error('fail'), undefined);
+    await mqttClient['onSubscribe'](new Error('fail'), undefined);
     expect(logger.error).toHaveBeenCalledWith(expect.stringContaining('failed to subscribe'));
-    expect(mqttClient.connected).toBe(false);
+    expect(mqttClient['connected']).toBe(false);
     expect(connectionListeners.onDisconnected).toHaveBeenCalled();
   });
 
   it('onSubscribe should do nothing if no error', async () => {
     const mqttClient = createMQTTClient();
-    await mqttClient.onSubscribe(null, undefined);
+    await mqttClient['onSubscribe'](null, undefined);
     expect(logger.error).not.toHaveBeenCalled();
     expect(connectionListeners.onDisconnected).not.toHaveBeenCalled();
   });
 
   it('onDisconnect should call onDisconnected', async () => {
     const mqttClient = createMQTTClient();
-    await mqttClient.onDisconnect();
+    await mqttClient['onDisconnect']();
     expect(connectionListeners.onDisconnected).toHaveBeenCalled();
   });
 
   it('onError should log error and call onError', async () => {
     const mqttClient = createMQTTClient();
-    mqttClient.connected = true;
-    await mqttClient.onError(new Error('fail'));
+    mqttClient['connected'] = true;
+    await mqttClient['onError'](new Error('fail'));
     expect(logger.error).toHaveBeenCalledWith(expect.stringContaining('MQTT connection error'));
-    expect(connectionListeners.onError).toHaveBeenCalledWith('mqtt-c6d6afb9', expect.any(String));
+    expect(connectionListeners.onError).toHaveBeenCalledWith('mqtt-c6d6afb9', expect.stringContaining('fail'));
   });
 
   it('onReconnect should call subscribeToQueue', () => {
     const mqttClient = createMQTTClient();
-    mqttClient.subscribeToQueue = vi.fn();
-    mqttClient.onReconnect();
-    expect(mqttClient.subscribeToQueue).toHaveBeenCalled();
+    mqttClient['subscribeToQueue'] = vi.fn();
+    mqttClient['onReconnect']();
+    expect(mqttClient['subscribeToQueue']).toHaveBeenCalled();
   });
 
   it('onMessage should call deserializer and messageListeners.onMessage if message', async () => {
     const mqttClient = createMQTTClient();
-    await mqttClient.onMessage('rr/m/o/user/c6d6afb9/duid1', Buffer.from('msg'));
+    await mqttClient['onMessage']('rr/m/o/user/c6d6afb9/duid1', Buffer.from('msg'));
     expect(deserializer.deserialize).toHaveBeenCalledWith('duid1', Buffer.from('msg'), 'MQTTClient');
     expect(messageListeners.onMessage).toHaveBeenCalledWith('deserialized');
   });
 
   it('onMessage should log notice if message is falsy', async () => {
     const mqttClient = createMQTTClient();
-    await mqttClient.onMessage('topic', null as any);
+    await mqttClient['onMessage']('topic', null as any);
     expect(logger.notice).toHaveBeenCalledWith(expect.stringContaining('received empty message'));
   });
 
@@ -247,7 +247,7 @@ describe('MQTTClient', () => {
     deserializer.deserialize.mockImplementation(() => {
       throw new Error('fail');
     });
-    await mqttClient.onMessage('topic/duid', Buffer.from('msg'));
+    await mqttClient['onMessage']('topic/duid', Buffer.from('msg'));
     expect(logger.error).toHaveBeenCalledWith(expect.stringContaining('unable to process message'));
   });
 
@@ -260,10 +260,10 @@ describe('MQTTClient', () => {
     mqttClient.connect();
 
     // Verify the client was created and event handlers were registered
-    expect(mqttClient.mqttClient).toBeDefined();
+    expect(mqttClient['mqttClient']).toBeDefined();
 
     // Get the actual client instance
-    const actualClient = mqttClient.mqttClient;
+    const actualClient = mqttClient['mqttClient'];
 
     // Verify event handlers were registered on the actual client
     // Since we're using the real mqtt library, just verify the client exists and is set up
@@ -276,12 +276,11 @@ describe('MQTTClient', () => {
   it('keepConnectionAlive should setup interval that reconnects client', () => {
     vi.useFakeTimers();
     const mqttClient = createMQTTClient();
-    mqttClient.mqttClient = client;
-    mqttClient.connected = true;
-    mqttClient.keepConnectionAlive();
+    mqttClient['mqttClient'] = client;
+    mqttClient['connected'] = true;
+    mqttClient['keepConnectionAlive']();
 
-    expect(mqttClient.keepConnectionAliveInterval).toBeDefined();
-
+    expect(mqttClient['keepConnectionAliveInterval']).toBeDefined();
     // Fast-forward time by 60 minutes to trigger the interval callback
     vi.advanceTimersByTime(60 * 60 * 1000);
 
@@ -289,7 +288,7 @@ describe('MQTTClient', () => {
     expect(client.reconnect).toHaveBeenCalled();
 
     // Clean up
-    clearInterval(mqttClient.keepConnectionAliveInterval);
+    clearInterval(mqttClient['keepConnectionAliveInterval']);
     vi.useRealTimers();
   });
 
@@ -297,9 +296,9 @@ describe('MQTTClient', () => {
     vi.useFakeTimers();
     const mqttClient = createMQTTClient();
     const connectSpy = vi.spyOn(mqttClient, 'connect');
-    mqttClient.mqttClient = undefined;
-    mqttClient.connected = false;
-    mqttClient.keepConnectionAlive();
+    mqttClient['mqttClient'] = undefined;
+    mqttClient['connected'] = false;
+    mqttClient['keepConnectionAlive']();
 
     // Fast-forward time by 60 minutes to trigger the interval callback
     vi.advanceTimersByTime(60 * 60 * 1000);
@@ -307,7 +306,7 @@ describe('MQTTClient', () => {
     expect(connectSpy).toHaveBeenCalled();
 
     // Clean up
-    clearInterval(mqttClient.keepConnectionAliveInterval);
+    clearInterval(mqttClient['keepConnectionAliveInterval']);
     vi.useRealTimers();
   });
 
@@ -317,54 +316,53 @@ describe('MQTTClient', () => {
     const clearTimeoutSpy = vi.spyOn(global, 'clearTimeout');
 
     // Set initial interval
-    mqttClient.keepConnectionAlive();
-    const firstInterval = mqttClient.keepConnectionAliveInterval;
+    mqttClient['keepConnectionAlive']();
+    const firstInterval = mqttClient['keepConnectionAliveInterval'];
 
     // Call again to clear and reset
-    mqttClient.keepConnectionAlive();
-
+    mqttClient['keepConnectionAlive']();
     expect(clearTimeoutSpy).toHaveBeenCalledWith(firstInterval);
 
     // Clean up
-    clearInterval(mqttClient.keepConnectionAliveInterval);
+    clearInterval(mqttClient['keepConnectionAliveInterval']);
     vi.useRealTimers();
   });
 
   it('disconnect should return early if not connected', async () => {
     const mqttClient = createMQTTClient();
-    mqttClient.mqttClient = client;
-    mqttClient.connected = false;
+    mqttClient['mqttClient'] = client;
+    mqttClient['connected'] = false;
     await mqttClient.disconnect();
     expect(client.end).not.toHaveBeenCalled();
   });
 
   it('onClose should call onDisconnected only if connected', async () => {
     const mqttClient = createMQTTClient();
-    mqttClient.connected = true;
-    await mqttClient.onClose();
+    mqttClient['connected'] = true;
+    await mqttClient['onClose']();
     expect(connectionListeners.onDisconnected).toHaveBeenCalledWith('mqtt-c6d6afb9', 'MQTT connection closed');
-    expect(mqttClient.connected).toBe(false);
+    expect(mqttClient['connected']).toBe(false);
   });
 
   it('onClose should not call onDisconnected if already disconnected', async () => {
     const mqttClient = createMQTTClient();
-    mqttClient.connected = false;
-    await mqttClient.onClose();
+    mqttClient['connected'] = false;
+    await mqttClient['onClose']();
     expect(connectionListeners.onDisconnected).not.toHaveBeenCalled();
   });
 
   it('onOffline should set connected to false and call onDisconnected', async () => {
     const mqttClient = createMQTTClient();
-    mqttClient.connected = true;
-    await mqttClient.onOffline();
-    expect(mqttClient.connected).toBe(false);
+    mqttClient['connected'] = true;
+    await mqttClient['onOffline']();
+    expect(mqttClient['connected']).toBe(false);
     expect(connectionListeners.onDisconnected).toHaveBeenCalledWith('mqtt-c6d6afb9', 'MQTT connection offline');
   });
 
   it('onReconnect should call onReconnect on connectionListeners', () => {
     const mqttClient = createMQTTClient();
-    mqttClient.subscribeToQueue = vi.fn();
-    mqttClient.onReconnect();
+    mqttClient['subscribeToQueue'] = vi.fn();
+    mqttClient['onReconnect']();
     expect(connectionListeners.onReconnect).toHaveBeenCalledWith('mqtt-c6d6afb9', 'Reconnected to MQTT broker');
   });
 });

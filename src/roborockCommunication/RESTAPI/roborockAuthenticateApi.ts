@@ -32,9 +32,6 @@ export class RoborockAuthenticateApi {
     return userData;
   }
 
-  /**
-   * @deprecated Use requestCodeV4 and loginWithCodeV4 instead
-   */
   public async loginWithPassword(username: string, password: string): Promise<UserData> {
     const api = await this.getAPIFor(username);
     const response = await api.post(
