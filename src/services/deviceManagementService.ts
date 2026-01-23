@@ -69,7 +69,7 @@ export class DeviceManagementService {
       this.logger.debug('Fetching home details for user:', username);
       const homeDetails = await this.loginApi.getHomeDetails();
 
-      if (!homeDetails || !homeDetails.rrHomeId) {
+      if (!homeDetails?.rrHomeId) {
         throw new DeviceNotFoundError('No home found for user');
       }
 
@@ -107,7 +107,7 @@ export class DeviceManagementService {
           },
           store: {
             username: username,
-            userData: this.userdata as UserData,
+            userData: this.userdata,
             localKey: device.localKey,
             pv: device.pv,
             model: products.get(device.productId),
@@ -149,11 +149,11 @@ export class DeviceManagementService {
       // Fallback to older API versions if rooms are missing
       if (homeData.rooms.length === 0) {
         const homeDataV3 = await this.iotApi.getHomev3(homeid);
-        if (homeDataV3 && homeDataV3.rooms && homeDataV3.rooms.length > 0) {
+        if (homeDataV3?.rooms && homeDataV3.rooms.length > 0) {
           homeData.rooms = homeDataV3.rooms;
         } else {
           const homeDataV1 = await this.iotApi.getHome(homeid);
-          if (homeDataV1 && homeDataV1.rooms && homeDataV1.rooms.length > 0) {
+          if (homeDataV1?.rooms && homeDataV1.rooms.length > 0) {
             homeData.rooms = homeDataV1.rooms;
           }
         }
@@ -174,7 +174,7 @@ export class DeviceManagementService {
             batteryLevel: device.deviceStatus?.[Protocol.battery] ?? 100,
           },
           store: {
-            userData: this.userdata as UserData,
+            userData: this.userdata,
             localKey: device.localKey,
             pv: device.pv,
             model: products.get(device.productId),
@@ -253,11 +253,10 @@ export class DeviceManagementService {
       this.logger.debug(`Device: ${device.duid} uses B01 protocol, switch to use UDPClient`);
       this.messageRoutingService.setMqttAlwaysOn(device.duid, true);
       const localNetworkUDPClient = new LocalNetworkUDPClient(this.logger);
-      const networkInfo =
-        device.deviceStatus && device.deviceStatus[Protocol.rpc_request]
-          ? ((device.deviceStatus[Protocol.rpc_request] as Record<number, unknown>)[RPC_Request_Segments.network_info] as NetworkInfo)
-          : undefined;
-      if (networkInfo && networkInfo.ipAddress) {
+      const networkInfo = device.deviceStatus?.[Protocol.rpc_request]
+        ? ((device.deviceStatus[Protocol.rpc_request] as Record<number, unknown>)[RPC_Request_Segments.network_info] as NetworkInfo)
+        : undefined;
+      if (networkInfo?.ipAddress) {
         this.logger.debug(`Device ${device.duid} has network info IP: ${networkInfo.ipAddress}, setting up UDP listener`);
         const success = await this.setupLocalClient(device.duid, networkInfo.ipAddress);
         if (success) {
@@ -286,7 +285,7 @@ export class DeviceManagementService {
       this.logger.debug(`Device ${device.duid} IP not cached, fetching from device`);
       const networkInfo = await messageProcessor.getNetworkInfo(device.duid);
 
-      if (!networkInfo || !networkInfo.ip) {
+      if (!networkInfo?.ip) {
         this.logger.warn('Failed to get network info, using MQTT only for device:', device.duid);
         return false;
       }

@@ -14,7 +14,7 @@ export function getSupportedScenes(scenes: Scene[], log?: AnsiLogger): ServiceAr
   log?.debug('getSupportedScenes', debugStringify(scenes));
 
   if (!scenes || scenes.length === 0) {
-    log?.error('No scenes found');
+    log?.debug('No scenes found');
     return [];
   }
 

@@ -24,8 +24,8 @@ export enum Protocol {
   back_type = 139, // WTF is this
   map_response = 301,
   some_thing_happened_when_socket_closed = 500,
+  // TODO: Q10 series has 138, what is that?
 }
-// "deviceStatus":{"120":0,"121":8,"122":100,"123":110,"124":209,"125":99,"126":96,"127":97,"128":0,"133":1,"134":1,"135":0,"139":0}
 
 export enum RPC_Request_Segments {
   timezone = 79,

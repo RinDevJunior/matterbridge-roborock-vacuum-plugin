@@ -77,7 +77,7 @@ export async function getRoomMap(duid: string, platform: RoborockMatterbridgePla
 
   // Try to get map information first
   const mapInfo = await platform.roborockService.getMapInformation(robot.device.duid);
-  if (mapInfo && mapInfo.allRooms && mapInfo.allRooms.length > 0) {
+  if (mapInfo?.allRooms && mapInfo.allRooms.length > 0) {
     platform.log.info(`getRoomMap - mapInfo: ${debugStringify(mapInfo.allRooms)}`);
     robot.roomInfo = new RoomMap(mapInfo.allRooms, rooms, mapInfo.maps, enableMultipleMap);
     return robot.roomInfo;
@@ -114,7 +114,7 @@ export async function getRoomMapFromDevice(device: Device, platform: RoborockMat
   platform.log.debug(`getRoomMapFromDevice - mapInfo: ${mapInfo ? debugStringify(mapInfo) : 'undefined'}`);
   platform.log.debug(`getRoomMapFromDevice - rooms: ${debugStringify(rooms)}`);
 
-  if (mapInfo && mapInfo.allRooms && mapInfo.allRooms.length > 0) {
+  if (mapInfo?.allRooms && mapInfo.allRooms.length > 0) {
     return new RoomMap(mapInfo.allRooms, rooms, mapInfo.maps, enableMultipleMap);
   }
 

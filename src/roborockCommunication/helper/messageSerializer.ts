@@ -9,7 +9,7 @@ import { MessageBodyBuilderFactory } from './messageBodyBuilderFactory.js';
 
 interface SerializeResult {
   messageId: number;
-  buffer: Buffer<ArrayBufferLike>;
+  buffer: Buffer;
 }
 
 export class MessageSerializer {
@@ -32,10 +32,10 @@ export class MessageSerializer {
     return { messageId: messageId, buffer: buffer };
   }
 
-  private buildBuffer(duid: string, messageId: number, request: RequestMessage): Buffer<ArrayBufferLike> {
+  private buildBuffer(duid: string, messageId: number, request: RequestMessage): Buffer {
     const version = request.version ?? this.context.getProtocolVersion(duid);
     if (!version || !this.supportedVersions.includes(version)) {
-      throw new Error('[MessageSerializer] unknown protocol: ' + version);
+      throw new Error(`[MessageSerializer] unknown protocol: ${version ?? ''}`);
     }
     let encrypted;
     if (this.protocolsWithoutPayload.includes(request.protocol)) {
@@ -43,7 +43,7 @@ export class MessageSerializer {
     } else {
       const localKey = this.context.getLocalKey(duid);
       if (!localKey) {
-        throw new Error('no local key for device ' + duid);
+        throw new Error(`no local key for device ${duid}`);
       }
 
       const messageBodyBuilder = this.messageBodyBuilderFactory.getMessageBodyBuilder(version, request.body !== undefined);

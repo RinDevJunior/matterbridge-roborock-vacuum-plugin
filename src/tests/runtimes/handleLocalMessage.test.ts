@@ -31,7 +31,9 @@ const mockLog = {
   info: vi.fn(),
   warn: vi.fn(),
   /* eslint-disable no-console */
-  fatal: vi.fn().mockImplementation((message: string, ...arg: unknown[]) => console.info(message, ...arg)),
+  fatal: vi.fn().mockImplementation((message: string, ...arg: unknown[]) => {
+    console.info(message, ...arg);
+  }),
 };
 
 const getMockRobot = () => ({

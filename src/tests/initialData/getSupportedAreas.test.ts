@@ -31,7 +31,7 @@ describe('getSupportedAreas (legacy)', () => {
   test('enableMultipleMap returns supportedMaps', () => {
     const vacuumRooms = [{ id: 1, name: 'R1' } as any];
     const roomMap: any = { rooms: [{ id: 10, iot_name_id: '10', globalId: 10, tag: 0, mapId: 7, displayName: 'RoomX' }], mapInfo: [{ id: 7, name: 'Level 7' }] };
-    const res = getSupportedAreas(vacuumRooms as any, roomMap as any, true, { error: vi.fn(), debug: vi.fn() } as any);
+    const res = getSupportedAreas(vacuumRooms as any, roomMap, true, { error: vi.fn(), debug: vi.fn() } as any);
     expect(res.supportedMaps.length).toBeGreaterThanOrEqual(1);
     expect(res.roomIndexMap).toBeDefined();
   });

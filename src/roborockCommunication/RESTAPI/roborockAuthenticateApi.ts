@@ -105,17 +105,17 @@ export class RoborockAuthenticateApi {
     let countryCode = this.cachedCountryCode;
     if (!country || !countryCode) {
       if (this.baseUrl.includes('euiot')) {
-        country = country || 'Germany';
-        countryCode = countryCode || 'DE';
+        country ??= 'Germany';
+        countryCode ??= 'DE';
       } else if (this.baseUrl.includes('usiot')) {
-        country = country || 'United States';
-        countryCode = countryCode || 'US';
+        country ??= 'United States';
+        countryCode ??= 'US';
       } else if (this.baseUrl.includes('cniot')) {
-        country = country || 'China';
-        countryCode = countryCode || 'CN';
+        country ??= 'China';
+        countryCode ??= 'CN';
       } else if (this.baseUrl.includes('ruiot')) {
-        country = country || 'Russia';
-        countryCode = countryCode || 'RU';
+        country ??= 'Russia';
+        countryCode ??= 'RU';
       }
     }
 
@@ -187,7 +187,7 @@ export class RoborockAuthenticateApi {
 
     const apiResponse: AuthenticateResponse<BaseUrl> = response.data;
     if (!apiResponse.data) {
-      throw new Error('Failed to retrieve base URL: ' + apiResponse.msg);
+      throw new Error(`Failed to retrieve base URL: ${apiResponse.msg ?? ''}`);
     }
 
     this.cachedBaseUrl = apiResponse.data.url;
@@ -228,7 +228,7 @@ export class RoborockAuthenticateApi {
       (error) => {
         this.logger.debug('=== HTTP Error ===');
         this.logger.debug(`Error: ${JSON.stringify(error.response?.data ?? error.message)}`);
-        return Promise.reject(error);
+        return Promise.reject(error instanceof Error ? error : new Error(String(error)));
       },
     );
 
@@ -237,8 +237,8 @@ export class RoborockAuthenticateApi {
 
   private auth(username: string, response: AuthenticateResponse<UserData>): UserData {
     const userdata = response.data;
-    if (!userdata || !userdata.token) {
-      throw new Error('Authentication failed: ' + response.msg + ' code: ' + response.code);
+    if (!userdata?.token) {
+      throw new Error(`Authentication failed: ${response.msg ?? ''} code: ${response.code}`);
     }
 
     this.loginWithAuthToken(username, userdata.token);
@@ -257,8 +257,8 @@ export class RoborockAuthenticateApi {
     }
 
     const userdata = response.data;
-    if (!userdata || !userdata.token) {
-      throw new Error('Authentication failed: ' + response.msg + ' code: ' + response.code);
+    if (!userdata?.token) {
+      throw new Error(`Authentication failed: ${response.msg ?? ''} code: ${response.code}`);
     }
 
     this.loginWithAuthToken(email, userdata.token);
@@ -293,7 +293,7 @@ export class RoborockAuthenticateApi {
 
     const apiResponse: AuthenticateResponse<{ k: string }> = response.data;
     if (!apiResponse.data?.k) {
-      throw new Error('Failed to sign key: ' + apiResponse.msg);
+      throw new Error(`Failed to sign key: ${apiResponse.msg ?? ''}`);
     }
 
     return apiResponse.data.k;

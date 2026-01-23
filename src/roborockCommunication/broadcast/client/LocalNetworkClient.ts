@@ -180,7 +180,7 @@ export class LocalNetworkClient extends AbstractClient {
         offset += 4 + segmentLength;
       }
     } catch (error) {
-      this.logger.error('[LocalNetworkClient]: read socket buffer error: ' + error);
+      this.logger.error(`[LocalNetworkClient]: read socket buffer error: ${error instanceof Error ? (error.stack ?? error.message) : String(error)}`);
     }
   }
 
@@ -201,7 +201,7 @@ export class LocalNetworkClient extends AbstractClient {
     return totalLength <= buffer.length;
   }
 
-  private wrapWithLengthData(buffer: Buffer<ArrayBufferLike>): Buffer<ArrayBufferLike> {
+  private wrapWithLengthData(buffer: Buffer): Buffer {
     const lengthBuffer = Buffer.alloc(4);
     lengthBuffer.writeUInt32BE(buffer.length, 0);
     return Buffer.concat([lengthBuffer, buffer]);

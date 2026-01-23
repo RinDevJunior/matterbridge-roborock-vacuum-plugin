@@ -76,6 +76,7 @@ export default class RoborockService {
     loadSavedUserData: () => Promise<UserData | undefined>,
     savedUserData: (userData: UserData) => Promise<void>,
   ): Promise<UserData> {
+    // eslint-disable-next-line @typescript-eslint/no-deprecated
     const userdata = await this.authService.loginWithPassword(username, password, loadSavedUserData, savedUserData);
     this.container.setUserData(userdata);
     return userdata;
@@ -118,12 +119,14 @@ export default class RoborockService {
   public async initializeMessageClient(username: string, device: Device, userdata: UserData): Promise<void> {
     await this.deviceService.initializeMessageClient(username, device, userdata);
     this.messageClient = this.deviceService.messageClient;
+    this.areaService.setMessageClient(this.messageClient);
   }
 
   /** Initialize local network connection for a device. */
   public async initializeMessageClientForLocal(device: Device): Promise<boolean> {
     const result = await this.deviceService.initializeMessageClientForLocal(device);
     this.messageClient = this.deviceService.messageClient;
+    this.areaService.setMessageClient(this.messageClient);
     return result;
   }
 
@@ -194,22 +197,12 @@ export default class RoborockService {
 
   /** Get map information for a device. */
   public async getMapInformation(duid: string): Promise<MapInfo | undefined> {
-    // Set message client if not already set
-    if (!this.messageClient) {
-      throw new Error('Message client not initialized. Please initialize before fetching map information.');
-    }
-    this.areaService.setMessageClient(this.messageClient);
     return this.areaService.getMapInformation(duid);
   }
 
   /** Get room mappings for a device. */
   public async getRoomMappings(duid: string): Promise<number[][] | undefined> {
-    // Set message client if not already set
-    if (this.messageClient) {
-      this.areaService.setMessageClient(this.messageClient);
-    }
-    const mqttOnly = this.messageService.getMqttAlwaysOn(duid);
-    return this.areaService.getRoomMappings(duid, mqttOnly);
+    return this.areaService.getRoomMappings(duid);
   }
 
   /** Get all scenes for a home. */

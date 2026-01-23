@@ -61,7 +61,7 @@ export async function handleLocalMessage(data: CloudMessageResult, platform: Rob
   }
 
   if (data.battery) {
-    const batteryLevel = data.battery as number;
+    const batteryLevel = data.battery;
     robot.updateAttribute(PowerSource.Cluster.id, 'batPercentRemaining', batteryLevel * 2, platform.log);
     robot.updateAttribute(PowerSource.Cluster.id, 'batChargeState', getBatteryState(data.state, data.battery), platform.log);
     robot.updateAttribute(PowerSource.Cluster.id, 'batChargeLevel', getBatteryStatus(batteryLevel), platform.log);

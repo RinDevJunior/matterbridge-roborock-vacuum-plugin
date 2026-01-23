@@ -19,7 +19,7 @@ describe('RoborockService basic behaviors', () => {
       undefined, // uses default IoT factory
       1000,
       clientManager,
-      logger as any,
+      logger,
     );
   });
 
@@ -178,7 +178,9 @@ describe('RoborockService - Facade Pattern Testing', () => {
 
     it('should coordinate service lifecycle', () => {
       // Act - Test lifecycle method exists and is callable
-      expect(() => roborockService.stopService()).not.toThrow();
+      expect(() => {
+        roborockService.stopService();
+      }).not.toThrow();
     });
   });
 
@@ -194,13 +196,19 @@ describe('RoborockService - Facade Pattern Testing', () => {
       // without making assumptions about internal implementation
 
       // Test methods that should handle invalid inputs gracefully
-      expect(() => roborockService.setSelectedAreas('device', [])).not.toThrow();
-      expect(() => roborockService.setSupportedAreas('device', [])).not.toThrow();
+      expect(() => {
+        roborockService.setSelectedAreas('device', []);
+      }).not.toThrow();
+      expect(() => {
+        roborockService.setSupportedAreas('device', []);
+      }).not.toThrow();
 
       // Create a valid RoomIndexMap with mock data
       const mockRoomMap = new Map();
       mockRoomMap.set(1, { roomId: 10, mapId: 1 } as any);
-      expect(() => roborockService.setSupportedAreaIndexMap('device', new RoomIndexMap(mockRoomMap))).not.toThrow();
+      expect(() => {
+        roborockService.setSupportedAreaIndexMap('device', new RoomIndexMap(mockRoomMap));
+      }).not.toThrow();
     });
   });
 
@@ -226,8 +234,12 @@ describe('RoborockService - Facade Pattern Testing', () => {
       const mockDevice = { duid: 'test-device', name: 'Test Vacuum' };
 
       // Act & Assert - Test workflow coordination
-      expect(() => roborockService.setDeviceNotify(vi.fn())).not.toThrow();
-      expect(() => roborockService.activateDeviceNotify(mockDevice as any)).not.toThrow();
+      expect(() => {
+        roborockService.setDeviceNotify(vi.fn());
+      }).not.toThrow();
+      expect(() => {
+        roborockService.activateDeviceNotify(mockDevice as any);
+      }).not.toThrow();
     });
 
     it('should coordinate area management workflow', () => {
@@ -236,7 +248,9 @@ describe('RoborockService - Facade Pattern Testing', () => {
       const areas = [1, 2, 3];
 
       // Act & Assert - Test area workflow coordination
-      expect(() => roborockService.setSelectedAreas(duid, areas)).not.toThrow();
+      expect(() => {
+        roborockService.setSelectedAreas(duid, areas);
+      }).not.toThrow();
       expect(() => roborockService.getSelectedAreas(duid)).not.toThrow();
     });
   });

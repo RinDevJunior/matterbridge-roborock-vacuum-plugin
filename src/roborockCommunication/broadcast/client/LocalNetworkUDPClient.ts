@@ -99,7 +99,7 @@ export class LocalNetworkUDPClient {
     }
   }
 
-  private async deserializeV10Message(buffer: Buffer<ArrayBufferLike>): Promise<string> {
+  private async deserializeV10Message(buffer: Buffer): Promise<string> {
     const data = this.V10Parser.parse(buffer);
 
     const crc32 = CRC32.buf(buffer.subarray(0, buffer.length - 4)) >>> 0;
@@ -118,7 +118,7 @@ export class LocalNetworkUDPClient {
     return decrypted.slice(0, -paddingLength);
   }
 
-  private async deserializeL01Message(buffer: Buffer<ArrayBufferLike>): Promise<string> {
+  private async deserializeL01Message(buffer: Buffer): Promise<string> {
     const data = this.L01Parser.parse(buffer);
     const crc32 = CRC32.buf(buffer.subarray(0, buffer.length - 4)) >>> 0;
     const expectedCrc32 = data.crc32;

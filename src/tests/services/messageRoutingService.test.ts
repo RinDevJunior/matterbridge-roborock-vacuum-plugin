@@ -70,7 +70,9 @@ describe('MessageRoutingService', () => {
 
     it('should set iotApi after initialization', () => {
       messageService.setIotApi(mockIotApi as RoborockIoTApi);
-      expect(() => messageService.setIotApi(mockIotApi)).not.toThrow();
+      expect(() => {
+        messageService.setIotApi(mockIotApi);
+      }).not.toThrow();
     });
   });
 
@@ -109,18 +111,24 @@ describe('MessageRoutingService', () => {
     it('should set MQTT always-on status to true', () => {
       messageService.setMqttAlwaysOn(testDuid, true);
       // Verify no error thrown and service handles it correctly
-      expect(() => messageService.setMqttAlwaysOn(testDuid, true)).not.toThrow();
+      expect(() => {
+        messageService.setMqttAlwaysOn(testDuid, true);
+      }).not.toThrow();
     });
 
     it('should set MQTT always-on status to false', () => {
       messageService.setMqttAlwaysOn(testDuid, false);
-      expect(() => messageService.setMqttAlwaysOn(testDuid, false)).not.toThrow();
+      expect(() => {
+        messageService.setMqttAlwaysOn(testDuid, false);
+      }).not.toThrow();
     });
 
     it('should update existing MQTT status', () => {
       messageService.setMqttAlwaysOn(testDuid, true);
       messageService.setMqttAlwaysOn(testDuid, false);
-      expect(() => messageService.setMqttAlwaysOn(testDuid, false)).not.toThrow();
+      expect(() => {
+        messageService.setMqttAlwaysOn(testDuid, false);
+      }).not.toThrow();
     });
   });
 
@@ -460,12 +468,16 @@ describe('MessageRoutingService', () => {
       messageService.clearAll();
       messageService.clearAll();
 
-      expect(() => messageService.clearAll()).not.toThrow();
+      expect(() => {
+        messageService.clearAll();
+      }).not.toThrow();
     });
 
     it('should clear empty service without errors', () => {
       const newService = new MessageRoutingService(mockLogger);
-      expect(() => newService.clearAll()).not.toThrow();
+      expect(() => {
+        newService.clearAll();
+      }).not.toThrow();
     });
   });
 

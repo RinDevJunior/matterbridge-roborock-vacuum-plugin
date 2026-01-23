@@ -40,4 +40,5 @@ export enum OperationStatusCode {
   ZoneCleanMopCleaning = 6308,
   ZoneCleanMopMopping = 6309,
   BackToDockWashingDuster = 6310,
+  // TODO: Q10 series has 104, what is that?
 }

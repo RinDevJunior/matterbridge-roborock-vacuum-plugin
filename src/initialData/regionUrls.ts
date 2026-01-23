@@ -12,5 +12,5 @@ export const REGION_URLS: Record<string, string> = {
  */
 export function getBaseUrl(region?: string): string {
   const r = region?.toUpperCase() ?? 'US';
-  return REGION_URLS[r] ?? REGION_URLS['US'];
+  return REGION_URLS[r] ?? REGION_URLS.US;
 }

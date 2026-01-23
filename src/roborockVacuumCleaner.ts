@@ -58,6 +58,19 @@ export class RoborockVacuumCleaner extends RoboticVacuumCleaner {
       deviceConfig.supportedMaps,
     );
 
+    log.debug(
+      `Creating RoborockVacuumCleaner for device: ${deviceConfig.deviceName}, 
+      model: ${device.data.model}, 
+      forceRunAtDefault: ${enableExperimentalFeature?.advancedFeature?.forceRunAtDefault}
+      bridgeMode: ${deviceConfig.bridgeMode},
+      Supported Clean Modes: ${debugStringify(deviceConfig.cleanModes)},
+      Supported Run Modes: ${debugStringify(deviceConfig.supportedRunModes)},
+      Supported Areas: ${debugStringify(deviceConfig.supportedAreas)},
+      Supported Maps: ${debugStringify(deviceConfig.supportedMaps)}
+      Supported Areas and Routines: ${debugStringify(deviceConfig.supportedAreaAndRoutines)},
+      Supported Operational States: ${debugStringify(deviceConfig.operationalState)}`,
+    );
+
     this.username = username;
     this.device = device;
   }
@@ -126,28 +139,16 @@ export class RoborockVacuumCleaner extends RoboticVacuumCleaner {
     const deviceName = `${device.name}-${device.duid}`.replace(/\s+/g, '');
 
     const bridgeMode: 'server' | 'matter' | undefined =
-      enableExperimentalFeature?.enableExperimentalFeature && enableExperimentalFeature?.advancedFeature?.enableServerMode ? 'server' : undefined;
-
-    log.debug(
-      `Creating RoborockVacuumCleaner for device: ${deviceName}, 
-      model: ${device.data.model}, 
-      forceRunAtDefault: ${enableExperimentalFeature?.advancedFeature?.forceRunAtDefault}
-      bridgeMode: ${bridgeMode},
-      Supported Clean Modes: ${debugStringify(cleanModes)},
-      Supported Run Modes: ${debugStringify(supportedRunModes)},
-      Supported Areas: ${debugStringify(supportedAreas)},
-      Supported Maps: ${debugStringify(supportedMaps)}
-      Supported Operational States: ${debugStringify(operationalState)}`,
-    );
+      enableExperimentalFeature?.enableExperimentalFeature && enableExperimentalFeature?.advancedFeature?.enableServerMode ? 'server' : 'matter';
 
     return {
+      deviceName,
+      bridgeMode,
       cleanModes,
       supportedRunModes,
       supportedAreas,
       supportedMaps,
       supportedAreaAndRoutines,
-      deviceName,
-      bridgeMode,
       operationalState,
     };
   }
@@ -159,7 +160,7 @@ export class RoborockVacuumCleaner extends RoboticVacuumCleaner {
    * @param handler - Async handler function
    * @private
    */
-  private addCommandHandlerWithErrorHandling<K extends keyof MatterbridgeEndpointCommands>(commandName: K, handler: (context: CommandHandlerData) => Promise<void>): void {
+  private addCommandHandlerWithErrorHandling(commandName: keyof MatterbridgeEndpointCommands, handler: (context: CommandHandlerData) => Promise<void>): void {
     this.addCommandHandler(commandName, async (context: CommandHandlerData) => {
       try {
         await handler(context);

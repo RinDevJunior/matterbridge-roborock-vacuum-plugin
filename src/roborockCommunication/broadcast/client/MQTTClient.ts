@@ -21,8 +21,8 @@ export class MQTTClient extends AbstractClient {
     super(logger, context, syncMessageListener);
     this.rriot = userdata.rriot;
 
-    this.mqttUsername = CryptoUtils.md5hex(userdata.rriot.u + ':' + userdata.rriot.k).substring(2, 10);
-    this.mqttPassword = CryptoUtils.md5hex(userdata.rriot.s + ':' + userdata.rriot.k).substring(16);
+    this.mqttUsername = CryptoUtils.md5hex(`${String(userdata.rriot.u)}:${String(userdata.rriot.k)}`).substring(2, 10);
+    this.mqttPassword = CryptoUtils.md5hex(`${String(userdata.rriot.s)}:${String(userdata.rriot.k)}`).substring(16);
 
     this.initializeConnectionStateListener();
   }
@@ -73,7 +73,7 @@ export class MQTTClient extends AbstractClient {
       this.mqttClient = undefined;
       this.connected = false;
     } catch (error) {
-      this.logger.error('[MQTTClient] client failed to disconnect with error: ' + error);
+      this.logger.error(`[MQTTClient] client failed to disconnect with error: ${error instanceof Error ? (error.stack ?? error.message) : String(error)}`);
     }
   }
 
@@ -111,7 +111,7 @@ export class MQTTClient extends AbstractClient {
     }
 
     this.connected = true;
-    await this.connectionListeners.onConnected('mqtt-' + this.mqttUsername);
+    await this.connectionListeners.onConnected(`mqtt-${this.mqttUsername}`);
     this.subscribeToQueue();
   }
 
@@ -121,34 +121,34 @@ export class MQTTClient extends AbstractClient {
       return;
     }
 
-    this.mqttClient.subscribe('rr/m/o/' + this.rriot.u + '/' + this.mqttUsername + '/#', this.onSubscribe.bind(this));
+    this.mqttClient.subscribe(`rr/m/o/${this.rriot.u}/${this.mqttUsername}/#`, this.onSubscribe.bind(this));
   }
 
   private async onSubscribe(err: Error | null, subscription: ISubscriptionGrant[] | undefined): Promise<void> {
     if (!err) {
-      this.logger.info('onSubscribe: ' + JSON.stringify(subscription));
+      this.logger.info(`onSubscribe: ${JSON.stringify(subscription)}`);
       return;
     }
 
-    this.logger.error('failed to subscribe: ' + err);
+    this.logger.error(`failed to subscribe: ${String(err)}`);
     this.connected = false;
 
-    await this.connectionListeners.onDisconnected('mqtt-' + this.mqttUsername, 'Failed to subscribe to the queue: ' + err.toString());
+    await this.connectionListeners.onDisconnected(`mqtt-${this.mqttUsername}`, `Failed to subscribe to the queue: ${String(err)}`);
   }
 
   private async onDisconnect(): Promise<void> {
     this.connected = false;
-    await this.connectionListeners.onDisconnected('mqtt-' + this.mqttUsername, 'Disconnected from MQTT broker');
+    await this.connectionListeners.onDisconnected(`mqtt-${this.mqttUsername}`, 'Disconnected from MQTT broker');
   }
 
   private async onError(result: Error | ErrorWithReasonCode): Promise<void> {
-    this.logger.error('MQTT connection error: ' + result);
-    await this.connectionListeners.onError('mqtt-' + this.mqttUsername, result.toString());
+    this.logger.error(`MQTT connection error: ${debugStringify(result)}`);
+    await this.connectionListeners.onError(`mqtt-${this.mqttUsername}`, debugStringify(result));
   }
 
   private async onClose(): Promise<void> {
     if (this.connected) {
-      await this.connectionListeners.onDisconnected('mqtt-' + this.mqttUsername, 'MQTT connection closed');
+      await this.connectionListeners.onDisconnected(`mqtt-${this.mqttUsername}`, 'MQTT connection closed');
     }
 
     this.connected = false;
@@ -164,10 +164,10 @@ export class MQTTClient extends AbstractClient {
     this.connectionListeners.onReconnect('mqtt-' + this.mqttUsername, 'Reconnected to MQTT broker');
   }
 
-  private async onMessage(topic: string, message: Buffer<ArrayBufferLike>): Promise<void> {
+  private async onMessage(topic: string, message: Buffer): Promise<void> {
     if (!message) {
       // Ignore empty messages
-      this.logger.notice('[MQTTClient] received empty message from topic: ' + topic);
+      this.logger.notice(`[MQTTClient] received empty message from topic: ${topic}`);
       return;
     }
 

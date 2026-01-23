@@ -1,5 +1,5 @@
 export interface ContentMessage {
   payloadLen?: number;
-  payload: Buffer<ArrayBufferLike>;
+  payload: Buffer;
   crc32: number;
 }

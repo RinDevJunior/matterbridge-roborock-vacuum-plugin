@@ -66,6 +66,8 @@ describe('RoborockService - activateDeviceNotify', () => {
     const device: Device = { duid: 'test-duid' } as Device;
 
     // Test that method exists and doesn't throw with basic call
-    expect(() => roborockService.activateDeviceNotify(device)).not.toThrow();
+    expect(() => {
+      roborockService.activateDeviceNotify(device);
+    }).not.toThrow();
   });
 });

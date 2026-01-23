@@ -56,13 +56,20 @@ export abstract class AbstractClient implements Client {
       const pv = this.context.getProtocolVersion(duid);
       request.version = request.version ?? pv;
       if (request.method && !this.noResponseNeededMethods.includes(request.method)) {
-        this.syncMessageListener.waitFor(request.messageId, request, (response: ResponseMessage) => resolve(response as unknown as T), reject);
+        this.syncMessageListener.waitFor(
+          request.messageId,
+          request,
+          (response: ResponseMessage) => {
+            resolve(response as unknown as T);
+          },
+          reject,
+        );
       }
       this.sendInternal(duid, request);
     })
       .then((result: T) => result)
-      .catch((error: Error) => {
-        this.logger.error(error.message);
+      .catch((error: unknown) => {
+        this.logger.error(error instanceof Error ? error.message : String(error));
         return undefined;
       });
   }
@@ -90,15 +97,22 @@ export abstract class AbstractClient implements Client {
       const pv = this.context.getProtocolVersion(duid);
       request.version = request.version ?? pv;
       if (request.method && !this.noResponseNeededMethods.includes(request.method)) {
-        this.syncMessageListener.waitFor(request.messageId, request, (response: ResponseMessage) => resolve(response as unknown as T), reject);
+        this.syncMessageListener.waitFor(
+          request.messageId,
+          request,
+          (response: ResponseMessage) => {
+            resolve(response as unknown as T);
+          },
+          reject,
+        );
       }
       this.sendInternal(duid, request);
     })
       .then((result: T) => {
         return result;
       })
-      .catch((error: Error) => {
-        this.logger.error(error.message);
+      .catch((error: unknown) => {
+        this.logger.error(error instanceof Error ? error.message : String(error));
         return undefined;
       });
   }

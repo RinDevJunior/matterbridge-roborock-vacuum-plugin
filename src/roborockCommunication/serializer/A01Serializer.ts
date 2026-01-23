@@ -10,15 +10,7 @@ export class A01Serializer implements Serializer {
     return Buffer.concat([cipher.update(payload), cipher.final()]);
   }
 
-  public decode(
-    payload: Buffer<ArrayBufferLike>,
-    localKey: string,
-    timestamp: number,
-    sequence: number,
-    nonce: number,
-    connectNonce?: number,
-    ackNonce?: number,
-  ): Buffer<ArrayBuffer> {
+  public decode(payload: Buffer, localKey: string, timestamp: number, sequence: number, nonce: number, connectNonce?: number, ackNonce?: number): Buffer<ArrayBuffer> {
     const iv = CryptoUtils.md5hex(nonce.toString(16).padStart(8, '0') + '726f626f726f636b2d67a6d6da').substring(8, 24);
     const decipher = crypto.createDecipheriv('aes-128-cbc', localKey, iv);
     return Buffer.concat([decipher.update(payload), decipher.final()]);

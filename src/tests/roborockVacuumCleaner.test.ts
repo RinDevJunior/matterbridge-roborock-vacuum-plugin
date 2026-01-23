@@ -131,6 +131,6 @@ describe('RoborockVacuumCleaner', () => {
     expect(result.supportedMaps).toBeDefined();
     expect(result.supportedAreaAndRoutines).toBeDefined();
     expect(result.deviceName).toContain(device.name);
-    expect(result.bridgeMode).toBeUndefined();
+    expect(result.bridgeMode).toBe('matter');
   });
 });

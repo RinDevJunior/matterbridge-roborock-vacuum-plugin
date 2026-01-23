@@ -23,17 +23,17 @@ export class MessageRoutingService {
   ) {}
 
   /** Set IoT API instance. */
-  setIotApi(iotApi: RoborockIoTApi): void {
+  public setIotApi(iotApi: RoborockIoTApi): void {
     this.iotApi = iotApi;
   }
 
   /** Register message processor for a device. */
-  registerMessageProcessor(duid: string, messageProcessor: MessageProcessor): void {
+  public registerMessageProcessor(duid: string, messageProcessor: MessageProcessor): void {
     this.messageProcessorMap.set(duid, messageProcessor);
   }
 
   /** Get message processor for a device. Throws if not initialized. */
-  getMessageProcessor(duid: string): MessageProcessor {
+  public getMessageProcessor(duid: string): MessageProcessor {
     const messageProcessor = this.messageProcessorMap.get(duid);
     if (!messageProcessor) {
       throw new DeviceError(`MessageProcessor not initialized for device ${duid}`, duid);
@@ -42,11 +42,11 @@ export class MessageRoutingService {
   }
 
   /** Mark device as MQTT-only (no local network). */
-  setMqttAlwaysOn(duid: string, mqttOnly: boolean): void {
+  public setMqttAlwaysOn(duid: string, mqttOnly: boolean): void {
     this.mqttAlwaysOnDevices.set(duid, mqttOnly);
   }
 
-  getMqttAlwaysOn(duid: string): boolean {
+  public getMqttAlwaysOn(duid: string): boolean {
     return this.mqttAlwaysOnDevices.get(duid) ?? false;
   }
 
@@ -56,7 +56,7 @@ export class MessageRoutingService {
   }
 
   /** Get current cleaning mode settings. */
-  async getCleanModeData(duid: string): Promise<CleanModeSetting> {
+  public async getCleanModeData(duid: string): Promise<CleanModeSetting> {
     this.logger.notice('MessageRoutingService - getCleanModeData');
     const data = await this.getMessageProcessor(duid).getCleanModeData(duid);
     if (!data) {
@@ -66,19 +66,19 @@ export class MessageRoutingService {
   }
 
   /** Get vacuum's current room from map. */
-  async getRoomIdFromMap(duid: string): Promise<number | undefined> {
+  public async getRoomIdFromMap(duid: string): Promise<number | undefined> {
     const data = await this.customGet<MapRoomResponse>(duid, new RequestMessage({ method: 'get_map_v1', secure: true }));
     return data?.vacuumRoom;
   }
 
   /** Change cleaning mode settings. */
-  async changeCleanMode(duid: string, { suctionPower, waterFlow, distance_off, mopRoute }: CleanModeSetting): Promise<void> {
+  public async changeCleanMode(duid: string, { suctionPower, waterFlow, distance_off, mopRoute }: CleanModeSetting): Promise<void> {
     this.logger.notice('MessageRoutingService - changeCleanMode');
     return this.getMessageProcessor(duid).changeCleanMode(duid, suctionPower, waterFlow, mopRoute ?? 0, distance_off);
   }
 
   /** Start cleaning (global, room-specific, or routine). */
-  async startClean(duid: string, selectedAreas: number[], supportedRooms: ServiceArea.Area[], supportedRoutines: ServiceArea.Area[]): Promise<void> {
+  public async startClean(duid: string, selectedAreas: number[], supportedRooms: ServiceArea.Area[], supportedRoutines: ServiceArea.Area[]): Promise<void> {
     let selected = selectedAreas;
 
     this.logger.debug('MessageRoutingService - begin cleaning', debugStringify({ duid, supportedRooms, supportedRoutines, selected }));
@@ -149,64 +149,48 @@ export class MessageRoutingService {
 
   /**
    * Pause the current cleaning operation.
-   * @param duid - Device unique identifier
    */
-  async pauseClean(duid: string): Promise<void> {
+  public async pauseClean(duid: string): Promise<void> {
     this.logger.debug('MessageRoutingService - pauseClean');
     await this.getMessageProcessor(duid).pauseClean(duid);
   }
 
   /**
    * Stop cleaning and return to the charging dock.
-   * @param duid - Device unique identifier
    */
-  async stopAndGoHome(duid: string): Promise<void> {
+  public async stopAndGoHome(duid: string): Promise<void> {
     this.logger.debug('MessageRoutingService - stopAndGoHome');
     await this.getMessageProcessor(duid).gotoDock(duid);
   }
 
   /**
    * Resume a paused cleaning operation.
-   * @param duid - Device unique identifier
    */
-  async resumeClean(duid: string): Promise<void> {
+  public async resumeClean(duid: string): Promise<void> {
     this.logger.debug('MessageRoutingService - resumeClean');
     await this.getMessageProcessor(duid).resumeClean(duid);
   }
 
   /**
    * Play a sound to help locate the vacuum.
-   * @param duid - Device unique identifier
    */
-  async playSoundToLocate(duid: string): Promise<void> {
+  public async playSoundToLocate(duid: string): Promise<void> {
     this.logger.debug('MessageRoutingService - findMe');
     await this.getMessageProcessor(duid).findMyRobot(duid);
   }
 
   /**
    * Execute a custom GET request to the device.
-   * @param duid - Device unique identifier
-   * @param request - The request message
-   * @returns Response data typed as T (defaults to unknown for flexibility)
-   *
-   * @example
-   * // With explicit type
-   * const mapData = await customGet<MapRoomResponse>(duid, request);
-   *
-   * // Type inferred as unknown
-   * const result = await customGet(duid, request);
    */
-  async customGet<T = unknown>(duid: string, request: RequestMessage): Promise<T> {
+  public async customGet<T = unknown>(duid: string, request: RequestMessage): Promise<T> {
     this.logger.debug('MessageRoutingService - customSend-message', request.method, request.params, request.secure);
-    return this.getMessageProcessor(duid).getCustomMessage(duid, request) as Promise<T>;
+    return this.getMessageProcessor(duid).getCustomMessage(duid, request);
   }
 
   /**
    * Send a custom command to the device without expecting a response.
-   * @param duid - Device unique identifier
-   * @param request - The request message to send
    */
-  async customSend(duid: string, request: RequestMessage): Promise<void> {
+  public async customSend(duid: string, request: RequestMessage): Promise<void> {
     return this.getMessageProcessor(duid).sendCustomMessage(duid, request);
   }
 
@@ -214,7 +198,7 @@ export class MessageRoutingService {
    * Clear all message routing data.
    * Used during service shutdown or reset.
    */
-  clearAll(): void {
+  public clearAll(): void {
     this.messageProcessorMap.clear();
     this.mqttAlwaysOnDevices.clear();
     this.logger.debug('MessageRoutingService - All data cleared');

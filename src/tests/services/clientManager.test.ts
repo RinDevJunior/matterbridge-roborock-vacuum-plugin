@@ -103,7 +103,9 @@ describe('ClientManager', () => {
       expect(() => clientManager.get('  ', mockUserData)).toThrow('Username cannot be empty');
 
       // Test destroy non-existent user
-      expect(() => clientManager.destroy('non-existent')).not.toThrow();
+      expect(() => {
+        clientManager.destroy('non-existent');
+      }).not.toThrow();
     });
   });
 });

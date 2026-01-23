@@ -81,7 +81,7 @@ describe('RoborockIoTApi', () => {
 
   it('should initialize logger and api', () => {
     expect(api.logger).toBe(mockLogger);
-    expect(api['api']).toBeDefined();
+    expect(api.api).toBeDefined();
   });
 
   it('getHome should return home if result exists', async () => {
@@ -153,7 +153,7 @@ describe('RoborockIoTApi', () => {
   });
 
   it('should create axios instance with timeout, redirects and httpsAgent', () => {
-    const instance = api['api'];
+    const instance = api.api;
     expect(instance).toBeDefined();
     expect(instance.defaults).toMatchObject({ baseURL: 'http://base.url', timeout: 10000, maxRedirects: 5 });
     expect(instance.defaults.httpsAgent).toBeDefined();

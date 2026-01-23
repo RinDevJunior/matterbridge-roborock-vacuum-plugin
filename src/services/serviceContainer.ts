@@ -71,33 +71,27 @@ export class ServiceContainer {
 
   /** Get or create AuthenticationService singleton. */
   getAuthenticationService(): AuthenticationService {
-    if (!this.authenticationService) {
-      this.authenticationService = new AuthenticationService(this.loginApi, this.logger);
-    }
+    this.authenticationService ??= new AuthenticationService(this.loginApi, this.logger);
     return this.authenticationService;
   }
 
   /** Get or create PollingService singleton. */
   getPollingService(): PollingService {
-    if (!this.pollingService) {
-      this.pollingService = new PollingService(this.config.refreshInterval, this.logger, this.getMessageRoutingService());
-    }
+    this.pollingService ??= new PollingService(this.config.refreshInterval, this.logger, this.getMessageRoutingService());
     return this.pollingService;
   }
 
   /** Get or create DeviceManagementService singleton. Requires setUserData() after login. */
   getDeviceManagementService(): DeviceManagementService {
-    if (!this.deviceManagementService) {
-      this.deviceManagementService = new DeviceManagementService(
-        this.iotApiFactory,
-        this.clientManager,
-        this.logger,
-        this.loginApi,
-        this.getMessageRoutingService(),
-        this.iotApi,
-        this.userdata,
-      );
-    }
+    this.deviceManagementService ??= new DeviceManagementService(
+      this.iotApiFactory,
+      this.clientManager,
+      this.logger,
+      this.loginApi,
+      this.getMessageRoutingService(),
+      this.iotApi,
+      this.userdata,
+    );
     return this.deviceManagementService;
   }
 
@@ -109,9 +103,7 @@ export class ServiceContainer {
    * @returns AreaManagementService instance
    */
   getAreaManagementService(): AreaManagementService {
-    if (!this.areaManagementService) {
-      this.areaManagementService = new AreaManagementService(this.logger, this.iotApi);
-    }
+    this.areaManagementService ??= new AreaManagementService(this.logger, this.getMessageRoutingService());
     return this.areaManagementService;
   }
 
@@ -123,9 +115,7 @@ export class ServiceContainer {
    * @returns MessageRoutingService instance
    */
   getMessageRoutingService(): MessageRoutingService {
-    if (!this.messageRoutingService) {
-      this.messageRoutingService = new MessageRoutingService(this.logger, this.iotApi);
-    }
+    this.messageRoutingService ??= new MessageRoutingService(this.logger, this.iotApi);
     return this.messageRoutingService;
   }
 

@@ -147,7 +147,9 @@ describe('LocalNetworkUDPClient', () => {
       client.registerListener(mockListener);
 
       // Verify by triggering a message and checking if listener is called
-      expect(() => client.registerListener(mockListener)).not.toThrow();
+      expect(() => {
+        client.registerListener(mockListener);
+      }).not.toThrow();
     });
 
     it('should register multiple listeners', () => {
@@ -161,7 +163,9 @@ describe('LocalNetworkUDPClient', () => {
       client.registerListener(mockListener1);
       client.registerListener(mockListener2);
 
-      expect(() => client.registerListener(mockListener1)).not.toThrow();
+      expect(() => {
+        client.registerListener(mockListener1);
+      }).not.toThrow();
     });
   });
 
@@ -304,8 +308,8 @@ describe('LocalNetworkUDPClient', () => {
       mockSocket.emit = (event: string, ...args: unknown[]) => {
         if (event === 'message') {
           // Wrap the call to catch async errors
-          client['onMessage'](args[0] as Buffer).catch((e) => {
-            caughtError = e;
+          client.onMessage(args[0] as Buffer).catch((e: unknown) => {
+            caughtError = e instanceof Error ? e : new Error(String(e));
           });
           return true;
         }

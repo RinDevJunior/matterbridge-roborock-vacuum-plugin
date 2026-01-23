@@ -21,6 +21,7 @@ import Path from 'node:path';
 import { Room } from './roborockCommunication/Zmodel/room.js';
 import { getBaseUrl } from './initialData/regionUrls.js';
 import { UINT16_MAX, UINT32_MAX } from 'matterbridge/matter';
+import type { MessagePayload } from './types/MessagePayloads.js';
 import { VERIFICATION_CODE_RATE_LIMIT_MS, DEFAULT_REFRESH_INTERVAL_SECONDS, REFRESH_INTERVAL_BUFFER_MS, UNREGISTER_DEVICES_DELAY_MS } from './constants/index.js';
 
 export type RoborockPluginPlatformConfig = PlatformConfig & {
@@ -70,9 +71,9 @@ export class RoborockMatterbridgePlatform extends MatterbridgeDynamicPlatform {
       );
     }
     this.log.info('Initializing platform:', this.config.name);
-    if (config.whiteList === undefined) config.whiteList = [];
-    if (config.blackList === undefined) config.blackList = [];
-    if (config.enableExperimental === undefined) config.enableExperimental = createDefaultExperimentalFeatureSetting();
+    config.whiteList ??= [];
+    config.blackList ??= [];
+    config.enableExperimental ??= createDefaultExperimentalFeatureSetting();
 
     // Create storage for this plugin (initialised in onStart)
     const persistDir = Path.join(this.matterbridge.matterbridgePluginDirectory, PLUGIN_NAME, 'persist');
@@ -125,7 +126,7 @@ export class RoborockMatterbridgePlatform extends MatterbridgeDynamicPlatform {
           this.log.error(`requestHomeData (interval) failed: ${error instanceof Error ? error.message : String(error)}`);
         }
       },
-      ((this.config.refreshInterval as number) ?? DEFAULT_REFRESH_INTERVAL_SECONDS) * 1000 + REFRESH_INTERVAL_BUFFER_MS,
+      (this.config.refreshInterval ?? DEFAULT_REFRESH_INTERVAL_SECONDS) * 1000 + REFRESH_INTERVAL_BUFFER_MS,
     );
   }
 
@@ -141,7 +142,7 @@ export class RoborockMatterbridgePlatform extends MatterbridgeDynamicPlatform {
       this.roborockService.stopService();
       this.roborockService = undefined;
     }
-    if (this.config.unregisterOnShutdown === true) await this.unregisterAllDevices(UNREGISTER_DEVICES_DELAY_MS);
+    if (this.config.unregisterOnShutdown) await this.unregisterAllDevices(UNREGISTER_DEVICES_DELAY_MS);
     this.isStartPluginCompleted = false;
   }
 
@@ -245,7 +246,7 @@ export class RoborockMatterbridgePlatform extends MatterbridgeDynamicPlatform {
     const authenticationPayload = this.config.authentication;
     const password = authenticationPayload.password ?? '';
     const verificationCode = authenticationPayload.verificationCode ?? '';
-    const authenticationMethod = authenticationPayload.authenticationMethod as 'VerificationCode' | 'Password';
+    const authenticationMethod = authenticationPayload.authenticationMethod;
 
     this.log.debug(
       `Authentication method: ${authenticationMethod},
@@ -303,7 +304,9 @@ export class RoborockMatterbridgePlatform extends MatterbridgeDynamicPlatform {
     }
 
     this.roborockService.setDeviceNotify(async (messageSource: NotifyMessageTypes, homeData: unknown) => {
-      await this.platformRunner?.updateRobot(messageSource, homeData);
+      const duid = (homeData as { duid?: string })?.duid ?? '';
+      const payload = { type: messageSource, data: homeData, duid };
+      await this.platformRunner?.updateRobotWithPayload(payload as unknown as MessagePayload);
     });
 
     for (const [duid, robot] of this.robots.entries()) {
@@ -391,6 +394,7 @@ export class RoborockMatterbridgePlatform extends MatterbridgeDynamicPlatform {
 
     this.log.notice('Attempting login with password...');
 
+    // eslint-disable-next-line @typescript-eslint/no-deprecated
     const userData = await this.roborockService.loginWithPassword(
       username,
       password,
@@ -523,10 +527,10 @@ export class RoborockMatterbridgePlatform extends MatterbridgeDynamicPlatform {
       device.hardwareVersionString = isValidString(device.hardwareVersionString) ? device.hardwareVersionString.slice(0, 64) : undefined;
       const options = device.getClusterServerOptions(BridgedDeviceBasicInformation.Cluster.id);
       if (options) {
-        options.softwareVersion = device.softwareVersion || 1;
-        options.softwareVersionString = device.softwareVersionString || '1.0.0';
-        options.hardwareVersion = device.hardwareVersion || 1;
-        options.hardwareVersionString = device.hardwareVersionString || '1.0.0';
+        options.softwareVersion = device.softwareVersion ?? 1;
+        options.softwareVersionString = device.softwareVersionString ?? '1.0.0';
+        options.hardwareVersion = device.hardwareVersion ?? 1;
+        options.hardwareVersionString = device.hardwareVersionString ?? '1.0.0';
       }
       // We need to add bridgedNode device type and BridgedDeviceBasicInformation cluster for single class devices that doesn't add it in childbridge mode.
       if (device.mode === undefined && !device.deviceTypes.has(bridgedNode.code)) {

@@ -19,7 +19,8 @@ export class AuthenticationService {
   async requestVerificationCode(email: string): Promise<void> {
     try {
       this.logger.debug('Requesting verification code for email:', email);
-      return await this.loginApi.requestCodeV4(email);
+      await this.loginApi.requestCodeV4(email);
+      return;
     } catch (error) {
       this.logger.error('Failed to request verification code:', { email, error });
       throw new AuthenticationError('Failed to send verification code. Please check your email address and try again.', {
@@ -91,6 +92,7 @@ export class AuthenticationService {
 
       if (!userdata) {
         this.logger.debug('No saved user data found, logging in with password');
+        // eslint-disable-next-line @typescript-eslint/no-deprecated
         userdata = await this.loginApi.loginWithPassword(username, password);
 
         try {

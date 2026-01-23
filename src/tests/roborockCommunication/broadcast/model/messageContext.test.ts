@@ -25,7 +25,9 @@ describe('MessageContext', () => {
 
   it('updateNonce should not throw for non-existent device', () => {
     const ctx = new MessageContext(userdata);
-    expect(() => ctx.updateNonce('nonexistent', 100)).not.toThrow();
+    expect(() => {
+      ctx.updateNonce('nonexistent', 100);
+    }).not.toThrow();
     expect(ctx.getDeviceNonce('nonexistent')).toBeUndefined();
   });
 

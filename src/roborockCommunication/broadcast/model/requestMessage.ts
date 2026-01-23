@@ -38,14 +38,14 @@ export class RequestMessage {
 
     this.version = args.version;
     this.dps = args.dps;
-    this.body = args.body || undefined;
+    this.body = args.body ?? undefined;
   }
 
   public isForProtocol(protocol: Protocol): boolean {
     return this.protocol === protocol;
   }
 
-  public toMqttRequest(): RequestMessage {
+  public toMqttRequest(): this {
     return this;
   }
 

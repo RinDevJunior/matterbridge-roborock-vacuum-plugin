@@ -321,24 +321,17 @@ describe('RoborockService - Comprehensive Coverage', () => {
       expect(result).toBe(indexMap);
     });
 
-    it('should get map information and set message client', async () => {
-      const mockClient = {} as any;
-      mockDeviceService.messageClient = mockClient;
-      service.messageClient = mockClient;
+    it('should get map information', async () => {
       const mapInfo = { name: 'map1' } as any;
       (mockAreaService.getMapInformation as ReturnType<typeof vi.fn>).mockResolvedValue(mapInfo);
 
       const result = await service.getMapInformation('device-123');
 
-      expect(mockAreaService.setMessageClient).toHaveBeenCalledWith(mockClient);
       expect(mockAreaService.getMapInformation).toHaveBeenCalledWith('device-123');
       expect(result).toBe(mapInfo);
     });
 
-    it('should get room mappings with MQTT status', async () => {
-      const mockClient = {} as any;
-      service.messageClient = mockClient;
-      (mockMessageService.getMqttAlwaysOn as ReturnType<typeof vi.fn>).mockReturnValue(true);
+    it('should get room mappings', async () => {
       const mappings = [
         [1, 2],
         [3, 4],
@@ -347,8 +340,7 @@ describe('RoborockService - Comprehensive Coverage', () => {
 
       const result = await service.getRoomMappings('device-123');
 
-      expect(mockAreaService.setMessageClient).toHaveBeenCalledWith(mockClient);
-      expect(mockAreaService.getRoomMappings).toHaveBeenCalledWith('device-123', true);
+      expect(mockAreaService.getRoomMappings).toHaveBeenCalledWith('device-123');
       expect(result).toBe(mappings);
     });
 

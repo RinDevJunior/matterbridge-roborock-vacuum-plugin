@@ -29,7 +29,7 @@ export class BehaviorDeviceGeneric<Commands extends DeviceCommands> {
   async executeCommand<Command extends keyof Commands>(command: Command, ...args: Parameters<Commands[Command]>): Promise<void> {
     const handler = this.commands[command];
     if (!handler) throw new Error(`${String(command)} not implemented`);
-    await (handler as DeviceCommandHandler)(...args);
+    await handler(...args);
   }
 }
 

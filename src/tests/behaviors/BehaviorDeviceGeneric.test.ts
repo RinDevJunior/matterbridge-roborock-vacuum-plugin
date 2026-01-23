@@ -18,7 +18,9 @@ describe('BehaviorDeviceGeneric', () => {
     const b = new BehaviorDeviceGeneric<any>(log);
     const h = vi.fn();
     b.setCommandHandler('cmd', h as any);
-    expect(() => b.setCommandHandler('cmd', h as any)).toThrow();
+    expect(() => {
+      b.setCommandHandler('cmd', h as any);
+    }).toThrow();
   });
 
   it('throws when executing unregistered command', async () => {

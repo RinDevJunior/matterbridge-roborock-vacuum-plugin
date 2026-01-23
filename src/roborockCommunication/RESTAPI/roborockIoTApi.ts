@@ -27,7 +27,7 @@ export class RoborockIoTApi {
         retryCondition: (error: unknown) => {
           const errTyped = error as { code?: string; message?: string } | AxiosError;
           const isNetwork = axiosRetry.isNetworkOrIdempotentRequestError(errTyped as unknown as Error);
-          const code = (errTyped as { code?: string })?.code as string | undefined;
+          const code = (errTyped as { code?: string })?.code;
           const isEconnreset = code === 'ECONNRESET';
           const isTimedOut = code === 'ETIMEDOUT' || code === 'ECONNABORTED' || /timeout/i.test((errTyped as { message?: string })?.message ?? '');
           return Boolean(isNetwork || isEconnreset || isTimedOut);
@@ -48,7 +48,7 @@ export class RoborockIoTApi {
         const url = this.api ? new URL(this.api.getUri(config)).pathname : '';
         const data = [userdata.rriot.u, userdata.rriot.s, nonce, timestamp, crypto.createHash('md5').update(url).digest('hex'), '', ''].join(':');
         const hmac = crypto.createHmac('sha256', userdata.rriot.h).update(data).digest('base64');
-        config.headers['Authorization'] = `Hawk id="${userdata.rriot.u}", s="${userdata.rriot.s}", ts="${timestamp}", nonce="${nonce}", mac="${hmac}"`;
+        config.headers.Authorization = `Hawk id="${userdata.rriot.u}", s="${userdata.rriot.s}", ts="${timestamp}", nonce="${nonce}", mac="${hmac}"`;
       } catch (error) {
         this.logger.error(`Failed to initialize RESTAPI ${error ? debugStringify(error) : 'undefined'}`);
       }
@@ -75,11 +75,11 @@ export class RoborockIoTApi {
 
     if (homeData.rooms.length === 0) {
       const homeDataV2 = await this.getHomev2(homeId);
-      if (homeDataV2 && homeDataV2.rooms && homeDataV2.rooms.length > 0) {
+      if (homeDataV2?.rooms && homeDataV2.rooms.length > 0) {
         homeData.rooms = homeDataV2.rooms;
       } else {
         const homeDataV3 = await this.getHomev3(homeId);
-        if (homeDataV3 && homeDataV3.rooms && homeDataV3.rooms.length > 0) {
+        if (homeDataV3?.rooms && homeDataV3.rooms.length > 0) {
           homeData.rooms = homeDataV3.rooms;
         }
       }
@@ -105,7 +105,7 @@ export class RoborockIoTApi {
 
   public async getHomev2(homeId: number): Promise<Home | undefined> {
     try {
-      const result = await this.api.get('v2/user/homes/' + homeId);
+      const result = await this.api.get(`v2/user/homes/${homeId}`);
       const apiResponse: ApiResponse<Home> = result.data;
       if (apiResponse.result) {
         return apiResponse.result;
@@ -120,7 +120,7 @@ export class RoborockIoTApi {
 
   public async getHomev3(homeId: number): Promise<Home | undefined> {
     try {
-      const result = await this.api.get('v3/user/homes/' + homeId); // can be v3 also
+      const result = await this.api.get(`v3/user/homes/${homeId}`); // can be v3 also
       const apiResponse: ApiResponse<Home> = result.data;
       if (apiResponse.result) {
         return apiResponse.result;
@@ -135,7 +135,7 @@ export class RoborockIoTApi {
 
   public async getScenes(homeId: number): Promise<Scene[] | undefined> {
     try {
-      const result = await this.api.get('user/scene/home/' + homeId);
+      const result = await this.api.get(`user/scene/home/${homeId}`);
       const apiResponse: ApiResponse<Scene[]> = result.data;
       if (apiResponse.result) {
         return apiResponse.result;

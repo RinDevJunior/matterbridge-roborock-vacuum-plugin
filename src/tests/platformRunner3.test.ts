@@ -41,7 +41,7 @@ describe('PlatformRunner.updateRobot', () => {
 
   it('should handle unknown message types gracefully', async () => {
     const mapUpdated = { duid: '123456', dps: { 128: 4 } };
-    await runner['updateFromMQTTMessage'](NotifyMessageTypes.CloudMessage, mapUpdated, '123456');
+    await runner.updateFromMQTTMessage(NotifyMessageTypes.CloudMessage, mapUpdated, '123456');
     expect(platform.log.notice).toHaveBeenCalled();
   });
 });

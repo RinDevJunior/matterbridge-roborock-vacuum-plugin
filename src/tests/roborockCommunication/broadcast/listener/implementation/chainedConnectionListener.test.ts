@@ -24,7 +24,7 @@ describe('ChainedConnectionListener', () => {
     chained.register(listener1);
     chained.register(listener2);
 
-    expect(chained['listeners']).toEqual([listener1, listener2]);
+    expect(chained.listeners).toEqual([listener1, listener2]);
   });
 
   it('should call onConnected on all listeners', async () => {

@@ -329,9 +329,9 @@ describe('DeviceManagementService', () => {
       const result = await deviceService.getHomeDataForUpdating(12345);
 
       expect(result).toBeDefined();
-      expect(result && result.devices).toBeDefined();
-      expect(result && result.devices).toHaveLength(1);
-      expect(result && result.devices && result.devices[0]).toMatchObject({
+      expect(result?.devices).toBeDefined();
+      expect(result?.devices).toHaveLength(1);
+      expect(result?.devices?.[0]).toMatchObject({
         duid: 'device-123',
         rrHomeId: 12345,
         rooms: mockHomeData.rooms,
@@ -353,7 +353,7 @@ describe('DeviceManagementService', () => {
       const result = await deviceService.getHomeDataForUpdating(12345);
 
       expect(mockIotApi.getHomev3).toHaveBeenCalledWith(12345);
-      expect(result && result.rooms).toEqual(v3Rooms);
+      expect(result?.rooms).toEqual(v3Rooms);
     });
 
     it('should fallback to v1 API for rooms if v2 and v3 rooms are empty', async () => {
@@ -367,7 +367,7 @@ describe('DeviceManagementService', () => {
       const result = await deviceService.getHomeDataForUpdating(12345);
 
       expect(mockIotApi.getHome).toHaveBeenCalledWith(12345);
-      expect(result && result.rooms).toEqual(v1Rooms);
+      expect(result?.rooms).toEqual(v1Rooms);
     });
 
     it('should keep empty rooms if all API versions fail to provide rooms', async () => {
@@ -379,9 +379,9 @@ describe('DeviceManagementService', () => {
 
       const result = await deviceService.getHomeDataForUpdating(12345);
 
-      expect(result && result.rooms).toEqual([]);
-      expect(result && result.rooms).toEqual([]);
-      expect(result && result.rooms).toEqual([]);
+      expect(result?.rooms).toEqual([]);
+      expect(result?.rooms).toEqual([]);
+      expect(result?.rooms).toEqual([]);
     });
 
     it('should keep empty rooms if v3 returns no rooms and v1 fails', async () => {
@@ -393,7 +393,7 @@ describe('DeviceManagementService', () => {
 
       const result = await deviceService.getHomeDataForUpdating(12345);
 
-      expect(result && result.rooms).toEqual([]);
+      expect(result?.rooms).toEqual([]);
     });
 
     it('should use receivedDevices when devices array is empty', async () => {
@@ -406,8 +406,8 @@ describe('DeviceManagementService', () => {
 
       const result = await deviceService.getHomeDataForUpdating(12345);
 
-      expect(result && result.devices).toHaveLength(1);
-      expect(result && result.devices && result.devices[0] && result.devices[0].duid).toBe('device-123');
+      expect(result?.devices).toHaveLength(1);
+      expect(result?.devices?.[0]?.duid).toBe('device-123');
     });
 
     it('should handle API errors gracefully', async () => {
@@ -714,7 +714,7 @@ describe('DeviceManagementService', () => {
 
     it('should handle hello_response without updateNonce', async () => {
       mockClientRouter.isConnected.mockReturnValue(true);
-      (mockClientRouter.updateNonce as any) = undefined;
+      mockClientRouter.updateNonce = undefined;
 
       await deviceService.initializeMessageClient('test@example.com', mockDevice, mockUserData);
 

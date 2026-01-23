@@ -50,6 +50,6 @@ describe('PingResponseListener', () => {
     const listener = new PingResponseListener(DUID);
     const promise = listener.waitFor();
     vi.advanceTimersByTime(HELLO_RESPONSE_TIMEOUT_MS);
-    await expect(promise).rejects.toMatch(/no ping response/);
+    await expect(promise).rejects.toThrow(/no ping response/);
   });
 });

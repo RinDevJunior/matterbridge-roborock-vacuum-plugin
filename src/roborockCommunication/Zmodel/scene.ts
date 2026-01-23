@@ -3,7 +3,7 @@ export class Scene {
   name: string | undefined;
   param: string | undefined;
   enabled: boolean | undefined;
-  extra: unknown | undefined;
+  extra?: unknown;
   type: string | undefined;
 }
 
