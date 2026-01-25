@@ -53,7 +53,7 @@ export class AuthenticationService {
       this.logger.notice('Successfully authenticated with verification code');
       return userdata;
     } catch (error) {
-      this.logger.error('Failed to login with verification code:', { email, error });
+      this.logger.error(`Failed to login with verification code: ${debugStringify({ email, error })}`);
 
       // Check if error indicates expired code
       const errorMessage = error instanceof Error ? error.message : String(error);
@@ -172,7 +172,14 @@ export class AuthenticationService {
 
     if (skipAuthentication) {
       const savedUserData = (await this.persist.getItem('userData')) as UserData | undefined;
-      if (savedUserData && savedUserData.username === username) {
+      if (!savedUserData) {
+        this.logger.debug('No saved userData found, proceeding to verification code flow');
+      } else {
+        if (savedUserData.username === undefined || savedUserData.username !== '') {
+          savedUserData.username = username;
+          this.persist.setItem('userData', savedUserData);
+        }
+
         this.logger.debug('Found saved userData, attempting to use cached token');
         try {
           const userData = await this.loginWithCachedToken(username, savedUserData);

@@ -4,11 +4,11 @@ import { CloudMessageResult } from '../roborockCommunication/models/index.js';
 import { state_to_matter_state } from '../share/function.js';
 import { RoborockMatterbridgePlatform } from '../module.js';
 import { OperationStatusCode } from '../roborockCommunication/enums/index.js';
-import { getRoomMap } from '../helper.js';
+import { getRoomMap } from '../share/helper.js';
 import { debugStringify } from 'matterbridge/logger';
 import { getBatteryState, getBatteryStatus } from '../initialData/index.js';
 import { getCurrentCleanModeFunc } from '../share/runtimeHelper.js';
-import { RoborockVacuumCleaner } from '../roborockVacuumCleaner.js';
+import { RoborockVacuumCleaner } from '../types/roborockVacuumCleaner.js';
 import { hasDockingStationError, parseDockingStationStatus } from '../model/DockingStationStatus.js';
 import { INVALID_SEGMENT_ID } from '../constants/index.js';
 

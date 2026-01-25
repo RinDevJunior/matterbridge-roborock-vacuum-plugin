@@ -1,5 +1,4 @@
-import { NotifyMessageTypes } from '../../../../notifyMessageTypes.js';
-import { DeviceNotifyCallback } from '../../../../types/index.js';
+import { DeviceNotifyCallback, NotifyMessageTypes } from '../../../../types/index.js';
 import { VacuumErrorCode } from '../../../enums/vacuumAndDockErrorCode.js';
 import { BatteryMessage, DeviceErrorMessage, ResponseMessage } from '../../../models/index.js';
 import { AbstractMessageHandler } from '../abstractMessageHandler.js';

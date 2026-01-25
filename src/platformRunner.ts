@@ -1,7 +1,7 @@
 import { PowerSource, RvcOperationalState } from 'matterbridge/matter/clusters';
 import { CloudMessageModel } from './model/CloudMessageModel.js';
 import { getBatteryStatus, getOperationalErrorState } from './initialData/index.js';
-import { NotifyMessageTypes } from './notifyMessageTypes.js';
+import { NotifyMessageTypes } from './types/notifyMessageTypes.js';
 import { debugStringify } from 'matterbridge/logger';
 import { handleLocalMessage } from './runtimes/handleLocalMessage.js';
 import { handleCloudMessage } from './runtimes/handleCloudMessage.js';

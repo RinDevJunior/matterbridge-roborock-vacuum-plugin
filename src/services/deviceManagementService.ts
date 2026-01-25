@@ -1,5 +1,4 @@
 import { AnsiLogger } from 'matterbridge/logger';
-import type { Factory } from '../types/index.js';
 import { DeviceError, DeviceNotFoundError } from '../errors/index.js';
 import { Device, Home, Protocol, SceneParam, UserData } from '../roborockCommunication/models/index.js';
 import { RoborockIoTApi } from '../roborockCommunication/api/iotClient.js';

@@ -1,14 +1,14 @@
 import { RoboticVacuumCleaner } from 'matterbridge/devices';
 import { CommandHandlerData, MatterbridgeEndpointCommands } from 'matterbridge';
-import { RoomMap } from './model/RoomMap.js';
-import { getOperationalStates, getSupportedAreas, getSupportedCleanModes, getSupportedRunModes } from './initialData/index.js';
+import { RoomMap } from '../model/RoomMap.js';
+import { getOperationalStates, getSupportedAreas, getSupportedCleanModes, getSupportedRunModes } from '../initialData/index.js';
 import { AnsiLogger, debugStringify } from 'matterbridge/logger';
-import { BehaviorFactoryResult } from './behaviorFactory.js';
+import { BehaviorFactoryResult } from '../share/behaviorFactory.js';
 import { ModeBase, RvcOperationalState, ServiceArea } from 'matterbridge/matter/clusters';
-import { ExperimentalFeatureSetting } from './model/ExperimentalFeatureSetting.js';
-import { CommandNames } from './behaviors/BehaviorDeviceGeneric.js';
-import { DockingStationStatus } from './model/DockingStationStatus.js';
-import { Device } from './roborockCommunication/models/index.js';
+import { ExperimentalFeatureSetting } from '../model/ExperimentalFeatureSetting.js';
+import { CommandNames } from '../behaviors/BehaviorDeviceGeneric.js';
+import { DockingStationStatus } from '../model/DockingStationStatus.js';
+import { Device } from '../roborockCommunication/models/index.js';
 
 interface IdentifyCommandRequest {
   identifyTime?: number;

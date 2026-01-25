@@ -1,6 +1,6 @@
 import { expect, test } from 'vitest';
 import { isLocalMessage, isCloudMessage, isHomeData, isBatteryUpdate, isErrorOccurred } from '../../types/MessagePayloads.js';
-import { NotifyMessageTypes } from '../../notifyMessageTypes.js';
+import { NotifyMessageTypes } from '../../types/notifyMessageTypes.js';
 
 test('MessagePayloads type-guards', () => {
   const local = { type: NotifyMessageTypes.LocalMessage, data: {}, duid: 'd' } as any;

@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { RoborockService } from '../roborockService.js';
+import { RoborockService } from '../services/roborockService.js';
 import type { AnsiLogger } from 'matterbridge/logger';
 
 describe('getHomeDataForUpdating', () => {

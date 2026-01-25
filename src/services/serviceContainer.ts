@@ -135,12 +135,12 @@ export class ServiceContainer {
   }
 
   public synchronizeMessageClients(): void {
-    const messageClient = this.connectionService?.messageClient;
-    if (!messageClient) {
+    const clientRouter = this.connectionService?.clientRouter;
+    if (!clientRouter) {
       throw new Error('Message client not initialized in ConnectionService');
     }
 
-    this.areaManagementService?.setMessageClient(messageClient);
+    this.areaManagementService?.setMessageClient(clientRouter);
   }
 
   /**

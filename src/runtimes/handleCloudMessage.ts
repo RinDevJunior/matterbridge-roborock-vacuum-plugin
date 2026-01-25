@@ -4,14 +4,14 @@ import { hasDockingStationError } from '../model/DockingStationStatus.js';
 import { state_to_matter_operational_status, state_to_matter_state } from '../share/function.js';
 import { RvcCleanMode, RvcOperationalState, RvcRunMode, ServiceArea } from 'matterbridge/matter/clusters';
 import { triggerDssError } from './handleLocalMessage.js';
-import { getRoomMapFromDevice, isStatusUpdate } from '../helper.js';
+import { getRoomMapFromDevice, isStatusUpdate } from '../share/helper.js';
 import { debugStringify } from 'matterbridge/logger';
 import { CloudMessageResult, DeviceStatusNotify, DpsPayload, Protocol } from '../roborockCommunication/models/index.js';
-import { NotifyMessageTypes } from '../notifyMessageTypes.js';
+import { NotifyMessageTypes } from '../types/notifyMessageTypes.js';
 import { getCurrentCleanModeFunc } from '../share/runtimeHelper.js';
 import { getSupportedAreas } from '../initialData/getSupportedAreas.js';
 import { PlatformRunner } from '../platformRunner.js';
-import { RoborockVacuumCleaner } from '../roborockVacuumCleaner.js';
+import { RoborockVacuumCleaner } from '../types/roborockVacuumCleaner.js';
 import { AdditionalPropCode } from '../roborockCommunication/enums/index.js';
 import { RoborockMatterbridgePlatform } from '../module.js';
 

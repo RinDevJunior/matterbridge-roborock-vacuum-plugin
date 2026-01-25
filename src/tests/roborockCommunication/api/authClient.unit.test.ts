@@ -3,7 +3,7 @@ import { RoborockAuthenticateApi } from '../../../roborockCommunication/api/auth
 import { AuthenticateResponseCode } from '../../../roborockCommunication/enums/index.js';
 
 describe('RoborockAuthenticateApi private helpers', () => {
-  const logger = { debug: vi.fn() } as any;
+  const logger = { debug: vi.fn(), notice: vi.fn(), error: vi.fn() } as any;
   const api = new RoborockAuthenticateApi(logger, { create: () => ({}) } as any);
 
   it('auth throws when userdata missing token', () => {

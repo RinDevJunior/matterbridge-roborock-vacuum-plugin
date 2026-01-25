@@ -1,10 +1,9 @@
 import { AnsiLogger } from 'matterbridge/logger';
 import { ServiceArea } from 'matterbridge/matter/clusters';
 import { LocalStorage } from 'node-persist';
-import { RoomIndexMap } from './model/RoomIndexMap.js';
-import { CleanModeSetting } from './behaviors/roborock.vacuum/default/default.js';
-import type { Factory } from './types/index.js';
-import { NotifyMessageTypes } from './notifyMessageTypes.js';
+import { RoomIndexMap } from '../model/RoomIndexMap.js';
+import { CleanModeSetting } from '../behaviors/roborock.vacuum/default/default.js';
+import { Factory, NotifyMessageTypes } from '../types/index.js';
 import {
   ServiceContainer,
   ServiceContainerConfig,
@@ -14,12 +13,12 @@ import {
   MessageRoutingService,
   PollingService,
   ConnectionService,
-} from './services/index.js';
-import { RoborockAuthenticateApi } from './roborockCommunication/api/authClient.js';
-import { Device, Home, MapInfo, RequestMessage, Scene, UserData } from './roborockCommunication/models/index.js';
-import { RoborockIoTApi } from './roborockCommunication/api/iotClient.js';
-import { MessageProcessor } from './roborockCommunication/mqtt/messageProcessor.js';
-import { PlatformConfigManager } from './platform/platformConfig.js';
+} from '../services/index.js';
+import { RoborockAuthenticateApi } from '../roborockCommunication/api/authClient.js';
+import { Device, Home, MapInfo, RequestMessage, Scene, UserData } from '../roborockCommunication/models/index.js';
+import { RoborockIoTApi } from '../roborockCommunication/api/iotClient.js';
+import { MessageProcessor } from '../roborockCommunication/mqtt/messageProcessor.js';
+import { PlatformConfigManager } from '../platform/platformConfig.js';
 
 export interface RoborockServiceConfig {
   authenticateApiFactory?: (logger: AnsiLogger, baseUrl: string) => RoborockAuthenticateApi;

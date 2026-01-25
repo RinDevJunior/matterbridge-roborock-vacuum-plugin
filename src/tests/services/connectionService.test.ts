@@ -2,8 +2,8 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { ConnectionService } from '../../services/connectionService.js';
 import ClientManager from '../../services/clientManager.js';
 import { DeviceConnectionError, DeviceInitializationError } from '../../errors/index.js';
-import { NotifyMessageTypes } from '../../notifyMessageTypes.js';
-import { Device, DpsPayload, HeaderMessage, Protocol, ResponseMessage, UserData } from '../../roborockCommunication/models/index.js';
+import { NotifyMessageTypes } from '../../types/notifyMessageTypes.js';
+import { Device, HeaderMessage, ResponseMessage, UserData } from '../../roborockCommunication/models/index.js';
 import { ClientRouter } from '../../roborockCommunication/routing/clientRouter.js';
 import { AnsiLogger } from 'matterbridge/logger';
 import { MessageRoutingService } from '../../services/messageRoutingService.js';
@@ -96,7 +96,10 @@ describe('ConnectionService', () => {
   }
 
   function createMockMessageRoutingService() {
-    return {} satisfies Partial<MessageRoutingService>;
+    return {
+      registerMessageProcessor: vi.fn(),
+      setMqttAlwaysOn: vi.fn(),
+    } satisfies Partial<MessageRoutingService>;
   }
 
   describe('setDeviceNotify', () => {
@@ -158,14 +161,14 @@ describe('ConnectionService', () => {
 
     it('should successfully initialize MQTT client and connect', async () => {
       mockClientRouter.isConnected.mockReturnValue(true);
+      mockClientRouter.get = vi.fn().mockResolvedValue(mockClientRouter);
 
       await service.initializeMessageClient(mockDevice, mockUserData);
 
       expect(mockClientManager.get).toHaveBeenCalledWith(mockUserData);
       expect(mockClientRouter.registerDevice).toHaveBeenCalledWith(mockDevice.duid, mockDevice.localKey, mockDevice.pv, undefined);
-      expect(mockClientRouter.registerMessageListener).toHaveBeenCalled();
       expect(mockClientRouter.connect).toHaveBeenCalled();
-      expect(mockLogger.debug).toHaveBeenCalledWith('MessageClient connected for device:', mockDevice.duid);
+      expect(mockLogger.debug).toHaveBeenCalledWith('clientRouter connected for device:', mockDevice.duid);
     });
 
     it('should handle message listener for non-battery protocol messages', async () => {
@@ -174,6 +177,7 @@ describe('ConnectionService', () => {
       service.setDeviceNotify(mockCallback);
 
       await service.initializeMessageClient(mockDevice, mockUserData);
+      await service.initializeMessageClientForLocal(mockDevice);
 
       const listenerCall = mockClientRouter.registerMessageListener.mock.calls[0][0];
       expect(listenerCall).toHaveProperty('onMessage');
@@ -192,6 +196,7 @@ describe('ConnectionService', () => {
       service.setDeviceNotify(mockCallback);
 
       await service.initializeMessageClient(mockDevice, mockUserData);
+      await service.initializeMessageClientForLocal(mockDevice);
 
       const listenerCall = mockClientRouter.registerMessageListener.mock.calls[0][0];
       const mockMessage = new ResponseMessage(mockDevice.duid, new HeaderMessage('1.0', 2, 0, Date.now(), 0));
@@ -206,6 +211,7 @@ describe('ConnectionService', () => {
       mockClientRouter.isConnected.mockReturnValue(true);
 
       await service.initializeMessageClient(mockDevice, mockUserData);
+      await service.initializeMessageClientForLocal(mockDevice);
 
       const listenerCall = mockClientRouter.registerMessageListener.mock.calls[0][0];
       const mockMessage = new ResponseMessage(mockDevice.duid, new HeaderMessage('1.0', 4, 0, Date.now(), 0));
@@ -245,19 +251,19 @@ describe('ConnectionService', () => {
     });
 
     it('should return the message client when initialized', () => {
-      service.messageClient = mockClientRouter as unknown as ClientRouter;
+      service.clientRouter = mockClientRouter as unknown as ClientRouter;
       expect(service.getMessageClient()).toBe(mockClientRouter);
     });
   });
 
   describe('shutdown', () => {
     it('should clear message client and device notify callback', async () => {
-      service.messageClient = mockClientRouter as unknown as ClientRouter;
+      service.clientRouter = mockClientRouter as unknown as ClientRouter;
       service.deviceNotify = vi.fn();
 
       await service.shutdown();
 
-      expect(service.messageClient).toBeUndefined();
+      expect(service.clientRouter).toBeUndefined();
       expect(service.deviceNotify).toBeUndefined();
     });
 
@@ -277,7 +283,6 @@ describe('ConnectionService', () => {
       await service.initializeMessageClient(mockDevice, mockUserData);
 
       expect(mockClientRouter.isConnected).toHaveBeenCalled();
-      expect(mockLogger.debug).toHaveBeenCalledWith('MessageClient connected for device:', mockDevice.duid);
     });
   });
 });

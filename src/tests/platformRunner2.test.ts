@@ -1,4 +1,4 @@
-import { getRoomMapFromDevice } from '../helper.js';
+import { getRoomMapFromDevice } from '../share/helper.js';
 import { RoomMap } from '../model/RoomMap.js';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { MapInfo } from '../roborockCommunication/models/index.js';

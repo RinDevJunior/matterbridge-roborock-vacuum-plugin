@@ -1,5 +1,5 @@
 import CRC32 from 'crc-32';
-import { AnsiLogger } from 'matterbridge/logger';
+import { AnsiLogger, debugStringify } from 'matterbridge/logger';
 import { Parser } from 'binary-parser/dist/binary_parser.js';
 import { ContentMessage, HeaderMessage, MessageContext, Protocol, ResponseBody, ResponseMessage } from '../../models/index.js';
 import { ProtocolVersion } from '../../enums/index.js';
@@ -82,7 +82,9 @@ export class MessageDeserializer {
     data.payload = messageProcessor.decode(data.payload, localKey, header.timestamp, header.seq, header.nonce, connectNonce, ackNonce);
 
     if (header.isForProtocol(Protocol.rpc_response) || header.isForProtocol(Protocol.general_request)) {
-      return this.deserializeRpcResponse(duid, data, header);
+      const response = this.deserializeRpcResponse(duid, data, header);
+      this.logger.debug(`[${from}][MessageDeserializer] deserialized body: ${debugStringify(response.body ?? {})}`);
+      return response;
     } else {
       this.logger.error(`unknown protocol: ${header.protocol}`);
       return new ResponseMessage(duid, header);

@@ -1,7 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { AnsiLogger } from 'matterbridge/logger';
 import { ServiceContainer, ServiceContainerConfig } from '../../services/serviceContainer.js';
-import ClientManager from '../../services/clientManager.js';
 import { AuthenticationService } from '../../services/authenticationService.js';
 import { DeviceManagementService } from '../../services/deviceManagementService.js';
 import { AreaManagementService } from '../../services/areaManagementService.js';
@@ -14,7 +13,6 @@ import { localStorageMock } from '../testData/localStorageMock.js';
 describe('ServiceContainer', () => {
   let container: ServiceContainer;
   let mockLogger: AnsiLogger;
-  let mockClientManager: ClientManager;
   let mockAuthApi: RoborockAuthenticateApi;
   let mockIotApi: RoborockIoTApi;
   let config: ServiceContainerConfig;
@@ -27,12 +25,6 @@ describe('ServiceContainer', () => {
       warn: vi.fn(),
       error: vi.fn(),
       notice: vi.fn(),
-    } as any;
-
-    mockClientManager = {
-      get: vi.fn(),
-      has: vi.fn(),
-      remove: vi.fn(),
     } as any;
 
     mockAuthApi = {
@@ -89,7 +81,7 @@ describe('ServiceContainer', () => {
     it('should create container with provided dependencies', () => {
       expect(container).toBeInstanceOf(ServiceContainer);
       expect(container.getLogger()).toBe(mockLogger);
-      expect(container.getClientManager()).toBe(mockClientManager);
+      expect(container.getClientManager()).not.toBeUndefined();
     });
 
     it('should use custom factories when provided', () => {
@@ -283,7 +275,7 @@ describe('ServiceContainer', () => {
     it('should return the ClientManager instance', () => {
       const clientManager = container.getClientManager();
 
-      expect(clientManager).toBe(mockClientManager);
+      expect(clientManager).not.toBeUndefined();
     });
   });
 

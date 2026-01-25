@@ -1,4 +1,4 @@
-import { getVacuumProperty, isSupportedDevice, isStatusUpdate, getRoomMap, getRoomMapFromDevice } from '../helper.js';
+import { getVacuumProperty, isSupportedDevice, isStatusUpdate, getRoomMap, getRoomMapFromDevice } from '../share/helper.js';
 import { RoomMap } from '../model/RoomMap.js';
 import { describe, it, test, expect, vi, beforeEach } from 'vitest';
 

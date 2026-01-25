@@ -1,11 +1,11 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { PlatformRunner } from '../platformRunner.js';
-import { NotifyMessageTypes } from '../notifyMessageTypes.js';
+import { NotifyMessageTypes } from '../types/notifyMessageTypes.js';
 import { RoborockMatterbridgePlatform } from '../module.js';
 import fs from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
-import { RoborockVacuumCleaner } from '../roborockVacuumCleaner.js';
+import { RoborockVacuumCleaner } from '../types/roborockVacuumCleaner.js';
 import * as initialDataIndex from '../initialData/index.js';
 import { RvcOperationalState } from 'matterbridge/matter/clusters';
 import { Home } from '../roborockCommunication/models/index.js';

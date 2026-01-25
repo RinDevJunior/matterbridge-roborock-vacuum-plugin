@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { handleCloudMessage } from '../../runtimes/handleCloudMessage.js';
-import { NotifyMessageTypes } from '../../notifyMessageTypes.js';
+import { NotifyMessageTypes } from '../../types/notifyMessageTypes.js';
 import { mapInfo, roomData, roomIndexMap, supportedAreas, supportedMaps } from '../testData/mockData.js';
 import { Protocol } from '../../roborockCommunication/models/index.js';
 import { AdditionalPropCode, OperationStatusCode } from '../../roborockCommunication/enums/index.js';

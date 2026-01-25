@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { RoborockService } from '../roborockService.js';
+import { RoborockService } from '../services/roborockService.js';
 
 describe('initializeMessageClientForLocal', () => {
   let service: RoborockService;
@@ -29,10 +29,8 @@ describe('initializeMessageClientForLocal', () => {
   });
 
   it('returns false if messageClient is not initialized', async () => {
-    // Without message client setup, should return false
-    const result = await service.initializeMessageClientForLocal(mockDevice);
-    expect(result).toBe(false);
-    expect(mockLogger.error).toHaveBeenCalledWith('messageClient not initialized');
+    // Without message client setup, should throw error
+    await expect(service.initializeMessageClientForLocal(mockDevice)).rejects.toThrow('Message client not initialized in ConnectionService');
   });
 
   // Skip complex tests that require full message client setup for facade pattern

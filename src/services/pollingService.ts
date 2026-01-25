@@ -1,6 +1,6 @@
 import { AnsiLogger, debugStringify } from 'matterbridge/logger';
 import { LOCAL_REFRESH_INTERVAL_MULTIPLIER, MQTT_REFRESH_INTERVAL_MULTIPLIER } from '../constants/index.js';
-import { NotifyMessageTypes } from '../notifyMessageTypes.js';
+import { NotifyMessageTypes } from '../types/notifyMessageTypes.js';
 import { MessageRoutingService } from './messageRoutingService.js';
 import { Device, DeviceStatusNotify } from '../roborockCommunication/models/index.js';
 

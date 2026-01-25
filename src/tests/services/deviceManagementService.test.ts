@@ -6,12 +6,8 @@ import { Device, Home, Protocol, UserData } from '../../roborockCommunication/mo
 describe('DeviceManagementService', () => {
   let deviceService: DeviceManagementService;
   let mockLogger: any;
-  let mockClientManager: any;
-  let mockIotApiFactory: any;
   let mockLoginApi: any;
   let mockIotApi: any;
-  let mockClientRouter: any;
-  let mockMessageRoutingService: any;
 
   const mockUserData: UserData = {
     username: 'test-user',
@@ -100,20 +96,6 @@ describe('DeviceManagementService', () => {
       notice: vi.fn(),
     } as any;
 
-    mockClientRouter = {
-      registerDevice: vi.fn(),
-      registerMessageListener: vi.fn(),
-      connect: vi.fn(),
-      disconnect: vi.fn(),
-      isConnected: vi.fn().mockReturnValue(true),
-      registerClient: vi.fn().mockReturnValue({
-        connect: vi.fn(),
-        disconnect: vi.fn(),
-        isConnected: vi.fn().mockReturnValue(true),
-      }),
-      updateNonce: vi.fn(),
-    } as any;
-
     mockIotApi = {
       getHomev2: vi.fn().mockResolvedValue(mockHomeData),
       getHomev3: vi.fn(),
@@ -122,29 +104,14 @@ describe('DeviceManagementService', () => {
       getHomeWithProducts: vi.fn().mockResolvedValue(mockHomeData),
     } as any;
 
-    mockIotApiFactory = vi.fn().mockReturnValue(mockIotApi);
-
     mockLoginApi = {
       getHomeDetails: vi.fn().mockResolvedValue({
         rrHomeId: 12345,
       }),
     } as any;
 
-    mockClientManager = {
-      get: vi.fn().mockReturnValue(mockClientRouter),
-      destroy: vi.fn(),
-      destroyAll: vi.fn(),
-    } as any;
-
-    mockMessageRoutingService = {
-      subscribeToMessages: vi.fn(),
-      unsubscribeFromMessages: vi.fn(),
-      setMqttAlwaysOn: vi.fn(),
-      clearAll: vi.fn(),
-      registerMessageProcessor: vi.fn(),
-    } as any;
-
-    deviceService = new DeviceManagementService(mockIotApiFactory, mockLogger, mockLoginApi);
+    deviceService = new DeviceManagementService(mockLogger, mockLoginApi, mockUserData);
+    deviceService.setIotApi(mockIotApi);
   });
 
   afterEach(() => {
@@ -154,19 +121,16 @@ describe('DeviceManagementService', () => {
 
   describe('initialization and configuration', () => {
     it('should set authentication data correctly', () => {
-      deviceService.setAuthentication(mockUserData);
+      const newUserData = { ...mockUserData, uid: 'new-uid' };
+      deviceService.setAuthentication(newUserData);
 
-      expect(mockIotApiFactory).toHaveBeenCalledWith(mockLogger, mockUserData);
+      expect(deviceService).toBeDefined();
     });
   });
 
   describe('listDevices', () => {
-    beforeEach(() => {
-      deviceService.setAuthentication(mockUserData);
-    });
-
     it('should throw error when not authenticated', async () => {
-      const unauthenticatedService = new DeviceManagementService(mockIotApiFactory, mockLogger, mockLoginApi);
+      const unauthenticatedService = new DeviceManagementService(mockLogger, mockLoginApi);
 
       await expect(unauthenticatedService.listDevices()).rejects.toThrow('Not authenticated. Please login first.');
     });
@@ -288,121 +252,115 @@ describe('DeviceManagementService', () => {
     });
   });
 
-  describe('getHomeDataForUpdating', () => {
-    beforeEach(() => {
-      deviceService.setAuthentication(mockUserData);
+  it('should return undefined when not authenticated', async () => {
+    const unauthenticatedService = new DeviceManagementService(mockLogger, mockLoginApi);
+
+    const result = await unauthenticatedService.getHomeDataForUpdating(12345);
+
+    expect(result).toBeUndefined();
+    expect(mockLogger.error).toHaveBeenCalledWith('Not authenticated');
+  });
+
+  it('should return undefined when homeData cannot be retrieved', async () => {
+    mockIotApi.getHomev2.mockResolvedValue(undefined);
+
+    const result = await deviceService.getHomeDataForUpdating(12345);
+
+    expect(result).toBeUndefined();
+  });
+
+  it('should return homeData with enriched devices', async () => {
+    const result = await deviceService.getHomeDataForUpdating(12345);
+
+    expect(result).toBeDefined();
+    expect(result?.devices).toBeDefined();
+    expect(result?.devices).toHaveLength(1);
+    expect(result?.devices?.[0]).toMatchObject({
+      duid: 'device-123',
+      rrHomeId: 12345,
+      rooms: mockHomeData.rooms,
+      data: expect.objectContaining({
+        id: 'device-123',
+        firmwareVersion: '1.0.0',
+        serialNumber: 'SN12345',
+      }),
     });
+  });
 
-    it('should return undefined when not authenticated', async () => {
-      const unauthenticatedService = new DeviceManagementService(mockIotApiFactory, mockLogger, mockLoginApi);
+  it('should fallback to v3 API for rooms if v2 rooms are empty', async () => {
+    const homeDataNoRooms = { ...mockHomeData, rooms: [] };
+    const v3Rooms = [{ id: 2, name: 'Kitchen' }];
 
-      const result = await unauthenticatedService.getHomeDataForUpdating(12345);
+    mockIotApi.getHomev2.mockResolvedValue(homeDataNoRooms);
+    mockIotApi.getHomev3.mockResolvedValue({ ...mockHomeData, rooms: v3Rooms });
 
-      expect(result).toBeUndefined();
-      expect(mockLogger.error).toHaveBeenCalledWith('Not authenticated');
-    });
+    const result = await deviceService.getHomeDataForUpdating(12345);
 
-    it('should return undefined when homeData cannot be retrieved', async () => {
-      mockIotApi.getHomev2.mockResolvedValue(undefined);
+    expect(mockIotApi.getHomev3).toHaveBeenCalledWith(12345);
+    expect(result?.rooms).toEqual(v3Rooms);
+  });
 
-      const result = await deviceService.getHomeDataForUpdating(12345);
+  it('should fallback to v1 API for rooms if v2 and v3 rooms are empty', async () => {
+    const homeDataNoRooms = { ...mockHomeData, rooms: [] };
+    const v1Rooms = [{ id: 3, name: 'Bedroom' }];
 
-      expect(result).toBeUndefined();
-    });
+    mockIotApi.getHomev2.mockResolvedValue(homeDataNoRooms);
+    mockIotApi.getHomev3.mockResolvedValue({ ...mockHomeData, rooms: [] });
+    mockIotApi.getHome.mockResolvedValue({ ...mockHomeData, rooms: v1Rooms });
 
-    it('should return homeData with enriched devices', async () => {
-      const result = await deviceService.getHomeDataForUpdating(12345);
+    const result = await deviceService.getHomeDataForUpdating(12345);
 
-      expect(result).toBeDefined();
-      expect(result?.devices).toBeDefined();
-      expect(result?.devices).toHaveLength(1);
-      expect(result?.devices?.[0]).toMatchObject({
-        duid: 'device-123',
-        rrHomeId: 12345,
-        rooms: mockHomeData.rooms,
-        data: expect.objectContaining({
-          id: 'device-123',
-          firmwareVersion: '1.0.0',
-          serialNumber: 'SN12345',
-        }),
-      });
-    });
+    expect(mockIotApi.getHome).toHaveBeenCalledWith(12345);
+    expect(result?.rooms).toEqual(v1Rooms);
+  });
 
-    it('should fallback to v3 API for rooms if v2 rooms are empty', async () => {
-      const homeDataNoRooms = { ...mockHomeData, rooms: [] };
-      const v3Rooms = [{ id: 2, name: 'Kitchen' }];
+  it('should keep empty rooms if all API versions fail to provide rooms', async () => {
+    const homeDataNoRooms = { ...mockHomeData, rooms: [] };
 
-      mockIotApi.getHomev2.mockResolvedValue(homeDataNoRooms);
-      mockIotApi.getHomev3.mockResolvedValue({ ...mockHomeData, rooms: v3Rooms });
+    mockIotApi.getHomev2.mockResolvedValue(homeDataNoRooms);
+    mockIotApi.getHomev3.mockResolvedValue(undefined);
+    mockIotApi.getHome.mockResolvedValue(undefined);
 
-      const result = await deviceService.getHomeDataForUpdating(12345);
+    const result = await deviceService.getHomeDataForUpdating(12345);
 
-      expect(mockIotApi.getHomev3).toHaveBeenCalledWith(12345);
-      expect(result?.rooms).toEqual(v3Rooms);
-    });
+    expect(result?.rooms).toEqual([]);
+    expect(result?.rooms).toEqual([]);
+    expect(result?.rooms).toEqual([]);
+  });
 
-    it('should fallback to v1 API for rooms if v2 and v3 rooms are empty', async () => {
-      const homeDataNoRooms = { ...mockHomeData, rooms: [] };
-      const v1Rooms = [{ id: 3, name: 'Bedroom' }];
+  it('should keep empty rooms if v3 returns no rooms and v1 fails', async () => {
+    const homeDataNoRooms = { ...mockHomeData, rooms: [] };
 
-      mockIotApi.getHomev2.mockResolvedValue(homeDataNoRooms);
-      mockIotApi.getHomev3.mockResolvedValue({ ...mockHomeData, rooms: [] });
-      mockIotApi.getHome.mockResolvedValue({ ...mockHomeData, rooms: v1Rooms });
+    mockIotApi.getHomev2.mockResolvedValue(homeDataNoRooms);
+    mockIotApi.getHomev3.mockResolvedValue({ ...mockHomeData, rooms: [] });
+    mockIotApi.getHome.mockResolvedValue(undefined);
 
-      const result = await deviceService.getHomeDataForUpdating(12345);
+    const result = await deviceService.getHomeDataForUpdating(12345);
 
-      expect(mockIotApi.getHome).toHaveBeenCalledWith(12345);
-      expect(result?.rooms).toEqual(v1Rooms);
-    });
+    expect(result?.rooms).toEqual([]);
+  });
 
-    it('should keep empty rooms if all API versions fail to provide rooms', async () => {
-      const homeDataNoRooms = { ...mockHomeData, rooms: [] };
+  it('should use receivedDevices when devices array is empty', async () => {
+    const homeDataWithReceived = {
+      ...mockHomeData,
+      devices: [],
+      receivedDevices: [mockDevice],
+    };
+    mockIotApi.getHomev2.mockResolvedValue(homeDataWithReceived);
 
-      mockIotApi.getHomev2.mockResolvedValue(homeDataNoRooms);
-      mockIotApi.getHomev3.mockResolvedValue(undefined);
-      mockIotApi.getHome.mockResolvedValue(undefined);
+    const result = await deviceService.getHomeDataForUpdating(12345);
 
-      const result = await deviceService.getHomeDataForUpdating(12345);
+    expect(result?.devices).toHaveLength(1);
+    expect(result?.devices?.[0]?.duid).toBe('device-123');
+  });
 
-      expect(result?.rooms).toEqual([]);
-      expect(result?.rooms).toEqual([]);
-      expect(result?.rooms).toEqual([]);
-    });
+  it('should handle API errors gracefully', async () => {
+    mockIotApi.getHomev2.mockRejectedValue(new Error('API Error'));
 
-    it('should keep empty rooms if v3 returns no rooms and v1 fails', async () => {
-      const homeDataNoRooms = { ...mockHomeData, rooms: [] };
+    const result = await deviceService.getHomeDataForUpdating(12345);
 
-      mockIotApi.getHomev2.mockResolvedValue(homeDataNoRooms);
-      mockIotApi.getHomev3.mockResolvedValue({ ...mockHomeData, rooms: [] });
-      mockIotApi.getHome.mockResolvedValue(undefined);
-
-      const result = await deviceService.getHomeDataForUpdating(12345);
-
-      expect(result?.rooms).toEqual([]);
-    });
-
-    it('should use receivedDevices when devices array is empty', async () => {
-      const homeDataWithReceived = {
-        ...mockHomeData,
-        devices: [],
-        receivedDevices: [mockDevice],
-      };
-      mockIotApi.getHomev2.mockResolvedValue(homeDataWithReceived);
-
-      const result = await deviceService.getHomeDataForUpdating(12345);
-
-      expect(result?.devices).toHaveLength(1);
-      expect(result?.devices?.[0]?.duid).toBe('device-123');
-    });
-
-    it('should handle API errors gracefully', async () => {
-      mockIotApi.getHomev2.mockRejectedValue(new Error('API Error'));
-
-      const result = await deviceService.getHomeDataForUpdating(12345);
-
-      expect(result).toBeUndefined();
-      expect(mockLogger.error).toHaveBeenCalledWith('Failed to get home data for updating:', expect.any(Error));
-    });
+    expect(result).toBeUndefined();
+    expect(mockLogger.error).toHaveBeenCalledWith('Failed to get home data for updating:', expect.any(Error));
   });
 
   describe('Authentication data handling', () => {

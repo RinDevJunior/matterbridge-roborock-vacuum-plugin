@@ -585,6 +585,7 @@ Located in: [src/core/](../src/core/)
 ### **Domain Entities** ([domain/entities/](../src/core/domain/entities/))
 
 **Device.ts:**
+
 ```typescript
 interface DeviceEntity {
   readonly duid: string;
@@ -596,6 +597,7 @@ interface DeviceEntity {
 ```
 
 **Home.ts:**
+
 ```typescript
 interface HomeEntity {
   readonly id: number;
@@ -608,6 +610,7 @@ interface HomeEntity {
 ### **Value Objects** ([domain/value-objects/](../src/core/domain/value-objects/))
 
 **DeviceId.ts:**
+
 ```typescript
 class DeviceId {
   static create(duid: string): DeviceId;
@@ -617,6 +620,7 @@ class DeviceId {
 ```
 
 **CleanMode.ts:**
+
 ```typescript
 class CleanMode {
   static readonly Vacuum: CleanMode;
@@ -628,6 +632,7 @@ class CleanMode {
 ### **Port Interfaces** ([ports/](../src/core/ports/))
 
 **IAuthGateway.ts:**
+
 ```typescript
 interface IAuthGateway {
   requestVerificationCode(email: string): Promise<void>;
@@ -637,6 +642,7 @@ interface IAuthGateway {
 ```
 
 **IDeviceGateway.ts:**
+
 ```typescript
 interface IDeviceGateway {
   sendCommand(deviceId: string, command: DeviceCommand): Promise<void>;
@@ -785,11 +791,13 @@ roborockCommunication/
 ### **Adapters** ([adapters/](../src/roborockCommunication/adapters/))
 
 **RoborockAuthGateway.ts:**
+
 - Implements `IAuthGateway` interface
 - Wraps `RoborockAuthenticateApi`
 - Adapts REST API to domain port
 
 **RoborockDeviceGateway.ts:**
+
 - Implements `IDeviceGateway` interface
 - Wraps `ClientRouter`
 - Adapts message routing to domain port
@@ -820,12 +828,12 @@ ClientRouter (facade)
 
 ### **Protocol Support**
 
-| Protocol | Builder | Serializer | Description |
-|----------|---------|------------|-------------|
-| L01 | L01MessageBodyBuilder | L01Serializer | Legacy protocol |
-| A01 | A01MessageBodyBuilder | A01Serializer | Standard protocol |
-| B01 | B01MessageBodyBuilder | B01Serializer | Extended protocol |
-| V01 | V01MessageBodyBuilder | V01Serializer | Latest protocol |
+| Protocol | Builder               | Serializer    | Description       |
+| -------- | --------------------- | ------------- | ----------------- |
+| L01      | L01MessageBodyBuilder | L01Serializer | Legacy protocol   |
+| A01      | A01MessageBodyBuilder | A01Serializer | Standard protocol |
+| B01      | B01MessageBodyBuilder | B01Serializer | Extended protocol |
+| V01      | V01MessageBodyBuilder | V01Serializer | Latest protocol   |
 
 ---
 

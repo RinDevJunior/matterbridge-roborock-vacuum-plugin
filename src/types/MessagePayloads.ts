@@ -5,7 +5,7 @@
  */
 
 import { CloudMessageModel } from '../model/CloudMessageModel.js';
-import { NotifyMessageTypes } from '../notifyMessageTypes.js';
+import { NotifyMessageTypes } from './notifyMessageTypes.js';
 import { CloudMessageResult, Home } from '../roborockCommunication/models/index.js';
 
 /**

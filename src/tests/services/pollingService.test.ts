@@ -3,7 +3,7 @@ import { AnsiLogger } from 'matterbridge/logger';
 import { PollingService } from '../../services/pollingService.js';
 import { MessageRoutingService } from '../../services/messageRoutingService.js';
 import { LOCAL_REFRESH_INTERVAL_MULTIPLIER, MQTT_REFRESH_INTERVAL_MULTIPLIER } from '../../constants/index.js';
-import { NotifyMessageTypes } from '../../notifyMessageTypes.js';
+import { NotifyMessageTypes } from '../../types/notifyMessageTypes.js';
 import { MessageProcessor } from '../../roborockCommunication/mqtt/messageProcessor.js';
 import { Device } from '../../roborockCommunication/models/index.js';
 

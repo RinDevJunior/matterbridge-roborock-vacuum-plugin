@@ -63,7 +63,7 @@ export class SyncMessageListener implements AbstractMessageListener {
         this.logger.debug(`Resolved messageId: ${messageId}`);
         responseHandler(dps.result as ResponseMessage);
       } else {
-        this.logger.warn(`No handler found for messageId: ${messageId}`);
+        this.logger.warn(`No handler found for messageId: ${messageId}, message: ${debugStringify(message)}`);
       }
       this.pending.delete(messageId);
       return;

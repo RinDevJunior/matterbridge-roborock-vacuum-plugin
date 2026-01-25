@@ -1,7 +1,7 @@
 import { debugStringify } from 'matterbridge/logger';
-import { RoomMap } from './model/RoomMap.js';
-import { RoborockMatterbridgePlatform } from './module.js';
-import { CloudMessageResult, Device, MapRoom } from './roborockCommunication/models/index.js';
+import { RoomMap } from '../model/RoomMap.js';
+import { RoborockMatterbridgePlatform } from '../module.js';
+import { CloudMessageResult, Device, MapRoom } from '../roborockCommunication/models/index.js';
 
 /** Get vacuum property by schema code or property name. */
 export function getVacuumProperty(device: Device, property: string): number | undefined {

@@ -1,5 +1,5 @@
 import { Device } from '../roborockCommunication/models/index.js';
-import { RoborockVacuumCleaner } from '../roborockVacuumCleaner.js';
+import { RoborockVacuumCleaner } from '../types/roborockVacuumCleaner.js';
 
 /**
  * Registry for managing robot vacuum devices.

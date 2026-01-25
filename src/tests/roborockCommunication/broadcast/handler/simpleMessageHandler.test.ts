@@ -1,4 +1,4 @@
-import { NotifyMessageTypes } from '../../../../notifyMessageTypes.js';
+import { NotifyMessageTypes } from '../../../../types/notifyMessageTypes.js';
 import { describe, it, expect, vi } from 'vitest';
 import { VacuumErrorCode } from '../../../../roborockCommunication/enums/index.js';
 import { SimpleMessageHandler } from '../../../../roborockCommunication/routing/handlers/implementation/simpleMessageHandler.js';

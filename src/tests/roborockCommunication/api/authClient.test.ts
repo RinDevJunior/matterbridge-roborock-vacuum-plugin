@@ -7,7 +7,7 @@ describe('RoborockAuthenticateApi', () => {
   let api: any;
 
   beforeEach(() => {
-    mockLogger = { info: vi.fn(), error: vi.fn(), debug: vi.fn() };
+    mockLogger = { info: vi.fn(), error: vi.fn(), debug: vi.fn(), notice: vi.fn() };
     mockAxiosInstance = {
       post: vi.fn(),
       get: vi.fn(),

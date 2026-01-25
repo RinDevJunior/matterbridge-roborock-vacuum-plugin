@@ -6,7 +6,7 @@ vi.mock('../runtimes/handleCloudMessage.js', () => ({
 }));
 
 import { PlatformRunner } from '../platformRunner.js';
-import { NotifyMessageTypes } from '../notifyMessageTypes.js';
+import { NotifyMessageTypes } from '../types/notifyMessageTypes.js';
 import { handleCloudMessage } from '../runtimes/handleCloudMessage.js';
 
 describe('PlatformRunner CloudMessage handling', () => {

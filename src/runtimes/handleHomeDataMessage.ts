@@ -1,5 +1,5 @@
 import { PowerSource, RvcOperationalState, RvcRunMode } from 'matterbridge/matter/clusters';
-import { getVacuumProperty } from '../helper.js';
+import { getVacuumProperty } from '../share/helper.js';
 import { RoborockMatterbridgePlatform } from '../module.js';
 import { debugStringify } from 'matterbridge/logger';
 import { getBatteryState, getBatteryStatus } from '../initialData/index.js';

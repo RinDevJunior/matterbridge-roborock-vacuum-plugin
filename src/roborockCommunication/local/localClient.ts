@@ -96,8 +96,8 @@ export class LocalNetworkClient extends AbstractClient {
   }
 
   private async onConnect(): Promise<void> {
-    this.logger.debug(` [LocalNetworkClient]: ${this.duid} connected to ${this.ip}`);
-    this.logger.debug(` [LocalNetworkClient]: ${this.duid} socket writable: ${this.socket?.writable}, readable: ${this.socket?.readable}`);
+    this.logger.debug(`[LocalNetworkClient]: ${this.duid} connected to ${this.ip}`);
+    this.logger.debug(`[LocalNetworkClient]: ${this.duid} socket writable: ${this.socket?.writable}, readable: ${this.socket?.readable}`);
     await this.trySendHelloRequest();
   }
 

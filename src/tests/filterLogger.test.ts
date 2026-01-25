@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { FilterLogger } from '../filterLogger.js';
+import { FilterLogger } from '../share/filterLogger.js';
 import { AnsiLogger, LogLevel } from 'matterbridge/logger';
 
 describe('FilterLogger', () => {

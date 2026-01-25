@@ -18,7 +18,7 @@ import { MessageRoutingService } from './messageRoutingService.js';
 
 /** Manages device connections (MQTT and local network). */
 export class ConnectionService {
-  messageClient: ClientRouter | undefined;
+  clientRouter: ClientRouter | undefined;
   ipMap = new Map<string, string>();
   localClientMap = new Map<string, Client>();
   deviceNotify?: DeviceNotifyCallback;
@@ -59,23 +59,18 @@ export class ConnectionService {
     }
 
     try {
-      this.messageClient = this.clientManager.get(userdata);
-      this.messageClient.registerDevice(device.duid, device.localKey, device.pv, undefined);
-
-      this.messageClient.registerMessageListener(new StatusMessageListener(device.duid, this.logger, this.deviceNotify?.bind(this)));
-      this.messageClient.registerMessageListener(new PingResponseListener(device.duid));
-      this.messageClient.registerMessageListener(new MapResponseListener(device.duid, this.logger));
-
-      this.messageClient.connect();
+      this.clientRouter = this.clientManager.get(userdata);
+      this.clientRouter.registerDevice(device.duid, device.localKey, device.pv, undefined);
+      this.clientRouter.connect();
 
       // Wait for connection
       try {
-        await this.waitForConnection(() => this.messageClient?.isConnected() ?? false);
+        await this.waitForConnection(() => this.clientRouter?.isConnected() ?? false);
       } catch {
         throw new DeviceConnectionError(device.duid, 'MQTT connection timeout');
       }
 
-      this.logger.debug('MessageClient connected for device:', device.duid);
+      this.logger.debug('clientRouter connected for device:', device.duid);
     } catch (error) {
       this.logger.error('Failed to initialize message client:', error);
       if (error instanceof DeviceError) {
@@ -93,12 +88,16 @@ export class ConnectionService {
   public async initializeMessageClientForLocal(device: Device): Promise<boolean> {
     this.logger.debug('Initializing local network client for device:', device.duid);
 
-    if (!this.messageClient) {
-      this.logger.error('messageClient not initialized');
+    if (!this.clientRouter) {
+      this.logger.error('clientRouter not initialized');
       return false;
     }
 
-    const messageProcessor = new MessageProcessor(this.messageClient);
+    this.clientRouter.registerMessageListener(new StatusMessageListener(device.duid, this.logger, this.deviceNotify?.bind(this)));
+    this.clientRouter.registerMessageListener(new PingResponseListener(device.duid));
+    this.clientRouter.registerMessageListener(new MapResponseListener(device.duid, this.logger));
+
+    const messageProcessor = new MessageProcessor(this.clientRouter);
     messageProcessor.injectLogger(this.logger);
 
     // Register message listeners
@@ -163,7 +162,7 @@ export class ConnectionService {
    * @returns The active ClientRouter or undefined if not initialized
    */
   getMessageClient(): ClientRouter | undefined {
-    return this.messageClient;
+    return this.clientRouter;
   }
 
   /**
@@ -171,13 +170,13 @@ export class ConnectionService {
    */
   async shutdown(): Promise<void> {
     // Disconnect main message client
-    if (this.messageClient) {
+    if (this.clientRouter) {
       try {
-        this.messageClient.disconnect();
+        this.clientRouter.disconnect();
       } catch (error) {
         this.logger.error('Error disconnecting message client:', error);
       }
-      this.messageClient = undefined;
+      this.clientRouter = undefined;
     }
 
     // Disconnect all local clients
@@ -194,7 +193,7 @@ export class ConnectionService {
     this.localClientMap.clear();
     this.ipMap.clear();
 
-    this.messageClient = undefined;
+    this.clientRouter = undefined;
     this.deviceNotify = undefined;
   }
 
@@ -211,7 +210,7 @@ export class ConnectionService {
    */
   private async setupLocalClient(duid: string, ip: string): Promise<boolean> {
     try {
-      const localClient = this.messageClient?.registerClient(duid, ip);
+      const localClient = this.clientRouter?.registerClient(duid, ip);
       if (!localClient) {
         this.logger.error(`Failed to create local client for device ${duid} at IP ${ip}`);
         return false;

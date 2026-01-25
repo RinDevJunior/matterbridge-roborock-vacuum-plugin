@@ -1,5 +1,5 @@
 import { AnsiLogger, LogLevel } from 'matterbridge/logger';
-import { sensitiveDataRegexReplacements } from './constants/sensitiveDataRegexReplacements.js';
+import { sensitiveDataRegexReplacements } from '../constants/sensitiveDataRegexReplacements.js';
 
 export class FilterLogger extends AnsiLogger {
   constructor(readonly delegate: AnsiLogger) {

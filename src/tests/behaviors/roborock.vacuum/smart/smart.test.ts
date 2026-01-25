@@ -3,7 +3,7 @@ import { AnsiLogger } from 'matterbridge/logger';
 import { BehaviorDeviceGeneric } from '../../../../behaviors/BehaviorDeviceGeneric.js';
 import { setCommandHandlerSmart, MopRouteSmart, VacuumSuctionPowerSmart, MopWaterFlowSmart } from '../../../../behaviors/roborock.vacuum/smart/smart.js';
 import { CleanModeSettings } from '../../../../model/ExperimentalFeatureSetting.js';
-import { RoborockService } from '../../../../roborockService.js';
+import { RoborockService } from '../../../../services/roborockService.js';
 
 describe('setCommandHandlerSmart', () => {
   let handler: BehaviorDeviceGeneric<any>;

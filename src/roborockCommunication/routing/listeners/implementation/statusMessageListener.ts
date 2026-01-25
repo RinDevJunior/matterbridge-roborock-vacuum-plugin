@@ -1,6 +1,5 @@
 import { AnsiLogger } from 'matterbridge/logger';
-import { NotifyMessageTypes } from '../../../../notifyMessageTypes.js';
-import { DeviceNotifyCallback } from '../../../../types/index.js';
+import { DeviceNotifyCallback, NotifyMessageTypes } from '../../../../types/index.js';
 import { Protocol, ResponseMessage } from '../../../models/index.js';
 import { AbstractMessageListener } from '../abstractMessageListener.js';
 

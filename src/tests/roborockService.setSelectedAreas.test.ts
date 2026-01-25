@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { AnsiLogger } from 'matterbridge/logger';
-import { RoborockService } from '../roborockService.js';
+import { RoborockService } from '../services/roborockService.js';
 import { RoomIndexMap } from '../model/RoomIndexMap.js';
 import ClientManager from '../services/clientManager.js';
 
