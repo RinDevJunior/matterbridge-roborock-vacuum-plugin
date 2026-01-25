@@ -13,7 +13,6 @@ describe('ConnectionService', () => {
   let mockClientManager: ReturnType<typeof createMockClientManager>;
   let mockLogger: ReturnType<typeof createMockLogger>;
   let mockClientRouter: ReturnType<typeof createMockClientRouter>;
-  let mockLocalClient: ReturnType<typeof createMockLocalClient>;
   let mockMessageRoutingService: ReturnType<typeof createMockMessageRoutingService>;
 
   const mockDevice: Device = {
@@ -33,7 +32,6 @@ describe('ConnectionService', () => {
     vi.clearAllMocks();
     mockLogger = createMockLogger();
     mockClientRouter = createMockClientRouter();
-    mockLocalClient = createMockLocalClient();
     mockClientManager = createMockClientManager(mockClientRouter);
     mockMessageRoutingService = createMockMessageRoutingService();
     service = new ConnectionService(
@@ -70,17 +68,9 @@ describe('ConnectionService', () => {
       logger: mockLogger,
       mqttClient: {},
       disconnect: vi.fn(),
-      // Add required methods for ClientRouter
       send: vi.fn(),
       get: vi.fn(),
       getClient: vi.fn(),
-    };
-  }
-
-  function createMockLocalClient() {
-    return {
-      connect: vi.fn(),
-      isConnected: vi.fn().mockReturnValue(false),
     };
   }
 
@@ -90,7 +80,6 @@ describe('ConnectionService', () => {
       destroy: vi.fn(),
       destroyAll: vi.fn(),
       logger: mockLogger,
-      // Add required property for ClientManager
       clients: new Map(),
     };
   }
@@ -284,5 +273,106 @@ describe('ConnectionService', () => {
 
       expect(mockClientRouter.isConnected).toHaveBeenCalled();
     });
+  });
+});
+
+describe('ConnectionService additional coverage', () => {
+  let service: ConnectionService;
+  let mockClientManager: any;
+  let mockLogger: any;
+  let mockClientRouter: any;
+  let mockLocalClient: any;
+  let mockMessageRoutingService: any;
+  const mockDevice: Device = { duid: 'test-duid-123', name: 'Test Vacuum', localKey: 'test-local-key', pv: '1.0' } as Device;
+
+  beforeEach(() => {
+    mockLogger = { debug: vi.fn(), notice: vi.fn(), warn: vi.fn(), error: vi.fn(), info: vi.fn() };
+    mockClientRouter = { registerClient: vi.fn(), isConnected: vi.fn().mockReturnValue(true), connect: vi.fn(), registerMessageListener: vi.fn() };
+    mockLocalClient = { connect: vi.fn(), isConnected: vi.fn().mockReturnValue(true), disconnect: vi.fn() };
+    mockClientManager = { get: vi.fn().mockReturnValue(mockClientRouter) };
+    mockMessageRoutingService = { registerMessageProcessor: vi.fn(), setMqttAlwaysOn: vi.fn() };
+    service = new ConnectionService(mockClientManager, mockLogger, mockMessageRoutingService);
+  });
+
+  it('should handle B01 protocol and UDP client setup', async () => {
+    const device = { ...mockDevice, pv: 'B01', duid: 'b01-duid', deviceStatus: { 1001: { 101: { ipAddress: '1.2.3.4' } } } } as any;
+    service.clientRouter = mockClientRouter;
+    const result = await service.initializeMessageClientForLocal(device);
+    expect(result).toBe(true);
+  });
+
+  it('should fallback to UDP broadcast if setupLocalClient fails', async () => {
+    const device = { ...mockDevice, pv: 'B01', duid: 'b01-duid', deviceStatus: { 1001: { 101: { ipAddress: '1.2.3.4' } } } } as any;
+    service.clientRouter = mockClientRouter;
+    const result = await service.initializeMessageClientForLocal(device);
+    expect(result).toBe(true);
+  });
+
+  it('should return false if clientRouter is not initialized', async () => {
+    service.clientRouter = undefined;
+    const result = await service.initializeMessageClientForLocal(mockDevice);
+    expect(result).toBe(false);
+  });
+
+  it('should return false if getNetworkInfo returns no ip', async () => {
+    mockClientRouter.get = vi.fn().mockResolvedValue({ ip: undefined });
+    service.clientRouter = mockClientRouter;
+
+    const result = await service.initializeMessageClientForLocal(mockDevice);
+    expect(result).toBe(false);
+  });
+
+  it('should return true when local client connects successfully', async () => {
+    service.clientRouter = mockClientRouter;
+    mockClientRouter.registerClient.mockReturnValue({ connect: vi.fn(), isConnected: vi.fn().mockReturnValue(true) });
+    const result = await (service as any).setupLocalClient('duid', '1.2.3.4');
+    expect(result).toBe(true);
+  });
+
+  it('should return false and log error if registerClient returns undefined', async () => {
+    service.clientRouter = mockClientRouter;
+    mockClientRouter.registerClient.mockReturnValue(undefined);
+    const result = await (service as any).setupLocalClient('duid', '1.2.3.4');
+    expect(result).toBe(false);
+    expect(mockLogger.error).toHaveBeenCalledWith('Failed to create local client for device duid at IP 1.2.3.4');
+  });
+
+  it('should return false and log error if exception is thrown', async () => {
+    service.clientRouter = mockClientRouter;
+    mockClientRouter.registerClient.mockImplementation(() => {
+      throw new Error('fail');
+    });
+    const result = await (service as any).setupLocalClient('duid', '1.2.3.4');
+    expect(result).toBe(false);
+    expect(mockLogger.error).toHaveBeenCalledWith('Error setting up local client for device duid at IP 1.2.3.4:', expect.any(Error));
+  });
+
+  it('should log error if disconnect throws', async () => {
+    service.clientRouter = {
+      disconnect: vi.fn().mockImplementation(() => {
+        throw new Error('fail');
+      }),
+    } as any;
+    await service.shutdown();
+    expect(mockLogger.error).toHaveBeenCalledWith('Error disconnecting message client:', expect.any(Error));
+  });
+
+  it('should log error if local client disconnect throws', async () => {
+    const badClient = {
+      disconnect: vi.fn().mockImplementation(() => {
+        throw new Error('fail');
+      }),
+    };
+    service.localClientMap.set('duid', badClient as any);
+    await service.shutdown();
+    expect(mockLogger.error).toHaveBeenCalledWith('Error disconnecting local client duid:', expect.any(Error));
+  });
+
+  it('should clear ipMap and localClientMap on shutdown', async () => {
+    service.ipMap.set('a', '1.2.3.4');
+    service.localClientMap.set('a', mockLocalClient as any);
+    await service.shutdown();
+    expect(service.ipMap.size).toBe(0);
+    expect(service.localClientMap.size).toBe(0);
   });
 });

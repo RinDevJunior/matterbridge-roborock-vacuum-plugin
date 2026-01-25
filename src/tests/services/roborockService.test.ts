@@ -1,13 +1,13 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { AnsiLogger } from 'matterbridge/logger';
-import { RoborockService } from '../services/roborockService.js';
-import { ServiceContainer } from '../services/serviceContainer.js';
-import { AuthenticationService } from '../services/authenticationService.js';
-import { DeviceManagementService } from '../services/deviceManagementService.js';
-import { AreaManagementService } from '../services/areaManagementService.js';
-import { MessageRoutingService } from '../services/messageRoutingService.js';
-import { PollingService } from '../services/pollingService.js';
-import { Device, UserData } from '../roborockCommunication/models/index.js';
+import { RoborockService } from '../../services/roborockService.js';
+import { ServiceContainer } from '../../services/serviceContainer.js';
+import { AuthenticationService } from '../../services/authenticationService.js';
+import { DeviceManagementService } from '../../services/deviceManagementService.js';
+import { AreaManagementService } from '../../services/areaManagementService.js';
+import { MessageRoutingService } from '../../services/messageRoutingService.js';
+import { PollingService } from '../../services/pollingService.js';
+import { Device, UserData } from '../../roborockCommunication/models/index.js';
 
 describe('RoborockService - Comprehensive Coverage', () => {
   let service: RoborockService;

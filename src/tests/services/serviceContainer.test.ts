@@ -72,8 +72,8 @@ describe('ServiceContainer', () => {
     container = new ServiceContainer(mockLogger, config);
   });
 
-  afterEach(() => {
-    container.destroy();
+  afterEach(async () => {
+    await container.destroy();
     vi.clearAllMocks();
   });
 
@@ -88,7 +88,7 @@ describe('ServiceContainer', () => {
       expect(config.authenticateApiFactory).toHaveBeenCalledWith(mockLogger, config.baseUrl);
     });
 
-    it('should create default factories when not provided', () => {
+    it('should create default factories when not provided', async () => {
       const defaultConfig = {
         baseUrl: 'https://default.com',
         refreshInterval: 10000,
@@ -99,7 +99,7 @@ describe('ServiceContainer', () => {
       const defaultContainer = new ServiceContainer(mockLogger, defaultConfig);
 
       expect(defaultContainer).toBeInstanceOf(ServiceContainer);
-      defaultContainer.destroy();
+      await defaultContainer.destroy();
     });
   });
 
@@ -203,6 +203,88 @@ describe('ServiceContainer', () => {
     });
   });
 
+  describe('getPollingService', () => {
+    it('should create and return PollingService singleton', () => {
+      const service1 = container.getPollingService();
+      const service2 = container.getPollingService();
+
+      expect(service1).toBeDefined();
+      expect(service1).toBe(service2); // Same instance
+    });
+
+    it('should initialize PollingService with refresh interval from config', () => {
+      const service = container.getPollingService();
+
+      expect(service).toBeDefined();
+    });
+  });
+
+  describe('getConnectionService', () => {
+    it('should create and return ConnectionService singleton', () => {
+      const service1 = container.getConnectionService();
+      const service2 = container.getConnectionService();
+
+      expect(service1).toBeDefined();
+      expect(service1).toBe(service2); // Same instance
+    });
+  });
+
+  describe('synchronizeMessageClients', () => {
+    it('should synchronize message clients when clientRouter is initialized', () => {
+      const connectionService = container.getConnectionService();
+      const areaService = container.getAreaManagementService();
+
+      // Mock clientRouter to be defined
+      const mockClientRouter = {} as any;
+      connectionService.clientRouter = mockClientRouter;
+
+      const setMessageClientSpy = vi.spyOn(areaService, 'setMessageClient');
+
+      container.synchronizeMessageClients();
+
+      expect(setMessageClientSpy).toHaveBeenCalledWith(mockClientRouter);
+    });
+
+    it('should throw error when ConnectionService is not initialized', () => {
+      expect(() => container.synchronizeMessageClients()).toThrow('Message client not initialized in ConnectionService');
+    });
+
+    it('should throw error when clientRouter is undefined', () => {
+      container.getConnectionService();
+
+      expect(() => container.synchronizeMessageClients()).toThrow('Message client not initialized in ConnectionService');
+    });
+  });
+
+  describe('getIotApi', () => {
+    it('should return undefined when user is not authenticated', () => {
+      expect(container.getIotApi()).toBeUndefined();
+    });
+
+    it('should return IoT API after user authentication', () => {
+      container.setUserData(mockUserData);
+
+      const iotApi = container.getIotApi();
+
+      expect(iotApi).toBe(mockIotApi);
+    });
+  });
+
+  describe('getMessageProcessorMap', () => {
+    it('should return message processor map', () => {
+      const map = container.getMessageProcessorMap();
+
+      expect(map).toBeInstanceOf(Map);
+    });
+
+    it('should return same map instance on multiple calls', () => {
+      const map1 = container.getMessageProcessorMap();
+      const map2 = container.getMessageProcessorMap();
+
+      expect(map1).toBe(map2);
+    });
+  });
+
   describe('getAllServices', () => {
     it('should return all services in a bundle', () => {
       const services = container.getAllServices();
@@ -211,6 +293,8 @@ describe('ServiceContainer', () => {
       expect(services).toHaveProperty('deviceManagement');
       expect(services).toHaveProperty('areaManagement');
       expect(services).toHaveProperty('messageRouting');
+      expect(services).toHaveProperty('polling');
+      expect(services).toHaveProperty('connection');
 
       expect(services.authentication).toBeInstanceOf(AuthenticationService);
       expect(services.deviceManagement).toBeInstanceOf(DeviceManagementService);
@@ -226,40 +310,74 @@ describe('ServiceContainer', () => {
       expect(services1.deviceManagement).toBe(services2.deviceManagement);
       expect(services1.areaManagement).toBe(services2.areaManagement);
       expect(services1.messageRouting).toBe(services2.messageRouting);
+      expect(services1.polling).toBe(services2.polling);
+      expect(services1.connection).toBe(services2.connection);
     });
   });
 
   describe('destroy', () => {
-    it('should clear all service references', () => {
+    it('should clear all service references', async () => {
       // Create all services first
       container.getAuthenticationService();
       container.getDeviceManagementService();
       container.getAreaManagementService();
       container.getMessageRoutingService();
+      container.getPollingService();
+      container.getConnectionService();
 
-      container.destroy();
+      await container.destroy();
 
       expect(mockLogger.debug).toHaveBeenCalledWith('ServiceContainer destroyed');
     });
 
-    it('should clear user data', () => {
+    it('should clear user data', async () => {
       container.setUserData(mockUserData);
 
       expect(container.getUserData()).toBe(mockUserData);
 
-      container.destroy();
+      await container.destroy();
 
       expect(container.getUserData()).toBeUndefined();
     });
 
-    it('should create new instances after destroy', () => {
+    it('should create new instances after destroy', async () => {
       const service1 = container.getAuthenticationService();
 
-      container.destroy();
+      await container.destroy();
 
       const service2 = container.getAuthenticationService();
 
       expect(service1).not.toBe(service2); // Different instances
+    });
+
+    it('should shutdown polling service before clearing references', async () => {
+      const pollingService = container.getPollingService();
+      const shutdownSpy = vi.spyOn(pollingService, 'shutdown');
+
+      await container.destroy();
+
+      expect(shutdownSpy).toHaveBeenCalled();
+    });
+
+    it('should clear message processor map on destroy', async () => {
+      const map = container.getMessageProcessorMap();
+      map.set('test-key', {} as any);
+
+      expect(map.size).toBe(1);
+
+      await container.destroy();
+
+      expect(map.size).toBe(0);
+    });
+
+    it('should clear IoT API on destroy', async () => {
+      container.setUserData(mockUserData);
+
+      expect(container.getIotApi()).toBeDefined();
+
+      await container.destroy();
+
+      expect(container.getIotApi()).toBeUndefined();
     });
   });
 

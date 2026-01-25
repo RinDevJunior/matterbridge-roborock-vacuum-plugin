@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { AnsiLogger } from 'matterbridge/logger';
-import { RoborockService } from '../services/roborockService.js';
+import { RoborockService } from '../../services/roborockService.js';
 
 describe('RoborockService - listDevices', () => {
   let roborockService: RoborockService;

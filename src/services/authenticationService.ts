@@ -175,7 +175,7 @@ export class AuthenticationService {
       if (!savedUserData) {
         this.logger.debug('No saved userData found, proceeding to verification code flow');
       } else {
-        if (savedUserData.username === undefined || savedUserData.username !== '') {
+        if (savedUserData.username === undefined || savedUserData.username === '') {
           savedUserData.username = username;
           this.persist.setItem('userData', savedUserData);
         }
