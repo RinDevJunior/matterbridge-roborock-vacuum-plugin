@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { RoborockService } from '../../services/roborockService.js';
+import { RoborockService } from '../../../services/roborockService.js';
 
 describe('initializeMessageClientForLocal', () => {
   let service: RoborockService;
@@ -31,16 +31,5 @@ describe('initializeMessageClientForLocal', () => {
   it('returns false if messageClient is not initialized', async () => {
     // Without message client setup, should throw error
     await expect(service.initializeMessageClientForLocal(mockDevice)).rejects.toThrow('Message client not initialized in ConnectionService');
-  });
-
-  // Skip complex tests that require full message client setup for facade pattern
-  it('returns true and sets mqttAlwaysOnDevices if device.pv is B01', async () => {
-    // Placeholder assertion to satisfy linter
-    expect(true).toBe(true);
-  });
-
-  it('returns false if local client does not connect after attempts', async () => {
-    // Placeholder assertion to satisfy linter
-    expect(true).toBe(true);
   });
 });

@@ -21,5 +21,6 @@
 
 - [x] Add unit tests for module.ts coverage (improved from 31% to 43%)
 - [x] Add unit tests for platformLifecycle.ts (100% coverage achieved)
+- [x] Fix unit test failures for roborockService.areamanagement.test.ts
 - [ ] Add unit tests for remaining platform classes (deviceRegistry, platformConfig, platformState)
 - [ ] Final verification (build, test, lint)

@@ -1,53 +1,8 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { AnsiLogger } from 'matterbridge/logger';
-import { RoborockService } from '../../services/roborockService.js';
-import { RoomIndexMap } from '../../model/RoomIndexMap.js';
+import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
+import { RoborockService } from '../../../services/roborockService.js';
+import { RoomIndexMap } from '../../../model/RoomIndexMap.js';
 
 const logger: any = { debug: vi.fn(), error: vi.fn(), notice: vi.fn(), warn: vi.fn() };
-
-describe('RoborockService (unit)', () => {
-  let logger: any;
-  let container: any;
-  let authService: any;
-
-  beforeEach(() => {
-    logger = { debug: vi.fn(), notice: vi.fn(), error: vi.fn() };
-
-    authService = {
-      loginWithPassword: vi.fn(async (u: string, p: string) => ({ username: u, token: 't' })),
-      loginWithVerificationCode: vi.fn(),
-      loginWithCachedToken: vi.fn(),
-      requestVerificationCode: vi.fn(),
-    };
-
-    // Minimal container mock used by RoborockService when injected
-    container = {
-      getAuthenticationService: () => authService,
-      getDeviceManagementService: () => ({}),
-      getAreaManagementService: () => ({ getSelectedAreas: () => [], getSupportedAreas: () => [] }),
-      getMessageRoutingService: () => ({}),
-      getPollingService: () => ({ setDeviceNotify: vi.fn(), activateDeviceNotifyOverLocal: vi.fn(), activateDeviceNotifyOverMQTT: vi.fn(), stopPolling: vi.fn() }),
-      setUserData: vi.fn(),
-      getIotApi: () => undefined,
-    };
-  });
-
-  it('getCustomAPI throws when IoT API not initialized', async () => {
-    const svc = new RoborockService(
-      {
-        authenticateApiFactory: () => undefined as any,
-        iotApiFactory: () => undefined as any,
-        refreshInterval: 10,
-        baseUrl: 'https://api.roborock.com',
-        persist: {} as any,
-        configManager: {} as any,
-      },
-      logger as any,
-      container as any,
-    );
-    await expect(svc.getCustomAPI('/some')).rejects.toThrow(/IoT API not initialized/);
-  });
-});
 
 describe('RoborockService basic behaviors', () => {
   let svc: RoborockService;
@@ -89,42 +44,12 @@ describe('RoborockService basic behaviors', () => {
     // Test without authentication - should throw
     await expect(svc.getCustomAPI('http://x')).rejects.toThrow('IoT API not initialized. Please login first.');
   });
-
-  // Skip complex tests that require full authentication flow for now
-  it('getRoomIdFromMap returns vacuumRoom from customGet', async () => {
-    // Placeholder assertion to satisfy linter
-    expect(true).toBe(true);
-  });
-
-  it('getCustomAPI returns result when authenticated', async () => {
-    // Placeholder assertion to satisfy linter
-    expect(true).toBe(true);
-  });
 });
 
-/**
- * Facade Pattern Unit Tests for RoborockService
- *
- * This demonstrates proper facade testing principles:
- * 1. Test public contracts, not implementation details
- * 2. Focus on behavior coordination rather than internal calls
- * 3. Mock external dependencies, not internal services
- * 4. Verify error propagation and state management
- */
 describe('RoborockService - Facade Pattern Testing', () => {
   let roborockService: RoborockService;
-  let mockLogger: AnsiLogger;
 
   beforeEach(() => {
-    mockLogger = {
-      debug: vi.fn(),
-      error: vi.fn(),
-      warn: vi.fn(),
-      notice: vi.fn(),
-    } as any;
-
-    // Create RoborockService instance without dependency injection
-    // This tests the facade in its normal production configuration
     roborockService = new RoborockService(
       {
         authenticateApiFactory: () => undefined as any,
@@ -140,7 +65,6 @@ describe('RoborockService - Facade Pattern Testing', () => {
   });
 
   afterEach(() => {
-    // Clean up any intervals or resources created during tests
     roborockService.stopService();
   });
 

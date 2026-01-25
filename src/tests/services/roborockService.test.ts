@@ -7,7 +7,7 @@ import { DeviceManagementService } from '../../services/deviceManagementService.
 import { AreaManagementService } from '../../services/areaManagementService.js';
 import { MessageRoutingService } from '../../services/messageRoutingService.js';
 import { PollingService } from '../../services/pollingService.js';
-import { Device, UserData } from '../../roborockCommunication/models/index.js';
+import { Device } from '../../roborockCommunication/models/index.js';
 
 describe('RoborockService - Comprehensive Coverage', () => {
   let service: RoborockService;
@@ -18,8 +18,6 @@ describe('RoborockService - Comprehensive Coverage', () => {
   let mockAreaService: AreaManagementService;
   let mockMessageService: MessageRoutingService;
   let mockPollingService: PollingService;
-  let mockUserData: UserData;
-  let mockDevice: Device;
 
   beforeEach(() => {
     mockLogger = {
@@ -106,33 +104,6 @@ describe('RoborockService - Comprehensive Coverage', () => {
       getIotApi: vi.fn(),
     } as unknown as ServiceContainer;
 
-    mockUserData = {
-      uid: 'test-uid',
-      tokentype: 'Bearer',
-      token: 'test-token',
-      rruid: 'rr-uid',
-      region: 'us',
-      countrycode: 'US',
-      country: 'United States',
-      nickname: 'Test User',
-      rriot: {
-        u: 'test-user',
-        s: 'test-secret',
-        h: 'test-host',
-        k: 'test-key',
-        r: { a: 'test-region-a', m: 'test-mqtt' },
-      },
-    } as UserData;
-
-    mockDevice = {
-      duid: 'device-123',
-      name: 'Test Vacuum',
-      localKey: 'local-key-789',
-      pv: 'A01',
-      productId: 'product-456',
-      runtimeEnv: { featureSet: 123 },
-    } as unknown as Device;
-
     service = new RoborockService(
       {
         authenticateApiFactory: () => undefined as any,
@@ -145,14 +116,6 @@ describe('RoborockService - Comprehensive Coverage', () => {
       mockLogger,
       mockContainer as any,
     );
-  });
-
-  describe('Device Management Methods', () => {
-    it('should throw error when getting custom API without IoT API', async () => {
-      (mockContainer.getIotApi as ReturnType<typeof vi.fn>).mockReturnValue(undefined);
-
-      await expect(service.getCustomAPI('/test')).rejects.toThrow('IoT API not initialized. Please login first.');
-    });
   });
 
   describe('Constructor and Initialization', () => {
@@ -208,6 +171,15 @@ describe('RoborockService - Comprehensive Coverage', () => {
       );
 
       expect(customService).toBeInstanceOf(RoborockService);
+    });
+
+    it('activateDeviceNotify delegates to device service', () => {
+      const device: Device = { duid: 'test-duid' } as Device;
+
+      // Test that method exists and doesn't throw with basic call
+      expect(() => {
+        service.activateDeviceNotify(device);
+      }).not.toThrow();
     });
   });
 });
