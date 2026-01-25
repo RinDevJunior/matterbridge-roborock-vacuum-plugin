@@ -36,7 +36,7 @@ export class RoborockVacuumCleaner extends RoboticVacuumCleaner {
     super(
       deviceConfig.deviceName,
       device.duid,
-      deviceConfig.bridgeMode,
+      deviceConfig.bridgeMode, // hardcode to 'server' or 'matter'
       deviceConfig.supportedRunModes[0].mode,
       deviceConfig.supportedRunModes,
       deviceConfig.cleanModes[0].mode,

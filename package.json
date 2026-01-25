@@ -101,14 +101,13 @@
     "vitest": "4.0.17"
   },
   "dependencies": {
-    "@log4js-node/log4js-api": "^1.0.2",
-    "@types/node-persist": "^3.1.8",
-    "axios": "^1.9.0",
-    "axios-retry": "^3.3.1",
-    "binary-parser": "^2.2.1",
-    "crc-32": "^1.2.2",
-    "jimp": "^1.6.0",
-    "mqtt": "^5.13.0",
-    "node-persist-manager": "1.0.8"
+    "@types/node-persist": "3.1.8",
+    "axios": "1.13.2",
+    "axios-logger": "2.8.1",
+    "axios-retry": "4.5.0",
+    "binary-parser": "2.3.0",
+    "crc-32": "1.2.2",
+    "mqtt": "5.14.1",
+    "node-persist-manager": "2.0.0"
   }
 }

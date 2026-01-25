@@ -87,7 +87,7 @@ export class RoborockMatterbridgePlatform extends MatterbridgeDynamicPlatform {
       unregisterAllDevices: (delay) => this.unregisterAllDevices(delay),
     };
 
-    this.lifecycle = new PlatformLifecycle(this, this.registry, this.configManager, this.state, deps);
+    this.lifecycle = new PlatformLifecycle(this, this.configManager, this.state, deps);
   }
 
   // ─── Lifecycle Delegation ───────────────────────────────────────────────────
@@ -119,10 +119,10 @@ export class RoborockMatterbridgePlatform extends MatterbridgeDynamicPlatform {
 
     this.log.info('startDeviceDiscovery start');
 
-    if (this.configManager.experimentalSettings.enableExperimentalFeature && this.configManager.cleanModeSettings) {
-      const cleanModeSettings = this.configManager.cleanModeSettings;
+    const cleanModeSettings = this.configManager.cleanModeSettings;
+    if (cleanModeSettings) {
       this.log.notice(
-        `Experimental Feature: ${this.configManager.experimentalSettings.enableExperimentalFeature ? 'Enabled' : 'Disabled'},
+        `Experimental Feature: ${this.configManager.isExperimentalEnabled ? 'Enabled' : 'Disabled'},
          Clean Mode Settings: ${debugStringify(cleanModeSettings)}`,
       );
     }
@@ -147,7 +147,7 @@ export class RoborockMatterbridgePlatform extends MatterbridgeDynamicPlatform {
     this.roborockService = new RoborockService(
       {
         authenticateApiFactory: (_, url) => new RoborockAuthenticateApi(this.log, axiosInstance, sessionId, url),
-        iotApiFactory: (logger, ud) => new RoborockIoTApi(ud, logger),
+        iotApiFactory: (logger, ud) => new RoborockIoTApi(ud, this.log, axiosInstance),
         refreshInterval: this.config.refreshInterval ?? DEFAULT_REFRESH_INTERVAL_SECONDS,
         baseUrl,
         persist: this.persist,
