@@ -155,10 +155,7 @@ export class RoborockService {
 
   /** Stop service and clean up resources. */
   public stopService(): void {
-    this.deviceService.stopService();
-    this.pollingService.stopPolling();
-    this.areaService.clearAll();
-    this.messageService.clearAll();
+    this.container.destroy();
   }
 
   // ============================================================================

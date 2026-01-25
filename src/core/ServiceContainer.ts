@@ -67,9 +67,13 @@ export class ServiceContainer {
   /**
    * Clean up resources.
    */
-  public async dispose(): Promise<void> {
+  public async shutdown(): Promise<void> {
     if (this.clientRouter) {
       await this.clientRouter.disconnect();
+      this.clientRouter = undefined;
+    }
+    if (this.deviceGateway) {
+      this.deviceGateway = undefined;
     }
     this.logger.info('Service container disposed');
   }

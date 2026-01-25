@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
 import { RoborockService } from '../../../services/roborockService.js';
 import { RoomIndexMap } from '../../../model/RoomIndexMap.js';
 
-const logger: any = { debug: vi.fn(), error: vi.fn(), notice: vi.fn(), warn: vi.fn() };
+const logger: any = { debug: vi.fn(), error: vi.fn(), notice: vi.fn(), warn: vi.fn(), info: vi.fn() };
 
 describe('RoborockService basic behaviors', () => {
   let svc: RoborockService;

@@ -165,12 +165,37 @@ export class ServiceContainer {
       await this.pollingService.shutdown();
     }
 
-    // Clear service references (allows garbage collection)
-    this.authenticationService = undefined;
-    this.deviceManagementService = undefined;
-    this.areaManagementService = undefined;
-    this.messageRoutingService = undefined;
-    this.pollingService = undefined;
+    if (this.connectionService) {
+      await this.connectionService.shutdown();
+      this.connectionService = undefined;
+    }
+
+    if (this.messageRoutingService) {
+      this.messageRoutingService.clearAll();
+      this.messageRoutingService = undefined;
+    }
+
+    if (this.areaManagementService) {
+      this.areaManagementService.clearAll();
+      this.areaManagementService = undefined;
+    }
+
+    if (this.deviceManagementService) {
+      this.deviceManagementService.stopService();
+      this.deviceManagementService = undefined;
+    }
+
+    if (this.authenticationService) {
+      this.authenticationService = undefined;
+    }
+
+    if (this.pollingService) {
+      await this.pollingService.shutdown();
+      this.pollingService = undefined;
+    }
+
+    // Dispose core service container
+    await this.coreServiceContainer.shutdown();
 
     // Clear user data
     this.userdata = undefined;
@@ -178,7 +203,6 @@ export class ServiceContainer {
 
     // Clear message processor map
     this.messageProcessorMap.clear();
-
     this.logger.debug('ServiceContainer destroyed');
   }
 
