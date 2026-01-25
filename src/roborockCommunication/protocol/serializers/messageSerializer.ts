@@ -2,8 +2,8 @@ import CRC32 from 'crc-32';
 import { AnsiLogger } from 'matterbridge/logger';
 import { MessageContext, Protocol, RequestMessage } from '../../models/index.js';
 import { ProtocolVersion } from '../../enums/index.js';
-import { MessageProcessorFactory } from '../../helper/messageProcessorFactory.js';
-import { MessageBodyBuilderFactory } from '../../helper/messageBodyBuilderFactory.js';
+import { MessageBodyBuilderFactory } from '../builders/messageBodyBuilderFactory.js';
+import { MessageSerializerFactory } from './messageSerializerFactory.js';
 
 interface SerializeResult {
   messageId: number;
@@ -16,7 +16,7 @@ export class MessageSerializer {
   private sequence = 1;
   private readonly supportedVersions: string[] = [ProtocolVersion.V1, ProtocolVersion.A01, ProtocolVersion.B01, ProtocolVersion.L01];
   private readonly protocolsWithoutPayload: Protocol[] = [Protocol.hello_request, Protocol.ping_request];
-  private readonly messageProcessorFactory = new MessageProcessorFactory();
+  private readonly messageSerializerFactory = new MessageSerializerFactory();
   private readonly messageBodyBuilderFactory = new MessageBodyBuilderFactory();
 
   constructor(context: MessageContext, logger: AnsiLogger) {
@@ -45,11 +45,11 @@ export class MessageSerializer {
       }
 
       const messageBodyBuilder = this.messageBodyBuilderFactory.getMessageBodyBuilder(version, request.body !== undefined);
-      const messageProcessor = this.messageProcessorFactory.getMessageProcessor(version);
+      const messageSerializer = this.messageSerializerFactory.getMessageSerializer(version);
       const payloadData = messageBodyBuilder.buildPayload(request, this.context);
       const connectNonce = this.context.nonce;
       const ackNonce = this.context.getDeviceNonce(duid);
-      encrypted = messageProcessor.encode(payloadData, localKey, request.timestamp, this.sequence, request.nonce, connectNonce, ackNonce);
+      encrypted = messageSerializer.encode(payloadData, localKey, request.timestamp, this.sequence, request.nonce, connectNonce, ackNonce);
     }
 
     const msg = Buffer.alloc(23 + encrypted.length);

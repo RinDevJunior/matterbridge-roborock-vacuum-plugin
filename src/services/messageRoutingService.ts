@@ -5,19 +5,16 @@ import { DeviceError } from '../errors/index.js';
 import { MessageProcessor } from '../roborockCommunication/mqtt/messageProcessor.js';
 import { RoborockIoTApi } from '../roborockCommunication/api/iotClient.js';
 import { RequestMessage } from '../roborockCommunication/models/index.js';
+import { AbstractMessageDispatcher } from '../roborockCommunication/protocol/dispatcher/abstractMessageDispatcher.js';
 
 /** Response from map room queries. */
 interface MapRoomResponse {
   vacuumRoom?: number;
 }
 
-/** Routes and executes device commands (cleaning, mode changes, custom messages). */
 export class MessageRoutingService {
-  // Message processor map: duid -> MessageProcessor
   private messageProcessorMap = new Map<string, MessageProcessor>();
-
-  // MQTT always-on devices (use MQTT protocol exclusively)
-  private mqttAlwaysOnDevices = new Map<string, boolean>();
+  private messageDispatcherMap = new Map<string, AbstractMessageDispatcher>();
 
   constructor(
     private readonly logger: AnsiLogger,
@@ -34,6 +31,18 @@ export class MessageRoutingService {
     this.messageProcessorMap.set(duid, messageProcessor);
   }
 
+  public registerMessageDispatcher(duid: string, messageDispatcher: AbstractMessageDispatcher): void {
+    this.messageDispatcherMap.set(duid, messageDispatcher);
+  }
+
+  public getMessageDispatcher(duid: string): AbstractMessageDispatcher {
+    const messageDispatcher = this.messageDispatcherMap.get(duid);
+    if (!messageDispatcher) {
+      throw new DeviceError(`MessageDispatcher not initialized for device ${duid}`, duid);
+    }
+    return messageDispatcher;
+  }
+
   /** Get message processor for a device. Throws if not initialized. */
   public getMessageProcessor(duid: string): MessageProcessor {
     const messageProcessor = this.messageProcessorMap.get(duid);
@@ -43,24 +52,10 @@ export class MessageRoutingService {
     return messageProcessor;
   }
 
-  /** Mark device as MQTT-only (no local network). */
-  public setMqttAlwaysOn(duid: string, mqttOnly: boolean): void {
-    this.mqttAlwaysOnDevices.set(duid, mqttOnly);
-  }
-
-  public getMqttAlwaysOn(duid: string): boolean {
-    return this.mqttAlwaysOnDevices.get(duid) ?? false;
-  }
-
-  /** Check if device requires secure protocol (MQTT-only). */
-  private isRequestSecure(duid: string): boolean {
-    return this.mqttAlwaysOnDevices.get(duid) ?? false;
-  }
-
   /** Get current cleaning mode settings. */
   public async getCleanModeData(duid: string): Promise<CleanModeSetting> {
     this.logger.notice('MessageRoutingService - getCleanModeData');
-    const data = await this.getMessageProcessor(duid).getCleanModeData(duid);
+    const data = await this.getMessageDispatcher(duid).getCleanModeData(duid);
     if (!data) {
       throw new DeviceError('Failed to retrieve clean mode data', duid);
     }
@@ -69,14 +64,14 @@ export class MessageRoutingService {
 
   /** Get vacuum's current room from map. */
   public async getRoomIdFromMap(duid: string): Promise<number | undefined> {
-    const data = await this.customGet<MapRoomResponse>(duid, new RequestMessage({ method: 'get_map_v1', secure: true }));
+    const data = await this.getMessageDispatcher(duid).getCustomMessage<MapRoomResponse>(duid, new RequestMessage({ method: 'get_map_v1', secure: true }));
     return data?.vacuumRoom;
   }
 
   /** Change cleaning mode settings. */
   public async changeCleanMode(duid: string, { suctionPower, waterFlow, distance_off, mopRoute }: CleanModeSetting): Promise<void> {
     this.logger.notice('MessageRoutingService - changeCleanMode');
-    return this.getMessageProcessor(duid).changeCleanMode(duid, suctionPower, waterFlow, mopRoute ?? 0, distance_off);
+    return this.getMessageDispatcher(duid).changeCleanMode(duid, suctionPower, waterFlow, mopRoute ?? 0, distance_off);
   }
 
   /** Start cleaning (global, room-specific, or routine). */
@@ -141,12 +136,12 @@ export class MessageRoutingService {
     }
 
     this.logger.debug('Starting room clean', { duid, selected });
-    return this.getMessageProcessor(duid).startRoomClean(duid, selected, 1);
+    return this.getMessageDispatcher(duid).startRoomCleaning(duid, selected, 1);
   }
 
   /** Start global cleaning (entire house). */
   private async startGlobalClean(duid: string): Promise<void> {
-    return this.getMessageProcessor(duid).startClean(duid);
+    return this.getMessageDispatcher(duid).startCleaning(duid);
   }
 
   /**
@@ -154,7 +149,7 @@ export class MessageRoutingService {
    */
   public async pauseClean(duid: string): Promise<void> {
     this.logger.debug('MessageRoutingService - pauseClean');
-    await this.getMessageProcessor(duid).pauseClean(duid);
+    await this.getMessageDispatcher(duid).pauseCleaning(duid);
   }
 
   /**
@@ -162,7 +157,7 @@ export class MessageRoutingService {
    */
   public async stopAndGoHome(duid: string): Promise<void> {
     this.logger.debug('MessageRoutingService - stopAndGoHome');
-    await this.getMessageProcessor(duid).gotoDock(duid);
+    await this.getMessageDispatcher(duid).goHome(duid);
   }
 
   /**
@@ -170,7 +165,7 @@ export class MessageRoutingService {
    */
   public async resumeClean(duid: string): Promise<void> {
     this.logger.debug('MessageRoutingService - resumeClean');
-    await this.getMessageProcessor(duid).resumeClean(duid);
+    await this.getMessageDispatcher(duid).resumeCleaning(duid);
   }
 
   /**
@@ -178,7 +173,7 @@ export class MessageRoutingService {
    */
   public async playSoundToLocate(duid: string): Promise<void> {
     this.logger.debug('MessageRoutingService - findMe');
-    await this.getMessageProcessor(duid).findMyRobot(duid);
+    await this.getMessageDispatcher(duid).findMyRobot(duid);
   }
 
   /**
@@ -186,14 +181,14 @@ export class MessageRoutingService {
    */
   public async customGet<T = unknown>(duid: string, request: RequestMessage): Promise<T> {
     this.logger.debug('MessageRoutingService - customSend-message', request.method, request.params, request.secure);
-    return this.getMessageProcessor(duid).getCustomMessage(duid, request);
+    return this.getMessageDispatcher(duid).getCustomMessage(duid, request);
   }
 
   /**
    * Send a custom command to the device without expecting a response.
    */
   public async customSend(duid: string, request: RequestMessage): Promise<void> {
-    return this.getMessageProcessor(duid).sendCustomMessage(duid, request);
+    return this.getMessageDispatcher(duid).sendCustomMessage(duid, request);
   }
 
   /**
@@ -202,7 +197,7 @@ export class MessageRoutingService {
    */
   public clearAll(): void {
     this.messageProcessorMap.clear();
-    this.mqttAlwaysOnDevices.clear();
+    this.messageDispatcherMap.clear();
     this.logger.debug('MessageRoutingService - All data cleared');
   }
 }

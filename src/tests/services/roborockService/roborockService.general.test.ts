@@ -37,7 +37,7 @@ describe('RoborockService basic behaviors', () => {
   });
 
   it('getCleanModeData throws when message processor not available', async () => {
-    await expect(svc.getCleanModeData('nope')).rejects.toThrow('MessageProcessor not initialized for device nope');
+    await expect(svc.getCleanModeData('nope')).rejects.toThrow('MessageDispatcher not initialized for device nope');
   });
 
   it('getCustomAPI returns error when not authenticated', async () => {

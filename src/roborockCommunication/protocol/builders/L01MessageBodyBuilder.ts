@@ -1,7 +1,7 @@
 import { DpsPayload, MessageContext, Protocol, RequestMessage } from '../../models/index.js';
-import { MessageBodyBuilder } from './messageBodyBuilder.js';
+import { AbstractMessageBodyBuilder } from './abstractMessageBodyBuilder.js';
 
-export class L01MessageBodyBuilder implements MessageBodyBuilder {
+export class L01MessageBodyBuilder implements AbstractMessageBodyBuilder {
   buildPayload(request: RequestMessage, context: MessageContext): string {
     let protocol = request.protocol;
     if (protocol == Protocol.general_request) {

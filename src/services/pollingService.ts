@@ -1,5 +1,5 @@
 import { AnsiLogger, debugStringify } from 'matterbridge/logger';
-import { LOCAL_REFRESH_INTERVAL_MULTIPLIER, MQTT_REFRESH_INTERVAL_MULTIPLIER } from '../constants/index.js';
+import { LOCAL_REFRESH_INTERVAL_MULTIPLIER } from '../constants/index.js';
 import { NotifyMessageTypes } from '../types/notifyMessageTypes.js';
 import { MessageRoutingService } from './messageRoutingService.js';
 import { Device, DeviceStatusNotify } from '../roborockCommunication/models/index.js';
@@ -10,7 +10,6 @@ export type DeviceNotifyCallback = (messageSource: NotifyMessageTypes, homeData:
 /** Polls device status via local network or MQTT. */
 export class PollingService {
   private localRequestDeviceStatusInterval: NodeJS.Timeout | undefined;
-  private mqttRequestDeviceStatusInterval: NodeJS.Timeout | undefined;
   private deviceNotify?: DeviceNotifyCallback;
 
   constructor(
@@ -38,13 +37,13 @@ export class PollingService {
 
     this.localRequestDeviceStatusInterval = setInterval(async () => {
       try {
-        const messageProcessor = this.messageRoutingService.getMessageProcessor(device.duid);
-        if (!messageProcessor) {
-          this.logger.error('Local Polling - No message processor for device:', device.duid);
+        const messageDispatcher = this.messageRoutingService.getMessageDispatcher(device.duid);
+        if (!messageDispatcher) {
+          this.logger.error('Local Polling - No message dispatcher for device:', device.duid);
           return;
         }
 
-        const response = await messageProcessor.getDeviceStatus(device.duid);
+        const response = await messageDispatcher.getDeviceStatus(device.duid);
         if (response && this.deviceNotify) {
           const message = Object.assign({ duid: device.duid }, response.errorStatus ?? {}, response.message ?? {}) as unknown as DeviceStatusNotify;
           this.logger.debug('Local Polling - Device status update:', debugStringify(message));
@@ -56,55 +55,15 @@ export class PollingService {
     }, this.refreshInterval * LOCAL_REFRESH_INTERVAL_MULTIPLIER);
   }
 
-  /** Start polling device status via MQTT. */
-  activateDeviceNotifyOverMQTT(device: Device): void {
-    if (!this.deviceNotify) {
-      this.logger.warn('Cannot activate device notify over MQTT: deviceNotify callback not set');
-      return;
-    }
-
-    // Clear any existing interval before creating a new one
-    this.stopMqttPolling();
-
-    this.logger.notice('Requesting device info for device over MQTT', device.duid);
-
-    this.mqttRequestDeviceStatusInterval = setInterval(async () => {
-      try {
-        const messageProcessor = this.messageRoutingService.getMessageProcessor(device.duid);
-        if (!messageProcessor) {
-          this.logger.error('MQTT - No message processor for device:', device.duid);
-          return;
-        }
-
-        const response = await messageProcessor.getDeviceStatusOverMQTT(device.duid);
-        if (response && this.deviceNotify) {
-          const message = Object.assign({ duid: device.duid }, response.errorStatus ?? {}, response.message ?? {}) as unknown as DeviceStatusNotify;
-          this.logger.debug('MQTT - Device status update', debugStringify(message));
-          this.deviceNotify(NotifyMessageTypes.LocalMessage, message);
-        }
-      } catch (error) {
-        this.logger.error('Failed to get device status over MQTT:', error);
-      }
-    }, this.refreshInterval * MQTT_REFRESH_INTERVAL_MULTIPLIER);
-  }
-
   /** Stop all polling intervals. */
   stopPolling(): void {
     this.stopLocalPolling();
-    this.stopMqttPolling();
   }
 
   private stopLocalPolling(): void {
     if (this.localRequestDeviceStatusInterval !== undefined) {
       clearInterval(this.localRequestDeviceStatusInterval);
       this.localRequestDeviceStatusInterval = undefined;
-    }
-  }
-
-  private stopMqttPolling(): void {
-    if (this.mqttRequestDeviceStatusInterval !== undefined) {
-      clearInterval(this.mqttRequestDeviceStatusInterval);
-      this.mqttRequestDeviceStatusInterval = undefined;
     }
   }
 

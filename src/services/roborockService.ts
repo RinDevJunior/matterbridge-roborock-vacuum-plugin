@@ -153,11 +153,6 @@ export class RoborockService {
     this.pollingService.activateDeviceNotifyOverLocal(device);
   }
 
-  /** Start polling device status via MQTT. */
-  public activateDeviceNotifyOverMQTT(device: Device): void {
-    this.pollingService.activateDeviceNotifyOverMQTT(device);
-  }
-
   /** Stop service and clean up resources. */
   public stopService(): void {
     this.deviceService.stopService();

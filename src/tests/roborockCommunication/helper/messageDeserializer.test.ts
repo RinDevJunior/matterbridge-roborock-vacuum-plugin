@@ -39,8 +39,8 @@ describe('MessageDeserializer', () => {
   });
 
   it('parses rpc_response and returns a body with parsed dps', async () => {
-    const mpf = await import('../../../roborockCommunication/helper/messageProcessorFactory.js');
-    vi.spyOn(mpf.MessageProcessorFactory.prototype, 'getMessageProcessor').mockReturnValue({
+    const mpf = await import('../../../roborockCommunication/protocol/serializers/messageSerializerFactory.js');
+    vi.spyOn(mpf.MessageSerializerFactory.prototype, 'getMessageSerializer').mockReturnValue({
       decode: (_payload: Buffer) => Buffer.from(JSON.stringify({ dps: { '102': JSON.stringify({ x: 1 }) } })),
     } as any);
 

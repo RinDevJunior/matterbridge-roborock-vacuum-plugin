@@ -313,16 +313,6 @@ describe('AreaManagementService', () => {
       [18, 3],
     ];
 
-    it('should retrieve room mappings with secure request', async () => {
-      mockMessageClient.get.mockResolvedValue(mockRoomMappings);
-      (mockMessageRoutingService.getMqttAlwaysOn as ReturnType<typeof vi.fn>).mockReturnValue(true);
-
-      const mappings = await areaService.getRoomMappings(mockDeviceId);
-
-      expect(mappings).toEqual(mockRoomMappings);
-      expect(mockMessageClient.get).toHaveBeenCalledWith(mockDeviceId, expect.objectContaining({ method: 'get_room_mapping', secure: true }));
-    });
-
     it('should retrieve room mappings with non-secure request', async () => {
       mockMessageClient.get.mockResolvedValue(mockRoomMappings);
 

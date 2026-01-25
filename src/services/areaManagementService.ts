@@ -91,8 +91,7 @@ export class AreaManagementService {
     }
 
     this.logger.debug('AreaManagementService - getMapInformation', duid);
-    const isRequestSecure = this.serviceRouting?.getMqttAlwaysOn(duid) ?? false;
-    const response = await this.messageClient.get<MultipleMap[] | undefined>(duid, new RequestMessage({ method: 'get_multi_maps_list', secure: isRequestSecure }));
+    const response = await this.messageClient.get<MultipleMap[] | undefined>(duid, new RequestMessage({ method: 'get_multi_maps_list' }));
 
     this.logger.debug('AreaManagementService - getMapInformation response', debugStringify(response ?? []));
     return response ? new MapInfo(response[0]) : undefined;
@@ -104,8 +103,7 @@ export class AreaManagementService {
       this.logger.warn('messageClient not initialized. Waiting for next execution');
       return undefined;
     }
-    const isRequestSecure = this.serviceRouting?.getMqttAlwaysOn(duid) ?? false;
-    return this.messageClient.get(duid, new RequestMessage({ method: 'get_room_mapping', secure: isRequestSecure }));
+    return this.messageClient.get(duid, new RequestMessage({ method: 'get_room_mapping' }));
   }
 
   /** Get all scenes for a home. */

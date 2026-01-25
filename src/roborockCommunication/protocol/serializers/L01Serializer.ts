@@ -1,8 +1,8 @@
 import crypto from 'node:crypto';
-import { Serializer } from './Serializer.js';
+import { AbstractSerializer } from './abstractSerializer.js';
 import * as CryptoUtils from '../../helper/cryptoHelper.js';
 
-export class L01Serializer implements Serializer {
+export class L01Serializer implements AbstractSerializer {
   public encode(payload: string, localKey: string, timestamp: number, sequence: number, nonce: number, connectNonce?: number, ackNonce?: number): Buffer<ArrayBuffer> {
     if (!connectNonce || !ackNonce) {
       throw new Error('connectNonce and ackNonce are required for L01 encryption');

@@ -1,8 +1,8 @@
 import * as CryptoUtils from '../../helper/cryptoHelper.js';
-import { Serializer } from './Serializer.js';
+import { AbstractSerializer } from './abstractSerializer.js';
 import crypto from 'node:crypto';
 
-export class A01Serializer implements Serializer {
+export class A01Serializer implements AbstractSerializer {
   public encode(payload: string, localKey: string, timestamp: number, sequence: number, nonce: number, connectNonce?: number, ackNonce?: number): Buffer<ArrayBuffer> {
     const encoder = new TextEncoder();
     const iv = CryptoUtils.md5hex(nonce.toString(16).padStart(8, '0') + '726f626f726f636b2d67a6d6da').substring(8, 24);

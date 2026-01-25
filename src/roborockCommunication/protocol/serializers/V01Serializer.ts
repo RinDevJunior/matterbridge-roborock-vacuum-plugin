@@ -1,8 +1,8 @@
 import crypto from 'node:crypto';
 import * as CryptoUtils from '../../helper/cryptoHelper.js';
-import { Serializer } from './Serializer.js';
+import { AbstractSerializer } from './abstractSerializer.js';
 
-export class V01Serializer implements Serializer {
+export class V01Serializer implements AbstractSerializer {
   public encode(payload: string, localKey: string, timestamp: number, sequence: number, nonce: number, connectNonce?: number, ackNonce?: number): Buffer<ArrayBuffer> {
     const aesKey = CryptoUtils.md5bin(CryptoUtils.encodeTimestamp(timestamp) + localKey + CryptoUtils.SALT);
     const cipher = crypto.createCipheriv('aes-128-ecb', aesKey, null);

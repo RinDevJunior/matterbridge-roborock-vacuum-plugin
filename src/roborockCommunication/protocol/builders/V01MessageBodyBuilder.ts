@@ -1,7 +1,7 @@
 import { DpsPayload, MessageContext, RequestMessage } from '../../models/index.js';
-import { MessageBodyBuilder } from './messageBodyBuilder.js';
+import { AbstractMessageBodyBuilder } from './abstractMessageBodyBuilder.js';
 
-export class V01MessageBodyBuilder implements MessageBodyBuilder {
+export class V01MessageBodyBuilder implements AbstractMessageBodyBuilder {
   buildPayload(request: RequestMessage, context: MessageContext): string {
     const data: DpsPayload = {
       id: request.messageId,

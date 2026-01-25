@@ -6,12 +6,14 @@ import { LOCAL_REFRESH_INTERVAL_MULTIPLIER, MQTT_REFRESH_INTERVAL_MULTIPLIER } f
 import { NotifyMessageTypes } from '../../types/notifyMessageTypes.js';
 import { MessageProcessor } from '../../roborockCommunication/mqtt/messageProcessor.js';
 import { Device } from '../../roborockCommunication/models/index.js';
+import { AbstractMessageDispatcher } from '../../roborockCommunication/protocol/dispatcher/abstractMessageDispatcher.js';
 
 describe('PollingService', () => {
   let service: PollingService;
   let mockLogger: AnsiLogger;
   let mockMessageRoutingService: MessageRoutingService;
   let mockMessageProcessor: MessageProcessor;
+  let mockMessageDispatcher: AbstractMessageDispatcher;
   const TEST_REFRESH_INTERVAL = 100;
 
   const mockDevice: Device = {
@@ -33,15 +35,30 @@ describe('PollingService', () => {
     } as unknown as AnsiLogger;
 
     mockMessageProcessor = {
-      getDeviceStatus: vi.fn(async (_duid?: string) => undefined),
-      getDeviceStatusOverMQTT: vi.fn(async (_duid?: string) => undefined),
       logger: mockLogger,
-      injectLogger: vi.fn(),
       registerListener: vi.fn(),
     } as unknown as MessageProcessor;
 
+    mockMessageDispatcher = {
+      getDeviceStatus: vi.fn(async (_duid: string) => undefined),
+      startCleanning: vi.fn(),
+      startRoomCleaning: vi.fn(),
+      pauseCleaning: vi.fn(),
+      resumeCleaning: vi.fn(),
+      stopCleaning: vi.fn(),
+      goHome: vi.fn(),
+      findMyRobot: vi.fn(),
+      getRooms: vi.fn(),
+      sendCustomMessage: vi.fn(),
+      getCustomMessage: vi.fn(),
+      getCleanModeData: vi.fn(),
+      changeCleanMode: vi.fn(),
+      logger: mockLogger,
+    } as unknown as AbstractMessageDispatcher;
+
     mockMessageRoutingService = {
       getMessageProcessor: vi.fn().mockReturnValue(mockMessageProcessor),
+      getMessageDispatcher: vi.fn().mockReturnValue(mockMessageDispatcher),
       getCleanModeData: vi.fn(),
       getRoomIdFromMap: vi.fn(),
       changeCleanMode: vi.fn(),
@@ -117,14 +134,14 @@ describe('PollingService', () => {
         errorStatus: { error: 0 },
         message: { state: 8, battery: 100 },
       };
-      mockMessageProcessor.getDeviceStatus = vi.fn().mockResolvedValue(mockResponse as never);
+      mockMessageDispatcher.getDeviceStatus = vi.fn().mockResolvedValue(mockResponse as never);
       service.setDeviceNotify(mockCallback);
 
       service.activateDeviceNotifyOverLocal(mockDevice);
 
       await vi.advanceTimersByTimeAsync(TEST_REFRESH_INTERVAL * LOCAL_REFRESH_INTERVAL_MULTIPLIER);
 
-      expect(mockMessageProcessor.getDeviceStatus).toHaveBeenCalledWith(mockDevice.duid);
+      expect(mockMessageDispatcher.getDeviceStatus).toHaveBeenCalledWith(mockDevice.duid);
       expect(mockCallback).toHaveBeenCalledWith(NotifyMessageTypes.LocalMessage, {
         duid: mockDevice.duid,
         error: 0,
@@ -139,7 +156,7 @@ describe('PollingService', () => {
         errorStatus: { error: 0 },
         message: { state: 8 },
       };
-      mockMessageProcessor.getDeviceStatus = vi.fn().mockResolvedValue(mockResponse as never);
+      mockMessageDispatcher.getDeviceStatus = vi.fn().mockResolvedValue(mockResponse as never);
       service.setDeviceNotify(mockCallback);
 
       service.activateDeviceNotifyOverLocal(mockDevice);
@@ -148,27 +165,14 @@ describe('PollingService', () => {
         await vi.advanceTimersByTimeAsync(TEST_REFRESH_INTERVAL * LOCAL_REFRESH_INTERVAL_MULTIPLIER);
       }
 
-      expect(mockMessageProcessor.getDeviceStatus).toHaveBeenCalledTimes(3);
+      expect(mockMessageDispatcher.getDeviceStatus).toHaveBeenCalledTimes(3);
       expect(mockCallback).toHaveBeenCalledTimes(3);
-    });
-
-    it('should log error when message processor is not found', async () => {
-      const mockCallback = vi.fn();
-      service.setDeviceNotify(mockCallback);
-      mockMessageRoutingService.getMessageProcessor = vi.fn().mockReturnValue(undefined as any);
-
-      service.activateDeviceNotifyOverLocal(mockDevice);
-
-      await vi.advanceTimersByTimeAsync(TEST_REFRESH_INTERVAL * LOCAL_REFRESH_INTERVAL_MULTIPLIER);
-
-      expect(mockLogger.error).toHaveBeenCalledWith('Local Polling - No message processor for device:', mockDevice.duid);
-      expect(mockCallback).not.toHaveBeenCalled();
     });
 
     it('should handle getDeviceStatus errors gracefully', async () => {
       const mockCallback = vi.fn();
       const testError = new Error('Network timeout');
-      mockMessageProcessor.getDeviceStatus = vi.fn().mockRejectedValue(testError);
+      mockMessageDispatcher.getDeviceStatus = vi.fn().mockRejectedValue(testError);
       service.setDeviceNotify(mockCallback);
 
       service.activateDeviceNotifyOverLocal(mockDevice);
@@ -181,124 +185,12 @@ describe('PollingService', () => {
 
     it('should handle null/undefined response from getDeviceStatus', async () => {
       const mockCallback = vi.fn();
-      mockMessageProcessor.getDeviceStatus = vi.fn().mockResolvedValue(null as never);
+      mockMessageDispatcher.getDeviceStatus = vi.fn().mockResolvedValue(null as never);
       service.setDeviceNotify(mockCallback);
 
       service.activateDeviceNotifyOverLocal(mockDevice);
 
       await vi.advanceTimersByTimeAsync(TEST_REFRESH_INTERVAL * LOCAL_REFRESH_INTERVAL_MULTIPLIER);
-
-      expect(mockCallback).not.toHaveBeenCalled();
-    });
-  });
-
-  describe('activateDeviceNotifyOverMQTT', () => {
-    it('should warn and return early when deviceNotify callback is not set', () => {
-      service.activateDeviceNotifyOverMQTT(mockDevice);
-
-      expect(mockLogger.warn).toHaveBeenCalledWith('Cannot activate device notify over MQTT: deviceNotify callback not set');
-      expect(mockLogger.notice).not.toHaveBeenCalled();
-    });
-
-    it('should activate MQTT polling and start interval', () => {
-      const mockCallback = vi.fn();
-      service.setDeviceNotify(mockCallback);
-
-      service.activateDeviceNotifyOverMQTT(mockDevice);
-
-      expect(mockLogger.notice).toHaveBeenCalledWith('Requesting device info for device over MQTT', mockDevice.duid);
-      expect(service['mqttRequestDeviceStatusInterval']).toBeDefined();
-    });
-
-    it('should clear existing interval before creating new one', () => {
-      const mockCallback = vi.fn();
-      service.setDeviceNotify(mockCallback);
-
-      service.activateDeviceNotifyOverMQTT(mockDevice);
-      const firstInterval = service['mqttRequestDeviceStatusInterval'];
-
-      service.activateDeviceNotifyOverMQTT(mockDevice);
-      const secondInterval = service['mqttRequestDeviceStatusInterval'];
-
-      expect(firstInterval).not.toBe(secondInterval);
-    });
-
-    it('should poll device status over MQTT at correct intervals', async () => {
-      const mockCallback = vi.fn();
-      const mockResponse = {
-        errorStatus: { error: 0 },
-        message: { state: 5, battery: 85 },
-      };
-      mockMessageProcessor.getDeviceStatusOverMQTT = vi.fn().mockResolvedValue(mockResponse as never);
-      service.setDeviceNotify(mockCallback);
-
-      service.activateDeviceNotifyOverMQTT(mockDevice);
-
-      await vi.advanceTimersByTimeAsync(TEST_REFRESH_INTERVAL * MQTT_REFRESH_INTERVAL_MULTIPLIER);
-
-      expect(mockMessageProcessor.getDeviceStatusOverMQTT).toHaveBeenCalledWith(mockDevice.duid);
-      expect(mockCallback).toHaveBeenCalledWith(NotifyMessageTypes.LocalMessage, {
-        duid: mockDevice.duid,
-        error: 0,
-        state: 5,
-        battery: 85,
-      });
-    });
-
-    it('should handle multiple MQTT polling cycles', async () => {
-      const mockCallback = vi.fn();
-      const mockResponse = {
-        errorStatus: { error: 0 },
-        message: { state: 5 },
-      };
-      mockMessageProcessor.getDeviceStatusOverMQTT = vi.fn().mockResolvedValue(mockResponse as never);
-      service.setDeviceNotify(mockCallback);
-
-      service.activateDeviceNotifyOverMQTT(mockDevice);
-
-      for (let i = 0; i < 3; i++) {
-        await vi.advanceTimersByTimeAsync(TEST_REFRESH_INTERVAL * MQTT_REFRESH_INTERVAL_MULTIPLIER);
-      }
-
-      expect(mockMessageProcessor.getDeviceStatusOverMQTT).toHaveBeenCalledTimes(3);
-      expect(mockCallback).toHaveBeenCalledTimes(3);
-    });
-
-    it('should log error when message processor is not found', async () => {
-      const mockCallback = vi.fn();
-      service.setDeviceNotify(mockCallback);
-      mockMessageRoutingService.getMessageProcessor = vi.fn().mockReturnValue(undefined as any);
-
-      service.activateDeviceNotifyOverMQTT(mockDevice);
-
-      await vi.advanceTimersByTimeAsync(TEST_REFRESH_INTERVAL * MQTT_REFRESH_INTERVAL_MULTIPLIER);
-
-      expect(mockLogger.error).toHaveBeenCalledWith('MQTT - No message processor for device:', mockDevice.duid);
-      expect(mockCallback).not.toHaveBeenCalled();
-    });
-
-    it('should handle getDeviceStatusOverMQTT errors gracefully', async () => {
-      const mockCallback = vi.fn();
-      const testError = new Error('MQTT connection lost');
-      mockMessageProcessor.getDeviceStatusOverMQTT = vi.fn().mockRejectedValue(testError);
-      service.setDeviceNotify(mockCallback);
-
-      service.activateDeviceNotifyOverMQTT(mockDevice);
-
-      await vi.advanceTimersByTimeAsync(TEST_REFRESH_INTERVAL * MQTT_REFRESH_INTERVAL_MULTIPLIER);
-
-      expect(mockLogger.error).toHaveBeenCalledWith('Failed to get device status over MQTT:', testError);
-      expect(mockCallback).not.toHaveBeenCalled();
-    });
-
-    it('should handle null/undefined response from getDeviceStatusOverMQTT', async () => {
-      const mockCallback = vi.fn();
-      mockMessageProcessor.getDeviceStatusOverMQTT = vi.fn().mockResolvedValue(undefined as never);
-      service.setDeviceNotify(mockCallback);
-
-      service.activateDeviceNotifyOverMQTT(mockDevice);
-
-      await vi.advanceTimersByTimeAsync(TEST_REFRESH_INTERVAL * MQTT_REFRESH_INTERVAL_MULTIPLIER);
 
       expect(mockCallback).not.toHaveBeenCalled();
     });
@@ -315,7 +207,6 @@ describe('PollingService', () => {
       service.stopPolling();
 
       expect(service['localRequestDeviceStatusInterval']).toBeUndefined();
-      expect(service['mqttRequestDeviceStatusInterval']).toBeUndefined();
     });
 
     it('should handle calling stopPolling when no interval is active', () => {
@@ -323,12 +214,11 @@ describe('PollingService', () => {
         service.stopPolling();
       }).not.toThrow();
       expect(service['localRequestDeviceStatusInterval']).toBeUndefined();
-      expect(service['mqttRequestDeviceStatusInterval']).toBeUndefined();
     });
 
     it('should prevent further polling after stopPolling is called', async () => {
       const mockCallback = vi.fn();
-      mockMessageProcessor.getDeviceStatus = vi.fn().mockResolvedValue({
+      mockMessageDispatcher.getDeviceStatus = vi.fn().mockResolvedValue({
         errorStatus: { error: 0 },
         message: { state: 8 },
       } as never);
@@ -339,7 +229,7 @@ describe('PollingService', () => {
 
       await vi.advanceTimersByTimeAsync(TEST_REFRESH_INTERVAL * LOCAL_REFRESH_INTERVAL_MULTIPLIER * 3);
 
-      expect(mockMessageProcessor.getDeviceStatus).not.toHaveBeenCalled();
+      expect(mockMessageDispatcher.getDeviceStatus).not.toHaveBeenCalled();
     });
   });
 
@@ -352,7 +242,6 @@ describe('PollingService', () => {
       await service.shutdown();
 
       expect(service['localRequestDeviceStatusInterval']).toBeUndefined();
-      expect(service['mqttRequestDeviceStatusInterval']).toBeUndefined();
       expect(service['deviceNotify']).toBeUndefined();
     });
 
@@ -362,7 +251,7 @@ describe('PollingService', () => {
 
     it('should prevent polling after shutdown', async () => {
       const mockCallback = vi.fn();
-      mockMessageProcessor.getDeviceStatus = vi.fn().mockResolvedValue({
+      mockMessageDispatcher.getDeviceStatus = vi.fn().mockResolvedValue({
         errorStatus: { error: 0 },
         message: { state: 8 },
       } as never);
@@ -373,7 +262,7 @@ describe('PollingService', () => {
 
       await vi.advanceTimersByTimeAsync(TEST_REFRESH_INTERVAL * LOCAL_REFRESH_INTERVAL_MULTIPLIER * 3);
 
-      expect(mockMessageProcessor.getDeviceStatus).not.toHaveBeenCalled();
+      expect(mockMessageDispatcher.getDeviceStatus).not.toHaveBeenCalled();
     });
   });
 
@@ -388,20 +277,16 @@ describe('PollingService', () => {
         errorStatus: { error: 0 },
         message: { state: 5 },
       };
-      mockMessageProcessor.getDeviceStatus = vi.fn().mockResolvedValue(localResponse as never);
-      mockMessageProcessor.getDeviceStatusOverMQTT = vi.fn().mockResolvedValue(mqttResponse as never);
+      mockMessageDispatcher.getDeviceStatus = vi.fn().mockResolvedValue(localResponse as never);
       service.setDeviceNotify(mockCallback);
 
       service.activateDeviceNotifyOverLocal(mockDevice);
       await vi.advanceTimersByTimeAsync(TEST_REFRESH_INTERVAL * LOCAL_REFRESH_INTERVAL_MULTIPLIER);
 
-      expect(mockMessageProcessor.getDeviceStatus).toHaveBeenCalledTimes(1);
-
-      service.activateDeviceNotifyOverMQTT(mockDevice);
+      expect(mockMessageDispatcher.getDeviceStatus).toHaveBeenCalledTimes(1);
       await vi.advanceTimersByTimeAsync(TEST_REFRESH_INTERVAL * MQTT_REFRESH_INTERVAL_MULTIPLIER);
 
-      expect(mockMessageProcessor.getDeviceStatusOverMQTT).toHaveBeenCalledTimes(1);
-      expect(mockMessageProcessor.getDeviceStatus).toHaveBeenCalledTimes(1);
+      expect(mockMessageDispatcher.getDeviceStatus).toHaveBeenCalledTimes(1);
     });
 
     it('should handle rapid activation/deactivation cycles', () => {
@@ -414,7 +299,6 @@ describe('PollingService', () => {
       }
 
       expect(service['localRequestDeviceStatusInterval']).toBeUndefined();
-      expect(service['mqttRequestDeviceStatusInterval']).toBeUndefined();
     });
   });
 });

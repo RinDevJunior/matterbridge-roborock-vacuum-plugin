@@ -1,11 +1,12 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { MessageProcessor } from '../../../roborockCommunication/mqtt/messageProcessor.js';
+import { AnsiLogger } from 'matterbridge/logger';
 import { DeviceStatus } from '../../../roborockCommunication/models/index.js';
+import { V01MessageDispatcher } from '../../../roborockCommunication/protocol/dispatcher/V01MessageDispatcher.js';
 
-describe('MessageProcessor', () => {
+describe('V01MessageDispatcher', () => {
   let mockClient: any;
-  let processor: MessageProcessor;
-  let mockLogger: any;
+  let processor: V01MessageDispatcher;
+  let mockLogger: AnsiLogger;
 
   beforeEach(() => {
     mockClient = {
@@ -15,18 +16,18 @@ describe('MessageProcessor', () => {
       get: vi.fn(),
       send: vi.fn(),
     };
-    processor = new MessageProcessor(mockClient);
-    mockLogger = { debug: vi.fn(), notice: vi.fn() };
-    processor.injectLogger(mockLogger);
+    mockLogger = {
+      debug: vi.fn(),
+      notice: vi.fn(),
+      warn: vi.fn(),
+      error: vi.fn(),
+    } as unknown as AnsiLogger;
+
+    processor = new V01MessageDispatcher(mockLogger, mockClient);
   });
 
   afterEach(() => {
     vi.restoreAllMocks();
-  });
-
-  it('should inject logger', () => {
-    processor.injectLogger(mockLogger);
-    expect(processor.logger).toBe(mockLogger);
   });
 
   it('getNetworkInfo should call client.get with correct params', async () => {
@@ -52,37 +53,37 @@ describe('MessageProcessor', () => {
 
   it('getRooms should return RoomInfo', async () => {
     mockClient.get.mockResolvedValue([[1, 2]]);
-    const result = await processor.getRooms('duid');
+    const result = await processor.getRooms('duid', 1);
     expect(result).not.toBeUndefined();
   });
 
   it('gotoDock should call client.send', async () => {
-    await processor.gotoDock('duid');
+    await processor.goHome('duid');
     expect(mockClient.send).toHaveBeenCalledWith('duid', expect.any(Object));
   });
 
   it('startClean should call client.send', async () => {
-    await processor.startClean('duid');
+    await processor.startCleaning('duid');
     expect(mockClient.send).toHaveBeenCalledWith('duid', expect.any(Object));
   });
 
   it('startRoomClean should call client.send with correct params', async () => {
-    await processor.startRoomClean('duid', [1, 2], 3);
+    await processor.startRoomCleaning('duid', [1, 2], 3);
     expect(mockClient.send).toHaveBeenCalledWith('duid', expect.any(Object));
   });
 
   it('pauseClean should call client.send', async () => {
-    await processor.pauseClean('duid');
+    await processor.pauseCleaning('duid');
     expect(mockClient.send).toHaveBeenCalledWith('duid', expect.any(Object));
   });
 
   it('resumeClean should call client.send', async () => {
-    await processor.resumeClean('duid');
+    await processor.resumeCleaning('duid');
     expect(mockClient.send).toHaveBeenCalledWith('duid', expect.any(Object));
   });
 
   it('stopClean should call client.send', async () => {
-    await processor.stopClean('duid');
+    await processor.stopCleaning('duid');
     expect(mockClient.send).toHaveBeenCalledWith('duid', expect.any(Object));
   });
 
@@ -123,20 +124,6 @@ describe('MessageProcessor', () => {
     mockClient.get.mockResolvedValueOnce(110); // currentMopMode
     await processor.changeCleanMode('duid', 101, 207, 306, 5);
     expect(mockLogger.notice).toHaveBeenCalled();
-  });
-
-  it('getDeviceStatusOverMQTT should return DeviceStatus if response exists', async () => {
-    const mockDeviceStatus = { status: 'ok' };
-    mockClient.get.mockResolvedValue([mockDeviceStatus]);
-    const result = await processor.getDeviceStatusOverMQTT('duid');
-    expect(mockLogger.debug).toHaveBeenCalledWith('MQTT - Device status: ', expect.any(String));
-    expect(result).toBeInstanceOf(DeviceStatus);
-  });
-
-  it('getDeviceStatusOverMQTT should return undefined if response is falsy', async () => {
-    mockClient.get.mockResolvedValue(undefined);
-    const result = await processor.getDeviceStatusOverMQTT('duid');
-    expect(result).toBeUndefined();
   });
 
   it('getCleanModeData should handle array responses for suctionPower', async () => {
