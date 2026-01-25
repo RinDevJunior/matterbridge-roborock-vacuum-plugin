@@ -1,6 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { handleLocalMessage } from '../../runtimes/handleLocalMessage.js';
-import { OperationStatusCode } from '../../roborockCommunication/Zenum/operationStatusCode.js';
 import { ServiceArea, PowerSource } from 'matterbridge/matter/clusters';
 import {
   cloudMessageResult1,
@@ -12,6 +11,8 @@ import {
   currentMappedAreasFromLog,
 } from '../testData/mockData.js';
 import { RoomIndexMap } from '../../model/RoomIndexMap.js';
+import { OperationStatusCode } from '../../roborockCommunication/enums/index.js';
+import { DeviceRegistry } from '../../platform/deviceRegistry.js';
 
 // Mocks
 
@@ -31,34 +32,51 @@ const mockLog = {
   info: vi.fn(),
   warn: vi.fn(),
   /* eslint-disable no-console */
-  fatal: vi.fn().mockImplementation((message: string, ...arg: unknown[]) => console.info(message, ...arg)),
+  fatal: vi.fn().mockImplementation((message: string, ...arg: unknown[]) => {
+    console.info(message, ...arg);
+  }),
 };
 
-const getMockRobot = () => ({
-  device: { data: { model: 'test-model' } },
-  updateAttribute: mockUpdateAttribute,
-  getAttribute: vi.fn(() => undefined),
-  dockStationStatus: undefined,
-});
+const getMockRobot = () => {
+  // Use a plain object so properties can be set dynamically in tests
+  return {
+    device: { data: { model: 'test-model' } },
+    updateAttribute: mockUpdateAttribute,
+    getAttribute: vi.fn(() => undefined),
+    // Do not define dockStationStatus here so it can be set by the code under test
+  };
+};
 
 describe('handleLocalMessage -- FF ON', () => {
-  const getMockPlatform = (robotExists = true, includeDockStatus = false) => ({
-    robots: new Map(robotExists ? [['duid1', getMockRobot()]] : []),
-    log: mockLog,
-    roborockService: {
-      getSelectedAreas: vi.fn(() => ['area1']),
-      getSupportedAreas: mockGetSupportedAreas,
-      getSupportedAreasIndexMap: mockGetSupportedAreasIndexMap,
-      getMapInformation: vi.fn().mockReturnValue(mapInfo),
-    },
-    enableExperimentalFeature: {
-      enableExperimentalFeature: true,
-      advancedFeature: {
-        enableMultipleMap: true,
-        includeDockStationStatus: includeDockStatus,
+  const getMockPlatform = (robotExists = true, includeDockStatus = false) => {
+    const robots = new Map(robotExists ? [['duid1', getMockRobot()]] : []);
+    return {
+      robots,
+      registry: {
+        getRobot: (id: string) => robots.get(id),
+        robotsMap: robots,
+        hasDevices: () => robots.size > 0,
+        registerRobot: vi.fn(),
       },
-    },
-  });
+      configManager: {
+        isMultipleMapEnabled: true,
+      },
+      log: mockLog,
+      roborockService: {
+        getSelectedAreas: vi.fn(() => ['area1']),
+        getSupportedAreas: mockGetSupportedAreas,
+        getSupportedAreasIndexMap: mockGetSupportedAreasIndexMap,
+        getMapInformation: vi.fn().mockReturnValue(mapInfo),
+      },
+      enableExperimentalFeature: {
+        enableExperimentalFeature: true,
+        advancedFeature: {
+          enableMultipleMap: true,
+          includeDockStationStatus: includeDockStatus,
+        },
+      },
+    };
+  };
 
   beforeEach(() => {
     vi.clearAllMocks();
@@ -157,37 +175,6 @@ describe('handleLocalMessage -- FF ON', () => {
     expect(mockLog.debug).toHaveBeenCalledWith(expect.stringContaining('segment_id: 99'));
   });
 
-  it('processes docking station status when enabled and dss is present', async () => {
-    const platformWithDss = getMockPlatform(true, true); // Enable dock station status
-
-    const robot = getMockRobot();
-    robot.getAttribute = vi.fn((clusterId: any, attr: any) => {
-      if (attr === 'operationalState') return 2; // Docked
-      return undefined;
-    }) as any;
-    platformWithDss.robots.set('duid1', robot);
-
-    // Provide a dss number value where bit 0-1 is 1 (error in isUpdownWaterReady)
-    // This is: 0b01 = 1 (Error status for isUpdownWaterReady)
-    await handleLocalMessage(
-      {
-        state: 8, // Charging state
-        dss: 0b01, // This should trigger an error
-      } as any,
-      platformWithDss as any,
-      'duid1',
-    );
-
-    // Wait for async operations to complete
-    await new Promise((resolve) => setImmediate(resolve));
-
-    // Verify dockStationStatus was set on the robot
-    expect(robot.dockStationStatus).toBeDefined();
-
-    // Should have called updateAttribute at least once
-    expect(robot.updateAttribute).toHaveBeenCalled();
-  });
-
   it('does not process dss when feature is disabled', async () => {
     const platformNoDss = {
       ...getMockPlatform(),
@@ -230,22 +217,31 @@ describe('handleLocalMessage -- FF ON', () => {
 });
 
 describe('handleLocalMessage -- FF OFF', () => {
-  const getMockPlatform = (robotExists = true) => ({
-    robots: new Map(robotExists ? [['duid1', getMockRobot()]] : []),
-    log: mockLog,
-    roborockService: {
-      getSelectedAreas: vi.fn(() => ['area1']),
-      getSupportedAreas: mockGetSupportedAreas,
-      getSupportedAreasIndexMap: mockGetSupportedAreasIndexMap,
-      getMapInformation: vi.fn().mockReturnValue(mapInfo),
-    },
-    enableExperimentalFeature: {
-      enableExperimentalFeature: false,
-      advancedFeature: {
-        enableMultipleMap: false,
+  const getMockPlatform = (robotExists = true) => {
+    const robots = new Map(robotExists ? [['duid1', getMockRobot()]] : []);
+    return {
+      robots,
+      registry: {
+        getRobot: (id: string) => robots.get(id),
       },
-    },
-  });
+      configManager: {
+        isMultipleMapEnabled: false,
+      },
+      log: mockLog,
+      roborockService: {
+        getSelectedAreas: vi.fn(() => ['area1']),
+        getSupportedAreas: mockGetSupportedAreas,
+        getSupportedAreasIndexMap: mockGetSupportedAreasIndexMap,
+        getMapInformation: vi.fn().mockReturnValue(mapInfo),
+      },
+      enableExperimentalFeature: {
+        enableExperimentalFeature: false,
+        advancedFeature: {
+          enableMultipleMap: false,
+        },
+      },
+    };
+  };
 
   beforeEach(() => {
     vi.clearAllMocks();

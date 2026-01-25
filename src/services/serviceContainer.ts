@@ -1,5 +1,5 @@
 import { AnsiLogger } from 'matterbridge/logger';
-import { MessageProcessor, RoborockAuthenticateApi, RoborockIoTApi, UserData } from '../roborockCommunication/index.js';
+import { LocalStorage } from 'node-persist';
 import type { Factory } from '../types/index.js';
 import { AuthenticationService } from './authenticationService.js';
 import { DeviceManagementService } from './deviceManagementService.js';
@@ -7,17 +7,22 @@ import { AreaManagementService } from './areaManagementService.js';
 import { MessageRoutingService } from './messageRoutingService.js';
 import { PollingService } from './pollingService.js';
 import ClientManager from './clientManager.js';
+import { ServiceContainer as CoreServiceContainer } from '../core/ServiceContainer.js';
+import { RoborockAuthenticateApi } from '../roborockCommunication/api/authClient.js';
+import { RoborockIoTApi } from '../roborockCommunication/api/iotClient.js';
+import { UserData } from '../roborockCommunication/models/index.js';
+import { MessageProcessor } from '../roborockCommunication/mqtt/messageProcessor.js';
+import { PlatformConfigManager } from '../platform/platformConfig.js';
+import { ConnectionService } from './connectionService.js';
 
 /** Configuration for ServiceContainer. */
 export interface ServiceContainerConfig {
-  /** Base URL for Roborock API */
   baseUrl: string;
-  /** Refresh interval (ms) for polling */
   refreshInterval: number;
-  /** Factory for auth API instances */
   authenticateApiFactory?: (logger: AnsiLogger, baseUrl: string) => RoborockAuthenticateApi;
-  /** Factory for IoT API instances */
   iotApiFactory?: Factory<UserData, RoborockIoTApi>;
+  persist: LocalStorage;
+  configManager: PlatformConfigManager;
 }
 
 /** DI container managing service lifecycle. Services are lazily created and cached. */
@@ -28,11 +33,14 @@ export class ServiceContainer {
   private areaManagementService: AreaManagementService | undefined;
   private messageRoutingService: MessageRoutingService | undefined;
   private pollingService: PollingService | undefined;
+  private connectionService: ConnectionService | undefined;
   // Shared infrastructure
-  private readonly loginApi: RoborockAuthenticateApi;
+  private readonly authenticateApi: RoborockAuthenticateApi;
   private readonly authenticateApiFactory: (logger: AnsiLogger, baseUrl: string) => RoborockAuthenticateApi;
   private readonly iotApiFactory: Factory<UserData, RoborockIoTApi>;
   private readonly messageProcessorMap = new Map<string, MessageProcessor>();
+  private readonly coreServiceContainer: CoreServiceContainer;
+  private readonly clientManager: ClientManager;
 
   // User data (set after authentication)
   private userdata?: UserData;
@@ -40,16 +48,19 @@ export class ServiceContainer {
 
   constructor(
     private readonly logger: AnsiLogger,
-    private readonly clientManager: ClientManager,
     private readonly config: ServiceContainerConfig,
   ) {
     // Set up factory functions with defaults
     this.authenticateApiFactory = config.authenticateApiFactory ?? ((logger, baseUrl) => new RoborockAuthenticateApi(logger, undefined, undefined, baseUrl));
-
     this.iotApiFactory = config.iotApiFactory ?? ((logger, ud) => new RoborockIoTApi(ud, logger));
 
+    this.clientManager = new ClientManager(this.logger);
+
     // Create login API instance
-    this.loginApi = this.authenticateApiFactory(logger, config.baseUrl);
+    this.authenticateApi = this.authenticateApiFactory(logger, config.baseUrl);
+
+    // Create core service container for port adapters
+    this.coreServiceContainer = new CoreServiceContainer(logger, this.authenticateApi);
   }
 
   /** Set user data after login to enable device services. */
@@ -57,8 +68,12 @@ export class ServiceContainer {
     this.userdata = userdata;
     this.iotApi = this.iotApiFactory(this.logger, userdata);
 
+    // Initialize core service container with user data
+    this.coreServiceContainer.initialize(userdata);
+
     // Update existing services if they're already created
     if (this.deviceManagementService) {
+      this.deviceManagementService.setIotApi(this.iotApi);
       this.deviceManagementService.setAuthentication(userdata);
     }
     if (this.areaManagementService && this.iotApi) {
@@ -72,32 +87,22 @@ export class ServiceContainer {
   /** Get or create AuthenticationService singleton. */
   getAuthenticationService(): AuthenticationService {
     if (!this.authenticationService) {
-      this.authenticationService = new AuthenticationService(this.loginApi, this.logger);
+      // Use IAuthGateway from core service container
+      const authGateway = this.coreServiceContainer.getAuthGateway();
+      this.authenticationService = new AuthenticationService(authGateway, this.config.persist, this.logger, this.config.configManager);
     }
     return this.authenticationService;
   }
 
   /** Get or create PollingService singleton. */
   getPollingService(): PollingService {
-    if (!this.pollingService) {
-      this.pollingService = new PollingService(this.config.refreshInterval, this.logger, this.getMessageRoutingService());
-    }
+    this.pollingService ??= new PollingService(this.config.refreshInterval, this.logger, this.getMessageRoutingService());
     return this.pollingService;
   }
 
   /** Get or create DeviceManagementService singleton. Requires setUserData() after login. */
   getDeviceManagementService(): DeviceManagementService {
-    if (!this.deviceManagementService) {
-      this.deviceManagementService = new DeviceManagementService(
-        this.iotApiFactory,
-        this.clientManager,
-        this.logger,
-        this.loginApi,
-        this.getMessageRoutingService(),
-        this.iotApi,
-        this.userdata,
-      );
-    }
+    this.deviceManagementService ??= new DeviceManagementService(this.logger, this.authenticateApi, this.userdata);
     return this.deviceManagementService;
   }
 
@@ -109,9 +114,7 @@ export class ServiceContainer {
    * @returns AreaManagementService instance
    */
   getAreaManagementService(): AreaManagementService {
-    if (!this.areaManagementService) {
-      this.areaManagementService = new AreaManagementService(this.logger, this.iotApi);
-    }
+    this.areaManagementService ??= new AreaManagementService(this.logger, this.getMessageRoutingService());
     return this.areaManagementService;
   }
 
@@ -123,17 +126,26 @@ export class ServiceContainer {
    * @returns MessageRoutingService instance
    */
   getMessageRoutingService(): MessageRoutingService {
-    if (!this.messageRoutingService) {
-      this.messageRoutingService = new MessageRoutingService(this.logger, this.iotApi);
-    }
+    this.messageRoutingService ??= new MessageRoutingService(this.logger, this.iotApi);
     return this.messageRoutingService;
+  }
+
+  getConnectionService(): ConnectionService {
+    return (this.connectionService ??= new ConnectionService(this.clientManager, this.logger, this.getMessageRoutingService()));
+  }
+
+  public synchronizeMessageClients(): void {
+    const clientRouter = this.connectionService?.clientRouter;
+    if (!clientRouter) {
+      throw new Error('Message client not initialized in ConnectionService');
+    }
+
+    this.areaManagementService?.setMessageClient(clientRouter);
   }
 
   /**
    * Get all services as a bundle.
    * Useful for passing to RoborockService facade.
-   *
-   * @returns Object containing all service instances
    */
   getAllServices() {
     return {
@@ -142,6 +154,7 @@ export class ServiceContainer {
       areaManagement: this.getAreaManagementService(),
       messageRouting: this.getMessageRoutingService(),
       polling: this.getPollingService(),
+      connection: this.getConnectionService(),
     };
   }
 

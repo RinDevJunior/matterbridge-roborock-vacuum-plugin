@@ -1,5 +1,6 @@
-import { UserData, ClientRouter, RequestMessage } from '../../../roborockCommunication/index.js';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { RequestMessage, UserData } from '../../../roborockCommunication/models/index.js';
+import { ClientRouter } from '../../../roborockCommunication/routing/clientRouter.js';
 
 describe('ClientRouter', () => {
   let mockLogger: any;
@@ -11,6 +12,7 @@ describe('ClientRouter', () => {
   beforeEach(() => {
     mockLogger = { debug: vi.fn(), notice: vi.fn() };
     mockUserData = {
+      username: 'testuser',
       uid: '123',
       token: '123:123/lfrZhw==:123',
       tokentype: 'Bearer',

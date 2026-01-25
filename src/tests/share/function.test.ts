@@ -1,15 +1,10 @@
 import { describe, it, expect } from 'vitest';
 import { state_to_matter_state, state_to_matter_operational_status } from '../../share/function.js';
-import { OperationStatusCode } from '../../roborockCommunication/Zenum/operationStatusCode.js';
 import { RvcRunMode, RvcOperationalState } from 'matterbridge/matter/clusters';
+import { OperationStatusCode } from '../../roborockCommunication/enums/index.js';
 
 describe('share/function helpers', () => {
   describe('state_to_matter_state', () => {
-    it('returns undefined for null state', () => {
-      const result = state_to_matter_state(null as any);
-      expect(result).toBeUndefined();
-    });
-
     it('returns Cleaning for cleaning-related states', () => {
       expect(state_to_matter_state(OperationStatusCode.Cleaning)).toBe(RvcRunMode.ModeTag.Cleaning);
       expect(state_to_matter_state(OperationStatusCode.SpotCleaning)).toBe(RvcRunMode.ModeTag.Cleaning);

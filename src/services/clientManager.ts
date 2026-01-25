@@ -1,6 +1,6 @@
-import { ClientRouter } from '../roborockCommunication/broadcast/clientRouter.js';
-import { UserData } from '../roborockCommunication/index.js';
 import { AnsiLogger } from 'matterbridge/logger';
+import { ClientRouter } from '../roborockCommunication/routing/clientRouter.js';
+import { UserData } from '../roborockCommunication/models/index.js';
 
 /** Manages ClientRouter instances per user with caching and cleanup. */
 export default class ClientManager {
@@ -12,7 +12,8 @@ export default class ClientManager {
   }
 
   /** Get or create ClientRouter for a user. */
-  public get(username: string, userdata: UserData): ClientRouter {
+  public get(userdata: UserData): ClientRouter {
+    const username = userdata.username;
     if (!username || username.trim().length === 0) {
       throw new Error('Username cannot be empty');
     }

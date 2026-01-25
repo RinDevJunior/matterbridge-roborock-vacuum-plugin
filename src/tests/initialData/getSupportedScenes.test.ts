@@ -2,11 +2,11 @@ import { getSupportedScenes } from '../../initialData/getSupportedScenes.js';
 import { describe, it, expect, vi } from 'vitest';
 
 describe('getSupportedScenes', () => {
-  it('returns empty array and logs error when scenes missing', () => {
+  it('returns empty array and logs debug when scenes missing', () => {
     const mockLogger: any = { error: vi.fn(), debug: vi.fn() };
     const result = getSupportedScenes([], mockLogger);
     expect(result).toEqual([]);
-    expect(mockLogger.error).toHaveBeenCalledWith('No scenes found');
+    expect(mockLogger.debug).toHaveBeenCalledWith('No scenes found');
   });
 
   it('maps enabled scenes to ServiceArea.Area entries', () => {

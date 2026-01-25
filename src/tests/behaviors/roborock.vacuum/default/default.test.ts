@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { BehaviorDeviceGeneric } from '../../../../behaviors/BehaviorDeviceGeneric.js';
 import { AnsiLogger } from 'matterbridge/logger';
-import RoborockService from '../../../../roborockService.js';
+import { RoborockService } from '../../../../services/roborockService.js';
 import { CleanModeSettings } from '../../../../model/ExperimentalFeatureSetting.js';
 import { MopRoute, MopWaterFlow, setDefaultCommandHandler, VacuumSuctionPower } from '../../../../behaviors/roborock.vacuum/default/default.js';
 

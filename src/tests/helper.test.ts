@@ -1,4 +1,4 @@
-import { getVacuumProperty, isSupportedDevice, isStatusUpdate, getRoomMap, getRoomMapFromDevice } from '../helper.js';
+import { getVacuumProperty, isSupportedDevice, isStatusUpdate, getRoomMap, getRoomMapFromDevice } from '../share/helper.js';
 import { RoomMap } from '../model/RoomMap.js';
 import { describe, it, test, expect, vi, beforeEach } from 'vitest';
 
@@ -30,7 +30,16 @@ describe('helper utilities', () => {
   });
 
   test('getRoomMap handles missing robot and missing roborockService', async () => {
-    const platform: any = { robots: new Map(), enableExperimentalFeature: undefined, log: { error: vi.fn(), info: vi.fn() } };
+    const platform: any = {
+      robots: new Map(),
+      enableExperimentalFeature: undefined,
+      log: { error: vi.fn(), info: vi.fn() },
+      configManager: { isMultipleMapEnabled: false },
+      registry: {
+        getRobot: vi.fn(() => undefined),
+        robotsMap: new Map(),
+      },
+    };
     const res = await getRoomMap('nope', platform);
     expect(res).toBeUndefined();
     expect(platform.log.error).toHaveBeenCalled();
@@ -38,6 +47,7 @@ describe('helper utilities', () => {
     // robot present but no service
     const robot: any = { device: { duid: 'd1', rooms: [] } };
     platform.robots.set('d1', robot);
+    platform.registry.getRobot.mockReturnValueOnce(robot);
     const res2 = await getRoomMap('d1', platform);
     expect(res2).toBeUndefined();
   });
@@ -47,6 +57,7 @@ describe('helper utilities', () => {
     const platform: any = {
       enableExperimentalFeature: undefined,
       log: { debug: vi.fn(), notice: vi.fn() },
+      configManager: { isMultipleMapEnabled: false },
       roborockService: {
         getMapInformation: async () => ({ allRooms: [{ id: 1, iot_name_id: '1', tag: 0, mapId: 0, displayName: 'R1' }], maps: [] }),
         getRoomMappings: async () => undefined,
@@ -60,6 +71,7 @@ describe('helper utilities', () => {
     const platform2: any = {
       enableExperimentalFeature: undefined,
       log: { debug: vi.fn(), notice: vi.fn() },
+      configManager: { isMultipleMapEnabled: false },
       roborockService: { getMapInformation: async () => undefined, getRoomMappings: async () => [[1, 1, 0]] },
     };
     const rmap2 = await getRoomMapFromDevice(device, platform2);
@@ -69,6 +81,7 @@ describe('helper utilities', () => {
     const platform3: any = {
       enableExperimentalFeature: undefined,
       log: { debug: vi.fn(), notice: vi.fn() },
+      configManager: { isMultipleMapEnabled: false },
       roborockService: { getMapInformation: async () => undefined, getRoomMappings: async () => undefined },
     };
     const rmap3 = await getRoomMapFromDevice(device, platform3);
@@ -93,6 +106,7 @@ const mockRoborockService = {
 const mockPlatform = {
   log: mockLog,
   roborockService: mockRoborockService,
+  configManager: { isMultipleMapEnabled: false },
 };
 
 describe('getRoomMapFromDevice', () => {

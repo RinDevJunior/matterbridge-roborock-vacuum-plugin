@@ -1,7 +1,7 @@
 import { CleanModeSetting } from '../behaviors/roborock.vacuum/default/default.js';
 import { getCurrentCleanModeDefault } from '../behaviors/roborock.vacuum/default/runtimes.js';
 import { getCurrentCleanModeSmart } from '../behaviors/roborock.vacuum/smart/runtimes.js';
-import { DeviceModel } from '../roborockCommunication/Zmodel/deviceModel.js';
+import { DeviceModel } from '../roborockCommunication/models/index.js';
 import { SMART_MODELS } from '../constants/index.js';
 
 export type CleanModeFunc = (setting: CleanModeSetting) => number | undefined;

@@ -1,15 +1,6 @@
-/**
- * Mock data generators for test fixtures.
- * Provides factory functions for creating realistic test data.
- * @module tests/helpers/mock-generators
- */
-
-import type { Home, UserData } from '../../roborockCommunication/index.js';
-import { Scene } from '../../roborockCommunication/index.js';
-import { DeviceModel } from '../../roborockCommunication/Zmodel/deviceModel.js';
-import type { CloudMessageResult } from '../../roborockCommunication/Zmodel/messageResult.js';
 import type { ServiceArea } from 'matterbridge/matter/clusters';
 import { DeviceBuilder } from './device-builder.js';
+import { CloudMessageResult, DeviceModel, Home, Scene, UserData } from '../../roborockCommunication/models/index.js';
 
 /**
  * Generates a mock UserData object for testing.
@@ -24,6 +15,7 @@ import { DeviceBuilder } from './device-builder.js';
  */
 export function generateMockUserData(overrides?: Partial<UserData>): UserData {
   const defaultData: UserData = {
+    username: 'test-user',
     uid: Math.floor(Math.random() * 1000000),
     tokentype: 'mock',
     token: `mock-token-${Math.random().toString(36).substring(7)}`,

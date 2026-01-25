@@ -1,0 +1,16 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm run test:*)",
+      "Bash(npm run test:coverage:*)",
+      "Bash(npm run lint:fix:*)",
+      "Bash(npm run build:local:*)",
+      "Bash(clear:*)",
+      "Bash(npm test:*)",
+      "Bash(npx vitest:*)",
+      "Bash(npm run coverage:*)"
+    ]
+  },
+  "outputStyle": "default",
+  "spinnerTipsEnabled": false
+}

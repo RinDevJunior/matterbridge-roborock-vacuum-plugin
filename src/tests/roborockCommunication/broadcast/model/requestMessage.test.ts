@@ -1,5 +1,5 @@
-import { RequestMessage, Protocol } from '../../../../roborockCommunication/index.js';
 import { describe, it, expect } from 'vitest';
+import { Protocol, RequestMessage } from '../../../../roborockCommunication/models/index.js';
 
 describe('RequestMessage', () => {
   it('constructor uses provided values', () => {

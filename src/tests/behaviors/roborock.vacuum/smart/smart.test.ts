@@ -3,7 +3,7 @@ import { AnsiLogger } from 'matterbridge/logger';
 import { BehaviorDeviceGeneric } from '../../../../behaviors/BehaviorDeviceGeneric.js';
 import { setCommandHandlerSmart, MopRouteSmart, VacuumSuctionPowerSmart, MopWaterFlowSmart } from '../../../../behaviors/roborock.vacuum/smart/smart.js';
 import { CleanModeSettings } from '../../../../model/ExperimentalFeatureSetting.js';
-import RoborockService from '../../../../roborockService.js';
+import { RoborockService } from '../../../../services/roborockService.js';
 
 describe('setCommandHandlerSmart', () => {
   let handler: BehaviorDeviceGeneric<any>;
@@ -53,7 +53,7 @@ describe('setCommandHandlerSmart', () => {
   });
 
   it('should set all command handlers', () => {
-    setCommandHandlerSmart(duid, handler, logger, roborockService as RoborockService, cleanModeSettings);
+    setCommandHandlerSmart(duid, handler, logger, roborockService, cleanModeSettings);
     expect(handler.setCommandHandler).toHaveBeenCalledWith('changeToMode', expect.any(Function));
     expect(handler.setCommandHandler).toHaveBeenCalledWith('selectAreas', expect.any(Function));
     expect(handler.setCommandHandler).toHaveBeenCalledWith('pause', expect.any(Function));
@@ -63,14 +63,14 @@ describe('setCommandHandlerSmart', () => {
   });
 
   it('should call startClean for Cleaning mode', async () => {
-    setCommandHandlerSmart(duid, handler, logger, roborockService as RoborockService, cleanModeSettings);
+    setCommandHandlerSmart(duid, handler, logger, roborockService, cleanModeSettings);
     const [[, changeToModeHandler]] = (handler.setCommandHandler as ReturnType<typeof vi.fn>).mock.calls.filter((args) => args[0] === 'changeToMode');
     await (changeToModeHandler as (mode: number) => Promise<void>)(2); // 2 = Cleaning
     expect(roborockService.startClean).toHaveBeenCalledWith(duid);
   });
 
   it('should call changeCleanMode for Smart Plan', async () => {
-    setCommandHandlerSmart(duid, handler, logger, roborockService as RoborockService, cleanModeSettings);
+    setCommandHandlerSmart(duid, handler, logger, roborockService, cleanModeSettings);
     const [[, changeToModeHandler]] = (handler.setCommandHandler as ReturnType<typeof vi.fn>).mock.calls.filter((args) => args[0] === 'changeToMode');
     await (changeToModeHandler as (mode: number) => Promise<void>)(4); // 4 = Smart Plan
     expect(roborockService.changeCleanMode).toHaveBeenCalledWith(duid, {
@@ -82,7 +82,7 @@ describe('setCommandHandlerSmart', () => {
   });
 
   it('should call changeCleanMode for Mop with correct values', async () => {
-    setCommandHandlerSmart(duid, handler, logger, roborockService as RoborockService, undefined);
+    setCommandHandlerSmart(duid, handler, logger, roborockService, undefined);
     const [[, changeToModeHandler]] = (handler.setCommandHandler as ReturnType<typeof vi.fn>).mock.calls.filter((args) => args[0] === 'changeToMode');
     await (changeToModeHandler as (mode: number) => Promise<void>)(31); // 31 = Mop Default
     // mopping: { waterFlowMode: 'High', mopRouteMode: 'Fast', distanceOff: 85 },
@@ -95,7 +95,7 @@ describe('setCommandHandlerSmart', () => {
   });
 
   it('should call changeCleanMode for Mop with custom values', async () => {
-    setCommandHandlerSmart(duid, handler, logger, roborockService as RoborockService, {
+    setCommandHandlerSmart(duid, handler, logger, roborockService, {
       vacuuming: { fanMode: 'Max', mopRouteMode: 'DeepPlus' },
       mopping: { waterFlowMode: 'CustomizeWithDistanceOff', mopRouteMode: 'Fast', distanceOff: 25 },
       vacmop: {

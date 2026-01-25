@@ -1,17 +1,21 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { AreaManagementService } from '../../services/areaManagementService.js';
 import { RoomIndexMap } from '../../model/RoomIndexMap.js';
-import { RoborockIoTApi, ClientRouter, Scene } from '../../roborockCommunication/index.js';
 import { ServiceArea } from 'matterbridge/matter/clusters';
 import { DeviceError } from '../../errors/index.js';
 import { MapInfo } from '../../initialData/getSupportedAreas.js';
 import { AnsiLogger } from 'matterbridge/logger';
+import { MessageRoutingService } from '../../services/index.js';
+import { RoborockIoTApi } from '../../roborockCommunication/api/iotClient.js';
+import { ClientRouter } from '../../roborockCommunication/routing/clientRouter.js';
+import { Scene } from '../../roborockCommunication/models/scene.js';
 
 describe('AreaManagementService', () => {
   let areaService: AreaManagementService;
   let mockLogger: any;
   let mockIotApi: any;
   let mockMessageClient: any;
+  let mockMessageRoutingService: any;
 
   const mockDeviceId = 'test-device-1';
   const mockAreas: ServiceArea.Area[] = [{ areaId: 0, mapId: 1 } as ServiceArea.Area, { areaId: 1, mapId: 1 } as ServiceArea.Area, { areaId: 2, mapId: 1 } as ServiceArea.Area];
@@ -22,7 +26,10 @@ describe('AreaManagementService', () => {
     mockLogger = createMockLogger() as unknown as AnsiLogger;
     mockIotApi = createMockIotApi() as unknown as RoborockIoTApi;
     mockMessageClient = createMockMessageClient() as unknown as ClientRouter;
-    areaService = new AreaManagementService(mockLogger, mockIotApi, mockMessageClient);
+    mockMessageRoutingService = { getMqttAlwaysOn: vi.fn().mockReturnValue(false) } as unknown as MessageRoutingService;
+    areaService = new AreaManagementService(mockLogger, mockMessageRoutingService);
+    areaService.setIotApi(mockIotApi);
+    areaService.setMessageClient(mockMessageClient);
   });
 
   function createMockLogger() {
@@ -63,8 +70,8 @@ describe('AreaManagementService', () => {
       expect(serviceWithoutDeps).toBeDefined();
     });
 
-    it('should initialize with logger and iotApi', () => {
-      const service = new AreaManagementService(mockLogger as AnsiLogger, mockIotApi as RoborockIoTApi);
+    it('should initialize with logger and message routing service', () => {
+      const service = new AreaManagementService(mockLogger as AnsiLogger, mockMessageRoutingService as MessageRoutingService);
       expect(service).toBeDefined();
     });
 
@@ -72,14 +79,18 @@ describe('AreaManagementService', () => {
       const service = new AreaManagementService(mockLogger as AnsiLogger);
       const newIotApi = {} as RoborockIoTApi;
 
-      expect(() => service.setIotApi(newIotApi)).not.toThrow();
+      expect(() => {
+        service.setIotApi(newIotApi);
+      }).not.toThrow();
     });
 
     it('should set message client after initialization', () => {
       const service = new AreaManagementService(mockLogger as AnsiLogger);
       const newMessageClient = {} as ClientRouter;
 
-      expect(() => service.setMessageClient(newMessageClient)).not.toThrow();
+      expect(() => {
+        service.setMessageClient(newMessageClient);
+      }).not.toThrow();
     });
   });
 
@@ -288,7 +299,7 @@ describe('AreaManagementService', () => {
     });
 
     it('should throw DeviceError when message client not initialized', async () => {
-      const serviceWithoutClient = new AreaManagementService(mockLogger, mockIotApi);
+      const serviceWithoutClient = new AreaManagementService(mockLogger);
 
       await expect(serviceWithoutClient.getMapInformation(mockDeviceId)).rejects.toThrow(DeviceError);
       await expect(serviceWithoutClient.getMapInformation(mockDeviceId)).rejects.toThrow('Message client not initialized');
@@ -304,8 +315,9 @@ describe('AreaManagementService', () => {
 
     it('should retrieve room mappings with secure request', async () => {
       mockMessageClient.get.mockResolvedValue(mockRoomMappings);
+      (mockMessageRoutingService.getMqttAlwaysOn as ReturnType<typeof vi.fn>).mockReturnValue(true);
 
-      const mappings = await areaService.getRoomMappings(mockDeviceId, true);
+      const mappings = await areaService.getRoomMappings(mockDeviceId);
 
       expect(mappings).toEqual(mockRoomMappings);
       expect(mockMessageClient.get).toHaveBeenCalledWith(mockDeviceId, expect.objectContaining({ method: 'get_room_mapping', secure: true }));
@@ -314,16 +326,16 @@ describe('AreaManagementService', () => {
     it('should retrieve room mappings with non-secure request', async () => {
       mockMessageClient.get.mockResolvedValue(mockRoomMappings);
 
-      const mappings = await areaService.getRoomMappings(mockDeviceId, false);
+      const mappings = await areaService.getRoomMappings(mockDeviceId);
 
       expect(mappings).toEqual(mockRoomMappings);
       expect(mockMessageClient.get).toHaveBeenCalledWith(mockDeviceId, expect.objectContaining({ method: 'get_room_mapping', secure: false }));
     });
 
     it('should return undefined when message client not initialized', async () => {
-      const serviceWithoutClient = new AreaManagementService(mockLogger, mockIotApi);
+      const serviceWithoutClient = new AreaManagementService(mockLogger);
 
-      const mappings = await serviceWithoutClient.getRoomMappings(mockDeviceId, false);
+      const mappings = await serviceWithoutClient.getRoomMappings(mockDeviceId);
 
       expect(mappings).toBeUndefined();
       expect(mockLogger.warn).toHaveBeenCalledWith('messageClient not initialized. Waiting for next execution');
@@ -332,7 +344,7 @@ describe('AreaManagementService', () => {
     it('should handle empty room mappings', async () => {
       mockMessageClient.get.mockResolvedValue([]);
 
-      const mappings = await areaService.getRoomMappings(mockDeviceId, false);
+      const mappings = await areaService.getRoomMappings(mockDeviceId);
 
       expect(mappings).toEqual([]);
     });
@@ -352,7 +364,7 @@ describe('AreaManagementService', () => {
     });
 
     it('should throw DeviceError when IoT API not initialized', async () => {
-      const serviceWithoutApi = new AreaManagementService(mockLogger, undefined, mockMessageClient);
+      const serviceWithoutApi = new AreaManagementService(mockLogger, undefined);
 
       await expect(serviceWithoutApi.getScenes(mockHomeId)).rejects.toThrow(DeviceError);
       await expect(serviceWithoutApi.getScenes(mockHomeId)).rejects.toThrow('IoT API not initialized');
@@ -389,7 +401,7 @@ describe('AreaManagementService', () => {
     });
 
     it('should throw DeviceError when IoT API not initialized', async () => {
-      const serviceWithoutApi = new AreaManagementService(mockLogger, undefined, mockMessageClient);
+      const serviceWithoutApi = new AreaManagementService(mockLogger, undefined);
 
       await expect(serviceWithoutApi.startScene(mockSceneId)).rejects.toThrow(DeviceError);
       await expect(serviceWithoutApi.startScene(mockSceneId)).rejects.toThrow('IoT API not initialized');
@@ -427,13 +439,17 @@ describe('AreaManagementService', () => {
       areaService.clearAll();
       areaService.clearAll();
 
-      expect(() => areaService.clearAll()).not.toThrow();
+      expect(() => {
+        areaService.clearAll();
+      }).not.toThrow();
     });
 
     it('should clear empty service without errors', () => {
       const newService = new AreaManagementService(mockLogger);
 
-      expect(() => newService.clearAll()).not.toThrow();
+      expect(() => {
+        newService.clearAll();
+      }).not.toThrow();
     });
   });
 
@@ -501,7 +517,9 @@ describe('AreaManagementService', () => {
     it('should handle malformed area data', () => {
       const malformedAreas = [{ areaId: 1 } as ServiceArea.Area, null as any, { areaId: 2 } as ServiceArea.Area];
 
-      expect(() => areaService.setSupportedAreas(mockDeviceId, malformedAreas)).not.toThrow();
+      expect(() => {
+        areaService.setSupportedAreas(mockDeviceId, malformedAreas);
+      }).not.toThrow();
 
       const areas = areaService.getSupportedAreas(mockDeviceId);
       expect(areas).toEqual(malformedAreas);

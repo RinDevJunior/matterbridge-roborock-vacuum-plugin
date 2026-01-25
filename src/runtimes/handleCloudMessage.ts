@@ -1,32 +1,27 @@
 import { getRunningMode } from '../initialData/getSupportedRunModes.js';
 import { CloudMessageModel } from '../model/CloudMessageModel.js';
 import { hasDockingStationError } from '../model/DockingStationStatus.js';
-import { RoborockMatterbridgePlatform } from '../module.js';
-import { AdditionalPropCode, DeviceStatusNotify, Protocol } from '../roborockCommunication/index.js';
 import { state_to_matter_operational_status, state_to_matter_state } from '../share/function.js';
 import { RvcCleanMode, RvcOperationalState, RvcRunMode, ServiceArea } from 'matterbridge/matter/clusters';
 import { triggerDssError } from './handleLocalMessage.js';
-import { DpsPayload } from '../roborockCommunication/broadcast/model/dps.js';
-import { getRoomMapFromDevice, isStatusUpdate } from '../helper.js';
+import { getRoomMapFromDevice, isStatusUpdate } from '../share/helper.js';
 import { debugStringify } from 'matterbridge/logger';
-import { CloudMessageResult } from '../roborockCommunication/Zmodel/messageResult.js';
-import { NotifyMessageTypes } from '../notifyMessageTypes.js';
+import { CloudMessageResult, DeviceStatusNotify, DpsPayload, Protocol } from '../roborockCommunication/models/index.js';
+import { NotifyMessageTypes } from '../types/notifyMessageTypes.js';
 import { getCurrentCleanModeFunc } from '../share/runtimeHelper.js';
 import { getSupportedAreas } from '../initialData/getSupportedAreas.js';
 import { PlatformRunner } from '../platformRunner.js';
-import { RoborockVacuumCleaner } from '../roborockVacuumCleaner.js';
+import { RoborockVacuumCleaner } from '../types/roborockVacuumCleaner.js';
+import { AdditionalPropCode } from '../roborockCommunication/enums/index.js';
+import { RoborockMatterbridgePlatform } from '../module.js';
 
 /**
  * Process cloud MQTT messages and update robot state.
  * Handles status updates, RPC responses, clean mode changes, and map updates.
- * @param data - Cloud message containing DPS (Data Point System) payload
- * @param platform - Platform instance for logging and service access
- * @param runner - Platform runner for state updates
- * @param duid - Device unique identifier
  */
 export async function handleCloudMessage(data: CloudMessageModel, platform: RoborockMatterbridgePlatform, runner: PlatformRunner, duid: string): Promise<void> {
   const messageTypes = Object.keys(data.dps).map(Number);
-  const robot = platform.robots.get(duid);
+  const robot = platform.registry.getRobot(duid);
   if (robot === undefined) {
     platform.log.error(`Robot not found: ${duid}`);
     return;
@@ -79,7 +74,7 @@ export async function handleCloudMessage(data: CloudMessageModel, platform: Robo
           if (cleanModeData) {
             const currentCleanMode = getCurrentCleanModeFunc(
               robot.device.data.model,
-              platform.enableExperimentalFeature?.advancedFeature?.forceRunAtDefault ?? false,
+              platform.configManager.forceRunAtDefault,
             )({
               suctionPower: cleanModeData.suctionPower,
               waterFlow: cleanModeData.waterFlow,
@@ -126,7 +121,7 @@ export async function handleCloudMessage(data: CloudMessageModel, platform: Robo
  * @param duid - Device unique identifier
  */
 export async function handleMapChange(robot: RoborockVacuumCleaner, platform: RoborockMatterbridgePlatform, duid: string): Promise<void> {
-  const enableMultipleMap = (platform.enableExperimentalFeature?.enableExperimentalFeature && platform.enableExperimentalFeature?.advancedFeature?.enableMultipleMap) ?? false;
+  const enableMultipleMap = platform.configManager.isMultipleMapEnabled;
   if (!enableMultipleMap) return;
 
   await getRoomMapFromDevice(robot.device, platform).then((roomMap) => {

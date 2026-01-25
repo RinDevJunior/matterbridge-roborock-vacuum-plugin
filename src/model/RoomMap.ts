@@ -1,5 +1,4 @@
-import { MapRoom } from '../roborockCommunication/Zmodel/mapInfo.js';
-import { Room } from '../roborockCommunication/Zmodel/room.js';
+import { MapRoom, Room } from '../roborockCommunication/models/index.js';
 
 export interface RoomMapEntry {
   id: number;

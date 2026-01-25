@@ -1,5 +1,5 @@
-import { ChainedMessageListener } from '../../../../../roborockCommunication/broadcast/listener/implementation/chainedMessageListener.js';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { ChainedMessageListener } from '../../../../../roborockCommunication/routing/listeners/implementation/chainedMessageListener.js';
 
 describe('ChainedMessageListener', () => {
   let chained: ChainedMessageListener;

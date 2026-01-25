@@ -21,20 +21,20 @@ export interface ExperimentalFeatureSetting {
 }
 
 interface VacuumingCleanModeSetting {
-  fanMode: 'Balanced' | string;
-  mopRouteMode: 'Standard' | string;
+  fanMode: string;
+  mopRouteMode: string;
 }
 
 interface MoppingCleanModeSetting {
-  waterFlowMode: 'Medium' | string;
-  mopRouteMode: 'Standard' | string;
+  waterFlowMode: string;
+  mopRouteMode: string;
   distanceOff?: number;
 }
 
 interface VacMopCleanModeSetting {
-  fanMode: 'Balanced' | string;
-  waterFlowMode: 'Medium' | string;
-  mopRouteMode: 'Standard' | string;
+  fanMode: string;
+  waterFlowMode: string;
+  mopRouteMode: string;
   distanceOff?: number;
 }
 

@@ -1,4 +1,4 @@
-import { OperationStatusCode } from '../roborockCommunication/Zenum/operationStatusCode.js';
+import { OperationStatusCode } from '../roborockCommunication/enums/index.js';
 import { RvcRunMode, RvcOperationalState } from 'matterbridge/matter/clusters';
 
 /**

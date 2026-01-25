@@ -1,8 +1,8 @@
 import { AnsiLogger, debugStringify } from 'matterbridge/logger';
 import { ServiceArea } from 'matterbridge/matter/clusters';
-import { Scene } from '../roborockCommunication/index.js';
 import { randomInt } from 'node:crypto';
 import { SCENE_AREA_ID_MIN, SCENE_AREA_ID_MAX } from '../constants/index.js';
+import { Scene } from '../roborockCommunication/models/index.js';
 
 /**
  * Convert Roborock scenes to Matter ServiceArea areas.
@@ -14,7 +14,7 @@ export function getSupportedScenes(scenes: Scene[], log?: AnsiLogger): ServiceAr
   log?.debug('getSupportedScenes', debugStringify(scenes));
 
   if (!scenes || scenes.length === 0) {
-    log?.error('No scenes found');
+    log?.debug('No scenes found');
     return [];
   }
 

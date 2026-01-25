@@ -1,7 +1,90 @@
-import { describe, it, beforeEach, expect, vi } from 'vitest';
-import { AdditionalPropCode, Protocol } from '../../roborockCommunication/index.js';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { handleCloudMessage } from '../../runtimes/handleCloudMessage.js';
+import { NotifyMessageTypes } from '../../types/notifyMessageTypes.js';
 import { mapInfo, roomData, roomIndexMap, supportedAreas, supportedMaps } from '../testData/mockData.js';
+import { Protocol } from '../../roborockCommunication/models/index.js';
+import { AdditionalPropCode, OperationStatusCode } from '../../roborockCommunication/enums/index.js';
+
+describe('handleCloudMessage (integration)', () => {
+  let platform: any;
+  let runner: any;
+  let duid: string;
+
+  beforeEach(() => {
+    duid = 'duid-1';
+    runner = { updateFromMQTTMessage: vi.fn() };
+    // Mock registry with robotsMap and getRobot
+    const robots = new Map();
+    const registry = {
+      robotsMap: robots,
+      getRobot: (duid: string) => robots.get(duid),
+    };
+    // Mock configManager with isMultipleMapEnabled
+    const configManager = {
+      get isMultipleMapEnabled() {
+        return false;
+      },
+    };
+    platform = {
+      robots: robots,
+      log: { error: vi.fn(), debug: vi.fn(), notice: vi.fn() },
+      roborockService: { setSupportedAreas: vi.fn(), setSelectedAreas: vi.fn(), setSupportedAreaIndexMap: vi.fn() },
+      registry: {
+        robotsMap: robots,
+        getRobot: vi.fn(),
+        hasDevices: vi.fn(() => true),
+        registerRobot: vi.fn(),
+      },
+      configManager: configManager,
+      enableExperimentalFeature: { enableExperimentalFeature: false, advancedFeature: { enableMultipleMap: false, forceRunAtDefault: false } },
+    };
+  });
+
+  it('logs error and returns when robot not found', async () => {
+    // Patch registry.getRobot to return undefined
+    platform.registry.getRobot = (_duid: string) => undefined;
+    const data: any = { dps: { [Protocol.status_update]: 5 } };
+    await handleCloudMessage(data, platform, runner, duid);
+    expect(platform.log.error).toHaveBeenCalledWith(`Robot not found: ${duid}`);
+  });
+
+  it('processes rpc_response and calls runner.updateFromMQTTMessage when status array present', async () => {
+    const robot: any = { updateAttribute: vi.fn(), dockStationStatus: {} };
+    platform.robots.set(duid, robot);
+    // Patch registry.getRobot to return the robot
+    platform.registry.getRobot = (_duid: string) => platform.robots.get(_duid);
+
+    const messageObj = { msg_ver: 1, some: 'value' };
+    const data: any = { dps: { [Protocol.rpc_response]: { result: [messageObj] } } };
+
+    await handleCloudMessage(data, platform, runner, duid);
+
+    expect(platform.log.debug).toHaveBeenCalled();
+    expect(runner.updateFromMQTTMessage).toHaveBeenCalledWith(NotifyMessageTypes.LocalMessage, expect.objectContaining(messageObj), duid, true);
+  });
+
+  it('does not call setSupportedAreas when additional_props map_change received and multiple map disabled', async () => {
+    const robot: any = { updateAttribute: vi.fn(), device: { rooms: [], data: { model: 'roborock.vacuum.test' }, duid } };
+    platform.robots.set(duid, robot);
+
+    const data: any = { dps: { [Protocol.additional_props]: AdditionalPropCode.map_change } };
+    await handleCloudMessage(data, platform, runner, duid);
+
+    expect(platform.roborockService.setSupportedAreas).not.toHaveBeenCalled();
+  });
+
+  it('handles status_update and updates run mode and operational state', async () => {
+    const robot: any = { updateAttribute: vi.fn(), dockStationStatus: {} };
+    platform.robots.set(duid, robot);
+    // Patch registry.getRobot to return the robot
+    platform.registry.getRobot = (_duid: string) => platform.robots.get(_duid);
+
+    const data: any = { dps: { [Protocol.status_update]: OperationStatusCode.Cleaning } };
+    await handleCloudMessage(data, platform, runner, duid);
+
+    expect(robot.updateAttribute).toHaveBeenCalled();
+  });
+});
 
 // Mocks for dependencies
 const mockUpdateAttribute = vi.fn().mockImplementation((clusterId: number, attributeName: string, value: any, log: any) => {
@@ -42,8 +125,19 @@ const robot = {
   },
   dockStationStatus: {},
 };
+const robots = new Map([[duid, robot]]);
+const registry = {
+  robotsMap: robots,
+  getRobot: (id: string) => robots.get(id),
+};
+const configManager = {
+  get isMultipleMapEnabled() {
+    return true;
+  },
+  forceRunAtDefault: false,
+};
 const platform = {
-  robots: new Map([[duid, robot]]),
+  robots,
   log: {
     error: vi.fn(),
     debug: vi.fn(),
@@ -66,6 +160,8 @@ const platform = {
       enableMultipleMap: true,
     },
   },
+  registry,
+  configManager,
 };
 const runner = { updateFromMQTTMessage: mockUpdateFromMQTTMessage };
 
@@ -148,10 +244,11 @@ describe('handleCloudMessage', () => {
 
   it('logs error if robot not found', async () => {
     const fakePlatform = { ...platform, robots: new Map() };
+    fakePlatform.registry = { ...platform.registry, getRobot: (_duid: string) => undefined };
     const data = { dps: { [Protocol.status_update]: 1 } };
     await handleCloudMessage(data as any, fakePlatform as any, runner as any, duid);
     await new Promise(process.nextTick);
-    expect(platform.log.error).toHaveBeenCalled();
+    expect(fakePlatform.log.error).toHaveBeenCalled();
   });
 
   it('handles unknown message type', async () => {

@@ -1,8 +1,8 @@
 import { AnsiLogger, debugStringify } from 'matterbridge/logger';
-import { Device, DeviceStatusNotify } from '../roborockCommunication/index.js';
 import { LOCAL_REFRESH_INTERVAL_MULTIPLIER, MQTT_REFRESH_INTERVAL_MULTIPLIER } from '../constants/index.js';
-import { NotifyMessageTypes } from '../notifyMessageTypes.js';
+import { NotifyMessageTypes } from '../types/notifyMessageTypes.js';
 import { MessageRoutingService } from './messageRoutingService.js';
+import { Device, DeviceStatusNotify } from '../roborockCommunication/models/index.js';
 
 /** Callback for device status notifications. */
 export type DeviceNotifyCallback = (messageSource: NotifyMessageTypes, homeData: unknown) => Promise<void>;
@@ -46,7 +46,7 @@ export class PollingService {
 
         const response = await messageProcessor.getDeviceStatus(device.duid);
         if (response && this.deviceNotify) {
-          const message = { duid: device.duid, ...response.errorStatus, ...response.message } as DeviceStatusNotify;
+          const message = Object.assign({ duid: device.duid }, response.errorStatus ?? {}, response.message ?? {}) as unknown as DeviceStatusNotify;
           this.logger.debug('Local Polling - Device status update:', debugStringify(message));
           this.deviceNotify(NotifyMessageTypes.LocalMessage, message);
         }
@@ -78,7 +78,7 @@ export class PollingService {
 
         const response = await messageProcessor.getDeviceStatusOverMQTT(device.duid);
         if (response && this.deviceNotify) {
-          const message = { duid: device.duid, ...response.errorStatus, ...response.message } as DeviceStatusNotify;
+          const message = Object.assign({ duid: device.duid }, response.errorStatus ?? {}, response.message ?? {}) as unknown as DeviceStatusNotify;
           this.logger.debug('MQTT - Device status update', debugStringify(message));
           this.deviceNotify(NotifyMessageTypes.LocalMessage, message);
         }

@@ -1,7 +1,7 @@
 import { AnsiLogger, debugStringify } from 'matterbridge/logger';
 import { ServiceArea } from 'matterbridge/matter/clusters';
 import { RoomMap } from '../model/RoomMap.js';
-import { Room } from '../roborockCommunication/Zmodel/room.js';
+import { Room } from '../roborockCommunication/models/index.js';
 import { randomInt } from 'node:crypto';
 import { RoomIndexMap } from '../model/RoomIndexMap.js';
 import { DEFAULT_AREA_ID_UNKNOWN, DEFAULT_AREA_ID_ERROR, MULTIPLE_MAP_AREA_ID_OFFSET, RANDOM_ROOM_MIN, RANDOM_ROOM_MAX } from '../constants/index.js';

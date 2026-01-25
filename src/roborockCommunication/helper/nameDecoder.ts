@@ -13,7 +13,7 @@ function decodeComponents(components: RegExpMatchArray | string[] | [], split: n
     return components;
   }
 
-  split = split || 1;
+  split = split ?? 1;
   const left = components.slice(0, split);
   const right = components.slice(split);
   return Array.prototype.concat.call([], decodeComponents(left), decodeComponents(right));
@@ -23,12 +23,12 @@ function decode(input: string) {
   try {
     return decodeURIComponent(input);
   } catch {
-    let tokens = input.match(singleMatcher) || [];
+    let tokens = input.match(singleMatcher) ?? [];
 
     for (let i = 1; i < tokens.length; i++) {
       input = decodeComponents(tokens, i).join('');
 
-      tokens = input.match(singleMatcher) || [];
+      tokens = input.match(singleMatcher) ?? [];
     }
 
     return input;

@@ -14,6 +14,7 @@ web-for-testing/build/
 web-for-testing/out/
 web-for-testing/src/ext
 jest/
+report/
 
 
 # TypeScript cache

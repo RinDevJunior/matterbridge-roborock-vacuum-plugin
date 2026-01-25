@@ -25,3 +25,5 @@ export type { DeviceNotifyCallback } from './communication.js';
 
 // Message payload types
 export * from './MessagePayloads.js';
+
+export { NotifyMessageTypes } from './notifyMessageTypes.js';

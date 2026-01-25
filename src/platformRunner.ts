@@ -1,15 +1,14 @@
 import { PowerSource, RvcOperationalState } from 'matterbridge/matter/clusters';
 import { CloudMessageModel } from './model/CloudMessageModel.js';
-import { RoborockMatterbridgePlatform } from './module.js';
 import { getBatteryStatus, getOperationalErrorState } from './initialData/index.js';
-import { NotifyMessageTypes } from './notifyMessageTypes.js';
-import { CloudMessageResult } from './roborockCommunication/Zmodel/messageResult.js';
-import { BatteryMessage, DeviceErrorMessage, DeviceStatusNotify, Home } from './roborockCommunication/index.js';
+import { NotifyMessageTypes } from './types/notifyMessageTypes.js';
 import { debugStringify } from 'matterbridge/logger';
 import { handleLocalMessage } from './runtimes/handleLocalMessage.js';
 import { handleCloudMessage } from './runtimes/handleCloudMessage.js';
 import { updateFromHomeData } from './runtimes/handleHomeDataMessage.js';
 import type { MessagePayload } from './types/MessagePayloads.js';
+import { BatteryMessage, CloudMessageResult, DeviceErrorMessage, DeviceStatusNotify, Home } from './roborockCommunication/models/index.js';
+import { RoborockMatterbridgePlatform } from './module.js';
 
 export class PlatformRunner {
   platform: RoborockMatterbridgePlatform;
@@ -60,12 +59,13 @@ export class PlatformRunner {
    */
   public async requestHomeData(): Promise<void> {
     const platform = this.platform;
-    if (platform.robots.size === 0 || !platform.rrHomeId) return;
+    if (platform.registry.robotsMap.size === 0 || !platform.rrHomeId) return;
     if (platform.roborockService === undefined) return;
 
     const homeData = await platform.roborockService.getHomeDataForUpdating(platform.rrHomeId);
     if (homeData === undefined) return;
-    await this.updateRobot(NotifyMessageTypes.HomeData, homeData);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await this.updateRobotWithPayload({ type: NotifyMessageTypes.HomeData, data: homeData } as any);
   }
 
   /**
@@ -79,7 +79,7 @@ export class PlatformRunner {
     const platform = this.platform;
     duid = duid || (messageData as DeviceStatusNotify)?.duid || '';
 
-    const robot = platform.robots.get(duid);
+    const robot = platform.registry.getRobot(duid);
     if (robot === undefined) {
       platform.log.error(`Robot with DUID ${duid} not found during MQTT message processing`);
       return;

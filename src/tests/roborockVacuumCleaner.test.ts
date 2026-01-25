@@ -1,8 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { RoborockVacuumCleaner } from '../roborockVacuumCleaner.js';
+import { RoborockVacuumCleaner } from '../types/roborockVacuumCleaner.js';
 import { ModeBase } from 'matterbridge/matter/clusters';
 import { AnsiLogger } from 'matterbridge/logger';
-import { BehaviorFactoryResult } from '../behaviorFactory.js';
+import { BehaviorFactoryResult } from '../share/behaviorFactory.js';
 
 function createMockLogger(): AnsiLogger {
   return {
@@ -131,6 +131,6 @@ describe('RoborockVacuumCleaner', () => {
     expect(result.supportedMaps).toBeDefined();
     expect(result.supportedAreaAndRoutines).toBeDefined();
     expect(result.deviceName).toContain(device.name);
-    expect(result.bridgeMode).toBeUndefined();
+    expect(result.bridgeMode).toBe('matter');
   });
 });

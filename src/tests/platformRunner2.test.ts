@@ -1,12 +1,24 @@
-import { getRoomMapFromDevice } from '../helper.js';
+import { getRoomMapFromDevice } from '../share/helper.js';
 import { RoomMap } from '../model/RoomMap.js';
-import { MapInfo } from '../roborockCommunication/index.js';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { MapInfo } from '../roborockCommunication/models/index.js';
 
 describe('PlatformRunner.getRoomMapFromDevice', () => {
   let platform: any;
 
   beforeEach(() => {
+    // Mock registry with robotsMap and getRobot
+    const robots = new Map();
+    const registry = {
+      robotsMap: robots,
+      getRobot: (duid: string) => robots.get(duid),
+    };
+    // Mock configManager with isMultipleMapEnabled
+    const configManager = {
+      get isMultipleMapEnabled() {
+        return false;
+      },
+    };
     platform = {
       log: {
         error: vi.fn(),
@@ -17,6 +29,8 @@ describe('PlatformRunner.getRoomMapFromDevice', () => {
         getRoomMappings: vi.fn(),
         getMapInformation: vi.fn(),
       },
+      registry: registry,
+      configManager: configManager,
     };
   });
 
@@ -127,7 +141,7 @@ describe('PlatformRunner.getRoomMapFromDevice', () => {
 
     const result1 = await getRoomMapFromDevice(device as any, platform);
     expect(result1).toBeInstanceOf(RoomMap);
-    expect(result1.rooms.length).toEqual(8);
+    expect(result1.rooms.length).toEqual(4);
   });
 
   it('returns RoomMap with empty roomData from getMapInformation if available', async () => {

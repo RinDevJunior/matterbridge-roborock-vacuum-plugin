@@ -1,14 +1,15 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { PlatformRunner } from '../platformRunner.js';
-import { NotifyMessageTypes } from '../notifyMessageTypes.js';
+import { NotifyMessageTypes } from '../types/notifyMessageTypes.js';
 import { RoborockMatterbridgePlatform } from '../module.js';
-import { Home } from '../roborockCommunication/index.js';
 import fs from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
-import { RoborockVacuumCleaner } from '../roborockVacuumCleaner.js';
+import { RoborockVacuumCleaner } from '../types/roborockVacuumCleaner.js';
 import * as initialDataIndex from '../initialData/index.js';
 import { RvcOperationalState } from 'matterbridge/matter/clusters';
+import { Home } from '../roborockCommunication/models/index.js';
+import { DeviceRegistry } from '../platform/deviceRegistry.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -41,6 +42,21 @@ describe('PlatformRunner.updateRobot', () => {
     const robots = new Map<string, RoborockVacuumCleaner>();
     robots.set('123456', robotMock);
 
+    // Mock registry with robotsMap and getRobot
+    const registry = {
+      robotsMap: robots,
+      getRobot: (duid: string) => robots.get(duid),
+      hasDevices: vi.fn(() => true),
+      registerRobot: vi.fn(),
+    };
+
+    // Mock configManager with isMultipleMapEnabled
+    const configManager = {
+      get isMultipleMapEnabled() {
+        return false;
+      },
+    };
+
     platform = {
       robots: robots,
       log: {
@@ -48,6 +64,8 @@ describe('PlatformRunner.updateRobot', () => {
         debug: vi.fn(),
         notice: vi.fn(),
       },
+      registry: registry,
+      configManager: configManager,
       enableExperimentalFeature: undefined,
     } as unknown as RoborockMatterbridgePlatform;
 
@@ -151,7 +169,7 @@ describe('PlatformRunner.updateRobot', () => {
     const batteryMessage = { percentage: 60 };
     robotMock.device.data = { model: 'test-model' };
     robotMock.serialNumber = '123456';
-    await runner['updateFromMQTTMessage'](NotifyMessageTypes.BatteryUpdate, batteryMessage, '123456');
+    await runner.updateFromMQTTMessage(NotifyMessageTypes.BatteryUpdate, batteryMessage, '123456');
 
     expect(robotMock.updateAttribute).toHaveBeenCalledWith(expect.any(Number), 'batPercentRemaining', 120, expect.any(Object));
     expect(robotMock.updateAttribute).toHaveBeenCalledWith(expect.any(Number), 'batChargeLevel', expect.any(Number), expect.any(Object));
@@ -174,26 +192,26 @@ describe('PlatformRunner.updateRobot', () => {
     robotMock.serialNumber = '123456';
     getOperationalErrorState = vi.fn().mockReturnValue(RvcOperationalState.OperationalState.Error);
 
-    await runner['updateFromMQTTMessage'](NotifyMessageTypes.ErrorOccurred, errorMessage, '123456');
+    await runner.updateFromMQTTMessage(NotifyMessageTypes.ErrorOccurred, errorMessage, '123456');
 
     expect(platform.log.error).toHaveBeenCalledWith('Error occurred: 1');
     expect(robotMock.updateAttribute).toHaveBeenCalledWith(expect.any(Number), 'operationalState', 3, expect.any(Object));
   });
 
   it('should log error if robot not found for MQTT message', async () => {
-    await runner['updateFromMQTTMessage'](NotifyMessageTypes.BatteryUpdate, { percentage: 50 }, 'notfound');
+    await runner.updateFromMQTTMessage(NotifyMessageTypes.BatteryUpdate, { percentage: 50 }, 'notfound');
     expect(platform.log.error).toHaveBeenCalledWith('Robot with DUID notfound not found during MQTT message processing');
   });
 
   it('should log error if device data is undefined for MQTT message', async () => {
     robotMock.device.data = undefined;
-    await runner['updateFromMQTTMessage'](NotifyMessageTypes.BatteryUpdate, { percentage: 50 }, '123456');
+    await runner.updateFromMQTTMessage(NotifyMessageTypes.BatteryUpdate, { percentage: 50 }, '123456');
     expect(platform.log.error).toHaveBeenCalledWith('Device data is undefined for robot 123456');
   });
 
   it('should handle LocalMessage when robot is not found', async () => {
     const localMessage = { duid: '999999', data: {} };
-    await runner['updateFromMQTTMessage'](NotifyMessageTypes.LocalMessage, localMessage, '999999');
+    await runner.updateFromMQTTMessage(NotifyMessageTypes.LocalMessage, localMessage, '999999');
     expect(platform.log.error).toHaveBeenCalledWith('Robot with DUID 999999 not found during MQTT message processing');
   });
 
@@ -207,7 +225,7 @@ describe('PlatformRunner.updateRobot', () => {
     (platform.log.error as ReturnType<typeof vi.fn>).mockClear();
 
     // This will call the actual handleLocalMessage function
-    await runner['updateFromMQTTMessage'](NotifyMessageTypes.LocalMessage, localMessage, '123456');
+    await runner.updateFromMQTTMessage(NotifyMessageTypes.LocalMessage, localMessage, '123456');
 
     // Verify no error was logged (which would happen on the error path)
     expect(platform.log.error).not.toHaveBeenCalled();
@@ -218,7 +236,7 @@ describe('PlatformRunner.updateRobot', () => {
     robotMock.serialNumber = '123456';
 
     // Use a message type that hits the default case
-    await runner['updateFromMQTTMessage'](999 as any, {}, '123456');
+    await runner.updateFromMQTTMessage(999 as any, {}, '123456');
 
     // Should complete without error
     expect(robotMock.updateAttribute).not.toHaveBeenCalled();
@@ -231,7 +249,7 @@ describe('PlatformRunner.requestHomeData', () => {
 
   it('should return early if no robots exist', async () => {
     platform = {
-      robots: new Map(),
+      registry: { robotsMap: new Map() },
       rrHomeId: '12345',
       roborockService: { getHomeDataForUpdating: vi.fn() },
       log: { error: vi.fn(), debug: vi.fn(), notice: vi.fn() },
@@ -245,7 +263,7 @@ describe('PlatformRunner.requestHomeData', () => {
 
   it('should return early if rrHomeId is not set (undefined)', async () => {
     platform = {
-      robots: new Map([['123', {} as any]]),
+      registry: { robotsMap: new Map([['123', {} as any]]) },
       rrHomeId: undefined,
       roborockService: { getHomeDataForUpdating: vi.fn() },
       log: { error: vi.fn(), debug: vi.fn(), notice: vi.fn() },
@@ -259,7 +277,7 @@ describe('PlatformRunner.requestHomeData', () => {
 
   it('should return early if rrHomeId is falsy (empty string)', async () => {
     platform = {
-      robots: new Map([['123', {} as any]]),
+      registry: { robotsMap: new Map([['123', {} as any]]) },
       rrHomeId: '',
       roborockService: { getHomeDataForUpdating: vi.fn() },
       log: { error: vi.fn(), debug: vi.fn(), notice: vi.fn() },
@@ -273,7 +291,7 @@ describe('PlatformRunner.requestHomeData', () => {
 
   it('should return early if roborockService is undefined', async () => {
     platform = {
-      robots: new Map([['123', {} as any]]),
+      registry: { robotsMap: new Map([['123', {} as any]]) },
       rrHomeId: '12345',
       roborockService: undefined,
       log: { error: vi.fn(), debug: vi.fn(), notice: vi.fn() },
@@ -289,7 +307,7 @@ describe('PlatformRunner.requestHomeData', () => {
   it('should return early if homeData is undefined', async () => {
     const getHomeDataMock = vi.fn().mockResolvedValue(undefined);
     platform = {
-      robots: new Map([['123', {} as any]]),
+      registry: { robotsMap: new Map([['123', {} as any]]) },
       rrHomeId: '12345',
       roborockService: { getHomeDataForUpdating: getHomeDataMock },
       log: { error: vi.fn(), debug: vi.fn(), notice: vi.fn() },
@@ -304,22 +322,22 @@ describe('PlatformRunner.requestHomeData', () => {
     expect(updateRobotSpy).not.toHaveBeenCalled();
   });
 
-  it('should call updateRobot when homeData is available', async () => {
+  it('should call updateRobotWithPayload when homeData is available', async () => {
     const homeData = { devices: [], products: [] };
     const getHomeDataMock = vi.fn().mockResolvedValue(homeData);
     platform = {
-      robots: new Map([['123', {} as any]]),
+      registry: { robotsMap: new Map([['123', {} as any]]) },
       rrHomeId: '12345',
       roborockService: { getHomeDataForUpdating: getHomeDataMock },
       log: { error: vi.fn(), debug: vi.fn(), notice: vi.fn() },
     } as unknown as RoborockMatterbridgePlatform;
 
     runner = new PlatformRunner(platform);
-    const updateRobotSpy = vi.spyOn(runner, 'updateRobot').mockResolvedValue();
+    const updateRobotWithPayloadSpy = vi.spyOn(runner, 'updateRobotWithPayload').mockResolvedValue();
 
     await runner.requestHomeData();
 
     expect(getHomeDataMock).toHaveBeenCalledWith('12345');
-    expect(updateRobotSpy).toHaveBeenCalledWith(NotifyMessageTypes.HomeData, homeData);
+    expect(updateRobotWithPayloadSpy).toHaveBeenCalledWith({ type: NotifyMessageTypes.HomeData, data: homeData });
   });
 });

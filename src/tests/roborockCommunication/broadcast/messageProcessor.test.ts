@@ -1,5 +1,6 @@
-import { MessageProcessor, DeviceStatus } from '../../../roborockCommunication/index.js';
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { MessageProcessor } from '../../../roborockCommunication/mqtt/messageProcessor.js';
+import { DeviceStatus } from '../../../roborockCommunication/models/index.js';
 
 describe('MessageProcessor', () => {
   let mockClient: any;

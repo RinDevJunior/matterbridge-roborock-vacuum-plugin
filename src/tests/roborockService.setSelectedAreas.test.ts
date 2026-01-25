@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { AnsiLogger } from 'matterbridge/logger';
-import RoborockService from '../roborockService.js';
+import { RoborockService } from '../services/roborockService.js';
 import { RoomIndexMap } from '../model/RoomIndexMap.js';
 import ClientManager from '../services/clientManager.js';
 
@@ -20,11 +20,16 @@ describe('RoborockService - startClean', () => {
     clientManager = {} as ClientManager;
 
     roborockService = new RoborockService(
-      undefined, // default auth factory
-      undefined, // default IoT factory
-      10,
-      clientManager,
+      {
+        authenticateApiFactory: vi.fn(),
+        iotApiFactory: vi.fn(),
+        baseUrl: 'https://api.roborock.com',
+        refreshInterval: 60000,
+        persist: {} as any,
+        configManager: {} as any,
+      },
       mockLogger,
+      {} as any,
     );
   });
 

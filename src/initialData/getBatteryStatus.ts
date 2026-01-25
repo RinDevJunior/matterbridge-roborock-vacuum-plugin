@@ -1,5 +1,5 @@
 import { PowerSource } from 'matterbridge/matter/clusters';
-import { OperationStatusCode } from '../roborockCommunication/Zenum/operationStatusCode.js';
+import { OperationStatusCode } from '../roborockCommunication/enums/index.js';
 import { BATTERY_THRESHOLD_OK, BATTERY_THRESHOLD_WARNING, BATTERY_FULL } from '../constants/index.js';
 
 /**
