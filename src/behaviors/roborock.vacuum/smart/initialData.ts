@@ -6,10 +6,10 @@ import { ExperimentalFeatureSetting } from '../../../model/ExperimentalFeatureSe
 /**
  * Get supported clean modes for smart vacuum models.
  * Adds 'Smart Plan' mode (4) and day mode (5) to the default clean modes.
- * @param enableExperimentalFeature - Experimental feature settings
+ * @param experimentalFeatureSetting - Experimental feature settings
  * @returns Array of supported clean mode configurations for smart models
  */
-export function getSupportedCleanModesSmart(enableExperimentalFeature: ExperimentalFeatureSetting | undefined): RvcCleanMode.ModeOption[] {
+export function getSupportedCleanModesSmart(experimentalFeatureSetting: ExperimentalFeatureSetting | undefined): RvcCleanMode.ModeOption[] {
   return [
     {
       label: RvcCleanModeDisplayMap[4],
@@ -21,6 +21,6 @@ export function getSupportedCleanModesSmart(enableExperimentalFeature: Experimen
       mode: 5,
       modeTags: [{ value: RvcCleanMode.ModeTag.Mop }, { value: RvcCleanMode.ModeTag.Vacuum }, { value: RvcCleanMode.ModeTag.Day }],
     },
-    ...getDefaultSupportedCleanModes(enableExperimentalFeature).filter((x) => x.mode !== 4 && x.mode !== 5), // Exclude modes 4 and 5 which are already defined
+    ...getDefaultSupportedCleanModes(experimentalFeatureSetting).filter((x) => x.mode !== 4 && x.mode !== 5), // Exclude modes 4 and 5 which are already defined
   ];
 }

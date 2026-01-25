@@ -17,6 +17,8 @@ export type RoborockPluginPlatformConfig = PlatformConfig & {
   enableExperimental: ExperimentalFeatureSetting;
   region?: string;
   unregisterOnShutdown?: boolean;
+  enableServerMode: boolean;
+  sanitizeSensitiveLogs: boolean;
 };
 
 /**
@@ -151,7 +153,7 @@ export class PlatformConfigManager {
   }
 
   public get isServerModeEnabled(): boolean {
-    return this.isExperimentalEnabled && this.advancedFeatures.enableServerMode;
+    return this.config.enableServerMode;
   }
 
   public get isMultipleMapEnabled(): boolean {

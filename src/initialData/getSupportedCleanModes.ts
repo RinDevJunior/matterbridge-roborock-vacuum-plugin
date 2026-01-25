@@ -5,14 +5,14 @@ import { DeviceModel } from '../roborockCommunication/models/index.js';
 import { ExperimentalFeatureSetting } from '../model/ExperimentalFeatureSetting.js';
 import { SMART_MODELS } from '../constants/index.js';
 
-export function getSupportedCleanModes(model: DeviceModel, enableExperimentalFeature: ExperimentalFeatureSetting | undefined): RvcCleanMode.ModeOption[] {
-  if (enableExperimentalFeature?.advancedFeature?.forceRunAtDefault ?? false) {
-    return getDefaultSupportedCleanModes(enableExperimentalFeature);
+export function getSupportedCleanModes(model: DeviceModel, experimentalFeatureSetting: ExperimentalFeatureSetting | undefined): RvcCleanMode.ModeOption[] {
+  if (experimentalFeatureSetting?.advancedFeature?.forceRunAtDefault ?? false) {
+    return getDefaultSupportedCleanModes(experimentalFeatureSetting);
   }
 
   if (SMART_MODELS.has(model)) {
-    return getSupportedCleanModesSmart(enableExperimentalFeature);
+    return getSupportedCleanModesSmart(experimentalFeatureSetting);
   }
 
-  return getDefaultSupportedCleanModes(enableExperimentalFeature);
+  return getDefaultSupportedCleanModes(experimentalFeatureSetting);
 }

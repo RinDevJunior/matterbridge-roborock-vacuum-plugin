@@ -3,6 +3,7 @@ export interface AdvancedFeature {
   includeDockStationStatus: boolean;
   forceRunAtDefault: boolean;
   useVacationModeToSendVacuumToDock: boolean;
+  /** @deprecated use RoborockPluginPlatformConfig.enableServerMode instead */
   enableServerMode: boolean;
   alwaysExecuteAuthentication: boolean;
   enableMultipleMap: boolean;

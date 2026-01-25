@@ -5,10 +5,10 @@ import { getOperationalStates, getSupportedAreas, getSupportedCleanModes, getSup
 import { AnsiLogger, debugStringify } from 'matterbridge/logger';
 import { BehaviorFactoryResult } from '../share/behaviorFactory.js';
 import { ModeBase, RvcOperationalState, ServiceArea } from 'matterbridge/matter/clusters';
-import { ExperimentalFeatureSetting } from '../model/ExperimentalFeatureSetting.js';
 import { CommandNames } from '../behaviors/BehaviorDeviceGeneric.js';
 import { DockingStationStatus } from '../model/DockingStationStatus.js';
 import { Device } from '../roborockCommunication/models/index.js';
+import { PlatformConfigManager } from '../platform/platformConfig.js';
 
 interface IdentifyCommandRequest {
   identifyTime?: number;
@@ -30,15 +30,8 @@ export class RoborockVacuumCleaner extends RoboticVacuumCleaner {
    * @param enableExperimentalFeature - Experimental feature settings
    * @param log - Logger instance
    */
-  constructor(
-    username: string,
-    device: Device,
-    roomMap: RoomMap,
-    routineAsRoom: ServiceArea.Area[],
-    enableExperimentalFeature: ExperimentalFeatureSetting | undefined,
-    log: AnsiLogger,
-  ) {
-    const deviceConfig = RoborockVacuumCleaner.initializeDeviceConfiguration(device, roomMap, routineAsRoom, enableExperimentalFeature, log);
+  constructor(username: string, device: Device, roomMap: RoomMap, routineAsRoom: ServiceArea.Area[], configManager: PlatformConfigManager, log: AnsiLogger) {
+    const deviceConfig = RoborockVacuumCleaner.initializeDeviceConfiguration(device, roomMap, routineAsRoom, configManager, log);
 
     super(
       deviceConfig.deviceName,
@@ -61,7 +54,7 @@ export class RoborockVacuumCleaner extends RoboticVacuumCleaner {
     log.debug(
       `Creating RoborockVacuumCleaner for device: ${deviceConfig.deviceName}, 
       model: ${device.data.model}, 
-      forceRunAtDefault: ${enableExperimentalFeature?.advancedFeature?.forceRunAtDefault}
+      forceRunAtDefault: ${configManager.forceRunAtDefault}
       bridgeMode: ${deviceConfig.bridgeMode},
       Supported Clean Modes: ${debugStringify(deviceConfig.cleanModes)},
       Supported Run Modes: ${debugStringify(deviceConfig.supportedRunModes)},
@@ -122,24 +115,17 @@ export class RoborockVacuumCleaner extends RoboticVacuumCleaner {
    * Initialize device configuration including modes, areas, and maps.
    * @private
    */
-  private static initializeDeviceConfiguration(
-    device: Device,
-    roomMap: RoomMap,
-    routineAsRoom: ServiceArea.Area[],
-    enableExperimentalFeature: ExperimentalFeatureSetting | undefined,
-    log: AnsiLogger,
-  ) {
-    const cleanModes = getSupportedCleanModes(device.data.model, enableExperimentalFeature);
+  private static initializeDeviceConfiguration(device: Device, roomMap: RoomMap, routineAsRoom: ServiceArea.Area[], configManager: PlatformConfigManager, log: AnsiLogger) {
+    const cleanModes = getSupportedCleanModes(device.data.model, configManager.experimentalSettings);
     const supportedRunModes = getSupportedRunModes();
-    const enableMultipleMap = enableExperimentalFeature?.enableExperimentalFeature && enableExperimentalFeature?.advancedFeature?.enableMultipleMap;
+    const enableMultipleMap = configManager.isMultipleMapEnabled;
     const operationalState = getOperationalStates();
 
     const { supportedAreas, supportedMaps } = getSupportedAreas(device.rooms, roomMap, enableMultipleMap, log);
     const supportedAreaAndRoutines = [...supportedAreas, ...routineAsRoom];
     const deviceName = `${device.name}-${device.duid}`.replace(/\s+/g, '');
 
-    const bridgeMode: 'server' | 'matter' | undefined =
-      enableExperimentalFeature?.enableExperimentalFeature && enableExperimentalFeature?.advancedFeature?.enableServerMode ? 'server' : 'matter';
+    const bridgeMode: 'server' | 'matter' | undefined = configManager.isServerModeEnabled ? 'server' : 'matter';
 
     return {
       deviceName,

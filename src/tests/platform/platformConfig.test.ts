@@ -135,6 +135,7 @@ describe('PlatformConfigManager', () => {
         alwaysExecuteAuthentication: false,
         includeDockStationStatus: true,
       } as any;
+      config.enableServerMode = true;
       config.enableExperimental.enableExperimentalFeature = true;
       manager = PlatformConfigManager.create(config, mockLogger);
       expect(manager.isServerModeEnabled).toBe(true);

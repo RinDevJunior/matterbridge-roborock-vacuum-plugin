@@ -42,5 +42,7 @@
   },
   "debug": true,
   "unregisterOnShutdown": false,
-  "enableExperimentalFeature": false
+  "enableExperimentalFeature": false,
+  "enableServerMode": false,
+  "sanitizeSensitiveLogs": true
 }

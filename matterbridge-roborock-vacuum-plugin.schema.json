@@ -76,13 +76,23 @@
         }
       ]
     },
+    "enableServerMode": {
+      "description": "Enable the Robot Vacuum Cleaner in server mode (Each vacuum will have its own server).",
+      "type": "boolean",
+      "default": false
+    },
+    "sanitizeSensitiveLogs": {
+      "description": "Sanitize sensitive information in logs (e.g., authentication tokens).",
+      "type": "boolean",
+      "default": true
+    },
     "refreshInterval": {
       "description": "Refresh interval in seconds (default: 60)",
       "type": "number",
       "default": 60
     },
     "enableExperimental": {
-      "title": "Enable the experimental feature",
+      "title": "Enable the Advanced feature",
       "type": "object",
       "properties": {
         "enableExperimentalFeature": {
@@ -128,7 +138,7 @@
                     "default": false
                   },
                   "enableServerMode": {
-                    "description": "Enable the Robot Vacuum Cleaner in server mode (Each vacuum will have its own server).",
+                    "description": "[DEPRECATED] Enable the Robot Vacuum Cleaner in server mode (Each vacuum will have its own server).",
                     "type": "boolean",
                     "default": false
                   },

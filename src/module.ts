@@ -56,7 +56,7 @@ export class RoborockMatterbridgePlatform extends MatterbridgeDynamicPlatform {
     logger: AnsiLogger,
     override config: RoborockPluginPlatformConfig,
   ) {
-    super(matterbridge, new FilterLogger(logger), config);
+    super(matterbridge, new FilterLogger(logger, config.sanitizeSensitiveLogs), config);
 
     const requiredMatterbridgeVersion = '3.5.0';
     if (this.verifyMatterbridgeVersion === undefined || typeof this.verifyMatterbridgeVersion !== 'function' || !this.verifyMatterbridgeVersion(requiredMatterbridgeVersion)) {
@@ -288,7 +288,7 @@ export class RoborockMatterbridgePlatform extends MatterbridgeDynamicPlatform {
       this.roborockService.setSupportedScenes(vacuum.duid, routineAsRoom);
     }
 
-    const robot = new RoborockVacuumCleaner(username, vacuum, roomMap, routineAsRoom, this.configManager.experimentalSettings, this.log);
+    const robot = new RoborockVacuumCleaner(username, vacuum, roomMap, routineAsRoom, this.configManager, this.log);
     robot.configureHandler(behaviorHandler);
 
     this.log.info('vacuum:', debugStringify(vacuum));
