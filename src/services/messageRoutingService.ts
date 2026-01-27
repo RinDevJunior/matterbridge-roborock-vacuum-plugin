@@ -148,57 +148,40 @@ export class MessageRoutingService {
     return this.getMessageDispatcher(duid).startCleaning(duid);
   }
 
-  /**
-   * Pause the current cleaning operation.
-   */
   public async pauseClean(duid: string): Promise<void> {
     this.logger.debug('MessageRoutingService - pauseClean');
     await this.getMessageDispatcher(duid).pauseCleaning(duid);
   }
 
-  /**
-   * Stop cleaning and return to the charging dock.
-   */
   public async stopAndGoHome(duid: string): Promise<void> {
     this.logger.debug('MessageRoutingService - stopAndGoHome');
     await this.getMessageDispatcher(duid).goHome(duid);
   }
 
-  /**
-   * Resume a paused cleaning operation.
-   */
   public async resumeClean(duid: string): Promise<void> {
     this.logger.debug('MessageRoutingService - resumeClean');
     await this.getMessageDispatcher(duid).resumeCleaning(duid);
   }
 
-  /**
-   * Play a sound to help locate the vacuum.
-   */
+  public async stopClean(duid: string): Promise<void> {
+    this.logger.debug('MessageRoutingService - stopClean');
+    await this.getMessageDispatcher(duid).stopCleaning(duid);
+  }
+
   public async playSoundToLocate(duid: string): Promise<void> {
     this.logger.debug('MessageRoutingService - findMe');
     await this.getMessageDispatcher(duid).findMyRobot(duid);
   }
 
-  /**
-   * Execute a custom GET request to the device.
-   */
   public async customGet<T = unknown>(duid: string, request: RequestMessage): Promise<T> {
     this.logger.debug('MessageRoutingService - customSend-message', request.method, request.params, request.secure);
     return this.getMessageDispatcher(duid).getCustomMessage(duid, request);
   }
 
-  /**
-   * Send a custom command to the device without expecting a response.
-   */
   public async customSend(duid: string, request: RequestMessage): Promise<void> {
     return this.getMessageDispatcher(duid).sendCustomMessage(duid, request);
   }
 
-  /**
-   * Clear all message routing data.
-   * Used during service shutdown or reset.
-   */
   public clearAll(): void {
     this.messageProcessorMap.clear();
     this.messageDispatcherMap.clear();

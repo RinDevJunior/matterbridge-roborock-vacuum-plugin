@@ -10,7 +10,7 @@ export interface DefaultEndpointCommands extends DeviceCommands {
   pause: () => MaybePromise;
   resume: () => MaybePromise;
   goHome: () => MaybePromise;
-  playSoundToLocate: (identifyTime: number) => MaybePromise;
+  identify: (identifyTime: number) => MaybePromise;
 }
 
 export class DefaultBehavior extends BehaviorRoborock {
@@ -202,9 +202,14 @@ export function setDefaultCommandHandler(
     await roborockService.stopAndGoHome(duid);
   });
 
-  handler.setCommandHandler(CommandNames.PLAY_SOUND_TO_LOCATE, async () => {
-    logger.notice('DefaultBehavior-playSoundToLocate');
+  handler.setCommandHandler(CommandNames.IDENTIFY, async () => {
+    logger.notice('DefaultBehavior-identify');
     await roborockService.playSoundToLocate(duid);
+  });
+
+  handler.setCommandHandler(CommandNames.STOP, async () => {
+    logger.notice('DefaultBehavior-Stop');
+    await roborockService.stopClean(duid);
   });
 }
 

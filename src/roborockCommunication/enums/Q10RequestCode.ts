@@ -5,8 +5,8 @@ export enum Q10RequestCode {
   multimap = 61,
   networkinfo = 81,
 
-  common = 101,
-  get_status = 102,
+  rpc_request = 101,
+  rpc_response = 102,
   get_prop = 999, // TODO: Verify
 
   clean_task_type = 138,
@@ -16,6 +16,7 @@ export enum Q10RequestCode {
   app_pause = 204,
   app_resume = 205,
   app_stop = 206,
+  ceip = 207,
 }
 
 export enum Q10RequestMethod {

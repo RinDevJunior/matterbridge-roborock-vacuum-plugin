@@ -10,7 +10,7 @@ export const CommandNames = {
   PAUSE: 'pause',
   RESUME: 'resume',
   GO_HOME: 'goHome',
-  PLAY_SOUND_TO_LOCATE: 'playSoundToLocate',
+  STOP: 'stop',
 } as const;
 
 export type DeviceCommandHandler = (...args: never[]) => MaybePromise;

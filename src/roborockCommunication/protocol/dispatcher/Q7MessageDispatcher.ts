@@ -1,5 +1,5 @@
 import { randomInt } from 'node:crypto';
-import { Q7RequestCode, Q7RequestMethod } from '../../enums/Q7RequestCode.js';
+import { Q7CleanType, Q7ControlCode, Q7RequestCode, Q7RequestMethod } from '../../enums/Q7RequestCode.js';
 import { DeviceStatus } from '../../models/deviceStatus.js';
 import { RequestMessage } from '../../models/requestMessage.js';
 import { AbstractMessageDispatcher } from './abstractMessageDispatcher.js';
@@ -59,12 +59,16 @@ export class Q7MessageDispatcher implements AbstractMessageDispatcher {
   }
 
   public async startRoomCleaning(duid: string, roomIds: number[], repeat: number): Promise<void> {
-    const request = new RequestMessage({ dps: this.createDps(Q7RequestMethod.app_start_stop, { clean_type: 0, ctrl_value: 1, room_ids: roomIds }) });
+    const request = new RequestMessage({
+      dps: this.createDps(Q7RequestMethod.app_start_stop, { clean_type: Q7CleanType.room_clean, ctrl_value: Q7ControlCode.start, room_ids: roomIds }),
+    });
     await this.client.send(duid, request);
   }
 
   public async pauseCleaning(duid: string): Promise<void> {
-    const request = new RequestMessage({ dps: this.createDps(Q7RequestMethod.app_start_stop, { clean_type: 0, ctrl_value: 2, room_ids: [] }) });
+    const request = new RequestMessage({
+      dps: this.createDps(Q7RequestMethod.app_start_stop, { clean_type: Q7CleanType.full_clean, ctrl_value: Q7ControlCode.pause, room_ids: [] }),
+    });
     await this.client.send(duid, request);
   }
 
@@ -77,12 +81,15 @@ export class Q7MessageDispatcher implements AbstractMessageDispatcher {
   }
 
   public async stopCleaning(duid: string): Promise<void> {
-    const request = new RequestMessage({ dps: this.createDps(Q7RequestMethod.app_start_stop, { clean_type: 0, ctrl_value: 0, room_ids: [] }) });
+    const request = new RequestMessage({
+      dps: this.createDps(Q7RequestMethod.app_start_stop, { clean_type: Q7CleanType.full_clean, ctrl_value: Q7ControlCode.stop, room_ids: [] }),
+    });
     await this.client.send(duid, request);
   }
 
   public async findMyRobot(duid: string): Promise<void> {
-    // TODO: Implement find my robot for Q7
+    const request = new RequestMessage({ dps: this.createDps(Q7RequestMethod.find_me, {}) });
+    await this.client.send(duid, request);
   }
 
   public async sendCustomMessage(duid: string, def: RequestMessage): Promise<void> {

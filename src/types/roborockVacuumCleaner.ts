@@ -70,7 +70,7 @@ export class RoborockVacuumCleaner extends RoboticVacuumCleaner {
   public configureHandler(behaviorHandler: BehaviorFactoryResult): void {
     this.addCommandHandlerWithErrorHandling(CommandNames.IDENTIFY, async ({ request, cluster, attributes, endpoint }) => {
       this.log.info(`Identify command received for endpoint ${endpoint}, cluster ${cluster}, attributes ${debugStringify(attributes)}, request: ${JSON.stringify(request)}`);
-      behaviorHandler.executeCommand(CommandNames.PLAY_SOUND_TO_LOCATE, (request as IdentifyCommandRequest).identifyTime ?? 5);
+      behaviorHandler.executeCommand(CommandNames.IDENTIFY, (request as IdentifyCommandRequest).identifyTime ?? 5);
     });
 
     this.addCommandHandlerWithErrorHandling(CommandNames.SELECT_AREAS, async ({ request }) => {
@@ -102,6 +102,11 @@ export class RoborockVacuumCleaner extends RoboticVacuumCleaner {
     this.addCommandHandlerWithErrorHandling(CommandNames.GO_HOME, async () => {
       this.log.info('GoHome command received');
       behaviorHandler.executeCommand(CommandNames.GO_HOME);
+    });
+
+    this.addCommandHandlerWithErrorHandling(CommandNames.STOP, async () => {
+      this.log.info('Stop command received');
+      behaviorHandler.executeCommand(CommandNames.STOP);
     });
   }
 

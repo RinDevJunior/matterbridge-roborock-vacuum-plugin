@@ -52,7 +52,7 @@ describe('setDefaultCommandHandler', () => {
     expect(handler.setCommandHandler).toHaveBeenCalledWith('pause', expect.any(Function));
     expect(handler.setCommandHandler).toHaveBeenCalledWith('resume', expect.any(Function));
     expect(handler.setCommandHandler).toHaveBeenCalledWith('goHome', expect.any(Function));
-    expect(handler.setCommandHandler).toHaveBeenCalledWith('playSoundToLocate', expect.any(Function));
+    expect(handler.setCommandHandler).toHaveBeenCalledWith('identify', expect.any(Function));
   });
 
   it('should call startClean for Cleaning mode', async () => {
@@ -128,7 +128,7 @@ describe('setDefaultCommandHandler', () => {
 
   it('should call playSoundToLocate', async () => {
     setDefaultCommandHandler(duid, handler, logger, roborockService as RoborockService, cleanModeSettings);
-    const [[, playSoundHandler]] = (handler.setCommandHandler as ReturnType<typeof vi.fn>).mock.calls.filter(([cmd]) => cmd === 'playSoundToLocate');
+    const [[, playSoundHandler]] = (handler.setCommandHandler as ReturnType<typeof vi.fn>).mock.calls.filter(([cmd]) => cmd === 'identify');
     await (playSoundHandler as (arg: number) => Promise<void>)(1);
     expect(roborockService.playSoundToLocate).toHaveBeenCalledWith(duid);
   });

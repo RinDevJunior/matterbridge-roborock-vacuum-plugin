@@ -11,7 +11,8 @@ export interface EndpointCommandsSmart extends DeviceCommands {
   pause: () => MaybePromise;
   resume: () => MaybePromise;
   goHome: () => MaybePromise;
-  playSoundToLocate: (identifyTime: number) => MaybePromise;
+  identify: (identifyTime: number) => MaybePromise;
+  stop: () => MaybePromise;
 }
 
 export class BehaviorSmart extends BehaviorRoborock {
@@ -161,8 +162,13 @@ export function setCommandHandlerSmart(
     await roborockService.stopAndGoHome(duid);
   });
 
-  handler.setCommandHandler(CommandNames.PLAY_SOUND_TO_LOCATE, async () => {
+  handler.setCommandHandler(CommandNames.IDENTIFY, async () => {
     logger.notice('BehaviorSmart-playSoundToLocate');
     await roborockService.playSoundToLocate(duid);
+  });
+
+  handler.setCommandHandler(CommandNames.STOP, async () => {
+    logger.notice('BehaviorSmart-Stop');
+    await roborockService.stopClean(duid);
   });
 }

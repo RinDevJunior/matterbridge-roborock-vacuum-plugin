@@ -57,7 +57,7 @@ describe('RoborockVacuumCleaner', () => {
     } satisfies BehaviorFactoryResult;
     vacuum.configureHandler(behaviorHandler);
     await vacuum.executeCommandHandler('identify', { request: { identifyTime: 5 }, cluster: 1, attributes: {}, endpoint: 1 });
-    expect(behaviorHandler.executeCommand).toHaveBeenCalledWith('playSoundToLocate', 5);
+    expect(behaviorHandler.executeCommand).toHaveBeenCalledWith('identify', 5);
   });
 
   it('should warn if selectAreas called with empty areas', async () => {

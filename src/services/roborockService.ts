@@ -265,6 +265,10 @@ export class RoborockService {
     return this.messageService.resumeClean(duid);
   }
 
+  public async stopClean(duid: string): Promise<void> {
+    return this.messageService.stopClean(duid);
+  }
+
   /** Play sound to locate vacuum. */
   public async playSoundToLocate(duid: string): Promise<void> {
     return this.messageService.playSoundToLocate(duid);

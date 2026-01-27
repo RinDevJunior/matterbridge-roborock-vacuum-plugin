@@ -23,7 +23,7 @@ export class Q10MessageDispatcher implements AbstractMessageDispatcher {
   }
 
   public async getDeviceStatus(duid: string): Promise<DeviceStatus | undefined> {
-    const request = new RequestMessage({ dps: { [Q10RequestCode.get_status]: 1 } });
+    const request = new RequestMessage({ dps: { [Q10RequestCode.rpc_response]: 1 } });
     await this.client.get<CloudMessageResult[]>(duid, request);
 
     // Q10 will return device status via MQTT (or not :) ) messages, so we return undefined here.
@@ -36,7 +36,7 @@ export class Q10MessageDispatcher implements AbstractMessageDispatcher {
   }
 
   public async getMapInfo(duid: string): Promise<MapInfo> {
-    const request = new RequestMessage({ dps: { [Q10RequestCode.common]: { [Q10RequestMethod.multimap]: { 'op': 'list' } } } });
+    const request = new RequestMessage({ dps: { [Q10RequestCode.rpc_request]: { [Q10RequestMethod.multimap]: { 'op': 'list' } } } });
     const response = await this.client.get<object>(duid, request);
     this.logger.notice(`Get map info response for Q10 device ${duid}: ${response ? JSON.stringify(response) : 'no response'}`);
     return new MapInfo({ max_multi_map: 0, max_bak_map: 0, multi_map_count: 0, map_info: [] });
