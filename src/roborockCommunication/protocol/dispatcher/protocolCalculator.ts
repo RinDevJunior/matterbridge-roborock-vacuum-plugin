@@ -1,6 +1,7 @@
 import { NewProtocolVersion, ProtocolVersion } from '../../enums/index.js';
+import { DeviceModel } from '../../models/deviceModel.js';
 
-export function calculateProtocol(protocol: ProtocolVersion | string, model: string): NewProtocolVersion {
+export function calculateProtocol(protocol: ProtocolVersion | string, model: DeviceModel): NewProtocolVersion {
   switch (protocol) {
     case ProtocolVersion.V1:
     case ProtocolVersion.L01:

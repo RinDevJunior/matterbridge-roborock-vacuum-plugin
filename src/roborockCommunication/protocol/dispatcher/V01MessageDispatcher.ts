@@ -1,8 +1,11 @@
 import { AnsiLogger, debugStringify } from 'matterbridge/logger';
 import { AbstractMessageDispatcher } from './abstractMessageDispatcher.js';
-import { CloudMessageResult, DeviceStatus, NetworkInfo, RequestMessage } from '../../models/index.js';
+import { CloudMessageResult, DeviceStatus, NetworkInfo, RequestMessage, RoomDto } from '../../models/index.js';
 import { Client } from '../../routing/client.js';
 import { CleanModeSetting } from '../../../behaviors/roborock.vacuum/default/default.js';
+import { MapInfo, RoomMap } from '../../../core/application/models/index.js';
+import { HomeModelMapper, MultipleMapDto, RawRoomMappingData } from '../../models/home/index.js';
+import { MapRoomResponse } from '../../../types/index.js';
 
 export class V01MessageDispatcher implements AbstractMessageDispatcher {
   constructor(
@@ -20,13 +23,38 @@ export class V01MessageDispatcher implements AbstractMessageDispatcher {
     const response = await this.client.get<CloudMessageResult[]>(duid, request);
 
     if (response) {
-      this.logger?.debug('Device status: ', debugStringify(response));
+      this.logger.debug('Device status: ', debugStringify(response));
       return new DeviceStatus(response);
     }
 
     return undefined;
   }
 
+  /* --------------- Core Data Retrieval --------------- */
+  public async getHomeMap(duid: string): Promise<MapRoomResponse> {
+    const request = new RequestMessage({ method: 'get_map_v1', secure: true });
+    const response = await this.client.get<MapRoomResponse>(duid, request);
+    return response ?? {};
+  }
+
+  public async getMapInfo(duid: string): Promise<MapInfo> {
+    const request = new RequestMessage({ method: 'get_multi_maps_list' });
+    const response = (await this.client.get<MultipleMapDto[]>(duid, request)) ?? [];
+    return new MapInfo(response.length > 0 ? response[0] : { max_multi_map: 0, max_bak_map: 0, multi_map_count: 0, map_info: [] });
+  }
+
+  public async getRoomMap(duid: string, activeMap: number, rooms: RoomDto[]): Promise<RoomMap> {
+    const request = new RequestMessage({ method: 'get_room_mapping' });
+    const response = (await this.client.get<RawRoomMappingData>(duid, request)) ?? [];
+
+    const mapRoomDtos = response.map((raw) => HomeModelMapper.rawArrayToMapRoomDto(raw, activeMap));
+    const roomMappings = mapRoomDtos.map((dto) => HomeModelMapper.toRoomMapping(dto, rooms));
+    const roomMap = new RoomMap(roomMappings);
+    this.logger.debug(`Room mapping for device ${duid}: ${debugStringify(roomMap)}`);
+    return roomMap;
+  }
+
+  /* ---------------- Cleaning Commands ---------------- */
   public async goHome(duid: string): Promise<void> {
     const request = new RequestMessage({ method: 'app_charge' });
     await this.client.send(duid, request);
@@ -68,11 +96,6 @@ export class V01MessageDispatcher implements AbstractMessageDispatcher {
   public async findMyRobot(duid: string): Promise<void> {
     const request = new RequestMessage({ method: 'find_me' });
     await this.client.get(duid, request);
-  }
-
-  public async getRooms(duid: string, activeMap: number): Promise<number[][] | undefined> {
-    const request = new RequestMessage({ method: 'get_room_mapping' });
-    return this.client.get<number[][] | undefined>(duid, request);
   }
 
   public async sendCustomMessage(duid: string, def: RequestMessage): Promise<void> {
@@ -125,7 +148,7 @@ export class V01MessageDispatcher implements AbstractMessageDispatcher {
   }
 
   public async changeCleanMode(duid: string, suctionPower: number, waterFlow: number, mopRoute: number, distance_off: number): Promise<void> {
-    this.logger?.notice(`Change clean mode for ${duid} to suctionPower: ${suctionPower}, waterFlow: ${waterFlow}, mopRoute: ${mopRoute}, distance_off: ${distance_off}`);
+    this.logger.notice(`Change clean mode for ${duid} to suctionPower: ${suctionPower}, waterFlow: ${waterFlow}, mopRoute: ${mopRoute}, distance_off: ${distance_off}`);
 
     const currentMopMode = await this.getCustomMessage<number>(duid, new RequestMessage({ method: 'get_custom_mode' }));
     const smartMopMode = 110;

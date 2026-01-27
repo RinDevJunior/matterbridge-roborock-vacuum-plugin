@@ -39,7 +39,7 @@ describe('RoborockVacuumCleaner', () => {
       experimentalSettings: undefined,
     };
     logger = createMockLogger();
-    vacuum = new RoborockVacuumCleaner('user@example.com', device, roomMap, routineAsRoom, configManager, logger);
+    vacuum = new RoborockVacuumCleaner('user@example.com', device, roomMap, routineAsRoom, configManager, logger, []);
   });
 
   it('should construct with correct properties', () => {
@@ -114,7 +114,7 @@ describe('RoborockVacuumCleaner', () => {
       },
     };
     const dev = { ...device, data: { model: 'roborock.s7', firmwareVersion: '2.0.0' } };
-    const result = (RoborockVacuumCleaner as any).initializeDeviceConfiguration(dev, roomMap, [{ areaId: 1 }], expFeature, expLogger);
+    const result = (RoborockVacuumCleaner as any).initializeDeviceConfiguration(dev, roomMap, [{ areaId: 1 }], expFeature, expLogger, []);
     expect(result.cleanModes).toBeDefined();
     expect(result.supportedRunModes).toBeDefined();
     expect(result.supportedAreas).toBeDefined();
@@ -130,7 +130,7 @@ describe('RoborockVacuumCleaner', () => {
       isServerModeEnabled: false,
       experimentalSettings: undefined,
     };
-    const result = (RoborockVacuumCleaner as any).initializeDeviceConfiguration(device, roomMap, [], configManager, minLogger);
+    const result = (RoborockVacuumCleaner as any).initializeDeviceConfiguration(device, roomMap, [], configManager, minLogger, []);
     expect(result.cleanModes).toBeDefined();
     expect(result.supportedRunModes).toBeDefined();
     expect(result.supportedAreas).toBeDefined();

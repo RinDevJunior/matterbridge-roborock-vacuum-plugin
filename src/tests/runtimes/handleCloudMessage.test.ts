@@ -151,8 +151,8 @@ const platform = {
     setSupportedAreas: mockSetSupportedAreas,
     setSelectedAreas: mockSetSelectedAreas,
     setSupportedAreaIndexMap: mockSetSupportedAreaIndexMap,
-    getMapInformation: vi.fn().mockResolvedValue(mapInfo),
-    getRoomMappings: vi.fn().mockResolvedValue(roomData),
+    getMapInfo: vi.fn().mockResolvedValue(mapInfo),
+    getRoomMap: vi.fn().mockResolvedValue(roomData),
   },
   enableExperimentalFeature: {
     enableExperimentalFeature: true,

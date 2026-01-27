@@ -1,5 +1,7 @@
 import { ServiceArea } from 'matterbridge/matter/clusters';
-import { CloudMessageResult, DeviceModel, Home, MapInfo } from '../../roborockCommunication/models/index.js';
+import { CloudMessageResult, DeviceModel, Home } from '../../roborockCommunication/models/index.js';
+import { DeviceCategory } from '../../roborockCommunication/models/deviceCategory.js';
+import { MapInfo } from '../../core/application/models/index.js';
 
 export const supportedAreas: ServiceArea.Area[] = [
   { areaId: 100, mapId: 0, areaInfo: { locationInfo: { locationName: 'Kitchen', floorNumber: 0, areaType: null }, landmarkInfo: null } },
@@ -48,15 +50,14 @@ export const mapInfo = new MapInfo({
       name: 'First Map',
       bak_maps: [{ mapFlag: 4, add_time: 1753578164 }],
       rooms: [
-        { id: 1, tag: 14, iot_name_id: '11100845', iot_name: 'Kitchen' },
-        { id: 2, tag: 9, iot_name_id: '11100849', iot_name: 'Study' },
+        { id: 1, tag: 14, iot_name_id: '11100845' },
+        { id: 2, tag: 9, iot_name_id: '11100849' },
         {
           id: 3,
           tag: 6,
           iot_name_id: '11100842',
-          iot_name: 'Living room',
         },
-        { id: 4, tag: 1, iot_name_id: '11100847', iot_name: 'Bedroom' },
+        { id: 4, tag: 1, iot_name_id: '11100847' },
       ],
     },
     {
@@ -70,21 +71,18 @@ export const mapInfo = new MapInfo({
           id: 1,
           tag: 6,
           iot_name_id: '11100842',
-          iot_name: 'Living room',
         },
         {
           id: 2,
           tag: 3,
           iot_name_id: '12461114',
-          iot_name: 'Guest bedroom',
         },
         {
           id: 3,
           tag: 2,
           iot_name_id: '12461109',
-          iot_name: 'Master bedroom',
         },
-        { id: 4, tag: 7, iot_name_id: '12461111', iot_name: 'Balcony' },
+        { id: 4, tag: 7, iot_name_id: '12461111' },
       ],
     },
   ],
@@ -311,8 +309,8 @@ export const homeData: Home = {
         id: 'test-duid',
         firmwareVersion: '02.28.34',
         serialNumber: 'RCIEBS50900224',
-        model: DeviceModel.Q5,
-        category: 'robot.vacuum.cleaner',
+        model: DeviceModel.QREVO_EDGE_5V1,
+        category: DeviceCategory.VacuumCleaner,
         batteryLevel: 100,
       },
       store: {
@@ -336,7 +334,7 @@ export const homeData: Home = {
         },
         localKey: 'v0OKpWXwBmiCk4ku',
         pv: '1.0',
-        model: 'test-model',
+        model: DeviceModel.QREVO_EDGE_5V1,
       },
       schema: [
         { id: 101, name: 'rpc_request', code: 'rpc_request', mode: 'rw', type: 'RAW', property: null },

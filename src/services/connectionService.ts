@@ -98,8 +98,9 @@ export class ConnectionService {
     this.clientRouter.registerMessageListener(new PingResponseListener(device.duid));
     this.clientRouter.registerMessageListener(new MapResponseListener(device.duid, this.logger));
 
+    const store = device.store;
     const messageProcessor = new MessageProcessor(this.clientRouter, this.logger);
-    const messageDispatcher = new MessageDispatcherFactory(this.clientRouter, this.logger).getMessageDispatcher(device.pv, device.data.model);
+    const messageDispatcher = new MessageDispatcherFactory(this.clientRouter, this.logger).getMessageDispatcher(store.pv, store.model);
 
     // Register message listeners
     messageProcessor.registerListener(new SimpleMessageHandler(device.duid, this.deviceNotify?.bind(this)));

@@ -101,6 +101,7 @@ describe('MessageRoutingService', () => {
       resumeCleaning: vi.fn(),
       goHome: vi.fn(),
       findMyRobot: vi.fn(),
+      getHomeMap: vi.fn(),
       getCustomMessage: vi.fn(),
       sendCustomMessage: vi.fn(),
     };
@@ -210,16 +211,16 @@ describe('MessageRoutingService', () => {
     });
 
     it('should retrieve room ID from map successfully', async () => {
-      mockDispatcher.getCustomMessage.mockResolvedValue(mockMapData);
+      mockDispatcher.getHomeMap.mockResolvedValue(mockMapData);
 
       const result = await messageService.getRoomIdFromMap(testDuid);
 
       expect(result).toEqual(16);
-      expect(mockDispatcher.getCustomMessage).toHaveBeenCalled();
+      expect(mockDispatcher.getHomeMap).toHaveBeenCalled();
     });
 
     it('should handle missing map data', async () => {
-      mockDispatcher.getCustomMessage.mockResolvedValue(undefined);
+      mockDispatcher.getHomeMap.mockResolvedValue(undefined);
 
       const result = await messageService.getRoomIdFromMap(testDuid);
 
@@ -227,7 +228,7 @@ describe('MessageRoutingService', () => {
     });
 
     it('should handle map data without vacuumRoom', async () => {
-      mockDispatcher.getCustomMessage.mockResolvedValue({});
+      mockDispatcher.getHomeMap.mockResolvedValue({});
 
       const result = await messageService.getRoomIdFromMap(testDuid);
 

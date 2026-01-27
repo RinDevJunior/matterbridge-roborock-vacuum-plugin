@@ -1,5 +1,7 @@
 import { CleanModeSetting } from '../../../behaviors/roborock.vacuum/default/default.js';
-import { DeviceStatus, NetworkInfo, RequestMessage } from '../../models/index.js';
+import { MapInfo, RoomMap } from '../../../core/application/models/index.js';
+import { MapRoomResponse } from '../../../types/index.js';
+import { DeviceStatus, NetworkInfo, RequestMessage, RoomDto } from '../../models/index.js';
 
 export interface AbstractMessageDispatcher {
   getNetworkInfo(duid: string): Promise<NetworkInfo | undefined>;
@@ -14,10 +16,14 @@ export interface AbstractMessageDispatcher {
   findMyRobot(duid: string): Promise<void>;
 
   // For custom messages
-  getRooms(duid: string, activeMap: number): Promise<number[][] | undefined>;
   sendCustomMessage(duid: string, def: RequestMessage): Promise<void>;
   getCustomMessage<T = unknown>(duid: string, def: RequestMessage): Promise<T>;
 
   getCleanModeData(duid: string): Promise<CleanModeSetting>;
   changeCleanMode(duid: string, suctionPower: number, waterFlow: number, mopRoute: number, distance_off: number): Promise<void>;
+
+  // For core data retrieval
+  getHomeMap(duid: string): Promise<MapRoomResponse>;
+  getMapInfo(duid: string): Promise<MapInfo>;
+  getRoomMap(duid: string, activeMap: number, rooms: RoomDto[]): Promise<RoomMap>;
 }

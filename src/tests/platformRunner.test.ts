@@ -9,7 +9,6 @@ import { RoborockVacuumCleaner } from '../types/roborockVacuumCleaner.js';
 import * as initialDataIndex from '../initialData/index.js';
 import { RvcOperationalState } from 'matterbridge/matter/clusters';
 import { Home } from '../roborockCommunication/models/index.js';
-import { DeviceRegistry } from '../platform/deviceRegistry.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -24,6 +23,7 @@ describe('PlatformRunner.updateRobot', () => {
   let platform: RoborockMatterbridgePlatform;
   let runner: PlatformRunner;
   let robotMock: any;
+  let roborockServiceMock: any;
 
   beforeEach(() => {
     robotMock = {
@@ -57,6 +57,15 @@ describe('PlatformRunner.updateRobot', () => {
       },
     };
 
+    roborockServiceMock = {
+      getHomeDataForUpdating: vi.fn(),
+      getSupportedAreas: vi.fn().mockReturnValue([]),
+      getSupportedAreasIndexMap: vi.fn().mockReturnValue(new Map()),
+      getSelectedAreas: vi.fn().mockReturnValue([]),
+      getMapInfo: vi.fn().mockResolvedValue({ maps: [], allRooms: [] }),
+      getRoomMap: vi.fn().mockResolvedValue(new Map()),
+    };
+
     platform = {
       robots: robots,
       log: {
@@ -67,6 +76,7 @@ describe('PlatformRunner.updateRobot', () => {
       registry: registry,
       configManager: configManager,
       enableExperimentalFeature: undefined,
+      roborockService: roborockServiceMock,
     } as unknown as RoborockMatterbridgePlatform;
 
     runner = new PlatformRunner(platform);
@@ -96,7 +106,7 @@ describe('PlatformRunner.updateRobot', () => {
     expect(platform.log.error).not.toHaveBeenCalled();
   });
 
-  it('should log error if robot not found in homeData', async () => {
+  it('should log error if Robot or RoborockService not found in homeData', async () => {
     const homeData: Home = {
       devices: [{ duid: 'notfound', data: {}, productId: 1 }],
       products: [],
@@ -198,7 +208,7 @@ describe('PlatformRunner.updateRobot', () => {
     expect(robotMock.updateAttribute).toHaveBeenCalledWith(expect.any(Number), 'operationalState', 3, expect.any(Object));
   });
 
-  it('should log error if robot not found for MQTT message', async () => {
+  it('should log error if Robot or RoborockService not found for MQTT message', async () => {
     await runner.updateFromMQTTMessage(NotifyMessageTypes.BatteryUpdate, { percentage: 50 }, 'notfound');
     expect(platform.log.error).toHaveBeenCalledWith('Robot with DUID notfound not found during MQTT message processing');
   });
@@ -223,6 +233,7 @@ describe('PlatformRunner.updateRobot', () => {
 
     // Clear previous error calls
     (platform.log.error as ReturnType<typeof vi.fn>).mockClear();
+    (platform.registry.getRobot as ReturnType<typeof vi.fn>) = vi.fn().mockReturnValue(robotMock);
 
     // This will call the actual handleLocalMessage function
     await runner.updateFromMQTTMessage(NotifyMessageTypes.LocalMessage, localMessage, '123456');

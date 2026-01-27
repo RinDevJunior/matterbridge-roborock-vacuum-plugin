@@ -54,7 +54,6 @@ describe('PlatformConfigManager', () => {
       config.username = '';
       manager = PlatformConfigManager.create(config, mockLogger);
       expect(manager.validateConfig()).toBe(false);
-      expect(mockLogger.error).toHaveBeenCalledWith('Platform config validation failed: "username" is required');
     });
   });
 

@@ -51,12 +51,6 @@ describe('V01MessageDispatcher', () => {
     expect(result).toBeUndefined();
   });
 
-  it('getRooms should return RoomInfo', async () => {
-    mockClient.get.mockResolvedValue([[1, 2]]);
-    const result = await processor.getRooms('duid', 1);
-    expect(result).not.toBeUndefined();
-  });
-
   it('gotoDock should call client.send', async () => {
     await processor.goHome('duid');
     expect(mockClient.send).toHaveBeenCalledWith('duid', expect.any(Object));

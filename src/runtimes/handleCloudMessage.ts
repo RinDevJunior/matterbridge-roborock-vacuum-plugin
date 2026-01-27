@@ -4,7 +4,8 @@ import { hasDockingStationError } from '../model/DockingStationStatus.js';
 import { state_to_matter_operational_status, state_to_matter_state } from '../share/function.js';
 import { RvcCleanMode, RvcOperationalState, RvcRunMode, ServiceArea } from 'matterbridge/matter/clusters';
 import { triggerDssError } from './handleLocalMessage.js';
-import { getRoomMapFromDevice, isStatusUpdate } from '../share/helper.js';
+import { RoomMap } from '../core/application/models/index.js';
+import { isStatusUpdate } from '../share/helper.js';
 import { debugStringify } from 'matterbridge/logger';
 import { CloudMessageResult, DeviceStatusNotify, DpsPayload, Protocol } from '../roborockCommunication/models/index.js';
 import { NotifyMessageTypes } from '../types/notifyMessageTypes.js';
@@ -116,16 +117,13 @@ export async function handleCloudMessage(data: CloudMessageModel, platform: Robo
 /**
  * Handle map change events from device.
  * Updates supported areas and maps when the device's map configuration changes.
- * @param robot - Robot vacuum cleaner instance
- * @param platform - Platform instance
- * @param duid - Device unique identifier
  */
 export async function handleMapChange(robot: RoborockVacuumCleaner, platform: RoborockMatterbridgePlatform, duid: string): Promise<void> {
   const enableMultipleMap = platform.configManager.isMultipleMapEnabled;
   if (!enableMultipleMap) return;
 
-  await getRoomMapFromDevice(robot.device, platform).then((roomMap) => {
-    const { supportedAreas, supportedMaps, roomIndexMap } = getSupportedAreas(robot.device.rooms, roomMap, enableMultipleMap, platform.log);
+  await RoomMap.fromDeviceDirect(robot.device, platform).then((roomMap) => {
+    const { supportedAreas, supportedMaps, roomIndexMap } = getSupportedAreas(robot.device.rooms, roomMap, enableMultipleMap, platform.log, robot.mapInfos ?? []);
 
     platform.log.debug(`handleMapChange - supportedAreas: ${debugStringify(supportedAreas)}`);
     platform.log.debug(`handleMapChange - supportedMaps: ${debugStringify(supportedMaps)}`);

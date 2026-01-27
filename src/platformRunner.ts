@@ -11,15 +11,11 @@ import { BatteryMessage, CloudMessageResult, DeviceErrorMessage, DeviceStatusNot
 import { RoborockMatterbridgePlatform } from './module.js';
 
 export class PlatformRunner {
-  platform: RoborockMatterbridgePlatform;
-  constructor(platform: RoborockMatterbridgePlatform) {
-    this.platform = platform;
-  }
+  constructor(private readonly platform: RoborockMatterbridgePlatform) {}
 
   /**
    * Update robot state based on message payload.
    * Routes to appropriate handler using type-safe discriminated unions.
-   * @param payload - The message payload with discriminated type
    */
   public async updateRobotWithPayload(payload: MessagePayload): Promise<void> {
     switch (payload.type) {
@@ -40,9 +36,6 @@ export class PlatformRunner {
   /**
    * Update robot state based on message source (legacy method for compatibility).
    * Routes to appropriate handler based on whether message is HomeData or MQTT message.
-   * @param messageSource - The type of message being processed
-   * @param homeData - The message data (HomeData or MQTT message)
-   * @deprecated Use updateRobotWithPayload for type-safe message handling
    */
   public async updateRobot(messageSource: NotifyMessageTypes, homeData: unknown): Promise<void> {
     if (messageSource === NotifyMessageTypes.HomeData) {
@@ -70,10 +63,6 @@ export class PlatformRunner {
 
   /**
    * Process MQTT messages and update robot state accordingly.
-   * @param messageSource - The type of message being processed
-   * @param messageData - The message data
-   * @param duid - Device unique identifier
-   * @param skipLogging - Set to true to suppress debug logging (useful when message already logged elsewhere)
    */
   public async updateFromMQTTMessage(messageSource: NotifyMessageTypes, messageData: unknown, duid = '', skipLogging = false): Promise<void> {
     const platform = this.platform;

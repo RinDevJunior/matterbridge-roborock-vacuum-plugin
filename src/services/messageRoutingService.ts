@@ -4,13 +4,9 @@ import type { CleanModeSetting } from '../behaviors/roborock.vacuum/default/defa
 import { DeviceError } from '../errors/index.js';
 import { MessageProcessor } from '../roborockCommunication/mqtt/messageProcessor.js';
 import { RoborockIoTApi } from '../roborockCommunication/api/iotClient.js';
-import { RequestMessage } from '../roborockCommunication/models/index.js';
+import { RequestMessage, RoomDto } from '../roborockCommunication/models/index.js';
 import { AbstractMessageDispatcher } from '../roborockCommunication/protocol/dispatcher/abstractMessageDispatcher.js';
-
-/** Response from map room queries. */
-interface MapRoomResponse {
-  vacuumRoom?: number;
-}
+import { MapInfo, RoomMap } from '../core/application/models/index.js';
 
 export class MessageRoutingService {
   private messageProcessorMap = new Map<string, MessageProcessor>();
@@ -52,6 +48,14 @@ export class MessageRoutingService {
     return messageProcessor;
   }
 
+  public getMapInfo(duid: string): Promise<MapInfo> {
+    return this.getMessageDispatcher(duid).getMapInfo(duid);
+  }
+
+  public getRoomMap(duid: string, activeMap: number, rooms: RoomDto[]): Promise<RoomMap> {
+    return this.getMessageDispatcher(duid).getRoomMap(duid, activeMap, rooms);
+  }
+
   /** Get current cleaning mode settings. */
   public async getCleanModeData(duid: string): Promise<CleanModeSetting> {
     this.logger.notice('MessageRoutingService - getCleanModeData');
@@ -64,7 +68,7 @@ export class MessageRoutingService {
 
   /** Get vacuum's current room from map. */
   public async getRoomIdFromMap(duid: string): Promise<number | undefined> {
-    const data = await this.getMessageDispatcher(duid).getCustomMessage<MapRoomResponse>(duid, new RequestMessage({ method: 'get_map_v1', secure: true }));
+    const data = await this.getMessageDispatcher(duid).getHomeMap(duid);
     return data?.vacuumRoom;
   }
 

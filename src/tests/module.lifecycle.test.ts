@@ -260,23 +260,6 @@ describe('module.ts coverage tests', () => {
 
       expect(mockLogger.log as any).toHaveBeenCalledWith('error', 'Initializing: No supported devices found');
     });
-  });
-
-  describe('onConfigureDevice - early return conditions', () => {
-    it('should return early when platformRunner is undefined', async () => {
-      const platform = new RoborockMatterbridgePlatform(mockMatterbridge, mockLogger, createMockConfig());
-      platform.platformRunner = undefined;
-      platform.roborockService = {} as any;
-      const mockDevice: Partial<Device> = {
-        duid: 'test-device',
-        name: 'Test Vacuum',
-      };
-      platform.registry.registerDevice(mockDevice as Device);
-
-      await (platform as any).onConfigureDevice();
-
-      expect(mockLogger.log as any).toHaveBeenCalledWith('error', 'Initializing: PlatformRunner or RoborockService is undefined');
-    });
 
     it('should return early when roborockService is undefined', async () => {
       const platform = new RoborockMatterbridgePlatform(mockMatterbridge, mockLogger, createMockConfig());
@@ -290,7 +273,7 @@ describe('module.ts coverage tests', () => {
 
       await (platform as any).onConfigureDevice();
 
-      expect(mockLogger.log as any).toHaveBeenCalledWith('error', 'Initializing: PlatformRunner or RoborockService is undefined');
+      expect(mockLogger.log as any).toHaveBeenCalledWith('error', 'Initializing: RoborockService is undefined');
     });
   });
 

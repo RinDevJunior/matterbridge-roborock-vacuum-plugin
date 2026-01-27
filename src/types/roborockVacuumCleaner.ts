@@ -1,6 +1,6 @@
 import { RoboticVacuumCleaner } from 'matterbridge/devices';
 import { CommandHandlerData, MatterbridgeEndpointCommands } from 'matterbridge';
-import { RoomMap } from '../model/RoomMap.js';
+import { RoomMap, MapEntry } from '../core/application/models/index.js';
 import { getOperationalStates, getSupportedAreas, getSupportedCleanModes, getSupportedRunModes } from '../initialData/index.js';
 import { AnsiLogger, debugStringify } from 'matterbridge/logger';
 import { BehaviorFactoryResult } from '../share/behaviorFactory.js';
@@ -18,20 +18,15 @@ export class RoborockVacuumCleaner extends RoboticVacuumCleaner {
   username: string | undefined;
   device: Device;
   roomInfo: RoomMap | undefined;
+  mapInfos: MapEntry[] | undefined;
   dockStationStatus: DockingStationStatus | undefined;
 
   /**
    * Create a new Roborock Vacuum Cleaner device.
    * Initializes the device with supported cleaning modes, run modes, areas, and routines.
-   * @param username - User's account email
-   * @param device - Device information from Roborock API
-   * @param roomMap - Room mapping information
-   * @param routineAsRoom - Cleaning routines represented as areas
-   * @param enableExperimentalFeature - Experimental feature settings
-   * @param log - Logger instance
    */
-  constructor(username: string, device: Device, roomMap: RoomMap, routineAsRoom: ServiceArea.Area[], configManager: PlatformConfigManager, log: AnsiLogger) {
-    const deviceConfig = RoborockVacuumCleaner.initializeDeviceConfiguration(device, roomMap, routineAsRoom, configManager, log);
+  constructor(username: string, device: Device, roomMap: RoomMap, routineAsRoom: ServiceArea.Area[], configManager: PlatformConfigManager, log: AnsiLogger, mapInfos: MapEntry[]) {
+    const deviceConfig = RoborockVacuumCleaner.initializeDeviceConfiguration(device, roomMap, routineAsRoom, configManager, log, mapInfos);
 
     super(
       deviceConfig.deviceName,
@@ -71,7 +66,6 @@ export class RoborockVacuumCleaner extends RoboticVacuumCleaner {
   /**
    * Configure command handlers for the vacuum device.
    * Sets up handlers for identify, area selection, mode changes, and cleaning operations.
-   * @param behaviorHandler - Behavior handler that executes device commands
    */
   public configureHandler(behaviorHandler: BehaviorFactoryResult): void {
     this.addCommandHandlerWithErrorHandling(CommandNames.IDENTIFY, async ({ request, cluster, attributes, endpoint }) => {
@@ -113,15 +107,20 @@ export class RoborockVacuumCleaner extends RoboticVacuumCleaner {
 
   /**
    * Initialize device configuration including modes, areas, and maps.
-   * @private
    */
-  private static initializeDeviceConfiguration(device: Device, roomMap: RoomMap, routineAsRoom: ServiceArea.Area[], configManager: PlatformConfigManager, log: AnsiLogger) {
+  private static initializeDeviceConfiguration(
+    device: Device,
+    roomMap: RoomMap,
+    routineAsRoom: ServiceArea.Area[],
+    configManager: PlatformConfigManager,
+    log: AnsiLogger,
+    mapInfos: MapEntry[],
+  ) {
     const cleanModes = getSupportedCleanModes(device.data.model, configManager.experimentalSettings);
     const supportedRunModes = getSupportedRunModes();
-    const enableMultipleMap = configManager.isMultipleMapEnabled;
     const operationalState = getOperationalStates();
 
-    const { supportedAreas, supportedMaps } = getSupportedAreas(device.rooms, roomMap, enableMultipleMap, log);
+    const { supportedAreas, supportedMaps } = getSupportedAreas(device.rooms, roomMap, configManager.isMultipleMapEnabled, log, mapInfos);
     const supportedAreaAndRoutines = [...supportedAreas, ...routineAsRoom];
     const deviceName = `${device.name}-${device.duid}`.replace(/\s+/g, '');
 
@@ -142,9 +141,6 @@ export class RoborockVacuumCleaner extends RoboticVacuumCleaner {
   /**
    * Helper method to add command handler with error handling.
    * Wraps handler logic in try-catch to avoid code duplication.
-   * @param commandName - Name of the command for logging
-   * @param handler - Async handler function
-   * @private
    */
   private addCommandHandlerWithErrorHandling(commandName: keyof MatterbridgeEndpointCommands, handler: (context: CommandHandlerData) => Promise<void>): void {
     this.addCommandHandler(commandName, async (context: CommandHandlerData) => {

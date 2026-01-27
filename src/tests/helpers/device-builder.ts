@@ -1,3 +1,4 @@
+import { DeviceCategory } from '../../roborockCommunication/models/deviceCategory.js';
 import { Device, DeviceModel, Protocol, UserData } from '../../roborockCommunication/models/index.js';
 
 /**
@@ -32,7 +33,7 @@ export class DeviceBuilder {
       firmwareVersion: '1.0.0',
       serialNumber: 'TEST-SN-123456',
       model: DeviceModel.Q5,
-      category: 'robot.vacuum.cleaner',
+      category: DeviceCategory.VacuumCleaner,
       batteryLevel: 100,
     },
     store: {

@@ -21,6 +21,7 @@ describe('ConnectionService', () => {
     localKey: 'test-local-key',
     pv: '1.0',
     data: { model: 'roborock.vacuum.a187' },
+    store: { pv: '1.0', model: 'roborock.vacuum.a187' },
   } as Device;
 
   const mockUserData: UserData = {
@@ -284,7 +285,14 @@ describe('ConnectionService additional coverage', () => {
   let mockClientRouter: any;
   let mockLocalClient: any;
   let mockMessageRoutingService: any;
-  const mockDevice: Device = { duid: 'test-duid-123', name: 'Test Vacuum', localKey: 'test-local-key', pv: '1.0', data: { model: 'roborock.vacuum.a187' } } as unknown as Device;
+  const mockDevice: Device = {
+    duid: 'test-duid-123',
+    name: 'Test Vacuum',
+    localKey: 'test-local-key',
+    pv: '1.0',
+    store: { pv: '1.0', model: 'roborock.vacuum.a187' },
+    data: { model: 'roborock.vacuum.a187' },
+  } as unknown as Device;
 
   beforeEach(() => {
     mockLogger = { debug: vi.fn(), notice: vi.fn(), warn: vi.fn(), error: vi.fn(), info: vi.fn() };

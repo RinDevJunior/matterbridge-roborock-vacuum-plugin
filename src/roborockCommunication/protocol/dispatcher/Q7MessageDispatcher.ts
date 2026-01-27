@@ -3,11 +3,13 @@ import { Q7RequestCode, Q7RequestMethod } from '../../enums/Q7RequestCode.js';
 import { DeviceStatus } from '../../models/deviceStatus.js';
 import { RequestMessage } from '../../models/requestMessage.js';
 import { AbstractMessageDispatcher } from './abstractMessageDispatcher.js';
-import { AnsiLogger } from 'matterbridge/logger';
+import { AnsiLogger, debugStringify } from 'matterbridge/logger';
 import { Client } from '../../routing/client.js';
-import { NetworkInfo } from '../../models/index.js';
+import { NetworkInfo, RoomDto } from '../../models/index.js';
 import { CleanModeSetting } from '../../../behaviors/roborock.vacuum/default/default.js';
 import { resolveQ7CleanMode, resolveMopMode, resolveVacuumMode, resolveCleanRoute } from '../../helper/B01VacuumModeResolver.js';
+import { MapInfo, RoomMap } from '../../../core/application/models/index.js';
+import { MapRoomResponse } from '../../../types/device.js';
 
 export class Q7MessageDispatcher implements AbstractMessageDispatcher {
   constructor(
@@ -25,6 +27,28 @@ export class Q7MessageDispatcher implements AbstractMessageDispatcher {
     return undefined;
   }
 
+  /* --------------- Core Data Retrieval --------------- */
+  public async getHomeMap(duid: string): Promise<MapRoomResponse> {
+    return {};
+  }
+
+  public async getMapInfo(duid: string): Promise<MapInfo> {
+    const request = new RequestMessage({ dps: this.createDps(Q7RequestMethod.get_map_list, {}) });
+    const response = await this.client.get<object>(duid, request);
+
+    this.logger.notice(`Get map info response for Q7 device ${duid}: ${response ? debugStringify(response) : 'no response'}`);
+    return new MapInfo({ max_multi_map: 0, max_bak_map: 0, multi_map_count: 0, map_info: [] });
+  }
+
+  public async getRoomMap(duid: string, activeMap: number, rooms: RoomDto[]): Promise<RoomMap> {
+    const request = new RequestMessage({ dps: this.createDps(Q7RequestMethod.get_room_mapping, { map_id: activeMap, prefer_type: 1 }) });
+    const response = await this.client.get<number[][] | undefined>(duid, request);
+
+    this.logger.notice(`Get room map response for Q7 device ${duid}: ${response ? debugStringify(response) : 'no response'}`);
+    return new RoomMap([]); // TODO: Implement proper room mapping retrieval for Q7
+  }
+
+  /* ---------------- Cleaning Commands ---------------- */
   public async goHome(duid: string): Promise<void> {
     const request = new RequestMessage({ dps: this.createDps(Q7RequestMethod.app_charge, {}) });
     await this.client.send(duid, request);
@@ -59,11 +83,6 @@ export class Q7MessageDispatcher implements AbstractMessageDispatcher {
 
   public async findMyRobot(duid: string): Promise<void> {
     // TODO: Implement find my robot for Q7
-  }
-
-  public async getRooms(duid: string, activeMap: number): Promise<number[][] | undefined> {
-    const request = new RequestMessage({ dps: this.createDps(Q7RequestMethod.get_room_mapping, { map_id: activeMap, prefer_type: 1 }) });
-    return this.client.get<number[][] | undefined>(duid, request);
   }
 
   public async sendCustomMessage(duid: string, def: RequestMessage): Promise<void> {

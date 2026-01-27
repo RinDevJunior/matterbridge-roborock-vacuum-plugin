@@ -10,4 +10,5 @@ export enum Q7RequestMethod {
   app_resume = 'app_resume',
   get_room_mapping = 'service.get_preference',
   set_prop = 'prop.set',
+  get_map_list = 'service.get_map_list',
 }

@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
 import { RoborockService } from '../../../services/roborockService.js';
-import { RoomIndexMap } from '../../../model/RoomIndexMap.js';
+import { RoomIndexMap } from '../../../core/application/models/index.js';
 
 const logger: any = { debug: vi.fn(), error: vi.fn(), notice: vi.fn(), warn: vi.fn(), info: vi.fn() };
 
@@ -90,8 +90,8 @@ describe('RoborockService - Facade Pattern Testing', () => {
       expect(typeof roborockService.getSelectedAreas).toBe('function');
       expect(typeof roborockService.setSupportedAreas).toBe('function');
       expect(typeof roborockService.getSupportedAreas).toBe('function');
-      expect(typeof roborockService.getMapInformation).toBe('function');
-      expect(typeof roborockService.getRoomMappings).toBe('function');
+      expect(typeof roborockService.getMapInfo).toBe('function');
+      expect(typeof roborockService.getRoomMap).toBe('function');
       expect(typeof roborockService.getScenes).toBe('function');
       expect(typeof roborockService.startScene).toBe('function');
     });
@@ -213,13 +213,10 @@ describe('RoborockService - Facade Pattern Testing', () => {
     });
 
     it('should maintain separation of concerns', () => {
-      // This test verifies the facade properly separates different domain concerns
-      // without testing implementation details
-
       // Only check for methods that are actually present on the facade
       const authMethods: string[] = [];
       const deviceMethods = ['listDevices', 'initializeMessageClient', 'activateDeviceNotify'];
-      const areaMethods = ['setSelectedAreas', 'getSupportedAreas', 'getMapInformation'];
+      const areaMethods = ['setSelectedAreas', 'getSupportedAreas', 'getMapInfo'];
       const messageMethods = ['startClean', 'pauseClean', 'getCleanModeData'];
 
       // Assert - All domain methods are available through facade

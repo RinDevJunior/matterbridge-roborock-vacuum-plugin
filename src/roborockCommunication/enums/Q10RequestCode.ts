@@ -7,6 +7,7 @@ export enum Q10RequestCode {
 
   common = 101,
   get_status = 102,
+  get_prop = 999, // TODO: Verify
 
   clean_task_type = 138,
 
@@ -18,6 +19,7 @@ export enum Q10RequestCode {
 }
 
 export enum Q10RequestMethod {
+  multimap = 61,
   change_vacuum_mode = 123,
   change_mop_mode = 124,
   change_clean_mode = 137,

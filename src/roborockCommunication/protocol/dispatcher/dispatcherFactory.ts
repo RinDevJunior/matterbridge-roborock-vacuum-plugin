@@ -6,6 +6,7 @@ import { Q7MessageDispatcher } from './Q7MessageDispatcher.js';
 import { V01MessageDispatcher } from './V01MessageDispatcher.js';
 import { AnsiLogger } from 'matterbridge/logger';
 import { Client } from '../../routing/client.js';
+import { DeviceModel } from '../../models/deviceModel.js';
 
 export class MessageDispatcherFactory {
   private readonly builders: Record<NewProtocolVersion, AbstractMessageDispatcher>;
@@ -21,7 +22,7 @@ export class MessageDispatcherFactory {
     };
   }
 
-  public getMessageDispatcher(version: ProtocolVersion | string, modelCode: string): AbstractMessageDispatcher {
+  public getMessageDispatcher(version: ProtocolVersion | string, modelCode: DeviceModel): AbstractMessageDispatcher {
     if (version === undefined) {
       this.logger.error('Unable to send message: no version included');
     }

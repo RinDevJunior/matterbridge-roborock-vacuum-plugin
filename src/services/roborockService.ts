@@ -1,7 +1,6 @@
 import { AnsiLogger } from 'matterbridge/logger';
 import { ServiceArea } from 'matterbridge/matter/clusters';
 import { LocalStorage } from 'node-persist';
-import { RoomIndexMap } from '../model/RoomIndexMap.js';
 import { CleanModeSetting } from '../behaviors/roborock.vacuum/default/default.js';
 import { Factory, NotifyMessageTypes } from '../types/index.js';
 import {
@@ -15,10 +14,11 @@ import {
   ConnectionService,
 } from '../services/index.js';
 import { RoborockAuthenticateApi } from '../roborockCommunication/api/authClient.js';
-import { Device, Home, MapInfo, RequestMessage, Scene, UserData } from '../roborockCommunication/models/index.js';
+import { Device, Home, RequestMessage, RoomDto, Scene, UserData } from '../roborockCommunication/models/index.js';
 import { RoborockIoTApi } from '../roborockCommunication/api/iotClient.js';
 import { MessageProcessor } from '../roborockCommunication/mqtt/messageProcessor.js';
 import { PlatformConfigManager } from '../platform/platformConfig.js';
+import { RoomMap, MapInfo, RoomIndexMap } from '../core/application/models/index.js';
 
 export interface RoborockServiceConfig {
   authenticateApiFactory?: (logger: AnsiLogger, baseUrl: string) => RoborockAuthenticateApi;
@@ -198,13 +198,13 @@ export class RoborockService {
   }
 
   /** Get map information for a device. */
-  public async getMapInformation(duid: string): Promise<MapInfo | undefined> {
-    return this.areaService.getMapInformation(duid);
+  public async getMapInfo(duid: string): Promise<MapInfo> {
+    return this.areaService.getMapInfo(duid);
   }
 
-  /** Get room mappings for a device. */
-  public async getRoomMappings(duid: string): Promise<number[][] | undefined> {
-    return this.areaService.getRoomMappings(duid);
+  /** Get room mapping for a device. */
+  public async getRoomMap(duid: string, activeMap: number, rooms: RoomDto[]): Promise<RoomMap> {
+    return this.areaService.getRoomMap(duid, activeMap, rooms);
   }
 
   /** Get all scenes for a home. */

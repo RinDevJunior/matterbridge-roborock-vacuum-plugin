@@ -1,4 +1,4 @@
-import { MapInfo } from '../initialData/getSupportedAreas.js';
+import { MapInfo } from '../../../initialData/getSupportedAreas.js';
 
 export class RoomIndexMap {
   public indexMap: Map<number, MapInfo>;
