@@ -1,5 +1,6 @@
+import { MopWaterFlow, VacuumSuctionPower } from '../enums/index.js';
 import { CleanModeSetting } from './CleanModeSetting.js';
-import { ModeConfig } from './modeConfig.js';
+import { CleanModeDisplayLabel, CleanModeLabelInfo, ModeConfig } from './modeConfig.js';
 
 enum BehaviorType {
   Default = 'default',
@@ -52,9 +53,9 @@ export class ModeResolver {
   }
 
   private resolveFallback(setting: CleanModeSetting): number | undefined {
-    if (setting.suctionPower === 105) return 31;
-    if (setting.waterFlow === 200) return 66;
-    if (setting.suctionPower !== 105 && setting.waterFlow !== 200) return 5;
+    if (setting.suctionPower === VacuumSuctionPower.Off) return CleanModeLabelInfo[CleanModeDisplayLabel.MopDefault].mode;
+    if (setting.waterFlow === MopWaterFlow.Off) return CleanModeLabelInfo[CleanModeDisplayLabel.VacuumDefault].mode;
+    if (setting.suctionPower !== VacuumSuctionPower.Off && setting.waterFlow !== MopWaterFlow.Off) return CleanModeLabelInfo[CleanModeDisplayLabel.MopAndVacuumCustom].mode;
     return undefined;
   }
 }
@@ -66,8 +67,8 @@ export function createDefaultModeResolver(configs: ModeConfig[]): ModeResolver {
   return new ModeResolver(
     configs,
     (setting) => {
-      if (setting.suctionPower === 106 || setting.waterFlow === 204 || setting.mopRoute === 302) {
-        return 10;
+      if (setting.isCustomMode) {
+        return CleanModeLabelInfo[CleanModeDisplayLabel.MopAndVacuumCustom].mode;
       }
       return undefined;
     },
@@ -82,11 +83,11 @@ export function createSmartModeResolver(configs: ModeConfig[]): ModeResolver {
   return new ModeResolver(
     configs,
     (setting) => {
-      if (setting.suctionPower === 110 || setting.waterFlow === 209 || setting.mopRoute === 306) {
-        return 4;
+      if (setting.isSmartMode) {
+        return CleanModeLabelInfo[CleanModeDisplayLabel.SmartPlan].mode;
       }
-      if (setting.suctionPower === 106 || setting.waterFlow === 204 || setting.mopRoute === 302) {
-        return 10;
+      if (setting.isCustomMode) {
+        return CleanModeLabelInfo[CleanModeDisplayLabel.MopAndVacuumCustom].mode;
       }
       return undefined;
     },

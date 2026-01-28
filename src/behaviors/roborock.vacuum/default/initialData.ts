@@ -1,5 +1,5 @@
 import { RvcCleanMode, RvcOperationalState, RvcRunMode } from 'matterbridge/matter/clusters';
-import { baseCleanModeConfigs, getModeOptions } from '../core/modeConfig.js';
+import { baseCleanModeConfigs, CleanModeDisplayLabel, CleanModeLabelInfo, getModeOptions } from '../core/modeConfig.js';
 import { PlatformConfigManager } from '../../../platform/platformConfig.js';
 
 export function getDefaultSupportedRunModes(): RvcRunMode.ModeOption[] {
@@ -28,8 +28,8 @@ export function getDefaultSupportedCleanModes(configManager: PlatformConfigManag
   // Add vacation mode if enabled
   if (configManager.useVacationModeToSendVacuumToDock) {
     modes.push({
-      label: 'Go Vacation',
-      mode: 99,
+      mode: CleanModeLabelInfo[CleanModeDisplayLabel.GoVacation].mode,
+      label: CleanModeLabelInfo[CleanModeDisplayLabel.GoVacation].label,
       modeTags: [{ value: RvcCleanMode.ModeTag.Mop }, { value: RvcCleanMode.ModeTag.Vacuum }, { value: RvcCleanMode.ModeTag.Vacation }],
     });
   }

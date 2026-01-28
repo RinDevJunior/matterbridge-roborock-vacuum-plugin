@@ -1,5 +1,5 @@
 import { RvcCleanMode } from 'matterbridge/matter/clusters';
-import { getModeOptions, smartCleanModeConfigs } from '../core/modeConfig.js';
+import { CleanModeDisplayLabel, CleanModeLabelInfo, getModeOptions, smartCleanModeConfigs } from '../core/modeConfig.js';
 import { PlatformConfigManager } from '../../../platform/platformConfig.js';
 
 /**
@@ -12,8 +12,8 @@ export function getSmartSupportedCleanModes(configManager: PlatformConfigManager
   // Add vacation mode if enabled
   if (configManager.useVacationModeToSendVacuumToDock) {
     smartModes.push({
-      label: 'Go Vacation',
-      mode: 99,
+      mode: CleanModeLabelInfo[CleanModeDisplayLabel.GoVacation].mode,
+      label: CleanModeLabelInfo[CleanModeDisplayLabel.GoVacation].label,
       modeTags: [{ value: RvcCleanMode.ModeTag.Mop }, { value: RvcCleanMode.ModeTag.Vacuum }, { value: RvcCleanMode.ModeTag.Vacation }],
     });
   }

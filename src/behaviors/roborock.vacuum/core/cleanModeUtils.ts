@@ -1,5 +1,5 @@
 import { CleanModeSettings } from '../../../model/ExperimentalFeatureSetting.js';
-import { VacuumSuctionPower, MopWaterFlow, MopRoute } from '../default/default.js';
+import { MopRoute, MopWaterFlow, VacuumSuctionPower } from '../enums/index.js';
 import { CleanModeSetting } from './CleanModeSetting.js';
 
 const DISTANCE_OFF_BASE = 210;
@@ -20,33 +20,28 @@ export const getSettingFromCleanMode = (activity: string, cleanModeSettings?: Cl
       const waterFlow = MopWaterFlow[mopSetting?.waterFlowMode as keyof typeof MopWaterFlow] ?? MopWaterFlow.Medium;
       const distance_off =
         waterFlow === MopWaterFlow.CustomizeWithDistanceOff ? DISTANCE_OFF_BASE - DISTANCE_OFF_MULTIPLIER * (mopSetting?.distanceOff ?? DISTANCE_OFF_DEFAULT) : 0;
-      return {
-        suctionPower: VacuumSuctionPower.Off,
-        waterFlow,
-        distance_off,
-        mopRoute: MopRoute[mopSetting?.mopRouteMode as keyof typeof MopRoute] ?? MopRoute.Standard,
-      };
+      return new CleanModeSetting(VacuumSuctionPower.Off, waterFlow, distance_off, MopRoute[mopSetting?.mopRouteMode as keyof typeof MopRoute] ?? MopRoute.Standard);
     }
     case 'Vacuum: Default': {
       const vacuumSetting = cleanModeSettings?.vacuuming;
-      return {
-        suctionPower: VacuumSuctionPower[vacuumSetting?.fanMode as keyof typeof VacuumSuctionPower] ?? VacuumSuctionPower.Balanced,
-        waterFlow: MopWaterFlow.Off,
-        distance_off: 0,
-        mopRoute: MopRoute[vacuumSetting?.mopRouteMode as keyof typeof MopRoute] ?? MopRoute.Standard,
-      };
+      return new CleanModeSetting(
+        VacuumSuctionPower[vacuumSetting?.fanMode as keyof typeof VacuumSuctionPower] ?? VacuumSuctionPower.Balanced,
+        MopWaterFlow.Off,
+        0,
+        MopRoute[vacuumSetting?.mopRouteMode as keyof typeof MopRoute] ?? MopRoute.Standard,
+      );
     }
     case 'Mop & Vacuum: Default': {
       const vacmopSetting = cleanModeSettings?.vacmop;
       const waterFlow = MopWaterFlow[vacmopSetting?.waterFlowMode as keyof typeof MopWaterFlow] ?? MopWaterFlow.Medium;
       const distance_off =
         waterFlow === MopWaterFlow.CustomizeWithDistanceOff ? DISTANCE_OFF_BASE - DISTANCE_OFF_MULTIPLIER * (vacmopSetting?.distanceOff ?? DISTANCE_OFF_DEFAULT) : 0;
-      return {
-        suctionPower: VacuumSuctionPower[vacmopSetting?.fanMode as keyof typeof VacuumSuctionPower] ?? VacuumSuctionPower.Balanced,
+      return new CleanModeSetting(
+        VacuumSuctionPower[vacmopSetting?.fanMode as keyof typeof VacuumSuctionPower] ?? VacuumSuctionPower.Balanced,
         waterFlow,
         distance_off,
-        mopRoute: MopRoute[vacmopSetting?.mopRouteMode as keyof typeof MopRoute] ?? MopRoute.Standard,
-      };
+        MopRoute[vacmopSetting?.mopRouteMode as keyof typeof MopRoute] ?? MopRoute.Standard,
+      );
     }
     default:
       return undefined;

@@ -168,12 +168,7 @@ describe('MessageRoutingService', () => {
 
   describe('getCleanModeData', () => {
     const testDuid = 'test-device-456';
-    const mockCleanMode: CleanModeSetting = {
-      suctionPower: 100,
-      waterFlow: 200,
-      distance_off: 0,
-      mopRoute: 302,
-    };
+    const mockCleanMode = new CleanModeSetting(100, 200, 0, 302);
 
     beforeEach(() => {
       messageService.registerMessageDispatcher(testDuid, mockDispatcher as V01MessageDispatcher);
@@ -248,7 +243,7 @@ describe('MessageRoutingService', () => {
     });
 
     it('should change clean mode successfully', async () => {
-      const settings: CleanModeSetting = { suctionPower: 105, waterFlow: 203, mopRoute: 302, distance_off: 0 };
+      const settings = new CleanModeSetting(105, 203, 0, 302);
       await messageService.changeCleanMode(testDuid, settings);
 
       expect(mockDispatcher.changeCleanMode).toHaveBeenCalledWith(testDuid, 105, 203, 302, 0);
@@ -256,14 +251,14 @@ describe('MessageRoutingService', () => {
     });
 
     it('should handle zero values in clean mode', async () => {
-      const settings: CleanModeSetting = { suctionPower: 0, waterFlow: 0, mopRoute: 0, distance_off: 0 };
+      const settings = new CleanModeSetting(0, 0, 0, 0);
       await messageService.changeCleanMode(testDuid, settings);
 
       expect(mockDispatcher.changeCleanMode).toHaveBeenCalledWith(testDuid, 0, 0, 0, 0);
     });
 
     it('should throw DeviceError when processor not found', async () => {
-      const settings: CleanModeSetting = { suctionPower: 105, waterFlow: 203, mopRoute: 302, distance_off: 0 };
+      const settings = new CleanModeSetting(105, 203, 0, 302);
       await expect(messageService.changeCleanMode('unknown-device', settings)).rejects.toThrow(DeviceError);
     });
   });
@@ -543,12 +538,7 @@ describe('MessageRoutingService', () => {
     });
 
     it('should handle clean mode adjustment workflow', async () => {
-      const mockCleanMode: CleanModeSetting = {
-        suctionPower: 101,
-        waterFlow: 202,
-        distance_off: 0,
-        mopRoute: 302,
-      };
+      const mockCleanMode = new CleanModeSetting(101, 202, 0, 302);
 
       mockDispatcher.getCleanModeData.mockResolvedValue(mockCleanMode);
 
@@ -557,7 +547,7 @@ describe('MessageRoutingService', () => {
       expect(currentMode).toEqual(mockCleanMode);
 
       // Change clean mode
-      const settings: CleanModeSetting = { suctionPower: 105, waterFlow: 203, mopRoute: 302, distance_off: 0 };
+      const settings = new CleanModeSetting(105, 203, 0, 302);
       await messageService.changeCleanMode(testDuid, settings);
       expect(mockDispatcher.changeCleanMode).toHaveBeenCalledWith(testDuid, 105, 203, 302, 0);
     });

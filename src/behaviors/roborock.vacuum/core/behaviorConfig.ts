@@ -5,9 +5,9 @@ import { DefaultCleanModeHandler } from '../handlers/defaultCleanModeHandler.js'
 import { PresetCleanModeHandler } from '../handlers/presetCleanModeHandler.js';
 import { CustomCleanModeHandler } from '../handlers/customCleanModeHandler.js';
 import { SmartPlanHandler } from '../handlers/smartPlanHandler.js';
-import { RvcCleanMode as DefaultRvcCleanMode, CleanSetting as DefaultCleanSetting } from '../default/default.js';
-import { RvcCleanMode as SmartRvcCleanMode, CleanSetting as SmartCleanSetting } from '../smart/smart.js';
 import { CleanModeSetting } from './CleanModeSetting.js';
+import { DefaultRvcCleanMode, SmartRvcCleanMode } from './cleanMode.js';
+import { DefaultCleanSetting, SmartCleanSetting } from './cleanSetting.js';
 
 export interface BehaviorConfig {
   name: string;

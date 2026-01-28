@@ -1,6 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import { ModeHandlerRegistry } from '../../../../behaviors/roborock.vacuum/core/modeHandlerRegistry.js';
 import { ModeHandler, HandlerContext } from '../../../../behaviors/roborock.vacuum/core/modeHandler.js';
+import { CleanModeSetting } from '../../../../behaviors/roborock.vacuum/core/CleanModeSetting.js';
 
 describe('ModeHandlerRegistry', () => {
   it('registers handlers and returns this for chaining', () => {
@@ -112,7 +113,7 @@ describe('ModeHandlerRegistry', () => {
       roborockService: { test: 'service' } as any,
       logger: { notice: vi.fn() } as any,
       cleanModeSettings: { test: 'settings' } as any,
-      cleanSettings: { 5: { suctionPower: 102, waterFlow: 202, distance_off: 0, mopRoute: 300 } },
+      cleanSettings: { 5: new CleanModeSetting(102, 202, 0, 300) },
       behaviorName: 'SmartBehavior',
     };
 

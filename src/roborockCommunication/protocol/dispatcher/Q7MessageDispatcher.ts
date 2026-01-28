@@ -102,7 +102,7 @@ export class Q7MessageDispatcher implements AbstractMessageDispatcher {
   }
 
   public async getCleanModeData(duid: string): Promise<CleanModeSetting> {
-    return { suctionPower: 2, waterFlow: 2, mopRoute: 0, distance_off: 0 };
+    return new CleanModeSetting(0, 0, 0, 0); // TODO: Implement retrieval of clean mode data for Q7
   }
 
   public async changeCleanMode(duid: string, suctionPower: number, waterFlow: number, mopRoute: number, distance_off: number): Promise<void> {

@@ -1,11 +1,11 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { AnsiLogger } from 'matterbridge/logger';
 import { BehaviorDeviceGeneric } from '../../../../behaviors/BehaviorDeviceGeneric.js';
-import { MopRouteSmart, VacuumSuctionPowerSmart, MopWaterFlowSmart } from '../../../../behaviors/roborock.vacuum/smart/smart.js';
 import { CleanModeSettings } from '../../../../model/ExperimentalFeatureSetting.js';
 import { RoborockService } from '../../../../services/roborockService.js';
 import { configureBehavior } from '../../../../share/behaviorFactory.js';
 import { DeviceModel } from '../../../../roborockCommunication/models/deviceModel.js';
+import { MopRoute, MopWaterFlow, VacuumSuctionPower } from '../../../../behaviors/roborock.vacuum/enums/index.js';
 
 describe('setCommandHandlerSmart', () => {
   let handler: BehaviorDeviceGeneric<any>;
@@ -67,7 +67,7 @@ describe('setCommandHandlerSmart', () => {
       suctionPower: 0,
       waterFlow: 0,
       distance_off: 0,
-      mopRoute: MopRouteSmart.Smart,
+      mopRoute: MopRoute.Smart,
     });
   });
 
@@ -76,9 +76,9 @@ describe('setCommandHandlerSmart', () => {
     await handler.executeCommand('changeToMode', 31); // 31 = Mop Default
     // mopping: { waterFlowMode: 'High', mopRouteMode: 'Fast', distanceOff: 85 },
     expect(roborockService.changeCleanMode).toHaveBeenCalledWith(duid, {
-      suctionPower: VacuumSuctionPowerSmart.Off,
-      waterFlow: MopWaterFlowSmart.Medium,
-      mopRoute: MopRouteSmart.Standard,
+      suctionPower: VacuumSuctionPower.Off,
+      waterFlow: MopWaterFlow.Medium,
+      mopRoute: MopRoute.Standard,
       distance_off: 0,
     });
   });
@@ -105,9 +105,9 @@ describe('setCommandHandlerSmart', () => {
     await handler.executeCommand('changeToMode', 31); // 31 = Mop Default
     // vacuuming: { fanMode: 'Max', mopRouteMode: 'DeepPlus' },
     expect(roborockService.changeCleanMode).toHaveBeenCalledWith(duid, {
-      suctionPower: VacuumSuctionPowerSmart.Off,
-      waterFlow: MopWaterFlowSmart.CustomizeWithDistanceOff,
-      mopRoute: MopRouteSmart.Fast,
+      suctionPower: VacuumSuctionPower.Off,
+      waterFlow: MopWaterFlow.CustomizeWithDistanceOff,
+      mopRoute: MopRoute.Fast,
       distance_off: 85,
     });
   });
@@ -116,9 +116,9 @@ describe('setCommandHandlerSmart', () => {
     const handler = configureBehavior(DeviceModel.QREVO_EDGE_5V1, duid, roborockService, cleanModeSettings, false, logger);
     await handler.executeCommand('changeToMode', 66); // 66 = Vacuum Default
     expect(roborockService.changeCleanMode).toHaveBeenCalledWith(duid, {
-      suctionPower: VacuumSuctionPowerSmart.Balanced,
-      waterFlow: MopWaterFlowSmart.Off,
-      mopRoute: MopRouteSmart.Standard,
+      suctionPower: VacuumSuctionPower.Balanced,
+      waterFlow: MopWaterFlow.Off,
+      mopRoute: MopRoute.Standard,
       distance_off: 0,
     });
   });
@@ -129,9 +129,9 @@ describe('setCommandHandlerSmart', () => {
     await handler.executeCommand('changeToMode', 66); // 66 = Vacuum Default
     // vacuuming: { fanMode: 'Max', mopRouteMode: 'DeepPlus' },
     expect(roborockService.changeCleanMode).toHaveBeenCalledWith(duid, {
-      suctionPower: VacuumSuctionPowerSmart.Max,
-      waterFlow: MopWaterFlowSmart.Off,
-      mopRoute: MopRouteSmart.DeepPlus,
+      suctionPower: VacuumSuctionPower.Max,
+      waterFlow: MopWaterFlow.Off,
+      mopRoute: MopRoute.DeepPlus,
       distance_off: 0,
     });
   });
@@ -140,9 +140,9 @@ describe('setCommandHandlerSmart', () => {
     const handler = configureBehavior(DeviceModel.QREVO_EDGE_5V1, duid, roborockService, undefined, false, logger);
     await handler.executeCommand('changeToMode', 5); // 5 = Vac & Mop Default
     expect(roborockService.changeCleanMode).toHaveBeenCalledWith(duid, {
-      suctionPower: VacuumSuctionPowerSmart.Balanced,
-      waterFlow: MopWaterFlowSmart.Medium,
-      mopRoute: MopRouteSmart.Standard,
+      suctionPower: VacuumSuctionPower.Balanced,
+      waterFlow: MopWaterFlow.Medium,
+      mopRoute: MopRoute.Standard,
       distance_off: 0,
     });
   });
@@ -168,9 +168,9 @@ describe('setCommandHandlerSmart', () => {
     );
     await handler.executeCommand('changeToMode', 5); // 5 = Vac & Mop Default
     expect(roborockService.changeCleanMode).toHaveBeenCalledWith(duid, {
-      suctionPower: VacuumSuctionPowerSmart.Turbo,
-      waterFlow: MopWaterFlowSmart.CustomizeWithDistanceOff,
-      mopRoute: MopRouteSmart.Deep,
+      suctionPower: VacuumSuctionPower.Turbo,
+      waterFlow: MopWaterFlow.CustomizeWithDistanceOff,
+      mopRoute: MopRoute.Deep,
       distance_off: 85,
     });
   });

@@ -3,7 +3,7 @@ import { BehaviorDeviceGeneric } from '../../../../behaviors/BehaviorDeviceGener
 import { AnsiLogger } from 'matterbridge/logger';
 import { RoborockService } from '../../../../services/roborockService.js';
 import { CleanModeSettings } from '../../../../model/ExperimentalFeatureSetting.js';
-import { MopRoute, MopWaterFlow, VacuumSuctionPower } from '../../../../behaviors/roborock.vacuum/default/default.js';
+import { MopRoute, MopWaterFlow, VacuumSuctionPower } from '../../../../behaviors/roborock.vacuum/enums/index.js';
 import { configureBehavior } from '../../../../share/behaviorFactory.js';
 import { DeviceModel } from '../../../../roborockCommunication/models/deviceModel.js';
 

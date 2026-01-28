@@ -12,6 +12,7 @@ import { RoborockVacuumCleaner } from '../types/roborockVacuumCleaner.js';
 import { hasDockingStationError, parseDockingStationStatus } from '../model/DockingStationStatus.js';
 import { INVALID_SEGMENT_ID } from '../constants/index.js';
 import { RoborockService } from '../services/roborockService.js';
+import { CleanModeSetting } from '../behaviors/roborock.vacuum/core/CleanModeSetting.js';
 
 /**
  * Process local network messages and update robot attributes.
@@ -66,21 +67,22 @@ export async function handleLocalMessage(data: CloudMessageResult, platform: Rob
     robot.updateAttribute(PowerSource.Cluster.id, 'batChargeLevel', getBatteryStatus(batteryLevel), platform.log);
   }
 
-  const currentCleanModeSetting = {
-    suctionPower: data.cleaning_info?.fan_power ?? data.fan_power,
-    waterFlow: data.cleaning_info?.water_box_status ?? data.water_box_mode,
-    distance_off: data.distance_off,
-    mopRoute: data.cleaning_info?.mop_mode ?? data.mop_mode,
-    segment_id: data.cleaning_info?.segment_id,
-    target_segment_id: data.cleaning_info?.target_segment_id,
-  };
+  const currentCleanModeSetting = new CleanModeSetting(
+    data.cleaning_info?.fan_power ?? data.fan_power,
+    data.cleaning_info?.water_box_status ?? data.water_box_mode,
+    data.distance_off,
+    data.cleaning_info?.mop_mode ?? data.mop_mode,
+  );
 
   platform.log.debug(
     `Message: ${debugStringify(data)}
-     Current Clean Mode Setting: ${debugStringify(currentCleanModeSetting)}`,
+     Current Clean Mode Setting: ${debugStringify(currentCleanModeSetting)}
+     Current segment_id: ${data.cleaning_info?.segment_id}
+     Current target_segment_id: ${data.cleaning_info?.target_segment_id}
+    `,
   );
 
-  if (currentCleanModeSetting.mopRoute && currentCleanModeSetting.suctionPower && currentCleanModeSetting.waterFlow) {
+  if (currentCleanModeSetting.hasFullSettings) {
     const forceRunAtDefault = platform.configManager.forceRunAtDefault;
     const currentCleanModeResolver = getCleanModeResolver(deviceData.model, forceRunAtDefault);
     const currentCleanMode = currentCleanModeResolver.resolve(currentCleanModeSetting);
@@ -159,8 +161,8 @@ async function mapRoomsToAreasFeatureOff(
   }
   const currentMappedAreas = roborockService.getSupportedAreas(duid);
 
-  const source_segment_id = data.cleaning_info.segment_id ?? INVALID_SEGMENT_ID; // 4
-  const source_target_segment_id = data.cleaning_info.target_segment_id ?? INVALID_SEGMENT_ID; // -1
+  const source_segment_id = data.cleaning_info.segment_id ?? INVALID_SEGMENT_ID;
+  const source_target_segment_id = data.cleaning_info.target_segment_id ?? INVALID_SEGMENT_ID;
   const segment_id = source_segment_id !== INVALID_SEGMENT_ID ? source_segment_id : source_target_segment_id; // 4
   const mappedArea = currentMappedAreas?.find((x) => x.areaId == segment_id);
 
@@ -206,9 +208,14 @@ async function mapRoomsToAreasFeatureOn(platform: RoborockMatterbridgePlatform, 
     platform.log.debug('No cleaning_info found, skipping area mapping.');
     return;
   }
+  const service = platform.roborockService;
+  if (!service) {
+    platform.log.error('RoborockService not available.');
+    return;
+  }
 
-  const currentMappedAreas = platform.roborockService?.getSupportedAreas(duid);
-  const roomIndexMap = platform.roborockService?.getSupportedAreasIndexMap(duid);
+  const currentMappedAreas = service.getSupportedAreas(duid);
+  const roomIndexMap = service.getSupportedAreasIndexMap(duid);
   const source_segment_id = data.cleaning_info.segment_id ?? INVALID_SEGMENT_ID; // 4
   const source_target_segment_id = data.cleaning_info.target_segment_id ?? INVALID_SEGMENT_ID; // -1
   const segment_id = source_segment_id !== INVALID_SEGMENT_ID ? source_segment_id : source_target_segment_id; // 4

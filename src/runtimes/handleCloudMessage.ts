@@ -75,12 +75,7 @@ export async function handleCloudMessage(data: CloudMessageModel, platform: Robo
         await service.getCleanModeData(duid).then((cleanModeData) => {
           if (cleanModeData) {
             const resolver = getCleanModeResolver(robot.device.data.model, platform.configManager.forceRunAtDefault);
-            const currentCleanMode = resolver.resolve({
-              suctionPower: cleanModeData.suctionPower,
-              waterFlow: cleanModeData.waterFlow,
-              distance_off: cleanModeData.distance_off,
-              mopRoute: cleanModeData.mopRoute,
-            });
+            const currentCleanMode = resolver.resolve(cleanModeData);
 
             platform.log.debug(`Clean mode data: ${debugStringify(cleanModeData)}`);
             platform.log.debug(`Current clean mode: ${currentCleanMode}`);

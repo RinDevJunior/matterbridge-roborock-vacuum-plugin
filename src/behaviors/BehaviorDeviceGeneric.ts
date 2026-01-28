@@ -53,6 +53,7 @@ export class BehaviorRoborock extends Behavior {
   static override readonly id = 'roborock.vacuum.axx';
   declare state: BehaviorRoborockState;
 }
+
 export interface BehaviorRoborockState {
   device: BehaviorDeviceGeneric<DeviceCommands>;
 }

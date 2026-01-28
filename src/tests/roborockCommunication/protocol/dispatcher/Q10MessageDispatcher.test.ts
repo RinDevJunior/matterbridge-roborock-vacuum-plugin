@@ -159,7 +159,7 @@ describe('Q10MessageDispatcher', () => {
   describe('getCleanModeData', () => {
     it('should return a CleanModeSetting object', async () => {
       const result = await dispatcher.getCleanModeData(duid);
-      expect(result).toEqual({ suctionPower: 2, waterFlow: 2, mopRoute: 0, distance_off: 0 });
+      expect(result).toEqual({ suctionPower: 0, waterFlow: 0, mopRoute: 0, distance_off: 0 });
     });
   });
 

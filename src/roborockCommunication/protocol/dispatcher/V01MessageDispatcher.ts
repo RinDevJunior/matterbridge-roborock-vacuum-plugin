@@ -6,6 +6,7 @@ import { MapInfo, RoomMap } from '../../../core/application/models/index.js';
 import { HomeModelMapper, MultipleMapDto, RawRoomMappingData } from '../../models/home/index.js';
 import { MapRoomResponse } from '../../../types/index.js';
 import { CleanModeSetting } from '../../../behaviors/roborock.vacuum/core/CleanModeSetting.js';
+import { MopRoute, VacuumSuctionPower } from '../../../behaviors/roborock.vacuum/enums/index.js';
 
 export class V01MessageDispatcher implements AbstractMessageDispatcher {
   constructor(
@@ -139,22 +140,17 @@ export class V01MessageDispatcher implements AbstractMessageDispatcher {
       waterFlow = waterFlowRaw as number;
     }
 
-    return {
-      suctionPower: suctionPower,
-      waterFlow: waterFlow,
-      distance_off: distance_off,
-      mopRoute: mopRoute,
-    } satisfies CleanModeSetting;
+    return new CleanModeSetting(suctionPower, waterFlow, distance_off, mopRoute);
   }
 
   public async changeCleanMode(duid: string, suctionPower: number, waterFlow: number, mopRoute: number, distance_off: number): Promise<void> {
     this.logger.notice(`Change clean mode for ${duid} to suctionPower: ${suctionPower}, waterFlow: ${waterFlow}, mopRoute: ${mopRoute}, distance_off: ${distance_off}`);
 
     const currentMopMode = await this.getCustomMessage<number>(duid, new RequestMessage({ method: 'get_custom_mode' }));
-    const smartMopMode = 110;
-    const smartMopRoute = 306;
-    const customMopMode = 106;
-    const customMopRoute = 302;
+    const smartMopMode = VacuumSuctionPower.Smart;
+    const smartMopRoute = MopRoute.Smart;
+    const customMopMode = VacuumSuctionPower.Custom;
+    const customMopRoute = MopRoute.Custom;
 
     if (currentMopMode == smartMopMode && mopRoute == smartMopRoute) return;
     if (currentMopMode == customMopMode && mopRoute == customMopRoute) return;
