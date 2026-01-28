@@ -7,7 +7,7 @@ import { OperationStatusCode } from '../roborockCommunication/enums/index.js';
 import { RoomMap } from '../core/application/models/index.js';
 import { AnsiLogger, debugStringify } from 'matterbridge/logger';
 import { getBatteryState, getBatteryStatus } from '../initialData/index.js';
-import { getCurrentCleanModeFunc } from '../share/runtimeHelper.js';
+import { getCleanModeResolver } from '../share/runtimeHelper.js';
 import { RoborockVacuumCleaner } from '../types/roborockVacuumCleaner.js';
 import { hasDockingStationError, parseDockingStationStatus } from '../model/DockingStationStatus.js';
 import { INVALID_SEGMENT_ID } from '../constants/index.js';
@@ -21,12 +21,13 @@ export async function handleLocalMessage(data: CloudMessageResult, platform: Rob
   const robot = platform.registry.getRobot(duid);
 
   if (!robot || !platform.roborockService) {
-    platform.log.error(`Robot or RoborockService not found: ${duid}`);
+    platform.log.error(`[handleLocalMessage] Robot or RoborockService not found: ${duid}`);
     return;
   }
+  const service = platform.roborockService;
 
-  const currentMappedAreas = platform.roborockService?.getSupportedAreas(duid);
-  const roomIndexMap = platform.roborockService?.getSupportedAreasIndexMap(duid);
+  const currentMappedAreas = service.getSupportedAreas(duid);
+  const roomIndexMap = service.getSupportedAreasIndexMap(duid);
   const roomMap = await RoomMap.fromDevice(duid, platform);
   platform.log.debug(
     `Precondition Data:
@@ -44,7 +45,7 @@ export async function handleLocalMessage(data: CloudMessageResult, platform: Rob
   }
 
   if (data.state === OperationStatusCode.Idle) {
-    const selectedAreas = platform.roborockService?.getSelectedAreas(duid) ?? [];
+    const selectedAreas = service.getSelectedAreas(duid) ?? [];
     robot.updateAttribute(ServiceArea.Cluster.id, 'selectedAreas', selectedAreas, platform.log);
   }
 
@@ -55,7 +56,7 @@ export async function handleLocalMessage(data: CloudMessageResult, platform: Rob
   } else if (platform.configManager.isMultipleMapEnabled) {
     await mapRoomsToAreasFeatureOn(platform, duid, data);
   } else {
-    await mapRoomsToAreasFeatureOff(duid, data, platform.roborockService, robot, platform.log);
+    await mapRoomsToAreasFeatureOff(duid, data, service, robot, platform.log);
   }
 
   if (data.battery) {
@@ -81,7 +82,8 @@ export async function handleLocalMessage(data: CloudMessageResult, platform: Rob
 
   if (currentCleanModeSetting.mopRoute && currentCleanModeSetting.suctionPower && currentCleanModeSetting.waterFlow) {
     const forceRunAtDefault = platform.configManager.forceRunAtDefault;
-    const currentCleanMode = getCurrentCleanModeFunc(deviceData.model, forceRunAtDefault)(currentCleanModeSetting);
+    const currentCleanModeResolver = getCleanModeResolver(deviceData.model, forceRunAtDefault);
+    const currentCleanMode = currentCleanModeResolver.resolve(currentCleanModeSetting);
     platform.log.debug(`Current clean mode: ${currentCleanMode}`);
 
     if (currentCleanMode) {

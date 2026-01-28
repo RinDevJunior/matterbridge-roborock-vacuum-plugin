@@ -12,6 +12,7 @@ import {
 } from '../testData/mockData.js';
 import { OperationStatusCode } from '../../roborockCommunication/enums/index.js';
 import { RoomIndexMap } from '../../core/application/models/index.js';
+import { DeviceModel } from '../../roborockCommunication/models/index.js';
 
 // Mocks
 
@@ -19,7 +20,6 @@ const mockUpdateAttribute = vi.fn();
 const mockGetSupportedAreas = vi.fn();
 const mockGetSupportedAreasIndexMap = vi.fn();
 const mockGetRoomMap = vi.fn();
-const mockGetMapInfo = vi.fn();
 
 vi.mock('../helper.js', () => ({
   getRoomMap: mockGetRoomMap,
@@ -31,19 +31,14 @@ const mockLog = {
   notice: vi.fn(),
   info: vi.fn(),
   warn: vi.fn(),
-  /* eslint-disable no-console */
-  fatal: vi.fn().mockImplementation((message: string, ...arg: unknown[]) => {
-    console.info(message, ...arg);
-  }),
+  fatal: vi.fn(),
 };
 
 const getMockRobot = () => {
-  // Use a plain object so properties can be set dynamically in tests
   return {
-    device: { data: { model: 'test-model' } },
+    device: { data: { model: DeviceModel.QREVO_EDGE_5V1 } },
     updateAttribute: mockUpdateAttribute,
     getAttribute: vi.fn(() => undefined),
-    // Do not define dockStationStatus here so it can be set by the code under test
   };
 };
 
@@ -85,7 +80,7 @@ describe('handleLocalMessage -- FF ON', () => {
   it('logs error if robot not found', async () => {
     const platform = getMockPlatform(false);
     await handleLocalMessage({ state: 0 } as any, platform as any, 'duid1');
-    expect(mockLog.error).toHaveBeenCalledWith('Robot or RoborockService not found: duid1');
+    expect(mockLog.error).toHaveBeenCalledWith('[handleLocalMessage] Robot or RoborockService not found: duid1');
   });
 
   it('updates selectedAreas on Idle', async () => {
@@ -155,7 +150,7 @@ describe('handleLocalMessage -- FF ON', () => {
   it('returns early when robot not found in mapRoomsToAreasFeatureOn', async () => {
     const platform = getMockPlatform(false);
     await handleLocalMessage({ state: 5, cleaning_info: { segment_id: 1 } } as any, platform as any, 'duid1');
-    expect(mockLog.error).toHaveBeenCalledWith('Robot or RoborockService not found: duid1');
+    expect(mockLog.error).toHaveBeenCalledWith('[handleLocalMessage] Robot or RoborockService not found: duid1');
   });
 
   it('returns early when cleaning_info is missing in mapRoomsToAreasFeatureOn', async () => {
@@ -163,7 +158,6 @@ describe('handleLocalMessage -- FF ON', () => {
     mockGetSupportedAreas.mockReturnValue([{ areaId: 100, mapId: 0 }]);
     mockGetSupportedAreasIndexMap.mockReturnValue(new RoomIndexMap(new Map([[100, { roomId: 1, mapId: 0 }]])));
     await handleLocalMessage({ state: 5 } as any, platform as any, 'duid1');
-    // Should not crash
     expect(mockLog.error).not.toHaveBeenCalled();
   });
 
@@ -203,12 +197,12 @@ describe('handleLocalMessage -- FF ON', () => {
   });
 
   it('handles data from log with segment_id -1 for FF ON', async () => {
-    const platform = getMockPlatform();
+    const platform = getMockPlatform(true);
     mockGetRoomMap.mockReturnValue(roomMapFromLog);
     mockGetSupportedAreas.mockReturnValue(currentMappedAreasFromLog);
     mockGetSupportedAreasIndexMap.mockReturnValue(new RoomIndexMap(new Map())); // Empty
 
-    await handleLocalMessage(cloudMessageResultFromLog as any, platform as any, 'duid1');
+    await handleLocalMessage({ ...cloudMessageResultFromLog }, platform as any, 'duid1');
 
     expect(mockLog.debug).toHaveBeenCalledWith(expect.stringContaining('source_segment_id: -1'));
     expect(mockLog.debug).toHaveBeenCalledWith(expect.stringContaining('areaId: undefined'));
@@ -250,7 +244,7 @@ describe('handleLocalMessage -- FF OFF', () => {
   it('logs error if robot not found', async () => {
     const platform = getMockPlatform(false);
     await handleLocalMessage({ state: 0 } as any, platform as any, 'duid1');
-    expect(mockLog.error).toHaveBeenCalledWith('Robot or RoborockService not found: duid1');
+    expect(mockLog.error).toHaveBeenCalledWith('[handleLocalMessage] Robot or RoborockService not found: duid1');
   });
 
   it('updates selectedAreas on Idle', async () => {
@@ -325,7 +319,7 @@ describe('handleLocalMessage -- FF OFF', () => {
   it('returns early when robot not found in mapRoomsToAreasFeatureOff', async () => {
     const platform = getMockPlatform(false);
     await handleLocalMessage({ state: 5, cleaning_info: { segment_id: 1 } } as any, platform as any, 'duid1');
-    expect(mockLog.error).toHaveBeenCalledWith('Robot or RoborockService not found: duid1');
+    expect(mockLog.error).toHaveBeenCalledWith('[handleLocalMessage] Robot or RoborockService not found: duid1');
   });
 
   it('returns early when cleaning_info is missing in mapRoomsToAreasFeatureOff', async () => {
@@ -348,13 +342,13 @@ describe('handleLocalMessage -- FF OFF', () => {
   it('handles robot not found when getting dss status', async () => {
     const platform = getMockPlatform(false);
     await handleLocalMessage({ state: 5, dss: 1 } as any, platform as any, 'duid1');
-    expect(mockLog.error).toHaveBeenCalledWith('Robot or RoborockService not found: duid1');
+    expect(mockLog.error).toHaveBeenCalledWith('[handleLocalMessage] Robot or RoborockService not found: duid1');
   });
 
   it('handles robot not found in mapRoomsToAreasFeatureOff', async () => {
     const platform = getMockPlatform(false);
     await handleLocalMessage({ state: 5, cleaning_info: { segment_id: 1 } } as any, platform as any, 'duid1');
-    expect(mockLog.error).toHaveBeenCalledWith('Robot or RoborockService not found: duid1');
+    expect(mockLog.error).toHaveBeenCalledWith('[handleLocalMessage] Robot or RoborockService not found: duid1');
   });
 
   it('handles robot not found in mapRoomsToAreasFeatureOn', async () => {
@@ -364,7 +358,7 @@ describe('handleLocalMessage -- FF OFF', () => {
       advancedFeature: { enableMultipleMap: true },
     };
     await handleLocalMessage({ state: 5, cleaning_info: { segment_id: 1 } } as any, platform as any, 'duid1');
-    expect(mockLog.error).toHaveBeenCalledWith('Robot or RoborockService not found: duid1');
+    expect(mockLog.error).toHaveBeenCalledWith('[handleLocalMessage] Robot or RoborockService not found: duid1');
   });
 
   it('handles missing cleaning_info in mapRoomsToAreasFeatureOn', async () => {
@@ -386,7 +380,7 @@ describe('handleLocalMessage -- FF OFF', () => {
     mockGetSupportedAreas.mockReturnValue(currentMappedAreasFromLog);
     mockGetSupportedAreasIndexMap.mockReturnValue(new RoomIndexMap(new Map())); // Empty
 
-    await handleLocalMessage(cloudMessageResultFromLog as any, platform as any, 'duid1');
+    await handleLocalMessage({ ...cloudMessageResultFromLog }, platform as any, 'duid1');
 
     // The function does not set currentArea to null if segment_id is -1 and no mappedArea is found, it skips updating currentArea.
     // Instead, it may update currentMode and battery attributes.

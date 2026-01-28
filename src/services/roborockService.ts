@@ -1,7 +1,6 @@
 import { AnsiLogger } from 'matterbridge/logger';
 import { ServiceArea } from 'matterbridge/matter/clusters';
 import { LocalStorage } from 'node-persist';
-import { CleanModeSetting } from '../behaviors/roborock.vacuum/default/default.js';
 import { Factory, NotifyMessageTypes } from '../types/index.js';
 import {
   ServiceContainer,
@@ -19,6 +18,7 @@ import { RoborockIoTApi } from '../roborockCommunication/api/iotClient.js';
 import { MessageProcessor } from '../roborockCommunication/mqtt/messageProcessor.js';
 import { PlatformConfigManager } from '../platform/platformConfig.js';
 import { RoomMap, MapInfo, RoomIndexMap } from '../core/application/models/index.js';
+import { CleanModeSetting } from '../behaviors/roborock.vacuum/core/CleanModeSetting.js';
 
 export interface RoborockServiceConfig {
   authenticateApiFactory?: (logger: AnsiLogger, baseUrl: string) => RoborockAuthenticateApi;

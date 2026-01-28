@@ -1,4 +1,4 @@
-import { CleanModeSetting } from '../../../behaviors/roborock.vacuum/default/default.js';
+import { CleanModeSetting } from '../../../behaviors/roborock.vacuum/core/CleanModeSetting.js';
 import { MapInfo, RoomMap } from '../../../core/application/models/index.js';
 import { MapRoomResponse } from '../../../types/index.js';
 import { DeviceStatus, NetworkInfo, RequestMessage, RoomDto } from '../../models/index.js';

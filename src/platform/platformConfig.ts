@@ -175,6 +175,13 @@ export class PlatformConfigManager {
     return false;
   }
 
+  public get useVacationModeToSendVacuumToDock(): boolean {
+    if (this.isExperimentalEnabled) {
+      return this.advancedFeatures.useVacationModeToSendVacuumToDock;
+    }
+    return false;
+  }
+
   // ─── Device Filtering ───────────────────────────────────────────────────────
 
   /**

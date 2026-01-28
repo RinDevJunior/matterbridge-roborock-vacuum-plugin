@@ -6,10 +6,10 @@ import { AbstractMessageDispatcher } from './abstractMessageDispatcher.js';
 import { AnsiLogger, debugStringify } from 'matterbridge/logger';
 import { Client } from '../../routing/client.js';
 import { NetworkInfo, RoomDto } from '../../models/index.js';
-import { CleanModeSetting } from '../../../behaviors/roborock.vacuum/default/default.js';
 import { resolveQ7CleanMode, resolveMopMode, resolveVacuumMode, resolveCleanRoute } from '../../helper/B01VacuumModeResolver.js';
 import { MapInfo, RoomMap } from '../../../core/application/models/index.js';
 import { MapRoomResponse } from '../../../types/device.js';
+import { CleanModeSetting } from '../../../behaviors/roborock.vacuum/core/CleanModeSetting.js';
 
 export class Q7MessageDispatcher implements AbstractMessageDispatcher {
   constructor(

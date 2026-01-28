@@ -45,7 +45,7 @@ describe('handleCloudMessage (integration)', () => {
     platform.registry.getRobot = (_duid: string) => undefined;
     const data: any = { dps: { [Protocol.status_update]: 5 } };
     await handleCloudMessage(data, platform, runner, duid);
-    expect(platform.log.error).toHaveBeenCalledWith(`Robot not found: ${duid}`);
+    expect(platform.log.error).toHaveBeenCalledWith(`[handleCloudMessage] Robot or RoborockService not found: ${duid}`);
   });
 
   it('processes rpc_response and calls runner.updateFromMQTTMessage when status array present', async () => {

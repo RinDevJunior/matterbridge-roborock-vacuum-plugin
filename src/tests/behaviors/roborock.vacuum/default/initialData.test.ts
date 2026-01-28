@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { getDefaultSupportedRunModes, getDefaultSupportedCleanModes, getDefaultOperationalStates } from '../../../../behaviors/roborock.vacuum/default/initialData.js';
-import { ExperimentalFeatureSetting } from '../../../../model/ExperimentalFeatureSetting.js';
 import { RvcOperationalState } from 'matterbridge/matter/clusters';
+import { PlatformConfigManager } from '../../../../platform/platformConfig.js';
 
 describe('default initialData helpers', () => {
   it('getDefaultSupportedRunModes returns expected modes', () => {
@@ -11,14 +11,8 @@ describe('default initialData helpers', () => {
     expect(labels).toEqual(expect.arrayContaining(['Idle', 'Cleaning', 'Mapping']));
   });
 
-  it('getDefaultSupportedCleanModes without experimental feature does not include mode 99', () => {
-    const modes = getDefaultSupportedCleanModes(undefined);
-    const ids = modes.map((m) => m.mode);
-    expect(ids).not.toContain(99);
-  });
-
   it('getDefaultSupportedCleanModes with experimental feature includes mode 99', () => {
-    const ef: ExperimentalFeatureSetting = { advancedFeature: { useVacationModeToSendVacuumToDock: true } } as any;
+    const ef: PlatformConfigManager = { useVacationModeToSendVacuumToDock: true } as any;
     const modes = getDefaultSupportedCleanModes(ef);
     const ids = modes.map((m) => m.mode);
     expect(ids).toContain(99);

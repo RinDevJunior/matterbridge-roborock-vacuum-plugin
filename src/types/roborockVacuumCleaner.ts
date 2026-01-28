@@ -121,7 +121,7 @@ export class RoborockVacuumCleaner extends RoboticVacuumCleaner {
     log: AnsiLogger,
     mapInfos: MapEntry[],
   ) {
-    const cleanModes = getSupportedCleanModes(device.data.model, configManager.experimentalSettings);
+    const cleanModes = getSupportedCleanModes(device.data.model, configManager);
     const supportedRunModes = getSupportedRunModes();
     const operationalState = getOperationalStates();
 

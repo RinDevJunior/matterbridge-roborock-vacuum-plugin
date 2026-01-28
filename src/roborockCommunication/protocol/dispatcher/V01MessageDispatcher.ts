@@ -2,10 +2,10 @@ import { AnsiLogger, debugStringify } from 'matterbridge/logger';
 import { AbstractMessageDispatcher } from './abstractMessageDispatcher.js';
 import { CloudMessageResult, DeviceStatus, NetworkInfo, RequestMessage, RoomDto } from '../../models/index.js';
 import { Client } from '../../routing/client.js';
-import { CleanModeSetting } from '../../../behaviors/roborock.vacuum/default/default.js';
 import { MapInfo, RoomMap } from '../../../core/application/models/index.js';
 import { HomeModelMapper, MultipleMapDto, RawRoomMappingData } from '../../models/home/index.js';
 import { MapRoomResponse } from '../../../types/index.js';
+import { CleanModeSetting } from '../../../behaviors/roborock.vacuum/core/CleanModeSetting.js';
 
 export class V01MessageDispatcher implements AbstractMessageDispatcher {
   constructor(

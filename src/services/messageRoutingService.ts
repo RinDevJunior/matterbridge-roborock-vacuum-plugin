@@ -1,12 +1,12 @@
 import { AnsiLogger, debugStringify } from 'matterbridge/logger';
 import { ServiceArea } from 'matterbridge/matter/clusters';
-import type { CleanModeSetting } from '../behaviors/roborock.vacuum/default/default.js';
 import { DeviceError } from '../errors/index.js';
 import { MessageProcessor } from '../roborockCommunication/mqtt/messageProcessor.js';
 import { RoborockIoTApi } from '../roborockCommunication/api/iotClient.js';
 import { RequestMessage, RoomDto } from '../roborockCommunication/models/index.js';
 import { AbstractMessageDispatcher } from '../roborockCommunication/protocol/dispatcher/abstractMessageDispatcher.js';
 import { MapInfo, RoomMap } from '../core/application/models/index.js';
+import { CleanModeSetting } from '../behaviors/roborock.vacuum/core/CleanModeSetting.js';
 
 export class MessageRoutingService {
   private messageProcessorMap = new Map<string, MessageProcessor>();

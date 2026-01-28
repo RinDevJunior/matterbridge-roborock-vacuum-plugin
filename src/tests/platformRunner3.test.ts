@@ -26,13 +26,11 @@ describe('PlatformRunner.updateRobot', () => {
     const robots = new Map<string, RoborockVacuumCleaner>();
     robots.set('123456', robotMock);
 
-    // Mock registry with robotsMap and getRobot
     const registry = {
       robotsMap: robots,
       getRobot: (duid: string) => robots.get(duid),
     };
 
-    // Mock configManager with isMultipleMapEnabled
     const configManager = {
       get isMultipleMapEnabled() {
         return false;
@@ -46,6 +44,7 @@ describe('PlatformRunner.updateRobot', () => {
         debug: vi.fn(),
         notice: vi.fn(),
       },
+      roborockService: {},
       registry: registry,
       configManager: configManager,
       enableExperimentalFeature: undefined,
@@ -58,5 +57,6 @@ describe('PlatformRunner.updateRobot', () => {
     const mapUpdated = { duid: '123456', dps: { 128: 4 } };
     await runner.updateFromMQTTMessage(NotifyMessageTypes.CloudMessage, mapUpdated, '123456');
     expect(platform.log.notice).toHaveBeenCalled();
+    expect(platform.log.error).not.toHaveBeenCalled();
   });
 });

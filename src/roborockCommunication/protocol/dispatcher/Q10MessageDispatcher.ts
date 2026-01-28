@@ -6,10 +6,10 @@ import { AbstractMessageDispatcher } from './abstractMessageDispatcher.js';
 import { Q10RequestCode, Q10RequestMethod } from '../../enums/Q10RequestCode.js';
 import { Client } from '../../routing/client.js';
 import { NetworkInfo, RoomDto } from '../../models/index.js';
-import { CleanModeSetting } from '../../../behaviors/roborock.vacuum/default/default.js';
 import { resolveMopMode, resolveQ10CleanMode, resolveVacuumMode } from '../../helper/B01VacuumModeResolver.js';
 import { MapInfo, RoomMap } from '../../../core/application/models/index.js';
 import { MapRoomResponse } from '../../../types/index.js';
+import { CleanModeSetting } from '../../../behaviors/roborock.vacuum/core/CleanModeSetting.js';
 
 export class Q10MessageDispatcher implements AbstractMessageDispatcher {
   constructor(

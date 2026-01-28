@@ -1,11 +1,10 @@
 import { describe, it, expect } from 'vitest';
-import { getSupportedCleanModesSmart } from '../../../../behaviors/roborock.vacuum/smart/initialData.js';
-import { createDefaultExperimentalFeatureSetting } from '../../../../model/ExperimentalFeatureSetting.js';
+import { getSmartSupportedCleanModes } from '../../../../behaviors/roborock.vacuum/smart/initialData.js';
 
 describe('getSupportedCleanModesSmart', () => {
   it('includes modes 4 and 5 and excludes duplicates from default list', () => {
-    const setting = createDefaultExperimentalFeatureSetting();
-    const result = getSupportedCleanModesSmart(setting);
+    const setting = { useVacationModeToSendVacuumToDock: false } as any;
+    const result = getSmartSupportedCleanModes(setting);
     const modes = result.map((r) => r.mode);
     expect(modes).toContain(4);
     expect(modes).toContain(5);
