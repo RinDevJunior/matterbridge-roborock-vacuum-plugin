@@ -4,11 +4,12 @@ import { hasDockingStationError } from '../model/DockingStationStatus.js';
 import { state_to_matter_operational_status, state_to_matter_state } from '../share/function.js';
 import { RvcCleanMode, RvcOperationalState, RvcRunMode, ServiceArea } from 'matterbridge/matter/clusters';
 import { triggerDssError } from './handleLocalMessage.js';
-import { getRoomMapFromDevice, isStatusUpdate } from '../share/helper.js';
+import { RoomMap } from '../core/application/models/index.js';
+import { isStatusUpdate } from '../share/helper.js';
 import { debugStringify } from 'matterbridge/logger';
 import { CloudMessageResult, DeviceStatusNotify, DpsPayload, Protocol } from '../roborockCommunication/models/index.js';
 import { NotifyMessageTypes } from '../types/notifyMessageTypes.js';
-import { getCurrentCleanModeFunc } from '../share/runtimeHelper.js';
+import { getCleanModeResolver } from '../share/runtimeHelper.js';
 import { getSupportedAreas } from '../initialData/getSupportedAreas.js';
 import { PlatformRunner } from '../platformRunner.js';
 import { RoborockVacuumCleaner } from '../types/roborockVacuumCleaner.js';
@@ -22,8 +23,9 @@ import { RoborockMatterbridgePlatform } from '../module.js';
 export async function handleCloudMessage(data: CloudMessageModel, platform: RoborockMatterbridgePlatform, runner: PlatformRunner, duid: string): Promise<void> {
   const messageTypes = Object.keys(data.dps).map(Number);
   const robot = platform.registry.getRobot(duid);
-  if (robot === undefined) {
-    platform.log.error(`Robot not found: ${duid}`);
+  const service = platform.roborockService;
+  if (!robot || !service) {
+    platform.log.error(`[handleCloudMessage] Robot or RoborockService not found: ${duid}`);
     return;
   }
 
@@ -52,7 +54,7 @@ export async function handleCloudMessage(data: CloudMessageModel, platform: Robo
         const response = data.dps[messageType] as DpsPayload;
         // ignore network info
         if (!isStatusUpdate(response.result)) {
-          platform.log.debug('Ignore message:', debugStringify(data));
+          platform.log.debug(`[handleCloudMessage] Ignore message: ${debugStringify(data)}`);
           return;
         }
 
@@ -63,24 +65,17 @@ export async function handleCloudMessage(data: CloudMessageModel, platform: Robo
 
         if (roboStatus) {
           const message = { ...roboStatus } as DeviceStatusNotify;
-          platform.log.debug('rpc_response:', debugStringify(message));
+          platform.log.debug(`[handleCloudMessage] rpc_response: ${debugStringify(message)}`);
           await runner.updateFromMQTTMessage(NotifyMessageTypes.LocalMessage, message, duid, true);
         }
         break;
       }
       case Protocol.suction_power:
       case Protocol.water_box_mode: {
-        await platform.roborockService?.getCleanModeData(duid).then((cleanModeData) => {
+        await service.getCleanModeData(duid).then((cleanModeData) => {
           if (cleanModeData) {
-            const currentCleanMode = getCurrentCleanModeFunc(
-              robot.device.data.model,
-              platform.configManager.forceRunAtDefault,
-            )({
-              suctionPower: cleanModeData.suctionPower,
-              waterFlow: cleanModeData.waterFlow,
-              distance_off: cleanModeData.distance_off,
-              mopRoute: cleanModeData.mopRoute,
-            });
+            const resolver = getCleanModeResolver(robot.device.data.model, platform.configManager.forceRunAtDefault);
+            const currentCleanMode = resolver.resolve(cleanModeData);
 
             platform.log.debug(`Clean mode data: ${debugStringify(cleanModeData)}`);
             platform.log.debug(`Current clean mode: ${currentCleanMode}`);
@@ -92,9 +87,9 @@ export async function handleCloudMessage(data: CloudMessageModel, platform: Robo
         break; // Do nothing, handled in local message
       }
       case Protocol.additional_props: {
-        platform.log.notice(`Received additional properties for robot ${duid}: ${debugStringify(data)}`);
+        platform.log.notice(`[handleCloudMessage] Received additional properties for robot ${duid}: ${debugStringify(data)}`);
         const propCode = data.dps[Protocol.additional_props] as number;
-        platform.log.debug(`DPS for additional properties: ${propCode}, AdditionalPropCode: ${AdditionalPropCode[propCode]}`);
+        platform.log.debug(`[handleCloudMessage] DPS for additional properties: ${propCode}, AdditionalPropCode: ${AdditionalPropCode[propCode]}`);
         if (propCode === AdditionalPropCode.map_change) {
           await handleMapChange(robot, platform, duid);
         }
@@ -106,7 +101,7 @@ export async function handleCloudMessage(data: CloudMessageModel, platform: Robo
         break;
       }
       default: {
-        platform.log.notice(`Unknown message type ${messageType}, protocol: ${Protocol[messageType]}, message: ${debugStringify(data)}`);
+        platform.log.notice(`[handleCloudMessage] Unknown message type ${messageType}, protocol: ${Protocol[messageType]}, message: ${debugStringify(data)}`);
         break;
       }
     }
@@ -116,20 +111,17 @@ export async function handleCloudMessage(data: CloudMessageModel, platform: Robo
 /**
  * Handle map change events from device.
  * Updates supported areas and maps when the device's map configuration changes.
- * @param robot - Robot vacuum cleaner instance
- * @param platform - Platform instance
- * @param duid - Device unique identifier
  */
 export async function handleMapChange(robot: RoborockVacuumCleaner, platform: RoborockMatterbridgePlatform, duid: string): Promise<void> {
   const enableMultipleMap = platform.configManager.isMultipleMapEnabled;
   if (!enableMultipleMap) return;
 
-  await getRoomMapFromDevice(robot.device, platform).then((roomMap) => {
-    const { supportedAreas, supportedMaps, roomIndexMap } = getSupportedAreas(robot.device.rooms, roomMap, enableMultipleMap, platform.log);
+  await RoomMap.fromDeviceDirect(robot.device, platform).then((roomMap) => {
+    const { supportedAreas, supportedMaps, roomIndexMap } = getSupportedAreas(robot.device.rooms, roomMap, enableMultipleMap, platform.log, robot.mapInfos ?? []);
 
-    platform.log.debug(`handleMapChange - supportedAreas: ${debugStringify(supportedAreas)}`);
-    platform.log.debug(`handleMapChange - supportedMaps: ${debugStringify(supportedMaps)}`);
-    platform.log.debug(`handleMapChange - roomIndexMap: `, roomIndexMap);
+    platform.log.debug(`[handleMapChange] supportedAreas: ${debugStringify(supportedAreas)}`);
+    platform.log.debug(`[handleMapChange] supportedMaps: ${debugStringify(supportedMaps)}`);
+    platform.log.debug(`[handleMapChange] roomIndexMap: `, roomIndexMap);
 
     platform.roborockService?.setSupportedAreas(duid, supportedAreas);
     platform.roborockService?.setSelectedAreas(duid, []);

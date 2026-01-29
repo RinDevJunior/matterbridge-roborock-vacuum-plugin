@@ -5,16 +5,12 @@ import { UserData } from '../roborockCommunication/models/index.js';
 /** Manages ClientRouter instances per user with caching and cleanup. */
 export default class ClientManager {
   private readonly clients = new Map<string, ClientRouter>();
-  private logger: AnsiLogger;
-
-  public constructor(logger: AnsiLogger) {
-    this.logger = logger;
-  }
+  public constructor(private readonly logger: AnsiLogger) {}
 
   /** Get or create ClientRouter for a user. */
   public get(userdata: UserData): ClientRouter {
     const username = userdata.username;
-    if (!username || username.trim().length === 0) {
+    if (username.trim().length === 0) {
       throw new Error('Username cannot be empty');
     }
 

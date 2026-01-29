@@ -15,6 +15,7 @@ import { LocalNetworkUDPClient } from '../roborockCommunication/local/udpClient.
 import { MessageProcessor } from '../roborockCommunication/mqtt/messageProcessor.js';
 import { Client } from '../roborockCommunication/routing/client.js';
 import { MessageRoutingService } from './messageRoutingService.js';
+import { MessageDispatcherFactory } from '../roborockCommunication/protocol/dispatcher/dispatcherFactory.js';
 
 /** Manages device connections (MQTT and local network). */
 export class ConnectionService {
@@ -97,17 +98,18 @@ export class ConnectionService {
     this.clientRouter.registerMessageListener(new PingResponseListener(device.duid));
     this.clientRouter.registerMessageListener(new MapResponseListener(device.duid, this.logger));
 
-    const messageProcessor = new MessageProcessor(this.clientRouter);
-    messageProcessor.injectLogger(this.logger);
+    const store = device.store;
+    const messageProcessor = new MessageProcessor(this.clientRouter, this.logger);
+    const messageDispatcher = new MessageDispatcherFactory(this.clientRouter, this.logger).getMessageDispatcher(store.pv, store.model);
 
     // Register message listeners
     messageProcessor.registerListener(new SimpleMessageHandler(device.duid, this.deviceNotify?.bind(this)));
     this.messageRoutingService.registerMessageProcessor(device.duid, messageProcessor);
+    this.messageRoutingService.registerMessageDispatcher(device.duid, messageDispatcher);
 
     // B01 devices use MQTT-only communication
     if (device.pv === ProtocolVersion.B01) {
       this.logger.debug(`Device: ${device.duid} uses B01 protocol, switch to use UDPClient`);
-      this.messageRoutingService.setMqttAlwaysOn(device.duid, true);
       const localNetworkUDPClient = new LocalNetworkUDPClient(this.logger);
       const networkInfo = device.deviceStatus?.[Protocol.rpc_request]
         ? ((device.deviceStatus[Protocol.rpc_request] as Record<number, unknown>)[RPC_Request_Segments.network_info] as NetworkInfoDTO)
@@ -139,7 +141,7 @@ export class ConnectionService {
 
     if (!localIp) {
       this.logger.debug(`Device ${device.duid} IP not cached, fetching from device`);
-      const networkInfo = await messageProcessor.getNetworkInfo(device.duid);
+      const networkInfo = await messageDispatcher.getNetworkInfo(device.duid);
 
       if (!networkInfo?.ip) {
         this.logger.warn('Failed to get network info, using MQTT only for device:', device.duid);

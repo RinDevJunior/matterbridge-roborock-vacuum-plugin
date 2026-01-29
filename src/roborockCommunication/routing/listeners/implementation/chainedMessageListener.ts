@@ -8,6 +8,10 @@ export class ChainedMessageListener implements AbstractMessageListener {
     this.listeners.push(listener);
   }
 
+  public unregister(): void {
+    this.listeners = [];
+  }
+
   public async onMessage(message: ResponseMessage): Promise<void> {
     for (const listener of this.listeners) {
       await listener.onMessage(message);

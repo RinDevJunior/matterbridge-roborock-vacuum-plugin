@@ -1,7 +1,7 @@
 import { MessageContext, RequestMessage } from '../../models/index.js';
-import { MessageBodyBuilder } from './messageBodyBuilder.js';
+import { AbstractMessageBodyBuilder } from './abstractMessageBodyBuilder.js';
 
-export class UnknownMessageBodyBuilder implements MessageBodyBuilder {
+export class UnknownMessageBodyBuilder implements AbstractMessageBodyBuilder {
   buildPayload(request: RequestMessage, context: MessageContext): string {
     if (!request.body) {
       throw new Error('Cannot build payload for unknown protocol without body');

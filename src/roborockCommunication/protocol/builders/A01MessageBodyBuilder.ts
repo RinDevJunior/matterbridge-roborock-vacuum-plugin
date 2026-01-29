@@ -1,7 +1,7 @@
 import { MessageContext, RequestMessage } from '../../models/index.js';
-import { MessageBodyBuilder } from './messageBodyBuilder.js';
+import { AbstractMessageBodyBuilder } from './abstractMessageBodyBuilder.js';
 
-export class A01MessageBodyBuilder implements MessageBodyBuilder {
+export class A01MessageBodyBuilder implements AbstractMessageBodyBuilder {
   buildPayload(request: RequestMessage, context: MessageContext): string {
     return JSON.stringify({
       dps: request.dps,

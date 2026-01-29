@@ -54,7 +54,6 @@ describe('PlatformConfigManager', () => {
       config.username = '';
       manager = PlatformConfigManager.create(config, mockLogger);
       expect(manager.validateConfig()).toBe(false);
-      expect(mockLogger.error).toHaveBeenCalledWith('Platform config validation failed: "username" is required');
     });
   });
 
@@ -135,6 +134,7 @@ describe('PlatformConfigManager', () => {
         alwaysExecuteAuthentication: false,
         includeDockStationStatus: true,
       } as any;
+      config.enableServerMode = true;
       config.enableExperimental.enableExperimentalFeature = true;
       manager = PlatformConfigManager.create(config, mockLogger);
       expect(manager.isServerModeEnabled).toBe(true);

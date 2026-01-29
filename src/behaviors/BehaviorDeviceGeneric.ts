@@ -10,8 +10,24 @@ export const CommandNames = {
   PAUSE: 'pause',
   RESUME: 'resume',
   GO_HOME: 'goHome',
-  PLAY_SOUND_TO_LOCATE: 'playSoundToLocate',
+  STOP: 'stop',
 } as const;
+
+export interface DeviceEndpointCommands extends DeviceCommands {
+  selectAreas: (newAreas: number[]) => MaybePromise;
+  changeToMode: (newMode: number) => MaybePromise;
+  pause: () => MaybePromise;
+  resume: () => MaybePromise;
+  goHome: () => MaybePromise;
+  identify: (identifyTime: number) => MaybePromise;
+  stop: () => MaybePromise;
+}
+
+export const RvcRunMode: Record<number, string> = {
+  [1]: 'Idle', // DO NOT HANDLE HERE,
+  [2]: 'Cleaning',
+  [3]: 'Mapping',
+};
 
 export type DeviceCommandHandler = (...args: never[]) => MaybePromise;
 
@@ -37,6 +53,7 @@ export class BehaviorRoborock extends Behavior {
   static override readonly id = 'roborock.vacuum.axx';
   declare state: BehaviorRoborockState;
 }
+
 export interface BehaviorRoborockState {
   device: BehaviorDeviceGeneric<DeviceCommands>;
 }

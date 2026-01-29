@@ -1,22 +1,19 @@
-import { CleanModeSetting } from '../behaviors/roborock.vacuum/default/default.js';
-import { getCurrentCleanModeDefault } from '../behaviors/roborock.vacuum/default/runtimes.js';
-import { getCurrentCleanModeSmart } from '../behaviors/roborock.vacuum/smart/runtimes.js';
 import { DeviceModel } from '../roborockCommunication/models/index.js';
 import { SMART_MODELS } from '../constants/index.js';
+import { baseCleanModeConfigs, smartCleanModeConfigs } from '../behaviors/roborock.vacuum/core/modeConfig.js';
+import { createDefaultModeResolver, createSmartModeResolver, ModeResolver } from '../behaviors/roborock.vacuum/core/modeResolver.js';
 
-export type CleanModeFunc = (setting: CleanModeSetting) => number | undefined;
+const smartModeResolver = createSmartModeResolver(smartCleanModeConfigs);
+const defaultModeResolver = createDefaultModeResolver(baseCleanModeConfigs);
 
 /**
  * Get the appropriate clean mode function based on device model.
  * Smart models use different clean mode mappings than default models.
- * @param model - Device model identifier
- * @param forceRunAtDefault - Force default behavior regardless of model
- * @returns Function to determine current clean mode from settings
  */
-export function getCurrentCleanModeFunc(model: DeviceModel, forceRunAtDefault: boolean): CleanModeFunc {
+export function getCleanModeResolver(model: DeviceModel, forceRunAtDefault: boolean): ModeResolver {
   if (forceRunAtDefault) {
-    return getCurrentCleanModeDefault;
+    return defaultModeResolver;
   }
 
-  return SMART_MODELS.has(model) ? getCurrentCleanModeSmart : getCurrentCleanModeDefault;
+  return SMART_MODELS.has(model) ? smartModeResolver : defaultModeResolver;
 }

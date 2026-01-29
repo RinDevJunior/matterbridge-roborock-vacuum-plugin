@@ -1,16 +1,17 @@
 import { AnsiLogger } from 'matterbridge/logger';
 import { DeviceError, DeviceNotFoundError } from '../errors/index.js';
-import { Device, Home, Protocol, SceneParam, UserData } from '../roborockCommunication/models/index.js';
+import { Device, DeviceData, DeviceInformation, DeviceModel, Home, Protocol, SceneParam, UserData } from '../roborockCommunication/models/index.js';
 import { RoborockIoTApi } from '../roborockCommunication/api/iotClient.js';
 import { RoborockAuthenticateApi } from '../roborockCommunication/api/authClient.js';
+import { DeviceCategory } from '../roborockCommunication/models/deviceCategory.js';
 
 /** Handles device discovery, initialization, and lifecycle. */
 export class DeviceManagementService {
-  private iotApi?: RoborockIoTApi;
+  private iotApi: RoborockIoTApi | undefined;
   constructor(
     private readonly logger: AnsiLogger,
     private readonly loginApi: RoborockAuthenticateApi,
-    private userdata?: UserData,
+    private userdata: UserData | undefined,
   ) {}
 
   public setIotApi(iotApi: RoborockIoTApi): void {
@@ -43,8 +44,8 @@ export class DeviceManagementService {
 
       this.logger.debug(`Processing home data for home ID: ${homeDetails.rrHomeId}`);
 
-      const products = new Map<string, string>();
-      homeData.products.forEach((p) => products.set(p.id, p.model));
+      const products = new Map<string, { model: DeviceModel; category: DeviceCategory }>();
+      homeData.products.forEach((p) => products.set(p.id, { model: p.model as DeviceModel, category: p.category as DeviceCategory }));
 
       const devices: Device[] = homeData.devices.length > 0 ? homeData.devices : homeData.receivedDevices;
 
@@ -64,18 +65,18 @@ export class DeviceManagementService {
             id: device.duid,
             firmwareVersion: device.fv,
             serialNumber: device.sn,
-            model: homeData.products.find((p) => p.id === device.productId)?.model,
-            category: homeData.products.find((p) => p.id === device.productId)?.category,
+            model: products.get(device.productId)?.model as DeviceModel,
+            category: products.get(device.productId)?.category as DeviceCategory,
             batteryLevel: Number(device.deviceStatus?.[Protocol.battery] ?? 100),
-          },
+          } satisfies DeviceData,
           store: {
-            userData: this.userdata,
+            userData: this.userdata as UserData,
             localKey: device.localKey,
             pv: device.pv,
-            model: products.get(device.productId),
-          },
+            model: products.get(device.productId)?.model as DeviceModel,
+          } satisfies DeviceInformation,
         };
-      }) as Device[];
+      }) satisfies Device[];
 
       this.logger.notice(`Found ${result.length} devices`);
       return result;
@@ -104,8 +105,8 @@ export class DeviceManagementService {
         return undefined;
       }
 
-      const products = new Map<string, string>();
-      homeData.products.forEach((p) => products.set(p.id, p.model));
+      const products = new Map<string, { model: DeviceModel; category: DeviceCategory }>();
+      homeData.products.forEach((p) => products.set(p.id, { model: p.model as DeviceModel, category: p.category as DeviceCategory }));
       const devices: Device[] = homeData.devices.length > 0 ? homeData.devices : homeData.receivedDevices;
 
       // Fallback to older API versions if rooms are missing
@@ -131,23 +132,23 @@ export class DeviceManagementService {
             id: device.duid,
             firmwareVersion: device.fv,
             serialNumber: device.sn,
-            model: homeData.products.find((p) => p.id === device.productId)?.model,
-            category: homeData.products.find((p) => p.id === device.productId)?.category,
-            batteryLevel: device.deviceStatus?.[Protocol.battery] ?? 100,
-          },
+            model: products.get(device.productId)?.model as DeviceModel,
+            category: products.get(device.productId)?.category as DeviceCategory,
+            batteryLevel: Number(device.deviceStatus?.[Protocol.battery] ?? 100),
+          } satisfies DeviceData,
           store: {
-            userData: this.userdata,
+            userData: this.userdata as UserData,
             localKey: device.localKey,
             pv: device.pv,
-            model: products.get(device.productId),
-          },
+            model: products.get(device.productId)?.model as DeviceModel,
+          } satisfies DeviceInformation,
         };
-      }) as Device[];
+      }) satisfies Device[];
 
       return {
         ...homeData,
         devices: dvs,
-      };
+      } satisfies Home;
     } catch (error) {
       this.logger.error('Failed to get home data for updating:', error);
       return undefined;
@@ -160,5 +161,7 @@ export class DeviceManagementService {
    */
   public stopService(): void {
     this.logger.notice('Device management service stopped');
+    this.iotApi = undefined;
+    this.userdata = undefined;
   }
 }

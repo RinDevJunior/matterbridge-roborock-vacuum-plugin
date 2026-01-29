@@ -3,7 +3,7 @@ import { AnsiLogger, debugStringify } from 'matterbridge/logger';
 import { Parser } from 'binary-parser/dist/binary_parser.js';
 import { ContentMessage, HeaderMessage, MessageContext, Protocol, ResponseBody, ResponseMessage } from '../../models/index.js';
 import { ProtocolVersion } from '../../enums/index.js';
-import { MessageProcessorFactory } from '../../helper/messageProcessorFactory.js';
+import { MessageSerializerFactory } from '../serializers/messageSerializerFactory.js';
 
 export class MessageDeserializer {
   private readonly context: MessageContext;
@@ -20,7 +20,7 @@ export class MessageDeserializer {
   ];
   private readonly ignoredProtocols: Protocol[] = [Protocol.map_response];
 
-  private readonly messageProcessorFactory = new MessageProcessorFactory();
+  private readonly messageSerializerFactory = new MessageSerializerFactory();
 
   constructor(context: MessageContext, logger: AnsiLogger) {
     this.context = context;
@@ -78,8 +78,8 @@ export class MessageDeserializer {
     const connectNonce = this.context.nonce;
     const ackNonce = this.context.getDeviceNonce(duid);
 
-    const messageProcessor = this.messageProcessorFactory.getMessageProcessor(header.version);
-    data.payload = messageProcessor.decode(data.payload, localKey, header.timestamp, header.seq, header.nonce, connectNonce, ackNonce);
+    const messageSerializer = this.messageSerializerFactory.getMessageSerializer(header.version);
+    data.payload = messageSerializer.decode(data.payload, localKey, header.timestamp, header.seq, header.nonce, connectNonce, ackNonce);
 
     if (header.isForProtocol(Protocol.rpc_response) || header.isForProtocol(Protocol.general_request)) {
       const response = this.deserializeRpcResponse(duid, data, header);

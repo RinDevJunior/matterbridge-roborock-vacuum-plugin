@@ -1,6 +1,5 @@
 import type { AnsiLogger } from 'matterbridge/logger';
 import NodePersist from 'node-persist';
-import { DeviceRegistry } from './deviceRegistry.js';
 import { PlatformConfigManager } from './platformConfig.js';
 import { PlatformState } from './platformState.js';
 import { MatterbridgeDynamicPlatform } from 'matterbridge';
@@ -29,7 +28,6 @@ export class PlatformLifecycle {
 
   public constructor(
     private readonly platform: MatterbridgeDynamicPlatform,
-    private readonly registry: DeviceRegistry,
     private readonly configManager: PlatformConfigManager,
     private readonly state: PlatformState,
     private readonly deps: LifecycleDependencies,

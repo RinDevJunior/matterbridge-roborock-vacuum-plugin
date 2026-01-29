@@ -70,10 +70,13 @@ export class ClientRouter implements Client {
 
   public async disconnect(): Promise<void> {
     await this.mqttClient.disconnect();
+    this.connectionListeners.unregister();
+    this.messageListeners.unregister();
+    this.context.unregisterAllDevices();
 
-    this.localClients.forEach((client) => {
-      client.disconnect();
-    });
+    for (const client of this.localClients.values()) {
+      await client.disconnect();
+    }
   }
 
   public async send(duid: string, request: RequestMessage): Promise<void> {

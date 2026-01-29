@@ -60,7 +60,7 @@ describe('RoborockMatterbridgePlatform - startup branches', () => {
     expect(logger.log as any).toHaveBeenCalled();
   });
 
-  it('configureDevice returns false when platformRunner or roborockService undefined', async () => {
+  it('configureDevice returns false when roborockService undefined', async () => {
     const logger = makeLogger();
     const cfg: any = { name: 'Test', username: 'u@example.com', authentication: {} };
     const platform = new RoborockMatterbridgePlatform(makeMatterbridge(), logger, cfg);
@@ -68,6 +68,6 @@ describe('RoborockMatterbridgePlatform - startup branches', () => {
 
     const result = await (platform as any).configureDevice(vacuum);
     expect(result).toBe(false);
-    expect(logger.log as any).toHaveBeenCalledWith('error', 'Initializing: PlatformRunner or RoborockService is undefined');
+    expect(logger.log as any).toHaveBeenCalledWith('error', 'Initializing: RoborockService is undefined');
   });
 });

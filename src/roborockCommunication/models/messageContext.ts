@@ -20,8 +20,12 @@ export class MessageContext {
     this.serializeNonce = randomBytes(16);
   }
 
-  public registerDevice(duid: string, localKey: string, pv: string, nonce: number | undefined) {
+  public registerDevice(duid: string, localKey: string, pv: string, nonce: number | undefined): void {
     this.devices.set(duid, { localKey: localKey, protocolVersion: pv, nonce });
+  }
+
+  public unregisterAllDevices(): void {
+    this.devices.clear();
   }
 
   public updateNonce(duid: string, nonce: number): void {

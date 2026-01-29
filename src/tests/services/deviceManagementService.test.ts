@@ -1,7 +1,8 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { DeviceManagementService } from '../../services/deviceManagementService.js';
 import { DeviceError, DeviceNotFoundError } from '../../errors/index.js';
-import { Device, Home, Protocol, UserData } from '../../roborockCommunication/models/index.js';
+import { Device, DeviceModel, Home, Protocol, UserData } from '../../roborockCommunication/models/index.js';
+import { DeviceCategory } from '../../roborockCommunication/models/deviceCategory.js';
 
 describe('DeviceManagementService', () => {
   let deviceService: DeviceManagementService;
@@ -51,15 +52,15 @@ describe('DeviceManagementService', () => {
       id: 'device-123',
       firmwareVersion: '1.0.0',
       serialNumber: 'SN12345',
-      model: 's5_max' as any,
-      category: 'vacuum',
+      model: DeviceModel.QREVO_EDGE_5V1,
+      category: DeviceCategory.VacuumCleaner,
       batteryLevel: 85,
     },
     store: {
       userData: mockUserData,
       localKey: 'local-key-789',
       pv: 'A01',
-      model: 'Test Model',
+      model: DeviceModel.QREVO_EDGE_5V1,
     },
   };
 
@@ -130,7 +131,7 @@ describe('DeviceManagementService', () => {
 
   describe('listDevices', () => {
     it('should throw error when not authenticated', async () => {
-      const unauthenticatedService = new DeviceManagementService(mockLogger, mockLoginApi);
+      const unauthenticatedService = new DeviceManagementService(mockLogger, mockLoginApi, undefined);
 
       await expect(unauthenticatedService.listDevices()).rejects.toThrow('Not authenticated. Please login first.');
     });
@@ -253,7 +254,7 @@ describe('DeviceManagementService', () => {
   });
 
   it('should return undefined when not authenticated', async () => {
-    const unauthenticatedService = new DeviceManagementService(mockLogger, mockLoginApi);
+    const unauthenticatedService = new DeviceManagementService(mockLogger, mockLoginApi, undefined);
 
     const result = await unauthenticatedService.getHomeDataForUpdating(12345);
 

@@ -28,10 +28,7 @@ const platform = {
     error: vi.fn(),
     debug: vi.fn(),
     notice: vi.fn(),
-    /* eslint-disable no-console */
-    fatal: vi.fn().mockImplementation((message: string, ...arg: unknown[]) => {
-      console.info(message, ...arg);
-    }),
+    fatal: vi.fn(),
   },
   roborockService: {},
   enableExperimentalFeature: {},

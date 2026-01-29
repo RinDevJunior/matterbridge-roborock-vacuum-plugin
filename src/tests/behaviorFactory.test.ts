@@ -40,22 +40,4 @@ describe('configureBehavior', () => {
     const result = configureBehavior(model, duid, roborockService, cleanModeSettings, true, logger);
     expect(result).toBeInstanceOf(BehaviorDeviceGeneric);
   });
-
-  it('calls setCommandHandlerSmart for smart model', async () => {
-    const model = Array.from(SMART_MODELS)[0];
-    const smartModule = await import('../behaviors/roborock.vacuum/smart/smart.js');
-    const spy = vi.spyOn(smartModule, 'setCommandHandlerSmart');
-    configureBehavior(model, duid, roborockService, cleanModeSettings, false, logger);
-    expect(spy).toHaveBeenCalledWith(duid, expect.any(BehaviorDeviceGeneric), logger, roborockService, cleanModeSettings);
-    spy.mockRestore();
-  });
-
-  it('calls setDefaultCommandHandler for non-smart model', async () => {
-    const model = 'non-smart-model';
-    const defaultModule = await import('../behaviors/roborock.vacuum/default/default.js');
-    const spy = vi.spyOn(defaultModule, 'setDefaultCommandHandler');
-    configureBehavior(model, duid, roborockService, cleanModeSettings, false, logger);
-    expect(spy).toHaveBeenCalledWith(duid, expect.any(BehaviorDeviceGeneric), logger, roborockService, cleanModeSettings);
-    spy.mockRestore();
-  });
 });

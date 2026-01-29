@@ -38,14 +38,14 @@ describe('MessageSerializer', () => {
     ctx.registerDevice('duid-ok', 'lk-secret', '1.0', 77);
 
     // mock the factory methods to return controlled builders/processors
-    const mbf = await import('../../../roborockCommunication/helper/messageBodyBuilderFactory.js');
-    const mpf = await import('../../../roborockCommunication/helper/messageProcessorFactory.js');
+    const mbf = await import('../../../roborockCommunication/protocol/builders/messageBodyBuilderFactory.js');
+    const mpf = await import('../../../roborockCommunication/protocol/serializers/messageSerializerFactory.js');
 
     vi.spyOn(mbf.MessageBodyBuilderFactory.prototype, 'getMessageBodyBuilder').mockReturnValue({
       buildPayload: (_req: any, _ctx: any) => Buffer.from([1, 2, 3]),
     } as any);
 
-    vi.spyOn(mpf.MessageProcessorFactory.prototype, 'getMessageProcessor').mockReturnValue({
+    vi.spyOn(mpf.MessageSerializerFactory.prototype, 'getMessageSerializer').mockReturnValue({
       encode: (_payload: any, _localKey: any, _timestamp: any, _seq: any, _nonce: any, _connectNonce: any, _ackNonce: any) => Buffer.from([9, 8, 7]),
     } as any);
 

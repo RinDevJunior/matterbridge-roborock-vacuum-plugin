@@ -1,7 +1,8 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { DeviceRegistry } from '../../platform/deviceRegistry.js';
-import type { Device } from '../../roborockCommunication/models/index.js';
+import { DeviceModel, type Device } from '../../roborockCommunication/models/index.js';
 import type { RoborockVacuumCleaner } from '../../types/roborockVacuumCleaner.js';
+import { DeviceCategory } from '../../roborockCommunication/models/deviceCategory.js';
 
 function createMockDevice(serialNumber: string): Device {
   return {
@@ -24,10 +25,11 @@ function createMockDevice(serialNumber: string): Device {
       id: `id-${serialNumber}`,
       firmwareVersion: '1.0.0',
       serialNumber,
-      model: 'test-model' as any,
-      category: 'vacuum',
+      model: DeviceModel.Q7_MAX,
+      category: DeviceCategory.VacuumCleaner,
       batteryLevel: 100,
     },
+    store: {} as any,
   } as Device;
 }
 

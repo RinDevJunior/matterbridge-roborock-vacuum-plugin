@@ -20,6 +20,8 @@ describe('ConnectionService', () => {
     name: 'Test Vacuum',
     localKey: 'test-local-key',
     pv: '1.0',
+    data: { model: 'roborock.vacuum.a187' },
+    store: { pv: '1.0', model: 'roborock.vacuum.a187' },
   } as Device;
 
   const mockUserData: UserData = {
@@ -87,7 +89,7 @@ describe('ConnectionService', () => {
   function createMockMessageRoutingService() {
     return {
       registerMessageProcessor: vi.fn(),
-      setMqttAlwaysOn: vi.fn(),
+      registerMessageDispatcher: vi.fn(),
     } satisfies Partial<MessageRoutingService>;
   }
 
@@ -283,26 +285,33 @@ describe('ConnectionService additional coverage', () => {
   let mockClientRouter: any;
   let mockLocalClient: any;
   let mockMessageRoutingService: any;
-  const mockDevice: Device = { duid: 'test-duid-123', name: 'Test Vacuum', localKey: 'test-local-key', pv: '1.0' } as Device;
+  const mockDevice: Device = {
+    duid: 'test-duid-123',
+    name: 'Test Vacuum',
+    localKey: 'test-local-key',
+    pv: '1.0',
+    store: { pv: '1.0', model: 'roborock.vacuum.a187' },
+    data: { model: 'roborock.vacuum.a187' },
+  } as unknown as Device;
 
   beforeEach(() => {
     mockLogger = { debug: vi.fn(), notice: vi.fn(), warn: vi.fn(), error: vi.fn(), info: vi.fn() };
     mockClientRouter = { registerClient: vi.fn(), isConnected: vi.fn().mockReturnValue(true), connect: vi.fn(), registerMessageListener: vi.fn() };
     mockLocalClient = { connect: vi.fn(), isConnected: vi.fn().mockReturnValue(true), disconnect: vi.fn() };
     mockClientManager = { get: vi.fn().mockReturnValue(mockClientRouter) };
-    mockMessageRoutingService = { registerMessageProcessor: vi.fn(), setMqttAlwaysOn: vi.fn() };
+    mockMessageRoutingService = { registerMessageProcessor: vi.fn(), registerMessageDispatcher: vi.fn() };
     service = new ConnectionService(mockClientManager, mockLogger, mockMessageRoutingService);
   });
 
   it('should handle B01 protocol and UDP client setup', async () => {
-    const device = { ...mockDevice, pv: 'B01', duid: 'b01-duid', deviceStatus: { 1001: { 101: { ipAddress: '1.2.3.4' } } } } as any;
+    const device = { ...mockDevice, data: { model: 'roborock.vacuum.ss1' }, pv: 'B01', duid: 'b01-duid', deviceStatus: { 1001: { 101: { ipAddress: '1.2.3.4' } } } } as any;
     service.clientRouter = mockClientRouter;
     const result = await service.initializeMessageClientForLocal(device);
     expect(result).toBe(true);
   });
 
   it('should fallback to UDP broadcast if setupLocalClient fails', async () => {
-    const device = { ...mockDevice, pv: 'B01', duid: 'b01-duid', deviceStatus: { 1001: { 101: { ipAddress: '1.2.3.4' } } } } as any;
+    const device = { ...mockDevice, data: { model: 'roborock.vacuum.ss2' }, pv: 'B01', duid: 'b01-duid', deviceStatus: { 1001: { 101: { ipAddress: '1.2.3.4' } } } } as any;
     service.clientRouter = mockClientRouter;
     const result = await service.initializeMessageClientForLocal(device);
     expect(result).toBe(true);

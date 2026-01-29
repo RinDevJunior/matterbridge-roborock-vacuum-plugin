@@ -1,178 +1,139 @@
 # Claude History
 
-## 2026-01-23
+## 2026-01-26
 
-### Phase 1: Naming & Folder Cleanup
+### Room/Map Models Refactoring Plan
 
-- Created `models/` and `enums/` folders in roborockCommunication
-- Copied files from `Zmodel/` → `models/` and `Zenum/` → `enums/`
-- Created migration.md, to_do.md, claude_history.md
+- Analyzed current room/map model structure across codebase
+- Identified issues:
+  - 4 duplicate room representations (Room, RoomEntity, RoomInformation, RoomEntry)
+  - 3 duplicate room-with-map-context models (MapRoom, RoomSpec, RoomMapEntry)
+  - 2 duplicate MapInfo types (interface vs class)
+  - Helper functions in `src/share/helper.ts` that should be class methods
+  - Models scattered across `src/core/domain/entities/`, `src/model/`, and `src/roborockCommunication/models/`
+  - No clear separation between API responses and application models
+- Created comprehensive refactoring plan:
+  - **API DTOs**: `src/roborockCommunication/models/home/` with `Dto` suffix (RoomDto, MapRoomDto, etc.)
+  - **Application models**: `src/core/application/models/` with clean names (RoomMapping, MapRoom, MapInfo, RoomMap)
+  - **Mapper layer**: `HomeModelMapper` to transform DTOs → Application models
+  - **Data flow**: API → DTO → Mapper → Application Model
+  - Convert helper functions to static/instance methods on classes
+  - Remove duplicates and create clear separation of concerns
+- Documentation:
+  - Created `docs/refactor_room.md` with 6-phase refactoring plan
+  - Added data flow architecture diagram showing API → DTO → Mapper → App Model
+  - Updated `docs/to_do.md` with new refactoring tasks
+- Benefits:
+  - Single source of truth for each model type
+  - Clear naming convention: `*Dto` suffix for API models, clean names for application models
+  - Separation of concerns: API changes only affect DTOs/mappers, business logic only in app models
+  - Better encapsulation and testability
+  - Improved discoverability through logical grouping
+- Example transformation in `getRoomMappings()`:
+  - API response (`number[][]`) → `MapRoomDto[]` → `RoomMapping[]` → `RoomMap`
+  - Each layer has single responsibility
 
-### Phase 2: Platform Layer Extraction
+### Room/Map Models Refactoring - Phase 1: API DTOs
 
-- Created `platform/` folder with:
-  - `deviceRegistry.ts` - Device/robot storage with register/get methods
-  - `platformConfig.ts` - Config validation and getters
-  - `platformLifecycle.ts` - onStart/onConfigure/onShutdown handlers
-  - `platformState.ts` - Startup completion tracking
-- Wired `module.updated.ts` to use platform classes
+- Created `src/roborockCommunication/models/home/` directory for API DTOs
+- Created API DTOs with `Dto` suffix:
+  - `RoomDto.ts` - Base room from home data with id and name
+  - `MapRoomDto.ts` - Room with map context (id, globalId, iot_name_id, tag, displayName, mapId)
+  - `MapDataDto.ts` - Map information with MapBackupDto interface
+  - `MultipleMapDto.ts` - Container for multiple maps
+- Created `home/index.ts` barrel export for all DTOs
+- Updated `src/roborockCommunication/models/index.ts` to re-export home DTOs
+- Note: Mapper layer (`HomeModelMapper`) deferred to Phase 2 since it depends on application models
+- Type errors present from previous branch work; will be addressed in Phase 5 (test updates)
 
-### Phase 3: Communication Layer Reorganization
+### Room/Map Models Refactoring - Phase 2: Application Models
 
-- Created new folder structure:
-  - `api/` - REST API clients (authClient.ts, iotClient.ts)
-  - `mqtt/` - MQTT communication (mqttClient.ts, messageProcessor.ts)
-  - `local/` - Local network (localClient.ts, udpClient.ts)
-  - `protocol/` - builders/, serializers/, deserializers/
-  - `routing/` - clientRouter.ts, listeners/
+- Created `src/core/application/models/` directory for application models
+- Created application models with clean names (no suffix):
+  - `RoomMapping.ts` - Room with local/global ID mapping (id, globalId, iot_name_id, tag, mapId, displayName)
+  - `MapRoom.ts` - Room with full map context, includes `fromDto()` static factory method
+  - `MapInfo.ts` - Aggregates and processes map information (maps, allRooms, getById, getByName methods)
+  - `RoomMap.ts` - Refactored from `src/model/`, now uses `RoomMapping[]` instead of `MapRoom[]` and `Room[]`
+  - `RoomIndexMap.ts` - Moved from `src/model/`, updated import path for MapInfo from getSupportedAreas
+- Created `application/models/index.ts` barrel export
+- Created `src/roborockCommunication/models/home/mappers.ts` with `HomeModelMapper` class:
+  - `toRoomMapping()` - Maps MapRoomDto + RoomDto[] to RoomMapping
+  - `rawArrayToMapRoomDto()` - Maps raw number[][] from API to MapRoomDto
+  - `toMapInfo()` - Maps MultipleMapDto to MapInfo
+- Updated `home/index.ts` to export mappers
+- Key changes in RoomMap refactoring:
+  - Removed `RoomMapEntry` interface (replaced by `RoomMapping`)
+  - Removed `MapInfo` interface (now exists as application model class)
+  - Introduced `MapReference` interface for map_info parameter
+  - Simplified constructor to accept only `RoomMapping[]`
+  - Updated `getRooms()` to return `RoomMapping[]`
+- Type errors expected from previous branch work; will be fixed in Phase 3 (dispatchers) and Phase 5 (tests)
 
-### Phase 4: Domain & Ports Introduction
+### Room/Map Models Refactoring - Phase 3: Dispatcher Refactoring
 
-- Created `core/` folder with:
-  - `domain/entities/` - Device.ts, Home.ts, Room.ts
-  - `domain/value-objects/` - DeviceId.ts, CleanMode.ts
-  - `ports/` - IDeviceGateway.ts, IAuthGateway.ts, IMessageBroker.ts
-  - `ServiceContainer.ts` - Port adapter DI container
-- Created `roborockCommunication/adapters/`:
-  - `RoborockAuthGateway.ts` - Implements IAuthGateway
-  - `RoborockDeviceGateway.ts` - Implements IDeviceGateway
-  - `RoborockMessageBroker.ts` - Implements IMessageBroker
-- Migrated AuthenticationService to use IAuthGateway
-- Wired core/ServiceContainer into services/serviceContainer
+- Updated `src/roborockCommunication/protocol/dispatcher/abstractMessageDispatcher.ts`:
+  - Changed `getRoomMappings()` signature from `rooms: Room[]` to `rooms: RoomDto[]`
+  - Updated import from `src/model/RoomMap.js` to `src/core/application/models/index.js`
+- Updated `src/roborockCommunication/protocol/dispatcher/V01MessageDispatcher.ts`:
+  - Refactored `getRoomMappings()` to use DTO → Mapper → Application Model pattern:
+    - Transform API response `number[][]` → `MapRoomDto[]` using `HomeModelMapper.rawArrayToMapRoomDto()`
+    - Transform `MapRoomDto[]` → `RoomMapping[]` using `HomeModelMapper.toRoomMapping()`
+    - Create `RoomMap` from `RoomMapping[]` (single parameter constructor)
+  - Updated imports: replaced `Room, MapRoom, RoomSpec` with `RoomDto`, replaced old RoomMap import
+  - Removed direct use of `decodeComponent` (now handled by mapper)
+  - Simplified from three chained `.map()` calls to two clean transformation steps
+- Updated `src/roborockCommunication/protocol/dispatcher/Q7MessageDispatcher.ts`:
+  - Changed `getRoomMappings()` parameter from `rooms: Room[]` to `rooms: RoomDto[]`
+  - Updated `RoomMap` constructor call to single parameter (empty array for TODO implementation)
+  - Updated imports to use RoomDto and new RoomMap location
+- Updated `src/roborockCommunication/protocol/dispatcher/Q10MessageDispatcher.ts`:
+  - Changed `getRoomMappings()` parameter from `rooms: Room[]` to `rooms: RoomDto[]`
+  - Updated `RoomMap` constructor call to single parameter (empty array for TODO implementation)
+  - Updated imports to use RoomDto and new RoomMap location
+- Updated service layer to propagate RoomDto type:
+  - `src/services/messageRoutingService.ts` - Updated method signature and imports
+  - `src/services/areaManagementService.ts` - Updated method signature and imports
+  - `src/services/roborockService.ts` - Updated method signature and imports
+- Established complete data flow: **API → DTO → Mapper → Application Model**
+- Remaining type errors (50 errors) are expected:
+  - Old RoomMap usage in helper.ts (Phase 4 - remove helper functions)
+  - Test files using old MapInfo and RoomMap constructors (Phase 5 - update tests)
+  - getSupportedAreas.ts using private RoomMap properties (Phase 4)
 
-## 2026-01-24
+### Room/Map Models Refactoring - Phase 4: Remove Helper Functions
 
-### Migrate Device Discovery Logic
+- Added static factory methods to `src/core/application/models/RoomMap.ts`:
+  - `RoomMap.fromDevice(duid, platform)` - Get room map with caching (replaces getRoomMap)
+  - `RoomMap.fromDeviceDirect(device, platform)` - Get room map without caching (replaces getRoomMapFromDevice)
+  - Added public `rooms` getter to expose roomMappings for backwards compatibility
+- Updated call sites to use new static methods:
+  - `src/runtimes/handleLocalMessage.ts` - Changed `getRoomMap()` to `RoomMap.fromDevice()`
+  - `src/runtimes/handleCloudMessage.ts` - Changed `getRoomMapFromDevice()` to `RoomMap.fromDeviceDirect()`
+  - `src/module.ts` - Changed `getRoomMapFromDevice()` to `RoomMap.fromDeviceDirect()`
+- Removed deprecated helper functions from `src/share/helper.ts`:
+  - Deleted `getRoomMap()` function (57 lines)
+  - Deleted `getRoomMapFromDevice()` function (20 lines)
+  - Deleted `createRoomDataMap()` function (10 lines)
+  - Cleaned up unused imports (RoomMap, RoborockMatterbridgePlatform, MapRoom, debugStringify)
+- Updated `src/initialData/getSupportedAreas.ts`:
+  - Changed parameter type from `Room[]` to `RoomDto[]`
+  - Added `mapInfos: MapEntry[]` parameter for multiple map support
+  - Updated imports to use new application models from `src/core/application/models/`
+  - Changed `getSupportedMaps()` to use `MapEntry[]` instead of accessing roomMap.mapInfo
+- Updated `src/types/roborockVacuumCleaner.ts`:
+  - Changed `mapInfos` property type from `MapInfo[]` to `MapEntry[]`
+  - Updated imports to use `MapEntry` from application models
+- Reduced type errors from 50 to 39 (11 errors fixed)
+- Remaining errors (39 total) are all in test files, to be addressed in Phase 5
 
-- Migrated methods from module.ts to module.updated.ts:
-  - `startDeviceDiscovery()`, `authenticate()`, `authenticateWithPassword()`, `authenticate2FA()`
-  - `onConfigureDevice()`, `configureDevice()`, `addDevice()`
-- Build successful
+### Room/Map Models Refactoring - Type Safety Improvements
 
-### Update CODE_STRUCTURE.md
-
-- Added dependency tree view from module.ts
-- Documented new layers: platform/, core/, adapters/
-- Updated architecture patterns, data flows, design patterns
-- Updated to version 3.0
-
-## 2026-01-25
-
-### Increase Unit Test Coverage for module.ts
-
-- Created `src/tests/module.coverage.test.ts` with 16 new tests
-- Coverage improved:
-  - Statement coverage: 31.32% → 42.77%
-  - Branch coverage: 24.29% → 33.64%
-  - Function coverage: 33.33% → 50%
-- Tests added:
-  - `initializePlugin` function
-  - `onChangeLoggerLevel` method
-  - `onShutdown` method
-  - `startDeviceDiscovery` whitelist filtering, no devices, server mode disabled
-  - `onConfigureDevice` early return conditions
-  - `configureDevice` local network failure, room fetching
-  - `addDevice` validation and missing fields
-  - Experimental features configuration
-- All 941 tests passing across 136 test files
-
-### Increase Unit Test Coverage for platformLifecycle.ts
-
-- Created `src/tests/platform/platformLifecycle.test.ts` with 20 new tests
-- Coverage achieved:
-  - Statement coverage: 0% → 100%
-  - Branch coverage: 0% → 95%
-  - Function coverage: 0% → 100%
-  - Line coverage: 0% → 100%
-- Tests added:
-  - `onStart` method: successful startup, missing reason, config validation failure, device discovery failure, platform ready wait, persistence storage initialization
-  - `onConfigure` method: polling interval setup, startup not completed check, custom refresh interval, error handling (Error and non-Error exceptions), undefined platform runner
-  - `onShutdown` method: interval cleanup, state reset, missing reason, roborock service stop, device unregistration (when configured and not configured), no interval scenario
-- All 961 tests passing across 137 test files
-
-### Increase Unit Test Coverage for RoborockDeviceGateway.ts
-
-- Created `src/tests/roborockCommunication/adapters/RoborockDeviceGateway.test.ts` with 20 new tests
-- Coverage achieved:
-  - Statement coverage: 0% → 100%
-  - Branch coverage: 0% → 95%
-  - Function coverage: 0% → 100%
-  - Line coverage: 0% → 100%
-- Tests added:
-  - `constructor` method: message listener registration, battery protocol filtering, hello_response protocol handling with nonce update, status callback notifications, missing duid handling, non-ResponseMessage filtering
-  - `sendCommand` method: command sending via clientRouter, debug logging, command parameters
-  - `getStatus` method: status retrieval, error handling for undefined response, custom properties
-  - `subscribe` method: callback registration and unsubscribe function, status update notifications, multiple callbacks per device, callbacks for different devices, unsubscribe functionality, callback cleanup, error handling in callbacks
-- All 981 tests passing across 138 test files
-
-### Increase Unit Test Coverage for ServiceContainer.ts (services/)
-
-- Enhanced `src/tests/services/serviceContainer.test.ts` with 13 new tests (26 → 39 tests)
-- Coverage improved:
-  - Statement coverage: 87.03% → 98.14%
-  - Branch coverage: 85% → 95%
-  - Function coverage: 77.77% → 94.44%
-  - Line coverage: 88.46% → 100%
-- Tests added:
-  - `getPollingService` method: singleton creation and initialization
-  - `getConnectionService` method: singleton creation
-  - `synchronizeMessageClients` method: message client synchronization, error handling when ConnectionService not initialized, error handling when clientRouter undefined
-  - `getIotApi` method: undefined when not authenticated, IoT API after authentication
-  - `getMessageProcessorMap` method: map retrieval and singleton behavior
-  - `getAllServices` method: updated to include polling and connection services
-  - `destroy` method: polling service shutdown, message processor map cleanup, IoT API cleanup
-- All 994 tests passing across 138 test files
-
-### Increase Unit Test Coverage for ServiceContainer.ts (core/)
-
-- Created `src/tests/core/ServiceContainer.test.ts` with 22 new tests
-- Coverage achieved:
-  - Statement coverage: 0% → 100%
-  - Branch coverage: 0% → 100%
-  - Function coverage: 0% → 100%
-  - Line coverage: 0% → 100%
-- Tests added:
-  - `constructor` method: container creation with dependencies, authGateway immediate creation
-  - `initialize` method: clientRouter and deviceGateway creation, info logging, multiple initializations
-  - `getDeviceGateway` method: deviceGateway retrieval after initialization, error when not initialized, singleton behavior
-  - `getAuthGateway` method: authGateway retrieval without initialization, singleton behavior, availability after initialization
-  - `getClientRouter` method: clientRouter retrieval after initialization, error when not initialized, singleton behavior
-  - `dispose` method: clientRouter disconnection, info logging, handling without initialization, multiple dispose calls
-  - Integration scenarios: complete workflow (construct → initialize → get services → dispose), error handling for uninitialized services, singleton pattern verification
-- All 1016 tests passing across 139 test files
-
-### Increase Unit Test Coverage for authenticationService.ts
-
-- Enhanced `src/tests/services/authenticationService.test.ts` with 52 new tests (6 → 58 tests)
-- Coverage improved significantly with comprehensive test coverage
-- Tests added:
-  - `requestVerificationCode` method: successful code request, error handling with AuthenticationError, debug and error logging
-  - `loginWithVerificationCode` method: successful login with save, save failure handling, VerificationCodeExpiredError for expired/invalid codes, generic AuthenticationError, debug/notice/warn logging
-  - `loginWithCachedToken` method: successful token refresh, username setting on userData, TokenExpiredError for expired/invalid tokens, generic AuthenticationError, debug and notice logging
-  - `loginWithPassword` method: password authentication when no saved data, username mismatch handling, cached token usage, save failure handling, InvalidCredentialsError for invalid/incorrect/wrong credentials, generic AuthenticationError, debug and notice logging for both password and cached token paths
-  - `authenticateWithPasswordFlow` method: authentication with no cached data, cached token usage, alwaysExecuteAuthentication forcing fresh auth, notice and debug logging
-  - `authenticate2FAFlow` method: verification code authentication with save, cached token usage, username setting (undefined and empty string cases), verification code request scenarios, rate limiting enforcement, authenticateFlowState persistence, cached token expiration handling, alwaysExecuteAuthentication bypass, code trimming, comprehensive logging (notice, debug, warn, error), verification code banner display for new codes and rate-limited requests
-- All 1068 tests passing across 139 test files
-
-### Fix Unit Test Failures for roborockService.areamanagement.test.ts
-
-- Fixed `roborockService.areamanagement.test.ts` test failures
-- Root cause: Test was incorrectly initializing `AreaManagementService` directly instead of using `RoborockService` singleton pattern
-- Changes made:
-  - Removed direct instantiation of `AreaManagementService` and `MessageRoutingService`
-  - Changed to call `roborockService.setSupportedAreaIndexMap()` instead
-  - Updated test assertion from "should throw if area is invalid" to "should filter out invalid areas" to match actual implementation behavior (filters undefined room IDs rather than throwing)
-  - Removed unused imports (`AreaManagementService`, `MessageRoutingService`)
-- All 3 tests now passing in roborockService.areamanagement.test.ts
-
-### Fix Unit Test Failures for roborockService.authentication.test.ts
-
-- Fixed `roborockService.authentication.test.ts` test failures
-- Root cause: Tests were mocking the `authenticate` method being tested, bypassing the real implementation and error handling logic
-- Changes made:
-  - Injected mock `ServiceContainer` to control `AuthenticationService` behavior
-  - Mock `AuthenticationService` methods (`authenticateWithPasswordFlow`, `authenticate2FAFlow`) instead of the facade method
-  - Rewrote first test to verify successful authentication flow returns userData and shouldContinue: true
-  - Rewrote second test to verify failed authentication logs error and returns shouldContinue: false
-  - Added proper mock setup for logger (debug, error, info) and configManager (username, password, authenticationMethod)
-- All 2 tests now passing in roborockService.authentication.test.ts
+- Created `RawRoomMappingData` type for `number[][]` from API room mapping response
+- Added type to `src/roborockCommunication/models/home/mappers.ts`:
+  - `export type RawRoomMappingData = number[][]`
+- Updated `src/roborockCommunication/models/home/index.ts`:
+  - Explicit export: `export { HomeModelMapper, type RawRoomMappingData } from './mappers.js'`
+- Updated `src/roborockCommunication/protocol/dispatcher/V01MessageDispatcher.ts`:
+  - Changed `this.client.get<number[][]>(duid, request)` to `this.client.get<RawRoomMappingData>(duid, request)`
+  - Added import: `RawRoomMappingData` from `../../models/home/index.js`
+- Improved type clarity and maintainability by replacing generic array type with semantic type name

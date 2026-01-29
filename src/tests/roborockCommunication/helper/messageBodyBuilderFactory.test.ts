@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
-import { MessageBodyBuilderFactory } from '../../../roborockCommunication/helper/messageBodyBuilderFactory.js';
 import { ProtocolVersion } from '../../../roborockCommunication/enums/index.js';
 import { MessageContext, RequestMessage } from '../../../roborockCommunication/models/index.js';
+import { MessageBodyBuilderFactory } from '../../../roborockCommunication/protocol/builders/messageBodyBuilderFactory.js';
 
 const mkUser = () => ({ rriot: { k: 'test-key' } }) as any;
 

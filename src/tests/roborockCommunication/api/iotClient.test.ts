@@ -24,7 +24,7 @@ describe('RoborockIoTApi (additional)', () => {
 
     const mockApi: any = {
       get: vi.fn().mockResolvedValue({ data: { result: expected } }),
-      interceptors: { request: { use: vi.fn() } },
+      interceptors: { request: { use: vi.fn() }, response: { use: vi.fn() } },
     };
 
     vi.spyOn(axios, 'create').mockImplementation(() => mockApi);
@@ -61,7 +61,7 @@ describe('RoborockIoTApi (additional)', () => {
         if (url === 'v3/user/homes/2') return Promise.resolve({ data: { result: homeV3 } });
         return Promise.resolve({ data: {} });
       }),
-      interceptors: { request: { use: vi.fn() } },
+      interceptors: { request: { use: vi.fn() }, response: { use: vi.fn() } },
     };
 
     vi.spyOn(axios, 'create').mockImplementation(() => mockApi);
@@ -102,7 +102,7 @@ describe('RoborockIoTApi (additional)', () => {
         if (url === 'v2/user/homes/3') return Promise.resolve({ data: { result: homeV2 } });
         return Promise.resolve({ data: {} });
       }),
-      interceptors: { request: { use: vi.fn() } },
+      interceptors: { request: { use: vi.fn() }, response: { use: vi.fn() } },
     };
 
     vi.spyOn(axios, 'create').mockImplementation(() => mockApi);

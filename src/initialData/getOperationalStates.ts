@@ -1,7 +1,7 @@
 import { RvcOperationalState } from 'matterbridge/matter/clusters';
-import { getDefaultOperationalStates } from '../behaviors/roborock.vacuum/default/initialData.js';
 import { VacuumErrorCode } from '../roborockCommunication/enums/index.js';
 import { DockingStationStatus, DockingStationStatusType, hasDockingStationError } from '../model/DockingStationStatus.js';
+import { getDefaultOperationalStates } from '../behaviors/roborock.vacuum/core/initialData.js';
 
 /**
  * Get supported operational states for the vacuum.

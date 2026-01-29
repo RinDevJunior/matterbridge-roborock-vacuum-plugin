@@ -1,6 +1,6 @@
+import { RoomEntity } from '../../core/domain/entities/Room.js';
 import { Device } from './device.js';
 import { Product } from './product.js';
-import { Room } from './room.js';
 
 export interface Home {
   id: number;
@@ -9,5 +9,5 @@ export interface Home {
   products: Product[];
   devices: Device[];
   receivedDevices: Device[];
-  rooms: Room[];
+  rooms: RoomEntity[];
 }

@@ -1,6 +1,7 @@
+import { RoomEntity } from '../../core/domain/entities/Room.js';
+import { DeviceCategory } from './deviceCategory.js';
 import { DeviceModel } from './deviceModel.js';
 import { DeviceSchema } from './deviceSchema.js';
-import { Room } from './room.js';
 import { Scene } from './scene.js';
 import { UserData } from './userData.js';
 
@@ -9,15 +10,15 @@ export interface DeviceData {
   firmwareVersion: string;
   serialNumber: string;
   model: DeviceModel;
-  category: string;
+  category: DeviceCategory;
   batteryLevel: number;
 }
 
-interface DeviceInformation {
+export interface DeviceInformation {
   userData: UserData;
   localKey: string;
   pv: string;
-  model?: string;
+  model: DeviceModel;
 }
 
 export interface Device {
@@ -43,9 +44,9 @@ export interface Device {
   fv: string;
 
   deviceStatus: Record<string, unknown>;
-  rooms: Room[];
+  rooms: RoomEntity[];
   schema: DeviceSchema[];
   data: DeviceData;
-  store?: DeviceInformation;
+  store: DeviceInformation;
   scenes?: Scene[];
 }

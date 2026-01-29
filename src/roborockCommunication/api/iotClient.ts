@@ -1,20 +1,20 @@
-import axios, { AxiosInstance } from 'axios';
-import type { AxiosError } from 'axios';
+import { default as axios, AxiosInstance, AxiosError, AxiosStatic } from 'axios';
 import axiosRetry from 'axios-retry';
 import https from 'node:https';
 import crypto from 'node:crypto';
 import { AnsiLogger, debugStringify } from 'matterbridge/logger';
 import { ApiResponse, Home, UserData, Scene } from '../models/index.js';
+import * as AxiosLogger from 'axios-logger';
 
 export class RoborockIoTApi {
   logger: AnsiLogger;
   private readonly api: AxiosInstance;
   private readonly vacuumNeedAPIV3 = ['roborock.vacuum.ss07'];
 
-  constructor(userdata: UserData, logger: AnsiLogger) {
+  constructor(userdata: UserData, logger: AnsiLogger, axiosFactory: AxiosStatic = axios) {
     this.logger = logger;
 
-    this.api = axios.create({ baseURL: userdata.rriot.r.a, timeout: 10000, maxRedirects: 5, httpsAgent: new https.Agent({ keepAlive: true }) });
+    this.api = axiosFactory.create({ baseURL: userdata.rriot.r.a, timeout: 10000, maxRedirects: 5, httpsAgent: new https.Agent({ keepAlive: true }) });
 
     // Retry transient network errors (including ECONNRESET) with exponential backoff
     try {
@@ -22,12 +22,15 @@ export class RoborockIoTApi {
         retries: 3,
         retryDelay: axiosRetry.exponentialDelay,
         retryCondition: (error: unknown) => {
-          const errTyped = error as { code?: string; message?: string } | AxiosError;
-          const isNetwork = axiosRetry.isNetworkOrIdempotentRequestError(errTyped as unknown as Error);
-          const code = (errTyped as { code?: string })?.code;
+          const errTyped = error as AxiosError;
+          const isNetwork = axiosRetry.isNetworkOrIdempotentRequestError(errTyped);
+          const code = errTyped?.code;
           const isEconnreset = code === 'ECONNRESET';
-          const isTimedOut = code === 'ETIMEDOUT' || code === 'ECONNABORTED' || /timeout/i.test((errTyped as { message?: string })?.message ?? '');
+          const isTimedOut = code === 'ETIMEDOUT' || code === 'ECONNABORTED' || /timeout/i.test(errTyped?.message ?? '');
           return Boolean(isNetwork || isEconnreset || isTimedOut);
+        },
+        onRetry: (retryCount: number, error: unknown, _requestConfig: unknown) => {
+          this.logger.warn(`Retrying request, attempt #${retryCount} due to error: ${error ? debugStringify(error) : 'unknown'}`);
         },
       });
     } catch (err: unknown) {
@@ -51,6 +54,33 @@ export class RoborockIoTApi {
       }
       return config;
     });
+
+    this.api.interceptors.request.use((request) => {
+      return AxiosLogger.requestLogger(request, {
+        prefixText: 'Roborock IoT API',
+        dateFormat: 'HH:MM:ss',
+        headers: true,
+        data: true,
+        method: true,
+        url: true,
+        params: true,
+        logger: this.logger.debug.bind(this.logger),
+      });
+    }, AxiosLogger.errorLogger);
+
+    this.api.interceptors.response.use((response) => {
+      AxiosLogger.responseLogger(response, {
+        prefixText: 'Roborock IoT API',
+        dateFormat: 'HH:MM:ss',
+        headers: true,
+        data: true,
+        status: true,
+        statusText: true,
+        params: true,
+        logger: this.logger.debug.bind(this.logger),
+      });
+      return response;
+    }, AxiosLogger.errorLogger);
   }
 
   public async getHomeWithProducts(homeId: number): Promise<Home | undefined> {
