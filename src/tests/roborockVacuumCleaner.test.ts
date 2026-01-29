@@ -116,7 +116,6 @@ describe('RoborockVacuumCleaner', () => {
     const dev = { ...device, data: { model: 'roborock.s7', firmwareVersion: '2.0.0' } };
     const result = (RoborockVacuumCleaner as any).initializeDeviceConfiguration(dev, roomMap, [{ areaId: 1 }], expFeature, expLogger, []);
     expect(result.cleanModes).toBeDefined();
-    expect(result.supportedRunModes).toBeDefined();
     expect(result.supportedAreas).toBeDefined();
     expect(result.supportedMaps).toBeDefined();
     expect(result.supportedAreaAndRoutines).toBeDefined();
@@ -132,7 +131,6 @@ describe('RoborockVacuumCleaner', () => {
     };
     const result = (RoborockVacuumCleaner as any).initializeDeviceConfiguration(device, roomMap, [], configManager, minLogger, []);
     expect(result.cleanModes).toBeDefined();
-    expect(result.supportedRunModes).toBeDefined();
     expect(result.supportedAreas).toBeDefined();
     expect(result.supportedMaps).toBeDefined();
     expect(result.supportedAreaAndRoutines).toBeDefined();

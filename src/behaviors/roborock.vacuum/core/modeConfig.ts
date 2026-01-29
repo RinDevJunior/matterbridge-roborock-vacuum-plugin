@@ -51,7 +51,12 @@ export type CleanModeLabel =
   | CleanModeDisplayLabel.VacuumQuick
   | CleanModeDisplayLabel.GoVacation;
 
-export const CleanModeLabelInfo: Record<CleanModeLabel, { mode: number; label: CleanModeLabel }> = {
+interface CleanModeLabelInfoStruct {
+  label: CleanModeLabel;
+  mode: number;
+}
+
+export const CleanModeLabelInfo: Record<CleanModeLabel, CleanModeLabelInfoStruct> = {
   [CleanModeDisplayLabel.SmartPlan]: { mode: 4, label: CleanModeDisplayLabel.SmartPlan },
   [CleanModeDisplayLabel.MopAndVacuumDefault]: { mode: 5, label: CleanModeDisplayLabel.MopAndVacuumDefault },
   [CleanModeDisplayLabel.MopAndVacuumQuick]: { mode: 6, label: CleanModeDisplayLabel.MopAndVacuumQuick },

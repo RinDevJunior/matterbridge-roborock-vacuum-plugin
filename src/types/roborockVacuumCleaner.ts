@@ -1,7 +1,7 @@
 import { RoboticVacuumCleaner } from 'matterbridge/devices';
 import { CommandHandlerData, MatterbridgeEndpointCommands } from 'matterbridge';
 import { RoomMap, MapEntry } from '../core/application/models/index.js';
-import { getOperationalStates, getSupportedAreas, getSupportedCleanModes, getSupportedRunModes } from '../initialData/index.js';
+import { getOperationalStates, getSupportedAreas, getSupportedCleanModes } from '../initialData/index.js';
 import { AnsiLogger, debugStringify } from 'matterbridge/logger';
 import { BehaviorFactoryResult } from '../share/behaviorFactory.js';
 import { ModeBase, RvcOperationalState, ServiceArea } from 'matterbridge/matter/clusters';
@@ -9,6 +9,7 @@ import { CommandNames } from '../behaviors/BehaviorDeviceGeneric.js';
 import { DockingStationStatus } from '../model/DockingStationStatus.js';
 import { Device } from '../roborockCommunication/models/index.js';
 import { PlatformConfigManager } from '../platform/platformConfig.js';
+import { RunModeConfigs, RunModeDisplayLabel, RunModeLabelInfo } from '../behaviors/roborock.vacuum/core/initialData.js';
 
 interface IdentifyCommandRequest {
   identifyTime?: number;
@@ -31,9 +32,9 @@ export class RoborockVacuumCleaner extends RoboticVacuumCleaner {
     super(
       deviceConfig.deviceName,
       device.duid,
-      deviceConfig.bridgeMode, // hardcode to 'server' or 'matter'
-      deviceConfig.supportedRunModes[0].mode,
-      deviceConfig.supportedRunModes,
+      deviceConfig.bridgeMode,
+      RunModeConfigs[0].mode,
+      RunModeConfigs,
       deviceConfig.cleanModes[0].mode,
       deviceConfig.cleanModes,
       undefined,
@@ -52,7 +53,6 @@ export class RoborockVacuumCleaner extends RoboticVacuumCleaner {
       forceRunAtDefault: ${configManager.forceRunAtDefault}
       bridgeMode: ${deviceConfig.bridgeMode},
       Supported Clean Modes: ${debugStringify(deviceConfig.cleanModes)},
-      Supported Run Modes: ${debugStringify(deviceConfig.supportedRunModes)},
       Supported Areas: ${debugStringify(deviceConfig.supportedAreas)},
       Supported Maps: ${debugStringify(deviceConfig.supportedMaps)}
       Supported Areas and Routines: ${debugStringify(deviceConfig.supportedAreaAndRoutines)},
@@ -122,7 +122,6 @@ export class RoborockVacuumCleaner extends RoboticVacuumCleaner {
     mapInfos: MapEntry[],
   ) {
     const cleanModes = getSupportedCleanModes(device.data.model, configManager);
-    const supportedRunModes = getSupportedRunModes();
     const operationalState = getOperationalStates();
 
     const { supportedAreas, supportedMaps } = getSupportedAreas(device.rooms, roomMap, configManager.isMultipleMapEnabled, log, mapInfos);
@@ -135,7 +134,6 @@ export class RoborockVacuumCleaner extends RoboticVacuumCleaner {
       deviceName,
       bridgeMode,
       cleanModes,
-      supportedRunModes,
       supportedAreas,
       supportedMaps,
       supportedAreaAndRoutines,
