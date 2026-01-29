@@ -1,6 +1,6 @@
 import { MopRoute, MopWaterFlow, VacuumSuctionPower } from '../enums/index.js';
 import { CleanModeSetting } from './CleanModeSetting.js';
-import { CleanModeLabelInfo, CleanModeDisplayLabel } from './modeConfig.js';
+import { CleanModeLabelInfo, CleanModeDisplayLabel } from './cleanModeConfig.js';
 
 export const DefaultCleanSetting: Record<number, CleanModeSetting> = {
   [CleanModeLabelInfo[CleanModeDisplayLabel.MopAndVacuumDefault].mode]: new CleanModeSetting(VacuumSuctionPower.Balanced, MopWaterFlow.Medium, 0, MopRoute.Standard), // 'Vac & Mop Default'

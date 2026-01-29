@@ -5,7 +5,7 @@ import { MopRoute, MopWaterFlow, VacuumSuctionPower } from '../enums/index.js';
 /**
  * Complete mode configuration including display name, settings, and Matter tags.
  */
-export interface ModeConfig {
+export interface CleanModeConfig {
   mode: number;
   label: string;
   setting: CleanModeSetting;
@@ -79,7 +79,7 @@ export const CleanModeLabelInfo: Record<CleanModeLabel, CleanModeLabelInfoStruct
 /**
  * Base clean mode configurations shared across all device types.
  */
-export const baseCleanModeConfigs: ModeConfig[] = [
+export const baseCleanModeConfigs: CleanModeConfig[] = [
   {
     label: CleanModeLabelInfo[CleanModeDisplayLabel.MopAndVacuumDefault].label,
     mode: CleanModeLabelInfo[CleanModeDisplayLabel.MopAndVacuumDefault].mode,
@@ -175,7 +175,7 @@ export const baseCleanModeConfigs: ModeConfig[] = [
 /**
  * Smart device-specific mode configurations.
  */
-export const smartCleanModeConfigs: ModeConfig[] = [
+export const smartCleanModeConfigs: CleanModeConfig[] = [
   {
     label: CleanModeLabelInfo[CleanModeDisplayLabel.SmartPlan].label,
     mode: CleanModeLabelInfo[CleanModeDisplayLabel.SmartPlan].mode,
@@ -188,15 +188,15 @@ export const smartCleanModeConfigs: ModeConfig[] = [
 /**
  * Helper functions to extract different views of the configuration.
  */
-export function getModeDisplayMap(configs: ModeConfig[]): Record<number, string> {
+export function getModeDisplayMap(configs: CleanModeConfig[]): Record<number, string> {
   return Object.fromEntries(configs.map((c) => [c.mode, c.label]));
 }
 
-export function getModeSettingsMap(configs: ModeConfig[]): Record<number, CleanModeSetting> {
+export function getModeSettingsMap(configs: CleanModeConfig[]): Record<number, CleanModeSetting> {
   return Object.fromEntries(configs.map((c) => [c.mode, c.setting]));
 }
 
-export function getModeOptions(configs: ModeConfig[]): RvcCleanMode.ModeOption[] {
+export function getModeOptions(configs: CleanModeConfig[]): RvcCleanMode.ModeOption[] {
   return configs.map((c) => ({
     mode: c.mode,
     label: c.label,

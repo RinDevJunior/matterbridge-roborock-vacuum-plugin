@@ -23,12 +23,6 @@ export interface DeviceEndpointCommands extends DeviceCommands {
   stop: () => MaybePromise;
 }
 
-export const RvcRunMode: Record<number, string> = {
-  [1]: 'Idle', // DO NOT HANDLE HERE,
-  [2]: 'Cleaning',
-  [3]: 'Mapping',
-};
-
 export type DeviceCommandHandler = (...args: never[]) => MaybePromise;
 
 export type DeviceCommands = Record<string, DeviceCommandHandler>;

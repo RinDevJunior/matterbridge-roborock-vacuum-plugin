@@ -8,11 +8,13 @@ import { SmartPlanHandler } from '../handlers/smartPlanHandler.js';
 import { CleanModeSetting } from './CleanModeSetting.js';
 import { DefaultRvcCleanMode, SmartRvcCleanMode } from './cleanMode.js';
 import { DefaultCleanSetting, SmartCleanSetting } from './cleanSetting.js';
+import { baseRunModeConfigs, RunModeConfig } from './runModeConfig.js';
 
 export interface BehaviorConfig {
   name: string;
   cleanModes: Record<number, string>;
   cleanSettings: Record<number, CleanModeSetting>;
+  runModeConfigs: RunModeConfig[];
   registry: ModeHandlerRegistry;
 }
 
@@ -28,6 +30,7 @@ export function createDefaultBehaviorConfig(): BehaviorConfig {
     name: 'DefaultBehavior',
     cleanModes: DefaultRvcCleanMode,
     cleanSettings: DefaultCleanSetting,
+    runModeConfigs: baseRunModeConfigs,
     registry,
   };
 }
@@ -45,6 +48,7 @@ export function createSmartBehaviorConfig(): BehaviorConfig {
     name: 'BehaviorSmart',
     cleanModes: SmartRvcCleanMode,
     cleanSettings: SmartCleanSetting,
+    runModeConfigs: baseRunModeConfigs,
     registry,
   };
 }

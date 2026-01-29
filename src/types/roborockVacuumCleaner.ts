@@ -9,7 +9,7 @@ import { CommandNames } from '../behaviors/BehaviorDeviceGeneric.js';
 import { DockingStationStatus } from '../model/DockingStationStatus.js';
 import { Device } from '../roborockCommunication/models/index.js';
 import { PlatformConfigManager } from '../platform/platformConfig.js';
-import { RunModeConfigs, RunModeDisplayLabel, RunModeLabelInfo } from '../behaviors/roborock.vacuum/core/initialData.js';
+import { baseRunModeConfigs, getRunModeOptions } from '../behaviors/roborock.vacuum/core/runModeConfig.js';
 
 interface IdentifyCommandRequest {
   identifyTime?: number;
@@ -33,8 +33,8 @@ export class RoborockVacuumCleaner extends RoboticVacuumCleaner {
       deviceConfig.deviceName,
       device.duid,
       deviceConfig.bridgeMode,
-      RunModeConfigs[0].mode,
-      RunModeConfigs,
+      deviceConfig.runModeConfigs[0].mode,
+      deviceConfig.runModeConfigs,
       deviceConfig.cleanModes[0].mode,
       deviceConfig.cleanModes,
       undefined,
@@ -126,6 +126,7 @@ export class RoborockVacuumCleaner extends RoboticVacuumCleaner {
 
     const { supportedAreas, supportedMaps } = getSupportedAreas(device.rooms, roomMap, configManager.isMultipleMapEnabled, log, mapInfos);
     const supportedAreaAndRoutines = [...supportedAreas, ...routineAsRoom];
+    const runModeConfigs = getRunModeOptions(baseRunModeConfigs);
     const deviceName = `${device.name}-${device.duid}`.replace(/\s+/g, '');
 
     const bridgeMode: 'server' | 'matter' | undefined = configManager.isServerModeEnabled ? 'server' : 'matter';
@@ -134,6 +135,7 @@ export class RoborockVacuumCleaner extends RoboticVacuumCleaner {
       deviceName,
       bridgeMode,
       cleanModes,
+      runModeConfigs,
       supportedAreas,
       supportedMaps,
       supportedAreaAndRoutines,

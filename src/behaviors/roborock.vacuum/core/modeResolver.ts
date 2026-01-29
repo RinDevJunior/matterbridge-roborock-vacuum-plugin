@@ -1,6 +1,6 @@
 import { MopWaterFlow, VacuumSuctionPower } from '../enums/index.js';
 import { CleanModeSetting } from './CleanModeSetting.js';
-import { CleanModeDisplayLabel, CleanModeLabelInfo, ModeConfig } from './modeConfig.js';
+import { CleanModeDisplayLabel, CleanModeLabelInfo, CleanModeConfig } from './cleanModeConfig.js';
 
 enum BehaviorType {
   Default = 'default',
@@ -16,7 +16,7 @@ export class ModeResolver {
   private readonly customCheckFn?: (setting: CleanModeSetting) => number | undefined;
 
   constructor(
-    configs: ModeConfig[],
+    configs: CleanModeConfig[],
     customCheckFn?: (setting: CleanModeSetting) => number | undefined,
     public readonly behavior = BehaviorType.Default,
   ) {
@@ -63,7 +63,7 @@ export class ModeResolver {
 /**
  * Create resolver for default devices.
  */
-export function createDefaultModeResolver(configs: ModeConfig[]): ModeResolver {
+export function createDefaultModeResolver(configs: CleanModeConfig[]): ModeResolver {
   return new ModeResolver(
     configs,
     (setting) => {
@@ -79,7 +79,7 @@ export function createDefaultModeResolver(configs: ModeConfig[]): ModeResolver {
 /**
  * Create resolver for smart devices.
  */
-export function createSmartModeResolver(configs: ModeConfig[]): ModeResolver {
+export function createSmartModeResolver(configs: CleanModeConfig[]): ModeResolver {
   return new ModeResolver(
     configs,
     (setting) => {

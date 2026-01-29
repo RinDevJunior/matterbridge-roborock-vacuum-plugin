@@ -1,4 +1,4 @@
-import { CleanModeLabelInfo, CleanModeDisplayLabel } from './modeConfig.js';
+import { CleanModeLabelInfo, CleanModeDisplayLabel } from './cleanModeConfig.js';
 
 export const DefaultRvcCleanMode: Record<number, string> = {
   [CleanModeLabelInfo[CleanModeDisplayLabel.MopAndVacuumDefault].mode]: CleanModeLabelInfo[CleanModeDisplayLabel.MopAndVacuumDefault].label,

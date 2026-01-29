@@ -1,6 +1,6 @@
 import { DeviceModel } from '../roborockCommunication/models/index.js';
 import { SMART_MODELS } from '../constants/index.js';
-import { baseCleanModeConfigs, smartCleanModeConfigs } from '../behaviors/roborock.vacuum/core/modeConfig.js';
+import { baseCleanModeConfigs, smartCleanModeConfigs } from '../behaviors/roborock.vacuum/core/cleanModeConfig.js';
 import { createDefaultModeResolver, createSmartModeResolver, ModeResolver } from '../behaviors/roborock.vacuum/core/modeResolver.js';
 
 const smartModeResolver = createSmartModeResolver(smartCleanModeConfigs);

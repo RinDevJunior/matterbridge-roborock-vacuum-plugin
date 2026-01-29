@@ -1,6 +1,6 @@
 import { debugStringify } from 'matterbridge/logger';
 import { ModeHandler, HandlerContext } from '../core/modeHandler.js';
-import { CleanModeDisplayLabel } from '../core/modeConfig.js';
+import { CleanModeDisplayLabel } from '../core/cleanModeConfig.js';
 
 export class SmartPlanHandler implements ModeHandler {
   public canHandle(_mode: number, activity: string): boolean {

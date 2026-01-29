@@ -1,5 +1,5 @@
 import { AnsiLogger } from 'matterbridge/logger';
-import { BehaviorDeviceGeneric, CommandNames, DeviceEndpointCommands, RvcRunMode } from '../behaviors/BehaviorDeviceGeneric.js';
+import { BehaviorDeviceGeneric, CommandNames, DeviceEndpointCommands } from '../behaviors/BehaviorDeviceGeneric.js';
 import { RoborockService } from '../services/roborockService.js';
 import { CleanModeSettings } from '../model/ExperimentalFeatureSetting.js';
 import { SMART_MODELS } from '../constants/index.js';
@@ -7,6 +7,7 @@ import { BehaviorConfig, createDefaultBehaviorConfig, createSmartBehaviorConfig 
 import { registerCommonCommands } from '../behaviors/roborock.vacuum/core/commonCommands.js';
 import { HandlerContext } from '../behaviors/roborock.vacuum/core/modeHandler.js';
 import { DeviceModel } from '../roborockCommunication/models/index.js';
+import { getRunModeDisplayMap } from '../behaviors/roborock.vacuum/core/runModeConfig.js';
 
 export type BehaviorFactoryResult = BehaviorDeviceGeneric<DeviceEndpointCommands>;
 const smartConfig = createSmartBehaviorConfig();
@@ -49,8 +50,9 @@ function setCommandHandler(
   cleanModeSettings: CleanModeSettings | undefined,
   config: BehaviorConfig = defaultConfig,
 ): void {
+  const runModeMap = getRunModeDisplayMap(config.runModeConfigs);
   handler.setCommandHandler(CommandNames.CHANGE_TO_MODE, async (newMode: number) => {
-    const activity = RvcRunMode[newMode] || config.cleanModes[newMode];
+    const activity = runModeMap[newMode] || config.cleanModes[newMode];
     const context: HandlerContext = {
       roborockService,
       logger,
