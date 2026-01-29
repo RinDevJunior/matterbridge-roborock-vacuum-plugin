@@ -85,162 +85,166 @@ This plugin integrates Roborock vacuum cleaners into the Matter ecosystem via Ma
 
 ## Dependency Tree
 
-This tree visualizes the dependency flow starting from `module.ts`:
+This tree visualizes the dependency flow starting from `src/module.ts` and reflects the latest code structure:
 
 ```
-module.ts (RoborockMatterbridgePlatform)
+src/module.ts (RoborockMatterbridgePlatform)
 │
-├── Platform Layer
-│   ├── PlatformConfigManager (platformConfig.ts)
-│   │   └── Validates and manages plugin configuration
-│   ├── DeviceRegistry (deviceRegistry.ts)
-│   │   └── Stores registered devices and robots
-│   ├── PlatformState (platformState.ts)
-│   │   └── Tracks startup completion state
-│   └── PlatformLifecycle (platformLifecycle.ts)
-│       ├── Uses: DeviceRegistry, PlatformConfigManager, PlatformState
-│       └── Manages: onStart, onConfigure, onShutdown
+├── Platform Layer (platform/)
+│   ├── platformConfig.ts         # Validates and manages plugin configuration
+│   ├── deviceRegistry.ts         # Stores registered devices and robots
+│   ├── platformState.ts          # Tracks platform and startup state
+│   └── platformLifecycle.ts      # Manages onStart, onConfigure, onShutdown
 │
-├── PlatformRunner (platformRunner.ts)
-│   ├── Uses: RoborockMatterbridgePlatform
-│   └── Manages: Message routing to runtime handlers
-│       ├── handleLocalMessage.ts
-│       ├── handleCloudMessage.ts
-│       └── handleHomeDataMessage.ts
+├── platformRunner.ts             # Orchestrates device updates and message routing
+│   ├── handleLocalMessage.ts
+│   ├── handleCloudMessage.ts
+│   └── handleHomeDataMessage.ts
 │
-├── ClientManager (services/clientManager.ts)
-│   └── Manages MQTT client instances
+├── services/ (Service Layer)
+│   ├── serviceContainer.ts       # Main DI container for services
+│   ├── authenticationService.ts
+│   ├── deviceManagementService.ts
+│   ├── areaManagementService.ts
+│   ├── messageRoutingService.ts
+│   ├── pollingService.ts
+│   ├── connectionService.ts
+│   └── clientManager.ts          # Manages MQTT client instances
 │
-└── RoborockService (roborockService.ts) [Facade]
-    │
-    └── ServiceContainer (services/serviceContainer.ts)
-        │
-        ├── CoreServiceContainer (core/ServiceContainer.ts)
-        │   ├── IAuthGateway ─────────► RoborockAuthGateway
-        │   │                            └── RoborockAuthenticateApi (api/authClient.ts)
-        │   └── IDeviceGateway ───────► RoborockDeviceGateway
-        │                                └── ClientRouter (routing/clientRouter.ts)
-        │
-        ├── AuthenticationService
-        │   └── Uses: IAuthGateway, LocalStorage, PlatformConfigManager
-        │
-        ├── DeviceManagementService
-        │   └── Uses: RoborockIoTApi, RoborockAuthenticateApi
-        │
-        ├── AreaManagementService
-        │   └── Uses: MessageRoutingService, ClientRouter
-        │
-        ├── MessageRoutingService
-        │   └── Uses: RoborockIoTApi, MessageProcessor
-        │
-        ├── PollingService
-        │   └── Uses: MessageRoutingService
-        │
-        └── ConnectionService
-            └── Uses: ClientManager, MessageRoutingService
-                │
-                └── ClientRouter (routing/clientRouter.ts)
-                    ├── MQTTClient (mqtt/mqttClient.ts)
-                    │   └── Cloud MQTT communication
-                    └── LocalNetworkClient (local/localClient.ts)
-                        └── Local UDP communication
+├── core/ (Core Domain Layer)
+│   ├── ServiceContainer.ts       # Port adapter DI container
+│   └── ports/
+│       ├── IDeviceGateway.ts
+│       ├── IAuthGateway.ts
+│       └── IMessageBroker.ts
+│
+├── roborockService.ts (Facade)
+│   └── Uses: services/serviceContainer.ts
+│        └── Uses: core/ServiceContainer.ts
+│            ├── IAuthGateway → adapters/RoborockAuthGateway
+│            │      └── api/authClient.ts (RoborockAuthenticateApi)
+│            └── IDeviceGateway → adapters/RoborockDeviceGateway
+│                   └── routing/clientRouter.ts (ClientRouter)
+│                        ├── mqtt/mqttClient.ts (MQTTClient)
+│                        └── local/localClient.ts (LocalNetworkClient)
+│
+├── behaviors/ (Behavior Layer)
+│   ├── BehaviorDeviceGeneric.ts
+│   └── roborock.vacuum/
+│       └── ...
+│
+└── roborockCommunication/ (Communication Layer)
+    ├── adapters/
+    ├── api/
+    ├── enums/
+    ├── helper/
+    ├── local/
+    ├── models/
+    ├── mqtt/
+    ├── protocol/
+    └── routing/
 ```
+
+**Key Relationships:**
+
+- `src/module.ts` is the entry point and wires up the platform, service, and core layers.
+- The `platform/` directory encapsulates platform-specific logic and state.
+- The `services/` directory provides business logic and orchestrates communication between platform, core, and communication layers.
+- The `core/` directory defines domain models and port interfaces, with adapters implemented in `roborockCommunication/adapters/`.
+- The `roborockService.ts` acts as a facade, exposing a unified API to the rest of the platform.
+- The `roborockCommunication/` directory contains all communication logic, including MQTT, local, and protocol-specific code.
 
 ### Detailed Service Dependencies
 
 ```
-┌─────────────────────────────────────────────────────────────────────────────┐
-│                            MODULE.TS (Entry Point)                          │
-└────────────────────────────────────┬────────────────────────────────────────┘
-                                     │
-        ┌────────────────────────────┼────────────────────────────┐
-        ▼                            ▼                            ▼
-┌───────────────────┐    ┌───────────────────┐    ┌───────────────────────────┐
-│  Platform Layer   │    │  PlatformRunner   │    │     RoborockService       │
-├───────────────────┤    ├───────────────────┤    │        (Facade)           │
-│ • ConfigManager   │    │ • updateRobot()   │    ├───────────────────────────┤
-│ • DeviceRegistry  │    │ • requestHomeData │    │ • authenticate()          │
-│ • PlatformState   │    │ • handleMessages  │    │ • listDevices()           │
-│ • Lifecycle       │    └─────────┬─────────┘    │ • initializeMessageClient │
-└─────────┬─────────┘              │              │ • startClean/pauseClean   │
-          │                        │              │ • getMapInformation       │
-          │              ┌─────────┴─────────┐    └─────────────┬─────────────┘
-          │              ▼                   ▼                  │
-          │    ┌─────────────────┐  ┌─────────────────┐         │
-          │    │ handleLocal     │  │ handleCloud     │         │
-          │    │ Message.ts      │  │ Message.ts      │         │
-          │    └─────────────────┘  └─────────────────┘         │
-          │                                                     │
-          └──────────────────────┬──────────────────────────────┘
+┌──────────────────────────────────────────────────────────────────────────────┐
+│                            MODULE.TS (Entry Point)                           │
+└─────────────────────────────────┬──────────────────────────────────----──────┘
+                                  │
+    ┌─────────────────────────────┼─────────────────────────────┐
+    ▼                             ▼                             ▼
+┌────────────────────┐    ┌────────────────────┐    ┌──────────────────────────┐
+│  Platform Layer    │    │  PlatformRunner    │    │    RoborockService       │
+├────────────────────┤    ├────────────────────┤    │        (Facade)          │
+│ • platformConfig   │    │ • updateRobot()    │    ├──────────────────────────┤
+│ • deviceRegistry   │    │ • requestHomeData  │    │ • authenticate()         │
+│ • platformState    │    │ • handleMessages   │    │ • listDevices()          │
+│ • platformLifecycle│    └─────────┬──────────┘    │ • initializeMessageClient│
+└─────┬──────----────┘              │               │ • startClean/pauseClean  │
+      │                             │               │ • getMapInformation      │
+      │                   ┌─────────┴─────────┐    └─────────────┬────────────┘
+      │                   ▼                   ▼                  │
+      │    ┌─────────────────┐  ┌─────────────────┐          │
+      │    │ handleLocal     │  │ handleCloud     │          │
+      │    │ Message.ts      │  │ Message.ts      │          │
+      │    └─────────────────┘  └─────────────────┘          │
+      │                                                      │
+      └──────────────────────┬───────────────────────────────┘
+                 ▼
+┌──────────────────────────────────────────────────────────────────────────────┐
+│                         SERVICE CONTAINER (DI)                              │
+├──────────────────────────────────────────────────────────────────────────────┤
+│                                                                              │
+│  ┌────────────────────────┐   ┌────────────────────────┐   ┌────────────────┐│
+│  │ AuthenticationService  │   │ DeviceManagementSvc    │   │ AreaManagement ││
+│  │ • 2FA, password, token │   │ • listDevices, connect │   │ • setAreas     ││
+│  │   refresh              │   │ • getHomeData          │   │ • getMapInfo   ││
+│  └─────────┬──────────────┘   └─────────┬──────────────┘   └───────┬────────┘│
+│            │                            │                           │         │
+│            ▼                            ▼                           ▼         │
+│  ┌──────────────────────┐   ┌────────────────────────┐   ┌──────────────────┐│
+│  │ core/ports/IAuthGatew│   │ roborockCommunication/ │   │ MessageRouting   ││
+│  │ ay.ts (Port)         │   │ api/iotClient.ts       │   │ Service          ││
+│  └─────────┬────────────┘   └────────────────────────┘   └─────────┬────────┘│
+│            │                                                │                │
+│            ▼                                                ▼                │
+│  ┌─────────────────────────────┐   ┌────────────────────┐   ┌──────────────┐ │
+│  │ adapters/RoborockAuthGatewa │   │ PollingService     │◄──│ ConnectionSvc│ │
+│  │ y.ts (Adapter)              │   │ • activateNotify   │   │ • initMQTT   │ │
+│  └─────────┬──────────────────┘   │ • stopPolling       │   │ • initLocal  │ │
+│            │                      └────────────────────┘   └───────┬────────┘ │
+│            ▼                                              │                │
+│  ┌─────────────────────────────┐                     ┌────▼─────────────┐ │
+│  │ api/authClient.ts           │                     │ clientManager.ts │ │
+│  │ (RoborockAuthenticateApi)   │                     └──────┬───────────┘ │
+│  └─────────────────────────────┘                            │             │
+│                                                             │             │
+└──────────────────────────────────────────────────────────────┼────────────┘
                                  ▼
-┌─────────────────────────────────────────────────────────────────────────────┐
-│                         SERVICE CONTAINER (DI)                               │
-├─────────────────────────────────────────────────────────────────────────────┤
+┌──────────────────────────────────────────────────────────────────────────────┐
+│                         COMMUNICATION LAYER                                 │
+├──────────────────────────────────────────────────────────────────────────────┤
 │                                                                              │
-│  ┌─────────────────────┐    ┌─────────────────────┐    ┌─────────────────┐  │
-│  │ AuthenticationSvc   │    │ DeviceManagementSvc │    │ AreaManagement  │  │
-│  │ • authenticate2FA   │    │ • listDevices       │    │ • setAreas      │  │
-│  │ • passwordFlow      │    │ • getHomeData       │    │ • getMapInfo    │  │
-│  │ • tokenRefresh      │    │ • connectDevice     │    │ • startScene    │  │
-│  └──────────┬──────────┘    └──────────┬──────────┘    └────────┬────────┘  │
-│             │                          │                        │           │
-│             ▼                          ▼                        ▼           │
-│  ┌─────────────────────┐    ┌─────────────────────┐    ┌─────────────────┐  │
-│  │ IAuthGateway (Port) │    │ RoborockIoTApi      │    │ MessageRouting  │  │
-│  └──────────┬──────────┘    │ (api/iotClient.ts)  │    │ Service         │  │
-│             │               └─────────────────────┘    └────────┬────────┘  │
-│             ▼                                                   │           │
-│  ┌─────────────────────┐    ┌─────────────────────┐    ┌───────▼─────────┐  │
-│  │ RoborockAuthGateway │    │ PollingService      │◄───│ ConnectionSvc   │  │
-│  │ (Adapter)           │    │ • activateNotify    │    │ • initMQTT      │  │
-│  └──────────┬──────────┘    │ • stopPolling       │    │ • initLocal     │  │
-│             │               └─────────────────────┘    └────────┬────────┘  │
-│             ▼                                                   │           │
-│  ┌─────────────────────┐                               ┌───────▼─────────┐  │
-│  │ RoborockAuthApi     │                               │ ClientManager   │  │
-│  │ (api/authClient.ts) │                               └────────┬────────┘  │
-│  └─────────────────────┘                                        │           │
-│                                                                 │           │
-└─────────────────────────────────────────────────────────────────┼───────────┘
-                                                                  ▼
-┌─────────────────────────────────────────────────────────────────────────────┐
-│                         COMMUNICATION LAYER                                  │
-├─────────────────────────────────────────────────────────────────────────────┤
-│                                                                              │
-│  ┌─────────────────────────────────────────────────────────────────────┐    │
-│  │                         ClientRouter                                 │    │
-│  │                    (routing/clientRouter.ts)                         │    │
-│  └────────────────────────────┬────────────────────────────────────────┘    │
-│                               │                                              │
-│           ┌───────────────────┼───────────────────┐                         │
-│           ▼                   ▼                   ▼                         │
-│  ┌─────────────────┐  ┌─────────────────┐  ┌─────────────────┐              │
-│  │   MQTTClient    │  │ LocalNetwork    │  │ LocalNetwork    │              │
-│  │ (mqtt/mqtt      │  │ Client          │  │ UDPClient       │              │
-│  │  Client.ts)     │  │ (local/local    │  │ (local/udp      │              │
-│  │                 │  │  Client.ts)     │  │  Client.ts)     │              │
-│  │ • Cloud MQTT    │  │ • TCP Local     │  │ • UDP Local     │              │
-│  │ • TLS encrypted │  │ • Low latency   │  │ • Discovery     │              │
-│  └────────┬────────┘  └────────┬────────┘  └────────┬────────┘              │
+│  ┌──────────────────────────────────────────────────────────────────────┐    │
+│  │                    routing/clientRouter.ts (ClientRouter)            │    │
+│  └────────────────────────────┬─────────────────────────────────────────┘    │
+│                               │                                               │
+│           ┌───────────────────┼───────────────────┐                          │
+│           ▼                   ▼                   ▼                          │
+│  ┌─────────────────┐  ┌─────────────────┐  ┌─────────────────┐               │
+│  │ mqtt/mqttClient │  │ local/localClien│  │ local/udpClient │               │
+│  │ .ts (MQTTClient)│  │ t.ts            │  │ .ts             │               │
+│  │ • Cloud MQTT    │  │ • TCP Local     │  │ • UDP Local     │               │
+│  │ • TLS encrypted │  │ • Low latency   │  │ • Discovery     │               │
+│  └────────┬────────┘  └────────┬────────┘  └────────┬────────┘               │
 │           │                    │                    │                        │
 │           └────────────────────┼────────────────────┘                        │
-│                                ▼                                             │
-│  ┌─────────────────────────────────────────────────────────────────────┐    │
-│  │                      MessageProcessor                                │    │
-│  │                   (mqtt/messageProcessor.ts)                         │    │
-│  │  • Deserialize → Validate → Route to Listeners                      │    │
-│  └─────────────────────────────────────────────────────────────────────┘    │
+│                                ▼                                              │
+│  ┌──────────────────────────────────────────────────────────────────────┐    │
+│  │                mqtt/messageProcessor.ts (MessageProcessor)           │    │
+│  │  • Deserialize → Validate → Route to Listeners                       │    │
+│  └──────────────────────────────────────────────────────────────────────┘    │
 │                                                                              │
-│  ┌─────────────────────────────────────────────────────────────────────┐    │
-│  │                     Protocol Layer                                   │    │
-│  │  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐ │    │
-│  │  │ L01Protocol │  │ A01Protocol │  │ B01Protocol │  │ V01Protocol │ │    │
-│  │  │ • Builder   │  │ • Builder   │  │ • Builder   │  │ • Builder   │ │    │
-│  │  │ • Serializer│  │ • Serializer│  │ • Serializer│  │ • Serializer│ │    │
-│  │  └─────────────┘  └─────────────┘  └─────────────┘  └─────────────┘ │    │
-│  └─────────────────────────────────────────────────────────────────────┘    │
+│  ┌──────────────────────────────────────────────────────────────────────┐    │
+│  │                        Protocol Layer                               │    │
+│  │  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐  │    │
+│  │  │ L01Protocol │  │ A01Protocol │  │ B01Protocol │  │ V01Protocol │  │    │
+│  │  │ • Builder   │  │ • Builder   │  │ • Builder   │  │ • Builder   │  │    │
+│  │  │ • Serializer│  │ • Serializer│  │ • Serializer│  │ • Serializer│  │    │
+│  │  └─────────────┘  └─────────────┘  └─────────────┘  └─────────────┘  │    │
+│  └──────────────────────────────────────────────────────────────────────┘    │
 │                                                                              │
-└─────────────────────────────────────────────────────────────────────────────┘
+└──────────────────────────────────────────────────────────────────────────────┘
 ```
 
 ---
