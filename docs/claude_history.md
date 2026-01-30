@@ -2,6 +2,20 @@
 
 ## 2026-01-30
 
+### GitHub Actions: Conditional npm Tag Publishing
+
+- **Task**: Update publish workflow to use different npm tags based on release type
+- **Changes**:
+  - Use `github.event.release.prerelease` flag instead of string matching for reliability
+  - If prerelease (e.g., `1.1.1-rc13`), publish with `--tag dev`
+  - If stable release (e.g., `1.2.3`), publish with `--tag latest`
+  - Fixed duplicate "Install dependencies" step names
+  - Consolidated to `npm ci` (removed redundant `npm install`)
+  - Separated preparation (precondition/deepClean) from installation
+- **File**: [.github/workflows/publish.yml](.github/workflows/publish.yml)
+
+## 2026-01-30
+
 ### API Refactoring: send() vs get() Pattern
 
 - **Issue**: `send()` and `get()` methods in AbstractClient were identical (both waited for responses)
