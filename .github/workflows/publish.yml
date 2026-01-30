@@ -19,10 +19,7 @@ jobs:
           registry-url: 'https://registry.npmjs.org/'
 
       - name: Prepare environment
-        run: npm run precondition && npm run deepClean
-
-      - name: Install dependencies
-        run: npm ci && npm link matterbridge
+        run: npm ci && npm run precondition && npm run deepClean && npm install && npm link matterbridge
 
       - name: Build
         run: npm run build
