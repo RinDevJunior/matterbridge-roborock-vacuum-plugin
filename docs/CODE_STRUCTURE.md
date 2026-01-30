@@ -1,7 +1,7 @@
 # Matterbridge Roborock Vacuum Plugin - Code Structure
 
 **Version:** 1.1.3-rc03
-**Last Updated:** January 24, 2026
+**Last Updated:** January 30, 2026
 **Test Coverage:** 95.74% (959+ tests passed)
 
 ---
@@ -97,12 +97,14 @@ src/module.ts (RoborockMatterbridgePlatform)
 │   └── platformLifecycle.ts      # Manages onStart, onConfigure, onShutdown
 │
 ├── platformRunner.ts             # Orchestrates device updates and message routing
-│   ├── handleLocalMessage.ts
-│   ├── handleCloudMessage.ts
-│   └── handleHomeDataMessage.ts
+│   └── uses: runtimes/
+│       ├── handleLocalMessage.ts
+│       ├── handleCloudMessage.ts
+│       └── handleHomeDataMessage.ts
 │
 ├── services/ (Service Layer)
 │   ├── serviceContainer.ts       # Main DI container for services
+│   ├── roborockService.ts        # Service facade
 │   ├── authenticationService.ts
 │   ├── deviceManagementService.ts
 │   ├── areaManagementService.ts
@@ -113,36 +115,50 @@ src/module.ts (RoborockMatterbridgePlatform)
 │
 ├── core/ (Core Domain Layer)
 │   ├── ServiceContainer.ts       # Port adapter DI container
-│   └── ports/
+│   ├── application/              # Application layer
+│   │   └── models/               # Application models (MapInfo, MapRoom, RoomMap, etc.)
+│   ├── domain/                   # Domain layer
+│   │   ├── entities/             # Domain entities (Device, Home, Room)
+│   │   └── value-objects/        # Value objects (DeviceId, CleanMode)
+│   └── ports/                    # Port interfaces
 │       ├── IDeviceGateway.ts
-│       ├── IAuthGateway.ts
-│       └── IMessageBroker.ts
+│       └── IAuthGateway.ts
 │
-├── roborockService.ts (Facade)
+├── services/roborockService.ts (Facade)
 │   └── Uses: services/serviceContainer.ts
 │        └── Uses: core/ServiceContainer.ts
-│            ├── IAuthGateway → adapters/RoborockAuthGateway
-│            │      └── api/authClient.ts (RoborockAuthenticateApi)
-│            └── IDeviceGateway → adapters/RoborockDeviceGateway
-│                   └── routing/clientRouter.ts (ClientRouter)
-│                        ├── mqtt/mqttClient.ts (MQTTClient)
-│                        └── local/localClient.ts (LocalNetworkClient)
+│            ├── IAuthGateway → roborockCommunication/adapters/RoborockAuthGateway
+│            │      └── roborockCommunication/api/authClient.ts (RoborockAuthenticateApi)
+│            └── IDeviceGateway → roborockCommunication/adapters/RoborockDeviceGateway
+│                   └── roborockCommunication/routing/clientRouter.ts (ClientRouter)
+│                        ├── roborockCommunication/mqtt/mqttClient.ts (MQTTClient)
+│                        └── roborockCommunication/local/localClient.ts (LocalNetworkClient)
 │
 ├── behaviors/ (Behavior Layer)
 │   ├── BehaviorDeviceGeneric.ts
 │   └── roborock.vacuum/
-│       └── ...
+│       ├── core/                 # Core behavior logic
+│       ├── handlers/             # Mode handlers
+│       ├── enums/                # Behavior enums
+│       └── b01/                  # Protocol-specific behaviors
 │
 └── roborockCommunication/ (Communication Layer)
-    ├── adapters/
-    ├── api/
-    ├── enums/
-    ├── helper/
-    ├── local/
-    ├── models/
-    ├── mqtt/
-    ├── protocol/
-    └── routing/
+    ├── adapters/                # Port adapter implementations
+    ├── api/                     # REST API clients
+    ├── enums/                   # Enumerations
+    ├── helper/                  # Helper utilities
+    ├── local/                   # Local network clients
+    ├── models/                  # Data models and DTOs
+    │   └── home/                # Home/room DTOs and mappers
+    ├── mqtt/                    # MQTT communication
+    ├── protocol/                # Protocol handling
+    │   ├── builders/            # Message builders
+    │   ├── serializers/         # Message serializers
+    │   ├── deserializers/       # Message deserializers
+    │   └── dispatcher/          # Message dispatchers
+    └── routing/                 # Message routing
+        ├── handlers/            # Message handlers
+        └── listeners/           # Message listeners
 ```
 
 **Key Relationships:**
@@ -157,94 +173,162 @@ src/module.ts (RoborockMatterbridgePlatform)
 ### Detailed Service Dependencies
 
 ```
-┌──────────────────────────────────────────────────────────────────────────────┐
-│                            MODULE.TS (Entry Point)                           │
-└─────────────────────────────────┬──────────────────────────────────----──────┘
-                                  │
-    ┌─────────────────────────────┼─────────────────────────────┐
-    ▼                             ▼                             ▼
-┌────────────────────┐    ┌────────────────────┐    ┌──────────────────────────┐
-│  Platform Layer    │    │  PlatformRunner    │    │    RoborockService       │
-├────────────────────┤    ├────────────────────┤    │        (Facade)          │
-│ • platformConfig   │    │ • updateRobot()    │    ├──────────────────────────┤
-│ • deviceRegistry   │    │ • requestHomeData  │    │ • authenticate()         │
-│ • platformState    │    │ • handleMessages   │    │ • listDevices()          │
-│ • platformLifecycle│    └─────────┬──────────┘    │ • initializeMessageClient│
-└─────┬──────----────┘              │               │ • startClean/pauseClean  │
-      │                             │               │ • getMapInformation      │
-      │                   ┌─────────┴─────────┐    └─────────────┬────────────┘
-      │                   ▼                   ▼                  │
-      │    ┌─────────────────┐  ┌─────────────────┐          │
-      │    │ handleLocal     │  │ handleCloud     │          │
-      │    │ Message.ts      │  │ Message.ts      │          │
-      │    └─────────────────┘  └─────────────────┘          │
-      │                                                      │
-      └──────────────────────┬───────────────────────────────┘
-                 ▼
-┌──────────────────────────────────────────────────────────────────────────────┐
-│                         SERVICE CONTAINER (DI)                              │
-├──────────────────────────────────────────────────────────────────────────────┤
-│                                                                              │
-│  ┌────────────────────────┐   ┌────────────────────────┐   ┌────────────────┐│
-│  │ AuthenticationService  │   │ DeviceManagementSvc    │   │ AreaManagement ││
-│  │ • 2FA, password, token │   │ • listDevices, connect │   │ • setAreas     ││
-│  │   refresh              │   │ • getHomeData          │   │ • getMapInfo   ││
-│  └─────────┬──────────────┘   └─────────┬──────────────┘   └───────┬────────┘│
-│            │                            │                           │         │
-│            ▼                            ▼                           ▼         │
-│  ┌──────────────────────┐   ┌────────────────────────┐   ┌──────────────────┐│
-│  │ core/ports/IAuthGatew│   │ roborockCommunication/ │   │ MessageRouting   ││
-│  │ ay.ts (Port)         │   │ api/iotClient.ts       │   │ Service          ││
-│  └─────────┬────────────┘   └────────────────────────┘   └─────────┬────────┘│
-│            │                                                │                │
-│            ▼                                                ▼                │
-│  ┌─────────────────────────────┐   ┌────────────────────┐   ┌──────────────┐ │
-│  │ adapters/RoborockAuthGatewa │   │ PollingService     │◄──│ ConnectionSvc│ │
-│  │ y.ts (Adapter)              │   │ • activateNotify   │   │ • initMQTT   │ │
-│  └─────────┬──────────────────┘   │ • stopPolling       │   │ • initLocal  │ │
-│            │                      └────────────────────┘   └───────┬────────┘ │
-│            ▼                                              │                │
-│  ┌─────────────────────────────┐                     ┌────▼─────────────┐ │
-│  │ api/authClient.ts           │                     │ clientManager.ts │ │
-│  │ (RoborockAuthenticateApi)   │                     └──────┬───────────┘ │
-│  └─────────────────────────────┘                            │             │
-│                                                             │             │
-└──────────────────────────────────────────────────────────────┼────────────┘
-                                 ▼
-┌──────────────────────────────────────────────────────────────────────────────┐
-│                         COMMUNICATION LAYER                                 │
-├──────────────────────────────────────────────────────────────────────────────┤
-│                                                                              │
-│  ┌──────────────────────────────────────────────────────────────────────┐    │
-│  │                    routing/clientRouter.ts (ClientRouter)            │    │
-│  └────────────────────────────┬─────────────────────────────────────────┘    │
-│                               │                                               │
-│           ┌───────────────────┼───────────────────┐                          │
-│           ▼                   ▼                   ▼                          │
-│  ┌─────────────────┐  ┌─────────────────┐  ┌─────────────────┐               │
-│  │ mqtt/mqttClient │  │ local/localClien│  │ local/udpClient │               │
-│  │ .ts (MQTTClient)│  │ t.ts            │  │ .ts             │               │
-│  │ • Cloud MQTT    │  │ • TCP Local     │  │ • UDP Local     │               │
-│  │ • TLS encrypted │  │ • Low latency   │  │ • Discovery     │               │
-│  └────────┬────────┘  └────────┬────────┘  └────────┬────────┘               │
-│           │                    │                    │                        │
-│           └────────────────────┼────────────────────┘                        │
-│                                ▼                                              │
-│  ┌──────────────────────────────────────────────────────────────────────┐    │
-│  │                mqtt/messageProcessor.ts (MessageProcessor)           │    │
-│  │  • Deserialize → Validate → Route to Listeners                       │    │
-│  └──────────────────────────────────────────────────────────────────────┘    │
-│                                                                              │
-│  ┌──────────────────────────────────────────────────────────────────────┐    │
-│  │                        Protocol Layer                               │    │
-│  │  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐  │    │
-│  │  │ L01Protocol │  │ A01Protocol │  │ B01Protocol │  │ V01Protocol │  │    │
-│  │  │ • Builder   │  │ • Builder   │  │ • Builder   │  │ • Builder   │  │    │
-│  │  │ • Serializer│  │ • Serializer│  │ • Serializer│  │ • Serializer│  │    │
-│  │  └─────────────┘  └─────────────┘  └─────────────┘  └─────────────┘  │    │
-│  └──────────────────────────────────────────────────────────────────────┘    │
-│                                                                              │
-└──────────────────────────────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────────────────┐
+│                     MODULE.TS (Entry Point)                             │
+│                   RoborockMatterbridgePlatform                          │
+└─────────────────────────────┬───────────────────────────────────────────┘
+                              │
+        ┌─────────────────────┼─────────────────────┐
+        │                     │                     │
+        ▼                     ▼                     ▼
+┌──────────────────┐  ┌──────────────────┐  ┌──────────────────────────┐
+│ Platform Layer   │  │ PlatformRunner   │  │  RoborockService         │
+│  (platform/)     │  │                  │  │     (Facade)             │
+├──────────────────┤  ├──────────────────┤  ├──────────────────────────┤
+│• platformConfig  │  │• updateRobot()   │  │• authenticate()          │
+│• deviceRegistry  │  │• requestHomeData │  │• listDevices()           │
+│• platformState   │  │                  │  │• initMessageClient()     │
+│• lifecycle       │  │  Uses runtimes/: │  │• startClean/pause/dock   │
+└──────────────────┘  │  ├ handleLocal   │  │• getMapInformation()     │
+                      │  ├ handleCloud   │  └────────┬─────────────────┘
+                      │  └ handleHomeData│           │
+                      └──────────────────┘           │
+                                                     │
+                                                     ▼
+┌─────────────────────────────────────────────────────────────────────────┐
+│                    SERVICE CONTAINER (DI)                               │
+│                    services/serviceContainer.ts                         │
+├─────────────────────────────────────────────────────────────────────────┤
+│                                                                         │
+│  ┌──────────────────────┐    ┌──────────────────────┐                  │
+│  │ Authentication       │    │ DeviceManagement     │                  │
+│  │ Service              │    │ Service              │                  │
+│  ├──────────────────────┤    ├──────────────────────┤                  │
+│  │• authenticate2FA()   │    │• listDevices()       │                  │
+│  │• authenticatePass()  │    │• getHomeData()       │                  │
+│  │• requestCode()       │    │• stopService()       │                  │
+│  └──────┬───────────────┘    └───────┬──────────────┘                  │
+│         │                            │                                 │
+│         │                            ▼                                 │
+│         │                    ┌─────────────────────────────┐           │
+│         │                    │  core/ServiceContainer      │           │
+│         │                    │  (Port Adapter DI)          │           │
+│         │                    ├─────────────────────────────┤           │
+│         │                    │ IDeviceGateway →            │           │
+│         │                    │   RoborockDeviceGateway     │           │
+│         │                    │     └→ ClientRouter         │           │
+│         │                    └─────────────────────────────┘           │
+│         │                                                              │
+│         ▼                                                              │
+│  ┌────────────────────────────────┐                                    │
+│  │ core/ports/IAuthGateway        │                                    │
+│  │        ↓                       │                                    │
+│  │ adapters/RoborockAuthGateway   │                                    │
+│  │        ↓                       │                                    │
+│  │ api/authClient.ts              │                                    │
+│  └────────────────────────────────┘                                    │
+│                                                                         │
+│  ┌──────────────────────┐    ┌──────────────────────┐                  │
+│  │ AreaManagement       │    │ MessageRouting       │                  │
+│  │ Service              │    │ Service              │                  │
+│  ├──────────────────────┤    ├──────────────────────┤                  │
+│  │• setAreas()          │    │• getClient()         │                  │
+│  │• getMapInfo()        │    │• sendRequest()       │                  │
+│  │• getRoomMap()        │    │• subscribe()         │                  │
+│  └──────────────────────┘    └──────────────────────┘                  │
+│                                                                         │
+│  ┌──────────────────────┐    ┌──────────────────────┐                  │
+│  │ Connection           │    │ Polling              │                  │
+│  │ Service              │    │ Service              │                  │
+│  ├──────────────────────┤    ├──────────────────────┤                  │
+│  │• initMessageClient() │◄───│• activateNotify()    │                  │
+│  │• initLocal()         │    │• stopPolling()       │                  │
+│  │• setNotify()         │    └──────────────────────┘                  │
+│  └──────┬───────────────┘                                              │
+│         │                                                              │
+│         ▼                                                              │
+│  ┌────────────────────────────────┐                                    │
+│  │ services/clientManager.ts      │                                    │
+│  │ • getClient(duid)              │                                    │
+│  │ • createClient(device)         │                                    │
+│  │ • disposeClient(duid)          │                                    │
+│  └────────────┬───────────────────┘                                    │
+└───────────────┼────────────────────────────────────────────────────────┘
+                │
+                ▼
+┌─────────────────────────────────────────────────────────────────────────┐
+│                      COMMUNICATION LAYER                                │
+│                   roborockCommunication/                                │
+├─────────────────────────────────────────────────────────────────────────┤
+│                                                                         │
+│  ┌──────────────────────────────────────────────────────────────────┐  │
+│  │              routing/clientRouter.ts (ClientRouter)              │  │
+│  │  • route(device) → MQTTClient | LocalNetworkClient               │  │
+│  │  • sendRequest(device, command, params)                          │  │
+│  └──────────────┬─────────────────────────────────────┬─────────────┘  │
+│                 │                                     │                │
+│                 ▼                                     ▼                │
+│  ┌──────────────────────────┐        ┌──────────────────────────────┐ │
+│  │ mqtt/mqttClient.ts       │        │ local/localClient.ts         │ │
+│  │ (MQTTClient)             │        │ (LocalNetworkClient)         │ │
+│  ├──────────────────────────┤        ├──────────────────────────────┤ │
+│  │• Cloud MQTT connection   │        │• TCP local connection        │ │
+│  │• TLS encrypted           │        │• Low latency                 │ │
+│  │• Auto-reconnect          │        │• Uses local/udpClient.ts     │ │
+│  │• Subscribe to topics     │        │  for discovery               │ │
+│  └──────────┬───────────────┘        └──────────┬───────────────────┘ │
+│             │                                   │                     │
+│             └───────────────┬───────────────────┘                     │
+│                             ▼                                         │
+│  ┌──────────────────────────────────────────────────────────────────┐ │
+│  │           mqtt/messageProcessor.ts (MessageProcessor)            │ │
+│  │  Deserialize → Validate → Route to Message Listeners             │ │
+│  └──────────────────────────────────────────────────────────────────┘ │
+│                             │                                         │
+│                             ▼                                         │
+│  ┌──────────────────────────────────────────────────────────────────┐ │
+│  │                     routing/listeners/                           │ │
+│  │  • simpleMessageListener.ts                                      │ │
+│  │  • syncMessageListener.ts                                        │ │
+│  │  • connectionStateListener.ts                                    │ │
+│  │  • mapResponseListener.ts                                        │ │
+│  │  • statusMessageListener.ts                                      │ │
+│  └──────────────────────────────────────────────────────────────────┘ │
+│                                                                         │
+│  ┌──────────────────────────────────────────────────────────────────┐  │
+│  │                     protocol/ (Protocol Layer)                   │  │
+│  │                                                                  │  │
+│  │  builders/              serializers/           dispatcher/      │  │
+│  │  ├ L01MessageBuilder     ├ L01Serializer       ├ Q7Dispatcher   │  │
+│  │  ├ A01MessageBuilder     ├ A01Serializer       ├ Q10Dispatcher  │  │
+│  │  ├ B01MessageBuilder     ├ B01Serializer       ├ V01Dispatcher  │  │
+│  │  └ V01MessageBuilder     └ V01Serializer       └ ...            │  │
+│  │                                                                  │  │
+│  │  deserializers/                                                 │  │
+│  │  └ messageDeserializer.ts                                       │  │
+│  └──────────────────────────────────────────────────────────────────┘  │
+│                                                                         │
+│  ┌──────────────────────────────────────────────────────────────────┐  │
+│  │                     api/ (REST API Layer)                        │  │
+│  │  • authClient.ts (RoborockAuthenticateApi)                       │  │
+│  │    - sendEmailCode(), loginWithCode(), loginWithPassword()       │  │
+│  │  • iotClient.ts (RoborockIoTApi)                                 │  │
+│  │    - getHomeData(), getDeviceList(), getScenes()                 │  │
+│  └──────────────────────────────────────────────────────────────────┘  │
+│                                                                         │
+│  ┌──────────────────────────────────────────────────────────────────┐  │
+│  │                  models/home/ (DTOs & Mappers)                   │  │
+│  │  • MapDataDto, MapRoomDto, MultipleMapDto, RoomDto               │  │
+│  │  • mappers.ts (HomeModelMapper)                                  │  │
+│  │    - API DTO → Application Model transformation                  │  │
+│  └──────────────────────────────────────────────────────────────────┘  │
+│                                                                         │
+└─────────────────────────────────────────────────────────────────────────┘
+
+Legend:
+  ──────►  Direct dependency / calls
+  │       Component boundary
+  ┌─────┐ Module/Component
 ```
 
 ---
@@ -257,12 +341,6 @@ src/module.ts (RoborockMatterbridgePlatform)
 src/
 ├── module.ts                    # Main platform entry point
 ├── platformRunner.ts            # Orchestrates device updates
-├── roborockService.ts           # Service facade
-├── roborockVacuumCleaner.ts     # RVC (Robot Vacuum Cleaner) class
-├── behaviorFactory.ts           # Behavior creation
-├── filterLogger.ts              # Logger with sensitive data filtering
-├── helper.ts                    # Utility functions
-├── notifyMessageTypes.ts        # Message type enums
 ├── settings.ts                  # Plugin configuration
 │
 ├── platform/                    # Platform layer (NEW)
@@ -271,9 +349,17 @@ src/
 │   ├── platformState.ts         # State management
 │   └── deviceRegistry.ts        # Device/robot registry
 │
-├── core/                        # Core domain layer (NEW)
+├── core/                        # Core domain layer
 │   ├── ServiceContainer.ts      # Port adapter DI container
-│   ├── domain/
+│   ├── application/             # Application layer
+│   │   └── models/
+│   │       ├── MapInfo.ts
+│   │       ├── MapRoom.ts
+│   │       ├── RoomIndexMap.ts
+│   │       ├── RoomMap.ts
+│   │       ├── RoomMapping.ts
+│   │       └── index.ts
+│   ├── domain/                  # Domain layer
 │   │   ├── entities/
 │   │   │   ├── Device.ts
 │   │   │   ├── Home.ts
@@ -281,13 +367,13 @@ src/
 │   │   └── value-objects/
 │   │       ├── DeviceId.ts
 │   │       └── CleanMode.ts
-│   └── ports/
+│   └── ports/                   # Port interfaces
 │       ├── IDeviceGateway.ts
-│       ├── IAuthGateway.ts
-│       └── IMessageBroker.ts
+│       └── IAuthGateway.ts
 │
 ├── services/                    # Service layer
 │   ├── serviceContainer.ts      # Main DI container
+│   ├── roborockService.ts       # Service facade
 │   ├── authenticationService.ts
 │   ├── deviceManagementService.ts
 │   ├── areaManagementService.ts
@@ -298,87 +384,156 @@ src/
 │   └── index.ts
 │
 ├── behaviors/                   # Device behavior implementations
-│   ├── BehaviorDeviceGeneric.ts
+│   ├── BehaviorDeviceGeneric.ts # Base behavior class
 │   └── roborock.vacuum/
-│       ├── default/
-│       │   ├── default.ts
-│       │   ├── initialData.ts
-│       │   └── runtimes.ts
-│       └── smart/
-│           ├── smart.ts
-│           ├── initialData.ts
-│           └── runtimes.ts
+│       ├── b01/                 # B01 protocol-specific behaviors
+│       │   └── q7.ts
+│       ├── core/                # Core behavior logic
+│       │   ├── CleanModeSetting.ts
+│       │   ├── behaviorConfig.ts
+│       │   ├── cleanMode.ts
+│       │   ├── cleanModeConfig.ts
+│       │   ├── cleanModeUtils.ts
+│       │   ├── cleanSetting.ts
+│       │   ├── commonCommands.ts
+│       │   ├── modeHandler.ts
+│       │   ├── modeHandlerRegistry.ts
+│       │   ├── modeResolver.ts
+│       │   └── runModeConfig.ts
+│       ├── enums/               # Behavior enumerations
+│       │   ├── MopRoute.ts
+│       │   ├── MopWaterFlow.ts
+│       │   ├── VacuumSuctionPower.ts
+│       │   └── index.ts
+│       └── handlers/            # Mode-specific handlers
+│           ├── cleaningModeHandler.ts
+│           ├── customCleanModeHandler.ts
+│           ├── defaultCleanModeHandler.ts
+│           ├── goVacationHandler.ts
+│           ├── presetCleanModeHandler.ts
+│           └── smartPlanHandler.ts
 │
 ├── roborockCommunication/       # Communication layer
-│   ├── adapters/                # Port adapters (NEW)
+│   ├── adapters/                # Port adapters
 │   │   ├── RoborockAuthGateway.ts
 │   │   └── RoborockDeviceGateway.ts
 │   │
-│   ├── api/                     # REST API clients (NEW location)
+│   ├── api/                     # REST API clients
 │   │   ├── authClient.ts        # Authentication API
 │   │   └── iotClient.ts         # IoT API
 │   │
-│   ├── mqtt/                    # MQTT communication (NEW location)
+│   ├── mqtt/                    # MQTT communication
 │   │   ├── mqttClient.ts
 │   │   └── messageProcessor.ts
 │   │
-│   ├── local/                   # Local network (NEW location)
+│   ├── local/                   # Local network
 │   │   ├── localClient.ts
 │   │   └── udpClient.ts
 │   │
-│   ├── protocol/                # Protocol handling (NEW location)
+│   ├── protocol/                # Protocol handling
 │   │   ├── builders/
 │   │   │   ├── A01MessageBodyBuilder.ts
 │   │   │   ├── B01MessageBodyBuilder.ts
 │   │   │   ├── L01MessageBodyBuilder.ts
 │   │   │   ├── V01MessageBodyBuilder.ts
-│   │   │   └── UnknownMessageBodyBuilder.ts
+│   │   │   ├── UnknownMessageBodyBuilder.ts
+│   │   │   ├── abstractMessageBodyBuilder.ts
+│   │   │   └── messageBodyBuilderFactory.ts
 │   │   ├── serializers/
 │   │   │   ├── A01Serializer.ts
 │   │   │   ├── B01Serializer.ts
 │   │   │   ├── L01Serializer.ts
 │   │   │   ├── V01Serializer.ts
-│   │   │   ├── Serializer.ts
-│   │   │   └── messageSerializer.ts
-│   │   └── deserializers/
-│   │       └── messageDeserializer.ts
+│   │   │   ├── abstractSerializer.ts
+│   │   │   ├── messageSerializer.ts
+│   │   │   └── messageSerializerFactory.ts
+│   │   ├── deserializers/
+│   │   │   └── messageDeserializer.ts
+│   │   └── dispatcher/          # Message dispatchers
+│   │       ├── Q10MessageDispatcher.ts
+│   │       ├── Q7MessageDispatcher.ts
+│   │       ├── V01MessageDispatcher.ts
+│   │       ├── abstractMessageDispatcher.ts
+│   │       ├── dispatcherFactory.ts
+│   │       └── protocolCalculator.ts
 │   │
-│   ├── routing/                 # Message routing (NEW location)
+│   ├── routing/                 # Message routing
 │   │   ├── clientRouter.ts
+│   │   ├── client.ts
 │   │   ├── abstractClient.ts
+│   │   ├── handlers/
+│   │   │   ├── abstractMessageHandler.ts
+│   │   │   └── implementation/
+│   │   │       └── simpleMessageHandler.ts
 │   │   └── listeners/
+│   │       ├── abstractConnectionListener.ts
+│   │       ├── abstractMessageListener.ts
+│   │       ├── abstractUDPMessageListener.ts
 │   │       └── implementation/
 │   │           ├── simpleMessageListener.ts
 │   │           ├── syncMessageListener.ts
 │   │           ├── connectionStateListener.ts
 │   │           ├── chainedMessageListener.ts
-│   │           └── chainedConnectionListener.ts
+│   │           ├── chainedConnectionListener.ts
+│   │           ├── mapResponseListener.ts
+│   │           ├── pingResponseListener.ts
+│   │           └── statusMessageListener.ts
 │   │
-│   ├── models/                  # Data models (NEW location)
+│   ├── models/                  # Data models
+│   │   ├── home/                # Home/room DTOs
+│   │   │   ├── MapDataDto.ts
+│   │   │   ├── MapRoomDto.ts
+│   │   │   ├── MultipleMapDto.ts
+│   │   │   ├── RoomDto.ts
+│   │   │   ├── mappers.ts       # DTO to application model mappers
+│   │   │   └── index.ts
+│   │   ├── apiResponse.ts
+│   │   ├── authenticateFlowState.ts
+│   │   ├── authenticateResponse.ts
+│   │   ├── baseURL.ts
+│   │   ├── batteryMessage.ts
+│   │   ├── contentMessage.ts
 │   │   ├── device.ts
+│   │   ├── deviceCategory.ts
+│   │   ├── deviceModel.ts
+│   │   ├── deviceSchema.ts
+│   │   ├── deviceStatus.ts
+│   │   ├── dockInfo.ts
+│   │   ├── dps.ts
+│   │   ├── headerMessage.ts
 │   │   ├── home.ts
-│   │   ├── room.ts
-│   │   ├── userData.ts
+│   │   ├── homeInfo.ts
+│   │   ├── messageContext.ts
+│   │   ├── messageResult.ts
+│   │   ├── networkInfo.ts
+│   │   ├── product.ts
+│   │   ├── protocol.ts
 │   │   ├── requestMessage.ts
+│   │   ├── responseBody.ts
 │   │   ├── responseMessage.ts
+│   │   ├── scene.ts
+│   │   ├── userData.ts
+│   │   ├── vacuumError.ts
 │   │   └── index.ts
 │   │
-│   ├── enums/                   # Enumerations (NEW location)
-│   │   ├── protocolVersion.ts
+│   ├── enums/                   # Enumerations
+│   │   ├── Q10RequestCode.ts
+│   │   ├── Q7RequestCode.ts
+│   │   ├── additionalPropCode.ts
+│   │   ├── authenticateResponseCode.ts
+│   │   ├── dockType.ts
 │   │   ├── operationStatusCode.ts
+│   │   ├── protocolVersion.ts
+│   │   ├── vacuumAndDockErrorCode.ts
 │   │   └── index.ts
 │   │
 │   ├── helper/                  # Communication helpers
-│   │   ├── messageBodyBuilderFactory.ts
-│   │   ├── messageProcessorFactory.ts
-│   │   └── cryptoHelper.ts
+│   │   ├── B01VacuumModeResolver.ts
+│   │   ├── chunkBuffer.ts
+│   │   ├── cryptoHelper.ts
+│   │   ├── nameDecoder.ts
+│   │   └── sequence.ts
 │   │
-│   ├── RESTAPI/                 # Legacy location (deprecated)
-│   ├── broadcast/               # Legacy location (deprecated)
-│   ├── builder/                 # Legacy location (deprecated)
-│   ├── serializer/              # Legacy location (deprecated)
-│   ├── Zenum/                   # Legacy location (deprecated)
-│   └── Zmodel/                  # Legacy location (deprecated)
 │
 ├── runtimes/                    # Message runtime handlers
 │   ├── handleCloudMessage.ts
@@ -416,9 +571,7 @@ src/
 ├── model/                       # Application models
 │   ├── CloudMessageModel.ts
 │   ├── DockingStationStatus.ts
-│   ├── ExperimentalFeatureSetting.ts
-│   ├── RoomIndexMap.ts
-│   └── RoomMap.ts
+│   └── ExperimentalFeatureSetting.ts
 │
 ├── types/                       # TypeScript type definitions
 │   ├── callbacks.ts
@@ -427,12 +580,19 @@ src/
 │   ├── device.ts
 │   ├── factories.ts
 │   ├── MessagePayloads.ts
+│   ├── notifyMessageTypes.ts
+│   ├── roborockVacuumCleaner.ts
 │   ├── state.ts
 │   └── index.ts
 │
 ├── share/                       # Shared utilities
-│   ├── function.ts
-│   └── runtimeHelper.ts
+│   ├── behaviorFactory.ts       # Behavior creation
+│   ├── filterLogger.ts          # Logger with sensitive data filtering
+│   ├── function.ts              # Utility functions
+│   ├── helper.ts                # Helper functions
+│   └── runtimeHelper.ts         # Runtime helper utilities
+│
+├── handlers/                    # Root-level handlers (reserved)
 │
 └── tests/                       # Unit tests (142+ files)
     ├── behaviors/
@@ -497,16 +657,16 @@ persist: LocalStorage                 // Data persistence
 MQTT/Cloud → PlatformRunner → Runtime Handlers → Robot Update
 ```
 
-### 3. **RoborockVacuumCleaner** ([roborockVacuumCleaner.ts](../src/roborockVacuumCleaner.ts))
+### 3. **RoborockVacuumCleaner Types** ([types/roborockVacuumCleaner.ts](../src/types/roborockVacuumCleaner.ts))
 
-**Responsibility:** Represents a single Roborock device in Matter ecosystem
+**Responsibility:** Type definitions for Roborock vacuum cleaner
 
-**Key Features:**
+**Key Types:**
 
-- Extends Matterbridge endpoint
-- Manages device-specific behaviors
-- Handles Matter cluster interactions
-- Tracks device state and configuration
+- Device configuration types
+- State types
+- Map and room types
+- Behavior types
 
 ---
 
@@ -585,6 +745,79 @@ Located in: [src/core/](../src/core/)
 - `getAuthGateway()` - Get IAuthGateway instance
 - `getDeviceGateway()` - Get IDeviceGateway instance
 - `dispose()` - Clean up resources
+
+### **Application Models** ([application/models/](../src/core/application/models/))
+
+Application-layer models for room and map management:
+
+**MapInfo.ts:**
+
+```typescript
+class MapInfo {
+  readonly maps: Map<number, string>;      // Map ID → Map name
+  readonly allRooms: RoomMapping[];        // All rooms across all maps
+
+  getById(mapId: number): string | undefined;
+  getByName(name: string): number | undefined;
+  static fromDto(dto: MultipleMapDto): MapInfo;
+}
+```
+
+**RoomMapping.ts:**
+
+```typescript
+class RoomMapping {
+  readonly id: number;                     // Local room ID
+  readonly globalId: number;               // Global room ID
+  readonly iot_name_id: number;            // IoT name identifier
+  readonly tag: number;                    // Room tag
+  readonly mapId: number;                  // Associated map ID
+  readonly displayName: string;            // Decoded room name
+}
+```
+
+**MapRoom.ts:**
+
+```typescript
+class MapRoom {
+  readonly id: number;
+  readonly globalId: number;
+  readonly iot_name_id: number;
+  readonly tag: number;
+  readonly displayName: string;
+  readonly mapId: number;
+
+  static fromDto(dto: MapRoomDto): MapRoom;
+}
+```
+
+**RoomMap.ts:**
+
+```typescript
+class RoomMap {
+  private readonly roomMappings: RoomMapping[];
+
+  getRooms(): RoomMapping[];
+  getRoomName(roomId: number): string | undefined;
+  getRoomIdByName(roomName: string): number | undefined;
+
+  static fromDevice(duid: string, platform: RoborockMatterbridgePlatform): Promise<RoomMap>;
+  static fromDeviceDirect(device: Device, platform: RoborockMatterbridgePlatform): Promise<RoomMap>;
+}
+```
+
+**RoomIndexMap.ts:**
+
+```typescript
+class RoomIndexMap {
+  readonly mapInfo: MapInfo;
+  readonly indexToRoomId: Map<number, number>;
+  readonly roomIdToIndex: Map<number, number>;
+
+  getRoomIdByIndex(index: number): number | undefined;
+  getIndexByRoomId(roomId: number): number | undefined;
+}
+```
 
 ### **Domain Entities** ([domain/entities/](../src/core/domain/entities/))
 
@@ -763,7 +996,7 @@ destroy(): Promise<void>;
 
 Located in: [src/roborockCommunication/](../src/roborockCommunication/)
 
-### Structure (After Migration)
+### Structure
 
 ```
 roborockCommunication/
@@ -780,14 +1013,17 @@ roborockCommunication/
 │   ├── localClient.ts
 │   └── udpClient.ts
 ├── protocol/                    # Protocol handling
-│   ├── builders/
-│   ├── serializers/
-│   └── deserializers/
+│   ├── builders/                # Message body builders
+│   ├── serializers/             # Protocol serializers
+│   ├── deserializers/           # Protocol deserializers
+│   └── dispatcher/              # Message dispatchers (Q7, Q10, V01)
 ├── routing/                     # Message routing
 │   ├── clientRouter.ts
 │   ├── abstractClient.ts
-│   └── listeners/
+│   ├── handlers/                # Message handlers
+│   └── listeners/               # Message listeners
 ├── models/                      # Data models
+│   └── home/                    # Home/room DTOs and mappers
 ├── enums/                       # Enumerations
 └── helper/                      # Utilities
 ```
@@ -832,12 +1068,28 @@ ClientRouter (facade)
 
 ### **Protocol Support**
 
-| Protocol | Builder               | Serializer    | Description       |
-| -------- | --------------------- | ------------- | ----------------- |
-| L01      | L01MessageBodyBuilder | L01Serializer | Legacy protocol   |
-| A01      | A01MessageBodyBuilder | A01Serializer | Standard protocol |
-| B01      | B01MessageBodyBuilder | B01Serializer | Extended protocol |
-| V01      | V01MessageBodyBuilder | V01Serializer | Latest protocol   |
+| Protocol | Builder               | Serializer    | Dispatcher           | Description       |
+| -------- | --------------------- | ------------- | -------------------- | ----------------- |
+| L01      | L01MessageBodyBuilder | L01Serializer | -                    | Legacy protocol   |
+| A01      | A01MessageBodyBuilder | A01Serializer | -                    | Standard protocol |
+| B01      | B01MessageBodyBuilder | B01Serializer | Q7MessageDispatcher  | Extended protocol |
+| V01      | V01MessageBodyBuilder | V01Serializer | V01MessageDispatcher | Latest protocol   |
+
+**Message Dispatchers:**
+
+- **V01MessageDispatcher** - Handles V01 protocol messages, including room mapping and map data
+- **Q7MessageDispatcher** - Handles Q7-specific B01 protocol messages
+- **Q10MessageDispatcher** - Handles Q10-specific messages
+
+**DTO to Application Model Mapping:**
+
+The communication layer uses DTOs (Data Transfer Objects) with mappers to transform API responses into application models:
+
+```
+API Response → DTO (RoomDto, MapRoomDto) → Mapper (HomeModelMapper) → Application Model (RoomMapping, MapInfo)
+```
+
+This separation ensures the domain layer is decoupled from external API changes.
 
 ---
 
@@ -847,20 +1099,44 @@ Located in: [src/behaviors/](../src/behaviors/)
 
 ### Architecture
 
+The behavior system has been refactored from device-based behaviors (default/smart) to a modular, handler-based architecture:
+
 ```
 BehaviorDeviceGeneric (base class)
     │
-    ├── DefaultBehavior (default vacuum behavior)
-    └── SmartBehavior (advanced vacuum behavior)
+    └── roborock.vacuum/
+        ├── core/           # Core behavior logic and configuration
+        ├── handlers/       # Mode-specific handlers
+        ├── enums/          # Behavior-specific enumerations
+        └── b01/            # Protocol-specific behaviors
 ```
 
-### **DefaultBehavior** ([default/default.ts](../src/behaviors/roborock.vacuum/default/default.ts))
+### **Core Behavior Components** ([core/](../src/behaviors/roborock.vacuum/core/))
 
-**Features:**
+**Key Files:**
 
-- Basic cleaning operations (start, pause, dock)
-- Battery status monitoring
-- Operational state management
+- `CleanModeSetting.ts` - Clean mode configuration
+- `behaviorConfig.ts` - Behavior configuration
+- `cleanMode.ts` - Clean mode definitions
+- `cleanModeConfig.ts` - Clean mode settings
+- `cleanModeUtils.ts` - Clean mode utilities
+- `cleanSetting.ts` - Clean setting management
+- `commonCommands.ts` - Common device commands
+- `modeHandler.ts` - Mode handler interface
+- `modeHandlerRegistry.ts` - Mode handler registry
+- `modeResolver.ts` - Mode resolution logic
+- `runModeConfig.ts` - Run mode configuration
+
+### **Mode Handlers** ([handlers/](../src/behaviors/roborock.vacuum/handlers/))
+
+**Handler Types:**
+
+- `cleaningModeHandler.ts` - Standard cleaning mode
+- `customCleanModeHandler.ts` - Custom cleaning mode
+- `defaultCleanModeHandler.ts` - Default cleaning mode
+- `goVacationHandler.ts` - Vacation mode
+- `presetCleanModeHandler.ts` - Preset cleaning modes
+- `smartPlanHandler.ts` - Smart cleaning plan
 
 **Supported Clusters:**
 
@@ -868,15 +1144,69 @@ BehaviorDeviceGeneric (base class)
 - RvcOperationalState
 - RvcCleanMode
 - PowerSource
+- ServiceArea (for room-based cleaning)
 
-### **SmartBehavior** ([smart/smart.ts](../src/behaviors/roborock.vacuum/smart/smart.ts))
+### **Protocol-Specific Behaviors** ([b01/](../src/behaviors/roborock.vacuum/b01/))
 
-**Additional Features:**
+Device-specific behavior implementations:
 
-- ServiceArea cluster support
-- Room-based cleaning
-- Multi-area cleaning
-- Map-based navigation
+- `q7.ts` - Roborock Q7 (B01 protocol)
+
+---
+
+## Shared Utilities
+
+Located in: [src/share/](../src/share/)
+
+Shared utilities and helper functions used across the codebase:
+
+### **BehaviorFactory** ([behaviorFactory.ts](../src/share/behaviorFactory.ts))
+
+**Responsibility:** Factory for creating device behaviors
+
+**Key Functions:**
+
+- Creates appropriate behavior instances based on device type
+- Handles behavior initialization and configuration
+
+### **FilterLogger** ([filterLogger.ts](../src/share/filterLogger.ts))
+
+**Responsibility:** Logger with sensitive data filtering
+
+**Key Features:**
+
+- Filters sensitive information (passwords, tokens, keys) from logs
+- Wraps Matterbridge logger with security enhancements
+- Uses regex patterns from `constants/sensitiveDataRegexReplacements.ts`
+
+### **Helper Functions** ([helper.ts](../src/share/helper.ts))
+
+**Responsibility:** General utility functions
+
+**Key Functions:**
+
+- String manipulation utilities
+- Data transformation helpers
+- Common operations used across modules
+
+### **Function Utilities** ([function.ts](../src/share/function.ts))
+
+**Responsibility:** Functional programming utilities
+
+**Key Functions:**
+
+- Functional composition helpers
+- Data processing utilities
+
+### **Runtime Helpers** ([runtimeHelper.ts](../src/share/runtimeHelper.ts))
+
+**Responsibility:** Runtime message processing helpers
+
+**Key Functions:**
+
+- Message validation and transformation
+- Runtime data processing utilities
+- Common message handling operations
 
 ---
 
@@ -973,6 +1303,36 @@ MQTTClient/LocalNetworkClient
     ↓
 Roborock Device
 ```
+
+### 5. **Room/Map Data Flow (DTO → Mapper → Application Model)**
+
+```
+API Response (number[][])
+    ↓
+V01MessageDispatcher.getRoomMappings()
+    ↓
+HomeModelMapper.rawArrayToMapRoomDto() → MapRoomDto[]
+    ↓
+HomeModelMapper.toRoomMapping() → RoomMapping[]
+    ↓
+new RoomMap(roomMappings)
+    ↓
+Application uses RoomMap
+```
+
+**Key Transformation Steps:**
+
+1. **API Layer**: Raw data from Roborock API (e.g., `number[][]` for room mappings)
+2. **DTO Layer**: Transform to typed DTOs (`MapRoomDto`, `RoomDto`, `MultipleMapDto`)
+3. **Mapper Layer**: `HomeModelMapper` transforms DTOs to application models
+4. **Application Layer**: Clean models (`RoomMapping`, `MapInfo`, `RoomMap`) used in business logic
+
+**Benefits:**
+
+- API changes only affect DTOs and mappers
+- Business logic works with clean, domain-focused models
+- Clear separation of concerns
+- Type safety throughout the transformation
 
 ---
 
@@ -1076,5 +1436,5 @@ npm run test:verbose       # Verbose output
 
 ---
 
-**Document Version:** 3.0
-**Last Updated:** January 24, 2026
+**Document Version:** 4.0
+**Last Updated:** January 30, 2026

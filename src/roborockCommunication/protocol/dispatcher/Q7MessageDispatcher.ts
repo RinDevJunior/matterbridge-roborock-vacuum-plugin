@@ -94,7 +94,7 @@ export class Q7MessageDispatcher implements AbstractMessageDispatcher {
 
   public async sendCustomMessage(duid: string, def: RequestMessage): Promise<void> {
     const request = new RequestMessage(def);
-    return this.client.send(duid, request);
+    await this.client.send(duid, request);
   }
 
   public async getCustomMessage<T = unknown>(duid: string, def: RequestMessage): Promise<T> {
@@ -126,14 +126,14 @@ export class Q7MessageDispatcher implements AbstractMessageDispatcher {
     await this.client.send(duid, request);
   }
 
-  private setVacuumMode(duid: string, suctionPower: number): Promise<void> {
+  private async setVacuumMode(duid: string, suctionPower: number): Promise<void> {
     const request = new RequestMessage({ dps: this.createDps(Q7RequestMethod.set_prop, { 'wind': resolveVacuumMode(suctionPower) }) });
-    return this.client.send(duid, request);
+    await this.client.send(duid, request);
   }
 
-  private setMopMode(duid: string, waterFlow: number): Promise<void> {
+  private async setMopMode(duid: string, waterFlow: number): Promise<void> {
     const request = new RequestMessage({ dps: this.createDps(Q7RequestMethod.set_prop, { 'water': resolveMopMode(waterFlow) }) });
-    return this.client.send(duid, request);
+    await this.client.send(duid, request);
   }
 
   async setCleanRoute(duid: string, mopRoute: number): Promise<void> {

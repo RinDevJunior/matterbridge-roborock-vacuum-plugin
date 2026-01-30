@@ -9,4 +9,4 @@ See [refactor_room.md](./refactor_room.md) for detailed plan.
 - [x] Phase 3: Refactor message dispatchers
 - [x] Phase 4: Remove helper functions from `src/share/helper.ts`
 - [ ] Phase 5: Update tests
-- [ ] Phase 6: Update documentation
+- [x] Phase 6: Update documentation (CODE_STRUCTURE.md updated to v4.0)
