@@ -19,9 +19,9 @@ describe('RoborockVacuumCleaner', () => {
   let device: any;
   let roomMap: any;
   let routineAsRoom: any[];
-  let enableExperimentalFeature: any;
   let logger: AnsiLogger;
   let vacuum: RoborockVacuumCleaner;
+  let configManager: any;
 
   beforeEach(() => {
     device = {
@@ -35,9 +35,11 @@ describe('RoborockVacuumCleaner', () => {
     };
     roomMap = { rooms: [] };
     routineAsRoom = [];
-    enableExperimentalFeature = undefined;
+    configManager = {
+      experimentalSettings: undefined,
+    };
     logger = createMockLogger();
-    vacuum = new RoborockVacuumCleaner('user@example.com', device, roomMap, routineAsRoom, enableExperimentalFeature, logger);
+    vacuum = new RoborockVacuumCleaner('user@example.com', device, roomMap, routineAsRoom, configManager, logger, []);
   });
 
   it('should construct with correct properties', () => {
@@ -55,7 +57,7 @@ describe('RoborockVacuumCleaner', () => {
     } satisfies BehaviorFactoryResult;
     vacuum.configureHandler(behaviorHandler);
     await vacuum.executeCommandHandler('identify', { request: { identifyTime: 5 }, cluster: 1, attributes: {}, endpoint: 1 });
-    expect(behaviorHandler.executeCommand).toHaveBeenCalledWith('playSoundToLocate', 5);
+    expect(behaviorHandler.executeCommand).toHaveBeenCalledWith('identify', 5);
   });
 
   it('should warn if selectAreas called with empty areas', async () => {
@@ -105,16 +107,15 @@ describe('RoborockVacuumCleaner', () => {
     const expLogger = createMockLogger();
     const expFeature = {
       enableExperimentalFeature: true,
+      isServerModeEnabled: true,
       advancedFeature: {
         enableMultipleMap: true,
-        enableServerMode: true,
         forceRunAtDefault: true,
       },
     };
     const dev = { ...device, data: { model: 'roborock.s7', firmwareVersion: '2.0.0' } };
-    const result = (RoborockVacuumCleaner as any).initializeDeviceConfiguration(dev, roomMap, [{ areaId: 1 }], expFeature, expLogger);
+    const result = (RoborockVacuumCleaner as any).initializeDeviceConfiguration(dev, roomMap, [{ areaId: 1 }], expFeature, expLogger, []);
     expect(result.cleanModes).toBeDefined();
-    expect(result.supportedRunModes).toBeDefined();
     expect(result.supportedAreas).toBeDefined();
     expect(result.supportedMaps).toBeDefined();
     expect(result.supportedAreaAndRoutines).toBeDefined();
@@ -124,9 +125,12 @@ describe('RoborockVacuumCleaner', () => {
 
   it('should cover initializeDeviceConfiguration with minimal config', () => {
     const minLogger = createMockLogger();
-    const result = (RoborockVacuumCleaner as any).initializeDeviceConfiguration(device, roomMap, [], undefined, minLogger);
+    const configManager = {
+      isServerModeEnabled: false,
+      experimentalSettings: undefined,
+    };
+    const result = (RoborockVacuumCleaner as any).initializeDeviceConfiguration(device, roomMap, [], configManager, minLogger, []);
     expect(result.cleanModes).toBeDefined();
-    expect(result.supportedRunModes).toBeDefined();
     expect(result.supportedAreas).toBeDefined();
     expect(result.supportedMaps).toBeDefined();
     expect(result.supportedAreaAndRoutines).toBeDefined();

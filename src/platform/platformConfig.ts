@@ -17,6 +17,8 @@ export type RoborockPluginPlatformConfig = PlatformConfig & {
   enableExperimental: ExperimentalFeatureSetting;
   region?: string;
   unregisterOnShutdown?: boolean;
+  enableServerMode: boolean;
+  sanitizeSensitiveLogs: boolean;
 };
 
 /**
@@ -29,13 +31,11 @@ export class PlatformConfigManager {
     private readonly config: RoborockPluginPlatformConfig,
     private readonly log: AnsiLogger,
   ) {
-    // Apply defaults
     this.config.whiteList ??= [];
     this.config.blackList ??= [];
     this.config.enableExperimental ??= createDefaultExperimentalFeatureSetting();
-
-    // Copy experimental features and apply overrides
     this.experimentalFeatures = { ...this.config.enableExperimental };
+
     // Disable multiple map for more investigation
     this.experimentalFeatures.advancedFeature.enableMultipleMap = false;
   }
@@ -47,13 +47,8 @@ export class PlatformConfigManager {
     return new PlatformConfigManager(config, log);
   }
 
-  /**
-   * Validate required configuration fields.
-   * Returns true if config is valid for startup.
-   */
   public validateConfig(): boolean {
     if (!this.config.username || typeof this.config.username !== 'string') {
-      this.log.error('Platform config validation failed: "username" is required');
       return false;
     }
     return true;
@@ -151,7 +146,7 @@ export class PlatformConfigManager {
   }
 
   public get isServerModeEnabled(): boolean {
-    return this.isExperimentalEnabled && this.advancedFeatures.enableServerMode;
+    return this.config.enableServerMode;
   }
 
   public get isMultipleMapEnabled(): boolean {
@@ -176,6 +171,13 @@ export class PlatformConfigManager {
   public get includeDockStationStatus(): boolean {
     if (this.isExperimentalEnabled) {
       return this.advancedFeatures.includeDockStationStatus;
+    }
+    return false;
+  }
+
+  public get useVacationModeToSendVacuumToDock(): boolean {
+    if (this.isExperimentalEnabled) {
+      return this.advancedFeatures.useVacationModeToSendVacuumToDock;
     }
     return false;
   }

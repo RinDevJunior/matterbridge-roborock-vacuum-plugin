@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { RoborockService } from '../../../services/roborockService.js';
-import { RoomIndexMap } from '../../../model/RoomIndexMap.js';
+import { RoomIndexMap } from '../../../core/application/models/index.js';
 
 describe('RoborockService - Area Management', () => {
   let roborockService: RoborockService;

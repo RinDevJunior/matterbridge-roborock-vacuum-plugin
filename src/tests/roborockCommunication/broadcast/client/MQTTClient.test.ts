@@ -117,7 +117,7 @@ describe('MQTTClient', () => {
 
   beforeEach(() => {
     logger = { error: vi.fn(), debug: vi.fn(), notice: vi.fn(), info: vi.fn() };
-    context = {};
+    context = { getProtocolVersion: vi.fn().mockReturnValue('1.0') };
     userdata = {
       rriot: {
         u: 'user',

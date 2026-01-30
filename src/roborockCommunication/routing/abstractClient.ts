@@ -28,7 +28,6 @@ export abstract class AbstractClient implements Client {
   protected abstract clientName: string;
 
   private readonly syncMessageListener: SyncMessageListener;
-  private noResponseNeededMethods: string[] = [];
 
   protected constructor(logger: AnsiLogger, context: MessageContext, syncMessageListener?: SyncMessageListener) {
     this.context = context;
@@ -48,30 +47,13 @@ export abstract class AbstractClient implements Client {
   }
 
   /**
-   * Sends a request and waits for a response using syncMessageListener.
-   * Override this if you need custom send logic, but call super.send for response waiting.
+   * Sends a request without waiting for a response (fire-and-forget).
+   * Use get() if you need to wait for a response.
    */
-  public async send<T = ResponseMessage>(duid: string, request: RequestMessage): Promise<T | undefined> {
-    return new Promise<T>((resolve, reject) => {
-      const pv = this.context.getProtocolVersion(duid);
-      request.version = request.version ?? pv;
-      if (request.method && !this.noResponseNeededMethods.includes(request.method)) {
-        this.syncMessageListener.waitFor(
-          request.messageId,
-          request,
-          (response: ResponseMessage) => {
-            resolve(response as unknown as T);
-          },
-          reject,
-        );
-      }
-      this.sendInternal(duid, request);
-    })
-      .then((result: T) => result)
-      .catch((error: unknown) => {
-        this.logger.error(error instanceof Error ? error.message : String(error));
-        return undefined;
-      });
+  public async send(duid: string, request: RequestMessage): Promise<void> {
+    const pv = this.context.getProtocolVersion(duid);
+    request.version = request.version ?? pv;
+    this.sendInternal(duid, request);
   }
 
   /**
@@ -96,16 +78,14 @@ export abstract class AbstractClient implements Client {
     return new Promise<T>((resolve, reject) => {
       const pv = this.context.getProtocolVersion(duid);
       request.version = request.version ?? pv;
-      if (request.method && !this.noResponseNeededMethods.includes(request.method)) {
-        this.syncMessageListener.waitFor(
-          request.messageId,
-          request,
-          (response: ResponseMessage) => {
-            resolve(response as unknown as T);
-          },
-          reject,
-        );
-      }
+      this.syncMessageListener.waitFor(
+        request.messageId,
+        request,
+        (response: ResponseMessage) => {
+          resolve(response as unknown as T);
+        },
+        reject,
+      );
       this.sendInternal(duid, request);
     })
       .then((result: T) => {

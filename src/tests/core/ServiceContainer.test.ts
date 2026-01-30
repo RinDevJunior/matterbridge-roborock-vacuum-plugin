@@ -61,7 +61,7 @@ describe('ServiceContainer', () => {
   });
 
   afterEach(async () => {
-    await container.dispose();
+    await container.shutdown();
     vi.clearAllMocks();
   });
 
@@ -184,7 +184,7 @@ describe('ServiceContainer', () => {
       const clientRouter = container.getClientRouter();
       const disconnectSpy = vi.spyOn(clientRouter, 'disconnect');
 
-      await container.dispose();
+      await container.shutdown();
 
       expect(disconnectSpy).toHaveBeenCalled();
     });
@@ -192,17 +192,17 @@ describe('ServiceContainer', () => {
     it('should log info message when disposed', async () => {
       container.initialize(mockUserData);
 
-      await container.dispose();
+      await container.shutdown();
 
       expect(mockLogger.info).toHaveBeenCalledWith('Service container disposed');
     });
 
     it('should not throw when disposing without initialization', async () => {
-      await expect(container.dispose()).resolves.not.toThrow();
+      await expect(container.shutdown()).resolves.not.toThrow();
     });
 
     it('should log info even when not initialized', async () => {
-      await container.dispose();
+      await container.shutdown();
 
       expect(mockLogger.info).toHaveBeenCalledWith('Service container disposed');
     });
@@ -210,8 +210,8 @@ describe('ServiceContainer', () => {
     it('should handle multiple dispose calls', async () => {
       container.initialize(mockUserData);
 
-      await container.dispose();
-      await container.dispose();
+      await container.shutdown();
+      await container.shutdown();
 
       expect(mockLogger.info).toHaveBeenCalledTimes(3);
     });
@@ -237,7 +237,7 @@ describe('ServiceContainer', () => {
       expect(clientRouter).toBeDefined();
 
       // 5. Dispose
-      await container.dispose();
+      await container.shutdown();
       expect(mockLogger.info).toHaveBeenCalledWith('Service container disposed');
     });
 

@@ -12,16 +12,14 @@ import { UserData } from '../roborockCommunication/models/index.js';
  * Centralizes creation and wiring of all gateway adapters.
  */
 export class ServiceContainer {
-  private readonly logger: AnsiLogger;
   private deviceGateway?: IDeviceGateway;
   private readonly authGateway: IAuthGateway;
   private clientRouter?: ClientRouter;
 
   public constructor(
-    logger: AnsiLogger,
+    private readonly logger: AnsiLogger,
     private readonly authenticateApi: RoborockAuthenticateApi,
   ) {
-    this.logger = logger;
     this.authGateway = new RoborockAuthGateway(this.authenticateApi, this.logger);
   }
 
@@ -67,9 +65,13 @@ export class ServiceContainer {
   /**
    * Clean up resources.
    */
-  public async dispose(): Promise<void> {
+  public async shutdown(): Promise<void> {
     if (this.clientRouter) {
       await this.clientRouter.disconnect();
+      this.clientRouter = undefined;
+    }
+    if (this.deviceGateway) {
+      this.deviceGateway = undefined;
     }
     this.logger.info('Service container disposed');
   }

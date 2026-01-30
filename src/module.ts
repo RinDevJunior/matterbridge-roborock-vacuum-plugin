@@ -1,24 +1,25 @@
 import { PlatformMatterbridge, MatterbridgeDynamicPlatform, PlatformConfig, MatterbridgeEndpoint, bridgedNode } from 'matterbridge';
+import { BridgedDeviceBasicInformation, Descriptor, ServiceArea } from 'matterbridge/matter/clusters';
 import * as axios from 'axios';
 import crypto from 'node:crypto';
+import NodePersist from 'node-persist';
+import Path from 'node:path';
 import { AnsiLogger, debugStringify, LogLevel } from 'matterbridge/logger';
 import { isValidNumber, isValidString } from 'matterbridge/utils';
 import { RoborockService } from './services/roborockService.js';
 import { PLUGIN_NAME } from './settings.js';
-import { getRoomMapFromDevice, isSupportedDevice } from './share/helper.js';
+import { isSupportedDevice } from './share/helper.js';
+import { RoomMap } from './core/application/models/index.js';
 import { PlatformRunner } from './platformRunner.js';
 import { FilterLogger } from './share/filterLogger.js';
 import { RoborockVacuumCleaner } from './types/roborockVacuumCleaner.js';
 import { configureBehavior } from './share/behaviorFactory.js';
-import { NotifyMessageTypes } from './types/notifyMessageTypes.js';
+import { NotifyMessageTypes, MessagePayload } from './types/index.js';
 import { getSupportedAreas, getSupportedScenes } from './initialData/index.js';
-import { BridgedDeviceBasicInformation, Descriptor, ServiceArea } from 'matterbridge/matter/clusters';
-import NodePersist from 'node-persist';
-import Path from 'node:path';
+
 import { getBaseUrl } from './initialData/regionUrls.js';
 import { UINT16_MAX, UINT32_MAX } from 'matterbridge/matter';
-import type { MessagePayload } from './types/MessagePayloads.js';
-import { Device, Room } from './roborockCommunication/models/index.js';
+import { Device, RoomDto } from './roborockCommunication/models/index.js';
 import { RoborockAuthenticateApi } from './roborockCommunication/api/authClient.js';
 import { RoborockIoTApi } from './roborockCommunication/api/iotClient.js';
 
@@ -38,9 +39,8 @@ export default function initializePlugin(matterbridge: PlatformMatterbridge, log
  * Lifecycle, config, registry, and state are delegated to dedicated modules.
  */
 export class RoborockMatterbridgePlatform extends MatterbridgeDynamicPlatform {
-  // Services (will be initialized during startup)
   public roborockService: RoborockService | undefined;
-  public platformRunner: PlatformRunner | undefined;
+  public platformRunner: PlatformRunner;
   public persist: NodePersist.LocalStorage;
   public rvcInterval: NodeJS.Timeout | undefined;
   public rrHomeId: number | undefined;
@@ -56,7 +56,7 @@ export class RoborockMatterbridgePlatform extends MatterbridgeDynamicPlatform {
     logger: AnsiLogger,
     override config: RoborockPluginPlatformConfig,
   ) {
-    super(matterbridge, new FilterLogger(logger), config);
+    super(matterbridge, new FilterLogger(logger, config.sanitizeSensitiveLogs), config);
 
     const requiredMatterbridgeVersion = '3.5.0';
     if (this.verifyMatterbridgeVersion === undefined || typeof this.verifyMatterbridgeVersion !== 'function' || !this.verifyMatterbridgeVersion(requiredMatterbridgeVersion)) {
@@ -75,6 +75,7 @@ export class RoborockMatterbridgePlatform extends MatterbridgeDynamicPlatform {
     this.configManager = PlatformConfigManager.create(config, this.log);
     this.registry = new DeviceRegistry();
     this.state = new PlatformState();
+    this.platformRunner = new PlatformRunner(this);
 
     // Create lifecycle dependencies
     const deps: LifecycleDependencies = {
@@ -86,8 +87,7 @@ export class RoborockMatterbridgePlatform extends MatterbridgeDynamicPlatform {
       clearSelect: () => this.clearSelect(),
       unregisterAllDevices: (delay) => this.unregisterAllDevices(delay),
     };
-
-    this.lifecycle = new PlatformLifecycle(this, this.registry, this.configManager, this.state, deps);
+    this.lifecycle = new PlatformLifecycle(this, this.configManager, this.state, deps);
   }
 
   // ─── Lifecycle Delegation ───────────────────────────────────────────────────
@@ -114,20 +114,15 @@ export class RoborockMatterbridgePlatform extends MatterbridgeDynamicPlatform {
   // ─── Device Discovery & Configuration ───────────────────────────────────────
 
   private async startDeviceDiscovery(): Promise<boolean> {
-    // Disable multiple map for more investigation
-    this.configManager.advancedFeatures.enableMultipleMap = false;
-
     this.log.info('startDeviceDiscovery start');
 
-    if (this.configManager.experimentalSettings.enableExperimentalFeature && this.configManager.cleanModeSettings) {
-      const cleanModeSettings = this.configManager.cleanModeSettings;
+    const cleanModeSettings = this.configManager.cleanModeSettings;
+    if (cleanModeSettings) {
       this.log.notice(
-        `Experimental Feature: ${this.configManager.experimentalSettings.enableExperimentalFeature ? 'Enabled' : 'Disabled'},
+        `Experimental Feature: ${this.configManager.isExperimentalEnabled ? 'Enabled' : 'Disabled'},
          Clean Mode Settings: ${debugStringify(cleanModeSettings)}`,
       );
     }
-
-    this.platformRunner = new PlatformRunner(this); // TODO: Refactor PlatformRunner to avoid 'any'
 
     // Load or generate sessionId for consistent authentication
     let sessionId = (await this.persist.getItem('sessionId')) as string | undefined;
@@ -147,7 +142,7 @@ export class RoborockMatterbridgePlatform extends MatterbridgeDynamicPlatform {
     this.roborockService = new RoborockService(
       {
         authenticateApiFactory: (_, url) => new RoborockAuthenticateApi(this.log, axiosInstance, sessionId, url),
-        iotApiFactory: (logger, ud) => new RoborockIoTApi(ud, logger),
+        iotApiFactory: (logger, ud) => new RoborockIoTApi(ud, this.log, axiosInstance),
         refreshInterval: this.config.refreshInterval ?? DEFAULT_REFRESH_INTERVAL_SECONDS,
         baseUrl,
         persist: this.persist,
@@ -199,8 +194,8 @@ export class RoborockMatterbridgePlatform extends MatterbridgeDynamicPlatform {
 
   private async onConfigureDevice(): Promise<void> {
     this.log.info('onConfigureDevice start');
-    if (this.platformRunner === undefined || this.roborockService === undefined) {
-      this.log.error('Initializing: PlatformRunner or RoborockService is undefined');
+    if (this.roborockService === undefined) {
+      this.log.error('Initializing: RoborockService is undefined');
       return;
     }
 
@@ -223,7 +218,7 @@ export class RoborockMatterbridgePlatform extends MatterbridgeDynamicPlatform {
     this.roborockService.setDeviceNotify(async (messageSource: NotifyMessageTypes, homeData: unknown) => {
       const duid = (homeData as { duid?: string })?.duid ?? '';
       const payload = { type: messageSource, data: homeData, duid };
-      await this.platformRunner?.updateRobotWithPayload(payload as unknown as MessagePayload);
+      await this.platformRunner.updateRobotWithPayload(payload as unknown as MessagePayload);
     });
 
     for (const [duid, robot] of this.registry.robotsMap) {
@@ -234,7 +229,7 @@ export class RoborockMatterbridgePlatform extends MatterbridgeDynamicPlatform {
     }
 
     try {
-      await this.platformRunner?.requestHomeData();
+      await this.platformRunner.requestHomeData();
     } catch (error) {
       this.log.error(`requestHomeData (initial) failed: ${error instanceof Error ? error.message : String(error)}`);
     }
@@ -245,8 +240,8 @@ export class RoborockMatterbridgePlatform extends MatterbridgeDynamicPlatform {
   private async configureDevice(vacuum: Device): Promise<boolean> {
     const username = this.config.username as string;
 
-    if (this.platformRunner === undefined || this.roborockService === undefined) {
-      this.log.error('Initializing: PlatformRunner or RoborockService is undefined');
+    if (this.roborockService === undefined) {
+      this.log.error('Initializing: RoborockService is undefined');
       return false;
     }
 
@@ -259,12 +254,12 @@ export class RoborockMatterbridgePlatform extends MatterbridgeDynamicPlatform {
 
     if (vacuum.rooms === undefined || vacuum.rooms.length === 0) {
       this.log.notice(`Fetching map information for device: ${vacuum.name} (${vacuum.duid}) to get rooms`);
-      const map_info = await this.roborockService.getMapInformation(vacuum.duid);
-      const rooms = map_info?.allRooms ?? [];
-      vacuum.rooms = rooms.map((room) => ({ id: room.globalId, name: room.displayName }) as Room);
+      const map_info = await this.roborockService.getMapInfo(vacuum.duid);
+      const rooms = map_info.allRooms ?? [];
+      vacuum.rooms = rooms.map((room) => ({ id: room.globalId, name: room.iot_name }) as RoomDto);
     }
 
-    const roomMap = await getRoomMapFromDevice(vacuum, this);
+    const roomMap = await RoomMap.fromDeviceDirect(vacuum, this);
 
     this.log.debug('Initializing - roomMap: ', debugStringify(roomMap));
 
@@ -277,8 +272,7 @@ export class RoborockMatterbridgePlatform extends MatterbridgeDynamicPlatform {
       this.log,
     );
 
-    const enableMultipleMap = this.configManager.isMultipleMapEnabled;
-    const { supportedAreas, roomIndexMap } = getSupportedAreas(vacuum.rooms, roomMap, enableMultipleMap, this.log);
+    const { supportedAreas, roomIndexMap } = getSupportedAreas(vacuum.rooms, roomMap, this.configManager.isMultipleMapEnabled, this.log, []); // TODO: populate mapInfos
     this.roborockService.setSupportedAreas(vacuum.duid, supportedAreas);
     this.roborockService.setSupportedAreaIndexMap(vacuum.duid, roomIndexMap);
 
@@ -288,7 +282,7 @@ export class RoborockMatterbridgePlatform extends MatterbridgeDynamicPlatform {
       this.roborockService.setSupportedScenes(vacuum.duid, routineAsRoom);
     }
 
-    const robot = new RoborockVacuumCleaner(username, vacuum, roomMap, routineAsRoom, this.configManager.experimentalSettings, this.log);
+    const robot = new RoborockVacuumCleaner(username, vacuum, roomMap, routineAsRoom, this.configManager, this.log, []); // TODO: populate mapInfos
     robot.configureHandler(behaviorHandler);
 
     this.log.info('vacuum:', debugStringify(vacuum));

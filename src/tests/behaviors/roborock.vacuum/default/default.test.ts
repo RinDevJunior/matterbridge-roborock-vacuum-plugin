@@ -3,7 +3,9 @@ import { BehaviorDeviceGeneric } from '../../../../behaviors/BehaviorDeviceGener
 import { AnsiLogger } from 'matterbridge/logger';
 import { RoborockService } from '../../../../services/roborockService.js';
 import { CleanModeSettings } from '../../../../model/ExperimentalFeatureSetting.js';
-import { MopRoute, MopWaterFlow, setDefaultCommandHandler, VacuumSuctionPower } from '../../../../behaviors/roborock.vacuum/default/default.js';
+import { MopRoute, MopWaterFlow, VacuumSuctionPower } from '../../../../behaviors/roborock.vacuum/enums/index.js';
+import { configureBehavior } from '../../../../share/behaviorFactory.js';
+import { DeviceModel } from '../../../../roborockCommunication/models/deviceModel.js';
 
 describe('setDefaultCommandHandler', () => {
   let handler: BehaviorDeviceGeneric<any> & { setCommandHandler: ReturnType<typeof vi.fn> };
@@ -45,27 +47,15 @@ describe('setDefaultCommandHandler', () => {
     };
   });
 
-  it('should set all command handlers', () => {
-    setDefaultCommandHandler(duid, handler, logger, roborockService as RoborockService, cleanModeSettings);
-    expect(handler.setCommandHandler).toHaveBeenCalledWith('changeToMode', expect.any(Function));
-    expect(handler.setCommandHandler).toHaveBeenCalledWith('selectAreas', expect.any(Function));
-    expect(handler.setCommandHandler).toHaveBeenCalledWith('pause', expect.any(Function));
-    expect(handler.setCommandHandler).toHaveBeenCalledWith('resume', expect.any(Function));
-    expect(handler.setCommandHandler).toHaveBeenCalledWith('goHome', expect.any(Function));
-    expect(handler.setCommandHandler).toHaveBeenCalledWith('playSoundToLocate', expect.any(Function));
-  });
-
   it('should call startClean for Cleaning mode', async () => {
-    setDefaultCommandHandler(duid, handler, logger, roborockService as RoborockService, cleanModeSettings);
-    const [[, changeToModeHandler]] = (handler.setCommandHandler as ReturnType<typeof vi.fn>).mock.calls.filter(([cmd]) => cmd === 'changeToMode');
-    await (changeToModeHandler as (mode: number) => Promise<void>)(2); // 2 = Cleaning
+    const handler = configureBehavior(DeviceModel.Q5, duid, roborockService as RoborockService, cleanModeSettings, false, logger);
+    await handler.executeCommand('changeToMode', 2); // 2 = Cleaning
     expect(roborockService.startClean).toHaveBeenCalledWith(duid);
   });
 
   it('should call changeCleanMode for Mop with correct values', async () => {
-    setDefaultCommandHandler(duid, handler, logger, roborockService as RoborockService, cleanModeSettings);
-    const [[, changeToModeHandler]] = (handler.setCommandHandler as ReturnType<typeof vi.fn>).mock.calls.filter(([cmd]) => cmd === 'changeToMode');
-    await (changeToModeHandler as (mode: number) => Promise<void>)(31); // 31 = Mop Default
+    const handler = configureBehavior(DeviceModel.Q5, duid, roborockService as RoborockService, cleanModeSettings, false, logger);
+    await handler.executeCommand('changeToMode', 31); // 31 = Mop Default
     expect(roborockService.changeCleanMode).toHaveBeenCalledWith(duid, {
       suctionPower: VacuumSuctionPower.Off,
       waterFlow: MopWaterFlow.High,
@@ -75,9 +65,8 @@ describe('setDefaultCommandHandler', () => {
   });
 
   it('should call changeCleanMode for Vacuum with correct values', async () => {
-    setDefaultCommandHandler(duid, handler, logger, roborockService as RoborockService, cleanModeSettings);
-    const [[, changeToModeHandler]] = (handler.setCommandHandler as ReturnType<typeof vi.fn>).mock.calls.filter(([cmd]) => cmd === 'changeToMode');
-    await (changeToModeHandler as (mode: number) => Promise<void>)(66); // 66 = Vacuum Default
+    const handler = configureBehavior(DeviceModel.Q5, duid, roborockService as RoborockService, cleanModeSettings, false, logger);
+    await handler.executeCommand('changeToMode', 66); // 66 = Vacuum Default
     expect(roborockService.changeCleanMode).toHaveBeenCalledWith(duid, {
       suctionPower: VacuumSuctionPower.Max,
       waterFlow: MopWaterFlow.Off,
@@ -87,9 +76,8 @@ describe('setDefaultCommandHandler', () => {
   });
 
   it('should call changeCleanMode for Vac & Mop with correct values', async () => {
-    setDefaultCommandHandler(duid, handler, logger, roborockService as RoborockService, cleanModeSettings);
-    const [[, changeToModeHandler]] = (handler.setCommandHandler as ReturnType<typeof vi.fn>).mock.calls.filter(([cmd]) => cmd === 'changeToMode');
-    await (changeToModeHandler as (mode: number) => Promise<void>)(5); // 5 = Vac & Mop Default
+    const handler = configureBehavior(DeviceModel.Q5, duid, roborockService as RoborockService, cleanModeSettings, false, logger);
+    await handler.executeCommand('changeToMode', 5); // 5 = Vac & Mop Default
     expect(roborockService.changeCleanMode).toHaveBeenCalledWith(duid, {
       suctionPower: VacuumSuctionPower.Turbo,
       waterFlow: MopWaterFlow.Low,
@@ -99,142 +87,122 @@ describe('setDefaultCommandHandler', () => {
   });
 
   it('should call setSelectedAreas', async () => {
-    setDefaultCommandHandler(duid, handler, logger, roborockService as RoborockService, cleanModeSettings);
-    const [[, selectAreasHandler]] = (handler.setCommandHandler as ReturnType<typeof vi.fn>).mock.calls.filter(([cmd]) => cmd === 'selectAreas');
-    await (selectAreasHandler as (areas: number[]) => Promise<void>)([1, 2, 3]);
+    const handler = configureBehavior(DeviceModel.Q5, duid, roborockService as RoborockService, cleanModeSettings, false, logger);
+    await handler.executeCommand('selectAreas', [1, 2, 3]);
     expect(roborockService.setSelectedAreas).toHaveBeenCalledWith(duid, [1, 2, 3]);
   });
 
   it('should call pauseClean', async () => {
-    setDefaultCommandHandler(duid, handler, logger, roborockService as RoborockService, cleanModeSettings);
-    const [[, pauseHandler]] = (handler.setCommandHandler as ReturnType<typeof vi.fn>).mock.calls.filter(([cmd]) => cmd === 'pause');
-    await (pauseHandler as () => Promise<void>)();
+    const handler = configureBehavior(DeviceModel.Q5, duid, roborockService as RoborockService, cleanModeSettings, false, logger);
+    await handler.executeCommand('pause');
     expect(roborockService.pauseClean).toHaveBeenCalledWith(duid);
   });
 
   it('should call resumeClean', async () => {
-    setDefaultCommandHandler(duid, handler, logger, roborockService as RoborockService, cleanModeSettings);
-    const [[, resumeHandler]] = (handler.setCommandHandler as ReturnType<typeof vi.fn>).mock.calls.filter(([cmd]) => cmd === 'resume');
-    await (resumeHandler as () => Promise<void>)();
+    const handler = configureBehavior(DeviceModel.Q5, duid, roborockService as RoborockService, cleanModeSettings, false, logger);
+    await handler.executeCommand('resume');
     expect(roborockService.resumeClean).toHaveBeenCalledWith(duid);
   });
 
   it('should call stopAndGoHome', async () => {
-    setDefaultCommandHandler(duid, handler, logger, roborockService as RoborockService, cleanModeSettings);
-    const [[, goHomeHandler]] = (handler.setCommandHandler as ReturnType<typeof vi.fn>).mock.calls.filter(([cmd]) => cmd === 'goHome');
-    await (goHomeHandler as () => Promise<void>)();
+    const handler = configureBehavior(DeviceModel.Q5, duid, roborockService as RoborockService, cleanModeSettings, false, logger);
+    await handler.executeCommand('goHome');
     expect(roborockService.stopAndGoHome).toHaveBeenCalledWith(duid);
   });
 
   it('should call playSoundToLocate', async () => {
-    setDefaultCommandHandler(duid, handler, logger, roborockService as RoborockService, cleanModeSettings);
-    const [[, playSoundHandler]] = (handler.setCommandHandler as ReturnType<typeof vi.fn>).mock.calls.filter(([cmd]) => cmd === 'playSoundToLocate');
-    await (playSoundHandler as (arg: number) => Promise<void>)(1);
+    const handler = configureBehavior(DeviceModel.Q5, duid, roborockService as RoborockService, cleanModeSettings, false, logger);
+    await handler.executeCommand('identify', 1);
     expect(roborockService.playSoundToLocate).toHaveBeenCalledWith(duid);
   });
 
   it('should handle Go Vacation mode', async () => {
-    setDefaultCommandHandler(duid, handler, logger, roborockService as RoborockService, cleanModeSettings);
-    const [[, changeToModeHandler]] = (handler.setCommandHandler as ReturnType<typeof vi.fn>).mock.calls.filter(([cmd]) => cmd === 'changeToMode');
-    await (changeToModeHandler as (mode: number) => Promise<void>)(99); // 99 = Go Vacation
+    const handler = configureBehavior(DeviceModel.Q5, duid, roborockService as RoborockService, cleanModeSettings, false, logger);
+    await handler.executeCommand('changeToMode', 99); // 99 = Go Vacation
     expect(roborockService.stopAndGoHome).toHaveBeenCalledWith(duid);
   });
 
   it('should handle Mop & Vacuum: Quick mode', async () => {
-    setDefaultCommandHandler(duid, handler, logger, roborockService as RoborockService, cleanModeSettings);
-    const [[, changeToModeHandler]] = (handler.setCommandHandler as ReturnType<typeof vi.fn>).mock.calls.filter(([cmd]) => cmd === 'changeToMode');
-    await (changeToModeHandler as (mode: number) => Promise<void>)(6); // 6 = Mop & Vacuum: Quick
+    const handler = configureBehavior(DeviceModel.Q5, duid, roborockService as RoborockService, cleanModeSettings, false, logger);
+    await handler.executeCommand('changeToMode', 6); // 6 = Mop & Vacuum: Quick
     expect(roborockService.changeCleanMode).toHaveBeenCalled();
   });
 
   it('should handle Vacuum: Max mode', async () => {
-    setDefaultCommandHandler(duid, handler, logger, roborockService as RoborockService, cleanModeSettings);
-    const [[, changeToModeHandler]] = (handler.setCommandHandler as ReturnType<typeof vi.fn>).mock.calls.filter(([cmd]) => cmd === 'changeToMode');
-    await (changeToModeHandler as (mode: number) => Promise<void>)(67); // 67 = Vacuum: Max
+    const handler = configureBehavior(DeviceModel.Q5, duid, roborockService as RoborockService, cleanModeSettings, false, logger);
+    await handler.executeCommand('changeToMode', 67); // 67 = Vacuum: Max
     expect(roborockService.changeCleanMode).toHaveBeenCalled();
   });
 
   it('should handle Mop: Min mode', async () => {
-    setDefaultCommandHandler(duid, handler, logger, roborockService as RoborockService, cleanModeSettings);
-    const [[, changeToModeHandler]] = (handler.setCommandHandler as ReturnType<typeof vi.fn>).mock.calls.filter(([cmd]) => cmd === 'changeToMode');
-    await (changeToModeHandler as (mode: number) => Promise<void>)(33); // 33 = Mop: Min
+    const handler = configureBehavior(DeviceModel.Q5, duid, roborockService as RoborockService, cleanModeSettings, false, logger);
+    await handler.executeCommand('changeToMode', 33); // 33 = Mop: Min
     expect(roborockService.changeCleanMode).toHaveBeenCalled();
   });
 
   it('should handle unknown mode', async () => {
-    setDefaultCommandHandler(duid, handler, logger, roborockService as RoborockService, cleanModeSettings);
-    const [[, changeToModeHandler]] = (handler.setCommandHandler as ReturnType<typeof vi.fn>).mock.calls.filter(([cmd]) => cmd === 'changeToMode');
-    await (changeToModeHandler as (mode: number) => Promise<void>)(9999); // Unknown mode
+    const handler = configureBehavior(DeviceModel.Q5, duid, roborockService as RoborockService, cleanModeSettings, false, logger);
+    await handler.executeCommand('changeToMode', 9999); // Unknown mode
     expect(logger.notice).toHaveBeenCalledWith('DefaultBehavior-changeToMode-Unknown: ', 9999);
   });
 
   it('should handle cleanModeSettings being undefined for Default modes', async () => {
-    setDefaultCommandHandler(duid, handler, logger, roborockService as RoborockService, undefined);
-    const [[, changeToModeHandler]] = (handler.setCommandHandler as ReturnType<typeof vi.fn>).mock.calls.filter(([cmd]) => cmd === 'changeToMode');
-    await (changeToModeHandler as (mode: number) => Promise<void>)(31); // 31 = Mop Default
+    const handler = configureBehavior(DeviceModel.Q5, duid, roborockService as RoborockService, undefined, false, logger);
+    await handler.executeCommand('changeToMode', 31); // 31 = Mop Default
     expect(roborockService.changeCleanMode).toHaveBeenCalled();
   });
 
   it('should handle Vacuum: Min mode', async () => {
-    setDefaultCommandHandler(duid, handler, logger, roborockService as RoborockService, cleanModeSettings);
-    const [[, changeToModeHandler]] = (handler.setCommandHandler as ReturnType<typeof vi.fn>).mock.calls.filter(([cmd]) => cmd === 'changeToMode');
-    await (changeToModeHandler as (mode: number) => Promise<void>)(68); // 68 = Vacuum: Quiet (Min in list)
+    const handler = configureBehavior(DeviceModel.Q5, duid, roborockService as RoborockService, cleanModeSettings, false, logger);
+    await handler.executeCommand('changeToMode', 68); // 68 = Vacuum: Quiet (Min in list)
     expect(roborockService.changeCleanMode).toHaveBeenCalled();
   });
 
   it('should handle Mop: DeepClean mode', async () => {
-    setDefaultCommandHandler(duid, handler, logger, roborockService as RoborockService, cleanModeSettings);
-    const [[, changeToModeHandler]] = (handler.setCommandHandler as ReturnType<typeof vi.fn>).mock.calls.filter(([cmd]) => cmd === 'changeToMode');
-    await (changeToModeHandler as (mode: number) => Promise<void>)(35); // 35 = Mop: DeepClean
+    const handler = configureBehavior(DeviceModel.Q5, duid, roborockService as RoborockService, cleanModeSettings, false, logger);
+    await handler.executeCommand('changeToMode', 35); // 35 = Mop: DeepClean
     expect(roborockService.changeCleanMode).toHaveBeenCalled();
   });
 
   it('should handle Mop & Vacuum: Max mode', async () => {
-    setDefaultCommandHandler(duid, handler, logger, roborockService as RoborockService, cleanModeSettings);
-    const [[, changeToModeHandler]] = (handler.setCommandHandler as ReturnType<typeof vi.fn>).mock.calls.filter(([cmd]) => cmd === 'changeToMode');
-    await (changeToModeHandler as (mode: number) => Promise<void>)(7); // 7 = Mop & Vacuum: Max
+    const handler = configureBehavior(DeviceModel.Q5, duid, roborockService as RoborockService, cleanModeSettings, false, logger);
+    await handler.executeCommand('changeToMode', 7); // 7 = Mop & Vacuum: Max
     expect(roborockService.changeCleanMode).toHaveBeenCalled();
   });
 
   it('should handle Mop & Vacuum: Min mode', async () => {
-    setDefaultCommandHandler(duid, handler, logger, roborockService as RoborockService, cleanModeSettings);
-    const [[, changeToModeHandler]] = (handler.setCommandHandler as ReturnType<typeof vi.fn>).mock.calls.filter(([cmd]) => cmd === 'changeToMode');
-    await (changeToModeHandler as (mode: number) => Promise<void>)(8); // 8 = Mop & Vacuum: Min
+    const handler = configureBehavior(DeviceModel.Q5, duid, roborockService as RoborockService, cleanModeSettings, false, logger);
+    await handler.executeCommand('changeToMode', 8); // 8 = Mop & Vacuum: Min
     expect(roborockService.changeCleanMode).toHaveBeenCalled();
   });
 
   it('should handle Mop & Vacuum: Quiet mode', async () => {
-    setDefaultCommandHandler(duid, handler, logger, roborockService as RoborockService, cleanModeSettings);
-    const [[, changeToModeHandler]] = (handler.setCommandHandler as ReturnType<typeof vi.fn>).mock.calls.filter(([cmd]) => cmd === 'changeToMode');
-    await (changeToModeHandler as (mode: number) => Promise<void>)(9); // 9 = Mop & Vacuum: Quiet
+    const handler = configureBehavior(DeviceModel.Q5, duid, roborockService as RoborockService, cleanModeSettings, false, logger);
+    await handler.executeCommand('changeToMode', 9); // 9 = Mop & Vacuum: Quiet
     expect(roborockService.changeCleanMode).toHaveBeenCalled();
   });
 
   it('should handle Vacuum: Quick mode', async () => {
-    setDefaultCommandHandler(duid, handler, logger, roborockService as RoborockService, cleanModeSettings);
-    const [[, changeToModeHandler]] = (handler.setCommandHandler as ReturnType<typeof vi.fn>).mock.calls.filter(([cmd]) => cmd === 'changeToMode');
-    await (changeToModeHandler as (mode: number) => Promise<void>)(69); // 69 = Vacuum: Quick
+    const handler = configureBehavior(DeviceModel.Q5, duid, roborockService as RoborockService, cleanModeSettings, false, logger);
+    await handler.executeCommand('changeToMode', 69); // 69 = Vacuum: Quick
     expect(roborockService.changeCleanMode).toHaveBeenCalled();
   });
 
   it('should handle Mop: Quick mode', async () => {
-    setDefaultCommandHandler(duid, handler, logger, roborockService as RoborockService, cleanModeSettings);
-    const [[, changeToModeHandler]] = (handler.setCommandHandler as ReturnType<typeof vi.fn>).mock.calls.filter(([cmd]) => cmd === 'changeToMode');
-    await (changeToModeHandler as (mode: number) => Promise<void>)(34); // 34 = Mop: Quick
+    const handler = configureBehavior(DeviceModel.Q5, duid, roborockService as RoborockService, cleanModeSettings, false, logger);
+    await handler.executeCommand('changeToMode', 34); // 34 = Mop: Quick
     expect(roborockService.changeCleanMode).toHaveBeenCalled();
   });
 
   it('should handle Mop & Vacuum: Custom mode', async () => {
-    setDefaultCommandHandler(duid, handler, logger, roborockService as RoborockService, cleanModeSettings);
-    const [[, changeToModeHandler]] = (handler.setCommandHandler as ReturnType<typeof vi.fn>).mock.calls.filter(([cmd]) => cmd === 'changeToMode');
-    await (changeToModeHandler as (mode: number) => Promise<void>)(10); // 10 = Mop & Vacuum: Custom
+    const handler = configureBehavior(DeviceModel.Q5, duid, roborockService as RoborockService, cleanModeSettings, false, logger);
+    await handler.executeCommand('changeToMode', 10); // 10 = Mop & Vacuum: Custom
     expect(roborockService.changeCleanMode).toHaveBeenCalled();
   });
 
   it('should handle Mop: Max mode', async () => {
-    setDefaultCommandHandler(duid, handler, logger, roborockService as RoborockService, cleanModeSettings);
-    const [[, changeToModeHandler]] = (handler.setCommandHandler as ReturnType<typeof vi.fn>).mock.calls.filter(([cmd]) => cmd === 'changeToMode');
-    await (changeToModeHandler as (mode: number) => Promise<void>)(32); // 32 = Mop: Max
+    const handler = configureBehavior(DeviceModel.Q5, duid, roborockService as RoborockService, cleanModeSettings, false, logger);
+    await handler.executeCommand('changeToMode', 32); // 32 = Mop: Max
     expect(roborockService.changeCleanMode).toHaveBeenCalled();
   });
 });

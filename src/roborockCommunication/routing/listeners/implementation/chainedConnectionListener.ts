@@ -7,6 +7,10 @@ export class ChainedConnectionListener implements AbstractConnectionListener {
     this.listeners.push(listener);
   }
 
+  public unregister(): void {
+    this.listeners = [];
+  }
+
   public async onConnected(duid: string): Promise<void> {
     for (const listener of this.listeners) {
       await listener.onConnected(duid);

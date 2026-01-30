@@ -76,5 +76,9 @@ export class ConnectionStateListener implements AbstractConnectionListener {
 
   public async onError(duid: string, message: string): Promise<void> {
     this.logger.error(`Error on device with DUID ${duid}: ${message}`);
+    if (message.includes('Connection refused: Not authorized')) {
+      this.logger.notice(`Device with DUID ${duid} authorization error, stopping reconnection attempts.`);
+      this.shouldReconnect = false;
+    }
   }
 }

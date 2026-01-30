@@ -1,18 +1,34 @@
 import { RvcCleanMode } from 'matterbridge/matter/clusters';
-import { getSupportedCleanModesSmart } from '../behaviors/roborock.vacuum/smart/initialData.js';
-import { getDefaultSupportedCleanModes } from '../behaviors/roborock.vacuum/default/initialData.js';
 import { DeviceModel } from '../roborockCommunication/models/index.js';
-import { ExperimentalFeatureSetting } from '../model/ExperimentalFeatureSetting.js';
 import { SMART_MODELS } from '../constants/index.js';
+import { PlatformConfigManager } from '../platform/platformConfig.js';
+import { baseCleanModeConfigs, CleanModeDisplayLabel, CleanModeLabelInfo, getModeOptions, smartCleanModeConfigs } from '../behaviors/roborock.vacuum/core/cleanModeConfig.js';
 
-export function getSupportedCleanModes(model: DeviceModel, enableExperimentalFeature: ExperimentalFeatureSetting | undefined): RvcCleanMode.ModeOption[] {
-  if (enableExperimentalFeature?.advancedFeature?.forceRunAtDefault ?? false) {
-    return getDefaultSupportedCleanModes(enableExperimentalFeature);
+const smartModes = getModeOptions(smartCleanModeConfigs);
+const defaultModes = getModeOptions(baseCleanModeConfigs);
+
+export function getSupportedCleanModes(model: DeviceModel, configManager: PlatformConfigManager): RvcCleanMode.ModeOption[] {
+  if (configManager.forceRunAtDefault) {
+    return getDefaultSupportedCleanModes(configManager, defaultModes);
   }
 
+  let supportedModes = defaultModes;
   if (SMART_MODELS.has(model)) {
-    return getSupportedCleanModesSmart(enableExperimentalFeature);
+    return (supportedModes = smartModes);
   }
 
-  return getDefaultSupportedCleanModes(enableExperimentalFeature);
+  return getDefaultSupportedCleanModes(configManager, supportedModes);
+}
+
+function getDefaultSupportedCleanModes(configManager: PlatformConfigManager, supportedModes: RvcCleanMode.ModeOption[]): RvcCleanMode.ModeOption[] {
+  // Add vacation mode if enabled
+  if (configManager.useVacationModeToSendVacuumToDock) {
+    supportedModes.push({
+      mode: CleanModeLabelInfo[CleanModeDisplayLabel.GoVacation].mode,
+      label: CleanModeLabelInfo[CleanModeDisplayLabel.GoVacation].label,
+      modeTags: [{ value: RvcCleanMode.ModeTag.Mop }, { value: RvcCleanMode.ModeTag.Vacuum }, { value: RvcCleanMode.ModeTag.Vacation }],
+    });
+  }
+
+  return supportedModes;
 }

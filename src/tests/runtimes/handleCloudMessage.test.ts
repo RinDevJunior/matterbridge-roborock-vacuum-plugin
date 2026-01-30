@@ -45,7 +45,7 @@ describe('handleCloudMessage (integration)', () => {
     platform.registry.getRobot = (_duid: string) => undefined;
     const data: any = { dps: { [Protocol.status_update]: 5 } };
     await handleCloudMessage(data, platform, runner, duid);
-    expect(platform.log.error).toHaveBeenCalledWith(`Robot not found: ${duid}`);
+    expect(platform.log.error).toHaveBeenCalledWith(`[handleCloudMessage] Robot or RoborockService not found: ${duid}`);
   });
 
   it('processes rpc_response and calls runner.updateFromMQTTMessage when status array present', async () => {
@@ -151,8 +151,8 @@ const platform = {
     setSupportedAreas: mockSetSupportedAreas,
     setSelectedAreas: mockSetSelectedAreas,
     setSupportedAreaIndexMap: mockSetSupportedAreaIndexMap,
-    getMapInformation: vi.fn().mockResolvedValue(mapInfo),
-    getRoomMappings: vi.fn().mockResolvedValue(roomData),
+    getMapInfo: vi.fn().mockResolvedValue(mapInfo),
+    getRoomMap: vi.fn().mockResolvedValue(roomData),
   },
   enableExperimentalFeature: {
     enableExperimentalFeature: true,

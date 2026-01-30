@@ -8,7 +8,9 @@
       "Bash(clear:*)",
       "Bash(npm test:*)",
       "Bash(npx vitest:*)",
-      "Bash(npm run coverage:*)"
+      "Bash(npm run coverage:*)",
+      "Bash(npm run type-check:*)",
+      "Bash(tree:*)"
     ]
   },
   "outputStyle": "default",

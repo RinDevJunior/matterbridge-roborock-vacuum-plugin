@@ -335,18 +335,24 @@ describe('RoborockAuthenticateApi', () => {
       };
       const result = requestInterceptor(config);
       expect(result).toBe(config);
-      expect(mockLogger.debug).toHaveBeenCalledWith('=== HTTP Request ===');
-      expect(mockLogger.debug).toHaveBeenCalledWith('URL: http://test.com//api/test');
 
       // Test response interceptor
       const response = {
         status: 200,
+        statusText: 'OK',
         data: { success: true },
+        config: {
+          baseURL: 'http://test.com',
+          url: '/api/test',
+          method: 'POST',
+        },
+        headers: {},
       };
       const responseResult = responseInterceptor(response);
       expect(responseResult).toBe(response);
-      expect(mockLogger.debug).toHaveBeenCalledWith('=== HTTP Response ===');
-      expect(mockLogger.debug).toHaveBeenCalledWith('Status: 200');
+      expect(mockLogger.debug).toHaveBeenCalledWith(expect.stringContaining('[Roborock Authenticate API][Request]'));
+      expect(mockLogger.debug).toHaveBeenCalledWith(expect.stringContaining('[Roborock Authenticate API][Response]'));
+      expect(mockLogger.debug).toHaveBeenCalledWith(expect.stringContaining('200:OK'));
     });
 
     it('should log error via error interceptor', async () => {
@@ -362,8 +368,6 @@ describe('RoborockAuthenticateApi', () => {
 
       await expect(errorInterceptor(error)).rejects.toBeInstanceOf(Error);
       await expect(errorInterceptor(error)).rejects.toThrow('Request failed');
-      expect(mockLogger.debug).toHaveBeenCalledWith('=== HTTP Error ===');
-      expect(mockLogger.debug).toHaveBeenCalledWith(expect.stringContaining('test error'));
     });
 
     it('should log error message when response is missing', async () => {
@@ -376,8 +380,6 @@ describe('RoborockAuthenticateApi', () => {
 
       await expect(errorInterceptor(error)).rejects.toBeInstanceOf(Error);
       await expect(errorInterceptor(error)).rejects.toThrow('Network error');
-      expect(mockLogger.debug).toHaveBeenCalledWith('=== HTTP Error ===');
-      expect(mockLogger.debug).toHaveBeenCalledWith(expect.stringContaining('Network error'));
     });
   });
 

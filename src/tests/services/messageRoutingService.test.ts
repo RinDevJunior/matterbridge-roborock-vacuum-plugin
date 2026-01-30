@@ -2,11 +2,11 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { AnsiLogger } from 'matterbridge/logger';
 import { MessageRoutingService } from '../../services/messageRoutingService.js';
 import { DeviceError } from '../../errors/index.js';
-import { CleanModeSetting } from '../../behaviors/roborock.vacuum/default/default.js';
 import { ServiceArea } from 'matterbridge/matter/clusters';
 import { RoborockIoTApi } from '../../roborockCommunication/api/iotClient.js';
-import { MessageProcessor } from '../../roborockCommunication/mqtt/messageProcessor.js';
 import { RequestMessage } from '../../roborockCommunication/models/index.js';
+import { V01MessageDispatcher } from '../../roborockCommunication/protocol/dispatcher/V01MessageDispatcher.js';
+import { CleanModeSetting } from '../../behaviors/roborock.vacuum/core/CleanModeSetting.js';
 
 describe('MessageRoutingService (integration)', () => {
   let logger: any;
@@ -15,25 +15,17 @@ describe('MessageRoutingService (integration)', () => {
     logger = { debug: vi.fn(), notice: vi.fn(), warn: vi.fn() };
   });
 
-  it('throws when getting an unregistered MessageProcessor', () => {
+  it('throws when getting an unregistered MessageDispatcher', () => {
     const service = new MessageRoutingService(logger as any);
-    expect(() => service.getMessageProcessor('missing')).toThrow();
+    expect(() => service.getMessageDispatcher('missing')).toThrow();
   });
 
-  it('registers and returns a MessageProcessor', () => {
+  it('registers and returns a MessageDispatcher', () => {
     const service = new MessageRoutingService(logger as any);
     const duid = 'dev1';
     const mp = { some: 'processor' } as any;
-    service.registerMessageProcessor(duid, mp);
-    expect(service.getMessageProcessor(duid)).toBe(mp);
-  });
-
-  it('sets and reads MQTT-only flag', () => {
-    const service = new MessageRoutingService(logger as any);
-    const duid = 'dev-mqtt';
-    expect(service.getMqttAlwaysOn(duid)).toBe(false);
-    service.setMqttAlwaysOn(duid, true);
-    expect(service.getMqttAlwaysOn(duid)).toBe(true);
+    service.registerMessageDispatcher(duid, mp);
+    expect(service.getMessageDispatcher(duid)).toBe(mp);
   });
 
   it('uses IoT API to start a single selected routine', async () => {
@@ -55,21 +47,21 @@ describe('MessageRoutingService (integration)', () => {
     const supportedRooms: any[] = [];
     const supportedRoutines = [{ areaId: 1 }, { areaId: 2 }];
 
-    const startClean = vi.fn(async () => {});
-    const mp: any = { startClean };
+    const startCleaning = vi.fn(async () => {});
+    const mp: any = { startCleaning };
 
     const service = new MessageRoutingService(logger as any);
-    service.registerMessageProcessor(duid, mp);
+    service.registerMessageDispatcher(duid, mp);
 
     await service.startClean(duid, selected, supportedRooms, supportedRoutines as any);
-    expect(startClean).toHaveBeenCalled();
+    expect(startCleaning).toHaveBeenCalled();
   });
 
   it('throws when getCleanModeData returns no data', async () => {
     const duid = 'dev-nodata';
     const mp: any = { getCleanModeData: vi.fn(async () => undefined) };
     const service = new MessageRoutingService(logger as any);
-    service.registerMessageProcessor(duid, mp);
+    service.registerMessageDispatcher(duid, mp);
     await expect(service.getCleanModeData(duid)).rejects.toThrow();
   });
 });
@@ -78,7 +70,7 @@ describe('MessageRoutingService', () => {
   let messageService: MessageRoutingService;
   let mockLogger: ReturnType<typeof createMockLogger>;
   let mockIotApi: ReturnType<typeof createMockIotApi>;
-  let mockProcessor: ReturnType<typeof createMockProcessor>;
+  let mockDispatcher: ReturnType<typeof createMockDispatcher>;
 
   function createMockLogger() {
     return {
@@ -98,17 +90,18 @@ describe('MessageRoutingService', () => {
     };
   }
 
-  function createMockProcessor(): any {
+  function createMockDispatcher(): any {
     return {
       getCleanModeData: vi.fn(),
       changeCleanMode: vi.fn(),
       getRooms: vi.fn(),
-      startClean: vi.fn(),
-      startRoomClean: vi.fn(),
-      pauseClean: vi.fn(),
-      resumeClean: vi.fn(),
-      gotoDock: vi.fn(),
+      startCleaning: vi.fn(),
+      startRoomCleaning: vi.fn(),
+      pauseCleaning: vi.fn(),
+      resumeCleaning: vi.fn(),
+      goHome: vi.fn(),
       findMyRobot: vi.fn(),
+      getHomeMap: vi.fn(),
       getCustomMessage: vi.fn(),
       sendCustomMessage: vi.fn(),
     };
@@ -117,7 +110,7 @@ describe('MessageRoutingService', () => {
   beforeEach(() => {
     mockLogger = createMockLogger();
     mockIotApi = createMockIotApi();
-    mockProcessor = createMockProcessor();
+    mockDispatcher = createMockDispatcher();
     messageService = new MessageRoutingService(mockLogger);
   });
 
@@ -148,78 +141,46 @@ describe('MessageRoutingService', () => {
     const testDuid = 'test-device-123';
 
     it('should register a message processor', () => {
-      messageService.registerMessageProcessor(testDuid, mockProcessor as MessageProcessor);
-      expect(() => messageService.getMessageProcessor(testDuid)).not.toThrow();
+      messageService.registerMessageDispatcher(testDuid, mockDispatcher as V01MessageDispatcher);
+      expect(() => messageService.getMessageDispatcher(testDuid)).not.toThrow();
     });
 
     it('should retrieve registered processor', () => {
-      messageService.registerMessageProcessor(testDuid, mockProcessor);
-      const processor = messageService.getMessageProcessor(testDuid);
-      expect(processor).toBe(mockProcessor);
+      messageService.registerMessageDispatcher(testDuid, mockDispatcher as V01MessageDispatcher);
+      const processor = messageService.getMessageDispatcher(testDuid);
+      expect(processor).toBe(mockDispatcher);
     });
 
     it('should throw DeviceError when processor not found', () => {
-      expect(() => messageService.getMessageProcessor('unknown-device')).toThrow(DeviceError);
-      expect(() => messageService.getMessageProcessor('unknown-device')).toThrow('MessageProcessor not initialized for device unknown-device');
+      expect(() => messageService.getMessageDispatcher('unknown-device')).toThrow(DeviceError);
+      expect(() => messageService.getMessageDispatcher('unknown-device')).toThrow('MessageDispatcher not initialized for device unknown-device');
     });
 
     it('should allow multiple processors to be registered', () => {
-      const mockProcessor2 = createMockProcessor();
-      messageService.registerMessageProcessor('device-1', mockProcessor as MessageProcessor);
-      messageService.registerMessageProcessor('device-2', mockProcessor2 as MessageProcessor);
+      const mockProcessor2 = createMockDispatcher();
+      messageService.registerMessageDispatcher('device-1', mockDispatcher as V01MessageDispatcher);
+      messageService.registerMessageDispatcher('device-2', mockProcessor2 as V01MessageDispatcher);
 
-      expect(messageService.getMessageProcessor('device-1')).toBe(mockProcessor);
-      expect(messageService.getMessageProcessor('device-2')).toBe(mockProcessor2);
-    });
-  });
-
-  describe('MQTT Always-On Device Management', () => {
-    const testDuid = 'mqtt-device-123';
-
-    it('should set MQTT always-on status to true', () => {
-      messageService.setMqttAlwaysOn(testDuid, true);
-      // Verify no error thrown and service handles it correctly
-      expect(() => {
-        messageService.setMqttAlwaysOn(testDuid, true);
-      }).not.toThrow();
-    });
-
-    it('should set MQTT always-on status to false', () => {
-      messageService.setMqttAlwaysOn(testDuid, false);
-      expect(() => {
-        messageService.setMqttAlwaysOn(testDuid, false);
-      }).not.toThrow();
-    });
-
-    it('should update existing MQTT status', () => {
-      messageService.setMqttAlwaysOn(testDuid, true);
-      messageService.setMqttAlwaysOn(testDuid, false);
-      expect(() => {
-        messageService.setMqttAlwaysOn(testDuid, false);
-      }).not.toThrow();
+      expect(messageService.getMessageDispatcher('device-1')).toBe(mockDispatcher);
+      expect(messageService.getMessageDispatcher('device-2')).toBe(mockProcessor2);
     });
   });
 
   describe('getCleanModeData', () => {
     const testDuid = 'test-device-456';
-    const mockCleanMode: CleanModeSetting = {
-      suctionPower: 100,
-      waterFlow: 200,
-      distance_off: 0,
-      mopRoute: 302,
-    };
+    const mockCleanMode = new CleanModeSetting(100, 200, 0, 302);
 
     beforeEach(() => {
-      messageService.registerMessageProcessor(testDuid, mockProcessor as MessageProcessor);
+      messageService.registerMessageDispatcher(testDuid, mockDispatcher as V01MessageDispatcher);
     });
 
     it('should retrieve clean mode data successfully', async () => {
-      mockProcessor.getCleanModeData.mockResolvedValue(mockCleanMode);
+      mockDispatcher.getCleanModeData.mockResolvedValue(mockCleanMode);
 
       const result = await messageService.getCleanModeData(testDuid);
 
       expect(result).toEqual(mockCleanMode);
-      expect(mockProcessor.getCleanModeData).toHaveBeenCalledWith(testDuid);
+      expect(mockDispatcher.getCleanModeData).toHaveBeenCalledWith(testDuid);
       expect(mockLogger.notice).toHaveBeenCalledWith('MessageRoutingService - getCleanModeData');
     });
 
@@ -228,7 +189,7 @@ describe('MessageRoutingService', () => {
     });
 
     it('should propagate processor errors', async () => {
-      mockProcessor.getCleanModeData.mockRejectedValue(new Error('API failure'));
+      mockDispatcher.getCleanModeData.mockRejectedValue(new Error('API failure'));
 
       await expect(messageService.getCleanModeData(testDuid)).rejects.toThrow('API failure');
     });
@@ -241,20 +202,20 @@ describe('MessageRoutingService', () => {
     };
 
     beforeEach(() => {
-      messageService.registerMessageProcessor(testDuid, mockProcessor as MessageProcessor);
+      messageService.registerMessageDispatcher(testDuid, mockDispatcher as V01MessageDispatcher);
     });
 
     it('should retrieve room ID from map successfully', async () => {
-      mockProcessor.getCustomMessage.mockResolvedValue(mockMapData);
+      mockDispatcher.getHomeMap.mockResolvedValue(mockMapData);
 
       const result = await messageService.getRoomIdFromMap(testDuid);
 
       expect(result).toEqual(16);
-      expect(mockProcessor.getCustomMessage).toHaveBeenCalled();
+      expect(mockDispatcher.getHomeMap).toHaveBeenCalled();
     });
 
     it('should handle missing map data', async () => {
-      mockProcessor.getCustomMessage.mockResolvedValue(undefined);
+      mockDispatcher.getHomeMap.mockResolvedValue(undefined);
 
       const result = await messageService.getRoomIdFromMap(testDuid);
 
@@ -262,7 +223,7 @@ describe('MessageRoutingService', () => {
     });
 
     it('should handle map data without vacuumRoom', async () => {
-      mockProcessor.getCustomMessage.mockResolvedValue({});
+      mockDispatcher.getHomeMap.mockResolvedValue({});
 
       const result = await messageService.getRoomIdFromMap(testDuid);
 
@@ -278,26 +239,26 @@ describe('MessageRoutingService', () => {
     const testDuid = 'test-device-clean-mode';
 
     beforeEach(() => {
-      messageService.registerMessageProcessor(testDuid, mockProcessor as MessageProcessor);
+      messageService.registerMessageDispatcher(testDuid, mockDispatcher as V01MessageDispatcher);
     });
 
     it('should change clean mode successfully', async () => {
-      const settings: CleanModeSetting = { suctionPower: 105, waterFlow: 203, mopRoute: 302, distance_off: 0 };
+      const settings = new CleanModeSetting(105, 203, 0, 302);
       await messageService.changeCleanMode(testDuid, settings);
 
-      expect(mockProcessor.changeCleanMode).toHaveBeenCalledWith(testDuid, 105, 203, 302, 0);
+      expect(mockDispatcher.changeCleanMode).toHaveBeenCalledWith(testDuid, 105, 203, 302, 0);
       expect(mockLogger.notice).toHaveBeenCalledWith('MessageRoutingService - changeCleanMode');
     });
 
     it('should handle zero values in clean mode', async () => {
-      const settings: CleanModeSetting = { suctionPower: 0, waterFlow: 0, mopRoute: 0, distance_off: 0 };
+      const settings = new CleanModeSetting(0, 0, 0, 0);
       await messageService.changeCleanMode(testDuid, settings);
 
-      expect(mockProcessor.changeCleanMode).toHaveBeenCalledWith(testDuid, 0, 0, 0, 0);
+      expect(mockDispatcher.changeCleanMode).toHaveBeenCalledWith(testDuid, 0, 0, 0, 0);
     });
 
     it('should throw DeviceError when processor not found', async () => {
-      const settings: CleanModeSetting = { suctionPower: 105, waterFlow: 203, mopRoute: 302, distance_off: 0 };
+      const settings = new CleanModeSetting(105, 203, 0, 302);
       await expect(messageService.changeCleanMode('unknown-device', settings)).rejects.toThrow(DeviceError);
     });
   });
@@ -306,14 +267,14 @@ describe('MessageRoutingService', () => {
     const testDuid = 'test-device-start-clean';
 
     beforeEach(() => {
-      messageService.registerMessageProcessor(testDuid, mockProcessor as MessageProcessor);
+      messageService.registerMessageDispatcher(testDuid, mockDispatcher as V01MessageDispatcher);
     });
 
     it('should start global clean when no areas selected', async () => {
       await messageService.startClean(testDuid, [], [], []);
 
-      expect(mockProcessor.startClean).toHaveBeenCalledWith(testDuid);
-      expect(mockProcessor.startRoomClean).not.toHaveBeenCalled();
+      expect(mockDispatcher.startCleaning).toHaveBeenCalledWith(testDuid);
+      expect(mockDispatcher.startRoomCleaning).not.toHaveBeenCalled();
       expect(mockLogger.debug).toHaveBeenCalledWith('Starting global clean');
     });
 
@@ -323,8 +284,8 @@ describe('MessageRoutingService', () => {
 
       await messageService.startClean(testDuid, selectedRooms, supportedRooms, []);
 
-      expect(mockProcessor.startRoomClean).toHaveBeenCalledWith(testDuid, selectedRooms, 1);
-      expect(mockProcessor.startClean).not.toHaveBeenCalled();
+      expect(mockDispatcher.startRoomCleaning).toHaveBeenCalledWith(testDuid, selectedRooms, 1);
+      expect(mockDispatcher.startCleaning).not.toHaveBeenCalled();
     });
 
     it('should start routine clean when routine is selected', async () => {
@@ -349,7 +310,7 @@ describe('MessageRoutingService', () => {
 
       await messageService.startClean(testDuid, selectedRooms, supportedRooms, supportedRoutines);
 
-      expect(mockProcessor.startRoomClean).toHaveBeenCalledWith(testDuid, selectedRooms, 1);
+      expect(mockDispatcher.startRoomCleaning).toHaveBeenCalledWith(testDuid, selectedRooms, 1);
     });
 
     it('should handle multiple room selection', async () => {
@@ -364,7 +325,7 @@ describe('MessageRoutingService', () => {
 
       await messageService.startClean(testDuid, selectedRooms, supportedRooms, []);
 
-      expect(mockProcessor.startRoomClean).toHaveBeenCalledWith(testDuid, selectedRooms, 1);
+      expect(mockDispatcher.startRoomCleaning).toHaveBeenCalledWith(testDuid, selectedRooms, 1);
     });
 
     it('should throw DeviceError when processor not found', async () => {
@@ -376,13 +337,13 @@ describe('MessageRoutingService', () => {
     const testDuid = 'test-device-pause';
 
     beforeEach(() => {
-      messageService.registerMessageProcessor(testDuid, mockProcessor as MessageProcessor);
+      messageService.registerMessageDispatcher(testDuid, mockDispatcher as V01MessageDispatcher);
     });
 
     it('should pause cleaning operation', async () => {
       await messageService.pauseClean(testDuid);
 
-      expect(mockProcessor.pauseClean).toHaveBeenCalledWith(testDuid);
+      expect(mockDispatcher.pauseCleaning).toHaveBeenCalledWith(testDuid);
       expect(mockLogger.debug).toHaveBeenCalledWith('MessageRoutingService - pauseClean');
     });
 
@@ -395,13 +356,13 @@ describe('MessageRoutingService', () => {
     const testDuid = 'test-device-resume';
 
     beforeEach(() => {
-      messageService.registerMessageProcessor(testDuid, mockProcessor as MessageProcessor);
+      messageService.registerMessageDispatcher(testDuid, mockDispatcher as V01MessageDispatcher);
     });
 
     it('should resume cleaning operation', async () => {
       await messageService.resumeClean(testDuid);
 
-      expect(mockProcessor.resumeClean).toHaveBeenCalledWith(testDuid);
+      expect(mockDispatcher.resumeCleaning).toHaveBeenCalledWith(testDuid);
       expect(mockLogger.debug).toHaveBeenCalledWith('MessageRoutingService - resumeClean');
     });
 
@@ -414,13 +375,13 @@ describe('MessageRoutingService', () => {
     const testDuid = 'test-device-stop';
 
     beforeEach(() => {
-      messageService.registerMessageProcessor(testDuid, mockProcessor as MessageProcessor);
+      messageService.registerMessageDispatcher(testDuid, mockDispatcher as V01MessageDispatcher);
     });
 
     it('should stop cleaning and return to dock', async () => {
       await messageService.stopAndGoHome(testDuid);
 
-      expect(mockProcessor.gotoDock).toHaveBeenCalledWith(testDuid);
+      expect(mockDispatcher.goHome).toHaveBeenCalledWith(testDuid);
       expect(mockLogger.debug).toHaveBeenCalledWith('MessageRoutingService - stopAndGoHome');
     });
 
@@ -433,13 +394,13 @@ describe('MessageRoutingService', () => {
     const testDuid = 'test-device-locate';
 
     beforeEach(() => {
-      messageService.registerMessageProcessor(testDuid, mockProcessor as MessageProcessor);
+      messageService.registerMessageDispatcher(testDuid, mockDispatcher as V01MessageDispatcher);
     });
 
     it('should play sound to locate vacuum', async () => {
       await messageService.playSoundToLocate(testDuid);
 
-      expect(mockProcessor.findMyRobot).toHaveBeenCalledWith(testDuid);
+      expect(mockDispatcher.findMyRobot).toHaveBeenCalledWith(testDuid);
       expect(mockLogger.debug).toHaveBeenCalledWith('MessageRoutingService - findMe');
     });
 
@@ -454,21 +415,21 @@ describe('MessageRoutingService', () => {
     const mockResponse = { status: 'cleaning' };
 
     beforeEach(() => {
-      messageService.registerMessageProcessor(testDuid, mockProcessor as MessageProcessor);
+      messageService.registerMessageDispatcher(testDuid, mockDispatcher as V01MessageDispatcher);
     });
 
     it('should execute custom GET request with typed response', async () => {
-      mockProcessor.getCustomMessage.mockResolvedValue(mockResponse);
+      mockDispatcher.getCustomMessage.mockResolvedValue(mockResponse);
 
       const result = await messageService.customGet<{ status: string }>(testDuid, mockRequest);
 
       expect(result).toEqual(mockResponse);
-      expect(mockProcessor.getCustomMessage).toHaveBeenCalledWith(testDuid, mockRequest);
+      expect(mockDispatcher.getCustomMessage).toHaveBeenCalledWith(testDuid, mockRequest);
       expect(mockLogger.debug).toHaveBeenCalledWith('MessageRoutingService - customSend-message', 'get_status', [], false);
     });
 
     it('should execute custom GET request with unknown response type', async () => {
-      mockProcessor.getCustomMessage.mockResolvedValue(mockResponse);
+      mockDispatcher.getCustomMessage.mockResolvedValue(mockResponse);
 
       const result = await messageService.customGet(testDuid, mockRequest);
 
@@ -477,7 +438,7 @@ describe('MessageRoutingService', () => {
 
     it('should handle secure request flag', async () => {
       const secureRequest = new RequestMessage({ method: 'get_status', params: [], secure: true });
-      mockProcessor.getCustomMessage.mockResolvedValue(mockResponse);
+      mockDispatcher.getCustomMessage.mockResolvedValue(mockResponse);
 
       await messageService.customGet(testDuid, secureRequest);
 
@@ -494,13 +455,13 @@ describe('MessageRoutingService', () => {
     const mockRequest = new RequestMessage({ method: 'set_mop_mode', params: [302] });
 
     beforeEach(() => {
-      messageService.registerMessageProcessor(testDuid, mockProcessor as MessageProcessor);
+      messageService.registerMessageDispatcher(testDuid, mockDispatcher as V01MessageDispatcher);
     });
 
     it('should send custom command successfully', async () => {
       await messageService.customSend(testDuid, mockRequest);
 
-      expect(mockProcessor.sendCustomMessage).toHaveBeenCalledWith(testDuid, mockRequest);
+      expect(mockDispatcher.sendCustomMessage).toHaveBeenCalledWith(testDuid, mockRequest);
     });
 
     it('should throw DeviceError when processor not found', async () => {
@@ -512,7 +473,7 @@ describe('MessageRoutingService', () => {
 
       await messageService.customSend(testDuid, simpleRequest);
 
-      expect(mockProcessor.sendCustomMessage).toHaveBeenCalledWith(testDuid, simpleRequest);
+      expect(mockDispatcher.sendCustomMessage).toHaveBeenCalledWith(testDuid, simpleRequest);
     });
   });
 
@@ -521,14 +482,13 @@ describe('MessageRoutingService', () => {
       const testDuid1 = 'device-1';
       const testDuid2 = 'device-2';
 
-      messageService.registerMessageProcessor(testDuid1, mockProcessor as MessageProcessor);
-      messageService.registerMessageProcessor(testDuid2, mockProcessor as MessageProcessor);
-      messageService.setMqttAlwaysOn(testDuid1, true);
+      messageService.registerMessageDispatcher(testDuid1, mockDispatcher as V01MessageDispatcher);
+      messageService.registerMessageDispatcher(testDuid2, mockDispatcher as V01MessageDispatcher);
 
       messageService.clearAll();
 
-      expect(() => messageService.getMessageProcessor(testDuid1)).toThrow(DeviceError);
-      expect(() => messageService.getMessageProcessor(testDuid2)).toThrow(DeviceError);
+      expect(() => messageService.getMessageDispatcher(testDuid1)).toThrow(DeviceError);
+      expect(() => messageService.getMessageDispatcher(testDuid2)).toThrow(DeviceError);
       expect(mockLogger.debug).toHaveBeenCalledWith('MessageRoutingService - All data cleared');
     });
 
@@ -553,7 +513,7 @@ describe('MessageRoutingService', () => {
     const testDuid = 'integration-device';
 
     beforeEach(() => {
-      messageService.registerMessageProcessor(testDuid, mockProcessor);
+      messageService.registerMessageDispatcher(testDuid, mockDispatcher);
       messageService.setIotApi(mockIotApi);
     });
 
@@ -563,51 +523,33 @@ describe('MessageRoutingService', () => {
 
       // Start room clean
       await messageService.startClean(testDuid, selectedRooms, supportedRooms, []);
-      expect(mockProcessor.startRoomClean).toHaveBeenCalledWith(testDuid, selectedRooms, 1);
+      expect(mockDispatcher.startRoomCleaning).toHaveBeenCalledWith(testDuid, selectedRooms, 1);
 
       // Pause
       await messageService.pauseClean(testDuid);
-      expect(mockProcessor.pauseClean).toHaveBeenCalledWith(testDuid);
-
+      expect(mockDispatcher.pauseCleaning).toHaveBeenCalledWith(testDuid);
       // Resume
       await messageService.resumeClean(testDuid);
-      expect(mockProcessor.resumeClean).toHaveBeenCalledWith(testDuid);
+      expect(mockDispatcher.resumeCleaning).toHaveBeenCalledWith(testDuid);
 
       // Stop and go home
       await messageService.stopAndGoHome(testDuid);
-      expect(mockProcessor.gotoDock).toHaveBeenCalledWith(testDuid);
+      expect(mockDispatcher.goHome).toHaveBeenCalledWith(testDuid);
     });
 
     it('should handle clean mode adjustment workflow', async () => {
-      const mockCleanMode: CleanModeSetting = {
-        suctionPower: 101,
-        waterFlow: 202,
-        distance_off: 0,
-        mopRoute: 302,
-      };
+      const mockCleanMode = new CleanModeSetting(101, 202, 0, 302);
 
-      mockProcessor.getCleanModeData.mockResolvedValue(mockCleanMode);
+      mockDispatcher.getCleanModeData.mockResolvedValue(mockCleanMode);
 
       // Get current clean mode
       const currentMode = await messageService.getCleanModeData(testDuid);
       expect(currentMode).toEqual(mockCleanMode);
 
       // Change clean mode
-      const settings: CleanModeSetting = { suctionPower: 105, waterFlow: 203, mopRoute: 302, distance_off: 0 };
+      const settings = new CleanModeSetting(105, 203, 0, 302);
       await messageService.changeCleanMode(testDuid, settings);
-      expect(mockProcessor.changeCleanMode).toHaveBeenCalledWith(testDuid, 105, 203, 302, 0);
-    });
-
-    it('should handle MQTT device workflow', async () => {
-      // Set MQTT always-on
-      messageService.setMqttAlwaysOn(testDuid, true);
-
-      // Perform operations
-      await messageService.pauseClean(testDuid);
-      await messageService.resumeClean(testDuid);
-
-      expect(mockProcessor.pauseClean).toHaveBeenCalled();
-      expect(mockProcessor.resumeClean).toHaveBeenCalled();
+      expect(mockDispatcher.changeCleanMode).toHaveBeenCalledWith(testDuid, 105, 203, 302, 0);
     });
   });
 
@@ -615,19 +557,19 @@ describe('MessageRoutingService', () => {
     const testDuid = 'error-device';
 
     beforeEach(() => {
-      messageService.registerMessageProcessor(testDuid, mockProcessor);
+      messageService.registerMessageDispatcher(testDuid, mockDispatcher);
     });
 
-    it('should propagate MessageProcessor errors', async () => {
+    it('should propagate MessageDispatcher errors', async () => {
       const error = new Error('Communication timeout');
-      mockProcessor.startClean.mockRejectedValue(error);
+      mockDispatcher.startCleaning.mockRejectedValue(error);
 
       await expect(messageService.startClean(testDuid, [], [], [])).rejects.toThrow('Communication timeout');
     });
 
     it('should throw DeviceError when routine requires iotApi but not initialized', async () => {
       const serviceWithoutApi = new MessageRoutingService(mockLogger);
-      serviceWithoutApi.registerMessageProcessor(testDuid, mockProcessor);
+      serviceWithoutApi.registerMessageDispatcher(testDuid, mockDispatcher);
       const supportedRoutines: ServiceArea.Area[] = [{ areaId: 1 } as ServiceArea.Area];
 
       await expect(serviceWithoutApi.startClean(testDuid, [1], [], supportedRoutines)).rejects.toThrow(DeviceError);
@@ -637,9 +579,9 @@ describe('MessageRoutingService', () => {
     it('should throw meaningful errors for missing processors', async () => {
       const unknownDuid = 'non-existent-device';
 
-      await expect(messageService.getCleanModeData(unknownDuid)).rejects.toThrow(`MessageProcessor not initialized for device ${unknownDuid}`);
-      await expect(messageService.startClean(unknownDuid, [], [], [])).rejects.toThrow(`MessageProcessor not initialized for device ${unknownDuid}`);
-      await expect(messageService.pauseClean(unknownDuid)).rejects.toThrow(`MessageProcessor not initialized for device ${unknownDuid}`);
+      await expect(messageService.getCleanModeData(unknownDuid)).rejects.toThrow(`MessageDispatcher not initialized for device ${unknownDuid}`);
+      await expect(messageService.startClean(unknownDuid, [], [], [])).rejects.toThrow(`MessageDispatcher not initialized for device ${unknownDuid}`);
+      await expect(messageService.pauseClean(unknownDuid)).rejects.toThrow(`MessageDispatcher not initialized for device ${unknownDuid}`);
     });
   });
 });

@@ -8,13 +8,10 @@ import { UserData } from '../models/index.js';
  * Adapts the RoborockAuthenticateApi to the domain port interface.
  */
 export class RoborockAuthGateway implements IAuthGateway {
-  private readonly authApi: RoborockAuthenticateApi;
-  private readonly logger: AnsiLogger;
-
-  public constructor(authApi: RoborockAuthenticateApi, logger: AnsiLogger) {
-    this.authApi = authApi;
-    this.logger = logger;
-  }
+  public constructor(
+    private readonly authApi: RoborockAuthenticateApi,
+    private readonly logger: AnsiLogger,
+  ) {}
 
   /**
    * Request a verification code for email-based authentication.

@@ -5,6 +5,7 @@ export enum Protocol {
   ping_response = 3,
   general_request = 4,
   general_response = 5,
+
   rpc_request = 101,
   rpc_response = 102,
   error = 120,
@@ -24,7 +25,13 @@ export enum Protocol {
   back_type = 139, // WTF is this
   map_response = 301,
   some_thing_happened_when_socket_closed = 500,
-  // TODO: Q10 series has 138, what is that?
+  offline_status = 135,
+  clean_times = 136,
+  cleaning_reference = 137,
+  clean_task_type = 138,
+  dock_task_type = 140,
+  cleaning_progress = 141,
+  fc_state = 142,
 }
 
 export enum RPC_Request_Segments {

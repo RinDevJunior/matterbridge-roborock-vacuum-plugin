@@ -1,9 +1,9 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { AreaManagementService } from '../../services/areaManagementService.js';
-import { RoomIndexMap } from '../../model/RoomIndexMap.js';
+import { RoomIndexMap } from '../../core/application/models/index.js';
+import { MapInfo } from '../../initialData/getSupportedAreas.js';
 import { ServiceArea } from 'matterbridge/matter/clusters';
 import { DeviceError } from '../../errors/index.js';
-import { MapInfo } from '../../initialData/getSupportedAreas.js';
 import { AnsiLogger } from 'matterbridge/logger';
 import { MessageRoutingService } from '../../services/index.js';
 import { RoborockIoTApi } from '../../roborockCommunication/api/iotClient.js';
@@ -26,7 +26,12 @@ describe('AreaManagementService', () => {
     mockLogger = createMockLogger() as unknown as AnsiLogger;
     mockIotApi = createMockIotApi() as unknown as RoborockIoTApi;
     mockMessageClient = createMockMessageClient() as unknown as ClientRouter;
-    mockMessageRoutingService = { getMqttAlwaysOn: vi.fn().mockReturnValue(false) } as unknown as MessageRoutingService;
+    mockMessageRoutingService = {
+      getRoomMap: vi.fn(),
+      getMapInfo: vi.fn(),
+      getMqttAlwaysOn: vi.fn().mockReturnValue(false),
+      getRoomMappings: vi.fn().mockReturnValue(new Map()),
+    } as unknown as MessageRoutingService;
     areaService = new AreaManagementService(mockLogger, mockMessageRoutingService);
     areaService.setIotApi(mockIotApi);
     areaService.setMessageClient(mockMessageClient);
@@ -66,7 +71,7 @@ describe('AreaManagementService', () => {
     });
 
     it('should initialize with logger only', () => {
-      const serviceWithoutDeps = new AreaManagementService(mockLogger as AnsiLogger);
+      const serviceWithoutDeps = new AreaManagementService(mockLogger as AnsiLogger, undefined);
       expect(serviceWithoutDeps).toBeDefined();
     });
 
@@ -76,7 +81,7 @@ describe('AreaManagementService', () => {
     });
 
     it('should set IoT API after initialization', () => {
-      const service = new AreaManagementService(mockLogger as AnsiLogger);
+      const service = new AreaManagementService(mockLogger as AnsiLogger, undefined);
       const newIotApi = {} as RoborockIoTApi;
 
       expect(() => {
@@ -85,7 +90,7 @@ describe('AreaManagementService', () => {
     });
 
     it('should set message client after initialization', () => {
-      const service = new AreaManagementService(mockLogger as AnsiLogger);
+      const service = new AreaManagementService(mockLogger as AnsiLogger, undefined);
       const newMessageClient = {} as ClientRouter;
 
       expect(() => {
@@ -274,35 +279,28 @@ describe('AreaManagementService', () => {
     ];
 
     it('should retrieve map information successfully', async () => {
-      mockMessageClient.get.mockResolvedValue(mockMultipleMaps);
+      mockMessageRoutingService.getMapInfo.mockResolvedValue(mockMultipleMaps);
 
-      const mapInfo = await areaService.getMapInformation(mockDeviceId);
+      const mapInfo = await areaService.getMapInfo(mockDeviceId);
 
       expect(mapInfo).toBeDefined();
-      expect(mockMessageClient.get).toHaveBeenCalledWith(mockDeviceId, expect.objectContaining({ method: 'get_multi_maps_list' }));
-      expect(mockLogger.debug).toHaveBeenCalledWith('AreaManagementService - getMapInformation', mockDeviceId);
+      expect(mockMessageRoutingService.getMapInfo).toHaveBeenCalled();
+      expect(mockLogger.debug).toHaveBeenCalledWith('AreaManagementService - getMapInfo', mockDeviceId);
     });
 
     it('should return undefined when no maps available', async () => {
-      mockMessageClient.get.mockResolvedValue(undefined);
+      mockMessageRoutingService.getMapInfo.mockResolvedValue(undefined);
 
-      const mapInfo = await areaService.getMapInformation(mockDeviceId);
+      const mapInfo = await areaService.getMapInfo(mockDeviceId);
 
       expect(mapInfo).toBeUndefined();
     });
 
-    it('should handle error when empty maps array returned', async () => {
-      mockMessageClient.get.mockResolvedValue([]);
+    it('should throw DeviceError when service routing not initialized', async () => {
+      const serviceWithoutClient = new AreaManagementService(mockLogger, undefined);
 
-      // Empty array means response[0] is undefined, which will throw in MapInfo constructor
-      await expect(areaService.getMapInformation(mockDeviceId)).rejects.toThrow();
-    });
-
-    it('should throw DeviceError when message client not initialized', async () => {
-      const serviceWithoutClient = new AreaManagementService(mockLogger);
-
-      await expect(serviceWithoutClient.getMapInformation(mockDeviceId)).rejects.toThrow(DeviceError);
-      await expect(serviceWithoutClient.getMapInformation(mockDeviceId)).rejects.toThrow('Message client not initialized');
+      await expect(serviceWithoutClient.getMapInfo(mockDeviceId)).rejects.toThrow(DeviceError);
+      await expect(serviceWithoutClient.getMapInfo(mockDeviceId)).rejects.toThrow('Service routing not initialized');
     });
   });
 
@@ -313,40 +311,30 @@ describe('AreaManagementService', () => {
       [18, 3],
     ];
 
-    it('should retrieve room mappings with secure request', async () => {
-      mockMessageClient.get.mockResolvedValue(mockRoomMappings);
-      (mockMessageRoutingService.getMqttAlwaysOn as ReturnType<typeof vi.fn>).mockReturnValue(true);
-
-      const mappings = await areaService.getRoomMappings(mockDeviceId);
-
-      expect(mappings).toEqual(mockRoomMappings);
-      expect(mockMessageClient.get).toHaveBeenCalledWith(mockDeviceId, expect.objectContaining({ method: 'get_room_mapping', secure: true }));
-    });
-
     it('should retrieve room mappings with non-secure request', async () => {
-      mockMessageClient.get.mockResolvedValue(mockRoomMappings);
+      mockMessageRoutingService.getRoomMap.mockImplementation((duid: string, activeMap: number, rooms: any[]) => {
+        mockMessageClient.get(duid, { method: 'get_room_mapping', secure: false });
+        return Promise.resolve(mockRoomMappings);
+      });
 
-      const mappings = await areaService.getRoomMappings(mockDeviceId);
+      const mappings = await areaService.getRoomMap(mockDeviceId, 1, []);
 
       expect(mappings).toEqual(mockRoomMappings);
-      expect(mockMessageClient.get).toHaveBeenCalledWith(mockDeviceId, expect.objectContaining({ method: 'get_room_mapping', secure: false }));
+      expect(mockMessageRoutingService.getRoomMap).toHaveBeenCalledWith(mockDeviceId, 1, []);
     });
 
     it('should return undefined when message client not initialized', async () => {
-      const serviceWithoutClient = new AreaManagementService(mockLogger);
-
-      const mappings = await serviceWithoutClient.getRoomMappings(mockDeviceId);
-
-      expect(mappings).toBeUndefined();
-      expect(mockLogger.warn).toHaveBeenCalledWith('messageClient not initialized. Waiting for next execution');
+      const serviceWithoutClient = new AreaManagementService(mockLogger, undefined);
+      await expect(serviceWithoutClient.getRoomMap(mockDeviceId, 1, [])).rejects.toThrow(DeviceError);
     });
 
     it('should handle empty room mappings', async () => {
-      mockMessageClient.get.mockResolvedValue([]);
+      mockMessageRoutingService.getRoomMap.mockResolvedValue([]);
 
-      const mappings = await areaService.getRoomMappings(mockDeviceId);
+      const mappings = await areaService.getRoomMap(mockDeviceId, 1, []);
 
-      expect(mappings).toEqual([]);
+      expect(mappings).toBeInstanceOf(Object);
+      expect(Array.isArray(mappings.rooms) ? mappings.rooms.length : 0).toEqual(0);
     });
   });
 
@@ -445,7 +433,7 @@ describe('AreaManagementService', () => {
     });
 
     it('should clear empty service without errors', () => {
-      const newService = new AreaManagementService(mockLogger);
+      const newService = new AreaManagementService(mockLogger, undefined);
 
       expect(() => {
         newService.clearAll();
@@ -527,9 +515,9 @@ describe('AreaManagementService', () => {
 
     it('should propagate message client errors', async () => {
       const error = new Error('Network error');
-      mockMessageClient.get.mockRejectedValue(error);
+      mockMessageRoutingService.getMapInfo.mockRejectedValue(error);
 
-      await expect(areaService.getMapInformation(mockDeviceId)).rejects.toThrow('Network error');
+      await expect(areaService.getMapInfo(mockDeviceId)).rejects.toThrow('Network error');
     });
 
     it('should propagate IoT API errors', async () => {

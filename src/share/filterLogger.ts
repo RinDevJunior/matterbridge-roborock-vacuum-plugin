@@ -2,7 +2,10 @@ import { AnsiLogger, LogLevel } from 'matterbridge/logger';
 import { sensitiveDataRegexReplacements } from '../constants/sensitiveDataRegexReplacements.js';
 
 export class FilterLogger extends AnsiLogger {
-  constructor(readonly delegate: AnsiLogger) {
+  constructor(
+    readonly delegate: AnsiLogger,
+    readonly sanitizeSensitiveLogs = true,
+  ) {
     super({
       extLog: delegate,
       logTimestampFormat: delegate.logTimestampFormat,
@@ -25,6 +28,11 @@ export class FilterLogger extends AnsiLogger {
   }
 
   public override log(level: LogLevel, message: string, ...parameters: unknown[]): void {
+    if (!this.sanitizeSensitiveLogs) {
+      this.delegate.log(level, message, ...parameters);
+      return;
+    }
+
     // Filter the log message and parameters
     const filteredMessage = this.filterSensitive(message);
     const filteredParameters = parameters.map((p) => this.filterSensitive(p));

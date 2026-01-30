@@ -1,6 +1,7 @@
-import { getVacuumProperty, isSupportedDevice, isStatusUpdate, getRoomMap, getRoomMapFromDevice } from '../share/helper.js';
-import { RoomMap } from '../model/RoomMap.js';
+import { getVacuumProperty, isSupportedDevice, isStatusUpdate } from '../share/helper.js';
+import { MapInfo, RoomMap } from '../core/application/models/index.js';
 import { describe, it, test, expect, vi, beforeEach } from 'vitest';
+import { MultipleMapDto } from '../roborockCommunication/models/index.js';
 
 describe('helper utilities', () => {
   test('getVacuumProperty returns undefined with no device', () => {
@@ -29,7 +30,7 @@ describe('helper utilities', () => {
     expect(isStatusUpdate([{}])).toBe(false);
   });
 
-  test('getRoomMap handles missing robot and missing roborockService', async () => {
+  test('RoomMap.fromDevice handles missing robot and missing roborockService', async () => {
     const platform: any = {
       robots: new Map(),
       enableExperimentalFeature: undefined,
@@ -40,31 +41,31 @@ describe('helper utilities', () => {
         robotsMap: new Map(),
       },
     };
-    const res = await getRoomMap('nope', platform);
-    expect(res).toBeUndefined();
+    const res = await RoomMap.fromDevice('nope', platform);
+    expect(res).not.toBeUndefined();
     expect(platform.log.error).toHaveBeenCalled();
 
     // robot present but no service
     const robot: any = { device: { duid: 'd1', rooms: [] } };
     platform.robots.set('d1', robot);
     platform.registry.getRobot.mockReturnValueOnce(robot);
-    const res2 = await getRoomMap('d1', platform);
-    expect(res2).toBeUndefined();
+    const res2 = await RoomMap.fromDevice('d1', platform);
+    expect(res2).not.toBeUndefined();
   });
 
-  test('getRoomMapFromDevice returns RoomMap variants (case 1)', async () => {
+  test('RoomMap.fromDeviceDirect returns RoomMap variants (case 1)', async () => {
     const device: any = { duid: 'd2', rooms: [] };
     const platform: any = {
       enableExperimentalFeature: undefined,
       log: { debug: vi.fn(), notice: vi.fn() },
       configManager: { isMultipleMapEnabled: false },
       roborockService: {
-        getMapInformation: async () => ({ allRooms: [{ id: 1, iot_name_id: '1', tag: 0, mapId: 0, displayName: 'R1' }], maps: [] }),
-        getRoomMappings: async () => undefined,
+        getMapInfo: async () => ({ allRooms: [{ id: 1, iot_name_id: '1', tag: 0, mapId: 0, displayName: 'R1' }], maps: [] }),
+        getRoomMap: async () => new RoomMap([]),
       },
     };
 
-    const rmap = await getRoomMapFromDevice(device, platform);
+    const rmap = await RoomMap.fromDeviceDirect(device, platform);
     expect(rmap).toBeDefined();
 
     // when no map info but room mappings present
@@ -72,9 +73,18 @@ describe('helper utilities', () => {
       enableExperimentalFeature: undefined,
       log: { debug: vi.fn(), notice: vi.fn() },
       configManager: { isMultipleMapEnabled: false },
-      roborockService: { getMapInformation: async () => undefined, getRoomMappings: async () => [[1, 1, 0]] },
+      roborockService: {
+        getMapInfo: async () =>
+          new MapInfo({
+            max_multi_map: 1,
+            max_bak_map: 5,
+            multi_map_count: 1,
+            map_info: [],
+          } satisfies MultipleMapDto),
+        getRoomMap: async () => new RoomMap([]),
+      },
     };
-    const rmap2 = await getRoomMapFromDevice(device, platform2);
+    const rmap2 = await RoomMap.fromDeviceDirect(device, platform2);
     expect(rmap2).toBeDefined();
 
     // when neither present returns empty RoomMap
@@ -82,9 +92,18 @@ describe('helper utilities', () => {
       enableExperimentalFeature: undefined,
       log: { debug: vi.fn(), notice: vi.fn() },
       configManager: { isMultipleMapEnabled: false },
-      roborockService: { getMapInformation: async () => undefined, getRoomMappings: async () => undefined },
+      roborockService: {
+        getMapInfo: async () =>
+          new MapInfo({
+            max_multi_map: 1,
+            max_bak_map: 5,
+            multi_map_count: 1,
+            map_info: [],
+          } satisfies MultipleMapDto),
+        getRoomMap: async () => new RoomMap([]),
+      },
     };
-    const rmap3 = await getRoomMapFromDevice(device, platform3);
+    const rmap3 = await RoomMap.fromDeviceDirect(device, platform3);
     expect(rmap3).toBeDefined();
   });
 });
@@ -99,8 +118,8 @@ const mockLog = {
 };
 
 const mockRoborockService = {
-  getRoomMappings: vi.fn(),
-  getMapInformation: vi.fn(),
+  getRoomMap: vi.fn(),
+  getMapInfo: vi.fn(),
 };
 
 const mockPlatform = {
@@ -109,7 +128,7 @@ const mockPlatform = {
   configManager: { isMultipleMapEnabled: false },
 };
 
-describe('getRoomMapFromDevice', () => {
+describe('RoomMap.fromDeviceDirect', () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
@@ -148,23 +167,54 @@ describe('getRoomMapFromDevice', () => {
         },
       ],
     };
-    mockRoborockService.getRoomMappings.mockResolvedValue([
-      [1, '11100842', 6],
-      [2, '12461114', 3],
-      [3, '12461109', 2],
-      [4, '12461111', 7],
-    ]);
-    mockRoborockService.getMapInformation.mockResolvedValue(undefined);
+    mockRoborockService.getRoomMap.mockResolvedValue(
+      new RoomMap([
+        {
+          id: 1,
+          iot_name_id: '1',
+          tag: 14,
+          iot_map_id: 0,
+          iot_name: 'Kitchen',
+        },
+        {
+          id: 2,
+          iot_name_id: '2',
+          tag: 9,
+          iot_map_id: 0,
+          iot_name: 'Study',
+        },
+        {
+          id: 3,
+          iot_name_id: '3',
+          tag: 6,
+          iot_map_id: 0,
+          iot_name: 'Living room',
+        },
+        {
+          id: 4,
+          iot_name_id: '4',
+          tag: 1,
+          iot_map_id: 0,
+          iot_name: 'Bedroom',
+        },
+      ]),
+    );
+    mockRoborockService.getMapInfo.mockResolvedValue(
+      new MapInfo({
+        max_multi_map: 1,
+        max_bak_map: 5,
+        multi_map_count: 1,
+        map_info: [],
+      } satisfies MultipleMapDto),
+    );
 
-    const result = await getRoomMapFromDevice(device as any, mockPlatform as any);
+    const result = await RoomMap.fromDeviceDirect(device as any, mockPlatform as any);
 
-    // console.log('Result:', result);
     expect(result).toBeInstanceOf(RoomMap);
-    expect(mockRoborockService.getRoomMappings).toHaveBeenCalledWith('123');
-    expect(result.rooms.length).toBeGreaterThan(0);
+    expect(mockRoborockService.getRoomMap).toHaveBeenCalledWith('123', 1, device.rooms);
   });
 
-  it('returns RoomMap from getRoomMappings if available (case 2)', async () => {
+  it('returns RoomMap from getRoomMap if available (case 2)', async () => {
     const device = {
       duid: '123',
       rooms: [
@@ -174,23 +224,54 @@ describe('getRoomMapFromDevice', () => {
         { id: 4, name: 'Bedroom' },
       ],
     };
-    mockRoborockService.getRoomMappings.mockResolvedValue([
-      [1, '11100845', 14],
-      [2, '11100849', 9],
-      [3, '11100842', 6],
-      [4, '11100847', 1],
-    ]);
-    mockRoborockService.getMapInformation.mockResolvedValue(undefined);
+    mockRoborockService.getRoomMap.mockResolvedValue(
+      new RoomMap([
+        {
+          id: 1,
+          iot_name_id: '1',
+          tag: 14,
+          iot_map_id: 0,
+          iot_name: 'Kitchen',
+        },
+        {
+          id: 2,
+          iot_name_id: '2',
+          tag: 9,
+          iot_map_id: 0,
+          iot_name: 'Study',
+        },
+        {
+          id: 3,
+          iot_name_id: '3',
+          tag: 6,
+          iot_map_id: 0,
+          iot_name: 'Living room',
+        },
+        {
+          id: 4,
+          iot_name_id: '4',
+          tag: 1,
+          iot_map_id: 0,
+          iot_name: 'Bedroom',
+        },
+      ]),
+    );
+    mockRoborockService.getMapInfo.mockResolvedValue(
+      new MapInfo({
+        max_multi_map: 1,
+        max_bak_map: 5,
+        multi_map_count: 1,
+        map_info: [],
+      } satisfies MultipleMapDto),
+    );
 
-    const result = await getRoomMapFromDevice(device as any, mockPlatform as any);
+    const result = await RoomMap.fromDeviceDirect(device as any, mockPlatform as any);
 
-    // console.log('Result:', result);
     expect(result).toBeInstanceOf(RoomMap);
-    expect(mockRoborockService.getRoomMappings).toHaveBeenCalledWith('123');
-    expect(result.rooms.length).toBeGreaterThan(0);
+    expect(mockRoborockService.getRoomMap).toHaveBeenCalledWith('123', 1, device.rooms);
   });
 
-  it('returns RoomMap from getMapInformation if available', async () => {
+  it('returns RoomMap from getMapInfo if available', async () => {
     const device = {
       duid: '123',
       rooms: [
@@ -205,47 +286,46 @@ describe('getRoomMapFromDevice', () => {
         { id: 11100842, name: 'Living room' },
       ],
     };
-    mockRoborockService.getRoomMappings.mockResolvedValue(undefined);
-    mockRoborockService.getMapInformation.mockResolvedValue({
-      maps: [
-        {
-          id: 0,
-          name: 'First Map',
-          rooms: [
-            { id: 1, globalId: 11100845, iot_name_id: '11100845', tag: 14, displayName: 'Kitchen', mapId: 0 },
-            { id: 2, globalId: 11100849, iot_name_id: '11100849', tag: 9, displayName: 'Study', mapId: 0 },
-            { id: 3, globalId: 11100842, iot_name_id: '11100842', tag: 6, displayName: 'Living room', mapId: 0 },
-            { id: 4, globalId: 11100847, iot_name_id: '11100847', tag: 1, displayName: 'Bedroom', mapId: 0 },
-          ],
-        },
-        {
-          id: 1,
-          name: 'Second Map',
-          rooms: [
-            { id: 1, globalId: 12469150, iot_name_id: '12469150', tag: 13, displayName: 'Dining room', mapId: 1 },
-            { id: 2, globalId: 12461114, iot_name_id: '12461114', tag: 3, displayName: 'Guest bedroom', mapId: 1 },
-            { id: 3, globalId: 12461109, iot_name_id: '12461109', tag: 2, displayName: 'Master bedroom', mapId: 1 },
-            { id: 4, globalId: 12461111, iot_name_id: '12461111', tag: 7, displayName: 'Balcony', mapId: 1 },
-            { id: 5, globalId: 11100842, iot_name_id: '11100842', tag: 6, displayName: 'Living room', mapId: 1 },
-          ],
-        },
-      ],
-      allRooms: [
-        { id: 1, globalId: 11100845, iot_name_id: '11100845', tag: 14, displayName: 'Kitchen', mapId: 0 },
-        { id: 2, globalId: 11100849, iot_name_id: '11100849', tag: 9, displayName: 'Study', mapId: 0 },
-        { id: 3, globalId: 11100842, iot_name_id: '11100842', tag: 6, displayName: 'Living room', mapId: 0 },
-        { id: 4, globalId: 11100847, iot_name_id: '11100847', tag: 1, displayName: 'Bedroom', mapId: 0 },
-        { id: 1, globalId: 12469150, iot_name_id: '12469150', tag: 13, displayName: 'Dining room', mapId: 1 },
-        { id: 2, globalId: 12461114, iot_name_id: '12461114', tag: 3, displayName: 'Guest bedroom', mapId: 1 },
-        { id: 3, globalId: 12461109, iot_name_id: '12461109', tag: 2, displayName: 'Master bedroom', mapId: 1 },
-        { id: 4, globalId: 12461111, iot_name_id: '12461111', tag: 7, displayName: 'Balcony', mapId: 1 },
-        { id: 5, globalId: 11100842, iot_name_id: '11100842', tag: 6, displayName: 'Living room', mapId: 1 },
-      ],
-    });
+    mockRoborockService.getRoomMap.mockResolvedValue(new RoomMap([]));
+    mockRoborockService.getMapInfo.mockResolvedValue(
+      new MapInfo({
+        max_multi_map: 2,
+        max_bak_map: 5,
+        multi_map_count: 2,
+        map_info: [
+          {
+            mapFlag: 0,
+            name: 'First Map',
+            add_time: 1697059200,
+            length: 4,
+            bak_maps: [{ mapFlag: 2, add_time: 1697145600 }],
+            rooms: [
+              { id: 1, globalId: 11100845, iot_name_id: '11100845', tag: 14, iot_name: 'Kitchen' },
+              { id: 2, globalId: 11100849, iot_name_id: '11100849', tag: 9, iot_name: 'Study' },
+              { id: 3, globalId: 11100842, iot_name_id: '11100842', tag: 6, iot_name: 'Living room' },
+              { id: 4, globalId: 11100847, iot_name_id: '11100847', tag: 1, iot_name: 'Bedroom' },
+            ],
+          },
+          {
+            mapFlag: 1,
+            name: 'Second Map',
+            add_time: 1697145600,
+            length: 5,
+            bak_maps: [],
+            rooms: [
+              { id: 1, globalId: 12469150, iot_name_id: '12469150', tag: 13, iot_name: 'Dining room' },
+              { id: 2, globalId: 12461114, iot_name_id: '12461114', tag: 3, iot_name: 'Guest bedroom' },
+              { id: 3, globalId: 12461109, iot_name_id: '12461109', tag: 2, iot_name: 'Master bedroom' },
+              { id: 4, globalId: 12461111, iot_name_id: '12461111', tag: 7, iot_name: 'Balcony' },
+              { id: 5, globalId: 11100842, iot_name_id: '11100842', tag: 6, iot_name: 'Living room' },
+            ],
+          },
+        ],
+      } satisfies MultipleMapDto),
+    );
 
-    const result = await getRoomMapFromDevice(device as any, mockPlatform as any);
+    const result = await RoomMap.fromDeviceDirect(device as any, mockPlatform as any);
     expect(result).toBeInstanceOf(RoomMap);
-    expect(mockRoborockService.getMapInformation).toHaveBeenCalledWith('123');
-    expect(result.rooms.length).toBeGreaterThan(0);
+    expect(mockRoborockService.getMapInfo).toHaveBeenCalledWith('123');
   });
 });

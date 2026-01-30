@@ -4,24 +4,23 @@ import { AnsiLogger } from 'matterbridge/logger';
 import { URLSearchParams } from 'node:url';
 import { BaseUrl, HomeInfo, UserData, AuthenticateResponse } from '../models/index.js';
 import { AuthenticateResponseCode } from '../enums/index.js';
+import * as AxiosLogger from 'axios-logger';
 
 export class RoborockAuthenticateApi {
-  private readonly logger: AnsiLogger;
-  private axiosFactory: AxiosStatic;
   private sessionId: string;
   private username?: string;
   private authToken?: string;
-  private readonly baseUrl: string;
-  // Cached values from base URL lookup for v4 login
   private cachedBaseUrl?: string;
   private cachedCountry?: string;
   private cachedCountryCode?: string;
 
-  constructor(logger: AnsiLogger, axiosFactory: AxiosStatic = axios, sessionId?: string, baseUrl = 'https://usiot.roborock.com') {
+  constructor(
+    private readonly logger: AnsiLogger,
+    private readonly axiosFactory: AxiosStatic = axios,
+    sessionId?: string,
+    private readonly baseUrl = 'https://usiot.roborock.com',
+  ) {
     this.sessionId = sessionId ?? crypto.randomUUID();
-    this.axiosFactory = axiosFactory;
-    this.logger = logger;
-    this.baseUrl = baseUrl;
   }
 
   public async loginWithUserData(username: string, userData: UserData): Promise<UserData> {
@@ -207,30 +206,32 @@ export class RoborockAuthenticateApi {
       },
     });
 
-    instance.interceptors.request.use((config) => {
-      this.logger.debug('=== HTTP Request ===');
-      this.logger.debug(`URL: ${config.baseURL}/${config.url}`);
-      this.logger.debug(`Method: ${config.method?.toUpperCase()}`);
-      this.logger.debug(`Params: ${JSON.stringify(config.params)}`);
-      this.logger.debug(`Data: ${JSON.stringify(config.data)}`);
-      this.logger.debug(`Headers: ${JSON.stringify(config.headers)}`);
-      return config;
-    });
+    instance.interceptors.request.use((request) => {
+      return AxiosLogger.requestLogger(request, {
+        prefixText: 'Roborock Authenticate API',
+        dateFormat: 'HH:MM:ss',
+        headers: true,
+        data: true,
+        method: true,
+        url: true,
+        params: true,
+        logger: this.logger.debug.bind(this.logger),
+      });
+    }, AxiosLogger.errorLogger);
 
-    instance.interceptors.response.use(
-      (response) => {
-        this.logger.debug('=== HTTP Response ===');
-        this.logger.debug(`Status: ${response.status}`);
-        this.logger.debug(`Data: ${JSON.stringify(response.data)}`);
-        return response;
-      },
-      (error) => {
-        this.logger.debug('=== HTTP Error ===');
-        this.logger.debug(`Error: ${JSON.stringify(error.response?.data ?? error.message)}`);
-        return Promise.reject(error instanceof Error ? error : new Error(String(error)));
-      },
-    );
-
+    instance.interceptors.response.use((response) => {
+      AxiosLogger.responseLogger(response, {
+        prefixText: 'Roborock Authenticate API',
+        dateFormat: 'HH:MM:ss',
+        headers: true,
+        data: true,
+        status: true,
+        statusText: true,
+        params: true,
+        logger: this.logger.debug.bind(this.logger),
+      });
+      return response;
+    }, AxiosLogger.errorLogger);
     return instance;
   }
 

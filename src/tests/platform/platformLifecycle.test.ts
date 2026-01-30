@@ -55,7 +55,6 @@ describe('PlatformLifecycle', () => {
   beforeEach(() => {
     vi.useFakeTimers();
     mockPlatform = createMockPlatform();
-    mockRegistry = new DeviceRegistry();
     mockConfigManager = {
       validateConfig: vi.fn().mockReturnValue(true),
       refreshInterval: 60,
@@ -63,7 +62,7 @@ describe('PlatformLifecycle', () => {
     } as unknown as PlatformConfigManager;
     mockState = new PlatformState();
     mockDeps = createMockDependencies();
-    lifecycle = new PlatformLifecycle(mockPlatform, mockRegistry, mockConfigManager, mockState, mockDeps);
+    lifecycle = new PlatformLifecycle(mockPlatform, mockConfigManager, mockState, mockDeps);
   });
 
   afterEach(() => {
@@ -122,7 +121,7 @@ describe('PlatformLifecycle', () => {
         ...mockPlatform,
         ready: readyPromise,
       } as MatterbridgeDynamicPlatform;
-      lifecycle = new PlatformLifecycle(customMockPlatform, mockRegistry, mockConfigManager, mockState, mockDeps);
+      lifecycle = new PlatformLifecycle(customMockPlatform, mockConfigManager, mockState, mockDeps);
 
       const startPromise = lifecycle.onStart('test');
 
@@ -283,7 +282,7 @@ describe('PlatformLifecycle', () => {
         ...mockConfigManager,
         unregisterOnShutdown: false,
       } as PlatformConfigManager;
-      lifecycle = new PlatformLifecycle(mockPlatform, mockRegistry, fakeConfigManager, mockState, mockDeps);
+      lifecycle = new PlatformLifecycle(mockPlatform, fakeConfigManager, mockState, mockDeps);
       await lifecycle.onShutdown('test');
 
       expect(mockDeps.unregisterAllDevices).not.toHaveBeenCalledWith(500);
@@ -294,7 +293,7 @@ describe('PlatformLifecycle', () => {
         ...mockConfigManager,
         unregisterOnShutdown: false,
       } as PlatformConfigManager;
-      lifecycle = new PlatformLifecycle(mockPlatform, mockRegistry, fakeConfigManager, mockState, mockDeps);
+      lifecycle = new PlatformLifecycle(mockPlatform, fakeConfigManager, mockState, mockDeps);
 
       await lifecycle.onShutdown('test');
 

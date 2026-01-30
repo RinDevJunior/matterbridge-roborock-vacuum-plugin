@@ -1,14 +1,15 @@
 import { RoboticVacuumCleaner } from 'matterbridge/devices';
 import { CommandHandlerData, MatterbridgeEndpointCommands } from 'matterbridge';
-import { RoomMap } from '../model/RoomMap.js';
-import { getOperationalStates, getSupportedAreas, getSupportedCleanModes, getSupportedRunModes } from '../initialData/index.js';
+import { RoomMap, MapEntry } from '../core/application/models/index.js';
+import { getOperationalStates, getSupportedAreas, getSupportedCleanModes } from '../initialData/index.js';
 import { AnsiLogger, debugStringify } from 'matterbridge/logger';
 import { BehaviorFactoryResult } from '../share/behaviorFactory.js';
 import { ModeBase, RvcOperationalState, ServiceArea } from 'matterbridge/matter/clusters';
-import { ExperimentalFeatureSetting } from '../model/ExperimentalFeatureSetting.js';
 import { CommandNames } from '../behaviors/BehaviorDeviceGeneric.js';
 import { DockingStationStatus } from '../model/DockingStationStatus.js';
 import { Device } from '../roborockCommunication/models/index.js';
+import { PlatformConfigManager } from '../platform/platformConfig.js';
+import { baseRunModeConfigs, getRunModeOptions } from '../behaviors/roborock.vacuum/core/runModeConfig.js';
 
 interface IdentifyCommandRequest {
   identifyTime?: number;
@@ -18,34 +19,22 @@ export class RoborockVacuumCleaner extends RoboticVacuumCleaner {
   username: string | undefined;
   device: Device;
   roomInfo: RoomMap | undefined;
+  mapInfos: MapEntry[] | undefined;
   dockStationStatus: DockingStationStatus | undefined;
 
   /**
    * Create a new Roborock Vacuum Cleaner device.
    * Initializes the device with supported cleaning modes, run modes, areas, and routines.
-   * @param username - User's account email
-   * @param device - Device information from Roborock API
-   * @param roomMap - Room mapping information
-   * @param routineAsRoom - Cleaning routines represented as areas
-   * @param enableExperimentalFeature - Experimental feature settings
-   * @param log - Logger instance
    */
-  constructor(
-    username: string,
-    device: Device,
-    roomMap: RoomMap,
-    routineAsRoom: ServiceArea.Area[],
-    enableExperimentalFeature: ExperimentalFeatureSetting | undefined,
-    log: AnsiLogger,
-  ) {
-    const deviceConfig = RoborockVacuumCleaner.initializeDeviceConfiguration(device, roomMap, routineAsRoom, enableExperimentalFeature, log);
+  constructor(username: string, device: Device, roomMap: RoomMap, routineAsRoom: ServiceArea.Area[], configManager: PlatformConfigManager, log: AnsiLogger, mapInfos: MapEntry[]) {
+    const deviceConfig = RoborockVacuumCleaner.initializeDeviceConfiguration(device, roomMap, routineAsRoom, configManager, log, mapInfos);
 
     super(
       deviceConfig.deviceName,
       device.duid,
       deviceConfig.bridgeMode,
-      deviceConfig.supportedRunModes[0].mode,
-      deviceConfig.supportedRunModes,
+      deviceConfig.runModeConfigs[0].mode,
+      deviceConfig.runModeConfigs,
       deviceConfig.cleanModes[0].mode,
       deviceConfig.cleanModes,
       undefined,
@@ -61,10 +50,9 @@ export class RoborockVacuumCleaner extends RoboticVacuumCleaner {
     log.debug(
       `Creating RoborockVacuumCleaner for device: ${deviceConfig.deviceName}, 
       model: ${device.data.model}, 
-      forceRunAtDefault: ${enableExperimentalFeature?.advancedFeature?.forceRunAtDefault}
+      forceRunAtDefault: ${configManager.forceRunAtDefault}
       bridgeMode: ${deviceConfig.bridgeMode},
       Supported Clean Modes: ${debugStringify(deviceConfig.cleanModes)},
-      Supported Run Modes: ${debugStringify(deviceConfig.supportedRunModes)},
       Supported Areas: ${debugStringify(deviceConfig.supportedAreas)},
       Supported Maps: ${debugStringify(deviceConfig.supportedMaps)}
       Supported Areas and Routines: ${debugStringify(deviceConfig.supportedAreaAndRoutines)},
@@ -78,12 +66,11 @@ export class RoborockVacuumCleaner extends RoboticVacuumCleaner {
   /**
    * Configure command handlers for the vacuum device.
    * Sets up handlers for identify, area selection, mode changes, and cleaning operations.
-   * @param behaviorHandler - Behavior handler that executes device commands
    */
   public configureHandler(behaviorHandler: BehaviorFactoryResult): void {
     this.addCommandHandlerWithErrorHandling(CommandNames.IDENTIFY, async ({ request, cluster, attributes, endpoint }) => {
       this.log.info(`Identify command received for endpoint ${endpoint}, cluster ${cluster}, attributes ${debugStringify(attributes)}, request: ${JSON.stringify(request)}`);
-      behaviorHandler.executeCommand(CommandNames.PLAY_SOUND_TO_LOCATE, (request as IdentifyCommandRequest).identifyTime ?? 5);
+      behaviorHandler.executeCommand(CommandNames.IDENTIFY, (request as IdentifyCommandRequest).identifyTime ?? 5);
     });
 
     this.addCommandHandlerWithErrorHandling(CommandNames.SELECT_AREAS, async ({ request }) => {
@@ -116,36 +103,39 @@ export class RoborockVacuumCleaner extends RoboticVacuumCleaner {
       this.log.info('GoHome command received');
       behaviorHandler.executeCommand(CommandNames.GO_HOME);
     });
+
+    this.addCommandHandlerWithErrorHandling(CommandNames.STOP, async () => {
+      this.log.info('Stop command received');
+      behaviorHandler.executeCommand(CommandNames.STOP);
+    });
   }
 
   /**
    * Initialize device configuration including modes, areas, and maps.
-   * @private
    */
   private static initializeDeviceConfiguration(
     device: Device,
     roomMap: RoomMap,
     routineAsRoom: ServiceArea.Area[],
-    enableExperimentalFeature: ExperimentalFeatureSetting | undefined,
+    configManager: PlatformConfigManager,
     log: AnsiLogger,
+    mapInfos: MapEntry[],
   ) {
-    const cleanModes = getSupportedCleanModes(device.data.model, enableExperimentalFeature);
-    const supportedRunModes = getSupportedRunModes();
-    const enableMultipleMap = enableExperimentalFeature?.enableExperimentalFeature && enableExperimentalFeature?.advancedFeature?.enableMultipleMap;
+    const cleanModes = getSupportedCleanModes(device.data.model, configManager);
     const operationalState = getOperationalStates();
 
-    const { supportedAreas, supportedMaps } = getSupportedAreas(device.rooms, roomMap, enableMultipleMap, log);
+    const { supportedAreas, supportedMaps } = getSupportedAreas(device.rooms, roomMap, configManager.isMultipleMapEnabled, log, mapInfos);
     const supportedAreaAndRoutines = [...supportedAreas, ...routineAsRoom];
+    const runModeConfigs = getRunModeOptions(baseRunModeConfigs);
     const deviceName = `${device.name}-${device.duid}`.replace(/\s+/g, '');
 
-    const bridgeMode: 'server' | 'matter' | undefined =
-      enableExperimentalFeature?.enableExperimentalFeature && enableExperimentalFeature?.advancedFeature?.enableServerMode ? 'server' : 'matter';
+    const bridgeMode: 'server' | 'matter' | undefined = configManager.isServerModeEnabled ? 'server' : 'matter';
 
     return {
       deviceName,
       bridgeMode,
       cleanModes,
-      supportedRunModes,
+      runModeConfigs,
       supportedAreas,
       supportedMaps,
       supportedAreaAndRoutines,
@@ -156,9 +146,6 @@ export class RoborockVacuumCleaner extends RoboticVacuumCleaner {
   /**
    * Helper method to add command handler with error handling.
    * Wraps handler logic in try-catch to avoid code duplication.
-   * @param commandName - Name of the command for logging
-   * @param handler - Async handler function
-   * @private
    */
   private addCommandHandlerWithErrorHandling(commandName: keyof MatterbridgeEndpointCommands, handler: (context: CommandHandlerData) => Promise<void>): void {
     this.addCommandHandler(commandName, async (context: CommandHandlerData) => {

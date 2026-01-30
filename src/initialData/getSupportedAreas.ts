@@ -1,9 +1,8 @@
 import { AnsiLogger, debugStringify } from 'matterbridge/logger';
 import { ServiceArea } from 'matterbridge/matter/clusters';
-import { RoomMap } from '../model/RoomMap.js';
-import { Room } from '../roborockCommunication/models/index.js';
+import { RoomMap, RoomIndexMap, MapEntry } from '../core/application/models/index.js';
+import { RoomDto } from '../roborockCommunication/models/index.js';
 import { randomInt } from 'node:crypto';
-import { RoomIndexMap } from '../model/RoomIndexMap.js';
 import { DEFAULT_AREA_ID_UNKNOWN, DEFAULT_AREA_ID_ERROR, MULTIPLE_MAP_AREA_ID_OFFSET, RANDOM_ROOM_MIN, RANDOM_ROOM_MAX } from '../constants/index.js';
 
 /**
@@ -40,9 +39,16 @@ export interface SupportedAreasResult {
  * @param roomMap - Parsed room map data
  * @param enableMultipleMap - Whether multiple map support is enabled
  * @param log - Optional logger instance
+ * @param mapInfos - Optional map information for multiple map support
  * @returns Supported areas, maps, and room index mapping
  */
-export function getSupportedAreas(vacuumRooms: Room[], roomMap: RoomMap | undefined, enableMultipleMap = false, log?: AnsiLogger): SupportedAreasResult {
+export function getSupportedAreas(
+  vacuumRooms: RoomDto[],
+  roomMap: RoomMap | undefined,
+  enableMultipleMap = false,
+  log?: AnsiLogger,
+  mapInfos: MapEntry[] = [],
+): SupportedAreasResult {
   log?.debug('getSupportedAreas-vacuum room', debugStringify(vacuumRooms));
   log?.debug('getSupportedAreas-roomMap', roomMap ? debugStringify(roomMap) : 'undefined');
 
@@ -74,7 +80,7 @@ export function getSupportedAreas(vacuumRooms: Room[], roomMap: RoomMap | undefi
     };
   }
 
-  const supportedMaps = getSupportedMaps(enableMultipleMap, supportedAreas, roomMap);
+  const supportedMaps = getSupportedMaps(enableMultipleMap, supportedAreas, mapInfos);
 
   log?.debug('getSupportedAreas - supportedAreas', debugStringify(supportedAreas));
   log?.debug('getSupportedAreas - supportedMaps', debugStringify(supportedMaps));
@@ -122,25 +128,25 @@ interface ProcessedData {
   indexMap: Map<number, MapInfo>;
 }
 
-function processValidData(enableMultipleMap: boolean, vacuumRooms: Room[], roomMap?: RoomMap): ProcessedData {
+function processValidData(enableMultipleMap: boolean, vacuumRooms: RoomDto[], roomMap?: RoomMap): ProcessedData {
   const indexMap = new Map<number, MapInfo>();
   const supportedAreas: ServiceArea.Area[] =
     roomMap?.rooms !== undefined && roomMap.rooms.length > 0
       ? roomMap.rooms.map((room, index) => {
           const locationName =
-            room.displayName ?? vacuumRooms.find((r) => r.id === room.globalId || r.id === room.id)?.name ?? `Unknown Room ${randomInt(RANDOM_ROOM_MIN, RANDOM_ROOM_MAX)}`;
+            room.iot_name ?? vacuumRooms.find((r) => r.id === room.globalId || r.id === room.id)?.name ?? `Unknown Room ${randomInt(RANDOM_ROOM_MIN, RANDOM_ROOM_MAX)}`;
 
           const areaId = enableMultipleMap ? index + MULTIPLE_MAP_AREA_ID_OFFSET : room.id;
-          const mapId = enableMultipleMap ? (room.mapId ?? null) : null;
+          const mapId = enableMultipleMap ? (room.iot_map_id ?? null) : null;
 
-          indexMap.set(areaId, { roomId: room.id, mapId: room.mapId ?? null });
+          indexMap.set(areaId, { roomId: room.id, mapId: room.iot_map_id ?? null });
           return {
             areaId: areaId,
             mapId: mapId,
             areaInfo: {
               locationInfo: {
                 locationName: locationName,
-                floorNumber: room.mapId ?? null,
+                floorNumber: room.iot_map_id ?? null,
                 areaType: null,
               },
               landmarkInfo: null,
@@ -154,14 +160,12 @@ function processValidData(enableMultipleMap: boolean, vacuumRooms: Room[], roomM
   };
 }
 
-function getSupportedMaps(enableMultipleMap: boolean, supportedAreas: ServiceArea.Area[], roomMap?: RoomMap): ServiceArea.Map[] {
+function getSupportedMaps(enableMultipleMap: boolean, _supportedAreas: ServiceArea.Area[], mapInfos: MapEntry[]): ServiceArea.Map[] {
   if (enableMultipleMap) {
-    return (
-      roomMap?.mapInfo?.map((map) => ({
-        mapId: map.id,
-        name: map.name ?? `Map ${map.id}`,
-      })) ?? []
-    );
+    return mapInfos.map((map) => ({
+      mapId: map.id,
+      name: map.name ?? `Map ${map.id}`,
+    }));
   }
 
   return [];
