@@ -101,6 +101,7 @@
     "vitest": "4.0.17"
   },
   "dependencies": {
+    "@matter/types": "^0.16.8",
     "@types/node-persist": "3.1.8",
     "axios": "1.13.2",
     "axios-logger": "2.8.1",
