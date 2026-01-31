@@ -1,6 +1,6 @@
 {
   "title": "Matterbridge Roborock Vacuum Plugin",
-  "description": "matterbridge-roborock-vacuum-plugin v. 1.1.3-rc04 by https://github.com/RinDevJunior",
+  "description": "matterbridge-roborock-vacuum-plugin v. 1.1.3-rc05 by https://github.com/RinDevJunior",
   "type": "object",
   "properties": {
     "name": {
@@ -58,8 +58,7 @@
               "verificationCode": {
                 "title": "Verification Code",
                 "description": "6-digit verification code sent to your email. Leave empty to request a new code, then restart the plugin after entering the code.",
-                "type": "string",
-                "pattern": "^[0-9]{6}$"
+                "type": "string"
               }
             }
           },

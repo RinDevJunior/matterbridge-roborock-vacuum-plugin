@@ -36,6 +36,19 @@ export class ConnectionStateListener implements AbstractConnectionListener {
 
   public async onDisconnected(duid: string, message: string): Promise<void> {
     this.logger.error(`Device ${duid} disconnected from ${this.clientName} with message: ${message}`);
+
+    if (message.includes('Connection refused: Not authorized')) {
+      this.logger.notice(`Device ${duid} authorization error, stopping reconnection attempts.`);
+      this.shouldReconnect = false;
+      return;
+    }
+
+    if (message.includes('MQTT connection offline')) {
+      this.logger.notice(`Device ${duid} went offline, likely due to network issues. Waiting for automatic reconnection.`);
+      this.shouldReconnect = false;
+      return;
+    }
+
     if (!this.shouldReconnect) {
       this.logger.notice(`Device ${duid} disconnected from ${this.clientName}, but re-registration is disabled.`);
       return;

@@ -4,6 +4,17 @@ All notable changes to this project will be documented in this file.
 
 ---
 
+## [1.1.3-rc05] - 2026-01-31
+
+### Changed
+
+- Bumped version to `1.1.3-rc05`.
+- Updated `matterbridge-roborock-vacuum-plugin.schema.json` and `matterbridge-roborock-vacuum-plugin.config.json` to the new version.
+- Updated `buildpackage` script to use `matterbridge-roborock-vacuum-plugin-1.1.3-rc05.tgz`.
+- Updated docs and internal references.
+
+---
+
 ## [1.1.0-rc15] - 2025-07-26
 
 ### Changed

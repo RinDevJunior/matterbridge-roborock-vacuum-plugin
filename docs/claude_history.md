@@ -6,7 +6,7 @@
 
 - **Task**: Update config.json and TypeScript models to match latest schema.json structure
 - **Changes**:
-  - Restructured config.json to align with schema.json v1.1.3-rc04
+  - Restructured config.json to align with schema.json v1.1.3-rc05
   - Moved properties into proper nested structures:
     - `authentication`: Added `username`, `region`, `forceAuthentication`; kept `authenticationMethod`, `verificationCode`
     - `pluginConfiguration`: Consolidated `whiteList`, `enableServerMode`, `enableMultipleMap`, `sanitizeSensitiveLogs`, `refreshInterval`, `debug`, `unregisterOnShutdown`
