@@ -181,15 +181,21 @@ describe('PendingResponseTracker', () => {
     expect(logger.warn).toHaveBeenCalledWith(expect.stringContaining('Response message has no body'));
   });
 
-  it('should warn when response is not for protocol 102', () => {
+  it('should resolve when payload present on non-102 protocol', async () => {
+    const messageId = 9999;
+    const request = { method: 'test', messageId } as RequestMessage;
+    const dpsPayload = { id: messageId, result: { ok: true } };
     const response = {
-      body: { data: {} },
-      isForProtocol: (_proto: Protocol) => false,
+      body: { data: { 5: dpsPayload } },
+      isForProtocol: (p: Protocol) => p === Protocol.general_response,
+      get: (p: Protocol) => (p === Protocol.general_response ? dpsPayload : undefined),
     } as any;
 
+    const promise = tracker.waitFor(messageId, request);
     tracker.tryResolve(response);
 
-    expect(logger.warn).toHaveBeenCalledWith(expect.stringContaining('Response message is not for protocol 102'));
+    await expect(promise).resolves.toEqual(response);
+    expect(tracker['pending'].has(messageId)).toBe(false);
   });
 
   it('should warn when response missing DPS payload', () => {
@@ -221,6 +227,55 @@ describe('PendingResponseTracker', () => {
     const request = { method: 'get_status', messageId } as RequestMessage;
     const complexResult = [110];
     const response = createResponseMessage(messageId, complexResult);
+
+    const promise = tracker.waitFor(messageId, request);
+    tracker.tryResolve(response);
+
+    await expect(promise).resolves.toEqual(response);
+    expect(tracker['pending'].has(messageId)).toBe(false);
+  });
+
+  it('should resolve when rpc_response payload is a number', async () => {
+    const messageId = 4242;
+    const request = { method: 'test', messageId } as RequestMessage;
+    const response = {
+      body: { data: { 102: messageId } },
+      isForProtocol: (proto: Protocol) => proto === Protocol.rpc_response,
+      get: (proto: Protocol) => (proto === Protocol.rpc_response ? messageId : undefined),
+    } as any;
+
+    const promise = tracker.waitFor(messageId, request);
+    tracker.tryResolve(response);
+
+    await expect(promise).resolves.toEqual(response);
+    expect(tracker['pending'].has(messageId)).toBe(false);
+  });
+
+  it('should resolve when id is present in another data mapping', async () => {
+    const messageId = 6666;
+    const request = { method: 'test', messageId } as RequestMessage;
+    const response = {
+      body: { data: { 123: messageId } },
+      // still marked as rpc_response (some devices do this)
+      isForProtocol: (proto: Protocol) => proto === Protocol.rpc_response,
+      get: (_proto: Protocol) => undefined,
+    } as any;
+
+    const promise = tracker.waitFor(messageId, request);
+    tracker.tryResolve(response);
+
+    await expect(promise).resolves.toEqual(response);
+    expect(tracker['pending'].has(messageId)).toBe(false);
+  });
+
+  it('should resolve when id is a numeric string', async () => {
+    const messageId = 13131;
+    const request = { method: 'test', messageId } as RequestMessage;
+    const response = {
+      body: { data: { 102: { id: String(messageId), result: { ok: true } } } },
+      isForProtocol: (_p: Protocol) => true,
+      get: (_p: Protocol) => undefined,
+    } as any;
 
     const promise = tracker.waitFor(messageId, request);
     tracker.tryResolve(response);

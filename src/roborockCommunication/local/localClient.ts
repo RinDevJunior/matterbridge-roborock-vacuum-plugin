@@ -228,16 +228,16 @@ export class LocalNetworkClient extends AbstractClient {
       await this.processHelloResponse(response);
       return true;
     } catch (error) {
-      this.logger.error(` [LocalNetworkClient]: ${this.duid} failed to receive hello response: ${error}`);
+      this.logger.error(`[LocalNetworkClient]: ${this.duid} failed to receive hello response: ${error}`);
       return false;
     }
   }
 
   private async processHelloResponse(response: ResponseMessage): Promise<void> {
-    this.logger.info(` [LocalNetworkClient]: ${this.duid} received hello response: ${debugStringify(response)}`);
+    this.logger.info(`[LocalNetworkClient]: ${this.duid} received hello response: ${debugStringify(response)}`);
 
     if (response.header === undefined) {
-      this.logger.error(` [LocalNetworkClient]: ${this.duid} hello response missing header.`);
+      this.logger.error(`[LocalNetworkClient]: ${this.duid} hello response missing header.`);
       return;
     }
 
