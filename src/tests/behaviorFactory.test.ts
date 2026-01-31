@@ -3,8 +3,8 @@ import { configureBehavior } from '../share/behaviorFactory.js';
 import { SMART_MODELS } from '../constants/index.js';
 import { AnsiLogger } from 'matterbridge/logger';
 import { RoborockService } from '../services/roborockService.js';
-import { CleanModeSettings } from '../model/ExperimentalFeatureSetting.js';
 import { BehaviorDeviceGeneric } from '../behaviors/BehaviorDeviceGeneric.js';
+import { CleanModeSettings } from '../model/RoborockPluginPlatformConfig.js';
 
 function createMockLogger(): AnsiLogger {
   return {
@@ -25,19 +25,19 @@ describe('configureBehavior', () => {
 
   it('returns smart handler for smart model', () => {
     const model = Array.from(SMART_MODELS)[0];
-    const result = configureBehavior(model, duid, roborockService, cleanModeSettings, false, logger);
+    const result = configureBehavior(model, duid, roborockService, false, cleanModeSettings, false, logger);
     expect(result).toBeInstanceOf(BehaviorDeviceGeneric);
   });
 
   it('returns default handler for non-smart model', () => {
     const model = 'non-smart-model';
-    const result = configureBehavior(model, duid, roborockService, cleanModeSettings, false, logger);
+    const result = configureBehavior(model, duid, roborockService, false, cleanModeSettings, false, logger);
     expect(result).toBeInstanceOf(BehaviorDeviceGeneric);
   });
 
   it('returns default handler if forceRunAtDefault is true, even for smart model', () => {
     const model = Array.from(SMART_MODELS)[0];
-    const result = configureBehavior(model, duid, roborockService, cleanModeSettings, true, logger);
+    const result = configureBehavior(model, duid, roborockService, false, cleanModeSettings, true, logger);
     expect(result).toBeInstanceOf(BehaviorDeviceGeneric);
   });
 });

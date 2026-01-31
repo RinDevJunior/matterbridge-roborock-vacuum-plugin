@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { PlatformConfigManager, RoborockPluginPlatformConfig } from '../../platform/platformConfig.js';
+import { PlatformConfigManager } from '../../platform/platformConfig.js';
 import type { AnsiLogger } from 'matterbridge/logger';
-import { createDefaultExperimentalFeatureSetting } from '../../model/ExperimentalFeatureSetting.js';
+import { createDefaultAdvancedFeature, PluginConfiguration, RoborockPluginPlatformConfig } from '../../model/RoborockPluginPlatformConfig.js';
 
 function createMockLogger(): AnsiLogger {
   return {
@@ -16,17 +16,23 @@ function createMockLogger(): AnsiLogger {
 
 function createMockConfig(overrides: Partial<RoborockPluginPlatformConfig> = {}): RoborockPluginPlatformConfig {
   return {
-    username: 'user@example.com',
-    whiteList: [],
-    blackList: [],
-    useInterval: true,
-    refreshInterval: 60,
-    debug: false,
     authentication: {
+      username: 'testuser',
+      region: 'US',
+      forceAuthentication: false,
       authenticationMethod: 'Password',
       password: 'pass',
     },
-    enableExperimental: createDefaultExperimentalFeatureSetting(),
+    pluginConfiguration: {
+      whiteList: [],
+      enableServerMode: false,
+      enableMultipleMap: false,
+      sanitizeSensitiveLogs: true,
+      refreshInterval: 60,
+      debug: false,
+      unregisterOnShutdown: false,
+    } satisfies PluginConfiguration,
+    advancedFeature: createDefaultAdvancedFeature(),
     ...overrides,
   } as RoborockPluginPlatformConfig;
 }
@@ -51,7 +57,7 @@ describe('PlatformConfigManager', () => {
       expect(manager.validateConfig()).toBe(true);
     });
     it('should return false and log error if username is missing', () => {
-      config.username = '';
+      config.authentication.username = '';
       manager = PlatformConfigManager.create(config, mockLogger);
       expect(manager.validateConfig()).toBe(false);
     });
@@ -88,26 +94,24 @@ describe('PlatformConfigManager', () => {
 
   describe('getters', () => {
     it('should return username, password, verificationCode, authenticationMethod', () => {
-      expect(manager.username).toBe('user@example.com');
+      expect(manager.username).toBe('testuser');
       expect(manager.password).toBe('pass');
       expect(manager.verificationCode).toBe('');
       expect(manager.authenticationMethod).toBe('Password');
     });
     it('should return region in uppercase or default to US', () => {
       expect(manager.region).toBe('US');
-      config.region = 'eu';
+      config.authentication.region = 'EU';
       manager = PlatformConfigManager.create(config, mockLogger);
       expect(manager.region).toBe('EU');
     });
     it('should return refreshInterval or default', () => {
       expect(manager.refreshInterval).toBe(60);
-      config.refreshInterval = undefined as any;
+      config.pluginConfiguration.refreshInterval = undefined as any;
       manager = PlatformConfigManager.create(config, mockLogger);
       expect(manager.refreshInterval).toBeDefined();
     });
-    it('should return whiteList, blackList, unregisterOnShutdown, rawConfig', () => {
-      expect(manager.whiteList).toEqual([]);
-      expect(manager.blackList).toEqual([]);
+    it('should return unregisterOnShutdown, rawConfig', () => {
       expect(manager.unregisterOnShutdown).toBe(false);
       expect(manager.rawConfig).toBe(config);
     });
@@ -115,30 +119,40 @@ describe('PlatformConfigManager', () => {
 
   describe('experimental features', () => {
     it('should return experimental feature flags and settings', () => {
-      expect(manager.isExperimentalEnabled).toBe(manager.experimentalSettings.enableExperimentalFeature);
-      expect(manager.advancedFeatures).toBe(manager.experimentalSettings.advancedFeature);
+      expect(manager.isAdvancedFeatureEnabled).toBe(manager.rawConfig.advancedFeature.enableAdvancedFeature);
+      expect(manager.advancedFeatureSettings).toBe(manager.rawConfig.advancedFeature.settings);
     });
-    it('should return cleanModeSettings only if enabled', () => {
-      expect(manager.cleanModeSettings).toBeUndefined();
-      config.enableExperimental.cleanModeSettings = { enableCleanModeMapping: true } as any;
-      config.enableExperimental.enableExperimentalFeature = true;
+    it('should return cleanModeSettings in all cases when enabled', () => {
+      expect(manager.cleanModeSettings).not.toBeUndefined();
+      config.advancedFeature.enableAdvancedFeature = true;
+      config.advancedFeature.settings = {
+        showRoutinesAsRoom: false,
+        forceRunAtDefault: false,
+        includeDockStationStatus: false,
+        enableCleanModeMapping: true,
+        useVacationModeToSendVacuumToDock: false,
+        cleanModeSettings: createDefaultAdvancedFeature().settings.cleanModeSettings,
+      };
+      config.advancedFeature.enableAdvancedFeature = true;
       manager = PlatformConfigManager.create(config, mockLogger);
       expect(manager.cleanModeSettings).toBeDefined();
     });
     it('should return correct advanced feature flags', () => {
-      config.enableExperimental.advancedFeature = {
-        enableServerMode: true,
-        enableMultipleMap: true,
-        showRoutinesAsRoom: true,
-        forceRunAtDefault: true,
-        alwaysExecuteAuthentication: false,
-        includeDockStationStatus: true,
-      } as any;
-      config.enableServerMode = true;
-      config.enableExperimental.enableExperimentalFeature = true;
+      config.advancedFeature = {
+        enableAdvancedFeature: true,
+        settings: {
+          showRoutinesAsRoom: true,
+          forceRunAtDefault: true,
+          includeDockStationStatus: true,
+          enableCleanModeMapping: false,
+          useVacationModeToSendVacuumToDock: false,
+          cleanModeSettings: createDefaultAdvancedFeature().settings.cleanModeSettings,
+        },
+      };
+      config.pluginConfiguration.enableServerMode = true;
+      config.pluginConfiguration.enableMultipleMap = false;
       manager = PlatformConfigManager.create(config, mockLogger);
       expect(manager.isServerModeEnabled).toBe(true);
-      // Multiple map is always false by constructor override
       expect(manager.isMultipleMapEnabled).toBe(false);
       expect(manager.showRoutinesAsRoom).toBe(true);
       expect(manager.forceRunAtDefault).toBe(true);
@@ -148,21 +162,16 @@ describe('PlatformConfigManager', () => {
   });
 
   describe('device filtering', () => {
-    it('should allow device if not blacklisted and whitelist is empty', () => {
+    it('should allow device if whitelist is empty', () => {
       expect(manager.isDeviceAllowed({ duid: 'abc', deviceName: 'dev1' })).toBe(true);
     });
-    it('should deny device if blacklisted', () => {
-      config.blackList = ['abc'];
-      manager = PlatformConfigManager.create(config, mockLogger);
-      expect(manager.isDeviceAllowed({ duid: 'abc', deviceName: 'dev1' })).toBe(false);
-    });
     it('should allow device if whitelisted', () => {
-      config.whiteList = ['abc'];
+      config.pluginConfiguration.whiteList = ['abc'];
       manager = PlatformConfigManager.create(config, mockLogger);
       expect(manager.isDeviceAllowed({ duid: 'abc', deviceName: 'dev1' })).toBe(true);
     });
     it('should deny device if not in whitelist', () => {
-      config.whiteList = ['other'];
+      config.pluginConfiguration.whiteList = ['dev2-duid456'];
       manager = PlatformConfigManager.create(config, mockLogger);
       expect(manager.isDeviceAllowed({ duid: 'abc', deviceName: 'dev1' })).toBe(false);
     });

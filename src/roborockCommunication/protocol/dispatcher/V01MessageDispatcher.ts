@@ -9,6 +9,7 @@ import { CleanModeSetting } from '../../../behaviors/roborock.vacuum/core/CleanM
 import { MopRoute, VacuumSuctionPower } from '../../../behaviors/roborock.vacuum/enums/index.js';
 
 export class V01MessageDispatcher implements AbstractMessageDispatcher {
+  public dispatcherName = 'V01MessageDispatcher';
   constructor(
     private readonly logger: AnsiLogger,
     private readonly client: Client,

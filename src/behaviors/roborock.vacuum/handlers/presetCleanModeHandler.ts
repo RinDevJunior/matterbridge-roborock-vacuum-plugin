@@ -1,20 +1,21 @@
 import { debugStringify } from 'matterbridge/logger';
 import { ModeHandler, HandlerContext } from '../core/modeHandler.js';
+import { CleanModeDisplayLabel } from '../core/cleanModeConfig.js';
 
 export class PresetCleanModeHandler implements ModeHandler {
-  private readonly presetModes = [
-    'Mop & Vacuum: Quick',
-    'Mop & Vacuum: Max',
-    'Mop & Vacuum: Min',
-    'Mop & Vacuum: Quiet',
-    'Mop: Max',
-    'Mop: Min',
-    'Mop: Quick',
-    'Mop: DeepClean',
-    'Vacuum: Max',
-    'Vacuum: Min',
-    'Vacuum: Quiet',
-    'Vacuum: Quick',
+  private readonly presetModes: string[] = [
+    CleanModeDisplayLabel.MopAndVacuumQuick,
+    CleanModeDisplayLabel.MopAndVacuumMax,
+    CleanModeDisplayLabel.MopAndVacuumMin,
+    CleanModeDisplayLabel.MopAndVacuumQuiet,
+    CleanModeDisplayLabel.MopMax,
+    CleanModeDisplayLabel.MopMin,
+    CleanModeDisplayLabel.MopQuick,
+    CleanModeDisplayLabel.MopDeepClean,
+    CleanModeDisplayLabel.VacuumMax,
+    CleanModeDisplayLabel.VacuumMin,
+    CleanModeDisplayLabel.VacuumQuiet,
+    CleanModeDisplayLabel.VacuumQuick,
   ];
 
   public canHandle(_mode: number, activity: string): boolean {

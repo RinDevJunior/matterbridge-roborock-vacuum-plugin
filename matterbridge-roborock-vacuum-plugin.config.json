@@ -2,47 +2,48 @@
   "name": "matterbridge-roborock-vacuum-plugin",
   "type": "DynamicPlatform",
   "version": "1.1.3-rc04",
-  "whiteList": [],
-  "blackList": [],
-  "useInterval": true,
-  "enableExperimental": {
-    "enableExperimentalFeature": false,
-    "advancedFeature": {
-      "showRoutinesAsRooms": false,
-      "includeDockStationStatus": false,
-      "forceRunAtDefault": false,
-      "useVacationModeToSendVacuumToDock": false,
-      "enableServerMode": false,
-      "alwaysExecuteAuthentication": false,
-      "enableMultipleMap": false
-    },
-    "cleanModeSettings": {
-      "enableCleanModeMapping": false,
-      "vacuuming": {
-        "fanMode": "Balanced",
-        "mopRouteMode": "Standard"
-      },
-      "mopping": {
-        "waterFlowMode": "Medium",
-        "mopRouteMode": "Standard",
-        "distanceOff": 25
-      },
-      "vacmop": {
-        "fanMode": "Balanced",
-        "waterFlowMode": "Medium",
-        "mopRouteMode": "Standard",
-        "distanceOff": 25
-      }
-    }
-  },
   "authentication": {
+    "username": "",
+    "region": "US",
+    "forceAuthentication": false,
     "authenticationMethod": "VerificationCode",
     "verificationCode": "",
     "password": ""
   },
-  "debug": true,
-  "unregisterOnShutdown": false,
-  "enableExperimentalFeature": false,
-  "enableServerMode": false,
-  "sanitizeSensitiveLogs": true
+  "pluginConfiguration": {
+    "whiteList": [],
+    "enableServerMode": false,
+    "enableMultipleMap": false,
+    "sanitizeSensitiveLogs": true,
+    "refreshInterval": 60,
+    "debug": true,
+    "unregisterOnShutdown": false
+  },
+  "advancedFeature": {
+    "enableAdvancedFeature": false,
+    "settings": {
+      "showRoutinesAsRoom": false,
+      "includeDockStationStatus": false,
+      "forceRunAtDefault": false,
+      "useVacationModeToSendVacuumToDock": false,
+      "enableCleanModeMapping": false,
+      "cleanModeSettings": {
+        "vacuuming": {
+          "fanMode": "Balanced",
+          "mopRouteMode": "Standard"
+        },
+        "mopping": {
+          "waterFlowMode": "Medium",
+          "mopRouteMode": "Standard",
+          "distanceOff": 25
+        },
+        "vacmop": {
+          "fanMode": "Balanced",
+          "waterFlowMode": "Medium",
+          "mopRouteMode": "Standard",
+          "distanceOff": 25
+        }
+      }
+    }
+  }
 }

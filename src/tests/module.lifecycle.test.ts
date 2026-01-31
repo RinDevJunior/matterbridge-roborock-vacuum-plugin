@@ -3,8 +3,8 @@ import { AnsiLogger, LogLevel } from 'matterbridge/logger';
 import { PlatformMatterbridge } from 'matterbridge';
 import { RoborockMatterbridgePlatform } from '../module.js';
 import initializePlugin from '../module.js';
-import type { RoborockPluginPlatformConfig } from '../platform/platformConfig.js';
 import type { Device } from '../roborockCommunication/models/index.js';
+import { RoborockPluginPlatformConfig } from '../model/RoborockPluginPlatformConfig.js';
 
 function createMockLogger(): AnsiLogger {
   return {
@@ -36,25 +36,42 @@ function createMockConfig(overrides: Partial<RoborockPluginPlatformConfig> = {})
     useInterval: false,
     refreshInterval: 60,
     debug: false,
-    authentication: { password: 'test', authenticationMethod: 'Password' },
-    enableExperimental: {
-      cleanModeSettings: {
-        enableCleanModeMapping: false,
-        vacuuming: {
-          fanMode: 'silent',
-          mopRouteMode: 'standard',
-        },
-      },
-      advancedFeature: {
+    authentication: { username: 'test', region: 'US', forceAuthentication: false, password: 'test', authenticationMethod: 'Password' },
+    pluginConfiguration: {
+      whiteList: [],
+      enableServerMode: false,
+      enableMultipleMap: false,
+      sanitizeSensitiveLogs: false,
+      refreshInterval: 60,
+      debug: false,
+      unregisterOnShutdown: false,
+    },
+    advancedFeature: {
+      enableAdvancedFeature: false,
+      settings: {
         showRoutinesAsRoom: false,
         includeDockStationStatus: false,
         forceRunAtDefault: false,
         useVacationModeToSendVacuumToDock: false,
-        enableMultipleMap: false,
-        enableServerMode: true,
-        alwaysExecuteAuthentication: false,
+        enableCleanModeMapping: false,
+        cleanModeSettings: {
+          vacuuming: {
+            fanMode: 'Silent',
+            mopRouteMode: 'Standard',
+          },
+          mopping: {
+            waterFlowMode: 'Low',
+            mopRouteMode: 'Standard',
+            distanceOff: 0,
+          },
+          vacmop: {
+            fanMode: 'Silent',
+            waterFlowMode: 'Low',
+            mopRouteMode: 'Standard',
+            distanceOff: 25,
+          },
+        },
       },
-      enableExperimentalFeature: false,
     },
     persistDirectory: '/tmp',
     ...overrides,
@@ -149,14 +166,9 @@ describe('module.ts coverage tests', () => {
         }
         const devices = await mockRoborockService.listDevices();
         const vacuums: Device[] = [];
-        if (this.config.whiteList.length > 0) {
-          const whiteList = this.config.whiteList ?? [];
-          for (const item of whiteList) {
-            const duid = item.split('-')[1].trim();
-            const vacuum = devices.find((d: Device) => d.duid === duid);
-            if (vacuum) {
-              vacuums.push(vacuum as Device);
-            }
+        for (const device of devices) {
+          if (this.configManager.isDeviceAllowed({ duid: device.duid, deviceName: device.name })) {
+            vacuums.push(device as Device);
           }
         }
         return vacuums.length > 0;
@@ -398,20 +410,27 @@ describe('module.ts coverage tests', () => {
   describe('experimental features logging', () => {
     it('should have clean mode settings when experimental features are enabled', () => {
       const config = createMockConfig({
-        enableExperimental: {
-          enableExperimentalFeature: true,
-          advancedFeature: {} as any,
-          cleanModeSettings: {
+        advancedFeature: {
+          enableAdvancedFeature: true,
+          settings: {
             enableCleanModeMapping: true,
-            vacuuming: { fanMode: 'test', mopRouteMode: 'test' },
+            cleanModeSettings: {
+              vacuuming: { fanMode: 'Silent', mopRouteMode: 'Standard' },
+              mopping: { waterFlowMode: 'Low', mopRouteMode: 'Standard', distanceOff: 0 },
+              vacmop: { fanMode: 'Silent', waterFlowMode: 'Low', mopRouteMode: 'Standard', distanceOff: 25 },
+            },
+            showRoutinesAsRoom: true,
+            includeDockStationStatus: true,
+            forceRunAtDefault: true,
+            useVacationModeToSendVacuumToDock: true,
           },
         },
       });
       const platform = new RoborockMatterbridgePlatform(mockMatterbridge, mockLogger, config);
 
-      expect(platform.configManager.experimentalSettings.enableExperimentalFeature).toBe(true);
+      expect(platform.configManager.isAdvancedFeatureEnabled).toBe(true);
       expect(platform.configManager.cleanModeSettings).toBeDefined();
-      expect(platform.configManager.cleanModeSettings?.enableCleanModeMapping).toBe(true);
+      expect(platform.configManager.isCustomCleanModeMappingEnabled).toBe(true);
     });
   });
 });

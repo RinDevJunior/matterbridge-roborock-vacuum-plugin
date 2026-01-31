@@ -37,6 +37,7 @@ describe('ModeHandlerRegistry', () => {
       logger: { notice: vi.fn() } as any,
       cleanSettings: {},
       behaviorName: 'TestBehavior',
+      enableCleanModeMapping: false,
     };
 
     await registry.handle('test-duid', 2, 'Cleaning', context);
@@ -67,6 +68,7 @@ describe('ModeHandlerRegistry', () => {
       logger: { notice: vi.fn() } as any,
       cleanSettings: {},
       behaviorName: 'TestBehavior',
+      enableCleanModeMapping: false,
     };
 
     await registry.handle('test-duid', 1, 'Test', context);
@@ -91,6 +93,7 @@ describe('ModeHandlerRegistry', () => {
       logger: { notice: mockNotice } as any,
       cleanSettings: {},
       behaviorName: 'TestBehavior',
+      enableCleanModeMapping: false,
     };
 
     await registry.handle('test-duid', 99, 'Unknown', context);
@@ -115,6 +118,7 @@ describe('ModeHandlerRegistry', () => {
       cleanModeSettings: { test: 'settings' } as any,
       cleanSettings: { 5: new CleanModeSetting(102, 202, 0, 300) },
       behaviorName: 'SmartBehavior',
+      enableCleanModeMapping: true,
     };
 
     await registry.handle('duid-123', 5, 'Mop & Vacuum: Default', context);
@@ -130,6 +134,7 @@ describe('ModeHandlerRegistry', () => {
       roborockService: {} as any,
       logger: { notice: mockNotice } as any,
       cleanSettings: {},
+      enableCleanModeMapping: false,
       behaviorName: 'TestBehavior',
     };
 
