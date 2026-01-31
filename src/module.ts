@@ -294,6 +294,12 @@ export class RoborockMatterbridgePlatform extends MatterbridgeDynamicPlatform {
   }
 
   private async addDevice(device: MatterbridgeEndpoint): Promise<MatterbridgeEndpoint | undefined> {
+      // Add the Identify cluster with the IdentifyType attribute
+      // By default, use IdentifyType.AudibleBeep (audible beep)
+      // eslint-disable-next-line @typescript-eslint/no-var-requires
+      const { Identify } = require('matterbridge/node_modules/@matter/types/dist/clusters/identify.js');
+      const defaultIdentifyType = Identify.IdentifyType.AudibleBeep;
+      device.createDefaultIdentifyClusterServer(0, defaultIdentifyType);
     if (!device.serialNumber || !device.deviceName) {
       this.log.warn('Cannot add device: missing serialNumber or deviceName');
       return undefined;
