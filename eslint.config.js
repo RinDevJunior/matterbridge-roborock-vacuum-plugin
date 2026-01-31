@@ -32,6 +32,7 @@ export default [
         'error',
         {
           'args': 'none',
+          'varsIgnorePattern': '^_',
         },
       ],
       // Relax strict rules that cause too many errors initially

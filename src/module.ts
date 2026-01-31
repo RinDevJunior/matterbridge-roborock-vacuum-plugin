@@ -210,10 +210,10 @@ export class RoborockMatterbridgePlatform extends MatterbridgeDynamicPlatform {
       }
     }
 
-    this.roborockService.setDeviceNotify(async (messageSource: NotifyMessageTypes, homeData: unknown) => {
+    this.roborockService.setDeviceNotify((messageSource: NotifyMessageTypes, homeData: unknown) => {
       const duid = (homeData as { duid?: string })?.duid ?? '';
       const payload = { type: messageSource, data: homeData, duid };
-      await this.platformRunner.updateRobotWithPayload(payload as unknown as MessagePayload);
+      this.platformRunner.updateRobotWithPayload(payload as unknown as MessagePayload);
     });
 
     for (const [duid, robot] of this.registry.robotsMap) {

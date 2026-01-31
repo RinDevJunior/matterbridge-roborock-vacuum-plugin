@@ -1,7 +1,7 @@
 import { AnsiLogger } from 'matterbridge/logger';
 import { ServiceArea } from 'matterbridge/matter/clusters';
 import { LocalStorage } from 'node-persist';
-import { Factory, NotifyMessageTypes } from '../types/index.js';
+import { DeviceNotifyCallback, Factory } from '../types/index.js';
 import {
   ServiceContainer,
   ServiceContainerConfig,
@@ -40,7 +40,7 @@ export class RoborockService {
   private readonly pollingService: PollingService;
   private readonly connectionService: ConnectionService;
 
-  public deviceNotify?: (messageSource: NotifyMessageTypes, homeData: unknown) => void;
+  public deviceNotify: DeviceNotifyCallback | undefined;
 
   constructor(
     params: RoborockServiceConfig,
@@ -142,7 +142,7 @@ export class RoborockService {
   }
 
   /** Set callback for device status notifications. */
-  public setDeviceNotify(callback: (messageSource: NotifyMessageTypes, homeData: unknown) => Promise<void>): void {
+  public setDeviceNotify(callback: DeviceNotifyCallback): void {
     this.deviceNotify = callback;
     this.pollingService.setDeviceNotify(callback);
     this.connectionService.setDeviceNotify(callback);

@@ -4,7 +4,6 @@ import { CloudMessageResult } from '../roborockCommunication/models/index.js';
 import { state_to_matter_state } from '../share/function.js';
 import { RoborockMatterbridgePlatform } from '../module.js';
 import { OperationStatusCode } from '../roborockCommunication/enums/index.js';
-import { RoomMap } from '../core/application/models/index.js';
 import { AnsiLogger, debugStringify } from 'matterbridge/logger';
 import { getBatteryState, getBatteryStatus } from '../initialData/index.js';
 import { getCleanModeResolver } from '../share/runtimeHelper.js';
@@ -18,7 +17,7 @@ import { CleanModeSetting } from '../behaviors/roborock.vacuum/core/CleanModeSet
  * Process local network messages and update robot attributes.
  * Handles run mode, battery level, clean mode settings, and area mapping.
  */
-export async function handleLocalMessage(data: CloudMessageResult, platform: RoborockMatterbridgePlatform, duid = ''): Promise<void> {
+export function handleLocalMessage(data: CloudMessageResult, platform: RoborockMatterbridgePlatform, duid = ''): void {
   const robot = platform.registry.getRobot(duid);
 
   if (!robot || !platform.roborockService) {
@@ -29,11 +28,10 @@ export async function handleLocalMessage(data: CloudMessageResult, platform: Rob
 
   const currentMappedAreas = service.getSupportedAreas(duid);
   const roomIndexMap = service.getSupportedAreasIndexMap(duid);
-  const roomMap = await RoomMap.fromDevice(duid, platform);
   platform.log.debug(
     `Precondition Data:
     Device: ${duid}
-    RoomMap: ${debugStringify(roomMap)}
+    RoomMap: ${robot.roomInfo ? debugStringify(robot.roomInfo) : 'undefined'}
     Current mapped areas: ${currentMappedAreas ? debugStringify(currentMappedAreas) : 'undefined'}
     RoomIndexMap: ${roomIndexMap ? debugStringify(roomIndexMap) : 'undefined'}
     `,
@@ -55,9 +53,9 @@ export async function handleLocalMessage(data: CloudMessageResult, platform: Rob
     robot.updateAttribute(ServiceArea.Cluster.id, 'currentArea', null, platform.log);
     robot.updateAttribute(ServiceArea.Cluster.id, 'selectedAreas', [], platform.log);
   } else if (platform.configManager.isMultipleMapEnabled) {
-    await mapRoomsToAreasFeatureOn(platform, duid, data);
+    mapRoomsToAreasFeatureOn(platform, duid, data);
   } else {
-    await mapRoomsToAreasFeatureOff(duid, data, service, robot, platform.log);
+    mapRoomsToAreasFeatureOff(duid, data, service, robot, platform.log);
   }
 
   if (data.battery) {
@@ -83,6 +81,7 @@ export async function handleLocalMessage(data: CloudMessageResult, platform: Rob
   );
 
   if (currentCleanModeSetting.hasFullSettings) {
+    robot.cleanModeSetting = currentCleanModeSetting;
     const forceRunAtDefault = platform.configManager.forceRunAtDefault;
     const currentCleanModeResolver = getCleanModeResolver(deviceData.model, forceRunAtDefault);
     const currentCleanMode = currentCleanModeResolver.resolve(currentCleanModeSetting);
@@ -148,13 +147,7 @@ function getDssStatus(message: CloudMessageResult, duid: string, platform: Robor
 /**
  * Map room segments to service areas when multiple map feature is disabled.
  */
-async function mapRoomsToAreasFeatureOff(
-  duid: string,
-  data: CloudMessageResult,
-  roborockService: RoborockService,
-  robot: RoborockVacuumCleaner,
-  logger: AnsiLogger,
-): Promise<void> {
+function mapRoomsToAreasFeatureOff(duid: string, data: CloudMessageResult, roborockService: RoborockService, robot: RoborockVacuumCleaner, logger: AnsiLogger): void {
   if (!data.cleaning_info) {
     logger.debug('No cleaning_info found, skipping area mapping.');
     return;
@@ -197,7 +190,7 @@ async function mapRoomsToAreasFeatureOff(
 /**
  * Map room segments to service areas when multiple map feature is enabled.
  */
-async function mapRoomsToAreasFeatureOn(platform: RoborockMatterbridgePlatform, duid: string, data: CloudMessageResult): Promise<void> {
+function mapRoomsToAreasFeatureOn(platform: RoborockMatterbridgePlatform, duid: string, data: CloudMessageResult): void {
   const robot = platform.registry.getRobot(duid);
   if (!robot) {
     platform.log.error(`Robot not found: ${duid}`);

@@ -12,7 +12,7 @@ export class StatusMessageListener implements AbstractMessageListener {
     private readonly callback: DeviceNotifyCallback | undefined,
   ) {}
 
-  public async onMessage(message: ResponseMessage): Promise<void> {
+  public onMessage(message: ResponseMessage): void {
     if (this.shouldIgnoreProtocols.some((protocol) => message.isForProtocol(protocol))) {
       return;
     }

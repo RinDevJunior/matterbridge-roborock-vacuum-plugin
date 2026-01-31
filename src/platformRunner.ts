@@ -17,18 +17,18 @@ export class PlatformRunner {
    * Update robot state based on message payload.
    * Routes to appropriate handler using type-safe discriminated unions.
    */
-  public async updateRobotWithPayload(payload: MessagePayload): Promise<void> {
+  public updateRobotWithPayload(payload: MessagePayload): void {
     switch (payload.type) {
       case NotifyMessageTypes.HomeData:
         updateFromHomeData(payload.data, this.platform);
         break;
       case NotifyMessageTypes.LocalMessage:
       case NotifyMessageTypes.CloudMessage:
-        await this.updateFromMQTTMessage(payload.type, payload.data, payload.duid);
+        this.updateFromMQTTMessage(payload.type, payload.data, payload.duid);
         break;
       case NotifyMessageTypes.BatteryUpdate:
       case NotifyMessageTypes.ErrorOccurred:
-        await this.updateFromMQTTMessage(payload.type, payload.data, payload.data.duid);
+        this.updateFromMQTTMessage(payload.type, payload.data, payload.data.duid);
         break;
     }
   }
@@ -37,11 +37,11 @@ export class PlatformRunner {
    * Update robot state based on message source (legacy method for compatibility).
    * Routes to appropriate handler based on whether message is HomeData or MQTT message.
    */
-  public async updateRobot(messageSource: NotifyMessageTypes, homeData: unknown): Promise<void> {
+  public updateRobot(messageSource: NotifyMessageTypes, homeData: unknown): void {
     if (messageSource === NotifyMessageTypes.HomeData) {
       updateFromHomeData(homeData as Home, this.platform);
     } else {
-      await this.updateFromMQTTMessage(messageSource, homeData);
+      this.updateFromMQTTMessage(messageSource, homeData);
     }
   }
 
@@ -58,13 +58,13 @@ export class PlatformRunner {
     const homeData = await platform.roborockService.getHomeDataForUpdating(platform.rrHomeId);
     if (homeData === undefined) return;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    await this.updateRobotWithPayload({ type: NotifyMessageTypes.HomeData, data: homeData } as any);
+    this.updateRobotWithPayload({ type: NotifyMessageTypes.HomeData, data: homeData } as any);
   }
 
   /**
    * Process MQTT messages and update robot state accordingly.
    */
-  public async updateFromMQTTMessage(messageSource: NotifyMessageTypes, messageData: unknown, duid = '', skipLogging = false): Promise<void> {
+  public updateFromMQTTMessage(messageSource: NotifyMessageTypes, messageData: unknown, duid = '', skipLogging = false): void {
     const platform = this.platform;
     duid = duid || (messageData as DeviceStatusNotify)?.duid || '';
 
@@ -107,7 +107,7 @@ export class PlatformRunner {
       case NotifyMessageTypes.LocalMessage: {
         const data = messageData as CloudMessageResult;
         if (data) {
-          await handleLocalMessage(data, platform, duid);
+          handleLocalMessage(data, platform, duid);
         }
         break;
       }
@@ -115,7 +115,7 @@ export class PlatformRunner {
       case NotifyMessageTypes.CloudMessage: {
         const data = messageData as CloudMessageModel;
         if (!data) return;
-        await handleCloudMessage(data, platform, this, duid);
+        handleCloudMessage(data, platform, this, duid);
         break;
       }
 

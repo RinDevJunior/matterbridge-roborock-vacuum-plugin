@@ -6,6 +6,8 @@ Project-specific instructions for Claude Code.
 
 - Be concise. No explanations unless I ask.
 - Output code only. No prose.
+- No yapping, no long explanations.
+- Provide details only when explicitly asked.
 - Update `docs\claude_history.md` to track execution process.
 - Update `docs\to_do.md` what plan to do and what completed.
 

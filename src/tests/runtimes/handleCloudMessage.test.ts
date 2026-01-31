@@ -124,6 +124,7 @@ const robot = {
     ],
   },
   dockStationStatus: {},
+  cleanModeSetting: undefined,
 };
 const robots = new Map([[duid, robot]]);
 const registry = {
@@ -168,6 +169,7 @@ const runner = { updateFromMQTTMessage: mockUpdateFromMQTTMessage };
 describe('handleCloudMessage', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    robot.cleanModeSetting = undefined;
   });
 
   it('handles status_update', async () => {
@@ -318,7 +320,7 @@ describe('handleCloudMessage', () => {
     };
     mockGetCleanModeData.mockResolvedValue({ suctionPower: 100, waterFlow: 50, distance_off: 0, mopRoute: 0 });
     await handleCloudMessage(data as any, platform as any, runner as any, duid);
-    await new Promise(process.nextTick);
+    await new Promise((resolve) => setImmediate(resolve));
     expect(mockGetCleanModeData).toHaveBeenCalledWith(duid);
   });
 
@@ -330,7 +332,7 @@ describe('handleCloudMessage', () => {
     };
     mockGetCleanModeData.mockResolvedValue({ suctionPower: 100, waterFlow: 200, distance_off: 0, mopRoute: 0 });
     await handleCloudMessage(data as any, platform as any, runner as any, duid);
-    await new Promise(process.nextTick);
+    await new Promise((resolve) => setImmediate(resolve));
     expect(mockGetCleanModeData).toHaveBeenCalledWith(duid);
   });
 });

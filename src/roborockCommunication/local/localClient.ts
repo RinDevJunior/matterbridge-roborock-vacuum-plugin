@@ -7,7 +7,8 @@ import { AbstractClient } from '../routing/abstractClient.js';
 import { ChunkBuffer } from '../helper/chunkBuffer.js';
 import { Sequence } from '../helper/sequence.js';
 import { PingResponseListener } from '../routing/listeners/implementation/pingResponseListener.js';
-import { SyncMessageListener } from '../routing/listeners/implementation/syncMessageListener.js';
+import { PendingResponseTracker } from '../routing/services/pendingResponseTracker.js';
+import { ChainedMessageListener } from '../routing/listeners/implementation/chainedMessageListener.js';
 
 export class LocalNetworkClient extends AbstractClient {
   protected override clientName = 'LocalNetworkClient';
@@ -21,14 +22,14 @@ export class LocalNetworkClient extends AbstractClient {
   public duid: string;
   public ip: string;
 
-  constructor(logger: AnsiLogger, context: MessageContext, duid: string, ip: string, syncMessageListener?: SyncMessageListener) {
-    super(logger, context, syncMessageListener);
+  constructor(logger: AnsiLogger, context: MessageContext, duid: string, ip: string, chainedMessageListener: ChainedMessageListener, responseTracker: PendingResponseTracker) {
+    super(logger, context, chainedMessageListener, responseTracker);
     this.duid = duid;
     this.ip = ip;
     this.messageIdSeq = new Sequence(100000, 999999);
 
     this.pingResponseListener = new PingResponseListener(this.duid);
-    this.messageListeners.register(this.pingResponseListener);
+    this.chainedMessageListener.register(this.pingResponseListener);
   }
 
   public isReady(): boolean {
@@ -112,7 +113,7 @@ export class LocalNetworkClient extends AbstractClient {
       clearInterval(this.pingInterval);
     }
     if (!this.connected) {
-      await this.connectionListeners.onDisconnected(this.duid, 'Socket disconnected. Had no error.');
+      await this.connectionListener.onDisconnected(this.duid, 'Socket disconnected. Had no error.');
     }
     this.connected = false;
   }
@@ -126,7 +127,7 @@ export class LocalNetworkClient extends AbstractClient {
     }
 
     if (!this.connected) {
-      await this.connectionListeners.onDisconnected(this.duid, `Socket error: ${error.message}`);
+      await this.connectionListener.onDisconnected(this.duid, `Socket error: ${error.message}`);
     }
     this.connected = false;
   }
@@ -169,7 +170,8 @@ export class LocalNetworkClient extends AbstractClient {
         try {
           const currentBuffer = receivedBuffer.subarray(offset + 4, offset + segmentLength + 4);
           const response = this.deserializer.deserialize(this.duid, currentBuffer, 'LocalNetworkClient');
-          await this.messageListeners.onMessage(response);
+          this.chainedMessageListener.onResponse(response);
+          this.chainedMessageListener.onMessage(response);
         } catch (error) {
           const errMsg = error instanceof Error ? (error.stack ?? error.message) : String(error);
           this.logger.error(`[LocalNetworkClient]: unable to process message with error: ${errMsg}`);

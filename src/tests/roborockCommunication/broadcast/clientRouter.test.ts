@@ -51,18 +51,18 @@ describe('ClientRouter', () => {
     };
   });
 
-  it('registerConnectionListener should call connectionListeners.register', () => {
+  it('registerConnectionListener should call connectionListener.register', () => {
     const router = new ClientRouter(mockLogger, mockUserData);
     const listener = {};
-    const spy = vi.spyOn(router['connectionListeners'], 'register');
+    const spy = vi.spyOn(router['connectionListener'], 'register');
     router.registerConnectionListener(listener as any);
     expect(spy).toHaveBeenCalledWith(listener);
   });
 
-  it('registerMessageListener should call messageListeners.register', () => {
+  it('registerMessageListener should call chainedMessageListener.register', () => {
     const router = new ClientRouter(mockLogger, mockUserData);
     const listener = {};
-    const spy = vi.spyOn(router['messageListeners'], 'register');
+    const spy = vi.spyOn(router['chainedMessageListener'], 'register');
     router.registerMessageListener(listener as any);
     expect(spy).toHaveBeenCalledWith(listener);
   });
@@ -155,18 +155,18 @@ describe('ClientRouter', () => {
     expect(mockLocalNetworkClient.get).toHaveBeenCalledWith('duid', request);
   });
 
-  it('getClient should return localClient if connected', () => {
+  it('getLocalClient should return localClient if connected', () => {
     const router = new ClientRouter(mockLogger, mockUserData);
     router.registerClient('duid', '127.0.0.1');
     router['localClients'].set('duid', mockLocalNetworkClient);
-    expect(router['getClient']('duid')).toBe(mockLocalNetworkClient);
+    expect(router['getLocalClient']('duid')).toBe(mockLocalNetworkClient);
   });
 
-  it('getClient should return mqttClient if localClient not connected', () => {
+  it('getLocalClient should return mqttClient if localClient not connected', () => {
     mockLocalNetworkClient.isConnected.mockReturnValue(false);
     const router = new ClientRouter(mockLogger, mockUserData);
     router.registerClient('duid', '127.0.0.1');
     router['mqttClient'] = mockMQTTClient;
-    expect(router['getClient']('duid')).toBe(mockMQTTClient);
+    expect(router['getLocalClient']('duid')).toBe(mockMQTTClient);
   });
 });
