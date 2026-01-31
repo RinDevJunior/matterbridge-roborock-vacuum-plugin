@@ -2,6 +2,8 @@ import mqtt from 'mqtt';
 import { vi, describe, it, expect, beforeEach, afterEach, afterAll } from 'vitest';
 import { MessageContext, RequestMessage } from '../../../../roborockCommunication/models/index.js';
 import { MQTTClient } from '../../../../roborockCommunication/mqtt/mqttClient.js';
+import { ChainedMessageListener } from '../../../../roborockCommunication/routing/listeners/implementation/chainedMessageListener.js';
+import { PendingResponseTracker } from '../../../../roborockCommunication/routing/services/pendingResponseTracker.js';
 
 function makeUserdata() {
   return { rriot: { r: { m: 'mqtt://broker.example' }, u: 'testuser', k: 'key123', s: 'secret' } } as any;
@@ -15,16 +17,20 @@ describe('MQTTClient (additional)', () => {
   let userdata: any;
   let context: MessageContext;
   let logger: any;
+  let chainedMessageListener: ChainedMessageListener;
+  let responseTracker: PendingResponseTracker;
 
   beforeEach(() => {
     vi.restoreAllMocks();
     userdata = makeUserdata();
     context = new MessageContext(userdata);
     logger = makeLogger();
+    responseTracker = new PendingResponseTracker(logger);
+    chainedMessageListener = new ChainedMessageListener(responseTracker, logger);
   });
 
   it('isReady/isConnected reflect internal state', () => {
-    const client = new MQTTClient(logger, context, userdata);
+    const client = new MQTTClient(logger, context, userdata, chainedMessageListener, responseTracker);
     expect(client.isConnected()).toBe(false);
     expect(client.isReady()).toBe(false);
 
@@ -43,7 +49,7 @@ describe('MQTTClient (additional)', () => {
 
     const spyConnect = vi.spyOn(mqtt, 'connect').mockImplementation(() => mockMqttClient as any);
 
-    const client = new MQTTClient(logger, context, userdata);
+    const client = new MQTTClient(logger, context, userdata, chainedMessageListener, responseTracker);
     client.connect();
 
     expect(spyConnect).toHaveBeenCalledWith(
@@ -56,7 +62,7 @@ describe('MQTTClient (additional)', () => {
   });
 
   it('sendInternal logs error when not connected', async () => {
-    const client = new MQTTClient(logger, context, userdata);
+    const client = new MQTTClient(logger, context, userdata, chainedMessageListener, responseTracker);
     const req = new RequestMessage({ method: 'test' });
 
     await (client as any).sendInternal('duid-1', req);
@@ -70,7 +76,7 @@ describe('MQTTClient (additional)', () => {
     vi.spyOn(MQTTClient.prototype as any, 'keepConnectionAlive').mockImplementation(() => {});
     vi.spyOn(mqtt, 'connect').mockImplementation(() => mockMqttClient as any);
 
-    const client = new MQTTClient(logger, context, userdata);
+    const client = new MQTTClient(logger, context, userdata, chainedMessageListener, responseTracker);
 
     // prepare serializer mock
     (client as any).mqttClient = mockMqttClient;
@@ -111,8 +117,8 @@ describe('MQTTClient', () => {
   let client: any;
   let serializer: any;
   let deserializer: any;
-  let connectionListeners: any;
-  let messageListeners: any;
+  let chainedMessageListener: ChainedMessageListener;
+  let responseTracker: PendingResponseTracker;
   const createdClients: any[] = [];
 
   beforeEach(() => {
@@ -128,13 +134,8 @@ describe('MQTTClient', () => {
     };
     serializer = { serialize: vi.fn(() => ({ buffer: Buffer.from('msg') })) };
     deserializer = { deserialize: vi.fn(() => 'deserialized') };
-    connectionListeners = {
-      onConnected: vi.fn().mockResolvedValue(undefined),
-      onDisconnected: vi.fn().mockResolvedValue(undefined),
-      onError: vi.fn().mockResolvedValue(undefined),
-      onReconnect: vi.fn().mockResolvedValue(undefined),
-    };
-    messageListeners = { onMessage: vi.fn().mockResolvedValue(undefined) };
+    responseTracker = new PendingResponseTracker(logger);
+    chainedMessageListener = new ChainedMessageListener(responseTracker, logger);
 
     // Mock mqtt client instance
     client = {
@@ -147,14 +148,23 @@ describe('MQTTClient', () => {
     globalThis.mockConnect.mockReturnValue(client);
   });
 
-  function createMQTTClient(mockSyncMessageListener?: any) {
+  function createMQTTClient() {
     class TestMQTTClient extends MQTTClient {
       constructor() {
-        super(logger, context, userdata, mockSyncMessageListener);
+        super(logger, context, userdata, chainedMessageListener, responseTracker);
         (this as any).serializer = serializer;
         (this as any).deserializer = deserializer;
-        (this as any).connectionListeners = connectionListeners;
-        (this as any).messageListeners = messageListeners;
+        // Mock the listener methods
+        (this as any).connectionListener = {
+          onConnected: vi.fn().mockResolvedValue(undefined),
+          onDisconnected: vi.fn().mockResolvedValue(undefined),
+          onError: vi.fn().mockResolvedValue(undefined),
+          onReconnect: vi.fn().mockResolvedValue(undefined),
+        };
+        (this as any).chainedMessageListener = {
+          onMessage: vi.fn().mockResolvedValue(undefined),
+          onResponse: vi.fn().mockResolvedValue(undefined),
+        };
       }
     }
     const mqttClient = new TestMQTTClient();
@@ -234,13 +244,7 @@ describe('MQTTClient', () => {
   });
 
   it('should publish message if connected', async () => {
-    const mockSyncMessageListener = {
-      waitFor: vi.fn((_msgId: number, _req: any, resolve: any, _reject: any) => resolve(undefined)),
-      pending: new Map(),
-      logger,
-      onMessage: vi.fn(),
-    };
-    const mqttClient = createMQTTClient(mockSyncMessageListener);
+    const mqttClient = createMQTTClient();
     mqttClient['mqttClient'] = client;
     mqttClient['connected'] = true;
     const request = { toMqttRequest: vi.fn(() => 'req'), method: 'test' };
@@ -250,13 +254,7 @@ describe('MQTTClient', () => {
   });
 
   it('should log error if send called when not connected', async () => {
-    const mockSyncMessageListener = {
-      waitFor: vi.fn((_msgId: number, _req: any, resolve: any, _reject: any) => resolve(undefined)),
-      pending: new Map(),
-      logger,
-      onMessage: vi.fn(),
-    };
-    const mqttClient = createMQTTClient(mockSyncMessageListener);
+    const mqttClient = createMQTTClient();
     mqttClient['mqttClient'] = undefined;
     mqttClient['connected'] = false;
     const request = { toMqttRequest: vi.fn(), method: 'test' };
@@ -271,7 +269,7 @@ describe('MQTTClient', () => {
     mqttClient['subscribeToQueue'] = vi.fn();
     await mqttClient['onConnect']({} as any);
     expect(mqttClient['connected']).toBe(true);
-    expect(connectionListeners.onConnected).toHaveBeenCalled();
+    expect(mqttClient['connectionListener'].onConnected).toHaveBeenCalled();
     expect(mqttClient['subscribeToQueue']).toHaveBeenCalled();
   });
 
@@ -288,20 +286,20 @@ describe('MQTTClient', () => {
     await mqttClient['onSubscribe'](new Error('fail'), undefined);
     expect(logger.error).toHaveBeenCalledWith(expect.stringContaining('failed to subscribe'));
     expect(mqttClient['connected']).toBe(false);
-    expect(connectionListeners.onDisconnected).toHaveBeenCalled();
+    expect(mqttClient['connectionListener'].onDisconnected).toHaveBeenCalled();
   });
 
   it('onSubscribe should do nothing if no error', async () => {
     const mqttClient = createMQTTClient();
     await mqttClient['onSubscribe'](null, undefined);
     expect(logger.error).not.toHaveBeenCalled();
-    expect(connectionListeners.onDisconnected).not.toHaveBeenCalled();
+    expect(mqttClient['connectionListener'].onDisconnected).not.toHaveBeenCalled();
   });
 
   it('onDisconnect should call onDisconnected', async () => {
     const mqttClient = createMQTTClient();
     await mqttClient['onDisconnect']();
-    expect(connectionListeners.onDisconnected).toHaveBeenCalled();
+    expect(mqttClient['connectionListener'].onDisconnected).toHaveBeenCalled();
   });
 
   it('onError should log error and call onError', async () => {
@@ -309,7 +307,7 @@ describe('MQTTClient', () => {
     mqttClient['connected'] = true;
     await mqttClient['onError'](new Error('fail'));
     expect(logger.error).toHaveBeenCalledWith(expect.stringContaining('MQTT connection error'));
-    expect(connectionListeners.onError).toHaveBeenCalledWith('mqtt-c6d6afb9', expect.stringContaining('MQTT connection error'));
+    expect(mqttClient['connectionListener'].onError).toHaveBeenCalledWith('mqtt-c6d6afb9', expect.stringContaining('MQTT connection error'));
   });
 
   it('onReconnect should call subscribeToQueue', () => {
@@ -319,11 +317,11 @@ describe('MQTTClient', () => {
     expect(mqttClient['subscribeToQueue']).toHaveBeenCalled();
   });
 
-  it('onMessage should call deserializer and messageListeners.onMessage if message', async () => {
+  it('onMessage should call deserializer and chainedMessageListener.onMessage if message', async () => {
     const mqttClient = createMQTTClient();
     await mqttClient['onMessage']('rr/m/o/user/c6d6afb9/duid1', Buffer.from('msg'));
     expect(deserializer.deserialize).toHaveBeenCalledWith('duid1', Buffer.from('msg'), 'MQTTClient');
-    expect(messageListeners.onMessage).toHaveBeenCalledWith('deserialized');
+    expect(mqttClient['chainedMessageListener'].onMessage).toHaveBeenCalledWith('deserialized');
   });
 
   it('onMessage should log notice if message is falsy', async () => {
@@ -430,7 +428,7 @@ describe('MQTTClient', () => {
     const mqttClient = createMQTTClient();
     mqttClient['connected'] = true;
     await mqttClient['onClose']();
-    expect(connectionListeners.onDisconnected).toHaveBeenCalledWith('mqtt-c6d6afb9', 'MQTT connection closed');
+    expect(mqttClient['connectionListener'].onDisconnected).toHaveBeenCalledWith('mqtt-c6d6afb9', 'MQTT connection closed');
     expect(mqttClient['connected']).toBe(false);
   });
 
@@ -438,7 +436,7 @@ describe('MQTTClient', () => {
     const mqttClient = createMQTTClient();
     mqttClient['connected'] = false;
     await mqttClient['onClose']();
-    expect(connectionListeners.onDisconnected).not.toHaveBeenCalled();
+    expect(mqttClient['connectionListener'].onDisconnected).not.toHaveBeenCalled();
   });
 
   it('onOffline should set connected to false and call onDisconnected', async () => {
@@ -446,13 +444,13 @@ describe('MQTTClient', () => {
     mqttClient['connected'] = true;
     await mqttClient['onOffline']();
     expect(mqttClient['connected']).toBe(false);
-    expect(connectionListeners.onDisconnected).toHaveBeenCalledWith('mqtt-c6d6afb9', 'MQTT connection offline');
+    expect(mqttClient['connectionListener'].onDisconnected).toHaveBeenCalledWith('mqtt-c6d6afb9', 'MQTT connection offline');
   });
 
-  it('onReconnect should call onReconnect on connectionListeners', () => {
+  it('onReconnect should call onReconnect on connectionListener', () => {
     const mqttClient = createMQTTClient();
     mqttClient['subscribeToQueue'] = vi.fn();
     mqttClient['onReconnect']();
-    expect(connectionListeners.onReconnect).toHaveBeenCalledWith('mqtt-c6d6afb9', 'Reconnected to MQTT broker');
+    expect(mqttClient['connectionListener'].onReconnect).toHaveBeenCalledWith('mqtt-c6d6afb9', 'Reconnected to MQTT broker');
   });
 });

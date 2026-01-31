@@ -8,7 +8,7 @@ export class MapResponseListener implements AbstractMessageListener {
     private readonly logger: AnsiLogger,
   ) {}
 
-  public async onMessage(message: ResponseMessage): Promise<void> {
+  public onMessage(message: ResponseMessage): void {
     if (message.isForProtocol(Protocol.map_response)) {
       this.logger.debug(`Ingoring map response message: ${debugStringify(message)}`);
     }

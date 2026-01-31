@@ -13,11 +13,11 @@ export class MessageProcessor {
   ) {
     this.client = client;
 
-    this.messageListener = new SimpleMessageListener();
+    this.messageListener = new SimpleMessageListener(this.logger);
     this.client.registerMessageListener(this.messageListener);
   }
 
-  public registerListener(listener: AbstractMessageHandler): void {
-    this.messageListener.registerListener(listener);
+  public registerHandler(handler: AbstractMessageHandler): void {
+    this.messageListener.registerHandler(handler);
   }
 }

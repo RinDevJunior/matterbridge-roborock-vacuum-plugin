@@ -63,7 +63,7 @@ describe('PingResponseListener (basic behavior)', () => {
     await expect(p).rejects.toThrow(/no ping response/);
   });
 
-  it('ignores messages when no handler is registered', async () => {
+  it('ignores messages when no handler is registered', () => {
     const message = new ResponseMessage('device-1', {
       version: '1.0',
       seq: 3,
@@ -74,7 +74,7 @@ describe('PingResponseListener (basic behavior)', () => {
     } as any);
 
     // call onMessage without waitFor() being called first
-    await expect(listener.onMessage(message)).resolves.toBeUndefined();
+    expect(() => listener.onMessage(message)).not.toThrow();
   });
 });
 

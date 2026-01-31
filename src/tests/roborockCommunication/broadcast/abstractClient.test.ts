@@ -1,13 +1,15 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { AbstractClient } from '../../../roborockCommunication/routing/abstractClient.js';
 import { MessageContext, RequestMessage } from '../../../roborockCommunication/models/index.js';
+import { ChainedMessageListener } from '../../../roborockCommunication/routing/listeners/implementation/chainedMessageListener.js';
+import { PendingResponseTracker } from '../../../roborockCommunication/routing/services/pendingResponseTracker.js';
 
 class TestClient extends AbstractClient {
   protected clientName = 'TestClient';
   protected shouldReconnect = false;
 
-  constructor(logger: any, context: MessageContext) {
-    super(logger, context);
+  constructor(logger: any, context: MessageContext, chainedMessageListener: ChainedMessageListener, responseTracker: PendingResponseTracker) {
+    super(logger, context, chainedMessageListener, responseTracker);
     this.initializeConnectionStateListener();
   }
 
@@ -24,7 +26,7 @@ class TestClient extends AbstractClient {
   }
 
   protected override sendInternal(duid: string, request: RequestMessage): void {
-    throw new Error('Method not implemented.');
+    // Mock implementation - do nothing
   }
 }
 
@@ -48,45 +50,36 @@ describe('AbstractClient', () => {
   let client: TestClient;
   let logger: any;
   let context: MessageContext;
+  let responseTracker: PendingResponseTracker;
+  let chainedMessageListener: ChainedMessageListener;
 
   beforeEach(() => {
     logger = makeLogger();
     const userdata: any = { rriot: { k: 'secretkey' } };
     context = new MessageContext(userdata);
-    client = new TestClient(logger, context);
+    responseTracker = new PendingResponseTracker(logger);
+    chainedMessageListener = new ChainedMessageListener(responseTracker, logger);
+    client = new TestClient(logger, context, chainedMessageListener, responseTracker);
   });
 
-  it('get resolves when syncMessageListener receives response', async () => {
-    vi.useFakeTimers();
+  it('get resolves when responseTracker receives response', async () => {
     const request = { messageId: 123, method: 'test_method' } as any;
     const mockResponse = { data: 'response_data' } as any;
 
-    // Spy on waitFor to manually resolve
-    const listener = (client as any).syncMessageListener;
-    listener.waitFor = vi.fn((_msgId: number, _req: RequestMessage, resolve: any, _reject: any) => {
-      // Immediately resolve without timeout
-      resolve(mockResponse);
-    });
+    vi.spyOn(responseTracker, 'waitFor').mockResolvedValue(mockResponse);
 
     const result = await client.get<any>('DUID123', request);
     expect(result).toEqual(mockResponse);
-    vi.useRealTimers();
   });
 
   it('get returns undefined when error occurs', async () => {
-    vi.useFakeTimers();
     const request = { messageId: 456, method: 'failing_method' } as any;
 
-    // Spy on waitFor to manually reject
-    const listener = (client as any).syncMessageListener;
-    listener.waitFor = vi.fn((msgId: number, req: RequestMessage, resolve: any, reject: any) => {
-      reject(new Error('test error'));
-    });
+    vi.spyOn(responseTracker, 'waitFor').mockRejectedValue(new Error('test error'));
 
     const result = await client.get<any>('DUID456', request);
     expect(result).toBeUndefined();
     expect(logger.__calls.error.some((m: string) => m.includes('test error'))).toBe(true);
-    vi.useRealTimers();
   });
 
   it('registerDevice delegates to context', () => {
@@ -98,13 +91,13 @@ describe('AbstractClient', () => {
   it('registerConnectionListener adds listener to chain', () => {
     const listener = { onConnected: vi.fn() } as any;
     client.registerConnectionListener(listener);
-    expect((client as any).connectionListeners.listeners).toContain(listener);
+    expect((client as any).connectionListener.listeners).toContain(listener);
   });
 
   it('registerMessageListener adds listener to chain', () => {
     const listener = { onMessage: vi.fn() } as any;
     client.registerMessageListener(listener);
-    expect((client as any).messageListeners.listeners).toContain(listener);
+    expect((client as any).chainedMessageListener.listeners).toContain(listener);
   });
 
   it('isConnected returns connection state', () => {
