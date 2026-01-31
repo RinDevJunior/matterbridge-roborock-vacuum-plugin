@@ -83,6 +83,7 @@ describe('module additional tests', () => {
       mode: undefined,
       getClusterServerOptions: (id: number) => ({ deviceTypeList: [] }),
       createDefaultBridgedDeviceBasicInformationClusterServer: vi.fn(),
+      createDefaultIdentifyClusterServer: vi.fn(),
       device: { data: { firmwareVersion: 'v1.2.3' }, fv: undefined },
     };
 
