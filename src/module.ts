@@ -18,7 +18,7 @@ import { NotifyMessageTypes, MessagePayload } from './types/index.js';
 import { getSupportedAreas, getSupportedScenes } from './initialData/index.js';
 
 import { getBaseUrl } from './initialData/regionUrls.js';
-import { Identify } from 'matterbridge/node_modules/@matter/types/dist/esm/clusters/identify.js';
+import { Identify } from '@matter/types/dist/esm/clusters';
 import { UINT16_MAX, UINT32_MAX } from 'matterbridge/matter';
 import { Device, RoomDto } from './roborockCommunication/models/index.js';
 import { RoborockAuthenticateApi } from './roborockCommunication/api/authClient.js';
