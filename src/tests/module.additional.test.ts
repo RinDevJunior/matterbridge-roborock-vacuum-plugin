@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { AnsiLogger } from 'matterbridge/logger';
 import { PlatformMatterbridge } from 'matterbridge';
 import { RoborockMatterbridgePlatform } from '../module.js';
+import { AdvancedFeatureConfiguration, PluginConfiguration, RoborockPluginPlatformConfig } from '../model/RoborockPluginPlatformConfig.js';
 
 function createMockLogger(): AnsiLogger {
   const logger = {
@@ -57,17 +58,41 @@ describe('module additional tests', () => {
 
   it('addDevice adds a valid device and registers bridged node info', async () => {
     const platform = new RoborockMatterbridgePlatform(mockMatterbridge, mockLogger, {
-      name: 'X',
-      username: 'a',
+      name: 'TestPlatform',
+      type: 'roborock',
+      username: 'tesa',
       whiteList: [],
       blackList: [],
       useInterval: false,
       refreshInterval: 60,
       debug: false,
-      authentication: { password: '', authenticationMethod: 'Password' },
-      enableExperimental: { advancedFeature: {}, enableExperimentalFeature: false },
-      persistDirectory: '/tmp',
-    } as any);
+      version: '1.0.0',
+      authentication: { username: 'test', region: 'US', forceAuthentication: false, password: 'test', authenticationMethod: 'Password' },
+      pluginConfiguration: {
+        whiteList: [],
+        enableServerMode: false,
+        enableMultipleMap: false,
+        refreshInterval: 60,
+        debug: false,
+        unregisterOnShutdown: false,
+        sanitizeSensitiveLogs: true,
+      } satisfies PluginConfiguration,
+      advancedFeature: {
+        enableAdvancedFeature: true,
+        settings: {
+          showRoutinesAsRoom: false,
+          includeDockStationStatus: false,
+          forceRunAtDefault: false,
+          useVacationModeToSendVacuumToDock: false,
+          enableCleanModeMapping: false,
+          cleanModeSettings: {
+            vacuuming: { fanMode: 'Silent', mopRouteMode: 'Standard' },
+            mopping: { waterFlowMode: 'Low', mopRouteMode: 'Standard', distanceOff: 0 },
+            vacmop: { fanMode: 'Silent', waterFlowMode: 'Low', mopRouteMode: 'Standard', distanceOff: 0 },
+          },
+        },
+      } as AdvancedFeatureConfiguration,
+    } as unknown as RoborockPluginPlatformConfig);
 
     // Patch registry and configManager
     (platform as any).registry = mockRegistry;
@@ -83,6 +108,7 @@ describe('module additional tests', () => {
       mode: undefined,
       getClusterServerOptions: (id: number) => ({ deviceTypeList: [] }),
       createDefaultBridgedDeviceBasicInformationClusterServer: vi.fn(),
+      createDefaultIdentifyClusterServer: vi.fn(),
       device: { data: { firmwareVersion: 'v1.2.3' }, fv: undefined },
     };
 

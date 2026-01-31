@@ -1,9 +1,10 @@
 import { debugStringify } from 'matterbridge/logger';
 import { ModeHandler, HandlerContext } from '../core/modeHandler.js';
 import { getSettingFromCleanMode } from '../core/cleanModeUtils.js';
+import { CleanModeDisplayLabel } from '../core/cleanModeConfig.js';
 
 export class DefaultCleanModeHandler implements ModeHandler {
-  private readonly defaultModes = ['Mop & Vacuum: Default', 'Mop: Default', 'Vacuum: Default'];
+  private readonly defaultModes: string[] = [CleanModeDisplayLabel.MopAndVacuumDefault, CleanModeDisplayLabel.MopDefault, CleanModeDisplayLabel.VacuumDefault];
 
   public canHandle(_mode: number, activity: string): boolean {
     return this.defaultModes.includes(activity);
@@ -11,7 +12,7 @@ export class DefaultCleanModeHandler implements ModeHandler {
 
   public async handle(duid: string, mode: number, activity: string, context: HandlerContext): Promise<void> {
     const setting =
-      context.cleanModeSettings && context.cleanModeSettings.enableCleanModeMapping
+      context.enableCleanModeMapping && context.cleanModeSettings
         ? (getSettingFromCleanMode(activity, context.cleanModeSettings) ?? context.cleanSettings[mode])
         : context.cleanSettings[mode];
 

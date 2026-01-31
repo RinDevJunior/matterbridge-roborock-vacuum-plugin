@@ -1,5 +1,4 @@
 import { getSupportedCleanModes } from '../../initialData/getSupportedCleanModes.js';
-import { createDefaultExperimentalFeatureSetting } from '../../model/ExperimentalFeatureSetting.js';
 import { DeviceModel } from '../../roborockCommunication/models/deviceModel.js';
 import { describe, it, expect } from 'vitest';
 

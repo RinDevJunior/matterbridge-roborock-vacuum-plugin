@@ -1,13 +1,13 @@
 import { AnsiLogger } from 'matterbridge/logger';
 import { BehaviorDeviceGeneric, CommandNames, DeviceEndpointCommands } from '../behaviors/BehaviorDeviceGeneric.js';
 import { RoborockService } from '../services/roborockService.js';
-import { CleanModeSettings } from '../model/ExperimentalFeatureSetting.js';
 import { SMART_MODELS } from '../constants/index.js';
 import { BehaviorConfig, createDefaultBehaviorConfig, createSmartBehaviorConfig } from '../behaviors/roborock.vacuum/core/behaviorConfig.js';
 import { registerCommonCommands } from '../behaviors/roborock.vacuum/core/commonCommands.js';
 import { HandlerContext } from '../behaviors/roborock.vacuum/core/modeHandler.js';
 import { DeviceModel } from '../roborockCommunication/models/index.js';
 import { getRunModeDisplayMap } from '../behaviors/roborock.vacuum/core/runModeConfig.js';
+import { CleanModeSettings } from '../model/RoborockPluginPlatformConfig.js';
 
 export type BehaviorFactoryResult = BehaviorDeviceGeneric<DeviceEndpointCommands>;
 const smartConfig = createSmartBehaviorConfig();
@@ -21,6 +21,7 @@ export function configureBehavior(
   model: DeviceModel | string,
   duid: string,
   roborockService: RoborockService,
+  enableCleanModeMapping: boolean,
   cleanModeSettings: CleanModeSettings | undefined,
   forceRunAtDefault: boolean,
   logger: AnsiLogger,
@@ -30,11 +31,11 @@ export function configureBehavior(
   const deviceHandler = new BehaviorDeviceGeneric<DeviceEndpointCommands>(logger);
 
   if (useSmart) {
-    setCommandHandler(duid, deviceHandler, logger, roborockService, cleanModeSettings, smartConfig);
+    setCommandHandler(duid, deviceHandler, logger, roborockService, enableCleanModeMapping, cleanModeSettings, smartConfig);
     return deviceHandler;
   }
 
-  setCommandHandler(duid, deviceHandler, logger, roborockService, cleanModeSettings, defaultConfig);
+  setCommandHandler(duid, deviceHandler, logger, roborockService, enableCleanModeMapping, cleanModeSettings, defaultConfig);
   return deviceHandler;
 }
 
@@ -47,6 +48,7 @@ function setCommandHandler(
   handler: BehaviorDeviceGeneric<DeviceEndpointCommands>,
   logger: AnsiLogger,
   roborockService: RoborockService,
+  enableCleanModeMapping: boolean,
   cleanModeSettings: CleanModeSettings | undefined,
   config: BehaviorConfig = defaultConfig,
 ): void {
@@ -56,6 +58,7 @@ function setCommandHandler(
     const context: HandlerContext = {
       roborockService,
       logger,
+      enableCleanModeMapping: enableCleanModeMapping,
       cleanModeSettings,
       cleanSettings: config.cleanSettings,
       behaviorName: config.name,

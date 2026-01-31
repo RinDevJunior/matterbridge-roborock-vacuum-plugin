@@ -4,6 +4,8 @@ import { MapRoomResponse } from '../../../types/index.js';
 import { DeviceStatus, NetworkInfo, RequestMessage, RoomDto } from '../../models/index.js';
 
 export interface AbstractMessageDispatcher {
+  dispatcherName: string;
+
   getNetworkInfo(duid: string): Promise<NetworkInfo | undefined>;
   getDeviceStatus(duid: string): Promise<DeviceStatus | undefined>;
   goHome(duid: string): Promise<void>;

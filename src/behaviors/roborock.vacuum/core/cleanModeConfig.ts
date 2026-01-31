@@ -26,6 +26,7 @@ export enum CleanModeDisplayLabel {
   MopQuick = 'Mop: Quick',
   MopDeepClean = 'Mop: DeepClean',
   VacuumDefault = 'Vacuum: Default',
+  VacuumMin = 'Vacuum: Min',
   VacuumMax = 'Vacuum: Max',
   VacuumQuiet = 'Vacuum: Quiet',
   VacuumQuick = 'Vacuum: Quick',

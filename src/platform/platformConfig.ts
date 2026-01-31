@@ -2,42 +2,27 @@
  * Platform configuration manager.
  * Provides validation, defaults, and device allow/deny checks using whiteList/blackList.
  */
-import { PlatformConfig } from 'matterbridge';
-import type { AnsiLogger } from 'matterbridge/logger';
-import { AuthenticationPayload, CleanModeSettings, ExperimentalFeatureSetting, createDefaultExperimentalFeatureSetting } from '../model/ExperimentalFeatureSetting.js';
-import { DEFAULT_REFRESH_INTERVAL_SECONDS } from '../constants/index.js';
 
-export type RoborockPluginPlatformConfig = PlatformConfig & {
-  whiteList: string[];
-  blackList: string[];
-  useInterval: boolean;
-  refreshInterval: number;
-  debug: boolean;
-  authentication: AuthenticationPayload;
-  enableExperimental: ExperimentalFeatureSetting;
-  region?: string;
-  unregisterOnShutdown?: boolean;
-  enableServerMode: boolean;
-  sanitizeSensitiveLogs: boolean;
-};
+import type { AnsiLogger } from 'matterbridge/logger';
+import { DEFAULT_REFRESH_INTERVAL_SECONDS } from '../constants/index.js';
+import {
+  AdvancedFeatureSetting,
+  CleanModeSettings,
+  createDefaultAdvancedFeature,
+  createDefaultCleanModeSettings,
+  RoborockPluginPlatformConfig,
+} from '../model/RoborockPluginPlatformConfig.js';
 
 /**
  * Manages platform configuration with validation and defaults.
  */
 export class PlatformConfigManager {
-  private readonly experimentalFeatures: ExperimentalFeatureSetting;
-
   private constructor(
     private readonly config: RoborockPluginPlatformConfig,
     private readonly log: AnsiLogger,
   ) {
-    this.config.whiteList ??= [];
-    this.config.blackList ??= [];
-    this.config.enableExperimental ??= createDefaultExperimentalFeatureSetting();
-    this.experimentalFeatures = { ...this.config.enableExperimental };
-
-    // Disable multiple map for more investigation
-    this.experimentalFeatures.advancedFeature.enableMultipleMap = false;
+    this.config.pluginConfiguration.whiteList ??= [];
+    this.config.advancedFeature ??= createDefaultAdvancedFeature();
   }
 
   /**
@@ -48,7 +33,7 @@ export class PlatformConfigManager {
   }
 
   public validateConfig(): boolean {
-    if (!this.config.username || typeof this.config.username !== 'string') {
+    if (!this.config.authentication.username || typeof this.config.authentication.username !== 'string') {
       return false;
     }
     return true;
@@ -84,40 +69,36 @@ export class PlatformConfigManager {
   // ─── Getters ────────────────────────────────────────────────────────────────
 
   public get username(): string {
-    return this.config.username as string;
+    return this.config.authentication.username;
   }
 
   public get password(): string {
-    return this.config.authentication?.password ?? '';
+    return this.config.authentication.password ?? '';
   }
 
   public get verificationCode(): string {
-    return this.config.authentication?.verificationCode ?? '';
+    return this.config.authentication.verificationCode ?? '';
   }
 
   public get authenticationMethod(): 'VerificationCode' | 'Password' {
-    return this.config.authentication?.authenticationMethod ?? 'Password';
+    return this.config.authentication.authenticationMethod ?? 'Password';
   }
 
   public get region(): string {
-    const configRegion = this.config.region;
+    const configRegion = this.config.authentication.region;
     return configRegion?.toUpperCase() ?? 'US';
   }
 
   public get refreshInterval(): number {
-    return this.config.refreshInterval ?? DEFAULT_REFRESH_INTERVAL_SECONDS;
+    return this.config.pluginConfiguration.refreshInterval ?? DEFAULT_REFRESH_INTERVAL_SECONDS;
   }
 
-  public get whiteList(): string[] {
-    return this.config.whiteList ?? [];
-  }
-
-  public get blackList(): string[] {
-    return this.config.blackList ?? [];
+  public get hasWhiteListConfig(): boolean {
+    return (this.config.pluginConfiguration.whiteList ?? []).length > 0;
   }
 
   public get unregisterOnShutdown(): boolean {
-    return this.config.unregisterOnShutdown ?? false;
+    return this.config.pluginConfiguration.unregisterOnShutdown ?? false;
   }
 
   public get rawConfig(): RoborockPluginPlatformConfig {
@@ -126,79 +107,68 @@ export class PlatformConfigManager {
 
   // ─── Experimental Features ──────────────────────────────────────────────────
 
-  public get isExperimentalEnabled(): boolean {
-    return this.experimentalFeatures.enableExperimentalFeature;
+  public get isAdvancedFeatureEnabled(): boolean {
+    return this.config.advancedFeature.enableAdvancedFeature;
   }
 
-  public get experimentalSettings(): ExperimentalFeatureSetting {
-    return this.experimentalFeatures;
+  public get isCustomCleanModeMappingEnabled(): boolean {
+    return this.isAdvancedFeatureEnabled && this.advancedFeatureSettings.enableCleanModeMapping;
   }
 
-  public get advancedFeatures(): ExperimentalFeatureSetting['advancedFeature'] {
-    return this.experimentalFeatures.advancedFeature;
+  public get advancedFeatureSettings(): AdvancedFeatureSetting {
+    return this.config.advancedFeature.settings;
   }
 
-  public get cleanModeSettings(): CleanModeSettings | undefined {
-    if (this.isExperimentalEnabled && this.experimentalFeatures.cleanModeSettings?.enableCleanModeMapping) {
-      return this.experimentalFeatures.cleanModeSettings;
+  public get cleanModeSettings(): CleanModeSettings {
+    if (this.isAdvancedFeatureEnabled && this.advancedFeatureSettings.enableCleanModeMapping) {
+      return this.config.advancedFeature.settings.cleanModeSettings;
     }
-    return undefined;
+    return createDefaultCleanModeSettings();
   }
 
   public get isServerModeEnabled(): boolean {
-    return this.config.enableServerMode;
+    return this.config.pluginConfiguration.enableServerMode;
   }
 
   public get isMultipleMapEnabled(): boolean {
-    return this.isExperimentalEnabled && this.advancedFeatures.enableMultipleMap;
+    return this.config.pluginConfiguration.enableMultipleMap;
   }
 
   public get showRoutinesAsRoom(): boolean {
-    return this.isExperimentalEnabled && this.advancedFeatures.showRoutinesAsRoom;
+    return this.isAdvancedFeatureEnabled && this.advancedFeatureSettings.showRoutinesAsRoom;
   }
 
   public get forceRunAtDefault(): boolean {
-    return this.isExperimentalEnabled && this.advancedFeatures.forceRunAtDefault;
+    return this.isAdvancedFeatureEnabled && this.advancedFeatureSettings.forceRunAtDefault;
   }
 
   public get alwaysExecuteAuthentication(): boolean {
-    if (this.isExperimentalEnabled) {
-      return this.advancedFeatures.alwaysExecuteAuthentication;
-    }
-    return true;
+    return this.config.authentication.forceAuthentication;
   }
 
   public get includeDockStationStatus(): boolean {
-    if (this.isExperimentalEnabled) {
-      return this.advancedFeatures.includeDockStationStatus;
+    if (this.isAdvancedFeatureEnabled) {
+      return this.advancedFeatureSettings.includeDockStationStatus;
     }
     return false;
   }
 
   public get useVacationModeToSendVacuumToDock(): boolean {
-    if (this.isExperimentalEnabled) {
-      return this.advancedFeatures.useVacationModeToSendVacuumToDock;
+    if (this.isAdvancedFeatureEnabled) {
+      return this.advancedFeatureSettings.useVacationModeToSendVacuumToDock;
     }
     return false;
   }
 
   // ─── Device Filtering ───────────────────────────────────────────────────────
 
-  /**
-   * Decide whether a device is allowed based on whiteList/blackList rules.
-   */
   public isDeviceAllowed(device: { duid?: string; deviceName?: string }): boolean {
-    const duid = device.duid ?? this.extractDuidFromDeviceName(device.deviceName);
-    const name = device.deviceName ?? '';
-
-    // Deny if blacklisted
-    for (const entry of this.blackList) {
-      if (this.matchesListEntry(entry, duid, name)) return false;
-    }
-
     // If whitelist present, require match
-    if (this.whiteList.length > 0) {
-      for (const entry of this.whiteList) {
+    if (this.hasWhiteListConfig) {
+      const duid = device.duid ?? this.extractDuidFromDeviceName(device.deviceName);
+      const name = device.deviceName ?? '';
+
+      for (const entry of this.config.pluginConfiguration.whiteList) {
         if (this.matchesListEntry(entry, duid, name)) return true;
       }
       return false;
@@ -207,9 +177,6 @@ export class PlatformConfigManager {
     return true;
   }
 
-  /**
-   * Extract DUID from whitelist entry format "name - duid".
-   */
   public extractDuidFromWhitelistEntry(entry: string): string | undefined {
     const parts = entry.split('-');
     if (parts.length >= 2) return parts[1].trim();

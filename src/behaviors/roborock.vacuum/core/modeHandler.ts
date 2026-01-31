@@ -1,7 +1,7 @@
 import { AnsiLogger } from 'matterbridge/logger';
 import { RoborockService } from '../../../services/roborockService.js';
-import { CleanModeSettings } from '../../../model/ExperimentalFeatureSetting.js';
 import { CleanModeSetting } from './CleanModeSetting.js';
+import { CleanModeSettings } from '../../../model/RoborockPluginPlatformConfig.js';
 
 export interface ModeHandler {
   canHandle(mode: number, activity: string): boolean;
@@ -11,6 +11,8 @@ export interface ModeHandler {
 export interface HandlerContext {
   roborockService: RoborockService;
   logger: AnsiLogger;
+
+  enableCleanModeMapping: boolean;
   cleanModeSettings?: CleanModeSettings;
   cleanSettings: Record<number, CleanModeSetting>;
   behaviorName: string;

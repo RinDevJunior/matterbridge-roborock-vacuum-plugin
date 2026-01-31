@@ -12,6 +12,7 @@ import { MapRoomResponse } from '../../../types/index.js';
 import { CleanModeSetting } from '../../../behaviors/roborock.vacuum/core/CleanModeSetting.js';
 
 export class Q10MessageDispatcher implements AbstractMessageDispatcher {
+  public dispatcherName = 'Q10MessageDispatcher';
   constructor(
     private readonly logger: AnsiLogger,
     private readonly client: Client,
@@ -30,7 +31,7 @@ export class Q10MessageDispatcher implements AbstractMessageDispatcher {
     return undefined;
   }
 
-  /* --------------- Core Data Retrieval --------------- */
+  // #region Core Data Retrieval
   public async getHomeMap(duid: string): Promise<MapRoomResponse> {
     return {}; // TODO: Implement home map retrieval for Q10
   }
@@ -47,8 +48,9 @@ export class Q10MessageDispatcher implements AbstractMessageDispatcher {
     await this.client.get<{ room_mapping: number[][] }>(duid, request);
     return new RoomMap([]); // TODO: Implement proper room mapping retrieval for Q10
   }
+  // #endregion Core Data Retrieval
 
-  /* ---------------- Cleaning Commands ---------------- */
+  // #region Cleaning Commands
   public async goHome(duid: string): Promise<void> {
     const request = new RequestMessage({ dps: { [Q10RequestCode.app_charge]: 0 } });
     await this.client.send(duid, request);
@@ -112,8 +114,9 @@ export class Q10MessageDispatcher implements AbstractMessageDispatcher {
       await this.setWaterMode(duid, waterFlow);
     }
   }
+  // #endregion Cleaning Commands
 
-  /* --------------- Private Helpers --------------- */
+  // #region Private Helpers
   private async setCleanMode(duid: string, suctionPower: number, waterFlow: number): Promise<void> {
     const request = new RequestMessage({ dps: { [Q10RequestMethod.change_clean_mode]: resolveQ10CleanMode(suctionPower, waterFlow) } });
     return this.client.send(duid, request);
@@ -128,4 +131,5 @@ export class Q10MessageDispatcher implements AbstractMessageDispatcher {
     const request = new RequestMessage({ dps: { [Q10RequestMethod.change_mop_mode]: resolveMopMode(mode) } });
     return this.client.send(duid, request);
   }
+  // #endregion Private Helpers
 }

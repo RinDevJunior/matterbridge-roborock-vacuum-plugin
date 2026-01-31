@@ -12,6 +12,7 @@ import { MapRoomResponse } from '../../../types/device.js';
 import { CleanModeSetting } from '../../../behaviors/roborock.vacuum/core/CleanModeSetting.js';
 
 export class Q7MessageDispatcher implements AbstractMessageDispatcher {
+  public dispatcherName = 'Q7MessageDispatcher';
   constructor(
     private readonly logger: AnsiLogger,
     private readonly client: Client,
@@ -27,7 +28,7 @@ export class Q7MessageDispatcher implements AbstractMessageDispatcher {
     return undefined;
   }
 
-  /* --------------- Core Data Retrieval --------------- */
+  // #region Core Data Retrieval
   public async getHomeMap(duid: string): Promise<MapRoomResponse> {
     return {};
   }
@@ -47,8 +48,9 @@ export class Q7MessageDispatcher implements AbstractMessageDispatcher {
     this.logger.notice(`Get room map response for Q7 device ${duid}: ${response ? debugStringify(response) : 'no response'}`);
     return new RoomMap([]); // TODO: Implement proper room mapping retrieval for Q7
   }
+  // #endregion Core Data Retrieval
 
-  /* ---------------- Cleaning Commands ---------------- */
+  // #region Cleaning Commands
   public async goHome(duid: string): Promise<void> {
     const request = new RequestMessage({ dps: this.createDps(Q7RequestMethod.app_charge, {}) });
     await this.client.send(duid, request);
@@ -115,7 +117,9 @@ export class Q7MessageDispatcher implements AbstractMessageDispatcher {
       await this.setMopMode(duid, waterFlow);
     }
   }
+  // #endregion Cleaning Commands
 
+  // #region Private Helpers
   private createDps(method: string, params: unknown): Record<number, unknown> {
     const messageId = randomInt(100000000000, 999999999999).toString();
     return { [Q7RequestCode.query]: { msgId: messageId, method: method, params: params } };
@@ -140,4 +144,5 @@ export class Q7MessageDispatcher implements AbstractMessageDispatcher {
     const request = new RequestMessage({ dps: this.createDps(Q7RequestMethod.set_prop, { 'clean_path_preference': resolveCleanRoute(mopRoute) }) });
     await this.client.send(duid, request);
   }
+  // #endregion Private Helpers
 }
