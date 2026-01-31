@@ -295,10 +295,6 @@ export class RoborockMatterbridgePlatform extends MatterbridgeDynamicPlatform {
   }
 
   private async addDevice(device: MatterbridgeEndpoint): Promise<MatterbridgeEndpoint | undefined> {
-    // Add the Identify cluster with the IdentifyType attribute
-    // By default, use IdentifyType.AudibleBeep (audible beep)
-    const defaultIdentifyType = Identify.IdentifyType.AudibleBeep;
-    device.createDefaultIdentifyClusterServer(0, defaultIdentifyType);
     if (!device.serialNumber || !device.deviceName) {
       this.log.warn('Cannot add device: missing serialNumber or deviceName');
       return undefined;
@@ -324,6 +320,10 @@ export class RoborockMatterbridgePlatform extends MatterbridgeDynamicPlatform {
         options.hardwareVersion = device.hardwareVersion ?? 1;
         options.hardwareVersionString = device.hardwareVersionString ?? '1.0.0';
       }
+      // Add the Identify cluster with the IdentifyType attribute
+      // By default, use IdentifyType.AudibleBeep (audible beep)
+      const defaultIdentifyType = Identify.IdentifyType.AudibleBeep;
+      device.createDefaultIdentifyClusterServer(0, defaultIdentifyType);
       // We need to add bridgedNode device type and BridgedDeviceBasicInformation cluster for single class devices that doesn't add it in childbridge mode.
       if (device.mode === undefined && !device.deviceTypes.has(bridgedNode.code)) {
         device.deviceTypes.set(bridgedNode.code, bridgedNode);
