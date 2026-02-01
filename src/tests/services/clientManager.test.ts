@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { AnsiLogger } from 'matterbridge/logger';
 import ClientManager from '../../services/clientManager.js';
 import { UserData } from '../../roborockCommunication/models/index.js';
+import { makeLogger } from '../testUtils.js';
 
 describe('ClientManager', () => {
   let clientManager: ClientManager;
@@ -9,13 +10,7 @@ describe('ClientManager', () => {
   let mockUserData: UserData;
 
   beforeEach(() => {
-    mockLogger = {
-      debug: vi.fn(),
-      info: vi.fn(),
-      warn: vi.fn(),
-      error: vi.fn(),
-      notice: vi.fn(),
-    } as any;
+    mockLogger = makeLogger();
 
     mockUserData = {
       username: 'test-user',

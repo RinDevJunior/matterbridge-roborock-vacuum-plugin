@@ -1,5 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { MapResponseListener } from '../../../../../roborockCommunication/routing/listeners/implementation/mapResponseListener.js';
+import { asType, asPartial } from '../../../../testUtils.js';
+import { ResponseMessage } from '../../../../../roborockCommunication/models/index.js';
 
 function createMockLogger() {
   return {
@@ -20,7 +22,7 @@ describe('MapResponseListener', () => {
   beforeEach(() => {
     duid = 'test-duid';
     logger = createMockLogger();
-    listener = new MapResponseListener(duid, logger as any);
+    listener = new MapResponseListener(duid, asType(logger));
   });
 
   it('should construct with duid and logger', () => {
@@ -28,18 +30,18 @@ describe('MapResponseListener', () => {
   });
 
   it('should log debug if message is for Protocol.map_response', async () => {
-    const message = {
+    const message = asPartial<ResponseMessage>({
       isForProtocol: vi.fn().mockReturnValue(true),
-    } as any;
+    });
     await listener.onMessage(message);
     expect(message.isForProtocol).toHaveBeenCalledWith(expect.anything());
     expect(logger.debug).toHaveBeenCalled();
   });
 
   it('should not log if message is not for Protocol.map_response', async () => {
-    const message = {
+    const message = asPartial<ResponseMessage>({
       isForProtocol: vi.fn().mockReturnValue(false),
-    } as any;
+    });
     await listener.onMessage(message);
     expect(logger.debug).not.toHaveBeenCalled();
   });

@@ -2,8 +2,10 @@ import { describe, it, expect } from 'vitest';
 import { MessageContext } from '../../../../roborockCommunication/models/messageContext.js';
 import { RequestMessage } from '../../../../roborockCommunication/models/requestMessage.js';
 import { UnknownMessageBodyBuilder } from '../../../../roborockCommunication/protocol/builders/UnknownMessageBodyBuilder.js';
+import { asPartial } from '../../../helpers/testUtils.js';
+import type { UserData } from '../../../../roborockCommunication/models/index.js';
 
-const mkUser = () => ({ rriot: { k: 'test-key' } }) as any;
+const mkUser = () => asPartial<UserData>({ rriot: { r: { a: 'https://api.example', r: 'r', m: 'm', l: 'l' }, u: 'uid', s: 's', h: 'h', k: 'k' } });
 
 describe('UnknownMessageBodyBuilder', () => {
   it('throws when body is missing', () => {

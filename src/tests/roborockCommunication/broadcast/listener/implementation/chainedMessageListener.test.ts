@@ -1,13 +1,19 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { ChainedMessageListener } from '../../../../../roborockCommunication/routing/listeners/implementation/chainedMessageListener.js';
+import { PendingResponseTracker } from '../../../../../roborockCommunication/routing/services/pendingResponseTracker.js';
+import { makeLogger, asPartial } from '../../../../testUtils.js';
+import { HeaderMessage, ResponseMessage } from '../../../../../roborockCommunication/models/index.js';
 
 describe('ChainedMessageListener', () => {
   let chained: ChainedMessageListener;
   let listener1: { onMessage: ReturnType<typeof vi.fn<(message: any) => Promise<void>>> }, listener2: { onMessage: ReturnType<typeof vi.fn<(message: any) => Promise<void>>> };
-  const message = { foo: 'bar' } as any;
+  const message = asPartial<ResponseMessage>({ duid: 'test-duid', header: asPartial<HeaderMessage>({}), get: () => undefined });
+
+  const logger = makeLogger();
+  const responseTracker = new PendingResponseTracker(logger);
 
   beforeEach(() => {
-    chained = new ChainedMessageListener();
+    chained = new ChainedMessageListener(responseTracker, logger);
     listener1 = { onMessage: vi.fn<(message: any) => Promise<void>>() };
     listener2 = { onMessage: vi.fn<(message: any) => Promise<void>>() };
   });
@@ -22,8 +28,8 @@ describe('ChainedMessageListener', () => {
     expect(listener2.onMessage).toHaveBeenCalledWith(message);
   });
 
-  it('should not fail if no listeners registered', async () => {
-    await expect(chained.onMessage(message)).resolves.toBeUndefined();
+  it('should not fail if no listeners registered', () => {
+    expect(() => chained.onMessage(message)).not.toThrow();
   });
 
   it('should call listeners in order', async () => {

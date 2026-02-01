@@ -5,17 +5,7 @@ import { AnsiLogger } from 'matterbridge/logger';
 import { RoborockService } from '../services/roborockService.js';
 import { BehaviorDeviceGeneric } from '../behaviors/BehaviorDeviceGeneric.js';
 import { CleanModeSettings } from '../model/RoborockPluginPlatformConfig.js';
-
-function createMockLogger(): AnsiLogger {
-  return {
-    debug: vi.fn(),
-    info: vi.fn(),
-    warn: vi.fn(),
-    error: vi.fn(),
-    notice: vi.fn(),
-    logLevel: 'info',
-  } as unknown as AnsiLogger;
-}
+import { createMockLogger } from './helpers/testUtils.js';
 
 describe('configureBehavior', () => {
   const duid = 'test-duid';

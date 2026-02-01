@@ -7,9 +7,12 @@ describe('SimpleMessageListener', () => {
   let listener: SimpleMessageListener;
   let handler: any;
   let message: any;
+  const logger: any = {
+    debug: vi.fn(),
+  };
 
   beforeEach(() => {
-    listener = new SimpleMessageListener();
+    listener = new SimpleMessageListener(logger);
     handler = {
       onStatusChanged: vi.fn().mockResolvedValue(undefined),
       onError: vi.fn().mockResolvedValue(undefined),
@@ -25,11 +28,11 @@ describe('SimpleMessageListener', () => {
       body: undefined,
       header: {} as HeaderMessage,
     };
-    listener.registerListener(handler);
+    listener.registerHandler(handler);
   });
 
   it('should do nothing if no handler registered', async () => {
-    const l = new SimpleMessageListener();
+    const l = new SimpleMessageListener(logger);
     await expect(l.onMessage(message as ResponseMessage)).resolves.toBeUndefined();
   });
 
@@ -71,7 +74,7 @@ describe('SimpleMessageListener', () => {
 
   it('should not call handler methods if they are undefined', async () => {
     const handlerPartial = {} as AbstractMessageHandler;
-    listener.registerListener(handlerPartial);
+    listener.registerHandler(handlerPartial);
     message.isForProtocol.mockReturnValue(true);
     await expect(listener.onMessage(message)).resolves.toBeUndefined();
   });

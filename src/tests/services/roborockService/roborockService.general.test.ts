@@ -1,25 +1,67 @@
 import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
+import type { AnsiLogger } from 'matterbridge/logger';
+import type { RoborockPluginPlatformConfig } from '../../../model/RoborockPluginPlatformConfig.js';
 import { RoborockService } from '../../../services/roborockService.js';
 import { RoomIndexMap } from '../../../core/application/models/index.js';
+import { createMockLogger, createMockLocalStorage, asPartial, asType } from '../../helpers/testUtils.js';
+import { localStorageMock } from '../../testData/localStorageMock.js';
+import { PlatformConfigManager as PlatformConfigManagerStatic } from '../../../platform/platformConfig.js';
+import { Device } from '../../../roborockCommunication/models/device.js';
 
-const logger: any = { debug: vi.fn(), error: vi.fn(), notice: vi.fn(), warn: vi.fn(), info: vi.fn() };
+const logger: AnsiLogger = createMockLogger();
 
 describe('RoborockService basic behaviors', () => {
   let svc: RoborockService;
 
-  beforeEach(() => {
+  beforeEach(async () => {
     // Create service with default factories (will be mocked as needed)
+    const persist = createMockLocalStorage();
+
+    const PlatformConfigManager = PlatformConfigManagerStatic;
+    const config = {
+      name: 'test',
+      type: 'test',
+      version: '1.0',
+      debug: false,
+      unregisterOnShutdown: false,
+      authentication: { username: 'test', region: 'US', forceAuthentication: false, authenticationMethod: 'Password', password: '' },
+      pluginConfiguration: {
+        whiteList: [],
+        enableServerMode: false,
+        enableMultipleMap: false,
+        sanitizeSensitiveLogs: false,
+        refreshInterval: 10,
+        debug: false,
+        unregisterOnShutdown: false,
+      },
+      advancedFeature: {
+        enableAdvancedFeature: false,
+        settings: {
+          showRoutinesAsRoom: false,
+          includeDockStationStatus: false,
+          forceRunAtDefault: false,
+          useVacationModeToSendVacuumToDock: false,
+          enableCleanModeMapping: false,
+          cleanModeSettings: {
+            vacuuming: { fanMode: 'Balanced', mopRouteMode: 'Standard' },
+            mopping: { waterFlowMode: 'Medium', mopRouteMode: 'Standard', distanceOff: 25 },
+            vacmop: { fanMode: 'Balanced', waterFlowMode: 'Medium', mopRouteMode: 'Standard', distanceOff: 25 },
+          },
+        },
+      },
+    } as RoborockPluginPlatformConfig;
+    Object.assign(config, { name: 'test', type: 'test', version: '1.0', debug: false, unregisterOnShutdown: false });
+    const configManager = PlatformConfigManager.create(config, asType<AnsiLogger>(logger));
+
     svc = new RoborockService(
       {
-        authenticateApiFactory: () => undefined as any,
-        iotApiFactory: () => undefined as any,
         refreshInterval: 10,
         baseUrl: 'https://api.roborock.com',
-        persist: {} as any,
-        configManager: {} as any,
+        persist: persist,
+        configManager: configManager,
       },
-      logger as any,
-      {} as any,
+      logger,
+      configManager,
     );
   });
 
@@ -49,18 +91,54 @@ describe('RoborockService basic behaviors', () => {
 describe('RoborockService - Facade Pattern Testing', () => {
   let roborockService: RoborockService;
 
-  beforeEach(() => {
+  beforeEach(async () => {
+    const persist = createMockLocalStorage();
+
+    const PlatformConfigManager = PlatformConfigManagerStatic;
+    const config = {
+      name: 'test',
+      type: 'test',
+      version: '1.0',
+      debug: false,
+      unregisterOnShutdown: false,
+      authentication: { username: 'test', region: 'US', forceAuthentication: false, authenticationMethod: 'Password', password: '' },
+      pluginConfiguration: {
+        whiteList: [],
+        enableServerMode: false,
+        enableMultipleMap: false,
+        sanitizeSensitiveLogs: false,
+        refreshInterval: 10,
+        debug: false,
+        unregisterOnShutdown: false,
+      },
+      advancedFeature: {
+        enableAdvancedFeature: false,
+        settings: {
+          showRoutinesAsRoom: false,
+          includeDockStationStatus: false,
+          forceRunAtDefault: false,
+          useVacationModeToSendVacuumToDock: false,
+          enableCleanModeMapping: false,
+          cleanModeSettings: {
+            vacuuming: { fanMode: 'Balanced', mopRouteMode: 'Standard' },
+            mopping: { waterFlowMode: 'Medium', mopRouteMode: 'Standard', distanceOff: 25 },
+            vacmop: { fanMode: 'Balanced', waterFlowMode: 'Medium', mopRouteMode: 'Standard', distanceOff: 25 },
+          },
+        },
+      },
+    } as RoborockPluginPlatformConfig;
+    Object.assign(config, { name: 'test', type: 'test', version: '1.0', debug: false, unregisterOnShutdown: false });
+    const configManager = PlatformConfigManager.create(config, asType<AnsiLogger>(logger));
+
     roborockService = new RoborockService(
       {
-        authenticateApiFactory: () => undefined as any,
-        iotApiFactory: () => undefined as any,
         refreshInterval: 10,
         baseUrl: 'https://api.roborock.com',
-        persist: {} as any,
-        configManager: {} as any,
+        persist: persist,
+        configManager: configManager,
       },
-      logger as any,
-      {} as any,
+      logger,
+      configManager,
     );
   });
 
@@ -113,7 +191,7 @@ describe('RoborockService - Facade Pattern Testing', () => {
     it('should maintain consistent public interface', () => {
       // Assert - Test that facade maintains stable public API
       const publicMethods = Object.getOwnPropertyNames(Object.getPrototypeOf(roborockService)).filter(
-        (name) => typeof (roborockService as any)[name] === 'function' && !name.startsWith('_'),
+        (name) => typeof asType<Record<string, unknown>>(roborockService)[name] === 'function' && !name.startsWith('_'),
       );
 
       expect(publicMethods.length).toBeGreaterThan(15); // Should have comprehensive API
@@ -170,8 +248,8 @@ describe('RoborockService - Facade Pattern Testing', () => {
       }).not.toThrow();
 
       // Create a valid RoomIndexMap with mock data
-      const mockRoomMap = new Map();
-      mockRoomMap.set(1, { roomId: 10, mapId: 1 } as any);
+      const mockRoomMap = new Map<number, { roomId: number; mapId: number }>();
+      mockRoomMap.set(1, { roomId: 10, mapId: 1 });
       expect(() => {
         roborockService.setSupportedAreaIndexMap('device', new RoomIndexMap(mockRoomMap));
       }).not.toThrow();
@@ -188,7 +266,7 @@ describe('RoborockService - Facade Pattern Testing', () => {
         roborockService.setDeviceNotify(vi.fn());
       }).not.toThrow();
       expect(() => {
-        roborockService.activateDeviceNotify(mockDevice as any);
+        roborockService.activateDeviceNotify(asPartial<Device>(mockDevice));
       }).not.toThrow();
     });
 
@@ -221,19 +299,19 @@ describe('RoborockService - Facade Pattern Testing', () => {
 
       // Assert - All domain methods are available through facade
       authMethods.forEach((method) => {
-        expect(typeof (roborockService as any)[method]).toBe('function');
+        expect(typeof asType<Record<string, unknown>>(roborockService)[method]).toBe('function');
       });
 
       deviceMethods.forEach((method) => {
-        expect(typeof (roborockService as any)[method]).toBe('function');
+        expect(typeof asType<Record<string, unknown>>(roborockService)[method]).toBe('function');
       });
 
       areaMethods.forEach((method) => {
-        expect(typeof (roborockService as any)[method]).toBe('function');
+        expect(typeof asType<Record<string, unknown>>(roborockService)[method]).toBe('function');
       });
 
       messageMethods.forEach((method) => {
-        expect(typeof (roborockService as any)[method]).toBe('function');
+        expect(typeof asType<Record<string, unknown>>(roborockService)[method]).toBe('function');
       });
     });
   });

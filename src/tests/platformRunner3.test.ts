@@ -3,6 +3,7 @@ import { NotifyMessageTypes } from '../types/notifyMessageTypes.js';
 import { PlatformRunner } from '../platformRunner.js';
 import { RoborockVacuumCleaner } from '../types/roborockVacuumCleaner.js';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { asPartial, createMockLogger, createMockDeviceRegistry, createMockConfigManager, createMockRoborockService } from './testUtils.js';
 
 describe('PlatformRunner.updateRobot', () => {
   let platform: RoborockMatterbridgePlatform;
@@ -26,29 +27,16 @@ describe('PlatformRunner.updateRobot', () => {
     const robots = new Map<string, RoborockVacuumCleaner>();
     robots.set('123456', robotMock);
 
-    const registry = {
-      robotsMap: robots,
-      getRobot: (duid: string) => robots.get(duid),
-    };
+    const registry = createMockDeviceRegistry({}, robots as unknown as Map<string, RoborockVacuumCleaner>);
 
-    const configManager = {
-      get isMultipleMapEnabled() {
-        return false;
-      },
-    };
+    const configManager = createMockConfigManager({ isMultipleMapEnabled: false });
 
-    platform = {
-      robots: robots,
-      log: {
-        error: vi.fn(),
-        debug: vi.fn(),
-        notice: vi.fn(),
-      },
-      roborockService: {},
+    platform = asPartial<RoborockMatterbridgePlatform>({
+      log: createMockLogger(),
+      roborockService: createMockRoborockService(),
       registry: registry,
       configManager: configManager,
-      enableExperimentalFeature: undefined,
-    } as unknown as RoborockMatterbridgePlatform;
+    });
 
     runner = new PlatformRunner(platform);
   });

@@ -1,70 +1,61 @@
 import { vi, describe, it, expect } from 'vitest';
 import { ConnectionStateListener } from '../../../../../roborockCommunication/routing/listeners/implementation/connectionStateListener.js';
+import { createMockLogger, asPartial, asType } from '../../../../testUtils.js';
+import { AbstractClient } from '../../../../../roborockCommunication/routing/abstractClient.js';
 
-// --- Helpers ---
-function makeLogger() {
-  const calls: { notice: string[]; info: string[]; error: string[] } = { notice: [], info: [], error: [] };
-  return {
-    notice: (m: string) => calls.notice.push(m),
-    info: (m: string) => calls.info.push(m),
-    error: (m: string) => calls.error.push(m),
-    __calls: calls,
-  } as any;
-}
-
-function makeClient(overrides: Partial<any> = {}) {
-  return {
-    retryCount: overrides.retryCount ?? 0,
-    isInDisconnectingStep: overrides.isInDisconnectingStep ?? false,
-    isConnected: overrides.isConnected ?? (() => false),
-    connect: overrides.connect ?? vi.fn(),
-  } as any;
+function makeClient(overrides: Partial<AbstractClient> = {}) {
+  return asPartial<AbstractClient>({
+    retryCount: overrides['retryCount'] ?? 0,
+    isInDisconnectingStep: overrides['isInDisconnectingStep'] ?? false,
+    isConnected: vi.fn(() => (overrides['isConnected'] ? overrides['isConnected']() : false)),
+    connect: vi.fn(() => (overrides['connect'] as unknown) ?? vi.fn()()),
+  });
 }
 
 describe('ConnectionStateListener', () => {
   // --- Reconnect/Retry Logic ---
 
   it('resets retryCount to 0 on reconnect', async () => {
-    const logger = makeLogger();
+    const logger = createMockLogger();
     const client = makeClient({ retryCount: 5 });
     const listener = new ConnectionStateListener(logger, client, 'TEST');
     await listener.onReconnect('DUID6', 'reconnected');
     expect(client.retryCount).toBe(0);
-    expect(logger.__calls.info.some((s: string) => s.includes('reconnected'))).toBe(true);
+    expect(logger.info).toHaveBeenCalledWith(expect.stringContaining('reconnected'));
   });
 
   it('resets retryCount to 0 and logs on connected', async () => {
-    const logger = makeLogger();
+    const logger = createMockLogger();
     const client = makeClient();
     const listener = new ConnectionStateListener(logger, client, 'TEST');
     await listener.onConnected('DUID1');
-    expect(logger.__calls.info.length).toBeGreaterThan(0);
+    expect(logger.info).toHaveBeenCalled();
   });
 
   it('logs error on onError', async () => {
-    const logger = makeLogger();
+    const logger = createMockLogger();
     const client = makeClient();
     const listener = new ConnectionStateListener(logger, client, 'TEST');
     await listener.onError('DUID1', 'boom');
-    expect(logger.__calls.error.some((s: string) => s.includes('boom'))).toBe(true);
+    expect(logger.error).toHaveBeenCalledWith(expect.stringContaining('boom'));
   });
 
   // --- Disconnection/Reconnection Policy ---
 
   it('does not reconnect if shouldReconnect is false', async () => {
-    const logger = makeLogger();
+    const logger = createMockLogger();
     const client = makeClient();
     const listener = new ConnectionStateListener(logger, client, 'TEST');
     // Don't call start() to leave shouldReconnect as false
     await listener.onDisconnected('DUID2', 'bye');
-    expect(logger.__calls.error.length).toBeGreaterThan(0);
-    expect(logger.__calls.notice.some((s: string) => s.includes('re-registration is disabled'))).toBe(true);
+    expect(logger.error).toHaveBeenCalled();
+    expect(logger.notice).toHaveBeenCalledWith(expect.stringContaining('re-registration is disabled'));
     expect(client.connect).not.toHaveBeenCalled();
   });
 
   it('schedules manual reconnect after 30s if still disconnected', async () => {
     vi.useFakeTimers();
-    const logger = makeLogger();
+    const logger = createMockLogger();
     let connected = false;
     const client = makeClient({
       retryCount: 0,
@@ -86,7 +77,7 @@ describe('ConnectionStateListener', () => {
 
   it('increments retryCount and schedules reconnect after 30s', async () => {
     vi.useFakeTimers();
-    const logger = makeLogger();
+    const logger = createMockLogger();
     const client = makeClient({ retryCount: 0, isInDisconnectingStep: false });
     const listener = new ConnectionStateListener(logger, client, 'TEST');
     listener.start();
@@ -99,22 +90,23 @@ describe('ConnectionStateListener', () => {
   });
 
   it('does not reconnect if retryCount > 10', async () => {
-    const logger = makeLogger();
+    const logger = createMockLogger();
     const client = makeClient({ retryCount: 11 });
     const listener = new ConnectionStateListener(logger, client, 'TEST');
     listener.start();
     await listener.onDisconnected('DUID4', 'lost');
-    expect(logger.__calls.error.some((s: string) => s.includes('exceeded retry limit'))).toBe(true);
+    expect(logger.error).toHaveBeenCalledWith(expect.stringContaining('exceeded retry limit'));
+
     expect(client.connect).not.toHaveBeenCalled();
   });
 
   it('skips re-registration if in disconnecting step', async () => {
-    const logger = makeLogger();
+    const logger = createMockLogger();
     const client = makeClient({ retryCount: 0, isInDisconnectingStep: true });
     const listener = new ConnectionStateListener(logger, client, 'TEST');
     listener.start();
     await listener.onDisconnected('DUID5', 'lost');
-    expect(logger.__calls.info.some((s: string) => s.includes('disconnecting step'))).toBe(true);
+    expect(logger.info).toHaveBeenCalledWith(expect.stringContaining('disconnecting step'));
     expect(client.connect).not.toHaveBeenCalled();
     expect(client.isInDisconnectingStep).toBe(true);
   });

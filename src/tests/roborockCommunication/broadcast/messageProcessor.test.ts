@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { AnsiLogger } from 'matterbridge/logger';
 import { DeviceStatus } from '../../../roborockCommunication/models/index.js';
 import { V01MessageDispatcher } from '../../../roborockCommunication/protocol/dispatcher/V01MessageDispatcher.js';
+import { asType } from '../../testUtils.js';
 
 describe('V01MessageDispatcher', () => {
   let mockClient: any;
@@ -16,12 +17,12 @@ describe('V01MessageDispatcher', () => {
       get: vi.fn(),
       send: vi.fn(),
     };
-    mockLogger = {
+    mockLogger = asType<AnsiLogger>({
       debug: vi.fn(),
       notice: vi.fn(),
       warn: vi.fn(),
       error: vi.fn(),
-    } as unknown as AnsiLogger;
+    });
 
     processor = new V01MessageDispatcher(mockLogger, mockClient);
   });
@@ -83,13 +84,13 @@ describe('V01MessageDispatcher', () => {
 
   it('sendCustomMessage should call client.send', async () => {
     const def = { method: 'custom' };
-    await processor.sendCustomMessage('duid', def as any);
+    await processor.sendCustomMessage('duid', asType(def));
     expect(mockClient.send).toHaveBeenCalledWith('duid', expect.any(Object));
   });
 
   it('getCustomMessage should call client.get', async () => {
     const def = { method: 'custom' };
-    await processor.getCustomMessage('duid', def as any);
+    await processor.getCustomMessage('duid', asType(def));
     expect(mockClient.get).toHaveBeenCalledWith('duid', def);
   });
 

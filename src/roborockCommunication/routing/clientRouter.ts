@@ -8,23 +8,26 @@ import { AbstractMessageListener } from './listeners/abstractMessageListener.js'
 import { ChainedConnectionListener } from './listeners/implementation/chainedConnectionListener.js';
 import { ChainedMessageListener } from './listeners/implementation/chainedMessageListener.js';
 import { Client } from './client.js';
+import { PendingResponseTracker } from './services/pendingResponseTracker.js';
 
 export class ClientRouter implements Client {
-  protected readonly connectionListeners = new ChainedConnectionListener();
-  protected readonly messageListeners = new ChainedMessageListener();
+  protected readonly connectionListener = new ChainedConnectionListener();
+  protected readonly chainedMessageListener: ChainedMessageListener;
 
   private readonly context: MessageContext;
   private readonly localClients = new Map<string, AbstractClient>();
   private readonly logger: AnsiLogger;
   private mqttClient: MQTTClient;
+  private readonly responseTracker: PendingResponseTracker;
 
   public constructor(logger: AnsiLogger, userdata: UserData) {
     this.context = new MessageContext(userdata);
     this.logger = logger;
 
-    this.mqttClient = new MQTTClient(logger, this.context, userdata);
-    this.mqttClient.registerConnectionListener(this.connectionListeners);
-    this.mqttClient.registerMessageListener(this.messageListeners);
+    this.responseTracker = new PendingResponseTracker(this.logger);
+    this.chainedMessageListener = new ChainedMessageListener(this.responseTracker, this.logger);
+    this.mqttClient = new MQTTClient(logger, this.context, userdata, this.chainedMessageListener, this.responseTracker);
+    this.mqttClient.registerConnectionListener(this.connectionListener);
   }
 
   public registerDevice(duid: string, localKey: string, pv: string, nonce: number | undefined): void {
@@ -36,9 +39,8 @@ export class ClientRouter implements Client {
   }
 
   public registerClient(duid: string, ip: string): Client {
-    const localClient = new LocalNetworkClient(this.logger, this.context, duid, ip);
-    localClient.registerConnectionListener(this.connectionListeners);
-    localClient.registerMessageListener(this.messageListeners);
+    const localClient = new LocalNetworkClient(this.logger, this.context, duid, ip, this.chainedMessageListener, this.responseTracker);
+    localClient.registerConnectionListener(this.connectionListener);
 
     this.localClients.set(duid, localClient);
     return localClient;
@@ -49,11 +51,11 @@ export class ClientRouter implements Client {
   }
 
   public registerConnectionListener(listener: AbstractConnectionListener): void {
-    this.connectionListeners.register(listener);
+    this.connectionListener.register(listener);
   }
 
   public registerMessageListener(listener: AbstractMessageListener): void {
-    this.messageListeners.register(listener);
+    this.chainedMessageListener.register(listener);
   }
 
   public isConnected(): boolean {
@@ -70,8 +72,8 @@ export class ClientRouter implements Client {
 
   public async disconnect(): Promise<void> {
     await this.mqttClient.disconnect();
-    this.connectionListeners.unregister();
-    this.messageListeners.unregister();
+    this.connectionListener.unregister();
+    this.chainedMessageListener.unregister();
     this.context.unregisterAllDevices();
 
     for (const client of this.localClients.values()) {
@@ -83,7 +85,7 @@ export class ClientRouter implements Client {
     if (request.secure) {
       await this.mqttClient.send(duid, request);
     } else {
-      await this.getClient(duid).send(duid, request);
+      await this.getLocalClient(duid).send(duid, request);
     }
   }
 
@@ -91,11 +93,11 @@ export class ClientRouter implements Client {
     if (request.secure) {
       return await this.mqttClient.get(duid, request);
     } else {
-      return await this.getClient(duid).get(duid, request);
+      return await this.getLocalClient(duid).get(duid, request);
     }
   }
 
-  private getClient(duid: string): Client {
+  private getLocalClient(duid: string): Client {
     const localClient = this.localClients.get(duid);
     if (localClient === undefined || !localClient.isConnected() || !localClient.isReady()) {
       return this.mqttClient;

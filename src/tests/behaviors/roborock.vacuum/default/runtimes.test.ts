@@ -3,6 +3,7 @@ import { VacuumSuctionPower, MopRoute, MopWaterFlow } from '../../../../behavior
 import { createDefaultModeResolver } from '../../../../behaviors/roborock.vacuum/core/modeResolver.js';
 import { baseCleanModeConfigs, CleanModeDisplayLabel, CleanModeLabelInfo } from '../../../../behaviors/roborock.vacuum/core/cleanModeConfig.js';
 import { CleanModeSetting } from '../../../../behaviors/roborock.vacuum/core/CleanModeSetting.js';
+import { asType } from '../../../testUtils.js';
 
 const defaultModeResolver = createDefaultModeResolver(baseCleanModeConfigs);
 
@@ -36,10 +37,10 @@ describe('runtimes.getCurrentCleanModeDefault', () => {
   });
 
   it('returns undefined for completely invalid input', () => {
-    expect(defaultModeResolver.resolve(undefined as any)).toBeUndefined();
-    expect(defaultModeResolver.resolve(null as any)).toBeUndefined();
-    expect(defaultModeResolver.resolve(123 as any)).toBeUndefined();
-    expect(defaultModeResolver.resolve('bad' as any)).toBeUndefined();
+    expect(defaultModeResolver.resolve(asType<CleanModeSetting>(undefined))).toBeUndefined();
+    expect(defaultModeResolver.resolve(asType<CleanModeSetting>(null))).toBeUndefined();
+    expect(defaultModeResolver.resolve(asType<CleanModeSetting>(123))).toBeUndefined();
+    expect(defaultModeResolver.resolve(asType<CleanModeSetting>('bad'))).toBeUndefined();
   });
 
   it('returns 5 if no CleanSetting match and not covered by other rules', () => {

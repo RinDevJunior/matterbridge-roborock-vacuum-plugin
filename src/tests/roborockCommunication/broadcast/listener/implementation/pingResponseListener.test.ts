@@ -1,14 +1,13 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { HELLO_RESPONSE_TIMEOUT_MS } from '../../../../../constants/timeouts.js';
 import { Protocol, ResponseMessage } from '../../../../../roborockCommunication/models/index.js';
+import { asPartial } from '../../../../helpers/testUtils.js';
 import { PingResponseListener } from '../../../../../roborockCommunication/routing/listeners/implementation/pingResponseListener.js';
 
 const DUID = 'test-duid';
 
 function createMockMessage(isHello = true) {
-  return {
-    isForProtocol: vi.fn().mockImplementation((proto) => isHello && proto === Protocol.hello_response),
-  } as unknown as ResponseMessage;
+  return asPartial<ResponseMessage>({ isForProtocol: vi.fn().mockImplementation((proto) => isHello && proto === Protocol.hello_response) });
 }
 
 describe('PingResponseListener (basic behavior)', () => {
@@ -32,7 +31,7 @@ describe('PingResponseListener (basic behavior)', () => {
       timestamp: 1,
       protocol: Protocol.hello_response,
       isForProtocol: (p: Protocol) => p === Protocol.hello_response,
-    } as any);
+    });
 
     const p = listener.waitFor();
 
@@ -50,7 +49,7 @@ describe('PingResponseListener (basic behavior)', () => {
       timestamp: 2,
       protocol: Protocol.ping_response,
       isForProtocol: (p: Protocol) => p === Protocol.ping_response,
-    } as any);
+    });
 
     const p = listener.waitFor();
 
@@ -63,7 +62,7 @@ describe('PingResponseListener (basic behavior)', () => {
     await expect(p).rejects.toThrow(/no ping response/);
   });
 
-  it('ignores messages when no handler is registered', async () => {
+  it('ignores messages when no handler is registered', () => {
     const message = new ResponseMessage('device-1', {
       version: '1.0',
       seq: 3,
@@ -71,10 +70,10 @@ describe('PingResponseListener (basic behavior)', () => {
       timestamp: 3,
       protocol: Protocol.hello_response,
       isForProtocol: (p: Protocol) => p === Protocol.hello_response,
-    } as any);
+    });
 
     // call onMessage without waitFor() being called first
-    await expect(listener.onMessage(message)).resolves.toBeUndefined();
+    expect(() => listener.onMessage(message)).not.toThrow();
   });
 });
 

@@ -1,25 +1,60 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { RoborockService } from '../../../services/roborockService.js';
 import { RoomIndexMap } from '../../../core/application/models/index.js';
+import { createMockIotApi, createMockAuthApi, createMockLocalStorage, createMockLogger } from '../../testUtils.js';
+import { PlatformConfigManager as PlatformConfigManagerStatic } from '../../../platform/platformConfig.js';
+import type { AnsiLogger } from 'matterbridge/logger';
+import type { RoborockPluginPlatformConfig } from '../../../model/RoborockPluginPlatformConfig.js';
 
 describe('RoborockService - Area Management', () => {
   let roborockService: RoborockService;
-  let mockLogger: any;
+  let mockLogger: ReturnType<typeof createMockLogger>;
 
   beforeEach(() => {
-    mockLogger = { debug: vi.fn(), error: vi.fn(), warn: vi.fn() };
+    mockLogger = createMockLogger();
+
+    const PlatformConfigManager = PlatformConfigManagerStatic;
+    const config = {
+      authentication: { username: 'test', region: 'US', forceAuthentication: false, authenticationMethod: 'Password', password: '' },
+      pluginConfiguration: {
+        whiteList: [],
+        enableServerMode: false,
+        enableMultipleMap: false,
+        sanitizeSensitiveLogs: false,
+        refreshInterval: 10,
+        debug: false,
+        unregisterOnShutdown: false,
+      },
+      advancedFeature: {
+        enableAdvancedFeature: false,
+        settings: {
+          showRoutinesAsRoom: false,
+          includeDockStationStatus: false,
+          forceRunAtDefault: false,
+          useVacationModeToSendVacuumToDock: false,
+          enableCleanModeMapping: false,
+          cleanModeSettings: {
+            vacuuming: { fanMode: 'Balanced', mopRouteMode: 'Standard' },
+            mopping: { waterFlowMode: 'Medium', mopRouteMode: 'Standard', distanceOff: 25 },
+            vacmop: { fanMode: 'Balanced', waterFlowMode: 'Medium', mopRouteMode: 'Standard', distanceOff: 25 },
+          },
+        },
+      },
+    } as Partial<RoborockPluginPlatformConfig> as RoborockPluginPlatformConfig;
+
+    const configManager = PlatformConfigManager.create(config, mockLogger as AnsiLogger);
 
     roborockService = new RoborockService(
       {
-        authenticateApiFactory: () => undefined as any,
-        iotApiFactory: () => undefined as any,
+        authenticateApiFactory: () => createMockAuthApi(),
+        iotApiFactory: () => createMockIotApi(),
         refreshInterval: 10,
         baseUrl: 'https://api.roborock.com',
-        persist: {} as any,
-        configManager: {} as any,
+        persist: createMockLocalStorage(),
+        configManager: configManager,
       },
       mockLogger,
-      {} as any,
+      configManager,
     );
 
     roborockService.setSupportedAreaIndexMap(

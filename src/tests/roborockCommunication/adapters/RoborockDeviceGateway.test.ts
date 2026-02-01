@@ -9,26 +9,7 @@ import { Security } from '../../../types/device.js';
 import { HeaderMessage } from '../../../roborockCommunication/models/headerMessage.js';
 import { ResponseBody } from '../../../roborockCommunication/models/responseBody.js';
 import type { DpsPayload } from '../../../roborockCommunication/models/dps.js';
-
-function createMockLogger(): AnsiLogger {
-  return {
-    debug: vi.fn(),
-    info: vi.fn(),
-    warn: vi.fn(),
-    error: vi.fn(),
-    notice: vi.fn(),
-    log: vi.fn(),
-  } as unknown as AnsiLogger;
-}
-
-function createMockClientRouter(): ClientRouter {
-  return {
-    send: vi.fn().mockResolvedValue(undefined),
-    get: vi.fn().mockResolvedValue(undefined),
-    registerMessageListener: vi.fn(),
-    updateNonce: vi.fn(),
-  } as unknown as ClientRouter;
-}
+import { createMockLogger, makeMockClientRouter } from '../../helpers/testUtils.js';
 
 describe('RoborockDeviceGateway', () => {
   let mockLogger: AnsiLogger;
@@ -38,7 +19,7 @@ describe('RoborockDeviceGateway', () => {
 
   beforeEach(() => {
     mockLogger = createMockLogger();
-    mockClientRouter = createMockClientRouter();
+    mockClientRouter = makeMockClientRouter();
 
     // Capture the registered message listener
     vi.mocked(mockClientRouter.registerMessageListener).mockImplementation((listener) => {

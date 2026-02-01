@@ -22,7 +22,7 @@ export class ConnectionService {
   clientRouter: ClientRouter | undefined;
   ipMap = new Map<string, string>();
   localClientMap = new Map<string, Client>();
-  deviceNotify?: DeviceNotifyCallback;
+  deviceNotify: DeviceNotifyCallback | undefined;
 
   constructor(
     private readonly clientManager: ClientManager,
@@ -31,7 +31,7 @@ export class ConnectionService {
   ) {}
 
   /** Set callback for device notifications. */
-  public setDeviceNotify(callback?: DeviceNotifyCallback): void {
+  public setDeviceNotify(callback: DeviceNotifyCallback): void {
     this.deviceNotify = callback;
   }
 
@@ -94,7 +94,7 @@ export class ConnectionService {
       return false;
     }
 
-    this.clientRouter.registerMessageListener(new StatusMessageListener(device.duid, this.logger, this.deviceNotify?.bind(this)));
+    this.clientRouter.registerMessageListener(new StatusMessageListener(device.duid, this.logger, this.deviceNotify));
     this.clientRouter.registerMessageListener(new PingResponseListener(device.duid));
     this.clientRouter.registerMessageListener(new MapResponseListener(device.duid, this.logger));
 
@@ -103,7 +103,7 @@ export class ConnectionService {
     const messageDispatcher = new MessageDispatcherFactory(this.clientRouter, this.logger).getMessageDispatcher(store.pv, store.model);
 
     // Register message listeners
-    messageProcessor.registerListener(new SimpleMessageHandler(device.duid, this.deviceNotify?.bind(this)));
+    messageProcessor.registerHandler(new SimpleMessageHandler(device.duid, this.deviceNotify));
     this.messageRoutingService.registerMessageProcessor(device.duid, messageProcessor);
     this.messageRoutingService.registerMessageDispatcher(device.duid, messageDispatcher);
 
@@ -211,8 +211,13 @@ export class ConnectionService {
    * Helper: Set up a local client for the given device and IP.
    */
   private async setupLocalClient(duid: string, ip: string): Promise<boolean> {
+    if (!this.clientRouter) {
+      this.logger.error('clientRouter not initialized');
+      return false;
+    }
+
     try {
-      const localClient = this.clientRouter?.registerClient(duid, ip);
+      const localClient = this.clientRouter.registerClient(duid, ip);
       if (!localClient) {
         this.logger.error(`Failed to create local client for device ${duid} at IP ${ip}`);
         return false;

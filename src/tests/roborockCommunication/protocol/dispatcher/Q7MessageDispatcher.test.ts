@@ -1,5 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { Q7MessageDispatcher } from '../../../../roborockCommunication/protocol/dispatcher/Q7MessageDispatcher.js';
+import { asType, asPartial } from '../../../testUtils.js';
+import { RequestMessage } from '../../../../roborockCommunication/models/index.js';
 // --- Mock Factories ---
 function createMockLogger() {
   return {
@@ -33,7 +35,7 @@ describe('Q7MessageDispatcher', () => {
   beforeEach(() => {
     logger = createMockLogger();
     client = createMockClient();
-    dispatcher = new Q7MessageDispatcher(logger as any, client as any);
+    dispatcher = new Q7MessageDispatcher(asType(logger), asType(client));
   });
 
   afterEach(() => {
@@ -144,7 +146,7 @@ describe('Q7MessageDispatcher', () => {
 
   describe('sendCustomMessage', () => {
     it('should send a custom message', async () => {
-      const def = { dps: { foo: 'bar' } } as any;
+      const def = asPartial<RequestMessage>({ toLocalRequest: vi.fn(), secure: false, isForProtocol: vi.fn(), version: '1.0', method: 'custom' });
       await dispatcher.sendCustomMessage(duid, def);
       expect(client.send).toHaveBeenCalled();
     });
@@ -152,7 +154,7 @@ describe('Q7MessageDispatcher', () => {
 
   describe('getCustomMessage', () => {
     it('should get a custom message', async () => {
-      const def = { dps: { foo: 'bar' } } as any;
+      const def = asPartial<RequestMessage>({ dps: { foo: 'bar' } });
       await dispatcher.getCustomMessage(duid, def);
       expect(client.get).toHaveBeenCalled();
     });
@@ -167,26 +169,41 @@ describe('Q7MessageDispatcher', () => {
 
   describe('changeCleanMode', () => {
     it('should call setCleanMode, setVacuumMode, setMopMode as needed', async () => {
-      const setCleanMode = vi.spyOn(dispatcher, 'setCleanMode' as any).mockResolvedValue(undefined);
-      const setVacuumMode = vi.spyOn(dispatcher, 'setVacuumMode' as any).mockResolvedValue(undefined);
-      const setMopMode = vi.spyOn(dispatcher, 'setMopMode' as any).mockResolvedValue(undefined);
+      const setCleanMode = vi.fn();
+      const setVacuumMode = vi.fn();
+      const setMopMode = vi.fn();
+
+      dispatcher['setCleanMode'] = setCleanMode;
+      dispatcher['setVacuumMode'] = setVacuumMode;
+      dispatcher['setMopMode'] = setMopMode;
+
       await dispatcher.changeCleanMode(duid, 1, 2, 3, 4);
       expect(setCleanMode).toHaveBeenCalledWith(duid, 1, 2);
       expect(setVacuumMode).toHaveBeenCalledWith(duid, 1);
       expect(setMopMode).toHaveBeenCalledWith(duid, 2);
     });
     it('should not call setVacuumMode if suctionPower is 0', async () => {
-      const setCleanMode = vi.spyOn(dispatcher, 'setCleanMode' as any).mockResolvedValue(undefined);
-      const setVacuumMode = vi.spyOn(dispatcher, 'setVacuumMode' as any).mockResolvedValue(undefined);
-      const setMopMode = vi.spyOn(dispatcher, 'setMopMode' as any).mockResolvedValue(undefined);
+      const setCleanMode = vi.fn();
+      const setVacuumMode = vi.fn();
+      const setMopMode = vi.fn();
+
+      dispatcher['setCleanMode'] = setCleanMode;
+      dispatcher['setVacuumMode'] = setVacuumMode;
+      dispatcher['setMopMode'] = setMopMode;
+
       await dispatcher.changeCleanMode(duid, 0, 2, 3, 4);
       expect(setVacuumMode).not.toHaveBeenCalled();
       expect(setMopMode).toHaveBeenCalledWith(duid, 2);
     });
     it('should not call setMopMode if waterFlow is 0', async () => {
-      const setCleanMode = vi.spyOn(dispatcher, 'setCleanMode' as any).mockResolvedValue(undefined);
-      const setVacuumMode = vi.spyOn(dispatcher, 'setVacuumMode' as any).mockResolvedValue(undefined);
-      const setMopMode = vi.spyOn(dispatcher, 'setMopMode' as any).mockResolvedValue(undefined);
+      const setCleanMode = vi.fn();
+      const setVacuumMode = vi.fn();
+      const setMopMode = vi.fn();
+
+      dispatcher['setCleanMode'] = setCleanMode;
+      dispatcher['setVacuumMode'] = setVacuumMode;
+      dispatcher['setMopMode'] = setMopMode;
+
       await dispatcher.changeCleanMode(duid, 1, 0, 3, 4);
       expect(setVacuumMode).toHaveBeenCalledWith(duid, 1);
       expect(setMopMode).not.toHaveBeenCalled();

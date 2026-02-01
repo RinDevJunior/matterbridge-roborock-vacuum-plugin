@@ -3,6 +3,10 @@ import { AuthenticationService } from '../../services/authenticationService.js';
 import { AuthenticationError, InvalidCredentialsError, VerificationCodeExpiredError, TokenExpiredError } from '../../errors/index.js';
 import { VERIFICATION_CODE_RATE_LIMIT_MS } from '../../constants/index.js';
 import type { UserData } from '../../roborockCommunication/models/index.js';
+import { makeLogger, createMockLocalStorage } from '../testUtils.js';
+import type { IAuthGateway } from '../../core/ports/IAuthGateway.js';
+import type NodePersist from 'node-persist';
+import type { PlatformConfigManager } from '../../platform/platformConfig.js';
 
 const mockAuthGateway = {
   requestVerificationCode: vi.fn(),
@@ -10,17 +14,8 @@ const mockAuthGateway = {
   authenticatePassword: vi.fn(),
   refreshToken: vi.fn(),
 };
-const mockPersist = {
-  getItem: vi.fn(),
-  setItem: vi.fn(),
-  removeItem: vi.fn(),
-};
-const mockLogger = {
-  debug: vi.fn(),
-  error: vi.fn(),
-  warn: vi.fn(),
-  notice: vi.fn(),
-};
+const mockPersist: any = createMockLocalStorage();
+const mockLogger = makeLogger();
 const mockConfigManager = {
   alwaysExecuteAuthentication: false,
 };
@@ -51,7 +46,7 @@ function createMockUserData(username = 'test@example.com'): UserData {
 beforeEach(() => {
   vi.clearAllMocks();
   mockConfigManager.alwaysExecuteAuthentication = false;
-  service = new AuthenticationService(mockAuthGateway as any, mockPersist as any, mockLogger as any, mockConfigManager as any);
+  service = new AuthenticationService(mockAuthGateway as IAuthGateway, mockPersist as NodePersist.LocalStorage, mockLogger, mockConfigManager as PlatformConfigManager);
 });
 
 describe('AuthenticationService', () => {
@@ -311,10 +306,10 @@ describe('AuthenticationService', () => {
 
   describe('authenticateWithPasswordFlow', () => {
     it('should authenticate with password flow when no cached data exists', async () => {
-      mockPersist.getItem.mockResolvedValue(undefined);
+      mockPersist.getItem = vi.fn().mockResolvedValue(undefined);
       const userData = createMockUserData();
       mockAuthGateway.authenticatePassword.mockResolvedValue(userData);
-      mockPersist.setItem.mockResolvedValue(undefined);
+      mockPersist.setItem = vi.fn().mockResolvedValue(undefined);
       const result = await service.authenticateWithPasswordFlow('test@example.com', 'pw');
       expect(result).toEqual(userData);
       expect(mockPersist.setItem).toHaveBeenCalledWith('userData', userData);
@@ -426,12 +421,12 @@ describe('AuthenticationService', () => {
 
     it('should enforce rate limiting when code was recently requested', async () => {
       const now = Date.now();
-      mockPersist.getItem.mockImplementation((key) => {
-        if (key === 'userData') return Promise.resolve(undefined);
+      mockPersist.getItem = vi.fn(async (key: string) => {
+        if (key === 'userData') return undefined;
         if (key === 'authenticateFlowState') {
-          return Promise.resolve({ email: 'test@example.com', codeRequestedAt: now - 30000 });
+          return { email: 'test@example.com', codeRequestedAt: now - 30000 };
         }
-        return Promise.resolve(undefined);
+        return undefined;
       });
       const result = await service.authenticate2FAFlow('test@example.com', undefined);
       expect(result).toBeUndefined();
@@ -441,12 +436,12 @@ describe('AuthenticationService', () => {
 
     it('should allow code request after rate limit expires', async () => {
       const now = Date.now();
-      mockPersist.getItem.mockImplementation((key) => {
-        if (key === 'userData') return Promise.resolve(undefined);
+      mockPersist.getItem = vi.fn(async (key: string) => {
+        if (key === 'userData') return undefined;
         if (key === 'authenticateFlowState') {
-          return Promise.resolve({ email: 'test@example.com', codeRequestedAt: now - VERIFICATION_CODE_RATE_LIMIT_MS - 1000 });
+          return { email: 'test@example.com', codeRequestedAt: now - VERIFICATION_CODE_RATE_LIMIT_MS - 1000 };
         }
-        return Promise.resolve(undefined);
+        return undefined;
       });
       mockAuthGateway.requestVerificationCode.mockResolvedValue(undefined);
       const result = await service.authenticate2FAFlow('test@example.com', undefined);
@@ -463,9 +458,9 @@ describe('AuthenticationService', () => {
 
     it('should clear saved userData when cached token is invalid', async () => {
       const savedUserData = createMockUserData();
-      mockPersist.getItem.mockImplementation((key) => {
-        if (key === 'userData') return Promise.resolve(savedUserData);
-        return Promise.resolve(undefined);
+      mockPersist.getItem = vi.fn(async (key: string) => {
+        if (key === 'userData') return savedUserData;
+        return undefined;
       });
       mockAuthGateway.refreshToken.mockRejectedValue(new Error('Token expired'));
       mockAuthGateway.requestVerificationCode.mockResolvedValue(undefined);
@@ -538,9 +533,9 @@ describe('AuthenticationService', () => {
 
     it('should log warn when cached token is invalid', async () => {
       const savedUserData = createMockUserData();
-      mockPersist.getItem.mockImplementation((key) => {
-        if (key === 'userData') return Promise.resolve(savedUserData);
-        return Promise.resolve(undefined);
+      mockPersist.getItem = vi.fn(async (key: string) => {
+        if (key === 'userData') return savedUserData;
+        return undefined;
       });
       mockAuthGateway.refreshToken.mockRejectedValue(new Error('Token expired'));
       mockAuthGateway.requestVerificationCode.mockResolvedValue(undefined);
@@ -566,12 +561,12 @@ describe('AuthenticationService', () => {
 
     it('should log verification code banner when rate limited', async () => {
       const now = Date.now();
-      mockPersist.getItem.mockImplementation((key) => {
-        if (key === 'userData') return Promise.resolve(undefined);
+      mockPersist.getItem = vi.fn(async (key: string) => {
+        if (key === 'userData') return undefined;
         if (key === 'authenticateFlowState') {
-          return Promise.resolve({ email: 'test@example.com', codeRequestedAt: now - 30000 });
+          return { email: 'test@example.com', codeRequestedAt: now - 30000 };
         }
-        return Promise.resolve(undefined);
+        return undefined;
       });
       await service.authenticate2FAFlow('test@example.com', undefined);
       expect(mockLogger.notice).toHaveBeenCalledWith(expect.stringContaining('was previously sent to: test@example.com'));

@@ -3,7 +3,22 @@ import { handleCloudMessage } from '../../runtimes/handleCloudMessage.js';
 import { NotifyMessageTypes } from '../../types/notifyMessageTypes.js';
 import { mapInfo, roomData, roomIndexMap, supportedAreas, supportedMaps } from '../testData/mockData.js';
 import { Protocol } from '../../roborockCommunication/models/index.js';
+import type { CloudMessageModel } from '../../model/CloudMessageModel.js';
+import type { RoborockMatterbridgePlatform } from '../../module.js';
+import type { PlatformRunner } from '../../platformRunner.js';
 import { AdditionalPropCode, OperationStatusCode } from '../../roborockCommunication/enums/index.js';
+
+function toCloudMessage(data: any) {
+  return data as Partial<CloudMessageModel> as CloudMessageModel;
+}
+
+function toPlatform(p: any) {
+  return p as Partial<RoborockMatterbridgePlatform> as RoborockMatterbridgePlatform;
+}
+
+function toRunner(r: any) {
+  return r as Partial<PlatformRunner> as PlatformRunner;
+}
 
 describe('handleCloudMessage (integration)', () => {
   let platform: any;
@@ -50,9 +65,9 @@ describe('handleCloudMessage (integration)', () => {
 
   it('processes rpc_response and calls runner.updateFromMQTTMessage when status array present', async () => {
     const robot: any = { updateAttribute: vi.fn(), dockStationStatus: {} };
-    platform.robots.set(duid, robot);
+    platform.registry.robotsMap.set(duid, robot);
     // Patch registry.getRobot to return the robot
-    platform.registry.getRobot = (_duid: string) => platform.robots.get(_duid);
+    platform.registry.getRobot = (_duid: string) => platform.registry.robotsMap.get(_duid);
 
     const messageObj = { msg_ver: 1, some: 'value' };
     const data: any = { dps: { [Protocol.rpc_response]: { result: [messageObj] } } };
@@ -65,7 +80,7 @@ describe('handleCloudMessage (integration)', () => {
 
   it('does not call setSupportedAreas when additional_props map_change received and multiple map disabled', async () => {
     const robot: any = { updateAttribute: vi.fn(), device: { rooms: [], data: { model: 'roborock.vacuum.test' }, duid } };
-    platform.robots.set(duid, robot);
+    platform.registry.robotsMap.set(duid, robot);
 
     const data: any = { dps: { [Protocol.additional_props]: AdditionalPropCode.map_change } };
     await handleCloudMessage(data, platform, runner, duid);
@@ -75,9 +90,9 @@ describe('handleCloudMessage (integration)', () => {
 
   it('handles status_update and updates run mode and operational state', async () => {
     const robot: any = { updateAttribute: vi.fn(), dockStationStatus: {} };
-    platform.robots.set(duid, robot);
+    platform.registry.robotsMap.set(duid, robot);
     // Patch registry.getRobot to return the robot
-    platform.registry.getRobot = (_duid: string) => platform.robots.get(_duid);
+    platform.registry.getRobot = (_duid: string) => platform.registry.robotsMap.get(_duid);
 
     const data: any = { dps: { [Protocol.status_update]: OperationStatusCode.Cleaning } };
     await handleCloudMessage(data, platform, runner, duid);
@@ -124,6 +139,7 @@ const robot = {
     ],
   },
   dockStationStatus: {},
+  cleanModeSetting: undefined,
 };
 const robots = new Map([[duid, robot]]);
 const registry = {
@@ -168,11 +184,12 @@ const runner = { updateFromMQTTMessage: mockUpdateFromMQTTMessage };
 describe('handleCloudMessage', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    robot.cleanModeSetting = undefined;
   });
 
   it('handles status_update', async () => {
     const data = { duid: 'test-duid', dps: { 121: 6, 128: 3, 139: 5 } };
-    await handleCloudMessage(data as any, platform as any, runner as any, duid);
+    await handleCloudMessage(toCloudMessage(data), toPlatform(platform), toRunner(runner), duid);
     await new Promise(process.nextTick);
     expect(mockUpdateAttribute).toHaveBeenCalled();
   });
@@ -221,7 +238,7 @@ describe('handleCloudMessage', () => {
       },
     };
 
-    await handleCloudMessage(data as any, platform as any, runner as any, duid);
+    await handleCloudMessage(toCloudMessage(data), toPlatform(platform), toRunner(runner), duid);
     await new Promise(process.nextTick);
     expect(mockUpdateFromMQTTMessage).toHaveBeenCalled();
   });
@@ -234,7 +251,7 @@ describe('handleCloudMessage', () => {
       roomIndexMap,
     });
     const data = { dps: { [Protocol.additional_props]: AdditionalPropCode.map_change } };
-    await handleCloudMessage(data as any, platform as any, runner as any, duid);
+    await handleCloudMessage(toCloudMessage(data), toPlatform(platform), toRunner(runner), duid);
 
     await new Promise(process.nextTick);
     expect(mockSetSupportedAreas).toHaveBeenCalled();
@@ -246,14 +263,14 @@ describe('handleCloudMessage', () => {
     const fakePlatform = { ...platform, robots: new Map() };
     fakePlatform.registry = { ...platform.registry, getRobot: (_duid: string) => undefined };
     const data = { dps: { [Protocol.status_update]: 1 } };
-    await handleCloudMessage(data as any, fakePlatform as any, runner as any, duid);
+    await handleCloudMessage(toCloudMessage(data), toPlatform(fakePlatform), toRunner(runner), duid);
     await new Promise(process.nextTick);
     expect(fakePlatform.log.error).toHaveBeenCalled();
   });
 
   it('handles unknown message type', async () => {
     const data = { dps: { 999: 42 } };
-    await handleCloudMessage(data as any, platform as any, runner as any, duid);
+    await handleCloudMessage(toCloudMessage(data), toPlatform(platform), toRunner(runner), duid);
     await new Promise(process.nextTick);
     expect(platform.log.notice).toHaveBeenCalled();
   });
@@ -292,7 +309,7 @@ describe('handleCloudMessage', () => {
       ],
     });
 
-    await handleCloudMessage(data as any, platform as any, runner as any, duid);
+    await handleCloudMessage(toCloudMessage(data), toPlatform(platform), toRunner(runner), duid);
     await new Promise(process.nextTick);
     expect(platform.log.notice).toHaveBeenCalled();
   });
@@ -305,7 +322,7 @@ describe('handleCloudMessage', () => {
         },
       },
     };
-    await handleCloudMessage(data as any, platform as any, runner as any, duid);
+    await handleCloudMessage(toCloudMessage(data), toPlatform(platform), toRunner(runner), duid);
     await new Promise(process.nextTick);
     expect(platform.log.debug).toHaveBeenCalled();
   });
@@ -317,8 +334,8 @@ describe('handleCloudMessage', () => {
       },
     };
     mockGetCleanModeData.mockResolvedValue({ suctionPower: 100, waterFlow: 50, distance_off: 0, mopRoute: 0 });
-    await handleCloudMessage(data as any, platform as any, runner as any, duid);
-    await new Promise(process.nextTick);
+    await handleCloudMessage(toCloudMessage(data), toPlatform(platform), toRunner(runner), duid);
+    await new Promise((resolve) => setImmediate(resolve));
     expect(mockGetCleanModeData).toHaveBeenCalledWith(duid);
   });
 
@@ -329,8 +346,8 @@ describe('handleCloudMessage', () => {
       },
     };
     mockGetCleanModeData.mockResolvedValue({ suctionPower: 100, waterFlow: 200, distance_off: 0, mopRoute: 0 });
-    await handleCloudMessage(data as any, platform as any, runner as any, duid);
-    await new Promise(process.nextTick);
+    await handleCloudMessage(toCloudMessage(data), toPlatform(platform), toRunner(runner), duid);
+    await new Promise((resolve) => setImmediate(resolve));
     expect(mockGetCleanModeData).toHaveBeenCalledWith(duid);
   });
 });

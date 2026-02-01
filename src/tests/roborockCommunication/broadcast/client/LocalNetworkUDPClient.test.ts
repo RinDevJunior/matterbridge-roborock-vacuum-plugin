@@ -6,6 +6,7 @@ import * as dgram from 'node:dgram';
 import { EventEmitter } from 'node:events';
 import { LocalNetworkUDPClient } from '../../../../roborockCommunication/local/udpClient.js';
 import { AbstractUDPMessageListener } from '../../../../roborockCommunication/routing/listeners/abstractUDPMessageListener.js';
+import { createMockLogger, asType } from '../../../helpers/testUtils.js';
 
 // Mock dgram module
 vi.mock('node:dgram', () => {
@@ -13,18 +14,6 @@ vi.mock('node:dgram', () => {
     createSocket: vi.fn(),
   };
 });
-
-function createMockLogger(): AnsiLogger {
-  return {
-    debug: vi.fn(),
-    info: vi.fn(),
-    warn: vi.fn(),
-    error: vi.fn(),
-    notice: vi.fn(),
-    log: vi.fn(),
-    logLevel: 'info',
-  } as unknown as AnsiLogger;
-}
 
 class MockSocket extends EventEmitter {
   public bind = vi.fn();
@@ -124,7 +113,7 @@ describe('LocalNetworkUDPClient', () => {
   beforeEach(() => {
     mockLogger = createMockLogger();
     mockSocket = new MockSocket();
-    vi.mocked(dgram.createSocket).mockReturnValue(mockSocket as unknown as dgram.Socket);
+    vi.mocked(dgram.createSocket).mockReturnValue(asType<dgram.Socket>(mockSocket));
     client = new LocalNetworkUDPClient(mockLogger);
   });
 
@@ -332,7 +321,7 @@ describe('LocalNetworkUDPClient', () => {
       buffer[buffer.length - 1] = buffer[buffer.length - 1] ^ 0xff;
 
       // Test the private deserializeMessage method directly
-      await expect((client as any).deserializeMessage(buffer)).rejects.toThrow('wrong CRC32');
+      await expect(client['deserializeMessage'](buffer)).rejects.toThrow('wrong CRC32');
     });
 
     it('should throw error for invalid L01 CRC32', async () => {
@@ -342,7 +331,7 @@ describe('LocalNetworkUDPClient', () => {
       buffer[buffer.length - 1] = buffer[buffer.length - 1] ^ 0xff;
 
       // Test the private deserializeMessage method directly
-      await expect((client as any).deserializeMessage(buffer)).rejects.toThrow('wrong CRC32');
+      await expect(client['deserializeMessage'](buffer)).rejects.toThrow('wrong CRC32');
     });
   });
 
@@ -351,7 +340,7 @@ describe('LocalNetworkUDPClient', () => {
       const buffer = createV10Buffer(testNetworkInfo);
 
       // Access private method through any
-      const result = await (client as any).deserializeV10Message(buffer);
+      const result = await client['deserializeV10Message'](buffer);
       const parsed = JSON.parse(result);
 
       expect(parsed.duid).toBe(testNetworkInfo.duid);
@@ -364,7 +353,7 @@ describe('LocalNetworkUDPClient', () => {
       const buffer = createL01Buffer(testNetworkInfo);
 
       // Access private method through any
-      const result = await (client as any).deserializeL01Message(buffer);
+      const result = await client['deserializeL01Message'](buffer);
       const parsed = JSON.parse(result);
 
       expect(parsed.duid).toBe(testNetworkInfo.duid);
@@ -390,7 +379,7 @@ describe('LocalNetworkUDPClient', () => {
       const crc = CRC32.buf(headerAndPayload) >>> 0;
       buffer.writeUInt32BE(crc, buffer.length - 4);
 
-      await expect((client as any).deserializeL01Message(buffer)).rejects.toThrow('failed to decrypt');
+      await expect(client['deserializeL01Message'](buffer)).rejects.toThrow('failed to decrypt');
     });
   });
 

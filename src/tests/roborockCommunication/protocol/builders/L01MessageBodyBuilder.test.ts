@@ -3,8 +3,10 @@ import { MessageContext } from '../../../../roborockCommunication/models/message
 import { Protocol } from '../../../../roborockCommunication/models/protocol.js';
 import { RequestMessage } from '../../../../roborockCommunication/models/requestMessage.js';
 import { L01MessageBodyBuilder } from '../../../../roborockCommunication/protocol/builders/L01MessageBodyBuilder.js';
+import { asPartial } from '../../../helpers/testUtils.js';
+import type { UserData } from '../../../../roborockCommunication/models/index.js';
 
-const mkUser = () => ({ rriot: { k: 'test-key' } }) as any;
+const mkUser = () => asPartial<UserData>({ rriot: { r: { a: 'https://api.example', r: 'r', m: 'm', l: 'l' }, u: 'uid', s: 's', h: 'h', k: 'k' } });
 
 describe('L01MessageBodyBuilder', () => {
   it('builds payload and converts general_request to rpc_request', () => {

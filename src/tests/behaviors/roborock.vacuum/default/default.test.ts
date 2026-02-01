@@ -1,28 +1,21 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { BehaviorDeviceGeneric } from '../../../../behaviors/BehaviorDeviceGeneric.js';
 import { AnsiLogger } from 'matterbridge/logger';
 import { RoborockService } from '../../../../services/roborockService.js';
+import { createMockLogger } from '../../../testUtils.js';
+
 import { MopRoute, MopWaterFlow, VacuumSuctionPower } from '../../../../behaviors/roborock.vacuum/enums/index.js';
 import { configureBehavior } from '../../../../share/behaviorFactory.js';
 import { DeviceModel } from '../../../../roborockCommunication/models/deviceModel.js';
 import { CleanModeSettings } from '../../../../model/RoborockPluginPlatformConfig.js';
 
 describe('setDefaultCommandHandler', () => {
-  let handler: BehaviorDeviceGeneric<any> & { setCommandHandler: ReturnType<typeof vi.fn> };
   let logger: AnsiLogger;
   let roborockService: Partial<RoborockService>;
   let cleanModeSettings: CleanModeSettings;
   const duid = 'test-duid';
 
   beforeEach(() => {
-    handler = {
-      setCommandHandler: vi.fn(),
-    } as any;
-
-    logger = {
-      notice: vi.fn(),
-      warn: vi.fn(),
-    } as any;
+    logger = createMockLogger();
 
     roborockService = {
       startClean: vi.fn(),

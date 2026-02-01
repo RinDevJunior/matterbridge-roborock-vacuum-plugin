@@ -2,8 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { ProtocolVersion } from '../../../roborockCommunication/enums/index.js';
 import { MessageContext, RequestMessage } from '../../../roborockCommunication/models/index.js';
 import { MessageBodyBuilderFactory } from '../../../roborockCommunication/protocol/builders/messageBodyBuilderFactory.js';
-
-const mkUser = () => ({ rriot: { k: 'test-key' } }) as any;
+import { mkUser } from '../../helpers/testUtils.js';
 
 describe('MessageBodyBuilderFactory', () => {
   it('returns known builders and throws for unknown version', () => {
@@ -20,7 +19,6 @@ describe('MessageBodyBuilderFactory', () => {
     const ub = f.getMessageBodyBuilder('anything', true);
     const ctx = new MessageContext(mkUser());
     const req = new RequestMessage({ messageId: 1, timestamp: 10 });
-    // Unknown builder requires req.body to be set; calling without body should throw
     expect(() => ub.buildPayload(req, ctx)).toThrow();
   });
 });

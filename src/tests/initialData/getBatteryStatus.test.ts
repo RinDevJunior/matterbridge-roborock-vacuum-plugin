@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { getBatteryStatus, getBatteryState } from '../../initialData/getBatteryStatus.js';
 import { OperationStatusCode } from '../../roborockCommunication/enums/operationStatusCode.js';
+import { asType } from '../testUtils.js';
 
 describe('getBatteryStatus', () => {
   it('battery level undefined -> Ok', () => {
@@ -17,6 +18,6 @@ describe('getBatteryStatus', () => {
     expect(getBatteryState(OperationStatusCode.Charging, 50)).toBeDefined();
     expect(getBatteryState(OperationStatusCode.Charging, 100)).toBeDefined();
     expect(getBatteryState(OperationStatusCode.ChargingError, 10)).toBeDefined();
-    expect(getBatteryState(999 as any, 0)).toBeDefined();
+    expect(getBatteryState(asType<OperationStatusCode>(999), 0)).toBeDefined();
   });
 });

@@ -10,6 +10,7 @@ import { DockingStationStatus } from '../model/DockingStationStatus.js';
 import { Device } from '../roborockCommunication/models/index.js';
 import { PlatformConfigManager } from '../platform/platformConfig.js';
 import { baseRunModeConfigs, getRunModeOptions } from '../behaviors/roborock.vacuum/core/runModeConfig.js';
+import { CleanModeSetting } from '../behaviors/roborock.vacuum/core/CleanModeSetting.js';
 
 interface IdentifyCommandRequest {
   identifyTime?: number;
@@ -21,6 +22,7 @@ export class RoborockVacuumCleaner extends RoboticVacuumCleaner {
   roomInfo: RoomMap | undefined;
   mapInfos: MapEntry[] | undefined;
   dockStationStatus: DockingStationStatus | undefined;
+  cleanModeSetting: CleanModeSetting | undefined;
 
   /**
    * Create a new Roborock Vacuum Cleaner device.

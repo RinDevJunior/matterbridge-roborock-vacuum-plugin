@@ -1,5 +1,12 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { RoborockService } from '../../../services/roborockService.js';
+import type { RoborockAuthenticateApi } from '../../../roborockCommunication/api/authClient.js';
+import type { RoborockIoTApi } from '../../../roborockCommunication/api/iotClient.js';
+import type { LocalStorage } from 'node-persist';
+import type { PlatformConfigManager } from '../../../platform/platformConfig.js';
+import type { AnsiLogger } from 'matterbridge/logger';
+import type { ServiceContainer } from '../../../services/index.js';
+import { asPartial } from '../../testUtils.js';
 
 describe('RoborockService (unit)', () => {
   let logger: any;
@@ -23,6 +30,7 @@ describe('RoborockService (unit)', () => {
       getAreaManagementService: () => ({ getSelectedAreas: () => [], getSupportedAreas: () => [] }),
       getMessageRoutingService: () => ({}),
       getPollingService: () => ({ setDeviceNotify: vi.fn(), activateDeviceNotifyOverLocal: vi.fn(), activateDeviceNotifyOverMQTT: vi.fn(), stopPolling: vi.fn() }),
+      getConnectionService: () => ({ initializeMessageClient: vi.fn(), initializeMessageClientForLocal: vi.fn().mockResolvedValue(false), setDeviceNotify: vi.fn() }),
       setUserData: vi.fn(),
       getIotApi: () => undefined,
     };
@@ -31,15 +39,16 @@ describe('RoborockService (unit)', () => {
   it('getCustomAPI throws when IoT API not initialized', async () => {
     const svc = new RoborockService(
       {
-        authenticateApiFactory: () => undefined as any,
-        iotApiFactory: () => undefined as any,
+        authenticateApiFactory: () => asPartial<RoborockAuthenticateApi>({}),
+        iotApiFactory: () => asPartial<RoborockIoTApi>({}),
         refreshInterval: 10,
         baseUrl: 'https://api.roborock.com',
-        persist: {} as any,
-        configManager: {} as any,
+        persist: asPartial<LocalStorage>({}),
+        configManager: asPartial<PlatformConfigManager>({}),
+        container: container as ServiceContainer,
       },
-      logger as any,
-      container as any,
+      asPartial<AnsiLogger>(logger),
+      asPartial<PlatformConfigManager>({}),
     );
     await expect(svc.getCustomAPI('/some')).rejects.toThrow(/IoT API not initialized/);
   });

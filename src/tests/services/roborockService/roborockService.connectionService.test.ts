@@ -1,26 +1,62 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { RoborockService } from '../../../services/roborockService.js';
+import { makeLogger } from '../../testUtils.js';
+import { createMockLocalStorage } from '../../testUtils.js';
+import type { RoborockPluginPlatformConfig } from '../../../model/RoborockPluginPlatformConfig.js';
+import type { AnsiLogger } from 'matterbridge/logger';
+import { PlatformConfigManager as PlatformConfigManagerStatic } from '../../../platform/platformConfig.js';
+import { makeDeviceFixture } from '../../helpers/fixtures.js';
 
 describe('initializeMessageClientForLocal', () => {
   let service: RoborockService;
-  let mockLogger: any;
+  let mockLogger: AnsiLogger;
   let mockDevice: any;
 
-  beforeEach(() => {
-    mockLogger = { debug: vi.fn(), error: vi.fn(), warn: vi.fn() };
-    mockDevice = { duid: 'd1', pv: 'pv', data: { model: 'm1' }, localKey: 'lk' };
+  beforeEach(async () => {
+    mockLogger = makeLogger();
+    mockDevice = makeDeviceFixture({ duid: 'd1', pv: 'pv', localKey: 'lk' });
+
+    const persist = createMockLocalStorage();
+
+    const PlatformConfigManager = PlatformConfigManagerStatic;
+    const config = {
+      authentication: { username: 'test', region: 'US', forceAuthentication: false, authenticationMethod: 'Password', password: '' },
+      pluginConfiguration: {
+        whiteList: [],
+        enableServerMode: false,
+        enableMultipleMap: false,
+        sanitizeSensitiveLogs: false,
+        refreshInterval: 10,
+        debug: false,
+        unregisterOnShutdown: false,
+      },
+      advancedFeature: {
+        enableAdvancedFeature: false,
+        settings: {
+          showRoutinesAsRoom: false,
+          includeDockStationStatus: false,
+          forceRunAtDefault: false,
+          useVacationModeToSendVacuumToDock: false,
+          enableCleanModeMapping: false,
+          cleanModeSettings: {
+            vacuuming: { fanMode: 'Balanced', mopRouteMode: 'Standard' },
+            mopping: { waterFlowMode: 'Medium', mopRouteMode: 'Standard', distanceOff: 25 },
+            vacmop: { fanMode: 'Balanced', waterFlowMode: 'Medium', mopRouteMode: 'Standard', distanceOff: 25 },
+          },
+        },
+      },
+    } as Partial<RoborockPluginPlatformConfig> as RoborockPluginPlatformConfig;
+    const configManager = PlatformConfigManager.create(config, mockLogger as AnsiLogger);
 
     service = new RoborockService(
       {
-        authenticateApiFactory: () => undefined as any,
-        iotApiFactory: () => undefined as any,
         refreshInterval: 10,
         baseUrl: 'https://api.roborock.com',
-        persist: {} as any,
-        configManager: {} as any,
+        persist: persist,
+        configManager: configManager,
       },
       mockLogger,
-      {} as any,
+      configManager,
     );
   });
 

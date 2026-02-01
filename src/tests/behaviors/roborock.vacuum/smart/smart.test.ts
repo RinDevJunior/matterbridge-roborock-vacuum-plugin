@@ -1,30 +1,28 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { AnsiLogger } from 'matterbridge/logger';
-import { BehaviorDeviceGeneric } from '../../../../behaviors/BehaviorDeviceGeneric.js';
+import { BehaviorDeviceGeneric, DeviceCommands } from '../../../../behaviors/BehaviorDeviceGeneric.js';
 import { RoborockService } from '../../../../services/roborockService.js';
 import { configureBehavior } from '../../../../share/behaviorFactory.js';
 import { DeviceModel } from '../../../../roborockCommunication/models/deviceModel.js';
 import { MopRoute, MopWaterFlow, VacuumSuctionPower } from '../../../../behaviors/roborock.vacuum/enums/index.js';
 import { CleanModeSettings } from '../../../../model/RoborockPluginPlatformConfig.js';
+import { asPartial, asType, createMockLogger } from '../../../testUtils.js';
 
 describe('setCommandHandlerSmart', () => {
-  let handler: BehaviorDeviceGeneric<any>;
+  let handler: BehaviorDeviceGeneric<DeviceCommands>;
   let logger: AnsiLogger;
   let roborockService: RoborockService;
   let cleanModeSettings: CleanModeSettings;
   const duid = 'test-duid';
 
   beforeEach(() => {
-    handler = {
+    handler = asPartial<BehaviorDeviceGeneric<DeviceCommands>>({
       setCommandHandler: vi.fn(),
-    } as any;
+    });
 
-    logger = {
-      notice: vi.fn(),
-      warn: vi.fn(),
-    } as any;
+    logger = createMockLogger();
 
-    roborockService = {
+    roborockService = asPartial<RoborockService>({
       startClean: vi.fn(),
       changeCleanMode: vi.fn(),
       setSelectedAreas: vi.fn(),
@@ -32,14 +30,7 @@ describe('setCommandHandlerSmart', () => {
       resumeClean: vi.fn(),
       stopAndGoHome: vi.fn(),
       playSoundToLocate: vi.fn(),
-      // Provide stubs for required properties to satisfy type
-      container: undefined as any,
-      authService: undefined as any,
-      deviceService: undefined as any,
-      areaService: undefined as any,
-      messageRoutingService: undefined as any,
-      pollingService: undefined as any,
-    } as unknown as RoborockService;
+    });
 
     cleanModeSettings = {
       vacuuming: { fanMode: 'Max', mopRouteMode: 'DeepPlus' },

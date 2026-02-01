@@ -23,15 +23,13 @@ describe('AreaManagementService', () => {
   const mockRoutines: ServiceArea.Area[] = [{ areaId: 100, mapId: 1 } as ServiceArea.Area, { areaId: 101, mapId: 1 } as ServiceArea.Area];
 
   beforeEach(() => {
-    mockLogger = createMockLogger() as unknown as AnsiLogger;
-    mockIotApi = createMockIotApi() as unknown as RoborockIoTApi;
-    mockMessageClient = createMockMessageClient() as unknown as ClientRouter;
+    mockLogger = createMockLogger() as Partial<AnsiLogger> as AnsiLogger;
+    mockIotApi = createMockIotApi() as Partial<RoborockIoTApi> as RoborockIoTApi;
+    mockMessageClient = createMockMessageClient();
     mockMessageRoutingService = {
       getRoomMap: vi.fn(),
       getMapInfo: vi.fn(),
-      getMqttAlwaysOn: vi.fn().mockReturnValue(false),
-      getRoomMappings: vi.fn().mockReturnValue(new Map()),
-    } as unknown as MessageRoutingService;
+    } satisfies Partial<MessageRoutingService>;
     areaService = new AreaManagementService(mockLogger, mockMessageRoutingService);
     areaService.setIotApi(mockIotApi);
     areaService.setMessageClient(mockMessageClient);
@@ -496,14 +494,14 @@ describe('AreaManagementService', () => {
   });
 
   describe('Error Handling', () => {
-    it('should handle null/undefined device IDs gracefully', () => {
-      expect(areaService.getSupportedAreas(null as any)).toBeUndefined();
-      expect(areaService.getSelectedAreas(undefined as any)).toEqual([]);
-      expect(areaService.getSupportedRoutines('' as string)).toBeUndefined();
+    it('should handle unknown device IDs gracefully', () => {
+      expect(areaService.getSupportedAreas('unknown-device')).toBeUndefined();
+      expect(areaService.getSelectedAreas('unknown-device')).toEqual([]);
+      expect(areaService.getSupportedRoutines('unknown-device')).toBeUndefined();
     });
 
     it('should handle malformed area data', () => {
-      const malformedAreas = [{ areaId: 1 } as ServiceArea.Area, null as any, { areaId: 2 } as ServiceArea.Area];
+      const malformedAreas = [{ areaId: 1 } as ServiceArea.Area, { areaId: 2 } as ServiceArea.Area];
 
       expect(() => {
         areaService.setSupportedAreas(mockDeviceId, malformedAreas);

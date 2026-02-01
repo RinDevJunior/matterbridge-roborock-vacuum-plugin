@@ -9,6 +9,11 @@ import { RoborockAuthenticateApi } from '../../roborockCommunication/api/authCli
 import { RoborockIoTApi } from '../../roborockCommunication/api/iotClient.js';
 import { UserData } from '../../roborockCommunication/models/index.js';
 import { localStorageMock } from '../testData/localStorageMock.js';
+import { makeLogger, makeMockClientRouter, createMockLocalStorage, createMockAuthApi, createMockIotApi, asPartial } from '../testUtils.js';
+import { ClientRouter } from '../../roborockCommunication/routing/clientRouter.js';
+import type { LocalStorage } from 'node-persist';
+import type { PlatformConfigManager } from '../../platform/platformConfig.js';
+import type { MessageProcessor } from '../../roborockCommunication/mqtt/messageProcessor.js';
 
 describe('ServiceContainer', () => {
   let container: ServiceContainer;
@@ -19,30 +24,14 @@ describe('ServiceContainer', () => {
   let mockUserData: UserData;
 
   beforeEach(() => {
-    mockLogger = {
-      debug: vi.fn(),
-      info: vi.fn(),
-      warn: vi.fn(),
-      error: vi.fn(),
-      notice: vi.fn(),
-    } as any;
+    mockLogger = makeLogger();
 
-    mockAuthApi = {
-      getUserDetails: vi.fn(),
-      loginWithPassword: vi.fn(),
-      sendEmailCode: vi.fn(),
-      loginWithCode: vi.fn(),
-    } as any;
+    mockAuthApi = createMockAuthApi();
 
-    mockIotApi = {
-      getHomev2: vi.fn(),
-      getHomev3: vi.fn(),
-      getHome: vi.fn(),
-      getRoomMapping: vi.fn(),
-      subscribeToMQTT: vi.fn(),
-    } as any;
+    mockIotApi = createMockIotApi();
 
     mockUserData = {
+      username: 'test-user',
       uid: 'test-uid',
       tokentype: 'Bearer',
       token: 'test-token',
@@ -56,7 +45,7 @@ describe('ServiceContainer', () => {
         s: 'test-secret',
         h: 'test-host',
         k: 'test-key',
-        r: { a: 'test-region-a', m: 'test-mqtt' },
+        r: { a: 'test-region-a', m: 'test-mqtt', r: '', l: '' },
       },
     } as UserData;
 
@@ -65,8 +54,8 @@ describe('ServiceContainer', () => {
       refreshInterval: 30000,
       authenticateApiFactory: vi.fn(() => mockAuthApi),
       iotApiFactory: vi.fn(() => mockIotApi),
-      persist: { storage: localStorageMock } as any,
-      configManager: {} as any,
+      persist: createMockLocalStorage({ storage: localStorageMock }) as LocalStorage,
+      configManager: asPartial<PlatformConfigManager>({}),
     };
 
     container = new ServiceContainer(mockLogger, config);
@@ -92,8 +81,8 @@ describe('ServiceContainer', () => {
       const defaultConfig = {
         baseUrl: 'https://default.com',
         refreshInterval: 10000,
-        persist: {} as any,
-        configManager: {} as any,
+        persist: {} as LocalStorage,
+        configManager: asPartial<PlatformConfigManager>({}),
       };
 
       const defaultContainer = new ServiceContainer(mockLogger, defaultConfig);
@@ -235,8 +224,8 @@ describe('ServiceContainer', () => {
       const areaService = container.getAreaManagementService();
 
       // Mock clientRouter to be defined
-      const mockClientRouter = {} as any;
-      connectionService.clientRouter = mockClientRouter;
+      const mockClientRouter = makeMockClientRouter();
+      connectionService.clientRouter = asPartial<ClientRouter>(mockClientRouter);
 
       const setMessageClientSpy = vi.spyOn(areaService, 'setMessageClient');
 
@@ -361,7 +350,7 @@ describe('ServiceContainer', () => {
 
     it('should clear message processor map on destroy', async () => {
       const map = container.getMessageProcessorMap();
-      map.set('test-key', {} as any);
+      map.set('test-key', {} as MessageProcessor);
 
       expect(map.size).toBe(1);
 

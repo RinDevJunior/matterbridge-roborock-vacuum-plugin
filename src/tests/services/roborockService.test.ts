@@ -8,16 +8,22 @@ import { AreaManagementService } from '../../services/areaManagementService.js';
 import { MessageRoutingService } from '../../services/messageRoutingService.js';
 import { PollingService } from '../../services/pollingService.js';
 import { Device } from '../../roborockCommunication/models/index.js';
+import { RoborockAuthenticateApi } from '../../roborockCommunication/api/authClient.js';
+import { RoborockIoTApi } from '../../roborockCommunication/api/iotClient.js';
+import type { LocalStorage } from 'node-persist';
+import type { PlatformConfigManager } from '../../platform/platformConfig.js';
 
 describe('RoborockService - Comprehensive Coverage', () => {
   let service: RoborockService;
-  let mockLogger: AnsiLogger;
-  let mockContainer: ServiceContainer;
-  let mockAuthService: AuthenticationService;
-  let mockDeviceService: DeviceManagementService;
-  let mockAreaService: AreaManagementService;
-  let mockMessageService: MessageRoutingService;
-  let mockPollingService: PollingService;
+  let mockLogger: Partial<AnsiLogger>;
+  let mockContainer: Partial<ServiceContainer>;
+  let mockAuthService: Partial<AuthenticationService>;
+  let mockDeviceService: Partial<DeviceManagementService>;
+  let mockAreaService: Partial<AreaManagementService>;
+  let mockMessageService: Partial<MessageRoutingService>;
+  let mockPollingService: Partial<PollingService>;
+  let mockPersist: Partial<LocalStorage>;
+  let mockConfigManager: Partial<PlatformConfigManager>;
 
   beforeEach(() => {
     mockLogger = {
@@ -26,28 +32,22 @@ describe('RoborockService - Comprehensive Coverage', () => {
       warn: vi.fn(),
       error: vi.fn(),
       notice: vi.fn(),
-    } as unknown as AnsiLogger;
+    };
 
     mockAuthService = {
       requestVerificationCode: vi.fn(),
       loginWithVerificationCode: vi.fn(),
       loginWithCachedToken: vi.fn(),
       loginWithPassword: vi.fn(),
-    } as unknown as AuthenticationService;
+    };
 
     mockDeviceService = {
       listDevices: vi.fn(),
       getHomeDataForUpdating: vi.fn(),
-      initializeMessageClient: vi.fn(),
-      initializeMessageClientForLocal: vi.fn(),
-      setDeviceNotify: vi.fn(),
-      activateDeviceNotifyOverMQTT: vi.fn(),
-      stopService: vi.fn(),
+      setIotApi: vi.fn(),
       setAuthentication: vi.fn(),
-      messageClient: undefined,
-      messageProcessorMap: new Map(),
-      mqttAlwaysOnDevices: new Map(),
-    } as unknown as DeviceManagementService;
+      stopService: vi.fn(),
+    };
 
     mockAreaService = {
       setSelectedAreas: vi.fn(),
@@ -58,14 +58,14 @@ describe('RoborockService - Comprehensive Coverage', () => {
       getSupportedAreas: vi.fn(),
       getSupportedAreasIndexMap: vi.fn(),
       getSupportedRoutines: vi.fn(),
-      getMapInformation: vi.fn(),
-      getRoomMappings: vi.fn(),
+      getMapInfo: vi.fn(),
+      getRoomMap: vi.fn(),
       getScenes: vi.fn(),
       startScene: vi.fn(),
       setMessageClient: vi.fn(),
       setIotApi: vi.fn(),
       clearAll: vi.fn(),
-    } as unknown as AreaManagementService;
+    };
 
     mockMessageService = {
       getMessageProcessor: vi.fn(),
@@ -80,41 +80,54 @@ describe('RoborockService - Comprehensive Coverage', () => {
       customGet: vi.fn(),
       customSend: vi.fn(),
       registerMessageProcessor: vi.fn(),
-      setMqttAlwaysOn: vi.fn(),
-      getMqttAlwaysOn: vi.fn(),
       setIotApi: vi.fn(),
+      getMapInfo: vi.fn(),
       clearAll: vi.fn(),
-    } as unknown as MessageRoutingService;
-
+    };
     mockPollingService = {
       setDeviceNotify: vi.fn(),
       activateDeviceNotifyOverLocal: vi.fn(),
-      activateDeviceNotifyOverMQTT: vi.fn(),
       stopPolling: vi.fn(),
       shutdown: vi.fn(),
-    } as unknown as PollingService;
-
+    };
     mockContainer = {
       getAuthenticationService: vi.fn().mockReturnValue(mockAuthService),
       getDeviceManagementService: vi.fn().mockReturnValue(mockDeviceService),
       getAreaManagementService: vi.fn().mockReturnValue(mockAreaService),
       getMessageRoutingService: vi.fn().mockReturnValue(mockMessageService),
       getPollingService: vi.fn().mockReturnValue(mockPollingService),
+      getConnectionService: vi.fn().mockReturnValue({
+        initializeMessageClient: vi.fn(),
+        initializeMessageClientForLocal: vi.fn().mockResolvedValue(false),
+        setDeviceNotify: vi.fn(),
+      }),
       setUserData: vi.fn(),
       getIotApi: vi.fn(),
-    } as unknown as ServiceContainer;
+    };
+
+    mockPersist = {
+      init: vi.fn().mockResolvedValue(undefined),
+      getItem: vi.fn().mockResolvedValue(undefined),
+      setItem: vi.fn().mockResolvedValue(undefined),
+    };
+
+    mockConfigManager = {
+      username: 'testuser',
+      password: 'testpass',
+      verificationCode: undefined,
+      authenticationMethod: 'Password',
+    };
 
     service = new RoborockService(
       {
-        authenticateApiFactory: () => undefined as any,
-        iotApiFactory: () => undefined as any,
         refreshInterval: 10,
         baseUrl: 'https://api.roborock.com',
-        persist: {} as any,
-        configManager: {} as any,
+        persist: mockPersist as LocalStorage,
+        configManager: mockConfigManager as PlatformConfigManager,
+        container: mockContainer as ServiceContainer,
       },
-      mockLogger,
-      mockContainer as any,
+      mockLogger as AnsiLogger,
+      mockConfigManager as PlatformConfigManager,
     );
   });
 
@@ -122,35 +135,33 @@ describe('RoborockService - Comprehensive Coverage', () => {
     it('should create service with default factories when not provided', () => {
       const defaultService = new RoborockService(
         {
-          authenticateApiFactory: () => undefined as any,
-          iotApiFactory: () => undefined as any,
           refreshInterval: 10,
           baseUrl: 'https://api.roborock.com',
-          persist: {} as any,
-          configManager: {} as any,
+          persist: mockPersist as LocalStorage,
+          configManager: mockConfigManager as PlatformConfigManager,
+          container: mockContainer as ServiceContainer,
         },
-        mockLogger as any,
-        mockContainer as any,
+        mockLogger as AnsiLogger,
+        mockConfigManager as PlatformConfigManager,
       );
 
       expect(defaultService).toBeInstanceOf(RoborockService);
     });
 
     it('should create service with custom factories', () => {
-      const customAuthFactory = vi.fn(() => ({}) as any);
-      const customIotFactory = vi.fn(() => ({}) as any);
+      const customAuthFactory = vi.fn((logger: AnsiLogger) => new RoborockAuthenticateApi(logger));
 
       const customService = new RoborockService(
         {
           authenticateApiFactory: customAuthFactory,
-          iotApiFactory: customIotFactory,
           refreshInterval: 20000,
           baseUrl: 'https://custom-api.roborock.com',
-          persist: {} as any,
-          configManager: {} as any,
+          persist: mockPersist as LocalStorage,
+          configManager: mockConfigManager as PlatformConfigManager,
+          container: mockContainer as ServiceContainer,
         },
-        mockLogger,
-        mockContainer as any,
+        mockLogger as AnsiLogger,
+        mockConfigManager as PlatformConfigManager,
       );
 
       expect(customService).toBeInstanceOf(RoborockService);
@@ -159,15 +170,14 @@ describe('RoborockService - Comprehensive Coverage', () => {
     it('should create service with custom base URL', () => {
       const customService = new RoborockService(
         {
-          authenticateApiFactory: () => undefined as any,
-          iotApiFactory: () => undefined as any,
           refreshInterval: 15000,
           baseUrl: 'https://another-api.roborock.com',
-          persist: {} as any,
-          configManager: {} as any,
+          persist: mockPersist as LocalStorage,
+          configManager: mockConfigManager as PlatformConfigManager,
+          container: mockContainer as ServiceContainer,
         },
-        mockLogger,
-        mockContainer as any,
+        mockLogger as AnsiLogger,
+        mockConfigManager as PlatformConfigManager,
       );
 
       expect(customService).toBeInstanceOf(RoborockService);

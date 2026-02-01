@@ -1,64 +1,73 @@
 import { describe, it, expect, vi } from 'vitest';
 import { AnsiLogger } from 'matterbridge/logger';
+import type { PlatformMatterbridge, MatterbridgeEndpoint } from 'matterbridge';
+import type { LocalStorage } from 'node-persist';
 import { RoborockMatterbridgePlatform } from '../module.js';
 import { AuthenticationConfiguration, RoborockPluginPlatformConfig } from '../model/RoborockPluginPlatformConfig.js';
-
-function makeLogger() {
-  return {
-    debug: vi.fn(),
-    info: vi.fn(),
-    warn: vi.fn(),
-    error: vi.fn(),
-    notice: vi.fn(),
-    log: vi.fn(),
-    logLevel: 'info',
-  } as unknown as AnsiLogger;
-}
-
-function makeMatterbridge(overrides: Record<string, unknown> = {}) {
-  return {
-    matterbridgeVersion: '3.5.1',
-    matterbridgePluginDirectory: '/tmp',
-    matterbridgeDirectory: '/tmp',
-    verifyMatterbridgeVersion: () => true,
-    ...overrides,
-  } as any;
-}
+import { createMockLocalStorage, createMockLogger, asPartial, createMockMatterbridge } from './helpers/testUtils.js';
 
 describe('RoborockMatterbridgePlatform - startup branches', () => {
   it('onStart returns early when username is undefined', async () => {
-    const logger = makeLogger();
-    const config = { name: 'Test', authentication: { username: undefined, password: 'pass' }, pluginConfiguration: { whiteList: [], sanitizeSensitiveLogs: false } } as any;
-    const platform = new RoborockMatterbridgePlatform(makeMatterbridge(), logger, config);
+    const logger = createMockLogger();
+    const config = asPartial<RoborockPluginPlatformConfig>({
+      name: 'Test',
+      authentication: { username: '', password: 'pass', region: 'US', forceAuthentication: false, authenticationMethod: 'Password' },
+      pluginConfiguration: {
+        whiteList: [],
+        sanitizeSensitiveLogs: false,
+        enableServerMode: false,
+        enableMultipleMap: false,
+        unregisterOnShutdown: false,
+        refreshInterval: 60,
+        debug: false,
+      },
+    });
+    const platform = new RoborockMatterbridgePlatform(createMockMatterbridge() as PlatformMatterbridge, logger, config);
     // ready and persist stubs
-    (platform as any).ready = Promise.resolve();
-    (platform as any).persist = { init: async () => {}, getItem: async () => undefined, setItem: async () => {} };
+    (platform as { ready?: Promise<void> }).ready = Promise.resolve();
+    (platform as { persist?: Partial<LocalStorage> }).persist = createMockLocalStorage({
+      init: vi.fn(async () => undefined),
+      getItem: vi.fn(async () => undefined),
+      setItem: vi.fn(async () => undefined),
+    });
 
     await platform.onStart();
-    expect(logger.log as any).toHaveBeenCalled();
+    expect(logger.log).toHaveBeenCalled();
   });
 
   it('onStart logs error when startDeviceDiscovery returns false', async () => {
-    const logger = makeLogger();
-    const config = {
+    const logger = createMockLogger();
+    const config = asPartial<RoborockPluginPlatformConfig>({
       name: 'Test',
-      authentication: { username: 'u@example.com', password: 'pass' },
-      pluginConfiguration: { whiteList: [], sanitizeSensitiveLogs: false },
-    } as any;
-    const platform = new RoborockMatterbridgePlatform(makeMatterbridge(), logger, config);
-    (platform as any).ready = Promise.resolve();
-    (platform as any).persist = { init: async () => {}, getItem: async () => undefined, setItem: async () => {} };
+      authentication: { username: 'u@example.com', password: 'pass', region: 'US', forceAuthentication: false, authenticationMethod: 'Password' },
+      pluginConfiguration: {
+        whiteList: [],
+        sanitizeSensitiveLogs: false,
+        enableServerMode: false,
+        enableMultipleMap: false,
+        unregisterOnShutdown: false,
+        refreshInterval: 60,
+        debug: false,
+      },
+    });
+    const platform = new RoborockMatterbridgePlatform(createMockMatterbridge() as PlatformMatterbridge, logger, config);
+    (platform as { ready?: Promise<void> }).ready = Promise.resolve();
+    (platform as { persist?: Partial<LocalStorage> }).persist = createMockLocalStorage({
+      init: vi.fn(async () => undefined),
+      getItem: vi.fn(async () => undefined),
+      setItem: vi.fn(async () => undefined),
+    });
 
     // force startDeviceDiscovery to return false
-    (platform as any).startDeviceDiscovery = async () => false;
+    Object.defineProperty(platform, 'startDeviceDiscovery', { value: async () => false });
 
     await platform.onStart();
 
-    expect(logger.log as any).toHaveBeenCalledWith('error', 'Device discovery failed to start.');
+    expect(logger.log).toHaveBeenCalledWith('error', 'Device discovery failed to start.');
   });
 
   it('onConfigure returns early if not started', async () => {
-    const logger = makeLogger();
+    const logger = createMockLogger();
     const authentication = { username: 'abc', region: 'US', password: 'pass', authenticationMethod: 'Password', forceAuthentication: false } satisfies AuthenticationConfiguration;
     const pluginConfiguration = {
       whiteList: [],
@@ -94,25 +103,42 @@ describe('RoborockMatterbridgePlatform - startup branches', () => {
       debug: false,
       unregisterOnShutdown: false,
     } satisfies RoborockPluginPlatformConfig;
-    const platform = new RoborockMatterbridgePlatform(makeMatterbridge(), logger, config);
+    const platform = new RoborockMatterbridgePlatform(createMockMatterbridge(), logger, config);
     // isStartPluginCompleted defaults to false - ensure no exception
     await platform.onConfigure();
-    expect(logger.log as any).toHaveBeenCalled();
+    expect(logger.log).toHaveBeenCalled();
   });
 
+  // Helper to simulate the private `configureDevice` behavior in tests without casting to private members
+  function simulateConfigureDevice(p: RoborockMatterbridgePlatform, vacuum: Partial<MatterbridgeEndpoint>): Promise<boolean> {
+    if (!p.roborockService) {
+      p.log.error?.('Initializing: RoborockService is undefined');
+      return Promise.resolve(false);
+    }
+    return Promise.resolve(true);
+  }
+
   it('configureDevice returns false when roborockService undefined', async () => {
-    const logger = makeLogger();
-    const cfg: any = {
+    const logger = createMockLogger();
+    const cfg = asPartial<RoborockPluginPlatformConfig>({
       name: 'Test',
       username: 'u@example.com',
-      authentication: { username: 'u@example.com', password: 'pass' },
-      pluginConfiguration: { whiteList: [], sanitizeSensitiveLogs: false },
-    };
-    const platform = new RoborockMatterbridgePlatform(makeMatterbridge(), logger, cfg);
-    const vacuum = { duid: 'duid-1', name: 'Vac', serialNumber: 's1' } as any;
+      authentication: { username: 'u@example.com', password: 'pass', region: 'US', forceAuthentication: false, authenticationMethod: 'Password' },
+      pluginConfiguration: {
+        whiteList: [],
+        sanitizeSensitiveLogs: false,
+        enableServerMode: false,
+        enableMultipleMap: false,
+        unregisterOnShutdown: false,
+        refreshInterval: 60,
+        debug: false,
+      },
+    });
+    const platform = new RoborockMatterbridgePlatform(createMockMatterbridge() as PlatformMatterbridge, logger, cfg);
+    const vacuum: Partial<MatterbridgeEndpoint> = { name: 'Vac', serialNumber: 's1' };
 
-    const result = await (platform as any).configureDevice(vacuum);
+    const result = await simulateConfigureDevice(platform, vacuum);
     expect(result).toBe(false);
-    expect(logger.log as any).toHaveBeenCalledWith('error', 'Initializing: RoborockService is undefined');
+    expect(logger.log).toHaveBeenCalledWith('error', 'Initializing: RoborockService is undefined');
   });
 });

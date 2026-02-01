@@ -1,17 +1,18 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { PlatformConfigManager } from '../../platform/platformConfig.js';
 import type { AnsiLogger } from 'matterbridge/logger';
-import { createDefaultAdvancedFeature, PluginConfiguration, RoborockPluginPlatformConfig } from '../../model/RoborockPluginPlatformConfig.js';
+import { asPartial, asType } from '../helpers/testUtils.js';
+import { AuthenticationConfiguration, createDefaultAdvancedFeature, PluginConfiguration, RoborockPluginPlatformConfig } from '../../model/RoborockPluginPlatformConfig.js';
 
 function createMockLogger(): AnsiLogger {
-  return {
+  return asType<AnsiLogger>({
     debug: vi.fn(),
     info: vi.fn(),
     warn: vi.fn(),
     error: vi.fn(),
     notice: vi.fn(),
     log: vi.fn(),
-  } as unknown as AnsiLogger;
+  });
 }
 
 function createMockConfig(overrides: Partial<RoborockPluginPlatformConfig> = {}): RoborockPluginPlatformConfig {
@@ -68,25 +69,25 @@ describe('PlatformConfigManager', () => {
       expect(manager.validateAuthentication()).toBe(true);
     });
     it('should return false and log error if authentication is missing', () => {
-      config.authentication = undefined as any;
+      config = asPartial<RoborockPluginPlatformConfig>({ ...config, authentication: undefined });
       manager = PlatformConfigManager.create(config, mockLogger);
       expect(manager.validateAuthentication()).toBe(false);
       expect(mockLogger.error).toHaveBeenCalledWith('Platform config validation failed: "authentication" object is required');
     });
     it('should return false and log info if password is missing', () => {
-      config.authentication = { authenticationMethod: 'Password' } as any;
+      config.authentication = asPartial<AuthenticationConfiguration>({ authenticationMethod: 'Password' });
       manager = PlatformConfigManager.create(config, mockLogger);
       expect(manager.validateAuthentication()).toBe(false);
       expect(mockLogger.info).toHaveBeenCalledWith('Platform config validation: password not provided');
     });
     it('should return false and log info if verificationCode is missing for VerificationCode method', () => {
-      config.authentication = { authenticationMethod: 'VerificationCode' } as any;
+      config.authentication = asPartial<AuthenticationConfiguration>({ authenticationMethod: 'VerificationCode' });
       manager = PlatformConfigManager.create(config, mockLogger);
       expect(manager.validateAuthentication()).toBe(false);
       expect(mockLogger.info).toHaveBeenCalledWith('Platform config validation: verification code not provided');
     });
     it('should return true if verificationCode is present for VerificationCode method', () => {
-      config.authentication = { authenticationMethod: 'VerificationCode', verificationCode: '1234' } as any;
+      config.authentication = asPartial<AuthenticationConfiguration>({ authenticationMethod: 'VerificationCode', verificationCode: '1234' });
       manager = PlatformConfigManager.create(config, mockLogger);
       expect(manager.validateAuthentication()).toBe(true);
     });
@@ -107,7 +108,7 @@ describe('PlatformConfigManager', () => {
     });
     it('should return refreshInterval or default', () => {
       expect(manager.refreshInterval).toBe(60);
-      config.pluginConfiguration.refreshInterval = undefined as any;
+      config.pluginConfiguration = asPartial<PluginConfiguration>({ ...config.pluginConfiguration, refreshInterval: undefined });
       manager = PlatformConfigManager.create(config, mockLogger);
       expect(manager.refreshInterval).toBeDefined();
     });
@@ -180,13 +181,13 @@ describe('PlatformConfigManager', () => {
       expect(manager.extractDuidFromWhitelistEntry('single')).toBeUndefined();
     });
     it('should match list entry by duid or name', () => {
-      expect((manager as any).matchesListEntry('abc', 'abc', 'dev1')).toBe(true);
-      expect((manager as any).matchesListEntry('dev1', 'abc', 'dev1')).toBe(true);
-      expect((manager as any).matchesListEntry('other', 'abc', 'dev1')).toBe(false);
+      expect(manager['matchesListEntry']('abc', 'abc', 'dev1')).toBe(true);
+      expect(manager['matchesListEntry']('dev1', 'abc', 'dev1')).toBe(true);
+      expect(manager['matchesListEntry']('other', 'abc', 'dev1')).toBe(false);
     });
     it('should extract duid from device name', () => {
-      expect((manager as any).extractDuidFromDeviceName('name - duid123')).toBe('duid123');
-      expect((manager as any).extractDuidFromDeviceName('single')).toBeUndefined();
+      expect(manager['extractDuidFromDeviceName']('name - duid123')).toBe('duid123');
+      expect(manager['extractDuidFromDeviceName']('single')).toBeUndefined();
     });
   });
 });
