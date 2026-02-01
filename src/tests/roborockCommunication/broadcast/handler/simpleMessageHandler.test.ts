@@ -2,6 +2,9 @@ import { NotifyMessageTypes } from '../../../../types/notifyMessageTypes.js';
 import { describe, it, expect, vi } from 'vitest';
 import { VacuumErrorCode } from '../../../../roborockCommunication/enums/index.js';
 import { SimpleMessageHandler } from '../../../../roborockCommunication/routing/handlers/implementation/simpleMessageHandler.js';
+import { ResponseMessage } from '../../../../roborockCommunication/models/responseMessage.js';
+import { HeaderMessage } from '../../../../roborockCommunication/models/headerMessage.js';
+import { Protocol } from '../../../../roborockCommunication/models/protocol.js';
 
 describe('SimpleMessageHandler', () => {
   const duid = 'test-duid';
@@ -28,7 +31,7 @@ describe('SimpleMessageHandler', () => {
 
   it('onStatusChanged and onAdditionalProps do not throw', async () => {
     const handler = new SimpleMessageHandler(duid, vi.fn());
-    await expect(handler.onStatusChanged({} as any)).resolves.toBeUndefined();
+    await expect(handler.onStatusChanged(new ResponseMessage(duid, new HeaderMessage('A01', 0, 0, 0, Protocol.general_response)))).resolves.toBeUndefined();
     await expect(handler.onAdditionalProps(123)).resolves.toBeUndefined();
   });
 });

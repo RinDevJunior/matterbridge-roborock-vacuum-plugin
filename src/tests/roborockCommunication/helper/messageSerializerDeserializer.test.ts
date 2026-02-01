@@ -3,7 +3,10 @@ import { MessageContext, Protocol, RequestMessage } from '../../../roborockCommu
 import { MessageSerializer } from '../../../roborockCommunication/protocol/serializers/messageSerializer.js';
 import { MessageDeserializer } from '../../../roborockCommunication/protocol/deserializers/messageDeserializer.js';
 
-const mkUser = () => ({ rriot: { k: 'some-key-for-test-000' } }) as any;
+import { asPartial, asType } from '../../helpers/testUtils.js';
+import type { UserData } from '../../../roborockCommunication/models/index.js';
+
+const mkUser = () => asPartial<UserData>({ rriot: { r: { a: 'https://api.example', r: 'r', m: 'm', l: 'l' }, u: 'uid', s: 's', h: 'h', k: 'k' } });
 
 const logger: any = { error: vi.fn(), notice: vi.fn(), debug: vi.fn() };
 
@@ -26,7 +29,7 @@ describe('MessageSerializer/Deserializer roundtrip', () => {
     const got = resp.get(Protocol.rpc_response);
     expect(typeof got).toBe('object');
     // id should match the one we set
-    expect((got as any).id).toBe(54321);
+    expect(asType<{ id: number }>(got).id).toBe(54321);
   });
 
   it('throws on CRC mismatch', () => {

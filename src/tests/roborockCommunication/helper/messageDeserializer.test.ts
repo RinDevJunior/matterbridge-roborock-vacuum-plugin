@@ -1,18 +1,21 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import CRC32 from 'crc-32';
 import { MessageDeserializer } from '../../../roborockCommunication/protocol/deserializers/messageDeserializer.js';
-import { Protocol } from '../../../roborockCommunication/models/index.js';
+import { Protocol, MessageContext, UserData } from '../../../roborockCommunication/models/index.js';
+import { asPartial, asType, mkUser } from '../../helpers/testUtils.js';
+import { MessageSerializerFactory } from '../../../roborockCommunication/protocol/serializers/messageSerializerFactory.js';
+import { makeLogger } from '../../testUtils.js';
 
 describe('MessageDeserializer', () => {
-  let logger: any;
+  let logger: ReturnType<typeof makeLogger>;
 
   beforeEach(() => {
-    logger = { debug: vi.fn(), notice: vi.fn(), error: vi.fn() };
+    logger = makeLogger();
   });
 
   it('returns ResponseMessage for protocols without payload', () => {
-    const context: any = { getLocalKey: () => null, nonce: 0, getDeviceNonce: () => 0 };
-    const des = new MessageDeserializer(context, logger as any);
+    const context = new MessageContext(mkUser());
+    const des = new MessageDeserializer(context, logger);
 
     // build header buffer: version(3) + seq(4) + nonce(4) + timestamp(4) + protocol(2)
     const buf = Buffer.alloc(17);
@@ -27,8 +30,8 @@ describe('MessageDeserializer', () => {
   });
 
   it('throws on unsupported protocol version', () => {
-    const context: any = { getLocalKey: () => null, nonce: 0, getDeviceNonce: () => 0 };
-    const des = new MessageDeserializer(context, logger as any);
+    const context = new MessageContext(mkUser());
+    const des = new MessageDeserializer(context, logger);
     const buf = Buffer.alloc(17);
     buf.write('BAD', 0, 3, 'ascii');
     buf.writeUInt32BE(0, 3);
@@ -39,13 +42,14 @@ describe('MessageDeserializer', () => {
   });
 
   it('parses rpc_response and returns a body with parsed dps', async () => {
-    const mpf = await import('../../../roborockCommunication/protocol/serializers/messageSerializerFactory.js');
-    vi.spyOn(mpf.MessageSerializerFactory.prototype, 'getMessageSerializer').mockReturnValue({
+    vi.spyOn(MessageSerializerFactory.prototype, 'getMessageSerializer').mockReturnValue({
+      encode: (_payload: string, _localKey: string, _timestamp: number, _sequence: number, _nonce: number) => Buffer.alloc(0),
       decode: (_payload: Buffer) => Buffer.from(JSON.stringify({ dps: { '102': JSON.stringify({ x: 1 }) } })),
-    } as any);
+    });
 
-    const context: any = { getLocalKey: () => 'local', nonce: 7, getDeviceNonce: () => 9 };
-    const des = new MessageDeserializer(context, logger as any);
+    const context = new MessageContext(asType<UserData>({ rriot: { k: 'k' } }));
+    context.registerDevice('duid', 'local', 'A01', 9);
+    const des = new MessageDeserializer(context, logger);
 
     const header = Buffer.alloc(17);
     header.write('A01', 0, 3, 'ascii');
@@ -67,9 +71,11 @@ describe('MessageDeserializer', () => {
 
     const res = des.deserialize('duid', full, 'from');
     expect(res.isForProtocol(Protocol.rpc_response)).toBe(true);
-    const body = (res as any).body;
+    const body = res.body;
     expect(body).toBeDefined();
-    expect(body.data['102']).toBeDefined();
-    expect(body.data['102'].x).toBe(1);
+    expect(body?.data['102']).toBeDefined();
+    const item = body?.data['102'];
+    const parsed = typeof item === 'string' ? JSON.parse(item) : JSON.parse(JSON.stringify(item));
+    expect(parsed.x).toBe(1);
   });
 });

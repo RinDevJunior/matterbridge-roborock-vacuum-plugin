@@ -2,6 +2,10 @@ import { describe, it, expect, vi } from 'vitest';
 import { ModeHandlerRegistry } from '../../../../behaviors/roborock.vacuum/core/modeHandlerRegistry.js';
 import { ModeHandler, HandlerContext } from '../../../../behaviors/roborock.vacuum/core/modeHandler.js';
 import { CleanModeSetting } from '../../../../behaviors/roborock.vacuum/core/CleanModeSetting.js';
+import { createDefaultCleanModeSettings } from '../../../../model/RoborockPluginPlatformConfig.js';
+import type { RoborockService } from '../../../../services/roborockService.js';
+import type { AnsiLogger } from 'matterbridge/logger';
+import { createMockLogger, asPartial } from '../../../helpers/testUtils.js';
 
 describe('ModeHandlerRegistry', () => {
   it('registers handlers and returns this for chaining', () => {
@@ -33,8 +37,8 @@ describe('ModeHandlerRegistry', () => {
     registry.register(handler1).register(handler2);
 
     const context: HandlerContext = {
-      roborockService: {} as any,
-      logger: { notice: vi.fn() } as any,
+      roborockService: {} as RoborockService,
+      logger: createMockLogger(),
       cleanSettings: {},
       behaviorName: 'TestBehavior',
       enableCleanModeMapping: false,
@@ -64,8 +68,8 @@ describe('ModeHandlerRegistry', () => {
     registry.register(handler1).register(handler2);
 
     const context: HandlerContext = {
-      roborockService: {} as any,
-      logger: { notice: vi.fn() } as any,
+      roborockService: {} as RoborockService,
+      logger: createMockLogger(),
       cleanSettings: {},
       behaviorName: 'TestBehavior',
       enableCleanModeMapping: false,
@@ -89,8 +93,8 @@ describe('ModeHandlerRegistry', () => {
     registry.register(handler);
 
     const context: HandlerContext = {
-      roborockService: {} as any,
-      logger: { notice: mockNotice } as any,
+      roborockService: {} as RoborockService,
+      logger: Object.assign(createMockLogger(), { notice: mockNotice }) as AnsiLogger,
       cleanSettings: {},
       behaviorName: 'TestBehavior',
       enableCleanModeMapping: false,
@@ -113,9 +117,9 @@ describe('ModeHandlerRegistry', () => {
     registry.register(handler);
 
     const context: HandlerContext = {
-      roborockService: { test: 'service' } as any,
-      logger: { notice: vi.fn() } as any,
-      cleanModeSettings: { test: 'settings' } as any,
+      roborockService: asPartial<RoborockService>({}),
+      logger: { notice: vi.fn() } as Partial<AnsiLogger> as AnsiLogger,
+      cleanModeSettings: createDefaultCleanModeSettings(),
       cleanSettings: { 5: new CleanModeSetting(102, 202, 0, 300) },
       behaviorName: 'SmartBehavior',
       enableCleanModeMapping: true,
@@ -131,8 +135,8 @@ describe('ModeHandlerRegistry', () => {
     const mockNotice = vi.fn();
 
     const context: HandlerContext = {
-      roborockService: {} as any,
-      logger: { notice: mockNotice } as any,
+      roborockService: {} as RoborockService,
+      logger: Object.assign(createMockLogger(), { notice: mockNotice }) as AnsiLogger,
       cleanSettings: {},
       enableCleanModeMapping: false,
       behaviorName: 'TestBehavior',

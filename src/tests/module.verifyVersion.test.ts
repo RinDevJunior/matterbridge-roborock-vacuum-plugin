@@ -1,17 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { AnsiLogger } from 'matterbridge/logger';
 import { RoborockMatterbridgePlatform } from '../module.js';
-
-function makeLogger() {
-  return {
-    debug: () => {},
-    info: () => {},
-    warn: () => {},
-    error: () => {},
-    notice: () => {},
-    logLevel: 'info',
-  } as unknown as AnsiLogger;
-}
+import { createMockLogger } from './helpers/testUtils.js';
 
 describe('RoborockMatterbridgePlatform - version checks', () => {
   it('throws if verifyMatterbridgeVersion is undefined', () => {
@@ -24,7 +14,7 @@ describe('RoborockMatterbridgePlatform - version checks', () => {
 
     const config: any = { name: 'Test Platform', persistDirectory: '/tmp' };
 
-    expect(() => new RoborockMatterbridgePlatform(mockMatterbridge, makeLogger(), config)).toThrow();
+    expect(() => new RoborockMatterbridgePlatform(mockMatterbridge, createMockLogger(), config)).toThrow();
   });
 
   it('throws if verifyMatterbridgeVersion returns false', () => {
@@ -37,6 +27,6 @@ describe('RoborockMatterbridgePlatform - version checks', () => {
 
     const config: any = { name: 'Test Platform', persistDirectory: '/tmp' };
 
-    expect(() => new RoborockMatterbridgePlatform(mockMatterbridge, makeLogger(), config)).toThrow();
+    expect(() => new RoborockMatterbridgePlatform(mockMatterbridge, createMockLogger(), config)).toThrow();
   });
 });

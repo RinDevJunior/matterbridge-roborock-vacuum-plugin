@@ -1,11 +1,10 @@
 import { describe, it, expect } from 'vitest';
 import { MessageContext, UserData } from '../../../../roborockCommunication/models/index.js';
+import { asPartial, asType, mkUser } from '../../../helpers/testUtils.js';
 
 describe('MessageContext', () => {
-  const userdata: any = { rriot: { k: 'secretkey' } };
-
   it('constructs and exposes endpoint, nonce and serializeNonce hex', () => {
-    const ctx = new MessageContext(userdata);
+    const ctx = new MessageContext(mkUser());
     expect(ctx.getEndpoint()).toBeDefined();
     expect(typeof ctx.nonce).toBe('number');
     const hex = ctx.getSerializeNonceAsHex();
@@ -13,7 +12,7 @@ describe('MessageContext', () => {
   });
 
   it('registerDevice, updateNonce and getters', () => {
-    const ctx = new MessageContext(userdata);
+    const ctx = new MessageContext(mkUser());
     ctx.registerDevice('d1', 'lk', '1.0', 5);
     expect(ctx.getLocalKey('d1')).toBe('lk');
     expect(ctx.getProtocolVersion('d1')).toBe('1.0');
@@ -24,7 +23,7 @@ describe('MessageContext', () => {
   });
 
   it('updateNonce should not throw for non-existent device', () => {
-    const ctx = new MessageContext(userdata);
+    const ctx = new MessageContext(mkUser());
     expect(() => {
       ctx.updateNonce('nonexistent', 100);
     }).not.toThrow();
@@ -32,12 +31,12 @@ describe('MessageContext', () => {
   });
 
   it('constructor throws when userdata is missing required fields', () => {
-    expect(() => new MessageContext({} as UserData)).toThrow();
-    expect(() => new MessageContext({ rriot: {} } as UserData)).toThrow();
+    expect(() => new MessageContext(asType<UserData>({}))).toThrow();
+    expect(() => new MessageContext(asType<UserData>(undefined))).toThrow();
   });
 
   it('updateProtocolVersion handles non-existent and existing devices', () => {
-    const ctx = new MessageContext(userdata);
+    const ctx = new MessageContext(mkUser());
     // should not throw for non-existent device
     expect(() => ctx.updateProtocolVersion('no', '2.0')).not.toThrow();
     expect(ctx.getProtocolVersion('no')).toBeUndefined();
@@ -50,7 +49,7 @@ describe('MessageContext', () => {
   });
 
   it('re-registering a device replaces stored values', () => {
-    const ctx = new MessageContext(userdata);
+    const ctx = new MessageContext(mkUser());
     ctx.registerDevice('d3', 'lkA', '1.0', 1);
     expect(ctx.getLocalKey('d3')).toBe('lkA');
     ctx.registerDevice('d3', 'lkB', '2.0', 2);
@@ -60,7 +59,7 @@ describe('MessageContext', () => {
   });
 
   it('should return undefined for all getters on non-existent device', () => {
-    const ctx = new MessageContext(userdata);
+    const ctx = new MessageContext(mkUser());
     expect(ctx.getLocalKey('missing')).toBeUndefined();
     expect(ctx.getProtocolVersion('missing')).toBeUndefined();
     expect(ctx.getDeviceNonce('missing')).toBeUndefined();

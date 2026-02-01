@@ -1,37 +1,14 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { FilterLogger } from '../share/filterLogger.js';
 import { AnsiLogger, LogLevel } from 'matterbridge/logger';
+import { createMockLogger } from './helpers/testUtils.js';
 
 describe('FilterLogger', () => {
   let filterLogger: FilterLogger;
-  let logger: AnsiLogger & {
-    debug: ReturnType<typeof vi.fn>;
-    info: ReturnType<typeof vi.fn>;
-    warn: ReturnType<typeof vi.fn>;
-    error: ReturnType<typeof vi.fn>;
-    notice: ReturnType<typeof vi.fn>;
-    log: ReturnType<typeof vi.fn>;
-  };
+  let logger: AnsiLogger;
 
   beforeEach(() => {
-    logger = {
-      debug: vi.fn(),
-      info: vi.fn(),
-      warn: vi.fn(),
-      error: vi.fn(),
-      notice: vi.fn(),
-      logLevel: LogLevel.INFO,
-      logName: 'test',
-      logTimestampFormat: 'HH:mm:ss',
-      logCustomTimestampFormat: '',
-    } as unknown as AnsiLogger & {
-      debug: ReturnType<typeof vi.fn>;
-      info: ReturnType<typeof vi.fn>;
-      warn: ReturnType<typeof vi.fn>;
-      error: ReturnType<typeof vi.fn>;
-      notice: ReturnType<typeof vi.fn>;
-      log: ReturnType<typeof vi.fn>;
-    };
+    logger = createMockLogger();
 
     // Add the log method that dispatches to level-specific methods
     logger.log = vi.fn((level: LogLevel, message: string, ...parameters: unknown[]) => {
@@ -137,7 +114,7 @@ describe('FilterLogger', () => {
     filterLogger.info(`Device info: ${JSON.stringify(objectToLog)}`);
 
     expect(logger.info).toHaveBeenCalledTimes(1);
-    const loggedMessage = logger.info.mock.calls[0][0];
+    const loggedMessage = vi.mocked(logger.info).mock.calls[0][0];
     expect(loggedMessage).not.toContain('rr66ed372dc7f130:Z280JwKBBROBGNxs7Mclyg==:019bbefff10a7053b338ca65df32c84b');
     expect(loggedMessage).toContain('[TOKEN_REDACTED]');
   });
@@ -166,7 +143,7 @@ describe('FilterLogger', () => {
     filterLogger.info(`User data: ${JSON.stringify(objectToLog)}`);
 
     expect(logger.info).toHaveBeenCalledTimes(1);
-    const loggedMessage = logger.info.mock.calls[0][0];
+    const loggedMessage = vi.mocked(logger.info).mock.calls[0][0];
     expect(loggedMessage).not.toContain('rr66ed372dc7f130:Z280JwKBBROBGNxs7Mclyg==:019bbefff10a7053b338ca65df32c84b');
     expect(loggedMessage).not.toContain('rr66ed372dc7f130');
     expect(loggedMessage).not.toContain('Z280JwKBBROBGNxs7Mclyg==');

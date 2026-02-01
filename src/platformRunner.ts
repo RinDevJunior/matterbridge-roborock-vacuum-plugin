@@ -57,8 +57,7 @@ export class PlatformRunner {
 
     const homeData = await platform.roborockService.getHomeDataForUpdating(platform.rrHomeId);
     if (homeData === undefined) return;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    this.updateRobotWithPayload({ type: NotifyMessageTypes.HomeData, data: homeData } as any);
+    this.updateRobotWithPayload({ type: NotifyMessageTypes.HomeData, data: homeData });
   }
 
   /**

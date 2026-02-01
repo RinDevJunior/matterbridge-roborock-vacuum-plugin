@@ -1,12 +1,16 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { DeviceManagementService } from '../../services/deviceManagementService.js';
+import { createMockIotApi, createMockAuthApi } from '../helpers/testUtils.js';
 import { DeviceError, DeviceNotFoundError } from '../../errors/index.js';
 import { Device, DeviceModel, Home, Protocol, UserData } from '../../roborockCommunication/models/index.js';
 import { DeviceCategory } from '../../roborockCommunication/models/deviceCategory.js';
+import { makeLogger } from '../testUtils.js';
+import type { RoborockIoTApi } from '../../roborockCommunication/api/iotClient.js';
+import type { RoborockAuthenticateApi } from '../../roborockCommunication/api/authClient.js';
 
 describe('DeviceManagementService', () => {
   let deviceService: DeviceManagementService;
-  let mockLogger: any;
+  let mockLogger: ReturnType<typeof makeLogger>;
   let mockLoginApi: any;
   let mockIotApi: any;
 
@@ -21,7 +25,7 @@ describe('DeviceManagementService', () => {
     country: 'United States',
     nickname: 'Test User',
     rriot: {
-      r: { host: 'test-host' } as any,
+      r: { r: 'test-r', a: 'test-a', m: 'test-m', l: 'test-l' },
       u: 'test-user',
       s: 'test-secret',
       h: 'test-host',
@@ -71,7 +75,7 @@ describe('DeviceManagementService', () => {
       {
         id: 'prod-456',
         name: 'Test Product',
-        model: 's5_max' as any,
+        model: 's5_max' as DeviceModel,
         category: 'vacuum',
         schema: [],
       },
@@ -89,27 +93,19 @@ describe('DeviceManagementService', () => {
   beforeEach(() => {
     vi.clearAllMocks();
 
-    mockLogger = {
-      debug: vi.fn(),
-      info: vi.fn(),
-      warn: vi.fn(),
-      error: vi.fn(),
-      notice: vi.fn(),
-    } as any;
+    mockLogger = makeLogger();
 
-    mockIotApi = {
+    mockIotApi = createMockIotApi({
       getHomev2: vi.fn().mockResolvedValue(mockHomeData),
       getHomev3: vi.fn(),
       getHome: vi.fn(),
       getScenes: vi.fn().mockResolvedValue([]),
       getHomeWithProducts: vi.fn().mockResolvedValue(mockHomeData),
-    } as any;
+    });
 
-    mockLoginApi = {
-      getHomeDetails: vi.fn().mockResolvedValue({
-        rrHomeId: 12345,
-      }),
-    } as any;
+    mockLoginApi = createMockAuthApi({
+      getHomeDetails: vi.fn().mockResolvedValue({ rrHomeId: 12345 }),
+    });
 
     deviceService = new DeviceManagementService(mockLogger, mockLoginApi, mockUserData);
     deviceService.setIotApi(mockIotApi);
@@ -137,7 +133,7 @@ describe('DeviceManagementService', () => {
     });
 
     it('should throw DeviceNotFoundError when no home found', async () => {
-      mockLoginApi.getHomeDetails.mockResolvedValue(undefined);
+      mockLoginApi.getHomeDetails = vi.fn().mockResolvedValue(undefined);
 
       await expect(deviceService.listDevices()).rejects.toThrow(DeviceNotFoundError);
       await expect(deviceService.listDevices()).rejects.toThrow('No home found for user');
@@ -150,7 +146,7 @@ describe('DeviceManagementService', () => {
     });
 
     it('should throw DeviceError when homeData cannot be retrieved', async () => {
-      mockIotApi.getHomeWithProducts.mockResolvedValue(undefined);
+      mockIotApi.getHomeWithProducts = vi.fn().mockResolvedValue(undefined);
 
       await expect(deviceService.listDevices()).rejects.toThrow(DeviceError);
       await expect(deviceService.listDevices()).rejects.toThrow('Failed to retrieve home data');
@@ -192,7 +188,7 @@ describe('DeviceManagementService', () => {
         devices: [],
         receivedDevices: [mockDevice],
       };
-      mockIotApi.getHomev2.mockResolvedValue(homeDataWithReceivedDevices);
+      mockIotApi.getHomev2 = vi.fn().mockResolvedValue(homeDataWithReceivedDevices);
 
       const result = await deviceService.listDevices();
 
@@ -226,7 +222,7 @@ describe('DeviceManagementService', () => {
           extra: undefined,
           type: 'auto',
         },
-      ] as any;
+      ];
       mockIotApi.getScenes.mockResolvedValue(mockScenes);
 
       const result = await deviceService.listDevices();
@@ -238,7 +234,7 @@ describe('DeviceManagementService', () => {
     it('should fallback battery level to 100 if not present', async () => {
       const deviceWithoutBattery = { ...mockDevice, deviceStatus: {} };
       const homeDataNoBattery = { ...mockHomeData, devices: [deviceWithoutBattery] };
-      mockIotApi.getHomeWithProducts.mockResolvedValue(homeDataNoBattery);
+      mockIotApi.getHomeWithProducts = vi.fn().mockResolvedValue(homeDataNoBattery);
 
       const result = await deviceService.listDevices();
 
@@ -246,7 +242,7 @@ describe('DeviceManagementService', () => {
     });
 
     it('should handle API errors and wrap them in DeviceError', async () => {
-      mockIotApi.getHomeWithProducts.mockRejectedValue(new Error('API Error'));
+      mockIotApi.getHomeWithProducts = vi.fn().mockRejectedValue(new Error('API Error'));
 
       await expect(deviceService.listDevices()).rejects.toThrow(DeviceError);
       await expect(deviceService.listDevices()).rejects.toThrow('Failed to retrieve device list');
@@ -263,7 +259,7 @@ describe('DeviceManagementService', () => {
   });
 
   it('should return undefined when homeData cannot be retrieved', async () => {
-    mockIotApi.getHomev2.mockResolvedValue(undefined);
+    mockIotApi.getHomev2 = vi.fn().mockResolvedValue(undefined);
 
     const result = await deviceService.getHomeDataForUpdating(12345);
 
@@ -293,7 +289,7 @@ describe('DeviceManagementService', () => {
     const v3Rooms = [{ id: 2, name: 'Kitchen' }];
 
     mockIotApi.getHomev2.mockResolvedValue(homeDataNoRooms);
-    mockIotApi.getHomev3.mockResolvedValue({ ...mockHomeData, rooms: v3Rooms });
+    mockIotApi.getHomev3 = vi.fn().mockResolvedValue({ ...mockHomeData, rooms: v3Rooms });
 
     const result = await deviceService.getHomeDataForUpdating(12345);
 
@@ -319,7 +315,7 @@ describe('DeviceManagementService', () => {
     const homeDataNoRooms = { ...mockHomeData, rooms: [] };
 
     mockIotApi.getHomev2.mockResolvedValue(homeDataNoRooms);
-    mockIotApi.getHomev3.mockResolvedValue(undefined);
+    mockIotApi.getHomev3 = vi.fn().mockResolvedValue(undefined);
     mockIotApi.getHome.mockResolvedValue(undefined);
 
     const result = await deviceService.getHomeDataForUpdating(12345);

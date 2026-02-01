@@ -3,6 +3,7 @@ import { vi, describe, beforeEach, it, expect } from 'vitest';
 import { RoborockAuthGateway } from '../../../roborockCommunication/adapters/RoborockAuthGateway.js';
 import { AuthenticationError } from '../../../errors/index.js';
 import { UserData } from '../../../roborockCommunication/models/index.js';
+import { asType, createMockLogger } from '../../testUtils.js';
 
 // Mock the authenticate API
 const mockAuthApi = {
@@ -18,15 +19,9 @@ describe('RoborockAuthGateway', () => {
   let mockLogger: AnsiLogger;
 
   beforeEach(() => {
-    mockLogger = {
-      debug: vi.fn(),
-      error: vi.fn(),
-      warn: vi.fn(),
-      notice: vi.fn(),
-      info: vi.fn(),
-    } as any;
+    mockLogger = createMockLogger();
 
-    authGateway = new RoborockAuthGateway(mockAuthApi as any, mockLogger);
+    authGateway = new RoborockAuthGateway(asType(mockAuthApi), mockLogger);
 
     // Reset all mocks
     vi.clearAllMocks();

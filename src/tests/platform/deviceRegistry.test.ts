@@ -3,6 +3,7 @@ import { DeviceRegistry } from '../../platform/deviceRegistry.js';
 import { DeviceModel, type Device } from '../../roborockCommunication/models/index.js';
 import type { RoborockVacuumCleaner } from '../../types/roborockVacuumCleaner.js';
 import { DeviceCategory } from '../../roborockCommunication/models/deviceCategory.js';
+import { asType } from '../testUtils.js';
 
 function createMockDevice(serialNumber: string): Device {
   return {
@@ -29,7 +30,23 @@ function createMockDevice(serialNumber: string): Device {
       category: DeviceCategory.VacuumCleaner,
       batteryLevel: 100,
     },
-    store: {} as any,
+    store: {
+      userData: {
+        username: 'test',
+        uid: 'uid',
+        tokentype: '',
+        token: '',
+        rruid: '',
+        region: 'US',
+        countrycode: '',
+        country: '',
+        nickname: 'nick',
+        rriot: { u: '', s: '', h: '', k: '', r: { r: '', a: '', m: '', l: '' } },
+      },
+      localKey: 'test-key',
+      pv: '1.0',
+      model: DeviceModel.Q7_MAX,
+    },
   } as Device;
 }
 
@@ -72,7 +89,7 @@ describe('DeviceRegistry', () => {
     it('should not register when device is null', () => {
       const robot = createMockRobot('SN001');
 
-      registry.register(null as any, robot);
+      registry.register(asType<Device>(undefined), robot);
 
       expect(registry.size).toBe(0);
     });
@@ -80,7 +97,7 @@ describe('DeviceRegistry', () => {
     it('should not register when device is undefined', () => {
       const robot = createMockRobot('SN001');
 
-      registry.register(undefined as any, robot);
+      registry.register(asType<Device>(undefined), robot);
 
       expect(registry.size).toBe(0);
     });
@@ -120,13 +137,13 @@ describe('DeviceRegistry', () => {
     });
 
     it('should not register when robot is null', () => {
-      registry.registerRobot(null as any);
+      registry.registerRobot(asType<RoborockVacuumCleaner>(undefined));
 
       expect(registry.getAllRobots()).toHaveLength(0);
     });
 
     it('should not register when robot is undefined', () => {
-      registry.registerRobot(undefined as any);
+      registry.registerRobot(asType<RoborockVacuumCleaner>(undefined));
 
       expect(registry.getAllRobots()).toHaveLength(0);
     });
@@ -163,13 +180,13 @@ describe('DeviceRegistry', () => {
     });
 
     it('should not register when device is null', () => {
-      registry.registerDevice(null as any);
+      registry.registerDevice(asType<Device>(undefined));
 
       expect(registry.size).toBe(0);
     });
 
     it('should not register when device is undefined', () => {
-      registry.registerDevice(undefined as any);
+      registry.registerDevice(asType<Device>(undefined));
 
       expect(registry.size).toBe(0);
     });

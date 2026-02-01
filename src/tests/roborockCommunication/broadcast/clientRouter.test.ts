@@ -1,6 +1,9 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { RequestMessage, UserData } from '../../../roborockCommunication/models/index.js';
 import { ClientRouter } from '../../../roborockCommunication/routing/clientRouter.js';
+import { asType, asPartial } from '../../testUtils.js';
+import { AbstractConnectionListener } from '../../../roborockCommunication/routing/listeners/abstractConnectionListener.js';
+import { AbstractMessageListener } from '../../../roborockCommunication/routing/listeners/abstractMessageListener.js';
 
 describe('ClientRouter', () => {
   let mockLogger: any;
@@ -53,17 +56,17 @@ describe('ClientRouter', () => {
 
   it('registerConnectionListener should call connectionListener.register', () => {
     const router = new ClientRouter(mockLogger, mockUserData);
-    const listener = {};
+    const listener = asType<AbstractConnectionListener>({});
     const spy = vi.spyOn(router['connectionListener'], 'register');
-    router.registerConnectionListener(listener as any);
+    router.registerConnectionListener(listener);
     expect(spy).toHaveBeenCalledWith(listener);
   });
 
   it('registerMessageListener should call chainedMessageListener.register', () => {
     const router = new ClientRouter(mockLogger, mockUserData);
-    const listener = {};
+    const listener = asType<AbstractMessageListener>({});
     const spy = vi.spyOn(router['chainedMessageListener'], 'register');
-    router.registerMessageListener(listener as any);
+    router.registerMessageListener(listener);
     expect(spy).toHaveBeenCalledWith(listener);
   });
 
@@ -114,7 +117,7 @@ describe('ClientRouter', () => {
     };
 
     const router = new ClientRouter(mockLogger, mockUserData);
-    const request: RequestMessage = { secure: true } as any;
+    const request = asPartial<RequestMessage>({ secure: true });
 
     router['mqttClient'] = mockMQTTClient;
     await router.send('duid', request);
@@ -124,7 +127,7 @@ describe('ClientRouter', () => {
   it('send should use localClient for non-secure requests', async () => {
     const router = new ClientRouter(mockLogger, mockUserData);
     router.registerClient('duid', '127.0.0.1');
-    const request: RequestMessage = { secure: false } as any;
+    const request = asPartial<RequestMessage>({ secure: false });
     router['localClients'].set('duid', mockLocalNetworkClient);
     await router.send('duid', request);
     expect(mockLocalNetworkClient.send).toHaveBeenCalledWith('duid', request);
@@ -132,7 +135,7 @@ describe('ClientRouter', () => {
 
   it('get should use mqttClient for secure requests', async () => {
     const router = new ClientRouter(mockLogger, mockUserData);
-    const request: RequestMessage = { secure: true } as any;
+    const request = asPartial<RequestMessage>({ secure: true });
 
     mockMQTTClient = {
       isConnected: vi.fn().mockReturnValue(false),
@@ -149,7 +152,7 @@ describe('ClientRouter', () => {
   it('get should use localClient for non-secure requests', async () => {
     const router = new ClientRouter(mockLogger, mockUserData);
     router.registerClient('duid', '127.0.0.1');
-    const request: RequestMessage = { secure: false } as any;
+    const request = asPartial<RequestMessage>({ secure: false });
     router['localClients'].set('duid', mockLocalNetworkClient);
     await router.get('duid', request);
     expect(mockLocalNetworkClient.get).toHaveBeenCalledWith('duid', request);

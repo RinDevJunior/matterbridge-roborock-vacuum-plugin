@@ -1,6 +1,6 @@
 import { it, expect } from 'vitest';
+import * as mod from '../../../../src/roborockCommunication/models/apiResponse.js';
 
-it('imports apiResponse without runtime error', async () => {
-  const mod = await import('../../../../src/roborockCommunication/models/apiResponse.js');
+it('imports apiResponse without runtime error', () => {
   expect(mod).toBeTruthy();
 });

@@ -1,18 +1,21 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { RoborockVacuumCleaner } from '../types/roborockVacuumCleaner.js';
-import { ModeBase } from 'matterbridge/matter/clusters';
+import { ModeBase, ServiceArea } from 'matterbridge/matter/clusters';
 import { AnsiLogger } from 'matterbridge/logger';
 import { BehaviorFactoryResult } from '../share/behaviorFactory.js';
+import { asPartial, asType } from './testUtils.js';
+import { PlatformConfigManager } from '../platform/platformConfig.js';
+import { PluginConfiguration, RoborockPluginPlatformConfig } from '../model/RoborockPluginPlatformConfig.js';
 
 function createMockLogger(): AnsiLogger {
-  return {
+  return asType<AnsiLogger>({
     debug: vi.fn(),
     info: vi.fn(),
     warn: vi.fn(),
     error: vi.fn(),
     notice: vi.fn(),
     logLevel: 'info',
-  } as unknown as AnsiLogger;
+  });
 }
 
 describe('RoborockVacuumCleaner', () => {
@@ -21,7 +24,7 @@ describe('RoborockVacuumCleaner', () => {
   let routineAsRoom: any[];
   let logger: AnsiLogger;
   let vacuum: RoborockVacuumCleaner;
-  let configManager: any;
+  let configManager: PlatformConfigManager;
 
   beforeEach(() => {
     device = {
@@ -35,9 +38,15 @@ describe('RoborockVacuumCleaner', () => {
     };
     roomMap = { rooms: [] };
     routineAsRoom = [];
-    configManager = {
-      experimentalSettings: undefined,
-    };
+    configManager = PlatformConfigManager.create(
+      asPartial<RoborockPluginPlatformConfig>({
+        pluginConfiguration: asPartial<PluginConfiguration>({
+          enableMultipleMap: false,
+          enableServerMode: false,
+        }),
+      }),
+      createMockLogger(),
+    );
     logger = createMockLogger();
     vacuum = new RoborockVacuumCleaner('user@example.com', device, roomMap, routineAsRoom, configManager, logger, []);
   });
@@ -105,16 +114,37 @@ describe('RoborockVacuumCleaner', () => {
 
   it('should cover initializeDeviceConfiguration with experimental features', () => {
     const expLogger = createMockLogger();
-    const expFeature = {
-      enableExperimentalFeature: true,
-      isServerModeEnabled: true,
-      advancedFeature: {
-        enableMultipleMap: true,
-        forceRunAtDefault: true,
+    const expConfig = asPartial<RoborockPluginPlatformConfig>({
+      authentication: {
+        username: 'user',
+        region: 'US',
+        forceAuthentication: false,
+        authenticationMethod: 'Password',
       },
-    };
+      pluginConfiguration: {
+        whiteList: [],
+        enableServerMode: true,
+        enableMultipleMap: true,
+        sanitizeSensitiveLogs: false,
+        refreshInterval: 60,
+        debug: false,
+        unregisterOnShutdown: false,
+      },
+      advancedFeature: {
+        enableAdvancedFeature: true,
+        settings: {
+          showRoutinesAsRoom: false,
+          includeDockStationStatus: false,
+          forceRunAtDefault: true,
+          useVacationModeToSendVacuumToDock: false,
+          enableCleanModeMapping: false,
+          cleanModeSettings: {} as any,
+        },
+      },
+    });
+    const configManager = PlatformConfigManager.create(expConfig, expLogger);
     const dev = { ...device, data: { model: 'roborock.s7', firmwareVersion: '2.0.0' } };
-    const result = (RoborockVacuumCleaner as any).initializeDeviceConfiguration(dev, roomMap, [{ areaId: 1 }], expFeature, expLogger, []);
+    const result = RoborockVacuumCleaner['initializeDeviceConfiguration'](dev, roomMap, [asPartial<ServiceArea.Area>({ areaId: 1 })], configManager, expLogger, []);
     expect(result.cleanModes).toBeDefined();
     expect(result.supportedAreas).toBeDefined();
     expect(result.supportedMaps).toBeDefined();
@@ -125,11 +155,36 @@ describe('RoborockVacuumCleaner', () => {
 
   it('should cover initializeDeviceConfiguration with minimal config', () => {
     const minLogger = createMockLogger();
-    const configManager = {
-      isServerModeEnabled: false,
-      experimentalSettings: undefined,
-    };
-    const result = (RoborockVacuumCleaner as any).initializeDeviceConfiguration(device, roomMap, [], configManager, minLogger, []);
+    const minConfig = asPartial<RoborockPluginPlatformConfig>({
+      authentication: {
+        username: 'user',
+        region: 'US',
+        forceAuthentication: false,
+        authenticationMethod: 'Password',
+      },
+      pluginConfiguration: {
+        whiteList: [],
+        enableServerMode: false,
+        enableMultipleMap: false,
+        sanitizeSensitiveLogs: false,
+        refreshInterval: 60,
+        debug: false,
+        unregisterOnShutdown: false,
+      },
+      advancedFeature: {
+        enableAdvancedFeature: false,
+        settings: {
+          showRoutinesAsRoom: false,
+          includeDockStationStatus: false,
+          forceRunAtDefault: false,
+          useVacationModeToSendVacuumToDock: false,
+          enableCleanModeMapping: false,
+          cleanModeSettings: {} as any,
+        },
+      },
+    });
+    const configManager = PlatformConfigManager.create(minConfig, minLogger);
+    const result = RoborockVacuumCleaner['initializeDeviceConfiguration'](device, roomMap, [], configManager, minLogger, []);
     expect(result.cleanModes).toBeDefined();
     expect(result.supportedAreas).toBeDefined();
     expect(result.supportedMaps).toBeDefined();

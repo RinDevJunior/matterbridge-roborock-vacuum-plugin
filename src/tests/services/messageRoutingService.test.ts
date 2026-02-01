@@ -7,23 +7,28 @@ import { RoborockIoTApi } from '../../roborockCommunication/api/iotClient.js';
 import { RequestMessage } from '../../roborockCommunication/models/index.js';
 import { V01MessageDispatcher } from '../../roborockCommunication/protocol/dispatcher/V01MessageDispatcher.js';
 import { CleanModeSetting } from '../../behaviors/roborock.vacuum/core/CleanModeSetting.js';
+import { asPartial } from '../testUtils.js';
+
+function createIntegrationLogger() {
+  return { debug: vi.fn(), notice: vi.fn(), warn: vi.fn() } as Partial<AnsiLogger> as AnsiLogger;
+}
 
 describe('MessageRoutingService (integration)', () => {
-  let logger: any;
+  let logger: ReturnType<typeof createIntegrationLogger>;
 
   beforeEach(() => {
-    logger = { debug: vi.fn(), notice: vi.fn(), warn: vi.fn() };
+    logger = createIntegrationLogger();
   });
 
   it('throws when getting an unregistered MessageDispatcher', () => {
-    const service = new MessageRoutingService(logger as any);
+    const service = new MessageRoutingService(logger);
     expect(() => service.getMessageDispatcher('missing')).toThrow();
   });
 
   it('registers and returns a MessageDispatcher', () => {
-    const service = new MessageRoutingService(logger as any);
+    const service = new MessageRoutingService(logger);
     const duid = 'dev1';
-    const mp = { some: 'processor' } as any;
+    const mp: any = { some: 'processor' };
     service.registerMessageDispatcher(duid, mp);
     expect(service.getMessageDispatcher(duid)).toBe(mp);
   });
@@ -31,36 +36,39 @@ describe('MessageRoutingService (integration)', () => {
   it('uses IoT API to start a single selected routine', async () => {
     const duid = 'dev-routine';
     const selected = [42];
-    const supportedRooms: any[] = [];
-    const supportedRoutines = [{ areaId: 42 }];
+    const supportedRooms: ServiceArea.Area[] = [];
+    const supportedRoutines: ServiceArea.Area[] = [asPartial<ServiceArea.Area>({ areaId: 42, mapId: null, areaInfo: asPartial({}) })];
 
-    const iotApi = { startScene: vi.fn(async () => {}) } as any;
-    const service = new MessageRoutingService(logger as any, iotApi);
+    const iotApi: Partial<RoborockIoTApi> = { startScene: vi.fn(async () => {}) };
+    const service = new MessageRoutingService(logger, iotApi as RoborockIoTApi);
 
-    await service.startClean(duid, selected, supportedRooms, supportedRoutines as any);
+    await service.startClean(duid, selected, supportedRooms, supportedRoutines);
     expect(iotApi.startScene).toHaveBeenCalledWith(selected[0]);
   });
 
   it('falls back to global clean when multiple routines selected', async () => {
     const duid = 'dev-multi';
     const selected = [1, 2];
-    const supportedRooms: any[] = [];
-    const supportedRoutines = [{ areaId: 1 }, { areaId: 2 }];
+    const supportedRooms: ServiceArea.Area[] = [];
+    const supportedRoutines: ServiceArea.Area[] = [
+      asPartial<ServiceArea.Area>({ areaId: 1, mapId: null, areaInfo: asPartial({}) }),
+      asPartial<ServiceArea.Area>({ areaId: 2, mapId: null, areaInfo: asPartial({}) }),
+    ];
 
     const startCleaning = vi.fn(async () => {});
     const mp: any = { startCleaning };
 
-    const service = new MessageRoutingService(logger as any);
+    const service = new MessageRoutingService(logger);
     service.registerMessageDispatcher(duid, mp);
 
-    await service.startClean(duid, selected, supportedRooms, supportedRoutines as any);
+    await service.startClean(duid, selected, supportedRooms, supportedRoutines);
     expect(startCleaning).toHaveBeenCalled();
   });
 
   it('throws when getCleanModeData returns no data', async () => {
     const duid = 'dev-nodata';
     const mp: any = { getCleanModeData: vi.fn(async () => undefined) };
-    const service = new MessageRoutingService(logger as any);
+    const service = new MessageRoutingService(logger);
     service.registerMessageDispatcher(duid, mp);
     await expect(service.getCleanModeData(duid)).rejects.toThrow();
   });
@@ -73,13 +81,13 @@ describe('MessageRoutingService', () => {
   let mockDispatcher: ReturnType<typeof createMockDispatcher>;
 
   function createMockLogger() {
-    return {
+    return asPartial<AnsiLogger>({
       debug: vi.fn(),
       info: vi.fn(),
       warn: vi.fn(),
       error: vi.fn(),
       notice: vi.fn(),
-    } as unknown as AnsiLogger;
+    });
   }
 
   function createMockIotApi(): any {

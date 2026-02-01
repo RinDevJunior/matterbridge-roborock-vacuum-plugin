@@ -1,18 +1,19 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { RoborockService } from '../../../services/roborockService.js';
+import type { RoborockPluginPlatformConfig } from '../../../model/RoborockPluginPlatformConfig.js';
+import type { AnsiLogger } from 'matterbridge/logger';
+import { makeLogger, createMockLocalStorage } from '../../testUtils.js';
+import { localStorageMock } from '../../testData/localStorageMock.js';
+import { PlatformConfigManager as PlatformConfigManagerStatic } from '../../../platform/platformConfig.js';
 
 describe('RoborockService - Authentication', () => {
   let roborockService: RoborockService;
-  let mockLogger: any;
+  let mockLogger: AnsiLogger;
   let mockContainer: any;
   let mockAuthService: any;
 
-  beforeEach(() => {
-    mockLogger = {
-      debug: vi.fn(),
-      error: vi.fn(),
-      info: vi.fn(),
-    };
+  beforeEach(async () => {
+    mockLogger = makeLogger();
 
     mockAuthService = {
       authenticate2FAFlow: vi.fn(),
@@ -29,20 +30,43 @@ describe('RoborockService - Authentication', () => {
       setUserData: vi.fn(),
     };
 
-    const mockConfigManager = {
-      username: 'test@example.com',
-      password: 'password123',
-      verificationCode: undefined,
-      authenticationMethod: 'Password',
-    } as any;
+    const persist = createMockLocalStorage();
+
+    const PlatformConfigManager = PlatformConfigManagerStatic;
+    const config = {
+      authentication: { username: 'test@example.com', region: 'US', forceAuthentication: false, authenticationMethod: 'Password', password: 'password123' },
+      pluginConfiguration: {
+        whiteList: [],
+        enableServerMode: false,
+        enableMultipleMap: false,
+        sanitizeSensitiveLogs: false,
+        refreshInterval: 10,
+        debug: false,
+        unregisterOnShutdown: false,
+      },
+      advancedFeature: {
+        enableAdvancedFeature: false,
+        settings: {
+          showRoutinesAsRoom: false,
+          includeDockStationStatus: false,
+          forceRunAtDefault: false,
+          useVacationModeToSendVacuumToDock: false,
+          enableCleanModeMapping: false,
+          cleanModeSettings: {
+            vacuuming: { fanMode: 'Balanced', mopRouteMode: 'Standard' },
+            mopping: { waterFlowMode: 'Medium', mopRouteMode: 'Standard', distanceOff: 25 },
+            vacmop: { fanMode: 'Balanced', waterFlowMode: 'Medium', mopRouteMode: 'Standard', distanceOff: 25 },
+          },
+        },
+      },
+    } as Partial<RoborockPluginPlatformConfig> as RoborockPluginPlatformConfig;
+    const mockConfigManager = PlatformConfigManager.create(config, mockLogger as AnsiLogger);
 
     roborockService = new RoborockService(
       {
-        authenticateApiFactory: () => undefined as any,
-        iotApiFactory: () => undefined as any,
         refreshInterval: 10,
         baseUrl: 'https://api.roborock.com',
-        persist: {} as any,
+        persist: persist,
         configManager: mockConfigManager,
         container: mockContainer,
       },

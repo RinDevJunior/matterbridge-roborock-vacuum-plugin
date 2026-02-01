@@ -1,8 +1,10 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { AbstractClient } from '../../../roborockCommunication/routing/abstractClient.js';
-import { MessageContext, RequestMessage } from '../../../roborockCommunication/models/index.js';
+import { MessageContext, RequestMessage, UserData, ResponseMessage } from '../../../roborockCommunication/models/index.js';
 import { ChainedMessageListener } from '../../../roborockCommunication/routing/listeners/implementation/chainedMessageListener.js';
 import { PendingResponseTracker } from '../../../roborockCommunication/routing/services/pendingResponseTracker.js';
+import { createMockLogger, asPartial, asType, mkUser } from '../../helpers/testUtils.js';
+import { AbstractConnectionListener } from '../../../roborockCommunication/routing/listeners/abstractConnectionListener.js';
 
 class TestClient extends AbstractClient {
   protected clientName = 'TestClient';
@@ -30,22 +32,6 @@ class TestClient extends AbstractClient {
   }
 }
 
-function makeLogger() {
-  const calls: { error: string[]; notice: string[]; info: string[]; debug: string[] } = {
-    error: [],
-    notice: [],
-    info: [],
-    debug: [],
-  };
-  return {
-    error: (m: string) => calls.error.push(m),
-    notice: (m: string) => calls.notice.push(m),
-    info: (m: string) => calls.info.push(m),
-    debug: (m: string) => calls.debug.push(m),
-    __calls: calls,
-  } as any;
-}
-
 describe('AbstractClient', () => {
   let client: TestClient;
   let logger: any;
@@ -54,8 +40,8 @@ describe('AbstractClient', () => {
   let chainedMessageListener: ChainedMessageListener;
 
   beforeEach(() => {
-    logger = makeLogger();
-    const userdata: any = { rriot: { k: 'secretkey' } };
+    logger = createMockLogger();
+    const userdata = mkUser();
     context = new MessageContext(userdata);
     responseTracker = new PendingResponseTracker(logger);
     chainedMessageListener = new ChainedMessageListener(responseTracker, logger);
@@ -63,23 +49,30 @@ describe('AbstractClient', () => {
   });
 
   it('get resolves when responseTracker receives response', async () => {
-    const request = { messageId: 123, method: 'test_method' } as any;
-    const mockResponse = { data: 'response_data' } as any;
+    const request = asPartial<RequestMessage>({ messageId: 123, method: 'test_method' });
+    const mockResponse = asPartial<ResponseMessage>({
+      duid: 'DUID123',
+      header: asPartial({}),
+      get: () => 'response_data',
+      isForProtocol: () => true,
+      isForProtocols: () => true,
+      isForStatus: () => true,
+    });
 
     vi.spyOn(responseTracker, 'waitFor').mockResolvedValue(mockResponse);
 
-    const result = await client.get<any>('DUID123', request);
+    const result = await client.get<unknown>('DUID123', request);
     expect(result).toEqual(mockResponse);
   });
 
   it('get returns undefined when error occurs', async () => {
-    const request = { messageId: 456, method: 'failing_method' } as any;
+    const request = asPartial<RequestMessage>({ messageId: 456, method: 'failing_method' });
 
     vi.spyOn(responseTracker, 'waitFor').mockRejectedValue(new Error('test error'));
 
-    const result = await client.get<any>('DUID456', request);
+    const result = await client.get<unknown>('DUID456', request);
     expect(result).toBeUndefined();
-    expect(logger.__calls.error.some((m: string) => m.includes('test error'))).toBe(true);
+    expect(vi.mocked(logger.error).mock.calls.some((args: unknown[]) => String(args[0]).includes('test error'))).toBe(true);
   });
 
   it('registerDevice delegates to context', () => {
@@ -89,15 +82,15 @@ describe('AbstractClient', () => {
   });
 
   it('registerConnectionListener adds listener to chain', () => {
-    const listener = { onConnected: vi.fn() } as any;
+    const listener = asPartial<AbstractConnectionListener>({ onConnected: vi.fn() });
     client.registerConnectionListener(listener);
-    expect((client as any).connectionListener.listeners).toContain(listener);
+    expect(asType<TestClient>(client)['connectionListener']['listeners']).toContain(listener);
   });
 
   it('registerMessageListener adds listener to chain', () => {
-    const listener = { onMessage: vi.fn() } as any;
+    const listener = asPartial<{ onMessage: (...args: unknown[]) => void }>({ onMessage: vi.fn() });
     client.registerMessageListener(listener);
-    expect((client as any).chainedMessageListener.listeners).toContain(listener);
+    expect(asType<TestClient>(client)['chainedMessageListener']['listeners']).toContain(listener);
   });
 
   it('isConnected returns connection state', () => {

@@ -1,5 +1,10 @@
 import { RoomMap, MapInfo, RoomMapping } from '../core/application/models/index.js';
+import { Device } from '../roborockCommunication/models/index.js';
+import { DeviceModel } from '../roborockCommunication/models/deviceModel.js';
+import { DeviceCategory } from '../roborockCommunication/models/deviceCategory.js';
+import { UserData } from '../roborockCommunication/models/userData.js';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { asPartial } from './testUtils.js';
 
 describe('PlatformRunner.getRoomMapFromDevice', () => {
   let platform: any;
@@ -33,14 +38,49 @@ describe('PlatformRunner.getRoomMapFromDevice', () => {
   });
 
   it('returns RoomMap with roomData from getRoomMap if available', async () => {
-    const device = {
+    const userData: UserData = {
+      username: 'test',
+      uid: 'u1',
+      tokentype: 'Bearer',
+      token: 't',
+      rruid: 'rr',
+      region: 'us',
+      countrycode: 'US',
+      country: 'US',
+      nickname: 'n',
+      rriot: { u: 'u', s: 's', h: 'h', k: 'k', r: { r: 'r', a: 'a', m: 'm', l: 'l' } },
+    };
+
+    const device: Device = {
       duid: 'duid1',
+      name: 'TestVac',
+      sn: 'SN1',
+      serialNumber: 'SN1',
+      activeTime: 0,
+      createTime: 0,
+      localKey: 'lk',
+      pv: '1.0',
+      online: true,
+      productId: 'p1',
+      rrHomeId: 1,
+      fv: '1.0',
+      deviceStatus: {},
       rooms: [
         { id: 1, name: 'Kitchen' },
         { id: 2, name: 'Study' },
         { id: 3, name: 'Living room' },
         { id: 4, name: 'Bedroom' },
       ],
+      schema: [],
+      data: {
+        id: 'duid1',
+        firmwareVersion: '1.0',
+        serialNumber: 'SN1',
+        model: DeviceModel.QREVO_EDGE_5V1,
+        category: DeviceCategory.VacuumCleaner,
+        batteryLevel: 100,
+      },
+      store: { userData, localKey: 'lk', pv: '1.0', model: DeviceModel.QREVO_EDGE_5V1 },
     };
 
     platform.roborockService.getRoomMap.mockResolvedValue(
@@ -61,14 +101,14 @@ describe('PlatformRunner.getRoomMapFromDevice', () => {
       }),
     );
 
-    const result = await RoomMap.fromDeviceDirect(device as any, platform);
+    const result = await RoomMap.fromDeviceDirect(device, platform);
 
     expect(result).toBeInstanceOf(RoomMap);
     expect(result.rooms.length).toEqual(4);
   });
 
   it('returns RoomMap with roomData from getMapInfo if available (case 1)', async () => {
-    const device = {
+    const device = asPartial<Device>({
       duid: 'duid1',
       rooms: [
         { id: 1, name: 'Kitchen' },
@@ -76,7 +116,7 @@ describe('PlatformRunner.getRoomMapFromDevice', () => {
         { id: 3, name: 'Living room' },
         { id: 4, name: 'Bedroom' },
       ],
-    };
+    });
 
     const mapInfo = new MapInfo({
       max_multi_map: 1,
@@ -131,7 +171,7 @@ describe('PlatformRunner.getRoomMapFromDevice', () => {
     platform.roborockService.getRoomMap.mockResolvedValue(undefined);
     platform.roborockService.getMapInfo.mockResolvedValue(mapInfo);
 
-    const result = await RoomMap.fromDeviceDirect(device as any, platform);
+    const result = await RoomMap.fromDeviceDirect(device as Device, platform);
     expect(result).toBeInstanceOf(RoomMap);
     // expect(result.rooms.length).toEqual(4);
 
@@ -142,13 +182,13 @@ describe('PlatformRunner.getRoomMapFromDevice', () => {
       },
     };
 
-    const result1 = await RoomMap.fromDeviceDirect(device as any, platform);
+    const result1 = await RoomMap.fromDeviceDirect(device as Device, platform);
     expect(result1).toBeInstanceOf(RoomMap);
     // expect(result1.rooms.length).toEqual(4);
   });
 
   it('returns RoomMap with empty roomData from getMapInformation if available', async () => {
-    const device = {
+    const device = asPartial<Device>({
       duid: 'duid1',
       rooms: [
         { id: 1, name: 'Kitchen' },
@@ -156,7 +196,7 @@ describe('PlatformRunner.getRoomMapFromDevice', () => {
         { id: 3, name: 'Living room' },
         { id: 4, name: 'Bedroom' },
       ],
-    };
+    });
 
     const mapInfo = new MapInfo({
       max_multi_map: 4,
@@ -176,7 +216,7 @@ describe('PlatformRunner.getRoomMapFromDevice', () => {
     platform.roborockService.getRoomMap.mockResolvedValue(new RoomMap([]));
     platform.roborockService.getMapInfo.mockResolvedValue(mapInfo);
 
-    const result = await RoomMap.fromDeviceDirect(device as any, platform);
+    const result = await RoomMap.fromDeviceDirect(device as Device, platform);
     expect(result).toBeInstanceOf(RoomMap);
     // expect(result.rooms.length).toEqual(0);
 
@@ -187,13 +227,13 @@ describe('PlatformRunner.getRoomMapFromDevice', () => {
       },
     };
 
-    const result1 = await RoomMap.fromDeviceDirect(device as any, platform);
+    const result1 = await RoomMap.fromDeviceDirect(device as Device, platform);
     expect(result1).toBeInstanceOf(RoomMap);
     // expect(result1.rooms.length).toEqual(0);
   });
 
   it('returns RoomMap with roomData from getMapInformation if available', async () => {
-    const device = {
+    const device = asPartial<Device>({
       duid: 'duid1',
       rooms: [
         { id: 1, name: 'Kitchen' },
@@ -201,7 +241,7 @@ describe('PlatformRunner.getRoomMapFromDevice', () => {
         { id: 3, name: 'Living room' },
         { id: 4, name: 'Bedroom' },
       ],
-    };
+    });
 
     const mapInfo = new MapInfo({
       max_multi_map: 4,
@@ -228,7 +268,7 @@ describe('PlatformRunner.getRoomMapFromDevice', () => {
     platform.roborockService.getRoomMap.mockResolvedValue(new RoomMap([]));
     platform.roborockService.getMapInfo.mockResolvedValue(mapInfo);
 
-    const result = await RoomMap.fromDeviceDirect(device as any, platform);
+    const result = await RoomMap.fromDeviceDirect(device as Device, platform);
     expect(result).toBeInstanceOf(RoomMap);
     // expect(result.rooms.length).toEqual(4);
 
@@ -239,16 +279,16 @@ describe('PlatformRunner.getRoomMapFromDevice', () => {
       },
     };
 
-    const result1 = await RoomMap.fromDeviceDirect(device as any, platform);
+    const result1 = await RoomMap.fromDeviceDirect(device as Device, platform);
     expect(result1).toBeInstanceOf(RoomMap);
     // expect(result1.rooms.length).toEqual(4);
   });
 
   it('handles undefined tag in room data from getMapInfo', async () => {
-    const device = {
+    const device = asPartial<Device>({
       duid: 'duid1',
       rooms: [{ id: 16, name: 'Garage' }],
-    };
+    });
     const mapInfo = {
       allRooms: [
         {
@@ -265,7 +305,7 @@ describe('PlatformRunner.getRoomMapFromDevice', () => {
     platform.roborockService.getRoomMap.mockResolvedValue(undefined);
     platform.roborockService.getMapInfo.mockResolvedValue(mapInfo);
 
-    const result = await RoomMap.fromDeviceDirect(device as any, platform);
+    const result = await RoomMap.fromDeviceDirect(device, platform);
 
     expect(result).toBeUndefined();
     // expect(result).toBeInstanceOf(RoomMap);

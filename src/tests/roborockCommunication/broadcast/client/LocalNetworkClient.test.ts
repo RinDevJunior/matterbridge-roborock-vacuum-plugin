@@ -1,30 +1,41 @@
+import { EventEmitter } from 'node:events';
+
 // Extend globalThis for test-only properties
 declare global {
   var mockSocketInstance: any;
 
   var Sket: any;
 }
-import EventEmitter from 'node:events';
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { asPartial, asType } from '../../../helpers/testUtils.js';
 import { LocalNetworkClient } from '../../../../roborockCommunication/local/localClient.js';
-import { Protocol } from '../../../../roborockCommunication/models/index.js';
+import { Protocol, RequestMessage } from '../../../../roborockCommunication/models/index.js';
 import { ChainedMessageListener } from '../../../../roborockCommunication/routing/listeners/implementation/chainedMessageListener.js';
 import { PendingResponseTracker } from '../../../../roborockCommunication/routing/services/pendingResponseTracker.js';
+import { ProtocolVersion } from '../../../../roborockCommunication/enums/protocolVersion.js';
+import { ChunkBuffer } from '../../../../roborockCommunication/helper/chunkBuffer.js';
 
-vi.mock('node:net', async () => {
-  const { EventEmitter } = await import('node:events');
-  const actual = await import('node:net');
-  class Sket extends EventEmitter {
+vi.mock('node:net', () => {
+  class Sket {
     constructor() {
-      super();
       if (globalThis.mockSocketInstance) {
         return globalThis.mockSocketInstance;
       }
     }
+
+    // Minimal set of methods used by LocalNetworkClient tests
+    on() {}
+    once() {}
+    emit() {}
+    write() {}
+    destroy() {}
+    connect() {}
+    address() {
+      return { address: '127.0.0.1', port: 58867 };
+    }
   }
   globalThis.Sket = Sket;
   return {
-    ...actual,
     Socket: Sket,
   };
 });
@@ -67,15 +78,27 @@ describe('LocalNetworkClient', () => {
     mockChainedMessageListener = new ChainedMessageListener(mockResponseTracker, mockLogger);
 
     client = new LocalNetworkClient(mockLogger, mockContext, duid, ip, mockChainedMessageListener, mockResponseTracker);
+    Object.defineProperty(client, 'serializer', {
+      value: asPartial({ serialize: vi.fn().mockReturnValue({ buffer: Buffer.from([1, 2, 3]), messageId: 123 }) }),
+      writable: true,
+    });
+    Object.defineProperty(client, 'deserializer', {
+      value: asPartial({ deserialize: vi.fn().mockReturnValue('deserialized') }),
+      writable: true,
+    });
 
-    (client as any).serializer = { serialize: vi.fn().mockReturnValue({ buffer: Buffer.from([1, 2, 3]), messageId: 123 }) };
-    (client as any).deserializer = { deserialize: vi.fn().mockReturnValue('deserialized') };
-    (client as any).chainedMessageListener = { onMessage: vi.fn(), onResponse: vi.fn() };
-    (client as any).connectionListener = {
-      onConnected: vi.fn(),
-      onDisconnected: vi.fn(),
-      onError: vi.fn(),
-    };
+    Object.defineProperty(client, 'chainedMessageListener', {
+      value: asPartial({ onMessage: vi.fn(), onResponse: vi.fn() }),
+      writable: true,
+    });
+    Object.defineProperty(client, 'connectionListener', {
+      value: asPartial({
+        onConnected: vi.fn(),
+        onDisconnected: vi.fn(),
+        onError: vi.fn(),
+      }),
+      writable: true,
+    });
   });
 
   afterEach(() => {
@@ -90,7 +113,7 @@ describe('LocalNetworkClient', () => {
   it('should initialize fields in constructor', () => {
     expect(client.duid).toBe(duid);
     expect(client.ip).toBe(ip);
-    expect((client as any).messageIdSeq).toBeDefined();
+    expect(client['messageIdSeq']).toBeDefined();
   });
 
   it('connect() should return early if socket already exists', () => {
@@ -126,8 +149,8 @@ describe('LocalNetworkClient', () => {
   it('send() should log error if socket is not connected', async () => {
     client['socket'] = undefined;
     client['connected'] = false;
-    const req = { toLocalRequest: vi.fn(), secure: false, isForProtocol: vi.fn().mockReturnValue(false), version: '1.0', method: 'test' };
-    await client.send(duid, req as any);
+    const req = asPartial<RequestMessage>({ toLocalRequest: vi.fn(), secure: false, isForProtocol: vi.fn().mockReturnValue(false), version: '1.0', method: 'test' });
+    await client.send(duid, req);
     expect(mockLogger.error).toHaveBeenCalledWith(expect.stringContaining('socket is not online'));
     expect(mockSocket.write).not.toHaveBeenCalled();
   });
@@ -137,20 +160,28 @@ describe('LocalNetworkClient', () => {
     mockSocket.destroyed = false;
     client['socket'] = mockSocket;
     client['connected'] = true;
-    const req = { toLocalRequest: vi.fn().mockReturnValue({}), secure: false, isForProtocol: vi.fn().mockReturnValue(false), version: '1.0', method: 'test' };
-    await client.send(duid, req as any);
+    const req = asPartial<RequestMessage>({
+      toLocalRequest: vi.fn().mockReturnValue({}),
+      secure: false,
+      isForProtocol: vi.fn().mockReturnValue(false),
+      version: '1.0',
+      method: 'test',
+    });
+    await client.send(duid, req);
     expect(client['serializer'].serialize).toHaveBeenCalled();
     expect(mockSocket.write).toHaveBeenCalledWith(expect.any(Buffer));
     expect(mockLogger.debug).toHaveBeenCalled();
-    // Ensure waitFor is called if send logic expects it (if not, this will pass regardless)
-    // expect((client as any)._mockSyncMessageListener.waitFor).toHaveBeenCalled();
   });
 
   it('onConnect() should set connected, log, send hello, set ping, call onConnected', async () => {
     client['socket'] = mockSocket;
     vi.useFakeTimers();
-    const trySendHelloSpy = vi.spyOn(client as any, 'trySendHelloRequest').mockResolvedValue(undefined);
-    await (client as any).onConnect();
+    const trySendHelloSpy = vi.fn().mockResolvedValue(undefined);
+    Object.defineProperty(client, 'trySendHelloRequest', {
+      value: trySendHelloSpy,
+      writable: true,
+    });
+    await client['onConnect']();
     expect(mockLogger.debug).toHaveBeenCalled();
     expect(trySendHelloSpy).toHaveBeenCalled();
   });
@@ -160,7 +191,7 @@ describe('LocalNetworkClient', () => {
     client['pingInterval'] = setInterval(() => {
       vi.fn();
     }, 1000);
-    await (client as any).onDisconnect();
+    await client['onDisconnect'](false);
     expect(mockLogger.info).toHaveBeenCalled();
     expect(client['connected']).toBe(false);
     expect(mockSocket.destroy).toHaveBeenCalled();
@@ -171,14 +202,14 @@ describe('LocalNetworkClient', () => {
   it('onError() should log, set connected false, destroy socket, call onDisconnected', async () => {
     client['socket'] = mockSocket;
     client['connected'] = false;
-    await (client as any).onError(new Error('fail'));
+    await client['onError'](new Error('fail'));
     expect(mockLogger.error).toHaveBeenCalledWith(expect.stringContaining(' [LocalNetworkClient]: Socket error for'));
     expect(client['connectionListener'].onDisconnected).toHaveBeenCalledWith('duid1', expect.stringContaining('fail'));
   });
 
   it('onMessage() should log debug if message is empty', async () => {
     client['socket'] = mockSocket;
-    await (client as any).onMessage(Buffer.alloc(0));
+    await client['onMessage'](Buffer.alloc(0));
     expect(mockLogger.debug).toHaveBeenCalledWith('[LocalNetworkClient] received empty message from socket.');
   });
 
@@ -186,13 +217,13 @@ describe('LocalNetworkClient', () => {
     client['socket'] = mockSocket;
     // Compose a buffer with a single segment of length 3 (after 4 bytes)
     const payload = Buffer.from([0, 0, 0, 3, 10, 20, 30]);
-    (client as any).isMessageComplete = vi.fn().mockReturnValue(true);
-    (client as any).buffer = {
+    client['isMessageComplete'] = vi.fn().mockReturnValue(true);
+    client['buffer'] = asPartial<ChunkBuffer>({
       append: vi.fn(),
       get: vi.fn().mockReturnValue(payload),
       reset: vi.fn(),
-    };
-    await (client as any).onMessage(payload);
+    });
+    await client['onMessage'](payload);
     expect(client['deserializer'].deserialize).toHaveBeenCalled();
     expect(client['chainedMessageListener'].onMessage).toHaveBeenCalledWith('deserialized');
   });
@@ -200,18 +231,18 @@ describe('LocalNetworkClient', () => {
   it('isMessageComplete() should return true for complete buffer', () => {
     // 4 bytes length + 3 bytes payload
     const buf = Buffer.from([0, 0, 0, 3, 1, 2, 3]);
-    expect((client as any).isMessageComplete(buf)).toBe(true);
+    expect(client['isMessageComplete'](buf)).toBe(true);
   });
 
   it('isMessageComplete() should return false for incomplete buffer', () => {
     // 4 bytes length + only 2 bytes payload
     const buf = Buffer.from([0, 0, 0, 3, 1, 2]);
-    expect((client as any).isMessageComplete(buf)).toBe(false);
+    expect(client['isMessageComplete'](buf)).toBe(false);
   });
 
   it('wrapWithLengthData() should prepend length', () => {
     const data = Buffer.from([1, 2, 3]);
-    const result = (client as any).wrapWithLengthData(data);
+    const result = client['wrapWithLengthData'](data);
     expect(result.readUInt32BE(0)).toBe(3);
     expect(result.slice(4).equals(data)).toBe(true);
   });
@@ -223,7 +254,7 @@ describe('LocalNetworkClient', () => {
     client['connected'] = true;
     client['pingResponseListener'].waitFor = vi.fn().mockResolvedValue({ header: { nonce: 123, version: '1.0' } });
     const sendSpy = vi.spyOn(client, 'send').mockResolvedValue(undefined);
-    await (client as any).sendHelloMessage('1.0');
+    await client['sendHelloMessage'](ProtocolVersion.V1);
     expect(sendSpy).toHaveBeenCalledWith(duid, expect.objectContaining({ protocol: Protocol.hello_request }));
   });
 
@@ -233,7 +264,7 @@ describe('LocalNetworkClient', () => {
     client['socket'] = mockSocket;
     client['connected'] = true;
     const sendSpy = vi.spyOn(client, 'send').mockResolvedValue(undefined);
-    await (client as any).sendPingRequest();
+    await client['sendPingRequest']();
     expect(sendSpy).toHaveBeenCalledWith(duid, expect.objectContaining({ protocol: Protocol.ping_request }));
   });
 
@@ -242,14 +273,14 @@ describe('LocalNetworkClient', () => {
   it('send() should handle when socket exists but not connected', async () => {
     client['socket'] = mockSocket;
     client['connected'] = false;
-    const req = {
+    const req = asPartial<RequestMessage>({
       toLocalRequest: vi.fn().mockReturnValue({ protocol: Protocol.ping_request }),
       secure: false,
       isForProtocol: vi.fn().mockReturnValue(false),
       version: '1.0',
       method: 'test',
-    };
-    await client.send(duid, req as any);
+    });
+    await client.send(duid, req);
     expect(mockLogger.error).toHaveBeenCalledWith(expect.stringContaining('socket is not online'));
     expect(mockSocket.write).not.toHaveBeenCalled();
   });
@@ -257,21 +288,21 @@ describe('LocalNetworkClient', () => {
   it('send() should handle when connected but socket is undefined', async () => {
     client['socket'] = undefined;
     client['connected'] = true;
-    const req = {
+    const req = asPartial<RequestMessage>({
       toLocalRequest: vi.fn().mockReturnValue({ protocol: Protocol.ping_request }),
       secure: false,
       isForProtocol: vi.fn().mockReturnValue(false),
       version: '1.0',
       method: 'test',
-    };
-    await client.send(duid, req as any);
+    });
+    await client.send(duid, req);
     expect(mockLogger.error).toHaveBeenCalledWith(expect.stringContaining('socket is not online'));
   });
 
   it('onDisconnect() should handle when socket already destroyed', async () => {
     client['socket'] = undefined;
     client['pingInterval'] = setInterval(() => vi.fn(), 1000);
-    await (client as any).onDisconnect(false);
+    await client['onDisconnect'](false);
     expect(client['connected']).toBe(false);
     expect(client['connectionListener'].onDisconnected).toHaveBeenCalled();
   });
@@ -279,7 +310,7 @@ describe('LocalNetworkClient', () => {
   it('onDisconnect() should handle when pingInterval is not set', async () => {
     client['socket'] = mockSocket;
     client['pingInterval'] = undefined;
-    await (client as any).onDisconnect(true);
+    await client['onDisconnect'](true);
     expect(mockSocket.destroy).toHaveBeenCalled();
     expect(mockLogger.info).toHaveBeenCalledWith(expect.stringContaining('Had error: true'));
   });
@@ -287,7 +318,7 @@ describe('LocalNetworkClient', () => {
   it('onMessage() should return early if socket is undefined', async () => {
     client['socket'] = undefined;
     const payload = Buffer.from([0, 0, 0, 3, 10, 20, 30]);
-    await (client as any).onMessage(payload);
+    await client['onMessage'](payload);
     expect(client['chainedMessageListener'].onMessage).not.toHaveBeenCalled();
   });
 
@@ -297,16 +328,16 @@ describe('LocalNetworkClient', () => {
     const buffer = Buffer.concat([
       Buffer.from([0, 0, 0, 17]), // length = 17
       Buffer.alloc(17, 0xff), // 17 bytes of data
-      Buffer.from([0, 0, 0, 3]), // second segment length = 3
+      Buffer.from([0, 0, 0, 3]), // second segment length = 3,
       Buffer.from([10, 20, 30]), // 3 bytes of data
     ]);
-    (client as any).isMessageComplete = vi.fn().mockReturnValue(true);
-    (client as any).buffer = {
+    client['isMessageComplete'] = vi.fn().mockReturnValue(true);
+    client['buffer'] = asPartial<ChunkBuffer>({
       append: vi.fn(),
       get: vi.fn().mockReturnValue(buffer),
       reset: vi.fn(),
-    };
-    await (client as any).onMessage(buffer);
+    });
+    await client['onMessage'](buffer);
     // Should process only the second segment (skip length 17)
     expect(client['deserializer'].deserialize).toHaveBeenCalledTimes(1);
   });
@@ -314,30 +345,35 @@ describe('LocalNetworkClient', () => {
   it('onMessage() should handle deserialization error', async () => {
     client['socket'] = mockSocket;
     const payload = Buffer.from([0, 0, 0, 3, 10, 20, 30]);
-    (client as any).isMessageComplete = vi.fn().mockReturnValue(true);
-    (client as any).buffer = {
+    client['isMessageComplete'] = vi.fn().mockReturnValue(true);
+    client['buffer'] = asPartial<ChunkBuffer>({
       append: vi.fn(),
       get: vi.fn().mockReturnValue(payload),
       reset: vi.fn(),
-    };
-    (client as any).deserializer.deserialize = vi.fn().mockImplementation(() => {
-      throw new Error('Deserialization failed');
     });
-    await (client as any).onMessage(payload);
+    Object.defineProperty(client, 'deserializer', {
+      value: asPartial({
+        deserialize: vi.fn().mockImplementation(() => {
+          throw new Error('Deserialization failed');
+        }),
+      }),
+      writable: true,
+    });
+    await client['onMessage'](payload);
     expect(mockLogger.error).toHaveBeenCalledWith(expect.stringContaining('unable to process message'));
   });
 
   it('onMessage() should handle buffer processing error', async () => {
     client['socket'] = mockSocket;
     const payload = Buffer.from([0, 0, 0, 3, 10, 20, 30]);
-    (client as any).buffer = {
+    client['buffer'] = asPartial<ChunkBuffer>({
       append: vi.fn().mockImplementation(() => {
         throw new Error('Buffer append failed');
       }),
       get: vi.fn(),
       reset: vi.fn(),
-    };
-    await (client as any).onMessage(payload);
+    });
+    await client['onMessage'](payload);
     expect(mockLogger.error).toHaveBeenCalledWith(expect.stringContaining('read socket buffer error'));
   });
 
@@ -345,12 +381,12 @@ describe('LocalNetworkClient', () => {
   // so these tests have been removed
 
   it('onTimeout() should log timeout error', async () => {
-    await (client as any).onTimeout();
+    await client['onTimeout']();
     expect(mockLogger.error).toHaveBeenCalledWith(expect.stringContaining('timed out'));
   });
 
   it('onEnd() should log socket ended', async () => {
-    await (client as any).onEnd();
+    await client['onEnd']();
     expect(mockLogger.debug).toHaveBeenCalledWith(expect.stringContaining('socket ended'));
   });
 

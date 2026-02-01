@@ -1,12 +1,13 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { ChainedMessageListener } from '../../../../../roborockCommunication/routing/listeners/implementation/chainedMessageListener.js';
 import { PendingResponseTracker } from '../../../../../roborockCommunication/routing/services/pendingResponseTracker.js';
-import { makeLogger } from '../../../../testUtils.js';
+import { makeLogger, asPartial } from '../../../../testUtils.js';
+import { HeaderMessage, ResponseMessage } from '../../../../../roborockCommunication/models/index.js';
 
 describe('ChainedMessageListener', () => {
   let chained: ChainedMessageListener;
   let listener1: { onMessage: ReturnType<typeof vi.fn<(message: any) => Promise<void>>> }, listener2: { onMessage: ReturnType<typeof vi.fn<(message: any) => Promise<void>>> };
-  const message = { foo: 'bar' } as any;
+  const message = asPartial<ResponseMessage>({ duid: 'test-duid', header: asPartial<HeaderMessage>({}), get: () => undefined });
 
   const logger = makeLogger();
   const responseTracker = new PendingResponseTracker(logger);

@@ -7,6 +7,7 @@ import { NotifyMessageTypes } from '../../types/notifyMessageTypes.js';
 import { MessageProcessor } from '../../roborockCommunication/mqtt/messageProcessor.js';
 import { Device } from '../../roborockCommunication/models/index.js';
 import { AbstractMessageDispatcher } from '../../roborockCommunication/protocol/dispatcher/abstractMessageDispatcher.js';
+import { createMockLogger, asPartial, asType } from '../helpers/testUtils.js';
 
 describe('PollingService', () => {
   let service: PollingService;
@@ -26,37 +27,32 @@ describe('PollingService', () => {
     vi.clearAllMocks();
     vi.useFakeTimers();
 
-    mockLogger = {
-      debug: vi.fn(),
-      notice: vi.fn(),
-      warn: vi.fn(),
-      error: vi.fn(),
-      info: vi.fn(),
-    } as unknown as AnsiLogger;
+    mockLogger = createMockLogger();
+    mockMessageProcessor = asPartial<MessageProcessor>({
+      registerHandler: vi.fn(),
+    });
+    // logger is not a public member on MessageProcessor; assign on typed any for tests
+    Object.defineProperty(mockMessageProcessor, 'logger', {
+      value: mockLogger,
+      writable: true,
+    });
 
-    mockMessageProcessor = {
-      logger: mockLogger,
-      registerListener: vi.fn(),
-    } as unknown as MessageProcessor;
-
-    mockMessageDispatcher = {
+    mockMessageDispatcher = asPartial<AbstractMessageDispatcher>({
       getDeviceStatus: vi.fn(async (_duid: string) => undefined),
-      startCleanning: vi.fn(),
       startRoomCleaning: vi.fn(),
       pauseCleaning: vi.fn(),
       resumeCleaning: vi.fn(),
       stopCleaning: vi.fn(),
       goHome: vi.fn(),
       findMyRobot: vi.fn(),
-      getRooms: vi.fn(),
+      getRoomMap: vi.fn(),
       sendCustomMessage: vi.fn(),
       getCustomMessage: vi.fn(),
       getCleanModeData: vi.fn(),
       changeCleanMode: vi.fn(),
-      logger: mockLogger,
-    } as unknown as AbstractMessageDispatcher;
+    });
 
-    mockMessageRoutingService = {
+    mockMessageRoutingService = asPartial<MessageRoutingService>({
       getMessageProcessor: vi.fn().mockReturnValue(mockMessageProcessor),
       getMessageDispatcher: vi.fn().mockReturnValue(mockMessageDispatcher),
       getCleanModeData: vi.fn(),
@@ -70,17 +66,9 @@ describe('PollingService', () => {
       customGet: vi.fn(),
       customSend: vi.fn(),
       registerMessageProcessor: vi.fn(),
-      setMqttAlwaysOn: vi.fn(),
       setIotApi: vi.fn(),
       clearAll: vi.fn(),
-      messageProcessorMap: new Map(),
-      mqttAlwaysOnDevices: new Set(),
-      logger: mockLogger,
-      isRequestSecure: vi.fn(),
-      getMqttClient: vi.fn(),
-      getMqttAlwaysOn: vi.fn(),
-    } as unknown as MessageRoutingService;
-
+    });
     service = new PollingService(TEST_REFRESH_INTERVAL, mockLogger, mockMessageRoutingService);
   });
 

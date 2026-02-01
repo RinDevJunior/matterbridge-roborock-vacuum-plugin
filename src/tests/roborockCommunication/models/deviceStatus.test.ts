@@ -39,7 +39,7 @@ describe('DeviceStatus model', () => {
       },
     ];
 
-    const ds = new DeviceStatus(msg as any);
+    const ds = new DeviceStatus(msg);
     expect(ds.getBattery()).toBe(75);
     expect(ds.getVacuumErrorCode()).toBe(VacuumErrorCode.None);
     expect(ds.getDockErrorCode()).toBe(DockErrorCode.None);
@@ -84,7 +84,7 @@ describe('DeviceStatus model', () => {
       },
     ];
 
-    const ds = new DeviceStatus(msg as any);
+    const ds = new DeviceStatus(msg);
     expect(ds.getBattery()).toBe(10);
     expect(ds.getVacuumErrorCode()).toBe(VacuumErrorCode.RobotTrapped);
     expect(ds.getDockErrorCode()).toBe(DockErrorCode.DuctBlockage);

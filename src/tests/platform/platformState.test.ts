@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { PlatformState, DeviceState, HomeData } from '../../platform/platformState.js';
+import { asType } from '../helpers/testUtils.js';
 
 describe('PlatformState', () => {
   let state: PlatformState;
@@ -95,7 +96,7 @@ describe('PlatformState', () => {
       expect(all.get('a')).toEqual({ foo: 1 });
       expect(all.get('b')).toEqual({ foo: 2 });
       // Should be a new map instance
-      expect(all).not.toBe((state as any).deviceStates);
+      expect(all).not.toBe(state['deviceStates']);
     });
   });
 });

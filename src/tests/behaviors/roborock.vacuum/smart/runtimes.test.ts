@@ -1,4 +1,5 @@
 import { describe, it, expect } from 'vitest';
+import { asType } from '../../../testUtils.js';
 import { CleanModeDisplayLabel, CleanModeLabelInfo, smartCleanModeConfigs } from '../../../../behaviors/roborock.vacuum/core/cleanModeConfig.js';
 import { createSmartModeResolver } from '../../../../behaviors/roborock.vacuum/core/modeResolver.js';
 import { CleanModeSetting } from '../../../../behaviors/roborock.vacuum/core/CleanModeSetting.js';
@@ -8,7 +9,7 @@ const smartModeResolver = createSmartModeResolver(smartCleanModeConfigs);
 
 describe('getCurrentCleanModeSmart', () => {
   it('returns undefined if input is undefined', () => {
-    expect(smartModeResolver.resolve(undefined as any)).toBeUndefined();
+    expect(smartModeResolver.resolve(asType<CleanModeSetting>(undefined))).toBeUndefined();
   });
 
   it('returns the correct key if an exact CleanSetting match exists', () => {

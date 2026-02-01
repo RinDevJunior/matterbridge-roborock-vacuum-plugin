@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { V01MessageDispatcher } from '../../../../roborockCommunication/protocol/dispatcher/V01MessageDispatcher.js';
+import { asType } from '../../../testUtils.js';
 // --- Mock Factories ---
 function createMockLogger() {
   return {
@@ -33,7 +34,7 @@ describe('V01MessageDispatcher', () => {
   beforeEach(() => {
     logger = createMockLogger();
     client = createMockClient();
-    dispatcher = new V01MessageDispatcher(logger as any, client);
+    dispatcher = new V01MessageDispatcher(asType(logger), client);
   });
 
   afterEach(() => {
@@ -162,16 +163,16 @@ describe('V01MessageDispatcher', () => {
 
   describe('sendCustomMessage', () => {
     it('should send a custom message', async () => {
-      const def = { method: 'foo' } as any;
-      await dispatcher.sendCustomMessage(duid, def);
+      const def = { method: 'foo' };
+      await dispatcher.sendCustomMessage(duid, asType(def));
       expect(client.send).toHaveBeenCalled();
     });
   });
 
   describe('getCustomMessage', () => {
     it('should get a custom message', async () => {
-      const def = { method: 'foo' } as any;
-      await dispatcher.getCustomMessage(duid, def);
+      const def = { method: 'foo' };
+      await dispatcher.getCustomMessage(duid, asType(def));
       expect(client.get).toHaveBeenCalled();
     });
   });

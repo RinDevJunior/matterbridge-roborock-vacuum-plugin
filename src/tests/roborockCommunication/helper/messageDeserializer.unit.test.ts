@@ -3,7 +3,8 @@ import { AnsiLogger } from 'matterbridge/logger';
 import { MessageContext, Protocol } from '../../../roborockCommunication/models/index.js';
 import { MessageDeserializer } from '../../../roborockCommunication/protocol/deserializers/messageDeserializer.js';
 
-const mkUser = () => ({ rriot: { k: 'test-key' } }) as any;
+import { asType, mkUser } from '../../helpers/testUtils.js';
+import type { UserData } from '../../../roborockCommunication/models/index.js';
 
 function buildHeaderBuffer(version: string, seq: number, nonce: number, timestamp: number, protocol: number): Buffer {
   const buf = Buffer.alloc(3 + 4 + 4 + 4 + 2);
@@ -17,8 +18,8 @@ function buildHeaderBuffer(version: string, seq: number, nonce: number, timestam
 
 describe('MessageDeserializer (basic)', () => {
   it('returns ResponseMessage for protocols without payload', () => {
-    const ctx = new MessageContext(mkUser());
-    const logger = { notice: vi.fn(), error: vi.fn(), debug: vi.fn() } as unknown as AnsiLogger;
+    const ctx = new MessageContext(asType<UserData>(mkUser()));
+    const logger = asType<AnsiLogger>({ notice: vi.fn(), error: vi.fn(), debug: vi.fn() });
     const d = new MessageDeserializer(ctx, logger);
     const duid = 'DTEST';
     const headerBuf = buildHeaderBuffer('1.0', 1, 2, 3, Protocol.hello_request);

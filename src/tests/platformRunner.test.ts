@@ -8,7 +8,12 @@ import path from 'node:path';
 import { RoborockVacuumCleaner } from '../types/roborockVacuumCleaner.js';
 import * as initialDataIndex from '../initialData/index.js';
 import { RvcOperationalState } from 'matterbridge/matter/clusters';
-import { Home } from '../roborockCommunication/models/index.js';
+import { Device, DeviceData, Home } from '../roborockCommunication/models/index.js';
+import { DeviceModel } from '../roborockCommunication/models/deviceModel.js';
+import { DeviceCategory } from '../roborockCommunication/models/deviceCategory.js';
+import { UserData } from '../roborockCommunication/models/userData.js';
+import { asPartial, createMockLogger, createMockDeviceRegistry, createMockConfigManager, createMockRoborockService } from './testUtils.js';
+import { RoborockService } from '../services/roborockService.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -42,42 +47,20 @@ describe('PlatformRunner.updateRobot', () => {
     const robots = new Map<string, RoborockVacuumCleaner>();
     robots.set('123456', robotMock);
 
-    // Mock registry with robotsMap and getRobot
-    const registry = {
-      robotsMap: robots,
-      getRobot: (duid: string) => robots.get(duid),
-      hasDevices: vi.fn(() => true),
-      registerRobot: vi.fn(),
-    };
+    // Mock registry with robots map
+    const registry = createMockDeviceRegistry({}, robots);
 
-    // Mock configManager with isMultipleMapEnabled
-    const configManager = {
-      get isMultipleMapEnabled() {
-        return false;
-      },
-    };
+    // Mock configManager
+    const configManager = createMockConfigManager({ isMultipleMapEnabled: false });
 
-    roborockServiceMock = {
-      getHomeDataForUpdating: vi.fn(),
-      getSupportedAreas: vi.fn().mockReturnValue([]),
-      getSupportedAreasIndexMap: vi.fn().mockReturnValue(new Map()),
-      getSelectedAreas: vi.fn().mockReturnValue([]),
-      getMapInfo: vi.fn().mockResolvedValue({ maps: [], allRooms: [] }),
-      getRoomMap: vi.fn().mockResolvedValue(new Map()),
-    };
+    roborockServiceMock = createMockRoborockService();
 
-    platform = {
-      robots: robots,
-      log: {
-        error: vi.fn(),
-        debug: vi.fn(),
-        notice: vi.fn(),
-      },
-      registry: registry,
-      configManager: configManager,
-      enableExperimentalFeature: undefined,
+    platform = asPartial<RoborockMatterbridgePlatform>({
+      log: createMockLogger(),
+      registry,
+      configManager,
       roborockService: roborockServiceMock,
-    } as unknown as RoborockMatterbridgePlatform;
+    });
 
     runner = new PlatformRunner(platform);
   });
@@ -108,9 +91,49 @@ describe('PlatformRunner.updateRobot', () => {
 
   it('should log error if Robot or RoborockService not found in homeData', async () => {
     const homeData: Home = {
-      devices: [{ duid: 'notfound', data: {}, productId: 1 }],
+      id: 0,
+      name: 'TestHome',
       products: [],
-    } as any;
+      devices: [
+        {
+          duid: 'notfound',
+          name: 'Missing',
+          sn: 'SN',
+          serialNumber: 'SN',
+          activeTime: 0,
+          createTime: 0,
+          localKey: '',
+          pv: '',
+          online: false,
+          productId: '',
+          rrHomeId: 0,
+          fv: '',
+          deviceStatus: {},
+          rooms: [],
+          schema: [],
+          data: { id: 'notfound', firmwareVersion: '', serialNumber: 'SN', model: DeviceModel.Q7_MAX, category: DeviceCategory.VacuumCleaner, batteryLevel: 100 },
+          store: {
+            userData: {
+              username: 'test',
+              uid: 'uid',
+              tokentype: '',
+              token: '',
+              rruid: '',
+              region: 'US',
+              countrycode: '',
+              country: '',
+              nickname: 'nick',
+              rriot: { u: '', s: '', h: '', k: '', r: { r: '', a: '', m: '', l: '' } },
+            },
+            localKey: '',
+            pv: '',
+            model: DeviceModel.Q7_MAX,
+          },
+        },
+      ],
+      receivedDevices: [],
+      rooms: [],
+    } as Home;
 
     await runner.updateRobot(NotifyMessageTypes.HomeData, homeData);
 
@@ -121,10 +144,47 @@ describe('PlatformRunner.updateRobot', () => {
 
   it('should log error if device data is undefined', async () => {
     robotMock.device.data = undefined;
+    const userData: UserData = {
+      username: 'test',
+      uid: 'u1',
+      tokentype: 'Bearer',
+      token: 't',
+      rruid: 'rr',
+      region: 'us',
+      countrycode: 'US',
+      country: 'US',
+      nickname: 'n',
+      rriot: { u: 'u', s: 's', h: 'h', k: 'k', r: { r: 'r', a: 'a', m: 'm', l: 'l' } },
+    };
+
     const homeData: Home = {
-      devices: [{ duid: '123456', data: {}, productId: 1 }],
+      id: 0,
+      name: 'TestHome',
       products: [],
-    } as any;
+      devices: [
+        {
+          duid: '123456',
+          name: 'TestVac',
+          sn: 'SN123',
+          serialNumber: 'SN123',
+          activeTime: 0,
+          createTime: 0,
+          localKey: '',
+          pv: '',
+          online: false,
+          productId: '',
+          rrHomeId: 0,
+          fv: '',
+          deviceStatus: {},
+          rooms: [],
+          schema: [],
+          data: { id: '123456', firmwareVersion: '', serialNumber: 'SN123', model: DeviceModel.QREVO_EDGE_5V1, category: DeviceCategory.VacuumCleaner, batteryLevel: 100 },
+          store: { userData, localKey: '', pv: '', model: DeviceModel.QREVO_EDGE_5V1 },
+        },
+      ],
+      receivedDevices: [],
+      rooms: [],
+    };
 
     await runner.updateRobot(NotifyMessageTypes.HomeData, homeData);
 
@@ -135,23 +195,51 @@ describe('PlatformRunner.updateRobot', () => {
   it('should not update attributes if state or matterState is missing', async () => {
     robotMock.device.data = { model: 'test-model' };
     robotMock.serialNumber = '123456';
+    const userData: UserData = {
+      username: 'test',
+      uid: 'u1',
+      tokentype: 'Bearer',
+      token: 't',
+      rruid: 'rr',
+      region: 'us',
+      countrycode: 'US',
+      country: 'US',
+      nickname: 'n',
+      rriot: { u: 'u', s: 's', h: 'h', k: 'k', r: { r: 'r', a: 'a', m: 'm', l: 'l' } },
+    };
+
     const homeData: Home = {
+      id: 0,
+      name: 'TestHome',
       devices: [
         {
           duid: '123456',
-          data: {
-            model: 'test-model',
-          },
-          productId: 1,
+          name: 'TestVac',
+          sn: 'SN123',
+          serialNumber: 'SN123',
+          activeTime: 0,
+          createTime: 0,
+          localKey: '',
+          pv: '',
+          online: false,
+          productId: 'prod',
+          rrHomeId: 0,
+          fv: '',
           deviceStatus: {
             122: 50,
           },
+          rooms: [],
+          schema: [],
+          data: { id: '123456', firmwareVersion: '', serialNumber: 'SN123', model: DeviceModel.QREVO_EDGE_5V1, category: DeviceCategory.VacuumCleaner, batteryLevel: 100 },
+          store: { userData, localKey: '', pv: '', model: DeviceModel.QREVO_EDGE_5V1 },
         },
       ],
       products: [
         {
-          id: 1,
+          id: '1',
+          name: 'Test Product',
           model: 'test-model',
+          category: 'vacuum',
           schema: [
             {
               id: 122,
@@ -164,7 +252,9 @@ describe('PlatformRunner.updateRobot', () => {
           ],
         },
       ],
-    } as any;
+      receivedDevices: [],
+      rooms: [],
+    };
 
     await runner.updateRobot(NotifyMessageTypes.HomeData, homeData);
 
@@ -188,7 +278,7 @@ describe('PlatformRunner.updateRobot', () => {
     robotMock.device.data = { model: 'test-model' };
     robotMock.serialNumber = '123456';
 
-    const updateFromMQTTMessageSpy = vi.spyOn(runner as any, 'updateFromMQTTMessage');
+    const updateFromMQTTMessageSpy = vi.spyOn(runner, 'updateFromMQTTMessage');
     const batteryMessage = { percentage: 70, duid: '123456' };
 
     await runner.updateRobot(NotifyMessageTypes.BatteryUpdate, batteryMessage);
@@ -246,8 +336,8 @@ describe('PlatformRunner.updateRobot', () => {
     robotMock.device.data = { model: 'test-model' };
     robotMock.serialNumber = '123456';
 
-    // Use a message type that hits the default case
-    await runner.updateFromMQTTMessage(999 as any, {}, '123456');
+    // Use a battery message with no percentage so it won't trigger attribute updates
+    await runner.updateFromMQTTMessage(NotifyMessageTypes.BatteryUpdate, {}, '123456');
 
     // Should complete without error
     expect(robotMock.updateAttribute).not.toHaveBeenCalled();
@@ -259,12 +349,12 @@ describe('PlatformRunner.requestHomeData', () => {
   let runner: PlatformRunner;
 
   it('should return early if no robots exist', async () => {
-    platform = {
-      registry: { robotsMap: new Map() },
-      rrHomeId: '12345',
-      roborockService: { getHomeDataForUpdating: vi.fn() },
-      log: { error: vi.fn(), debug: vi.fn(), notice: vi.fn() },
-    } as unknown as RoborockMatterbridgePlatform;
+    platform = asPartial<RoborockMatterbridgePlatform>({
+      registry: createMockDeviceRegistry({}, new Map()),
+      rrHomeId: 12345,
+      roborockService: createMockRoborockService({ getHomeDataForUpdating: vi.fn() }),
+      log: createMockLogger(),
+    });
 
     runner = new PlatformRunner(platform);
     await runner.requestHomeData();
@@ -273,12 +363,13 @@ describe('PlatformRunner.requestHomeData', () => {
   });
 
   it('should return early if rrHomeId is not set (undefined)', async () => {
-    platform = {
-      registry: { robotsMap: new Map([['123', {} as any]]) },
+    const placeholderRobot = asPartial<RoborockVacuumCleaner>({ serialNumber: '123', device: asPartial<Device>({ data: asPartial<DeviceData>({}) }), updateAttribute: vi.fn() });
+    platform = asPartial<RoborockMatterbridgePlatform>({
+      registry: createMockDeviceRegistry({}, new Map([['123', placeholderRobot]])),
       rrHomeId: undefined,
-      roborockService: { getHomeDataForUpdating: vi.fn() },
-      log: { error: vi.fn(), debug: vi.fn(), notice: vi.fn() },
-    } as unknown as RoborockMatterbridgePlatform;
+      roborockService: createMockRoborockService({ getHomeDataForUpdating: vi.fn() }),
+      log: createMockLogger(),
+    });
 
     runner = new PlatformRunner(platform);
     await runner.requestHomeData();
@@ -287,12 +378,13 @@ describe('PlatformRunner.requestHomeData', () => {
   });
 
   it('should return early if rrHomeId is falsy (empty string)', async () => {
-    platform = {
-      registry: { robotsMap: new Map([['123', {} as any]]) },
-      rrHomeId: '',
-      roborockService: { getHomeDataForUpdating: vi.fn() },
-      log: { error: vi.fn(), debug: vi.fn(), notice: vi.fn() },
-    } as unknown as RoborockMatterbridgePlatform;
+    const placeholderRobot = asPartial<RoborockVacuumCleaner>({ serialNumber: '123', device: asPartial<Device>({ data: asPartial<DeviceData>({}) }), updateAttribute: vi.fn() });
+    platform = asPartial<RoborockMatterbridgePlatform>({
+      registry: createMockDeviceRegistry({}, new Map([['123', placeholderRobot]])),
+      rrHomeId: undefined,
+      roborockService: asPartial<RoborockService>({ getHomeDataForUpdating: vi.fn() }),
+      log: createMockLogger(),
+    });
 
     runner = new PlatformRunner(platform);
     await runner.requestHomeData();
@@ -301,12 +393,13 @@ describe('PlatformRunner.requestHomeData', () => {
   });
 
   it('should return early if roborockService is undefined', async () => {
-    platform = {
-      registry: { robotsMap: new Map([['123', {} as any]]) },
-      rrHomeId: '12345',
+    const placeholderRobot = asPartial<RoborockVacuumCleaner>({ serialNumber: '123', device: asPartial<Device>({ data: asPartial<DeviceData>({}) }), updateAttribute: vi.fn() });
+    platform = asPartial<RoborockMatterbridgePlatform>({
+      registry: createMockDeviceRegistry({}, new Map([['123', placeholderRobot]])),
+      rrHomeId: 12345,
       roborockService: undefined,
-      log: { error: vi.fn(), debug: vi.fn(), notice: vi.fn() },
-    } as unknown as RoborockMatterbridgePlatform;
+      log: createMockLogger(),
+    });
 
     runner = new PlatformRunner(platform);
     await runner.requestHomeData();
@@ -317,38 +410,40 @@ describe('PlatformRunner.requestHomeData', () => {
 
   it('should return early if homeData is undefined', async () => {
     const getHomeDataMock = vi.fn().mockResolvedValue(undefined);
-    platform = {
-      registry: { robotsMap: new Map([['123', {} as any]]) },
-      rrHomeId: '12345',
-      roborockService: { getHomeDataForUpdating: getHomeDataMock },
-      log: { error: vi.fn(), debug: vi.fn(), notice: vi.fn() },
-    } as unknown as RoborockMatterbridgePlatform;
+    const placeholderRobot = asPartial<RoborockVacuumCleaner>({ serialNumber: '123', device: asPartial<Device>({ data: asPartial<DeviceData>({}) }), updateAttribute: vi.fn() });
+    platform = asPartial<RoborockMatterbridgePlatform>({
+      registry: createMockDeviceRegistry({}, new Map([['123', placeholderRobot]])),
+      rrHomeId: 12345,
+      roborockService: createMockRoborockService({ getHomeDataForUpdating: getHomeDataMock }),
+      log: createMockLogger(),
+    });
 
     runner = new PlatformRunner(platform);
     const updateRobotSpy = vi.spyOn(runner, 'updateRobot');
 
     await runner.requestHomeData();
 
-    expect(getHomeDataMock).toHaveBeenCalledWith('12345');
+    expect(getHomeDataMock).toHaveBeenCalledWith(12345);
     expect(updateRobotSpy).not.toHaveBeenCalled();
   });
 
   it('should call updateRobotWithPayload when homeData is available', async () => {
     const homeData = { devices: [], products: [] };
     const getHomeDataMock = vi.fn().mockResolvedValue(homeData);
-    platform = {
-      registry: { robotsMap: new Map([['123', {} as any]]) },
-      rrHomeId: '12345',
-      roborockService: { getHomeDataForUpdating: getHomeDataMock },
-      log: { error: vi.fn(), debug: vi.fn(), notice: vi.fn() },
-    } as unknown as RoborockMatterbridgePlatform;
+    const placeholderRobot = asPartial<RoborockVacuumCleaner>({ serialNumber: '123', device: asPartial<Device>({ data: asPartial<DeviceData>({}) }), updateAttribute: vi.fn() });
+    platform = asPartial<RoborockMatterbridgePlatform>({
+      registry: createMockDeviceRegistry({}, new Map([['123', placeholderRobot]])),
+      rrHomeId: 12345,
+      roborockService: createMockRoborockService({ getHomeDataForUpdating: getHomeDataMock }),
+      log: createMockLogger(),
+    });
 
     runner = new PlatformRunner(platform);
     const updateRobotWithPayloadSpy = vi.spyOn(runner, 'updateRobotWithPayload').mockResolvedValue();
 
     await runner.requestHomeData();
 
-    expect(getHomeDataMock).toHaveBeenCalledWith('12345');
+    expect(getHomeDataMock).toHaveBeenCalledWith(12345);
     expect(updateRobotWithPayloadSpy).toHaveBeenCalledWith({ type: NotifyMessageTypes.HomeData, data: homeData });
   });
 });

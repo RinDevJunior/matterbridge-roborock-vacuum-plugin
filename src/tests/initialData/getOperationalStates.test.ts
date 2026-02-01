@@ -2,27 +2,29 @@ import { describe, it, expect } from 'vitest';
 import { getOperationalErrorState, getErrorFromErrorCode, getErrorFromDSS } from '../../initialData/getOperationalStates.js';
 import { VacuumErrorCode } from '../../roborockCommunication/enums/vacuumAndDockErrorCode.js';
 import { DockingStationStatusType } from '../../model/DockingStationStatus.js';
+import type { DockingStationStatus } from '../../model/DockingStationStatus.js';
+import { asType } from '../testUtils.js';
 
 describe('getOperationalStates', () => {
   it('getOperationalErrorState returns undefined for None and Error for others', () => {
     expect(getOperationalErrorState(VacuumErrorCode.None)).toBeUndefined();
-    expect(getOperationalErrorState(999 as any)).toBeDefined();
+    expect(getOperationalErrorState(VacuumErrorCode.LidarBlocked)).toBeDefined();
   });
 
   it('getErrorFromErrorCode returns struct when error present', () => {
-    const res = getErrorFromErrorCode(1 as any);
+    const res = getErrorFromErrorCode(1);
     expect(res).toBeDefined();
     expect(res?.errorStateDetails).toContain('Error code');
   });
 
   it('getErrorFromDSS handles undefined status', () => {
-    const noStatus = getErrorFromDSS(undefined as any);
+    const noStatus = getErrorFromDSS(asType<DockingStationStatus>(undefined));
     expect(noStatus).toBeDefined();
     expect(noStatus?.errorStateLabel).toContain('No Docking Station Status');
   });
 
   it('getErrorFromDSS returns undefined when no errors present', () => {
-    const status: any = {
+    const status = {
       cleanFluidStatus: DockingStationStatusType.OK,
       waterBoxFilterStatus: DockingStationStatusType.OK,
       dustBagStatus: DockingStationStatusType.OK,
@@ -35,7 +37,7 @@ describe('getOperationalStates', () => {
   });
 
   it('getErrorFromDSS handles cleanFluidStatus error', () => {
-    const status: any = {
+    const status = {
       cleanFluidStatus: DockingStationStatusType.Error,
       waterBoxFilterStatus: 0,
       dustBagStatus: 0,
@@ -50,7 +52,7 @@ describe('getOperationalStates', () => {
   });
 
   it('getErrorFromDSS handles waterBoxFilterStatus error', () => {
-    const status: any = {
+    const status = {
       cleanFluidStatus: 0,
       waterBoxFilterStatus: DockingStationStatusType.Error,
       dustBagStatus: 0,
@@ -64,7 +66,7 @@ describe('getOperationalStates', () => {
   });
 
   it('getErrorFromDSS handles dustBagStatus error', () => {
-    const status: any = {
+    const status = {
       cleanFluidStatus: 0,
       waterBoxFilterStatus: 0,
       dustBagStatus: DockingStationStatusType.Error,
@@ -78,7 +80,7 @@ describe('getOperationalStates', () => {
   });
 
   it('getErrorFromDSS handles dirtyWaterBoxStatus error', () => {
-    const status: any = {
+    const status = {
       cleanFluidStatus: 0,
       waterBoxFilterStatus: 0,
       dustBagStatus: 0,
@@ -92,7 +94,7 @@ describe('getOperationalStates', () => {
   });
 
   it('getErrorFromDSS handles clearWaterBoxStatus error', () => {
-    const status: any = {
+    const status = {
       cleanFluidStatus: 0,
       waterBoxFilterStatus: 0,
       dustBagStatus: 0,

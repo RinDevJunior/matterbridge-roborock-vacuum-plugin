@@ -2,37 +2,42 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { updateFromHomeData } from '../../runtimes/handleHomeDataMessage.js';
 import { homeData } from '../testData/mockData.js';
 import { PowerSource, RvcRunMode } from 'matterbridge/matter/clusters';
-import { DeviceData } from '../../roborockCommunication/models/index.js';
+import { DeviceData, DeviceModel, Device, Home, Product } from '../../roborockCommunication/models/index.js';
+import type { DockingStationStatus } from '../../model/DockingStationStatus.js';
+import type { RoborockVacuumCleaner } from '../../types/roborockVacuumCleaner.js';
+import type { RoborockMatterbridgePlatform } from '../../module.js';
+import { asPartial, asType } from '../testUtils.js';
+import type { DeviceRegistry } from '../../platform/deviceRegistry.js';
+import type { RoborockService } from '../../services/roborockService.js';
+import type { AnsiLogger } from 'matterbridge/logger';
 
 // Mocks
 const mockUpdateAttribute = vi.fn();
+const simpleUpdateAttribute = (...args: any[]) => mockUpdateAttribute(...args);
 const duid = 'test-duid';
-const robot = {
-  updateAttribute: mockUpdateAttribute,
-  device: { data: { model: 'test-model' } as unknown as DeviceData | undefined },
-  dockStationStatus: {},
-};
+const robot = asPartial<RoborockVacuumCleaner>({
+  updateAttribute: simpleUpdateAttribute,
+  device: asPartial<Device>({ duid, name: 'TestVac', data: asPartial<DeviceData>({ model: DeviceModel.QREVO_EDGE_5V1 }) }),
+});
 const robots = new Map([[duid, robot]]);
-const registry = {
+const registry = asPartial<DeviceRegistry>({
   get robotsMap() {
     return robots;
   },
-  getRobot: (id: string) => robots.get(id),
+  getRobot: (id: string) => robots.get(id) as RoborockVacuumCleaner | undefined,
   hasDevices: () => robots.size > 0,
   registerRobot: vi.fn(),
-};
-const platform = {
-  robots,
-  registry,
-  log: {
+});
+const platform = asPartial<RoborockMatterbridgePlatform>({
+  registry: asPartial<DeviceRegistry>(registry),
+  log: asType<AnsiLogger>({
     error: vi.fn(),
     debug: vi.fn(),
     notice: vi.fn(),
     fatal: vi.fn(),
-  },
-  roborockService: {},
-  enableExperimentalFeature: {},
-};
+  }),
+  roborockService: asPartial<RoborockService>({}),
+});
 
 describe('updateFromHomeData', () => {
   beforeEach(() => {
@@ -40,7 +45,7 @@ describe('updateFromHomeData', () => {
   });
 
   it('should update robot attributes when valid data is provided', async () => {
-    await updateFromHomeData(homeData, platform as any);
+    await updateFromHomeData(homeData, asPartial<RoborockMatterbridgePlatform>(platform));
 
     expect(mockUpdateAttribute).toHaveBeenCalledWith(PowerSource.Cluster.id, 'batPercentRemaining', 200, expect.anything());
     expect(mockUpdateAttribute).toHaveBeenCalledWith(PowerSource.Cluster.id, 'batChargeLevel', 0, expect.anything());
@@ -50,32 +55,33 @@ describe('updateFromHomeData', () => {
   });
 
   it('should log error if robot is not found', async () => {
-    platform.robots.clear();
-    await updateFromHomeData(homeData, platform as any);
+    platform.registry.robotsMap.clear();
+    await updateFromHomeData(homeData, asPartial<RoborockMatterbridgePlatform>(platform));
     expect(platform.log.error).not.toHaveBeenCalledWith(expect.stringContaining('Robot with DUID'));
   });
 
   it('should log error if device data is undefined', async () => {
-    platform.robots.clear();
-    platform.robots.set('test-duid', { ...robot, device: { data: undefined } });
-    await updateFromHomeData(homeData, platform as any);
+    platform.registry.robotsMap.clear();
+    // Simulate device missing data by removing the data property
+    platform.registry.robotsMap.set('test-duid', asPartial<RoborockVacuumCleaner>({ ...robot, device: asPartial({}) }));
+    await updateFromHomeData(homeData, asPartial<RoborockMatterbridgePlatform>(platform));
     expect(platform.log.error).toHaveBeenCalledWith('Device not found in home data');
   });
 
   it('should return early if no state or matterState', async () => {
     const homeDataWithoutState = {
       ...homeData,
-      devices: [{ ...homeData.devices[0], deviceStatus: {} as any }],
+      devices: [{ ...homeData.devices[0], deviceStatus: {} }],
     };
-    platform.robots.clear();
-    platform.robots.set('test-duid', robot);
-    await updateFromHomeData(homeDataWithoutState, platform as any);
+    platform.registry.robotsMap.clear();
+    platform.registry.robotsMap.set('test-duid', robot);
+    await updateFromHomeData(homeDataWithoutState, asPartial<RoborockMatterbridgePlatform>(platform));
     expect(mockUpdateAttribute).not.toHaveBeenCalled();
   });
 
   it('should return early if platform has no robots', async () => {
-    platform.robots.clear();
-    await updateFromHomeData(homeData, platform as any);
+    platform.registry.robotsMap.clear();
+    await updateFromHomeData(homeData, asPartial<RoborockMatterbridgePlatform>(platform));
     // Should not throw, just return early
     expect(platform.log.error).not.toHaveBeenCalled();
   });
@@ -88,11 +94,11 @@ describe('updateFromHomeData', () => {
         { ...homeData.devices[0], duid: 'test-duid-2' }, // Second device
       ],
     };
-    platform.robots.clear();
-    platform.robots.set('test-duid', robot);
-    platform.robots.set('test-duid-2', { ...robot, updateAttribute: vi.fn() });
+    platform.registry.robotsMap.clear();
+    platform.registry.robotsMap.set('test-duid', robot);
+    platform.registry.robotsMap.set('test-duid-2', asPartial<RoborockVacuumCleaner>({ ...robot, updateAttribute: vi.fn() }));
 
-    await updateFromHomeData(homeDataMultipleDevices, platform as any);
+    await updateFromHomeData(homeDataMultipleDevices, asPartial<RoborockMatterbridgePlatform>(platform));
     // Both devices should be processed
     expect(mockUpdateAttribute).toHaveBeenCalled();
   });
@@ -102,10 +108,10 @@ describe('updateFromHomeData', () => {
       ...homeData,
       devices: [{ ...homeData.devices[0], duid: 'unknown-duid' }],
     };
-    platform.robots.clear();
-    platform.robots.set('test-duid', robot); // Robot exists but no matching device
+    platform.registry.robotsMap.clear();
+    platform.registry.robotsMap.set('test-duid', robot); // Robot exists but no matching device
 
-    await updateFromHomeData(homeDataUnknownDevice, platform as any);
+    await updateFromHomeData(homeDataUnknownDevice, asPartial<RoborockMatterbridgePlatform>(platform));
     // No devices should match the filter, so no updates
     expect(mockUpdateAttribute).not.toHaveBeenCalled();
   });
@@ -113,12 +119,12 @@ describe('updateFromHomeData', () => {
   it('should handle missing battery level', async () => {
     const homeDataNoBattery = {
       ...homeData,
-      devices: [{ ...homeData.devices[0], deviceStatus: { state: 8 } as any }],
+      devices: [{ ...homeData.devices[0], deviceStatus: asPartial({ state: 8 }) }],
     };
-    platform.robots.clear();
-    platform.robots.set('test-duid', robot);
+    platform.registry.robotsMap.clear();
+    platform.registry.robotsMap.set('test-duid', robot);
 
-    await updateFromHomeData(homeDataNoBattery, platform as any);
+    await updateFromHomeData(homeDataNoBattery, asPartial<RoborockMatterbridgePlatform>(platform));
     // Battery attributes should not be updated
     expect(mockUpdateAttribute).not.toHaveBeenCalledWith(PowerSource.Cluster.id, 'batPercentRemaining', expect.anything(), expect.anything());
   });
@@ -126,11 +132,11 @@ describe('updateFromHomeData', () => {
   it('should handle state without matterState mapping', async () => {
     const homeDataInvalidState = {
       ...homeData,
-      devices: [{ ...homeData.devices[0], deviceStatus: { state: 9999, battery: 100 } as any }], // Truly unmapped state
+      devices: [{ ...homeData.devices[0], deviceStatus: asPartial({ state: 9999, battery: 100 }) }], // Truly unmapped state
     };
-    platform.robots.clear();
-    platform.robots.set('test-duid', robot);
-    await updateFromHomeData(homeDataInvalidState, platform as any);
+    platform.registry.robotsMap.clear();
+    platform.registry.robotsMap.set('test-duid', robot);
+    await updateFromHomeData(homeDataInvalidState, asPartial<RoborockMatterbridgePlatform>(platform));
     // Should update operationalState to Docked for unknown state (per implementation)
     expect(mockUpdateAttribute).toHaveBeenCalledWith(expect.any(Number), 'operationalState', expect.anything(), expect.anything());
   });
@@ -138,35 +144,43 @@ describe('updateFromHomeData', () => {
   it('should return early when state is undefined', async () => {
     const homeDataNoState = {
       ...homeData,
-      devices: [{ ...homeData.devices[0], deviceStatus: {} as any }],
+      devices: [{ ...homeData.devices[0], deviceStatus: {} }],
     };
-    platform.robots.clear();
-    platform.robots.set('test-duid', robot);
-    await updateFromHomeData(homeDataNoState, platform as any);
+    platform.registry.robotsMap.clear();
+    platform.registry.robotsMap.set('test-duid', robot);
+    await updateFromHomeData(homeDataNoState, asPartial<RoborockMatterbridgePlatform>(platform));
     expect(mockUpdateAttribute).not.toHaveBeenCalled();
   });
 
   it('should handle missing operational state', async () => {
     const homeDataNoOpState = {
       ...homeData,
-      devices: [{ ...homeData.devices[0], deviceStatus: { state: 9999, battery: 100 } as any }], // Truly unmapped state
+      devices: [{ ...homeData.devices[0], deviceStatus: asPartial({ state: 9999, battery: 100 }) }], // Truly unmapped state
     };
-    platform.robots.clear();
-    platform.robots.set('test-duid', robot);
-    await updateFromHomeData(homeDataNoOpState, platform as any);
+    platform.registry.robotsMap.clear();
+    platform.registry.robotsMap.set('test-duid', robot);
+    await updateFromHomeData(homeDataNoOpState, asPartial<RoborockMatterbridgePlatform>(platform));
     // Should update operationalState to Docked for unknown state (per implementation)
     expect(mockUpdateAttribute).toHaveBeenCalledWith(expect.any(Number), 'operationalState', expect.anything(), expect.anything());
   });
 
   it('should process device when it has docking station status', async () => {
-    const robotWithDss = {
-      ...robot,
-      dockStationStatus: { dss_error: 0 }, // No error
-    };
-    platform.robots.clear();
-    platform.robots.set('test-duid', robotWithDss);
+    const robotWithDss = asPartial<RoborockVacuumCleaner>({
+      updateAttribute: simpleUpdateAttribute,
+      device: asPartial<Device>({ duid, name: 'TestVac', data: asPartial<DeviceData>({ model: DeviceModel.QREVO_EDGE_5V1 }) }),
+      dockStationStatus: asPartial<DockingStationStatus>({
+        cleanFluidStatus: 0,
+        waterBoxFilterStatus: 0,
+        dustBagStatus: 0,
+        dirtyWaterBoxStatus: 0,
+        clearWaterBoxStatus: 0,
+        isUpdownWaterReady: 0,
+      }), // No error
+    });
+    platform.registry.robotsMap.clear();
+    platform.registry.robotsMap.set('test-duid', robotWithDss);
 
-    await updateFromHomeData(homeData, platform as any);
+    await updateFromHomeData(homeData, asPartial<RoborockMatterbridgePlatform>(platform));
     // Should process normally when no dss error
     expect(mockUpdateAttribute).toHaveBeenCalled();
   });
@@ -174,12 +188,10 @@ describe('updateFromHomeData', () => {
   it('should log error and continue when robot is removed during processing', async () => {
     // Create a custom platform that removes robot during get()
     const robots = new Map([['test-duid', robot]]);
-    const customPlatform = {
-      robots,
+    const customPlatform = asPartial<RoborockMatterbridgePlatform>({
       log: platform.log,
-      roborockService: {},
-      enableExperimentalFeature: {},
-      registry: {
+      roborockService: asPartial<RoborockService>({}),
+      registry: asPartial<DeviceRegistry>({
         get robotsMap() {
           return robots;
         },
@@ -189,46 +201,46 @@ describe('updateFromHomeData', () => {
         },
         hasDevices: () => robots.size > 0,
         registerRobot: vi.fn(),
-      },
-    };
+      }),
+    });
 
-    await updateFromHomeData(homeData, customPlatform as any);
+    await updateFromHomeData(homeData, asPartial<RoborockMatterbridgePlatform>(customPlatform));
     expect(platform.log.error).toHaveBeenCalledWith(expect.stringContaining('Robot not found: test-duid'));
   });
 
   it('should update batChargeState when batteryLevel exists', async () => {
     const homeDataWithBattery = {
       ...homeData,
-      devices: [{ ...homeData.devices[0], deviceStatus: { state: 8, battery: 50 } as any }],
+      devices: [{ ...homeData.devices[0], deviceStatus: asPartial({ state: 8, battery: 50 }) }],
     };
-    platform.robots.clear();
-    platform.robots.set('test-duid', robot);
+    platform.registry.robotsMap.clear();
+    platform.registry.robotsMap.set('test-duid', robot);
 
-    await updateFromHomeData(homeDataWithBattery, platform as any);
+    await updateFromHomeData(homeDataWithBattery, asPartial<RoborockMatterbridgePlatform>(platform));
     expect(mockUpdateAttribute).toHaveBeenCalledWith(PowerSource.Cluster.id, 'batChargeState', expect.anything(), expect.anything());
   });
 
   it('should not update batChargeState when batteryLevel is missing', async () => {
     const homeDataNoBattery = {
       ...homeData,
-      devices: [{ ...homeData.devices[0], deviceStatus: { state: 8 } as any }],
+      devices: [{ ...homeData.devices[0], deviceStatus: asPartial({ state: 8 }) }],
     };
-    platform.robots.clear();
-    platform.robots.set('test-duid', robot);
+    platform.registry.robotsMap.clear();
+    platform.registry.robotsMap.set('test-duid', robot);
 
-    await updateFromHomeData(homeDataNoBattery, platform as any);
+    await updateFromHomeData(homeDataNoBattery, platform);
     expect(mockUpdateAttribute).not.toHaveBeenCalledWith(PowerSource.Cluster.id, 'batChargeState', expect.anything(), expect.anything());
   });
 
   it('should handle zero battery level', async () => {
     const homeDataZeroBattery = {
       ...homeData,
-      devices: [{ ...homeData.devices[0], deviceStatus: { state: 8, battery: 0 } as any }],
+      devices: [{ ...homeData.devices[0], deviceStatus: asPartial({ state: 8, battery: 0 }) }],
     };
-    platform.robots.clear();
-    platform.robots.set('test-duid', robot);
+    platform.registry.robotsMap.clear();
+    platform.registry.robotsMap.set('test-duid', robot);
 
-    await updateFromHomeData(homeDataZeroBattery, platform as any);
+    await updateFromHomeData(homeDataZeroBattery, platform);
     // Battery is 0, which is falsy, so battery attributes should not be updated
     expect(mockUpdateAttribute).not.toHaveBeenCalledWith(PowerSource.Cluster.id, 'batPercentRemaining', expect.anything(), expect.anything());
   });
@@ -237,13 +249,33 @@ describe('updateFromHomeData', () => {
     const homeDataNoSchema = {
       ...homeData,
       products: [], // No products means schema won't be found
-      devices: [{ ...homeData.devices[0], deviceStatus: { state: 8, battery: 100 } as any }],
+      devices: [{ ...homeData.devices[0], deviceStatus: asPartial({ state: 8, battery: 100 }) }],
     };
-    platform.robots.clear();
-    platform.robots.set('test-duid', robot);
+    platform.registry.robotsMap.clear();
+    platform.registry.robotsMap.set('test-duid', robot);
 
-    await updateFromHomeData(homeDataNoSchema, platform as any);
+    await updateFromHomeData(homeDataNoSchema, platform);
     // Should still process but schema will be empty array
     expect(mockUpdateAttribute).toHaveBeenCalled();
+  });
+
+  it('should use registered robot model to match product schema when home payload model differs', async () => {
+    const homeDataMismatch = asPartial<Home>({
+      ...homeData,
+      devices: [
+        {
+          ...homeData.devices[0],
+          deviceStatus: asPartial({ state: 8, battery: 100 }),
+          data: { ...homeData.devices[0].data, model: DeviceModel.Q7_MAX },
+        },
+      ],
+      products: [asPartial<Product>({ id: homeData.products[0].id, model: robot.device.data?.model, schema: homeData.products[0].schema })],
+    });
+
+    platform.registry.robotsMap.clear();
+    platform.registry.robotsMap.set('test-duid', robot);
+
+    await updateFromHomeData(homeDataMismatch, platform);
+    expect(mockUpdateAttribute).toHaveBeenCalledWith(PowerSource.Cluster.id, 'batPercentRemaining', 200, expect.anything());
   });
 });

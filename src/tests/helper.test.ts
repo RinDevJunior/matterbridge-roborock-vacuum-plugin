@@ -1,11 +1,14 @@
 import { getVacuumProperty, isSupportedDevice, isStatusUpdate } from '../share/helper.js';
 import { MapInfo, RoomMap } from '../core/application/models/index.js';
 import { describe, it, test, expect, vi, beforeEach } from 'vitest';
-import { MultipleMapDto } from '../roborockCommunication/models/index.js';
+import { MultipleMapDto, type Device } from '../roborockCommunication/models/index.js';
+import { asType, asPartial } from './testUtils.js';
+import { RoborockPluginPlatformConfig } from '../model/RoborockPluginPlatformConfig.js';
+import { RoborockMatterbridgePlatform } from '../module.js';
 
 describe('helper utilities', () => {
   test('getVacuumProperty returns undefined with no device', () => {
-    expect(getVacuumProperty(undefined as any, 'p')).toBeUndefined();
+    expect(getVacuumProperty(asType<Device>(undefined), 'p')).toBeUndefined();
   });
 
   test('getVacuumProperty reads via schema id and direct property', () => {
@@ -26,7 +29,7 @@ describe('helper utilities', () => {
   test('isStatusUpdate positive and negative', () => {
     expect(isStatusUpdate([{ msg_ver: '1' }])).toBe(true);
     expect(isStatusUpdate([])).toBe(false);
-    expect(isStatusUpdate([null as any])).toBe(false);
+    expect(isStatusUpdate([asType(null)])).toBe(false);
     expect(isStatusUpdate([{}])).toBe(false);
   });
 
@@ -47,7 +50,7 @@ describe('helper utilities', () => {
 
     // robot present but no service
     const robot: any = { device: { duid: 'd1', rooms: [] } };
-    platform.robots.set('d1', robot);
+    platform.registry.robotsMap.set('d1', robot);
     platform.registry.getRobot.mockReturnValueOnce(robot);
     const res2 = await RoomMap.fromDevice('d1', platform);
     expect(res2).not.toBeUndefined();
@@ -65,7 +68,7 @@ describe('helper utilities', () => {
       },
     };
 
-    const rmap = await RoomMap.fromDeviceDirect(device, platform);
+    const rmap = await RoomMap.fromDeviceDirect(asPartial<Device>(device), asPartial(platform));
     expect(rmap).toBeDefined();
 
     // when no map info but room mappings present
@@ -84,7 +87,7 @@ describe('helper utilities', () => {
         getRoomMap: async () => new RoomMap([]),
       },
     };
-    const rmap2 = await RoomMap.fromDeviceDirect(device, platform2);
+    const rmap2 = await RoomMap.fromDeviceDirect(asPartial<Device>(device), asPartial(platform2));
     expect(rmap2).toBeDefined();
 
     // when neither present returns empty RoomMap
@@ -103,7 +106,7 @@ describe('helper utilities', () => {
         getRoomMap: async () => new RoomMap([]),
       },
     };
-    const rmap3 = await RoomMap.fromDeviceDirect(device, platform3);
+    const rmap3 = await RoomMap.fromDeviceDirect(asPartial<Device>(device), asPartial(platform3));
     expect(rmap3).toBeDefined();
   });
 });
@@ -208,7 +211,7 @@ describe('RoomMap.fromDeviceDirect', () => {
       } satisfies MultipleMapDto),
     );
 
-    const result = await RoomMap.fromDeviceDirect(device as any, mockPlatform as any);
+    const result = await RoomMap.fromDeviceDirect(asPartial<Device>(device), asType<RoborockMatterbridgePlatform>(mockPlatform));
 
     expect(result).toBeInstanceOf(RoomMap);
     expect(mockRoborockService.getRoomMap).toHaveBeenCalledWith('123', 1, device.rooms);
@@ -265,7 +268,7 @@ describe('RoomMap.fromDeviceDirect', () => {
       } satisfies MultipleMapDto),
     );
 
-    const result = await RoomMap.fromDeviceDirect(device as any, mockPlatform as any);
+    const result = await RoomMap.fromDeviceDirect(asPartial<Device>(device), asType<RoborockMatterbridgePlatform>(mockPlatform));
 
     expect(result).toBeInstanceOf(RoomMap);
     expect(mockRoborockService.getRoomMap).toHaveBeenCalledWith('123', 1, device.rooms);
@@ -324,7 +327,7 @@ describe('RoomMap.fromDeviceDirect', () => {
       } satisfies MultipleMapDto),
     );
 
-    const result = await RoomMap.fromDeviceDirect(device as any, mockPlatform as any);
+    const result = await RoomMap.fromDeviceDirect(asPartial<Device>(device), asType<RoborockMatterbridgePlatform>(mockPlatform));
     expect(result).toBeInstanceOf(RoomMap);
     expect(mockRoborockService.getMapInfo).toHaveBeenCalledWith('123');
   });

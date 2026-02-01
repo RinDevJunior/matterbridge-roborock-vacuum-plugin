@@ -3,31 +3,21 @@ import { AnsiLogger } from 'matterbridge/logger';
 import { ServiceContainer } from '../../core/ServiceContainer.js';
 import { RoborockAuthenticateApi } from '../../roborockCommunication/api/authClient.js';
 import { UserData } from '../../roborockCommunication/models/index.js';
-import type { IDeviceGateway } from '../../core/ports/IDeviceGateway.js';
-import type { IAuthGateway } from '../../core/ports/IAuthGateway.js';
-
-function createMockLogger(): AnsiLogger {
-  return {
-    debug: vi.fn(),
-    info: vi.fn(),
-    warn: vi.fn(),
-    error: vi.fn(),
-    notice: vi.fn(),
-    log: vi.fn(),
-  } as unknown as AnsiLogger;
-}
+import { createMockLogger } from '../testUtils.js';
+import { asPartial } from '../helpers/testUtils.js';
 
 function createMockAuthenticateApi(): RoborockAuthenticateApi {
-  return {
-    getUserDetails: vi.fn(),
+  return asPartial<RoborockAuthenticateApi>({
     loginWithPassword: vi.fn(),
-    sendEmailCode: vi.fn(),
-    loginWithCode: vi.fn(),
-  } as unknown as RoborockAuthenticateApi;
+    requestCodeV4: vi.fn(),
+    loginWithCodeV4: vi.fn(),
+    getHomeDetails: vi.fn(),
+    getCachedCountryInfo: vi.fn(),
+  });
 }
 
 function createMockUserData(): UserData {
-  return {
+  return asPartial<UserData>({
     uid: 'test-uid',
     tokentype: 'Bearer',
     token: 'test-token',
@@ -41,9 +31,9 @@ function createMockUserData(): UserData {
       s: 'test-secret',
       h: 'test-host',
       k: 'test-key',
-      r: { a: 'test-region-a', m: 'test-mqtt' },
+      r: { r: 'test-region', a: 'test-region-a', m: 'test-mqtt', l: 'test-local' },
     },
-  } as UserData;
+  });
 }
 
 describe('ServiceContainer', () => {

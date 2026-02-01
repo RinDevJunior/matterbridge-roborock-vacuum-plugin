@@ -2,16 +2,13 @@ import { getSupportedAreas } from '../../initialData/getSupportedAreas.js';
 import { RoomMap, RoomMapping } from '../../core/application/models/index.js';
 import { describe, it, expect, beforeEach, vi, test } from 'vitest';
 import type { RoomDto } from '../../roborockCommunication/models/index.js';
+import { makeLogger } from '../testUtils.js';
 
-const mockLogger = {
-  debug: vi.fn(),
-  error: vi.fn(),
-  notice: vi.fn(),
-};
+const mockLogger = makeLogger();
 
 describe('getSupportedAreas (legacy)', () => {
   it('returns Unknown area when vacuumRooms missing or roomMap missing', () => {
-    const res = getSupportedAreas([], undefined, false, { error: vi.fn(), debug: vi.fn() } as any);
+    const res = getSupportedAreas([], undefined, false, makeLogger());
     expect(res.supportedAreas.length).toBe(1);
     expect(res.supportedAreas[0]?.areaInfo?.locationInfo?.locationName).toContain('Unknown');
   });
@@ -22,16 +19,16 @@ describe('getSupportedAreas (legacy)', () => {
       { id: 1, iot_name_id: '1', globalId: 1, tag: 0, iot_map_id: 0, iot_name: 'Room1' },
     ];
     const roomMap = new RoomMap(rooms);
-    const vacuumRooms = [{ id: 1, name: 'R1' }];
-    const res = getSupportedAreas(vacuumRooms as any, roomMap, false, { error: vi.fn(), debug: vi.fn() } as any);
+    const vacuumRooms: RoomDto[] = [{ id: 1, name: 'R1' }];
+    const res = getSupportedAreas(vacuumRooms, roomMap, false, makeLogger());
     expect(res.supportedAreas.length).toBe(1);
     expect(res.supportedAreas[0]?.areaInfo?.locationInfo?.locationName).toContain('Duplicated');
   });
 
   test('enableMultipleMap returns supportedMaps', () => {
-    const vacuumRooms = [{ id: 1, name: 'R1' } as any];
+    const vacuumRooms: RoomDto[] = [{ id: 1, name: 'R1' }];
     const roomMap = new RoomMap([{ id: 10, iot_name_id: '10', globalId: 10, tag: 0, iot_map_id: 7, iot_name: 'RoomX' }]);
-    const res = getSupportedAreas(vacuumRooms as any, roomMap, true, { error: vi.fn(), debug: vi.fn() } as any, [{ id: 7, name: 'Level 7', rooms: [] }]);
+    const res = getSupportedAreas(vacuumRooms, roomMap, true, makeLogger(), [{ id: 7, name: 'Level 7', rooms: [] }]);
     expect(res.supportedMaps.length).toBeGreaterThanOrEqual(1);
     expect(res.roomIndexMap).toBeDefined();
   });
@@ -76,7 +73,7 @@ describe('getSupportedAreas', () => {
         { id: 23, globalId: 1474466, iot_name_id: '1474466', tag: 0, iot_map_id: 0, iot_name: 'Outside' },
       ]),
       false, // enableMultipleMap
-      mockLogger as any,
+      mockLogger,
     );
 
     expect(supportedAreas.length).toEqual(8);
@@ -102,7 +99,7 @@ describe('getSupportedAreas', () => {
         { id: 20, globalId: 991190, iot_name_id: '991190', tag: 0, iot_map_id: 0, iot_name: '' },
       ]),
       false, // enableMultipleMap
-      mockLogger as any,
+      mockLogger,
     );
 
     expect(supportedAreas.length).toEqual(5);
@@ -128,7 +125,7 @@ describe('getSupportedAreas', () => {
         { id: 20, globalId: 991190, iot_name_id: '991190', tag: 0, iot_map_id: 0, iot_name: '' },
       ]),
       false, // enableMultipleMap
-      mockLogger as any,
+      mockLogger,
     );
 
     expect(supportedAreas.length).toEqual(5);
@@ -151,7 +148,7 @@ describe('getSupportedAreas', () => {
       { id: 19, globalId: 991185, iot_name_id: '991185', tag: 0, iot_map_id: 0, iot_name: '' },
       { id: 20, globalId: 991190, iot_name_id: '991190', tag: 0, iot_map_id: 0, iot_name: '' },
     ]);
-    const { supportedAreas } = getSupportedAreas(vacuumRooms, roomMap, false, mockLogger as any);
+    const { supportedAreas } = getSupportedAreas(vacuumRooms, roomMap, false, mockLogger);
 
     expect(supportedAreas.length).toEqual(5);
   });
@@ -183,7 +180,7 @@ describe('getSupportedAreas', () => {
       notice: vi.fn(),
       error: vi.fn(),
     };
-    const { supportedAreas, supportedMaps } = getSupportedAreas(vacuumRooms, roomMap, true, mockLogger1 as any, [
+    const { supportedAreas, supportedMaps } = getSupportedAreas(vacuumRooms, roomMap, true, makeLogger(), [
       { id: 0, name: 'First Map', rooms: [] },
       { id: 1, name: 'Second Map', rooms: [] },
     ]);

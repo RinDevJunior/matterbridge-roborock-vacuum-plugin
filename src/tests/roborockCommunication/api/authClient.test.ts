@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { RoborockAuthenticateApi } from '../../../roborockCommunication/api/authClient.js';
+
 describe('RoborockAuthenticateApi', () => {
   let mockLogger: any;
   let mockAxiosFactory: any;
@@ -362,10 +363,6 @@ describe('RoborockAuthenticateApi', () => {
       const errorInterceptor = mockAxiosInstance.interceptors.response.use.mock.calls[0][1];
 
       const error = new Error('Request failed');
-      (error as any).response = {
-        data: { error: 'test error' },
-      };
-
       await expect(errorInterceptor(error)).rejects.toBeInstanceOf(Error);
       await expect(errorInterceptor(error)).rejects.toThrow('Request failed');
     });

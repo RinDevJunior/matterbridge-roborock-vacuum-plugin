@@ -3,26 +3,27 @@ import { AnsiLogger } from 'matterbridge/logger';
 import { MatterbridgeDynamicPlatform } from 'matterbridge';
 import { PlatformLifecycle, LifecycleDependencies } from '../../platform/platformLifecycle.js';
 import { DeviceRegistry } from '../../platform/deviceRegistry.js';
+import { asPartial, asType } from '../helpers/testUtils.js';
 import { PlatformConfigManager } from '../../platform/platformConfig.js';
 import { PlatformState } from '../../platform/platformState.js';
 import type NodePersist from 'node-persist';
 
 function createMockLogger(): AnsiLogger {
-  return {
+  return asType<AnsiLogger>({
     debug: vi.fn(),
     info: vi.fn(),
     warn: vi.fn(),
     error: vi.fn(),
     notice: vi.fn(),
     log: vi.fn(),
-  } as unknown as AnsiLogger;
+  });
 }
 
 function createMockPlatform(): MatterbridgeDynamicPlatform {
-  return {
+  return asPartial<MatterbridgeDynamicPlatform>({
     log: createMockLogger(),
     ready: Promise.resolve(),
-  } as unknown as MatterbridgeDynamicPlatform;
+  });
 }
 
 function createMockDependencies(overrides: Partial<LifecycleDependencies> = {}): LifecycleDependencies {
@@ -55,11 +56,11 @@ describe('PlatformLifecycle', () => {
   beforeEach(() => {
     vi.useFakeTimers();
     mockPlatform = createMockPlatform();
-    mockConfigManager = {
+    mockConfigManager = asPartial<PlatformConfigManager>({
       validateConfig: vi.fn().mockReturnValue(true),
       refreshInterval: 60,
       unregisterOnShutdown: false,
-    } as unknown as PlatformConfigManager;
+    });
     mockState = new PlatformState();
     mockDeps = createMockDependencies();
     lifecycle = new PlatformLifecycle(mockPlatform, mockConfigManager, mockState, mockDeps);
@@ -136,9 +137,9 @@ describe('PlatformLifecycle', () => {
     });
 
     it('should initialize persistence storage', async () => {
-      const mockStorage = {
+      const mockStorage = asPartial<NodePersist.LocalStorage>({
         init: vi.fn().mockResolvedValue(undefined),
-      } as unknown as NodePersist.LocalStorage;
+      });
       mockDeps.getPersistanceStorage = vi.fn().mockReturnValue(mockStorage);
 
       await lifecycle.onStart('test');

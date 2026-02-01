@@ -1,5 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { asPartial, asType } from '../../../helpers/testUtils.js';
 import { Q10MessageDispatcher } from '../../../../roborockCommunication/protocol/dispatcher/Q10MessageDispatcher.js';
+import { RequestMessage } from '../../../../roborockCommunication/models/index.js';
 // --- Mock Factories ---
 function createMockLogger() {
   return {
@@ -33,7 +35,7 @@ describe('Q10MessageDispatcher', () => {
   beforeEach(() => {
     logger = createMockLogger();
     client = createMockClient();
-    dispatcher = new Q10MessageDispatcher(logger as any, client as any);
+    dispatcher = new Q10MessageDispatcher(asType(logger), asType(client));
   });
 
   afterEach(() => {
@@ -142,7 +144,7 @@ describe('Q10MessageDispatcher', () => {
 
   describe('sendCustomMessage', () => {
     it('should send a custom message', async () => {
-      const def = { dps: { foo: 'bar' } } as any;
+      const def = asPartial<RequestMessage>({ toLocalRequest: vi.fn(), secure: false, isForProtocol: vi.fn(), version: '1.0', method: 'custom' });
       await dispatcher.sendCustomMessage(duid, def);
       expect(client.send).toHaveBeenCalled();
     });
@@ -150,7 +152,7 @@ describe('Q10MessageDispatcher', () => {
 
   describe('getCustomMessage', () => {
     it('should get a custom message', async () => {
-      const def = { dps: { foo: 'bar' } } as any;
+      const def = asPartial<RequestMessage>({ dps: { foo: 'bar' } });
       await dispatcher.getCustomMessage(duid, def);
       expect(client.get).toHaveBeenCalled();
     });
@@ -165,26 +167,41 @@ describe('Q10MessageDispatcher', () => {
 
   describe('changeCleanMode', () => {
     it('should call setCleanMode, setVacuumMode, setWaterMode as needed', async () => {
-      const setCleanMode = vi.spyOn(dispatcher, 'setCleanMode' as any).mockResolvedValue(undefined);
-      const setVacuumMode = vi.spyOn(dispatcher, 'setVacuumMode' as any).mockResolvedValue(undefined);
-      const setWaterMode = vi.spyOn(dispatcher, 'setWaterMode' as any).mockResolvedValue(undefined);
+      const setCleanMode = vi.fn();
+      const setVacuumMode = vi.fn();
+      const setWaterMode = vi.fn();
+
+      dispatcher['setCleanMode'] = setCleanMode;
+      dispatcher['setVacuumMode'] = setVacuumMode;
+      dispatcher['setWaterMode'] = setWaterMode;
+
       await dispatcher.changeCleanMode(duid, 1, 2, 3, 4);
       expect(setCleanMode).toHaveBeenCalledWith(duid, 1, 2);
       expect(setVacuumMode).toHaveBeenCalledWith(duid, 1);
       expect(setWaterMode).toHaveBeenCalledWith(duid, 2);
     });
     it('should not call setVacuumMode if suctionPower is 0', async () => {
-      const setCleanMode = vi.spyOn(dispatcher, 'setCleanMode' as any).mockResolvedValue(undefined);
-      const setVacuumMode = vi.spyOn(dispatcher, 'setVacuumMode' as any).mockResolvedValue(undefined);
-      const setWaterMode = vi.spyOn(dispatcher, 'setWaterMode' as any).mockResolvedValue(undefined);
+      const setCleanMode = vi.fn();
+      const setVacuumMode = vi.fn();
+      const setWaterMode = vi.fn();
+
+      dispatcher['setCleanMode'] = setCleanMode;
+      dispatcher['setVacuumMode'] = setVacuumMode;
+      dispatcher['setWaterMode'] = setWaterMode;
+
       await dispatcher.changeCleanMode(duid, 0, 2, 3, 4);
       expect(setVacuumMode).not.toHaveBeenCalled();
       expect(setWaterMode).toHaveBeenCalledWith(duid, 2);
     });
     it('should not call setWaterMode if waterFlow is 0', async () => {
-      const setCleanMode = vi.spyOn(dispatcher, 'setCleanMode' as any).mockResolvedValue(undefined);
-      const setVacuumMode = vi.spyOn(dispatcher, 'setVacuumMode' as any).mockResolvedValue(undefined);
-      const setWaterMode = vi.spyOn(dispatcher, 'setWaterMode' as any).mockResolvedValue(undefined);
+      const setCleanMode = vi.fn();
+      const setVacuumMode = vi.fn();
+      const setWaterMode = vi.fn();
+
+      dispatcher['setCleanMode'] = setCleanMode;
+      dispatcher['setVacuumMode'] = setVacuumMode;
+      dispatcher['setWaterMode'] = setWaterMode;
+
       await dispatcher.changeCleanMode(duid, 1, 0, 3, 4);
       expect(setVacuumMode).toHaveBeenCalledWith(duid, 1);
       expect(setWaterMode).not.toHaveBeenCalled();

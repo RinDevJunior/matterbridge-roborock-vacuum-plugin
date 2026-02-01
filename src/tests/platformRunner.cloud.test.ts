@@ -8,11 +8,14 @@ vi.mock('../runtimes/handleCloudMessage.js', () => ({
 import { PlatformRunner } from '../platformRunner.js';
 import { NotifyMessageTypes } from '../types/notifyMessageTypes.js';
 import { handleCloudMessage } from '../runtimes/handleCloudMessage.js';
+import type { RoborockMatterbridgePlatform } from '../module.js';
+import type { DeviceRegistry } from '../platform/deviceRegistry.js';
+import { createMockLogger, asPartial, asType } from './helpers/testUtils.js';
 
 describe('PlatformRunner CloudMessage handling', () => {
-  let platform: any;
+  let platform: Partial<RoborockMatterbridgePlatform>;
   let runner: PlatformRunner;
-  let robotMock: any;
+  let robotMock: { updateAttribute: ReturnType<typeof vi.fn>; device: { data: { model: string } }; serialNumber: string };
 
   beforeEach(() => {
     robotMock = {
@@ -23,23 +26,21 @@ describe('PlatformRunner CloudMessage handling', () => {
     const robots = new Map<string, any>();
     robots.set('123', robotMock);
 
-    platform = {
-      robots,
-      log: { error: vi.fn(), debug: vi.fn(), notice: vi.fn() },
-      registry: {
+    platform = asPartial<RoborockMatterbridgePlatform>({
+      log: createMockLogger(),
+      registry: asPartial<DeviceRegistry>({
         getRobot: (duid: string) => robots.get(duid),
-      },
-    } as any;
+        robotsMap: robots,
+      }),
+    });
 
-    runner = new PlatformRunner(platform as any);
-    if ((handleCloudMessage as any)?.mockClear) {
-      (handleCloudMessage as any).mockClear();
-    }
+    runner = new PlatformRunner(asPartial<RoborockMatterbridgePlatform>(platform));
+    asType<{ mockClear?: () => void }>(handleCloudMessage).mockClear?.();
   });
 
   it('calls handleCloudMessage when CloudMessage is received and robot exists', async () => {
     const data = { some: 'payload' };
     await runner.updateFromMQTTMessage(NotifyMessageTypes.CloudMessage, data, '123');
-    expect(handleCloudMessage as any).toHaveBeenCalledWith(data, platform, runner, '123');
+    expect(handleCloudMessage).toHaveBeenCalledWith(data, platform, runner, '123');
   });
 });
