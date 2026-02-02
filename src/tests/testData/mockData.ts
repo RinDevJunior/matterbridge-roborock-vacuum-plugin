@@ -2,6 +2,7 @@ import { ServiceArea } from 'matterbridge/matter/clusters';
 import { CloudMessageResult, DeviceModel, Home } from '../../roborockCommunication/models/index.js';
 import { DeviceCategory } from '../../roborockCommunication/models/deviceCategory.js';
 import { MapInfo } from '../../core/application/models/index.js';
+import { asPartial } from '../testUtils.js';
 
 export const supportedAreas: ServiceArea.Area[] = [
   { areaId: 100, mapId: 0, areaInfo: { locationInfo: { locationName: 'Kitchen', floorNumber: 0, areaType: null }, landmarkInfo: null } },
@@ -250,7 +251,7 @@ export const cloudMessageResult3: CloudMessageResult = {
   charge_status: 1,
 };
 
-export const homeData: Home = {
+export const homeData: Home = asPartial<Home>({
   id: 3645093,
   name: 'My Home',
   products: [
@@ -298,6 +299,7 @@ export const homeData: Home = {
       deviceStatus: { 120: 0, 121: 8, 122: 100, 123: 110, 124: 209, 125: 93, 126: 69, 127: 86, 128: 0, 133: 1, 134: 0, 135: 0, 139: 0 },
       silentOtaSwitch: true,
       rrHomeId: 3645093,
+      mapInfos: undefined,
       rooms: [
         { id: 11100849, name: 'Study' },
         { id: 11100847, name: 'Bedroom' },
@@ -365,7 +367,7 @@ export const homeData: Home = {
     { id: 11100845, name: 'Kitchen' },
     { id: 11100842, name: 'Living room' },
   ],
-};
+});
 
 export const cloudMessageResultFromLog: CloudMessageResult = {
   msg_ver: 2,

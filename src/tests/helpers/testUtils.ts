@@ -157,7 +157,7 @@ export function createMockIotApi(overrides: Partial<RoborockIoTApi> = {}): Robor
 
 export function createMockAuthApi(overrides: Partial<RoborockAuthenticateApi> = {}): RoborockAuthenticateApi {
   const base: Partial<RoborockAuthenticateApi> = {
-    getHomeDetails: vi.fn().mockResolvedValue(undefined),
+    getBasicHomeInfo: vi.fn().mockResolvedValue(undefined),
   };
   return { ...base, ...overrides } as Partial<RoborockAuthenticateApi> as RoborockAuthenticateApi;
 }

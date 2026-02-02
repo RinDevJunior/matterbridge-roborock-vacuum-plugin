@@ -20,7 +20,6 @@ export class RoborockVacuumCleaner extends RoboticVacuumCleaner {
   username: string | undefined;
   device: Device;
   roomInfo: RoomMap | undefined;
-  mapInfos: MapEntry[] | undefined;
   dockStationStatus: DockingStationStatus | undefined;
   cleanModeSetting: CleanModeSetting | undefined;
 

@@ -31,31 +31,31 @@ export class DeviceManagementService {
 
     try {
       this.logger.debug('Fetching home details for user:', this.userdata.username);
-      const homeDetails = await this.loginApi.getHomeDetails();
+      const homeInfo = await this.loginApi.getBasicHomeInfo();
 
-      if (!homeDetails?.rrHomeId) {
+      if (!homeInfo?.rrHomeId) {
         throw new DeviceNotFoundError('No home found for user');
       }
 
-      const homeData = await this.iotApi.getHomeWithProducts(homeDetails.rrHomeId);
+      const homeData = await this.iotApi.getHomeWithProducts(homeInfo.rrHomeId);
       if (!homeData) {
-        throw new DeviceError('Failed to retrieve home data', undefined, { homeId: homeDetails.rrHomeId });
+        throw new DeviceError('Failed to retrieve home data', undefined, { homeId: homeInfo.rrHomeId });
       }
 
-      this.logger.debug(`Processing home data for home ID: ${homeDetails.rrHomeId}`);
+      this.logger.debug(`Processing home data for home ID: ${homeInfo.rrHomeId}`);
 
-      const products = new Map<string, { model: DeviceModel; category: DeviceCategory }>();
-      homeData.products.forEach((p) => products.set(p.id, { model: p.model as DeviceModel, category: p.category as DeviceCategory }));
-
-      const devices: Device[] = homeData.devices.length > 0 ? homeData.devices : homeData.receivedDevices;
+      const products = homeData.products.reduce((map, p) => {
+        map.set(p.id, { model: p.model as DeviceModel, category: p.category as DeviceCategory });
+        return map;
+      }, new Map<string, { model: DeviceModel; category: DeviceCategory }>());
 
       // Fetch scenes for routine support
-      const scenes = (await this.iotApi.getScenes(homeDetails.rrHomeId)) ?? [];
+      const scenes = (await this.iotApi.getScenes(homeInfo.rrHomeId)) ?? [];
 
-      const result = devices.map((device) => {
+      const result = homeData.allDevices.map((device) => {
         return {
           ...device,
-          rrHomeId: homeDetails.rrHomeId,
+          rrHomeId: homeInfo.rrHomeId,
           rooms: homeData.rooms,
           localKey: device.localKey,
           pv: device.pv,
@@ -144,11 +144,7 @@ export class DeviceManagementService {
           } satisfies DeviceInformation,
         };
       }) satisfies Device[];
-
-      return {
-        ...homeData,
-        devices: dvs,
-      } satisfies Home;
+      return new Home(homeData.id, homeData.name, homeData.products, dvs, homeData.receivedDevices, homeData.rooms);
     } catch (error) {
       this.logger.error('Failed to get home data for updating:', error);
       return undefined;

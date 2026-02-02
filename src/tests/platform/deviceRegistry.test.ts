@@ -47,6 +47,8 @@ function createMockDevice(serialNumber: string): Device {
       pv: '1.0',
       model: DeviceModel.Q7_MAX,
     },
+    scenes: [],
+    mapInfos: undefined,
   } as Device;
 }
 

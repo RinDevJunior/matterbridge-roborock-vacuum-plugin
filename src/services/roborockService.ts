@@ -13,10 +13,10 @@ import {
   ConnectionService,
 } from '../services/index.js';
 import { RoborockAuthenticateApi } from '../roborockCommunication/api/authClient.js';
-import { Device, Home, RequestMessage, RoomDto, Scene, UserData } from '../roborockCommunication/models/index.js';
+import { Device, Home, RawRoomMappingData, RequestMessage, Scene, UserData } from '../roborockCommunication/models/index.js';
 import { RoborockIoTApi } from '../roborockCommunication/api/iotClient.js';
 import { PlatformConfigManager } from '../platform/platformConfig.js';
-import { RoomMap, MapInfo, RoomIndexMap } from '../core/application/models/index.js';
+import { MapInfo, RoomIndexMap } from '../core/application/models/index.js';
 import { CleanModeSetting } from '../behaviors/roborock.vacuum/core/CleanModeSetting.js';
 
 export interface RoborockServiceConfig {
@@ -202,8 +202,8 @@ export class RoborockService {
   }
 
   /** Get room mapping for a device. */
-  public async getRoomMap(duid: string, activeMap: number, rooms: RoomDto[]): Promise<RoomMap> {
-    return this.areaService.getRoomMap(duid, activeMap, rooms);
+  public async getRoomMap(duid: string, activeMap: number): Promise<RawRoomMappingData> {
+    return this.areaService.getRoomMap(duid, activeMap);
   }
 
   /** Get all scenes for a home. */

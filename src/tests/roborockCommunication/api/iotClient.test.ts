@@ -86,21 +86,9 @@ describe('RoborockIoTApi (additional)', () => {
     const userdata = makeUserData();
     const logger = createMockLogger();
 
-    const homeV1 = {
-      id: 3,
-      products: [],
-      devices: [],
-      receivedDevices: [],
-      rooms: [],
-    };
+    const homeV1 = new Home(3, 'Home3', [], [], [], []);
 
-    const homeV2 = {
-      id: 3,
-      products: [],
-      devices: [],
-      receivedDevices: [],
-      rooms: [{ id: 11, name: 'Living' }],
-    };
+    const homeV2 = new Home(3, 'Home3', [], [], [], [asPartial<RoomEntity>({ id: 11, name: 'Living' })]);
 
     const mockApi: any = {
       get: vi.fn((url: string) => {
@@ -174,10 +162,8 @@ describe('RoborockIoTApi', () => {
     });
 
     it('merges v2 rooms if rooms are empty and v2 returns rooms', async () => {
-      vi.spyOn(api, 'getHome').mockResolvedValue(
-        asPartial<Home>({ id: 1, name: 'Home1', products: [asPartial<Product>({ model: 'other.model' })], devices: [], receivedDevices: [], rooms: [] }),
-      );
-      vi.spyOn(api, 'getHomev2').mockResolvedValue(asPartial<Home>({ id: 99, rooms: [asPartial<RoomEntity>({ id: 99 })] }));
+      vi.spyOn(api, 'getHome').mockResolvedValue(new Home(1, 'Home1', [asPartial<Product>({ model: 'other.model' })], [], [], []));
+      vi.spyOn(api, 'getHomev2').mockResolvedValue(new Home(99, 'Home99', [], [], [], [asPartial<RoomEntity>({ id: 99 })]));
       const result = await api.getHomeWithProducts(1);
       expect(result?.rooms).toContainEqual({ id: 99 });
     });
@@ -195,9 +181,7 @@ describe('RoborockIoTApi', () => {
 
     it('returns undefined and logs if getHome returns undefined', async () => {
       vi.spyOn(api, 'getHome').mockResolvedValue(undefined);
-      const result = await api.getHomeWithProducts(1);
-      expect(result).toBeUndefined();
-      expect(mockLogger.error).toHaveBeenCalledWith('Failed to retrieve the home data');
+      await expect(api.getHomeWithProducts(1)).rejects.toThrow('Failed to retrieve the home data');
     });
   });
   let mockLogger: AnsiLogger;

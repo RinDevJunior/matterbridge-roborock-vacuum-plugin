@@ -53,6 +53,7 @@ export function makeDeviceFixture(overrides: Partial<Device> = {}): Device {
     data: baseData,
     store: baseStore,
     scenes: [],
+    mapInfos: undefined,
   } as Device;
 
   return { ...base, ...overrides } as Device;

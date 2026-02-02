@@ -1,6 +1,7 @@
 import type { ServiceArea } from 'matterbridge/matter/clusters';
 import { DeviceBuilder } from './device-builder.js';
 import { CloudMessageResult, DeviceModel, Home, Scene, UserData } from '../../roborockCommunication/models/index.js';
+import { asPartial } from '../testUtils.js';
 
 /**
  * Generates a mock UserData object for testing.
@@ -68,7 +69,7 @@ export function generateMockHome(deviceCount = 1, roomCount = 4): Home {
       .build(),
   );
 
-  return {
+  return asPartial<Home>({
     id: 123456,
     name: 'Mock Home',
     products: [
@@ -83,7 +84,7 @@ export function generateMockHome(deviceCount = 1, roomCount = 4): Home {
     devices,
     receivedDevices: [],
     rooms,
-  };
+  });
 }
 
 /**

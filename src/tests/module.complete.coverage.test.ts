@@ -9,19 +9,8 @@ import type { RoborockService } from '../services/roborockService.js';
 import type { PlatformRunner } from '../platformRunner.js';
 import { DeviceModel } from '../roborockCommunication/models/deviceModel.js';
 import { DeviceCategory } from '../roborockCommunication/models/deviceCategory.js';
-import { asPartial, asType, createMockLocalStorage } from './helpers/testUtils.js';
+import { asPartial } from './helpers/testUtils.js';
 import { RoborockVacuumCleaner } from '../types/roborockVacuumCleaner.js';
-
-vi.mock('../core/application/models/index.js', async (importOriginal) => {
-  const original: any = await importOriginal();
-  return {
-    ...original,
-    RoomMap: {
-      ...original.RoomMap,
-      fromDeviceDirect: vi.fn().mockResolvedValue({ roomMapping: [], rooms: [] }),
-    },
-  };
-});
 
 vi.mock('../share/behaviorFactory.js', () => ({
   configureBehavior: vi.fn().mockReturnValue({ handler: vi.fn() }),
@@ -358,10 +347,12 @@ describe('module.ts - complete coverage', () => {
       platform.version = '1.0.0';
 
       const mockMapInfo = {
+        maps: [],
         allRooms: [
-          { globalId: 1, iot_name: 'Living Room' },
-          { globalId: 2, iot_name: 'Kitchen' },
+          { id: 1, iot_name: 'Living Room', tag: 0, iot_name_id: 'room1' },
+          { id: 2, iot_name: 'Kitchen', tag: 0, iot_name_id: 'room2' },
         ],
+        hasRooms: true,
       };
 
       const mockRoborockService = asPartial<RoborockService>({
@@ -375,6 +366,14 @@ describe('module.ts - complete coverage', () => {
       platform.validateDevice = vi.fn().mockReturnValue(true);
       platform.registerDevice = vi.fn().mockResolvedValue(undefined);
       platform.setSelectDevice = vi.fn();
+
+      mockDevice.rooms = mockDevice.rooms ?? [];
+      const mockRobot = asPartial<RoborockVacuumCleaner>({
+        serialNumber: 'device1',
+        device: mockDevice,
+        roomInfo: undefined,
+      });
+      platform.registry.registerRobot(mockRobot);
 
       const result = await platform['configureDevice'](mockDevice);
 
@@ -401,7 +400,9 @@ describe('module.ts - complete coverage', () => {
       platform.version = '1.0.0';
 
       const mockMapInfo = {
-        allRooms: [{ globalId: 5, iot_name: 'Bedroom' }],
+        maps: [],
+        allRooms: [{ id: 5, iot_name: 'Bedroom', tag: 0, iot_name_id: 'room5' }],
+        hasRooms: true,
       };
 
       const mockRoborockService = {
@@ -415,6 +416,14 @@ describe('module.ts - complete coverage', () => {
       platform.validateDevice = vi.fn().mockReturnValue(true);
       platform.registerDevice = vi.fn().mockResolvedValue(undefined);
       platform.setSelectDevice = vi.fn();
+
+      mockDevice.rooms = mockDevice.rooms ?? [];
+      const mockRobot = asPartial<RoborockVacuumCleaner>({
+        serialNumber: 'device1',
+        device: mockDevice,
+        roomInfo: undefined,
+      });
+      platform.registry.registerRobot(mockRobot);
 
       const result = await platform['configureDevice'](mockDevice);
 

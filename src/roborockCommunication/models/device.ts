@@ -1,3 +1,4 @@
+import { MapEntry } from '../../core/application/models/index.js';
 import { RoomEntity } from '../../core/domain/entities/Room.js';
 import { DeviceCategory } from './deviceCategory.js';
 import { DeviceModel } from './deviceModel.js';
@@ -52,4 +53,6 @@ export interface Device {
   data: DeviceData;
   store: DeviceInformation;
   scenes?: Scene[];
+
+  mapInfos: MapEntry[] | undefined;
 }

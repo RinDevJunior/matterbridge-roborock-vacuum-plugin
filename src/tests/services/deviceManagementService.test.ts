@@ -66,12 +66,13 @@ describe('DeviceManagementService', () => {
       pv: 'A01',
       model: DeviceModel.QREVO_EDGE_5V1,
     },
+    mapInfos: undefined,
   };
 
-  const mockHomeData: Home = {
-    id: 12345,
-    name: 'Test Home',
-    products: [
+  const mockHomeData: Home = new Home(
+    12345,
+    'Test Home',
+    [
       {
         id: 'prod-456',
         name: 'Test Product',
@@ -80,15 +81,15 @@ describe('DeviceManagementService', () => {
         schema: [],
       },
     ],
-    devices: [mockDevice],
-    receivedDevices: [],
-    rooms: [
+    [mockDevice],
+    [],
+    [
       {
         id: 1,
         name: 'Living Room',
       },
     ],
-  };
+  );
 
   beforeEach(() => {
     vi.clearAllMocks();
@@ -104,7 +105,7 @@ describe('DeviceManagementService', () => {
     });
 
     mockLoginApi = createMockAuthApi({
-      getHomeDetails: vi.fn().mockResolvedValue({ rrHomeId: 12345 }),
+      getBasicHomeInfo: vi.fn().mockResolvedValue({ rrHomeId: 12345 }),
     });
 
     deviceService = new DeviceManagementService(mockLogger, mockLoginApi, mockUserData);
@@ -133,14 +134,14 @@ describe('DeviceManagementService', () => {
     });
 
     it('should throw DeviceNotFoundError when no home found', async () => {
-      mockLoginApi.getHomeDetails = vi.fn().mockResolvedValue(undefined);
+      mockLoginApi.getBasicHomeInfo = vi.fn().mockResolvedValue(undefined);
 
       await expect(deviceService.listDevices()).rejects.toThrow(DeviceNotFoundError);
       await expect(deviceService.listDevices()).rejects.toThrow('No home found for user');
     });
 
     it('should throw error when home details missing rrHomeId', async () => {
-      mockLoginApi.getHomeDetails.mockResolvedValue(undefined);
+      mockLoginApi.getBasicHomeInfo.mockResolvedValue(undefined);
 
       await expect(deviceService.listDevices()).rejects.toThrow(DeviceNotFoundError);
     });
@@ -176,7 +177,7 @@ describe('DeviceManagementService', () => {
         },
       });
 
-      expect(mockLoginApi.getHomeDetails).toHaveBeenCalled();
+      expect(mockLoginApi.getBasicHomeInfo).toHaveBeenCalled();
       expect(mockIotApi.getHomeWithProducts).toHaveBeenCalledWith(12345);
       expect(mockIotApi.getScenes).toHaveBeenCalledWith(12345);
       expect(mockLogger.notice).toHaveBeenCalledWith('Found 1 devices');
@@ -233,7 +234,7 @@ describe('DeviceManagementService', () => {
 
     it('should fallback battery level to 100 if not present', async () => {
       const deviceWithoutBattery = { ...mockDevice, deviceStatus: {} };
-      const homeDataNoBattery = { ...mockHomeData, devices: [deviceWithoutBattery] };
+      const homeDataNoBattery = new Home(mockHomeData.id, mockHomeData.name, mockHomeData.products, [deviceWithoutBattery], mockHomeData.receivedDevices, mockHomeData.rooms);
       mockIotApi.getHomeWithProducts = vi.fn().mockResolvedValue(homeDataNoBattery);
 
       const result = await deviceService.listDevices();

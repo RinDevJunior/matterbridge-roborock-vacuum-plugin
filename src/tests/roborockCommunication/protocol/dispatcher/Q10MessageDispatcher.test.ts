@@ -79,7 +79,7 @@ describe('Q10MessageDispatcher', () => {
   describe('getRoomMap', () => {
     it('should call client.get and return RoomMap', async () => {
       client.get.mockResolvedValueOnce({ room_mapping: [] });
-      const result = await dispatcher.getRoomMap(duid, 1, []);
+      const result = await dispatcher.getRoomMap(duid, 1);
       expect(client.get).toHaveBeenCalled();
       expect(result).toBeInstanceOf(Object); // RoomMap, but type is not checked at runtime
     });

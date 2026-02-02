@@ -1,40 +1,43 @@
 import { RoomMap, MapInfo, RoomMapping } from '../core/application/models/index.js';
-import { Device } from '../roborockCommunication/models/index.js';
+import { Device, RawRoomMappingData } from '../roborockCommunication/models/index.js';
 import { DeviceModel } from '../roborockCommunication/models/deviceModel.js';
 import { DeviceCategory } from '../roborockCommunication/models/deviceCategory.js';
 import { UserData } from '../roborockCommunication/models/userData.js';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { asPartial } from './testUtils.js';
+import { asPartial, createMockLogger } from './testUtils.js';
+import { RoborockMatterbridgePlatform } from '../module.js';
+import { RoborockService } from '../services/roborockService.js';
+import { PlatformConfigManager } from '../platform/platformConfig.js';
+import { DeviceRegistry } from '../platform/deviceRegistry.js';
+import { RoborockVacuumCleaner } from '../types/roborockVacuumCleaner.js';
 
 describe('PlatformRunner.getRoomMapFromDevice', () => {
-  let platform: any;
+  let platform: RoborockMatterbridgePlatform;
+  let registry: DeviceRegistry;
+  let roborockService: RoborockService;
 
   beforeEach(() => {
     // Mock registry with robotsMap and getRobot
-    const robots = new Map();
-    const registry = {
+    const robots = new Map<string, RoborockVacuumCleaner>();
+    registry = asPartial<DeviceRegistry>({
       robotsMap: robots,
       getRobot: (duid: string) => robots.get(duid),
-    };
+    });
     // Mock configManager with isMultipleMapEnabled
     const configManager = {
       get isMultipleMapEnabled() {
         return false;
       },
     };
-    platform = {
-      log: {
-        error: vi.fn(),
-        debug: vi.fn(),
-        notice: vi.fn(),
-      },
-      roborockService: {
+    platform = asPartial<RoborockMatterbridgePlatform>({
+      log: createMockLogger(),
+      roborockService: (roborockService = asPartial<RoborockService>({
         getRoomMap: vi.fn(),
         getMapInfo: vi.fn(),
-      },
+      })),
       registry: registry,
-      configManager: configManager,
-    };
+      configManager: asPartial<PlatformConfigManager>(configManager),
+    });
   });
 
   it('returns RoomMap with roomData from getRoomMap if available', async () => {
@@ -81,18 +84,24 @@ describe('PlatformRunner.getRoomMapFromDevice', () => {
         batteryLevel: 100,
       },
       store: { userData, localKey: 'lk', pv: '1.0', model: DeviceModel.QREVO_EDGE_5V1 },
+      mapInfos: undefined,
     };
+    const robot = asPartial<RoborockVacuumCleaner>({
+      device,
+    });
 
-    platform.roborockService.getRoomMap.mockResolvedValue(
-      new RoomMap([
-        { id: 1, iot_name_id: '11100845', tag: 14, iot_map_id: 0 },
-        { id: 2, iot_name_id: '11100849', tag: 9, iot_map_id: 0 },
-        { id: 3, iot_name_id: '11100842', tag: 6, iot_map_id: 0 },
-        { id: 4, iot_name_id: '11100847', tag: 1, iot_map_id: 0 },
-      ]),
-    );
+    registry.robotsMap.set(device.duid, robot);
 
-    platform.roborockService.getMapInfo.mockResolvedValue(
+    const roomData = [
+      [1, '11100845', 14],
+      [2, '11100849', 9],
+      [3, '11100842', 6],
+      [4, '11100847', 1],
+    ] as Partial<RawRoomMappingData> as RawRoomMappingData;
+
+    vi.mocked(roborockService.getRoomMap).mockResolvedValue(roomData);
+
+    vi.mocked(roborockService.getMapInfo).mockResolvedValue(
       new MapInfo({
         max_multi_map: 1,
         max_bak_map: 1,
@@ -101,7 +110,7 @@ describe('PlatformRunner.getRoomMapFromDevice', () => {
       }),
     );
 
-    const result = await RoomMap.fromDeviceDirect(device, platform);
+    const result = await RoomMap.fromMapInfo(device, platform);
 
     expect(result).toBeInstanceOf(RoomMap);
     expect(result.rooms.length).toEqual(4);
@@ -168,21 +177,14 @@ describe('PlatformRunner.getRoomMapFromDevice', () => {
       ],
     });
 
-    platform.roborockService.getRoomMap.mockResolvedValue(undefined);
-    platform.roborockService.getMapInfo.mockResolvedValue(mapInfo);
+    vi.mocked(roborockService.getRoomMap).mockResolvedValue([]);
+    vi.mocked(roborockService.getMapInfo).mockResolvedValue(mapInfo);
 
-    const result = await RoomMap.fromDeviceDirect(device as Device, platform);
+    const result = await RoomMap.fromMapInfo(device, platform);
     expect(result).toBeInstanceOf(RoomMap);
     // expect(result.rooms.length).toEqual(4);
 
-    platform.enableExperimentalFeature = {
-      enableExperimentalFeature: true,
-      advancedFeature: {
-        enableMultipleMap: true,
-      },
-    };
-
-    const result1 = await RoomMap.fromDeviceDirect(device as Device, platform);
+    const result1 = await RoomMap.fromMapInfo(device, platform);
     expect(result1).toBeInstanceOf(RoomMap);
     // expect(result1.rooms.length).toEqual(4);
   });
@@ -213,21 +215,14 @@ describe('PlatformRunner.getRoomMapFromDevice', () => {
       ],
     });
 
-    platform.roborockService.getRoomMap.mockResolvedValue(new RoomMap([]));
-    platform.roborockService.getMapInfo.mockResolvedValue(mapInfo);
+    vi.mocked(roborockService.getRoomMap).mockResolvedValue([]);
+    vi.mocked(roborockService.getMapInfo).mockResolvedValue(mapInfo);
 
-    const result = await RoomMap.fromDeviceDirect(device as Device, platform);
+    const result = await RoomMap.fromMapInfo(device, platform);
     expect(result).toBeInstanceOf(RoomMap);
     // expect(result.rooms.length).toEqual(0);
 
-    platform.enableExperimentalFeature = {
-      enableExperimentalFeature: true,
-      advancedFeature: {
-        enableMultipleMap: true,
-      },
-    };
-
-    const result1 = await RoomMap.fromDeviceDirect(device as Device, platform);
+    const result1 = await RoomMap.fromMapInfo(device, platform);
     expect(result1).toBeInstanceOf(RoomMap);
     // expect(result1.rooms.length).toEqual(0);
   });
@@ -263,23 +258,16 @@ describe('PlatformRunner.getRoomMapFromDevice', () => {
       [2, '11100849', 9],
       [3, '11100842', 6],
       [4, '11100847', 1],
-    ];
+    ] as Partial<RawRoomMappingData> as RawRoomMappingData;
 
-    platform.roborockService.getRoomMap.mockResolvedValue(new RoomMap([]));
-    platform.roborockService.getMapInfo.mockResolvedValue(mapInfo);
+    vi.mocked(roborockService.getRoomMap).mockResolvedValue(roomData);
+    vi.mocked(roborockService.getMapInfo).mockResolvedValue(mapInfo);
 
-    const result = await RoomMap.fromDeviceDirect(device as Device, platform);
+    const result = await RoomMap.fromMapInfo(device, platform);
     expect(result).toBeInstanceOf(RoomMap);
     // expect(result.rooms.length).toEqual(4);
 
-    platform.enableExperimentalFeature = {
-      enableExperimentalFeature: true,
-      advancedFeature: {
-        enableMultipleMap: true,
-      },
-    };
-
-    const result1 = await RoomMap.fromDeviceDirect(device as Device, platform);
+    const result1 = await RoomMap.fromMapInfo(device, platform);
     expect(result1).toBeInstanceOf(RoomMap);
     // expect(result1.rooms.length).toEqual(4);
   });
@@ -289,25 +277,25 @@ describe('PlatformRunner.getRoomMapFromDevice', () => {
       duid: 'duid1',
       rooms: [{ id: 16, name: 'Garage' }],
     });
-    const mapInfo = {
+    const mapInfo = asPartial<MapInfo>({
       allRooms: [
         {
           id: 16,
+          tag: 1,
           iot_name_id: '12231095',
-          tag: undefined, // Simulate API response with undefined tag
-          displayName: 'Garage',
-          mapId: 0,
+          iot_name: 'Garage',
+          iot_map_id: 0,
         },
       ],
       maps: [],
-    };
+    });
 
-    platform.roborockService.getRoomMap.mockResolvedValue(undefined);
-    platform.roborockService.getMapInfo.mockResolvedValue(mapInfo);
+    vi.mocked(roborockService.getRoomMap).mockResolvedValue([]);
+    vi.mocked(roborockService.getMapInfo).mockResolvedValue(mapInfo);
 
-    const result = await RoomMap.fromDeviceDirect(device, platform);
+    const result = await RoomMap.fromMapInfo(device, platform);
 
-    expect(result).toBeUndefined();
+    expect(result).toBeDefined();
     // expect(result).toBeInstanceOf(RoomMap);
     // expect(result.rooms.length).toEqual(1);
     // expect(result.rooms[0].alternativeId).toEqual('16'); // Should be just the id when tag is undefined

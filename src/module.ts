@@ -18,7 +18,7 @@ import { getSupportedAreas, getSupportedScenes } from './initialData/index.js';
 
 import { getBaseUrl } from './initialData/regionUrls.js';
 import { UINT16_MAX, UINT32_MAX } from 'matterbridge/matter';
-import { Device, RoomDto } from './roborockCommunication/models/index.js';
+import { Device } from './roborockCommunication/models/index.js';
 import { RoborockAuthenticateApi } from './roborockCommunication/api/authClient.js';
 import { RoborockIoTApi } from './roborockCommunication/api/iotClient.js';
 
@@ -246,19 +246,18 @@ export class RoborockMatterbridgePlatform extends MatterbridgeDynamicPlatform {
       return false;
     }
 
+    let roomMap = new RoomMap([]);
+    // Fetch rooms if not already available
     if (vacuum.rooms === undefined || vacuum.rooms.length === 0) {
       this.log.notice(`Fetching map information for device: ${vacuum.name} (${vacuum.duid}) to get rooms`);
-      const map_info = await this.roborockService.getMapInfo(vacuum.duid);
+      vacuum.rooms = [];
+      roomMap = await RoomMap.fromMapInfo(vacuum, this);
 
-      if (map_info.hasRooms) {
-        vacuum.rooms = map_info.allRooms.map((room) => new RoomEntity(room.id, room.iot_name));
-      } else {
-        const roomMaps = await this.roborockService.getRoomMap(vacuum.duid, 1, []);
-        vacuum.rooms = roomMaps.rooms.map((room) => new RoomEntity(room.id, room.iot_name));
+      if (roomMap.hasRooms) {
+        this.log.info(`Using RoomMap rooms for device: ${vacuum.name} (${vacuum.duid})`);
+        vacuum.rooms = roomMap.rooms.map((room) => new RoomEntity(room.id, room.iot_name));
       }
     }
-
-    const roomMap = await RoomMap.fromDeviceDirect(vacuum, this);
 
     this.log.debug('Initializing - roomMap: ', debugStringify(roomMap));
 

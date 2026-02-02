@@ -4,8 +4,8 @@ import { DeviceError } from '../errors/index.js';
 import { MessageRoutingService } from './index.js';
 import { RoborockIoTApi } from '../roborockCommunication/api/iotClient.js';
 import { ClientRouter } from '../roborockCommunication/routing/clientRouter.js';
-import { RoomDto, Scene } from '../roborockCommunication/models/index.js';
-import { RoomMap, MapInfo, RoomIndexMap } from '../core/application/models/index.js';
+import { RawRoomMappingData, Scene } from '../roborockCommunication/models/index.js';
+import { MapInfo, RoomIndexMap } from '../core/application/models/index.js';
 
 /** Manages cleaning areas, rooms, maps, and scenes. */
 export class AreaManagementService {
@@ -82,13 +82,13 @@ export class AreaManagementService {
     return this.serviceRouting.getMapInfo(duid);
   }
 
-  public async getRoomMap(duid: string, activeMap: number, rooms: RoomDto[]): Promise<RoomMap> {
+  public async getRoomMap(duid: string, activeMap: number): Promise<RawRoomMappingData> {
     if (!this.serviceRouting) {
       throw new DeviceError('Service routing not initialized', duid);
     }
 
     this.logger.debug('AreaManagementService - getRoomMap', duid);
-    return this.serviceRouting.getRoomMap(duid, activeMap, rooms);
+    return this.serviceRouting.getRoomMap(duid, activeMap);
   }
 
   public async getScenes(homeId: number): Promise<Scene[] | undefined> {

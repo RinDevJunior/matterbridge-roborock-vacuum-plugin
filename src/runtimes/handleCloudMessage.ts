@@ -4,7 +4,6 @@ import { hasDockingStationError } from '../model/DockingStationStatus.js';
 import { state_to_matter_operational_status, state_to_matter_state } from '../share/function.js';
 import { RvcCleanMode, RvcOperationalState, RvcRunMode, ServiceArea } from 'matterbridge/matter/clusters';
 import { triggerDssError } from './handleLocalMessage.js';
-import { RoomMap } from '../core/application/models/index.js';
 import { debugStringify } from 'matterbridge/logger';
 import { Protocol } from '../roborockCommunication/models/index.js';
 import { getCleanModeResolver } from '../share/runtimeHelper.js';
@@ -112,27 +111,20 @@ export function handleMapChange(robot: RoborockVacuumCleaner, platform: Roborock
   const enableMultipleMap = platform.configManager.isMultipleMapEnabled;
   if (!enableMultipleMap) return;
 
-  RoomMap.fromDeviceDirect(robot.device, platform)
-    .then((roomMap) => {
-      robot.roomInfo = roomMap;
-      const { supportedAreas, supportedMaps, roomIndexMap } = getSupportedAreas(robot.device.rooms, roomMap, enableMultipleMap, platform.log, robot.mapInfos ?? []);
+  const { supportedAreas, supportedMaps, roomIndexMap } = getSupportedAreas(robot.device.rooms, robot.roomInfo, enableMultipleMap, platform.log, robot.device.mapInfos ?? []);
 
-      platform.log.debug(`[handleMapChange] supportedAreas: ${debugStringify(supportedAreas)}`);
-      platform.log.debug(`[handleMapChange] supportedMaps: ${debugStringify(supportedMaps)}`);
-      platform.log.debug(`[handleMapChange] roomIndexMap: `, roomIndexMap);
+  platform.log.debug(`[handleMapChange] supportedAreas: ${debugStringify(supportedAreas)}`);
+  platform.log.debug(`[handleMapChange] supportedMaps: ${debugStringify(supportedMaps)}`);
+  platform.log.debug(`[handleMapChange] roomIndexMap: `, roomIndexMap);
 
-      platform.roborockService?.setSupportedAreas(duid, supportedAreas);
-      platform.roborockService?.setSelectedAreas(duid, []);
-      robot.updateAttribute(ServiceArea.Cluster.id, 'supportedAreas', supportedAreas, platform.log);
-      robot.updateAttribute(ServiceArea.Cluster.id, 'selectedAreas', [], platform.log);
-      robot.updateAttribute(ServiceArea.Cluster.id, 'currentArea', null, platform.log);
+  platform.roborockService?.setSupportedAreas(duid, supportedAreas);
+  platform.roborockService?.setSelectedAreas(duid, []);
+  robot.updateAttribute(ServiceArea.Cluster.id, 'supportedAreas', supportedAreas, platform.log);
+  robot.updateAttribute(ServiceArea.Cluster.id, 'selectedAreas', [], platform.log);
+  robot.updateAttribute(ServiceArea.Cluster.id, 'currentArea', null, platform.log);
 
-      if (enableMultipleMap) {
-        platform.roborockService?.setSupportedAreaIndexMap(duid, roomIndexMap);
-        robot.updateAttribute(ServiceArea.Cluster.id, 'supportedMaps', supportedMaps, platform.log);
-      }
-    })
-    .catch((error) => {
-      platform.log.error(`[handleMapChange] Error handling map change for robot ${duid}: ${error}`);
-    });
+  if (enableMultipleMap) {
+    platform.roborockService?.setSupportedAreaIndexMap(duid, roomIndexMap);
+    robot.updateAttribute(ServiceArea.Cluster.id, 'supportedMaps', supportedMaps, platform.log);
+  }
 }

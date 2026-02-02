@@ -9,7 +9,7 @@ import * as AxiosLogger from 'axios-logger';
 export class RoborockIoTApi {
   logger: AnsiLogger;
   private readonly api: AxiosInstance;
-  private readonly vacuumNeedAPIV3 = ['roborock.vacuum.ss07'];
+  private readonly vacuumNeedAPIV3 = ['roborock.vacuum.ss07']; // Q10 S5 Plus
 
   constructor(userdata: UserData, logger: AnsiLogger, axiosFactory: AxiosStatic = axios) {
     this.logger = logger;
@@ -83,11 +83,10 @@ export class RoborockIoTApi {
     }, AxiosLogger.errorLogger);
   }
 
-  public async getHomeWithProducts(homeId: number): Promise<Home | undefined> {
+  public async getHomeWithProducts(homeId: number): Promise<Home> {
     const homeData = await this.getHome(homeId);
     if (!homeData) {
-      this.logger.error('Failed to retrieve the home data');
-      return undefined;
+      throw new Error('Failed to retrieve the home data');
     }
 
     if (homeData.products.some((p) => this.vacuumNeedAPIV3.includes(p.model))) {
@@ -100,13 +99,13 @@ export class RoborockIoTApi {
       homeData.receivedDevices = [...homeData.receivedDevices, ...homeDataV3.receivedDevices.filter((d) => !homeData.receivedDevices.some((x) => x.duid === d.duid))];
     }
 
-    if (homeData.rooms.length === 0) {
+    if (!homeData.hasRooms) {
       const homeDataV2 = await this.getHomev2(homeId);
-      if (homeDataV2?.rooms && homeDataV2.rooms.length > 0) {
+      if (homeDataV2?.hasRooms) {
         homeData.rooms = homeDataV2.rooms;
       } else {
         const homeDataV3 = await this.getHomev3(homeId);
-        if (homeDataV3?.rooms && homeDataV3.rooms.length > 0) {
+        if (homeDataV3?.hasRooms) {
           homeData.rooms = homeDataV3.rooms;
         }
       }

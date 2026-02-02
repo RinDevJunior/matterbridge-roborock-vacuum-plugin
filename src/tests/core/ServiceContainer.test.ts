@@ -11,7 +11,7 @@ function createMockAuthenticateApi(): RoborockAuthenticateApi {
     loginWithPassword: vi.fn(),
     requestCodeV4: vi.fn(),
     loginWithCodeV4: vi.fn(),
-    getHomeDetails: vi.fn(),
+    getBasicHomeInfo: vi.fn(),
     getCachedCountryInfo: vi.fn(),
   });
 }

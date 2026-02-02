@@ -63,8 +63,9 @@ describe('RoborockAuthenticateApi', () => {
   it('getHomeDetails should return undefined if username/authToken missing', async () => {
     api.username = undefined;
     api.authToken = undefined;
-    const result = await api.getHomeDetails();
+    const result = await api.getBasicHomeInfo();
     expect(result).toBeUndefined();
+    expect(mockLogger.error).toHaveBeenCalled();
   });
 
   it('getHomeDetails should throw error if response.data missing', async () => {
@@ -73,7 +74,7 @@ describe('RoborockAuthenticateApi', () => {
     vi.spyOn(api, 'getAPIFor').mockResolvedValue(mockAxiosInstance);
     mockAxiosInstance.get.mockResolvedValue({ data: { data: null } });
 
-    await expect(api.getHomeDetails()).rejects.toThrow('Failed to retrieve the home details');
+    await expect(api.getBasicHomeInfo()).rejects.toThrow('Failed to retrieve the home details');
   });
 
   it('getHomeDetails should return HomeInfo if present', async () => {
@@ -83,7 +84,7 @@ describe('RoborockAuthenticateApi', () => {
     vi.spyOn(api, 'getAPIFor').mockResolvedValue(mockAxiosInstance);
     mockAxiosInstance.get.mockResolvedValue({ data: { data: homeInfo } });
 
-    const result = await api.getHomeDetails();
+    const result = await api.getBasicHomeInfo();
     expect(result).toBe(homeInfo);
   });
 

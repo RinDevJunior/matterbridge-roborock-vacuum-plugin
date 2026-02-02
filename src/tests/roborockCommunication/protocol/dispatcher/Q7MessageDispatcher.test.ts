@@ -78,7 +78,7 @@ describe('Q7MessageDispatcher', () => {
   describe('getRoomMap', () => {
     it('should call client.get and logger.notice, return RoomMap', async () => {
       client.get.mockResolvedValueOnce([]);
-      const result = await dispatcher.getRoomMap(duid, 1, []);
+      const result = await dispatcher.getRoomMap(duid, 1);
       expect(client.get).toHaveBeenCalled();
       expect(logger.notice).toHaveBeenCalled();
       expect(result).toBeInstanceOf(Object); // RoomMap, but type is not checked at runtime

@@ -71,10 +71,10 @@ describe('updateFromHomeData', () => {
   });
 
   it('should return early if no state or matterState', async () => {
-    const homeDataWithoutState = {
+    const homeDataWithoutState = asPartial<Home>({
       ...homeData,
       devices: [{ ...homeData.devices[0], deviceStatus: {} }],
-    };
+    });
     platform.registry.robotsMap.clear();
     platform.registry.robotsMap.set('test-duid', robot);
     await updateFromHomeData(homeDataWithoutState, asPartial<RoborockMatterbridgePlatform>(platform));
@@ -89,13 +89,13 @@ describe('updateFromHomeData', () => {
   });
 
   it('should skip robot update when robot is found but continue to next device', async () => {
-    const homeDataMultipleDevices = {
+    const homeDataMultipleDevices = asPartial<Home>({
       ...homeData,
       devices: [
         { ...homeData.devices[0], duid: 'test-duid' }, // This one should succeed
         { ...homeData.devices[0], duid: 'test-duid-2' }, // Second device
       ],
-    };
+    });
     platform.registry.robotsMap.clear();
     platform.registry.robotsMap.set('test-duid', robot);
     platform.registry.robotsMap.set('test-duid-2', asPartial<RoborockVacuumCleaner>({ ...robot, updateAttribute: vi.fn() }));
@@ -106,10 +106,10 @@ describe('updateFromHomeData', () => {
   });
 
   it('should handle when device is filtered out before loop', async () => {
-    const homeDataUnknownDevice = {
+    const homeDataUnknownDevice = asPartial<Home>({
       ...homeData,
       devices: [{ ...homeData.devices[0], duid: 'unknown-duid' }],
-    };
+    });
     platform.registry.robotsMap.clear();
     platform.registry.robotsMap.set('test-duid', robot); // Robot exists but no matching device
 
@@ -119,10 +119,10 @@ describe('updateFromHomeData', () => {
   });
 
   it('should handle missing battery level', async () => {
-    const homeDataNoBattery = {
+    const homeDataNoBattery = asPartial<Home>({
       ...homeData,
       devices: [{ ...homeData.devices[0], deviceStatus: asPartial({ state: 8 }) }],
-    };
+    });
     platform.registry.robotsMap.clear();
     platform.registry.robotsMap.set('test-duid', robot);
 
@@ -132,10 +132,10 @@ describe('updateFromHomeData', () => {
   });
 
   it('should handle state without matterState mapping', async () => {
-    const homeDataInvalidState = {
+    const homeDataInvalidState = asPartial<Home>({
       ...homeData,
       devices: [{ ...homeData.devices[0], deviceStatus: asPartial({ state: 9999, battery: 100 }) }], // Truly unmapped state
-    };
+    });
     platform.registry.robotsMap.clear();
     platform.registry.robotsMap.set('test-duid', robot);
     await updateFromHomeData(homeDataInvalidState, asPartial<RoborockMatterbridgePlatform>(platform));
@@ -144,10 +144,10 @@ describe('updateFromHomeData', () => {
   });
 
   it('should return early when state is undefined', async () => {
-    const homeDataNoState = {
+    const homeDataNoState = asPartial<Home>({
       ...homeData,
       devices: [{ ...homeData.devices[0], deviceStatus: {} }],
-    };
+    });
     platform.registry.robotsMap.clear();
     platform.registry.robotsMap.set('test-duid', robot);
     await updateFromHomeData(homeDataNoState, asPartial<RoborockMatterbridgePlatform>(platform));
@@ -155,10 +155,10 @@ describe('updateFromHomeData', () => {
   });
 
   it('should handle missing operational state', async () => {
-    const homeDataNoOpState = {
+    const homeDataNoOpState = asPartial<Home>({
       ...homeData,
       devices: [{ ...homeData.devices[0], deviceStatus: asPartial({ state: 9999, battery: 100 }) }], // Truly unmapped state
-    };
+    });
     platform.registry.robotsMap.clear();
     platform.registry.robotsMap.set('test-duid', robot);
     await updateFromHomeData(homeDataNoOpState, asPartial<RoborockMatterbridgePlatform>(platform));
@@ -211,10 +211,10 @@ describe('updateFromHomeData', () => {
   });
 
   it('should update batChargeState when batteryLevel exists', async () => {
-    const homeDataWithBattery = {
+    const homeDataWithBattery = asPartial<Home>({
       ...homeData,
       devices: [{ ...homeData.devices[0], deviceStatus: asPartial({ state: 8, battery: 50 }) }],
-    };
+    });
     platform.registry.robotsMap.clear();
     platform.registry.robotsMap.set('test-duid', robot);
 
@@ -223,10 +223,10 @@ describe('updateFromHomeData', () => {
   });
 
   it('should not update batChargeState when batteryLevel is missing', async () => {
-    const homeDataNoBattery = {
+    const homeDataNoBattery = asPartial<Home>({
       ...homeData,
       devices: [{ ...homeData.devices[0], deviceStatus: asPartial({ state: 8 }) }],
-    };
+    });
     platform.registry.robotsMap.clear();
     platform.registry.robotsMap.set('test-duid', robot);
 
@@ -236,10 +236,10 @@ describe('updateFromHomeData', () => {
   });
 
   it('should handle zero battery level', async () => {
-    const homeDataZeroBattery = {
+    const homeDataZeroBattery = asPartial<Home>({
       ...homeData,
       devices: [{ ...homeData.devices[0], deviceStatus: asPartial({ state: 8, battery: 0 }) }],
-    };
+    });
     platform.registry.robotsMap.clear();
     platform.registry.robotsMap.set('test-duid', robot);
 
@@ -249,11 +249,11 @@ describe('updateFromHomeData', () => {
   });
 
   it('should handle homeData without matching product schema', async () => {
-    const homeDataNoSchema = {
+    const homeDataNoSchema = asPartial<Home>({
       ...homeData,
       products: [], // No products means schema won't be found
       devices: [{ ...homeData.devices[0], deviceStatus: asPartial({ state: 8, battery: 100 }) }],
-    };
+    });
     platform.registry.robotsMap.clear();
     platform.registry.robotsMap.set('test-duid', robot);
 

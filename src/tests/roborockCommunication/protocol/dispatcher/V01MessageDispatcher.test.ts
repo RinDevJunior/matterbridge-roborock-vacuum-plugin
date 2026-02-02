@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { V10MessageDispatcher } from '../../../../roborockCommunication/protocol/dispatcher/V10MessageDispatcher.js';
 import { asType } from '../../../testUtils.js';
+import { V10MessageDispatcher } from '../../../../roborockCommunication/protocol/dispatcher/V10MessageDispatcher.js';
 // --- Mock Factories ---
 function createMockLogger() {
   return {
@@ -98,10 +98,9 @@ describe('V10MessageDispatcher', () => {
         [1, 2],
         [3, 4],
       ]);
-      const result = await dispatcher.getRoomMap(duid, 1, []);
+      const result = await dispatcher.getRoomMap(duid, 1);
       expect(client.get).toHaveBeenCalled();
-      expect(logger.debug).toHaveBeenCalled();
-      expect(result).toBeInstanceOf(Object); // RoomMap
+      expect(result).toBeInstanceOf(Array); // RoomMap
     });
   });
 

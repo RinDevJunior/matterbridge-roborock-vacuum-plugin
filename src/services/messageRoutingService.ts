@@ -2,9 +2,9 @@ import { AnsiLogger, debugStringify } from 'matterbridge/logger';
 import { ServiceArea } from 'matterbridge/matter/clusters';
 import { DeviceError } from '../errors/index.js';
 import { RoborockIoTApi } from '../roborockCommunication/api/iotClient.js';
-import { RequestMessage, RoomDto } from '../roborockCommunication/models/index.js';
+import { RawRoomMappingData, RequestMessage } from '../roborockCommunication/models/index.js';
 import { AbstractMessageDispatcher } from '../roborockCommunication/protocol/dispatcher/abstractMessageDispatcher.js';
-import { MapInfo, RoomMap } from '../core/application/models/index.js';
+import { MapInfo } from '../core/application/models/index.js';
 import { CleanModeSetting } from '../behaviors/roborock.vacuum/core/CleanModeSetting.js';
 
 export class MessageRoutingService {
@@ -36,8 +36,8 @@ export class MessageRoutingService {
     return this.getMessageDispatcher(duid).getMapInfo(duid);
   }
 
-  public getRoomMap(duid: string, activeMap: number, rooms: RoomDto[]): Promise<RoomMap> {
-    return this.getMessageDispatcher(duid).getRoomMap(duid, activeMap, rooms);
+  public getRoomMap(duid: string, activeMap: number): Promise<RawRoomMappingData> {
+    return this.getMessageDispatcher(duid).getRoomMap(duid, activeMap);
   }
 
   /** Get current cleaning mode settings. */
