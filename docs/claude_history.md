@@ -2,6 +2,19 @@
 
 ## 2026-02-02
 
+### MapInfo Unit Tests
+
+**Created comprehensive unit test suite for MapInfo class**
+
+- Created [MapInfo.test.ts](src/tests/core/application/models/MapInfo.test.ts) with 13 passing tests
+- Test coverage:
+  - Constructor: parsing with/without rooms, mapId assignment, URL-decoded names, multiple maps
+  - getById(): existing/non-existing ids
+  - getByName(): existing/non-existing names, case-insensitive search
+  - hasRooms: true/false/empty array scenarios
+- Used sample data from [get_multi_maps_list_a51.json](misc/sample_data/v10/get_multi_maps_list_a51.json)
+- All tests passing (13/13)
+
 ### Test Suite Fixes
 
 **Fixed 13 failing unit tests after message handling refactor**

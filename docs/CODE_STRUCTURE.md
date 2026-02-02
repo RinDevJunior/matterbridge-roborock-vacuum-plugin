@@ -452,7 +452,7 @@ src/
 │   │   └── dispatcher/          # Message dispatchers
 │   │       ├── Q10MessageDispatcher.ts
 │   │       ├── Q7MessageDispatcher.ts
-│   │       ├── V01MessageDispatcher.ts
+│   │       ├── V10MessageDispatcher.ts
 │   │       ├── abstractMessageDispatcher.ts
 │   │       ├── dispatcherFactory.ts
 │   │       └── protocolCalculator.ts
@@ -1073,11 +1073,11 @@ ClientRouter (facade)
 | L01      | L01MessageBodyBuilder | L01Serializer | -                    | Legacy protocol   |
 | A01      | A01MessageBodyBuilder | A01Serializer | -                    | Standard protocol |
 | B01      | B01MessageBodyBuilder | B01Serializer | Q7MessageDispatcher  | Extended protocol |
-| V01      | V01MessageBodyBuilder | V01Serializer | V01MessageDispatcher | Latest protocol   |
+| V01      | V01MessageBodyBuilder | V01Serializer | V10MessageDispatcher | Latest protocol   |
 
 **Message Dispatchers:**
 
-- **V01MessageDispatcher** - Handles V01 protocol messages, including room mapping and map data
+- **V10MessageDispatcher** - Handles V01 protocol messages, including room mapping and map data
 - **Q7MessageDispatcher** - Handles Q7-specific B01 protocol messages
 - **Q10MessageDispatcher** - Handles Q10-specific messages
 
@@ -1309,7 +1309,7 @@ Roborock Device
 ```
 API Response (number[][])
     ↓
-V01MessageDispatcher.getRoomMappings()
+V10MessageDispatcher.getRoomMappings()
     ↓
 HomeModelMapper.rawArrayToMapRoomDto() → MapRoomDto[]
     ↓

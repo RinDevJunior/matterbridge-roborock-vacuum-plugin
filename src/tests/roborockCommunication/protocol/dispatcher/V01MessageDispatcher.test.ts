@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { V01MessageDispatcher } from '../../../../roborockCommunication/protocol/dispatcher/V01MessageDispatcher.js';
+import { V10MessageDispatcher } from '../../../../roborockCommunication/protocol/dispatcher/V10MessageDispatcher.js';
 import { asType } from '../../../testUtils.js';
 // --- Mock Factories ---
 function createMockLogger() {
@@ -25,16 +25,16 @@ function createMockClient() {
 }
 
 // --- Test Suite ---
-describe('V01MessageDispatcher', () => {
+describe('V10MessageDispatcher', () => {
   let logger: ReturnType<typeof createMockLogger>;
   let client: ReturnType<typeof createMockClient>;
-  let dispatcher: V01MessageDispatcher;
+  let dispatcher: V10MessageDispatcher;
   const duid = 'test-duid';
 
   beforeEach(() => {
     logger = createMockLogger();
     client = createMockClient();
-    dispatcher = new V01MessageDispatcher(asType(logger), client);
+    dispatcher = new V10MessageDispatcher(asType(logger), client);
   });
 
   afterEach(() => {

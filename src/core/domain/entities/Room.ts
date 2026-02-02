@@ -1,10 +1,11 @@
 /**
  * Domain entity representing a room in a home.
  */
-export interface RoomEntity {
+export class RoomEntity {
   /** Unique room identifier (global ID) */
-  readonly id: number;
-
   /** Room name */
-  readonly name: string;
+  constructor(
+    public readonly id: number,
+    public readonly name: string | undefined,
+  ) {}
 }

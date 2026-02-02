@@ -1,12 +1,12 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { AnsiLogger } from 'matterbridge/logger';
 import { DeviceStatus } from '../../../roborockCommunication/models/index.js';
-import { V01MessageDispatcher } from '../../../roborockCommunication/protocol/dispatcher/V01MessageDispatcher.js';
+import { V10MessageDispatcher } from '../../../roborockCommunication/protocol/dispatcher/V10MessageDispatcher.js';
 import { asType } from '../../testUtils.js';
 
-describe('V01MessageDispatcher', () => {
+describe('V10MessageDispatcher', () => {
   let mockClient: any;
-  let processor: V01MessageDispatcher;
+  let processor: V10MessageDispatcher;
   let mockLogger: AnsiLogger;
 
   beforeEach(() => {
@@ -24,7 +24,7 @@ describe('V01MessageDispatcher', () => {
       error: vi.fn(),
     });
 
-    processor = new V01MessageDispatcher(mockLogger, mockClient);
+    processor = new V10MessageDispatcher(mockLogger, mockClient);
   });
 
   afterEach(() => {

@@ -8,8 +8,8 @@ import { MapRoomResponse } from '../../../types/index.js';
 import { CleanModeSetting } from '../../../behaviors/roborock.vacuum/core/CleanModeSetting.js';
 import { MopRoute, VacuumSuctionPower } from '../../../behaviors/roborock.vacuum/enums/index.js';
 
-export class V01MessageDispatcher implements AbstractMessageDispatcher {
-  public dispatcherName = 'V01MessageDispatcher';
+export class V10MessageDispatcher implements AbstractMessageDispatcher {
+  public dispatcherName = 'V10MessageDispatcher';
   constructor(
     private readonly logger: AnsiLogger,
     private readonly client: Client,

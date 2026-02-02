@@ -5,7 +5,7 @@ import { DeviceError } from '../../errors/index.js';
 import { ServiceArea } from 'matterbridge/matter/clusters';
 import { RoborockIoTApi } from '../../roborockCommunication/api/iotClient.js';
 import { RequestMessage } from '../../roborockCommunication/models/index.js';
-import { V01MessageDispatcher } from '../../roborockCommunication/protocol/dispatcher/V01MessageDispatcher.js';
+import { V10MessageDispatcher } from '../../roborockCommunication/protocol/dispatcher/V10MessageDispatcher.js';
 import { CleanModeSetting } from '../../behaviors/roborock.vacuum/core/CleanModeSetting.js';
 import { asPartial } from '../testUtils.js';
 
@@ -149,12 +149,12 @@ describe('MessageRoutingService', () => {
     const testDuid = 'test-device-123';
 
     it('should register a message processor', () => {
-      messageService.registerMessageDispatcher(testDuid, mockDispatcher as V01MessageDispatcher);
+      messageService.registerMessageDispatcher(testDuid, mockDispatcher as V10MessageDispatcher);
       expect(() => messageService.getMessageDispatcher(testDuid)).not.toThrow();
     });
 
     it('should retrieve registered processor', () => {
-      messageService.registerMessageDispatcher(testDuid, mockDispatcher as V01MessageDispatcher);
+      messageService.registerMessageDispatcher(testDuid, mockDispatcher as V10MessageDispatcher);
       const processor = messageService.getMessageDispatcher(testDuid);
       expect(processor).toBe(mockDispatcher);
     });
@@ -166,8 +166,8 @@ describe('MessageRoutingService', () => {
 
     it('should allow multiple processors to be registered', () => {
       const mockProcessor2 = createMockDispatcher();
-      messageService.registerMessageDispatcher('device-1', mockDispatcher as V01MessageDispatcher);
-      messageService.registerMessageDispatcher('device-2', mockProcessor2 as V01MessageDispatcher);
+      messageService.registerMessageDispatcher('device-1', mockDispatcher as V10MessageDispatcher);
+      messageService.registerMessageDispatcher('device-2', mockProcessor2 as V10MessageDispatcher);
 
       expect(messageService.getMessageDispatcher('device-1')).toBe(mockDispatcher);
       expect(messageService.getMessageDispatcher('device-2')).toBe(mockProcessor2);
@@ -179,7 +179,7 @@ describe('MessageRoutingService', () => {
     const mockCleanMode = new CleanModeSetting(100, 200, 0, 302);
 
     beforeEach(() => {
-      messageService.registerMessageDispatcher(testDuid, mockDispatcher as V01MessageDispatcher);
+      messageService.registerMessageDispatcher(testDuid, mockDispatcher as V10MessageDispatcher);
     });
 
     it('should retrieve clean mode data successfully', async () => {
@@ -210,7 +210,7 @@ describe('MessageRoutingService', () => {
     };
 
     beforeEach(() => {
-      messageService.registerMessageDispatcher(testDuid, mockDispatcher as V01MessageDispatcher);
+      messageService.registerMessageDispatcher(testDuid, mockDispatcher as V10MessageDispatcher);
     });
 
     it('should retrieve room ID from map successfully', async () => {
@@ -247,7 +247,7 @@ describe('MessageRoutingService', () => {
     const testDuid = 'test-device-clean-mode';
 
     beforeEach(() => {
-      messageService.registerMessageDispatcher(testDuid, mockDispatcher as V01MessageDispatcher);
+      messageService.registerMessageDispatcher(testDuid, mockDispatcher as V10MessageDispatcher);
     });
 
     it('should change clean mode successfully', async () => {
@@ -275,7 +275,7 @@ describe('MessageRoutingService', () => {
     const testDuid = 'test-device-start-clean';
 
     beforeEach(() => {
-      messageService.registerMessageDispatcher(testDuid, mockDispatcher as V01MessageDispatcher);
+      messageService.registerMessageDispatcher(testDuid, mockDispatcher as V10MessageDispatcher);
     });
 
     it('should start global clean when no areas selected', async () => {
@@ -345,7 +345,7 @@ describe('MessageRoutingService', () => {
     const testDuid = 'test-device-pause';
 
     beforeEach(() => {
-      messageService.registerMessageDispatcher(testDuid, mockDispatcher as V01MessageDispatcher);
+      messageService.registerMessageDispatcher(testDuid, mockDispatcher as V10MessageDispatcher);
     });
 
     it('should pause cleaning operation', async () => {
@@ -364,7 +364,7 @@ describe('MessageRoutingService', () => {
     const testDuid = 'test-device-resume';
 
     beforeEach(() => {
-      messageService.registerMessageDispatcher(testDuid, mockDispatcher as V01MessageDispatcher);
+      messageService.registerMessageDispatcher(testDuid, mockDispatcher as V10MessageDispatcher);
     });
 
     it('should resume cleaning operation', async () => {
@@ -383,7 +383,7 @@ describe('MessageRoutingService', () => {
     const testDuid = 'test-device-stop';
 
     beforeEach(() => {
-      messageService.registerMessageDispatcher(testDuid, mockDispatcher as V01MessageDispatcher);
+      messageService.registerMessageDispatcher(testDuid, mockDispatcher as V10MessageDispatcher);
     });
 
     it('should stop cleaning and return to dock', async () => {
@@ -402,7 +402,7 @@ describe('MessageRoutingService', () => {
     const testDuid = 'test-device-locate';
 
     beforeEach(() => {
-      messageService.registerMessageDispatcher(testDuid, mockDispatcher as V01MessageDispatcher);
+      messageService.registerMessageDispatcher(testDuid, mockDispatcher as V10MessageDispatcher);
     });
 
     it('should play sound to locate vacuum', async () => {
@@ -423,7 +423,7 @@ describe('MessageRoutingService', () => {
     const mockResponse = { status: 'cleaning' };
 
     beforeEach(() => {
-      messageService.registerMessageDispatcher(testDuid, mockDispatcher as V01MessageDispatcher);
+      messageService.registerMessageDispatcher(testDuid, mockDispatcher as V10MessageDispatcher);
     });
 
     it('should execute custom GET request with typed response', async () => {
@@ -463,7 +463,7 @@ describe('MessageRoutingService', () => {
     const mockRequest = new RequestMessage({ method: 'set_mop_mode', params: [302] });
 
     beforeEach(() => {
-      messageService.registerMessageDispatcher(testDuid, mockDispatcher as V01MessageDispatcher);
+      messageService.registerMessageDispatcher(testDuid, mockDispatcher as V10MessageDispatcher);
     });
 
     it('should send custom command successfully', async () => {
@@ -490,8 +490,8 @@ describe('MessageRoutingService', () => {
       const testDuid1 = 'device-1';
       const testDuid2 = 'device-2';
 
-      messageService.registerMessageDispatcher(testDuid1, mockDispatcher as V01MessageDispatcher);
-      messageService.registerMessageDispatcher(testDuid2, mockDispatcher as V01MessageDispatcher);
+      messageService.registerMessageDispatcher(testDuid1, mockDispatcher as V10MessageDispatcher);
+      messageService.registerMessageDispatcher(testDuid2, mockDispatcher as V10MessageDispatcher);
 
       messageService.clearAll();
 

@@ -40,7 +40,7 @@ export class RoomMap {
       return new RoomMap([]);
     }
 
-    const rooms: RoomDto[] = robot.device.rooms ?? [];
+    const rooms = robot.device.rooms;
 
     // Return cached room info if available
     if (robot.roomInfo) {
@@ -69,7 +69,11 @@ export class RoomMap {
    * Tries to get room info from map information first, then falls back to room maps.
    */
   public static async fromDeviceDirect(device: Device, platform: RoborockMatterbridgePlatform): Promise<RoomMap> {
-    const rooms: RoomDto[] = device?.rooms ?? [];
+    const rooms = device.rooms;
+    if (!rooms) {
+      platform.log.error(`Device with DUID ${device.duid} has no rooms`);
+      return new RoomMap([]);
+    }
 
     if (!device || !platform.roborockService) {
       return new RoomMap([]);

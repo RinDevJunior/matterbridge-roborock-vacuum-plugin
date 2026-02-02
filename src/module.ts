@@ -29,6 +29,7 @@ import { PlatformLifecycle, LifecycleDependencies } from './platform/platformLif
 import { PlatformState } from './platform/platformState.js';
 import { DEFAULT_REFRESH_INTERVAL_SECONDS } from './constants/index.js';
 import { RoborockPluginPlatformConfig } from './model/RoborockPluginPlatformConfig.js';
+import { RoomEntity } from './core/domain/entities/Room.js';
 
 export default function initializePlugin(matterbridge: PlatformMatterbridge, log: AnsiLogger, config: PlatformConfig): RoborockMatterbridgePlatform {
   return new RoborockMatterbridgePlatform(matterbridge, log, config as RoborockPluginPlatformConfig);
@@ -248,8 +249,13 @@ export class RoborockMatterbridgePlatform extends MatterbridgeDynamicPlatform {
     if (vacuum.rooms === undefined || vacuum.rooms.length === 0) {
       this.log.notice(`Fetching map information for device: ${vacuum.name} (${vacuum.duid}) to get rooms`);
       const map_info = await this.roborockService.getMapInfo(vacuum.duid);
-      const rooms = map_info.allRooms ?? [];
-      vacuum.rooms = rooms.map((room) => ({ id: room.globalId, name: room.iot_name }) as RoomDto);
+
+      if (map_info.hasRooms) {
+        vacuum.rooms = map_info.allRooms.map((room) => new RoomEntity(room.id, room.iot_name));
+      } else {
+        const roomMaps = await this.roborockService.getRoomMap(vacuum.duid, 1, []);
+        vacuum.rooms = roomMaps.rooms.map((room) => new RoomEntity(room.id, room.iot_name));
+      }
     }
 
     const roomMap = await RoomMap.fromDeviceDirect(vacuum, this);

@@ -8,6 +8,11 @@
   - [x] Update iotClient.test.ts httpsAgent assertion
   - [x] Fix simpleMessageHandler.test.ts payload structure
   - [x] Update pendingResponseTracker.test.ts error handling expectations
+- [x] Create unit tests for MapInfo class
+  - [x] Test constructor with/without rooms
+  - [x] Test getById() and getByName() methods
+  - [x] Test hasRooms getter
+  - [x] Test case-insensitive name search
 
 ### Code Refactoring
 
