@@ -257,6 +257,16 @@ export class RoborockMatterbridgePlatform extends MatterbridgeDynamicPlatform {
         this.log.info(`Using RoomMap rooms for device: ${vacuum.name} (${vacuum.duid})`);
         vacuum.rooms = roomMap.rooms.map((room) => new RoomEntity(room.id, room.iot_name));
       }
+    } else {
+      this.log.info(`Existing device rooms for device: ${vacuum.name}: ${debugStringify(vacuum.rooms)}`);
+
+      // temporarily force fetching room map from mapInfos if available
+      vacuum.rooms = [];
+      roomMap = await RoomMap.fromMapInfo(vacuum, this);
+      if (roomMap.hasRooms) {
+        this.log.info(`Using RoomMap rooms from mapInfos for device: ${vacuum.name} (${vacuum.duid})`);
+        vacuum.rooms = roomMap.rooms.map((room) => new RoomEntity(room.id, room.iot_name));
+      }
     }
 
     this.log.debug('Initializing - roomMap: ', debugStringify(roomMap));

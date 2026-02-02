@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { AnsiLogger, LogLevel } from 'matterbridge/logger';
 import { PlatformMatterbridge } from 'matterbridge';
 import { RoborockMatterbridgePlatform } from '../module.js';
-import { DeviceData, type Device, type RoomDto } from '../roborockCommunication/models/index.js';
+import { DeviceData, RawRoomMappingData, type Device, type RoomDto } from '../roborockCommunication/models/index.js';
 import { AdvancedFeatureConfiguration, AdvancedFeatureSetting, RoborockPluginPlatformConfig } from '../model/RoborockPluginPlatformConfig.js';
 import type { LocalStorage } from 'node-persist';
 import type { RoborockService } from '../services/roborockService.js';
@@ -138,6 +138,13 @@ describe('module.ts - complete coverage', () => {
       platform.version = '1.0.0';
 
       let capturedCallback: (payload: unknown) => void = () => {};
+      const roomData = [
+        [1, '11100845', 14],
+        [2, '11100849', 9],
+        [3, '11100842', 6],
+        [4, '11100847', 1],
+      ] as Partial<RawRoomMappingData> as RawRoomMappingData;
+
       const mockRoborockService = asPartial<RoborockService>({
         initializeMessageClientForLocal: vi.fn().mockResolvedValue(true),
         getMapInfo: vi.fn().mockResolvedValue({ allRooms: [] }),
@@ -147,6 +154,7 @@ describe('module.ts - complete coverage', () => {
           capturedCallback = cb;
         }),
         activateDeviceNotify: vi.fn(),
+        getRoomMap: vi.fn().mockResolvedValue(roomData),
       });
       platform.roborockService = mockRoborockService;
 
@@ -205,6 +213,12 @@ describe('module.ts - complete coverage', () => {
       const platform = new RoborockMatterbridgePlatform(mockMatterbridge, mockLogger, createMockConfig());
       platform.persist = mockPersist;
       platform.version = '1.0.0';
+      const roomData = [
+        [1, '11100845', 14],
+        [2, '11100849', 9],
+        [3, '11100842', 6],
+        [4, '11100847', 1],
+      ] as Partial<RawRoomMappingData> as RawRoomMappingData;
 
       const mockRoborockService = asPartial<RoborockService>({
         initializeMessageClientForLocal: vi.fn().mockImplementation((d: Device) => Promise.resolve(d.duid === 'device1')),
@@ -213,6 +227,7 @@ describe('module.ts - complete coverage', () => {
         setSupportedAreaIndexMap: vi.fn(),
         setDeviceNotify: vi.fn(),
         activateDeviceNotify: vi.fn(),
+        getRoomMap: vi.fn().mockResolvedValue(roomData),
       });
       platform.roborockService = mockRoborockService;
 
@@ -255,6 +270,12 @@ describe('module.ts - complete coverage', () => {
       const platform = new RoborockMatterbridgePlatform(mockMatterbridge, mockLogger, createMockConfig());
       platform.persist = mockPersist;
       platform.version = '1.0.0';
+      const roomData = [
+        [1, '11100845', 14],
+        [2, '11100849', 9],
+        [3, '11100842', 6],
+        [4, '11100847', 1],
+      ] as Partial<RawRoomMappingData> as RawRoomMappingData;
 
       const mockRoborockService = asPartial<RoborockService>({
         initializeMessageClientForLocal: vi.fn().mockResolvedValue(true),
@@ -263,6 +284,7 @@ describe('module.ts - complete coverage', () => {
         setSupportedAreaIndexMap: vi.fn(),
         setDeviceNotify: vi.fn(),
         activateDeviceNotify: vi.fn(),
+        getRoomMap: vi.fn().mockResolvedValue(roomData),
       });
       platform.roborockService = mockRoborockService;
 
@@ -299,6 +321,12 @@ describe('module.ts - complete coverage', () => {
       const platform = new RoborockMatterbridgePlatform(mockMatterbridge, mockLogger, createMockConfig());
       platform.persist = mockPersist;
       platform.version = '1.0.0';
+      const roomData = [
+        [1, '11100845', 14],
+        [2, '11100849', 9],
+        [3, '11100842', 6],
+        [4, '11100847', 1],
+      ] as Partial<RawRoomMappingData> as RawRoomMappingData;
 
       const mockRoborockService = asPartial<RoborockService>({
         initializeMessageClientForLocal: vi.fn().mockResolvedValue(true),
@@ -307,6 +335,7 @@ describe('module.ts - complete coverage', () => {
         setSupportedAreaIndexMap: vi.fn(),
         setDeviceNotify: vi.fn(),
         activateDeviceNotify: vi.fn(),
+        getRoomMap: vi.fn().mockResolvedValue(roomData),
       });
       platform.roborockService = mockRoborockService;
 
@@ -463,6 +492,12 @@ describe('module.ts - complete coverage', () => {
       const platform = new RoborockMatterbridgePlatform(mockMatterbridge, mockLogger, config);
       platform.persist = mockPersist;
       platform.version = '1.0.0';
+      const roomData = [
+        [1, '11100845', 14],
+        [2, '11100849', 9],
+        [3, '11100842', 6],
+        [4, '11100847', 1],
+      ] as Partial<RawRoomMappingData> as RawRoomMappingData;
 
       const mockRoborockService = {
         initializeMessageClientForLocal: vi.fn().mockResolvedValue(true),
@@ -470,6 +505,7 @@ describe('module.ts - complete coverage', () => {
         setSupportedAreas: vi.fn(),
         setSupportedAreaIndexMap: vi.fn(),
         setSupportedScenes: vi.fn(),
+        getRoomMap: vi.fn().mockResolvedValue(roomData),
       };
       platform.roborockService = asPartial<RoborockService>(mockRoborockService);
 
