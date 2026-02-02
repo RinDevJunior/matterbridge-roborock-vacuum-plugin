@@ -68,7 +68,6 @@ describe('RoborockService - Comprehensive Coverage', () => {
     };
 
     mockMessageService = {
-      getMessageProcessor: vi.fn(),
       getCleanModeData: vi.fn(),
       getRoomIdFromMap: vi.fn(),
       changeCleanMode: vi.fn(),
@@ -79,7 +78,6 @@ describe('RoborockService - Comprehensive Coverage', () => {
       playSoundToLocate: vi.fn(),
       customGet: vi.fn(),
       customSend: vi.fn(),
-      registerMessageProcessor: vi.fn(),
       setIotApi: vi.fn(),
       getMapInfo: vi.fn(),
       clearAll: vi.fn(),

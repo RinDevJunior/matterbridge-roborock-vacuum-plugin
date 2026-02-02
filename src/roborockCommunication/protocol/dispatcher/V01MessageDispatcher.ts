@@ -26,7 +26,7 @@ export class V01MessageDispatcher implements AbstractMessageDispatcher {
 
     if (response) {
       this.logger.debug('Device status: ', debugStringify(response));
-      return new DeviceStatus(response);
+      return new DeviceStatus(duid, response[0]);
     }
 
     return undefined;

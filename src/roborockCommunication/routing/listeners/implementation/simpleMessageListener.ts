@@ -1,51 +1,65 @@
-import { Protocol, ResponseMessage } from '../../../models/index.js';
+import { CleanModeSetting } from '../../../../behaviors/roborock.vacuum/core/CleanModeSetting.js';
+import { BatteryMessage, DeviceStatus, DpsPayload, Protocol, ResponseMessage, VacuumError } from '../../../models/index.js';
 import { AbstractMessageHandler } from '../../handlers/abstractMessageHandler.js';
 import { AbstractMessageListener } from '../abstractMessageListener.js';
 import { AnsiLogger } from 'matterbridge/logger';
 
 export class SimpleMessageListener implements AbstractMessageListener {
-  private readonly ignoredProtocols: Protocol[] = [Protocol.rpc_response, Protocol.map_response];
-  private handler: AbstractMessageHandler | undefined;
+  readonly name = 'SimpleMessageListener';
 
-  constructor(private readonly logger: AnsiLogger) {}
+  private handler: AbstractMessageHandler | undefined;
+  constructor(
+    private readonly duid: string,
+    private readonly logger: AnsiLogger,
+  ) {}
 
   public registerHandler(handler: AbstractMessageHandler): void {
     this.handler = handler;
   }
 
-  public async onMessage(message: ResponseMessage): Promise<void> {
-    if (!this.handler || message.isForProtocols(this.ignoredProtocols)) {
-      this.logger.debug(`SimpleMessageListener: Ignoring message for protocols ${this.ignoredProtocols.map((p) => Protocol[p]).join(', ')}`);
+  public onMessage(message: ResponseMessage): void {
+    if (message.duid !== this.duid) {
+      this.logger.debug(`[SimpleMessageListener]: Message DUID ${message.duid} does not match listener DUID ${this.duid}`);
       return;
     }
 
-    if (message.isForProtocol(Protocol.status_update) && this.handler.onStatusChanged) {
-      this.logger.debug(`SimpleMessageListener: Handling status update message for duid ${message.duid}, message: ${JSON.stringify(message)}`);
-      await this.handler.onStatusChanged(message);
+    if (!this.handler || !message.isForProtocol(Protocol.rpc_response)) {
+      this.logger.debug(`[SimpleMessageListener]: No handler registered or message not for rpc_response`);
+      return;
     }
 
-    if (message.isForProtocol(Protocol.error) && this.handler.onError) {
-      const value = message.get(Protocol.error) as string;
-      this.logger.debug(`SimpleMessageListener: Handling error message with value ${value}`);
-      await this.handler.onError(Number(value));
+    const rpcData = message.get(Protocol.rpc_response) as DpsPayload;
+
+    if (!rpcData || !rpcData.result || !Array.isArray(rpcData.result) || rpcData.result.length === 0) {
+      this.logger.debug(`[SimpleMessageListener]: No rpc_response data found in message`);
+      return;
     }
 
-    if (message.isForProtocol(Protocol.battery) && this.handler.onBatteryUpdate) {
-      const value = message.get(Protocol.battery) as string;
-      this.logger.debug(`SimpleMessageListener: Handling battery update message with value ${value}`);
-      await this.handler.onBatteryUpdate(Number(value));
+    const deviceStatus = new DeviceStatus(message.duid, rpcData.result[0]);
+    const vacuumErrorCode = deviceStatus.getVacuumErrorCode();
+    const dockErrorCode = deviceStatus.getDockErrorCode();
+    const battery = deviceStatus.getBattery();
+    const chargeStatus = deviceStatus.getChargeStatus();
+    const messageBody = deviceStatus.getMessage();
+    const cleaningInfo = messageBody.cleaning_info;
+
+    const state = messageBody.state;
+    const cleanMode = new CleanModeSetting(
+      cleaningInfo?.fan_power ?? messageBody.fan_power,
+      cleaningInfo?.water_box_status ?? messageBody.water_box_mode,
+      messageBody.distance_off,
+      cleaningInfo?.mop_mode ?? messageBody.mop_mode,
+    );
+
+    const batteryMessage = new BatteryMessage(message.duid, battery, chargeStatus, state);
+
+    if (vacuumErrorCode !== 0 || dockErrorCode !== 0) {
+      this.logger.debug(`[SimpleMessageListener]: Detected error code ${vacuumErrorCode} or dock error code ${dockErrorCode}`);
+      this.handler.onError(new VacuumError(message.duid, vacuumErrorCode, dockErrorCode));
     }
 
-    if (message.isForProtocol(Protocol.general_response) && this.handler.onBatteryUpdate) {
-      const value = message.get(Protocol.battery) as string;
-      this.logger.debug(`SimpleMessageListener: Handling general response message with battery value ${value}`);
-      await this.handler.onBatteryUpdate(Number(value));
-    }
-
-    if (message.isForProtocol(Protocol.additional_props) && this.handler.onAdditionalProps) {
-      const value = message.get(Protocol.additional_props) as string;
-      this.logger.debug(`SimpleMessageListener: Handling additional props message with value ${value}`);
-      await this.handler.onAdditionalProps(Number(value));
-    }
+    this.handler.onBatteryUpdate(batteryMessage);
+    this.handler.onStatusChanged({ duid: message.duid, status: state });
+    this.handler.onCleanModeUpdate(cleanMode);
   }
 }

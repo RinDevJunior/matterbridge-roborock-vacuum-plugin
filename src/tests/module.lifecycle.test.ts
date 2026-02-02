@@ -240,7 +240,7 @@ describe('module.ts coverage tests', () => {
   describe('onConfigureDevice - no devices or username', () => {
     it('should return early when no devices are registered', async () => {
       const platform = new RoborockMatterbridgePlatform(mockMatterbridge, mockLogger, createMockConfig());
-      platform.platformRunner = asPartial<PlatformRunner>({ requestHomeData: vi.fn(), updateRobotWithPayload: vi.fn(), updateRobot: vi.fn() });
+      platform.platformRunner = asPartial<PlatformRunner>({ requestHomeData: vi.fn(), updateRobotWithPayload: vi.fn() });
       platform.roborockService = asPartial<RoborockService>({
         initializeMessageClientForLocal: vi.fn(),
         getMapInfo: vi.fn(),
@@ -263,7 +263,7 @@ describe('module.ts coverage tests', () => {
     it('should return early when username is missing', async () => {
       const config = createMockConfig({ username: '' });
       const platform = new RoborockMatterbridgePlatform(mockMatterbridge, mockLogger, config);
-      platform.platformRunner = asPartial<PlatformRunner>({ requestHomeData: vi.fn(), updateRobotWithPayload: vi.fn(), updateRobot: vi.fn() });
+      platform.platformRunner = asPartial<PlatformRunner>({ requestHomeData: vi.fn(), updateRobotWithPayload: vi.fn() });
       platform.roborockService = asPartial<RoborockService>({
         initializeMessageClientForLocal: vi.fn(),
         getMapInfo: vi.fn(),
@@ -284,7 +284,7 @@ describe('module.ts coverage tests', () => {
 
     it('should return early when roborockService is undefined', async () => {
       const platform = new RoborockMatterbridgePlatform(mockMatterbridge, mockLogger, createMockConfig());
-      platform.platformRunner = asPartial<PlatformRunner>({ requestHomeData: vi.fn(), updateRobotWithPayload: vi.fn(), updateRobot: vi.fn() });
+      platform.platformRunner = asPartial<PlatformRunner>({ requestHomeData: vi.fn(), updateRobotWithPayload: vi.fn() });
       platform.roborockService = undefined;
       const mockDevice: Partial<Device> = {
         duid: 'test-device',
@@ -309,7 +309,7 @@ describe('module.ts coverage tests', () => {
       const mockDevice = makeDeviceFixture({ duid: 'test-device', name: 'Test Vacuum' });
 
       const platform = new RoborockMatterbridgePlatform(mockMatterbridge, mockLogger, createMockConfig());
-      platform.platformRunner = asPartial<PlatformRunner>({ requestHomeData: vi.fn(), updateRobotWithPayload: vi.fn(), updateRobot: vi.fn() });
+      platform.platformRunner = asPartial<PlatformRunner>({ requestHomeData: vi.fn(), updateRobotWithPayload: vi.fn() });
       platform.roborockService = asPartial<RoborockService>({
         initializeMessageClientForLocal: vi.fn().mockResolvedValue(false),
         setDeviceNotify: vi.fn(),

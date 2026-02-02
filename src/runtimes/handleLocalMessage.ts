@@ -16,6 +16,7 @@ import { CleanModeSetting } from '../behaviors/roborock.vacuum/core/CleanModeSet
 /**
  * Process local network messages and update robot attributes.
  * Handles run mode, battery level, clean mode settings, and area mapping.
+ * @deprecated This function is deprecated and will be removed in future versions.
  */
 export function handleLocalMessage(data: CloudMessageResult, platform: RoborockMatterbridgePlatform, duid = ''): void {
   const robot = platform.registry.getRobot(duid);

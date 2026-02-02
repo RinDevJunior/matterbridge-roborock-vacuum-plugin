@@ -87,6 +87,8 @@ export class MessageDeserializer {
       return response;
     } else {
       this.logger.error(`unknown protocol: ${header.protocol}`);
+      const response = this.deserializeUnknownProtocolPayload(duid, data, header);
+      this.logger.debug(`[${from}][MessageDeserializer] deserialized body: ${debugStringify(response.body ?? {})}`);
       return new ResponseMessage(duid, header);
     }
   }
@@ -104,5 +106,11 @@ export class MessageDeserializer {
     if (dps[indexString] !== undefined) {
       dps[indexString] = JSON.parse(dps[indexString] as string);
     }
+  }
+
+  private deserializeUnknownProtocolPayload(duid: string, data: ContentMessage, header: HeaderMessage): ResponseMessage {
+    const payload = JSON.parse(data.payload.toString());
+    const dps = payload.dps;
+    return new ResponseMessage(duid, header, new ResponseBody(dps));
   }
 }

@@ -11,7 +11,6 @@ import { ServiceContainer as CoreServiceContainer } from '../core/ServiceContain
 import { RoborockAuthenticateApi } from '../roborockCommunication/api/authClient.js';
 import { RoborockIoTApi } from '../roborockCommunication/api/iotClient.js';
 import { UserData } from '../roborockCommunication/models/index.js';
-import { MessageProcessor } from '../roborockCommunication/mqtt/messageProcessor.js';
 import { PlatformConfigManager } from '../platform/platformConfig.js';
 import { ConnectionService } from './connectionService.js';
 
@@ -38,7 +37,6 @@ export class ServiceContainer {
   private readonly authenticateApi: RoborockAuthenticateApi;
   private readonly authenticateApiFactory: (logger: AnsiLogger, baseUrl: string) => RoborockAuthenticateApi;
   private readonly iotApiFactory: Factory<UserData, RoborockIoTApi>;
-  private readonly messageProcessorMap = new Map<string, MessageProcessor>();
   private readonly coreServiceContainer: CoreServiceContainer;
   private readonly clientManager: ClientManager;
 
@@ -201,8 +199,6 @@ export class ServiceContainer {
     this.userdata = undefined;
     this.iotApi = undefined;
 
-    // Clear message processor map
-    this.messageProcessorMap.clear();
     this.logger.debug('ServiceContainer destroyed');
   }
 
@@ -224,10 +220,5 @@ export class ServiceContainer {
   /** Get IoT API (undefined if not authenticated). */
   getIotApi(): RoborockIoTApi | undefined {
     return this.iotApi;
-  }
-
-  /** Get shared message processor map. */
-  getMessageProcessorMap(): Map<string, MessageProcessor> {
-    return this.messageProcessorMap;
   }
 }

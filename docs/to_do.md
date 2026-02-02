@@ -1,7 +1,16 @@
 # To Do
 
-### Unit Test Coverage
+### Test Suite Maintenance
 
-- [ ] Reach 85% coverage target for module.ts (requires startDeviceDiscovery refactoring)
-  - Current gap: Lines 118-194 (startDeviceDiscovery method)
-  - Recommendation: Extract method logic or implement dependency injection for RoborockService
+- [x] Fix unit test failures after message handling refactor (13 tests)
+  - [x] Update handleHomeDataMessage.test.ts for payload-based architecture
+  - [x] Fix pollingService.test.ts callback expectations
+  - [x] Update iotClient.test.ts httpsAgent assertion
+  - [x] Fix simpleMessageHandler.test.ts payload structure
+  - [x] Update pendingResponseTracker.test.ts error handling expectations
+
+### Code Refactoring
+
+- [x] Simplify networkInfo extraction in ConnectionService
+  - [x] Extract helper method getNetworkInfoFromDeviceStatus()
+  - [x] Update documentation

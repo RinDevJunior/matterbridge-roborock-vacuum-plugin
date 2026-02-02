@@ -88,7 +88,7 @@ describe('AbstractClient', () => {
   });
 
   it('registerMessageListener adds listener to chain', () => {
-    const listener = asPartial<{ onMessage: (...args: unknown[]) => void }>({ onMessage: vi.fn() });
+    const listener = asPartial<{ name: string; onMessage: (...args: unknown[]) => void }>({ name: 'test-listener', onMessage: vi.fn() });
     client.registerMessageListener(listener);
     expect(asType<TestClient>(client)['chainedMessageListener']['listeners']).toContain(listener);
   });

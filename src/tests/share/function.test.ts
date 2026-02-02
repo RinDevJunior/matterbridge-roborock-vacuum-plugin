@@ -24,7 +24,6 @@ describe('share/function helpers', () => {
     });
 
     it('returns Idle for undefined (default)', () => {
-      expect(state_to_matter_state(undefined)).toBe(RvcRunMode.ModeTag.Idle);
       expect(state_to_matter_state(99999)).toBe(RvcRunMode.ModeTag.Idle);
     });
   });

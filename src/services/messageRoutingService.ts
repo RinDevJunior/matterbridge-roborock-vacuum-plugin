@@ -1,7 +1,6 @@
 import { AnsiLogger, debugStringify } from 'matterbridge/logger';
 import { ServiceArea } from 'matterbridge/matter/clusters';
 import { DeviceError } from '../errors/index.js';
-import { MessageProcessor } from '../roborockCommunication/mqtt/messageProcessor.js';
 import { RoborockIoTApi } from '../roborockCommunication/api/iotClient.js';
 import { RequestMessage, RoomDto } from '../roborockCommunication/models/index.js';
 import { AbstractMessageDispatcher } from '../roborockCommunication/protocol/dispatcher/abstractMessageDispatcher.js';
@@ -9,7 +8,6 @@ import { MapInfo, RoomMap } from '../core/application/models/index.js';
 import { CleanModeSetting } from '../behaviors/roborock.vacuum/core/CleanModeSetting.js';
 
 export class MessageRoutingService {
-  private messageProcessorMap = new Map<string, MessageProcessor>();
   private messageDispatcherMap = new Map<string, AbstractMessageDispatcher>();
 
   constructor(
@@ -22,11 +20,6 @@ export class MessageRoutingService {
     this.iotApi = iotApi;
   }
 
-  /** Register message processor for a device. */
-  public registerMessageProcessor(duid: string, messageProcessor: MessageProcessor): void {
-    this.messageProcessorMap.set(duid, messageProcessor);
-  }
-
   public registerMessageDispatcher(duid: string, messageDispatcher: AbstractMessageDispatcher): void {
     this.messageDispatcherMap.set(duid, messageDispatcher);
   }
@@ -37,15 +30,6 @@ export class MessageRoutingService {
       throw new DeviceError(`MessageDispatcher not initialized for device ${duid}`, duid);
     }
     return messageDispatcher;
-  }
-
-  /** Get message processor for a device. Throws if not initialized. */
-  public getMessageProcessor(duid: string): MessageProcessor {
-    const messageProcessor = this.messageProcessorMap.get(duid);
-    if (!messageProcessor) {
-      throw new DeviceError(`MessageProcessor not initialized for device ${duid}`, duid);
-    }
-    return messageProcessor;
   }
 
   public getMapInfo(duid: string): Promise<MapInfo> {
@@ -183,7 +167,6 @@ export class MessageRoutingService {
   }
 
   public clearAll(): void {
-    this.messageProcessorMap.clear();
     this.messageDispatcherMap.clear();
     this.logger.debug('MessageRoutingService - All data cleared');
   }

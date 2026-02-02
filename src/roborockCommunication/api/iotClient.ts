@@ -1,5 +1,6 @@
 import { default as axios, AxiosInstance, AxiosError, AxiosStatic } from 'axios';
 import axiosRetry from 'axios-retry';
+import https from 'node:https';
 import crypto from 'node:crypto';
 import { AnsiLogger, debugStringify } from 'matterbridge/logger';
 import { ApiResponse, Home, UserData, Scene } from '../models/index.js';
@@ -13,7 +14,7 @@ export class RoborockIoTApi {
   constructor(userdata: UserData, logger: AnsiLogger, axiosFactory: AxiosStatic = axios) {
     this.logger = logger;
 
-    this.api = axiosFactory.create({ baseURL: userdata.rriot.r.a, timeout: 10000, maxRedirects: 5 });
+    this.api = axiosFactory.create({ baseURL: userdata.rriot.r.a, timeout: 10000, maxRedirects: 5, httpsAgent: new https.Agent({ keepAlive: true }) });
 
     // Retry transient network errors (including ECONNRESET) with exponential backoff
     try {

@@ -15,7 +15,6 @@ import {
 import { RoborockAuthenticateApi } from '../roborockCommunication/api/authClient.js';
 import { Device, Home, RequestMessage, RoomDto, Scene, UserData } from '../roborockCommunication/models/index.js';
 import { RoborockIoTApi } from '../roborockCommunication/api/iotClient.js';
-import { MessageProcessor } from '../roborockCommunication/mqtt/messageProcessor.js';
 import { PlatformConfigManager } from '../platform/platformConfig.js';
 import { RoomMap, MapInfo, RoomIndexMap } from '../core/application/models/index.js';
 import { CleanModeSetting } from '../behaviors/roborock.vacuum/core/CleanModeSetting.js';
@@ -220,11 +219,6 @@ export class RoborockService {
   // ============================================================================
   // Message Routing Methods (delegate to MessageRoutingService)
   // ============================================================================
-
-  /** Get message processor for a device. */
-  public getMessageProcessor(duid: string): MessageProcessor {
-    return this.messageService.getMessageProcessor(duid);
-  }
 
   /** Get current cleaning mode settings. */
   public async getCleanModeData(duid: string): Promise<CleanModeSetting> {

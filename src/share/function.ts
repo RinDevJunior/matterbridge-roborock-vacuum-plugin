@@ -7,11 +7,7 @@ import { RvcRunMode, RvcOperationalState } from 'matterbridge/matter/clusters';
  * @param state - The device operational status code
  * @returns Matter run mode tag (Cleaning, Mapping, or Idle). Returns undefined for null, defaults to Idle for undefined/unknown states.
  */
-export function state_to_matter_state(state: number | undefined): RvcRunMode.ModeTag | undefined {
-  if (state === null) {
-    return undefined;
-  }
-
+export function state_to_matter_state(state: number): RvcRunMode.ModeTag {
   switch (state) {
     case OperationStatusCode.RemoteControl:
     case OperationStatusCode.Cleaning:
@@ -57,7 +53,7 @@ export function state_to_matter_state(state: number | undefined): RvcRunMode.Mod
  * @param state - The device operational status code
  * @returns Matter operational state, or null for docked/idle states
  */
-export function state_to_matter_operational_status(state: number | undefined): RvcOperationalState.OperationalState | null {
+export function state_to_matter_operational_status(state: number | undefined): RvcOperationalState.OperationalState {
   switch (state) {
     case OperationStatusCode.Initiating:
     case OperationStatusCode.RemoteControl:

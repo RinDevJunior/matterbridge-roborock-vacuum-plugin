@@ -2,6 +2,7 @@ import { RoomEntity } from '../../core/domain/entities/Room.js';
 import { DeviceCategory } from './deviceCategory.js';
 import { DeviceModel } from './deviceModel.js';
 import { DeviceSchema } from './deviceSchema.js';
+import { NetworkInfoDTO, TimezoneInfo } from './index.js';
 import { Scene } from './scene.js';
 import { UserData } from './userData.js';
 
@@ -20,6 +21,8 @@ export interface DeviceInformation {
   pv: string;
   model: DeviceModel;
 }
+
+export type DeviceStatusResponsetype = number | Record<string, number | string | boolean | NetworkInfoDTO | TimezoneInfo | Record<number, unknown>>;
 
 export interface Device {
   duid: string;
@@ -43,7 +46,7 @@ export interface Device {
   /** The firmware version of the robot. */
   fv: string;
 
-  deviceStatus: Record<string, unknown>;
+  deviceStatus: Record<string, DeviceStatusResponsetype>;
   rooms: RoomEntity[];
   schema: DeviceSchema[];
   data: DeviceData;

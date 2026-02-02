@@ -5,15 +5,24 @@ import { VacuumError } from './vacuumError.js';
 
 export class DeviceStatus {
   errorStatus: VacuumError;
-  message: CloudMessageResult;
 
-  constructor(message: CloudMessageResult[]) {
-    this.message = message[0];
-    this.errorStatus = new VacuumError(this.message.error_code, this.message.dock_error_status);
+  constructor(
+    public readonly duid: string,
+    private readonly message: CloudMessageResult,
+  ) {
+    this.errorStatus = new VacuumError(this.duid, this.message.error_code, this.message.dock_error_status);
+  }
+
+  getMessage(): CloudMessageResult {
+    return this.message;
   }
 
   getBattery(): number {
     return this.message.battery;
+  }
+
+  getChargeStatus(): number {
+    return this.message.charge_status;
   }
 
   getVacuumErrorCode(): VacuumErrorCode {

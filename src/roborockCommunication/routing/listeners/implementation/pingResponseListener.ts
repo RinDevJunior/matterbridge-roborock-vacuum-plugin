@@ -3,6 +3,8 @@ import { Protocol, ResponseMessage } from '../../../models/index.js';
 import { HELLO_RESPONSE_TIMEOUT_MS } from '../../../../constants/index.js';
 
 export class PingResponseListener implements AbstractMessageListener {
+  readonly name = 'PingResponseListener';
+
   private readonly duid: string;
 
   private handler?: (data: ResponseMessage) => void;

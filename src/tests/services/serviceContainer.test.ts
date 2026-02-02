@@ -13,7 +13,6 @@ import { makeLogger, makeMockClientRouter, createMockLocalStorage, createMockAut
 import { ClientRouter } from '../../roborockCommunication/routing/clientRouter.js';
 import type { LocalStorage } from 'node-persist';
 import type { PlatformConfigManager } from '../../platform/platformConfig.js';
-import type { MessageProcessor } from '../../roborockCommunication/mqtt/messageProcessor.js';
 
 describe('ServiceContainer', () => {
   let container: ServiceContainer;
@@ -259,21 +258,6 @@ describe('ServiceContainer', () => {
     });
   });
 
-  describe('getMessageProcessorMap', () => {
-    it('should return message processor map', () => {
-      const map = container.getMessageProcessorMap();
-
-      expect(map).toBeInstanceOf(Map);
-    });
-
-    it('should return same map instance on multiple calls', () => {
-      const map1 = container.getMessageProcessorMap();
-      const map2 = container.getMessageProcessorMap();
-
-      expect(map1).toBe(map2);
-    });
-  });
-
   describe('getAllServices', () => {
     it('should return all services in a bundle', () => {
       const services = container.getAllServices();
@@ -346,17 +330,6 @@ describe('ServiceContainer', () => {
       await container.destroy();
 
       expect(shutdownSpy).toHaveBeenCalled();
-    });
-
-    it('should clear message processor map on destroy', async () => {
-      const map = container.getMessageProcessorMap();
-      map.set('test-key', {} as MessageProcessor);
-
-      expect(map.size).toBe(1);
-
-      await container.destroy();
-
-      expect(map.size).toBe(0);
     });
 
     it('should clear IoT API on destroy', async () => {

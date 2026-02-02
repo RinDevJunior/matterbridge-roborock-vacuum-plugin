@@ -4,6 +4,8 @@ import { PendingResponseTracker } from '../../services/pendingResponseTracker.js
 import { AbstractMessageListener } from '../abstractMessageListener.js';
 
 export class ChainedMessageListener implements AbstractMessageListener {
+  readonly name = 'ChainedMessageListener';
+
   private listeners: AbstractMessageListener[] = [];
 
   constructor(
@@ -28,6 +30,7 @@ export class ChainedMessageListener implements AbstractMessageListener {
     this.logger.debug(`[ChainedMessageListener] Dispatching message to ${this.listeners.length} listeners.`);
     for (const listener of this.listeners) {
       try {
+        this.logger.debug(`[ChainedMessageListener] Invoking listener: ${listener.name}`);
         listener.onMessage(message);
       } catch (error) {
         const errMsg = error instanceof Error ? error.message : String(error);

@@ -148,13 +148,13 @@ describe('module.ts - complete coverage', () => {
       platform.persist = mockPersist;
       platform.version = '1.0.0';
 
-      let capturedCallback: (messageSource: string, payload: unknown) => void = () => {};
+      let capturedCallback: (payload: unknown) => void = () => {};
       const mockRoborockService = asPartial<RoborockService>({
         initializeMessageClientForLocal: vi.fn().mockResolvedValue(true),
         getMapInfo: vi.fn().mockResolvedValue({ allRooms: [] }),
         setSupportedAreas: vi.fn(),
         setSupportedAreaIndexMap: vi.fn(),
-        setDeviceNotify: vi.fn().mockImplementation((cb: (messageSource: string, payload: unknown) => void) => {
+        setDeviceNotify: vi.fn().mockImplementation((cb: (payload: unknown) => void) => {
           capturedCallback = cb;
         }),
         activateDeviceNotify: vi.fn(),
@@ -181,12 +181,13 @@ describe('module.ts - complete coverage', () => {
       expect(mockRoborockService.setDeviceNotify).toHaveBeenCalled();
       expect(capturedCallback).toBeDefined();
 
-      await capturedCallback('status', { duid: 'device1', battery: 90 });
-      expect(mockPlatformRunner.updateRobotWithPayload).toHaveBeenCalledWith({
+      const testPayload = {
         type: 'status',
         data: { duid: 'device1', battery: 90 },
         duid: 'device1',
-      });
+      };
+      await capturedCallback(testPayload);
+      expect(mockPlatformRunner.updateRobotWithPayload).toHaveBeenCalledWith(testPayload);
 
       expect(mockRoborockService.activateDeviceNotify).toHaveBeenCalledWith(mockDevice);
       expect(mockPlatformRunner.requestHomeData).toHaveBeenCalled();

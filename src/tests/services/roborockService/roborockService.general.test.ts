@@ -176,7 +176,6 @@ describe('RoborockService - Facade Pattern Testing', () => {
 
     it('should provide message routing interface', () => {
       // Assert - Test that facade exposes expected message methods
-      expect(typeof roborockService.getMessageProcessor).toBe('function');
       expect(typeof roborockService.getCleanModeData).toBe('function');
       expect(typeof roborockService.changeCleanMode).toBe('function');
       expect(typeof roborockService.startClean).toBe('function');

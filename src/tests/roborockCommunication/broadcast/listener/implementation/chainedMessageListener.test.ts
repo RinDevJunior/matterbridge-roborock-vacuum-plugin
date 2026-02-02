@@ -6,7 +6,8 @@ import { HeaderMessage, ResponseMessage } from '../../../../../roborockCommunica
 
 describe('ChainedMessageListener', () => {
   let chained: ChainedMessageListener;
-  let listener1: { onMessage: ReturnType<typeof vi.fn<(message: any) => Promise<void>>> }, listener2: { onMessage: ReturnType<typeof vi.fn<(message: any) => Promise<void>>> };
+  let listener1: { name: string; onMessage: ReturnType<typeof vi.fn<(message: any) => Promise<void>>> };
+  let listener2: { name: string; onMessage: ReturnType<typeof vi.fn<(message: any) => Promise<void>>> };
   const message = asPartial<ResponseMessage>({ duid: 'test-duid', header: asPartial<HeaderMessage>({}), get: () => undefined });
 
   const logger = makeLogger();
@@ -14,8 +15,8 @@ describe('ChainedMessageListener', () => {
 
   beforeEach(() => {
     chained = new ChainedMessageListener(responseTracker, logger);
-    listener1 = { onMessage: vi.fn<(message: any) => Promise<void>>() };
-    listener2 = { onMessage: vi.fn<(message: any) => Promise<void>>() };
+    listener1 = { name: 'listener1', onMessage: vi.fn<(message: any) => Promise<void>>() };
+    listener2 = { name: 'listener2', onMessage: vi.fn<(message: any) => Promise<void>>() };
   });
 
   it('should call onMessage on all registered listeners', async () => {

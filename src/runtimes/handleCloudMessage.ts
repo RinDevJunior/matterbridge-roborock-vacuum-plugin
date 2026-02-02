@@ -5,10 +5,8 @@ import { state_to_matter_operational_status, state_to_matter_state } from '../sh
 import { RvcCleanMode, RvcOperationalState, RvcRunMode, ServiceArea } from 'matterbridge/matter/clusters';
 import { triggerDssError } from './handleLocalMessage.js';
 import { RoomMap } from '../core/application/models/index.js';
-import { isStatusUpdate } from '../share/helper.js';
 import { debugStringify } from 'matterbridge/logger';
-import { CloudMessageResult, DeviceStatusNotify, DpsPayload, Protocol } from '../roborockCommunication/models/index.js';
-import { NotifyMessageTypes } from '../types/notifyMessageTypes.js';
+import { Protocol } from '../roborockCommunication/models/index.js';
 import { getCleanModeResolver } from '../share/runtimeHelper.js';
 import { getSupportedAreas } from '../initialData/getSupportedAreas.js';
 import { PlatformRunner } from '../platformRunner.js';
@@ -19,6 +17,7 @@ import { RoborockMatterbridgePlatform } from '../module.js';
 /**
  * Process cloud MQTT messages and update robot state.
  * Handles status updates, RPC responses, clean mode changes, and map updates.
+ * @deprecated This function is deprecated and will be removed in future versions.
  */
 export function handleCloudMessage(data: CloudMessageModel, platform: RoborockMatterbridgePlatform, runner: PlatformRunner, duid: string): void {
   const messageTypes = Object.keys(data.dps).map(Number);
@@ -47,26 +46,6 @@ export function handleCloudMessage(data: CloudMessageModel, platform: RoborockMa
           if (!(dssHasError && triggerDssError(robot, platform))) {
             robot.updateAttribute(RvcOperationalState.Cluster.id, 'operationalState', operationalStateId, platform.log);
           }
-        }
-        break;
-      }
-      case Protocol.rpc_response: {
-        const response = data.dps[messageType] as DpsPayload;
-        // ignore network info
-        if (!isStatusUpdate(response.result)) {
-          platform.log.debug(`[handleCloudMessage] Ignore message: ${debugStringify(data)}`);
-          return;
-        }
-
-        let roboStatus: CloudMessageResult | undefined;
-        if (Array.isArray(response.result) && response.result.length > 0) {
-          roboStatus = response.result[0] as CloudMessageResult;
-        }
-
-        if (roboStatus) {
-          const message = { ...roboStatus } as DeviceStatusNotify;
-          platform.log.debug(`[handleCloudMessage] rpc_response: ${debugStringify(message)}`);
-          runner.updateFromMQTTMessage(NotifyMessageTypes.LocalMessage, message, duid, true);
         }
         break;
       }
@@ -105,7 +84,7 @@ export function handleCloudMessage(data: CloudMessageModel, platform: RoborockMa
       }
       case Protocol.additional_props: {
         platform.log.notice(`[handleCloudMessage] Received additional properties for robot ${duid}: ${debugStringify(data)}`);
-        const propCode = data.dps[Protocol.additional_props] as number;
+        const propCode = Number(data.dps[Protocol.additional_props]);
         platform.log.debug(`[handleCloudMessage] DPS for additional properties: ${propCode}, AdditionalPropCode: ${AdditionalPropCode[propCode]}`);
         if (propCode === AdditionalPropCode.map_change) {
           handleMapChange(robot, platform, duid);

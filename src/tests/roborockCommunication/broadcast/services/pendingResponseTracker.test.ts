@@ -196,12 +196,12 @@ describe('PendingResponseTracker', () => {
     expect(tracker['pending'].has(messageId)).toBe(false);
   });
 
-  it('should throw when response missing DPS payload', () => {
+  it('should return without throwing when response missing DPS payload', () => {
     const header = new HeaderMessage('1.0', 1, 1, Date.now(), Protocol.rpc_response);
     const body = new ResponseBody({});
     const response = new ResponseMessage('duid', header, body);
 
-    expect(() => tracker.tryResolve(response)).toThrow();
+    expect(() => tracker.tryResolve(response)).not.toThrow();
   });
 
   it('should do nothing when DPS payload missing id', () => {
@@ -247,7 +247,7 @@ describe('PendingResponseTracker', () => {
     expect(tracker['pending'].has(messageId)).toBe(false);
   });
 
-  it('should resolve when id is present in another data mapping', async () => {
+  it('should not resolve when id is present in another data mapping', async () => {
     const messageId = 6666;
     const request = new RequestMessage({ method: 'test', messageId });
     // put the id under a different data key (string to satisfy Dps type)
@@ -256,7 +256,7 @@ describe('PendingResponseTracker', () => {
     const response = new ResponseMessage('duid', header, body);
 
     const promise = tracker.waitFor(messageId, request);
-    expect(() => tracker.tryResolve(response)).toThrow();
+    expect(() => tracker.tryResolve(response)).not.toThrow();
 
     // Ensure pending was not resolved
     vi.advanceTimersByTime(10000);

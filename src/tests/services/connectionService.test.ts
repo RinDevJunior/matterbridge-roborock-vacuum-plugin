@@ -74,7 +74,6 @@ describe('ConnectionService', () => {
 
   function createMockMessageRoutingService() {
     return {
-      registerMessageProcessor: vi.fn(),
       registerMessageDispatcher: vi.fn(),
     } satisfies Partial<MessageRoutingService>;
   }
@@ -146,25 +145,6 @@ describe('ConnectionService', () => {
       expect(mockClientRouter.registerDevice).toHaveBeenCalledWith(mockDevice.duid, mockDevice.localKey, mockDevice.pv, undefined);
       expect(mockClientRouter.connect).toHaveBeenCalled();
       expect(mockLogger.debug).toHaveBeenCalledWith('clientRouter connected for device:', mockDevice.duid);
-    });
-
-    it('should handle message listener for non-battery protocol messages', async () => {
-      vi.spyOn(mockClientRouter, 'isConnected').mockReturnValue(true);
-      const mockCallback = vi.fn();
-      service.setDeviceNotify(mockCallback);
-
-      await service.initializeMessageClient(mockDevice, mockUserData);
-      await service.initializeMessageClientForLocal(mockDevice);
-
-      const listenerCall = vi.mocked(mockClientRouter.registerMessageListener).mock.calls[0][0];
-      expect(listenerCall).toHaveProperty('onMessage');
-
-      const mockMessage = new ResponseMessage(mockDevice.duid, new HeaderMessage('1.0', 1, 0, Date.now(), 0));
-      mockMessage.isForProtocol = vi.fn().mockReturnValue(false);
-
-      listenerCall.onMessage(mockMessage);
-
-      expect(mockCallback).toHaveBeenCalledWith(NotifyMessageTypes.CloudMessage, mockMessage);
     });
 
     it('should ignore battery protocol messages', async () => {
@@ -285,7 +265,7 @@ describe('ConnectionService additional coverage', () => {
     mockClientRouter = makeMockClientRouter();
     mockLocalClient = makeLocalClientStub();
     mockClientManager = asPartial<ClientManager>({ get: vi.fn().mockReturnValue(mockClientRouter) });
-    mockMessageRoutingService = { registerMessageProcessor: vi.fn(), registerMessageDispatcher: vi.fn() };
+    mockMessageRoutingService = { registerMessageDispatcher: vi.fn() };
     service = new ConnectionService(mockClientManager, mockLogger, mockMessageRoutingService as MessageRoutingService);
   });
 

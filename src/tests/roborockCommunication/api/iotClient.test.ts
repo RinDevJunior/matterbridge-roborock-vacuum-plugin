@@ -309,7 +309,7 @@ describe('RoborockIoTApi', () => {
     const instance = api['api'];
     expect(instance).toBeDefined();
     expect(instance.defaults).toMatchObject({ baseURL: 'http://base.url', timeout: 10000, maxRedirects: 5 });
-    expect(instance.defaults.httpsAgent).not.toBeDefined();
+    expect(instance.defaults.httpsAgent).toBeDefined();
   });
 
   it('getHomev2 should log error and return undefined on exception', async () => {

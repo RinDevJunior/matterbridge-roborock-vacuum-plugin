@@ -14,7 +14,6 @@ import { PlatformRunner } from './platformRunner.js';
 import { FilterLogger } from './share/filterLogger.js';
 import { RoborockVacuumCleaner } from './types/roborockVacuumCleaner.js';
 import { configureBehavior } from './share/behaviorFactory.js';
-import { NotifyMessageTypes, MessagePayload } from './types/index.js';
 import { getSupportedAreas, getSupportedScenes } from './initialData/index.js';
 
 import { getBaseUrl } from './initialData/regionUrls.js';
@@ -92,7 +91,7 @@ export class RoborockMatterbridgePlatform extends MatterbridgeDynamicPlatform {
     this.lifecycle = new PlatformLifecycle(this, this.configManager, this.state, deps);
   }
 
-  // ─── Lifecycle Delegation ───────────────────────────────────────────────────
+  // #region Lifecycle Delegation
 
   public override async onStart(reason?: string): Promise<void> {
     await this.lifecycle.onStart(reason);
@@ -112,9 +111,9 @@ export class RoborockMatterbridgePlatform extends MatterbridgeDynamicPlatform {
     this.log.notice(`Change ${PLUGIN_NAME} log level: ${logLevel} (was ${this.log.logLevel})`);
     this.log.logLevel = logLevel;
   }
+  // #endregion Lifecycle Delegation
 
-  // ─── Device Discovery & Configuration ───────────────────────────────────────
-
+  // #region Device Management Delegation
   private async startDeviceDiscovery(): Promise<boolean> {
     this.log.info('startDeviceDiscovery start');
 
@@ -187,6 +186,7 @@ export class RoborockMatterbridgePlatform extends MatterbridgeDynamicPlatform {
     return true;
   }
 
+  // #endregion Device Management Delegation
   private async onConfigureDevice(): Promise<void> {
     this.log.info('onConfigureDevice start');
     if (this.roborockService === undefined) {
@@ -210,10 +210,8 @@ export class RoborockMatterbridgePlatform extends MatterbridgeDynamicPlatform {
       }
     }
 
-    this.roborockService.setDeviceNotify((messageSource: NotifyMessageTypes, homeData: unknown) => {
-      const duid = (homeData as { duid?: string })?.duid ?? '';
-      const payload = { type: messageSource, data: homeData, duid };
-      this.platformRunner.updateRobotWithPayload(payload as unknown as MessagePayload);
+    this.roborockService.setDeviceNotify((payload) => {
+      this.platformRunner.updateRobotWithPayload(payload);
     });
 
     for (const [duid, robot] of this.registry.robotsMap) {
