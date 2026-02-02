@@ -110,4 +110,74 @@ describe('ConnectionStateListener', () => {
     expect(client.connect).not.toHaveBeenCalled();
     expect(client.isInDisconnectingStep).toBe(true);
   });
+
+  it('stops reconnection on authorization error in onDisconnected', async () => {
+    const logger = createMockLogger();
+    const client = makeClient();
+    const listener = new ConnectionStateListener(logger, client, 'TEST');
+    listener.start();
+    await listener.onDisconnected('DUID8', 'Connection refused: Not authorized');
+    expect(logger.notice).toHaveBeenCalledWith(expect.stringContaining('authorization error'));
+    expect(client.connect).not.toHaveBeenCalled();
+  });
+
+  it('stops reconnection on MQTT connection offline', async () => {
+    const logger = createMockLogger();
+    const client = makeClient();
+    const listener = new ConnectionStateListener(logger, client, 'TEST');
+    listener.start();
+    await listener.onDisconnected('DUID9', 'MQTT connection offline');
+    expect(logger.notice).toHaveBeenCalledWith(expect.stringContaining('went offline'));
+    expect(client.connect).not.toHaveBeenCalled();
+  });
+
+  it('clears previous manual reconnect timer on new disconnect', async () => {
+    vi.useFakeTimers();
+    const logger = createMockLogger();
+    const client = makeClient({ retryCount: 0, isInDisconnectingStep: false });
+    const listener = new ConnectionStateListener(logger, client, 'TEST');
+    listener.start();
+
+    await listener.onDisconnected('DUID10', 'lost1');
+    expect(client.retryCount).toBe(1);
+
+    await listener.onDisconnected('DUID10', 'lost2');
+    expect(client.retryCount).toBe(2);
+
+    vi.advanceTimersByTime(30000);
+    expect(client.connect).toHaveBeenCalledTimes(1);
+    vi.useRealTimers();
+  });
+
+  it('skips manual reconnect if already reconnected by MQTT library', async () => {
+    vi.useFakeTimers();
+    const logger = createMockLogger();
+    let connected = false;
+    const client = makeClient({
+      retryCount: 0,
+      isInDisconnectingStep: false,
+      isConnected: () => connected,
+      connect: vi.fn(),
+    });
+    const listener = new ConnectionStateListener(logger, client, 'TEST');
+    listener.start();
+    await listener.onDisconnected('DUID11', 'lost');
+
+    connected = true;
+    vi.advanceTimersByTime(30000);
+
+    expect(logger.info).toHaveBeenCalledWith(expect.stringContaining('already reconnected by MQTT library'));
+    expect(client.connect).not.toHaveBeenCalled();
+    expect(client.retryCount).toBe(0);
+    vi.useRealTimers();
+  });
+
+  it('stops reconnection on authorization error in onError', async () => {
+    const logger = createMockLogger();
+    const client = makeClient();
+    const listener = new ConnectionStateListener(logger, client, 'TEST');
+    listener.start();
+    await listener.onError('DUID12', 'Connection refused: Not authorized');
+    expect(logger.notice).toHaveBeenCalledWith(expect.stringContaining('authorization error'));
+  });
 });

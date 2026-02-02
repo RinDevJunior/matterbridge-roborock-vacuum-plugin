@@ -169,7 +169,7 @@ export class PlatformRunner {
       triggerDssError(robot, this.platform);
       return;
     }
-    robot.updateAttribute(RvcOperationalState.Cluster.id, 'operationalState', operationalStateId, this.platform.log);
+    if (operationalStateId !== undefined) robot.updateAttribute(RvcOperationalState.Cluster.id, 'operationalState', operationalStateId, this.platform.log);
   }
 
   /**

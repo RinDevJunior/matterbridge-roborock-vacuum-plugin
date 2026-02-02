@@ -1,22 +1,58 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { PlatformRunner } from '../platformRunner.js';
 import { NotifyMessageTypes } from '../types/notifyMessageTypes.js';
 import { RoborockMatterbridgePlatform } from '../module.js';
-import { fileURLToPath } from 'node:url';
-import path from 'node:path';
 import { RoborockVacuumCleaner } from '../types/roborockVacuumCleaner.js';
+import { Device, DeviceData, DeviceModel, BatteryMessage, DeviceErrorMessage, CleanInformation, Home } from '../roborockCommunication/models/index.js';
+import { asPartial, createMockLogger, createMockDeviceRegistry, createMockRoborockService, createMockConfigManager } from './testUtils.js';
+import { PowerSource, RvcCleanMode, RvcOperationalState, RvcRunMode, ServiceArea } from 'matterbridge/matter/clusters';
+import { OperationStatusCode, VacuumErrorCode } from '../roborockCommunication/enums/index.js';
+import type { DockingStationStatus } from '../model/DockingStationStatus.js';
 import * as initialDataIndex from '../initialData/index.js';
-import { Device, DeviceData } from '../roborockCommunication/models/index.js';
-import { asPartial, createMockLogger, createMockDeviceRegistry, createMockRoborockService } from './testUtils.js';
-import { RoborockService } from '../services/roborockService.js';
+import * as shareFunction from '../share/function.js';
+import * as runtimeHelper from '../share/runtimeHelper.js';
+import * as handleHomeDataMessage from '../runtimes/handleHomeDataMessage.js';
+import * as handleLocalMessage from '../runtimes/handleLocalMessage.js';
+import * as dockingStationStatus from '../model/DockingStationStatus.js';
+import { CleanModeSetting } from '../behaviors/roborock.vacuum/core/CleanModeSetting.js';
+import type { MessagePayload } from '../types/MessagePayloads.js';
+import { ModeResolver } from '../behaviors/roborock.vacuum/core/modeResolver.js';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-const getOperationalErrorState = vi.fn().mockReturnValue(2);
+vi.mock('../initialData/index.js', () => ({
+  getOperationalErrorState: vi.fn().mockReturnValue(2),
+  getBatteryStatus: vi.fn((level: number) => (level > 80 ? 0 : level > 20 ? 1 : 2)),
+  getBatteryState: vi.fn((_status: OperationStatusCode, _level: number) => 1),
+}));
 
-vi.mock('./initialData/index.js', () => ({
-  ...initialDataIndex,
-  getOperationalErrorState,
+vi.mock('../share/function.js', () => ({
+  state_to_matter_state: vi.fn((status: OperationStatusCode) => {
+    if (status === OperationStatusCode.Cleaning) return 1;
+    if (status === OperationStatusCode.Idle) return 0;
+    return 0;
+  }),
+  state_to_matter_operational_status: vi.fn((state: number | undefined) => state ?? 0),
+}));
+
+vi.mock('../runtimes/handleHomeDataMessage.js', () => ({
+  updateFromHomeData: vi.fn(),
+}));
+
+vi.mock('../runtimes/handleLocalMessage.js', () => ({
+  triggerDssError: vi.fn(),
+}));
+
+vi.mock('../model/DockingStationStatus.js', () => ({
+  hasDockingStationError: vi.fn().mockReturnValue(false),
+}));
+
+vi.mock('../share/runtimeHelper.js', () => ({
+  getCleanModeResolver: vi.fn(() => ({
+    resolve: vi.fn().mockReturnValue(1),
+  })),
+}));
+
+vi.mock('../initialData/getSupportedRunModes.js', () => ({
+  getRunningMode: vi.fn().mockReturnValue(1),
 }));
 
 describe('PlatformRunner.requestHomeData', () => {
@@ -57,7 +93,7 @@ describe('PlatformRunner.requestHomeData', () => {
     platform = asPartial<RoborockMatterbridgePlatform>({
       registry: createMockDeviceRegistry({}, new Map([['123', placeholderRobot]])),
       rrHomeId: undefined,
-      roborockService: asPartial<RoborockService>({ getHomeDataForUpdating: vi.fn() }),
+      roborockService: createMockRoborockService({ getHomeDataForUpdating: vi.fn() }),
       log: createMockLogger(),
     });
 
@@ -79,8 +115,26 @@ describe('PlatformRunner.requestHomeData', () => {
     runner = new PlatformRunner(platform);
     await runner.requestHomeData();
 
-    // No service call should be made
     expect(platform.roborockService).toBeUndefined();
+  });
+
+  it('should return early if getHomeDataForUpdating returns undefined', async () => {
+    const getHomeDataMock = vi.fn().mockResolvedValue(undefined);
+    const placeholderRobot = asPartial<RoborockVacuumCleaner>({ serialNumber: '123', device: asPartial<Device>({ data: asPartial<DeviceData>({}) }), updateAttribute: vi.fn() });
+    platform = asPartial<RoborockMatterbridgePlatform>({
+      registry: createMockDeviceRegistry({}, new Map([['123', placeholderRobot]])),
+      rrHomeId: 12345,
+      roborockService: createMockRoborockService({ getHomeDataForUpdating: getHomeDataMock }),
+      log: createMockLogger(),
+    });
+
+    runner = new PlatformRunner(platform);
+    const updateRobotWithPayloadSpy = vi.spyOn(runner, 'updateRobotWithPayload');
+
+    await runner.requestHomeData();
+
+    expect(getHomeDataMock).toHaveBeenCalledWith(12345);
+    expect(updateRobotWithPayloadSpy).not.toHaveBeenCalled();
   });
 
   it('should call updateRobotWithPayload when homeData is available', async () => {
@@ -95,11 +149,321 @@ describe('PlatformRunner.requestHomeData', () => {
     });
 
     runner = new PlatformRunner(platform);
-    const updateRobotWithPayloadSpy = vi.spyOn(runner, 'updateRobotWithPayload').mockResolvedValue();
+    const updateRobotWithPayloadSpy = vi.spyOn(runner, 'updateRobotWithPayload').mockImplementation(() => {});
 
     await runner.requestHomeData();
 
     expect(getHomeDataMock).toHaveBeenCalledWith(12345);
     expect(updateRobotWithPayloadSpy).toHaveBeenCalledWith({ type: NotifyMessageTypes.HomeData, data: homeData });
+  });
+});
+
+describe('PlatformRunner.updateRobotWithPayload', () => {
+  let platform: RoborockMatterbridgePlatform;
+  let runner: PlatformRunner;
+  let robot: RoborockVacuumCleaner;
+  const mockLogger = createMockLogger();
+
+  beforeEach(() => {
+    robot = asPartial<RoborockVacuumCleaner>({
+      serialNumber: 'test-duid',
+      device: asPartial<Device>({
+        duid: 'test-duid',
+        data: asPartial<DeviceData>({ model: DeviceModel.S7 }),
+      }),
+      updateAttribute: vi.fn(),
+      cleanModeSetting: new CleanModeSetting(1, 1, 1, 1),
+      dockStationStatus: asPartial<DockingStationStatus>({}),
+    });
+    platform = asPartial<RoborockMatterbridgePlatform>({
+      registry: createMockDeviceRegistry({}, new Map([['test-duid', robot]])),
+      log: mockLogger,
+      roborockService: createMockRoborockService(),
+      configManager: createMockConfigManager(),
+    });
+    runner = new PlatformRunner(platform);
+    vi.clearAllMocks();
+  });
+
+  it('should log warning for unhandled message type', () => {
+    const payload = { type: 'UnknownType', data: {} } as unknown as MessagePayload;
+    runner.updateRobotWithPayload(payload);
+    expect(mockLogger.warn).toHaveBeenCalledWith('No handler registered for message type: UnknownType');
+  });
+
+  it('should handle ErrorOccurred message', () => {
+    const errorMessage: DeviceErrorMessage = { duid: 'test-duid', errorCode: 1 as VacuumErrorCode };
+    const payload: MessagePayload = { type: NotifyMessageTypes.ErrorOccurred, data: errorMessage };
+
+    runner.updateRobotWithPayload(payload);
+
+    expect(initialDataIndex.getOperationalErrorState).toHaveBeenCalledWith(1);
+    expect(mockLogger.error).toHaveBeenCalledWith('Error occurred: 1');
+    expect(robot.updateAttribute).toHaveBeenCalledWith(RvcOperationalState.Cluster.id, 'operationalState', 2, mockLogger);
+  });
+
+  it('should not update operational state when getOperationalErrorState returns undefined', () => {
+    vi.mocked(initialDataIndex.getOperationalErrorState).mockReturnValueOnce(undefined);
+    const errorMessage: DeviceErrorMessage = { duid: 'test-duid', errorCode: 1 as VacuumErrorCode };
+    const payload: MessagePayload = { type: NotifyMessageTypes.ErrorOccurred, data: errorMessage };
+
+    runner.updateRobotWithPayload(payload);
+
+    expect(mockLogger.error).not.toHaveBeenCalled();
+    expect(robot.updateAttribute).not.toHaveBeenCalled();
+  });
+
+  it('should handle ErrorOccurred message with robot not found', () => {
+    const errorMessage: DeviceErrorMessage = { duid: 'unknown-duid', errorCode: 1 as VacuumErrorCode };
+    const payload: MessagePayload = { type: NotifyMessageTypes.ErrorOccurred, data: errorMessage };
+
+    runner.updateRobotWithPayload(payload);
+
+    expect(mockLogger.error).toHaveBeenCalledWith('Robot with DUID unknown-duid not found');
+  });
+
+  it('should handle BatteryUpdate message with battery level only', () => {
+    const batteryMessage = new BatteryMessage('test-duid', 85, undefined, undefined);
+    const payload: MessagePayload = { type: NotifyMessageTypes.BatteryUpdate, data: batteryMessage };
+
+    runner.updateRobotWithPayload(payload);
+
+    expect(robot.updateAttribute).toHaveBeenCalledWith(PowerSource.Cluster.id, 'batPercentRemaining', 170, mockLogger);
+    expect(robot.updateAttribute).toHaveBeenCalledWith(PowerSource.Cluster.id, 'batChargeLevel', 0, mockLogger);
+  });
+
+  it('should handle BatteryUpdate message with battery level and device status', () => {
+    const batteryMessage = new BatteryMessage('test-duid', 50, 1, OperationStatusCode.Charging);
+    const payload: MessagePayload = { type: NotifyMessageTypes.BatteryUpdate, data: batteryMessage };
+
+    runner.updateRobotWithPayload(payload);
+
+    expect(robot.updateAttribute).toHaveBeenCalledWith(PowerSource.Cluster.id, 'batPercentRemaining', 100, mockLogger);
+    expect(robot.updateAttribute).toHaveBeenCalledWith(PowerSource.Cluster.id, 'batChargeLevel', 1, mockLogger);
+    expect(robot.updateAttribute).toHaveBeenCalledWith(PowerSource.Cluster.id, 'batChargeState', 1, mockLogger);
+  });
+
+  it('should not update battery charge state when device status is missing', () => {
+    const batteryMessage = new BatteryMessage('test-duid', 50, 1, undefined);
+    const payload: MessagePayload = { type: NotifyMessageTypes.BatteryUpdate, data: batteryMessage };
+
+    runner.updateRobotWithPayload(payload);
+
+    expect(robot.updateAttribute).toHaveBeenCalledTimes(2);
+    expect(robot.updateAttribute).not.toHaveBeenCalledWith(PowerSource.Cluster.id, 'batChargeState', expect.anything(), mockLogger);
+  });
+
+  it('should handle DeviceStatus message', () => {
+    const statusMessage = { duid: 'test-duid', status: OperationStatusCode.Cleaning };
+    const payload: MessagePayload = { type: NotifyMessageTypes.DeviceStatus, data: statusMessage };
+
+    runner.updateRobotWithPayload(payload);
+
+    expect(shareFunction.state_to_matter_state).toHaveBeenCalledWith(OperationStatusCode.Cleaning);
+    expect(robot.updateAttribute).toHaveBeenCalledWith(RvcRunMode.Cluster.id, 'currentMode', 1, mockLogger);
+    expect(robot.updateAttribute).toHaveBeenCalledWith(RvcOperationalState.Cluster.id, 'operationalState', 1, mockLogger);
+  });
+
+  it('should not update run mode when state_to_matter_state returns undefined', () => {
+    vi.mocked(shareFunction.state_to_matter_state).mockReturnValueOnce(undefined);
+    const statusMessage = { duid: 'test-duid', status: OperationStatusCode.Unknown };
+    const payload: MessagePayload = { type: NotifyMessageTypes.DeviceStatus, data: statusMessage };
+
+    runner.updateRobotWithPayload(payload);
+
+    expect(robot.updateAttribute).toHaveBeenCalledWith(RvcOperationalState.Cluster.id, 'operationalState', 0, mockLogger);
+    expect(robot.updateAttribute).toHaveBeenCalledTimes(1);
+  });
+
+  it('should trigger dock station error when docking station has error', () => {
+    const robotWithErrorStatus = asPartial<RoborockVacuumCleaner>({
+      serialNumber: 'test-duid',
+      device: asPartial<Device>({
+        duid: 'test-duid',
+        data: asPartial<DeviceData>({ model: DeviceModel.S7 }),
+      }),
+      updateAttribute: vi.fn(),
+      cleanModeSetting: new CleanModeSetting(1, 1, 1, 1),
+      dockStationStatus: asPartial<DockingStationStatus>({ cleanFluidStatus: 1 }),
+    });
+
+    const mockHasDockingStationError = vi.fn().mockReturnValue(true);
+    vi.mocked(dockingStationStatus.hasDockingStationError).mockImplementation(mockHasDockingStationError);
+
+    const platformWithDockStatus = asPartial<RoborockMatterbridgePlatform>({
+      registry: createMockDeviceRegistry({}, new Map([['test-duid', robotWithErrorStatus]])),
+      log: mockLogger,
+      roborockService: createMockRoborockService(),
+      configManager: createMockConfigManager({ includeDockStationStatus: true }),
+    });
+    const runnerWithDockStatus = new PlatformRunner(platformWithDockStatus);
+
+    const statusMessage = { duid: 'test-duid', status: OperationStatusCode.Idle };
+    const payload: MessagePayload = { type: NotifyMessageTypes.DeviceStatus, data: statusMessage };
+
+    runnerWithDockStatus.updateRobotWithPayload(payload);
+
+    expect(mockHasDockingStationError).toHaveBeenCalledWith(robotWithErrorStatus.dockStationStatus);
+    expect(handleLocalMessage.triggerDssError).toHaveBeenCalledWith(robotWithErrorStatus, platformWithDockStatus);
+    expect(robotWithErrorStatus.updateAttribute).not.toHaveBeenCalledWith(RvcOperationalState.Cluster.id, 'operationalState', expect.anything(), mockLogger);
+  });
+
+  it('should not check dock station error when includeDockStationStatus is false', () => {
+    const statusMessage = { duid: 'test-duid', status: OperationStatusCode.Idle };
+    const payload: MessagePayload = { type: NotifyMessageTypes.DeviceStatus, data: statusMessage };
+
+    runner.updateRobotWithPayload(payload);
+
+    expect(dockingStationStatus.hasDockingStationError).not.toHaveBeenCalled();
+    expect(robot.updateAttribute).toHaveBeenCalledWith(RvcOperationalState.Cluster.id, 'operationalState', 0, mockLogger);
+  });
+
+  it('should handle CleanModeUpdate message with full settings', () => {
+    const cleanModeMessage = { duid: 'test-duid', suctionPower: 2, waterFlow: 3, distance_off: 1, mopRoute: 1 };
+    const payload: MessagePayload = { type: NotifyMessageTypes.CleanModeUpdate, data: cleanModeMessage };
+
+    runner.updateRobotWithPayload(payload);
+
+    expect(robot.updateAttribute).toHaveBeenCalledWith(RvcCleanMode.Cluster.id, 'currentMode', 1, mockLogger);
+    expect(robot.cleanModeSetting).toBeInstanceOf(CleanModeSetting);
+  });
+
+  it('should not update clean mode when settings are incomplete', () => {
+    const cleanModeMessage = { duid: 'test-duid', suctionPower: 2, waterFlow: 3, distance_off: 1, mopRoute: undefined };
+    const payload: MessagePayload = { type: NotifyMessageTypes.CleanModeUpdate, data: cleanModeMessage };
+
+    runner.updateRobotWithPayload(payload);
+
+    expect(robot.updateAttribute).not.toHaveBeenCalled();
+  });
+
+  it('should not update clean mode when resolver returns undefined', () => {
+    vi.mocked(runtimeHelper.getCleanModeResolver).mockReturnValueOnce(
+      asPartial<ModeResolver>({
+        resolve: vi.fn().mockReturnValue(undefined),
+      }),
+    );
+
+    const cleanModeMessage = { duid: 'test-duid', suctionPower: 2, waterFlow: 3, distance_off: 1, mopRoute: 1 };
+    const payload: MessagePayload = { type: NotifyMessageTypes.CleanModeUpdate, data: cleanModeMessage };
+
+    runner.updateRobotWithPayload(payload);
+
+    expect(robot.updateAttribute).not.toHaveBeenCalled();
+  });
+
+  it('should handle ServiceAreaUpdate message when state is Idle', () => {
+    const selectedAreas = [1, 2, 3];
+    platform.roborockService = createMockRoborockService({
+      getSelectedAreas: vi.fn().mockReturnValue(selectedAreas),
+    });
+
+    const serviceAreaMessage = { duid: 'test-duid', state: OperationStatusCode.Idle, cleaningInfo: undefined };
+    const payload: MessagePayload = { type: NotifyMessageTypes.ServiceAreaUpdate, data: serviceAreaMessage };
+
+    runner.updateRobotWithPayload(payload);
+
+    expect(robot.updateAttribute).toHaveBeenCalledWith(ServiceArea.Cluster.id, 'selectedAreas', selectedAreas, mockLogger);
+  });
+
+  it('should handle ServiceAreaUpdate when state is Cleaning without cleaningInfo', () => {
+    const serviceAreaMessage = { duid: 'test-duid', state: OperationStatusCode.Cleaning, cleaningInfo: undefined };
+    const payload: MessagePayload = { type: NotifyMessageTypes.ServiceAreaUpdate, data: serviceAreaMessage };
+
+    runner.updateRobotWithPayload(payload);
+
+    expect(mockLogger.debug).toHaveBeenCalledWith('No cleaning_info, setting currentArea to null');
+    expect(robot.updateAttribute).toHaveBeenCalledWith(ServiceArea.Cluster.id, 'currentArea', null, mockLogger);
+    expect(robot.updateAttribute).toHaveBeenCalledWith(ServiceArea.Cluster.id, 'selectedAreas', [], mockLogger);
+  });
+
+  it('should handle ServiceAreaUpdate when cleaningInfo is missing for non-cleaning state', () => {
+    const serviceAreaMessage = { duid: 'test-duid', state: OperationStatusCode.Paused, cleaningInfo: undefined };
+    const payload: MessagePayload = { type: NotifyMessageTypes.ServiceAreaUpdate, data: serviceAreaMessage };
+
+    runner.updateRobotWithPayload(payload);
+
+    expect(mockLogger.debug).toHaveBeenCalledWith('No cleaning_info available, skipping service area update');
+    expect(robot.updateAttribute).not.toHaveBeenCalled();
+  });
+
+  it('should handle ServiceAreaUpdate with cleaningInfo and valid segment_id', () => {
+    const cleaningInfo = asPartial<CleanInformation>({ segment_id: 4, target_segment_id: undefined });
+    const mappedArea = { areaId: 4, matterAreaId: 4, mapId: 1 };
+    platform.roborockService = createMockRoborockService({
+      getSupportedAreas: vi.fn().mockReturnValue([mappedArea]),
+    });
+
+    const serviceAreaMessage = { duid: 'test-duid', state: OperationStatusCode.Cleaning, cleaningInfo };
+    const payload: MessagePayload = { type: NotifyMessageTypes.ServiceAreaUpdate, data: serviceAreaMessage };
+
+    runner.updateRobotWithPayload(payload);
+
+    expect(robot.updateAttribute).toHaveBeenCalledWith(ServiceArea.Cluster.id, 'currentArea', 4, mockLogger);
+  });
+
+  it('should handle ServiceAreaUpdate with target_segment_id when segment_id is invalid', () => {
+    const cleaningInfo = asPartial<CleanInformation>({ segment_id: -1, target_segment_id: 5 });
+    const mappedArea = { areaId: 5, matterAreaId: 5, mapId: 1 };
+    platform.roborockService = createMockRoborockService({
+      getSupportedAreas: vi.fn().mockReturnValue([mappedArea]),
+    });
+
+    const serviceAreaMessage = { duid: 'test-duid', state: OperationStatusCode.Cleaning, cleaningInfo };
+    const payload: MessagePayload = { type: NotifyMessageTypes.ServiceAreaUpdate, data: serviceAreaMessage };
+
+    runner.updateRobotWithPayload(payload);
+
+    expect(robot.updateAttribute).toHaveBeenCalledWith(ServiceArea.Cluster.id, 'currentArea', 5, mockLogger);
+  });
+
+  it('should set currentArea to null when segment_id is INVALID_SEGMENT_ID and mapped area exists', () => {
+    const cleaningInfo = asPartial<CleanInformation>({ segment_id: -1, target_segment_id: -1 });
+    const mappedArea = { areaId: -1, matterAreaId: -1, mapId: 1 };
+    platform.roborockService = createMockRoborockService({
+      getSupportedAreas: vi.fn().mockReturnValue([mappedArea]),
+    });
+
+    const serviceAreaMessage = { duid: 'test-duid', state: OperationStatusCode.Cleaning, cleaningInfo };
+    const payload: MessagePayload = { type: NotifyMessageTypes.ServiceAreaUpdate, data: serviceAreaMessage };
+
+    runner.updateRobotWithPayload(payload);
+
+    expect(robot.updateAttribute).toHaveBeenCalledWith(ServiceArea.Cluster.id, 'currentArea', null, mockLogger);
+  });
+
+  it('should skip area mapping when no mapped area found', () => {
+    const cleaningInfo = asPartial<CleanInformation>({ segment_id: 10, target_segment_id: undefined });
+    platform.roborockService = createMockRoborockService({
+      getSupportedAreas: vi.fn().mockReturnValue([]),
+    });
+
+    const serviceAreaMessage = { duid: 'test-duid', state: OperationStatusCode.Cleaning, cleaningInfo };
+    const payload: MessagePayload = { type: NotifyMessageTypes.ServiceAreaUpdate, data: serviceAreaMessage };
+
+    runner.updateRobotWithPayload(payload);
+
+    expect(mockLogger.debug).toHaveBeenCalledWith(expect.stringContaining('No mapped area found'));
+    expect(robot.updateAttribute).not.toHaveBeenCalled();
+  });
+
+  it('should return early when roborockService is undefined for ServiceAreaUpdate', () => {
+    platform.roborockService = undefined;
+    const cleaningInfo = asPartial<CleanInformation>({ segment_id: 4, target_segment_id: undefined });
+    const serviceAreaMessage = { duid: 'test-duid', state: OperationStatusCode.Cleaning, cleaningInfo };
+    const payload: MessagePayload = { type: NotifyMessageTypes.ServiceAreaUpdate, data: serviceAreaMessage };
+
+    runner.updateRobotWithPayload(payload);
+
+    expect(robot.updateAttribute).not.toHaveBeenCalled();
+  });
+
+  it('should handle HomeData message', () => {
+    const homeData = { devices: [], products: [] };
+    const payload: MessagePayload = { type: NotifyMessageTypes.HomeData, data: asPartial<Home>(homeData) };
+
+    runner.updateRobotWithPayload(payload);
+
+    expect(handleHomeDataMessage.updateFromHomeData).toHaveBeenCalledWith(homeData, platform);
   });
 });

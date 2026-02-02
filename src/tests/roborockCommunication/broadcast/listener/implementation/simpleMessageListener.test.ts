@@ -91,4 +91,40 @@ describe('SimpleMessageListener', () => {
     expect(handler.onStatusChanged).not.toHaveBeenCalled();
     expect(handler.onError).not.toHaveBeenCalled();
   });
+
+  it('should do nothing if message duid does not match listener duid', async () => {
+    message.duid = '456';
+    message.isForProtocol.mockImplementation((proto: Protocol) => proto === Protocol.rpc_response);
+    await listener.onMessage(message);
+    expect(handler.onBatteryUpdate).not.toHaveBeenCalled();
+    expect(handler.onStatusChanged).not.toHaveBeenCalled();
+    expect(handler.onError).not.toHaveBeenCalled();
+    expect(logger.debug).toHaveBeenCalledWith('[SimpleMessageListener]: Message DUID 456 does not match listener DUID 123');
+  });
+
+  it('should handle rpc_response with dock_error_status', async () => {
+    message.isForProtocols.mockReturnValue(false);
+    message.isForProtocol.mockImplementation((proto: Protocol) => proto === Protocol.rpc_response);
+    message.get.mockReturnValue({
+      id: 15472,
+      result: [{ battery: 75, state: 8, error_code: 0, dock_error_status: 3, dock_type: 1 }],
+    });
+    await listener.onMessage(message);
+    expect(handler.onBatteryUpdate).toHaveBeenCalledWith(expect.objectContaining({ percentage: 75 }));
+    expect(handler.onStatusChanged).toHaveBeenCalledWith(expect.anything());
+    expect(handler.onError).toHaveBeenCalledWith(expect.objectContaining({ dockErrorCode: 3 }));
+  });
+
+  it('should handle rpc_response with both vacuum and dock errors', async () => {
+    message.isForProtocols.mockReturnValue(false);
+    message.isForProtocol.mockImplementation((proto: Protocol) => proto === Protocol.rpc_response);
+    message.get.mockReturnValue({
+      id: 15472,
+      result: [{ battery: 60, state: 8, error_code: 2, dock_error_status: 1, dock_type: 1 }],
+    });
+    await listener.onMessage(message);
+    expect(handler.onBatteryUpdate).toHaveBeenCalledWith(expect.objectContaining({ percentage: 60 }));
+    expect(handler.onStatusChanged).toHaveBeenCalledWith(expect.anything());
+    expect(handler.onError).toHaveBeenCalledWith(expect.objectContaining({ vacuumErrorCode: 2, dockErrorCode: 1 }));
+  });
 });

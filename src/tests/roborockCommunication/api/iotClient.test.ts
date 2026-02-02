@@ -179,6 +179,14 @@ describe('RoborockIoTApi', () => {
       expect(result?.rooms).toEqual([]);
     });
 
+    it('merges v3 rooms if v2 has no rooms but v3 does', async () => {
+      vi.spyOn(api, 'getHome').mockResolvedValue(new Home(1, 'Home1', [asPartial<Product>({ model: 'other.model' })], [], [], []));
+      vi.spyOn(api, 'getHomev2').mockResolvedValue(new Home(1, 'Home1', [], [], [], []));
+      vi.spyOn(api, 'getHomev3').mockResolvedValue(new Home(1, 'Home1', [], [], [], [asPartial<RoomEntity>({ id: 77, name: 'Garage' })]));
+      const result = await api.getHomeWithProducts(1);
+      expect(result?.rooms).toContainEqual({ id: 77, name: 'Garage' });
+    });
+
     it('returns undefined and logs if getHome returns undefined', async () => {
       vi.spyOn(api, 'getHome').mockResolvedValue(undefined);
       await expect(api.getHomeWithProducts(1)).rejects.toThrow('Failed to retrieve the home data');

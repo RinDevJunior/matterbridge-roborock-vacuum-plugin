@@ -124,6 +124,9 @@ export function createMockConfigManager(overrides: Partial<PlatformConfigManager
     get hasWhiteListConfig() {
       return overrides.hasWhiteListConfig ?? false;
     },
+    get includeDockStationStatus() {
+      return overrides.includeDockStationStatus ?? false;
+    },
     validateConfig: () => true,
     validateAuthentication: () => true,
   };

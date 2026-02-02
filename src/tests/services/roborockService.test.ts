@@ -39,6 +39,8 @@ describe('RoborockService - Comprehensive Coverage', () => {
       loginWithVerificationCode: vi.fn(),
       loginWithCachedToken: vi.fn(),
       loginWithPassword: vi.fn(),
+      authenticateWithPasswordFlow: vi.fn(),
+      authenticate2FAFlow: vi.fn(),
     };
 
     mockDeviceService = {
@@ -146,6 +148,21 @@ describe('RoborockService - Comprehensive Coverage', () => {
       expect(defaultService).toBeInstanceOf(RoborockService);
     });
 
+    it('should create service without injected container', () => {
+      const defaultService = new RoborockService(
+        {
+          refreshInterval: 10,
+          baseUrl: 'https://api.roborock.com',
+          persist: mockPersist as LocalStorage,
+          configManager: mockConfigManager as PlatformConfigManager,
+        },
+        mockLogger as AnsiLogger,
+        mockConfigManager as PlatformConfigManager,
+      );
+
+      expect(defaultService).toBeInstanceOf(RoborockService);
+    });
+
     it('should create service with custom factories', () => {
       const customAuthFactory = vi.fn((logger: AnsiLogger) => new RoborockAuthenticateApi(logger));
 
@@ -188,6 +205,92 @@ describe('RoborockService - Comprehensive Coverage', () => {
       expect(() => {
         service.activateDeviceNotify(device);
       }).not.toThrow();
+    });
+  });
+
+  describe('Authentication', () => {
+    it('should authenticate with password flow', async () => {
+      (mockAuthService.authenticateWithPasswordFlow as any).mockResolvedValue({
+        nickname: 'Test User',
+        username: 'testuser',
+      } as any);
+
+      const result = await service.authenticate();
+
+      expect(result.shouldContinue).toBe(true);
+      expect(result.userData).toBeDefined();
+      expect(mockAuthService.authenticateWithPasswordFlow).toHaveBeenCalledWith('testuser', 'testpass');
+    });
+
+    it('should authenticate with verification code flow', async () => {
+      const mockConfigWith2FA = {
+        username: 'testuser',
+        password: 'testpass',
+        verificationCode: '123456',
+        authenticationMethod: 'VerificationCode',
+      };
+      const serviceWith2FA = new RoborockService(
+        {
+          refreshInterval: 10,
+          baseUrl: 'https://api.roborock.com',
+          persist: mockPersist as LocalStorage,
+          configManager: mockConfigWith2FA as PlatformConfigManager,
+          container: mockContainer as ServiceContainer,
+        },
+        mockLogger as AnsiLogger,
+        mockConfigWith2FA as PlatformConfigManager,
+      );
+
+      (mockAuthService.authenticate2FAFlow as any).mockResolvedValue({
+        nickname: 'Test User',
+        username: 'testuser',
+      } as any);
+
+      const result = await serviceWith2FA.authenticate();
+
+      expect(result.shouldContinue).toBe(true);
+      expect(result.userData).toBeDefined();
+      expect(mockAuthService.authenticate2FAFlow).toHaveBeenCalledWith('testuser', '123456');
+    });
+
+    it('should return false when authentication fails', async () => {
+      (mockAuthService.authenticateWithPasswordFlow as any).mockRejectedValue(new Error('Auth failed'));
+
+      const result = await service.authenticate();
+
+      expect(result.shouldContinue).toBe(false);
+      expect(result.userData).toBeUndefined();
+      expect(mockLogger.error).toHaveBeenCalledWith('Authentication failed: Auth failed');
+    });
+
+    it('should return false when userData is undefined', async () => {
+      (mockAuthService.authenticateWithPasswordFlow as any).mockResolvedValue(undefined);
+
+      const result = await service.authenticate();
+
+      expect(result.shouldContinue).toBe(false);
+      expect(result.userData).toBeUndefined();
+      expect(mockLogger.info).toHaveBeenCalledWith('Authentication incomplete. Further action required (e.g., 2FA).');
+    });
+  });
+
+  describe('getCustomAPI', () => {
+    it('should throw error when iotApi is not initialized', async () => {
+      const getIotApi = mockContainer.getIotApi as any;
+      getIotApi.mockReturnValue(undefined);
+
+      await expect(service.getCustomAPI('/test')).rejects.toThrow('IoT API not initialized. Please login first.');
+    });
+
+    it('should call iotApi.getCustom when iotApi is initialized', async () => {
+      const mockIotApi = { getCustom: vi.fn().mockResolvedValue({ data: 'test' }) };
+      const getIotApi = mockContainer.getIotApi as any;
+      getIotApi.mockReturnValue(mockIotApi);
+
+      const result = await service.getCustomAPI('/test');
+
+      expect(result).toEqual({ data: 'test' });
+      expect(mockIotApi.getCustom).toHaveBeenCalledWith('/test');
     });
   });
 });
