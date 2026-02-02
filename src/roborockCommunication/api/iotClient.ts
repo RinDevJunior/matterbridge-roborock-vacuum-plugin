@@ -101,11 +101,11 @@ export class RoborockIoTApi {
 
     if (!homeData.hasRooms) {
       const homeDataV2 = await this.getHomev2(homeId);
-      if (homeDataV2?.hasRooms) {
+      if (homeDataV2 && homeDataV2.hasRooms) {
         homeData.rooms = homeDataV2.rooms;
       } else {
         const homeDataV3 = await this.getHomev3(homeId);
-        if (homeDataV3?.hasRooms) {
+        if (homeDataV3 && homeDataV3.hasRooms) {
           homeData.rooms = homeDataV3.rooms;
         }
       }
