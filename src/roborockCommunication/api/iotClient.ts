@@ -3,7 +3,7 @@ import axiosRetry from 'axios-retry';
 import https from 'node:https';
 import crypto from 'node:crypto';
 import { AnsiLogger, debugStringify } from 'matterbridge/logger';
-import { ApiResponse, Home, UserData, Scene } from '../models/index.js';
+import { ApiResponse, Home, UserData, Scene, HomeDataStruct } from '../models/index.js';
 import * as AxiosLogger from 'axios-logger';
 
 export class RoborockIoTApi {
@@ -117,9 +117,11 @@ export class RoborockIoTApi {
   public async getHome(homeId: number): Promise<Home | undefined> {
     try {
       const result = await this.api.get(`user/homes/${homeId}`);
-      const apiResponse: ApiResponse<Home> = result.data;
+      const apiResponse: ApiResponse<HomeDataStruct> = result.data;
       if (apiResponse.result) {
-        return apiResponse.result;
+        const data = apiResponse.result;
+        const home = new Home(data.id, data.name, data.products, data.devices, data.receivedDevices, data.rooms);
+        return home;
       }
       this.logger.error('Failed to retrieve the home data');
       return undefined;
@@ -132,9 +134,11 @@ export class RoborockIoTApi {
   public async getHomev2(homeId: number): Promise<Home | undefined> {
     try {
       const result = await this.api.get(`v2/user/homes/${homeId}`);
-      const apiResponse: ApiResponse<Home> = result.data;
+      const apiResponse: ApiResponse<HomeDataStruct> = result.data;
       if (apiResponse.result) {
-        return apiResponse.result;
+        const data = apiResponse.result;
+        const home = new Home(data.id, data.name, data.products, data.devices, data.receivedDevices, data.rooms);
+        return home;
       }
       this.logger.error('Failed to retrieve the home data');
       return undefined;
@@ -147,9 +151,11 @@ export class RoborockIoTApi {
   public async getHomev3(homeId: number): Promise<Home | undefined> {
     try {
       const result = await this.api.get(`v3/user/homes/${homeId}`); // can be v3 also
-      const apiResponse: ApiResponse<Home> = result.data;
+      const apiResponse: ApiResponse<HomeDataStruct> = result.data;
       if (apiResponse.result) {
-        return apiResponse.result;
+        const data = apiResponse.result;
+        const home = new Home(data.id, data.name, data.products, data.devices, data.receivedDevices, data.rooms);
+        return home;
       }
       this.logger.error('Failed to retrieve the home data');
       return undefined;

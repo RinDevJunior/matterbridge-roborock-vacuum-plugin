@@ -233,7 +233,7 @@ describe('RoborockIoTApi', () => {
     const home = { id: 1, name: 'Home1' };
     mockAxiosInstance.onGet('user/homes/1').reply(200, { result: home });
     const result = await api.getHome(1);
-    expect(result).toStrictEqual(home);
+    expect(result).toEqual(home);
   });
 
   it('getHome should log error and return undefined if result missing', async () => {
@@ -247,21 +247,21 @@ describe('RoborockIoTApi', () => {
     const home = { id: 2, name: 'Home2' };
     mockAxiosInstance.onGet('v2/user/homes/2').reply(200, { result: home });
     const result = await api.getHomev2(2);
-    expect(result).toStrictEqual(home);
+    expect(result).toEqual(home);
   });
 
   it('getHomev3 should return home if result exists', async () => {
     const home = { id: 3, name: 'Home3' };
     mockAxiosInstance.onGet('v3/user/homes/3').reply(200, { result: home });
     const result = await api.getHomev3(3);
-    expect(result).toStrictEqual(home);
+    expect(result).toEqual(home);
   });
 
   it('getScenes should return scenes if result exists', async () => {
     const scenes = [{ id: 1 }, { id: 2 }];
     mockAxiosInstance.onGet('user/scene/home/1').reply(200, { result: scenes });
     const result = await api.getScenes(1);
-    expect(result).toStrictEqual(scenes);
+    expect(result).toEqual(scenes);
   });
 
   it('getScenes should log error and return undefined if result missing', async () => {

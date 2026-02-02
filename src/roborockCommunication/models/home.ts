@@ -2,15 +2,16 @@ import { RoomEntity } from '../../core/domain/entities/Room.js';
 import { Device } from './device.js';
 import { Product } from './product.js';
 
+export interface HomeDataStruct {
+  id: number;
+  name: string;
+  products: Product[];
+  devices: Device[];
+  receivedDevices: Device[];
+  rooms: RoomEntity[];
+}
+
 export class Home {
-  // id: number;
-  // name: string;
-
-  // products: Product[];
-  // devices: Device[];
-  // receivedDevices: Device[];
-  // rooms: RoomEntity[];
-
   constructor(
     public id: number,
     public name: string,
