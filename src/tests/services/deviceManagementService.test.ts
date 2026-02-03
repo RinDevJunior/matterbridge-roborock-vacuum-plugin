@@ -52,6 +52,7 @@ describe('DeviceManagementService', () => {
     createTime: 0,
     online: true,
     schema: [],
+    mapInfos: undefined,
     data: {
       id: 'device-123',
       firmwareVersion: '1.0.0',
@@ -66,13 +67,12 @@ describe('DeviceManagementService', () => {
       pv: 'A01',
       model: DeviceModel.QREVO_EDGE_5V1,
     },
-    mapInfos: undefined,
   };
 
-  const mockHomeData: Home = new Home(
-    12345,
-    'Test Home',
-    [
+  const mockHomeData: Home = {
+    id: 12345,
+    name: 'Test Home',
+    products: [
       {
         id: 'prod-456',
         name: 'Test Product',
@@ -81,15 +81,15 @@ describe('DeviceManagementService', () => {
         schema: [],
       },
     ],
-    [mockDevice],
-    [],
-    [
+    devices: [mockDevice],
+    receivedDevices: [],
+    rooms: [
       {
         id: 1,
         name: 'Living Room',
       },
     ],
-  );
+  };
 
   beforeEach(() => {
     vi.clearAllMocks();
@@ -234,7 +234,7 @@ describe('DeviceManagementService', () => {
 
     it('should fallback battery level to 100 if not present', async () => {
       const deviceWithoutBattery = { ...mockDevice, deviceStatus: {} };
-      const homeDataNoBattery = new Home(mockHomeData.id, mockHomeData.name, mockHomeData.products, [deviceWithoutBattery], mockHomeData.receivedDevices, mockHomeData.rooms);
+      const homeDataNoBattery = { ...mockHomeData, devices: [deviceWithoutBattery] };
       mockIotApi.getHomeWithProducts = vi.fn().mockResolvedValue(homeDataNoBattery);
 
       const result = await deviceService.listDevices();

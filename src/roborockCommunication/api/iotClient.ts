@@ -3,7 +3,7 @@ import axiosRetry from 'axios-retry';
 import https from 'node:https';
 import crypto from 'node:crypto';
 import { AnsiLogger, debugStringify } from 'matterbridge/logger';
-import { ApiResponse, Home, UserData, Scene, HomeDataStruct } from '../models/index.js';
+import { ApiResponse, Home, UserData, Scene } from '../models/index.js';
 import * as AxiosLogger from 'axios-logger';
 
 export class RoborockIoTApi {
@@ -83,15 +83,30 @@ export class RoborockIoTApi {
     }, AxiosLogger.errorLogger);
   }
 
-  public async getHomeWithProducts(homeId: number): Promise<Home> {
-    const homeData = await this.getHome(homeId);
+  public async getHomeWithProducts(homeId: number): Promise<Home | undefined> {
+    let homeData = await this.getHome(homeId);
+    let homeDataV2: Home | undefined;
+    let homeDataV3: Home | undefined;
     if (!homeData) {
-      throw new Error('Failed to retrieve the home data');
+      this.logger.error('[getHomeWithProducts Step 1] Failed to retrieve the home data');
+      homeDataV2 = await this.getHomev2(homeId);
+      homeData = homeDataV2;
+    }
+
+    if (!homeData) {
+      this.logger.error('[getHomeWithProducts Step 2] Failed to retrieve the home data');
+      homeDataV3 = await this.getHomev3(homeId);
+      homeData = homeDataV3;
+    }
+
+    if (!homeData) {
+      this.logger.error('[getHomeWithProducts Step 3] Failed to retrieve the home data');
+      return undefined;
     }
 
     if (homeData.products.some((p) => this.vacuumNeedAPIV3.includes(p.model))) {
       this.logger.debug('Using v3 API for home data retrieval');
-      const homeDataV3 = await this.getHomev3(homeId);
+      homeDataV3 = homeDataV3 ?? (await this.getHomev3(homeId));
       if (!homeDataV3) {
         throw new Error('Failed to retrieve the home data from v3 API');
       }
@@ -99,13 +114,13 @@ export class RoborockIoTApi {
       homeData.receivedDevices = [...homeData.receivedDevices, ...homeDataV3.receivedDevices.filter((d) => !homeData.receivedDevices.some((x) => x.duid === d.duid))];
     }
 
-    if (!homeData.hasRooms) {
-      const homeDataV2 = await this.getHomev2(homeId);
-      if (homeDataV2 && homeDataV2.hasRooms) {
+    if (homeData.rooms.length === 0) {
+      homeDataV2 = homeDataV2 ?? (await this.getHomev2(homeId));
+      if (homeDataV2?.rooms && homeDataV2.rooms.length > 0) {
         homeData.rooms = homeDataV2.rooms;
       } else {
-        const homeDataV3 = await this.getHomev3(homeId);
-        if (homeDataV3 && homeDataV3.hasRooms) {
+        homeDataV3 = homeDataV3 ?? (await this.getHomev3(homeId));
+        if (homeDataV3?.rooms && homeDataV3.rooms.length > 0) {
           homeData.rooms = homeDataV3.rooms;
         }
       }
@@ -117,16 +132,14 @@ export class RoborockIoTApi {
   public async getHome(homeId: number): Promise<Home | undefined> {
     try {
       const result = await this.api.get(`user/homes/${homeId}`);
-      const apiResponse: ApiResponse<HomeDataStruct> = result.data;
+      const apiResponse: ApiResponse<Home> = result.data;
       if (apiResponse.result) {
-        const data = apiResponse.result;
-        const home = new Home(data.id, data.name, data.products, data.devices, data.receivedDevices, data.rooms);
-        return home;
+        return apiResponse.result;
       }
-      this.logger.error('Failed to retrieve the home data');
+      this.logger.error('[getHome] Failed to retrieve the home data');
       return undefined;
     } catch (error) {
-      this.logger.error(`getHome failed: ${error ? debugStringify(error) : 'unknown'}`);
+      this.logger.error(`[getHome] Failed: ${error ? debugStringify(error) : 'unknown'}`);
       return undefined;
     }
   }
@@ -134,16 +147,14 @@ export class RoborockIoTApi {
   public async getHomev2(homeId: number): Promise<Home | undefined> {
     try {
       const result = await this.api.get(`v2/user/homes/${homeId}`);
-      const apiResponse: ApiResponse<HomeDataStruct> = result.data;
+      const apiResponse: ApiResponse<Home> = result.data;
       if (apiResponse.result) {
-        const data = apiResponse.result;
-        const home = new Home(data.id, data.name, data.products, data.devices, data.receivedDevices, data.rooms);
-        return home;
+        return apiResponse.result;
       }
-      this.logger.error('Failed to retrieve the home data');
+      this.logger.error('[getHomev2] Failed to retrieve the home data');
       return undefined;
     } catch (error) {
-      this.logger.error(`getHomev2 failed: ${error ? debugStringify(error) : 'unknown'}`);
+      this.logger.error(`[getHomev2] Failed: ${error ? debugStringify(error) : 'unknown'}`);
       return undefined;
     }
   }
@@ -151,16 +162,14 @@ export class RoborockIoTApi {
   public async getHomev3(homeId: number): Promise<Home | undefined> {
     try {
       const result = await this.api.get(`v3/user/homes/${homeId}`); // can be v3 also
-      const apiResponse: ApiResponse<HomeDataStruct> = result.data;
+      const apiResponse: ApiResponse<Home> = result.data;
       if (apiResponse.result) {
-        const data = apiResponse.result;
-        const home = new Home(data.id, data.name, data.products, data.devices, data.receivedDevices, data.rooms);
-        return home;
+        return apiResponse.result;
       }
-      this.logger.error('Failed to retrieve the home data');
+      this.logger.error('[getHomev3] Failed to retrieve the home data');
       return undefined;
     } catch (error) {
-      this.logger.error(`getHomev3 failed: ${error ? debugStringify(error) : 'unknown'}`);
+      this.logger.error(`[getHomev3] Failed: ${error ? debugStringify(error) : 'unknown'}`);
       return undefined;
     }
   }
@@ -172,10 +181,10 @@ export class RoborockIoTApi {
       if (apiResponse.result) {
         return apiResponse.result;
       }
-      this.logger.error('Failed to retrieve scene');
+      this.logger.error('[getScenes] Failed to retrieve scenes');
       return undefined;
     } catch (error) {
-      this.logger.error(`getScenes failed: ${error ? debugStringify(error) : 'unknown'}`);
+      this.logger.error(`[getScenes] Failed: ${error ? debugStringify(error) : 'unknown'}`);
       return undefined;
     }
   }
@@ -187,10 +196,10 @@ export class RoborockIoTApi {
       if (apiResponse.result) {
         return apiResponse.result;
       }
-      this.logger.error('Failed to execute scene');
+      this.logger.error('[startScene] Failed to execute scene');
       return undefined;
     } catch (error) {
-      this.logger.error(`startScene failed: ${error ? debugStringify(error) : 'unknown'}`);
+      this.logger.error(`[startScene] Failed: ${error ? debugStringify(error) : 'unknown'}`);
       return undefined;
     }
   }
@@ -202,10 +211,10 @@ export class RoborockIoTApi {
       if (apiResponse.result) {
         return apiResponse.result;
       }
-      this.logger.error('Failed to execute scene');
+      this.logger.error('[getCustom] Failed to execute custom request');
       return undefined;
     } catch (error) {
-      this.logger.error(`getCustom failed: ${error ? debugStringify(error) : 'unknown'}`);
+      this.logger.error(`[getCustom] Failed: ${error ? debugStringify(error) : 'unknown'}`);
       return undefined;
     }
   }

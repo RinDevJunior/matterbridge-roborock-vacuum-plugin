@@ -44,15 +44,15 @@ export class DeviceManagementService {
 
       this.logger.debug(`Processing home data for home ID: ${homeInfo.rrHomeId}`);
 
-      const products = homeData.products.reduce((map, p) => {
-        map.set(p.id, { model: p.model as DeviceModel, category: p.category as DeviceCategory });
-        return map;
-      }, new Map<string, { model: DeviceModel; category: DeviceCategory }>());
+      const products = new Map<string, { model: DeviceModel; category: DeviceCategory }>();
+      homeData.products.forEach((p) => products.set(p.id, { model: p.model as DeviceModel, category: p.category as DeviceCategory }));
+
+      const devices: Device[] = [...homeData.devices, ...homeData.receivedDevices];
 
       // Fetch scenes for routine support
       const scenes = (await this.iotApi.getScenes(homeInfo.rrHomeId)) ?? [];
 
-      const result = homeData.allDevices.map((device) => {
+      const result = devices.map((device) => {
         return {
           ...device,
           rrHomeId: homeInfo.rrHomeId,
@@ -144,7 +144,11 @@ export class DeviceManagementService {
           } satisfies DeviceInformation,
         };
       }) satisfies Device[];
-      return new Home(homeData.id, homeData.name, homeData.products, dvs, homeData.receivedDevices, homeData.rooms);
+
+      return {
+        ...homeData,
+        devices: dvs,
+      } satisfies Home;
     } catch (error) {
       this.logger.error('Failed to get home data for updating:', error);
       return undefined;
