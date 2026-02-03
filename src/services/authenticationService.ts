@@ -227,6 +227,7 @@ export class AuthenticationService {
     this.logger.notice('Attempting login with verification code...');
 
     const userData = await this.loginWithVerificationCode(username, verificationCode.trim(), async (data: UserData) => {
+      data.username = username;
       await this.persist.setItem('userData', data);
       await this.persist.removeItem('authenticateFlowState');
     });

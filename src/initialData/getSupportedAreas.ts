@@ -134,7 +134,7 @@ function processValidData(enableMultipleMap: boolean, vacuumRooms: RoomDto[], ro
     roomMap?.rooms !== undefined && roomMap.rooms.length > 0
       ? roomMap.rooms.map((room, index) => {
           const locationName =
-            room.iot_name ?? vacuumRooms.find((r) => r.id === room.globalId || r.id === room.id)?.name ?? `Unknown Room ${randomInt(RANDOM_ROOM_MIN, RANDOM_ROOM_MAX)}`;
+            room.iot_name ?? vacuumRooms.find((r) => String(r.id) === room.iot_name_id || r.id === room.id)?.name ?? `Unknown Room ${randomInt(RANDOM_ROOM_MIN, RANDOM_ROOM_MAX)}`;
 
           const areaId = enableMultipleMap ? index + MULTIPLE_MAP_AREA_ID_OFFSET : room.id;
           const mapId = enableMultipleMap ? (room.iot_map_id ?? null) : null;

@@ -300,4 +300,100 @@ describe('PlatformRunner.getRoomMapFromDevice', () => {
     // expect(result.rooms.length).toEqual(1);
     // expect(result.rooms[0].alternativeId).toEqual('16'); // Should be just the id when tag is undefined
   });
+
+  it('xxx', async () => {
+    const device = asPartial<Device>({
+      duid: 'duid1',
+      rooms: [
+        { id: 39432524, name: 'Dining Room' },
+        { id: 39432521, name: 'Living Room' },
+        { id: 39432517, name: 'Boiler Room' },
+        { id: 39432514, name: 'Storage Room' },
+        { id: 39432512, name: 'Guest Toilet' },
+        { id: 39431381, name: 'Default' },
+        { id: 39431356, name: 'Storage room' },
+        { id: 39431312, name: 'Dining room' },
+        { id: 39431270, name: 'Boiler room' },
+        { id: 39431236, name: 'Guest toilet' },
+        { id: 11830052, name: 'Living room' },
+        { id: 11830055, name: 'Kitchen' },
+        { id: 11830066, name: 'Corridor' },
+        { id: 11830062, name: 'Bathroom' },
+        { id: 11830057, name: 'Bedroom' },
+      ],
+    });
+    const mapInfo = asPartial<MapInfo>({
+      allRooms: [],
+      maps: [],
+    });
+
+    vi.mocked(roborockService.getMapInfo).mockResolvedValue(mapInfo);
+
+    const roomMapData = [
+      [16, '39432521', 6],
+      [17, '11830055', 14],
+      [18, '11830066', 8],
+      [19, '39432517', 12],
+      [20, '39432514', 13],
+      [21, '39432512', 15],
+      [22, '39432524', 13],
+    ];
+
+    vi.mocked(roborockService.getRoomMap).mockResolvedValue(roomMapData as Partial<RawRoomMappingData> as RawRoomMappingData);
+
+    const result = await RoomMap.fromMapInfo(device, platform);
+    const expectedRoomMap = new RoomMap([
+      {
+        id: 16,
+        iot_name_id: '39432521',
+        tag: 6,
+        iot_map_id: 1,
+        iot_name: 'Living Room',
+      },
+      {
+        id: 17,
+        iot_name_id: '11830055',
+        tag: 14,
+        iot_map_id: 1,
+        iot_name: 'Kitchen',
+      },
+      {
+        id: 18,
+        iot_name_id: '11830066',
+        tag: 8,
+        iot_map_id: 1,
+        iot_name: 'Corridor',
+      },
+      {
+        id: 19,
+        iot_name_id: '39432517',
+        tag: 12,
+        iot_map_id: 1,
+        iot_name: 'Boiler Room',
+      },
+      {
+        id: 20,
+        iot_name_id: '39432514',
+        tag: 13,
+        iot_map_id: 1,
+        iot_name: 'Storage Room',
+      },
+      {
+        id: 21,
+        iot_name_id: '39432512',
+        tag: 15,
+        iot_map_id: 1,
+        iot_name: 'Guest Toilet',
+      },
+      {
+        id: 22,
+        iot_name_id: '39432524',
+        tag: 13,
+        iot_map_id: 1,
+        iot_name: 'Dining Room',
+      },
+    ]);
+
+    expect(result).toEqual(expectedRoomMap);
+  });
 });

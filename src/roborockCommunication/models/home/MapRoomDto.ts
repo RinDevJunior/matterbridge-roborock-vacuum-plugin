@@ -16,5 +16,4 @@ export interface MapRoomDto {
 
   /* Optional fields for enhanced identification */
   iot_map_id?: number;
-  globalId?: number;
 }

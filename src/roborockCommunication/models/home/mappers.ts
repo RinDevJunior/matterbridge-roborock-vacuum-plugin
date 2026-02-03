@@ -5,10 +5,9 @@ export type RawRoomMappingData = number[][];
 
 export const HomeModelMapper = {
   toRoomMapping(dto: MapRoomDto, rooms: RoomDto[]): RoomMapping {
-    const room = rooms.find((r) => r.id === dto.id);
+    const room = rooms.find((r) => r.id === dto.id || String(r.id) === dto.iot_name_id);
     return {
       id: dto.id,
-      globalId: dto.globalId,
       iot_name_id: dto.iot_name_id,
       tag: dto.tag,
       iot_map_id: dto.iot_map_id ?? 0,
@@ -19,9 +18,8 @@ export const HomeModelMapper = {
   rawArrayToMapRoomDto(raw: number[], activeMap: number): MapRoomDto {
     return {
       id: raw[0],
-      tag: raw[2],
       iot_name_id: String(raw[1]),
-      globalId: raw[1],
+      tag: raw[2],
       iot_map_id: activeMap,
     } satisfies MapRoomDto;
   },

@@ -15,8 +15,8 @@ describe('getSupportedAreas (legacy)', () => {
 
   test('detect duplicated areas returns duplicated sentinel', () => {
     const rooms: RoomMapping[] = [
-      { id: 1, iot_name_id: '1', globalId: 1, tag: 0, iot_map_id: 0, iot_name: 'Room1' },
-      { id: 1, iot_name_id: '1', globalId: 1, tag: 0, iot_map_id: 0, iot_name: 'Room1' },
+      { id: 1, iot_name_id: '1', tag: 0, iot_map_id: 0, iot_name: 'Room1' },
+      { id: 1, iot_name_id: '1', tag: 0, iot_map_id: 0, iot_name: 'Room1' },
     ];
     const roomMap = new RoomMap(rooms);
     const vacuumRooms: RoomDto[] = [{ id: 1, name: 'R1' }];
@@ -27,7 +27,7 @@ describe('getSupportedAreas (legacy)', () => {
 
   test('enableMultipleMap returns supportedMaps', () => {
     const vacuumRooms: RoomDto[] = [{ id: 1, name: 'R1' }];
-    const roomMap = new RoomMap([{ id: 10, iot_name_id: '10', globalId: 10, tag: 0, iot_map_id: 7, iot_name: 'RoomX' }]);
+    const roomMap = new RoomMap([{ id: 10, iot_name_id: '10', tag: 0, iot_map_id: 7, iot_name: 'RoomX' }]);
     const res = getSupportedAreas(vacuumRooms, roomMap, true, makeLogger(), [{ id: 7, name: 'Level 7', rooms: [] }]);
     expect(res.supportedMaps.length).toBeGreaterThanOrEqual(1);
     expect(res.roomIndexMap).toBeDefined();
@@ -63,14 +63,14 @@ describe('getSupportedAreas', () => {
         { id: 609145, name: 'Living Room' },
       ],
       new RoomMap([
-        { id: 16, globalId: 609146, iot_name_id: '609146', tag: 0, iot_map_id: 0, iot_name: 'Kitchen' },
-        { id: 17, globalId: 1457889, iot_name_id: '1457889', tag: 0, iot_map_id: 0, iot_name: 'Bathroom' },
-        { id: 18, globalId: 612202, iot_name_id: '612202', tag: 0, iot_map_id: 0, iot_name: 'Hallway' },
-        { id: 19, globalId: 1458155, iot_name_id: '1458155', tag: 0, iot_map_id: 0, iot_name: 'Dining room' },
-        { id: 20, globalId: 1457888, iot_name_id: '1457888', tag: 0, iot_map_id: 0, iot_name: 'Living room' },
-        { id: 21, globalId: 1459580, iot_name_id: '1459580', tag: 0, iot_map_id: 0, iot_name: "BBB's room" },
-        { id: 22, globalId: 612205, iot_name_id: '612205', tag: 0, iot_map_id: 0, iot_name: "CCC's Room" },
-        { id: 23, globalId: 1474466, iot_name_id: '1474466', tag: 0, iot_map_id: 0, iot_name: 'Outside' },
+        { id: 16, iot_name_id: '609146', tag: 0, iot_map_id: 0, iot_name: 'Kitchen' },
+        { id: 17, iot_name_id: '1457889', tag: 0, iot_map_id: 0, iot_name: 'Bathroom' },
+        { id: 18, iot_name_id: '612202', tag: 0, iot_map_id: 0, iot_name: 'Hallway' },
+        { id: 19, iot_name_id: '1458155', tag: 0, iot_map_id: 0, iot_name: 'Dining room' },
+        { id: 20, iot_name_id: '1457888', tag: 0, iot_map_id: 0, iot_name: 'Living room' },
+        { id: 21, iot_name_id: '1459580', tag: 0, iot_map_id: 0, iot_name: "BBB's room" },
+        { id: 22, iot_name_id: '612205', tag: 0, iot_map_id: 0, iot_name: "CCC's Room" },
+        { id: 23, iot_name_id: '1474466', tag: 0, iot_map_id: 0, iot_name: 'Outside' },
       ]),
       false, // enableMultipleMap
       mockLogger,
@@ -92,11 +92,11 @@ describe('getSupportedAreas', () => {
         { id: 11453384, name: 'Outside' },
       ],
       new RoomMap([
-        { id: 16, globalId: 2775739, iot_name_id: '2775739', tag: 0, iot_map_id: 0, iot_name: '' },
-        { id: 17, globalId: 991195, iot_name_id: '991195', tag: 0, iot_map_id: 0, iot_name: '' },
-        { id: 18, globalId: 991187, iot_name_id: '991187', tag: 0, iot_map_id: 0, iot_name: '' },
-        { id: 19, globalId: 991185, iot_name_id: '991185', tag: 0, iot_map_id: 0, iot_name: '' },
-        { id: 20, globalId: 991190, iot_name_id: '991190', tag: 0, iot_map_id: 0, iot_name: '' },
+        { id: 16, iot_name_id: '2775739', tag: 0, iot_map_id: 0, iot_name: '' },
+        { id: 17, iot_name_id: '991195', tag: 0, iot_map_id: 0, iot_name: '' },
+        { id: 18, iot_name_id: '991187', tag: 0, iot_map_id: 0, iot_name: '' },
+        { id: 19, iot_name_id: '991185', tag: 0, iot_map_id: 0, iot_name: '' },
+        { id: 20, iot_name_id: '991190', tag: 0, iot_map_id: 0, iot_name: '' },
       ]),
       false, // enableMultipleMap
       mockLogger,
@@ -118,11 +118,11 @@ describe('getSupportedAreas', () => {
         { id: 11453384, name: 'Outside' },
       ],
       new RoomMap([
-        { id: 16, globalId: 2775739, iot_name_id: '2775739', tag: 0, iot_map_id: 0, iot_name: '' },
-        { id: 17, globalId: 991195, iot_name_id: '991195', tag: 0, iot_map_id: 0, iot_name: '' },
-        { id: 18, globalId: 991187, iot_name_id: '991187', tag: 0, iot_map_id: 0, iot_name: '' },
-        { id: 19, globalId: 991185, iot_name_id: '991185', tag: 0, iot_map_id: 0, iot_name: '' },
-        { id: 20, globalId: 991190, iot_name_id: '991190', tag: 0, iot_map_id: 0, iot_name: '' },
+        { id: 16, iot_name_id: '2775739', tag: 0, iot_map_id: 0, iot_name: '' },
+        { id: 17, iot_name_id: '991195', tag: 0, iot_map_id: 0, iot_name: '' },
+        { id: 18, iot_name_id: '991187', tag: 0, iot_map_id: 0, iot_name: '' },
+        { id: 19, iot_name_id: '991185', tag: 0, iot_map_id: 0, iot_name: '' },
+        { id: 20, iot_name_id: '991190', tag: 0, iot_map_id: 0, iot_name: '' },
       ]),
       false, // enableMultipleMap
       mockLogger,
@@ -142,11 +142,11 @@ describe('getSupportedAreas', () => {
       { id: 12461111, name: 'Balcony' },
     ];
     const roomMap = new RoomMap([
-      { id: 16, globalId: 2775739, iot_name_id: '2775739', tag: 0, iot_map_id: 0, iot_name: '' },
-      { id: 17, globalId: 991195, iot_name_id: '991195', tag: 0, iot_map_id: 0, iot_name: '' },
-      { id: 18, globalId: 991187, iot_name_id: '991187', tag: 0, iot_map_id: 0, iot_name: '' },
-      { id: 19, globalId: 991185, iot_name_id: '991185', tag: 0, iot_map_id: 0, iot_name: '' },
-      { id: 20, globalId: 991190, iot_name_id: '991190', tag: 0, iot_map_id: 0, iot_name: '' },
+      { id: 16, iot_name_id: '2775739', tag: 0, iot_map_id: 0, iot_name: '' },
+      { id: 17, iot_name_id: '991195', tag: 0, iot_map_id: 0, iot_name: '' },
+      { id: 18, iot_name_id: '991187', tag: 0, iot_map_id: 0, iot_name: '' },
+      { id: 19, iot_name_id: '991185', tag: 0, iot_map_id: 0, iot_name: '' },
+      { id: 20, iot_name_id: '991190', tag: 0, iot_map_id: 0, iot_name: '' },
     ]);
     const { supportedAreas } = getSupportedAreas(vacuumRooms, roomMap, false, mockLogger);
 
@@ -165,14 +165,14 @@ describe('getSupportedAreas', () => {
       { id: 12461111, name: 'Balcony' },
     ];
     const roomMap = new RoomMap([
-      { id: 1, globalId: 11100845, iot_name_id: '11100845', tag: 14, iot_map_id: 0, iot_name: 'Kitchen' },
-      { id: 2, globalId: 11100849, iot_name_id: '11100849', tag: 9, iot_map_id: 0, iot_name: 'Study' },
-      { id: 3, globalId: 11100842, iot_name_id: '11100842', tag: 6, iot_map_id: 0, iot_name: 'Living room' },
-      { id: 4, globalId: 11100847, iot_name_id: '11100847', tag: 1, iot_map_id: 0, iot_name: 'Bedroom' },
-      { id: 1, globalId: 11100842, iot_name_id: '11100842', tag: 6, iot_map_id: 1, iot_name: 'Living room' },
-      { id: 2, globalId: 12461114, iot_name_id: '12461114', tag: 3, iot_map_id: 1, iot_name: 'Guest bedroom' },
-      { id: 3, globalId: 12461109, iot_name_id: '12461109', tag: 2, iot_map_id: 1, iot_name: 'Master bedroom' },
-      { id: 4, globalId: 12461111, iot_name_id: '12461111', tag: 7, iot_map_id: 1, iot_name: 'Balcony' },
+      { id: 1, iot_name_id: '11100845', tag: 14, iot_map_id: 0, iot_name: 'Kitchen' },
+      { id: 2, iot_name_id: '11100849', tag: 9, iot_map_id: 0, iot_name: 'Study' },
+      { id: 3, iot_name_id: '11100842', tag: 6, iot_map_id: 0, iot_name: 'Living room' },
+      { id: 4, iot_name_id: '11100847', tag: 1, iot_map_id: 0, iot_name: 'Bedroom' },
+      { id: 1, iot_name_id: '11100842', tag: 6, iot_map_id: 1, iot_name: 'Living room' },
+      { id: 2, iot_name_id: '12461114', tag: 3, iot_map_id: 1, iot_name: 'Guest bedroom' },
+      { id: 3, iot_name_id: '12461109', tag: 2, iot_map_id: 1, iot_name: 'Master bedroom' },
+      { id: 4, iot_name_id: '12461111', tag: 7, iot_map_id: 1, iot_name: 'Balcony' },
     ]);
 
     const mockLogger1 = {

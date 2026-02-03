@@ -77,7 +77,7 @@ export class RoborockVacuumCleaner extends RoboticVacuumCleaner {
     this.addCommandHandlerWithErrorHandling(CommandNames.SELECT_AREAS, async ({ request }) => {
       const { newAreas } = request as ServiceArea.SelectAreasRequest;
       if (!newAreas || newAreas.length === 0) {
-        this.log.warn('selectAreas called with empty or undefined areas');
+        this.log.info('selectAreas called with empty or undefined areas, it means selecting no areas or all areas, ignoring.');
         return;
       }
       this.log.info(`Selecting areas: ${newAreas.join(', ')}`);
