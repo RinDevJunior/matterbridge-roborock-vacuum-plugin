@@ -97,7 +97,7 @@ export class ServiceContainer {
       const authService = new AuthenticationService(authGateway, this.logger);
 
       // Create repositories
-      const userDataRepository = new UserDataRepository(this.config.persist, this.logger);
+      const userDataRepository = new UserDataRepository(this.config.persist, this.config.configManager, this.logger);
       const authStateRepository = new AuthenticationStateRepository(this.config.persist);
 
       // Create verification code service

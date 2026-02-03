@@ -1,11 +1,13 @@
 import type NodePersist from 'node-persist';
 import type { UserData } from '../../roborockCommunication/models/index.js';
 import { AnsiLogger } from 'matterbridge/logger';
+import { PlatformConfigManager } from '../../platform/platformConfig.js';
 
 /** Repository for persisting and retrieving user data. */
 export class UserDataRepository {
   constructor(
     private readonly persist: NodePersist.LocalStorage,
+    private readonly configManager: PlatformConfigManager,
     private readonly logger: AnsiLogger,
   ) {}
 
@@ -20,6 +22,12 @@ export class UserDataRepository {
 
     if (savedUserData.username === undefined || savedUserData.username === '' || savedUserData.username !== username) {
       this.logger.debug('Saved userData username does not match, ignoring saved data');
+      await this.clearUserData();
+      return undefined;
+    }
+
+    if (savedUserData.region.toUpperCase() !== this.configManager.region.toUpperCase()) {
+      this.logger.debug('Saved userData region does not match current config, ignoring saved data');
       await this.clearUserData();
       return undefined;
     }
