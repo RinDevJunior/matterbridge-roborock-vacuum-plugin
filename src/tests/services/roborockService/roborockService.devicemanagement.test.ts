@@ -250,7 +250,7 @@ describe('Device Management Methods', () => {
     mockContainer = asPartial<ServiceContainer>({
       setUserData: vi.fn(),
       getIotApi: vi.fn(),
-      getAuthenticationService: vi.fn().mockReturnValue({}),
+      getAuthenticationCoordinator: vi.fn().mockReturnValue({}),
       getDeviceManagementService: vi.fn().mockReturnValue({ getHomeDataForUpdating: vi.fn().mockResolvedValue(undefined) }),
       getAreaManagementService: vi.fn().mockReturnValue({}),
       getMessageRoutingService: vi.fn().mockReturnValue({}),

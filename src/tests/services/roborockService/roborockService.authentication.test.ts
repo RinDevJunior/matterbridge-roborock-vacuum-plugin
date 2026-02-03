@@ -10,18 +10,17 @@ describe('RoborockService - Authentication', () => {
   let roborockService: RoborockService;
   let mockLogger: AnsiLogger;
   let mockContainer: any;
-  let mockAuthService: any;
+  let mockAuthCoordinator: any;
 
   beforeEach(async () => {
     mockLogger = makeLogger();
 
-    mockAuthService = {
-      authenticate2FAFlow: vi.fn(),
-      authenticateWithPasswordFlow: vi.fn(),
+    mockAuthCoordinator = {
+      authenticate: vi.fn(),
     };
 
     mockContainer = {
-      getAuthenticationService: vi.fn(() => mockAuthService),
+      getAuthenticationCoordinator: vi.fn(() => mockAuthCoordinator),
       getDeviceManagementService: vi.fn(() => ({})),
       getAreaManagementService: vi.fn(() => ({})),
       getMessageRoutingService: vi.fn(() => ({})),
@@ -77,7 +76,7 @@ describe('RoborockService - Authentication', () => {
 
   it('should return success when authentication succeeds', async () => {
     const mockUserData = { username: 'test@example.com', nickname: 'Test' };
-    mockAuthService.authenticateWithPasswordFlow.mockResolvedValue(mockUserData);
+    mockAuthCoordinator.authenticate.mockResolvedValue(mockUserData);
 
     const result = await roborockService.authenticate();
 
@@ -87,7 +86,7 @@ describe('RoborockService - Authentication', () => {
   });
 
   it('should call logger.error and return failure when authentication throws', async () => {
-    mockAuthService.authenticateWithPasswordFlow.mockRejectedValue(new Error('auth failed'));
+    mockAuthCoordinator.authenticate.mockRejectedValue(new Error('auth failed'));
 
     const result = await roborockService.authenticate();
 

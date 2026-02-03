@@ -26,10 +26,10 @@ export const RECONNECT_DELAY_MS = 10000;
 export const KEEPALIVE_INTERVAL_MS = 60 * 60 * 1000;
 
 /**
- * Minimum time between verification code requests (1 minute).
+ * Minimum time between verification code requests (15 minutes).
  * Rate limiting for 2FA code generation.
  */
-export const VERIFICATION_CODE_RATE_LIMIT_MS = 60000;
+export const VERIFICATION_CODE_RATE_LIMIT_MS = 15 * 60 * 1000;
 
 /**
  * Default refresh interval for home data requests (60 seconds).

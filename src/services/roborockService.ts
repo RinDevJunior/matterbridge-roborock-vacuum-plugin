@@ -5,13 +5,13 @@ import { DeviceNotifyCallback, Factory } from '../types/index.js';
 import {
   ServiceContainer,
   ServiceContainerConfig,
-  AuthenticationService,
   DeviceManagementService,
   AreaManagementService,
   MessageRoutingService,
   PollingService,
   ConnectionService,
 } from '../services/index.js';
+import { AuthenticationCoordinator } from './authentication/AuthenticationCoordinator.js';
 import { RoborockAuthenticateApi } from '../roborockCommunication/api/authClient.js';
 import { Device, Home, RawRoomMappingData, RequestMessage, Scene, UserData } from '../roborockCommunication/models/index.js';
 import { RoborockIoTApi } from '../roborockCommunication/api/iotClient.js';
@@ -32,7 +32,7 @@ export interface RoborockServiceConfig {
 /** Facade coordinating Auth, Device, Area, and Message services via ServiceContainer. */
 export class RoborockService {
   private readonly container: ServiceContainer;
-  private readonly authService: AuthenticationService;
+  private readonly authCoordinator: AuthenticationCoordinator;
   private readonly deviceService: DeviceManagementService;
   private readonly areaService: AreaManagementService;
   private readonly messageService: MessageRoutingService;
@@ -63,7 +63,7 @@ export class RoborockService {
     }
 
     // Get service instances
-    this.authService = this.container.getAuthenticationService();
+    this.authCoordinator = this.container.getAuthenticationCoordinator();
     this.deviceService = this.container.getDeviceManagementService();
     this.areaService = this.container.getAreaManagementService();
     this.messageService = this.container.getMessageRoutingService();
@@ -72,7 +72,7 @@ export class RoborockService {
   }
 
   // ============================================================================
-  // Authentication Methods (delegate to AuthenticationService)
+  // Authentication Methods (delegate to AuthenticationCoordinator)
   // ============================================================================
 
   public async authenticate(): Promise<{ userData: UserData | undefined; shouldContinue: boolean }> {
@@ -93,11 +93,11 @@ export class RoborockService {
     );
     let userData: UserData | undefined;
     try {
-      if (method === 'VerificationCode') {
-        userData = await this.authService.authenticate2FAFlow(username, verificationCode);
-      } else {
-        userData = await this.authService.authenticateWithPasswordFlow(username, password);
-      }
+      userData = await this.authCoordinator.authenticate(method, {
+        username,
+        password,
+        verificationCode,
+      });
     } catch (error) {
       this.logger.error(`Authentication failed: ${(error as Error).message}`);
       return { userData: undefined, shouldContinue: false };

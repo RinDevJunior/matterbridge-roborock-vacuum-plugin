@@ -48,6 +48,11 @@ export class PlatformLifecycle {
     await this.deps.clearSelect();
     await this.deps.getPersistanceStorage().init();
 
+    // Clear storage if alwaysExecuteAuthentication is set
+    if (this.configManager.alwaysExecuteAuthentication) {
+      await this.deps.getPersistanceStorage().clear();
+    }
+
     // Validate configuration
     if (!this.configManager.validateConfig()) {
       this.log.error('"username" (email address) is required in the config');
