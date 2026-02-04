@@ -1,5 +1,6 @@
 import { DeviceCategory } from '../../roborockCommunication/models/deviceCategory.js';
-import { Device, DeviceModel, Protocol, UserData } from '../../roborockCommunication/models/index.js';
+import { Device, DeviceModel, Protocol, UserData, Home } from '../../roborockCommunication/models/index.js';
+import { RoomEntity } from '../../core/domain/entities/Room.js';
 
 /**
  * Fluent builder for creating Device objects in tests.
@@ -26,7 +27,6 @@ export class DeviceBuilder {
     },
     silentOtaSwitch: false,
     rrHomeId: 12345,
-    rooms: [],
     serialNumber: 'TEST-SN-123456',
     data: {
       id: 'test-duid-default',
@@ -41,6 +41,7 @@ export class DeviceBuilder {
       localKey: 'testLocalKey1234',
       pv: '1.0',
       model: DeviceModel.Q5,
+      homeData: this.createDefaultHomeData(),
     },
     schema: [],
   };
@@ -149,10 +150,12 @@ export class DeviceBuilder {
   }
 
   /**
-   * Add rooms to the device.
+   * Add home data to the device store.
    */
-  withRooms(rooms: { id: number; name: string }[]): this {
-    this.device.rooms = rooms;
+  withHomeData(homeData: Home): this {
+    if (this.device.store) {
+      this.device.store.homeData = homeData;
+    }
     return this;
   }
 
@@ -190,6 +193,20 @@ export class DeviceBuilder {
           l: 'https://wood-us.roborock.com',
         },
       },
+    };
+  }
+
+  /**
+   * Creates default home data for testing.
+   */
+  private createDefaultHomeData(): Home {
+    return {
+      id: 12345,
+      name: 'Test Home',
+      products: [],
+      devices: [],
+      receivedDevices: [],
+      rooms: [new RoomEntity(1, 'Living Room'), new RoomEntity(2, 'Kitchen')],
     };
   }
 }

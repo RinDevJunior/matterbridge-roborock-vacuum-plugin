@@ -29,7 +29,7 @@ import { PlatformLifecycle, LifecycleDependencies } from './platform/platformLif
 import { PlatformState } from './platform/platformState.js';
 import { DEFAULT_REFRESH_INTERVAL_SECONDS } from './constants/index.js';
 import { RoborockPluginPlatformConfig } from './model/RoborockPluginPlatformConfig.js';
-import { RoomEntity } from './core/domain/entities/Room.js';
+import { HomeEntity } from './core/domain/entities/Home.js';
 
 export default function initializePlugin(matterbridge: PlatformMatterbridge, log: AnsiLogger, config: PlatformConfig): RoborockMatterbridgePlatform {
   return new RoborockMatterbridgePlatform(matterbridge, log, config as RoborockPluginPlatformConfig);
@@ -246,15 +246,12 @@ export class RoborockMatterbridgePlatform extends MatterbridgeDynamicPlatform {
       return false;
     }
 
-    let roomMap = new RoomMap([]);
     // Fetch rooms if not already available
-    vacuum.rooms = [];
-    roomMap = await RoomMap.fromMapInfo(vacuum, this);
-    if (roomMap.hasRooms) {
-      this.log.info(`Using RoomMap rooms from mapInfos for device: ${vacuum.name} (${vacuum.duid})`);
-      vacuum.rooms = roomMap.rooms.map((room) => new RoomEntity(room.id, room.iot_name));
-    }
+    const { mapInfo, roomMap } = await RoomMap.fromMapInfo(vacuum, this);
     this.log.debug('Initializing - roomMap: ', debugStringify(roomMap));
+
+    const homeData = vacuum.store.homeData;
+    const homeInfo = new HomeEntity(homeData.id, homeData.name, roomMap, mapInfo, this.configManager.isMultipleMapEnabled);
 
     const behaviorHandler = configureBehavior(
       vacuum.data.model,
@@ -266,7 +263,7 @@ export class RoborockMatterbridgePlatform extends MatterbridgeDynamicPlatform {
       this.log,
     );
 
-    const { supportedAreas, roomIndexMap } = getSupportedAreas(vacuum.rooms, roomMap, this.configManager.isMultipleMapEnabled, this.log, []); // TODO: populate mapInfos
+    const { supportedAreas, roomIndexMap } = getSupportedAreas(homeInfo, this.log);
     this.roborockService.setSupportedAreas(vacuum.duid, supportedAreas);
     this.roborockService.setSupportedAreaIndexMap(vacuum.duid, roomIndexMap);
 
@@ -276,7 +273,7 @@ export class RoborockMatterbridgePlatform extends MatterbridgeDynamicPlatform {
       this.roborockService.setSupportedScenes(vacuum.duid, routineAsRoom);
     }
 
-    const robot = new RoborockVacuumCleaner(username, vacuum, roomMap, routineAsRoom, this.configManager, this.log, []); // TODO: populate mapInfos
+    const robot = new RoborockVacuumCleaner(username, vacuum, homeInfo, routineAsRoom, this.configManager, this.log);
     robot.configureHandler(behaviorHandler);
 
     this.log.info('vacuum:', debugStringify(vacuum));

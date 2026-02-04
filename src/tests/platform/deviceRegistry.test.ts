@@ -20,7 +20,6 @@ function createMockDevice(serialNumber: string): Device {
     rrHomeId: 123,
     fv: '1.0.0',
     deviceStatus: {},
-    rooms: [],
     schema: [],
     data: {
       id: `id-${serialNumber}`,
@@ -46,6 +45,14 @@ function createMockDevice(serialNumber: string): Device {
       localKey: 'test-key',
       pv: '1.0',
       model: DeviceModel.Q7_MAX,
+      homeData: {
+        id: 123,
+        name: 'Test Home',
+        products: [],
+        devices: [],
+        receivedDevices: [],
+        rooms: [],
+      },
     },
     scenes: [],
     mapInfos: undefined,

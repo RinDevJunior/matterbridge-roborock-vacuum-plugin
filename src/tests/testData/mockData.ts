@@ -3,6 +3,7 @@ import { CloudMessageResult, DeviceModel, Home } from '../../roborockCommunicati
 import { DeviceCategory } from '../../roborockCommunication/models/deviceCategory.js';
 import { MapInfo } from '../../core/application/models/index.js';
 import { asPartial } from '../testUtils.js';
+import { RoomEntity } from '../../core/domain/entities/Room.js';
 
 export const supportedAreas: ServiceArea.Area[] = [
   { areaId: 100, mapId: 0, areaInfo: { locationInfo: { locationName: 'Kitchen', floorNumber: 0, areaType: null }, landmarkInfo: null } },
@@ -300,12 +301,6 @@ export const homeData: Home = asPartial<Home>({
       silentOtaSwitch: true,
       rrHomeId: 3645093,
       mapInfos: undefined,
-      rooms: [
-        { id: 11100849, name: 'Study' },
-        { id: 11100847, name: 'Bedroom' },
-        { id: 11100845, name: 'Kitchen' },
-        { id: 11100842, name: 'Living room' },
-      ],
       serialNumber: 'RCIEBS50900224',
       data: {
         id: 'test-duid',
@@ -337,6 +332,14 @@ export const homeData: Home = asPartial<Home>({
         localKey: 'v0OKpWXwBmiCk4ku',
         pv: '1.0',
         model: DeviceModel.QREVO_EDGE_5V1,
+        homeData: {
+          id: 3645093,
+          name: 'Test Home',
+          products: [],
+          devices: [],
+          receivedDevices: [],
+          rooms: [new RoomEntity(11100849, 'Study'), new RoomEntity(11100847, 'Bedroom'), new RoomEntity(11100845, 'Kitchen'), new RoomEntity(11100842, 'Living room')],
+        } satisfies Home,
       },
       schema: [
         { id: 101, name: 'rpc_request', code: 'rpc_request', mode: 'rw', type: 'RAW', property: null },

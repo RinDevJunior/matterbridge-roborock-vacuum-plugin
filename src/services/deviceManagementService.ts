@@ -56,7 +56,6 @@ export class DeviceManagementService {
         return {
           ...device,
           rrHomeId: homeInfo.rrHomeId,
-          rooms: homeData.rooms,
           localKey: device.localKey,
           pv: device.pv,
           serialNumber: device.sn,
@@ -74,6 +73,7 @@ export class DeviceManagementService {
             localKey: device.localKey,
             pv: device.pv,
             model: products.get(device.productId)?.model as DeviceModel,
+            homeData: homeData,
           } satisfies DeviceInformation,
         };
       }) satisfies Device[];
@@ -126,7 +126,6 @@ export class DeviceManagementService {
         return {
           ...device,
           rrHomeId: homeid,
-          rooms: homeData.rooms,
           serialNumber: device.sn,
           data: {
             id: device.duid,
@@ -141,6 +140,7 @@ export class DeviceManagementService {
             localKey: device.localKey,
             pv: device.pv,
             model: products.get(device.productId)?.model as DeviceModel,
+            homeData: homeData,
           } satisfies DeviceInformation,
         };
       }) satisfies Device[];

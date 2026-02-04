@@ -42,7 +42,6 @@ describe('DeviceManagementService', () => {
     sn: 'SN12345',
     fv: '1.0.0',
     rrHomeId: 12345,
-    rooms: [],
     scenes: [],
     deviceStatus: {
       [Protocol.battery]: 85,
@@ -66,6 +65,19 @@ describe('DeviceManagementService', () => {
       localKey: 'local-key-789',
       pv: 'A01',
       model: DeviceModel.QREVO_EDGE_5V1,
+      homeData: {
+        id: 12345,
+        name: 'Test Home',
+        products: [],
+        devices: [],
+        receivedDevices: [],
+        rooms: [
+          {
+            id: 1,
+            name: 'Living Room',
+          },
+        ],
+      },
     },
   };
 
@@ -160,7 +172,6 @@ describe('DeviceManagementService', () => {
         duid: 'device-123',
         name: 'Test Vacuum',
         rrHomeId: 12345,
-        rooms: mockHomeData.rooms,
         scenes: [],
         data: {
           id: 'device-123',
@@ -276,7 +287,6 @@ describe('DeviceManagementService', () => {
     expect(result?.devices?.[0]).toMatchObject({
       duid: 'device-123',
       rrHomeId: 12345,
-      rooms: mockHomeData.rooms,
       data: expect.objectContaining({
         id: 'device-123',
         firmwareVersion: '1.0.0',

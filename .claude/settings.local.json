@@ -10,7 +10,8 @@
       "Bash(npx vitest:*)",
       "Bash(npm run coverage:*)",
       "Bash(npm run type-check:*)",
-      "Bash(tree:*)"
+      "Bash(tree:*)",
+      "Bash(cut:*)"
     ]
   },
   "outputStyle": "default",

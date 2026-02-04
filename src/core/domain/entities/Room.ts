@@ -1,9 +1,7 @@
 /**
- * Domain entity representing a room in a home.
+ * Domain entity representing a room in a Apple Home.
  */
 export class RoomEntity {
-  /** Unique room identifier (global ID) */
-  /** Room name */
   constructor(
     public readonly id: number,
     public readonly name: string | undefined,

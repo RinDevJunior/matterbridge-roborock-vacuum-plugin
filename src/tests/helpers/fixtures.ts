@@ -1,6 +1,7 @@
-import { Device, DeviceData, DeviceInformation } from '../../roborockCommunication/models/index.js';
+import { Device, DeviceData, DeviceInformation, Home } from '../../roborockCommunication/models/index.js';
 import { DeviceModel } from '../../roborockCommunication/models/deviceModel.js';
 import { DeviceCategory } from '../../roborockCommunication/models/deviceCategory.js';
+import { RoomEntity } from '../../core/domain/entities/Room.js';
 
 /**
  * Create a minimal valid Device instance for tests.
@@ -32,6 +33,14 @@ export function makeDeviceFixture(overrides: Partial<Device> = {}): Device {
     localKey: 'local-key',
     pv: '1.0',
     model: DeviceModel.S6,
+    homeData: {
+      id: 1,
+      name: 'Test Home',
+      products: [],
+      devices: [],
+      receivedDevices: [],
+      rooms: [new RoomEntity(1, 'Living Room'), new RoomEntity(2, 'Kitchen')],
+    } satisfies Home,
   };
 
   const base: Device = {
@@ -48,7 +57,6 @@ export function makeDeviceFixture(overrides: Partial<Device> = {}): Device {
     rrHomeId: 1,
     fv: '01.00.00',
     deviceStatus: {},
-    rooms: [],
     schema: [],
     data: baseData,
     store: baseStore,

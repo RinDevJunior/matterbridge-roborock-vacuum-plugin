@@ -111,7 +111,7 @@ export function handleMapChange(robot: RoborockVacuumCleaner, platform: Roborock
   const enableMultipleMap = platform.configManager.isMultipleMapEnabled;
   if (!enableMultipleMap) return;
 
-  const { supportedAreas, supportedMaps, roomIndexMap } = getSupportedAreas(robot.device.rooms, robot.roomInfo, enableMultipleMap, platform.log, robot.device.mapInfos ?? []);
+  const { supportedAreas, supportedMaps, roomIndexMap } = getSupportedAreas(robot.homeInfo, platform.log);
 
   platform.log.debug(`[handleMapChange] supportedAreas: ${debugStringify(supportedAreas)}`);
   platform.log.debug(`[handleMapChange] supportedMaps: ${debugStringify(supportedMaps)}`);

@@ -40,4 +40,13 @@ export class MapInfo {
   get hasRooms(): boolean {
     return this.allRooms.length > 0;
   }
+
+  public static empty(): MapInfo {
+    return new MapInfo({
+      max_multi_map: 0,
+      max_bak_map: 0,
+      multi_map_count: 0,
+      map_info: [],
+    });
+  }
 }

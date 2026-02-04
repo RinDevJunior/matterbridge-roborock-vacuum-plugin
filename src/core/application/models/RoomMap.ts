@@ -3,6 +3,7 @@ import { HomeModelMapper } from '../../../roborockCommunication/models/home/mapp
 import { debugStringify } from 'matterbridge/logger';
 import { RoborockMatterbridgePlatform } from '../../../module.js';
 import { Device } from '../../../roborockCommunication/models/device.js';
+import { MapInfo } from './MapInfo.js';
 
 export interface MapReference {
   id: number;
@@ -28,36 +29,39 @@ export class RoomMap {
   /**
    * Get room map for device (with caching).
    */
-  public static async fromMapInfo(device: Device, platform: RoborockMatterbridgePlatform): Promise<RoomMap> {
+  public static async fromMapInfo(vacuum: Device, platform: RoborockMatterbridgePlatform): Promise<{ mapInfo: MapInfo; roomMap: RoomMap }> {
     if (!platform.roborockService) {
       platform.log.error('Roborock service not initialized');
-      return new RoomMap([]);
+      return { mapInfo: MapInfo.empty(), roomMap: RoomMap.empty() };
     }
 
-    const rooms = device.rooms;
+    const rooms = vacuum.store.homeData.rooms;
 
     // Try to get map information first
-    const mapInfo = await platform.roborockService.getMapInfo(device.duid);
-    device.mapInfos = mapInfo.maps;
-
+    const mapInfo = await platform.roborockService.getMapInfo(vacuum.duid);
+    vacuum.mapInfos = mapInfo.maps;
     if (mapInfo.hasRooms) {
       platform.log.info(`fromMapInfo - mapInfo: ${debugStringify(mapInfo)}`);
       platform.log.info(`fromMapInfo - rooms: ${debugStringify(rooms)}`);
       const roomMappings = mapInfo.allRooms.map((dto) => HomeModelMapper.toRoomMapping(dto, rooms));
-      return new RoomMap(roomMappings);
+      return { mapInfo, roomMap: new RoomMap(roomMappings) };
     }
 
     const activeMap = 1;
 
     // Fall back to room maps
-    const roomData = await platform.roborockService.getRoomMap(device.duid, activeMap);
+    const roomData = await platform.roborockService.getRoomMap(vacuum.duid, activeMap);
 
     const mapRoomDtos = roomData.map((raw) => HomeModelMapper.rawArrayToMapRoomDto(raw, activeMap));
     const roomMappings = mapRoomDtos.map((dto) => HomeModelMapper.toRoomMapping(dto, rooms));
     const roomMap = new RoomMap(roomMappings);
 
-    platform.log.debug(`fromMapInfo - Room mapping for device ${device.duid}: ${debugStringify(roomMap)}`);
+    platform.log.debug(`fromMapInfo - Room mapping for device ${vacuum.duid}: ${debugStringify(roomMap)}`);
 
-    return roomMap;
+    return { mapInfo, roomMap };
+  }
+
+  public static empty(): RoomMap {
+    return new RoomMap([]);
   }
 }

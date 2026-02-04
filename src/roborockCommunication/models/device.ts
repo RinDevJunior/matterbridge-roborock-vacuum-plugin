@@ -1,9 +1,8 @@
 import { MapEntry } from '../../core/application/models/index.js';
-import { RoomEntity } from '../../core/domain/entities/Room.js';
 import { DeviceCategory } from './deviceCategory.js';
 import { DeviceModel } from './deviceModel.js';
 import { DeviceSchema } from './deviceSchema.js';
-import { NetworkInfoDTO, TimezoneInfo } from './index.js';
+import { Home, NetworkInfoDTO, TimezoneInfo } from './index.js';
 import { Scene } from './scene.js';
 import { UserData } from './userData.js';
 
@@ -21,6 +20,7 @@ export interface DeviceInformation {
   localKey: string;
   pv: string;
   model: DeviceModel;
+  homeData: Home;
 }
 
 export type DeviceStatusResponsetype = number | Record<string, number | string | boolean | NetworkInfoDTO | TimezoneInfo | Record<number, unknown>>;
@@ -48,7 +48,6 @@ export interface Device {
   fv: string;
 
   deviceStatus: Record<string, DeviceStatusResponsetype>;
-  rooms: RoomEntity[];
   schema: DeviceSchema[];
   data: DeviceData;
   store: DeviceInformation;

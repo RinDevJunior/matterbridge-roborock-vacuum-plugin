@@ -333,8 +333,17 @@ describe('module.ts coverage tests', () => {
       const mockDevice = asPartial<Device>({
         duid: 'test-device',
         name: 'Test Vacuum',
-        rooms: undefined,
         data: asPartial<Device['data']>({ model: DeviceModel.S5_MAX }),
+        store: asPartial<Device['store']>({
+          homeData: {
+            id: 1,
+            name: 'Test Home',
+            products: [],
+            devices: [],
+            receivedDevices: [],
+            rooms: [],
+          },
+        }),
       });
 
       const mockMapInfo = {
@@ -358,10 +367,15 @@ describe('module.ts coverage tests', () => {
           return false;
         }
 
-        if (vacuum.rooms === undefined || vacuum.rooms.length === 0) {
+        if (vacuum.store?.homeData?.rooms === undefined || vacuum.store.homeData.rooms.length === 0) {
           const map_info = await getMapInformationMock(vacuum.duid);
           const rooms = map_info?.allRooms ?? [];
-          vacuum.rooms = rooms.map((room: { globalId: number; displayName: string }) => ({ id: room.globalId, name: room.displayName }));
+          if (vacuum.store?.homeData) {
+            vacuum.store.homeData.rooms = rooms.map((room: { globalId: number; displayName: string }) => ({
+              id: room.globalId,
+              name: room.displayName,
+            }));
+          }
         }
 
         return true;
@@ -372,7 +386,7 @@ describe('module.ts coverage tests', () => {
       const configureResult = await configureDeviceImpl(platform, mockDevice as Device);
 
       expect(getMapInformationMock).toHaveBeenCalledWith('test-device');
-      expect(mockDevice.rooms?.length).toBe(2);
+      expect(mockDevice.store?.homeData?.rooms?.length).toBe(2);
     });
   });
 

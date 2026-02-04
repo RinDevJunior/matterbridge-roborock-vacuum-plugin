@@ -159,7 +159,16 @@ describe('RoborockService - listDevices', () => {
   });
 
   it('should handle rooms fallback from v2 and v3 APIs', async () => {
-    const device = { duid: '1', data: {}, store: {}, rrHomeId: 123, rooms: [{ id: 1, name: 'Living Room' }], localKey: '', pv: '', sn: '', scenes: [] };
+    const device = {
+      duid: '1',
+      data: {},
+      store: { homeData: { id: 123, name: 'Test Home', products: [], devices: [], receivedDevices: [], rooms: [{ id: 1, name: 'Living Room' }] } },
+      rrHomeId: 123,
+      localKey: '',
+      pv: '',
+      sn: '',
+      scenes: [],
+    };
     const mockDeviceService = {
       listDevices: vi.fn().mockResolvedValue([device]),
     };
@@ -167,7 +176,7 @@ describe('RoborockService - listDevices', () => {
       deviceService: { value: mockDeviceService },
     });
     const result = await roborockService.listDevices();
-    expect(result[0].rooms).toEqual([{ id: 1, name: 'Living Room' }]);
+    expect(result[0].store.homeData.rooms).toEqual([{ id: 1, name: 'Living Room' }]);
   });
 });
 

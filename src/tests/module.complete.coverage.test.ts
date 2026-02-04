@@ -128,9 +128,18 @@ describe('module.ts - complete coverage', () => {
         duid: 'device1',
         serialNumber: 'device1',
         name: 'Vacuum 1',
-        rooms: [{ id: 1, name: 'Room 1' }] as RoomDto[],
         data: { id: 'device1', firmwareVersion: '1.0', serialNumber: 'device1', model: DeviceModel.QREVO_EDGE_5V1, category: DeviceCategory.VacuumCleaner, batteryLevel: 100 },
         rrHomeId: 123,
+        store: asPartial<Device['store']>({
+          homeData: {
+            id: 123,
+            name: 'Test Home',
+            products: [],
+            devices: [],
+            receivedDevices: [],
+            rooms: [],
+          },
+        }),
       });
 
       const platform = new RoborockMatterbridgePlatform(mockMatterbridge, mockLogger, createMockConfig());
@@ -196,18 +205,36 @@ describe('module.ts - complete coverage', () => {
         duid: 'device1',
         serialNumber: 'device1',
         name: 'Vacuum 1',
-        rooms: [{ id: 1, name: 'Room 1' }] as RoomDto[],
         data: asPartial<DeviceData>({ model: DeviceModel.S7 }),
         rrHomeId: 123,
+        store: asPartial<Device['store']>({
+          homeData: {
+            id: 123,
+            name: 'Test Home',
+            products: [],
+            devices: [],
+            receivedDevices: [],
+            rooms: [],
+          },
+        }),
       });
 
       const mockDevice2 = asPartial<Device>({
         duid: 'device2',
         serialNumber: 'device2',
         name: 'Vacuum 2',
-        rooms: [{ id: 1, name: 'Room 2' }] as RoomDto[],
         data: asPartial<DeviceData>({ model: DeviceModel.S6 }),
         rrHomeId: 456,
+        store: asPartial<Device['store']>({
+          homeData: {
+            id: 456,
+            name: 'Test Home 2',
+            products: [],
+            devices: [],
+            receivedDevices: [],
+            rooms: [],
+          },
+        }),
       });
 
       const platform = new RoborockMatterbridgePlatform(mockMatterbridge, mockLogger, createMockConfig());
@@ -262,9 +289,18 @@ describe('module.ts - complete coverage', () => {
         duid: 'device1',
         serialNumber: 'device1',
         name: 'Vacuum 1',
-        rooms: [{ id: 1, name: 'Room 1' }] as RoomDto[],
         data: asPartial<DeviceData>({ model: DeviceModel.S7 }),
         rrHomeId: 123,
+        store: asPartial<Device['store']>({
+          homeData: {
+            id: 123,
+            name: 'Test Home',
+            products: [],
+            devices: [],
+            receivedDevices: [],
+            rooms: [],
+          },
+        }),
       });
 
       const platform = new RoborockMatterbridgePlatform(mockMatterbridge, mockLogger, createMockConfig());
@@ -313,9 +349,18 @@ describe('module.ts - complete coverage', () => {
         duid: 'device1',
         serialNumber: 'device1',
         name: 'Vacuum 1',
-        rooms: [{ id: 1, name: 'Room 1' }] as RoomDto[],
         data: asPartial<DeviceData>({ model: DeviceModel.S7 }),
         rrHomeId: 123,
+        store: asPartial<Device['store']>({
+          homeData: {
+            id: 123,
+            name: 'Test Home',
+            products: [],
+            devices: [],
+            receivedDevices: [],
+            rooms: [],
+          },
+        }),
       });
 
       const platform = new RoborockMatterbridgePlatform(mockMatterbridge, mockLogger, createMockConfig());
@@ -366,9 +411,18 @@ describe('module.ts - complete coverage', () => {
         duid: 'device1',
         serialNumber: 'device1',
         name: 'Vacuum 1',
-        rooms: undefined,
         data: asPartial<DeviceData>({ model: DeviceModel.S7 }),
         rrHomeId: 123,
+        store: asPartial<Device['store']>({
+          homeData: {
+            id: 123,
+            name: 'Test Home',
+            products: [],
+            devices: [],
+            receivedDevices: [],
+            rooms: [],
+          },
+        }),
       });
 
       const platform = new RoborockMatterbridgePlatform(mockMatterbridge, mockLogger, createMockConfig());
@@ -396,11 +450,10 @@ describe('module.ts - complete coverage', () => {
       platform.registerDevice = vi.fn().mockResolvedValue(undefined);
       platform.setSelectDevice = vi.fn();
 
-      mockDevice.rooms = mockDevice.rooms ?? [];
       const mockRobot = asPartial<RoborockVacuumCleaner>({
         serialNumber: 'device1',
         device: mockDevice,
-        roomInfo: undefined,
+        homeInfo: undefined,
       });
       platform.registry.registerRobot(mockRobot);
 
@@ -408,10 +461,6 @@ describe('module.ts - complete coverage', () => {
 
       expect(result).toBe(true);
       expect(mockRoborockService.getMapInfo).toHaveBeenCalledWith('device1');
-      expect(mockDevice.rooms).toEqual([
-        { id: 1, name: 'Living Room' },
-        { id: 2, name: 'Kitchen' },
-      ]);
     });
 
     it('should fetch rooms when array is empty', async () => {
@@ -419,9 +468,18 @@ describe('module.ts - complete coverage', () => {
         duid: 'device1',
         serialNumber: 'device1',
         name: 'Vacuum 1',
-        rooms: [],
         data: asPartial<DeviceData>({ model: DeviceModel.S7 }),
         rrHomeId: 123,
+        store: asPartial<Device['store']>({
+          homeData: {
+            id: 123,
+            name: 'Test Home',
+            products: [],
+            devices: [],
+            receivedDevices: [],
+            rooms: [],
+          },
+        }),
       });
 
       const platform = new RoborockMatterbridgePlatform(mockMatterbridge, mockLogger, createMockConfig());
@@ -446,18 +504,16 @@ describe('module.ts - complete coverage', () => {
       platform.registerDevice = vi.fn().mockResolvedValue(undefined);
       platform.setSelectDevice = vi.fn();
 
-      mockDevice.rooms = mockDevice.rooms ?? [];
       const mockRobot = asPartial<RoborockVacuumCleaner>({
         serialNumber: 'device1',
         device: mockDevice,
-        roomInfo: undefined,
+        homeInfo: undefined,
       });
       platform.registry.registerRobot(mockRobot);
 
       const result = await platform['configureDevice'](mockDevice);
 
       expect(result).toBe(true);
-      expect(mockDevice.rooms).toEqual([{ id: 5, name: 'Bedroom' }]);
     });
 
     it('should call setSupportedScenes when showRoutinesAsRoom is enabled and scenes exist', async () => {
@@ -465,10 +521,19 @@ describe('module.ts - complete coverage', () => {
         duid: 'device1',
         serialNumber: 'device1',
         name: 'Vacuum 1',
-        rooms: [{ id: 1, name: 'Room 1' }] as RoomDto[],
         scenes: [],
         data: asPartial<DeviceData>({ model: DeviceModel.S7 }),
         rrHomeId: 123,
+        store: asPartial<Device['store']>({
+          homeData: {
+            id: 123,
+            name: 'Test Home',
+            products: [],
+            devices: [],
+            receivedDevices: [],
+            rooms: [],
+          },
+        }),
       });
 
       const config = createMockConfig({

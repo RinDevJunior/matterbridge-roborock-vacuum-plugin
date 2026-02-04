@@ -1,6 +1,5 @@
 import { RoboticVacuumCleaner } from 'matterbridge/devices';
 import { CommandHandlerData, MatterbridgeEndpointCommands } from 'matterbridge';
-import { RoomMap, MapEntry } from '../core/application/models/index.js';
 import { getOperationalStates, getSupportedAreas, getSupportedCleanModes } from '../initialData/index.js';
 import { AnsiLogger, debugStringify } from 'matterbridge/logger';
 import { BehaviorFactoryResult } from '../share/behaviorFactory.js';
@@ -11,6 +10,7 @@ import { Device } from '../roborockCommunication/models/index.js';
 import { PlatformConfigManager } from '../platform/platformConfig.js';
 import { baseRunModeConfigs, getRunModeOptions } from '../behaviors/roborock.vacuum/core/runModeConfig.js';
 import { CleanModeSetting } from '../behaviors/roborock.vacuum/core/CleanModeSetting.js';
+import { HomeEntity } from '../core/domain/entities/Home.js';
 
 interface IdentifyCommandRequest {
   identifyTime?: number;
@@ -19,16 +19,16 @@ interface IdentifyCommandRequest {
 export class RoborockVacuumCleaner extends RoboticVacuumCleaner {
   username: string | undefined;
   device: Device;
-  roomInfo: RoomMap | undefined;
   dockStationStatus: DockingStationStatus | undefined;
   cleanModeSetting: CleanModeSetting | undefined;
+  homeInfo: HomeEntity;
 
   /**
    * Create a new Roborock Vacuum Cleaner device.
    * Initializes the device with supported cleaning modes, run modes, areas, and routines.
    */
-  constructor(username: string, device: Device, roomMap: RoomMap, routineAsRoom: ServiceArea.Area[], configManager: PlatformConfigManager, log: AnsiLogger, mapInfos: MapEntry[]) {
-    const deviceConfig = RoborockVacuumCleaner.initializeDeviceConfiguration(device, roomMap, routineAsRoom, configManager, log, mapInfos);
+  constructor(username: string, device: Device, homeInFo: HomeEntity, routineAsRoom: ServiceArea.Area[], configManager: PlatformConfigManager, log: AnsiLogger) {
+    const deviceConfig = RoborockVacuumCleaner.initializeDeviceConfiguration(device, homeInFo, routineAsRoom, configManager, log);
 
     super(
       deviceConfig.deviceName,
@@ -62,6 +62,7 @@ export class RoborockVacuumCleaner extends RoboticVacuumCleaner {
 
     this.username = username;
     this.device = device;
+    this.homeInfo = homeInFo;
   }
 
   /**
@@ -114,18 +115,11 @@ export class RoborockVacuumCleaner extends RoboticVacuumCleaner {
   /**
    * Initialize device configuration including modes, areas, and maps.
    */
-  private static initializeDeviceConfiguration(
-    device: Device,
-    roomMap: RoomMap,
-    routineAsRoom: ServiceArea.Area[],
-    configManager: PlatformConfigManager,
-    log: AnsiLogger,
-    mapInfos: MapEntry[],
-  ) {
+  private static initializeDeviceConfiguration(device: Device, homeInFo: HomeEntity, routineAsRoom: ServiceArea.Area[], configManager: PlatformConfigManager, log: AnsiLogger) {
     const cleanModes = getSupportedCleanModes(device.data.model, configManager);
     const operationalState = getOperationalStates();
 
-    const { supportedAreas, supportedMaps } = getSupportedAreas(device.rooms, roomMap, configManager.isMultipleMapEnabled, log, mapInfos);
+    const { supportedAreas, supportedMaps } = getSupportedAreas(homeInFo, log);
     const supportedAreaAndRoutines = [...supportedAreas, ...routineAsRoom];
     const runModeConfigs = getRunModeOptions(baseRunModeConfigs);
     const deviceName = `${device.name}-${device.duid}`.replace(/\s+/g, '');

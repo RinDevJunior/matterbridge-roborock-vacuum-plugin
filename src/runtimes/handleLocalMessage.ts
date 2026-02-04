@@ -32,7 +32,7 @@ export function handleLocalMessage(data: CloudMessageResult, platform: RoborockM
   platform.log.debug(
     `Precondition Data:
     Device: ${duid}
-    RoomMap: ${robot.roomInfo ? debugStringify(robot.roomInfo) : 'undefined'}
+    HomeInfo: ${robot.homeInfo ? debugStringify(robot.homeInfo) : 'undefined'}
     Current mapped areas: ${currentMappedAreas ? debugStringify(currentMappedAreas) : 'undefined'}
     RoomIndexMap: ${roomIndexMap ? debugStringify(roomIndexMap) : 'undefined'}
     `,
