@@ -38,7 +38,7 @@ export function handleLocalMessage(data: CloudMessageResult, platform: RoborockM
     `,
   );
 
-  const deviceData = robot.device.data;
+  const deviceData = robot.device.specs;
   const state = state_to_matter_state(data.state);
   if (state) {
     robot.updateAttribute(RvcRunMode.Cluster.id, 'currentMode', getRunningMode(state), platform.log);

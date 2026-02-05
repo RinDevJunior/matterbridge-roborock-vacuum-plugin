@@ -72,6 +72,12 @@ describe('SimpleMessageHandler', () => {
     handler.onStatusChanged({
       duid,
       status: message.state,
+      inCleaning: Boolean(message.in_cleaning),
+      inReturning: Boolean(message.in_returning),
+      inFreshState: Boolean(message.in_fresh_state),
+      isLocating: Boolean(message.is_locating),
+      isExploring: Boolean(undefined),
+      inWarmup: Boolean(undefined),
     });
     expect(deviceNotify).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -79,6 +85,12 @@ describe('SimpleMessageHandler', () => {
         data: {
           duid,
           status: message.state,
+          inCleaning: false,
+          inReturning: false,
+          inFreshState: false,
+          isLocating: false,
+          isExploring: false,
+          inWarmup: false,
         },
       }),
     );

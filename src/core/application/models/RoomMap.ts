@@ -10,6 +10,12 @@ export interface MapReference {
   name: string | undefined;
 }
 
+export interface MapInfoResult {
+  activeMapId: number;
+  mapInfo: MapInfo;
+  roomMap: RoomMap;
+}
+
 export class RoomMap {
   constructor(private readonly roomMappings: RoomMapping[]) {}
 
@@ -29,10 +35,10 @@ export class RoomMap {
   /**
    * Get room map for device (with caching).
    */
-  public static async fromMapInfo(vacuum: Device, platform: RoborockMatterbridgePlatform): Promise<{ mapInfo: MapInfo; roomMap: RoomMap }> {
+  public static async fromMapInfo(vacuum: Device, platform: RoborockMatterbridgePlatform): Promise<MapInfoResult> {
     if (!platform.roborockService) {
       platform.log.error('Roborock service not initialized');
-      return { mapInfo: MapInfo.empty(), roomMap: RoomMap.empty() };
+      return { activeMapId: 0, mapInfo: MapInfo.empty(), roomMap: RoomMap.empty() };
     }
 
     const rooms = vacuum.store.homeData.rooms;
@@ -44,10 +50,10 @@ export class RoomMap {
       platform.log.info(`fromMapInfo - mapInfo: ${debugStringify(mapInfo)}`);
       platform.log.info(`fromMapInfo - rooms: ${debugStringify(rooms)}`);
       const roomMappings = mapInfo.allRooms.map((dto) => HomeModelMapper.toRoomMapping(dto, rooms));
-      return { mapInfo, roomMap: new RoomMap(roomMappings) };
+      return { activeMapId: 0, mapInfo, roomMap: new RoomMap(roomMappings) };
     }
 
-    const activeMap = 1;
+    const activeMap = 0;
 
     // Fall back to room maps
     const roomData = await platform.roborockService.getRoomMap(vacuum.duid, activeMap);
@@ -58,7 +64,7 @@ export class RoomMap {
 
     platform.log.debug(`fromMapInfo - Room mapping for device ${vacuum.duid}: ${debugStringify(roomMap)}`);
 
-    return { mapInfo, roomMap };
+    return { activeMapId: 0, mapInfo, roomMap };
   }
 
   public static empty(): RoomMap {

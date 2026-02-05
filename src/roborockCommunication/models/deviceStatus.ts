@@ -1,7 +1,20 @@
-import { DockErrorCode, VacuumErrorCode } from '../enums/index.js';
+import { DockErrorCode, OperationStatusCode, VacuumErrorCode } from '../enums/index.js';
 import { DockInfo } from './dockInfo.js';
 import { CloudMessageResult } from './messageResult.js';
 import { VacuumError } from './vacuumError.js';
+
+export class StatusChangeMessage {
+  constructor(
+    public readonly duid: string,
+    public readonly status: OperationStatusCode,
+    public readonly inCleaning: boolean | undefined,
+    public readonly inReturning: boolean | undefined,
+    public readonly inFreshState: boolean | undefined,
+    public readonly isLocating: boolean | undefined,
+    public readonly isExploring: boolean | undefined,
+    public readonly inWarmup: boolean | undefined,
+  ) {}
+}
 
 export class DeviceStatus {
   errorStatus: VacuumError;

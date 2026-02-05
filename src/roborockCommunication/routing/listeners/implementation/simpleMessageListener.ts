@@ -1,5 +1,5 @@
 import { CleanModeSetting } from '../../../../behaviors/roborock.vacuum/core/CleanModeSetting.js';
-import { BatteryMessage, DeviceStatus, DpsPayload, Protocol, ResponseMessage, VacuumError } from '../../../models/index.js';
+import { BatteryMessage, DeviceStatus, DpsPayload, Protocol, ResponseMessage, StatusChangeMessage, VacuumError } from '../../../models/index.js';
 import { AbstractMessageHandler } from '../../handlers/abstractMessageHandler.js';
 import { AbstractMessageListener } from '../abstractMessageListener.js';
 import { AnsiLogger } from 'matterbridge/logger';
@@ -58,8 +58,19 @@ export class SimpleMessageListener implements AbstractMessageListener {
       this.handler.onError(new VacuumError(message.duid, vacuumErrorCode, dockErrorCode));
     }
 
+    const statusChangeMessage = new StatusChangeMessage(
+      message.duid,
+      state,
+      messageBody.in_cleaning !== undefined ? Boolean(messageBody.in_cleaning) : undefined,
+      messageBody.in_returning !== undefined ? Boolean(messageBody.in_returning) : undefined,
+      messageBody.in_fresh_state !== undefined ? Boolean(messageBody.in_fresh_state) : undefined,
+      messageBody.is_locating !== undefined ? Boolean(messageBody.is_locating) : undefined,
+      messageBody.is_exploring !== undefined ? Boolean(messageBody.is_exploring) : undefined,
+      messageBody.in_warmup !== undefined ? Boolean(messageBody.in_warmup) : undefined,
+    );
+
     this.handler.onBatteryUpdate(batteryMessage);
-    this.handler.onStatusChanged({ duid: message.duid, status: state });
+    this.handler.onStatusChanged(statusChangeMessage);
     this.handler.onCleanModeUpdate(cleanMode);
   }
 }

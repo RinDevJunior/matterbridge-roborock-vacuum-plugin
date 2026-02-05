@@ -21,7 +21,7 @@ function createMockDevice(serialNumber: string): Device {
     fv: '1.0.0',
     deviceStatus: {},
     schema: [],
-    data: {
+    specs: {
       id: `id-${serialNumber}`,
       firmwareVersion: '1.0.0',
       serialNumber,

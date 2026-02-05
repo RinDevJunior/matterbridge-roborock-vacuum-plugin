@@ -302,7 +302,7 @@ export const homeData: Home = asPartial<Home>({
       rrHomeId: 3645093,
       mapInfos: undefined,
       serialNumber: 'RCIEBS50900224',
-      data: {
+      specs: {
         id: 'test-duid',
         firmwareVersion: '02.28.34',
         serialNumber: 'RCIEBS50900224',

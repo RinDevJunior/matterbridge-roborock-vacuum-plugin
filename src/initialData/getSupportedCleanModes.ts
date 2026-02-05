@@ -1,7 +1,7 @@
 import { RvcCleanMode } from 'matterbridge/matter/clusters';
 import { DeviceModel } from '../roborockCommunication/models/index.js';
 import { SMART_MODELS } from '../constants/index.js';
-import { PlatformConfigManager } from '../platform/platformConfig.js';
+import { PlatformConfigManager } from '../platform/platformConfigManager.js';
 import { baseCleanModeConfigs, CleanModeDisplayLabel, CleanModeLabelInfo, getModeOptions, smartCleanModeConfigs } from '../behaviors/roborock.vacuum/core/cleanModeConfig.js';
 
 const smartModes = getModeOptions(smartCleanModeConfigs);

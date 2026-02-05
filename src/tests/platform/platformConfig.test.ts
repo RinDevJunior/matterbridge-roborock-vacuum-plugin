@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { PlatformConfigManager } from '../../platform/platformConfig.js';
+import { PlatformConfigManager } from '../../platform/platformConfigManager.js';
 import type { AnsiLogger } from 'matterbridge/logger';
 import { asPartial, asType } from '../helpers/testUtils.js';
 import { AuthenticationConfiguration, createDefaultAdvancedFeature, PluginConfiguration, RoborockPluginPlatformConfig } from '../../model/RoborockPluginPlatformConfig.js';

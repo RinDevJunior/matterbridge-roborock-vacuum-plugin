@@ -51,7 +51,7 @@ export function handleCloudMessage(data: CloudMessageModel, platform: RoborockMa
       case Protocol.suction_power:
       case Protocol.water_box_mode: {
         if (robot.cleanModeSetting) {
-          const resolver = getCleanModeResolver(robot.device.data.model, platform.configManager.forceRunAtDefault);
+          const resolver = getCleanModeResolver(robot.device.specs.model, platform.configManager.forceRunAtDefault);
           const currentCleanMode = resolver.resolve(robot.cleanModeSetting);
 
           platform.log.debug(`Clean mode data (cached): ${debugStringify(robot.cleanModeSetting)}`);
@@ -65,7 +65,7 @@ export function handleCloudMessage(data: CloudMessageModel, platform: RoborockMa
             .then((cleanModeData) => {
               if (cleanModeData) {
                 robot.cleanModeSetting = cleanModeData;
-                const resolver = getCleanModeResolver(robot.device.data.model, platform.configManager.forceRunAtDefault);
+                const resolver = getCleanModeResolver(robot.device.specs.model, platform.configManager.forceRunAtDefault);
                 const currentCleanMode = resolver.resolve(cleanModeData);
 
                 platform.log.debug(`Clean mode data (fetched): ${debugStringify(cleanModeData)}`);

@@ -4,7 +4,7 @@ import type { RoborockPluginPlatformConfig } from '../../../model/RoborockPlugin
 import type { AnsiLogger } from 'matterbridge/logger';
 import { makeLogger, createMockLocalStorage } from '../../testUtils.js';
 import { localStorageMock } from '../../testData/localStorageMock.js';
-import { PlatformConfigManager as PlatformConfigManagerStatic } from '../../../platform/platformConfig.js';
+import { PlatformConfigManager as PlatformConfigManagerStatic } from '../../../platform/platformConfigManager.js';
 
 describe('RoborockService - Authentication', () => {
   let roborockService: RoborockService;

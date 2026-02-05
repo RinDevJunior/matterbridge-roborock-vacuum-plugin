@@ -3,7 +3,7 @@ import { RoborockService } from '../../../services/roborockService.js';
 import type { RoborockAuthenticateApi } from '../../../roborockCommunication/api/authClient.js';
 import type { RoborockIoTApi } from '../../../roborockCommunication/api/iotClient.js';
 import type { LocalStorage } from 'node-persist';
-import type { PlatformConfigManager } from '../../../platform/platformConfig.js';
+import type { PlatformConfigManager } from '../../../platform/platformConfigManager.js';
 import type { AnsiLogger } from 'matterbridge/logger';
 import type { ServiceContainer } from '../../../services/index.js';
 import { asPartial } from '../../testUtils.js';

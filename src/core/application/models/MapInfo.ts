@@ -13,7 +13,7 @@ export class MapInfo {
   public readonly allRooms: MapRoomDto[] = [];
 
   constructor(multimap: MultipleMapDto) {
-    this.maps = multimap.map_info.map((mapInfo: MapDataDto) => {
+    this.maps = multimap.map_info.map((mapInfo: MapDataDto, index: number) => {
       const rooms =
         mapInfo.rooms?.map((room) => ({
           ...room,
@@ -23,7 +23,7 @@ export class MapInfo {
       this.allRooms.push(...rooms);
       return {
         id: mapInfo.mapFlag,
-        name: decodeComponent(mapInfo.name),
+        name: mapInfo.name !== undefined && mapInfo.name !== '' ? decodeComponent(mapInfo.name) : `Default Map ${index + 1}`,
         rooms,
       };
     });

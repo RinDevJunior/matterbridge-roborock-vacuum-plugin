@@ -1,7 +1,6 @@
 import { CleanModeSetting } from '../../../../behaviors/roborock.vacuum/core/CleanModeSetting.js';
 import { DeviceNotifyCallback, NotifyMessageTypes } from '../../../../types/index.js';
-import { OperationStatusCode } from '../../../enums/index.js';
-import { BatteryMessage, VacuumError } from '../../../models/index.js';
+import { BatteryMessage, StatusChangeMessage, VacuumError } from '../../../models/index.js';
 import { AbstractMessageHandler } from '../abstractMessageHandler.js';
 
 export class SimpleMessageHandler implements AbstractMessageHandler {
@@ -27,19 +26,14 @@ export class SimpleMessageHandler implements AbstractMessageHandler {
   public onBatteryUpdate(message: BatteryMessage): void {
     this.deviceNotify?.({
       type: NotifyMessageTypes.BatteryUpdate,
-      data: {
-        ...message,
-      },
+      data: message,
     });
   }
 
-  public onStatusChanged(message: { status: OperationStatusCode; duid: string }): void {
+  public onStatusChanged(message: StatusChangeMessage): void {
     this.deviceNotify?.({
       type: NotifyMessageTypes.DeviceStatus,
-      data: {
-        duid: message.duid,
-        status: message.status,
-      },
+      data: message,
     });
   }
 

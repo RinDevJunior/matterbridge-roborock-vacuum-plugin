@@ -210,4 +210,37 @@ describe('getSupportedAreas', () => {
     expect(supportedAreas.length).toEqual(8);
     expect(supportedMaps.length).toEqual(2);
   });
+
+  it('real test 1', () => {
+    const vacuumRooms: RoomDto[] = [
+      new RoomEntity(11100845, 'Kitchen'),
+      new RoomEntity(11100849, 'Study'),
+      new RoomEntity(11100842, 'Living room'),
+      new RoomEntity(11100847, 'Bedroom'),
+      new RoomEntity(12461114, 'Guest bedroom'),
+      new RoomEntity(12461109, 'Master bedroom'),
+      new RoomEntity(12461111, 'Balcony'),
+    ];
+    const roomMap = new RoomMap([
+      { id: 1, iot_name_id: '11100845', tag: 14, iot_map_id: 0, iot_name: 'Kitchen' },
+      { id: 2, iot_name_id: '11100849', tag: 9, iot_map_id: 0, iot_name: 'Study' },
+      { id: 3, iot_name_id: '11100842', tag: 6, iot_map_id: 0, iot_name: 'Living room' },
+      { id: 4, iot_name_id: '11100847', tag: 1, iot_map_id: 0, iot_name: 'Bedroom' },
+      { id: 1, iot_name_id: '11100842', tag: 6, iot_map_id: 1, iot_name: 'Living room' },
+      { id: 2, iot_name_id: '12461114', tag: 3, iot_map_id: 1, iot_name: 'Guest bedroom' },
+      { id: 3, iot_name_id: '12461109', tag: 2, iot_map_id: 1, iot_name: 'Master bedroom' },
+      { id: 4, iot_name_id: '12461111', tag: 7, iot_map_id: 1, iot_name: 'Balcony' },
+    ]);
+
+    const homeEntity = createHomeEntity(vacuumRooms, roomMap, true, [
+      { id: 0, name: 'First Map', rooms: [] },
+      { id: 1, name: 'Second Map', rooms: [] },
+    ]);
+    const { supportedAreas, supportedMaps } = getSupportedAreas(homeEntity, makeLogger());
+    expect(supportedAreas.length).toEqual(8);
+    expect(supportedMaps.length).toEqual(2);
+
+    // console.log(`Supported areas: ${JSON.stringify(supportedAreas, null, 2)} `);
+    // console.log(`Supported maps: ${JSON.stringify(supportedMaps, null, 2)} `);
+  });
 });

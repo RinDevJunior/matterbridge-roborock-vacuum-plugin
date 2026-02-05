@@ -1,9 +1,10 @@
 import { AnsiLogger, debugStringify } from 'matterbridge/logger';
 import { ServiceArea } from 'matterbridge/matter/clusters';
-import { RoomIndexMap, MapEntry } from '../core/application/models/index.js';
+import { RoomIndexMap, MapEntry, RoomMapping } from '../core/application/models/index.js';
 import { randomInt } from 'node:crypto';
 import { DEFAULT_AREA_ID_UNKNOWN, DEFAULT_AREA_ID_ERROR, MULTIPLE_MAP_AREA_ID_OFFSET, RANDOM_ROOM_MIN, RANDOM_ROOM_MAX } from '../constants/index.js';
 import { HomeEntity } from '../core/domain/entities/Home.js';
+import { AreaNamespaceTag } from 'matterbridge/matter';
 
 /**
  * Create a fallback service area for error cases.
@@ -60,6 +61,7 @@ export function getSupportedAreas(homeInFo: HomeEntity, logger: AnsiLogger): Sup
       roomIndexMap: new RoomIndexMap(new Map([[DEFAULT_AREA_ID_UNKNOWN, { roomId: DEFAULT_AREA_ID_UNKNOWN, mapId: null }]])),
     };
   }
+
   const { supportedAreas, indexMap } = processValidData(homeInFo);
   const duplicated = findDuplicatedAreaIds(supportedAreas, logger);
 
@@ -130,7 +132,7 @@ function processValidData(homeInFo: HomeEntity): ProcessedData {
             `Unknown Room ${randomInt(RANDOM_ROOM_MIN, RANDOM_ROOM_MAX)}`;
 
           const areaId = homeInFo.isMultiMapEnabled ? index + MULTIPLE_MAP_AREA_ID_OFFSET : room.id;
-          const mapId = homeInFo.isMultiMapEnabled ? (room.iot_map_id ?? null) : null;
+          const mapId = room.iot_map_id;
 
           indexMap.set(areaId, { roomId: room.id, mapId: room.iot_map_id ?? null });
           return {
@@ -140,17 +142,35 @@ function processValidData(homeInFo: HomeEntity): ProcessedData {
               locationInfo: {
                 locationName: locationName,
                 floorNumber: room.iot_map_id ?? null,
-                areaType: null,
+                areaType: populateAreaNamespaceTag(room),
               },
               landmarkInfo: null,
             },
-          };
+          } satisfies ServiceArea.Area;
         })
       : [];
   return {
     supportedAreas,
     indexMap,
   };
+}
+
+function populateAreaNamespaceTag(room: RoomMapping): number | null {
+  if (room.tag && room.tag > 0) {
+    switch (room.tag) {
+      case 1:
+        return AreaNamespaceTag.Bedroom.tag;
+      case 6:
+        return AreaNamespaceTag.LivingRoom.tag;
+      case 9:
+        return AreaNamespaceTag.Study.tag;
+      case 14:
+        return AreaNamespaceTag.Kitchen.tag;
+      default:
+        return null;
+    }
+  }
+  return null;
 }
 
 function getSupportedMaps(enableMultipleMap: boolean, _supportedAreas: ServiceArea.Area[], mapInfos: MapEntry[]): ServiceArea.Map[] {
@@ -161,5 +181,12 @@ function getSupportedMaps(enableMultipleMap: boolean, _supportedAreas: ServiceAr
     }));
   }
 
-  return [];
+  return mapInfos.length > 0
+    ? [
+        {
+          mapId: mapInfos[0].id,
+          name: mapInfos[0].name ?? `Map ${mapInfos[0].id}`,
+        },
+      ]
+    : [];
 }

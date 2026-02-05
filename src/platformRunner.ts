@@ -4,7 +4,7 @@ import { NotifyMessageTypes } from './types/notifyMessageTypes.js';
 import { debugStringify } from 'matterbridge/logger';
 import { updateFromHomeData } from './runtimes/handleHomeDataMessage.js';
 import type { MessagePayload } from './types/MessagePayloads.js';
-import { BatteryMessage, CleanInformation, DeviceErrorMessage } from './roborockCommunication/models/index.js';
+import { BatteryMessage, CleanInformation, DeviceErrorMessage, StatusChangeMessage } from './roborockCommunication/models/index.js';
 import { RoborockMatterbridgePlatform } from './module.js';
 import type { RoborockVacuumCleaner } from './types/roborockVacuumCleaner.js';
 import { state_to_matter_operational_status, state_to_matter_state } from './share/function.js';
@@ -147,7 +147,12 @@ export class PlatformRunner {
     }
 
     if (batteryLevel && deviceStatus) {
-      robot.updateAttribute(PowerSource.Cluster.id, 'batChargeState', getBatteryState(deviceStatus, batteryLevel), this.platform.log);
+      const batteryChargeState = getBatteryState(deviceStatus, batteryLevel);
+      const operationalStateId =
+        batteryChargeState === PowerSource.BatChargeState.IsCharging ? RvcOperationalState.OperationalState.Charging : RvcOperationalState.OperationalState.Docked;
+
+      robot.updateAttribute(PowerSource.Cluster.id, 'batChargeState', batteryChargeState, this.platform.log);
+      robot.updateAttribute(RvcOperationalState.Cluster.id, 'operationalState', operationalStateId, this.platform.log);
     }
   }
 
@@ -155,8 +160,10 @@ export class PlatformRunner {
    * Handle device status notify messages and update robot run mode.
    * Processes CloudMessageResult to extract state.
    */
-  private handleDeviceStatusUpdate(robot: RoborockVacuumCleaner, message: { status: OperationStatusCode }): void {
+  private handleDeviceStatusUpdate(robot: RoborockVacuumCleaner, message: StatusChangeMessage): void {
     // Update RvcRunMode based on state
+    this.platform.log.debug(`Handling device status update: ${debugStringify(message)}`);
+
     const state = state_to_matter_state(message.status);
     if (state) {
       robot.updateAttribute(RvcRunMode.Cluster.id, 'currentMode', getRunningMode(state), this.platform.log);
@@ -177,7 +184,7 @@ export class PlatformRunner {
    * Processes clean mode settings (suction power, water flow, mop route).
    */
   private handleCleanModeUpdate(robot: RoborockVacuumCleaner, message: { suctionPower: number; waterFlow: number; distance_off: number; mopRoute: number | undefined }): void {
-    const deviceData = robot.device.data;
+    const deviceData = robot.device.specs;
 
     // Update RvcCleanMode based on clean mode settings
     const currentCleanModeSetting = new CleanModeSetting(message.suctionPower, message.waterFlow, message.distance_off, message.mopRoute);

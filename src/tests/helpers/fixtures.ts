@@ -1,4 +1,4 @@
-import { Device, DeviceData, DeviceInformation, Home } from '../../roborockCommunication/models/index.js';
+import { Device, DeviceSpecs, DeviceInformation, Home } from '../../roborockCommunication/models/index.js';
 import { DeviceModel } from '../../roborockCommunication/models/deviceModel.js';
 import { DeviceCategory } from '../../roborockCommunication/models/deviceCategory.js';
 import { RoomEntity } from '../../core/domain/entities/Room.js';
@@ -8,7 +8,7 @@ import { RoomEntity } from '../../core/domain/entities/Room.js';
  * Override any fields via the `overrides` parameter.
  */
 export function makeDeviceFixture(overrides: Partial<Device> = {}): Device {
-  const baseData: DeviceData = {
+  const baseData: DeviceSpecs = {
     id: 'device-id',
     firmwareVersion: '01.00.00',
     serialNumber: 'SN123456',
@@ -58,7 +58,7 @@ export function makeDeviceFixture(overrides: Partial<Device> = {}): Device {
     fv: '01.00.00',
     deviceStatus: {},
     schema: [],
-    data: baseData,
+    specs: baseData,
     store: baseStore,
     scenes: [],
     mapInfos: undefined,

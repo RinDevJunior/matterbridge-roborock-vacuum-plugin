@@ -21,13 +21,13 @@ export async function updateFromHomeData(homeData: Home, platform: RoborockMatte
       continue;
     }
 
-    const deviceData = robot.device.data;
+    const deviceData = robot.device.specs;
     if (!device || deviceData === undefined) {
       platform.log.error('Device not found in home data');
       return;
     }
 
-    device.schema = homeData.products.find((prd) => prd.id === device.productId || prd.model === robot.device.data?.model || prd.model === device.data.model)?.schema ?? [];
+    device.schema = homeData.products.find((prd) => prd.id === device.productId || prd.model === robot.device.specs.model || prd.model === device.specs.model)?.schema ?? [];
     platform.log.debug('updateFromHomeData-homeData:', debugStringify(homeData));
     platform.log.debug('updateFromHomeData-device:', debugStringify(device));
     platform.log.debug('updateFromHomeData-schema:' + debugStringify(device.schema));
@@ -68,6 +68,13 @@ export async function updateFromHomeData(homeData: Home, platform: RoborockMatte
         data: {
           duid: device.duid,
           status: state,
+          // TODO: Add real values if available in home data
+          inCleaning: undefined,
+          inReturning: undefined,
+          inFreshState: undefined,
+          isLocating: undefined,
+          isExploring: undefined,
+          inWarmup: undefined,
         },
       });
     }

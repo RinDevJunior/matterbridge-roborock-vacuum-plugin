@@ -4,7 +4,7 @@ import type { LocalStorage } from 'node-persist';
 import { PlatformMatterbridge } from 'matterbridge';
 import { RoborockMatterbridgePlatform } from '../module.js';
 import initializePlugin from '../module.js';
-import type { Device } from '../roborockCommunication/models/index.js';
+import type { Device, DeviceSpecs } from '../roborockCommunication/models/index.js';
 import { DeviceModel } from '../roborockCommunication/models/deviceModel.js';
 import { makeDeviceFixture } from './helpers/fixtures.js';
 import { RoborockPluginPlatformConfig } from '../model/RoborockPluginPlatformConfig.js';
@@ -201,12 +201,12 @@ describe('module.ts coverage tests', () => {
       const mockDevice1: Partial<Device> = {
         duid: 'device1',
         name: 'Vacuum 1',
-        data: asPartial<Device['data']>({ model: DeviceModel.S5_MAX }),
+        specs: asPartial<DeviceSpecs>({ model: DeviceModel.S5_MAX }),
       };
       const mockDevice2: Partial<Device> = {
         duid: 'device2',
         name: 'Vacuum 2',
-        data: asPartial<Device['data']>({ model: DeviceModel.S5_MAX }),
+        specs: asPartial<DeviceSpecs>({ model: DeviceModel.S5_MAX }),
       };
 
       const config = createMockConfig();
@@ -333,7 +333,7 @@ describe('module.ts coverage tests', () => {
       const mockDevice = asPartial<Device>({
         duid: 'test-device',
         name: 'Test Vacuum',
-        data: asPartial<Device['data']>({ model: DeviceModel.S5_MAX }),
+        specs: asPartial<DeviceSpecs>({ model: DeviceModel.S5_MAX }),
         store: asPartial<Device['store']>({
           homeData: {
             id: 1,

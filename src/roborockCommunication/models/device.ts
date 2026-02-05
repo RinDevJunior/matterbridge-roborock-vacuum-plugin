@@ -6,7 +6,7 @@ import { Home, NetworkInfoDTO, TimezoneInfo } from './index.js';
 import { Scene } from './scene.js';
 import { UserData } from './userData.js';
 
-export interface DeviceData {
+export interface DeviceSpecs {
   id: string;
   firmwareVersion: string;
   serialNumber: string;
@@ -49,7 +49,7 @@ export interface Device {
 
   deviceStatus: Record<string, DeviceStatusResponsetype>;
   schema: DeviceSchema[];
-  data: DeviceData;
+  specs: DeviceSpecs;
   store: DeviceInformation;
   scenes?: Scene[];
 

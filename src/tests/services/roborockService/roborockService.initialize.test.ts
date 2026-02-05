@@ -3,7 +3,7 @@ import { AnsiLogger } from 'matterbridge/logger';
 import { RoborockService } from '../../../services/roborockService.js';
 import { makeLogger, asPartial, asType } from '../../testUtils.js';
 import type { LocalStorage } from 'node-persist';
-import type { PlatformConfigManager } from '../../../platform/platformConfig.js';
+import type { PlatformConfigManager } from '../../../platform/platformConfigManager.js';
 import type { RoborockAuthenticateApi } from '../../../roborockCommunication/api/authClient.js';
 import type { RoborockIoTApi } from '../../../roborockCommunication/api/iotClient.js';
 
@@ -100,15 +100,15 @@ describe('RoborockService - listDevices', () => {
 
   it('should fallback batteryLevel to 100 if not present', async () => {
     // Device with no battery info should default to 100
-    const device = { duid: '1', data: {}, store: {}, rrHomeId: 123, rooms: [], localKey: '', pv: '', sn: '', scenes: [], batteryLevel: undefined };
+    const device = { duid: '1', specs: {}, store: {}, rrHomeId: 123, rooms: [], localKey: '', pv: '', sn: '', scenes: [], batteryLevel: undefined };
     const mockDeviceService = {
-      listDevices: vi.fn().mockResolvedValue([{ ...device, data: { batteryLevel: undefined } }]),
+      listDevices: vi.fn().mockResolvedValue([{ ...device, specs: { batteryLevel: undefined } }]),
     };
     roborockService = Object.create(roborockService, {
       deviceService: { value: mockDeviceService },
     });
     const result = await roborockService.listDevices();
-    expect(result[0].data.batteryLevel ?? 100).toBe(100);
+    expect(result[0].specs.batteryLevel ?? 100).toBe(100);
   });
 
   it('should filter scenes correctly for devices', async () => {

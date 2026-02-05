@@ -12,7 +12,7 @@ import { localStorageMock } from '../testData/localStorageMock.js';
 import { makeLogger, makeMockClientRouter, createMockLocalStorage, createMockAuthApi, createMockIotApi, asPartial } from '../testUtils.js';
 import { ClientRouter } from '../../roborockCommunication/routing/clientRouter.js';
 import type { LocalStorage } from 'node-persist';
-import type { PlatformConfigManager } from '../../platform/platformConfig.js';
+import type { PlatformConfigManager } from '../../platform/platformConfigManager.js';
 
 describe('ServiceContainer', () => {
   let container: ServiceContainer;

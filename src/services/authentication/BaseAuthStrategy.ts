@@ -2,7 +2,7 @@ import { AnsiLogger } from 'matterbridge/logger';
 import type { UserData } from '../../roborockCommunication/models/index.js';
 import { AuthenticationService } from '../authenticationService.js';
 import { UserDataRepository } from './UserDataRepository.js';
-import { PlatformConfigManager } from '../../platform/platformConfig.js';
+import { PlatformConfigManager } from '../../platform/platformConfigManager.js';
 
 /** Base class for authentication strategies with shared caching logic. */
 export abstract class BaseAuthStrategy {

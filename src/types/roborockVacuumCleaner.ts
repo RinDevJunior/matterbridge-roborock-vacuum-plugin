@@ -7,7 +7,7 @@ import { ModeBase, RvcOperationalState, ServiceArea } from 'matterbridge/matter/
 import { CommandNames } from '../behaviors/BehaviorDeviceGeneric.js';
 import { DockingStationStatus } from '../model/DockingStationStatus.js';
 import { Device } from '../roborockCommunication/models/index.js';
-import { PlatformConfigManager } from '../platform/platformConfig.js';
+import { PlatformConfigManager } from '../platform/platformConfigManager.js';
 import { baseRunModeConfigs, getRunModeOptions } from '../behaviors/roborock.vacuum/core/runModeConfig.js';
 import { CleanModeSetting } from '../behaviors/roborock.vacuum/core/CleanModeSetting.js';
 import { HomeEntity } from '../core/domain/entities/Home.js';
@@ -50,7 +50,7 @@ export class RoborockVacuumCleaner extends RoboticVacuumCleaner {
 
     log.debug(
       `Creating RoborockVacuumCleaner for device: ${deviceConfig.deviceName}, 
-      model: ${device.data.model}, 
+      model: ${device.specs.model}, 
       forceRunAtDefault: ${configManager.forceRunAtDefault}
       bridgeMode: ${deviceConfig.bridgeMode},
       Supported Clean Modes: ${debugStringify(deviceConfig.cleanModes)},
@@ -116,7 +116,7 @@ export class RoborockVacuumCleaner extends RoboticVacuumCleaner {
    * Initialize device configuration including modes, areas, and maps.
    */
   private static initializeDeviceConfiguration(device: Device, homeInFo: HomeEntity, routineAsRoom: ServiceArea.Area[], configManager: PlatformConfigManager, log: AnsiLogger) {
-    const cleanModes = getSupportedCleanModes(device.data.model, configManager);
+    const cleanModes = getSupportedCleanModes(device.specs.model, configManager);
     const operationalState = getOperationalStates();
 
     const { supportedAreas, supportedMaps } = getSupportedAreas(homeInFo, log);

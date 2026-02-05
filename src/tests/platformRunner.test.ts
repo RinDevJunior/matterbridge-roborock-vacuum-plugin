@@ -3,7 +3,7 @@ import { PlatformRunner } from '../platformRunner.js';
 import { NotifyMessageTypes } from '../types/notifyMessageTypes.js';
 import { RoborockMatterbridgePlatform } from '../module.js';
 import { RoborockVacuumCleaner } from '../types/roborockVacuumCleaner.js';
-import { Device, DeviceData, DeviceModel, BatteryMessage, DeviceErrorMessage, CleanInformation, Home } from '../roborockCommunication/models/index.js';
+import { Device, DeviceSpecs, DeviceModel, BatteryMessage, DeviceErrorMessage, CleanInformation, Home } from '../roborockCommunication/models/index.js';
 import { asPartial, createMockLogger, createMockDeviceRegistry, createMockRoborockService, createMockConfigManager } from './testUtils.js';
 import { PowerSource, RvcCleanMode, RvcOperationalState, RvcRunMode, ServiceArea } from 'matterbridge/matter/clusters';
 import { OperationStatusCode, VacuumErrorCode } from '../roborockCommunication/enums/index.js';
@@ -74,7 +74,7 @@ describe('PlatformRunner.requestHomeData', () => {
   });
 
   it('should return early if rrHomeId is not set (undefined)', async () => {
-    const placeholderRobot = asPartial<RoborockVacuumCleaner>({ serialNumber: '123', device: asPartial<Device>({ data: asPartial<DeviceData>({}) }), updateAttribute: vi.fn() });
+    const placeholderRobot = asPartial<RoborockVacuumCleaner>({ serialNumber: '123', device: asPartial<Device>({ specs: asPartial<DeviceSpecs>({}) }), updateAttribute: vi.fn() });
     platform = asPartial<RoborockMatterbridgePlatform>({
       registry: createMockDeviceRegistry({}, new Map([['123', placeholderRobot]])),
       rrHomeId: undefined,
@@ -89,7 +89,7 @@ describe('PlatformRunner.requestHomeData', () => {
   });
 
   it('should return early if rrHomeId is falsy (empty string)', async () => {
-    const placeholderRobot = asPartial<RoborockVacuumCleaner>({ serialNumber: '123', device: asPartial<Device>({ data: asPartial<DeviceData>({}) }), updateAttribute: vi.fn() });
+    const placeholderRobot = asPartial<RoborockVacuumCleaner>({ serialNumber: '123', device: asPartial<Device>({ specs: asPartial<DeviceSpecs>({}) }), updateAttribute: vi.fn() });
     platform = asPartial<RoborockMatterbridgePlatform>({
       registry: createMockDeviceRegistry({}, new Map([['123', placeholderRobot]])),
       rrHomeId: undefined,
@@ -104,7 +104,7 @@ describe('PlatformRunner.requestHomeData', () => {
   });
 
   it('should return early if roborockService is undefined', async () => {
-    const placeholderRobot = asPartial<RoborockVacuumCleaner>({ serialNumber: '123', device: asPartial<Device>({ data: asPartial<DeviceData>({}) }), updateAttribute: vi.fn() });
+    const placeholderRobot = asPartial<RoborockVacuumCleaner>({ serialNumber: '123', device: asPartial<Device>({ specs: asPartial<DeviceSpecs>({}) }), updateAttribute: vi.fn() });
     platform = asPartial<RoborockMatterbridgePlatform>({
       registry: createMockDeviceRegistry({}, new Map([['123', placeholderRobot]])),
       rrHomeId: 12345,
@@ -120,7 +120,7 @@ describe('PlatformRunner.requestHomeData', () => {
 
   it('should return early if getHomeDataForUpdating returns undefined', async () => {
     const getHomeDataMock = vi.fn().mockResolvedValue(undefined);
-    const placeholderRobot = asPartial<RoborockVacuumCleaner>({ serialNumber: '123', device: asPartial<Device>({ data: asPartial<DeviceData>({}) }), updateAttribute: vi.fn() });
+    const placeholderRobot = asPartial<RoborockVacuumCleaner>({ serialNumber: '123', device: asPartial<Device>({ specs: asPartial<DeviceSpecs>({}) }), updateAttribute: vi.fn() });
     platform = asPartial<RoborockMatterbridgePlatform>({
       registry: createMockDeviceRegistry({}, new Map([['123', placeholderRobot]])),
       rrHomeId: 12345,
@@ -140,7 +140,7 @@ describe('PlatformRunner.requestHomeData', () => {
   it('should call updateRobotWithPayload when homeData is available', async () => {
     const homeData = { devices: [], products: [] };
     const getHomeDataMock = vi.fn().mockResolvedValue(homeData);
-    const placeholderRobot = asPartial<RoborockVacuumCleaner>({ serialNumber: '123', device: asPartial<Device>({ data: asPartial<DeviceData>({}) }), updateAttribute: vi.fn() });
+    const placeholderRobot = asPartial<RoborockVacuumCleaner>({ serialNumber: '123', device: asPartial<Device>({ specs: asPartial<DeviceSpecs>({}) }), updateAttribute: vi.fn() });
     platform = asPartial<RoborockMatterbridgePlatform>({
       registry: createMockDeviceRegistry({}, new Map([['123', placeholderRobot]])),
       rrHomeId: 12345,
@@ -169,9 +169,10 @@ describe('PlatformRunner.updateRobotWithPayload', () => {
       serialNumber: 'test-duid',
       device: asPartial<Device>({
         duid: 'test-duid',
-        data: asPartial<DeviceData>({ model: DeviceModel.S7 }),
+        specs: asPartial<DeviceSpecs>({ model: DeviceModel.S7 }),
       }),
       updateAttribute: vi.fn(),
+      setAttribute: vi.fn(),
       cleanModeSetting: new CleanModeSetting(1, 1, 1, 1),
       dockStationStatus: asPartial<DockingStationStatus>({}),
     });
@@ -240,7 +241,8 @@ describe('PlatformRunner.updateRobotWithPayload', () => {
 
     expect(robot.updateAttribute).toHaveBeenCalledWith(PowerSource.Cluster.id, 'batPercentRemaining', 100, mockLogger);
     expect(robot.updateAttribute).toHaveBeenCalledWith(PowerSource.Cluster.id, 'batChargeLevel', 1, mockLogger);
-    expect(robot.updateAttribute).toHaveBeenCalledWith(PowerSource.Cluster.id, 'batChargeState', 1, mockLogger);
+    expect(robot.updateAttribute).toHaveBeenCalledWith(PowerSource.Cluster.id, 'batChargeState', PowerSource.BatChargeState.IsCharging, mockLogger);
+    expect(robot.updateAttribute).toHaveBeenCalledWith(RvcOperationalState.Cluster.id, 'operationalState', RvcOperationalState.OperationalState.Charging, mockLogger);
   });
 
   it('should not update battery charge state when device status is missing', () => {
@@ -254,7 +256,16 @@ describe('PlatformRunner.updateRobotWithPayload', () => {
   });
 
   it('should handle DeviceStatus message', () => {
-    const statusMessage = { duid: 'test-duid', status: OperationStatusCode.Cleaning };
+    const statusMessage = {
+      duid: 'test-duid',
+      status: OperationStatusCode.Cleaning,
+      inCleaning: true,
+      inReturning: false,
+      inFreshState: false,
+      isLocating: false,
+      isExploring: false,
+      inWarmup: false,
+    };
     const payload: MessagePayload = { type: NotifyMessageTypes.DeviceStatus, data: statusMessage };
 
     runner.updateRobotWithPayload(payload);
@@ -266,7 +277,16 @@ describe('PlatformRunner.updateRobotWithPayload', () => {
 
   it('should not update run mode when state_to_matter_state returns undefined', () => {
     vi.mocked(shareFunction.state_to_matter_state).mockReturnValueOnce(undefined);
-    const statusMessage = { duid: 'test-duid', status: OperationStatusCode.Unknown };
+    const statusMessage = {
+      duid: 'test-duid',
+      status: OperationStatusCode.Unknown,
+      inCleaning: false,
+      inReturning: false,
+      inFreshState: false,
+      isLocating: false,
+      isExploring: false,
+      inWarmup: false,
+    };
     const payload: MessagePayload = { type: NotifyMessageTypes.DeviceStatus, data: statusMessage };
 
     runner.updateRobotWithPayload(payload);
@@ -280,7 +300,7 @@ describe('PlatformRunner.updateRobotWithPayload', () => {
       serialNumber: 'test-duid',
       device: asPartial<Device>({
         duid: 'test-duid',
-        data: asPartial<DeviceData>({ model: DeviceModel.S7 }),
+        specs: asPartial<DeviceSpecs>({ model: DeviceModel.S7 }),
       }),
       updateAttribute: vi.fn(),
       cleanModeSetting: new CleanModeSetting(1, 1, 1, 1),
@@ -298,7 +318,16 @@ describe('PlatformRunner.updateRobotWithPayload', () => {
     });
     const runnerWithDockStatus = new PlatformRunner(platformWithDockStatus);
 
-    const statusMessage = { duid: 'test-duid', status: OperationStatusCode.Idle };
+    const statusMessage = {
+      duid: 'test-duid',
+      status: OperationStatusCode.Idle,
+      inCleaning: false,
+      inReturning: false,
+      inFreshState: false,
+      isLocating: false,
+      isExploring: false,
+      inWarmup: false,
+    };
     const payload: MessagePayload = { type: NotifyMessageTypes.DeviceStatus, data: statusMessage };
 
     runnerWithDockStatus.updateRobotWithPayload(payload);
@@ -309,7 +338,16 @@ describe('PlatformRunner.updateRobotWithPayload', () => {
   });
 
   it('should not check dock station error when includeDockStationStatus is false', () => {
-    const statusMessage = { duid: 'test-duid', status: OperationStatusCode.Idle };
+    const statusMessage = {
+      duid: 'test-duid',
+      status: OperationStatusCode.Idle,
+      inCleaning: false,
+      inReturning: false,
+      inFreshState: false,
+      isLocating: false,
+      isExploring: false,
+      inWarmup: false,
+    };
     const payload: MessagePayload = { type: NotifyMessageTypes.DeviceStatus, data: statusMessage };
 
     runner.updateRobotWithPayload(payload);

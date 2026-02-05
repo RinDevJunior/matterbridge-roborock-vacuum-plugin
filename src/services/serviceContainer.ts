@@ -11,7 +11,7 @@ import { ServiceContainer as CoreServiceContainer } from '../core/ServiceContain
 import { RoborockAuthenticateApi } from '../roborockCommunication/api/authClient.js';
 import { RoborockIoTApi } from '../roborockCommunication/api/iotClient.js';
 import { UserData } from '../roborockCommunication/models/index.js';
-import { PlatformConfigManager } from '../platform/platformConfig.js';
+import { PlatformConfigManager } from '../platform/platformConfigManager.js';
 import { ConnectionService } from './connectionService.js';
 import { AuthenticationCoordinator } from './authentication/AuthenticationCoordinator.js';
 import { UserDataRepository } from './authentication/UserDataRepository.js';

@@ -23,7 +23,7 @@ export function getBatteryStatus(batteryLevel?: number): PowerSource.BatChargeLe
  * Determine battery charge state based on device status.
  */
 export function getBatteryState(deviceState: number, batRemaining: number): PowerSource.BatChargeState {
-  if (deviceState === OperationStatusCode.Charging) {
+  if (deviceState === OperationStatusCode.Charging || deviceState === OperationStatusCode.Idle) {
     return batRemaining < BATTERY_FULL ? PowerSource.BatChargeState.IsCharging : PowerSource.BatChargeState.IsAtFullCharge;
   }
 

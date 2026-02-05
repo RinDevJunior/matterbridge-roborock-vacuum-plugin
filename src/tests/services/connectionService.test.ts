@@ -2,8 +2,7 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { ConnectionService } from '../../services/connectionService.js';
 import ClientManager from '../../services/clientManager.js';
 import { DeviceConnectionError, DeviceInitializationError } from '../../errors/index.js';
-import { NotifyMessageTypes } from '../../types/notifyMessageTypes.js';
-import { Device, DeviceData, DeviceModel, HeaderMessage, ResponseMessage, UserData } from '../../roborockCommunication/models/index.js';
+import { Device, DeviceSpecs, DeviceModel, HeaderMessage, ResponseMessage, UserData } from '../../roborockCommunication/models/index.js';
 import { ClientRouter } from '../../roborockCommunication/routing/clientRouter.js';
 import { AnsiLogger } from 'matterbridge/logger';
 import { MessageRoutingService } from '../../services/messageRoutingService.js';
@@ -22,7 +21,7 @@ describe('ConnectionService', () => {
     name: 'Test Vacuum',
     localKey: 'test-local-key',
     pv: '1.0',
-    data: { model: 'roborock.vacuum.a187' },
+    specs: { model: 'roborock.vacuum.a187' },
     store: { pv: '1.0', model: 'roborock.vacuum.a187' },
   } as Device;
 
@@ -257,7 +256,7 @@ describe('ConnectionService additional coverage', () => {
     localKey: 'test-local-key',
     pv: '1.0',
     store: { pv: '1.0', model: DeviceModel.S6 },
-    data: asPartial<DeviceData>({ model: DeviceModel.S6 }),
+    specs: asPartial<DeviceSpecs>({ model: DeviceModel.S6 }),
   } as Device;
 
   beforeEach(() => {
@@ -272,7 +271,7 @@ describe('ConnectionService additional coverage', () => {
   it('should handle B01 protocol and UDP client setup', async () => {
     const device: Device = asPartial<Device>({
       ...mockDevice,
-      data: asPartial<DeviceData>({ model: DeviceModel.S6 }),
+      specs: asPartial<DeviceSpecs>({ model: DeviceModel.S6 }),
       pv: 'B01',
       duid: 'b01-duid',
       deviceStatus: { 1001: { 101: { ipAddress: '1.2.3.4' } } },
@@ -285,7 +284,7 @@ describe('ConnectionService additional coverage', () => {
   it('should fallback to UDP broadcast if setupLocalClient fails', async () => {
     const device: Device = asPartial<Device>({
       ...mockDevice,
-      data: asPartial<DeviceData>({ model: DeviceModel.S6 }),
+      specs: asPartial<DeviceSpecs>({ model: DeviceModel.S6 }),
       pv: 'B01',
       duid: 'b01-duid',
       deviceStatus: { 1001: { 101: { ipAddress: '1.2.3.4' } } },

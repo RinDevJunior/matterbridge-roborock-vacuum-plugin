@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { updateFromHomeData } from '../../runtimes/handleHomeDataMessage.js';
 import { homeData } from '../testData/mockData.js';
-import { DeviceData, DeviceModel, Device, Home, Product } from '../../roborockCommunication/models/index.js';
+import { DeviceSpecs, DeviceModel, Device, Home, Product } from '../../roborockCommunication/models/index.js';
 import type { DockingStationStatus } from '../../model/DockingStationStatus.js';
 import type { RoborockVacuumCleaner } from '../../types/roborockVacuumCleaner.js';
 import type { RoborockMatterbridgePlatform } from '../../module.js';
@@ -17,7 +17,7 @@ const simpleUpdateAttribute = (...args: any[]) => mockUpdateAttribute(...args);
 const duid = 'test-duid';
 const robot = asPartial<RoborockVacuumCleaner>({
   updateAttribute: simpleUpdateAttribute,
-  device: asPartial<Device>({ duid, name: 'TestVac', data: asPartial<DeviceData>({ model: DeviceModel.QREVO_EDGE_5V1 }) }),
+  device: asPartial<Device>({ duid, name: 'TestVac', specs: asPartial<DeviceSpecs>({ model: DeviceModel.QREVO_EDGE_5V1 }) }),
 });
 const robots = new Map([[duid, robot]]);
 const registry = asPartial<DeviceRegistry>({
@@ -169,7 +169,7 @@ describe('updateFromHomeData', () => {
   it('should process device when it has docking station status', async () => {
     const robotWithDss = asPartial<RoborockVacuumCleaner>({
       updateAttribute: simpleUpdateAttribute,
-      device: asPartial<Device>({ duid, name: 'TestVac', data: asPartial<DeviceData>({ model: DeviceModel.QREVO_EDGE_5V1 }) }),
+      device: asPartial<Device>({ duid, name: 'TestVac', specs: asPartial<DeviceSpecs>({ model: DeviceModel.QREVO_EDGE_5V1 }) }),
       dockStationStatus: asPartial<DockingStationStatus>({
         cleanFluidStatus: 0,
         waterBoxFilterStatus: 0,
@@ -269,10 +269,10 @@ describe('updateFromHomeData', () => {
         {
           ...homeData.devices[0],
           deviceStatus: asPartial({ state: 8, battery: 100 }),
-          data: { ...homeData.devices[0].data, model: DeviceModel.Q7_MAX },
+          specs: { ...homeData.devices[0].specs, model: DeviceModel.Q7_MAX },
         },
       ],
-      products: [asPartial<Product>({ id: homeData.products[0].id, model: robot.device.data?.model, schema: homeData.products[0].schema })],
+      products: [asPartial<Product>({ id: homeData.products[0].id, model: robot.device.specs?.model, schema: homeData.products[0].schema })],
     });
 
     platform.registry.robotsMap.clear();

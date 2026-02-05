@@ -11,7 +11,7 @@ import { Device } from '../../roborockCommunication/models/index.js';
 import { RoborockAuthenticateApi } from '../../roborockCommunication/api/authClient.js';
 import { RoborockIoTApi } from '../../roborockCommunication/api/iotClient.js';
 import type { LocalStorage } from 'node-persist';
-import type { PlatformConfigManager } from '../../platform/platformConfig.js';
+import type { PlatformConfigManager } from '../../platform/platformConfigManager.js';
 
 describe('RoborockService - Comprehensive Coverage', () => {
   let service: RoborockService;

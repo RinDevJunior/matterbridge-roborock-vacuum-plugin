@@ -1,6 +1,6 @@
 import { vi } from 'vitest';
 import { AnsiLogger } from 'matterbridge/logger';
-import type { PlatformConfigManager } from '../../platform/platformConfig.js';
+import type { PlatformConfigManager } from '../../platform/platformConfigManager.js';
 import type { PlatformMatterbridge, SystemInformation } from 'matterbridge';
 import type { RoborockIoTApi } from '../../roborockCommunication/api/iotClient.js';
 import type { RoborockAuthenticateApi } from '../../roborockCommunication/api/authClient.js';

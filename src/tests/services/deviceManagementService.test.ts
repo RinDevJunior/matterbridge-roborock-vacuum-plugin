@@ -5,8 +5,6 @@ import { DeviceError, DeviceNotFoundError } from '../../errors/index.js';
 import { Device, DeviceModel, Home, Protocol, UserData } from '../../roborockCommunication/models/index.js';
 import { DeviceCategory } from '../../roborockCommunication/models/deviceCategory.js';
 import { makeLogger } from '../testUtils.js';
-import type { RoborockIoTApi } from '../../roborockCommunication/api/iotClient.js';
-import type { RoborockAuthenticateApi } from '../../roborockCommunication/api/authClient.js';
 
 describe('DeviceManagementService', () => {
   let deviceService: DeviceManagementService;
@@ -52,7 +50,7 @@ describe('DeviceManagementService', () => {
     online: true,
     schema: [],
     mapInfos: undefined,
-    data: {
+    specs: {
       id: 'device-123',
       firmwareVersion: '1.0.0',
       serialNumber: 'SN12345',
@@ -173,7 +171,7 @@ describe('DeviceManagementService', () => {
         name: 'Test Vacuum',
         rrHomeId: 12345,
         scenes: [],
-        data: {
+        specs: {
           id: 'device-123',
           firmwareVersion: '1.0.0',
           serialNumber: 'SN12345',
@@ -250,7 +248,7 @@ describe('DeviceManagementService', () => {
 
       const result = await deviceService.listDevices();
 
-      expect(result[0].data.batteryLevel).toBe(100);
+      expect(result[0].specs.batteryLevel).toBe(100);
     });
 
     it('should handle API errors and wrap them in DeviceError', async () => {
@@ -287,7 +285,7 @@ describe('DeviceManagementService', () => {
     expect(result?.devices?.[0]).toMatchObject({
       duid: 'device-123',
       rrHomeId: 12345,
-      data: expect.objectContaining({
+      specs: expect.objectContaining({
         id: 'device-123',
         firmwareVersion: '1.0.0',
         serialNumber: 'SN12345',

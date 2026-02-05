@@ -1,6 +1,6 @@
 import { AnsiLogger } from 'matterbridge/logger';
 import { DeviceError, DeviceNotFoundError } from '../errors/index.js';
-import { Device, DeviceData, DeviceInformation, DeviceModel, Home, Protocol, SceneParam, UserData } from '../roborockCommunication/models/index.js';
+import { Device, DeviceSpecs, DeviceInformation, DeviceModel, Home, Protocol, SceneParam, UserData } from '../roborockCommunication/models/index.js';
 import { RoborockIoTApi } from '../roborockCommunication/api/iotClient.js';
 import { RoborockAuthenticateApi } from '../roborockCommunication/api/authClient.js';
 import { DeviceCategory } from '../roborockCommunication/models/deviceCategory.js';
@@ -60,14 +60,14 @@ export class DeviceManagementService {
           pv: device.pv,
           serialNumber: device.sn,
           scenes: scenes.filter((sc) => sc.param && (JSON.parse(sc.param) as SceneParam).action.items.some((x) => x.entityId == device.duid)),
-          data: {
+          specs: {
             id: device.duid,
             firmwareVersion: device.fv,
             serialNumber: device.sn,
             model: products.get(device.productId)?.model as DeviceModel,
             category: products.get(device.productId)?.category as DeviceCategory,
             batteryLevel: Number(device.deviceStatus?.[Protocol.battery] ?? 100),
-          } satisfies DeviceData,
+          } satisfies DeviceSpecs,
           store: {
             userData: this.userdata as UserData,
             localKey: device.localKey,
@@ -75,8 +75,8 @@ export class DeviceManagementService {
             model: products.get(device.productId)?.model as DeviceModel,
             homeData: homeData,
           } satisfies DeviceInformation,
-        };
-      }) satisfies Device[];
+        } satisfies Device;
+      });
 
       this.logger.notice(`Found ${result.length} devices`);
       return result;
@@ -99,9 +99,18 @@ export class DeviceManagementService {
     }
 
     try {
-      const homeData = await this.iotApi.getHomev2(homeid);
+      let homeData = await this.iotApi.getHomev2(homeid);
 
       if (!homeData) {
+        homeData = await this.iotApi.getHomev3(homeid);
+      }
+
+      if (!homeData) {
+        homeData = await this.iotApi.getHome(homeid);
+      }
+
+      if (!homeData) {
+        this.logger.error(`Home data not found for home ID: ${homeid}`);
         return undefined;
       }
 
@@ -127,14 +136,14 @@ export class DeviceManagementService {
           ...device,
           rrHomeId: homeid,
           serialNumber: device.sn,
-          data: {
+          specs: {
             id: device.duid,
             firmwareVersion: device.fv,
             serialNumber: device.sn,
             model: products.get(device.productId)?.model as DeviceModel,
             category: products.get(device.productId)?.category as DeviceCategory,
             batteryLevel: Number(device.deviceStatus?.[Protocol.battery] ?? 100),
-          } satisfies DeviceData,
+          } satisfies DeviceSpecs,
           store: {
             userData: this.userdata as UserData,
             localKey: device.localKey,

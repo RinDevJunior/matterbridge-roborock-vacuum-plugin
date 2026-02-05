@@ -15,7 +15,7 @@ import { AuthenticationCoordinator } from './authentication/AuthenticationCoordi
 import { RoborockAuthenticateApi } from '../roborockCommunication/api/authClient.js';
 import { Device, Home, RawRoomMappingData, RequestMessage, Scene, UserData } from '../roborockCommunication/models/index.js';
 import { RoborockIoTApi } from '../roborockCommunication/api/iotClient.js';
-import { PlatformConfigManager } from '../platform/platformConfig.js';
+import { PlatformConfigManager } from '../platform/platformConfigManager.js';
 import { MapInfo, RoomIndexMap } from '../core/application/models/index.js';
 import { CleanModeSetting } from '../behaviors/roborock.vacuum/core/CleanModeSetting.js';
 

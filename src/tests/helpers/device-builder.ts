@@ -28,7 +28,7 @@ export class DeviceBuilder {
     silentOtaSwitch: false,
     rrHomeId: 12345,
     serialNumber: 'TEST-SN-123456',
-    data: {
+    specs: {
       id: 'test-duid-default',
       firmwareVersion: '1.0.0',
       serialNumber: 'TEST-SN-123456',
@@ -51,7 +51,7 @@ export class DeviceBuilder {
    */
   withDuid(duid: string): this {
     this.device.duid = duid;
-    if (this.device.data) this.device.data.id = duid;
+    if (this.device.specs) this.device.specs.id = duid;
     return this;
   }
 
@@ -67,7 +67,7 @@ export class DeviceBuilder {
    * Set the device model.
    */
   withModel(model: DeviceModel): this {
-    if (this.device.data) this.device.data.model = model;
+    if (this.device.specs) this.device.specs.model = model;
     if (this.device.store) this.device.store.model = model;
     return this;
   }
@@ -80,8 +80,8 @@ export class DeviceBuilder {
     if (this.device.deviceStatus) {
       this.device.deviceStatus[Protocol.battery] = batteryLevel;
     }
-    if (this.device.data) {
-      this.device.data.batteryLevel = batteryLevel;
+    if (this.device.specs) {
+      this.device.specs.batteryLevel = batteryLevel;
     }
     return this;
   }
@@ -99,7 +99,7 @@ export class DeviceBuilder {
    */
   withFirmwareVersion(version: string): this {
     this.device.fv = version;
-    if (this.device.data) this.device.data.firmwareVersion = version;
+    if (this.device.specs) this.device.specs.firmwareVersion = version;
     return this;
   }
 
@@ -109,7 +109,7 @@ export class DeviceBuilder {
   withSerialNumber(sn: string): this {
     this.device.sn = sn;
     this.device.serialNumber = sn;
-    if (this.device.data) this.device.data.serialNumber = sn;
+    if (this.device.specs) this.device.specs.serialNumber = sn;
     return this;
   }
 

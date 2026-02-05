@@ -5,7 +5,7 @@ import { UserDataRepository } from './UserDataRepository.js';
 import { VerificationCodeService } from './VerificationCodeService.js';
 import type { IAuthStrategy } from './IAuthStrategy.js';
 import type { AuthContext } from './AuthContext.js';
-import { PlatformConfigManager } from '../../platform/platformConfig.js';
+import { PlatformConfigManager } from '../../platform/platformConfigManager.js';
 import { BaseAuthStrategy } from './BaseAuthStrategy.js';
 
 /** Two-factor authentication strategy with verification code. */

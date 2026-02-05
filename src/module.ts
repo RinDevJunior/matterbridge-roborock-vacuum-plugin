@@ -15,7 +15,6 @@ import { FilterLogger } from './share/filterLogger.js';
 import { RoborockVacuumCleaner } from './types/roborockVacuumCleaner.js';
 import { configureBehavior } from './share/behaviorFactory.js';
 import { getSupportedAreas, getSupportedScenes } from './initialData/index.js';
-
 import { getBaseUrl } from './initialData/regionUrls.js';
 import { UINT16_MAX, UINT32_MAX } from 'matterbridge/matter';
 import { Device } from './roborockCommunication/models/index.js';
@@ -24,7 +23,7 @@ import { RoborockIoTApi } from './roborockCommunication/api/iotClient.js';
 
 // Platform layer imports
 import { DeviceRegistry } from './platform/deviceRegistry.js';
-import { PlatformConfigManager } from './platform/platformConfig.js';
+import { PlatformConfigManager } from './platform/platformConfigManager.js';
 import { PlatformLifecycle, LifecycleDependencies } from './platform/platformLifecycle.js';
 import { PlatformState } from './platform/platformState.js';
 import { DEFAULT_REFRESH_INTERVAL_SECONDS } from './constants/index.js';
@@ -166,7 +165,7 @@ export class RoborockMatterbridgePlatform extends MatterbridgeDynamicPlatform {
     let vacuums: Device[] = [];
 
     for (const device of devices) {
-      if (this.configManager.isDeviceAllowed({ duid: device.duid, deviceName: device.name }) && isSupportedDevice(device.data.model)) {
+      if (this.configManager.isDeviceAllowed({ duid: device.duid, deviceName: device.name }) && isSupportedDevice(device.specs.model)) {
         vacuums.push(device);
       }
     }
@@ -254,7 +253,7 @@ export class RoborockMatterbridgePlatform extends MatterbridgeDynamicPlatform {
     const homeInfo = new HomeEntity(homeData.id, homeData.name, roomMap, mapInfo, this.configManager.isMultipleMapEnabled);
 
     const behaviorHandler = configureBehavior(
-      vacuum.data.model,
+      vacuum.specs.model,
       vacuum.duid,
       this.roborockService,
       this.configManager.isCustomCleanModeMappingEnabled,
@@ -291,7 +290,7 @@ export class RoborockMatterbridgePlatform extends MatterbridgeDynamicPlatform {
     }
     this.setSelectDevice(device.serialNumber, device.deviceName, undefined, 'hub');
 
-    const vacuumFirmwareData = (device as RoborockVacuumCleaner).device.data;
+    const vacuumFirmwareData = (device as RoborockVacuumCleaner).device.specs;
     const hardwareVersionString = vacuumFirmwareData.firmwareVersion ?? (device as RoborockVacuumCleaner).device.fv ?? this.matterbridge.matterbridgeVersion;
 
     if (this.validateDevice(device.deviceName)) {

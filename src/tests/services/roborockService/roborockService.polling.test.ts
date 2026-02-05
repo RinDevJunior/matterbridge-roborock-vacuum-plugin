@@ -3,7 +3,7 @@ import { RoborockService } from '../../../services/roborockService.js';
 import { Device } from '../../../roborockCommunication/models/index.js';
 import { localStorageMock } from '../../testData/localStorageMock.js';
 import { createMockLocalStorage, createMockLogger } from '../../testUtils.js';
-import { PlatformConfigManager as PlatformConfigManagerStatic } from '../../../platform/platformConfig.js';
+import { PlatformConfigManager as PlatformConfigManagerStatic } from '../../../platform/platformConfigManager.js';
 import type { RoborockPluginPlatformConfig } from '../../../model/RoborockPluginPlatformConfig.js';
 import type { AnsiLogger } from 'matterbridge/logger';
 

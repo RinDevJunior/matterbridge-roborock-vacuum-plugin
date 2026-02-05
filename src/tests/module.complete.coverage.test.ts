@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { AnsiLogger, LogLevel } from 'matterbridge/logger';
 import { PlatformMatterbridge } from 'matterbridge';
 import { RoborockMatterbridgePlatform } from '../module.js';
-import { DeviceData, RawRoomMappingData, type Device, type RoomDto } from '../roborockCommunication/models/index.js';
+import { DeviceSpecs, RawRoomMappingData, type Device, type RoomDto } from '../roborockCommunication/models/index.js';
 import { AdvancedFeatureConfiguration, AdvancedFeatureSetting, RoborockPluginPlatformConfig } from '../model/RoborockPluginPlatformConfig.js';
 import type { LocalStorage } from 'node-persist';
 import type { RoborockService } from '../services/roborockService.js';
@@ -128,7 +128,7 @@ describe('module.ts - complete coverage', () => {
         duid: 'device1',
         serialNumber: 'device1',
         name: 'Vacuum 1',
-        data: { id: 'device1', firmwareVersion: '1.0', serialNumber: 'device1', model: DeviceModel.QREVO_EDGE_5V1, category: DeviceCategory.VacuumCleaner, batteryLevel: 100 },
+        specs: { id: 'device1', firmwareVersion: '1.0', serialNumber: 'device1', model: DeviceModel.QREVO_EDGE_5V1, category: DeviceCategory.VacuumCleaner, batteryLevel: 100 },
         rrHomeId: 123,
         store: asPartial<Device['store']>({
           homeData: {
@@ -205,7 +205,7 @@ describe('module.ts - complete coverage', () => {
         duid: 'device1',
         serialNumber: 'device1',
         name: 'Vacuum 1',
-        data: asPartial<DeviceData>({ model: DeviceModel.S7 }),
+        specs: asPartial<DeviceSpecs>({ model: DeviceModel.S7 }),
         rrHomeId: 123,
         store: asPartial<Device['store']>({
           homeData: {
@@ -223,7 +223,7 @@ describe('module.ts - complete coverage', () => {
         duid: 'device2',
         serialNumber: 'device2',
         name: 'Vacuum 2',
-        data: asPartial<DeviceData>({ model: DeviceModel.S6 }),
+        specs: asPartial<DeviceSpecs>({ model: DeviceModel.S6 }),
         rrHomeId: 456,
         store: asPartial<Device['store']>({
           homeData: {
@@ -289,7 +289,7 @@ describe('module.ts - complete coverage', () => {
         duid: 'device1',
         serialNumber: 'device1',
         name: 'Vacuum 1',
-        data: asPartial<DeviceData>({ model: DeviceModel.S7 }),
+        specs: asPartial<DeviceSpecs>({ model: DeviceModel.S7 }),
         rrHomeId: 123,
         store: asPartial<Device['store']>({
           homeData: {
@@ -349,7 +349,7 @@ describe('module.ts - complete coverage', () => {
         duid: 'device1',
         serialNumber: 'device1',
         name: 'Vacuum 1',
-        data: asPartial<DeviceData>({ model: DeviceModel.S7 }),
+        specs: asPartial<DeviceSpecs>({ model: DeviceModel.S7 }),
         rrHomeId: 123,
         store: asPartial<Device['store']>({
           homeData: {
@@ -411,7 +411,7 @@ describe('module.ts - complete coverage', () => {
         duid: 'device1',
         serialNumber: 'device1',
         name: 'Vacuum 1',
-        data: asPartial<DeviceData>({ model: DeviceModel.S7 }),
+        specs: asPartial<DeviceSpecs>({ model: DeviceModel.S7 }),
         rrHomeId: 123,
         store: asPartial<Device['store']>({
           homeData: {
@@ -468,7 +468,7 @@ describe('module.ts - complete coverage', () => {
         duid: 'device1',
         serialNumber: 'device1',
         name: 'Vacuum 1',
-        data: asPartial<DeviceData>({ model: DeviceModel.S7 }),
+        specs: asPartial<DeviceSpecs>({ model: DeviceModel.S7 }),
         rrHomeId: 123,
         store: asPartial<Device['store']>({
           homeData: {
@@ -522,7 +522,7 @@ describe('module.ts - complete coverage', () => {
         serialNumber: 'device1',
         name: 'Vacuum 1',
         scenes: [],
-        data: asPartial<DeviceData>({ model: DeviceModel.S7 }),
+        specs: asPartial<DeviceSpecs>({ model: DeviceModel.S7 }),
         rrHomeId: 123,
         store: asPartial<Device['store']>({
           homeData: {

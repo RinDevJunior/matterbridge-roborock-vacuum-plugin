@@ -8,7 +8,18 @@ import { BatteryMessage, VacuumError } from '../../models/index.js';
 export interface AbstractMessageHandler {
   onError(error: VacuumError): void;
   onBatteryUpdate(message: BatteryMessage): void;
-  onStatusChanged(message: { status: OperationStatusCode; duid: string }): void;
+
+  onStatusChanged(message: {
+    status: OperationStatusCode;
+    duid: string;
+    inCleaning: boolean | undefined;
+    inReturning: boolean | undefined;
+    inFreshState: boolean | undefined;
+    isLocating: boolean | undefined;
+    isExploring: boolean | undefined;
+    inWarmup: boolean | undefined;
+  }): void;
+
   onCleanModeUpdate(message: CleanModeSetting): void;
   onAdditionalProps(value: number): void;
 }

@@ -52,6 +52,12 @@ export interface DeviceStatusPayload {
   data: {
     duid: string;
     status: OperationStatusCode;
+    inCleaning: boolean | undefined;
+    inReturning: boolean | undefined;
+    inFreshState: boolean | undefined;
+    isLocating: boolean | undefined;
+    isExploring: boolean | undefined;
+    inWarmup: boolean | undefined;
   };
 }
 

@@ -4,7 +4,7 @@ import { ModeBase, ServiceArea } from 'matterbridge/matter/clusters';
 import { AnsiLogger } from 'matterbridge/logger';
 import { BehaviorFactoryResult } from '../share/behaviorFactory.js';
 import { asPartial, asType } from './testUtils.js';
-import { PlatformConfigManager } from '../platform/platformConfig.js';
+import { PlatformConfigManager } from '../platform/platformConfigManager.js';
 import { PluginConfiguration, RoborockPluginPlatformConfig } from '../model/RoborockPluginPlatformConfig.js';
 import { HomeEntity } from '../core/domain/entities/Home.js';
 import { MapInfo } from '../core/application/models/MapInfo.js';
@@ -32,7 +32,7 @@ describe('RoborockVacuumCleaner', () => {
   beforeEach(() => {
     device = {
       duid: 'duid-123',
-      data: { model: 'roborock.s5', firmwareVersion: '1.0.0' },
+      specs: { model: 'roborock.s5', firmwareVersion: '1.0.0' },
       serialNumber: 'serial-123',
       deviceName: 'TestVac',
       name: 'TestVac',
