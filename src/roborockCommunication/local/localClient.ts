@@ -19,7 +19,7 @@ export class LocalNetworkClient extends AbstractClient {
   private messageIdSeq: Sequence;
   private pingInterval?: NodeJS.Timeout;
   private pingResponseListener: PingResponseListener;
-  private ready: boolean = false;
+  private ready = false;
   private keepConnectionAliveInterval: NodeJS.Timeout | undefined = undefined;
 
   constructor(

@@ -4,7 +4,7 @@
 
 ### Fix MQTT Reconnection Loop (Error Code 5)
 
-- Fixed race condition in `onReconnect` - removed `subscribeToQueue()` call since `onReconnect` fires when reconnection *starts*, not when it succeeds
+- Fixed race condition in `onReconnect` - removed `subscribeToQueue()` call since `onReconnect` fires when reconnection _starts_, not when it succeeds
 - Added error code 5 handling to translate `{ code: 5 }` to "Connection refused: Not authorized" message
 - Added `isReady()` method to MQTTClient
 - Updated `connectionStateListener.onError` to clear manual reconnect timer on auth errors

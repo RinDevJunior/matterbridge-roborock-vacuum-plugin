@@ -1,8 +1,8 @@
 import { AnsiLogger, debugStringify } from 'matterbridge/logger';
 import { ServiceArea } from 'matterbridge/matter/clusters';
-import { RoomIndexMap, MapEntry, RoomMapping } from '../core/application/models/index.js';
+import { RoomIndexMap, RoomMapping } from '../core/application/models/index.js';
 import { randomInt } from 'node:crypto';
-import { DEFAULT_AREA_ID_UNKNOWN, DEFAULT_AREA_ID_ERROR, MULTIPLE_MAP_AREA_ID_OFFSET, RANDOM_ROOM_MIN, RANDOM_ROOM_MAX } from '../constants/index.js';
+import { DEFAULT_AREA_ID_UNKNOWN, DEFAULT_AREA_ID_ERROR, RANDOM_ROOM_MIN, RANDOM_ROOM_MAX } from '../constants/index.js';
 import { HomeEntity } from '../core/domain/entities/Home.js';
 import { AreaNamespaceTag } from 'matterbridge/matter';
 

@@ -479,9 +479,6 @@ describe('MQTTClient', () => {
     const mqttClient = createMQTTClient();
     await mqttClient['onError']({ code: 5 } as any);
     expect(logger.error).toHaveBeenCalledWith('MQTT connection error: Connection refused: Not authorized');
-    expect(mqttClient['connectionListener'].onError).toHaveBeenCalledWith(
-      'mqtt-c6d6afb9',
-      'MQTT connection error: Connection refused: Not authorized',
-    );
+    expect(mqttClient['connectionListener'].onError).toHaveBeenCalledWith('mqtt-c6d6afb9', 'MQTT connection error: Connection refused: Not authorized');
   });
 });
