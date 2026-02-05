@@ -111,8 +111,8 @@ describe('LocalNetworkClient', () => {
   });
 
   it('should initialize fields in constructor', () => {
-    expect(client.duid).toBe(duid);
-    expect(client.ip).toBe(ip);
+    expect(client['duid']).toBe(duid);
+    expect(client['ip']).toBe(ip);
     expect(client['messageIdSeq']).toBeDefined();
   });
 
@@ -148,7 +148,7 @@ describe('LocalNetworkClient', () => {
 
   it('send() should log error if socket is not connected', async () => {
     client['socket'] = undefined;
-    client['connected'] = false;
+    client['ready'] = false;
     const req = asPartial<RequestMessage>({ toLocalRequest: vi.fn(), secure: false, isForProtocol: vi.fn().mockReturnValue(false), version: '1.0', method: 'test' });
     await client.send(duid, req);
     expect(mockLogger.error).toHaveBeenCalledWith(expect.stringContaining('socket is not online'));
@@ -159,7 +159,7 @@ describe('LocalNetworkClient', () => {
     mockSocket.readyState = 'open';
     mockSocket.destroyed = false;
     client['socket'] = mockSocket;
-    client['connected'] = true;
+    client['ready'] = true;
     const req = asPartial<RequestMessage>({
       toLocalRequest: vi.fn().mockReturnValue({}),
       secure: false,
@@ -193,7 +193,7 @@ describe('LocalNetworkClient', () => {
     }, 1000);
     await client['onDisconnect'](false);
     expect(mockLogger.info).toHaveBeenCalled();
-    expect(client['connected']).toBe(false);
+    expect(client['ready']).toBe(false);
     expect(mockSocket.destroy).toHaveBeenCalled();
     expect(client['socket']).toBeUndefined();
     expect(client['connectionListener'].onDisconnected).toHaveBeenCalled();
@@ -201,7 +201,7 @@ describe('LocalNetworkClient', () => {
 
   it('onError() should log, set connected false, destroy socket, call onDisconnected', async () => {
     client['socket'] = mockSocket;
-    client['connected'] = false;
+    client['ready'] = false;
     await client['onError'](new Error('fail'));
     expect(mockLogger.error).toHaveBeenCalledWith(expect.stringContaining(' [LocalNetworkClient]: Socket error for'));
     expect(client['connectionListener'].onDisconnected).toHaveBeenCalledWith('duid1', expect.stringContaining('fail'));
@@ -251,7 +251,7 @@ describe('LocalNetworkClient', () => {
     mockSocket.readyState = 'open';
     mockSocket.destroyed = false;
     client['socket'] = mockSocket;
-    client['connected'] = true;
+    client['ready'] = true;
     client['pingResponseListener'].waitFor = vi.fn().mockResolvedValue({ header: { nonce: 123, version: '1.0' } });
     const sendSpy = vi.spyOn(client, 'send').mockResolvedValue(undefined);
     await client['sendHelloMessage'](ProtocolVersion.V1);
@@ -262,7 +262,7 @@ describe('LocalNetworkClient', () => {
     mockSocket.readyState = 'open';
     mockSocket.destroyed = false;
     client['socket'] = mockSocket;
-    client['connected'] = true;
+    client['ready'] = true;
     const sendSpy = vi.spyOn(client, 'send').mockResolvedValue(undefined);
     await client['sendPingRequest']();
     expect(sendSpy).toHaveBeenCalledWith(duid, expect.objectContaining({ protocol: Protocol.ping_request }));
@@ -272,7 +272,7 @@ describe('LocalNetworkClient', () => {
 
   it('send() should handle when socket exists but not connected', async () => {
     client['socket'] = mockSocket;
-    client['connected'] = false;
+    client['ready'] = false;
     const req = asPartial<RequestMessage>({
       toLocalRequest: vi.fn().mockReturnValue({ protocol: Protocol.ping_request }),
       secure: false,
@@ -287,7 +287,7 @@ describe('LocalNetworkClient', () => {
 
   it('send() should handle when connected but socket is undefined', async () => {
     client['socket'] = undefined;
-    client['connected'] = true;
+    client['ready'] = true;
     const req = asPartial<RequestMessage>({
       toLocalRequest: vi.fn().mockReturnValue({ protocol: Protocol.ping_request }),
       secure: false,
@@ -303,7 +303,7 @@ describe('LocalNetworkClient', () => {
     client['socket'] = undefined;
     client['pingInterval'] = setInterval(() => vi.fn(), 1000);
     await client['onDisconnect'](false);
-    expect(client['connected']).toBe(false);
+    expect(client['ready']).toBe(false);
     expect(client['connectionListener'].onDisconnected).toHaveBeenCalled();
   });
 

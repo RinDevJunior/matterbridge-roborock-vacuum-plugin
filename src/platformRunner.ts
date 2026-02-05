@@ -225,45 +225,43 @@ export class PlatformRunner {
       return;
     }
 
-    if (this.platform.configManager.isMultipleMapEnabled) {
-      // Implement multiple map handling logic here if needed
-    } else {
-      const service = this.platform.roborockService;
-      if (!service) return;
+    const service = this.platform.roborockService;
+    if (!service) return;
 
-      const currentMappedAreas = service.getSupportedAreas(robot.device.duid);
+    const currentMappedAreas = service.getSupportedAreas(robot.device.duid);
 
-      const source_segment_id = message.cleaningInfo.segment_id ?? INVALID_SEGMENT_ID;
-      const source_target_segment_id = message.cleaningInfo.target_segment_id ?? INVALID_SEGMENT_ID;
-      const segment_id = source_segment_id !== INVALID_SEGMENT_ID ? source_segment_id : source_target_segment_id; // 4
-      const mappedArea = currentMappedAreas?.find((x) => x.areaId == segment_id);
+    const source_segment_id = message.cleaningInfo.segment_id ?? INVALID_SEGMENT_ID;
+    const source_target_segment_id = message.cleaningInfo.target_segment_id ?? INVALID_SEGMENT_ID;
+    const segment_id = source_segment_id !== INVALID_SEGMENT_ID ? source_segment_id : source_target_segment_id; // 4
+    const mappedArea = currentMappedAreas?.find((x) => x.areaId == segment_id);
 
-      if (!mappedArea) {
-        logger.debug(
-          `No mapped area found, skipping area mapping.
+    if (!mappedArea) {
+      logger.debug(
+        `No mapped area found, skipping area mapping.
           source_segment_id: ${source_segment_id}, 
           source_target_segment_id: ${source_target_segment_id}, 
-          segment_id: ${segment_id}, 
+          segment_id: ${segment_id},
+          currentMappedAreas: ${debugStringify(currentMappedAreas)},
           mappedArea: ${mappedArea}`,
-        );
-        return;
-      }
+      );
+      return;
+    }
 
-      logger.debug(
-        `Mapped area found:
+    logger.debug(
+      `Mapped area found:
         source_segment_id: ${source_segment_id},
         source_target_segment_id: ${source_target_segment_id},
         segment_id: ${segment_id},
+        currentMappedAreas: ${debugStringify(currentMappedAreas)},
         result: ${debugStringify(mappedArea)}`,
-      );
+    );
 
-      if (segment_id !== INVALID_SEGMENT_ID && mappedArea) {
-        robot.updateAttribute(ServiceArea.Cluster.id, 'currentArea', segment_id, logger);
-      }
+    if (segment_id !== INVALID_SEGMENT_ID && mappedArea) {
+      robot.updateAttribute(ServiceArea.Cluster.id, 'currentArea', segment_id, logger);
+    }
 
-      if (segment_id === INVALID_SEGMENT_ID) {
-        robot.updateAttribute(ServiceArea.Cluster.id, 'currentArea', null, logger);
-      }
+    if (segment_id === INVALID_SEGMENT_ID) {
+      robot.updateAttribute(ServiceArea.Cluster.id, 'currentArea', null, logger);
     }
   }
 }

@@ -187,7 +187,7 @@ export class RoborockService {
   }
 
   /** Get supported cleaning areas for a device. */
-  public getSupportedAreas(duid: string): ServiceArea.Area[] | undefined {
+  public getSupportedAreas(duid: string): ServiceArea.Area[] {
     return this.areaService.getSupportedAreas(duid);
   }
 

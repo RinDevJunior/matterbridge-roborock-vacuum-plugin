@@ -12,7 +12,6 @@ export class HomeEntity {
     public readonly name: string,
     public readonly roomMap: RoomMap,
     public readonly mapInfo: MapInfo,
-    public readonly isMultiMapEnabled = false,
   ) {}
 
   public get allRooms(): RoomEntity[] {

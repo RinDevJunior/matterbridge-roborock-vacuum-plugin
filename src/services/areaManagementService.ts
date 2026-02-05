@@ -61,8 +61,8 @@ export class AreaManagementService {
     this.supportedRoutines.set(duid, routineAsRooms);
   }
 
-  public getSupportedAreas(duid: string): ServiceArea.Area[] | undefined {
-    return this.supportedAreas.get(duid);
+  public getSupportedAreas(duid: string): ServiceArea.Area[] {
+    return this.supportedAreas.get(duid) ?? [];
   }
 
   public getSupportedAreasIndexMap(duid: string): RoomIndexMap | undefined {

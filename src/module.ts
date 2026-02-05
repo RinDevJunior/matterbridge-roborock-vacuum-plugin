@@ -59,7 +59,7 @@ export class RoborockMatterbridgePlatform extends MatterbridgeDynamicPlatform {
     super(matterbridge, new FilterLogger(logger, config.pluginConfiguration.sanitizeSensitiveLogs), config);
     logger.logLevel = this.config.pluginConfiguration.debug ? LogLevel.DEBUG : LogLevel.INFO;
 
-    const requiredMatterbridgeVersion = '3.5.0';
+    const requiredMatterbridgeVersion = '3.5.2';
     if (this.verifyMatterbridgeVersion === undefined || typeof this.verifyMatterbridgeVersion !== 'function' || !this.verifyMatterbridgeVersion(requiredMatterbridgeVersion)) {
       throw new Error(
         `This plugin requires Matterbridge version >= "${requiredMatterbridgeVersion}".
@@ -250,7 +250,7 @@ export class RoborockMatterbridgePlatform extends MatterbridgeDynamicPlatform {
     this.log.debug('Initializing - roomMap: ', debugStringify(roomMap));
 
     const homeData = vacuum.store.homeData;
-    const homeInfo = new HomeEntity(homeData.id, homeData.name, roomMap, mapInfo, this.configManager.isMultipleMapEnabled);
+    const homeInfo = new HomeEntity(homeData.id, homeData.name, roomMap, mapInfo);
 
     const behaviorHandler = configureBehavior(
       vacuum.specs.model,

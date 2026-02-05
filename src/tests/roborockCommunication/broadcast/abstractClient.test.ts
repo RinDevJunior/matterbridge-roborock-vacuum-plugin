@@ -9,13 +9,14 @@ import { AbstractConnectionListener } from '../../../roborockCommunication/routi
 class TestClient extends AbstractClient {
   protected clientName = 'TestClient';
   protected shouldReconnect = false;
+  private connected = false;
 
   constructor(logger: any, context: MessageContext, chainedMessageListener: ChainedMessageListener, responseTracker: PendingResponseTracker) {
     super(logger, context, chainedMessageListener, responseTracker);
     this.initializeConnectionStateListener();
   }
 
-  public override isReady(): boolean {
+  override isConnected(): boolean {
     return this.connected;
   }
 

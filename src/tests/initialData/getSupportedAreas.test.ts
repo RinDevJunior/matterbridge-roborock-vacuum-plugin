@@ -32,7 +32,7 @@ function createHomeEntity(vacuumRooms: RoomDto[], roomMap: RoomMap | undefined, 
     multi_map_count: mapInfos.length,
     map_info: mapDataDtos,
   });
-  return new HomeEntity(1, 'Test Home', roomMap ?? RoomMap.empty(), mapInfo, enableMultipleMap);
+  return new HomeEntity(1, 'Test Home', roomMap ?? RoomMap.empty(), mapInfo);
 }
 
 describe('getSupportedAreas (legacy)', () => {

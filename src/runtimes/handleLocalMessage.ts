@@ -53,9 +53,8 @@ export function handleLocalMessage(data: CloudMessageResult, platform: RoborockM
     platform.log.debug('No cleaning_info, setting currentArea to null');
     robot.updateAttribute(ServiceArea.Cluster.id, 'currentArea', null, platform.log);
     robot.updateAttribute(ServiceArea.Cluster.id, 'selectedAreas', [], platform.log);
-  } else if (platform.configManager.isMultipleMapEnabled) {
-    mapRoomsToAreasFeatureOn(platform, duid, data);
   } else {
+    // TODO: Handle multiple map feature toggle
     mapRoomsToAreasFeatureOff(duid, data, service, robot, platform.log);
   }
 

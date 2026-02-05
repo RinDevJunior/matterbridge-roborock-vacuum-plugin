@@ -29,6 +29,13 @@ export class RoborockVacuumCleaner extends RoboticVacuumCleaner {
    */
   constructor(username: string, device: Device, homeInFo: HomeEntity, routineAsRoom: ServiceArea.Area[], configManager: PlatformConfigManager, log: AnsiLogger) {
     const deviceConfig = RoborockVacuumCleaner.initializeDeviceConfiguration(device, homeInFo, routineAsRoom, configManager, log);
+    const firstSupportedMap = deviceConfig.supportedMaps.length > 0 ? deviceConfig.supportedMaps[0] : undefined;
+    const supportedMaps = deviceConfig.supportedMaps;
+    if (!configManager.isMultipleMapEnabled) {
+      supportedMaps.splice(1); // Keep only the first map
+      deviceConfig.supportedAreas = deviceConfig.supportedAreas.filter((area) => area.mapId === firstSupportedMap?.mapId);
+      deviceConfig.supportedAreaAndRoutines = deviceConfig.supportedAreaAndRoutines.filter((area) => area.mapId === firstSupportedMap?.mapId);
+    }
 
     super(
       deviceConfig.deviceName,
@@ -45,7 +52,7 @@ export class RoborockVacuumCleaner extends RoboticVacuumCleaner {
       deviceConfig.supportedAreaAndRoutines,
       undefined,
       deviceConfig.supportedAreas[0].areaId,
-      deviceConfig.supportedMaps,
+      supportedMaps,
     );
 
     log.debug(
@@ -124,7 +131,7 @@ export class RoborockVacuumCleaner extends RoboticVacuumCleaner {
     const runModeConfigs = getRunModeOptions(baseRunModeConfigs);
     const deviceName = `${device.name}-${device.duid}`.replace(/\s+/g, '');
 
-    const bridgeMode: 'server' | 'matter' | undefined = configManager.isServerModeEnabled ? 'server' : 'matter';
+    const bridgeMode: 'server' | 'matter' = configManager.isServerModeEnabled ? 'server' : 'matter';
 
     return {
       deviceName,

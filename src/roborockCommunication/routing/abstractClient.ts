@@ -18,7 +18,6 @@ export abstract class AbstractClient implements Client {
   protected readonly connectionListener = new ChainedConnectionListener();
   protected readonly serializer: MessageSerializer;
   protected readonly deserializer: MessageDeserializer;
-  protected connected = false;
   protected connectionStateListener: ConnectionStateListener | undefined;
 
   protected abstract clientName: string;
@@ -33,7 +32,7 @@ export abstract class AbstractClient implements Client {
     this.deserializer = new MessageDeserializer(this.context, this.logger);
   }
 
-  abstract isReady(): boolean;
+  abstract isConnected(): boolean;
 
   protected initializeConnectionStateListener() {
     this.connectionStateListener = new ConnectionStateListener(this.logger, this, this.clientName);
@@ -94,9 +93,5 @@ export abstract class AbstractClient implements Client {
 
   public registerConnectionListener(listener: AbstractConnectionListener): void {
     this.connectionListener.register(listener);
-  }
-
-  public isConnected() {
-    return this.connected;
   }
 }

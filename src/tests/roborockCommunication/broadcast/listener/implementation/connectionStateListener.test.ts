@@ -180,4 +180,25 @@ describe('ConnectionStateListener', () => {
     await listener.onError('DUID12', 'Connection refused: Not authorized');
     expect(logger.notice).toHaveBeenCalledWith(expect.stringContaining('authorization error'));
   });
+
+  it('clears manual reconnect timer on authorization error in onError', async () => {
+    vi.useFakeTimers();
+    const logger = createMockLogger();
+    const client = makeClient({ retryCount: 0, isInDisconnectingStep: false });
+    const listener = new ConnectionStateListener(logger, client, 'TEST');
+    listener.start();
+
+    // Trigger disconnect to start the manual reconnect timer
+    await listener.onDisconnected('DUID13', 'lost');
+    expect(client.retryCount).toBe(1);
+
+    // Trigger auth error which should clear the timer
+    await listener.onError('DUID13', 'Connection refused: Not authorized');
+
+    // Advance time past the 30s mark - connect should NOT be called because timer was cleared
+    vi.advanceTimersByTime(30000);
+    expect(client.connect).not.toHaveBeenCalled();
+
+    vi.useRealTimers();
+  });
 });

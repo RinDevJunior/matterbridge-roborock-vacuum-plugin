@@ -92,6 +92,12 @@ export class ConnectionStateListener implements AbstractConnectionListener {
     if (message.includes('Connection refused: Not authorized')) {
       this.logger.notice(`Device with DUID ${duid} authorization error, stopping reconnection attempts.`);
       this.shouldReconnect = false;
+
+      // Clear any pending manual reconnect timer to stop the reconnection loop
+      if (this.manualReconnectTimer) {
+        clearTimeout(this.manualReconnectTimer);
+        this.manualReconnectTimer = undefined;
+      }
     }
   }
 }

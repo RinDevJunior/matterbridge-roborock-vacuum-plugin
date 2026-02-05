@@ -41,6 +41,10 @@ describe('MQTTClient (additional)', () => {
 
     expect(client.isConnected()).toBe(true);
     expect(client.isReady()).toBe(true);
+
+    // isReady should be false if mqttClient is undefined even when connected is true
+    client['mqttClient'] = undefined;
+    expect(client.isReady()).toBe(false);
   });
 
   it('connect calls mqtt.connect and registers event handlers', () => {
@@ -327,11 +331,12 @@ describe('MQTTClient', () => {
     expect(mqttClient['connectionListener'].onError).toHaveBeenCalledWith('mqtt-c6d6afb9', expect.stringContaining('MQTT connection error'));
   });
 
-  it('onReconnect should call subscribeToQueue', () => {
+  it('onReconnect should NOT call subscribeToQueue (subscribe happens in onConnect)', () => {
     const mqttClient = createMQTTClient();
     mqttClient['subscribeToQueue'] = vi.fn();
     mqttClient['onReconnect']();
-    expect(mqttClient['subscribeToQueue']).toHaveBeenCalled();
+    // subscribeToQueue should NOT be called in onReconnect - it's called by onConnect
+    expect(mqttClient['subscribeToQueue']).not.toHaveBeenCalled();
   });
 
   it('onMessage should call deserializer and chainedMessageListener.onMessage if message', async () => {
@@ -466,8 +471,17 @@ describe('MQTTClient', () => {
 
   it('onReconnect should call onReconnect on connectionListener', () => {
     const mqttClient = createMQTTClient();
-    mqttClient['subscribeToQueue'] = vi.fn();
     mqttClient['onReconnect']();
-    expect(mqttClient['connectionListener'].onReconnect).toHaveBeenCalledWith('mqtt-c6d6afb9', 'Reconnected to MQTT broker');
+    expect(mqttClient['connectionListener'].onReconnect).toHaveBeenCalledWith('mqtt-c6d6afb9', 'Attempting to reconnect to MQTT broker');
+  });
+
+  it('onError should translate error code 5 to "Connection refused: Not authorized"', async () => {
+    const mqttClient = createMQTTClient();
+    await mqttClient['onError']({ code: 5 } as any);
+    expect(logger.error).toHaveBeenCalledWith('MQTT connection error: Connection refused: Not authorized');
+    expect(mqttClient['connectionListener'].onError).toHaveBeenCalledWith(
+      'mqtt-c6d6afb9',
+      'MQTT connection error: Connection refused: Not authorized',
+    );
   });
 });

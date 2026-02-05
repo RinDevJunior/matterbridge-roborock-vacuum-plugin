@@ -99,7 +99,7 @@ export class ClientRouter implements Client {
 
   private getLocalClient(duid: string): Client {
     const localClient = this.localClients.get(duid);
-    if (localClient === undefined || !localClient.isConnected() || !localClient.isReady()) {
+    if (localClient === undefined || !localClient.isConnected()) {
       return this.mqttClient;
     } else {
       return localClient;

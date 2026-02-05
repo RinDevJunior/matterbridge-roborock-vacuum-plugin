@@ -40,7 +40,7 @@ describe('RoborockVacuumCleaner', () => {
     };
     const roomMap = new RoomMap([]);
     const mapInfo = MapInfo.empty();
-    homeInfo = new HomeEntity(1, 'Test Home', roomMap, mapInfo, false);
+    homeInfo = new HomeEntity(1, 'Test Home', roomMap, mapInfo);
     routineAsRoom = [];
     configManager = PlatformConfigManager.create(
       asPartial<RoborockPluginPlatformConfig>({
@@ -148,7 +148,7 @@ describe('RoborockVacuumCleaner', () => {
     });
     const configManager = PlatformConfigManager.create(expConfig, expLogger);
     const dev = { ...device, data: { model: 'roborock.s7', firmwareVersion: '2.0.0' } };
-    const testHomeInfo = new HomeEntity(1, 'Test', new RoomMap([]), MapInfo.empty(), false);
+    const testHomeInfo = new HomeEntity(1, 'Test', new RoomMap([]), MapInfo.empty());
     const result = RoborockVacuumCleaner['initializeDeviceConfiguration'](dev, testHomeInfo, [asPartial<ServiceArea.Area>({ areaId: 1 })], configManager, expLogger);
     expect(result.cleanModes).toBeDefined();
     expect(result.supportedAreas).toBeDefined();
@@ -189,7 +189,7 @@ describe('RoborockVacuumCleaner', () => {
       },
     });
     const configManager = PlatformConfigManager.create(minConfig, minLogger);
-    const testHomeInfo = new HomeEntity(1, 'Test', new RoomMap([]), MapInfo.empty(), false);
+    const testHomeInfo = new HomeEntity(1, 'Test', new RoomMap([]), MapInfo.empty());
     const result = RoborockVacuumCleaner['initializeDeviceConfiguration'](device, testHomeInfo, [], configManager, minLogger);
     expect(result.cleanModes).toBeDefined();
     expect(result.supportedAreas).toBeDefined();

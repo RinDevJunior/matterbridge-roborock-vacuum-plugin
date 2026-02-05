@@ -53,7 +53,7 @@ export class SimpleMessageListener implements AbstractMessageListener {
 
     const batteryMessage = new BatteryMessage(message.duid, battery, chargeStatus, state);
 
-    if (vacuumErrorCode !== 0 || dockErrorCode !== 0) {
+    if ((vacuumErrorCode !== undefined && vacuumErrorCode !== 0) || (dockErrorCode !== undefined && dockErrorCode !== 0)) {
       this.logger.debug(`[SimpleMessageListener]: Detected error code ${vacuumErrorCode} or dock error code ${dockErrorCode}`);
       this.handler.onError(new VacuumError(message.duid, vacuumErrorCode, dockErrorCode));
     }

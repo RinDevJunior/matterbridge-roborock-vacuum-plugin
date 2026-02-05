@@ -15,11 +15,11 @@ import { AreaNamespaceTag } from 'matterbridge/matter';
 function createFallbackArea(areaId: number, reason: string): ServiceArea.Area {
   return {
     areaId,
-    mapId: null,
+    mapId: 0,
     areaInfo: {
       locationInfo: {
         locationName: `Unknown - ${reason}`,
-        floorNumber: null,
+        floorNumber: 0,
         areaType: null,
       },
       landmarkInfo: null,
@@ -57,8 +57,8 @@ export function getSupportedAreas(homeInFo: HomeEntity, logger: AnsiLogger): Sup
 
     return {
       supportedAreas: [createFallbackArea(DEFAULT_AREA_ID_UNKNOWN, 'No Rooms')],
-      supportedMaps: [],
-      roomIndexMap: new RoomIndexMap(new Map([[DEFAULT_AREA_ID_UNKNOWN, { roomId: DEFAULT_AREA_ID_UNKNOWN, mapId: null }]])),
+      supportedMaps: [{ mapId: 0, name: 'Default Map' }],
+      roomIndexMap: new RoomIndexMap(new Map([[DEFAULT_AREA_ID_UNKNOWN, { roomId: DEFAULT_AREA_ID_UNKNOWN, mapId: 0 }]])),
     };
   }
 
@@ -68,12 +68,15 @@ export function getSupportedAreas(homeInFo: HomeEntity, logger: AnsiLogger): Sup
   if (duplicated) {
     return {
       supportedAreas: [createFallbackArea(DEFAULT_AREA_ID_ERROR, 'Duplicated Areas Found')],
-      supportedMaps: [],
-      roomIndexMap: new RoomIndexMap(new Map([[DEFAULT_AREA_ID_ERROR, { roomId: DEFAULT_AREA_ID_ERROR, mapId: null }]])),
+      supportedMaps: [{ mapId: 0, name: 'Default Map' }],
+      roomIndexMap: new RoomIndexMap(new Map([[DEFAULT_AREA_ID_ERROR, { roomId: DEFAULT_AREA_ID_ERROR, mapId: 0 }]])),
     };
   }
 
-  const supportedMaps = getSupportedMaps(homeInFo.isMultiMapEnabled, supportedAreas, homeInFo.mapInfo.maps);
+  const supportedMaps = homeInFo.mapInfo.maps.map((map) => ({
+    mapId: map.id,
+    name: map.name ?? `Map ${map.id}`,
+  }));
 
   logger.debug('getSupportedAreas - supportedAreas', debugStringify(supportedAreas));
   logger.debug('getSupportedAreas - supportedMaps', debugStringify(supportedMaps));
@@ -125,13 +128,13 @@ function processValidData(homeInFo: HomeEntity): ProcessedData {
   const indexMap = new Map<number, MapInfo>();
   const supportedAreas: ServiceArea.Area[] =
     homeInFo.roomMap.rooms.length > 0
-      ? homeInFo.roomMap.rooms.map((room, index) => {
+      ? homeInFo.roomMap.rooms.map((room) => {
           const locationName =
             room.iot_name ??
             homeInFo.allRooms.find((r) => String(r.id) === room.iot_name_id || r.id === room.id)?.name ??
             `Unknown Room ${randomInt(RANDOM_ROOM_MIN, RANDOM_ROOM_MAX)}`;
 
-          const areaId = homeInFo.isMultiMapEnabled ? index + MULTIPLE_MAP_AREA_ID_OFFSET : room.id;
+          const areaId = room.id;
           const mapId = room.iot_map_id;
 
           indexMap.set(areaId, { roomId: room.id, mapId: room.iot_map_id ?? null });
@@ -171,22 +174,4 @@ function populateAreaNamespaceTag(room: RoomMapping): number | null {
     }
   }
   return null;
-}
-
-function getSupportedMaps(enableMultipleMap: boolean, _supportedAreas: ServiceArea.Area[], mapInfos: MapEntry[]): ServiceArea.Map[] {
-  if (enableMultipleMap) {
-    return mapInfos.map((map) => ({
-      mapId: map.id,
-      name: map.name ?? `Map ${map.id}`,
-    }));
-  }
-
-  return mapInfos.length > 0
-    ? [
-        {
-          mapId: mapInfos[0].id,
-          name: mapInfos[0].name ?? `Map ${mapInfos[0].id}`,
-        },
-      ]
-    : [];
 }

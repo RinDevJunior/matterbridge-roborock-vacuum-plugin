@@ -111,7 +111,7 @@ describe('AreaManagementService', () => {
     it('should return undefined for device without areas', () => {
       const areas = areaService.getSupportedAreas('unknown-device');
 
-      expect(areas).toBeUndefined();
+      expect(areas).toEqual([]);
     });
 
     it('should handle empty areas array', () => {
@@ -414,7 +414,7 @@ describe('AreaManagementService', () => {
       areaService.clearAll();
 
       // Verify everything is cleared
-      expect(areaService.getSupportedAreas(mockDeviceId)).toBeUndefined();
+      expect(areaService.getSupportedAreas(mockDeviceId)).toEqual([]);
       expect(areaService.getSupportedRoutines(mockDeviceId)).toBeUndefined();
       expect(areaService.getSupportedAreasIndexMap(mockDeviceId)).toBeUndefined();
       expect(areaService.getSelectedAreas(mockDeviceId)).toEqual([]);
@@ -495,7 +495,7 @@ describe('AreaManagementService', () => {
 
   describe('Error Handling', () => {
     it('should handle unknown device IDs gracefully', () => {
-      expect(areaService.getSupportedAreas('unknown-device')).toBeUndefined();
+      expect(areaService.getSupportedAreas('unknown-device')).toEqual([]);
       expect(areaService.getSelectedAreas('unknown-device')).toEqual([]);
       expect(areaService.getSupportedRoutines('unknown-device')).toBeUndefined();
     });
