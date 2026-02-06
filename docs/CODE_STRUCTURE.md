@@ -474,7 +474,7 @@ src/
 │   │           ├── syncMessageListener.ts
 │   │           ├── connectionStateListener.ts
 │   │           ├── chainedMessageListener.ts
-│   │           ├── chainedConnectionListener.ts
+│   │           ├── connectionBroadcaster.ts
 │   │           ├── mapResponseListener.ts
 │   │           ├── pingResponseListener.ts
 │   │           └── statusMessageListener.ts

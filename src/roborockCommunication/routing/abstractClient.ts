@@ -1,5 +1,5 @@
 import { AnsiLogger } from 'matterbridge/logger';
-import { ChainedConnectionListener } from './listeners/implementation/chainedConnectionListener.js';
+import { ConnectionBroadcaster } from './listeners/connectionBroadcaster.js';
 import { MessageContext } from '../models/messageContext.js';
 import { ConnectionStateListener } from './listeners/implementation/connectionStateListener.js';
 import { RequestMessage } from '../models/requestMessage.js';
@@ -15,7 +15,7 @@ export abstract class AbstractClient implements Client {
   public isInDisconnectingStep = false;
   public retryCount = 0;
 
-  protected readonly connectionListener = new ChainedConnectionListener();
+  protected readonly connectionListener = new ConnectionBroadcaster();
   protected readonly serializer: MessageSerializer;
   protected readonly deserializer: MessageDeserializer;
   protected connectionStateListener: ConnectionStateListener | undefined;

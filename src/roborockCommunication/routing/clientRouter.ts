@@ -5,13 +5,13 @@ import { LocalNetworkClient } from '../local/localClient.js';
 import { MQTTClient } from '../mqtt/mqttClient.js';
 import { AbstractConnectionListener } from './listeners/abstractConnectionListener.js';
 import { AbstractMessageListener } from './listeners/abstractMessageListener.js';
-import { ChainedConnectionListener } from './listeners/implementation/chainedConnectionListener.js';
+import { ConnectionBroadcaster } from './listeners/connectionBroadcaster.js';
 import { Client } from './client.js';
 import { PendingResponseTracker } from './services/pendingResponseTracker.js';
 import { ResponseBroadcaster } from './listeners/responseBroadcaster.js';
 
 export class ClientRouter implements Client {
-  protected readonly connectionListener = new ChainedConnectionListener();
+  protected readonly connectionListener = new ConnectionBroadcaster();
   protected readonly responseBroadcaster: ResponseBroadcaster;
 
   private readonly context: MessageContext;

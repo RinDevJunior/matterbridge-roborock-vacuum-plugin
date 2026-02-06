@@ -4,7 +4,7 @@ import { asPartial, asType } from '../../../helpers/testUtils.js';
 import { MessageContext, RequestMessage } from '../../../../roborockCommunication/models/index.js';
 import { MQTTClient } from '../../../../roborockCommunication/mqtt/mqttClient.js';
 import { PendingResponseTracker } from '../../../../roborockCommunication/routing/services/pendingResponseTracker.js';
-import { ChainedConnectionListener } from '../../../../roborockCommunication/routing/listeners/implementation/chainedConnectionListener.js';
+import { ConnectionBroadcaster } from '../../../../roborockCommunication/routing/listeners/connectionBroadcaster.js';
 import { ResponseBroadcaster } from '../../../../roborockCommunication/routing/listeners/responseBroadcaster.js';
 
 function makeUserdata() {
@@ -165,7 +165,7 @@ describe('MQTTClient', () => {
     }
     const mqttClient = new TestMQTTClient();
     Object.defineProperty(mqttClient, 'connectionListener', {
-      value: asPartial<ChainedConnectionListener>({
+      value: asPartial<ConnectionBroadcaster>({
         onConnected: vi.fn(),
         onDisconnected: vi.fn(),
         onError: vi.fn(),
