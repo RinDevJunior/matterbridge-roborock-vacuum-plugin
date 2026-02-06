@@ -33,7 +33,7 @@ export class LocalNetworkClient extends AbstractClient {
     super(logger, context, chainedMessageListener, responseTracker);
     this.messageIdSeq = new Sequence(100000, 999999);
 
-    this.pingResponseListener = new PingResponseListener(this.duid);
+    this.pingResponseListener = new PingResponseListener(this.duid, logger);
     this.chainedMessageListener.register(this.pingResponseListener);
   }
 

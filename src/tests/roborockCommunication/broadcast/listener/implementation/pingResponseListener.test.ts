@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { HELLO_RESPONSE_TIMEOUT_MS } from '../../../../../constants/timeouts.js';
 import { Protocol, ResponseMessage } from '../../../../../roborockCommunication/models/index.js';
-import { asPartial } from '../../../../helpers/testUtils.js';
+import { asPartial, createMockLogger } from '../../../../helpers/testUtils.js';
 import { PingResponseListener } from '../../../../../roborockCommunication/routing/listeners/implementation/pingResponseListener.js';
 
 const DUID = 'test-duid';
@@ -12,9 +12,10 @@ function createMockMessage(isHello = true) {
 
 describe('PingResponseListener (basic behavior)', () => {
   let listener: PingResponseListener;
+  let logger = createMockLogger();
 
   beforeEach(() => {
-    listener = new PingResponseListener('device-1');
+    listener = new PingResponseListener('device-1', logger);
     vi.useFakeTimers();
   });
 
@@ -78,6 +79,7 @@ describe('PingResponseListener (basic behavior)', () => {
 });
 
 describe('PingResponseListener', () => {
+  let logger = createMockLogger();
   beforeEach(() => {
     vi.useFakeTimers();
   });
@@ -86,7 +88,7 @@ describe('PingResponseListener', () => {
   });
 
   it('resolves when hello_response message received', async () => {
-    const listener = new PingResponseListener(DUID);
+    const listener = new PingResponseListener(DUID, logger);
     const promise = listener.waitFor();
     const msg = createMockMessage(true);
     // Simulate receiving the message before timeout
@@ -97,7 +99,7 @@ describe('PingResponseListener', () => {
   });
 
   it('does not resolve for non-hello_response message', async () => {
-    const listener = new PingResponseListener(DUID);
+    const listener = new PingResponseListener(DUID, logger);
     const promise = listener.waitFor();
     const msg = createMockMessage(false);
     await listener.onMessage(msg);
@@ -113,7 +115,7 @@ describe('PingResponseListener', () => {
   });
 
   it('rejects if timeout elapses', async () => {
-    const listener = new PingResponseListener(DUID);
+    const listener = new PingResponseListener(DUID, logger);
     const promise = listener.waitFor();
     vi.advanceTimersByTime(HELLO_RESPONSE_TIMEOUT_MS);
     await expect(promise).rejects.toThrow(/no ping response/);

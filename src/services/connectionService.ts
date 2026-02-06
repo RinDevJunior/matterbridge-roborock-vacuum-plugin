@@ -99,7 +99,7 @@ export class ConnectionService {
       return false;
     }
 
-    this.clientRouter.registerMessageListener(new PingResponseListener(device.duid));
+    this.clientRouter.registerMessageListener(new PingResponseListener(device.duid, this.logger));
     this.clientRouter.registerMessageListener(new MapResponseListener(device.duid, this.logger));
 
     const simpleMessageListener = new SimpleMessageListener(device.duid, this.logger);
