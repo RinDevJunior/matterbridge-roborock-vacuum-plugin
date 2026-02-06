@@ -4,8 +4,8 @@ import * as CryptoUtils from '../helper/cryptoHelper.js';
 import { RequestMessage, MessageContext, Rriot, UserData } from '../models/index.js';
 import { AbstractClient } from '../routing/abstractClient.js';
 import { KEEPALIVE_INTERVAL_MS } from '../../constants/timeouts.js';
-import { ChainedMessageListener } from '../routing/listeners/implementation/chainedMessageListener.js';
 import { PendingResponseTracker } from '../routing/services/pendingResponseTracker.js';
+import { ResponseBroadcaster } from '../routing/listeners/responseBroadcaster.js';
 
 export class MQTTClient extends AbstractClient {
   protected override clientName = 'MQTTClient';
@@ -17,8 +17,8 @@ export class MQTTClient extends AbstractClient {
   private keepConnectionAliveInterval: NodeJS.Timeout | undefined = undefined;
   private connected = false;
 
-  public constructor(logger: AnsiLogger, context: MessageContext, userdata: UserData, chainedMessageListener: ChainedMessageListener, responseTracker: PendingResponseTracker) {
-    super(logger, context, chainedMessageListener, responseTracker);
+  public constructor(logger: AnsiLogger, context: MessageContext, userdata: UserData, responseBroadcaster: ResponseBroadcaster, responseTracker: PendingResponseTracker) {
+    super(logger, context, responseBroadcaster, responseTracker);
     this.rriot = userdata.rriot;
 
     this.mqttUsername = CryptoUtils.md5hex(`${String(userdata.rriot.u)}:${String(userdata.rriot.k)}`).substring(2, 10);
@@ -181,8 +181,8 @@ export class MQTTClient extends AbstractClient {
     try {
       const duid = topic.split('/').slice(-1)[0];
       const response = this.deserializer.deserialize(duid, message, 'MQTTClient');
-      this.chainedMessageListener.onResponse(response);
-      this.chainedMessageListener.onMessage(response);
+      this.responseBroadcaster.onResponse(response);
+      this.responseBroadcaster.onMessage(response);
     } catch (error) {
       const errMsg = error instanceof Error ? (error.stack ?? error.message) : String(error);
       this.logger.error(`[MQTTClient]: unable to process message ${topic}: ${errMsg}`);

@@ -10,7 +10,7 @@ export class PingResponseListener implements AbstractMessageListener {
   private timer?: NodeJS.Timeout;
 
   constructor(
-    private readonly duid: string,
+    public readonly duid: string,
     private logger: AnsiLogger,
   ) {}
 

@@ -1,10 +1,10 @@
 import { AnsiLogger } from 'matterbridge/logger';
-import { ResponseMessage } from '../../../models/index.js';
-import { PendingResponseTracker } from '../../services/pendingResponseTracker.js';
-import { AbstractMessageListener } from '../abstractMessageListener.js';
+import { ResponseMessage } from '../../models/index.js';
+import { PendingResponseTracker } from '../services/pendingResponseTracker.js';
+import { AbstractMessageListener } from './abstractMessageListener.js';
 
-export class ChainedMessageListener implements AbstractMessageListener {
-  readonly name = 'ChainedMessageListener';
+export class ResponseBroadcaster {
+  readonly name = 'ResponseBroadcaster';
 
   private listeners: AbstractMessageListener[] = [];
 

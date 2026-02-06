@@ -7,7 +7,10 @@ export class SyncMessageListener implements AbstractMessageListener {
 
   private readonly acceptedProtocols: Protocol[] = [Protocol.general_request, Protocol.general_response, Protocol.rpc_response];
 
-  constructor(private readonly logger: AnsiLogger) {}
+  constructor(
+    public readonly duid: string,
+    private readonly logger: AnsiLogger,
+  ) {}
 
   public onMessage(message: ResponseMessage): void {
     // Handle general_request

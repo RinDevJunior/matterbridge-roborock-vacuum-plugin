@@ -1,6 +1,5 @@
 import { AnsiLogger } from 'matterbridge/logger';
 import { ChainedConnectionListener } from './listeners/implementation/chainedConnectionListener.js';
-import { ChainedMessageListener } from './listeners/implementation/chainedMessageListener.js';
 import { MessageContext } from '../models/messageContext.js';
 import { ConnectionStateListener } from './listeners/implementation/connectionStateListener.js';
 import { RequestMessage } from '../models/requestMessage.js';
@@ -10,6 +9,7 @@ import { Client } from './client.js';
 import { MessageSerializer } from '../protocol/serializers/messageSerializer.js';
 import { MessageDeserializer } from '../protocol/deserializers/messageDeserializer.js';
 import { PendingResponseTracker } from './services/pendingResponseTracker.js';
+import { ResponseBroadcaster } from './listeners/responseBroadcaster.js';
 
 export abstract class AbstractClient implements Client {
   public isInDisconnectingStep = false;
@@ -25,7 +25,7 @@ export abstract class AbstractClient implements Client {
   protected constructor(
     protected readonly logger: AnsiLogger,
     protected readonly context: MessageContext,
-    protected readonly chainedMessageListener: ChainedMessageListener,
+    protected readonly responseBroadcaster: ResponseBroadcaster,
     private readonly responseTracker: PendingResponseTracker,
   ) {
     this.serializer = new MessageSerializer(this.context, this.logger);
@@ -45,7 +45,7 @@ export abstract class AbstractClient implements Client {
   }
 
   public registerMessageListener(listener: AbstractMessageListener): void {
-    this.chainedMessageListener.register(listener);
+    this.responseBroadcaster.register(listener);
   }
 
   /**

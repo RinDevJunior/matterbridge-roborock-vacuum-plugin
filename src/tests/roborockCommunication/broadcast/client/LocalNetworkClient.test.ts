@@ -10,10 +10,10 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { asPartial, asType } from '../../../helpers/testUtils.js';
 import { LocalNetworkClient } from '../../../../roborockCommunication/local/localClient.js';
 import { Protocol, RequestMessage } from '../../../../roborockCommunication/models/index.js';
-import { ChainedMessageListener } from '../../../../roborockCommunication/routing/listeners/implementation/chainedMessageListener.js';
 import { PendingResponseTracker } from '../../../../roborockCommunication/routing/services/pendingResponseTracker.js';
 import { ProtocolVersion } from '../../../../roborockCommunication/enums/protocolVersion.js';
 import { ChunkBuffer } from '../../../../roborockCommunication/helper/chunkBuffer.js';
+import { ResponseBroadcaster } from '../../../../roborockCommunication/routing/listeners/responseBroadcaster.js';
 
 vi.mock('node:net', () => {
   class Sket {
@@ -45,7 +45,7 @@ describe('LocalNetworkClient', () => {
   let mockLogger: any;
   let mockContext: any;
   let mockSocket: any;
-  let mockChainedMessageListener: ChainedMessageListener;
+  let mockResponseBroadcaster: ResponseBroadcaster;
   let mockResponseTracker: PendingResponseTracker;
   const duid = 'duid1';
   const ip = '127.0.0.1';
@@ -75,9 +75,9 @@ describe('LocalNetworkClient', () => {
     globalThis.mockSocketInstance = mockSocket;
 
     mockResponseTracker = new PendingResponseTracker(mockLogger);
-    mockChainedMessageListener = new ChainedMessageListener(mockResponseTracker, mockLogger);
+    mockResponseBroadcaster = new ResponseBroadcaster(mockResponseTracker, mockLogger);
 
-    client = new LocalNetworkClient(mockLogger, mockContext, duid, ip, mockChainedMessageListener, mockResponseTracker);
+    client = new LocalNetworkClient(mockLogger, mockContext, duid, ip, mockResponseBroadcaster, mockResponseTracker);
     Object.defineProperty(client, 'serializer', {
       value: asPartial({ serialize: vi.fn().mockReturnValue({ buffer: Buffer.from([1, 2, 3]), messageId: 123 }) }),
       writable: true,
@@ -87,7 +87,7 @@ describe('LocalNetworkClient', () => {
       writable: true,
     });
 
-    Object.defineProperty(client, 'chainedMessageListener', {
+    Object.defineProperty(client, 'responseBroadcaster', {
       value: asPartial({ onMessage: vi.fn(), onResponse: vi.fn() }),
       writable: true,
     });
@@ -225,7 +225,7 @@ describe('LocalNetworkClient', () => {
     });
     await client['onMessage'](payload);
     expect(client['deserializer'].deserialize).toHaveBeenCalled();
-    expect(client['chainedMessageListener'].onMessage).toHaveBeenCalledWith('deserialized');
+    expect(client['responseBroadcaster'].onMessage).toHaveBeenCalledWith('deserialized');
   });
 
   it('isMessageComplete() should return true for complete buffer', () => {
@@ -319,7 +319,7 @@ describe('LocalNetworkClient', () => {
     client['socket'] = undefined;
     const payload = Buffer.from([0, 0, 0, 3, 10, 20, 30]);
     await client['onMessage'](payload);
-    expect(client['chainedMessageListener'].onMessage).not.toHaveBeenCalled();
+    expect(client['responseBroadcaster'].onMessage).not.toHaveBeenCalled();
   });
 
   it('onMessage() should skip segment with length 17', async () => {

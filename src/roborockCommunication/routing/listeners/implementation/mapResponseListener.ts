@@ -6,7 +6,7 @@ export class MapResponseListener implements AbstractMessageListener {
   readonly name = 'MapResponseListener';
 
   constructor(
-    private readonly duid: string,
+    public readonly duid: string,
     private readonly logger: AnsiLogger,
   ) {}
 

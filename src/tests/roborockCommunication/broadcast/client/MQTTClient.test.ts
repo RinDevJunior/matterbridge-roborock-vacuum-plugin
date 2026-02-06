@@ -3,9 +3,9 @@ import { vi, describe, it, expect, beforeEach, afterEach, afterAll } from 'vites
 import { asPartial, asType } from '../../../helpers/testUtils.js';
 import { MessageContext, RequestMessage } from '../../../../roborockCommunication/models/index.js';
 import { MQTTClient } from '../../../../roborockCommunication/mqtt/mqttClient.js';
-import { ChainedMessageListener } from '../../../../roborockCommunication/routing/listeners/implementation/chainedMessageListener.js';
 import { PendingResponseTracker } from '../../../../roborockCommunication/routing/services/pendingResponseTracker.js';
 import { ChainedConnectionListener } from '../../../../roborockCommunication/routing/listeners/implementation/chainedConnectionListener.js';
+import { ResponseBroadcaster } from '../../../../roborockCommunication/routing/listeners/responseBroadcaster.js';
 
 function makeUserdata() {
   return asPartial({ rriot: { r: { m: 'mqtt://broker.example' }, u: 'testuser', k: 'key123', s: 'secret' } });
@@ -19,7 +19,7 @@ describe('MQTTClient (additional)', () => {
   let userdata: any;
   let context: MessageContext;
   let logger: any;
-  let chainedMessageListener: ChainedMessageListener;
+  let responseBroadcaster: ResponseBroadcaster;
   let responseTracker: PendingResponseTracker;
 
   beforeEach(() => {
@@ -28,11 +28,11 @@ describe('MQTTClient (additional)', () => {
     context = new MessageContext(userdata);
     logger = makeLogger();
     responseTracker = new PendingResponseTracker(logger);
-    chainedMessageListener = new ChainedMessageListener(responseTracker, logger);
+    responseBroadcaster = new ResponseBroadcaster(responseTracker, logger);
   });
 
   it('isReady/isConnected reflect internal state', () => {
-    const client = new MQTTClient(logger, context, userdata, chainedMessageListener, responseTracker);
+    const client = new MQTTClient(logger, context, userdata, responseBroadcaster, responseTracker);
     expect(client.isConnected()).toBe(false);
     expect(client.isReady()).toBe(false);
 
@@ -53,7 +53,7 @@ describe('MQTTClient (additional)', () => {
     // prevent keepAlive timer from running
     const spyConnect = vi.spyOn(mqtt, 'connect').mockImplementation(() => asType<any>(mockMqttClient));
 
-    const client = new MQTTClient(logger, context, userdata, chainedMessageListener, responseTracker);
+    const client = new MQTTClient(logger, context, userdata, responseBroadcaster, responseTracker);
 
     client['keepConnectionAlive'] = vi.fn();
 
@@ -69,7 +69,7 @@ describe('MQTTClient (additional)', () => {
   });
 
   it('sendInternal logs error when not connected', async () => {
-    const client = new MQTTClient(logger, context, userdata, chainedMessageListener, responseTracker);
+    const client = new MQTTClient(logger, context, userdata, responseBroadcaster, responseTracker);
     const req = new RequestMessage({ method: 'test' });
 
     await asType<{ sendInternal(duid: string, req: RequestMessage): Promise<void> }>(client).sendInternal('duid-1', req);
@@ -81,7 +81,7 @@ describe('MQTTClient (additional)', () => {
     const mockMqttClient: any = { on: vi.fn(), end: vi.fn(), reconnect: vi.fn(), publish: vi.fn(), subscribe: vi.fn() };
     vi.spyOn(mqtt, 'connect').mockImplementation(() => asType<any>(mockMqttClient));
 
-    const client = new MQTTClient(logger, context, userdata, chainedMessageListener, responseTracker);
+    const client = new MQTTClient(logger, context, userdata, responseBroadcaster, responseTracker);
 
     client['keepConnectionAlive'] = vi.fn();
     client['mqttClient'] = mockMqttClient;
@@ -126,7 +126,7 @@ describe('MQTTClient', () => {
   let client: any;
   let serializer: any;
   let deserializer: any;
-  let chainedMessageListener: ChainedMessageListener;
+  let responseBroadcaster: ResponseBroadcaster;
   let responseTracker: PendingResponseTracker;
   const createdClients: any[] = [];
 
@@ -144,7 +144,7 @@ describe('MQTTClient', () => {
     serializer = { serialize: vi.fn(() => ({ buffer: Buffer.from('msg') })) };
     deserializer = { deserialize: vi.fn(() => 'deserialized') };
     responseTracker = new PendingResponseTracker(logger);
-    chainedMessageListener = new ChainedMessageListener(responseTracker, logger);
+    responseBroadcaster = new ResponseBroadcaster(responseTracker, logger);
 
     // Mock mqtt client instance
     client = {
@@ -160,7 +160,7 @@ describe('MQTTClient', () => {
   function createMQTTClient() {
     class TestMQTTClient extends MQTTClient {
       constructor() {
-        super(logger, context, userdata, chainedMessageListener, responseTracker);
+        super(logger, context, userdata, responseBroadcaster, responseTracker);
       }
     }
     const mqttClient = new TestMQTTClient();
@@ -173,8 +173,8 @@ describe('MQTTClient', () => {
       }),
       writable: true,
     });
-    Object.defineProperty(mqttClient, 'chainedMessageListener', {
-      value: asPartial<ChainedMessageListener>({
+    Object.defineProperty(mqttClient, 'responseBroadcaster', {
+      value: asPartial<ResponseBroadcaster>({
         onMessage: vi.fn(),
         onResponse: vi.fn(),
       }),
@@ -343,7 +343,7 @@ describe('MQTTClient', () => {
     const mqttClient = createMQTTClient();
     await mqttClient['onMessage']('rr/m/o/user/c6d6afb9/duid1', Buffer.from('msg'));
     expect(deserializer.deserialize).toHaveBeenCalledWith('duid1', Buffer.from('msg'), 'MQTTClient');
-    expect(mqttClient['chainedMessageListener'].onMessage).toHaveBeenCalledWith('deserialized');
+    expect(mqttClient['responseBroadcaster'].onMessage).toHaveBeenCalledWith('deserialized');
   });
 
   it('onMessage should log notice if message is falsy', async () => {

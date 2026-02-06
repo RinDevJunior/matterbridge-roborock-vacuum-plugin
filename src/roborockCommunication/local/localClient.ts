@@ -8,8 +8,8 @@ import { ChunkBuffer } from '../helper/chunkBuffer.js';
 import { Sequence } from '../helper/sequence.js';
 import { PingResponseListener } from '../routing/listeners/implementation/pingResponseListener.js';
 import { PendingResponseTracker } from '../routing/services/pendingResponseTracker.js';
-import { ChainedMessageListener } from '../routing/listeners/implementation/chainedMessageListener.js';
 import { KEEPALIVE_INTERVAL_MS } from '../../constants/index.js';
+import { ResponseBroadcaster } from '../routing/listeners/responseBroadcaster.js';
 
 export class LocalNetworkClient extends AbstractClient {
   protected override clientName = 'LocalNetworkClient';
@@ -27,14 +27,14 @@ export class LocalNetworkClient extends AbstractClient {
     context: MessageContext,
     private readonly duid: string,
     private readonly ip: string,
-    chainedMessageListener: ChainedMessageListener,
+    responseBroadcaster: ResponseBroadcaster,
     responseTracker: PendingResponseTracker,
   ) {
-    super(logger, context, chainedMessageListener, responseTracker);
+    super(logger, context, responseBroadcaster, responseTracker);
     this.messageIdSeq = new Sequence(100000, 999999);
 
     this.pingResponseListener = new PingResponseListener(this.duid, logger);
-    this.chainedMessageListener.register(this.pingResponseListener);
+    this.responseBroadcaster.register(this.pingResponseListener);
   }
 
   public override isReady(): boolean {
@@ -176,8 +176,8 @@ export class LocalNetworkClient extends AbstractClient {
         try {
           const currentBuffer = receivedBuffer.subarray(offset + 4, offset + segmentLength + 4);
           const response = this.deserializer.deserialize(this.duid, currentBuffer, 'LocalNetworkClient');
-          this.chainedMessageListener.onResponse(response);
-          this.chainedMessageListener.onMessage(response);
+          this.responseBroadcaster.onResponse(response);
+          this.responseBroadcaster.onMessage(response);
         } catch (error) {
           const errMsg = error instanceof Error ? (error.stack ?? error.message) : String(error);
           this.logger.error(`[LocalNetworkClient]: unable to process message with error: ${errMsg}`);
@@ -250,6 +250,10 @@ export class LocalNetworkClient extends AbstractClient {
     this.context.updateNonce(this.duid, response.header.nonce);
     this.context.updateProtocolVersion(this.duid, response.header.version);
     this.connected = true;
+
+    if (this.pingInterval) {
+      clearInterval(this.pingInterval);
+    }
     this.pingInterval = setInterval(this.sendPingRequest.bind(this), 5000);
   }
 

@@ -59,7 +59,7 @@ export class RoborockMatterbridgePlatform extends MatterbridgeDynamicPlatform {
     super(matterbridge, new FilterLogger(logger, config.pluginConfiguration.sanitizeSensitiveLogs), config);
     logger.logLevel = this.config.pluginConfiguration.debug ? LogLevel.DEBUG : LogLevel.INFO;
 
-    const requiredMatterbridgeVersion = '3.5.2';
+    const requiredMatterbridgeVersion = '3.5.3';
     if (this.verifyMatterbridgeVersion === undefined || typeof this.verifyMatterbridgeVersion !== 'function' || !this.verifyMatterbridgeVersion(requiredMatterbridgeVersion)) {
       throw new Error(
         `This plugin requires Matterbridge version >= "${requiredMatterbridgeVersion}".

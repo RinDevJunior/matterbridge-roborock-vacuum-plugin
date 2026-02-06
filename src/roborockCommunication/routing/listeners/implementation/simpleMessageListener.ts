@@ -9,7 +9,7 @@ export class SimpleMessageListener implements AbstractMessageListener {
 
   private handler: AbstractMessageHandler | undefined;
   constructor(
-    private readonly duid: string,
+    public readonly duid: string,
     private readonly logger: AnsiLogger,
   ) {}
 
