@@ -7,12 +7,15 @@ import { PingResponseListener } from '../../../../../roborockCommunication/routi
 const DUID = 'test-duid';
 
 function createMockMessage(isHello = true) {
-  return asPartial<ResponseMessage>({ isForProtocol: vi.fn().mockImplementation((proto) => isHello && proto === Protocol.hello_response) });
+  return asPartial<ResponseMessage>({
+    duid: DUID,
+    isForProtocol: vi.fn().mockImplementation((proto) => isHello && proto === Protocol.hello_response),
+  });
 }
 
 describe('PingResponseListener (basic behavior)', () => {
   let listener: PingResponseListener;
-  let logger = createMockLogger();
+  const logger = createMockLogger();
 
   beforeEach(() => {
     listener = new PingResponseListener('device-1', logger);
@@ -79,7 +82,7 @@ describe('PingResponseListener (basic behavior)', () => {
 });
 
 describe('PingResponseListener', () => {
-  let logger = createMockLogger();
+  const logger = createMockLogger();
   beforeEach(() => {
     vi.useFakeTimers();
   });
@@ -92,7 +95,7 @@ describe('PingResponseListener', () => {
     const promise = listener.waitFor();
     const msg = createMockMessage(true);
     // Simulate receiving the message before timeout
-    await listener.onMessage(msg);
+    listener.onMessage(msg);
     // Run all timers to ensure no pending
     vi.runAllTimers();
     await expect(promise).resolves.toBe(msg);
@@ -102,7 +105,7 @@ describe('PingResponseListener', () => {
     const listener = new PingResponseListener(DUID, logger);
     const promise = listener.waitFor();
     const msg = createMockMessage(false);
-    await listener.onMessage(msg);
+    listener.onMessage(msg);
     // Advance time less than timeout to ensure not resolved
     vi.advanceTimersByTime(10);
     // Promise should still be pending, so race with a resolved value

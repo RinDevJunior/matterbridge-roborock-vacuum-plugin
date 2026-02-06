@@ -204,7 +204,7 @@ export function createMockRoborockService(overrides: Partial<RoborockService> = 
 
 export function createMockMatterbridge(overrides: Partial<PlatformMatterbridge> = {}): PlatformMatterbridge {
   const base: Partial<PlatformMatterbridge> & Record<string, unknown> = {
-    matterbridgeVersion: '3.5.2',
+    matterbridgeVersion: '3.5.3',
     matterbridgePluginDirectory: '/tmp',
     matterbridgeDirectory: '/tmp',
     verifyMatterbridgeVersion: () => true,
