@@ -60,6 +60,12 @@ export class ConnectionService {
 
     try {
       this.clientRouter = this.clientManager.get(userdata);
+      if (!this.clientRouter) {
+        throw new DeviceInitializationError(device.duid, 'Failed to get ClientRouter from ClientManager');
+      }
+
+      this.logger.debug('Initializing message client for device:', device.duid);
+
       this.clientRouter.registerDevice(device.duid, device.localKey, device.pv, undefined);
       this.clientRouter.connect();
 
@@ -223,7 +229,7 @@ export class ConnectionService {
       }
 
       localClient.connect();
-      await this.waitForConnection(() => localClient.isConnected());
+      await this.waitForConnection(() => localClient.isReady());
 
       this.ipMap.set(duid, ip);
       this.localClientMap.set(duid, localClient);

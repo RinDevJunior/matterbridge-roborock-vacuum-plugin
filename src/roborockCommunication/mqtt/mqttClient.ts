@@ -31,7 +31,7 @@ export class MQTTClient extends AbstractClient {
     return this.connected;
   }
 
-  public isReady(): boolean {
+  public override isReady(): boolean {
     return this.connected && this.mqttClient !== undefined;
   }
 

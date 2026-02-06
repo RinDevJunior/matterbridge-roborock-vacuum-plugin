@@ -58,6 +58,7 @@ export function makeLocalClientStub(overrides: Partial<Record<string, unknown>> 
     connect: vi.fn(),
     disconnect: vi.fn(),
     isConnected: vi.fn().mockReturnValue(true),
+    isReady: vi.fn().mockReturnValue(true),
     ...overrides,
   } as MockLocalClient;
 }

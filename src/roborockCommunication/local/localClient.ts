@@ -37,7 +37,7 @@ export class LocalNetworkClient extends AbstractClient {
     this.chainedMessageListener.register(this.pingResponseListener);
   }
 
-  public isReady(): boolean {
+  public override isReady(): boolean {
     return this.ready;
   }
 

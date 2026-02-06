@@ -17,6 +17,7 @@ function createMockClient() {
     send: vi.fn().mockResolvedValue(undefined),
     get: vi.fn().mockResolvedValue(undefined),
     isConnected: vi.fn().mockReturnValue(true),
+    isReady: vi.fn().mockReturnValue(true),
     connect: vi.fn(),
     disconnect: vi.fn(),
     registerConnectionListener: vi.fn(),

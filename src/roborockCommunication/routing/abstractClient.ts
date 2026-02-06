@@ -34,6 +34,11 @@ export abstract class AbstractClient implements Client {
 
   abstract isConnected(): boolean;
 
+  /** Returns true when client is ready to send requests. Override for custom handshake logic. */
+  public isReady(): boolean {
+    return this.isConnected();
+  }
+
   protected initializeConnectionStateListener() {
     this.connectionStateListener = new ConnectionStateListener(this.logger, this, this.clientName);
     this.connectionListener.register(this.connectionStateListener);
