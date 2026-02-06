@@ -52,14 +52,14 @@ export const MAX_RETRY_COUNT = 10;
 export const HELLO_RESPONSE_TIMEOUT_MS = 30000;
 
 /**
- * Delay between connection retry attempts (500ms).
+ * Delay between connection retry attempts (1000ms).
  */
-export const CONNECTION_RETRY_DELAY_MS = 500;
+export const CONNECTION_RETRY_DELAY_MS = 1000;
 
 /**
  * Maximum number of connection attempts before timeout (20 attempts).
  */
-export const MAX_CONNECTION_ATTEMPTS = 20;
+export const MAX_CONNECTION_ATTEMPTS = 30;
 
 /**
  * Multiplier for MQTT refresh interval (500ms).

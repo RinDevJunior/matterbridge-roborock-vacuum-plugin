@@ -19,7 +19,7 @@ export class LocalNetworkClient extends AbstractClient {
   private messageIdSeq: Sequence;
   private pingInterval?: NodeJS.Timeout;
   private pingResponseListener: PingResponseListener;
-  private ready = false;
+  private connected = false;
   private keepConnectionAliveInterval: NodeJS.Timeout | undefined = undefined;
 
   constructor(
@@ -38,7 +38,7 @@ export class LocalNetworkClient extends AbstractClient {
   }
 
   public override isReady(): boolean {
-    return this.ready;
+    return this.connected;
   }
 
   public override isConnected(): boolean {
@@ -86,7 +86,7 @@ export class LocalNetworkClient extends AbstractClient {
       return;
     }
 
-    if (!request.isForProtocol(Protocol.hello_request) && !this.ready) {
+    if (!request.isForProtocol(Protocol.hello_request) && !this.connected) {
       this.logger.error(`${duid}: socket is not connected, cannot send request, ${debugStringify(request)}`);
       return;
     }
@@ -118,10 +118,10 @@ export class LocalNetworkClient extends AbstractClient {
     if (this.pingInterval) {
       clearInterval(this.pingInterval);
     }
-    if (!this.isReady()) {
+    if (!this.connected) {
       await this.connectionListener.onDisconnected(this.duid, 'Socket disconnected. Had no error.');
     }
-    this.ready = false;
+    this.connected = false;
   }
 
   private async onError(error: Error): Promise<void> {
@@ -132,10 +132,10 @@ export class LocalNetworkClient extends AbstractClient {
       this.socket = undefined;
     }
 
-    if (!this.isReady()) {
+    if (!this.connected) {
       await this.connectionListener.onDisconnected(this.duid, `Socket error: ${error.message}`);
     }
-    this.ready = false;
+    this.connected = false;
   }
 
   private async onTimeout(): Promise<void> {
@@ -249,7 +249,7 @@ export class LocalNetworkClient extends AbstractClient {
 
     this.context.updateNonce(this.duid, response.header.nonce);
     this.context.updateProtocolVersion(this.duid, response.header.version);
-    this.ready = true;
+    this.connected = true;
     this.pingInterval = setInterval(this.sendPingRequest.bind(this), 5000);
   }
 

@@ -229,7 +229,7 @@ export class ConnectionService {
       }
 
       localClient.connect();
-      await this.waitForConnection(() => localClient.isReady());
+      await this.waitForConnection(() => localClient.isConnected());
 
       this.ipMap.set(duid, ip);
       this.localClientMap.set(duid, localClient);
