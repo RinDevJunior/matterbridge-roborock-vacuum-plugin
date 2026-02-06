@@ -18,7 +18,6 @@ export class PingResponseListener implements AbstractMessageListener {
     return new Promise<ResponseMessage>((resolve, reject) => {
       this.handler = resolve;
       this.timer = setTimeout(() => {
-        this.logger.warn(`no ping response for ${this.duid} within ${HELLO_RESPONSE_TIMEOUT_MS / 1000} second`);
         reject(new Error(`no ping response for ${this.duid} within ${HELLO_RESPONSE_TIMEOUT_MS / 1000} second`));
       }, HELLO_RESPONSE_TIMEOUT_MS);
     });
