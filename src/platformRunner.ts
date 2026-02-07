@@ -7,7 +7,7 @@ import type { MessagePayload } from './types/MessagePayloads.js';
 import { BatteryMessage, CleanInformation, DeviceErrorMessage, StatusChangeMessage } from './roborockCommunication/models/index.js';
 import { RoborockMatterbridgePlatform } from './module.js';
 import type { RoborockVacuumCleaner } from './types/roborockVacuumCleaner.js';
-import { state_to_matter_operational_status, state_to_matter_state } from './share/function.js';
+import { resolveDeviceState } from './share/stateResolver.js';
 import { getRunningMode } from './initialData/getSupportedRunModes.js';
 import { CleanModeSetting } from './behaviors/roborock.vacuum/core/CleanModeSetting.js';
 import { getCleanModeResolver } from './share/runtimeHelper.js';
@@ -157,26 +157,27 @@ export class PlatformRunner {
   }
 
   /**
-   * Handle device status notify messages and update robot run mode.
-   * Processes CloudMessageResult to extract state.
+   * Handle device status notify messages and update robot run mode and operational state.
+   * Uses state resolution matrix to determine final state based on status code and modifiers.
    */
   private handleDeviceStatusUpdate(robot: RoborockVacuumCleaner, message: StatusChangeMessage): void {
-    // Update RvcRunMode based on state
     this.platform.log.debug(`Handling device status update: ${debugStringify(message)}`);
 
-    const state = state_to_matter_state(message.status);
-    if (state) {
-      robot.updateAttribute(RvcRunMode.Cluster.id, 'currentMode', getRunningMode(state), this.platform.log);
-    }
-
+    // Check docking station errors before state resolution
     const includeDockStationStatus = this.platform.configManager.includeDockStationStatus;
-    const operationalStateId = state_to_matter_operational_status(state);
     const dssHasError = includeDockStationStatus && hasDockingStationError(robot.dockStationStatus);
     if (dssHasError) {
       triggerDssError(robot, this.platform);
       return;
     }
-    if (operationalStateId !== undefined) robot.updateAttribute(RvcOperationalState.Cluster.id, 'operationalState', operationalStateId, this.platform.log);
+
+    // Resolve state using state resolution matrix
+    const resolvedState = resolveDeviceState(message);
+    this.platform.log.debug(`Resolved state: runMode=${resolvedState.runMode}, operationalState=${resolvedState.operationalState}`);
+
+    // Update Matter attributes
+    robot.updateAttribute(RvcRunMode.Cluster.id, 'currentMode', getRunningMode(resolvedState.runMode), this.platform.log);
+    robot.updateAttribute(RvcOperationalState.Cluster.id, 'operationalState', resolvedState.operationalState, this.platform.log);
   }
 
   /**

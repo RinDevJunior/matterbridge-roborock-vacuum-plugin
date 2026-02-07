@@ -24,13 +24,20 @@ vi.mock('../initialData/index.js', () => ({
   getBatteryState: vi.fn((_status: OperationStatusCode, _level: number) => 1),
 }));
 
-vi.mock('../share/function.js', () => ({
-  state_to_matter_state: vi.fn((status: OperationStatusCode) => {
-    if (status === OperationStatusCode.Cleaning) return 1;
-    if (status === OperationStatusCode.Idle) return 0;
-    return 0;
+vi.mock('../share/stateResolver.js', () => ({
+  resolveDeviceState: vi.fn((message) => {
+    const { status } = message;
+    if (status === OperationStatusCode.Cleaning) {
+      return { runMode: 1, operationalState: 1 }; // Cleaning + Running
+    }
+    if (status === OperationStatusCode.Idle) {
+      return { runMode: 0, operationalState: 66 }; // Idle + Docked
+    }
+    if (status === OperationStatusCode.Unknown) {
+      return { runMode: 0, operationalState: 66 }; // Idle + Docked
+    }
+    return { runMode: 0, operationalState: 66 }; // Default: Idle + Docked
   }),
-  state_to_matter_operational_status: vi.fn((state: number | undefined) => state ?? 0),
 }));
 
 vi.mock('../runtimes/handleHomeDataMessage.js', () => ({
@@ -270,13 +277,11 @@ describe('PlatformRunner.updateRobotWithPayload', () => {
 
     runner.updateRobotWithPayload(payload);
 
-    expect(shareFunction.state_to_matter_state).toHaveBeenCalledWith(OperationStatusCode.Cleaning);
     expect(robot.updateAttribute).toHaveBeenCalledWith(RvcRunMode.Cluster.id, 'currentMode', 1, mockLogger);
     expect(robot.updateAttribute).toHaveBeenCalledWith(RvcOperationalState.Cluster.id, 'operationalState', 1, mockLogger);
   });
 
-  it('should not update run mode when state_to_matter_state returns undefined', () => {
-    vi.mocked(shareFunction.state_to_matter_state).mockReturnValueOnce(undefined);
+  it('should handle Unknown status with default state', () => {
     const statusMessage = {
       duid: 'test-duid',
       status: OperationStatusCode.Unknown,
@@ -291,8 +296,9 @@ describe('PlatformRunner.updateRobotWithPayload', () => {
 
     runner.updateRobotWithPayload(payload);
 
-    expect(robot.updateAttribute).toHaveBeenCalledWith(RvcOperationalState.Cluster.id, 'operationalState', 0, mockLogger);
-    expect(robot.updateAttribute).toHaveBeenCalledTimes(1);
+    expect(robot.updateAttribute).toHaveBeenCalledWith(RvcRunMode.Cluster.id, 'currentMode', 1, mockLogger);
+    expect(robot.updateAttribute).toHaveBeenCalledWith(RvcOperationalState.Cluster.id, 'operationalState', 66, mockLogger);
+    expect(robot.updateAttribute).toHaveBeenCalledTimes(2);
   });
 
   it('should trigger dock station error when docking station has error', () => {
@@ -353,7 +359,8 @@ describe('PlatformRunner.updateRobotWithPayload', () => {
     runner.updateRobotWithPayload(payload);
 
     expect(dockingStationStatus.hasDockingStationError).not.toHaveBeenCalled();
-    expect(robot.updateAttribute).toHaveBeenCalledWith(RvcOperationalState.Cluster.id, 'operationalState', 0, mockLogger);
+    expect(robot.updateAttribute).toHaveBeenCalledWith(RvcRunMode.Cluster.id, 'currentMode', 1, mockLogger);
+    expect(robot.updateAttribute).toHaveBeenCalledWith(RvcOperationalState.Cluster.id, 'operationalState', 66, mockLogger);
   });
 
   it('should handle CleanModeUpdate message with full settings', () => {

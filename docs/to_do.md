@@ -1,3 +1,3 @@
 # To Do
 
-No pending tasks.
+## State Resolution Matrix
