@@ -62,19 +62,12 @@ export async function updateFromHomeData(homeData: Home, platform: RoborockMatte
       });
     }
 
-    if (state) {
+    if (state && !robot.device.specs.hasRealTimeConnection) {
       platform.platformRunner.updateRobotWithPayload({
-        type: NotifyMessageTypes.DeviceStatus,
+        type: NotifyMessageTypes.DeviceStatusSimple,
         data: {
           duid: device.duid,
           status: state,
-          // TODO: Add real values if available in home data
-          inCleaning: undefined,
-          inReturning: undefined,
-          inFreshState: undefined,
-          isLocating: undefined,
-          isExploring: undefined,
-          inWarmup: undefined,
         },
       });
     }

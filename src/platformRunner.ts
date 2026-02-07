@@ -15,6 +15,7 @@ import { OperationStatusCode } from './roborockCommunication/enums/index.js';
 import { INVALID_SEGMENT_ID } from './constants/index.js';
 import { hasDockingStationError } from './model/DockingStationStatus.js';
 import { triggerDssError } from './runtimes/handleLocalMessage.js';
+import { state_to_matter_operational_status, state_to_matter_state } from './share/function.js';
 
 type RobotHandler<T = unknown> = (robot: RoborockVacuumCleaner, data: T) => void;
 type PayloadHandler = (payload: MessagePayload) => void;
@@ -45,6 +46,14 @@ export class PlatformRunner {
         (p) => {
           if (p.type === NotifyMessageTypes.DeviceStatus) {
             this.executeWithRobot(p.data.duid, p.data, this.handleDeviceStatusUpdate.bind(this));
+          }
+        },
+      ],
+      [
+        NotifyMessageTypes.DeviceStatusSimple,
+        (p) => {
+          if (p.type === NotifyMessageTypes.DeviceStatusSimple) {
+            this.executeWithRobot(p.data.duid, p.data, this.handleDeviceStatusSimpleUpdate.bind(this));
           }
         },
       ],
@@ -125,6 +134,24 @@ export class PlatformRunner {
   }
 
   /**
+   * Get human-readable name for run mode enum value.
+   */
+  private getRunModeName(runMode: number): string {
+    return Object.keys(RvcRunMode.ModeTag).find((key) => RvcRunMode.ModeTag[key as keyof typeof RvcRunMode.ModeTag] === runMode) || String(runMode);
+  }
+
+  /**
+   * Get human-readable name for operational state enum value.
+   */
+  private getOperationalStateName(operationalState: number): string {
+    return (
+      Object.keys(RvcOperationalState.OperationalState).find(
+        (key) => RvcOperationalState.OperationalState[key as keyof typeof RvcOperationalState.OperationalState] === operationalState,
+      ) || String(operationalState)
+    );
+  }
+
+  /**
    * Handle error occurred messages and update robot operational state.
    */
   private handleErrorOccurred(robot: RoborockVacuumCleaner, message: DeviceErrorMessage): void {
@@ -173,11 +200,42 @@ export class PlatformRunner {
 
     // Resolve state using state resolution matrix
     const resolvedState = resolveDeviceState(message);
-    this.platform.log.debug(`Resolved state: runMode=${resolvedState.runMode}, operationalState=${resolvedState.operationalState}`);
+    this.platform.log.debug(
+      `Resolved state: runMode=${this.getRunModeName(resolvedState.runMode)}, operationalState=${this.getOperationalStateName(resolvedState.operationalState)}`,
+    );
 
     // Update Matter attributes
     robot.updateAttribute(RvcRunMode.Cluster.id, 'currentMode', getRunningMode(resolvedState.runMode), this.platform.log);
     robot.updateAttribute(RvcOperationalState.Cluster.id, 'operationalState', resolvedState.operationalState, this.platform.log);
+  }
+
+  /**
+   * Handle simple device status updates from home data API.
+   * For devices without real-time connection, uses only status code without modifier flags.
+   * Converts to StatusChangeMessage with undefined modifiers for state resolution.
+   */
+  private handleDeviceStatusSimpleUpdate(robot: RoborockVacuumCleaner, message: { duid: string; status: OperationStatusCode }): void {
+    this.platform.log.debug(`Handling simple device status update: ${debugStringify(message)}`);
+
+    this.platform.log.debug(`Handling device status update: ${debugStringify(message)}`);
+
+    const state = state_to_matter_state(message.status);
+    this.platform.log.debug(`Resolved state from simple update: ${state !== undefined ? this.getRunModeName(state) : 'undefined'}`);
+    if (state !== undefined) {
+      robot.updateAttribute(RvcRunMode.Cluster.id, 'currentMode', getRunningMode(state), this.platform.log);
+    }
+
+    const includeDockStationStatus = this.platform.configManager.includeDockStationStatus;
+    const operationalStateId = state_to_matter_operational_status(state);
+    const dssHasError = includeDockStationStatus && hasDockingStationError(robot.dockStationStatus);
+    if (dssHasError) {
+      triggerDssError(robot, this.platform);
+      return;
+    }
+    if (operationalStateId !== undefined) {
+      this.platform.log.debug(`Updating operational state to: ${this.getOperationalStateName(operationalStateId)}`);
+      robot.updateAttribute(RvcOperationalState.Cluster.id, 'operationalState', operationalStateId, this.platform.log);
+    }
   }
 
   /**

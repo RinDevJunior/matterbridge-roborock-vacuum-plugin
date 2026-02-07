@@ -57,6 +57,7 @@ describe('DeviceManagementService', () => {
       model: DeviceModel.QREVO_EDGE_5V1,
       category: DeviceCategory.VacuumCleaner,
       batteryLevel: 85,
+      hasRealTimeConnection: true,
     },
     store: {
       userData: mockUserData,

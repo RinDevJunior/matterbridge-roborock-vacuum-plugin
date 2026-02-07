@@ -62,6 +62,18 @@ export interface DeviceStatusPayload {
 }
 
 /**
+ * Simple device status message payload.
+ * Contains only status code from home data API for devices without real-time connection.
+ */
+export interface DeviceStatusSimplePayload {
+  type: NotifyMessageTypes.DeviceStatusSimple;
+  data: {
+    duid: string;
+    status: OperationStatusCode;
+  };
+}
+
+/**
  * Clean mode update message payload.
  * Contains clean mode settings (suction power, water flow, mop route).
  */
@@ -109,46 +121,11 @@ export interface ServiceAreaUpdatePayload {
  * }
  * ```
  */
-export type MessagePayload = HomeDataPayload | BatteryUpdatePayload | ErrorOccurredPayload | DeviceStatusPayload | CleanModeUpdatePayload | ServiceAreaUpdatePayload;
-
-/**
- * Type guard to check if a payload is home data.
- */
-export function isHomeData(payload: MessagePayload): payload is HomeDataPayload {
-  return payload.type === NotifyMessageTypes.HomeData;
-}
-
-/**
- * Type guard to check if a payload is a battery update.
- */
-export function isBatteryUpdate(payload: MessagePayload): payload is BatteryUpdatePayload {
-  return payload.type === NotifyMessageTypes.BatteryUpdate;
-}
-
-/**
- * Type guard to check if a payload is an error notification.
- */
-export function isErrorOccurred(payload: MessagePayload): payload is ErrorOccurredPayload {
-  return payload.type === NotifyMessageTypes.ErrorOccurred;
-}
-
-/**
- * Type guard to check if a payload is a device status update.
- */
-export function isDeviceStatus(payload: MessagePayload): payload is DeviceStatusPayload {
-  return payload.type === NotifyMessageTypes.DeviceStatus;
-}
-
-/**
- * Type guard to check if a payload is a clean mode update.
- */
-export function isCleanModeUpdate(payload: MessagePayload): payload is CleanModeUpdatePayload {
-  return payload.type === NotifyMessageTypes.CleanModeUpdate;
-}
-
-/**
- * Type guard to check if a payload is a service area update.
- */
-export function isServiceAreaUpdate(payload: MessagePayload): payload is ServiceAreaUpdatePayload {
-  return payload.type === NotifyMessageTypes.ServiceAreaUpdate;
-}
+export type MessagePayload =
+  | HomeDataPayload
+  | BatteryUpdatePayload
+  | ErrorOccurredPayload
+  | DeviceStatusPayload
+  | DeviceStatusSimplePayload
+  | CleanModeUpdatePayload
+  | ServiceAreaUpdatePayload;

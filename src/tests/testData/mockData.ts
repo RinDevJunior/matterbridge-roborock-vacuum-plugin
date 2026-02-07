@@ -309,6 +309,7 @@ export const homeData: Home = asPartial<Home>({
         model: DeviceModel.QREVO_EDGE_5V1,
         category: DeviceCategory.VacuumCleaner,
         batteryLevel: 100,
+        hasRealTimeConnection: true,
       },
       store: {
         userData: {

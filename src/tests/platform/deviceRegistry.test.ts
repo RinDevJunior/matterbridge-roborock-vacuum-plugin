@@ -28,6 +28,7 @@ function createMockDevice(serialNumber: string): Device {
       model: DeviceModel.Q7_MAX,
       category: DeviceCategory.VacuumCleaner,
       batteryLevel: 100,
+      hasRealTimeConnection: true,
     },
     store: {
       userData: {

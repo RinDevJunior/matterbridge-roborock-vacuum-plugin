@@ -312,14 +312,26 @@ describe('ConnectionService additional coverage', () => {
     service.clientRouter = asPartial<ClientRouter>(mockClientRouter);
     // mockClientRouter.registerClient.mockReturnValue({ connect: vi.fn(), isConnected: vi.fn().mockReturnValue(true) });
     vi.spyOn(mockClientRouter, 'registerClient').mockReturnValue(asType<Client>(mockLocalClient));
-    const result = await asType<{ setupLocalClient: (duid: string, ip: string) => Promise<boolean> }>(service).setupLocalClient.call(service, 'duid', '1.2.3.4');
+    const result = await asType<{
+      setupLocalClient: (
+        {
+          duid,
+          specs: { hasRealTimeConnection },
+        }: { duid: string; specs: DeviceSpecs },
+        ip: string,
+      ) => Promise<boolean>;
+    }>(service).setupLocalClient.call(service, { duid: 'duid', specs: mockDevice.specs }, '1.2.3.4');
     expect(result).toBe(true);
   });
 
   it('should return false and log error if registerClient returns undefined', async () => {
     service.clientRouter = asPartial<ClientRouter>(mockClientRouter);
     vi.spyOn(mockClientRouter, 'registerClient').mockReturnValue(asType<Client>(undefined));
-    const result = await asType<{ setupLocalClient: (duid: string, ip: string) => Promise<boolean> }>(service).setupLocalClient.call(service, 'duid', '1.2.3.4');
+    const result = await asType<{ setupLocalClient: ({ duid, specs }: { duid: string; specs: DeviceSpecs }, ip: string) => Promise<boolean> }>(service).setupLocalClient.call(
+      service,
+      { duid: 'duid', specs: mockDevice.specs },
+      '1.2.3.4',
+    );
     expect(result).toBe(false);
     expect(mockLogger.error).toHaveBeenCalledWith('Failed to create local client for device duid at IP 1.2.3.4');
   });
@@ -329,7 +341,11 @@ describe('ConnectionService additional coverage', () => {
     vi.spyOn(mockClientRouter, 'registerClient').mockImplementation(() => {
       throw new Error('fail');
     });
-    const result = await asType<{ setupLocalClient: (duid: string, ip: string) => Promise<boolean> }>(service).setupLocalClient.call(service, 'duid', '1.2.3.4');
+    const result = await asType<{ setupLocalClient: ({ duid, specs }: { duid: string; specs: DeviceSpecs }, ip: string) => Promise<boolean> }>(service).setupLocalClient.call(
+      service,
+      { duid: 'duid', specs: mockDevice.specs },
+      '1.2.3.4',
+    );
     expect(result).toBe(false);
     expect(mockLogger.error).toHaveBeenCalledWith('Error setting up local client for device duid at IP 1.2.3.4:', expect.any(Error));
   });

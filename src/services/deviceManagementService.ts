@@ -67,6 +67,7 @@ export class DeviceManagementService {
             model: products.get(device.productId)?.model as DeviceModel,
             category: products.get(device.productId)?.category as DeviceCategory,
             batteryLevel: Number(device.deviceStatus?.[Protocol.battery] ?? 100),
+            hasRealTimeConnection: false,
           } satisfies DeviceSpecs,
           store: {
             userData: this.userdata as UserData,
@@ -143,6 +144,7 @@ export class DeviceManagementService {
             model: products.get(device.productId)?.model as DeviceModel,
             category: products.get(device.productId)?.category as DeviceCategory,
             batteryLevel: Number(device.deviceStatus?.[Protocol.battery] ?? 100),
+            hasRealTimeConnection: false,
           } satisfies DeviceSpecs,
           store: {
             userData: this.userdata as UserData,

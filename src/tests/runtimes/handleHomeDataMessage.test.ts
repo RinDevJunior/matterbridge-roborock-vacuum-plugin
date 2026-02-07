@@ -128,7 +128,7 @@ describe('updateFromHomeData', () => {
 
     await updateFromHomeData(homeDataNoBattery, asPartial<RoborockMatterbridgePlatform>(platform));
     // Battery payload not sent, but DeviceStatus payload still sent because state exists
-    expect(platformRunner.updateRobotWithPayload).toHaveBeenCalledWith(expect.objectContaining({ type: 'DeviceStatus' }));
+    expect(platformRunner.updateRobotWithPayload).toHaveBeenCalledWith(expect.objectContaining({ type: 'DeviceStatusSimple' }));
   });
 
   it('should handle state without matterState mapping', async () => {
@@ -232,7 +232,7 @@ describe('updateFromHomeData', () => {
 
     await updateFromHomeData(homeDataNoBattery, platform);
     // Battery not present so no BatteryUpdate payload sent, but DeviceStatus still sent
-    expect(platformRunner.updateRobotWithPayload).toHaveBeenCalledWith(expect.objectContaining({ type: 'DeviceStatus' }));
+    expect(platformRunner.updateRobotWithPayload).toHaveBeenCalledWith(expect.objectContaining({ type: 'DeviceStatusSimple' }));
   });
 
   it('should handle zero battery level', async () => {
@@ -245,7 +245,7 @@ describe('updateFromHomeData', () => {
 
     await updateFromHomeData(homeDataZeroBattery, platform);
     // Battery is 0, which is falsy, so no BatteryUpdate payload, but DeviceStatus still sent
-    expect(platformRunner.updateRobotWithPayload).toHaveBeenCalledWith(expect.objectContaining({ type: 'DeviceStatus' }));
+    expect(platformRunner.updateRobotWithPayload).toHaveBeenCalledWith(expect.objectContaining({ type: 'DeviceStatusSimple' }));
   });
 
   it('should handle homeData without matching product schema', async () => {

@@ -13,6 +13,7 @@ export interface DeviceSpecs {
   model: DeviceModel;
   category: DeviceCategory;
   batteryLevel: number;
+  hasRealTimeConnection: boolean;
 }
 
 export interface DeviceInformation {

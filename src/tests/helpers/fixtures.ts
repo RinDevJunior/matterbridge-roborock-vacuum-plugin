@@ -15,6 +15,7 @@ export function makeDeviceFixture(overrides: Partial<Device> = {}): Device {
     model: DeviceModel.S6,
     category: DeviceCategory.VacuumCleaner,
     batteryLevel: 100,
+    hasRealTimeConnection: true,
   };
 
   const baseStore: DeviceInformation = {

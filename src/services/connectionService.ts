@@ -72,6 +72,7 @@ export class ConnectionService {
       // Wait for connection
       try {
         await this.waitForConnection(() => this.clientRouter?.isConnected() ?? false);
+        device.specs.hasRealTimeConnection = true;
       } catch {
         throw new DeviceConnectionError(device.duid, 'MQTT connection timeout');
       }
@@ -123,7 +124,7 @@ export class ConnectionService {
 
       if (networkInfo?.ipAddress) {
         this.logger.debug(`Device ${device.duid} has network info IP: ${networkInfo.ipAddress}, setting up UDP listener`);
-        const success = await this.setupLocalClient(device.duid, networkInfo.ipAddress);
+        const success = await this.setupLocalClient(device, networkInfo.ipAddress);
         if (success) {
           return true;
         }
@@ -135,7 +136,7 @@ export class ConnectionService {
       localNetworkUDPClient.registerListener({
         onMessage: async (duid: string, ip: string): Promise<void> => {
           this.logger.debug(`Received UDP broadcast from device ${duid} at IP ${ip}`);
-          await this.setupLocalClient(duid, ip);
+          await this.setupLocalClient(device, ip);
         },
       } as AbstractUDPMessageListener);
 
@@ -160,7 +161,7 @@ export class ConnectionService {
     }
 
     if (localIp) {
-      return await this.setupLocalClient(device.duid, localIp);
+      return await this.setupLocalClient(device, localIp);
     }
 
     return false;
@@ -217,28 +218,30 @@ export class ConnectionService {
   /**
    * Helper: Set up a local client for the given device and IP.
    */
-  private async setupLocalClient(duid: string, ip: string): Promise<boolean> {
+  private async setupLocalClient(device: Device, ip: string): Promise<boolean> {
     if (!this.clientRouter) {
       this.logger.error('clientRouter not initialized');
       return false;
     }
 
     try {
-      const localClient = this.clientRouter.registerClient(duid, ip);
+      const localClient = this.clientRouter.registerClient(device.duid, ip);
       if (!localClient) {
-        this.logger.error(`Failed to create local client for device ${duid} at IP ${ip}`);
+        this.logger.error(`Failed to create local client for device ${device.duid} at IP ${ip}`);
         return false;
       }
 
       localClient.connect();
       await this.waitForConnection(() => localClient.isConnected());
 
-      this.ipMap.set(duid, ip);
-      this.localClientMap.set(duid, localClient);
-      this.logger.debug(`Local connection established for device ${duid} at ${ip}`);
+      device.specs.hasRealTimeConnection = true;
+
+      this.ipMap.set(device.duid, ip);
+      this.localClientMap.set(device.duid, localClient);
+      this.logger.debug(`Local connection established for device ${device.duid} at ${ip}`);
       return true;
     } catch (error) {
-      this.logger.error(`Error setting up local client for device ${duid} at IP ${ip}:`, error);
+      this.logger.error(`Error setting up local client for device ${device.duid} at IP ${ip}:`, error);
       return false;
     }
   }

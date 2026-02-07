@@ -35,6 +35,7 @@ export class DeviceBuilder {
       model: DeviceModel.Q5,
       category: DeviceCategory.VacuumCleaner,
       batteryLevel: 100,
+      hasRealTimeConnection: true,
     },
     store: {
       userData: this.createDefaultUserData(),

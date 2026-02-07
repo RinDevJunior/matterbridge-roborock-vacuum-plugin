@@ -128,7 +128,15 @@ describe('module.ts - complete coverage', () => {
         duid: 'device1',
         serialNumber: 'device1',
         name: 'Vacuum 1',
-        specs: { id: 'device1', firmwareVersion: '1.0', serialNumber: 'device1', model: DeviceModel.QREVO_EDGE_5V1, category: DeviceCategory.VacuumCleaner, batteryLevel: 100 },
+        specs: {
+          id: 'device1',
+          firmwareVersion: '1.0',
+          serialNumber: 'device1',
+          model: DeviceModel.QREVO_EDGE_5V1,
+          category: DeviceCategory.VacuumCleaner,
+          batteryLevel: 100,
+          hasRealTimeConnection: true,
+        } as DeviceSpecs,
         rrHomeId: 123,
         store: asPartial<Device['store']>({
           homeData: {
