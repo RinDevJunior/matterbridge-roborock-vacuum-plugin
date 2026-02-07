@@ -24,7 +24,7 @@ export class MQTTClient extends AbstractClient {
     this.mqttUsername = CryptoUtils.md5hex(`${String(userdata.rriot.u)}:${String(userdata.rriot.k)}`).substring(2, 10);
     this.mqttPassword = CryptoUtils.md5hex(`${String(userdata.rriot.s)}:${String(userdata.rriot.k)}`).substring(16);
 
-    this.initializeConnectionStateListener();
+    this.initializeConnectionStateListener(this);
   }
 
   public override isConnected(): boolean {
@@ -96,10 +96,16 @@ export class MQTTClient extends AbstractClient {
     }
 
     this.keepConnectionAliveInterval = setInterval(() => {
-      if (this.mqttClient) {
+      if (this.mqttClient && this.connected) {
+        this.logger.debug('[MQTTClient] Reconnecting to keep connection alive');
         this.mqttClient.end();
         this.mqttClient.reconnect();
+      } else if (this.mqttClient && !this.connected) {
+        this.logger.debug('[MQTTClient] MQTT client exists but not connected, calling reconnect');
+        this.mqttClient = undefined;
+        this.connect();
       } else {
+        this.logger.debug('[MQTTClient] MQTT client not initialized, calling connect to establish connection');
         this.connect();
       }
     }, KEEPALIVE_INTERVAL_MS);
@@ -112,7 +118,8 @@ export class MQTTClient extends AbstractClient {
     }
 
     this.connected = true;
-    await this.connectionListener.onConnected(`mqtt-${this.mqttUsername}`);
+    this.logger.info(`[MQTTClient] connected to MQTT broker with result: ${debugStringify(result)}`);
+    await this.connectionBroadcaster.onConnected(`mqtt-${this.mqttUsername}`);
     this.subscribeToQueue();
   }
 
@@ -126,20 +133,20 @@ export class MQTTClient extends AbstractClient {
   }
 
   private async onSubscribe(err: Error | null, subscription: ISubscriptionGrant[] | undefined): Promise<void> {
-    if (!err) {
-      this.logger.info(`onSubscribe: ${JSON.stringify(subscription)}`);
+    const hasError = err !== null && err !== undefined;
+    if (hasError) {
+      this.logger.error(`[MQTTClient] Failed to subscribe: ${String(err)}`);
+      this.connected = false;
+
+      await this.connectionBroadcaster.onDisconnected(`mqtt-${this.mqttUsername}`, `Failed to subscribe to the queue: ${String(err)}`);
       return;
     }
-
-    this.logger.error(`failed to subscribe: ${String(err)}`);
-    this.connected = false;
-
-    await this.connectionListener.onDisconnected(`mqtt-${this.mqttUsername}`, `Failed to subscribe to the queue: ${String(err)}`);
+    this.logger.info(`[MQTTClient] Connection subscribed: ${debugStringify(subscription)}`);
   }
 
   private async onDisconnect(): Promise<void> {
     this.connected = false;
-    await this.connectionListener.onDisconnected(`mqtt-${this.mqttUsername}`, 'Disconnected from MQTT broker');
+    await this.connectionBroadcaster.onDisconnected(`mqtt-${this.mqttUsername}`, 'Disconnected from MQTT broker');
   }
 
   private async onError(result: Error | ErrorWithReasonCode): Promise<void> {
@@ -148,12 +155,12 @@ export class MQTTClient extends AbstractClient {
     const errorMessage = isAuthError ? 'Connection refused: Not authorized' : debugStringify(result);
 
     this.logger.error(`MQTT connection error: ${errorMessage}`);
-    await this.connectionListener.onError(`mqtt-${this.mqttUsername}`, `MQTT connection error: ${errorMessage}`);
+    await this.connectionBroadcaster.onError(`mqtt-${this.mqttUsername}`, `MQTT connection error: ${errorMessage}`);
   }
 
   private async onClose(): Promise<void> {
     if (this.connected) {
-      await this.connectionListener.onDisconnected(`mqtt-${this.mqttUsername}`, 'MQTT connection closed');
+      await this.connectionBroadcaster.onDisconnected(`mqtt-${this.mqttUsername}`, 'MQTT connection closed');
     }
 
     this.connected = false;
@@ -161,14 +168,14 @@ export class MQTTClient extends AbstractClient {
 
   private async onOffline(): Promise<void> {
     this.connected = false;
-    await this.connectionListener.onDisconnected('mqtt-' + this.mqttUsername, 'MQTT connection offline');
+    await this.connectionBroadcaster.onDisconnected('mqtt-' + this.mqttUsername, 'MQTT connection offline');
   }
 
   private onReconnect(): void {
     // Note: 'reconnect' event fires when MQTT library *starts* a reconnection attempt,
     // NOT when it successfully reconnects. The 'connect' event fires on successful reconnection.
     // Do NOT call subscribeToQueue() here - it will be called by onConnect() when successful.
-    this.connectionListener.onReconnect('mqtt-' + this.mqttUsername, 'Attempting to reconnect to MQTT broker');
+    this.connectionBroadcaster.onReconnect('mqtt-' + this.mqttUsername, 'Attempting to reconnect to MQTT broker');
   }
 
   private async onMessage(topic: string, message: Buffer): Promise<void> {

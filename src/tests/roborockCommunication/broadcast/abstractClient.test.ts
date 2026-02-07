@@ -13,7 +13,7 @@ class TestClient extends AbstractClient {
 
   constructor(logger: any, context: MessageContext, responseBroadcaster: ResponseBroadcaster, responseTracker: PendingResponseTracker) {
     super(logger, context, responseBroadcaster, responseTracker);
-    this.initializeConnectionStateListener();
+    this.initializeConnectionStateListener(asPartial<AbstractClient>({}));
   }
 
   override isConnected(): boolean {
@@ -85,7 +85,7 @@ describe('AbstractClient', () => {
   it('registerConnectionListener adds listener to chain', () => {
     const listener = asPartial<AbstractConnectionListener>({ onConnected: vi.fn() });
     client.registerConnectionListener(listener);
-    expect(asType<TestClient>(client)['connectionListener']['listeners']).toContain(listener);
+    expect(asType<TestClient>(client)['connectionBroadcaster']['listeners']).toContain(listener);
   });
 
   it('registerMessageListener adds listener to chain', () => {

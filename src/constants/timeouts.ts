@@ -47,19 +47,19 @@ export const REFRESH_INTERVAL_BUFFER_MS = 100;
 export const MAX_RETRY_COUNT = 10;
 
 /**
- * Timeout for hello/ping response from device (30 seconds).
+ * Timeout for hello/ping response from device (10 seconds).
  */
-export const HELLO_RESPONSE_TIMEOUT_MS = 30000;
+export const HELLO_RESPONSE_TIMEOUT_MS = 10000;
 
 /**
- * Delay between connection retry attempts (1000ms).
+ * Delay between connection retry attempts (500ms).
  */
-export const CONNECTION_RETRY_DELAY_MS = 1000;
+export const CONNECTION_RETRY_DELAY_MS = 500;
 
 /**
  * Maximum number of connection attempts before timeout (20 attempts).
  */
-export const MAX_CONNECTION_ATTEMPTS = 30;
+export const MAX_CONNECTION_ATTEMPTS = 20;
 
 /**
  * Multiplier for MQTT refresh interval (500ms).

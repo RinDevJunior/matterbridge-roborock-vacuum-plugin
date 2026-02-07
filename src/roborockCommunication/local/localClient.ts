@@ -6,7 +6,7 @@ import { ProtocolVersion } from '../enums/index.js';
 import { AbstractClient } from '../routing/abstractClient.js';
 import { ChunkBuffer } from '../helper/chunkBuffer.js';
 import { Sequence } from '../helper/sequence.js';
-import { PingResponseListener } from '../routing/listeners/implementation/pingResponseListener.js';
+import { HelloResponseListener } from '../routing/listeners/implementation/helloResponseListener.js';
 import { PendingResponseTracker } from '../routing/services/pendingResponseTracker.js';
 import { KEEPALIVE_INTERVAL_MS } from '../../constants/index.js';
 import { ResponseBroadcaster } from '../routing/listeners/responseBroadcaster.js';
@@ -18,7 +18,7 @@ export class LocalNetworkClient extends AbstractClient {
   private buffer: ChunkBuffer = new ChunkBuffer();
   private messageIdSeq: Sequence;
   private pingInterval?: NodeJS.Timeout;
-  private pingResponseListener: PingResponseListener;
+  private helloResponseListener: HelloResponseListener;
   private connected = false;
   private keepConnectionAliveInterval: NodeJS.Timeout | undefined = undefined;
 
@@ -33,8 +33,8 @@ export class LocalNetworkClient extends AbstractClient {
     super(logger, context, responseBroadcaster, responseTracker);
     this.messageIdSeq = new Sequence(100000, 999999);
 
-    this.pingResponseListener = new PingResponseListener(this.duid, logger);
-    this.responseBroadcaster.register(this.pingResponseListener);
+    this.helloResponseListener = new HelloResponseListener(this.duid, logger);
+    this.responseBroadcaster.register(this.helloResponseListener);
   }
 
   public override isReady(): boolean {
@@ -109,7 +109,7 @@ export class LocalNetworkClient extends AbstractClient {
   }
 
   private async onDisconnect(hadError: boolean): Promise<void> {
-    this.logger.info(` [LocalNetworkClient]: ${this.duid} socket disconnected. Had error: ${hadError}`);
+    this.logger.info(`[LocalNetworkClient]: ${this.duid} socket disconnected. Had error: ${hadError}`);
 
     if (this.socket) {
       this.socket.destroy();
@@ -118,9 +118,8 @@ export class LocalNetworkClient extends AbstractClient {
     if (this.pingInterval) {
       clearInterval(this.pingInterval);
     }
-    if (!this.connected) {
-      await this.connectionListener.onDisconnected(this.duid, 'Socket disconnected. Had no error.');
-    }
+
+    await this.connectionBroadcaster.onDisconnected(this.duid, 'Socket disconnected. Had error: ' + hadError);
     this.connected = false;
   }
 
@@ -132,9 +131,7 @@ export class LocalNetworkClient extends AbstractClient {
       this.socket = undefined;
     }
 
-    if (!this.connected) {
-      await this.connectionListener.onDisconnected(this.duid, `Socket error: ${error.message}`);
-    }
+    await this.connectionBroadcaster.onDisconnected(this.duid, `Socket error: ${error.message}`);
     this.connected = false;
   }
 
@@ -168,11 +165,6 @@ export class LocalNetworkClient extends AbstractClient {
       let offset = 0;
       while (offset + 4 <= receivedBuffer.length) {
         const segmentLength = receivedBuffer.readUInt32BE(offset);
-        if (segmentLength == 17) {
-          offset += 4 + segmentLength;
-          continue;
-        }
-
         try {
           const currentBuffer = receivedBuffer.subarray(offset + 4, offset + segmentLength + 4);
           const response = this.deserializer.deserialize(this.duid, currentBuffer, 'LocalNetworkClient');
@@ -228,7 +220,7 @@ export class LocalNetworkClient extends AbstractClient {
     });
 
     try {
-      const responsePromise = this.pingResponseListener.waitFor();
+      const responsePromise = this.helloResponseListener.waitFor(version);
       await this.send(this.duid, request);
       const response = await responsePromise;
       await this.processHelloResponse(response);
@@ -274,8 +266,10 @@ export class LocalNetworkClient extends AbstractClient {
 
     this.keepConnectionAliveInterval = setInterval(() => {
       if (this.socket && this.isConnected()) {
+        this.logger.debug(`[LocalNetworkClient]: Reconnecting to keep connection alive for ${this.duid}`);
         this.disconnect().then(() => this.connect());
       } else {
+        this.logger.debug(`[LocalNetworkClient]: Socket not connected for ${this.duid}, calling connect to establish connection`);
         this.connect();
       }
     }, KEEPALIVE_INTERVAL_MS);

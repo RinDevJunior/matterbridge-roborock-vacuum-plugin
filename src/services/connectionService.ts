@@ -6,7 +6,6 @@ import { CONNECTION_RETRY_DELAY_MS, MAX_CONNECTION_ATTEMPTS } from '../constants
 import { ClientRouter } from '../roborockCommunication/routing/clientRouter.js';
 import { Device, NetworkInfoDTO, Protocol, RPC_Request_Segments, UserData } from '../roborockCommunication/models/index.js';
 import { MapResponseListener } from '../roborockCommunication/routing/listeners/implementation/mapResponseListener.js';
-import { PingResponseListener } from '../roborockCommunication/routing/listeners/implementation/pingResponseListener.js';
 import { AbstractUDPMessageListener } from '../roborockCommunication/routing/listeners/abstractUDPMessageListener.js';
 import { ProtocolVersion } from '../roborockCommunication/enums/index.js';
 import { SimpleMessageHandler } from '../roborockCommunication/routing/handlers/implementation/simpleMessageHandler.js';
@@ -15,6 +14,7 @@ import { Client } from '../roborockCommunication/routing/client.js';
 import { MessageRoutingService } from './messageRoutingService.js';
 import { MessageDispatcherFactory } from '../roborockCommunication/protocol/dispatcher/dispatcherFactory.js';
 import { SimpleMessageListener } from '../roborockCommunication/routing/listeners/implementation/simpleMessageListener.js';
+import { PingResponseListener } from '../roborockCommunication/routing/listeners/implementation/pingResponseListener.js';
 
 /** Manages device connections (MQTT and local network). */
 export class ConnectionService {
@@ -99,12 +99,14 @@ export class ConnectionService {
       return false;
     }
 
-    this.clientRouter.registerMessageListener(new PingResponseListener(device.duid, this.logger));
     this.clientRouter.registerMessageListener(new MapResponseListener(device.duid, this.logger));
 
     const simpleMessageListener = new SimpleMessageListener(device.duid, this.logger);
     simpleMessageListener.registerHandler(new SimpleMessageHandler(device.duid, this.deviceNotify));
     this.clientRouter.registerMessageListener(simpleMessageListener);
+
+    const pingResponseListener = new PingResponseListener(device.duid, this.logger);
+    this.clientRouter.registerMessageListener(pingResponseListener);
 
     const store = device.store;
     const messageDispatcher = new MessageDispatcherFactory(this.clientRouter, this.logger).getMessageDispatcher(store.pv, store.model);

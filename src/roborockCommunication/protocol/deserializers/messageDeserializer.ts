@@ -18,6 +18,7 @@ export class MessageDeserializer {
     Protocol.ping_response,
     Protocol.general_response,
   ];
+
   private readonly ignoredProtocols: Protocol[] = [Protocol.map_response];
 
   private readonly messageSerializerFactory = new MessageSerializerFactory();
@@ -56,7 +57,9 @@ export class MessageDeserializer {
     }
 
     if (this.protocolsWithoutPayload.includes(header.protocol) || this.ignoredProtocols.includes(header.protocol)) {
-      return new ResponseMessage(duid, header);
+      const message = new ResponseMessage(duid, header);
+      this.logger.debug(`[${from}][MessageDeserializer] deserialized message without payload: ${debugStringify(message)}`);
+      return message;
     }
 
     // parse message content

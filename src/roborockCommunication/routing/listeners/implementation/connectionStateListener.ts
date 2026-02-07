@@ -4,17 +4,14 @@ import { AbstractClient } from '../../abstractClient.js';
 import { MANUAL_RECONNECT_DELAY_MS, MAX_RETRY_COUNT } from '../../../../constants/index.js';
 
 export class ConnectionStateListener implements AbstractConnectionListener {
-  protected logger: AnsiLogger;
-  protected client: AbstractClient;
-  protected clientName: string;
   protected shouldReconnect = false;
   private manualReconnectTimer: NodeJS.Timeout | undefined = undefined;
 
-  constructor(logger: AnsiLogger, client: AbstractClient, clientName: string) {
-    this.logger = logger;
-    this.client = client;
-    this.clientName = clientName;
-  }
+  constructor(
+    private readonly logger: AnsiLogger,
+    private readonly client: AbstractClient,
+    private readonly clientName: string,
+  ) {}
 
   public start(): void {
     this.shouldReconnect = true;
