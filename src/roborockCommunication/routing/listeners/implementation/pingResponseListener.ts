@@ -1,4 +1,4 @@
-import { AnsiLogger, debugStringify } from 'matterbridge/logger';
+import { AnsiLogger } from 'matterbridge/logger';
 import { AbstractMessageListener } from '../abstractMessageListener.js';
 import { Protocol, ResponseMessage } from '../../../models/index.js';
 
@@ -19,7 +19,7 @@ export class PingResponseListener implements AbstractMessageListener {
     }
 
     if (message.isForProtocol(Protocol.ping_response)) {
-      this.logger.debug(`[${this.name}] Received ping response message: ${debugStringify(message)}`);
+      this.logger.debug(`[${this.name}] Received ping response message for DUID ${this.duid}, the communication is healthy.`);
 
       if (this.handler) {
         this.handler(message);

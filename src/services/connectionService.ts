@@ -100,10 +100,15 @@ export class ConnectionService {
       return false;
     }
 
+    if (!this.deviceNotify) {
+      this.logger.error('deviceNotify callback not set');
+      return false;
+    }
+
     this.clientRouter.registerMessageListener(new MapResponseListener(device.duid, this.logger));
 
     const simpleMessageListener = new SimpleMessageListener(device.duid, this.logger);
-    simpleMessageListener.registerHandler(new SimpleMessageHandler(device.duid, this.deviceNotify));
+    simpleMessageListener.registerHandler(new SimpleMessageHandler(device.duid, this.logger, this.deviceNotify));
     this.clientRouter.registerMessageListener(simpleMessageListener);
 
     const pingResponseListener = new PingResponseListener(device.duid, this.logger);

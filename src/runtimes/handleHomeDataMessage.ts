@@ -62,7 +62,8 @@ export async function updateFromHomeData(homeData: Home, platform: RoborockMatte
       });
     }
 
-    if (state && !robot.device.specs.hasRealTimeConnection) {
+    if (state && !deviceData.hasRealTimeConnection) {
+      platform.log.notice(`hasRealTimeConnection is false, updating device status from home data: ${state}`);
       platform.platformRunner.updateRobotWithPayload({
         type: NotifyMessageTypes.DeviceStatusSimple,
         data: {

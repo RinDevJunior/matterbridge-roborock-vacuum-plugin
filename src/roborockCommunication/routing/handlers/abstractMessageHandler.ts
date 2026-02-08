@@ -1,4 +1,5 @@
 import { CleanModeSetting } from '../../../behaviors/roborock.vacuum/core/CleanModeSetting.js';
+import { ServiceAreaUpdateMessage } from '../../../types/index.js';
 import { OperationStatusCode } from '../../enums/index.js';
 import { BatteryMessage, VacuumError } from '../../models/index.js';
 
@@ -21,5 +22,8 @@ export interface AbstractMessageHandler {
   }): void;
 
   onCleanModeUpdate(message: CleanModeSetting): void;
+
+  onServiceAreaUpdate(message: ServiceAreaUpdateMessage): void;
+
   onAdditionalProps(value: number): void;
 }

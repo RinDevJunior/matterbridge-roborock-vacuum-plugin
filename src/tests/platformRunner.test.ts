@@ -249,7 +249,6 @@ describe('PlatformRunner.updateRobotWithPayload', () => {
     expect(robot.updateAttribute).toHaveBeenCalledWith(PowerSource.Cluster.id, 'batPercentRemaining', 100, mockLogger);
     expect(robot.updateAttribute).toHaveBeenCalledWith(PowerSource.Cluster.id, 'batChargeLevel', 1, mockLogger);
     expect(robot.updateAttribute).toHaveBeenCalledWith(PowerSource.Cluster.id, 'batChargeState', PowerSource.BatChargeState.IsCharging, mockLogger);
-    expect(robot.updateAttribute).toHaveBeenCalledWith(RvcOperationalState.Cluster.id, 'operationalState', RvcOperationalState.OperationalState.Charging, mockLogger);
   });
 
   it('should not update battery charge state when device status is missing', () => {
@@ -417,7 +416,7 @@ describe('PlatformRunner.updateRobotWithPayload', () => {
 
     runner.updateRobotWithPayload(payload);
 
-    expect(mockLogger.debug).toHaveBeenCalledWith('No cleaning_info, setting currentArea to null');
+    expect(mockLogger.notice).toHaveBeenCalledWith('No cleaning_info, setting currentArea to null');
     expect(robot.updateAttribute).toHaveBeenCalledWith(ServiceArea.Cluster.id, 'currentArea', null, mockLogger);
     expect(robot.updateAttribute).toHaveBeenCalledWith(ServiceArea.Cluster.id, 'selectedAreas', [], mockLogger);
   });

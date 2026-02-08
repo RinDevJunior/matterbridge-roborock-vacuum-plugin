@@ -11,7 +11,7 @@ export interface ResolvedState {
 /**
  * Resolves the robot's state based on status code and modifier flags.
  *
- * Implements a 56-row state resolution matrix with three priority levels:
+ * Implements a 47-row state resolution matrix with three priority levels:
  *
  * 1. **Status Override Rules** (Highest Priority)
  *    - Certain status codes ignore ALL modifier flags
@@ -26,14 +26,14 @@ export interface ResolvedState {
  *
  * 3. **Modifier Priority Chain**
  *    - For all other cases, modifiers apply in priority order:
- *      a. inReturning (High) - Sets SeekingCharger operational state (except Paused → Paused)
+ *      a. inReturning (High) - Sets SeekingCharger operational state (ignored for Paused, InError, ReturnToDock, ReturningDock)
  *      b. isExploring (Medium) - Changes run mode to Mapping (blocked on Charging)
- *      c. inFreshState (Low) - Transitions to Idle/Docked (only for status 8 Charging)
+ *      c. inFreshState (Low) - No longer used (redundant with Charging base state)
  *
  * @param message StatusChangeMessage containing status code and modifier flags
  * @returns ResolvedState with runMode and operationalState
  *
- * @see misc/state_resolution_matrix.md - Complete 56-row matrix documentation
+ * @see misc/state_resolution_matrix.md - Complete 47-row matrix documentation
  */
 export function resolveDeviceState(message: StatusChangeMessage): ResolvedState {
   const status = message.status;
@@ -51,7 +51,7 @@ export function resolveDeviceState(message: StatusChangeMessage): ResolvedState 
     };
   }
 
-  // EmptyingDustContainer Status Override - Row 53
+  // EmptyingDustContainer Status Override - Row 44
   if (status === OperationStatusCode.EmptyingDustContainer) {
     return {
       runMode: RvcRunMode.ModeTag.Cleaning,
@@ -59,7 +59,7 @@ export function resolveDeviceState(message: StatusChangeMessage): ResolvedState 
     };
   }
 
-  // WashingTheMop Status Override - Row 54
+  // WashingTheMop Status Override - Row 45
   if (status === OperationStatusCode.WashingTheMop) {
     return {
       runMode: RvcRunMode.ModeTag.Cleaning,
@@ -67,7 +67,7 @@ export function resolveDeviceState(message: StatusChangeMessage): ResolvedState 
     };
   }
 
-  // GoingToWashTheMop Status Override - Row 55
+  // GoingToWashTheMop Status Override - Row 46
   if (status === OperationStatusCode.GoingToWashTheMop) {
     return {
       runMode: RvcRunMode.ModeTag.Cleaning,
@@ -75,7 +75,7 @@ export function resolveDeviceState(message: StatusChangeMessage): ResolvedState 
     };
   }
 
-  // Mapping Status Override - Row 56
+  // Mapping Status Override - Row 47
   if (status === OperationStatusCode.Mapping) {
     return {
       runMode: RvcRunMode.ModeTag.Mapping,
@@ -191,10 +191,11 @@ function getBaseState(message: StatusChangeMessage): ResolvedState {
  * When inReturning=true, robot is seeking charger regardless of other flags.
  * Sets runMode to Cleaning and operationalState to SeekingCharger.
  *
- * Special Case: When status is Paused (10), maintains Paused operational state
- * instead of changing to SeekingCharger.
+ * Special Cases: For certain statuses (Paused, InError, ReturnToDock, ReturningDock),
+ * the operational state is fixed by the status itself, so inReturning is ignored entirely.
+ * These statuses only use isExploring to determine run mode (Cleaning vs Mapping).
  *
- * Matrix Coverage: Rows 2, 4, 6, 9, 16-19, 21, 24, 27, 29-31, 33, 36, 39, 42, 45, 48, 51
+ * Matrix Coverage: Rows 2, 4, 6, 16, 17, 21, 28, 36, 39, 42
  *
  * @param state Current resolved state
  * @param message StatusChangeMessage
@@ -202,12 +203,14 @@ function getBaseState(message: StatusChangeMessage): ResolvedState {
  */
 function applyInReturningModifier(state: ResolvedState, message: StatusChangeMessage): ResolvedState {
   if (message.inReturning === true) {
-    // Special case: Paused status maintains Paused operational state
-    if (message.status === OperationStatusCode.Paused) {
-      return {
-        runMode: RvcRunMode.ModeTag.Cleaning,
-        operationalState: RvcOperationalState.OperationalState.Paused,
-      };
+    // Skip inReturning for statuses with fixed operational states
+    if (
+      message.status === OperationStatusCode.Paused ||
+      message.status === OperationStatusCode.InError ||
+      message.status === OperationStatusCode.ReturnToDock ||
+      message.status === OperationStatusCode.ReturningDock
+    ) {
+      return state; // Keep current state unchanged
     }
 
     return {
@@ -228,7 +231,7 @@ function applyInReturningModifier(state: ResolvedState, message: StatusChangeMes
  * Note: This modifier is blocked when status is Charging (8) as the vacuum
  * cannot charge and explore simultaneously.
  *
- * Matrix Coverage: Rows 3, 7, 10, 22, 25, 34, 37, 40, 43, 46, 49, 52
+ * Matrix Coverage: Rows 3, 7, 9, 19, 22, 26, 32, 34, 37, 40, 43
  *
  * @param state Current resolved state
  * @param message StatusChangeMessage
@@ -257,7 +260,7 @@ function applyIsExploringModifier(state: ResolvedState, message: StatusChangeMes
  * For other statuses, including Cleaning (5), inFreshState has no effect
  * as the vacuum does not go to fresh state during active cleaning.
  *
- * Matrix Coverage: Row 28
+ * Matrix Coverage: None (inFreshState is redundant and no longer used in matrix)
  *
  * @param state Current resolved state
  * @param message StatusChangeMessage

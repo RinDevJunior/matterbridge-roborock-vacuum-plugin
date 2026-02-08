@@ -165,9 +165,12 @@ describe('ConnectionService', () => {
 
     it('should not call deviceNotify when callback is not set', async () => {
       vi.spyOn(mockClientRouter, 'isConnected').mockReturnValue(true);
+      service.setDeviceNotify(vi.fn());
 
       await service.initializeMessageClient(mockDevice, mockUserData);
       await service.initializeMessageClientForLocal(mockDevice);
+
+      service.deviceNotify = undefined;
 
       const listenerCall = vi.mocked(mockClientRouter.registerMessageListener).mock.calls[0][0];
       const mockMessage = new ResponseMessage(mockDevice.duid, new HeaderMessage('1.0', 4, 0, Date.now(), 0));
@@ -271,11 +274,12 @@ describe('ConnectionService additional coverage', () => {
   it('should handle B01 protocol and UDP client setup', async () => {
     const device: Device = asPartial<Device>({
       ...mockDevice,
-      specs: asPartial<DeviceSpecs>({ model: DeviceModel.S6 }),
+      specs: asPartial<DeviceSpecs>({ model: DeviceModel.S6, hasRealTimeConnection: false }),
       pv: 'B01',
       duid: 'b01-duid',
-      deviceStatus: { 1001: { 101: { ipAddress: '1.2.3.4' } } },
+      deviceStatus: { 101: { 81: { ipAddress: '1.2.3.4' } } },
     });
+    service.setDeviceNotify(vi.fn());
     service.clientRouter = asPartial<ClientRouter>(mockClientRouter);
     const result = await service.initializeMessageClientForLocal(device);
     expect(result).toBe(true);
@@ -284,11 +288,12 @@ describe('ConnectionService additional coverage', () => {
   it('should fallback to UDP broadcast if setupLocalClient fails', async () => {
     const device: Device = asPartial<Device>({
       ...mockDevice,
-      specs: asPartial<DeviceSpecs>({ model: DeviceModel.S6 }),
+      specs: asPartial<DeviceSpecs>({ model: DeviceModel.S6, hasRealTimeConnection: false }),
       pv: 'B01',
       duid: 'b01-duid',
-      deviceStatus: { 1001: { 101: { ipAddress: '1.2.3.4' } } },
+      deviceStatus: { 101: { 82: { ipAddress: '1.2.3.4' } } },
     });
+    service.setDeviceNotify(vi.fn());
     service.clientRouter = asPartial<ClientRouter>(mockClientRouter);
     const result = await service.initializeMessageClientForLocal(device);
     expect(result).toBe(true);
@@ -310,7 +315,6 @@ describe('ConnectionService additional coverage', () => {
 
   it('should return true when local client connects successfully', async () => {
     service.clientRouter = asPartial<ClientRouter>(mockClientRouter);
-    // mockClientRouter.registerClient.mockReturnValue({ connect: vi.fn(), isConnected: vi.fn().mockReturnValue(true) });
     vi.spyOn(mockClientRouter, 'registerClient').mockReturnValue(asType<Client>(mockLocalClient));
     const result = await asType<{
       setupLocalClient: (

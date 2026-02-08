@@ -202,6 +202,10 @@ export class RoborockMatterbridgePlatform extends MatterbridgeDynamicPlatform {
 
     const configureSuccess = new Map<string, boolean>();
 
+    this.roborockService.setDeviceNotify((payload) => {
+      this.platformRunner.updateRobotWithPayload(payload);
+    });
+
     for (const vacuum of this.registry.getAllDevices()) {
       const success = await this.configureDevice(vacuum);
       configureSuccess.set(vacuum.duid, success);
@@ -209,10 +213,6 @@ export class RoborockMatterbridgePlatform extends MatterbridgeDynamicPlatform {
         this.rrHomeId = vacuum.rrHomeId;
       }
     }
-
-    this.roborockService.setDeviceNotify((payload) => {
-      this.platformRunner.updateRobotWithPayload(payload);
-    });
 
     for (const [duid, robot] of this.registry.robotsMap) {
       if (!configureSuccess.get(duid)) {

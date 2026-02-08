@@ -8,6 +8,12 @@ import { NotifyMessageTypes } from './notifyMessageTypes.js';
 import { CleanInformation, Home } from '../roborockCommunication/models/index.js';
 import { OperationStatusCode } from '../roborockCommunication/enums/operationStatusCode.js';
 
+export interface ServiceAreaUpdateMessage {
+  duid: string;
+  state: OperationStatusCode;
+  cleaningInfo: CleanInformation | undefined;
+}
+
 /**
  * Home data message payload.
  * Contains complete home and device information from REST API.
@@ -94,11 +100,7 @@ export interface CleanModeUpdatePayload {
  */
 export interface ServiceAreaUpdatePayload {
   type: NotifyMessageTypes.ServiceAreaUpdate;
-  data: {
-    duid: string;
-    state: OperationStatusCode;
-    cleaningInfo: CleanInformation | undefined;
-  };
+  data: ServiceAreaUpdateMessage;
 }
 
 /**

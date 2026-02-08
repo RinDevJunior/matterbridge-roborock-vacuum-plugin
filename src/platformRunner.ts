@@ -155,6 +155,7 @@ export class PlatformRunner {
    * Handle error occurred messages and update robot operational state.
    */
   private handleErrorOccurred(robot: RoborockVacuumCleaner, message: DeviceErrorMessage): void {
+    this.platform.log.debug(`Handling error occurred: ${debugStringify(message)}`);
     const operationalStateId = getOperationalErrorState(message.errorCode);
     if (operationalStateId) {
       this.platform.log.error(`Error occurred: ${message.errorCode}`);
@@ -166,6 +167,7 @@ export class PlatformRunner {
    * Handle battery update messages and update robot power attributes.
    */
   private handleBatteryUpdate(robot: RoborockVacuumCleaner, message: BatteryMessage): void {
+    this.platform.log.debug(`Handling battery update: ${debugStringify(message)}`);
     const batteryLevel = message.percentage;
     const deviceStatus = message.deviceStatus;
     if (batteryLevel) {
@@ -175,11 +177,7 @@ export class PlatformRunner {
 
     if (batteryLevel && deviceStatus) {
       const batteryChargeState = getBatteryState(deviceStatus, batteryLevel);
-      const operationalStateId =
-        batteryChargeState === PowerSource.BatChargeState.IsCharging ? RvcOperationalState.OperationalState.Charging : RvcOperationalState.OperationalState.Docked;
-
       robot.updateAttribute(PowerSource.Cluster.id, 'batChargeState', batteryChargeState, this.platform.log);
-      robot.updateAttribute(RvcOperationalState.Cluster.id, 'operationalState', operationalStateId, this.platform.log);
     }
   }
 
@@ -200,7 +198,7 @@ export class PlatformRunner {
 
     // Resolve state using state resolution matrix
     const resolvedState = resolveDeviceState(message);
-    this.platform.log.debug(
+    this.platform.log.notice(
       `Resolved state: runMode=${this.getRunModeName(resolvedState.runMode)}, operationalState=${this.getOperationalStateName(resolvedState.operationalState)}`,
     );
 
@@ -216,8 +214,6 @@ export class PlatformRunner {
    */
   private handleDeviceStatusSimpleUpdate(robot: RoborockVacuumCleaner, message: { duid: string; status: OperationStatusCode }): void {
     this.platform.log.debug(`Handling simple device status update: ${debugStringify(message)}`);
-
-    this.platform.log.debug(`Handling device status update: ${debugStringify(message)}`);
 
     const state = state_to_matter_state(message.status);
     this.platform.log.debug(`Resolved state from simple update: ${state !== undefined ? this.getRunModeName(state) : 'undefined'}`);
@@ -243,6 +239,7 @@ export class PlatformRunner {
    * Processes clean mode settings (suction power, water flow, mop route).
    */
   private handleCleanModeUpdate(robot: RoborockVacuumCleaner, message: { suctionPower: number; waterFlow: number; distance_off: number; mopRoute: number | undefined }): void {
+    this.platform.log.debug(`Handling clean mode update: ${debugStringify(message)}`);
     const deviceData = robot.device.specs;
 
     // Update RvcCleanMode based on clean mode settings
@@ -267,13 +264,14 @@ export class PlatformRunner {
     const logger = this.platform.log;
 
     if (message.state === OperationStatusCode.Idle) {
+      logger.debug('Robot is idle, updating selectedAreas from Roborock service');
       const selectedAreas = this.platform.roborockService?.getSelectedAreas(robot.device.duid) ?? [];
       robot.updateAttribute(ServiceArea.Cluster.id, 'selectedAreas', selectedAreas, this.platform.log);
       return;
     }
 
     if (message.state === OperationStatusCode.Cleaning && !message.cleaningInfo) {
-      logger.debug('No cleaning_info, setting currentArea to null');
+      logger.notice('No cleaning_info, setting currentArea to null');
       robot.updateAttribute(ServiceArea.Cluster.id, 'currentArea', null, this.platform.log);
       robot.updateAttribute(ServiceArea.Cluster.id, 'selectedAreas', [], this.platform.log);
       return;

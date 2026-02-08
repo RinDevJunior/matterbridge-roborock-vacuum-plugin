@@ -3,14 +3,15 @@ import { describe, it, expect, vi } from 'vitest';
 import { DockErrorCode, OperationStatusCode, VacuumErrorCode } from '../../../../roborockCommunication/enums/index.js';
 import { SimpleMessageHandler } from '../../../../roborockCommunication/routing/handlers/implementation/simpleMessageHandler.js';
 import { BatteryMessage, DeviceStatus, VacuumError } from '../../../../roborockCommunication/models/index.js';
-import { asPartial } from '../../../testUtils.js';
+import { createMockLogger } from '../../../testUtils.js';
 
 describe('SimpleMessageHandler', () => {
   const duid = 'test-duid';
+  const logger = createMockLogger();
 
   it('calls deviceNotify on error', () => {
     const deviceNotify = vi.fn();
-    const handler = new SimpleMessageHandler(duid, deviceNotify);
+    const handler = new SimpleMessageHandler(duid, logger, deviceNotify);
     const error = new VacuumError(duid, VacuumErrorCode.ClearWaterTankEmpty, DockErrorCode.None);
     handler.onError(error);
     expect(deviceNotify).toHaveBeenCalledWith(
@@ -23,7 +24,7 @@ describe('SimpleMessageHandler', () => {
 
   it('calls deviceNotify on battery update', () => {
     const deviceNotify = vi.fn();
-    const handler = new SimpleMessageHandler(duid, deviceNotify);
+    const handler = new SimpleMessageHandler(duid, logger, deviceNotify);
     const batteryMessage = new BatteryMessage(duid, 77, 8, OperationStatusCode.Charging);
     handler.onBatteryUpdate(batteryMessage);
     expect(deviceNotify).toHaveBeenCalledWith(
@@ -36,7 +37,7 @@ describe('SimpleMessageHandler', () => {
 
   it('calls deviceNotify on status changed', () => {
     const deviceNotify = vi.fn();
-    const handler = new SimpleMessageHandler(duid, deviceNotify);
+    const handler = new SimpleMessageHandler(duid, logger, deviceNotify);
     const message = {
       msg_ver: 1,
       msg_seq: 1,
@@ -97,7 +98,7 @@ describe('SimpleMessageHandler', () => {
   });
 
   it('does nothing if deviceNotify is undefined', () => {
-    const handler = new SimpleMessageHandler(duid, undefined);
+    const handler = new SimpleMessageHandler(duid, logger, undefined);
     const error = new VacuumError(duid, VacuumErrorCode.ClearWaterTankEmpty, DockErrorCode.None);
     const batteryMessage = new BatteryMessage(duid, 50, undefined, undefined);
     expect(() => handler.onError(error)).not.toThrow();
@@ -105,7 +106,7 @@ describe('SimpleMessageHandler', () => {
   });
 
   it('onAdditionalProps does not throw', () => {
-    const handler = new SimpleMessageHandler(duid, vi.fn());
+    const handler = new SimpleMessageHandler(duid, logger, vi.fn());
     expect(() => handler.onAdditionalProps(123)).not.toThrow();
   });
 });

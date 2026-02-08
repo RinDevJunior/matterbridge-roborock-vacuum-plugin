@@ -1,20 +1,23 @@
+import { AnsiLogger } from 'matterbridge/logger';
 import { CleanModeSetting } from '../../../../behaviors/roborock.vacuum/core/CleanModeSetting.js';
-import { DeviceNotifyCallback, NotifyMessageTypes } from '../../../../types/index.js';
+import { DeviceNotifyCallback, NotifyMessageTypes, ServiceAreaUpdateMessage } from '../../../../types/index.js';
 import { BatteryMessage, StatusChangeMessage, VacuumError } from '../../../models/index.js';
 import { AbstractMessageHandler } from '../abstractMessageHandler.js';
 
 export class SimpleMessageHandler implements AbstractMessageHandler {
-  private readonly deviceNotify: DeviceNotifyCallback | undefined;
-
   constructor(
     private readonly duid: string,
-    deviceNotify: DeviceNotifyCallback | undefined,
-  ) {
-    this.deviceNotify = deviceNotify;
-  }
+    private readonly logger: AnsiLogger,
+    private readonly deviceNotify: DeviceNotifyCallback | undefined,
+  ) {}
 
   public onError(error: VacuumError): void {
-    this.deviceNotify?.({
+    if (!this.deviceNotify) {
+      this.logger.debug(`[SimpleMessageHandler]: No deviceNotify callback provided`);
+      return;
+    }
+
+    this.deviceNotify({
       type: NotifyMessageTypes.ErrorOccurred,
       data: {
         duid: error.duid,
@@ -24,26 +27,53 @@ export class SimpleMessageHandler implements AbstractMessageHandler {
   }
 
   public onBatteryUpdate(message: BatteryMessage): void {
-    this.deviceNotify?.({
+    if (!this.deviceNotify) {
+      this.logger.debug(`[SimpleMessageHandler]: No deviceNotify callback provided`);
+      return;
+    }
+
+    this.deviceNotify({
       type: NotifyMessageTypes.BatteryUpdate,
       data: message,
     });
   }
 
   public onStatusChanged(message: StatusChangeMessage): void {
-    this.deviceNotify?.({
+    if (!this.deviceNotify) {
+      this.logger.debug(`[SimpleMessageHandler]: No deviceNotify callback provided`);
+      return;
+    }
+
+    this.deviceNotify({
       type: NotifyMessageTypes.DeviceStatus,
       data: message,
     });
   }
 
   public onCleanModeUpdate(message: CleanModeSetting): void {
-    this.deviceNotify?.({
+    if (!this.deviceNotify) {
+      this.logger.debug(`[SimpleMessageHandler]: No deviceNotify callback provided`);
+      return;
+    }
+
+    this.deviceNotify({
       type: NotifyMessageTypes.CleanModeUpdate,
       data: {
         ...message,
         duid: this.duid,
       },
+    });
+  }
+
+  public onServiceAreaUpdate(message: ServiceAreaUpdateMessage): void {
+    if (!this.deviceNotify) {
+      this.logger.debug(`[SimpleMessageHandler]: No deviceNotify callback provided`);
+      return;
+    }
+
+    this.deviceNotify({
+      type: NotifyMessageTypes.ServiceAreaUpdate,
+      data: message,
     });
   }
 

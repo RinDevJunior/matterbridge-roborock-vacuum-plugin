@@ -23,8 +23,18 @@ export class SimpleMessageListener implements AbstractMessageListener {
       return;
     }
 
-    if (!this.handler || !message.isForProtocol(Protocol.rpc_response)) {
-      this.logger.debug(`[SimpleMessageListener]: No handler registered or message not for rpc_response`);
+    if (!this.handler) {
+      this.logger.error(`[SimpleMessageListener]: No handler registered`);
+      return;
+    }
+
+    if (!message.isForProtocols([Protocol.general_request, Protocol.rpc_response])) {
+      this.logger.debug(`[SimpleMessageListener]: Message not for general_request or rpc_response protocol`);
+      return;
+    }
+
+    if (message.isSimpleOkResponse()) {
+      this.logger.debug(`[SimpleMessageListener]: Ignoring simple 'ok' response`);
       return;
     }
 
@@ -72,5 +82,10 @@ export class SimpleMessageListener implements AbstractMessageListener {
     this.handler.onBatteryUpdate(batteryMessage);
     this.handler.onStatusChanged(statusChangeMessage);
     this.handler.onCleanModeUpdate(cleanMode);
+    this.handler.onServiceAreaUpdate({
+      duid: message.duid,
+      state: state,
+      cleaningInfo: cleaningInfo,
+    });
   }
 }
