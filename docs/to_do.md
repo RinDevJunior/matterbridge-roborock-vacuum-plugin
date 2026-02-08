@@ -1,5 +1,12 @@
 # To Do
 
+## Unit Tests
+
+- [x] Create unit tests for TwoFactorAuthStrategy
+- [x] Create unit tests for VerificationCodeService
+- [x] Create unit tests for PasswordAuthStrategy
+- [x] Create unit tests for UserDataRepository
+
 ## Connection Issues (High Priority)
 
 ### Bug Fixes Required
