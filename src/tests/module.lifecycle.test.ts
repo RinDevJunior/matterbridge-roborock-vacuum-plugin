@@ -4,7 +4,7 @@ import type { LocalStorage } from 'node-persist';
 import { PlatformMatterbridge } from 'matterbridge';
 import { RoborockMatterbridgePlatform } from '../module.js';
 import initializePlugin from '../module.js';
-import type { Device } from '../roborockCommunication/models/index.js';
+import type { Device, DeviceSpecs } from '../roborockCommunication/models/index.js';
 import { DeviceModel } from '../roborockCommunication/models/deviceModel.js';
 import { makeDeviceFixture } from './helpers/fixtures.js';
 import { RoborockPluginPlatformConfig } from '../model/RoborockPluginPlatformConfig.js';
@@ -15,7 +15,7 @@ import type { PlatformRunner } from '../platformRunner.js';
 
 function createMockMatterbridge(overrides: Partial<PlatformMatterbridge> = {}): PlatformMatterbridge {
   return {
-    matterbridgeVersion: '3.5.0',
+    matterbridgeVersion: '3.5.3',
     matterbridgePluginDirectory: '/tmp',
     matterbridgeDirectory: '/tmp',
     ...overrides,
@@ -201,12 +201,12 @@ describe('module.ts coverage tests', () => {
       const mockDevice1: Partial<Device> = {
         duid: 'device1',
         name: 'Vacuum 1',
-        data: asPartial<Device['data']>({ model: DeviceModel.S5_MAX }),
+        specs: asPartial<DeviceSpecs>({ model: DeviceModel.S5_MAX }),
       };
       const mockDevice2: Partial<Device> = {
         duid: 'device2',
         name: 'Vacuum 2',
-        data: asPartial<Device['data']>({ model: DeviceModel.S5_MAX }),
+        specs: asPartial<DeviceSpecs>({ model: DeviceModel.S5_MAX }),
       };
 
       const config = createMockConfig();
@@ -240,7 +240,7 @@ describe('module.ts coverage tests', () => {
   describe('onConfigureDevice - no devices or username', () => {
     it('should return early when no devices are registered', async () => {
       const platform = new RoborockMatterbridgePlatform(mockMatterbridge, mockLogger, createMockConfig());
-      platform.platformRunner = asPartial<PlatformRunner>({ requestHomeData: vi.fn(), updateRobotWithPayload: vi.fn(), updateRobot: vi.fn() });
+      platform.platformRunner = asPartial<PlatformRunner>({ requestHomeData: vi.fn(), updateRobotWithPayload: vi.fn() });
       platform.roborockService = asPartial<RoborockService>({
         initializeMessageClientForLocal: vi.fn(),
         getMapInfo: vi.fn(),
@@ -263,7 +263,7 @@ describe('module.ts coverage tests', () => {
     it('should return early when username is missing', async () => {
       const config = createMockConfig({ username: '' });
       const platform = new RoborockMatterbridgePlatform(mockMatterbridge, mockLogger, config);
-      platform.platformRunner = asPartial<PlatformRunner>({ requestHomeData: vi.fn(), updateRobotWithPayload: vi.fn(), updateRobot: vi.fn() });
+      platform.platformRunner = asPartial<PlatformRunner>({ requestHomeData: vi.fn(), updateRobotWithPayload: vi.fn() });
       platform.roborockService = asPartial<RoborockService>({
         initializeMessageClientForLocal: vi.fn(),
         getMapInfo: vi.fn(),
@@ -284,7 +284,7 @@ describe('module.ts coverage tests', () => {
 
     it('should return early when roborockService is undefined', async () => {
       const platform = new RoborockMatterbridgePlatform(mockMatterbridge, mockLogger, createMockConfig());
-      platform.platformRunner = asPartial<PlatformRunner>({ requestHomeData: vi.fn(), updateRobotWithPayload: vi.fn(), updateRobot: vi.fn() });
+      platform.platformRunner = asPartial<PlatformRunner>({ requestHomeData: vi.fn(), updateRobotWithPayload: vi.fn() });
       platform.roborockService = undefined;
       const mockDevice: Partial<Device> = {
         duid: 'test-device',
@@ -309,7 +309,7 @@ describe('module.ts coverage tests', () => {
       const mockDevice = makeDeviceFixture({ duid: 'test-device', name: 'Test Vacuum' });
 
       const platform = new RoborockMatterbridgePlatform(mockMatterbridge, mockLogger, createMockConfig());
-      platform.platformRunner = asPartial<PlatformRunner>({ requestHomeData: vi.fn(), updateRobotWithPayload: vi.fn(), updateRobot: vi.fn() });
+      platform.platformRunner = asPartial<PlatformRunner>({ requestHomeData: vi.fn(), updateRobotWithPayload: vi.fn() });
       platform.roborockService = asPartial<RoborockService>({
         initializeMessageClientForLocal: vi.fn().mockResolvedValue(false),
         setDeviceNotify: vi.fn(),
@@ -333,8 +333,17 @@ describe('module.ts coverage tests', () => {
       const mockDevice = asPartial<Device>({
         duid: 'test-device',
         name: 'Test Vacuum',
-        rooms: undefined,
-        data: asPartial<Device['data']>({ model: DeviceModel.S5_MAX }),
+        specs: asPartial<DeviceSpecs>({ model: DeviceModel.S5_MAX }),
+        store: asPartial<Device['store']>({
+          homeData: {
+            id: 1,
+            name: 'Test Home',
+            products: [],
+            devices: [],
+            receivedDevices: [],
+            rooms: [],
+          },
+        }),
       });
 
       const mockMapInfo = {
@@ -358,10 +367,15 @@ describe('module.ts coverage tests', () => {
           return false;
         }
 
-        if (vacuum.rooms === undefined || vacuum.rooms.length === 0) {
+        if (vacuum.store?.homeData?.rooms === undefined || vacuum.store.homeData.rooms.length === 0) {
           const map_info = await getMapInformationMock(vacuum.duid);
           const rooms = map_info?.allRooms ?? [];
-          vacuum.rooms = rooms.map((room: { globalId: number; displayName: string }) => ({ id: room.globalId, name: room.displayName }));
+          if (vacuum.store?.homeData) {
+            vacuum.store.homeData.rooms = rooms.map((room: { globalId: number; displayName: string }) => ({
+              id: room.globalId,
+              name: room.displayName,
+            }));
+          }
         }
 
         return true;
@@ -372,7 +386,7 @@ describe('module.ts coverage tests', () => {
       const configureResult = await configureDeviceImpl(platform, mockDevice as Device);
 
       expect(getMapInformationMock).toHaveBeenCalledWith('test-device');
-      expect(mockDevice.rooms?.length).toBe(2);
+      expect(mockDevice.store?.homeData?.rooms?.length).toBe(2);
     });
   });
 

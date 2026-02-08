@@ -1,5 +1,6 @@
 import { default as axios, AxiosInstance, AxiosError, AxiosStatic } from 'axios';
 import axiosRetry from 'axios-retry';
+import https from 'node:https';
 import crypto from 'node:crypto';
 import { AnsiLogger, debugStringify } from 'matterbridge/logger';
 import { ApiResponse, Home, UserData, Scene } from '../models/index.js';
@@ -8,12 +9,12 @@ import * as AxiosLogger from 'axios-logger';
 export class RoborockIoTApi {
   logger: AnsiLogger;
   private readonly api: AxiosInstance;
-  private readonly vacuumNeedAPIV3 = ['roborock.vacuum.ss07'];
+  private readonly vacuumNeedAPIV3 = ['roborock.vacuum.ss07']; // Q10 S5 Plus
 
   constructor(userdata: UserData, logger: AnsiLogger, axiosFactory: AxiosStatic = axios) {
     this.logger = logger;
 
-    this.api = axiosFactory.create({ baseURL: userdata.rriot.r.a, timeout: 10000, maxRedirects: 5 });
+    this.api = axiosFactory.create({ baseURL: userdata.rriot.r.a, timeout: 10000, maxRedirects: 5, httpsAgent: new https.Agent({ keepAlive: true }) });
 
     // Retry transient network errors (including ECONNRESET) with exponential backoff
     try {
@@ -83,15 +84,29 @@ export class RoborockIoTApi {
   }
 
   public async getHomeWithProducts(homeId: number): Promise<Home | undefined> {
-    const homeData = await this.getHome(homeId);
+    let homeData = await this.getHome(homeId);
+    let homeDataV2: Home | undefined;
+    let homeDataV3: Home | undefined;
     if (!homeData) {
-      this.logger.error('Failed to retrieve the home data');
+      this.logger.error('[getHomeWithProducts Step 1] Failed to retrieve the home data');
+      homeDataV2 = await this.getHomev2(homeId);
+      homeData = homeDataV2;
+    }
+
+    if (!homeData) {
+      this.logger.error('[getHomeWithProducts Step 2] Failed to retrieve the home data');
+      homeDataV3 = await this.getHomev3(homeId);
+      homeData = homeDataV3;
+    }
+
+    if (!homeData) {
+      this.logger.error('[getHomeWithProducts Step 3] Failed to retrieve the home data');
       return undefined;
     }
 
     if (homeData.products.some((p) => this.vacuumNeedAPIV3.includes(p.model))) {
       this.logger.debug('Using v3 API for home data retrieval');
-      const homeDataV3 = await this.getHomev3(homeId);
+      homeDataV3 = homeDataV3 ?? (await this.getHomev3(homeId));
       if (!homeDataV3) {
         throw new Error('Failed to retrieve the home data from v3 API');
       }
@@ -100,11 +115,11 @@ export class RoborockIoTApi {
     }
 
     if (homeData.rooms.length === 0) {
-      const homeDataV2 = await this.getHomev2(homeId);
+      homeDataV2 = homeDataV2 ?? (await this.getHomev2(homeId));
       if (homeDataV2?.rooms && homeDataV2.rooms.length > 0) {
         homeData.rooms = homeDataV2.rooms;
       } else {
-        const homeDataV3 = await this.getHomev3(homeId);
+        homeDataV3 = homeDataV3 ?? (await this.getHomev3(homeId));
         if (homeDataV3?.rooms && homeDataV3.rooms.length > 0) {
           homeData.rooms = homeDataV3.rooms;
         }
@@ -121,10 +136,10 @@ export class RoborockIoTApi {
       if (apiResponse.result) {
         return apiResponse.result;
       }
-      this.logger.error('Failed to retrieve the home data');
+      this.logger.error('[getHome] Failed to retrieve the home data');
       return undefined;
     } catch (error) {
-      this.logger.error(`getHome failed: ${error ? debugStringify(error) : 'unknown'}`);
+      this.logger.error(`[getHome] Failed: ${error ? debugStringify(error) : 'unknown'}`);
       return undefined;
     }
   }
@@ -136,10 +151,10 @@ export class RoborockIoTApi {
       if (apiResponse.result) {
         return apiResponse.result;
       }
-      this.logger.error('Failed to retrieve the home data');
+      this.logger.error('[getHomev2] Failed to retrieve the home data');
       return undefined;
     } catch (error) {
-      this.logger.error(`getHomev2 failed: ${error ? debugStringify(error) : 'unknown'}`);
+      this.logger.error(`[getHomev2] Failed: ${error ? debugStringify(error) : 'unknown'}`);
       return undefined;
     }
   }
@@ -151,10 +166,10 @@ export class RoborockIoTApi {
       if (apiResponse.result) {
         return apiResponse.result;
       }
-      this.logger.error('Failed to retrieve the home data');
+      this.logger.error('[getHomev3] Failed to retrieve the home data');
       return undefined;
     } catch (error) {
-      this.logger.error(`getHomev3 failed: ${error ? debugStringify(error) : 'unknown'}`);
+      this.logger.error(`[getHomev3] Failed: ${error ? debugStringify(error) : 'unknown'}`);
       return undefined;
     }
   }
@@ -166,10 +181,10 @@ export class RoborockIoTApi {
       if (apiResponse.result) {
         return apiResponse.result;
       }
-      this.logger.error('Failed to retrieve scene');
+      this.logger.error('[getScenes] Failed to retrieve scenes');
       return undefined;
     } catch (error) {
-      this.logger.error(`getScenes failed: ${error ? debugStringify(error) : 'unknown'}`);
+      this.logger.error(`[getScenes] Failed: ${error ? debugStringify(error) : 'unknown'}`);
       return undefined;
     }
   }
@@ -181,10 +196,10 @@ export class RoborockIoTApi {
       if (apiResponse.result) {
         return apiResponse.result;
       }
-      this.logger.error('Failed to execute scene');
+      this.logger.error('[startScene] Failed to execute scene');
       return undefined;
     } catch (error) {
-      this.logger.error(`startScene failed: ${error ? debugStringify(error) : 'unknown'}`);
+      this.logger.error(`[startScene] Failed: ${error ? debugStringify(error) : 'unknown'}`);
       return undefined;
     }
   }
@@ -196,10 +211,10 @@ export class RoborockIoTApi {
       if (apiResponse.result) {
         return apiResponse.result;
       }
-      this.logger.error('Failed to execute scene');
+      this.logger.error('[getCustom] Failed to execute custom request');
       return undefined;
     } catch (error) {
-      this.logger.error(`getCustom failed: ${error ? debugStringify(error) : 'unknown'}`);
+      this.logger.error(`[getCustom] Failed: ${error ? debugStringify(error) : 'unknown'}`);
       return undefined;
     }
   }

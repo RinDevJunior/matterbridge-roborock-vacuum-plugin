@@ -3,7 +3,7 @@ import { RoborockService } from '../../../services/roborockService.js';
 import type { RoborockAuthenticateApi } from '../../../roborockCommunication/api/authClient.js';
 import type { RoborockIoTApi } from '../../../roborockCommunication/api/iotClient.js';
 import type { LocalStorage } from 'node-persist';
-import type { PlatformConfigManager } from '../../../platform/platformConfig.js';
+import type { PlatformConfigManager } from '../../../platform/platformConfigManager.js';
 import type { AnsiLogger } from 'matterbridge/logger';
 import type { ServiceContainer } from '../../../services/index.js';
 import { asPartial } from '../../testUtils.js';
@@ -17,15 +17,12 @@ describe('RoborockService (unit)', () => {
     logger = { debug: vi.fn(), notice: vi.fn(), error: vi.fn() };
 
     authService = {
-      loginWithPassword: vi.fn(async (u: string, p: string) => ({ username: u, token: 't' })),
-      loginWithVerificationCode: vi.fn(),
-      loginWithCachedToken: vi.fn(),
-      requestVerificationCode: vi.fn(),
+      authenticate: vi.fn(),
     };
 
     // Minimal container mock used by RoborockService when injected
     container = {
-      getAuthenticationService: () => authService,
+      getAuthenticationCoordinator: () => authService,
       getDeviceManagementService: () => ({}),
       getAreaManagementService: () => ({ getSelectedAreas: () => [], getSupportedAreas: () => [] }),
       getMessageRoutingService: () => ({}),

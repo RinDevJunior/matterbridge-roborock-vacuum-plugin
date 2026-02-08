@@ -1,6 +1,6 @@
-import { AbstractConnectionListener } from '../abstractConnectionListener.js';
+import { AbstractConnectionListener } from './abstractConnectionListener.js';
 
-export class ChainedConnectionListener implements AbstractConnectionListener {
+export class ConnectionBroadcaster implements AbstractConnectionListener {
   private listeners: AbstractConnectionListener[] = [];
 
   public register(listener: AbstractConnectionListener): void {

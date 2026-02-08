@@ -5,8 +5,6 @@ import { DeviceError, DeviceNotFoundError } from '../../errors/index.js';
 import { Device, DeviceModel, Home, Protocol, UserData } from '../../roborockCommunication/models/index.js';
 import { DeviceCategory } from '../../roborockCommunication/models/deviceCategory.js';
 import { makeLogger } from '../testUtils.js';
-import type { RoborockIoTApi } from '../../roborockCommunication/api/iotClient.js';
-import type { RoborockAuthenticateApi } from '../../roborockCommunication/api/authClient.js';
 
 describe('DeviceManagementService', () => {
   let deviceService: DeviceManagementService;
@@ -42,7 +40,6 @@ describe('DeviceManagementService', () => {
     sn: 'SN12345',
     fv: '1.0.0',
     rrHomeId: 12345,
-    rooms: [],
     scenes: [],
     deviceStatus: {
       [Protocol.battery]: 85,
@@ -52,19 +49,34 @@ describe('DeviceManagementService', () => {
     createTime: 0,
     online: true,
     schema: [],
-    data: {
+    mapInfos: undefined,
+    specs: {
       id: 'device-123',
       firmwareVersion: '1.0.0',
       serialNumber: 'SN12345',
       model: DeviceModel.QREVO_EDGE_5V1,
       category: DeviceCategory.VacuumCleaner,
       batteryLevel: 85,
+      hasRealTimeConnection: true,
     },
     store: {
       userData: mockUserData,
       localKey: 'local-key-789',
       pv: 'A01',
       model: DeviceModel.QREVO_EDGE_5V1,
+      homeData: {
+        id: 12345,
+        name: 'Test Home',
+        products: [],
+        devices: [],
+        receivedDevices: [],
+        rooms: [
+          {
+            id: 1,
+            name: 'Living Room',
+          },
+        ],
+      },
     },
   };
 
@@ -104,7 +116,7 @@ describe('DeviceManagementService', () => {
     });
 
     mockLoginApi = createMockAuthApi({
-      getHomeDetails: vi.fn().mockResolvedValue({ rrHomeId: 12345 }),
+      getBasicHomeInfo: vi.fn().mockResolvedValue({ rrHomeId: 12345 }),
     });
 
     deviceService = new DeviceManagementService(mockLogger, mockLoginApi, mockUserData);
@@ -133,14 +145,14 @@ describe('DeviceManagementService', () => {
     });
 
     it('should throw DeviceNotFoundError when no home found', async () => {
-      mockLoginApi.getHomeDetails = vi.fn().mockResolvedValue(undefined);
+      mockLoginApi.getBasicHomeInfo = vi.fn().mockResolvedValue(undefined);
 
       await expect(deviceService.listDevices()).rejects.toThrow(DeviceNotFoundError);
       await expect(deviceService.listDevices()).rejects.toThrow('No home found for user');
     });
 
     it('should throw error when home details missing rrHomeId', async () => {
-      mockLoginApi.getHomeDetails.mockResolvedValue(undefined);
+      mockLoginApi.getBasicHomeInfo.mockResolvedValue(undefined);
 
       await expect(deviceService.listDevices()).rejects.toThrow(DeviceNotFoundError);
     });
@@ -159,9 +171,8 @@ describe('DeviceManagementService', () => {
         duid: 'device-123',
         name: 'Test Vacuum',
         rrHomeId: 12345,
-        rooms: mockHomeData.rooms,
         scenes: [],
-        data: {
+        specs: {
           id: 'device-123',
           firmwareVersion: '1.0.0',
           serialNumber: 'SN12345',
@@ -176,7 +187,7 @@ describe('DeviceManagementService', () => {
         },
       });
 
-      expect(mockLoginApi.getHomeDetails).toHaveBeenCalled();
+      expect(mockLoginApi.getBasicHomeInfo).toHaveBeenCalled();
       expect(mockIotApi.getHomeWithProducts).toHaveBeenCalledWith(12345);
       expect(mockIotApi.getScenes).toHaveBeenCalledWith(12345);
       expect(mockLogger.notice).toHaveBeenCalledWith('Found 1 devices');
@@ -238,7 +249,7 @@ describe('DeviceManagementService', () => {
 
       const result = await deviceService.listDevices();
 
-      expect(result[0].data.batteryLevel).toBe(100);
+      expect(result[0].specs.batteryLevel).toBe(100);
     });
 
     it('should handle API errors and wrap them in DeviceError', async () => {
@@ -275,8 +286,7 @@ describe('DeviceManagementService', () => {
     expect(result?.devices?.[0]).toMatchObject({
       duid: 'device-123',
       rrHomeId: 12345,
-      rooms: mockHomeData.rooms,
-      data: expect.objectContaining({
+      specs: expect.objectContaining({
         id: 'device-123',
         firmwareVersion: '1.0.0',
         serialNumber: 'SN12345',

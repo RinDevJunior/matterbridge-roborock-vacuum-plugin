@@ -4,7 +4,7 @@ import { makeLogger } from '../../testUtils.js';
 import { createMockLocalStorage } from '../../testUtils.js';
 import type { RoborockPluginPlatformConfig } from '../../../model/RoborockPluginPlatformConfig.js';
 import type { AnsiLogger } from 'matterbridge/logger';
-import { PlatformConfigManager as PlatformConfigManagerStatic } from '../../../platform/platformConfig.js';
+import { PlatformConfigManager as PlatformConfigManagerStatic } from '../../../platform/platformConfigManager.js';
 import { makeDeviceFixture } from '../../helpers/fixtures.js';
 
 describe('initializeMessageClientForLocal', () => {

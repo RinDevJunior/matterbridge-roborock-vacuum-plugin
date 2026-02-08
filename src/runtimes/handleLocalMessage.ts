@@ -16,6 +16,7 @@ import { CleanModeSetting } from '../behaviors/roborock.vacuum/core/CleanModeSet
 /**
  * Process local network messages and update robot attributes.
  * Handles run mode, battery level, clean mode settings, and area mapping.
+ * @deprecated This function is deprecated and will be removed in future versions.
  */
 export function handleLocalMessage(data: CloudMessageResult, platform: RoborockMatterbridgePlatform, duid = ''): void {
   const robot = platform.registry.getRobot(duid);
@@ -31,13 +32,13 @@ export function handleLocalMessage(data: CloudMessageResult, platform: RoborockM
   platform.log.debug(
     `Precondition Data:
     Device: ${duid}
-    RoomMap: ${robot.roomInfo ? debugStringify(robot.roomInfo) : 'undefined'}
+    HomeInfo: ${robot.homeInfo ? debugStringify(robot.homeInfo) : 'undefined'}
     Current mapped areas: ${currentMappedAreas ? debugStringify(currentMappedAreas) : 'undefined'}
     RoomIndexMap: ${roomIndexMap ? debugStringify(roomIndexMap) : 'undefined'}
     `,
   );
 
-  const deviceData = robot.device.data;
+  const deviceData = robot.device.specs;
   const state = state_to_matter_state(data.state);
   if (state) {
     robot.updateAttribute(RvcRunMode.Cluster.id, 'currentMode', getRunningMode(state), platform.log);
@@ -52,9 +53,8 @@ export function handleLocalMessage(data: CloudMessageResult, platform: RoborockM
     platform.log.debug('No cleaning_info, setting currentArea to null');
     robot.updateAttribute(ServiceArea.Cluster.id, 'currentArea', null, platform.log);
     robot.updateAttribute(ServiceArea.Cluster.id, 'selectedAreas', [], platform.log);
-  } else if (platform.configManager.isMultipleMapEnabled) {
-    mapRoomsToAreasFeatureOn(platform, duid, data);
   } else {
+    // TODO: Handle multiple map feature toggle
     mapRoomsToAreasFeatureOff(duid, data, service, robot, platform.log);
   }
 
@@ -190,54 +190,54 @@ function mapRoomsToAreasFeatureOff(duid: string, data: CloudMessageResult, robor
 /**
  * Map room segments to service areas when multiple map feature is enabled.
  */
-function mapRoomsToAreasFeatureOn(platform: RoborockMatterbridgePlatform, duid: string, data: CloudMessageResult): void {
-  const robot = platform.registry.getRobot(duid);
-  if (!robot) {
-    platform.log.error(`Robot not found: ${duid}`);
-    return;
-  }
+// function mapRoomsToAreasFeatureOn(platform: RoborockMatterbridgePlatform, duid: string, data: CloudMessageResult): void {
+//   const robot = platform.registry.getRobot(duid);
+//   if (!robot) {
+//     platform.log.error(`Robot not found: ${duid}`);
+//     return;
+//   }
 
-  if (!data.cleaning_info) {
-    platform.log.debug('No cleaning_info found, skipping area mapping.');
-    return;
-  }
-  const service = platform.roborockService;
-  if (!service) {
-    platform.log.error('RoborockService not available.');
-    return;
-  }
+//   if (!data.cleaning_info) {
+//     platform.log.debug('No cleaning_info found, skipping area mapping.');
+//     return;
+//   }
+//   const service = platform.roborockService;
+//   if (!service) {
+//     platform.log.error('RoborockService not available.');
+//     return;
+//   }
 
-  const currentMappedAreas = service.getSupportedAreas(duid);
-  const roomIndexMap = service.getSupportedAreasIndexMap(duid);
-  const source_segment_id = data.cleaning_info.segment_id ?? INVALID_SEGMENT_ID; // 4
-  const source_target_segment_id = data.cleaning_info.target_segment_id ?? INVALID_SEGMENT_ID; // -1
-  const segment_id = source_segment_id !== INVALID_SEGMENT_ID ? source_segment_id : source_target_segment_id; // 4
-  const areaId = roomIndexMap?.getAreaId(segment_id, 0);
+//   const currentMappedAreas = service.getSupportedAreas(duid);
+//   const roomIndexMap = service.getSupportedAreasIndexMap(duid);
+//   const source_segment_id = data.cleaning_info.segment_id ?? INVALID_SEGMENT_ID; // 4
+//   const source_target_segment_id = data.cleaning_info.target_segment_id ?? INVALID_SEGMENT_ID; // -1
+//   const segment_id = source_segment_id !== INVALID_SEGMENT_ID ? source_segment_id : source_target_segment_id; // 4
+//   const areaId = roomIndexMap?.getAreaId(segment_id, 0);
 
-  const mappedArea = currentMappedAreas?.find((x) => x.areaId == areaId);
+//   const mappedArea = currentMappedAreas?.find((x) => x.areaId == areaId);
 
-  if (!areaId || areaId === INVALID_SEGMENT_ID || !mappedArea) {
-    platform.log.debug(
-      `No areaId found, skipping area mapping.
-        source_segment_id: ${source_segment_id}, 
-        source_target_segment_id: ${source_target_segment_id}, 
-        segment_id: ${segment_id}, 
-        areaId: ${areaId}`,
-    );
-    return;
-  }
+//   if (!areaId || areaId === INVALID_SEGMENT_ID || !mappedArea) {
+//     platform.log.debug(
+//       `No areaId found, skipping area mapping.
+//         source_segment_id: ${source_segment_id},
+//         source_target_segment_id: ${source_target_segment_id},
+//         segment_id: ${segment_id},
+//         areaId: ${areaId}`,
+//     );
+//     return;
+//   }
 
-  platform.log.debug(
-    `Mapped area found:
-      source_segment_id: ${source_segment_id},
-      source_target_segment_id: ${source_target_segment_id},
-      segment_id: ${segment_id},
-      areaId: ${areaId},
-      result: ${debugStringify(mappedArea)}
-    `,
-  );
+//   platform.log.debug(
+//     `Mapped area found:
+//       source_segment_id: ${source_segment_id},
+//       source_target_segment_id: ${source_target_segment_id},
+//       segment_id: ${segment_id},
+//       areaId: ${areaId},
+//       result: ${debugStringify(mappedArea)}
+//     `,
+//   );
 
-  if (areaId !== INVALID_SEGMENT_ID && mappedArea) {
-    robot.updateAttribute(ServiceArea.Cluster.id, 'currentArea', areaId, platform.log); // need to be 107
-  }
-}
+//   if (areaId !== INVALID_SEGMENT_ID && mappedArea) {
+//     robot.updateAttribute(ServiceArea.Cluster.id, 'currentArea', areaId, platform.log); // need to be 107
+//   }
+// }

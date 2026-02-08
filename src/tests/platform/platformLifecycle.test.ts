@@ -4,7 +4,7 @@ import { MatterbridgeDynamicPlatform } from 'matterbridge';
 import { PlatformLifecycle, LifecycleDependencies } from '../../platform/platformLifecycle.js';
 import { DeviceRegistry } from '../../platform/deviceRegistry.js';
 import { asPartial, asType } from '../helpers/testUtils.js';
-import { PlatformConfigManager } from '../../platform/platformConfig.js';
+import { PlatformConfigManager } from '../../platform/platformConfigManager.js';
 import { PlatformState } from '../../platform/platformState.js';
 import type NodePersist from 'node-persist';
 

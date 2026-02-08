@@ -14,7 +14,6 @@
  */
 
 export { AuthenticationService } from './authenticationService.js';
-export type { SaveUserDataCallback, LoadUserDataCallback } from './authenticationService.js';
 export { DeviceManagementService } from './deviceManagementService.js';
 export { AreaManagementService } from './areaManagementService.js';
 export { MessageRoutingService } from './messageRoutingService.js';
@@ -23,3 +22,12 @@ export { default as ClientManager } from './clientManager.js';
 export { ServiceContainer } from './serviceContainer.js';
 export type { ServiceContainerConfig } from './serviceContainer.js';
 export { ConnectionService } from './connectionService.js';
+export { AuthenticationCoordinator } from './authentication/AuthenticationCoordinator.js';
+export { UserDataRepository } from './authentication/UserDataRepository.js';
+export { AuthenticationStateRepository } from './authentication/AuthenticationStateRepository.js';
+export { VerificationCodeService } from './authentication/VerificationCodeService.js';
+export { BaseAuthStrategy } from './authentication/BaseAuthStrategy.js';
+export { PasswordAuthStrategy } from './authentication/PasswordAuthStrategy.js';
+export { TwoFactorAuthStrategy } from './authentication/TwoFactorAuthStrategy.js';
+export type { IAuthStrategy } from './authentication/IAuthStrategy.js';
+export type { AuthContext } from './authentication/AuthContext.js';

@@ -10,7 +10,7 @@ export default class ClientManager {
   /** Get or create ClientRouter for a user. */
   public get(userdata: UserData): ClientRouter {
     const username = userdata.username;
-    if (username.trim().length === 0) {
+    if (!userdata || username.trim().length === 0) {
       throw new Error('Username cannot be empty');
     }
 

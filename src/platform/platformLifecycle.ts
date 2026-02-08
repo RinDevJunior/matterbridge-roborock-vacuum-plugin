@@ -1,6 +1,6 @@
 import type { AnsiLogger } from 'matterbridge/logger';
 import NodePersist from 'node-persist';
-import { PlatformConfigManager } from './platformConfig.js';
+import { PlatformConfigManager } from './platformConfigManager.js';
 import { PlatformState } from './platformState.js';
 import { MatterbridgeDynamicPlatform } from 'matterbridge';
 import { DEFAULT_REFRESH_INTERVAL_SECONDS, REFRESH_INTERVAL_BUFFER_MS, UNREGISTER_DEVICES_DELAY_MS } from '../constants/index.js';
@@ -47,6 +47,11 @@ export class PlatformLifecycle {
     await this.platform.ready;
     await this.deps.clearSelect();
     await this.deps.getPersistanceStorage().init();
+
+    // Clear storage if alwaysExecuteAuthentication is set
+    if (this.configManager.alwaysExecuteAuthentication) {
+      await this.deps.getPersistanceStorage().clear();
+    }
 
     // Validate configuration
     if (!this.configManager.validateConfig()) {

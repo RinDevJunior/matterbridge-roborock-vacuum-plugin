@@ -32,6 +32,10 @@ If the task type is unclear, ask for clarification before proceeding.
 
 - After running `npm install`, run `npm run build:local` to resolve potential build issues.
 
+## Git Workflow
+
+- Do NOT add `Co-Authored-By: Claude Sonnet 4.5 <noreply@anthropic.com>` to commit messages.
+
 ---
 
 # TypeScript Development

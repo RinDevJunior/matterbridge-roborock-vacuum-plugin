@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { AnsiLogger } from 'matterbridge/logger';
 import { ServiceContainer, ServiceContainerConfig } from '../../services/serviceContainer.js';
-import { AuthenticationService } from '../../services/authenticationService.js';
+import { AuthenticationCoordinator } from '../../services/authentication/AuthenticationCoordinator.js';
 import { DeviceManagementService } from '../../services/deviceManagementService.js';
 import { AreaManagementService } from '../../services/areaManagementService.js';
 import { MessageRoutingService } from '../../services/messageRoutingService.js';
@@ -12,8 +12,7 @@ import { localStorageMock } from '../testData/localStorageMock.js';
 import { makeLogger, makeMockClientRouter, createMockLocalStorage, createMockAuthApi, createMockIotApi, asPartial } from '../testUtils.js';
 import { ClientRouter } from '../../roborockCommunication/routing/clientRouter.js';
 import type { LocalStorage } from 'node-persist';
-import type { PlatformConfigManager } from '../../platform/platformConfig.js';
-import type { MessageProcessor } from '../../roborockCommunication/mqtt/messageProcessor.js';
+import type { PlatformConfigManager } from '../../platform/platformConfigManager.js';
 
 describe('ServiceContainer', () => {
   let container: ServiceContainer;
@@ -128,17 +127,17 @@ describe('ServiceContainer', () => {
     });
   });
 
-  describe('getAuthenticationService', () => {
-    it('should create and return AuthenticationService singleton', () => {
-      const service1 = container.getAuthenticationService();
-      const service2 = container.getAuthenticationService();
+  describe('getAuthenticationCoordinator', () => {
+    it('should create and return AuthenticationCoordinator singleton', () => {
+      const service1 = container.getAuthenticationCoordinator();
+      const service2 = container.getAuthenticationCoordinator();
 
-      expect(service1).toBeInstanceOf(AuthenticationService);
+      expect(service1).toBeInstanceOf(AuthenticationCoordinator);
       expect(service1).toBe(service2); // Same instance
     });
 
-    it('should initialize AuthenticationService with correct dependencies', () => {
-      const service = container.getAuthenticationService();
+    it('should initialize AuthenticationCoordinator with correct dependencies', () => {
+      const service = container.getAuthenticationCoordinator();
 
       expect(service).toBeDefined();
     });
@@ -259,33 +258,18 @@ describe('ServiceContainer', () => {
     });
   });
 
-  describe('getMessageProcessorMap', () => {
-    it('should return message processor map', () => {
-      const map = container.getMessageProcessorMap();
-
-      expect(map).toBeInstanceOf(Map);
-    });
-
-    it('should return same map instance on multiple calls', () => {
-      const map1 = container.getMessageProcessorMap();
-      const map2 = container.getMessageProcessorMap();
-
-      expect(map1).toBe(map2);
-    });
-  });
-
   describe('getAllServices', () => {
     it('should return all services in a bundle', () => {
       const services = container.getAllServices();
 
-      expect(services).toHaveProperty('authentication');
+      expect(services).toHaveProperty('authenticationCoordinator');
       expect(services).toHaveProperty('deviceManagement');
       expect(services).toHaveProperty('areaManagement');
       expect(services).toHaveProperty('messageRouting');
       expect(services).toHaveProperty('polling');
       expect(services).toHaveProperty('connection');
 
-      expect(services.authentication).toBeInstanceOf(AuthenticationService);
+      expect(services.authenticationCoordinator).toBeInstanceOf(AuthenticationCoordinator);
       expect(services.deviceManagement).toBeInstanceOf(DeviceManagementService);
       expect(services.areaManagement).toBeInstanceOf(AreaManagementService);
       expect(services.messageRouting).toBeInstanceOf(MessageRoutingService);
@@ -295,7 +279,7 @@ describe('ServiceContainer', () => {
       const services1 = container.getAllServices();
       const services2 = container.getAllServices();
 
-      expect(services1.authentication).toBe(services2.authentication);
+      expect(services1.authenticationCoordinator).toBe(services2.authenticationCoordinator);
       expect(services1.deviceManagement).toBe(services2.deviceManagement);
       expect(services1.areaManagement).toBe(services2.areaManagement);
       expect(services1.messageRouting).toBe(services2.messageRouting);
@@ -307,7 +291,7 @@ describe('ServiceContainer', () => {
   describe('destroy', () => {
     it('should clear all service references', async () => {
       // Create all services first
-      container.getAuthenticationService();
+      container.getAuthenticationCoordinator();
       container.getDeviceManagementService();
       container.getAreaManagementService();
       container.getMessageRoutingService();
@@ -330,11 +314,11 @@ describe('ServiceContainer', () => {
     });
 
     it('should create new instances after destroy', async () => {
-      const service1 = container.getAuthenticationService();
+      const service1 = container.getAuthenticationCoordinator();
 
       await container.destroy();
 
-      const service2 = container.getAuthenticationService();
+      const service2 = container.getAuthenticationCoordinator();
 
       expect(service1).not.toBe(service2); // Different instances
     });
@@ -346,17 +330,6 @@ describe('ServiceContainer', () => {
       await container.destroy();
 
       expect(shutdownSpy).toHaveBeenCalled();
-    });
-
-    it('should clear message processor map on destroy', async () => {
-      const map = container.getMessageProcessorMap();
-      map.set('test-key', {} as MessageProcessor);
-
-      expect(map.size).toBe(1);
-
-      await container.destroy();
-
-      expect(map.size).toBe(0);
     });
 
     it('should clear IoT API on destroy', async () => {
@@ -400,9 +373,9 @@ describe('ServiceContainer', () => {
 
   describe('integration scenarios', () => {
     it('should support complete workflow: login -> set user data -> get services', () => {
-      // 1. Get authentication service
-      const authService = container.getAuthenticationService();
-      expect(authService).toBeInstanceOf(AuthenticationService);
+      // 1. Get authentication coordinator
+      const authCoordinator = container.getAuthenticationCoordinator();
+      expect(authCoordinator).toBeInstanceOf(AuthenticationCoordinator);
 
       // 2. Simulate successful login
       container.setUserData(mockUserData);

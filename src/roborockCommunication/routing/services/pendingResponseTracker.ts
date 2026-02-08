@@ -48,6 +48,11 @@ export class PendingResponseTracker {
       dps = response.get(Protocol.general_request) as DpsPayload;
     }
 
+    if (!dps || (typeof dps.id !== 'number' && typeof dps.id !== 'string')) {
+      this.logger.debug(`No valid DpsPayload with id found in response: ${debugStringify(response)}`);
+      return;
+    }
+
     const messageId = dps.id;
 
     const entry = this.pending.get(messageId);

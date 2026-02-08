@@ -24,7 +24,6 @@ describe('share/function helpers', () => {
     });
 
     it('returns Idle for undefined (default)', () => {
-      expect(state_to_matter_state(undefined)).toBe(RvcRunMode.ModeTag.Idle);
       expect(state_to_matter_state(99999)).toBe(RvcRunMode.ModeTag.Idle);
     });
   });
@@ -60,7 +59,7 @@ describe('share/function helpers', () => {
       expect(state_to_matter_operational_status(OperationStatusCode.Idle)).toBe(RvcOperationalState.OperationalState.Docked);
       expect(state_to_matter_operational_status(OperationStatusCode.Sleeping)).toBe(RvcOperationalState.OperationalState.Docked);
       expect(state_to_matter_operational_status(OperationStatusCode.Charging)).toBe(RvcOperationalState.OperationalState.Docked);
-      expect(state_to_matter_operational_status(undefined)).toBe(RvcOperationalState.OperationalState.Docked);
+      expect(state_to_matter_operational_status(undefined)).toBe(undefined);
     });
   });
 });

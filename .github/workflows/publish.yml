@@ -4,39 +4,122 @@ on:
   release:
     types: [created]
 
+concurrency:
+  group: npm-publish
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  id-token: write # needed for npm trusted publishing (OIDC)
+  actions: read
+
 jobs:
-  publish:
+  publish-release:
+    name: Publish release to npm
+    if: github.event.release.prerelease == false
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout code
+      - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          ref: main
 
-      - name: Use Node.js
+      - name: Setup Node.js 24.x
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
-          registry-url: 'https://registry.npmjs.org/'
+          node-version: '24.x'
+          cache: npm
 
-      - name: Prepare environment
-        run: npm ci && npm run precondition && npm run deepClean && npm install && npm link matterbridge
+      - name: Verify Node.js version
+        run: node -v
 
-      - name: Build
+      - name: Verify Npm version
+        run: npm -v
+
+      - name: Clone matterbridge repo branch main
+        run: git clone --depth 1 --single-branch --no-tags -b main https://github.com/Luligu/matterbridge.git ../matterbridge
+
+      - name: Install matterbridge dependencies
+        working-directory: ../matterbridge
+        run: npm ci --no-fund --no-audit
+
+      - name: Build matterbridge
+        working-directory: ../matterbridge
         run: npm run build
 
-      - name: Run tests
+      - name: Link matterbridge globally
+        working-directory: ../matterbridge
+        run: npm link --no-fund --no-audit
+
+      - name: Install plugin dependencies
+        run: npm ci --no-fund --no-audit
+
+      - name: Link matterbridge in the project
+        run: npm link matterbridge --no-fund --no-audit
+
+      - name: Build the plugin
+        run: npm run build
+
+      - name: Lint the plugin
+        run: npm run lint
+
+      - name: Test the plugin
         run: npm run test
 
-      - name: Determine npm tag
-        id: npm-tag
-        run: |
-          if [[ "${{ github.event.release.prerelease }}" == "true" ]]; then
-            echo "tag=dev" >> $GITHUB_OUTPUT
-          else
-            echo "tag=latest" >> $GITHUB_OUTPUT
-          fi
+      - name: Publish to npm with trusted publishing / OIDC
+        run: npm publish --provenance --access public --tag latest
 
-      - name: Publish to npm
-        run: npm publish --tag ${{ steps.npm-tag.outputs.tag }}
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+  publish-release-candidate:
+    name: Publish release candidate to npm
+    if: github.event.release.prerelease == true
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 24.x
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24.x'
+          cache: npm
+
+      - name: Verify Node.js version
+        run: node -v
+
+      - name: Verify Npm version
+        run: npm -v
+
+      - name: Clone matterbridge repo branch main
+        run: git clone --depth 1 --single-branch --no-tags -b main https://github.com/Luligu/matterbridge.git ../matterbridge
+
+      - name: Install matterbridge dependencies
+        working-directory: ../matterbridge
+        run: npm ci --no-fund --no-audit
+
+      - name: Build matterbridge
+        working-directory: ../matterbridge
+        run: npm run build
+
+      - name: Link matterbridge globally
+        working-directory: ../matterbridge
+        run: npm link --no-fund --no-audit
+
+      - name: Install plugin dependencies
+        run: npm ci --no-fund --no-audit
+
+      - name: Link matterbridge in the project
+        run: npm link matterbridge --no-fund --no-audit
+
+      - name: Build the plugin
+        run: npm run build
+
+      - name: Lint the plugin
+        run: npm run lint
+
+      - name: Test the plugin
+        run: npm run test
+
+      - name: Publish to npm with trusted publishing / OIDC
+        run: npm publish --provenance --access public --tag dev

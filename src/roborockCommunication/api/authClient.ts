@@ -134,7 +134,7 @@ export class RoborockAuthenticateApi {
     return this.authV4(email, response.data);
   }
 
-  public async getHomeDetails(): Promise<HomeInfo | undefined> {
+  public async getBasicHomeInfo(): Promise<HomeInfo | undefined> {
     if (!this.username || !this.authToken) {
       this.logger.error(
         `Cannot get home details: not authenticated, 

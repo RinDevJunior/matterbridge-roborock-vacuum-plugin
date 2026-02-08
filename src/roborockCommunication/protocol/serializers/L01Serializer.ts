@@ -21,9 +21,22 @@ export class L01Serializer implements AbstractSerializer {
   }
 
   public decode(payload: Buffer, localKey: string, timestamp: number, sequence: number, nonce: number, connectNonce?: number, ackNonce?: number): Buffer<ArrayBuffer> {
-    const iv = CryptoUtils.md5hex(nonce.toString(16).padStart(8, '0') + '4c30316f72626f726f636b2d67656e65726963').substring(8, 24);
-    const decipher = crypto.createDecipheriv('aes-128-cbc', localKey, iv);
-    return Buffer.concat([decipher.update(payload), decipher.final()]);
+    if (!connectNonce || !ackNonce) {
+      throw new Error('connectNonce and ackNonce are required for L01 decryption');
+    }
+
+    const key = this.generateKey(localKey, timestamp);
+    const iv = this.generateInitializationVector(timestamp, nonce, sequence);
+    const aad = this.generateAAD(timestamp, nonce, sequence, connectNonce, ackNonce);
+
+    const tag = payload.subarray(payload.length - 16);
+    const ciphertext = payload.subarray(0, payload.length - 16);
+
+    const decipher = crypto.createDecipheriv('aes-256-gcm', key, iv);
+    decipher.setAAD(aad);
+    decipher.setAuthTag(tag);
+
+    return Buffer.concat([decipher.update(ciphertext), decipher.final()]);
   }
 
   private generateKey(localKey: string, timestamp: number): Buffer {

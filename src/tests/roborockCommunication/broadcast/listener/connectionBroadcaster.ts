@@ -1,13 +1,13 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { ChainedConnectionListener } from '../../../../../roborockCommunication/routing/listeners/implementation/chainedConnectionListener.js';
+import { ConnectionBroadcaster } from '../../../../roborockCommunication/routing/listeners/connectionBroadcaster.js';
 
-describe('ChainedConnectionListener', () => {
-  let chained: ChainedConnectionListener;
+describe('ConnectionBroadcaster', () => {
+  let chained: ConnectionBroadcaster;
   let listener1: any;
   let listener2: any;
 
   beforeEach(() => {
-    chained = new ChainedConnectionListener();
+    chained = new ConnectionBroadcaster();
     listener1 = {
       onConnected: vi.fn().mockResolvedValue(undefined),
       onDisconnected: vi.fn().mockResolvedValue(undefined),

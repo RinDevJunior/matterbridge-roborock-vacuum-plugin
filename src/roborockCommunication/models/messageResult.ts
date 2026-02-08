@@ -59,7 +59,7 @@ export interface CloudMessageResult {
   seq_type?: number;
 }
 
-interface CleanInformation {
+export interface CleanInformation {
   target_segment_id: number;
   segment_id: number;
   fan_power: number;

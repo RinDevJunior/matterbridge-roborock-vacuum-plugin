@@ -36,7 +36,7 @@
 
 ### ⚠️ Important Notes
 
-Requires matterbridge@3.5.0
+Requires matterbridge@3.5.3
 
 - **Matterbridge must be run in child bridge mode** for proper operation.
 - **Use one Matterbridge instance per Roborock vacuum.**  
@@ -73,7 +73,7 @@ To get the **DUID** for your devices, you have two options:
 ### 🚧 Project Status
 
 - **Under active development**
-- Requires **`matterbridge@3.5.0`**
+- Requires **`matterbridge@3.5.3`**
 - ⚠️ **Known Issue:**
 
 * Vacuum may appear as **two devices** in Apple Home

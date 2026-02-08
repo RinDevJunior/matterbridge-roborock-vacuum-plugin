@@ -8,18 +8,19 @@ on:
   push:
     branches:
       - main
+      - dev
   pull_request:
     types: [opened, synchronize, reopened, edited]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   coverage:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Cancel Previous Runs
-        uses: styfle/cancel-workflow-action@0.12.0
-        with:
-          access_token: ${{ github.token }}
 
       - name: Checkout code
         uses: actions/checkout@v4

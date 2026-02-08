@@ -19,6 +19,8 @@ export class RoborockDeviceGateway implements IDeviceGateway {
     this.logger = logger;
 
     this.clientRouter.registerMessageListener({
+      name: 'RoborockDeviceGatewayListener',
+      duid: '', // Not used in this context
       onMessage: async (message) => {
         if (message instanceof ResponseMessage) {
           const duid = message.duid;

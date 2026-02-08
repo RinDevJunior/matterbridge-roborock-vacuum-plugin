@@ -1,6 +1,6 @@
 import { vi } from 'vitest';
 import { AnsiLogger } from 'matterbridge/logger';
-import type { PlatformConfigManager } from '../../platform/platformConfig.js';
+import type { PlatformConfigManager } from '../../platform/platformConfigManager.js';
 import type { PlatformMatterbridge, SystemInformation } from 'matterbridge';
 import type { RoborockIoTApi } from '../../roborockCommunication/api/iotClient.js';
 import type { RoborockAuthenticateApi } from '../../roborockCommunication/api/authClient.js';
@@ -58,6 +58,7 @@ export function makeLocalClientStub(overrides: Partial<Record<string, unknown>> 
     connect: vi.fn(),
     disconnect: vi.fn(),
     isConnected: vi.fn().mockReturnValue(true),
+    isReady: vi.fn().mockReturnValue(true),
     ...overrides,
   } as MockLocalClient;
 }
@@ -124,6 +125,9 @@ export function createMockConfigManager(overrides: Partial<PlatformConfigManager
     get hasWhiteListConfig() {
       return overrides.hasWhiteListConfig ?? false;
     },
+    get includeDockStationStatus() {
+      return overrides.includeDockStationStatus ?? false;
+    },
     validateConfig: () => true,
     validateAuthentication: () => true,
   };
@@ -157,7 +161,7 @@ export function createMockIotApi(overrides: Partial<RoborockIoTApi> = {}): Robor
 
 export function createMockAuthApi(overrides: Partial<RoborockAuthenticateApi> = {}): RoborockAuthenticateApi {
   const base: Partial<RoborockAuthenticateApi> = {
-    getHomeDetails: vi.fn().mockResolvedValue(undefined),
+    getBasicHomeInfo: vi.fn().mockResolvedValue(undefined),
   };
   return { ...base, ...overrides } as Partial<RoborockAuthenticateApi> as RoborockAuthenticateApi;
 }
@@ -200,7 +204,7 @@ export function createMockRoborockService(overrides: Partial<RoborockService> = 
 
 export function createMockMatterbridge(overrides: Partial<PlatformMatterbridge> = {}): PlatformMatterbridge {
   const base: Partial<PlatformMatterbridge> & Record<string, unknown> = {
-    matterbridgeVersion: '3.5.0',
+    matterbridgeVersion: '3.5.3',
     matterbridgePluginDirectory: '/tmp',
     matterbridgeDirectory: '/tmp',
     verifyMatterbridgeVersion: () => true,

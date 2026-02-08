@@ -2,15 +2,11 @@ import { getRunningMode } from '../initialData/getSupportedRunModes.js';
 import { CloudMessageModel } from '../model/CloudMessageModel.js';
 import { hasDockingStationError } from '../model/DockingStationStatus.js';
 import { state_to_matter_operational_status, state_to_matter_state } from '../share/function.js';
-import { RvcCleanMode, RvcOperationalState, RvcRunMode, ServiceArea } from 'matterbridge/matter/clusters';
+import { RvcCleanMode, RvcOperationalState, RvcRunMode } from 'matterbridge/matter/clusters';
 import { triggerDssError } from './handleLocalMessage.js';
-import { RoomMap } from '../core/application/models/index.js';
-import { isStatusUpdate } from '../share/helper.js';
 import { debugStringify } from 'matterbridge/logger';
-import { CloudMessageResult, DeviceStatusNotify, DpsPayload, Protocol } from '../roborockCommunication/models/index.js';
-import { NotifyMessageTypes } from '../types/notifyMessageTypes.js';
+import { Protocol } from '../roborockCommunication/models/index.js';
 import { getCleanModeResolver } from '../share/runtimeHelper.js';
-import { getSupportedAreas } from '../initialData/getSupportedAreas.js';
 import { PlatformRunner } from '../platformRunner.js';
 import { RoborockVacuumCleaner } from '../types/roborockVacuumCleaner.js';
 import { AdditionalPropCode } from '../roborockCommunication/enums/index.js';
@@ -19,6 +15,7 @@ import { RoborockMatterbridgePlatform } from '../module.js';
 /**
  * Process cloud MQTT messages and update robot state.
  * Handles status updates, RPC responses, clean mode changes, and map updates.
+ * @deprecated This function is deprecated and will be removed in future versions.
  */
 export function handleCloudMessage(data: CloudMessageModel, platform: RoborockMatterbridgePlatform, runner: PlatformRunner, duid: string): void {
   const messageTypes = Object.keys(data.dps).map(Number);
@@ -50,30 +47,10 @@ export function handleCloudMessage(data: CloudMessageModel, platform: RoborockMa
         }
         break;
       }
-      case Protocol.rpc_response: {
-        const response = data.dps[messageType] as DpsPayload;
-        // ignore network info
-        if (!isStatusUpdate(response.result)) {
-          platform.log.debug(`[handleCloudMessage] Ignore message: ${debugStringify(data)}`);
-          return;
-        }
-
-        let roboStatus: CloudMessageResult | undefined;
-        if (Array.isArray(response.result) && response.result.length > 0) {
-          roboStatus = response.result[0] as CloudMessageResult;
-        }
-
-        if (roboStatus) {
-          const message = { ...roboStatus } as DeviceStatusNotify;
-          platform.log.debug(`[handleCloudMessage] rpc_response: ${debugStringify(message)}`);
-          runner.updateFromMQTTMessage(NotifyMessageTypes.LocalMessage, message, duid, true);
-        }
-        break;
-      }
       case Protocol.suction_power:
       case Protocol.water_box_mode: {
         if (robot.cleanModeSetting) {
-          const resolver = getCleanModeResolver(robot.device.data.model, platform.configManager.forceRunAtDefault);
+          const resolver = getCleanModeResolver(robot.device.specs.model, platform.configManager.forceRunAtDefault);
           const currentCleanMode = resolver.resolve(robot.cleanModeSetting);
 
           platform.log.debug(`Clean mode data (cached): ${debugStringify(robot.cleanModeSetting)}`);
@@ -87,7 +64,7 @@ export function handleCloudMessage(data: CloudMessageModel, platform: RoborockMa
             .then((cleanModeData) => {
               if (cleanModeData) {
                 robot.cleanModeSetting = cleanModeData;
-                const resolver = getCleanModeResolver(robot.device.data.model, platform.configManager.forceRunAtDefault);
+                const resolver = getCleanModeResolver(robot.device.specs.model, platform.configManager.forceRunAtDefault);
                 const currentCleanMode = resolver.resolve(cleanModeData);
 
                 platform.log.debug(`Clean mode data (fetched): ${debugStringify(cleanModeData)}`);
@@ -105,7 +82,7 @@ export function handleCloudMessage(data: CloudMessageModel, platform: RoborockMa
       }
       case Protocol.additional_props: {
         platform.log.notice(`[handleCloudMessage] Received additional properties for robot ${duid}: ${debugStringify(data)}`);
-        const propCode = data.dps[Protocol.additional_props] as number;
+        const propCode = Number(data.dps[Protocol.additional_props]);
         platform.log.debug(`[handleCloudMessage] DPS for additional properties: ${propCode}, AdditionalPropCode: ${AdditionalPropCode[propCode]}`);
         if (propCode === AdditionalPropCode.map_change) {
           handleMapChange(robot, platform, duid);
@@ -128,32 +105,24 @@ export function handleCloudMessage(data: CloudMessageModel, platform: RoborockMa
 /**
  * Handle map change events from device.
  * Updates supported areas and maps when the device's map configuration changes.
+ * @todo Re-implement map change handling when multiple map support is added back.
  */
 export function handleMapChange(robot: RoborockVacuumCleaner, platform: RoborockMatterbridgePlatform, duid: string): void {
-  const enableMultipleMap = platform.configManager.isMultipleMapEnabled;
-  if (!enableMultipleMap) return;
-
-  RoomMap.fromDeviceDirect(robot.device, platform)
-    .then((roomMap) => {
-      robot.roomInfo = roomMap;
-      const { supportedAreas, supportedMaps, roomIndexMap } = getSupportedAreas(robot.device.rooms, roomMap, enableMultipleMap, platform.log, robot.mapInfos ?? []);
-
-      platform.log.debug(`[handleMapChange] supportedAreas: ${debugStringify(supportedAreas)}`);
-      platform.log.debug(`[handleMapChange] supportedMaps: ${debugStringify(supportedMaps)}`);
-      platform.log.debug(`[handleMapChange] roomIndexMap: `, roomIndexMap);
-
-      platform.roborockService?.setSupportedAreas(duid, supportedAreas);
-      platform.roborockService?.setSelectedAreas(duid, []);
-      robot.updateAttribute(ServiceArea.Cluster.id, 'supportedAreas', supportedAreas, platform.log);
-      robot.updateAttribute(ServiceArea.Cluster.id, 'selectedAreas', [], platform.log);
-      robot.updateAttribute(ServiceArea.Cluster.id, 'currentArea', null, platform.log);
-
-      if (enableMultipleMap) {
-        platform.roborockService?.setSupportedAreaIndexMap(duid, roomIndexMap);
-        robot.updateAttribute(ServiceArea.Cluster.id, 'supportedMaps', supportedMaps, platform.log);
-      }
-    })
-    .catch((error) => {
-      platform.log.error(`[handleMapChange] Error handling map change for robot ${duid}: ${error}`);
-    });
+  // TODO: Re-implement map change handling when multiple map support is added back.
+  platform.log.info(`[handleMapChange] Map change detected for robot ${duid}, but handling is not implemented.`);
+  // const enableMultipleMap = platform.configManager.isMultipleMapEnabled;
+  // if (!enableMultipleMap) return;
+  // const { supportedAreas, supportedMaps, roomIndexMap } = getSupportedAreas(robot.homeInfo, platform.log);
+  // platform.log.debug(`[handleMapChange] supportedAreas: ${debugStringify(supportedAreas)}`);
+  // platform.log.debug(`[handleMapChange] supportedMaps: ${debugStringify(supportedMaps)}`);
+  // platform.log.debug(`[handleMapChange] roomIndexMap: `, roomIndexMap);
+  // platform.roborockService?.setSupportedAreas(duid, supportedAreas);
+  // platform.roborockService?.setSelectedAreas(duid, []);
+  // robot.updateAttribute(ServiceArea.Cluster.id, 'supportedAreas', supportedAreas, platform.log);
+  // robot.updateAttribute(ServiceArea.Cluster.id, 'selectedAreas', [], platform.log);
+  // robot.updateAttribute(ServiceArea.Cluster.id, 'currentArea', null, platform.log);
+  // if (enableMultipleMap) {
+  //   platform.roborockService?.setSupportedAreaIndexMap(duid, roomIndexMap);
+  //   robot.updateAttribute(ServiceArea.Cluster.id, 'supportedMaps', supportedMaps, platform.log);
+  // }
 }

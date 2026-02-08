@@ -1,3 +1,3 @@
-import type { NotifyMessageTypes } from './notifyMessageTypes.js';
+import type { MessagePayload } from './MessagePayloads.js';
 
-export type DeviceNotifyCallback = (messageSource: NotifyMessageTypes, homeData: unknown) => void;
+export type DeviceNotifyCallback = (payload: MessagePayload) => void;

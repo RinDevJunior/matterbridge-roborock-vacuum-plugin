@@ -5,9 +5,9 @@ import { RequestMessage } from '../../models/requestMessage.js';
 import { AbstractMessageDispatcher } from './abstractMessageDispatcher.js';
 import { AnsiLogger, debugStringify } from 'matterbridge/logger';
 import { Client } from '../../routing/client.js';
-import { NetworkInfo, RoomDto } from '../../models/index.js';
+import { NetworkInfo, RawRoomMappingData } from '../../models/index.js';
 import { resolveQ7CleanMode, resolveMopMode, resolveVacuumMode, resolveCleanRoute } from '../../helper/B01VacuumModeResolver.js';
-import { MapInfo, RoomMap } from '../../../core/application/models/index.js';
+import { MapInfo } from '../../../core/application/models/index.js';
 import { MapRoomResponse } from '../../../types/device.js';
 import { CleanModeSetting } from '../../../behaviors/roborock.vacuum/core/CleanModeSetting.js';
 
@@ -41,12 +41,12 @@ export class Q7MessageDispatcher implements AbstractMessageDispatcher {
     return new MapInfo({ max_multi_map: 0, max_bak_map: 0, multi_map_count: 0, map_info: [] });
   }
 
-  public async getRoomMap(duid: string, activeMap: number, rooms: RoomDto[]): Promise<RoomMap> {
+  public async getRoomMap(duid: string, activeMap: number): Promise<RawRoomMappingData> {
     const request = new RequestMessage({ dps: this.createDps(Q7RequestMethod.get_room_mapping, { map_id: activeMap, prefer_type: 1 }) });
-    const response = await this.client.get<number[][] | undefined>(duid, request);
+    const response = (await this.client.get<RawRoomMappingData>(duid, request)) ?? [];
 
     this.logger.notice(`Get room map response for Q7 device ${duid}: ${response ? debugStringify(response) : 'no response'}`);
-    return new RoomMap([]); // TODO: Implement proper room mapping retrieval for Q7
+    return response; // TODO: Implement proper room mapping retrieval for Q7
   }
   // #endregion Core Data Retrieval
 

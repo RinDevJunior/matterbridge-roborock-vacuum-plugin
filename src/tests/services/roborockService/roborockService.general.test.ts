@@ -5,7 +5,7 @@ import { RoborockService } from '../../../services/roborockService.js';
 import { RoomIndexMap } from '../../../core/application/models/index.js';
 import { createMockLogger, createMockLocalStorage, asPartial, asType } from '../../helpers/testUtils.js';
 import { localStorageMock } from '../../testData/localStorageMock.js';
-import { PlatformConfigManager as PlatformConfigManagerStatic } from '../../../platform/platformConfig.js';
+import { PlatformConfigManager as PlatformConfigManagerStatic } from '../../../platform/platformConfigManager.js';
 import { Device } from '../../../roborockCommunication/models/device.js';
 
 const logger: AnsiLogger = createMockLogger();
@@ -176,7 +176,6 @@ describe('RoborockService - Facade Pattern Testing', () => {
 
     it('should provide message routing interface', () => {
       // Assert - Test that facade exposes expected message methods
-      expect(typeof roborockService.getMessageProcessor).toBe('function');
       expect(typeof roborockService.getCleanModeData).toBe('function');
       expect(typeof roborockService.changeCleanMode).toBe('function');
       expect(typeof roborockService.startClean).toBe('function');

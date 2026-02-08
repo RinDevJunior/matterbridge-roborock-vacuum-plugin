@@ -1,15 +1,15 @@
 import { AnsiLogger, debugStringify } from 'matterbridge/logger';
 import { AbstractMessageDispatcher } from './abstractMessageDispatcher.js';
-import { CloudMessageResult, DeviceStatus, NetworkInfo, RequestMessage, RoomDto } from '../../models/index.js';
+import { CloudMessageResult, DeviceStatus, NetworkInfo, RequestMessage } from '../../models/index.js';
 import { Client } from '../../routing/client.js';
-import { MapInfo, RoomMap } from '../../../core/application/models/index.js';
-import { HomeModelMapper, MultipleMapDto, RawRoomMappingData } from '../../models/home/index.js';
+import { MapInfo } from '../../../core/application/models/index.js';
+import { MultipleMapDto, RawRoomMappingData } from '../../models/home/index.js';
 import { MapRoomResponse } from '../../../types/index.js';
 import { CleanModeSetting } from '../../../behaviors/roborock.vacuum/core/CleanModeSetting.js';
 import { MopRoute, VacuumSuctionPower } from '../../../behaviors/roborock.vacuum/enums/index.js';
 
-export class V01MessageDispatcher implements AbstractMessageDispatcher {
-  public dispatcherName = 'V01MessageDispatcher';
+export class V10MessageDispatcher implements AbstractMessageDispatcher {
+  public dispatcherName = 'V10MessageDispatcher';
   constructor(
     private readonly logger: AnsiLogger,
     private readonly client: Client,
@@ -26,7 +26,7 @@ export class V01MessageDispatcher implements AbstractMessageDispatcher {
 
     if (response) {
       this.logger.debug('Device status: ', debugStringify(response));
-      return new DeviceStatus(response);
+      return new DeviceStatus(duid, response[0]);
     }
 
     return undefined;
@@ -45,15 +45,10 @@ export class V01MessageDispatcher implements AbstractMessageDispatcher {
     return new MapInfo(response.length > 0 ? response[0] : { max_multi_map: 0, max_bak_map: 0, multi_map_count: 0, map_info: [] });
   }
 
-  public async getRoomMap(duid: string, activeMap: number, rooms: RoomDto[]): Promise<RoomMap> {
+  public async getRoomMap(duid: string, activeMap: number): Promise<RawRoomMappingData> {
     const request = new RequestMessage({ method: 'get_room_mapping' });
     const response = (await this.client.get<RawRoomMappingData>(duid, request)) ?? [];
-
-    const mapRoomDtos = response.map((raw) => HomeModelMapper.rawArrayToMapRoomDto(raw, activeMap));
-    const roomMappings = mapRoomDtos.map((dto) => HomeModelMapper.toRoomMapping(dto, rooms));
-    const roomMap = new RoomMap(roomMappings);
-    this.logger.debug(`Room mapping for device ${duid}: ${debugStringify(roomMap)}`);
-    return roomMap;
+    return response;
   }
 
   /* ---------------- Cleaning Commands ---------------- */

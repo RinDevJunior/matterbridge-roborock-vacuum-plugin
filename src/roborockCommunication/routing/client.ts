@@ -9,6 +9,8 @@ export interface Client {
 
   isConnected(): boolean;
 
+  isReady(): boolean;
+
   connect(): void;
 
   disconnect(): Promise<void>;

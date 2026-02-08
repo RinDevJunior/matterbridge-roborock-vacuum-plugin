@@ -1,0 +1,45 @@
+
+[09:45:25.224] [Matterbridge Roborock Vacuum Plugin] [debug] Waiting for response to messageId: 27788, method: get_prop 
+[09:45:25.224] [Matterbridge Roborock Vacuum Plugin] [debug] [LocalNetworkClient] sending message 27788, protocol version: L01, protocol:general_request, method:get_prop, secure:false to 7znOB0b8tk30fseWfEplJ 
+[09:45:25.224] [Matterbridge Roborock Vacuum Plugin] [debug] [LocalNetworkClient] sent message 27788 to 7znOB0b8tk30fseWfEplJ 
+[09:45:25.229] [Matterbridge Roborock Vacuum Plugin] [debug] [LocalNetworkClient][MessageDeserializer] deserialized header: {"version":"L01","seq":1105,"nonce":1631634060,"timestamp":1770457523,"protocol":4} 
+[09:45:25.230] [Matterbridge Roborock Vacuum Plugin] [debug] [LocalNetworkClient][MessageDeserializer] deserialized body: { data: { 102: { id: 27788, result: [ { msg_ver: 2, msg_seq: 244, state: 8, battery: 100, clean_time: 2158, clean_area: 32405000, error_code: 0, map_present: 1, in_cleaning: 0, in_returning: 0, in_fresh_state: 1, lab_status: 1, water_box_status: 1, fan_power: 104, dnd_enabled: 0, map_status: 3, is_locating: 0, lock_status: 0, water_box_mode: 202, water_box_carriage_status: 1, mop_forbidden_enable: 1, camera_status: 385, is_exploring: 0, adbumper_status: [ 0, 0, 0 ], water_shortage_status: 0, dock_type: 5, dust_collection_status: 0, auto_dust_collection: 1, avoid_count: 28, mop_mode: 300, debug_mode: 0, collision_avoid_status: 1, switch_map_mode: 0, dock_error_status: 0, charge_status: 1, unsave_map_reason: 0, unsave_map_flag: 0, clean_percent: 0, rss: 2, dss: 0, repeat: 1, events: [  ], switch_status: 1, replenish_mode: 0 } ] } } } 
+[09:45:25.230] [Matterbridge Roborock Vacuum Plugin] [debug] Resolved messageId: 27788 
+...
+
+[09:46:19.125] [Matterbridge Roborock Vacuum Plugin] [debug] [LocalNetworkClient] sending message 100714, protocol version: L01, protocol:ping_request, method:undefined, secure:false to 7znOB0b8tk30fseWfEplJ 
+[09:46:19.125] [Matterbridge Roborock Vacuum Plugin] [debug] [LocalNetworkClient] sent message 100714 to 7znOB0b8tk30fseWfEplJ 
+[09:46:22.678] [Matterbridge Roborock Vacuum Plugin] [error] Device mqtt-ba0511f9 disconnected from MQTTClient with message: MQTT connection closed 
+[09:46:22.678] [Matterbridge Roborock Vacuum Plugin] [info] Device mqtt-ba0511f9 reconnected to MQTTClient with message: Attempting to reconnect to MQTT broker 
+[09:46:22.745] [Matterbridge Roborock Vacuum Plugin] [info] Device mqtt-ba0511f9 connected to MQTTClient 
+[09:46:22.746] [Matterbridge Roborock Vacuum Plugin] [info] onSubscribe: [] 
+[09:46:23.775] [Matterbridge Roborock Vacuum Plugin] [info]  [LocalNetworkClient]: 7znOB0b8tk30fseWfEplJ socket disconnected. Had error: false 
+[09:46:23.776] [Matterbridge Roborock Vacuum Plugin] [info]  [LocalNetworkClient]: 7znOB0b8tk30fseWfEplJ socket disconnected. Had error: false 
+[09:46:25.224] [Matterbridge Roborock Vacuum Plugin] [debug] Waiting for response to messageId: 31843, method: get_prop 
+[09:46:25.225] [Matterbridge Roborock Vacuum Plugin] [debug] [MQTTClient] sending message to 7znOB0b8tk30fseWfEplJ: { version: 'L01', messageId: 31843, protocol: 101, method: 'get_prop', params: [ 'get_status' ], secure: false, timestamp: 1770457585, nonce: 14509, dps: undefined, body: undefined } 
+[09:46:25.226] [Matterbridge Roborock Vacuum Plugin] [debug] [MQTTClient] sent message to 7znOB0b8tk30fseWfEplJ 
+...
+[09:46:35.225] [Matterbridge Roborock Vacuum Plugin] [error] Message timeout for messageId: 31843, request: { version: 'L01', messageId: 31843, protocol: 101, method: 'get_prop', params: [ 'get_status' ], secure: false, timestamp: 1770457585, nonce: 14509, dps: undefined, body: undefined } 
+[09:46:52.679] [Matterbridge Roborock Vacuum Plugin] [info] Device with DUID mqtt-ba0511f9 already reconnected by MQTT library, skipping manual reconnect. 
+...
+[09:47:25.225] [Matterbridge Roborock Vacuum Plugin] [debug] Waiting for response to messageId: 19057, method: get_prop 
+[09:47:25.226] [Matterbridge Roborock Vacuum Plugin] [debug] [MQTTClient] sending message to 7znOB0b8tk30fseWfEplJ: { version: 'L01', messageId: 19057, protocol: 101, method: 'get_prop', params: [ 'get_status' ], secure: false, timestamp: 1770457645, nonce: 24182, dps: undefined, body: undefined } 
+[09:47:25.226] [Matterbridge Roborock Vacuum Plugin] [debug] [MQTTClient] sent message to 7znOB0b8tk30fseWfEplJ 
+...
+[09:47:35.227] [Matterbridge Roborock Vacuum Plugin] [error] Message timeout for messageId: 19057, request: { version: 'L01', messageId: 19057, protocol: 101, method: 'get_prop', params: [ 'get_status' ], secure: false, timestamp: 1770457645, nonce: 24182, dps: undefined, body: undefined } 
+...
+[09:48:25.226] [Matterbridge Roborock Vacuum Plugin] [debug] Waiting for response to messageId: 28674, method: get_prop 
+[09:48:25.227] [Matterbridge Roborock Vacuum Plugin] [debug] [MQTTClient] sending message to 7znOB0b8tk30fseWfEplJ: { version: 'L01', messageId: 28674, protocol: 101, method: 'get_prop', params: [ 'get_status' ], secure: false, timestamp: 1770457705, nonce: 22897, dps: undefined, body: undefined } 
+[09:48:25.227] [Matterbridge Roborock Vacuum Plugin] [debug] [MQTTClient] sent message to 7znOB0b8tk30fseWfEplJ 
+...
+[09:48:35.228] [Matterbridge Roborock Vacuum Plugin] [error] Message timeout for messageId: 28674, request: { version: 'L01', messageId: 28674, protocol: 101, method: 'get_prop', params: [ 'get_status' ], secure: false, timestamp: 1770457705, nonce: 22897, dps: undefined, body: undefined } 
+...
+[09:49:25.227] [Matterbridge Roborock Vacuum Plugin] [debug] Waiting for response to messageId: 16721, method: get_prop 
+[09:49:25.227] [Matterbridge Roborock Vacuum Plugin] [debug] [MQTTClient] sending message to 7znOB0b8tk30fseWfEplJ: { version: 'L01', messageId: 16721, protocol: 101, method: 'get_prop', params: [ 'get_status' ], secure: false, timestamp: 1770457765, nonce: 21736, dps: undefined, body: undefined } 
+[09:49:25.228] [Matterbridge Roborock Vacuum Plugin] [debug] [MQTTClient] sent message to 7znOB0b8tk30fseWfEplJ 
+...
+[09:49:35.228] [Matterbridge Roborock Vacuum Plugin] [error] Message timeout for messageId: 16721, request: { version: 'L01', messageId: 16721, protocol: 101, method: 'get_prop', params: [ 'get_status' ], secure: false, timestamp: 1770457765, nonce: 21736, dps: undefined, body: undefined } 
+...
+[09:50:25.227] [Matterbridge Roborock Vacuum Plugin] [debug] Waiting for response to messageId: 19738, method: get_prop 
+[09:50:25.228] [Matterbridge Roborock Vacuum Plugin] [debug] [MQTTClient] sending message to 7znOB0b8tk30fseWfEplJ: { version: 'L01', messageId: 19738, protocol: 101, method: 'get_prop', params: [ 'get_status' ], secure: false, timestamp: 1770457825, nonce: 24097, dps: undefined, body: undefined } 
+[09:50:25.228] [Matterbridge Roborock Vacuum Plugin] [debug] [MQTTClient] sent message to 7znOB0b8tk30fseWfEplJ 

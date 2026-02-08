@@ -78,4 +78,37 @@ describe('MessageDeserializer', () => {
     const parsed = typeof item === 'string' ? JSON.parse(item) : JSON.parse(JSON.stringify(item));
     expect(parsed.x).toBe(1);
   });
+
+  it('handles unknown protocol and returns ResponseMessage without throwing', async () => {
+    vi.spyOn(MessageSerializerFactory.prototype, 'getMessageSerializer').mockReturnValue({
+      encode: (_payload: string, _localKey: string, _timestamp: number, _sequence: number, _nonce: number) => Buffer.alloc(0),
+      decode: (_payload: Buffer) => Buffer.from(JSON.stringify({ dps: { test: 'data' } })),
+    });
+
+    const context = new MessageContext(asType<UserData>({ rriot: { k: 'k' } }));
+    context.registerDevice('duid', 'local', 'A01', 9);
+    const des = new MessageDeserializer(context, logger);
+
+    const header = Buffer.alloc(17);
+    header.write('A01', 0, 3, 'ascii');
+    header.writeUInt32BE(1, 3);
+    header.writeUInt32BE(2, 7);
+    header.writeUInt32BE(3, 11);
+    header.writeUInt16BE(999, 15);
+
+    const decodedPayload = Buffer.from('encrypted');
+    const contentLen = Buffer.alloc(2);
+    contentLen.writeUInt16BE(decodedPayload.length, 0);
+
+    const preCrc = Buffer.concat([header, contentLen, decodedPayload]);
+    const crc = CRC32.buf(preCrc) >>> 0;
+    const crcBuf = Buffer.alloc(4);
+    crcBuf.writeUInt32BE(crc, 0);
+
+    const full = Buffer.concat([preCrc, crcBuf]);
+
+    const res = des.deserialize('duid', full, 'from');
+    expect(res).toBeDefined();
+    expect(logger.error).toHaveBeenCalledWith('unknown protocol: 999');
+  });
 });

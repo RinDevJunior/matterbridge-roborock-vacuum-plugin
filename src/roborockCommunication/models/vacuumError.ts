@@ -1,13 +1,11 @@
 import { DockErrorCode, VacuumErrorCode } from '../enums/index.js';
 
 export class VacuumError {
-  private readonly vacuumErrorCode: VacuumErrorCode;
-  private readonly dockErrorCode: DockErrorCode;
-
-  constructor(errorCode: VacuumErrorCode, dockErrorCode: DockErrorCode) {
-    this.vacuumErrorCode = errorCode;
-    this.dockErrorCode = dockErrorCode;
-  }
+  constructor(
+    public readonly duid: string,
+    public readonly vacuumErrorCode: VacuumErrorCode,
+    public readonly dockErrorCode: DockErrorCode,
+  ) {}
 
   hasError() {
     return this.vacuumErrorCode != 0 || this.dockErrorCode != 0;
