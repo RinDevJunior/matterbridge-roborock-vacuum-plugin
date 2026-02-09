@@ -46,6 +46,7 @@ export interface ErrorOccurredPayload {
   data: {
     duid: string;
     errorCode: number;
+    dockStationStatus: number | undefined;
   };
 }
 

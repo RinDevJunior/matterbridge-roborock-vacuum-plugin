@@ -5,6 +5,7 @@ export class VacuumError {
     public readonly duid: string,
     public readonly vacuumErrorCode: VacuumErrorCode,
     public readonly dockErrorCode: DockErrorCode,
+    public readonly dockStationStatus: number | undefined,
   ) {}
 
   hasError() {

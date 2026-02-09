@@ -46,6 +46,7 @@ export async function updateFromHomeData(homeData: Home, platform: RoborockMatte
         data: {
           duid: device.duid,
           errorCode: errorCode,
+          dockStationStatus: undefined,
         },
       });
     }

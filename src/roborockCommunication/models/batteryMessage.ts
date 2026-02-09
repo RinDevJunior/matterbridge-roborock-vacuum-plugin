@@ -14,6 +14,7 @@ export class BatteryMessage {
 export interface DeviceErrorMessage {
   duid: string;
   errorCode: VacuumErrorCode;
+  dockStationStatus: number | undefined;
 }
 
 export interface DeviceStatusNotify extends DeviceStatus, CloudMessageResult {

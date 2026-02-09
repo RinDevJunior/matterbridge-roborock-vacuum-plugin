@@ -2,6 +2,25 @@
 
 ## 2026-02-08
 
+### Refactoring: DockingStationStatus
+
+- Converted `DockingStationStatus` from interface to class
+- Added `hasError()` method to replace standalone `hasDockingStationError()` function
+- Refactored bit manipulation logic for clarity:
+  - Added bit layout documentation
+  - Created named constants for bit positions
+  - Extracted `extractBits()` helper function
+- Updated all usages across codebase:
+  - `src/platformRunner.ts` - 3 locations updated to use `status?.hasError()`
+  - `src/initialData/getOperationalStates.ts` - updated to use class method
+  - Renamed `DockingStationStatusType` to `DockingStationStatusCode` throughout
+- Updated tests:
+  - `src/tests/model/DockingStationStatus.test.ts` - use class constructor
+  - `src/tests/initialData/getOperationalStates.test.ts` - updated to create instances with `new DockingStationStatus()`
+  - `src/tests/platformRunner.test.ts` - updated mocks to include `hasError()` method
+- Kept deprecated `hasDockingStationError()` function for backward compatibility
+- Test results: All 1357 tests passed, linter clean
+
 ### Unit Tests: UserDataRepository
 
 - Created comprehensive unit tests for `UserDataRepository.ts`

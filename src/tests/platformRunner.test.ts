@@ -9,7 +9,6 @@ import { PowerSource, RvcCleanMode, RvcOperationalState, RvcRunMode, ServiceArea
 import { OperationStatusCode, VacuumErrorCode } from '../roborockCommunication/enums/index.js';
 import type { DockingStationStatus } from '../model/DockingStationStatus.js';
 import * as initialDataIndex from '../initialData/index.js';
-import * as shareFunction from '../share/function.js';
 import * as runtimeHelper from '../share/runtimeHelper.js';
 import * as handleHomeDataMessage from '../runtimes/handleHomeDataMessage.js';
 import * as handleLocalMessage from '../runtimes/handleLocalMessage.js';
@@ -48,9 +47,13 @@ vi.mock('../runtimes/handleLocalMessage.js', () => ({
   triggerDssError: vi.fn(),
 }));
 
-vi.mock('../model/DockingStationStatus.js', () => ({
-  hasDockingStationError: vi.fn().mockReturnValue(false),
-}));
+vi.mock('../model/DockingStationStatus.js', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../model/DockingStationStatus.js')>();
+  return {
+    ...actual,
+    hasDockingStationError: vi.fn().mockReturnValue(false),
+  };
+});
 
 vi.mock('../share/runtimeHelper.js', () => ({
   getCleanModeResolver: vi.fn(() => ({
@@ -179,6 +182,7 @@ describe('PlatformRunner.updateRobotWithPayload', () => {
         specs: asPartial<DeviceSpecs>({ model: DeviceModel.S7 }),
       }),
       updateAttribute: vi.fn(),
+      getAttribute: vi.fn().mockReturnValue(RvcOperationalState.OperationalState.Docked),
       setAttribute: vi.fn(),
       cleanModeSetting: new CleanModeSetting(1, 1, 1, 1),
       dockStationStatus: asPartial<DockingStationStatus>({}),
@@ -200,7 +204,7 @@ describe('PlatformRunner.updateRobotWithPayload', () => {
   });
 
   it('should handle ErrorOccurred message', () => {
-    const errorMessage: DeviceErrorMessage = { duid: 'test-duid', errorCode: 1 as VacuumErrorCode };
+    const errorMessage: DeviceErrorMessage = { duid: 'test-duid', errorCode: VacuumErrorCode.LidarBlocked, dockStationStatus: undefined };
     const payload: MessagePayload = { type: NotifyMessageTypes.ErrorOccurred, data: errorMessage };
 
     runner.updateRobotWithPayload(payload);
@@ -212,7 +216,7 @@ describe('PlatformRunner.updateRobotWithPayload', () => {
 
   it('should not update operational state when getOperationalErrorState returns undefined', () => {
     vi.mocked(initialDataIndex.getOperationalErrorState).mockReturnValueOnce(undefined);
-    const errorMessage: DeviceErrorMessage = { duid: 'test-duid', errorCode: 1 as VacuumErrorCode };
+    const errorMessage: DeviceErrorMessage = { duid: 'test-duid', errorCode: VacuumErrorCode.LidarBlocked, dockStationStatus: undefined };
     const payload: MessagePayload = { type: NotifyMessageTypes.ErrorOccurred, data: errorMessage };
 
     runner.updateRobotWithPayload(payload);
@@ -222,7 +226,7 @@ describe('PlatformRunner.updateRobotWithPayload', () => {
   });
 
   it('should handle ErrorOccurred message with robot not found', () => {
-    const errorMessage: DeviceErrorMessage = { duid: 'unknown-duid', errorCode: 1 as VacuumErrorCode };
+    const errorMessage: DeviceErrorMessage = { duid: 'unknown-duid', errorCode: VacuumErrorCode.LidarBlocked, dockStationStatus: undefined };
     const payload: MessagePayload = { type: NotifyMessageTypes.ErrorOccurred, data: errorMessage };
 
     runner.updateRobotWithPayload(payload);
@@ -301,6 +305,10 @@ describe('PlatformRunner.updateRobotWithPayload', () => {
   });
 
   it('should trigger dock station error when docking station has error', () => {
+    const mockDockStatus = Object.assign(asPartial<DockingStationStatus>({ cleanFluidStatus: 1 }), {
+      hasError: vi.fn().mockReturnValue(true),
+    });
+
     const robotWithErrorStatus = asPartial<RoborockVacuumCleaner>({
       serialNumber: 'test-duid',
       device: asPartial<Device>({
@@ -309,11 +317,10 @@ describe('PlatformRunner.updateRobotWithPayload', () => {
       }),
       updateAttribute: vi.fn(),
       cleanModeSetting: new CleanModeSetting(1, 1, 1, 1),
-      dockStationStatus: asPartial<DockingStationStatus>({ cleanFluidStatus: 1 }),
+      dockStationStatus: mockDockStatus,
     });
 
-    const mockHasDockingStationError = vi.fn().mockReturnValue(true);
-    vi.mocked(dockingStationStatus.hasDockingStationError).mockImplementation(mockHasDockingStationError);
+    mockDockStatus.hasError = vi.fn().mockReturnValue(true);
 
     const platformWithDockStatus = asPartial<RoborockMatterbridgePlatform>({
       registry: createMockDeviceRegistry({}, new Map([['test-duid', robotWithErrorStatus]])),
@@ -337,7 +344,7 @@ describe('PlatformRunner.updateRobotWithPayload', () => {
 
     runnerWithDockStatus.updateRobotWithPayload(payload);
 
-    expect(mockHasDockingStationError).toHaveBeenCalledWith(robotWithErrorStatus.dockStationStatus);
+    expect(mockDockStatus.hasError).toHaveBeenCalled();
     expect(handleLocalMessage.triggerDssError).toHaveBeenCalledWith(robotWithErrorStatus, platformWithDockStatus);
     expect(robotWithErrorStatus.updateAttribute).not.toHaveBeenCalledWith(RvcOperationalState.Cluster.id, 'operationalState', expect.anything(), mockLogger);
   });
@@ -356,8 +363,6 @@ describe('PlatformRunner.updateRobotWithPayload', () => {
     const payload: MessagePayload = { type: NotifyMessageTypes.DeviceStatus, data: statusMessage };
 
     runner.updateRobotWithPayload(payload);
-
-    expect(dockingStationStatus.hasDockingStationError).not.toHaveBeenCalled();
     expect(robot.updateAttribute).toHaveBeenCalledWith(RvcRunMode.Cluster.id, 'currentMode', 1, mockLogger);
     expect(robot.updateAttribute).toHaveBeenCalledWith(RvcOperationalState.Cluster.id, 'operationalState', 66, mockLogger);
   });

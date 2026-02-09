@@ -7,8 +7,7 @@ import { PlatformConfigManager } from '../../../platform/platformConfigManager.j
 import { AuthContext } from '../../../services/authentication/AuthContext.js';
 import { UserData } from '../../../roborockCommunication/models/index.js';
 import { createMockLogger, asPartial, asType } from '../../testUtils.js';
-import { RoborockPluginPlatformConfig } from '../../../platform/roborockPluginPlatformConfig.js';
-import { AuthenticationConfiguration } from '../../../platform/authenticationConfiguration.js';
+import { AuthenticationConfiguration, RoborockPluginPlatformConfig } from '../../../model/RoborockPluginPlatformConfig.js';
 
 describe('PasswordAuthStrategy', () => {
   let strategy: PasswordAuthStrategy;
@@ -17,13 +16,13 @@ describe('PasswordAuthStrategy', () => {
   let mockConfigManager: PlatformConfigManager;
   let mockLogger: AnsiLogger;
 
-  const mockUserData: UserData = {
-    user_id: 'user123',
+  const mockUserData = asPartial<UserData>({
+    uid: 'user123',
     username: 'test@example.com',
-    email: 'test@example.com',
     token: 'valid-token',
-    rrHomeId: 'home123',
-  };
+    tokentype: 'Bearer',
+    region: 'us',
+  });
 
   beforeEach(() => {
     mockLogger = createMockLogger();
@@ -31,8 +30,7 @@ describe('PasswordAuthStrategy', () => {
     mockAuthService = asPartial<AuthenticationService>({
       loginWithPassword: vi.fn(),
       loginWithCachedToken: vi.fn(),
-      loginWith2FA: vi.fn(),
-      refreshUserToken: vi.fn(),
+      loginWithVerificationCode: vi.fn(),
     });
 
     mockUserDataRepository = asPartial<UserDataRepository>({
@@ -174,7 +172,7 @@ describe('PasswordAuthStrategy', () => {
       it('should return undefined when password authentication fails', async () => {
         const context = createContext('test@example.com', 'wrong-password');
         vi.mocked(mockUserDataRepository.loadUserData).mockResolvedValue(undefined);
-        vi.mocked(mockAuthService.loginWithPassword).mockResolvedValue(undefined);
+        vi.mocked(mockAuthService.loginWithPassword).mockResolvedValue(undefined as unknown as UserData);
         vi.mocked(mockUserDataRepository.saveUserData).mockResolvedValue();
 
         const result = await strategy.authenticate(context);
@@ -257,7 +255,7 @@ describe('PasswordAuthStrategy', () => {
       it('should attempt to save even when password authentication returns undefined', async () => {
         const context = createContext('test@example.com', 'wrong-password');
         vi.mocked(mockUserDataRepository.loadUserData).mockResolvedValue(undefined);
-        vi.mocked(mockAuthService.loginWithPassword).mockResolvedValue(undefined);
+        vi.mocked(mockAuthService.loginWithPassword).mockResolvedValue(undefined as unknown as UserData);
         vi.mocked(mockUserDataRepository.saveUserData).mockResolvedValue();
 
         await strategy.authenticate(context);

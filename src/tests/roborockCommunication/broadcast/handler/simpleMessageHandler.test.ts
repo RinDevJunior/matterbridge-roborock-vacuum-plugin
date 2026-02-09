@@ -12,7 +12,7 @@ describe('SimpleMessageHandler', () => {
   it('calls deviceNotify on error', () => {
     const deviceNotify = vi.fn();
     const handler = new SimpleMessageHandler(duid, logger, deviceNotify);
-    const error = new VacuumError(duid, VacuumErrorCode.ClearWaterTankEmpty, DockErrorCode.None);
+    const error = new VacuumError(duid, VacuumErrorCode.ClearWaterTankEmpty, DockErrorCode.None, 168);
     handler.onError(error);
     expect(deviceNotify).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -99,7 +99,7 @@ describe('SimpleMessageHandler', () => {
 
   it('does nothing if deviceNotify is undefined', () => {
     const handler = new SimpleMessageHandler(duid, logger, undefined);
-    const error = new VacuumError(duid, VacuumErrorCode.ClearWaterTankEmpty, DockErrorCode.None);
+    const error = new VacuumError(duid, VacuumErrorCode.ClearWaterTankEmpty, DockErrorCode.None, 168);
     const batteryMessage = new BatteryMessage(duid, 50, undefined, undefined);
     expect(() => handler.onError(error)).not.toThrow();
     expect(() => handler.onBatteryUpdate(batteryMessage)).not.toThrow();

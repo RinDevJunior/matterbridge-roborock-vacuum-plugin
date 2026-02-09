@@ -65,7 +65,7 @@ export class SimpleMessageListener implements AbstractMessageListener {
 
     if ((vacuumErrorCode !== undefined && vacuumErrorCode !== 0) || (dockErrorCode !== undefined && dockErrorCode !== 0)) {
       this.logger.debug(`[SimpleMessageListener]: Detected error code ${vacuumErrorCode} or dock error code ${dockErrorCode}`);
-      this.handler.onError(new VacuumError(message.duid, vacuumErrorCode, dockErrorCode));
+      this.handler.onError(new VacuumError(message.duid, vacuumErrorCode, dockErrorCode, messageBody.dss));
     }
 
     const statusChangeMessage = new StatusChangeMessage(

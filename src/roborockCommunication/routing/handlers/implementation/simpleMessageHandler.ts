@@ -22,6 +22,7 @@ export class SimpleMessageHandler implements AbstractMessageHandler {
       data: {
         duid: error.duid,
         errorCode: error.vacuumErrorCode,
+        dockStationStatus: error.dockErrorCode,
       },
     });
   }

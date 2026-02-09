@@ -5,8 +5,7 @@ import { PlatformConfigManager } from '../../../platform/platformConfigManager.j
 import { UserData } from '../../../roborockCommunication/models/index.js';
 import { createMockLogger, asPartial } from '../../testUtils.js';
 import type NodePersist from 'node-persist';
-import { RoborockPluginPlatformConfig } from '../../../platform/roborockPluginPlatformConfig.js';
-import { AuthenticationConfiguration } from '../../../platform/authenticationConfiguration.js';
+import { AuthenticationConfiguration, RoborockPluginPlatformConfig } from '../../../model/RoborockPluginPlatformConfig.js';
 
 describe('UserDataRepository', () => {
   let repository: UserDataRepository;
@@ -82,7 +81,7 @@ describe('UserDataRepository', () => {
     it('should return undefined and clear when saved username is undefined', async () => {
       const invalidUserData = { ...mockUserData, username: undefined as unknown as string };
       vi.mocked(mockPersist.getItem).mockResolvedValue(invalidUserData);
-      vi.mocked(mockPersist.removeItem).mockResolvedValue();
+      vi.mocked(mockPersist.removeItem).mockResolvedValue(undefined as never);
 
       const result = await repository.loadUserData('test@example.com');
 
@@ -94,7 +93,7 @@ describe('UserDataRepository', () => {
     it('should return undefined and clear when saved username is empty string', async () => {
       const invalidUserData = { ...mockUserData, username: '' };
       vi.mocked(mockPersist.getItem).mockResolvedValue(invalidUserData);
-      vi.mocked(mockPersist.removeItem).mockResolvedValue();
+      vi.mocked(mockPersist.removeItem).mockResolvedValue(undefined as never);
 
       const result = await repository.loadUserData('test@example.com');
 
@@ -106,7 +105,7 @@ describe('UserDataRepository', () => {
     it('should return undefined and clear when saved username does not match', async () => {
       const invalidUserData = { ...mockUserData, username: 'different@example.com' };
       vi.mocked(mockPersist.getItem).mockResolvedValue(invalidUserData);
-      vi.mocked(mockPersist.removeItem).mockResolvedValue();
+      vi.mocked(mockPersist.removeItem).mockResolvedValue(undefined as never);
 
       const result = await repository.loadUserData('test@example.com');
 
@@ -118,7 +117,7 @@ describe('UserDataRepository', () => {
     it('should return undefined and clear when saved region does not match config region', async () => {
       const invalidUserData = { ...mockUserData, region: 'EU' };
       vi.mocked(mockPersist.getItem).mockResolvedValue(invalidUserData);
-      vi.mocked(mockPersist.removeItem).mockResolvedValue();
+      vi.mocked(mockPersist.removeItem).mockResolvedValue(undefined as never);
 
       const result = await repository.loadUserData('test@example.com');
 
@@ -179,7 +178,7 @@ describe('UserDataRepository', () => {
 
   describe('saveUserData', () => {
     it('should save user data to persist', async () => {
-      vi.mocked(mockPersist.setItem).mockResolvedValue();
+      vi.mocked(mockPersist.setItem).mockResolvedValue(undefined as never);
 
       await repository.saveUserData(mockUserData);
 
@@ -188,7 +187,7 @@ describe('UserDataRepository', () => {
     });
 
     it('should save complete user data object', async () => {
-      vi.mocked(mockPersist.setItem).mockResolvedValue();
+      vi.mocked(mockPersist.setItem).mockResolvedValue(undefined as never);
 
       await repository.saveUserData(mockUserData);
 
@@ -212,7 +211,7 @@ describe('UserDataRepository', () => {
 
   describe('clearUserData', () => {
     it('should remove user data from persist', async () => {
-      vi.mocked(mockPersist.removeItem).mockResolvedValue();
+      vi.mocked(mockPersist.removeItem).mockResolvedValue(undefined as never);
 
       await repository.clearUserData();
 
@@ -230,7 +229,7 @@ describe('UserDataRepository', () => {
   describe('integration scenarios', () => {
     it('should clear and reload when username changes', async () => {
       vi.mocked(mockPersist.getItem).mockResolvedValue({ ...mockUserData, username: 'old@example.com' });
-      vi.mocked(mockPersist.removeItem).mockResolvedValue();
+      vi.mocked(mockPersist.removeItem).mockResolvedValue(undefined as never);
 
       const result = await repository.loadUserData('new@example.com');
 
@@ -241,7 +240,7 @@ describe('UserDataRepository', () => {
     it('should clear and reload when region changes', async () => {
       mockConfigManager.rawConfig.authentication.region = 'EU';
       vi.mocked(mockPersist.getItem).mockResolvedValue({ ...mockUserData, region: 'US' });
-      vi.mocked(mockPersist.removeItem).mockResolvedValue();
+      vi.mocked(mockPersist.removeItem).mockResolvedValue(undefined as never);
 
       const result = await repository.loadUserData('test@example.com');
 
@@ -250,7 +249,7 @@ describe('UserDataRepository', () => {
     });
 
     it('should save and load user data successfully', async () => {
-      vi.mocked(mockPersist.setItem).mockResolvedValue();
+      vi.mocked(mockPersist.setItem).mockResolvedValue(undefined as never);
       vi.mocked(mockPersist.getItem).mockResolvedValue(mockUserData);
 
       await repository.saveUserData(mockUserData);

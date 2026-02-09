@@ -5,7 +5,7 @@ import { AuthenticationStateRepository } from '../../../services/authentication/
 import { IAuthGateway } from '../../../core/ports/IAuthGateway.js';
 import { AuthenticationError } from '../../../errors/index.js';
 import { AuthenticateFlowState } from '../../../roborockCommunication/models/index.js';
-import { createMockLogger, asType } from '../../testUtils.js';
+import { createMockLogger, asType, asPartial } from '../../testUtils.js';
 import { VERIFICATION_CODE_RATE_LIMIT_MS } from '../../../constants/index.js';
 
 describe('VerificationCodeService', () => {
@@ -26,11 +26,11 @@ describe('VerificationCodeService', () => {
       refreshToken: vi.fn(),
     } satisfies Partial<IAuthGateway> as IAuthGateway;
 
-    mockStateRepository = {
+    mockStateRepository = asPartial<AuthenticationStateRepository>({
       getAuthState: vi.fn(),
       saveAuthState: vi.fn(),
       clearAuthState: vi.fn(),
-    } satisfies Partial<AuthenticationStateRepository> as AuthenticationStateRepository;
+    });
 
     service = new VerificationCodeService(mockAuthGateway, mockStateRepository, mockLogger);
 
