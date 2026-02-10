@@ -16,6 +16,8 @@ export class MQTTClient extends AbstractClient {
   private mqttClient: MqttLibClient | undefined = undefined;
   private keepConnectionAliveInterval: NodeJS.Timeout | undefined = undefined;
   private connected = false;
+  private consecutiveAuthErrors = 0;
+  private authErrorBackoffTimeout: NodeJS.Timeout | undefined = undefined;
 
   public constructor(logger: AnsiLogger, context: MessageContext, userdata: UserData, responseBroadcaster: ResponseBroadcaster, responseTracker: PendingResponseTracker) {
     super(logger, context, responseBroadcaster, responseTracker);
@@ -68,6 +70,16 @@ export class MQTTClient extends AbstractClient {
       return Promise.resolve();
     }
     try {
+      if (this.keepConnectionAliveInterval) {
+        clearInterval(this.keepConnectionAliveInterval);
+        this.keepConnectionAliveInterval = undefined;
+      }
+
+      if (this.authErrorBackoffTimeout) {
+        clearTimeout(this.authErrorBackoffTimeout);
+        this.authErrorBackoffTimeout = undefined;
+      }
+
       await super.disconnect();
       this.mqttClient.end();
       this.mqttClient = undefined;
@@ -91,8 +103,7 @@ export class MQTTClient extends AbstractClient {
 
   private keepConnectionAlive(): void {
     if (this.keepConnectionAliveInterval) {
-      clearTimeout(this.keepConnectionAliveInterval);
-      this.keepConnectionAliveInterval.unref();
+      clearInterval(this.keepConnectionAliveInterval);
     }
 
     this.keepConnectionAliveInterval = setInterval(() => {
@@ -109,6 +120,7 @@ export class MQTTClient extends AbstractClient {
         this.connect();
       }
     }, KEEPALIVE_INTERVAL_MS);
+    this.keepConnectionAliveInterval.unref();
   }
 
   private async onConnect(result: IConnackPacket): Promise<void> {
@@ -118,6 +130,7 @@ export class MQTTClient extends AbstractClient {
     }
 
     this.connected = true;
+    this.consecutiveAuthErrors = 0;
     this.logger.info(`[MQTTClient] connected to MQTT broker with result: ${debugStringify(result)}`);
     await this.connectionBroadcaster.onConnected(`mqtt-${this.mqttUsername}`);
     this.subscribeToQueue();
@@ -141,7 +154,7 @@ export class MQTTClient extends AbstractClient {
       await this.connectionBroadcaster.onDisconnected(`mqtt-${this.mqttUsername}`, `Failed to subscribe to the queue: ${String(err)}`);
       return;
     }
-    this.logger.info(`[MQTTClient] Connection subscribed: ${debugStringify(subscription)}`);
+    this.logger.info(`[MQTTClient] Connection subscribed: ${subscription ? debugStringify(subscription) : 'unknown'}`);
   }
 
   private async onDisconnect(): Promise<void> {
@@ -156,6 +169,44 @@ export class MQTTClient extends AbstractClient {
 
     this.logger.error(`MQTT connection error: ${errorMessage}`);
     await this.connectionBroadcaster.onError(`mqtt-${this.mqttUsername}`, `MQTT connection error: ${errorMessage}`);
+
+    if (isAuthError) {
+      this.consecutiveAuthErrors++;
+      this.logger.warn(`[MQTTClient] Auth error count: ${this.consecutiveAuthErrors}/5`);
+
+      if (this.consecutiveAuthErrors >= 5) {
+        this.logger.error('[MQTTClient] Auth error threshold reached, entering 60-minute backoff');
+        this.terminateConnection();
+
+        // Wait 60 minutes then reconnect
+        this.authErrorBackoffTimeout = setTimeout(() => {
+          this.authErrorBackoffTimeout = undefined;
+          this.consecutiveAuthErrors = 0;
+          this.logger.info('[MQTTClient] Auth error backoff period ended, attempting reconnection');
+          this.connect();
+        }, KEEPALIVE_INTERVAL_MS);
+        this.authErrorBackoffTimeout.unref();
+      }
+    }
+  }
+
+  private terminateConnection(): void {
+    if (this.keepConnectionAliveInterval) {
+      clearInterval(this.keepConnectionAliveInterval);
+      this.keepConnectionAliveInterval = undefined;
+    }
+
+    if (this.authErrorBackoffTimeout) {
+      clearTimeout(this.authErrorBackoffTimeout);
+      this.authErrorBackoffTimeout = undefined;
+    }
+
+    if (this.mqttClient) {
+      this.mqttClient.end(true);
+      this.mqttClient = undefined;
+    }
+
+    this.connected = false;
   }
 
   private async onClose(): Promise<void> {

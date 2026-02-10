@@ -70,3 +70,13 @@ export const MQTT_REFRESH_INTERVAL_MULTIPLIER = 500;
  * Multiplier for local network refresh interval (1000ms).
  */
 export const LOCAL_REFRESH_INTERVAL_MULTIPLIER = 1000;
+
+/**
+ * Number of consecutive failures before entering backoff mode (5 failures).
+ */
+export const FAILURE_THRESHOLD = 5;
+
+/**
+ * Backoff delay after consecutive failures (30 minutes).
+ */
+export const BACKOFF_DELAY_MS = 30 * 60 * 1000;

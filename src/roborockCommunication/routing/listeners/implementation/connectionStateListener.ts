@@ -24,6 +24,7 @@ export class ConnectionStateListener implements AbstractConnectionListener {
   public async onConnected(duid: string): Promise<void> {
     this.logger.info(`Device ${duid} connected to ${this.clientName}`);
     this.client.retryCount = 0;
+    this.shouldReconnect = true;
   }
 
   public async onReconnect(duid: string, message: string): Promise<void> {

@@ -1,6 +1,7 @@
 import mqtt, { IConnackPacket, MqttClient as MqttLibClient } from 'mqtt';
 import { vi, describe, it, expect, beforeEach, afterEach, afterAll } from 'vitest';
-import { asPartial, asType } from '../../../helpers/testUtils.js';
+import { AnsiLogger } from 'matterbridge/logger';
+import { asPartial, asType, createMockLogger } from '../../../helpers/testUtils.js';
 import { MessageContext, RequestMessage } from '../../../../roborockCommunication/models/index.js';
 import { MQTTClient } from '../../../../roborockCommunication/mqtt/mqttClient.js';
 import { PendingResponseTracker } from '../../../../roborockCommunication/routing/services/pendingResponseTracker.js';
@@ -120,7 +121,7 @@ vi.mock('mqtt', async () => {
 });
 
 describe('MQTTClient', () => {
-  let logger: any;
+  let logger: AnsiLogger;
   let context: any;
   let userdata: any;
   let client: any;
@@ -131,7 +132,7 @@ describe('MQTTClient', () => {
   const createdClients: any[] = [];
 
   beforeEach(() => {
-    logger = { error: vi.fn(), debug: vi.fn(), notice: vi.fn(), info: vi.fn() };
+    logger = createMockLogger();
     context = { getProtocolVersion: vi.fn().mockReturnValue('1.0') };
     userdata = {
       rriot: {
@@ -423,7 +424,7 @@ describe('MQTTClient', () => {
   it('keepConnectionAlive should clear existing interval before setting new one', () => {
     vi.useFakeTimers();
     const mqttClient = createMQTTClient();
-    const clearTimeoutSpy = vi.spyOn(global, 'clearTimeout');
+    const clearIntervalSpy = vi.spyOn(global, 'clearInterval');
 
     // Set initial interval
     mqttClient['keepConnectionAlive']();
@@ -431,7 +432,7 @@ describe('MQTTClient', () => {
 
     // Call again to clear and reset
     mqttClient['keepConnectionAlive']();
-    expect(clearTimeoutSpy).toHaveBeenCalledWith(firstInterval);
+    expect(clearIntervalSpy).toHaveBeenCalledWith(firstInterval);
 
     // Clean up
     clearInterval(mqttClient['keepConnectionAliveInterval']);
