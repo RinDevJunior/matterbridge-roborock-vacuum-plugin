@@ -3,6 +3,7 @@ import { describe, it, expect, vi } from 'vitest';
 import { DockErrorCode, OperationStatusCode, VacuumErrorCode } from '../../../../roborockCommunication/enums/index.js';
 import { SimpleMessageHandler } from '../../../../roborockCommunication/routing/handlers/implementation/simpleMessageHandler.js';
 import { BatteryMessage, DeviceStatus, VacuumError } from '../../../../roborockCommunication/models/index.js';
+import { CleanModeSetting } from '../../../../behaviors/roborock.vacuum/core/CleanModeSetting.js';
 import { createMockLogger } from '../../../testUtils.js';
 
 describe('SimpleMessageHandler', () => {
@@ -103,6 +104,89 @@ describe('SimpleMessageHandler', () => {
     const batteryMessage = new BatteryMessage(duid, 50, undefined, undefined);
     expect(() => handler.onError(error)).not.toThrow();
     expect(() => handler.onBatteryUpdate(batteryMessage)).not.toThrow();
+  });
+
+  it('logs debug message when deviceNotify is undefined for onError', () => {
+    const handler = new SimpleMessageHandler(duid, logger, undefined);
+    const error = new VacuumError(duid, VacuumErrorCode.ClearWaterTankEmpty, DockErrorCode.None, 168);
+    handler.onError(error);
+    expect(logger.debug).toHaveBeenCalledWith('[SimpleMessageHandler]: No deviceNotify callback provided');
+  });
+
+  it('logs debug message when deviceNotify is undefined for onBatteryUpdate', () => {
+    const handler = new SimpleMessageHandler(duid, logger, undefined);
+    const batteryMessage = new BatteryMessage(duid, 50, undefined, undefined);
+    handler.onBatteryUpdate(batteryMessage);
+    expect(logger.debug).toHaveBeenCalledWith('[SimpleMessageHandler]: No deviceNotify callback provided');
+  });
+
+  it('logs debug message when deviceNotify is undefined for onStatusChanged', () => {
+    const handler = new SimpleMessageHandler(duid, logger, undefined);
+    handler.onStatusChanged({
+      duid,
+      status: 0,
+      inCleaning: false,
+      inReturning: false,
+      inFreshState: false,
+      isLocating: false,
+      isExploring: false,
+      inWarmup: false,
+    });
+    expect(logger.debug).toHaveBeenCalledWith('[SimpleMessageHandler]: No deviceNotify callback provided');
+  });
+
+  it('calls deviceNotify on clean mode update', () => {
+    const deviceNotify = vi.fn();
+    const handler = new SimpleMessageHandler(duid, logger, deviceNotify);
+    const cleanModeMessage = new CleanModeSetting(102, 203, 25, 300);
+    handler.onCleanModeUpdate(cleanModeMessage);
+    expect(deviceNotify).toHaveBeenCalledWith(
+      expect.objectContaining({
+        type: NotifyMessageTypes.CleanModeUpdate,
+        data: expect.objectContaining({
+          duid,
+          suctionPower: 102,
+          waterFlow: 203,
+          distance_off: 25,
+          mopRoute: 300,
+        }),
+      }),
+    );
+  });
+
+  it('logs debug message when deviceNotify is undefined for onCleanModeUpdate', () => {
+    const handler = new SimpleMessageHandler(duid, logger, undefined);
+    const cleanModeMessage = new CleanModeSetting(102, 203, 25, 300);
+    handler.onCleanModeUpdate(cleanModeMessage);
+    expect(logger.debug).toHaveBeenCalledWith('[SimpleMessageHandler]: No deviceNotify callback provided');
+  });
+
+  it('calls deviceNotify on service area update', () => {
+    const deviceNotify = vi.fn();
+    const handler = new SimpleMessageHandler(duid, logger, deviceNotify);
+    const serviceAreaMessage = {
+      duid,
+      state: OperationStatusCode.Cleaning,
+      cleaningInfo: undefined,
+    };
+    handler.onServiceAreaUpdate(serviceAreaMessage);
+    expect(deviceNotify).toHaveBeenCalledWith(
+      expect.objectContaining({
+        type: NotifyMessageTypes.ServiceAreaUpdate,
+        data: serviceAreaMessage,
+      }),
+    );
+  });
+
+  it('logs debug message when deviceNotify is undefined for onServiceAreaUpdate', () => {
+    const handler = new SimpleMessageHandler(duid, logger, undefined);
+    const serviceAreaMessage = {
+      duid,
+      state: OperationStatusCode.Cleaning,
+      cleaningInfo: undefined,
+    };
+    handler.onServiceAreaUpdate(serviceAreaMessage);
+    expect(logger.debug).toHaveBeenCalledWith('[SimpleMessageHandler]: No deviceNotify callback provided');
   });
 
   it('onAdditionalProps does not throw', () => {

@@ -482,4 +482,191 @@ describe('MQTTClient', () => {
     expect(logger.error).toHaveBeenCalledWith('MQTT connection error: Connection refused: Not authorized');
     expect(mqttClient['connectionBroadcaster'].onError).toHaveBeenCalledWith('mqtt-c6d6afb9', 'MQTT connection error: Connection refused: Not authorized');
   });
+
+  it('onError should increment consecutiveAuthErrors for auth errors', async () => {
+    const mqttClient = createMQTTClient();
+    expect(mqttClient['consecutiveAuthErrors']).toBe(0);
+
+    await mqttClient['onError']({ code: 5 } as any);
+    expect(mqttClient['consecutiveAuthErrors']).toBe(1);
+
+    await mqttClient['onError']({ code: 5 } as any);
+    expect(mqttClient['consecutiveAuthErrors']).toBe(2);
+  });
+
+  it('onError should trigger backoff after 5 consecutive auth errors', async () => {
+    vi.useFakeTimers();
+    const mqttClient = createMQTTClient();
+    mqttClient['terminateConnection'] = vi.fn();
+    const connectSpy = vi.spyOn(mqttClient, 'connect');
+
+    // Trigger 5 consecutive auth errors
+    for (let i = 0; i < 5; i++) {
+      await mqttClient['onError']({ code: 5 } as any);
+    }
+
+    expect(logger.error).toHaveBeenCalledWith('[MQTTClient] Auth error threshold reached, entering 60-minute backoff');
+    expect(mqttClient['terminateConnection']).toHaveBeenCalled();
+    expect(mqttClient['authErrorBackoffTimeout']).toBeDefined();
+
+    // Fast-forward time by 60 minutes
+    vi.advanceTimersByTime(60 * 60 * 1000);
+
+    expect(connectSpy).toHaveBeenCalled();
+    expect(mqttClient['consecutiveAuthErrors']).toBe(0);
+    expect(logger.info).toHaveBeenCalledWith('[MQTTClient] Auth error backoff period ended, attempting reconnection');
+
+    vi.useRealTimers();
+  });
+
+  it('onError should not trigger backoff for fewer than 5 auth errors', async () => {
+    const mqttClient = createMQTTClient();
+    mqttClient['terminateConnection'] = vi.fn();
+
+    // Trigger 4 auth errors (below threshold)
+    for (let i = 0; i < 4; i++) {
+      await mqttClient['onError']({ code: 5 } as any);
+    }
+
+    expect(mqttClient['terminateConnection']).not.toHaveBeenCalled();
+    expect(mqttClient['authErrorBackoffTimeout']).toBeUndefined();
+  });
+
+  it('onError should reset consecutiveAuthErrors on successful connection', async () => {
+    const mqttClient = createMQTTClient();
+    mqttClient['consecutiveAuthErrors'] = 3;
+
+    await mqttClient['onConnect'](asType<IConnackPacket>({}));
+
+    expect(mqttClient['consecutiveAuthErrors']).toBe(0);
+  });
+
+  it('terminateConnection should clear intervals and close client', () => {
+    const mqttClient = createMQTTClient();
+    mqttClient['mqttClient'] = client;
+    mqttClient['connected'] = true;
+    mqttClient['keepConnectionAliveInterval'] = setInterval(() => {}, 1000);
+    mqttClient['authErrorBackoffTimeout'] = setTimeout(() => {}, 1000);
+
+    mqttClient['terminateConnection']();
+
+    expect(mqttClient['keepConnectionAliveInterval']).toBeUndefined();
+    expect(mqttClient['authErrorBackoffTimeout']).toBeUndefined();
+    expect(client.end).toHaveBeenCalledWith(true);
+    expect(mqttClient['mqttClient']).toBeUndefined();
+    expect(mqttClient['connected']).toBe(false);
+  });
+
+  it('terminateConnection should handle missing timers gracefully', () => {
+    const mqttClient = createMQTTClient();
+    mqttClient['mqttClient'] = client;
+    mqttClient['connected'] = true;
+    mqttClient['keepConnectionAliveInterval'] = undefined;
+    mqttClient['authErrorBackoffTimeout'] = undefined;
+
+    mqttClient['terminateConnection']();
+
+    expect(client.end).toHaveBeenCalledWith(true);
+    expect(mqttClient['connected']).toBe(false);
+  });
+
+  it('terminateConnection should handle missing mqttClient', () => {
+    const mqttClient = createMQTTClient();
+    mqttClient['mqttClient'] = undefined;
+    mqttClient['connected'] = true;
+
+    mqttClient['terminateConnection']();
+
+    expect(mqttClient['connected']).toBe(false);
+  });
+
+  it('keepConnectionAlive should reconnect when client exists but not connected', () => {
+    vi.useFakeTimers();
+    const mqttClient = createMQTTClient();
+    const connectSpy = vi.spyOn(mqttClient, 'connect');
+    const originalClient = mqttClient['mqttClient'];
+    mqttClient['mqttClient'] = client;
+    mqttClient['connected'] = false;
+    mqttClient['keepConnectionAlive']();
+
+    // Fast-forward time by 60 minutes to trigger the interval callback
+    vi.advanceTimersByTime(60 * 60 * 1000);
+
+    expect(connectSpy).toHaveBeenCalled();
+    expect(logger.debug).toHaveBeenCalledWith('[MQTTClient] MQTT client exists but not connected, calling reconnect');
+
+    // Clean up
+    clearInterval(mqttClient['keepConnectionAliveInterval']);
+    vi.useRealTimers();
+  });
+
+  it('onConnect should return early if result is falsy', async () => {
+    const mqttClient = createMQTTClient();
+    mqttClient['subscribeToQueue'] = vi.fn();
+
+    await mqttClient['onConnect'](null as any);
+
+    expect(logger.error).toHaveBeenCalledWith('[MQTTClient] onConnect called with no result');
+    expect(mqttClient['connected']).toBe(false);
+    expect(mqttClient['subscribeToQueue']).not.toHaveBeenCalled();
+  });
+
+  it('subscribeToQueue should log error when not connected', () => {
+    const mqttClient = createMQTTClient();
+    mqttClient['mqttClient'] = client;
+    mqttClient['connected'] = false;
+
+    mqttClient['subscribeToQueue']();
+
+    expect(logger.error).toHaveBeenCalledWith('[MQTTClient] cannot subscribe, client not connected');
+    expect(client.subscribe).not.toHaveBeenCalled();
+  });
+
+  it('subscribeToQueue should log error when mqttClient is undefined', () => {
+    const mqttClient = createMQTTClient();
+    mqttClient['mqttClient'] = undefined;
+    mqttClient['connected'] = true;
+
+    mqttClient['subscribeToQueue']();
+
+    expect(logger.error).toHaveBeenCalledWith('[MQTTClient] cannot subscribe, client not connected');
+  });
+
+  it('disconnect should clear keepConnectionAliveInterval', async () => {
+    const mqttClient = createMQTTClient();
+    mqttClient['mqttClient'] = client;
+    mqttClient['connected'] = true;
+    mqttClient['keepConnectionAliveInterval'] = setInterval(() => {}, 1000);
+
+    await mqttClient.disconnect();
+
+    expect(mqttClient['keepConnectionAliveInterval']).toBeUndefined();
+  });
+
+  it('disconnect should clear authErrorBackoffTimeout', async () => {
+    const mqttClient = createMQTTClient();
+    mqttClient['mqttClient'] = client;
+    mqttClient['connected'] = true;
+    mqttClient['authErrorBackoffTimeout'] = setTimeout(() => {}, 1000);
+
+    await mqttClient.disconnect();
+
+    expect(mqttClient['authErrorBackoffTimeout']).toBeUndefined();
+  });
+
+  it('onMessage should call both onResponse and onMessage on responseBroadcaster', async () => {
+    const mqttClient = createMQTTClient();
+    await mqttClient['onMessage']('rr/m/o/user/c6d6afb9/duid1', Buffer.from('msg'));
+    expect(mqttClient['responseBroadcaster'].onResponse).toHaveBeenCalledWith('deserialized');
+    expect(mqttClient['responseBroadcaster'].onMessage).toHaveBeenCalledWith('deserialized');
+  });
+
+  it('onMessage should handle non-Error objects', async () => {
+    const mqttClient = createMQTTClient();
+    deserializer.deserialize.mockImplementation(() => {
+      throw 'string error';
+    });
+    await mqttClient['onMessage']('topic/duid', Buffer.from('msg'));
+    expect(logger.error).toHaveBeenCalledWith(expect.stringContaining('unable to process message'));
+  });
 });

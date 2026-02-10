@@ -4,7 +4,7 @@ import { NotifyMessageTypes } from '../types/notifyMessageTypes.js';
 import { RoborockMatterbridgePlatform } from '../module.js';
 import { RoborockVacuumCleaner } from '../types/roborockVacuumCleaner.js';
 import { Device, DeviceSpecs, DeviceModel, BatteryMessage, DeviceErrorMessage, CleanInformation, Home } from '../roborockCommunication/models/index.js';
-import { asPartial, createMockLogger, createMockDeviceRegistry, createMockRoborockService, createMockConfigManager } from './testUtils.js';
+import { asPartial, createMockLogger, createMockDeviceRegistry, createMockRoborockService, createMockConfigManager, asType } from './testUtils.js';
 import { PowerSource, RvcCleanMode, RvcOperationalState, RvcRunMode, ServiceArea } from 'matterbridge/matter/clusters';
 import { DockErrorCode, OperationStatusCode, VacuumErrorCode } from '../roborockCommunication/enums/index.js';
 import type { DockStationStatus } from '../model/DockStationStatus.js';
@@ -519,5 +519,175 @@ describe('PlatformRunner.updateRobotWithPayload', () => {
     runner.updateRobotWithPayload(payload);
 
     expect(handleHomeDataMessage.updateFromHomeData).toHaveBeenCalledWith(homeData, platform);
+  });
+
+  it('should not process messages when handlers are not activated', () => {
+    const newRunner = new PlatformRunner(platform);
+    const errorMessage: DeviceErrorMessage = { duid: 'test-duid', vacuumErrorCode: VacuumErrorCode.LidarBlocked, dockErrorCode: DockErrorCode.None, dockStationStatus: undefined };
+    const payload: MessagePayload = { type: NotifyMessageTypes.ErrorOccurred, data: errorMessage };
+
+    newRunner.updateRobotWithPayload(payload);
+
+    expect(mockLogger.warn).not.toHaveBeenCalled();
+    expect(robot.updateAttribute).not.toHaveBeenCalled();
+  });
+
+  it('should clear error when vacuum is running without errors', () => {
+    vi.mocked(robot.getAttribute).mockReturnValue(RvcOperationalState.OperationalState.Running);
+    const errorMessage: DeviceErrorMessage = { duid: 'test-duid', vacuumErrorCode: VacuumErrorCode.None, dockErrorCode: DockErrorCode.None, dockStationStatus: undefined };
+    const payload: MessagePayload = { type: NotifyMessageTypes.ErrorOccurred, data: errorMessage };
+
+    runner.updateRobotWithPayload(payload);
+
+    expect(mockLogger.debug).toHaveBeenCalledWith('Vacuum running without errors, clearing error state.');
+    expect(robot.updateAttribute).toHaveBeenCalledWith(RvcOperationalState.Cluster.id, 'operationalError', { errorStateId: RvcOperationalState.ErrorState.NoError }, mockLogger);
+  });
+
+  it('should process dock station errors when includeDockStationStatus is enabled', () => {
+    const mockDockStatus = Object.assign(asPartial<DockStationStatus>({}), {
+      hasError: vi.fn().mockReturnValue(true),
+      getMatterOperationalError: vi.fn().mockReturnValue(RvcOperationalState.ErrorState.FailedToFindChargingDock),
+    });
+
+    const platformWithDockStatus = asPartial<RoborockMatterbridgePlatform>({
+      registry: createMockDeviceRegistry({}, new Map([['test-duid', robot]])),
+      log: mockLogger,
+      roborockService: createMockRoborockService(),
+      configManager: createMockConfigManager({ includeDockStationStatus: true }),
+    });
+    const runnerWithDockStatus = new PlatformRunner(platformWithDockStatus);
+    runnerWithDockStatus.activateHandlerFunctions();
+
+    vi.spyOn(dockingStationStatus.DockStationStatus, 'parseDockStationStatus').mockReturnValue(mockDockStatus);
+
+    const errorMessage: DeviceErrorMessage = { duid: 'test-duid', vacuumErrorCode: VacuumErrorCode.None, dockErrorCode: DockErrorCode.None, dockStationStatus: 168 };
+    const payload: MessagePayload = { type: NotifyMessageTypes.ErrorOccurred, data: errorMessage };
+
+    runnerWithDockStatus.updateRobotWithPayload(payload);
+
+    expect(mockDockStatus.hasError).toHaveBeenCalled();
+    expect(mockDockStatus.getMatterOperationalError).toHaveBeenCalled();
+    expect(mockLogger.warn).toHaveBeenCalledWith('Docking station error detected: FailedToFindChargingDock');
+    expect(robot.updateAttribute).toHaveBeenCalledWith(RvcOperationalState.Cluster.id, 'operationalState', RvcOperationalState.OperationalState.Error, mockLogger);
+    expect(robot.updateAttribute).toHaveBeenCalledWith(
+      RvcOperationalState.Cluster.id,
+      'operationalError',
+      { errorStateId: RvcOperationalState.ErrorState.FailedToFindChargingDock },
+      mockLogger,
+    );
+  });
+
+  it('should clear errors when dock station has no errors', () => {
+    const mockDockStatus = Object.assign(asPartial<DockStationStatus>({}), {
+      hasError: vi.fn().mockReturnValue(false),
+    });
+
+    const platformWithDockStatus = asPartial<RoborockMatterbridgePlatform>({
+      registry: createMockDeviceRegistry({}, new Map([['test-duid', robot]])),
+      log: mockLogger,
+      roborockService: createMockRoborockService(),
+      configManager: createMockConfigManager({ includeDockStationStatus: true }),
+    });
+    const runnerWithDockStatus = new PlatformRunner(platformWithDockStatus);
+    runnerWithDockStatus.activateHandlerFunctions();
+
+    vi.spyOn(dockingStationStatus.DockStationStatus, 'parseDockStationStatus').mockReturnValue(mockDockStatus);
+
+    const errorMessage: DeviceErrorMessage = { duid: 'test-duid', vacuumErrorCode: VacuumErrorCode.None, dockErrorCode: DockErrorCode.None, dockStationStatus: 0 };
+    const payload: MessagePayload = { type: NotifyMessageTypes.ErrorOccurred, data: errorMessage };
+
+    runnerWithDockStatus.updateRobotWithPayload(payload);
+
+    expect(mockLogger.debug).toHaveBeenCalledWith('No docking station errors detected.');
+    expect(robot.updateAttribute).toHaveBeenCalledWith(RvcOperationalState.Cluster.id, 'operationalError', { errorStateId: RvcOperationalState.ErrorState.NoError }, mockLogger);
+  });
+
+  it('should clear errors when no errors detected and no dock station processing', () => {
+    const errorMessage: DeviceErrorMessage = { duid: 'test-duid', vacuumErrorCode: VacuumErrorCode.None, dockErrorCode: DockErrorCode.None, dockStationStatus: undefined };
+    const payload: MessagePayload = { type: NotifyMessageTypes.ErrorOccurred, data: errorMessage };
+
+    runner.updateRobotWithPayload(payload);
+
+    expect(mockLogger.debug).toHaveBeenCalledWith('No errors detected, clearing operational error state.');
+    expect(robot.updateAttribute).toHaveBeenCalledWith(RvcOperationalState.Cluster.id, 'operationalError', { errorStateId: RvcOperationalState.ErrorState.NoError }, mockLogger);
+  });
+
+  it('should not update battery charge state when battery level is missing', () => {
+    const batteryMessage = new BatteryMessage('test-duid', asType<number>(undefined), 1, OperationStatusCode.Charging);
+    const payload: MessagePayload = { type: NotifyMessageTypes.BatteryUpdate, data: batteryMessage };
+
+    runner.updateRobotWithPayload(payload);
+
+    expect(robot.updateAttribute).not.toHaveBeenCalled();
+  });
+
+  it('should handle DeviceStatusSimple message with undefined state', () => {
+    const statusMessage = { duid: 'test-duid', status: OperationStatusCode.Unknown };
+    const payload: MessagePayload = { type: NotifyMessageTypes.DeviceStatusSimple, data: statusMessage };
+
+    runner.updateRobotWithPayload(payload);
+
+    expect(robot.updateAttribute).toHaveBeenCalledWith(RvcRunMode.Cluster.id, 'currentMode', 1, mockLogger);
+  });
+
+  it('should trigger dock station error in DeviceStatusSimple when dock has error', () => {
+    const mockDockStatus = Object.assign(asPartial<DockStationStatus>({}), {
+      hasError: vi.fn().mockReturnValue(true),
+    });
+
+    const robotWithDockError = asPartial<RoborockVacuumCleaner>({
+      serialNumber: 'test-duid',
+      device: asPartial<Device>({
+        duid: 'test-duid',
+        specs: asPartial<DeviceSpecs>({ model: DeviceModel.S7 }),
+      }),
+      updateAttribute: vi.fn(),
+      dockStationStatus: mockDockStatus,
+    });
+
+    const platformWithDockStatus = asPartial<RoborockMatterbridgePlatform>({
+      registry: createMockDeviceRegistry({}, new Map([['test-duid', robotWithDockError]])),
+      log: mockLogger,
+      roborockService: createMockRoborockService(),
+      configManager: createMockConfigManager({ includeDockStationStatus: true }),
+    });
+    const runnerWithDockStatus = new PlatformRunner(platformWithDockStatus);
+    runnerWithDockStatus.activateHandlerFunctions();
+
+    const statusMessage = { duid: 'test-duid', status: OperationStatusCode.Idle };
+    const payload: MessagePayload = { type: NotifyMessageTypes.DeviceStatusSimple, data: statusMessage };
+
+    runnerWithDockStatus.updateRobotWithPayload(payload);
+
+    expect(handleLocalMessage.triggerDssError).toHaveBeenCalledWith(robotWithDockError, platformWithDockStatus);
+    expect(robotWithDockError.updateAttribute).not.toHaveBeenCalledWith(RvcOperationalState.Cluster.id, 'operationalState', expect.anything(), mockLogger);
+  });
+
+  it('should handle ServiceAreaUpdate when getSelectedAreas returns empty array', () => {
+    platform.roborockService = createMockRoborockService({
+      getSelectedAreas: vi.fn().mockReturnValue([]),
+    });
+
+    const serviceAreaMessage = { duid: 'test-duid', state: OperationStatusCode.Idle, cleaningInfo: undefined };
+    const payload: MessagePayload = { type: NotifyMessageTypes.ServiceAreaUpdate, data: serviceAreaMessage };
+
+    runner.updateRobotWithPayload(payload);
+
+    expect(robot.updateAttribute).toHaveBeenCalledWith(ServiceArea.Cluster.id, 'selectedAreas', [], mockLogger);
+  });
+
+  it('should handle ServiceAreaUpdate with cleaningInfo but getSupportedAreas returns undefined', () => {
+    const cleaningInfo = asPartial<CleanInformation>({ segment_id: 4, target_segment_id: undefined });
+    platform.roborockService = createMockRoborockService({
+      getSupportedAreas: vi.fn().mockReturnValue(undefined),
+    });
+
+    const serviceAreaMessage = { duid: 'test-duid', state: OperationStatusCode.Cleaning, cleaningInfo };
+    const payload: MessagePayload = { type: NotifyMessageTypes.ServiceAreaUpdate, data: serviceAreaMessage };
+
+    runner.updateRobotWithPayload(payload);
+
+    expect(mockLogger.debug).toHaveBeenCalledWith(expect.stringContaining('No mapped area found'));
+    expect(robot.updateAttribute).not.toHaveBeenCalled();
   });
 });
