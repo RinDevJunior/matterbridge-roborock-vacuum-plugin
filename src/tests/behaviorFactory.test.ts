@@ -1,7 +1,6 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import { configureBehavior } from '../share/behaviorFactory.js';
 import { SMART_MODELS } from '../constants/index.js';
-import { AnsiLogger } from 'matterbridge/logger';
 import { RoborockService } from '../services/roborockService.js';
 import { BehaviorDeviceGeneric } from '../behaviors/BehaviorDeviceGeneric.js';
 import { CleanModeSettings } from '../model/RoborockPluginPlatformConfig.js';

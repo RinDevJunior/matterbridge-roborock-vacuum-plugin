@@ -83,6 +83,7 @@ export default [
     },
   },
   {
+    ...pluginVitest.configs.recommended,
     name: 'vitest',
     files: ['**/*.spec.ts', '**/*.test.ts', 'src/tests/**/*.ts'],
     languageOptions: {
@@ -93,11 +94,12 @@ export default [
         project: './tsconfig.vitest.json',
         tsconfigRootDir: import.meta.dirname,
       },
-    },
-    plugins: {
-      vitest: pluginVitest,
+      globals: {
+        ...pluginVitest.environments.env.globals,
+      },
     },
     rules: {
+      ...pluginVitest.configs.recommended.rules,
       // Override/add rules specific to test files here
       'no-unused-vars': 'off', // Disable base rule for unused variables in test files
       '@typescript-eslint/no-unused-vars': 'off', // Disable TypeScript rule for unused variables in test files
@@ -107,9 +109,6 @@ export default [
       '@typescript-eslint/require-await': 'off', // Allow async without await in tests
       '@typescript-eslint/no-deprecated': 'off', // Allow testing deprecated methods
       'jsdoc/require-jsdoc': 'off', // Disable JSDoc rule in test files
-
-      // Recommended Vitest rules
-      ...pluginVitest.configs.recommended.rules,
     },
   },
 ];

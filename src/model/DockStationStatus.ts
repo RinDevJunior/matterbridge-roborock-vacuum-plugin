@@ -1,6 +1,6 @@
 import { RvcOperationalState } from 'matterbridge/matter/clusters';
 
-export enum DockingStationStatusCode {
+export enum DockStationStatusCode {
   Unknown = 0,
   Error = 1,
   OK = 2,
@@ -31,49 +31,49 @@ function extractBits(value: number, position: number): number {
   return (value >> position) & BIT_MASK_2BITS;
 }
 
-export class DockingStationStatus {
+export class DockStationStatus {
   constructor(
-    public readonly cleanFluidStatus: DockingStationStatusCode,
-    public readonly waterBoxFilterStatus: DockingStationStatusCode,
-    public readonly dustBagStatus: DockingStationStatusCode,
-    public readonly dirtyWaterBoxStatus: DockingStationStatusCode,
-    public readonly clearWaterBoxStatus: DockingStationStatusCode,
-    public readonly isUpdownWaterReady: DockingStationStatusCode,
+    public readonly cleanFluidStatus: DockStationStatusCode,
+    public readonly waterBoxFilterStatus: DockStationStatusCode,
+    public readonly dustBagStatus: DockStationStatusCode,
+    public readonly dirtyWaterBoxStatus: DockStationStatusCode,
+    public readonly clearWaterBoxStatus: DockStationStatusCode,
+    public readonly isUpdownWaterReady: DockStationStatusCode,
   ) {}
 
   public hasError(): boolean {
     return (
-      this.cleanFluidStatus === DockingStationStatusCode.Error ||
-      this.waterBoxFilterStatus === DockingStationStatusCode.Error ||
-      this.dustBagStatus === DockingStationStatusCode.Error ||
-      this.dirtyWaterBoxStatus === DockingStationStatusCode.Error ||
-      this.clearWaterBoxStatus === DockingStationStatusCode.Error
-      // || this.isUpdownWaterReady === DockingStationStatusCode.Error
+      this.cleanFluidStatus === DockStationStatusCode.Error ||
+      this.waterBoxFilterStatus === DockStationStatusCode.Error ||
+      this.dustBagStatus === DockStationStatusCode.Error ||
+      this.dirtyWaterBoxStatus === DockStationStatusCode.Error ||
+      this.clearWaterBoxStatus === DockStationStatusCode.Error
+      // || this.isUpdownWaterReady === DockStationStatusCode.Error
     );
   }
 
   public getMatterOperationalError(): RvcOperationalState.ErrorState {
-    if (this.cleanFluidStatus === DockingStationStatusCode.Error) {
+    if (this.cleanFluidStatus === DockStationStatusCode.Error) {
       return RvcOperationalState.ErrorState.WaterTankMissing;
     }
-    if (this.waterBoxFilterStatus === DockingStationStatusCode.Error) {
+    if (this.waterBoxFilterStatus === DockStationStatusCode.Error) {
       return RvcOperationalState.ErrorState.WaterTankLidOpen;
     }
-    if (this.dustBagStatus === DockingStationStatusCode.Error) {
+    if (this.dustBagStatus === DockStationStatusCode.Error) {
       return RvcOperationalState.ErrorState.DustBinFull;
     }
-    if (this.dirtyWaterBoxStatus === DockingStationStatusCode.Error) {
+    if (this.dirtyWaterBoxStatus === DockStationStatusCode.Error) {
       return RvcOperationalState.ErrorState.DirtyWaterTankFull;
     }
-    if (this.clearWaterBoxStatus === DockingStationStatusCode.Error) {
+    if (this.clearWaterBoxStatus === DockStationStatusCode.Error) {
       return RvcOperationalState.ErrorState.WaterTankEmpty;
     }
 
     return RvcOperationalState.ErrorState.NoError;
   }
 
-  public static parseDockingStationStatus(dss: number): DockingStationStatus {
-    return new DockingStationStatus(
+  public static parseDockStationStatus(dss: number): DockStationStatus {
+    return new DockStationStatus(
       extractBits(dss, BitPosition.CleanFluid),
       extractBits(dss, BitPosition.WaterBoxFilter),
       extractBits(dss, BitPosition.DustBag),

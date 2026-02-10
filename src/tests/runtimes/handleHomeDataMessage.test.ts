@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { updateFromHomeData } from '../../runtimes/handleHomeDataMessage.js';
 import { homeData } from '../testData/mockData.js';
 import { DeviceSpecs, DeviceModel, Device, Home, Product } from '../../roborockCommunication/models/index.js';
-import type { DockingStationStatus } from '../../model/DockingStationStatus.js';
+import type { DockStationStatus } from '../../model/DockStationStatus.js';
 import type { RoborockVacuumCleaner } from '../../types/roborockVacuumCleaner.js';
 import type { RoborockMatterbridgePlatform } from '../../module.js';
 import { asPartial, asType } from '../testUtils.js';
@@ -170,7 +170,7 @@ describe('updateFromHomeData', () => {
     const robotWithDss = asPartial<RoborockVacuumCleaner>({
       updateAttribute: simpleUpdateAttribute,
       device: asPartial<Device>({ duid, name: 'TestVac', specs: asPartial<DeviceSpecs>({ model: DeviceModel.QREVO_EDGE_5V1 }) }),
-      dockStationStatus: asPartial<DockingStationStatus>({
+      dockStationStatus: asPartial<DockStationStatus>({
         cleanFluidStatus: 0,
         waterBoxFilterStatus: 0,
         dustBagStatus: 0,

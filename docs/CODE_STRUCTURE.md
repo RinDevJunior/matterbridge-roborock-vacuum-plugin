@@ -570,7 +570,7 @@ src/
 │
 ├── model/                       # Application models
 │   ├── CloudMessageModel.ts
-│   ├── DockingStationStatus.ts
+│   ├── DockStationStatus.ts
 │   └── ExperimentalFeatureSetting.ts
 │
 ├── types/                       # TypeScript type definitions

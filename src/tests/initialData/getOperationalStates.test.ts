@@ -1,8 +1,9 @@
 import { describe, it, expect } from 'vitest';
 import { RvcOperationalState } from 'matterbridge/matter/clusters';
-import { getOperationalErrorState, getErrorFromErrorCode, getErrorFromDSS } from '../../initialData/getOperationalStates.js';
+import { getOperationalErrorState, getErrorFromDSS } from '../../initialData/getOperationalStates.js';
 import { VacuumErrorCode } from '../../roborockCommunication/enums/vacuumAndDockErrorCode.js';
-import { DockingStationStatusCode, DockingStationStatus } from '../../model/DockingStationStatus.js';
+import { DockStationStatusCode, DockStationStatus } from '../../model/DockStationStatus.js';
+import { VacuumStatus } from '../../model/VacuumStatus.js';
 import { asType } from '../testUtils.js';
 
 describe('getOperationalStates', () => {
@@ -12,7 +13,8 @@ describe('getOperationalStates', () => {
   });
 
   it('getErrorFromErrorCode returns NoError for None', () => {
-    expect(getErrorFromErrorCode(VacuumErrorCode.None)).toBe(RvcOperationalState.ErrorState.NoError);
+    const vacuumStatus = new VacuumStatus(VacuumErrorCode.None);
+    expect(vacuumStatus.getErrorState()).toBe(RvcOperationalState.ErrorState.NoError);
   });
 
   it('getErrorFromErrorCode returns NavigationSensorObscured for sensor errors', () => {
@@ -26,7 +28,8 @@ describe('getOperationalStates', () => {
       VacuumErrorCode.WallSensorError,
     ];
     for (const code of sensorErrors) {
-      expect(getErrorFromErrorCode(code)).toBe(RvcOperationalState.ErrorState.NavigationSensorObscured);
+      const vacuumStatus = new VacuumStatus(code);
+      expect(vacuumStatus.getErrorState()).toBe(RvcOperationalState.ErrorState.NavigationSensorObscured);
     }
   });
 
@@ -40,13 +43,16 @@ describe('getOperationalStates', () => {
       VacuumErrorCode.RobotOnCarpet,
     ];
     for (const code of stuckErrors) {
-      expect(getErrorFromErrorCode(code)).toBe(RvcOperationalState.ErrorState.Stuck);
+      const vacuumStatus = new VacuumStatus(code);
+      expect(vacuumStatus.getErrorState()).toBe(RvcOperationalState.ErrorState.Stuck);
     }
   });
 
   it('getErrorFromErrorCode returns WheelsJammed for wheel errors', () => {
-    expect(getErrorFromErrorCode(VacuumErrorCode.WheelsSuspended)).toBe(RvcOperationalState.ErrorState.WheelsJammed);
-    expect(getErrorFromErrorCode(VacuumErrorCode.WheelsJammed)).toBe(RvcOperationalState.ErrorState.WheelsJammed);
+    const vacuumStatus1 = new VacuumStatus(VacuumErrorCode.WheelsSuspended);
+    expect(vacuumStatus1.getErrorState()).toBe(RvcOperationalState.ErrorState.WheelsJammed);
+    const vacuumStatus2 = new VacuumStatus(VacuumErrorCode.WheelsJammed);
+    expect(vacuumStatus2.getErrorState()).toBe(RvcOperationalState.ErrorState.WheelsJammed);
   });
 
   it('getErrorFromErrorCode returns BrushJammed for brush and roller errors', () => {
@@ -59,40 +65,47 @@ describe('getOperationalStates', () => {
       VacuumErrorCode.MoppingRollerJammed2,
     ];
     for (const code of brushErrors) {
-      expect(getErrorFromErrorCode(code)).toBe(RvcOperationalState.ErrorState.BrushJammed);
+      const vacuumStatus = new VacuumStatus(code);
+      expect(vacuumStatus.getErrorState()).toBe(RvcOperationalState.ErrorState.BrushJammed);
     }
   });
 
   it('getErrorFromErrorCode returns DustBinMissing for dustbin errors', () => {
     const dustbinErrors = [VacuumErrorCode.NoDustbin, VacuumErrorCode.StrainerError, VacuumErrorCode.CleanAutoEmptyDock];
     for (const code of dustbinErrors) {
-      expect(getErrorFromErrorCode(code)).toBe(RvcOperationalState.ErrorState.DustBinMissing);
+      const vacuumStatus = new VacuumStatus(code);
+      expect(vacuumStatus.getErrorState()).toBe(RvcOperationalState.ErrorState.DustBinMissing);
     }
   });
 
   it('getErrorFromErrorCode returns DustBinFull for clogged filter', () => {
-    expect(getErrorFromErrorCode(VacuumErrorCode.FilterBlocked)).toBe(RvcOperationalState.ErrorState.DustBinFull);
+    const vacuumStatus = new VacuumStatus(VacuumErrorCode.FilterBlocked);
+    expect(vacuumStatus.getErrorState()).toBe(RvcOperationalState.ErrorState.DustBinFull);
   });
 
   it('getErrorFromErrorCode returns LowBattery only for low battery', () => {
-    expect(getErrorFromErrorCode(VacuumErrorCode.LowBattery)).toBe(RvcOperationalState.ErrorState.LowBattery);
+    const vacuumStatus = new VacuumStatus(VacuumErrorCode.LowBattery);
+    expect(vacuumStatus.getErrorState()).toBe(RvcOperationalState.ErrorState.LowBattery);
   });
 
   it('getErrorFromErrorCode returns UnableToStartOrResume for charging error', () => {
-    expect(getErrorFromErrorCode(VacuumErrorCode.ChargingError)).toBe(RvcOperationalState.ErrorState.UnableToStartOrResume);
+    const vacuumStatus = new VacuumStatus(VacuumErrorCode.ChargingError);
+    expect(vacuumStatus.getErrorState()).toBe(RvcOperationalState.ErrorState.UnableToStartOrResume);
   });
 
   it('getErrorFromErrorCode returns FailedToFindChargingDock for dock errors', () => {
     const dockErrors = [VacuumErrorCode.DockNotConnectedToPower, VacuumErrorCode.ReturnToDockFail, VacuumErrorCode.DockLocatorError];
     for (const code of dockErrors) {
-      expect(getErrorFromErrorCode(code)).toBe(RvcOperationalState.ErrorState.FailedToFindChargingDock);
+      const vacuumStatus = new VacuumStatus(code);
+      expect(vacuumStatus.getErrorState()).toBe(RvcOperationalState.ErrorState.FailedToFindChargingDock);
     }
   });
 
   it('getErrorFromErrorCode returns CannotReachTargetArea for zone errors', () => {
     const zoneErrors = [VacuumErrorCode.NogoZoneDetected, VacuumErrorCode.InvisibleWallDetected, VacuumErrorCode.CannotCrossCarpet];
     for (const code of zoneErrors) {
-      expect(getErrorFromErrorCode(code)).toBe(RvcOperationalState.ErrorState.CannotReachTargetArea);
+      const vacuumStatus = new VacuumStatus(code);
+      expect(vacuumStatus.getErrorState()).toBe(RvcOperationalState.ErrorState.CannotReachTargetArea);
     }
   });
 
@@ -110,12 +123,14 @@ describe('getOperationalStates', () => {
       VacuumErrorCode.CheckCleanCarouse,
     ];
     for (const code of systemErrors) {
-      expect(getErrorFromErrorCode(code)).toBe(RvcOperationalState.ErrorState.UnableToCompleteOperation);
+      const vacuumStatus = new VacuumStatus(code);
+      expect(vacuumStatus.getErrorState()).toBe(RvcOperationalState.ErrorState.UnableToCompleteOperation);
     }
   });
 
   it('getErrorFromErrorCode returns WaterTankEmpty for empty clean water tank', () => {
-    expect(getErrorFromErrorCode(VacuumErrorCode.ClearWaterTankEmpty)).toBe(RvcOperationalState.ErrorState.WaterTankEmpty);
+    const vacuumStatus = new VacuumStatus(VacuumErrorCode.ClearWaterTankEmpty);
+    expect(vacuumStatus.getErrorState()).toBe(RvcOperationalState.ErrorState.WaterTankEmpty);
   });
 
   it('getErrorFromErrorCode returns WaterTankMissing for water tank issues', () => {
@@ -127,42 +142,45 @@ describe('getOperationalStates', () => {
       VacuumErrorCode.WaterCarriageDrop,
     ];
     for (const code of waterTankErrors) {
-      expect(getErrorFromErrorCode(code)).toBe(RvcOperationalState.ErrorState.WaterTankMissing);
+      const vacuumStatus = new VacuumStatus(code);
+      expect(vacuumStatus.getErrorState()).toBe(RvcOperationalState.ErrorState.WaterTankMissing);
     }
   });
 
   it('getErrorFromErrorCode returns DirtyWaterTankFull for dirty water errors', () => {
     const dirtyWaterErrors = [VacuumErrorCode.DirtyWaterBoxHoare, VacuumErrorCode.DrainWaterException, VacuumErrorCode.CleanCarouselWaterFull];
     for (const code of dirtyWaterErrors) {
-      expect(getErrorFromErrorCode(code)).toBe(RvcOperationalState.ErrorState.DirtyWaterTankFull);
+      const vacuumStatus = new VacuumStatus(code);
+      expect(vacuumStatus.getErrorState()).toBe(RvcOperationalState.ErrorState.DirtyWaterTankFull);
     }
   });
 
   it('getErrorFromErrorCode returns NoError for unknown error codes', () => {
-    expect(getErrorFromErrorCode(999 as VacuumErrorCode)).toBe(RvcOperationalState.ErrorState.NoError);
+    const vacuumStatus = new VacuumStatus(999 as VacuumErrorCode);
+    expect(vacuumStatus.getErrorState()).toBe(RvcOperationalState.ErrorState.NoError);
   });
 
   it('getErrorFromDSS handles undefined status', () => {
-    const noStatus = getErrorFromDSS(asType<DockingStationStatus>(undefined));
+    const noStatus = getErrorFromDSS(asType<DockStationStatus>(undefined));
     expect(noStatus).toBeDefined();
     expect(noStatus?.errorStateLabel).toContain('No Docking Station Status');
   });
 
   it('getErrorFromDSS returns undefined when no errors present', () => {
-    const status = new DockingStationStatus(
-      DockingStationStatusCode.OK,
-      DockingStationStatusCode.OK,
-      DockingStationStatusCode.OK,
-      DockingStationStatusCode.OK,
-      DockingStationStatusCode.OK,
-      DockingStationStatusCode.OK,
+    const status = new DockStationStatus(
+      DockStationStatusCode.OK,
+      DockStationStatusCode.OK,
+      DockStationStatusCode.OK,
+      DockStationStatusCode.OK,
+      DockStationStatusCode.OK,
+      DockStationStatusCode.OK,
     );
     const err = getErrorFromDSS(status);
     expect(err).toBeUndefined();
   });
 
   it('getErrorFromDSS handles cleanFluidStatus error', () => {
-    const status = new DockingStationStatus(DockingStationStatusCode.Error, 0, 0, 0, 0, 0);
+    const status = new DockStationStatus(DockStationStatusCode.Error, 0, 0, 0, 0, 0);
     const err = getErrorFromDSS(status);
     expect(err).toBeDefined();
     expect(err?.errorStateLabel).toBe('Clean Fluid Error');
@@ -170,28 +188,28 @@ describe('getOperationalStates', () => {
   });
 
   it('getErrorFromDSS handles waterBoxFilterStatus error', () => {
-    const status = new DockingStationStatus(0, DockingStationStatusCode.Error, 0, 0, 0, 0);
+    const status = new DockStationStatus(0, DockStationStatusCode.Error, 0, 0, 0, 0);
     const err = getErrorFromDSS(status);
     expect(err).toBeDefined();
     expect(err?.errorStateLabel).toBe('Water Box Filter Error');
   });
 
   it('getErrorFromDSS handles dustBagStatus error', () => {
-    const status = new DockingStationStatus(0, 0, DockingStationStatusCode.Error, 0, 0, 0);
+    const status = new DockStationStatus(0, 0, DockStationStatusCode.Error, 0, 0, 0);
     const err = getErrorFromDSS(status);
     expect(err).toBeDefined();
     expect(err?.errorStateLabel).toBe('Dust Bag Error');
   });
 
   it('getErrorFromDSS handles dirtyWaterBoxStatus error', () => {
-    const status = new DockingStationStatus(0, 0, 0, DockingStationStatusCode.Error, 0, 0);
+    const status = new DockStationStatus(0, 0, 0, DockStationStatusCode.Error, 0, 0);
     const err = getErrorFromDSS(status);
     expect(err).toBeDefined();
     expect(err?.errorStateLabel).toBe('Dirty Water Box Error');
   });
 
   it('getErrorFromDSS handles clearWaterBoxStatus error', () => {
-    const status = new DockingStationStatus(0, 0, 0, 0, DockingStationStatusCode.Error, 0);
+    const status = new DockStationStatus(0, 0, 0, 0, DockStationStatusCode.Error, 0);
     const err = getErrorFromDSS(status);
     expect(err).toBeDefined();
     expect(err?.errorStateLabel).toBe('Clear Water Box Error');

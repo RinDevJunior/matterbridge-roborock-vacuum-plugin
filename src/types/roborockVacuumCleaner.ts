@@ -5,7 +5,7 @@ import { AnsiLogger, debugStringify } from 'matterbridge/logger';
 import { BehaviorFactoryResult } from '../share/behaviorFactory.js';
 import { ModeBase, RvcOperationalState, ServiceArea } from 'matterbridge/matter/clusters';
 import { CommandNames } from '../behaviors/BehaviorDeviceGeneric.js';
-import { DockingStationStatus } from '../model/DockingStationStatus.js';
+import { DockStationStatus } from '../model/DockStationStatus.js';
 import { Device } from '../roborockCommunication/models/index.js';
 import { PlatformConfigManager } from '../platform/platformConfigManager.js';
 import { baseRunModeConfigs, getRunModeOptions } from '../behaviors/roborock.vacuum/core/runModeConfig.js';
@@ -19,7 +19,7 @@ interface IdentifyCommandRequest {
 export class RoborockVacuumCleaner extends RoboticVacuumCleaner {
   username: string | undefined;
   device: Device;
-  dockStationStatus: DockingStationStatus | undefined;
+  dockStationStatus: DockStationStatus | undefined;
   cleanModeSetting: CleanModeSetting | undefined;
   homeInfo: HomeEntity;
 

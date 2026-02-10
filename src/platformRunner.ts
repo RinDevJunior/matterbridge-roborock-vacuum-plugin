@@ -1,5 +1,5 @@
 import { PowerSource, RvcCleanMode, RvcOperationalState, RvcRunMode, ServiceArea } from 'matterbridge/matter/clusters';
-import { getBatteryState, getBatteryStatus, getOperationalErrorState } from './initialData/index.js';
+import { getBatteryState, getBatteryStatus } from './initialData/index.js';
 import { NotifyMessageTypes } from './types/notifyMessageTypes.js';
 import { debugStringify } from 'matterbridge/logger';
 import { updateFromHomeData } from './runtimes/handleHomeDataMessage.js';
@@ -13,9 +13,10 @@ import { CleanModeSetting } from './behaviors/roborock.vacuum/core/CleanModeSett
 import { getCleanModeResolver } from './share/runtimeHelper.js';
 import { OperationStatusCode } from './roborockCommunication/enums/index.js';
 import { INVALID_SEGMENT_ID } from './constants/index.js';
-import { DockingStationStatus } from './model/DockingStationStatus.js';
+import { DockStationStatus } from './model/DockStationStatus.js';
 import { triggerDssError } from './runtimes/handleLocalMessage.js';
 import { state_to_matter_operational_status, state_to_matter_state } from './share/function.js';
+import { VacuumStatus } from './model/VacuumStatus.js';
 
 type RobotHandler<T = unknown> = (robot: RoborockVacuumCleaner, data: T) => void;
 type PayloadHandler = (payload: MessagePayload) => void;
@@ -151,42 +152,59 @@ export class PlatformRunner {
     );
   }
 
+  private getOperationalErrorName(operationalError: number): string {
+    return (
+      Object.keys(RvcOperationalState.ErrorState).find((key) => RvcOperationalState.ErrorState[key as keyof typeof RvcOperationalState.ErrorState] === operationalError) ||
+      String(operationalError)
+    );
+  }
+
   /**
    * Handle error occurred messages and update robot operational state.
+   * Processes vacuum and docking station errors, updating Matter attributes accordingly.
+   * Prioritizes vacuum errors over docking station errors.
    */
   private handleErrorOccurred(robot: RoborockVacuumCleaner, message: DeviceErrorMessage): void {
     this.platform.log.debug(`Handling error occurred: ${debugStringify(message)}`);
-    const currentOperationState = robot.getAttribute(RvcOperationalState.Cluster.id, 'operationalState') as RvcOperationalState.OperationalState;
-    if (currentOperationState === RvcOperationalState.OperationalState.Error) {
+    const currentOperationState = robot.getAttribute(RvcOperationalState.Cluster.id, 'operationalState');
+
+    // Process vacuum errors (highest priority)
+    const vacuumStatus = new VacuumStatus(message.errorCode);
+    if (vacuumStatus.hasError()) {
+      const errorDetail = vacuumStatus.getErrorState();
+      this.platform.log.warn(`Vacuum error detected: ${this.getOperationalErrorName(errorDetail)}`);
+      robot.updateAttribute(RvcOperationalState.Cluster.id, 'operationalState', RvcOperationalState.OperationalState.Error, this.platform.log);
+      robot.updateAttribute(RvcOperationalState.Cluster.id, 'operationalError', { errorStateId: errorDetail }, this.platform.log);
       return;
     }
 
-    const operationalStateId = getOperationalErrorState(message.errorCode);
-    if (operationalStateId) {
-      this.platform.log.error(`Error occurred: ${message.errorCode}`);
-      robot.updateAttribute(RvcOperationalState.Cluster.id, 'operationalState', operationalStateId, this.platform.log);
+    // If vacuum is running with no errors, clear any previous errors and skip dock processing
+    if (currentOperationState === RvcOperationalState.OperationalState.Running) {
+      this.platform.log.debug('Vacuum running without errors, clearing error state.');
+      robot.updateAttribute(RvcOperationalState.Cluster.id, 'operationalError', { errorStateId: RvcOperationalState.ErrorState.NoError }, this.platform.log);
       return;
     }
 
-    if (this.platform.configManager.includeDockStationStatus && message.dockStationStatus) {
-      // only process dock station status if vacuum is not running
-      if (currentOperationState == RvcOperationalState.OperationalState.Running) {
-        return;
-      }
-
-      const dockStatus = DockingStationStatus.parseDockingStationStatus(message.dockStationStatus);
+    // Process dock station errors (only when vacuum not running)
+    if (this.platform.configManager.includeDockStationStatus && message.dockStationStatus !== undefined && message.dockStationStatus !== null) {
+      const dockStatus = DockStationStatus.parseDockStationStatus(message.dockStationStatus);
       robot.dockStationStatus = dockStatus;
 
       if (dockStatus.hasError()) {
+        this.platform.log.warn('Docking station errors detected.');
         robot.updateAttribute(RvcOperationalState.Cluster.id, 'operationalState', RvcOperationalState.OperationalState.Error, this.platform.log);
-
         const errorDetail = dockStatus.getMatterOperationalError();
         robot.updateAttribute(RvcOperationalState.Cluster.id, 'operationalError', { errorStateId: errorDetail }, this.platform.log);
       } else {
         this.platform.log.debug('No docking station errors detected.');
         robot.updateAttribute(RvcOperationalState.Cluster.id, 'operationalError', { errorStateId: RvcOperationalState.ErrorState.NoError }, this.platform.log);
       }
+      return;
     }
+
+    // No errors detected and no dock station processing
+    this.platform.log.debug('No errors detected, clearing operational error state.');
+    robot.updateAttribute(RvcOperationalState.Cluster.id, 'operationalError', { errorStateId: RvcOperationalState.ErrorState.NoError }, this.platform.log);
   }
 
   /**

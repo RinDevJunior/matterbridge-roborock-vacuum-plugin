@@ -1,6 +1,6 @@
 // import { getRunningMode } from '../initialData/getSupportedRunModes.js';
 // import { CloudMessageModel } from '../model/CloudMessageModel.js';
-// import { hasDockingStationError } from '../model/DockingStationStatus.js';
+// import { hasDockingStationError } from '../model/DockStationStatus.js';
 // import { state_to_matter_operational_status, state_to_matter_state } from '../share/function.js';
 // import { RvcCleanMode, RvcOperationalState, RvcRunMode } from 'matterbridge/matter/clusters';
 // import { triggerDssError } from './handleLocalMessage.js';

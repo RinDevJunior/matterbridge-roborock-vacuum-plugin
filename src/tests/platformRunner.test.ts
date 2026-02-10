@@ -7,12 +7,12 @@ import { Device, DeviceSpecs, DeviceModel, BatteryMessage, DeviceErrorMessage, C
 import { asPartial, createMockLogger, createMockDeviceRegistry, createMockRoborockService, createMockConfigManager } from './testUtils.js';
 import { PowerSource, RvcCleanMode, RvcOperationalState, RvcRunMode, ServiceArea } from 'matterbridge/matter/clusters';
 import { OperationStatusCode, VacuumErrorCode } from '../roborockCommunication/enums/index.js';
-import type { DockingStationStatus } from '../model/DockingStationStatus.js';
+import type { DockStationStatus } from '../model/DockStationStatus.js';
 import * as initialDataIndex from '../initialData/index.js';
 import * as runtimeHelper from '../share/runtimeHelper.js';
 import * as handleHomeDataMessage from '../runtimes/handleHomeDataMessage.js';
 import * as handleLocalMessage from '../runtimes/handleLocalMessage.js';
-import * as dockingStationStatus from '../model/DockingStationStatus.js';
+import * as dockingStationStatus from '../model/DockStationStatus.js';
 import { CleanModeSetting } from '../behaviors/roborock.vacuum/core/CleanModeSetting.js';
 import type { MessagePayload } from '../types/MessagePayloads.js';
 import { ModeResolver } from '../behaviors/roborock.vacuum/core/modeResolver.js';
@@ -47,8 +47,8 @@ vi.mock('../runtimes/handleLocalMessage.js', () => ({
   triggerDssError: vi.fn(),
 }));
 
-vi.mock('../model/DockingStationStatus.js', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('../model/DockingStationStatus.js')>();
+vi.mock('../model/DockStationStatus.js', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../model/DockStationStatus.js')>();
   return {
     ...actual,
     hasDockingStationError: vi.fn().mockReturnValue(false),
@@ -185,7 +185,7 @@ describe('PlatformRunner.updateRobotWithPayload', () => {
       getAttribute: vi.fn().mockReturnValue(RvcOperationalState.OperationalState.Docked),
       setAttribute: vi.fn(),
       cleanModeSetting: new CleanModeSetting(1, 1, 1, 1),
-      dockStationStatus: asPartial<DockingStationStatus>({}),
+      dockStationStatus: asPartial<DockStationStatus>({}),
     });
     platform = asPartial<RoborockMatterbridgePlatform>({
       registry: createMockDeviceRegistry({}, new Map([['test-duid', robot]])),
@@ -208,10 +208,8 @@ describe('PlatformRunner.updateRobotWithPayload', () => {
     const payload: MessagePayload = { type: NotifyMessageTypes.ErrorOccurred, data: errorMessage };
 
     runner.updateRobotWithPayload(payload);
-
-    expect(initialDataIndex.getOperationalErrorState).toHaveBeenCalledWith(1);
-    expect(mockLogger.error).toHaveBeenCalledWith('Error occurred: 1');
-    expect(robot.updateAttribute).toHaveBeenCalledWith(RvcOperationalState.Cluster.id, 'operationalState', 2, mockLogger);
+    expect(mockLogger.warn).toHaveBeenCalledWith('Vacuum error detected: NavigationSensorObscured');
+    expect(robot.updateAttribute).toHaveBeenCalledWith(RvcOperationalState.Cluster.id, 'operationalState', RvcOperationalState.OperationalState.Error, mockLogger);
   });
 
   it('should not update operational state when getOperationalErrorState returns undefined', () => {
@@ -222,7 +220,7 @@ describe('PlatformRunner.updateRobotWithPayload', () => {
     runner.updateRobotWithPayload(payload);
 
     expect(mockLogger.error).not.toHaveBeenCalled();
-    expect(robot.updateAttribute).not.toHaveBeenCalled();
+    expect(robot.updateAttribute).toHaveBeenCalled();
   });
 
   it('should handle ErrorOccurred message with robot not found', () => {
@@ -305,7 +303,7 @@ describe('PlatformRunner.updateRobotWithPayload', () => {
   });
 
   it('should trigger dock station error when docking station has error', () => {
-    const mockDockStatus = Object.assign(asPartial<DockingStationStatus>({ cleanFluidStatus: 1 }), {
+    const mockDockStatus = Object.assign(asPartial<DockStationStatus>({ cleanFluidStatus: 1 }), {
       hasError: vi.fn().mockReturnValue(true),
     });
 
