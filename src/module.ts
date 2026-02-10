@@ -227,6 +227,10 @@ export class RoborockMatterbridgePlatform extends MatterbridgeDynamicPlatform {
       this.log.error(`requestHomeData (initial) failed: ${error instanceof Error ? error.message : String(error)}`);
     }
 
+    // During initial configuration, we delay activating handlers until all devices are configured.
+    this.log.notice('Activating device notify handlers');
+    this.platformRunner.activateHandlerFunctions();
+
     this.log.info('onConfigureDevice finished');
   }
 

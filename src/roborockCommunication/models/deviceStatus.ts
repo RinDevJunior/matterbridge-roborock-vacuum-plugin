@@ -49,4 +49,8 @@ export class DeviceStatus {
   getDockErrorCode(): DockErrorCode {
     return this.message.dock_error_status;
   }
+
+  getDockStationStatus(): number | undefined {
+    return this.message.dss;
+  }
 }

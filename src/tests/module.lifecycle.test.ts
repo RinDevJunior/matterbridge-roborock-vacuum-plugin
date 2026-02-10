@@ -309,7 +309,7 @@ describe('module.ts coverage tests', () => {
       const mockDevice = makeDeviceFixture({ duid: 'test-device', name: 'Test Vacuum' });
 
       const platform = new RoborockMatterbridgePlatform(mockMatterbridge, mockLogger, createMockConfig());
-      platform.platformRunner = asPartial<PlatformRunner>({ requestHomeData: vi.fn(), updateRobotWithPayload: vi.fn() });
+      platform.platformRunner = asPartial<PlatformRunner>({ requestHomeData: vi.fn(), updateRobotWithPayload: vi.fn(), activateHandlerFunctions: vi.fn() });
       platform.roborockService = asPartial<RoborockService>({
         initializeMessageClientForLocal: vi.fn().mockResolvedValue(false),
         setDeviceNotify: vi.fn(),

@@ -3,6 +3,7 @@ import { BatteryMessage, DeviceStatus, DpsPayload, Protocol, ResponseMessage, St
 import { AbstractMessageHandler } from '../../handlers/abstractMessageHandler.js';
 import { AbstractMessageListener } from '../abstractMessageListener.js';
 import { AnsiLogger } from 'matterbridge/logger';
+import { DockStationStatus } from '../../../../model/DockStationStatus.js';
 
 export class SimpleMessageListener implements AbstractMessageListener {
   readonly name = 'SimpleMessageListener';
@@ -48,6 +49,7 @@ export class SimpleMessageListener implements AbstractMessageListener {
     const deviceStatus = new DeviceStatus(message.duid, rpcData.result[0]);
     const vacuumErrorCode = deviceStatus.getVacuumErrorCode();
     const dockErrorCode = deviceStatus.getDockErrorCode();
+    const dockStationStatusCode = deviceStatus.getDockStationStatus();
     const battery = deviceStatus.getBattery();
     const chargeStatus = deviceStatus.getChargeStatus();
     const messageBody = deviceStatus.getMessage();
@@ -63,9 +65,12 @@ export class SimpleMessageListener implements AbstractMessageListener {
 
     const batteryMessage = new BatteryMessage(message.duid, battery, chargeStatus, state);
 
-    if ((vacuumErrorCode !== undefined && vacuumErrorCode !== 0) || (dockErrorCode !== undefined && dockErrorCode !== 0)) {
-      this.logger.debug(`[SimpleMessageListener]: Detected error code ${vacuumErrorCode} or dock error code ${dockErrorCode}`);
-      this.handler.onError(new VacuumError(message.duid, vacuumErrorCode, dockErrorCode, messageBody.dss));
+    const dockStationStatus = dockStationStatusCode !== undefined ? DockStationStatus.parseDockStationStatus(dockStationStatusCode) : undefined;
+    const hasDockStationError = dockStationStatus?.hasError() ?? false;
+
+    if ((vacuumErrorCode !== undefined && vacuumErrorCode !== 0) || (dockErrorCode !== undefined && dockErrorCode !== 0) || hasDockStationError) {
+      this.logger.debug(`[SimpleMessageListener]: Detected error - vacuum: ${vacuumErrorCode}, dock: ${dockErrorCode}, dss: ${hasDockStationError}`);
+      this.handler.onError(new VacuumError(message.duid, vacuumErrorCode, dockErrorCode, dockStationStatusCode));
     }
 
     const statusChangeMessage = new StatusChangeMessage(

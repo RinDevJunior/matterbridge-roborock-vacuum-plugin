@@ -3,6 +3,7 @@ import { RoborockMatterbridgePlatform } from '../module.js';
 import { debugStringify } from 'matterbridge/logger';
 import { Device, Home } from '../roborockCommunication/models/index.js';
 import { NotifyMessageTypes } from '../types/notifyMessageTypes.js';
+import { DockErrorCode } from '../roborockCommunication/enums/vacuumAndDockErrorCode.js';
 
 /**
  * Update robot states from home data polling response.
@@ -45,7 +46,8 @@ export async function updateFromHomeData(homeData: Home, platform: RoborockMatte
         type: NotifyMessageTypes.ErrorOccurred,
         data: {
           duid: device.duid,
-          errorCode: errorCode,
+          vacuumErrorCode: errorCode,
+          dockErrorCode: DockErrorCode.None,
           dockStationStatus: undefined,
         },
       });

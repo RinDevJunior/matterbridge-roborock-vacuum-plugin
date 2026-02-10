@@ -7,6 +7,7 @@
 import { NotifyMessageTypes } from './notifyMessageTypes.js';
 import { CleanInformation, Home } from '../roborockCommunication/models/index.js';
 import { OperationStatusCode } from '../roborockCommunication/enums/operationStatusCode.js';
+import { DockErrorCode, VacuumErrorCode } from '../roborockCommunication/enums/index.js';
 
 export interface ServiceAreaUpdateMessage {
   duid: string;
@@ -45,7 +46,8 @@ export interface ErrorOccurredPayload {
   type: NotifyMessageTypes.ErrorOccurred;
   data: {
     duid: string;
-    errorCode: number;
+    vacuumErrorCode: VacuumErrorCode;
+    dockErrorCode: DockErrorCode;
     dockStationStatus: number | undefined;
   };
 }

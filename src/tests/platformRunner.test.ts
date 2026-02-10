@@ -6,7 +6,7 @@ import { RoborockVacuumCleaner } from '../types/roborockVacuumCleaner.js';
 import { Device, DeviceSpecs, DeviceModel, BatteryMessage, DeviceErrorMessage, CleanInformation, Home } from '../roborockCommunication/models/index.js';
 import { asPartial, createMockLogger, createMockDeviceRegistry, createMockRoborockService, createMockConfigManager } from './testUtils.js';
 import { PowerSource, RvcCleanMode, RvcOperationalState, RvcRunMode, ServiceArea } from 'matterbridge/matter/clusters';
-import { OperationStatusCode, VacuumErrorCode } from '../roborockCommunication/enums/index.js';
+import { DockErrorCode, OperationStatusCode, VacuumErrorCode } from '../roborockCommunication/enums/index.js';
 import type { DockStationStatus } from '../model/DockStationStatus.js';
 import * as initialDataIndex from '../initialData/index.js';
 import * as runtimeHelper from '../share/runtimeHelper.js';
@@ -194,6 +194,7 @@ describe('PlatformRunner.updateRobotWithPayload', () => {
       configManager: createMockConfigManager(),
     });
     runner = new PlatformRunner(platform);
+    runner.activateHandlerFunctions();
     vi.clearAllMocks();
   });
 
@@ -204,7 +205,7 @@ describe('PlatformRunner.updateRobotWithPayload', () => {
   });
 
   it('should handle ErrorOccurred message', () => {
-    const errorMessage: DeviceErrorMessage = { duid: 'test-duid', errorCode: VacuumErrorCode.LidarBlocked, dockStationStatus: undefined };
+    const errorMessage: DeviceErrorMessage = { duid: 'test-duid', vacuumErrorCode: VacuumErrorCode.LidarBlocked, dockErrorCode: DockErrorCode.None, dockStationStatus: undefined };
     const payload: MessagePayload = { type: NotifyMessageTypes.ErrorOccurred, data: errorMessage };
 
     runner.updateRobotWithPayload(payload);
@@ -214,7 +215,7 @@ describe('PlatformRunner.updateRobotWithPayload', () => {
 
   it('should not update operational state when getOperationalErrorState returns undefined', () => {
     vi.mocked(initialDataIndex.getOperationalErrorState).mockReturnValueOnce(undefined);
-    const errorMessage: DeviceErrorMessage = { duid: 'test-duid', errorCode: VacuumErrorCode.LidarBlocked, dockStationStatus: undefined };
+    const errorMessage: DeviceErrorMessage = { duid: 'test-duid', vacuumErrorCode: VacuumErrorCode.LidarBlocked, dockErrorCode: DockErrorCode.None, dockStationStatus: undefined };
     const payload: MessagePayload = { type: NotifyMessageTypes.ErrorOccurred, data: errorMessage };
 
     runner.updateRobotWithPayload(payload);
@@ -224,7 +225,12 @@ describe('PlatformRunner.updateRobotWithPayload', () => {
   });
 
   it('should handle ErrorOccurred message with robot not found', () => {
-    const errorMessage: DeviceErrorMessage = { duid: 'unknown-duid', errorCode: VacuumErrorCode.LidarBlocked, dockStationStatus: undefined };
+    const errorMessage: DeviceErrorMessage = {
+      duid: 'unknown-duid',
+      vacuumErrorCode: VacuumErrorCode.LidarBlocked,
+      dockErrorCode: DockErrorCode.None,
+      dockStationStatus: undefined,
+    };
     const payload: MessagePayload = { type: NotifyMessageTypes.ErrorOccurred, data: errorMessage };
 
     runner.updateRobotWithPayload(payload);
@@ -340,6 +346,7 @@ describe('PlatformRunner.updateRobotWithPayload', () => {
     };
     const payload: MessagePayload = { type: NotifyMessageTypes.DeviceStatus, data: statusMessage };
 
+    runnerWithDockStatus.activateHandlerFunctions();
     runnerWithDockStatus.updateRobotWithPayload(payload);
 
     expect(mockDockStatus.hasError).toHaveBeenCalled();

@@ -21,8 +21,9 @@ export class SimpleMessageHandler implements AbstractMessageHandler {
       type: NotifyMessageTypes.ErrorOccurred,
       data: {
         duid: error.duid,
-        errorCode: error.vacuumErrorCode,
-        dockStationStatus: error.dockErrorCode,
+        vacuumErrorCode: error.vacuumErrorCode,
+        dockErrorCode: error.dockErrorCode,
+        dockStationStatus: error.dockStationStatus,
       },
     });
   }

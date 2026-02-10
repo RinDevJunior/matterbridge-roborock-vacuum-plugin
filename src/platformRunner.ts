@@ -22,6 +22,7 @@ type RobotHandler<T = unknown> = (robot: RoborockVacuumCleaner, data: T) => void
 type PayloadHandler = (payload: MessagePayload) => void;
 
 export class PlatformRunner {
+  private activateHandlers = false;
   private readonly payloadHandlers: Map<NotifyMessageTypes, PayloadHandler>;
 
   constructor(private readonly platform: RoborockMatterbridgePlatform) {
@@ -85,6 +86,10 @@ export class PlatformRunner {
     ]);
   }
 
+  public activateHandlerFunctions(): void {
+    this.activateHandlers = true;
+  }
+
   /**
    * Request and process home data update from Roborock service.
    * Fetches latest home data including device states and triggers robot state updates.
@@ -105,6 +110,8 @@ export class PlatformRunner {
    * Routes to appropriate handler using type-safe discriminated unions.
    */
   public updateRobotWithPayload(payload: MessagePayload): void {
+    if (!this.activateHandlers) return;
+
     const handler = this.payloadHandlers.get(payload.type);
     if (handler) {
       handler(payload);
@@ -169,7 +176,7 @@ export class PlatformRunner {
     const currentOperationState = robot.getAttribute(RvcOperationalState.Cluster.id, 'operationalState');
 
     // Process vacuum errors (highest priority)
-    const vacuumStatus = new VacuumStatus(message.errorCode);
+    const vacuumStatus = new VacuumStatus(message.vacuumErrorCode ?? 0);
     if (vacuumStatus.hasError()) {
       const errorDetail = vacuumStatus.getErrorState();
       this.platform.log.warn(`Vacuum error detected: ${this.getOperationalErrorName(errorDetail)}`);
@@ -191,9 +198,9 @@ export class PlatformRunner {
       robot.dockStationStatus = dockStatus;
 
       if (dockStatus.hasError()) {
-        this.platform.log.warn('Docking station errors detected.');
         robot.updateAttribute(RvcOperationalState.Cluster.id, 'operationalState', RvcOperationalState.OperationalState.Error, this.platform.log);
         const errorDetail = dockStatus.getMatterOperationalError();
+        this.platform.log.warn(`Docking station error detected: ${this.getOperationalErrorName(errorDetail)}`);
         robot.updateAttribute(RvcOperationalState.Cluster.id, 'operationalError', { errorStateId: errorDetail }, this.platform.log);
       } else {
         this.platform.log.debug('No docking station errors detected.');

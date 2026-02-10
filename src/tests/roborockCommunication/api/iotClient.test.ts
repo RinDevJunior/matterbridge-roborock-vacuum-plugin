@@ -224,7 +224,7 @@ describe('RoborockIoTApi', () => {
     const mockAxiosFactory = asPartial<AxiosStatic>({
       create: vi.fn((config) => {
         const axiosInstance = axios.create(config);
-        mockAxiosInstance = new MockAdapter(axiosInstance);
+        mockAxiosInstance = new MockAdapter(axiosInstance as any);
         return axiosInstance;
       }),
     });

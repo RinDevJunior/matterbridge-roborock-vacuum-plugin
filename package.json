@@ -102,7 +102,7 @@
   },
   "dependencies": {
     "@types/node-persist": "3.1.8",
-    "axios": "1.13.2",
+    "axios": "1.13.5",
     "axios-logger": "2.8.1",
     "axios-retry": "4.5.0",
     "binary-parser": "2.3.0",

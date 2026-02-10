@@ -178,6 +178,7 @@ describe('module.ts - complete coverage', () => {
       const mockPlatformRunner = asPartial<PlatformRunner>({
         updateRobotWithPayload: vi.fn().mockResolvedValue(undefined),
         requestHomeData: vi.fn().mockResolvedValue(undefined),
+        activateHandlerFunctions: vi.fn(),
       });
       platform.platformRunner = mockPlatformRunner;
 
@@ -269,6 +270,7 @@ describe('module.ts - complete coverage', () => {
       const mockPlatformRunner = asPartial<PlatformRunner>({
         updateRobotWithPayload: vi.fn().mockResolvedValue(undefined),
         requestHomeData: vi.fn().mockResolvedValue(undefined),
+        activateHandlerFunctions: vi.fn(),
       });
       platform.platformRunner = mockPlatformRunner;
 
@@ -335,6 +337,7 @@ describe('module.ts - complete coverage', () => {
       const mockPlatformRunner = {
         updateRobotWithPayload: vi.fn().mockResolvedValue(undefined),
         requestHomeData: vi.fn().mockRejectedValue(new Error('Network timeout')),
+        activateHandlerFunctions: vi.fn(),
       };
       platform.platformRunner = asPartial<PlatformRunner>(mockPlatformRunner);
 
@@ -395,6 +398,7 @@ describe('module.ts - complete coverage', () => {
       const mockPlatformRunner = {
         updateRobotWithPayload: vi.fn().mockResolvedValue(undefined),
         requestHomeData: vi.fn().mockRejectedValue('Connection failed'),
+        activateHandlerFunctions: vi.fn(),
       };
       platform.platformRunner = asPartial<PlatformRunner>(mockPlatformRunner);
 

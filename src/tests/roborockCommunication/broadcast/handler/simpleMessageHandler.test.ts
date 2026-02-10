@@ -17,7 +17,7 @@ describe('SimpleMessageHandler', () => {
     expect(deviceNotify).toHaveBeenCalledWith(
       expect.objectContaining({
         type: NotifyMessageTypes.ErrorOccurred,
-        data: expect.objectContaining({ duid, errorCode: VacuumErrorCode.ClearWaterTankEmpty }),
+        data: expect.objectContaining({ duid, dockErrorCode: 0, dockStationStatus: 168, vacuumErrorCode: VacuumErrorCode.ClearWaterTankEmpty }),
       }),
     );
   });
