@@ -33,6 +33,7 @@ describe('RoborockService - Polling', () => {
       advancedFeature: {
         enableAdvancedFeature: false,
         settings: {
+          clearStorageOnStartup: false,
           showRoutinesAsRoom: false,
           includeDockStationStatus: false,
           forceRunAtDefault: false,

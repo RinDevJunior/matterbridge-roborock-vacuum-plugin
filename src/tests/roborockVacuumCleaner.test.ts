@@ -137,6 +137,7 @@ describe('RoborockVacuumCleaner', () => {
       advancedFeature: {
         enableAdvancedFeature: true,
         settings: {
+          clearStorageOnStartup: false,
           showRoutinesAsRoom: false,
           includeDockStationStatus: false,
           forceRunAtDefault: true,
@@ -179,6 +180,7 @@ describe('RoborockVacuumCleaner', () => {
       advancedFeature: {
         enableAdvancedFeature: false,
         settings: {
+          clearStorageOnStartup: false,
           showRoutinesAsRoom: false,
           includeDockStationStatus: false,
           forceRunAtDefault: false,

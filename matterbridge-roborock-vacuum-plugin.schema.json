@@ -190,6 +190,12 @@
                     "title": "Enable Custom Clean Mode Mapping",
                     "type": "boolean",
                     "default": false
+                  },
+                  "clearStorageOnStartup": {
+                    "title": "Clear Storage On Startup",
+                    "description": "Clear persistence storage and re-initialize the plugin on next startup.",
+                    "type": "boolean",
+                    "default": false
                   }
                 }
               }

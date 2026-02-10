@@ -44,6 +44,7 @@ function createMockConfig(overrides: Partial<RoborockPluginPlatformConfig> = {})
     advancedFeature: {
       enableAdvancedFeature: false,
       settings: {
+        clearStorageOnStartup: false,
         showRoutinesAsRoom: false,
         includeDockStationStatus: false,
         forceRunAtDefault: false,
@@ -462,6 +463,7 @@ describe('module.ts coverage tests', () => {
         advancedFeature: {
           enableAdvancedFeature: true,
           settings: {
+            clearStorageOnStartup: false,
             enableCleanModeMapping: true,
             cleanModeSettings: {
               vacuuming: { fanMode: 'Silent', mopRouteMode: 'Standard' },

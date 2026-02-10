@@ -39,6 +39,7 @@ describe('RoborockService - listDevices', () => {
       advancedFeature: {
         enableAdvancedFeature: false,
         settings: {
+          clearStorageOnStartup: false,
           showRoutinesAsRoom: false,
           includeDockStationStatus: false,
           forceRunAtDefault: false,
@@ -211,6 +212,7 @@ describe('getHomeDataForUpdating', () => {
       advancedFeature: {
         enableAdvancedFeature: false,
         settings: {
+          clearStorageOnStartup: false,
           showRoutinesAsRoom: false,
           includeDockStationStatus: false,
           forceRunAtDefault: false,
@@ -294,6 +296,7 @@ describe('Device Management Methods', () => {
       advancedFeature: {
         enableAdvancedFeature: false,
         settings: {
+          clearStorageOnStartup: false,
           showRoutinesAsRoom: false,
           includeDockStationStatus: false,
           forceRunAtDefault: false,

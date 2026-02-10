@@ -28,6 +28,7 @@ describe('RoborockService - Area Management', () => {
       advancedFeature: {
         enableAdvancedFeature: false,
         settings: {
+          clearStorageOnStartup: false,
           showRoutinesAsRoom: false,
           includeDockStationStatus: false,
           forceRunAtDefault: false,

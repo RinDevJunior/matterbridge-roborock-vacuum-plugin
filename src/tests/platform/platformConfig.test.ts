@@ -127,6 +127,7 @@ describe('PlatformConfigManager', () => {
       expect(manager.cleanModeSettings).not.toBeUndefined();
       config.advancedFeature.enableAdvancedFeature = true;
       config.advancedFeature.settings = {
+        clearStorageOnStartup: false,
         showRoutinesAsRoom: false,
         forceRunAtDefault: false,
         includeDockStationStatus: false,
@@ -142,6 +143,7 @@ describe('PlatformConfigManager', () => {
       config.advancedFeature = {
         enableAdvancedFeature: true,
         settings: {
+          clearStorageOnStartup: true,
           showRoutinesAsRoom: true,
           forceRunAtDefault: true,
           includeDockStationStatus: true,

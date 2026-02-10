@@ -111,6 +111,10 @@ export class PlatformConfigManager {
     return this.config.advancedFeature.enableAdvancedFeature;
   }
 
+  public get isClearStorageOnStartupEnabled(): boolean {
+    return this.isAdvancedFeatureEnabled && this.advancedFeatureSettings.clearStorageOnStartup;
+  }
+
   public get isCustomCleanModeMappingEnabled(): boolean {
     return this.isAdvancedFeatureEnabled && this.advancedFeatureSettings.enableCleanModeMapping;
   }

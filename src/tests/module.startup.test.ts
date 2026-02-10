@@ -81,6 +81,7 @@ describe('RoborockMatterbridgePlatform - startup branches', () => {
     const advancedFeature = {
       enableAdvancedFeature: false,
       settings: {
+        clearStorageOnStartup: false,
         showRoutinesAsRoom: false,
         includeDockStationStatus: false,
         forceRunAtDefault: false,

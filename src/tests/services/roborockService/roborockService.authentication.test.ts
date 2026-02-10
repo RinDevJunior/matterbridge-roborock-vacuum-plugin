@@ -46,6 +46,7 @@ describe('RoborockService - Authentication', () => {
       advancedFeature: {
         enableAdvancedFeature: false,
         settings: {
+          clearStorageOnStartup: false,
           showRoutinesAsRoom: false,
           includeDockStationStatus: false,
           forceRunAtDefault: false,
