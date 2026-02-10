@@ -1,5 +1,11 @@
 # To Do
 
+## Release Management
+
+### Completed
+
+- [x] Create release candidate 1.1.3-rc16
+
 ## Connection Issues (High Priority)
 
 ### Pending

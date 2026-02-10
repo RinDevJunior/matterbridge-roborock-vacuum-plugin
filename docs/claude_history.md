@@ -2,6 +2,22 @@
 
 ## 2026-02-10
 
+### Release: Version 1.1.3-rc16
+
+**Changes:**
+
+- Updated version from 1.1.3-rc15 to 1.1.3-rc16
+- Updated package.json version and build:package script
+- Updated matterbridge-roborock-vacuum-plugin.schema.json description
+- Updated matterbridge-roborock-vacuum-plugin.config.json version
+- Requires matterbridge@3.5.3
+
+**Files modified:**
+
+- `package.json`
+- `matterbridge-roborock-vacuum-plugin.schema.json`
+- `matterbridge-roborock-vacuum-plugin.config.json`
+
 ### Feature: Auth Error Backoff with Selective Reconnection
 
 **Problem:** MQTT service blocks connection due to excessive failed auth requests, and mqtt.js built-in auto-reconnect continues indefinitely after auth errors.
