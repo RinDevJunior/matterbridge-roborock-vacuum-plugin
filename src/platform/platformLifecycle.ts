@@ -48,6 +48,10 @@ export class PlatformLifecycle {
     await this.deps.clearSelect();
     await this.deps.getPersistanceStorage().init();
 
+    if (this.configManager.isClearStorageOnStartupEnabled) {
+      return;
+    }
+
     // Clear storage if alwaysExecuteAuthentication is set
     if (this.configManager.alwaysExecuteAuthentication) {
       await this.deps.getPersistanceStorage().clear();
@@ -82,6 +86,27 @@ export class PlatformLifecycle {
    */
   public async onConfigure(): Promise<void> {
     this.log.notice('onConfigure called');
+
+    // if clearStorageOnStartup flag enabled, clear persistence storage
+    if (this.configManager.isClearStorageOnStartupEnabled) {
+      this.log.warn('Clearing persistence storage as per configuration.');
+      await this.deps
+        .getPersistanceStorage()
+        .clear()
+        .then(() => this.deps.unregisterAllDevices(UNREGISTER_DEVICES_DELAY_MS))
+        .then(() => {
+          this.log.notice('Please restart the platform now.');
+        })
+        .then(() => {
+          const config = this.configManager.rawConfig;
+          config.authentication.verificationCode = '';
+          config.advancedFeature.settings.clearStorageOnStartup = false;
+          return this.platform.onConfigChanged(config);
+        })
+        .catch((error) => {
+          this.log.error(`Error clearing persistence storage: ${error}`);
+        });
+    }
 
     if (!this.state.isStartupCompleted) {
       return;

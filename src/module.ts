@@ -99,22 +99,6 @@ export class RoborockMatterbridgePlatform extends MatterbridgeDynamicPlatform {
 
   public override async onConfigure(): Promise<void> {
     await super.onConfigure();
-
-    // if clearStorageOnStartup flag enabled, clear persistence storage
-    if (this.configManager.isClearStorageOnStartupEnabled) {
-      this.log.warn('Clearing persistence storage as per configuration.');
-      this.persist
-        .clear()
-        .then(() => this.clearSelect())
-        .then(() => this.unregisterAllDevices(500))
-        .then(() => {
-          this.log.warn('Storage cleared. Please set "clearStorageOnStartup" to false in your config file to prevent this on next restart.');
-        })
-        .catch((error) => {
-          this.log.error(`Error clearing persistence storage: ${error}`);
-        });
-    }
-
     await this.lifecycle.onConfigure();
   }
 
