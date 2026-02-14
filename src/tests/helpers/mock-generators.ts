@@ -1,6 +1,8 @@
 import type { ServiceArea } from 'matterbridge/matter/clusters';
 import { DeviceBuilder } from './device-builder.js';
 import { CloudMessageResult, DeviceModel, Home, Scene, UserData } from '../../roborockCommunication/models/index.js';
+import { asPartial } from '../testUtils.js';
+import { RoomEntity } from '../../core/domain/entities/Room.js';
 
 /**
  * Generates a mock UserData object for testing.
@@ -54,21 +56,9 @@ export function generateMockUserData(overrides?: Partial<UserData>): UserData {
  * ```
  */
 export function generateMockHome(deviceCount = 1, roomCount = 4): Home {
-  const rooms = Array.from({ length: roomCount }, (_, i) => ({
-    id: 10000 + i,
-    name: `Room ${i + 1}`,
-  }));
+  const rooms = Array.from({ length: roomCount }, (_, i) => new RoomEntity(10000 + i, `Room ${i + 1}`));
 
-  const devices = Array.from({ length: deviceCount }, (_, i) =>
-    new DeviceBuilder()
-      .withDuid(`mock-device-${i}`)
-      .withName(`Mock Vacuum ${i + 1}`)
-      .withModel(DeviceModel.Q5)
-      .withRooms(rooms)
-      .build(),
-  );
-
-  return {
+  const homeData: Home = {
     id: 123456,
     name: 'Mock Home',
     products: [
@@ -80,10 +70,23 @@ export function generateMockHome(deviceCount = 1, roomCount = 4): Home {
         schema: [],
       },
     ],
-    devices,
+    devices: [],
     receivedDevices: [],
     rooms,
   };
+
+  const devices = Array.from({ length: deviceCount }, (_, i) =>
+    new DeviceBuilder()
+      .withDuid(`mock-device-${i}`)
+      .withName(`Mock Vacuum ${i + 1}`)
+      .withModel(DeviceModel.Q5)
+      .withHomeData(homeData)
+      .build(),
+  );
+
+  homeData.devices = devices;
+
+  return homeData;
 }
 
 /**

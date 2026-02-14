@@ -3,22 +3,22 @@ import { calculateProtocol } from './protocolCalculator.js';
 import { AbstractMessageDispatcher } from './abstractMessageDispatcher.js';
 import { Q10MessageDispatcher } from './Q10MessageDispatcher.js';
 import { Q7MessageDispatcher } from './Q7MessageDispatcher.js';
-import { V01MessageDispatcher } from './V01MessageDispatcher.js';
+import { V10MessageDispatcher } from './V10MessageDispatcher.js';
 import { AnsiLogger } from 'matterbridge/logger';
-import { Client } from '../../routing/client.js';
 import { DeviceModel } from '../../models/deviceModel.js';
+import { ClientRouter } from '../../routing/clientRouter.js';
 
 export class MessageDispatcherFactory {
   private readonly builders: Record<NewProtocolVersion, AbstractMessageDispatcher>;
 
   constructor(
-    client: Client,
+    clientRouter: ClientRouter,
     private readonly logger: AnsiLogger,
   ) {
     this.builders = {
-      [NewProtocolVersion.V1]: new V01MessageDispatcher(logger, client),
-      [NewProtocolVersion.Q7]: new Q7MessageDispatcher(logger, client),
-      [NewProtocolVersion.Q10]: new Q10MessageDispatcher(logger, client),
+      [NewProtocolVersion.V1]: new V10MessageDispatcher(logger, clientRouter),
+      [NewProtocolVersion.Q7]: new Q7MessageDispatcher(logger, clientRouter),
+      [NewProtocolVersion.Q10]: new Q10MessageDispatcher(logger, clientRouter),
     };
   }
 

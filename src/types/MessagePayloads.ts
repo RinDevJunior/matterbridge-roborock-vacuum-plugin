@@ -4,28 +4,15 @@
  * @module types/MessagePayloads
  */
 
-import { CloudMessageModel } from '../model/CloudMessageModel.js';
 import { NotifyMessageTypes } from './notifyMessageTypes.js';
-import { CloudMessageResult, Home } from '../roborockCommunication/models/index.js';
+import { CleanInformation, Home } from '../roborockCommunication/models/index.js';
+import { OperationStatusCode } from '../roborockCommunication/enums/operationStatusCode.js';
+import { DockErrorCode, VacuumErrorCode } from '../roborockCommunication/enums/index.js';
 
-/**
- * Local network message payload.
- * Contains device status and state from direct UDP communication.
- */
-export interface LocalMessagePayload {
-  type: NotifyMessageTypes.LocalMessage;
-  data: CloudMessageResult;
+export interface ServiceAreaUpdateMessage {
   duid: string;
-}
-
-/**
- * Cloud MQTT message payload.
- * Contains status updates from Roborock cloud service.
- */
-export interface CloudMessagePayload {
-  type: NotifyMessageTypes.CloudMessage;
-  data: CloudMessageModel;
-  duid: string;
+  state: OperationStatusCode;
+  cleaningInfo: CleanInformation | undefined;
 }
 
 /**
@@ -46,6 +33,8 @@ export interface BatteryUpdatePayload {
   data: {
     duid: string;
     percentage: number;
+    chargeStatus: number | undefined;
+    deviceStatus: number | undefined;
   };
 }
 
@@ -57,8 +46,64 @@ export interface ErrorOccurredPayload {
   type: NotifyMessageTypes.ErrorOccurred;
   data: {
     duid: string;
-    errorCode: number;
+    vacuumErrorCode: VacuumErrorCode;
+    dockErrorCode: DockErrorCode;
+    dockStationStatus: number | undefined;
   };
+}
+
+/**
+ * Device status message payload.
+ * Contains complete device status from status change notifications.
+ */
+export interface DeviceStatusPayload {
+  type: NotifyMessageTypes.DeviceStatus;
+  data: {
+    duid: string;
+    status: OperationStatusCode;
+    inCleaning: boolean | undefined;
+    inReturning: boolean | undefined;
+    inFreshState: boolean | undefined;
+    isLocating: boolean | undefined;
+    isExploring: boolean | undefined;
+    inWarmup: boolean | undefined;
+  };
+}
+
+/**
+ * Simple device status message payload.
+ * Contains only status code from home data API for devices without real-time connection.
+ */
+export interface DeviceStatusSimplePayload {
+  type: NotifyMessageTypes.DeviceStatusSimple;
+  data: {
+    duid: string;
+    status: OperationStatusCode;
+  };
+}
+
+/**
+ * Clean mode update message payload.
+ * Contains clean mode settings (suction power, water flow, mop route).
+ */
+export interface CleanModeUpdatePayload {
+  type: NotifyMessageTypes.CleanModeUpdate;
+  data: {
+    duid: string;
+    suctionPower: number;
+    waterFlow: number;
+    distance_off: number;
+    mopRoute: number | undefined;
+  };
+}
+
+/**
+ * Service area update message payload.
+ * Contains service area and map updates (supported areas, maps, selected areas, current area).
+ */
+export interface ServiceAreaUpdatePayload {
+  type: NotifyMessageTypes.ServiceAreaUpdate;
+  data: ServiceAreaUpdateMessage;
 }
 
 /**
@@ -73,10 +118,6 @@ export interface ErrorOccurredPayload {
  *       // payload.data is CloudMessageResult
  *       processLocalMessage(payload.data, payload.duid);
  *       break;
- *     case NotifyMessageTypes.CloudMessage:
- *       // payload.data is CloudMessageModel
- *       processCloudMessage(payload.data, payload.duid);
- *       break;
  *     case NotifyMessageTypes.HomeData:
  *       // payload.data is Home
  *       processHomeData(payload.data);
@@ -85,39 +126,11 @@ export interface ErrorOccurredPayload {
  * }
  * ```
  */
-export type MessagePayload = LocalMessagePayload | CloudMessagePayload | HomeDataPayload | BatteryUpdatePayload | ErrorOccurredPayload;
-
-/**
- * Type guard to check if a payload is a local message.
- */
-export function isLocalMessage(payload: MessagePayload): payload is LocalMessagePayload {
-  return payload.type === NotifyMessageTypes.LocalMessage;
-}
-
-/**
- * Type guard to check if a payload is a cloud message.
- */
-export function isCloudMessage(payload: MessagePayload): payload is CloudMessagePayload {
-  return payload.type === NotifyMessageTypes.CloudMessage;
-}
-
-/**
- * Type guard to check if a payload is home data.
- */
-export function isHomeData(payload: MessagePayload): payload is HomeDataPayload {
-  return payload.type === NotifyMessageTypes.HomeData;
-}
-
-/**
- * Type guard to check if a payload is a battery update.
- */
-export function isBatteryUpdate(payload: MessagePayload): payload is BatteryUpdatePayload {
-  return payload.type === NotifyMessageTypes.BatteryUpdate;
-}
-
-/**
- * Type guard to check if a payload is an error notification.
- */
-export function isErrorOccurred(payload: MessagePayload): payload is ErrorOccurredPayload {
-  return payload.type === NotifyMessageTypes.ErrorOccurred;
-}
+export type MessagePayload =
+  | HomeDataPayload
+  | BatteryUpdatePayload
+  | ErrorOccurredPayload
+  | DeviceStatusPayload
+  | DeviceStatusSimplePayload
+  | CleanModeUpdatePayload
+  | ServiceAreaUpdatePayload;

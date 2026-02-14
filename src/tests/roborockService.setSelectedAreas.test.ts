@@ -3,7 +3,7 @@ import { AnsiLogger } from 'matterbridge/logger';
 import { RoborockService } from '../services/roborockService.js';
 import { makeLogger, createMockLocalStorage } from './testUtils.js';
 import { localStorageMock } from './testData/localStorageMock.js';
-import { PlatformConfigManager as PlatformConfigManagerStatic } from '../platform/platformConfig.js';
+import { PlatformConfigManager as PlatformConfigManagerStatic } from '../platform/platformConfigManager.js';
 import type { RoborockPluginPlatformConfig } from '../model/RoborockPluginPlatformConfig.js';
 import ClientManager from '../services/clientManager.js';
 import { RoomIndexMap } from '../core/application/models/index.js';
@@ -35,6 +35,7 @@ describe('RoborockService - startClean', () => {
       advancedFeature: {
         enableAdvancedFeature: false,
         settings: {
+          clearStorageOnStartup: false,
           showRoutinesAsRoom: false,
           includeDockStationStatus: false,
           forceRunAtDefault: false,

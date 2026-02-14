@@ -5,14 +5,14 @@ import { LocalNetworkClient } from '../local/localClient.js';
 import { MQTTClient } from '../mqtt/mqttClient.js';
 import { AbstractConnectionListener } from './listeners/abstractConnectionListener.js';
 import { AbstractMessageListener } from './listeners/abstractMessageListener.js';
-import { ChainedConnectionListener } from './listeners/implementation/chainedConnectionListener.js';
-import { ChainedMessageListener } from './listeners/implementation/chainedMessageListener.js';
+import { ConnectionBroadcaster } from './listeners/connectionBroadcaster.js';
 import { Client } from './client.js';
 import { PendingResponseTracker } from './services/pendingResponseTracker.js';
+import { ResponseBroadcaster } from './listeners/responseBroadcaster.js';
 
 export class ClientRouter implements Client {
-  protected readonly connectionListener = new ChainedConnectionListener();
-  protected readonly chainedMessageListener: ChainedMessageListener;
+  protected readonly connectionListener = new ConnectionBroadcaster();
+  protected readonly responseBroadcaster: ResponseBroadcaster;
 
   private readonly context: MessageContext;
   private readonly localClients = new Map<string, AbstractClient>();
@@ -25,8 +25,8 @@ export class ClientRouter implements Client {
     this.logger = logger;
 
     this.responseTracker = new PendingResponseTracker(this.logger);
-    this.chainedMessageListener = new ChainedMessageListener(this.responseTracker, this.logger);
-    this.mqttClient = new MQTTClient(logger, this.context, userdata, this.chainedMessageListener, this.responseTracker);
+    this.responseBroadcaster = new ResponseBroadcaster(this.responseTracker, this.logger);
+    this.mqttClient = new MQTTClient(logger, this.context, userdata, this.responseBroadcaster, this.responseTracker);
     this.mqttClient.registerConnectionListener(this.connectionListener);
   }
 
@@ -39,7 +39,7 @@ export class ClientRouter implements Client {
   }
 
   public registerClient(duid: string, ip: string): Client {
-    const localClient = new LocalNetworkClient(this.logger, this.context, duid, ip, this.chainedMessageListener, this.responseTracker);
+    const localClient = new LocalNetworkClient(this.logger, this.context, duid, ip, this.responseBroadcaster, this.responseTracker);
     localClient.registerConnectionListener(this.connectionListener);
 
     this.localClients.set(duid, localClient);
@@ -55,11 +55,15 @@ export class ClientRouter implements Client {
   }
 
   public registerMessageListener(listener: AbstractMessageListener): void {
-    this.chainedMessageListener.register(listener);
+    this.responseBroadcaster.register(listener);
   }
 
   public isConnected(): boolean {
     return this.mqttClient.isConnected();
+  }
+
+  public isReady(): boolean {
+    return this.mqttClient.isReady();
   }
 
   public connect(): void {
@@ -73,7 +77,7 @@ export class ClientRouter implements Client {
   public async disconnect(): Promise<void> {
     await this.mqttClient.disconnect();
     this.connectionListener.unregister();
-    this.chainedMessageListener.unregister();
+    this.responseBroadcaster.unregister();
     this.context.unregisterAllDevices();
 
     for (const client of this.localClients.values()) {
@@ -99,7 +103,7 @@ export class ClientRouter implements Client {
 
   private getLocalClient(duid: string): Client {
     const localClient = this.localClients.get(duid);
-    if (localClient === undefined || !localClient.isConnected() || !localClient.isReady()) {
+    if (localClient === undefined || !localClient.isReady()) {
       return this.mqttClient;
     } else {
       return localClient;

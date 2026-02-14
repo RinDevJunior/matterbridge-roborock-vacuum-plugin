@@ -26,10 +26,10 @@ export const RECONNECT_DELAY_MS = 10000;
 export const KEEPALIVE_INTERVAL_MS = 60 * 60 * 1000;
 
 /**
- * Minimum time between verification code requests (1 minute).
+ * Minimum time between verification code requests (15 minutes).
  * Rate limiting for 2FA code generation.
  */
-export const VERIFICATION_CODE_RATE_LIMIT_MS = 60000;
+export const VERIFICATION_CODE_RATE_LIMIT_MS = 15 * 60 * 1000;
 
 /**
  * Default refresh interval for home data requests (60 seconds).
@@ -47,9 +47,9 @@ export const REFRESH_INTERVAL_BUFFER_MS = 100;
 export const MAX_RETRY_COUNT = 10;
 
 /**
- * Timeout for hello/ping response from device (30 seconds).
+ * Timeout for hello/ping response from device (10 seconds).
  */
-export const HELLO_RESPONSE_TIMEOUT_MS = 30000;
+export const HELLO_RESPONSE_TIMEOUT_MS = 10000;
 
 /**
  * Delay between connection retry attempts (500ms).
@@ -70,3 +70,13 @@ export const MQTT_REFRESH_INTERVAL_MULTIPLIER = 500;
  * Multiplier for local network refresh interval (1000ms).
  */
 export const LOCAL_REFRESH_INTERVAL_MULTIPLIER = 1000;
+
+/**
+ * Number of consecutive failures before entering backoff mode (5 failures).
+ */
+export const FAILURE_THRESHOLD = 5;
+
+/**
+ * Backoff delay after consecutive failures (30 minutes).
+ */
+export const BACKOFF_DELAY_MS = 30 * 60 * 1000;

@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { PlatformConfigManager } from '../../platform/platformConfig.js';
+import { PlatformConfigManager } from '../../platform/platformConfigManager.js';
 import type { AnsiLogger } from 'matterbridge/logger';
 import { asPartial, asType } from '../helpers/testUtils.js';
 import { AuthenticationConfiguration, createDefaultAdvancedFeature, PluginConfiguration, RoborockPluginPlatformConfig } from '../../model/RoborockPluginPlatformConfig.js';
@@ -127,6 +127,7 @@ describe('PlatformConfigManager', () => {
       expect(manager.cleanModeSettings).not.toBeUndefined();
       config.advancedFeature.enableAdvancedFeature = true;
       config.advancedFeature.settings = {
+        clearStorageOnStartup: false,
         showRoutinesAsRoom: false,
         forceRunAtDefault: false,
         includeDockStationStatus: false,
@@ -142,6 +143,7 @@ describe('PlatformConfigManager', () => {
       config.advancedFeature = {
         enableAdvancedFeature: true,
         settings: {
+          clearStorageOnStartup: true,
           showRoutinesAsRoom: true,
           forceRunAtDefault: true,
           includeDockStationStatus: true,

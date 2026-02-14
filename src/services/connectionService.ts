@@ -6,16 +6,15 @@ import { CONNECTION_RETRY_DELAY_MS, MAX_CONNECTION_ATTEMPTS } from '../constants
 import { ClientRouter } from '../roborockCommunication/routing/clientRouter.js';
 import { Device, NetworkInfoDTO, Protocol, RPC_Request_Segments, UserData } from '../roborockCommunication/models/index.js';
 import { MapResponseListener } from '../roborockCommunication/routing/listeners/implementation/mapResponseListener.js';
-import { PingResponseListener } from '../roborockCommunication/routing/listeners/implementation/pingResponseListener.js';
-import { StatusMessageListener } from '../roborockCommunication/routing/listeners/implementation/statusMessageListener.js';
 import { AbstractUDPMessageListener } from '../roborockCommunication/routing/listeners/abstractUDPMessageListener.js';
 import { ProtocolVersion } from '../roborockCommunication/enums/index.js';
 import { SimpleMessageHandler } from '../roborockCommunication/routing/handlers/implementation/simpleMessageHandler.js';
 import { LocalNetworkUDPClient } from '../roborockCommunication/local/udpClient.js';
-import { MessageProcessor } from '../roborockCommunication/mqtt/messageProcessor.js';
 import { Client } from '../roborockCommunication/routing/client.js';
 import { MessageRoutingService } from './messageRoutingService.js';
 import { MessageDispatcherFactory } from '../roborockCommunication/protocol/dispatcher/dispatcherFactory.js';
+import { SimpleMessageListener } from '../roborockCommunication/routing/listeners/implementation/simpleMessageListener.js';
+import { PingResponseListener } from '../roborockCommunication/routing/listeners/implementation/pingResponseListener.js';
 
 /** Manages device connections (MQTT and local network). */
 export class ConnectionService {
@@ -61,12 +60,19 @@ export class ConnectionService {
 
     try {
       this.clientRouter = this.clientManager.get(userdata);
+      if (!this.clientRouter) {
+        throw new DeviceInitializationError(device.duid, 'Failed to get ClientRouter from ClientManager');
+      }
+
+      this.logger.debug('Initializing message client for device:', device.duid);
+
       this.clientRouter.registerDevice(device.duid, device.localKey, device.pv, undefined);
       this.clientRouter.connect();
 
       // Wait for connection
       try {
         await this.waitForConnection(() => this.clientRouter?.isConnected() ?? false);
+        device.specs.hasRealTimeConnection = true;
       } catch {
         throw new DeviceConnectionError(device.duid, 'MQTT connection timeout');
       }
@@ -94,29 +100,36 @@ export class ConnectionService {
       return false;
     }
 
-    this.clientRouter.registerMessageListener(new StatusMessageListener(device.duid, this.logger, this.deviceNotify));
-    this.clientRouter.registerMessageListener(new PingResponseListener(device.duid));
+    if (!this.deviceNotify) {
+      this.logger.error('deviceNotify callback not set');
+      return false;
+    }
+
     this.clientRouter.registerMessageListener(new MapResponseListener(device.duid, this.logger));
 
+    const simpleMessageListener = new SimpleMessageListener(device.duid, this.logger);
+    simpleMessageListener.registerHandler(new SimpleMessageHandler(device.duid, this.logger, this.deviceNotify));
+    this.clientRouter.registerMessageListener(simpleMessageListener);
+
+    const pingResponseListener = new PingResponseListener(device.duid, this.logger);
+    this.clientRouter.registerMessageListener(pingResponseListener);
+
     const store = device.store;
-    const messageProcessor = new MessageProcessor(this.clientRouter, this.logger);
     const messageDispatcher = new MessageDispatcherFactory(this.clientRouter, this.logger).getMessageDispatcher(store.pv, store.model);
 
     // Register message listeners
-    messageProcessor.registerHandler(new SimpleMessageHandler(device.duid, this.deviceNotify));
-    this.messageRoutingService.registerMessageProcessor(device.duid, messageProcessor);
     this.messageRoutingService.registerMessageDispatcher(device.duid, messageDispatcher);
 
     // B01 devices use MQTT-only communication
     if (device.pv === ProtocolVersion.B01) {
       this.logger.debug(`Device: ${device.duid} uses B01 protocol, switch to use UDPClient`);
       const localNetworkUDPClient = new LocalNetworkUDPClient(this.logger);
-      const networkInfo = device.deviceStatus?.[Protocol.rpc_request]
-        ? ((device.deviceStatus[Protocol.rpc_request] as Record<number, unknown>)[RPC_Request_Segments.network_info] as NetworkInfoDTO)
-        : undefined;
+
+      const networkInfo = this.getNetworkInfoFromDeviceStatus(device);
+
       if (networkInfo?.ipAddress) {
         this.logger.debug(`Device ${device.duid} has network info IP: ${networkInfo.ipAddress}, setting up UDP listener`);
-        const success = await this.setupLocalClient(device.duid, networkInfo.ipAddress);
+        const success = await this.setupLocalClient(device, networkInfo.ipAddress);
         if (success) {
           return true;
         }
@@ -128,7 +141,7 @@ export class ConnectionService {
       localNetworkUDPClient.registerListener({
         onMessage: async (duid: string, ip: string): Promise<void> => {
           this.logger.debug(`Received UDP broadcast from device ${duid} at IP ${ip}`);
-          await this.setupLocalClient(duid, ip);
+          await this.setupLocalClient(device, ip);
         },
       } as AbstractUDPMessageListener);
 
@@ -153,7 +166,7 @@ export class ConnectionService {
     }
 
     if (localIp) {
-      return await this.setupLocalClient(device.duid, localIp);
+      return await this.setupLocalClient(device, localIp);
     }
 
     return false;
@@ -210,29 +223,41 @@ export class ConnectionService {
   /**
    * Helper: Set up a local client for the given device and IP.
    */
-  private async setupLocalClient(duid: string, ip: string): Promise<boolean> {
+  private async setupLocalClient(device: Device, ip: string): Promise<boolean> {
     if (!this.clientRouter) {
       this.logger.error('clientRouter not initialized');
       return false;
     }
 
     try {
-      const localClient = this.clientRouter.registerClient(duid, ip);
+      const localClient = this.clientRouter.registerClient(device.duid, ip);
       if (!localClient) {
-        this.logger.error(`Failed to create local client for device ${duid} at IP ${ip}`);
+        this.logger.error(`Failed to create local client for device ${device.duid} at IP ${ip}`);
         return false;
       }
 
       localClient.connect();
       await this.waitForConnection(() => localClient.isConnected());
 
-      this.ipMap.set(duid, ip);
-      this.localClientMap.set(duid, localClient);
-      this.logger.debug(`Local connection established for device ${duid} at ${ip}`);
+      device.specs.hasRealTimeConnection = true;
+
+      this.ipMap.set(device.duid, ip);
+      this.localClientMap.set(device.duid, localClient);
+      this.logger.debug(`Local connection established for device ${device.duid} at ${ip}`);
       return true;
     } catch (error) {
-      this.logger.error(`Error setting up local client for device ${duid} at IP ${ip}:`, error);
+      this.logger.error(`Error setting up local client for device ${device.duid} at IP ${ip}:`, error);
       return false;
     }
+  }
+
+  /**
+   * Extract network info from device status.
+   */
+  private getNetworkInfoFromDeviceStatus(device: Device): NetworkInfoDTO | undefined {
+    const rpcRequest = device.deviceStatus?.[Protocol.rpc_request];
+    if (!rpcRequest) return undefined;
+
+    return (rpcRequest as Record<number, unknown>)[RPC_Request_Segments.network_info] as NetworkInfoDTO | undefined;
   }
 }

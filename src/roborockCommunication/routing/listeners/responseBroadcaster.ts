@@ -1,9 +1,11 @@
 import { AnsiLogger } from 'matterbridge/logger';
-import { ResponseMessage } from '../../../models/index.js';
-import { PendingResponseTracker } from '../../services/pendingResponseTracker.js';
-import { AbstractMessageListener } from '../abstractMessageListener.js';
+import { ResponseMessage } from '../../models/index.js';
+import { PendingResponseTracker } from '../services/pendingResponseTracker.js';
+import { AbstractMessageListener } from './abstractMessageListener.js';
 
-export class ChainedMessageListener implements AbstractMessageListener {
+export class ResponseBroadcaster {
+  readonly name = 'ResponseBroadcaster';
+
   private listeners: AbstractMessageListener[] = [];
 
   constructor(
@@ -28,6 +30,7 @@ export class ChainedMessageListener implements AbstractMessageListener {
     this.logger.debug(`[ChainedMessageListener] Dispatching message to ${this.listeners.length} listeners.`);
     for (const listener of this.listeners) {
       try {
+        this.logger.debug(`[ChainedMessageListener] Invoking listener: ${listener.name}`);
         listener.onMessage(message);
       } catch (error) {
         const errMsg = error instanceof Error ? error.message : String(error);

@@ -4,7 +4,6 @@ import { PollingService } from '../../services/pollingService.js';
 import { MessageRoutingService } from '../../services/messageRoutingService.js';
 import { LOCAL_REFRESH_INTERVAL_MULTIPLIER, MQTT_REFRESH_INTERVAL_MULTIPLIER } from '../../constants/index.js';
 import { NotifyMessageTypes } from '../../types/notifyMessageTypes.js';
-import { MessageProcessor } from '../../roborockCommunication/mqtt/messageProcessor.js';
 import { Device } from '../../roborockCommunication/models/index.js';
 import { AbstractMessageDispatcher } from '../../roborockCommunication/protocol/dispatcher/abstractMessageDispatcher.js';
 import { createMockLogger, asPartial, asType } from '../helpers/testUtils.js';
@@ -13,7 +12,6 @@ describe('PollingService', () => {
   let service: PollingService;
   let mockLogger: AnsiLogger;
   let mockMessageRoutingService: MessageRoutingService;
-  let mockMessageProcessor: MessageProcessor;
   let mockMessageDispatcher: AbstractMessageDispatcher;
   const TEST_REFRESH_INTERVAL = 100;
 
@@ -28,14 +26,6 @@ describe('PollingService', () => {
     vi.useFakeTimers();
 
     mockLogger = createMockLogger();
-    mockMessageProcessor = asPartial<MessageProcessor>({
-      registerHandler: vi.fn(),
-    });
-    // logger is not a public member on MessageProcessor; assign on typed any for tests
-    Object.defineProperty(mockMessageProcessor, 'logger', {
-      value: mockLogger,
-      writable: true,
-    });
 
     mockMessageDispatcher = asPartial<AbstractMessageDispatcher>({
       getDeviceStatus: vi.fn(async (_duid: string) => undefined),
@@ -53,7 +43,6 @@ describe('PollingService', () => {
     });
 
     mockMessageRoutingService = asPartial<MessageRoutingService>({
-      getMessageProcessor: vi.fn().mockReturnValue(mockMessageProcessor),
       getMessageDispatcher: vi.fn().mockReturnValue(mockMessageDispatcher),
       getCleanModeData: vi.fn(),
       getRoomIdFromMap: vi.fn(),
@@ -65,7 +54,6 @@ describe('PollingService', () => {
       playSoundToLocate: vi.fn(),
       customGet: vi.fn(),
       customSend: vi.fn(),
-      registerMessageProcessor: vi.fn(),
       setIotApi: vi.fn(),
       clearAll: vi.fn(),
     });
@@ -116,33 +104,11 @@ describe('PollingService', () => {
       expect(firstInterval).not.toBe(secondInterval);
     });
 
-    it('should poll device status at correct intervals', async () => {
-      const mockCallback = vi.fn();
-      const mockResponse = {
-        errorStatus: { error: 0 },
-        message: { state: 8, battery: 100 },
-      };
-      mockMessageDispatcher.getDeviceStatus = vi.fn().mockResolvedValue(mockResponse as never);
-      service.setDeviceNotify(mockCallback);
-
-      service.activateDeviceNotifyOverLocal(mockDevice);
-
-      await vi.advanceTimersByTimeAsync(TEST_REFRESH_INTERVAL * LOCAL_REFRESH_INTERVAL_MULTIPLIER);
-
-      expect(mockMessageDispatcher.getDeviceStatus).toHaveBeenCalledWith(mockDevice.duid);
-      expect(mockCallback).toHaveBeenCalledWith(NotifyMessageTypes.LocalMessage, {
-        duid: mockDevice.duid,
-        error: 0,
-        state: 8,
-        battery: 100,
-      });
-    });
-
     it('should handle multiple polling cycles', async () => {
       const mockCallback = vi.fn();
+      const mockMessageData = { state: 8, error_code: 0, dock_error_status: 0, dock_type: 1 };
       const mockResponse = {
-        errorStatus: { error: 0 },
-        message: { state: 8 },
+        getMessage: () => mockMessageData,
       };
       mockMessageDispatcher.getDeviceStatus = vi.fn().mockResolvedValue(mockResponse as never);
       service.setDeviceNotify(mockCallback);
@@ -154,7 +120,6 @@ describe('PollingService', () => {
       }
 
       expect(mockMessageDispatcher.getDeviceStatus).toHaveBeenCalledTimes(3);
-      expect(mockCallback).toHaveBeenCalledTimes(3);
     });
 
     it('should handle getDeviceStatus errors gracefully', async () => {

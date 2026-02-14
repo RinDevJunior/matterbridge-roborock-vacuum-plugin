@@ -1,5 +1,6 @@
 import { DeviceCategory } from '../../roborockCommunication/models/deviceCategory.js';
-import { Device, DeviceModel, Protocol, UserData } from '../../roborockCommunication/models/index.js';
+import { Device, DeviceModel, Protocol, UserData, Home } from '../../roborockCommunication/models/index.js';
+import { RoomEntity } from '../../core/domain/entities/Room.js';
 
 /**
  * Fluent builder for creating Device objects in tests.
@@ -26,21 +27,22 @@ export class DeviceBuilder {
     },
     silentOtaSwitch: false,
     rrHomeId: 12345,
-    rooms: [],
     serialNumber: 'TEST-SN-123456',
-    data: {
+    specs: {
       id: 'test-duid-default',
       firmwareVersion: '1.0.0',
       serialNumber: 'TEST-SN-123456',
       model: DeviceModel.Q5,
       category: DeviceCategory.VacuumCleaner,
       batteryLevel: 100,
+      hasRealTimeConnection: true,
     },
     store: {
       userData: this.createDefaultUserData(),
       localKey: 'testLocalKey1234',
       pv: '1.0',
       model: DeviceModel.Q5,
+      homeData: this.createDefaultHomeData(),
     },
     schema: [],
   };
@@ -50,7 +52,7 @@ export class DeviceBuilder {
    */
   withDuid(duid: string): this {
     this.device.duid = duid;
-    if (this.device.data) this.device.data.id = duid;
+    if (this.device.specs) this.device.specs.id = duid;
     return this;
   }
 
@@ -66,7 +68,7 @@ export class DeviceBuilder {
    * Set the device model.
    */
   withModel(model: DeviceModel): this {
-    if (this.device.data) this.device.data.model = model;
+    if (this.device.specs) this.device.specs.model = model;
     if (this.device.store) this.device.store.model = model;
     return this;
   }
@@ -79,8 +81,8 @@ export class DeviceBuilder {
     if (this.device.deviceStatus) {
       this.device.deviceStatus[Protocol.battery] = batteryLevel;
     }
-    if (this.device.data) {
-      this.device.data.batteryLevel = batteryLevel;
+    if (this.device.specs) {
+      this.device.specs.batteryLevel = batteryLevel;
     }
     return this;
   }
@@ -98,7 +100,7 @@ export class DeviceBuilder {
    */
   withFirmwareVersion(version: string): this {
     this.device.fv = version;
-    if (this.device.data) this.device.data.firmwareVersion = version;
+    if (this.device.specs) this.device.specs.firmwareVersion = version;
     return this;
   }
 
@@ -108,7 +110,7 @@ export class DeviceBuilder {
   withSerialNumber(sn: string): this {
     this.device.sn = sn;
     this.device.serialNumber = sn;
-    if (this.device.data) this.device.data.serialNumber = sn;
+    if (this.device.specs) this.device.specs.serialNumber = sn;
     return this;
   }
 
@@ -149,10 +151,12 @@ export class DeviceBuilder {
   }
 
   /**
-   * Add rooms to the device.
+   * Add home data to the device store.
    */
-  withRooms(rooms: { id: number; name: string }[]): this {
-    this.device.rooms = rooms;
+  withHomeData(homeData: Home): this {
+    if (this.device.store) {
+      this.device.store.homeData = homeData;
+    }
     return this;
   }
 
@@ -190,6 +194,20 @@ export class DeviceBuilder {
           l: 'https://wood-us.roborock.com',
         },
       },
+    };
+  }
+
+  /**
+   * Creates default home data for testing.
+   */
+  private createDefaultHomeData(): Home {
+    return {
+      id: 12345,
+      name: 'Test Home',
+      products: [],
+      devices: [],
+      receivedDevices: [],
+      rooms: [new RoomEntity(1, 'Living Room'), new RoomEntity(2, 'Kitchen')],
     };
   }
 }

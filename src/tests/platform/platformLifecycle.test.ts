@@ -4,9 +4,10 @@ import { MatterbridgeDynamicPlatform } from 'matterbridge';
 import { PlatformLifecycle, LifecycleDependencies } from '../../platform/platformLifecycle.js';
 import { DeviceRegistry } from '../../platform/deviceRegistry.js';
 import { asPartial, asType } from '../helpers/testUtils.js';
-import { PlatformConfigManager } from '../../platform/platformConfig.js';
+import { PlatformConfigManager } from '../../platform/platformConfigManager.js';
 import { PlatformState } from '../../platform/platformState.js';
 import type NodePersist from 'node-persist';
+import type { RoborockService } from '../../services/roborockService.js';
 
 function createMockLogger(): AnsiLogger {
   return asType<AnsiLogger>({
@@ -34,11 +35,6 @@ function createMockDependencies(overrides: Partial<LifecycleDependencies> = {}):
     getPlatformRunner: vi.fn().mockReturnValue({
       requestHomeData: vi.fn().mockResolvedValue(undefined),
     }),
-    getRoborockService: vi.fn().mockReturnValue({
-      stopService: vi.fn(),
-    }),
-    startDeviceDiscovery: vi.fn().mockResolvedValue(true),
-    onConfigureDevice: vi.fn().mockResolvedValue(undefined),
     clearSelect: vi.fn().mockResolvedValue(undefined),
     unregisterAllDevices: vi.fn().mockResolvedValue(undefined),
     ...overrides,
@@ -56,6 +52,7 @@ describe('PlatformLifecycle', () => {
   beforeEach(() => {
     vi.useFakeTimers();
     mockPlatform = createMockPlatform();
+    mockRegistry = new DeviceRegistry();
     mockConfigManager = asPartial<PlatformConfigManager>({
       validateConfig: vi.fn().mockReturnValue(true),
       refreshInterval: 60,
@@ -63,7 +60,7 @@ describe('PlatformLifecycle', () => {
     });
     mockState = new PlatformState();
     mockDeps = createMockDependencies();
-    lifecycle = new PlatformLifecycle(mockPlatform, mockConfigManager, mockState, mockDeps);
+    lifecycle = new PlatformLifecycle(mockPlatform, mockConfigManager, mockState, mockRegistry, mockDeps);
   });
 
   afterEach(() => {
@@ -74,19 +71,30 @@ describe('PlatformLifecycle', () => {
 
   describe('onStart', () => {
     it('should complete startup successfully', async () => {
+      vi.spyOn(lifecycle.discovery, 'discoverDevices').mockImplementation(async () => {
+        lifecycle.discovery.roborockService = asPartial<RoborockService>({});
+        return true;
+      });
+      const onConfigureSpy = vi.spyOn(lifecycle.configurator, 'onConfigureDevice').mockResolvedValue(undefined);
+
       await lifecycle.onStart('test reason');
 
       expect(mockPlatform.log.notice).toHaveBeenCalledWith('onStart called with reason:', 'test reason');
       expect(mockDeps.clearSelect).toHaveBeenCalled();
       expect(mockDeps.getPersistanceStorage).toHaveBeenCalled();
       expect(mockConfigManager.validateConfig).toHaveBeenCalled();
-      expect(mockDeps.startDeviceDiscovery).toHaveBeenCalled();
-      expect(mockDeps.onConfigureDevice).toHaveBeenCalled();
+      expect(onConfigureSpy).toHaveBeenCalled();
       expect(mockPlatform.log.notice).toHaveBeenCalledWith('onStart finished');
       expect(mockState.isStartupCompleted).toBe(true);
     });
 
     it('should handle missing reason parameter', async () => {
+      vi.spyOn(lifecycle.discovery, 'discoverDevices').mockImplementation(async () => {
+        lifecycle.discovery.roborockService = asPartial<RoborockService>({});
+        return true;
+      });
+      vi.spyOn(lifecycle.configurator, 'onConfigureDevice').mockResolvedValue(undefined);
+
       await lifecycle.onStart();
 
       expect(mockPlatform.log.notice).toHaveBeenCalledWith('onStart called with reason:', 'none');
@@ -99,17 +107,15 @@ describe('PlatformLifecycle', () => {
 
       expect(mockPlatform.log.error).toHaveBeenCalledWith('"username" (email address) is required in the config');
       expect(mockState.isStartupCompleted).toBe(false);
-      expect(mockDeps.startDeviceDiscovery).not.toHaveBeenCalled();
     });
 
     it('should fail when device discovery fails', async () => {
-      mockDeps.startDeviceDiscovery = vi.fn().mockResolvedValue(false);
+      vi.spyOn(lifecycle.discovery, 'discoverDevices').mockResolvedValue(false);
 
       await lifecycle.onStart('test');
 
       expect(mockPlatform.log.error).toHaveBeenCalledWith('Device discovery failed to start.');
       expect(mockState.isStartupCompleted).toBe(false);
-      expect(mockDeps.onConfigureDevice).not.toHaveBeenCalled();
     });
 
     it('should wait for platform to be ready', async () => {
@@ -122,7 +128,12 @@ describe('PlatformLifecycle', () => {
         ...mockPlatform,
         ready: readyPromise,
       } as MatterbridgeDynamicPlatform;
-      lifecycle = new PlatformLifecycle(customMockPlatform, mockConfigManager, mockState, mockDeps);
+      lifecycle = new PlatformLifecycle(customMockPlatform, mockConfigManager, mockState, mockRegistry, mockDeps);
+      vi.spyOn(lifecycle.discovery, 'discoverDevices').mockImplementation(async () => {
+        lifecycle.discovery.roborockService = asPartial<RoborockService>({});
+        return true;
+      });
+      vi.spyOn(lifecycle.configurator, 'onConfigureDevice').mockResolvedValue(undefined);
 
       const startPromise = lifecycle.onStart('test');
 
@@ -141,6 +152,11 @@ describe('PlatformLifecycle', () => {
         init: vi.fn().mockResolvedValue(undefined),
       });
       mockDeps.getPersistanceStorage = vi.fn().mockReturnValue(mockStorage);
+      vi.spyOn(lifecycle.discovery, 'discoverDevices').mockImplementation(async () => {
+        lifecycle.discovery.roborockService = asPartial<RoborockService>({});
+        return true;
+      });
+      vi.spyOn(lifecycle.configurator, 'onConfigureDevice').mockResolvedValue(undefined);
 
       await lifecycle.onStart('test');
 
@@ -259,23 +275,23 @@ describe('PlatformLifecycle', () => {
     });
 
     it('should stop roborock service when available', async () => {
-      const mockService = {
+      const mockService = asPartial<RoborockService>({
         stopService: vi.fn(),
-      };
-      mockDeps.getRoborockService = vi.fn().mockReturnValue(mockService);
+      });
+      lifecycle.roborockService = mockService;
 
       await lifecycle.onShutdown('test');
 
-      expect(mockDeps.getRoborockService).toHaveBeenCalled();
       expect(mockService.stopService).toHaveBeenCalled();
+      expect(lifecycle.roborockService).toBeUndefined();
     });
 
     it('should handle undefined roborock service', async () => {
-      mockDeps.getRoborockService = vi.fn().mockReturnValue(undefined);
+      lifecycle.roborockService = undefined;
 
       await lifecycle.onShutdown('test');
 
-      expect(mockDeps.getRoborockService).toHaveBeenCalled();
+      expect(lifecycle.roborockService).toBeUndefined();
     });
 
     it('should unregister devices when configured', async () => {
@@ -283,7 +299,7 @@ describe('PlatformLifecycle', () => {
         ...mockConfigManager,
         unregisterOnShutdown: false,
       } as PlatformConfigManager;
-      lifecycle = new PlatformLifecycle(mockPlatform, fakeConfigManager, mockState, mockDeps);
+      lifecycle = new PlatformLifecycle(mockPlatform, fakeConfigManager, mockState, mockRegistry, mockDeps);
       await lifecycle.onShutdown('test');
 
       expect(mockDeps.unregisterAllDevices).not.toHaveBeenCalledWith(500);
@@ -294,7 +310,7 @@ describe('PlatformLifecycle', () => {
         ...mockConfigManager,
         unregisterOnShutdown: false,
       } as PlatformConfigManager;
-      lifecycle = new PlatformLifecycle(mockPlatform, fakeConfigManager, mockState, mockDeps);
+      lifecycle = new PlatformLifecycle(mockPlatform, fakeConfigManager, mockState, mockRegistry, mockDeps);
 
       await lifecycle.onShutdown('test');
 

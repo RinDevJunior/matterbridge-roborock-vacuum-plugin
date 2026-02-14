@@ -11,9 +11,14 @@ import { ServiceContainer as CoreServiceContainer } from '../core/ServiceContain
 import { RoborockAuthenticateApi } from '../roborockCommunication/api/authClient.js';
 import { RoborockIoTApi } from '../roborockCommunication/api/iotClient.js';
 import { UserData } from '../roborockCommunication/models/index.js';
-import { MessageProcessor } from '../roborockCommunication/mqtt/messageProcessor.js';
-import { PlatformConfigManager } from '../platform/platformConfig.js';
+import { PlatformConfigManager } from '../platform/platformConfigManager.js';
 import { ConnectionService } from './connectionService.js';
+import { AuthenticationCoordinator } from './authentication/AuthenticationCoordinator.js';
+import { UserDataRepository } from './authentication/UserDataRepository.js';
+import { AuthenticationStateRepository } from './authentication/AuthenticationStateRepository.js';
+import { VerificationCodeService } from './authentication/VerificationCodeService.js';
+import { PasswordAuthStrategy } from './authentication/PasswordAuthStrategy.js';
+import { TwoFactorAuthStrategy } from './authentication/TwoFactorAuthStrategy.js';
 
 /** Configuration for ServiceContainer. */
 export interface ServiceContainerConfig {
@@ -28,7 +33,7 @@ export interface ServiceContainerConfig {
 /** DI container managing service lifecycle. Services are lazily created and cached. */
 export class ServiceContainer {
   // Cached service instances (singletons)
-  private authenticationService: AuthenticationService | undefined;
+  private authenticationCoordinator: AuthenticationCoordinator | undefined;
   private deviceManagementService: DeviceManagementService | undefined;
   private areaManagementService: AreaManagementService | undefined;
   private messageRoutingService: MessageRoutingService | undefined;
@@ -38,7 +43,6 @@ export class ServiceContainer {
   private readonly authenticateApi: RoborockAuthenticateApi;
   private readonly authenticateApiFactory: (logger: AnsiLogger, baseUrl: string) => RoborockAuthenticateApi;
   private readonly iotApiFactory: Factory<UserData, RoborockIoTApi>;
-  private readonly messageProcessorMap = new Map<string, MessageProcessor>();
   private readonly coreServiceContainer: CoreServiceContainer;
   private readonly clientManager: ClientManager;
 
@@ -84,14 +88,29 @@ export class ServiceContainer {
     }
   }
 
-  /** Get or create AuthenticationService singleton. */
-  getAuthenticationService(): AuthenticationService {
-    if (!this.authenticationService) {
-      // Use IAuthGateway from core service container
+  /** Get or create AuthenticationCoordinator singleton. */
+  getAuthenticationCoordinator(): AuthenticationCoordinator {
+    if (!this.authenticationCoordinator) {
       const authGateway = this.coreServiceContainer.getAuthGateway();
-      this.authenticationService = new AuthenticationService(authGateway, this.config.persist, this.logger, this.config.configManager);
+
+      // Create core authentication service
+      const authService = new AuthenticationService(authGateway, this.logger);
+
+      // Create repositories
+      const userDataRepository = new UserDataRepository(this.config.persist, this.config.configManager, this.logger);
+      const authStateRepository = new AuthenticationStateRepository(this.config.persist);
+
+      // Create verification code service
+      const verificationCodeService = new VerificationCodeService(authGateway, authStateRepository, this.logger);
+
+      // Create strategies
+      const passwordStrategy = new PasswordAuthStrategy(authService, userDataRepository, this.config.configManager, this.logger);
+      const twoFactorStrategy = new TwoFactorAuthStrategy(authService, userDataRepository, verificationCodeService, this.config.configManager, this.logger);
+
+      // Create coordinator
+      this.authenticationCoordinator = new AuthenticationCoordinator(passwordStrategy, twoFactorStrategy, this.logger);
     }
-    return this.authenticationService;
+    return this.authenticationCoordinator;
   }
 
   /** Get or create PollingService singleton. */
@@ -149,7 +168,7 @@ export class ServiceContainer {
    */
   getAllServices() {
     return {
-      authentication: this.getAuthenticationService(),
+      authenticationCoordinator: this.getAuthenticationCoordinator(),
       deviceManagement: this.getDeviceManagementService(),
       areaManagement: this.getAreaManagementService(),
       messageRouting: this.getMessageRoutingService(),
@@ -185,8 +204,8 @@ export class ServiceContainer {
       this.deviceManagementService = undefined;
     }
 
-    if (this.authenticationService) {
-      this.authenticationService = undefined;
+    if (this.authenticationCoordinator) {
+      this.authenticationCoordinator = undefined;
     }
 
     if (this.pollingService) {
@@ -201,8 +220,6 @@ export class ServiceContainer {
     this.userdata = undefined;
     this.iotApi = undefined;
 
-    // Clear message processor map
-    this.messageProcessorMap.clear();
     this.logger.debug('ServiceContainer destroyed');
   }
 
@@ -224,10 +241,5 @@ export class ServiceContainer {
   /** Get IoT API (undefined if not authenticated). */
   getIotApi(): RoborockIoTApi | undefined {
     return this.iotApi;
-  }
-
-  /** Get shared message processor map. */
-  getMessageProcessorMap(): Map<string, MessageProcessor> {
-    return this.messageProcessorMap;
   }
 }

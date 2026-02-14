@@ -1,14 +1,13 @@
-import { AnsiLogger, debugStringify } from 'matterbridge/logger';
+import { AnsiLogger } from 'matterbridge/logger';
 import { LOCAL_REFRESH_INTERVAL_MULTIPLIER } from '../constants/index.js';
-import { NotifyMessageTypes } from '../types/notifyMessageTypes.js';
 import { MessageRoutingService } from './messageRoutingService.js';
-import { Device, DeviceStatusNotify } from '../roborockCommunication/models/index.js';
+import { Device } from '../roborockCommunication/models/index.js';
 import { DeviceNotifyCallback } from '../types/index.js';
 
 /** Polls device status via local network or MQTT. */
 export class PollingService {
   private localRequestDeviceStatusInterval: NodeJS.Timeout | undefined;
-  private deviceNotify?: DeviceNotifyCallback;
+  private deviceNotify: DeviceNotifyCallback | undefined;
 
   constructor(
     private readonly refreshInterval: number,
@@ -41,12 +40,7 @@ export class PollingService {
           return;
         }
 
-        const response = await messageDispatcher.getDeviceStatus(device.duid);
-        if (response && this.deviceNotify) {
-          const message = Object.assign({ duid: device.duid }, response.errorStatus ?? {}, response.message ?? {}) as unknown as DeviceStatusNotify;
-          this.logger.debug('Local Polling - Device status update:', debugStringify(message));
-          this.deviceNotify(NotifyMessageTypes.LocalMessage, message);
-        }
+        await messageDispatcher.getDeviceStatus(device.duid);
       } catch (error) {
         this.logger.error('Failed to get device status:', error);
       }

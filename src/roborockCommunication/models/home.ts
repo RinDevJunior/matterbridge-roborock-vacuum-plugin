@@ -5,7 +5,6 @@ import { Product } from './product.js';
 export interface Home {
   id: number;
   name: string;
-
   products: Product[];
   devices: Device[];
   receivedDevices: Device[];

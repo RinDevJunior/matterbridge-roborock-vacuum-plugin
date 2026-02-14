@@ -1,11 +1,6 @@
-import { CloudMessageResult } from '../roborockCommunication/models/index.js';
-
-interface CloudMessageDpsEntry {
-  id: number;
-  result: CloudMessageResult[];
-}
+import { Dps } from '../roborockCommunication/models/index.js';
 
 export interface CloudMessageModel {
   duid: string;
-  dps: Record<string, number | CloudMessageDpsEntry>;
+  dps: Dps;
 }

@@ -3,5 +3,5 @@ export interface RoomDto {
   /** Global room ID (cloud/home-level) */
   id: number;
   /** Room name */
-  name: string;
+  name: string | undefined;
 }

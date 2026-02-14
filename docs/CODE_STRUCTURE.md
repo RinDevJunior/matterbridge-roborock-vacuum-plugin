@@ -31,7 +31,7 @@ This plugin integrates Roborock vacuum cleaners into the Matter ecosystem via Ma
 **Key Technologies:**
 
 - TypeScript 5.x targeting ESNext
-- Matterbridge 3.5.0
+- Matterbridge 3.5.3
 - Vitest for unit testing
 - MQTT for real-time device communication
 - REST API for Roborock cloud services
@@ -452,7 +452,7 @@ src/
 │   │   └── dispatcher/          # Message dispatchers
 │   │       ├── Q10MessageDispatcher.ts
 │   │       ├── Q7MessageDispatcher.ts
-│   │       ├── V01MessageDispatcher.ts
+│   │       ├── V10MessageDispatcher.ts
 │   │       ├── abstractMessageDispatcher.ts
 │   │       ├── dispatcherFactory.ts
 │   │       └── protocolCalculator.ts
@@ -474,7 +474,7 @@ src/
 │   │           ├── syncMessageListener.ts
 │   │           ├── connectionStateListener.ts
 │   │           ├── chainedMessageListener.ts
-│   │           ├── chainedConnectionListener.ts
+│   │           ├── connectionBroadcaster.ts
 │   │           ├── mapResponseListener.ts
 │   │           ├── pingResponseListener.ts
 │   │           └── statusMessageListener.ts
@@ -570,7 +570,7 @@ src/
 │
 ├── model/                       # Application models
 │   ├── CloudMessageModel.ts
-│   ├── DockingStationStatus.ts
+│   ├── DockStationStatus.ts
 │   └── ExperimentalFeatureSetting.ts
 │
 ├── types/                       # TypeScript type definitions
@@ -1073,11 +1073,11 @@ ClientRouter (facade)
 | L01      | L01MessageBodyBuilder | L01Serializer | -                    | Legacy protocol   |
 | A01      | A01MessageBodyBuilder | A01Serializer | -                    | Standard protocol |
 | B01      | B01MessageBodyBuilder | B01Serializer | Q7MessageDispatcher  | Extended protocol |
-| V01      | V01MessageBodyBuilder | V01Serializer | V01MessageDispatcher | Latest protocol   |
+| V01      | V01MessageBodyBuilder | V01Serializer | V10MessageDispatcher | Latest protocol   |
 
 **Message Dispatchers:**
 
-- **V01MessageDispatcher** - Handles V01 protocol messages, including room mapping and map data
+- **V10MessageDispatcher** - Handles V01 protocol messages, including room mapping and map data
 - **Q7MessageDispatcher** - Handles Q7-specific B01 protocol messages
 - **Q10MessageDispatcher** - Handles Q10-specific messages
 
@@ -1309,7 +1309,7 @@ Roborock Device
 ```
 API Response (number[][])
     ↓
-V01MessageDispatcher.getRoomMappings()
+V10MessageDispatcher.getRoomMappings()
     ↓
 HomeModelMapper.rawArrayToMapRoomDto() → MapRoomDto[]
     ↓

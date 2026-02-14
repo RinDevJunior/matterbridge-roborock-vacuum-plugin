@@ -2,8 +2,7 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { ConnectionService } from '../../services/connectionService.js';
 import ClientManager from '../../services/clientManager.js';
 import { DeviceConnectionError, DeviceInitializationError } from '../../errors/index.js';
-import { NotifyMessageTypes } from '../../types/notifyMessageTypes.js';
-import { Device, DeviceData, DeviceModel, HeaderMessage, ResponseMessage, UserData } from '../../roborockCommunication/models/index.js';
+import { Device, DeviceSpecs, DeviceModel, HeaderMessage, ResponseMessage, UserData } from '../../roborockCommunication/models/index.js';
 import { ClientRouter } from '../../roborockCommunication/routing/clientRouter.js';
 import { AnsiLogger } from 'matterbridge/logger';
 import { MessageRoutingService } from '../../services/messageRoutingService.js';
@@ -22,7 +21,7 @@ describe('ConnectionService', () => {
     name: 'Test Vacuum',
     localKey: 'test-local-key',
     pv: '1.0',
-    data: { model: 'roborock.vacuum.a187' },
+    specs: { model: 'roborock.vacuum.a187' },
     store: { pv: '1.0', model: 'roborock.vacuum.a187' },
   } as Device;
 
@@ -74,7 +73,6 @@ describe('ConnectionService', () => {
 
   function createMockMessageRoutingService() {
     return {
-      registerMessageProcessor: vi.fn(),
       registerMessageDispatcher: vi.fn(),
     } satisfies Partial<MessageRoutingService>;
   }
@@ -148,25 +146,6 @@ describe('ConnectionService', () => {
       expect(mockLogger.debug).toHaveBeenCalledWith('clientRouter connected for device:', mockDevice.duid);
     });
 
-    it('should handle message listener for non-battery protocol messages', async () => {
-      vi.spyOn(mockClientRouter, 'isConnected').mockReturnValue(true);
-      const mockCallback = vi.fn();
-      service.setDeviceNotify(mockCallback);
-
-      await service.initializeMessageClient(mockDevice, mockUserData);
-      await service.initializeMessageClientForLocal(mockDevice);
-
-      const listenerCall = vi.mocked(mockClientRouter.registerMessageListener).mock.calls[0][0];
-      expect(listenerCall).toHaveProperty('onMessage');
-
-      const mockMessage = new ResponseMessage(mockDevice.duid, new HeaderMessage('1.0', 1, 0, Date.now(), 0));
-      mockMessage.isForProtocol = vi.fn().mockReturnValue(false);
-
-      listenerCall.onMessage(mockMessage);
-
-      expect(mockCallback).toHaveBeenCalledWith(NotifyMessageTypes.CloudMessage, mockMessage);
-    });
-
     it('should ignore battery protocol messages', async () => {
       vi.spyOn(mockClientRouter, 'isConnected').mockReturnValue(true);
       const mockCallback = vi.fn();
@@ -186,9 +165,12 @@ describe('ConnectionService', () => {
 
     it('should not call deviceNotify when callback is not set', async () => {
       vi.spyOn(mockClientRouter, 'isConnected').mockReturnValue(true);
+      service.setDeviceNotify(vi.fn());
 
       await service.initializeMessageClient(mockDevice, mockUserData);
       await service.initializeMessageClientForLocal(mockDevice);
+
+      service.deviceNotify = undefined;
 
       const listenerCall = vi.mocked(mockClientRouter.registerMessageListener).mock.calls[0][0];
       const mockMessage = new ResponseMessage(mockDevice.duid, new HeaderMessage('1.0', 4, 0, Date.now(), 0));
@@ -277,7 +259,7 @@ describe('ConnectionService additional coverage', () => {
     localKey: 'test-local-key',
     pv: '1.0',
     store: { pv: '1.0', model: DeviceModel.S6 },
-    data: asPartial<DeviceData>({ model: DeviceModel.S6 }),
+    specs: asPartial<DeviceSpecs>({ model: DeviceModel.S6 }),
   } as Device;
 
   beforeEach(() => {
@@ -285,18 +267,19 @@ describe('ConnectionService additional coverage', () => {
     mockClientRouter = makeMockClientRouter();
     mockLocalClient = makeLocalClientStub();
     mockClientManager = asPartial<ClientManager>({ get: vi.fn().mockReturnValue(mockClientRouter) });
-    mockMessageRoutingService = { registerMessageProcessor: vi.fn(), registerMessageDispatcher: vi.fn() };
+    mockMessageRoutingService = { registerMessageDispatcher: vi.fn() };
     service = new ConnectionService(mockClientManager, mockLogger, mockMessageRoutingService as MessageRoutingService);
   });
 
   it('should handle B01 protocol and UDP client setup', async () => {
     const device: Device = asPartial<Device>({
       ...mockDevice,
-      data: asPartial<DeviceData>({ model: DeviceModel.S6 }),
+      specs: asPartial<DeviceSpecs>({ model: DeviceModel.S6, hasRealTimeConnection: false }),
       pv: 'B01',
       duid: 'b01-duid',
-      deviceStatus: { 1001: { 101: { ipAddress: '1.2.3.4' } } },
+      deviceStatus: { 101: { 81: { ipAddress: '1.2.3.4' } } },
     });
+    service.setDeviceNotify(vi.fn());
     service.clientRouter = asPartial<ClientRouter>(mockClientRouter);
     const result = await service.initializeMessageClientForLocal(device);
     expect(result).toBe(true);
@@ -305,11 +288,12 @@ describe('ConnectionService additional coverage', () => {
   it('should fallback to UDP broadcast if setupLocalClient fails', async () => {
     const device: Device = asPartial<Device>({
       ...mockDevice,
-      data: asPartial<DeviceData>({ model: DeviceModel.S6 }),
+      specs: asPartial<DeviceSpecs>({ model: DeviceModel.S6, hasRealTimeConnection: false }),
       pv: 'B01',
       duid: 'b01-duid',
-      deviceStatus: { 1001: { 101: { ipAddress: '1.2.3.4' } } },
+      deviceStatus: { 101: { 82: { ipAddress: '1.2.3.4' } } },
     });
+    service.setDeviceNotify(vi.fn());
     service.clientRouter = asPartial<ClientRouter>(mockClientRouter);
     const result = await service.initializeMessageClientForLocal(device);
     expect(result).toBe(true);
@@ -331,16 +315,27 @@ describe('ConnectionService additional coverage', () => {
 
   it('should return true when local client connects successfully', async () => {
     service.clientRouter = asPartial<ClientRouter>(mockClientRouter);
-    // mockClientRouter.registerClient.mockReturnValue({ connect: vi.fn(), isConnected: vi.fn().mockReturnValue(true) });
     vi.spyOn(mockClientRouter, 'registerClient').mockReturnValue(asType<Client>(mockLocalClient));
-    const result = await asType<{ setupLocalClient: (duid: string, ip: string) => Promise<boolean> }>(service).setupLocalClient.call(service, 'duid', '1.2.3.4');
+    const result = await asType<{
+      setupLocalClient: (
+        {
+          duid,
+          specs: { hasRealTimeConnection },
+        }: { duid: string; specs: DeviceSpecs },
+        ip: string,
+      ) => Promise<boolean>;
+    }>(service).setupLocalClient.call(service, { duid: 'duid', specs: mockDevice.specs }, '1.2.3.4');
     expect(result).toBe(true);
   });
 
   it('should return false and log error if registerClient returns undefined', async () => {
     service.clientRouter = asPartial<ClientRouter>(mockClientRouter);
     vi.spyOn(mockClientRouter, 'registerClient').mockReturnValue(asType<Client>(undefined));
-    const result = await asType<{ setupLocalClient: (duid: string, ip: string) => Promise<boolean> }>(service).setupLocalClient.call(service, 'duid', '1.2.3.4');
+    const result = await asType<{ setupLocalClient: ({ duid, specs }: { duid: string; specs: DeviceSpecs }, ip: string) => Promise<boolean> }>(service).setupLocalClient.call(
+      service,
+      { duid: 'duid', specs: mockDevice.specs },
+      '1.2.3.4',
+    );
     expect(result).toBe(false);
     expect(mockLogger.error).toHaveBeenCalledWith('Failed to create local client for device duid at IP 1.2.3.4');
   });
@@ -350,7 +345,11 @@ describe('ConnectionService additional coverage', () => {
     vi.spyOn(mockClientRouter, 'registerClient').mockImplementation(() => {
       throw new Error('fail');
     });
-    const result = await asType<{ setupLocalClient: (duid: string, ip: string) => Promise<boolean> }>(service).setupLocalClient.call(service, 'duid', '1.2.3.4');
+    const result = await asType<{ setupLocalClient: ({ duid, specs }: { duid: string; specs: DeviceSpecs }, ip: string) => Promise<boolean> }>(service).setupLocalClient.call(
+      service,
+      { duid: 'duid', specs: mockDevice.specs },
+      '1.2.3.4',
+    );
     expect(result).toBe(false);
     expect(mockLogger.error).toHaveBeenCalledWith('Error setting up local client for device duid at IP 1.2.3.4:', expect.any(Error));
   });

@@ -2,6 +2,8 @@ import { ServiceArea } from 'matterbridge/matter/clusters';
 import { CloudMessageResult, DeviceModel, Home } from '../../roborockCommunication/models/index.js';
 import { DeviceCategory } from '../../roborockCommunication/models/deviceCategory.js';
 import { MapInfo } from '../../core/application/models/index.js';
+import { asPartial } from '../testUtils.js';
+import { RoomEntity } from '../../core/domain/entities/Room.js';
 
 export const supportedAreas: ServiceArea.Area[] = [
   { areaId: 100, mapId: 0, areaInfo: { locationInfo: { locationName: 'Kitchen', floorNumber: 0, areaType: null }, landmarkInfo: null } },
@@ -250,7 +252,7 @@ export const cloudMessageResult3: CloudMessageResult = {
   charge_status: 1,
 };
 
-export const homeData: Home = {
+export const homeData: Home = asPartial<Home>({
   id: 3645093,
   name: 'My Home',
   products: [
@@ -298,20 +300,16 @@ export const homeData: Home = {
       deviceStatus: { 120: 0, 121: 8, 122: 100, 123: 110, 124: 209, 125: 93, 126: 69, 127: 86, 128: 0, 133: 1, 134: 0, 135: 0, 139: 0 },
       silentOtaSwitch: true,
       rrHomeId: 3645093,
-      rooms: [
-        { id: 11100849, name: 'Study' },
-        { id: 11100847, name: 'Bedroom' },
-        { id: 11100845, name: 'Kitchen' },
-        { id: 11100842, name: 'Living room' },
-      ],
+      mapInfos: undefined,
       serialNumber: 'RCIEBS50900224',
-      data: {
+      specs: {
         id: 'test-duid',
         firmwareVersion: '02.28.34',
         serialNumber: 'RCIEBS50900224',
         model: DeviceModel.QREVO_EDGE_5V1,
         category: DeviceCategory.VacuumCleaner,
         batteryLevel: 100,
+        hasRealTimeConnection: true,
       },
       store: {
         userData: {
@@ -335,6 +333,14 @@ export const homeData: Home = {
         localKey: 'v0OKpWXwBmiCk4ku',
         pv: '1.0',
         model: DeviceModel.QREVO_EDGE_5V1,
+        homeData: {
+          id: 3645093,
+          name: 'Test Home',
+          products: [],
+          devices: [],
+          receivedDevices: [],
+          rooms: [new RoomEntity(11100849, 'Study'), new RoomEntity(11100847, 'Bedroom'), new RoomEntity(11100845, 'Kitchen'), new RoomEntity(11100842, 'Living room')],
+        } satisfies Home,
       },
       schema: [
         { id: 101, name: 'rpc_request', code: 'rpc_request', mode: 'rw', type: 'RAW', property: null },
@@ -365,7 +371,7 @@ export const homeData: Home = {
     { id: 11100845, name: 'Kitchen' },
     { id: 11100842, name: 'Living room' },
   ],
-};
+});
 
 export const cloudMessageResultFromLog: CloudMessageResult = {
   msg_ver: 2,

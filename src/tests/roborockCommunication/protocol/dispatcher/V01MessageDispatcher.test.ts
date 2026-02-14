@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { V01MessageDispatcher } from '../../../../roborockCommunication/protocol/dispatcher/V01MessageDispatcher.js';
 import { asType } from '../../../testUtils.js';
+import { V10MessageDispatcher } from '../../../../roborockCommunication/protocol/dispatcher/V10MessageDispatcher.js';
 // --- Mock Factories ---
 function createMockLogger() {
   return {
@@ -17,6 +17,7 @@ function createMockClient() {
     send: vi.fn().mockResolvedValue(undefined),
     get: vi.fn().mockResolvedValue(undefined),
     isConnected: vi.fn().mockReturnValue(true),
+    isReady: vi.fn().mockReturnValue(true),
     connect: vi.fn(),
     disconnect: vi.fn(),
     registerConnectionListener: vi.fn(),
@@ -25,16 +26,16 @@ function createMockClient() {
 }
 
 // --- Test Suite ---
-describe('V01MessageDispatcher', () => {
+describe('V10MessageDispatcher', () => {
   let logger: ReturnType<typeof createMockLogger>;
   let client: ReturnType<typeof createMockClient>;
-  let dispatcher: V01MessageDispatcher;
+  let dispatcher: V10MessageDispatcher;
   const duid = 'test-duid';
 
   beforeEach(() => {
     logger = createMockLogger();
     client = createMockClient();
-    dispatcher = new V01MessageDispatcher(asType(logger), client);
+    dispatcher = new V10MessageDispatcher(asType(logger), client);
   });
 
   afterEach(() => {
@@ -98,10 +99,9 @@ describe('V01MessageDispatcher', () => {
         [1, 2],
         [3, 4],
       ]);
-      const result = await dispatcher.getRoomMap(duid, 1, []);
+      const result = await dispatcher.getRoomMap(duid, 1);
       expect(client.get).toHaveBeenCalled();
-      expect(logger.debug).toHaveBeenCalled();
-      expect(result).toBeInstanceOf(Object); // RoomMap
+      expect(result).toBeInstanceOf(Array); // RoomMap
     });
   });
 

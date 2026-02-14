@@ -1,14 +1,9 @@
-import { PowerSource, RvcOperationalState, RvcRunMode } from 'matterbridge/matter/clusters';
 import { getVacuumProperty } from '../share/helper.js';
 import { RoborockMatterbridgePlatform } from '../module.js';
 import { debugStringify } from 'matterbridge/logger';
-import { getBatteryState, getBatteryStatus } from '../initialData/index.js';
-import { state_to_matter_operational_status, state_to_matter_state } from '../share/function.js';
-import { OperationStatusCode } from '../roborockCommunication/enums/index.js';
-import { getRunningMode } from '../initialData/getSupportedRunModes.js';
-import { hasDockingStationError } from '../model/DockingStationStatus.js';
-import { triggerDssError } from './handleLocalMessage.js';
 import { Device, Home } from '../roborockCommunication/models/index.js';
+import { NotifyMessageTypes } from '../types/notifyMessageTypes.js';
+import { DockErrorCode } from '../roborockCommunication/enums/vacuumAndDockErrorCode.js';
 
 /**
  * Update robot states from home data polling response.
@@ -27,47 +22,71 @@ export async function updateFromHomeData(homeData: Home, platform: RoborockMatte
       continue;
     }
 
-    const deviceData = robot.device.data;
+    const deviceData = robot.device.specs;
     if (!device || deviceData === undefined) {
       platform.log.error('Device not found in home data');
       return;
     }
 
-    device.schema = homeData.products.find((prd) => prd.id === device.productId || prd.model === robot.device.data?.model || prd.model === device.data.model)?.schema ?? [];
+    device.schema = homeData.products.find((prd) => prd.id === device.productId || prd.model === robot.device.specs.model || prd.model === device.specs.model)?.schema ?? [];
     platform.log.debug('updateFromHomeData-homeData:', debugStringify(homeData));
     platform.log.debug('updateFromHomeData-device:', debugStringify(device));
     platform.log.debug('updateFromHomeData-schema:' + debugStringify(device.schema));
-    platform.log.debug('updateFromHomeData-battery:' + debugStringify(device.deviceStatus));
+    platform.log.debug('updateFromHomeData-deviceStatus:' + debugStringify(device.deviceStatus));
 
     const batteryLevel = getVacuumProperty(device, 'battery');
-    if (batteryLevel) {
-      robot.updateAttribute(PowerSource.Cluster.id, 'batPercentRemaining', batteryLevel ? batteryLevel * 2 : 200, platform.log);
-      robot.updateAttribute(PowerSource.Cluster.id, 'batChargeLevel', getBatteryStatus(batteryLevel), platform.log);
-    }
-
     const state = getVacuumProperty(device, 'state');
-    const matterState = state_to_matter_state(state);
-    if (!state || !matterState) {
-      return;
-    }
-    platform.log.debug(`updateFromHomeData-RvcRunMode code: ${state} name: ${OperationStatusCode[state]}, matterState: ${RvcRunMode.ModeTag[matterState]}`);
+    const errorCode = getVacuumProperty(device, 'error_code');
+    const suctionPower = getVacuumProperty(device, 'fan_power');
+    const waterBoxMode = getVacuumProperty(device, 'water_box_mode');
+    const chargeStatus = getVacuumProperty(device, 'charge_status');
 
-    if (matterState) {
-      robot.updateAttribute(RvcRunMode.Cluster.id, 'currentMode', getRunningMode(matterState), platform.log);
+    if (errorCode && errorCode !== 0) {
+      platform.platformRunner.updateRobotWithPayload({
+        type: NotifyMessageTypes.ErrorOccurred,
+        data: {
+          duid: device.duid,
+          vacuumErrorCode: errorCode,
+          dockErrorCode: DockErrorCode.None,
+          dockStationStatus: undefined,
+        },
+      });
     }
+
     if (batteryLevel) {
-      robot.updateAttribute(PowerSource.Cluster.id, 'batChargeState', getBatteryState(state, batteryLevel), platform.log);
+      platform.platformRunner.updateRobotWithPayload({
+        type: NotifyMessageTypes.BatteryUpdate,
+        data: {
+          duid: device.duid,
+          percentage: batteryLevel,
+          chargeStatus: chargeStatus,
+          deviceStatus: state,
+        },
+      });
     }
 
-    const operationalStateId = state_to_matter_operational_status(state);
+    if (state && !deviceData.hasRealTimeConnection) {
+      platform.log.notice(`hasRealTimeConnection is false, updating device status from home data: ${state}`);
+      platform.platformRunner.updateRobotWithPayload({
+        type: NotifyMessageTypes.DeviceStatusSimple,
+        data: {
+          duid: device.duid,
+          status: state,
+        },
+      });
+    }
 
-    if (operationalStateId) {
-      const dssHasError = hasDockingStationError(robot.dockStationStatus);
-      platform.log.debug(`dssHasError: ${dssHasError}, dockStationStatus: ${debugStringify(robot.dockStationStatus ?? {})}`);
-      if (!(dssHasError && triggerDssError(robot, platform))) {
-        platform.log.debug(`updateFromHomeData-OperationalState: ${RvcOperationalState.OperationalState[operationalStateId]}`);
-        robot.updateAttribute(RvcOperationalState.Cluster.id, 'operationalState', operationalStateId, platform.log);
-      }
+    if (suctionPower && waterBoxMode) {
+      platform.platformRunner.updateRobotWithPayload({
+        type: NotifyMessageTypes.CleanModeUpdate,
+        data: {
+          duid: device.duid,
+          suctionPower: suctionPower,
+          waterFlow: waterBoxMode,
+          distance_off: 0,
+          mopRoute: undefined,
+        },
+      });
     }
   }
 }

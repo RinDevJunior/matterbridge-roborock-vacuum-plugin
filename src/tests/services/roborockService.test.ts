@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { AnsiLogger } from 'matterbridge/logger';
 import { RoborockService } from '../../services/roborockService.js';
 import { ServiceContainer } from '../../services/serviceContainer.js';
-import { AuthenticationService } from '../../services/authenticationService.js';
+import { AuthenticationCoordinator } from '../../services/authentication/AuthenticationCoordinator.js';
 import { DeviceManagementService } from '../../services/deviceManagementService.js';
 import { AreaManagementService } from '../../services/areaManagementService.js';
 import { MessageRoutingService } from '../../services/messageRoutingService.js';
@@ -11,13 +11,13 @@ import { Device } from '../../roborockCommunication/models/index.js';
 import { RoborockAuthenticateApi } from '../../roborockCommunication/api/authClient.js';
 import { RoborockIoTApi } from '../../roborockCommunication/api/iotClient.js';
 import type { LocalStorage } from 'node-persist';
-import type { PlatformConfigManager } from '../../platform/platformConfig.js';
+import type { PlatformConfigManager } from '../../platform/platformConfigManager.js';
 
 describe('RoborockService - Comprehensive Coverage', () => {
   let service: RoborockService;
   let mockLogger: Partial<AnsiLogger>;
   let mockContainer: Partial<ServiceContainer>;
-  let mockAuthService: Partial<AuthenticationService>;
+  let mockAuthCoordinator: Partial<AuthenticationCoordinator>;
   let mockDeviceService: Partial<DeviceManagementService>;
   let mockAreaService: Partial<AreaManagementService>;
   let mockMessageService: Partial<MessageRoutingService>;
@@ -34,11 +34,8 @@ describe('RoborockService - Comprehensive Coverage', () => {
       notice: vi.fn(),
     };
 
-    mockAuthService = {
-      requestVerificationCode: vi.fn(),
-      loginWithVerificationCode: vi.fn(),
-      loginWithCachedToken: vi.fn(),
-      loginWithPassword: vi.fn(),
+    mockAuthCoordinator = {
+      authenticate: vi.fn(),
     };
 
     mockDeviceService = {
@@ -68,7 +65,6 @@ describe('RoborockService - Comprehensive Coverage', () => {
     };
 
     mockMessageService = {
-      getMessageProcessor: vi.fn(),
       getCleanModeData: vi.fn(),
       getRoomIdFromMap: vi.fn(),
       changeCleanMode: vi.fn(),
@@ -79,7 +75,6 @@ describe('RoborockService - Comprehensive Coverage', () => {
       playSoundToLocate: vi.fn(),
       customGet: vi.fn(),
       customSend: vi.fn(),
-      registerMessageProcessor: vi.fn(),
       setIotApi: vi.fn(),
       getMapInfo: vi.fn(),
       clearAll: vi.fn(),
@@ -91,7 +86,7 @@ describe('RoborockService - Comprehensive Coverage', () => {
       shutdown: vi.fn(),
     };
     mockContainer = {
-      getAuthenticationService: vi.fn().mockReturnValue(mockAuthService),
+      getAuthenticationCoordinator: vi.fn().mockReturnValue(mockAuthCoordinator),
       getDeviceManagementService: vi.fn().mockReturnValue(mockDeviceService),
       getAreaManagementService: vi.fn().mockReturnValue(mockAreaService),
       getMessageRoutingService: vi.fn().mockReturnValue(mockMessageService),
@@ -148,6 +143,21 @@ describe('RoborockService - Comprehensive Coverage', () => {
       expect(defaultService).toBeInstanceOf(RoborockService);
     });
 
+    it('should create service without injected container', () => {
+      const defaultService = new RoborockService(
+        {
+          refreshInterval: 10,
+          baseUrl: 'https://api.roborock.com',
+          persist: mockPersist as LocalStorage,
+          configManager: mockConfigManager as PlatformConfigManager,
+        },
+        mockLogger as AnsiLogger,
+        mockConfigManager as PlatformConfigManager,
+      );
+
+      expect(defaultService).toBeInstanceOf(RoborockService);
+    });
+
     it('should create service with custom factories', () => {
       const customAuthFactory = vi.fn((logger: AnsiLogger) => new RoborockAuthenticateApi(logger));
 
@@ -190,6 +200,100 @@ describe('RoborockService - Comprehensive Coverage', () => {
       expect(() => {
         service.activateDeviceNotify(device);
       }).not.toThrow();
+    });
+  });
+
+  describe('Authentication', () => {
+    it('should authenticate with password flow', async () => {
+      (mockAuthCoordinator.authenticate as any).mockResolvedValue({
+        nickname: 'Test User',
+        username: 'testuser',
+      } as any);
+
+      const result = await service.authenticate();
+
+      expect(result.shouldContinue).toBe(true);
+      expect(result.userData).toBeDefined();
+      expect(mockAuthCoordinator.authenticate).toHaveBeenCalledWith('Password', {
+        username: 'testuser',
+        password: 'testpass',
+        verificationCode: undefined,
+      });
+    });
+
+    it('should authenticate with verification code flow', async () => {
+      const mockConfigWith2FA = {
+        username: 'testuser',
+        password: 'testpass',
+        verificationCode: '123456',
+        authenticationMethod: 'VerificationCode',
+      };
+      const serviceWith2FA = new RoborockService(
+        {
+          refreshInterval: 10,
+          baseUrl: 'https://api.roborock.com',
+          persist: mockPersist as LocalStorage,
+          configManager: mockConfigWith2FA as PlatformConfigManager,
+          container: mockContainer as ServiceContainer,
+        },
+        mockLogger as AnsiLogger,
+        mockConfigWith2FA as PlatformConfigManager,
+      );
+
+      (mockAuthCoordinator.authenticate as any).mockResolvedValue({
+        nickname: 'Test User',
+        username: 'testuser',
+      } as any);
+
+      const result = await serviceWith2FA.authenticate();
+
+      expect(result.shouldContinue).toBe(true);
+      expect(result.userData).toBeDefined();
+      expect(mockAuthCoordinator.authenticate).toHaveBeenCalledWith('VerificationCode', {
+        username: 'testuser',
+        password: 'testpass',
+        verificationCode: '123456',
+      });
+    });
+
+    it('should return false when authentication fails', async () => {
+      (mockAuthCoordinator.authenticate as any).mockRejectedValue(new Error('Auth failed'));
+
+      const result = await service.authenticate();
+
+      expect(result.shouldContinue).toBe(false);
+      expect(result.userData).toBeUndefined();
+      expect(mockLogger.error).toHaveBeenCalledWith('Authentication failed: Auth failed');
+    });
+
+    it('should return false when userData is undefined', async () => {
+      (mockAuthCoordinator.authenticate as any).mockResolvedValue(undefined);
+
+      const result = await service.authenticate();
+
+      expect(result.shouldContinue).toBe(false);
+      expect(result.userData).toBeUndefined();
+      expect(mockLogger.info).toHaveBeenCalledWith('Authentication incomplete. Further action required (e.g., 2FA).');
+    });
+  });
+
+  describe('getCustomAPI', () => {
+    it('should throw error when iotApi is not initialized', async () => {
+      const getIotApi = mockContainer.getIotApi as any;
+      getIotApi.mockReturnValue(undefined);
+
+      await expect(service.getCustomAPI('/test')).rejects.toThrow('IoT API not initialized. Please login first.');
+    });
+
+    it('should call iotApi.getCustom when iotApi is initialized', async () => {
+      const mockIotApi = { getCustom: vi.fn().mockResolvedValue({ data: 'test' }) };
+      const getIotApi = mockContainer.getIotApi as any;
+      getIotApi.mockReturnValue(mockIotApi);
+
+      const result = await service.getCustomAPI('/test');
+
+      expect(result).toEqual({ data: 'test' });
+      expect(mockIotApi.getCustom).toHaveBeenCalledWith('/test');
     });
   });
 });

@@ -31,6 +31,7 @@ export interface AdvancedFeatureConfiguration {
 }
 
 export interface AdvancedFeatureSetting {
+  clearStorageOnStartup: boolean;
   showRoutinesAsRoom: boolean;
   includeDockStationStatus: boolean;
   forceRunAtDefault: boolean;
@@ -67,6 +68,7 @@ export function createDefaultAdvancedFeature(): AdvancedFeatureConfiguration {
   return {
     enableAdvancedFeature: false,
     settings: {
+      clearStorageOnStartup: false,
       showRoutinesAsRoom: false,
       includeDockStationStatus: false,
       forceRunAtDefault: false,

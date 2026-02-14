@@ -1,6 +1,5 @@
 import { AnsiLogger } from 'matterbridge/logger';
-import { ChainedConnectionListener } from './listeners/implementation/chainedConnectionListener.js';
-import { ChainedMessageListener } from './listeners/implementation/chainedMessageListener.js';
+import { ConnectionBroadcaster } from './listeners/connectionBroadcaster.js';
 import { MessageContext } from '../models/messageContext.js';
 import { ConnectionStateListener } from './listeners/implementation/connectionStateListener.js';
 import { RequestMessage } from '../models/requestMessage.js';
@@ -10,15 +9,15 @@ import { Client } from './client.js';
 import { MessageSerializer } from '../protocol/serializers/messageSerializer.js';
 import { MessageDeserializer } from '../protocol/deserializers/messageDeserializer.js';
 import { PendingResponseTracker } from './services/pendingResponseTracker.js';
+import { ResponseBroadcaster } from './listeners/responseBroadcaster.js';
 
 export abstract class AbstractClient implements Client {
   public isInDisconnectingStep = false;
   public retryCount = 0;
 
-  protected readonly connectionListener = new ChainedConnectionListener();
+  protected readonly connectionBroadcaster = new ConnectionBroadcaster();
   protected readonly serializer: MessageSerializer;
   protected readonly deserializer: MessageDeserializer;
-  protected connected = false;
   protected connectionStateListener: ConnectionStateListener | undefined;
 
   protected abstract clientName: string;
@@ -26,22 +25,27 @@ export abstract class AbstractClient implements Client {
   protected constructor(
     protected readonly logger: AnsiLogger,
     protected readonly context: MessageContext,
-    protected readonly chainedMessageListener: ChainedMessageListener,
+    protected readonly responseBroadcaster: ResponseBroadcaster,
     private readonly responseTracker: PendingResponseTracker,
   ) {
     this.serializer = new MessageSerializer(this.context, this.logger);
     this.deserializer = new MessageDeserializer(this.context, this.logger);
   }
 
-  abstract isReady(): boolean;
+  abstract isConnected(): boolean;
 
-  protected initializeConnectionStateListener() {
-    this.connectionStateListener = new ConnectionStateListener(this.logger, this, this.clientName);
-    this.connectionListener.register(this.connectionStateListener);
+  /** Returns true when client is ready to send requests. Override for custom handshake logic. */
+  public isReady(): boolean {
+    return this.isConnected();
+  }
+
+  protected initializeConnectionStateListener(client: AbstractClient): void {
+    this.connectionStateListener = new ConnectionStateListener(this.logger, client, this.clientName);
+    this.connectionBroadcaster.register(this.connectionStateListener);
   }
 
   public registerMessageListener(listener: AbstractMessageListener): void {
-    this.chainedMessageListener.register(listener);
+    this.responseBroadcaster.register(listener);
   }
 
   /**
@@ -93,10 +97,6 @@ export abstract class AbstractClient implements Client {
   }
 
   public registerConnectionListener(listener: AbstractConnectionListener): void {
-    this.connectionListener.register(listener);
-  }
-
-  public isConnected() {
-    return this.connected;
+    this.connectionBroadcaster.register(listener);
   }
 }

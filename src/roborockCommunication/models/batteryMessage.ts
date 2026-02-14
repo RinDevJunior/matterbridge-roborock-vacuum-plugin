@@ -1,15 +1,21 @@
-import { VacuumErrorCode } from '../enums/index.js';
+import { DockErrorCode, OperationStatusCode, VacuumErrorCode } from '../enums/index.js';
 import { DeviceStatus } from './deviceStatus.js';
 import { CloudMessageResult } from './messageResult.js';
 
-export interface BatteryMessage {
-  duid: string;
-  percentage: number;
+export class BatteryMessage {
+  constructor(
+    public readonly duid: string,
+    public readonly percentage: number,
+    public readonly chargeStatus: number | undefined,
+    public readonly deviceStatus: OperationStatusCode | undefined,
+  ) {}
 }
 
 export interface DeviceErrorMessage {
   duid: string;
-  errorCode: VacuumErrorCode;
+  vacuumErrorCode: VacuumErrorCode;
+  dockErrorCode: DockErrorCode;
+  dockStationStatus: number | undefined;
 }
 
 export interface DeviceStatusNotify extends DeviceStatus, CloudMessageResult {

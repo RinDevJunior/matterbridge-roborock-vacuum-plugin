@@ -1,7 +1,7 @@
 import { CleanModeSetting } from '../../../behaviors/roborock.vacuum/core/CleanModeSetting.js';
-import { MapInfo, RoomMap } from '../../../core/application/models/index.js';
+import { MapInfo } from '../../../core/application/models/index.js';
 import { MapRoomResponse } from '../../../types/index.js';
-import { DeviceStatus, NetworkInfo, RequestMessage, RoomDto } from '../../models/index.js';
+import { DeviceStatus, NetworkInfo, RawRoomMappingData, RequestMessage } from '../../models/index.js';
 
 export interface AbstractMessageDispatcher {
   dispatcherName: string;
@@ -27,5 +27,5 @@ export interface AbstractMessageDispatcher {
   // For core data retrieval
   getHomeMap(duid: string): Promise<MapRoomResponse>;
   getMapInfo(duid: string): Promise<MapInfo>;
-  getRoomMap(duid: string, activeMap: number, rooms: RoomDto[]): Promise<RoomMap>;
+  getRoomMap(duid: string, activeMap: number): Promise<RawRoomMappingData>;
 }

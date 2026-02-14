@@ -2,5 +2,7 @@
 .vscode/
 docs/
 web-for-testing/
-src/tests/
+src/
 .tarignore
+.claude
+.jscpd.json

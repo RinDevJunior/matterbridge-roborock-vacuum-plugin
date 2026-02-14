@@ -1,21 +1,22 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { AbstractClient } from '../../../roborockCommunication/routing/abstractClient.js';
 import { MessageContext, RequestMessage, UserData, ResponseMessage } from '../../../roborockCommunication/models/index.js';
-import { ChainedMessageListener } from '../../../roborockCommunication/routing/listeners/implementation/chainedMessageListener.js';
 import { PendingResponseTracker } from '../../../roborockCommunication/routing/services/pendingResponseTracker.js';
 import { createMockLogger, asPartial, asType, mkUser } from '../../helpers/testUtils.js';
 import { AbstractConnectionListener } from '../../../roborockCommunication/routing/listeners/abstractConnectionListener.js';
+import { ResponseBroadcaster } from '../../../roborockCommunication/routing/listeners/responseBroadcaster.js';
 
 class TestClient extends AbstractClient {
   protected clientName = 'TestClient';
   protected shouldReconnect = false;
+  private connected = false;
 
-  constructor(logger: any, context: MessageContext, chainedMessageListener: ChainedMessageListener, responseTracker: PendingResponseTracker) {
-    super(logger, context, chainedMessageListener, responseTracker);
-    this.initializeConnectionStateListener();
+  constructor(logger: any, context: MessageContext, responseBroadcaster: ResponseBroadcaster, responseTracker: PendingResponseTracker) {
+    super(logger, context, responseBroadcaster, responseTracker);
+    this.initializeConnectionStateListener(asPartial<AbstractClient>({}));
   }
 
-  public override isReady(): boolean {
+  override isConnected(): boolean {
     return this.connected;
   }
 
@@ -37,15 +38,15 @@ describe('AbstractClient', () => {
   let logger: any;
   let context: MessageContext;
   let responseTracker: PendingResponseTracker;
-  let chainedMessageListener: ChainedMessageListener;
+  let responseBroadcaster: ResponseBroadcaster;
 
   beforeEach(() => {
     logger = createMockLogger();
     const userdata = mkUser();
     context = new MessageContext(userdata);
     responseTracker = new PendingResponseTracker(logger);
-    chainedMessageListener = new ChainedMessageListener(responseTracker, logger);
-    client = new TestClient(logger, context, chainedMessageListener, responseTracker);
+    responseBroadcaster = new ResponseBroadcaster(responseTracker, logger);
+    client = new TestClient(logger, context, responseBroadcaster, responseTracker);
   });
 
   it('get resolves when responseTracker receives response', async () => {
@@ -84,13 +85,13 @@ describe('AbstractClient', () => {
   it('registerConnectionListener adds listener to chain', () => {
     const listener = asPartial<AbstractConnectionListener>({ onConnected: vi.fn() });
     client.registerConnectionListener(listener);
-    expect(asType<TestClient>(client)['connectionListener']['listeners']).toContain(listener);
+    expect(asType<TestClient>(client)['connectionBroadcaster']['listeners']).toContain(listener);
   });
 
   it('registerMessageListener adds listener to chain', () => {
-    const listener = asPartial<{ onMessage: (...args: unknown[]) => void }>({ onMessage: vi.fn() });
+    const listener = asPartial<{ name: string; duid: string; onMessage: (...args: unknown[]) => void }>({ name: 'test-listener', duid: 'DUID123', onMessage: vi.fn() });
     client.registerMessageListener(listener);
-    expect(asType<TestClient>(client)['chainedMessageListener']['listeners']).toContain(listener);
+    expect(asType<TestClient>(client)['responseBroadcaster']['listeners']).toContain(listener);
   });
 
   it('isConnected returns connection state', () => {

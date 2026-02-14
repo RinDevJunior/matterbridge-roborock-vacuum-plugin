@@ -1,9 +1,10 @@
 import { AnsiLogger, debugStringify } from 'matterbridge/logger';
 import { ServiceArea } from 'matterbridge/matter/clusters';
-import { RoomMap, RoomIndexMap, MapEntry } from '../core/application/models/index.js';
-import { RoomDto } from '../roborockCommunication/models/index.js';
+import { RoomIndexMap, RoomMapping } from '../core/application/models/index.js';
 import { randomInt } from 'node:crypto';
-import { DEFAULT_AREA_ID_UNKNOWN, DEFAULT_AREA_ID_ERROR, MULTIPLE_MAP_AREA_ID_OFFSET, RANDOM_ROOM_MIN, RANDOM_ROOM_MAX } from '../constants/index.js';
+import { DEFAULT_AREA_ID_UNKNOWN, DEFAULT_AREA_ID_ERROR, RANDOM_ROOM_MIN, RANDOM_ROOM_MAX } from '../constants/index.js';
+import { HomeEntity } from '../core/domain/entities/Home.js';
+import { AreaNamespaceTag } from 'matterbridge/matter';
 
 /**
  * Create a fallback service area for error cases.
@@ -14,11 +15,11 @@ import { DEFAULT_AREA_ID_UNKNOWN, DEFAULT_AREA_ID_ERROR, MULTIPLE_MAP_AREA_ID_OF
 function createFallbackArea(areaId: number, reason: string): ServiceArea.Area {
   return {
     areaId,
-    mapId: null,
+    mapId: 0,
     areaInfo: {
       locationInfo: {
         locationName: `Unknown - ${reason}`,
-        floorNumber: null,
+        floorNumber: 0,
         areaType: null,
       },
       landmarkInfo: null,
@@ -35,55 +36,50 @@ export interface SupportedAreasResult {
 /**
  * Convert vacuum rooms and room map to Matter ServiceArea areas.
  * Handles single and multiple map configurations.
- * @param vacuumRooms - Rooms configured on the vacuum
- * @param roomMap - Parsed room map data
- * @param enableMultipleMap - Whether multiple map support is enabled
- * @param log - Optional logger instance
- * @param mapInfos - Optional map information for multiple map support
+ * @param homeInFo - Home entity containing room and map information
+ * @param logger - Logger for debugging and error reporting
  * @returns Supported areas, maps, and room index mapping
  */
-export function getSupportedAreas(
-  vacuumRooms: RoomDto[],
-  roomMap: RoomMap | undefined,
-  enableMultipleMap = false,
-  log?: AnsiLogger,
-  mapInfos: MapEntry[] = [],
-): SupportedAreasResult {
-  log?.debug('getSupportedAreas-vacuum room', debugStringify(vacuumRooms));
-  log?.debug('getSupportedAreas-roomMap', roomMap ? debugStringify(roomMap) : 'undefined');
+export function getSupportedAreas(homeInFo: HomeEntity, logger: AnsiLogger): SupportedAreasResult {
+  logger.debug('getSupportedAreas-vacuum room', debugStringify(homeInFo.allRooms));
+  logger.debug('getSupportedAreas-roomMap', homeInFo.roomMap ? debugStringify(homeInFo.roomMap) : 'undefined');
 
-  const noVacuumRooms = !vacuumRooms || vacuumRooms.length === 0;
-  const noRoomMap = !roomMap?.rooms || roomMap.rooms.length === 0;
+  const noVacuumRooms = !homeInFo.allRooms || homeInFo.allRooms.length === 0;
+  const noRoomMap = !homeInFo.roomMap?.rooms || homeInFo.roomMap.rooms.length === 0;
 
   if (noVacuumRooms || noRoomMap) {
     if (noVacuumRooms) {
-      log?.error('No rooms found');
+      logger.error('No rooms found');
     }
     if (noRoomMap) {
-      log?.error('No room map found');
+      logger.error('No room map found');
     }
 
     return {
       supportedAreas: [createFallbackArea(DEFAULT_AREA_ID_UNKNOWN, 'No Rooms')],
-      supportedMaps: [],
-      roomIndexMap: new RoomIndexMap(new Map([[DEFAULT_AREA_ID_UNKNOWN, { roomId: DEFAULT_AREA_ID_UNKNOWN, mapId: null }]])),
+      supportedMaps: [{ mapId: 0, name: 'Default Map' }],
+      roomIndexMap: new RoomIndexMap(new Map([[DEFAULT_AREA_ID_UNKNOWN, { roomId: DEFAULT_AREA_ID_UNKNOWN, mapId: 0 }]])),
     };
   }
-  const { supportedAreas, indexMap } = processValidData(enableMultipleMap, vacuumRooms, roomMap);
-  const duplicated = findDuplicatedAreaIds(supportedAreas, log);
+
+  const { supportedAreas, indexMap } = processValidData(homeInFo);
+  const duplicated = findDuplicatedAreaIds(supportedAreas, logger);
 
   if (duplicated) {
     return {
       supportedAreas: [createFallbackArea(DEFAULT_AREA_ID_ERROR, 'Duplicated Areas Found')],
-      supportedMaps: [],
-      roomIndexMap: new RoomIndexMap(new Map([[DEFAULT_AREA_ID_ERROR, { roomId: DEFAULT_AREA_ID_ERROR, mapId: null }]])),
+      supportedMaps: [{ mapId: 0, name: 'Default Map' }],
+      roomIndexMap: new RoomIndexMap(new Map([[DEFAULT_AREA_ID_ERROR, { roomId: DEFAULT_AREA_ID_ERROR, mapId: 0 }]])),
     };
   }
 
-  const supportedMaps = getSupportedMaps(enableMultipleMap, supportedAreas, mapInfos);
+  const supportedMaps = homeInFo.mapInfo.maps.map((map) => ({
+    mapId: map.id,
+    name: map.name ?? `Map ${map.id}`,
+  }));
 
-  log?.debug('getSupportedAreas - supportedAreas', debugStringify(supportedAreas));
-  log?.debug('getSupportedAreas - supportedMaps', debugStringify(supportedMaps));
+  logger.debug('getSupportedAreas - supportedAreas', debugStringify(supportedAreas));
+  logger.debug('getSupportedAreas - supportedMaps', debugStringify(supportedMaps));
   const roomIndexMap = new RoomIndexMap(indexMap);
   return {
     supportedAreas,
@@ -97,7 +93,7 @@ interface SupportedArea {
   mapId: number;
 }
 
-function findDuplicatedAreaIds(areas: ServiceArea.Area[], log?: AnsiLogger): boolean {
+function findDuplicatedAreaIds(areas: ServiceArea.Area[], logger: AnsiLogger): boolean {
   const seen = new Set<string>();
   const duplicates: SupportedArea[] = [];
 
@@ -110,9 +106,9 @@ function findDuplicatedAreaIds(areas: ServiceArea.Area[], log?: AnsiLogger): boo
     }
   }
 
-  if (duplicates.length > 0 && log) {
+  if (duplicates.length > 0) {
     const duplicated = areas.filter(({ areaId, mapId }) => duplicates.some((y) => y.areaId === areaId && y.mapId === (mapId ?? 0)));
-    log.error(`Duplicated areaId(s) found: ${debugStringify(duplicated)}`);
+    logger.error(`Duplicated areaId(s) found: ${debugStringify(duplicated)}`);
   }
 
   return duplicates.length > 0;
@@ -128,16 +124,18 @@ interface ProcessedData {
   indexMap: Map<number, MapInfo>;
 }
 
-function processValidData(enableMultipleMap: boolean, vacuumRooms: RoomDto[], roomMap?: RoomMap): ProcessedData {
+function processValidData(homeInFo: HomeEntity): ProcessedData {
   const indexMap = new Map<number, MapInfo>();
   const supportedAreas: ServiceArea.Area[] =
-    roomMap?.rooms !== undefined && roomMap.rooms.length > 0
-      ? roomMap.rooms.map((room, index) => {
+    homeInFo.roomMap.rooms.length > 0
+      ? homeInFo.roomMap.rooms.map((room) => {
           const locationName =
-            room.iot_name ?? vacuumRooms.find((r) => r.id === room.globalId || r.id === room.id)?.name ?? `Unknown Room ${randomInt(RANDOM_ROOM_MIN, RANDOM_ROOM_MAX)}`;
+            room.iot_name ??
+            homeInFo.allRooms.find((r) => String(r.id) === room.iot_name_id || r.id === room.id)?.name ??
+            `Unknown Room ${randomInt(RANDOM_ROOM_MIN, RANDOM_ROOM_MAX)}`;
 
-          const areaId = enableMultipleMap ? index + MULTIPLE_MAP_AREA_ID_OFFSET : room.id;
-          const mapId = enableMultipleMap ? (room.iot_map_id ?? null) : null;
+          const areaId = room.id;
+          const mapId = room.iot_map_id;
 
           indexMap.set(areaId, { roomId: room.id, mapId: room.iot_map_id ?? null });
           return {
@@ -147,11 +145,11 @@ function processValidData(enableMultipleMap: boolean, vacuumRooms: RoomDto[], ro
               locationInfo: {
                 locationName: locationName,
                 floorNumber: room.iot_map_id ?? null,
-                areaType: null,
+                areaType: populateAreaNamespaceTag(room),
               },
               landmarkInfo: null,
             },
-          };
+          } satisfies ServiceArea.Area;
         })
       : [];
   return {
@@ -160,13 +158,20 @@ function processValidData(enableMultipleMap: boolean, vacuumRooms: RoomDto[], ro
   };
 }
 
-function getSupportedMaps(enableMultipleMap: boolean, _supportedAreas: ServiceArea.Area[], mapInfos: MapEntry[]): ServiceArea.Map[] {
-  if (enableMultipleMap) {
-    return mapInfos.map((map) => ({
-      mapId: map.id,
-      name: map.name ?? `Map ${map.id}`,
-    }));
+function populateAreaNamespaceTag(room: RoomMapping): number | null {
+  if (room.tag && room.tag > 0) {
+    switch (room.tag) {
+      case 1:
+        return AreaNamespaceTag.Bedroom.tag;
+      case 6:
+        return AreaNamespaceTag.LivingRoom.tag;
+      case 9:
+        return AreaNamespaceTag.Study.tag;
+      case 14:
+        return AreaNamespaceTag.Kitchen.tag;
+      default:
+        return null;
+    }
   }
-
-  return [];
+  return null;
 }

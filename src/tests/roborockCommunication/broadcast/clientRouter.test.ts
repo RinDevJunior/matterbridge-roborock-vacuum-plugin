@@ -62,10 +62,10 @@ describe('ClientRouter', () => {
     expect(spy).toHaveBeenCalledWith(listener);
   });
 
-  it('registerMessageListener should call chainedMessageListener.register', () => {
+  it('registerMessageListener should call responseBroadcaster.register', () => {
     const router = new ClientRouter(mockLogger, mockUserData);
     const listener = asType<AbstractMessageListener>({});
-    const spy = vi.spyOn(router['chainedMessageListener'], 'register');
+    const spy = vi.spyOn(router['responseBroadcaster'], 'register');
     router.registerMessageListener(listener);
     expect(spy).toHaveBeenCalledWith(listener);
   });

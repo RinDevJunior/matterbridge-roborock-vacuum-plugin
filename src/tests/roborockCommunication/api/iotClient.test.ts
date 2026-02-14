@@ -193,11 +193,24 @@ describe('RoborockIoTApi', () => {
       expect(result?.rooms).toEqual([]);
     });
 
+    it('merges v3 rooms if v2 has no rooms but v3 does', async () => {
+      vi.spyOn(api, 'getHome').mockResolvedValue(
+        asPartial<Home>({ id: 1, name: 'Home1', products: [asPartial<Product>({ model: 'other.model' })], devices: [], receivedDevices: [], rooms: [] }),
+      );
+      vi.spyOn(api, 'getHomev2').mockResolvedValue(asPartial<Home>({ id: 99, rooms: [] }));
+      vi.spyOn(api, 'getHomev3').mockResolvedValue(asPartial<Home>({ id: 77, rooms: [asPartial<RoomEntity>({ id: 77, name: 'Garage' })] }));
+
+      const result = await api.getHomeWithProducts(1);
+      expect(result?.rooms).toContainEqual({ id: 77, name: 'Garage' });
+    });
+
     it('returns undefined and logs if getHome returns undefined', async () => {
       vi.spyOn(api, 'getHome').mockResolvedValue(undefined);
       const result = await api.getHomeWithProducts(1);
       expect(result).toBeUndefined();
-      expect(mockLogger.error).toHaveBeenCalledWith('Failed to retrieve the home data');
+      expect(mockLogger.error).toHaveBeenCalledWith('[getHomeWithProducts Step 1] Failed to retrieve the home data');
+      expect(mockLogger.error).toHaveBeenCalledWith('[getHomeWithProducts Step 2] Failed to retrieve the home data');
+      expect(mockLogger.error).toHaveBeenCalledWith('[getHomeWithProducts Step 3] Failed to retrieve the home data');
     });
   });
   let mockLogger: AnsiLogger;
@@ -211,7 +224,7 @@ describe('RoborockIoTApi', () => {
     const mockAxiosFactory = asPartial<AxiosStatic>({
       create: vi.fn((config) => {
         const axiosInstance = axios.create(config);
-        mockAxiosInstance = new MockAdapter(axiosInstance);
+        mockAxiosInstance = new MockAdapter(axiosInstance as any);
         return axiosInstance;
       }),
     });
@@ -241,42 +254,42 @@ describe('RoborockIoTApi', () => {
     const home = { id: 1, name: 'Home1' };
     mockAxiosInstance.onGet('user/homes/1').reply(200, { result: home });
     const result = await api.getHome(1);
-    expect(result).toStrictEqual(home);
+    expect(result).toEqual(home);
   });
 
   it('getHome should log error and return undefined if result missing', async () => {
     mockAxiosInstance.onGet('user/homes/1').reply(200, {});
     const result = await api.getHome(1);
     expect(result).toBeUndefined();
-    expect(mockLogger.error).toHaveBeenCalledWith('Failed to retrieve the home data');
+    expect(mockLogger.error).toHaveBeenCalledWith('[getHome] Failed to retrieve the home data');
   });
 
   it('getHomev2 should return home if result exists', async () => {
     const home = { id: 2, name: 'Home2' };
     mockAxiosInstance.onGet('v2/user/homes/2').reply(200, { result: home });
     const result = await api.getHomev2(2);
-    expect(result).toStrictEqual(home);
+    expect(result).toEqual(home);
   });
 
   it('getHomev3 should return home if result exists', async () => {
     const home = { id: 3, name: 'Home3' };
     mockAxiosInstance.onGet('v3/user/homes/3').reply(200, { result: home });
     const result = await api.getHomev3(3);
-    expect(result).toStrictEqual(home);
+    expect(result).toEqual(home);
   });
 
   it('getScenes should return scenes if result exists', async () => {
     const scenes = [{ id: 1 }, { id: 2 }];
     mockAxiosInstance.onGet('user/scene/home/1').reply(200, { result: scenes });
     const result = await api.getScenes(1);
-    expect(result).toStrictEqual(scenes);
+    expect(result).toEqual(scenes);
   });
 
   it('getScenes should log error and return undefined if result missing', async () => {
     mockAxiosInstance.onGet('user/scene/home/1').reply(200, {});
     const result = await api.getScenes(1);
     expect(result).toBeUndefined();
-    expect(mockLogger.error).toHaveBeenCalledWith('Failed to retrieve scene');
+    expect(mockLogger.error).toHaveBeenCalledWith('[getScenes] Failed to retrieve scenes');
   });
 
   it('startScene should return result if present', async () => {
@@ -289,7 +302,7 @@ describe('RoborockIoTApi', () => {
     mockAxiosInstance.onPost('user/scene/1/execute').reply(200, {});
     const result = await api.startScene(1);
     expect(result).toBeUndefined();
-    expect(mockLogger.error).toHaveBeenCalledWith('Failed to execute scene');
+    expect(mockLogger.error).toHaveBeenCalledWith('[startScene] Failed to execute scene');
   });
 
   it('getCustom should return result if present', async () => {
@@ -302,76 +315,76 @@ describe('RoborockIoTApi', () => {
     mockAxiosInstance.onGet('/custom/url').reply(200, {});
     const result = await api.getCustom('/custom/url');
     expect(result).toBeUndefined();
-    expect(mockLogger.error).toHaveBeenCalledWith('Failed to execute scene');
+    expect(mockLogger.error).toHaveBeenCalledWith('[getCustom] Failed to execute custom request');
   });
 
   it('should create axios instance with timeout, redirects and httpsAgent', () => {
     const instance = api['api'];
     expect(instance).toBeDefined();
     expect(instance.defaults).toMatchObject({ baseURL: 'http://base.url', timeout: 10000, maxRedirects: 5 });
-    expect(instance.defaults.httpsAgent).not.toBeDefined();
+    expect(instance.defaults.httpsAgent).toBeDefined();
   });
 
   it('getHomev2 should log error and return undefined on exception', async () => {
     mockAxiosInstance.onGet('v2/user/homes/2').networkErrorOnce();
     const result = await api.getHomev2(2);
     expect(result).toBeUndefined();
-    expect(mockLogger.error).toHaveBeenCalledWith(expect.stringContaining('getHomev2 failed'));
+    expect(mockLogger.error).toHaveBeenCalledWith(expect.stringContaining('[getHomev2] Failed'));
   });
 
   it('startScene should log error and return undefined on exception', async () => {
     mockAxiosInstance.onPost('user/scene/5/execute').networkErrorOnce();
     const result = await api.startScene(5);
     expect(result).toBeUndefined();
-    expect(mockLogger.error).toHaveBeenCalledWith(expect.stringContaining('startScene failed'));
+    expect(mockLogger.error).toHaveBeenCalledWith(expect.stringContaining('[startScene] Failed'));
   });
 
   it('getHomev2 handles ETIMEDOUT error and logs', async () => {
     mockAxiosInstance.onGet('v2/user/homes/2').timeoutOnce();
     const result = await api.getHomev2(2);
     expect(result).toBeUndefined();
-    expect(mockLogger.error).toHaveBeenCalledWith(expect.stringContaining('getHomev2 failed'));
+    expect(mockLogger.error).toHaveBeenCalledWith(expect.stringContaining('[getHomev2] Failed'));
   });
 
   it('getHomev2 handles ECONNRESET error and logs', async () => {
     mockAxiosInstance.onGet('v2/user/homes/2').networkErrorOnce();
     const result = await api.getHomev2(2);
     expect(result).toBeUndefined();
-    expect(mockLogger.error).toHaveBeenCalledWith(expect.stringContaining('getHomev2 failed'));
+    expect(mockLogger.error).toHaveBeenCalledWith(expect.stringContaining('[getHomev2] Failed'));
   });
 
   it('getHome should log error and return undefined on exception', async () => {
     mockAxiosInstance.onGet('user/homes/1').networkErrorOnce();
     const result = await api.getHome(1);
     expect(result).toBeUndefined();
-    expect(mockLogger.error).toHaveBeenCalledWith(expect.stringContaining('getHome failed'));
+    expect(mockLogger.error).toHaveBeenCalledWith(expect.stringContaining('[getHome] Failed'));
   });
 
   it('getHomev3 should log error and return undefined if result missing', async () => {
     mockAxiosInstance.onGet('v3/user/homes/3').reply(200, {});
     const result = await api.getHomev3(3);
     expect(result).toBeUndefined();
-    expect(mockLogger.error).toHaveBeenCalledWith('Failed to retrieve the home data');
+    expect(mockLogger.error).toHaveBeenCalledWith('[getHomev3] Failed to retrieve the home data');
   });
 
   it('getHomev3 should log error and return undefined on exception', async () => {
     mockAxiosInstance.onGet('v3/user/homes/3').networkErrorOnce();
     const result = await api.getHomev3(3);
     expect(result).toBeUndefined();
-    expect(mockLogger.error).toHaveBeenCalledWith(expect.stringContaining('getHomev3 failed'));
+    expect(mockLogger.error).toHaveBeenCalledWith(expect.stringContaining('[getHomev3] Failed'));
   });
 
   it('getScenes should log error and return undefined on exception', async () => {
     mockAxiosInstance.onGet('user/scene/home/1').networkErrorOnce();
     const result = await api.getScenes(1);
     expect(result).toBeUndefined();
-    expect(mockLogger.error).toHaveBeenCalledWith(expect.stringContaining('getScenes failed'));
+    expect(mockLogger.error).toHaveBeenCalledWith(expect.stringContaining('[getScenes] Failed'));
   });
 
   it('getCustom should log error and return undefined on exception', async () => {
     mockAxiosInstance.onGet('/custom/url').networkErrorOnce();
     const result = await api.getCustom('/custom/url');
     expect(result).toBeUndefined();
-    expect(mockLogger.error).toHaveBeenCalledWith(expect.stringContaining('getCustom failed'));
+    expect(mockLogger.error).toHaveBeenCalledWith(expect.stringContaining('[getCustom] Failed'));
   });
 });

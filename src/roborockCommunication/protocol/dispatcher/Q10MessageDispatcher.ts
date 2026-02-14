@@ -5,9 +5,9 @@ import { RequestMessage } from '../../models/requestMessage.js';
 import { AbstractMessageDispatcher } from './abstractMessageDispatcher.js';
 import { Q10RequestCode, Q10RequestMethod } from '../../enums/Q10RequestCode.js';
 import { Client } from '../../routing/client.js';
-import { NetworkInfo, RoomDto } from '../../models/index.js';
+import { NetworkInfo, RawRoomMappingData } from '../../models/index.js';
 import { resolveMopMode, resolveQ10CleanMode, resolveVacuumMode } from '../../helper/B01VacuumModeResolver.js';
-import { MapInfo, RoomMap } from '../../../core/application/models/index.js';
+import { MapInfo } from '../../../core/application/models/index.js';
 import { MapRoomResponse } from '../../../types/index.js';
 import { CleanModeSetting } from '../../../behaviors/roborock.vacuum/core/CleanModeSetting.js';
 
@@ -43,10 +43,10 @@ export class Q10MessageDispatcher implements AbstractMessageDispatcher {
     return new MapInfo({ max_multi_map: 0, max_bak_map: 0, multi_map_count: 0, map_info: [] });
   }
 
-  public async getRoomMap(duid: string, activeMap: number, rooms: RoomDto[]): Promise<RoomMap> {
+  public async getRoomMap(duid: string, activeMap: number): Promise<RawRoomMappingData> {
     const request = new RequestMessage({ dps: { [Q10RequestCode.get_prop]: 1 } });
-    await this.client.get<{ room_mapping: number[][] }>(duid, request);
-    return new RoomMap([]); // TODO: Implement proper room mapping retrieval for Q10
+    const response = await this.client.get<{ room_mapping: RawRoomMappingData }>(duid, request);
+    return response?.room_mapping ?? []; // TODO: Implement proper room mapping retrieval for Q10
   }
   // #endregion Core Data Retrieval
 

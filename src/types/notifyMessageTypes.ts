@@ -1,8 +1,9 @@
 export enum NotifyMessageTypes {
-  LocalMessage = 'LocalMessage',
-  CloudMessage = 'CloudMessage',
-  BatteryUpdate = 'BatteryUpdate',
-  ErrorOccurred = 'ErrorOccurred',
   HomeData = 'HomeData',
   DeviceStatus = 'DeviceStatus',
+  DeviceStatusSimple = 'DeviceStatusSimple',
+  BatteryUpdate = 'BatteryUpdate',
+  ErrorOccurred = 'ErrorOccurred',
+  CleanModeUpdate = 'CleanModeUpdate',
+  ServiceAreaUpdate = 'ServiceAreaUpdate',
 }

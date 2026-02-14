@@ -4,10 +4,11 @@ import { RoborockService } from '../../../services/roborockService.js';
 import { ServiceContainer } from '../../../services/serviceContainer.js';
 import { makeLogger, createMockLocalStorage, asPartial, asType } from '../../testUtils.js';
 import { localStorageMock } from '../../testData/localStorageMock.js';
-import { PlatformConfigManager as PlatformConfigManagerStatic } from '../../../platform/platformConfig.js';
+import { PlatformConfigManager as PlatformConfigManagerStatic } from '../../../platform/platformConfigManager.js';
 import type { RoborockPluginPlatformConfig } from '../../../model/RoborockPluginPlatformConfig.js';
 import { RoborockAuthenticateApi } from '../../../roborockCommunication/api/authClient.js';
 import { RoborockIoTApi } from '../../../roborockCommunication/api/iotClient.js';
+import { Device, DeviceInformation, DeviceSpecs } from '../../../roborockCommunication/models/device.js';
 
 describe('RoborockService - listDevices', () => {
   let roborockService: RoborockService;
@@ -38,6 +39,7 @@ describe('RoborockService - listDevices', () => {
       advancedFeature: {
         enableAdvancedFeature: false,
         settings: {
+          clearStorageOnStartup: false,
           showRoutinesAsRoom: false,
           includeDockStationStatus: false,
           forceRunAtDefault: false,
@@ -134,20 +136,20 @@ describe('RoborockService - listDevices', () => {
   });
 
   it('should fallback batteryLevel to 100 if not present', async () => {
-    const device = { duid: '1', data: {}, store: {}, rrHomeId: 123, rooms: [], localKey: '', pv: '', sn: '', scenes: [], batteryLevel: undefined };
+    const device = { duid: '1', specs: {}, store: {}, rrHomeId: 123, rooms: [], localKey: '', pv: '', sn: '', scenes: [], batteryLevel: undefined };
     const mockDeviceService = {
-      listDevices: vi.fn().mockResolvedValue([{ ...device, data: { batteryLevel: undefined } }]),
+      listDevices: vi.fn().mockResolvedValue([{ ...device, specs: { batteryLevel: undefined } }]),
     };
     roborockService = Object.create(roborockService, {
       deviceService: { value: mockDeviceService },
     });
     const result = await roborockService.listDevices();
-    expect(result[0].data.batteryLevel ?? 100).toBe(100);
+    expect(result[0].specs.batteryLevel ?? 100).toBe(100);
   });
 
   it('should filter scenes correctly for devices', async () => {
     const scenes = [{ param: '{"action":{"items":[{"entityId":"1"}]}}' }];
-    const device = { duid: '1', data: {}, store: {}, rrHomeId: 123, rooms: [], localKey: '', pv: '', sn: '', scenes };
+    const device = { duid: '1', specs: {}, store: {}, rrHomeId: 123, rooms: [], localKey: '', pv: '', sn: '', scenes };
     const mockDeviceService = {
       listDevices: vi.fn().mockResolvedValue([device]),
     };
@@ -159,7 +161,16 @@ describe('RoborockService - listDevices', () => {
   });
 
   it('should handle rooms fallback from v2 and v3 APIs', async () => {
-    const device = { duid: '1', data: {}, store: {}, rrHomeId: 123, rooms: [{ id: 1, name: 'Living Room' }], localKey: '', pv: '', sn: '', scenes: [] };
+    const device = asPartial<Device>({
+      duid: '1',
+      specs: asPartial<DeviceSpecs>({}),
+      store: asPartial<DeviceInformation>({ homeData: { id: 123, name: 'Test Home', products: [], devices: [], receivedDevices: [], rooms: [{ id: 1, name: 'Living Room' }] } }),
+      rrHomeId: 123,
+      localKey: '',
+      pv: '',
+      sn: '',
+      scenes: [],
+    });
     const mockDeviceService = {
       listDevices: vi.fn().mockResolvedValue([device]),
     };
@@ -167,7 +178,7 @@ describe('RoborockService - listDevices', () => {
       deviceService: { value: mockDeviceService },
     });
     const result = await roborockService.listDevices();
-    expect(result[0].rooms).toEqual([{ id: 1, name: 'Living Room' }]);
+    expect(result[0].store.homeData.rooms).toEqual([{ id: 1, name: 'Living Room' }]);
   });
 });
 
@@ -201,6 +212,7 @@ describe('getHomeDataForUpdating', () => {
       advancedFeature: {
         enableAdvancedFeature: false,
         settings: {
+          clearStorageOnStartup: false,
           showRoutinesAsRoom: false,
           includeDockStationStatus: false,
           forceRunAtDefault: false,
@@ -250,7 +262,7 @@ describe('Device Management Methods', () => {
     mockContainer = asPartial<ServiceContainer>({
       setUserData: vi.fn(),
       getIotApi: vi.fn(),
-      getAuthenticationService: vi.fn().mockReturnValue({}),
+      getAuthenticationCoordinator: vi.fn().mockReturnValue({}),
       getDeviceManagementService: vi.fn().mockReturnValue({ getHomeDataForUpdating: vi.fn().mockResolvedValue(undefined) }),
       getAreaManagementService: vi.fn().mockReturnValue({}),
       getMessageRoutingService: vi.fn().mockReturnValue({}),
@@ -284,6 +296,7 @@ describe('Device Management Methods', () => {
       advancedFeature: {
         enableAdvancedFeature: false,
         settings: {
+          clearStorageOnStartup: false,
           showRoutinesAsRoom: false,
           includeDockStationStatus: false,
           forceRunAtDefault: false,

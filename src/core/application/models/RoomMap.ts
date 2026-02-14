@@ -1,13 +1,25 @@
 import { RoomMapping } from './RoomMapping.js';
-import { RoomDto } from '../../../roborockCommunication/models/home/index.js';
 import { HomeModelMapper } from '../../../roborockCommunication/models/home/mappers.js';
+import type { AnsiLogger } from 'matterbridge/logger';
 import { debugStringify } from 'matterbridge/logger';
-import { RoborockMatterbridgePlatform } from '../../../module.js';
 import { Device } from '../../../roborockCommunication/models/device.js';
+import { MapInfo } from './MapInfo.js';
+import type { RoborockService } from '../../../services/roborockService.js';
+
+export interface MapInfoPlatformContext {
+  roborockService: RoborockService | undefined;
+  log: AnsiLogger;
+}
 
 export interface MapReference {
   id: number;
   name: string | undefined;
+}
+
+export interface MapInfoResult {
+  activeMapId: number;
+  mapInfo: MapInfo;
+  roomMap: RoomMap;
 }
 
 export class RoomMap {
@@ -29,64 +41,39 @@ export class RoomMap {
   /**
    * Get room map for device (with caching).
    */
-  public static async fromDevice(duid: string, platform: RoborockMatterbridgePlatform): Promise<RoomMap> {
-    const robot = platform.registry.getRobot(duid);
-    if (!robot) {
-      platform.log.error(`Robot with DUID ${duid} not found`);
-      return new RoomMap([]);
+  public static async fromMapInfo(vacuum: Device, context: MapInfoPlatformContext): Promise<MapInfoResult> {
+    if (!context.roborockService) {
+      context.log.error('Roborock service not initialized');
+      return { activeMapId: 0, mapInfo: MapInfo.empty(), roomMap: RoomMap.empty() };
     }
 
-    if (!platform.roborockService) {
-      return new RoomMap([]);
-    }
-
-    const rooms: RoomDto[] = robot.device.rooms ?? [];
-
-    // Return cached room info if available
-    if (robot.roomInfo) {
-      return robot.roomInfo;
-    }
+    const rooms = vacuum.store.homeData.rooms;
 
     // Try to get map information first
-    const mapInfo = await platform.roborockService.getMapInfo(robot.device.duid);
-    robot.mapInfos = mapInfo.maps;
+    const mapInfo = await context.roborockService.getMapInfo(vacuum.duid);
+    vacuum.mapInfos = mapInfo.maps;
     if (mapInfo.hasRooms) {
-      platform.log.info(`getRoomMap - mapInfo: ${debugStringify(mapInfo.allRooms)}`);
+      context.log.info(`fromMapInfo - mapInfo: ${debugStringify(mapInfo)}`);
+      context.log.info(`fromMapInfo - rooms: ${debugStringify(rooms)}`);
       const roomMappings = mapInfo.allRooms.map((dto) => HomeModelMapper.toRoomMapping(dto, rooms));
-      robot.roomInfo = new RoomMap(roomMappings);
-
-      return robot.roomInfo;
+      return { activeMapId: 0, mapInfo, roomMap: new RoomMap(roomMappings) };
     }
 
+    const activeMap = 0;
+
     // Fall back to room maps
-    const roomData = await platform.roborockService.getRoomMap(robot.device.duid, 1, rooms);
-    robot.roomInfo = roomData;
-    return robot.roomInfo;
+    const roomData = await context.roborockService.getRoomMap(vacuum.duid, activeMap);
+
+    const mapRoomDtos = roomData.map((raw) => HomeModelMapper.rawArrayToMapRoomDto(raw, activeMap));
+    const roomMappings = mapRoomDtos.map((dto) => HomeModelMapper.toRoomMapping(dto, rooms));
+    const roomMap = new RoomMap(roomMappings);
+
+    context.log.debug(`fromMapInfo - Room mapping for device ${vacuum.duid}: ${debugStringify(roomMap)}`);
+
+    return { activeMapId: 0, mapInfo, roomMap };
   }
 
-  /**
-   * Get room map directly from device without caching.
-   * Tries to get room info from map information first, then falls back to room maps.
-   */
-  public static async fromDeviceDirect(device: Device, platform: RoborockMatterbridgePlatform): Promise<RoomMap> {
-    const rooms: RoomDto[] = device?.rooms ?? [];
-
-    if (!device || !platform.roborockService) {
-      return new RoomMap([]);
-    }
-
-    // Try to get map information first
-    const mapInfo = await platform.roborockService.getMapInfo(device.duid);
-    platform.log.debug(`getRoomMapFromDevice - mapInfo: ${mapInfo ? debugStringify(mapInfo) : 'undefined'}`);
-    platform.log.debug(`getRoomMapFromDevice - rooms: ${debugStringify(rooms)}`);
-
-    if (mapInfo.hasRooms) {
-      const roomMappings = mapInfo.allRooms.map((dto) => HomeModelMapper.toRoomMapping(dto, rooms));
-      return new RoomMap(roomMappings);
-    }
-
-    // Fall back to room maps
-    const roomData = await platform.roborockService.getRoomMap(device.duid, 1, rooms);
-    return roomData;
+  public static empty(): RoomMap {
+    return new RoomMap([]);
   }
 }

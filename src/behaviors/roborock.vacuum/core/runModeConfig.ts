@@ -73,5 +73,9 @@ export function getDefaultOperationalStates(): RvcOperationalState.OperationalSt
     { operationalStateId: RvcOperationalState.OperationalState.SeekingCharger },
     { operationalStateId: RvcOperationalState.OperationalState.Charging },
     { operationalStateId: RvcOperationalState.OperationalState.Docked },
+    { operationalStateId: RvcOperationalState.OperationalState.EmptyingDustBin },
+    { operationalStateId: RvcOperationalState.OperationalState.CleaningMop },
+    { operationalStateId: RvcOperationalState.OperationalState.FillingWaterTank },
+    { operationalStateId: RvcOperationalState.OperationalState.UpdatingMaps },
   ];
 }

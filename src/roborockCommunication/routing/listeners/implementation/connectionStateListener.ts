@@ -4,17 +4,14 @@ import { AbstractClient } from '../../abstractClient.js';
 import { MANUAL_RECONNECT_DELAY_MS, MAX_RETRY_COUNT } from '../../../../constants/index.js';
 
 export class ConnectionStateListener implements AbstractConnectionListener {
-  protected logger: AnsiLogger;
-  protected client: AbstractClient;
-  protected clientName: string;
   protected shouldReconnect = false;
   private manualReconnectTimer: NodeJS.Timeout | undefined = undefined;
 
-  constructor(logger: AnsiLogger, client: AbstractClient, clientName: string) {
-    this.logger = logger;
-    this.client = client;
-    this.clientName = clientName;
-  }
+  constructor(
+    private readonly logger: AnsiLogger,
+    private readonly client: AbstractClient,
+    private readonly clientName: string,
+  ) {}
 
   public start(): void {
     this.shouldReconnect = true;
@@ -27,6 +24,7 @@ export class ConnectionStateListener implements AbstractConnectionListener {
   public async onConnected(duid: string): Promise<void> {
     this.logger.info(`Device ${duid} connected to ${this.clientName}`);
     this.client.retryCount = 0;
+    this.shouldReconnect = true;
   }
 
   public async onReconnect(duid: string, message: string): Promise<void> {
@@ -92,6 +90,12 @@ export class ConnectionStateListener implements AbstractConnectionListener {
     if (message.includes('Connection refused: Not authorized')) {
       this.logger.notice(`Device with DUID ${duid} authorization error, stopping reconnection attempts.`);
       this.shouldReconnect = false;
+
+      // Clear any pending manual reconnect timer to stop the reconnection loop
+      if (this.manualReconnectTimer) {
+        clearTimeout(this.manualReconnectTimer);
+        this.manualReconnectTimer = undefined;
+      }
     }
   }
 }

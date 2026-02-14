@@ -1,6 +1,6 @@
 import { RvcOperationalState } from 'matterbridge/matter/clusters';
 import { VacuumErrorCode } from '../roborockCommunication/enums/index.js';
-import { DockingStationStatus, DockingStationStatusType, hasDockingStationError } from '../model/DockingStationStatus.js';
+import { DockStationStatus, DockStationStatusCode } from '../model/DockStationStatus.js';
 import { getDefaultOperationalStates } from '../behaviors/roborock.vacuum/core/runModeConfig.js';
 
 /**
@@ -20,27 +20,9 @@ export function getOperationalErrorState(errorCode: VacuumErrorCode): RvcOperati
   switch (errorCode) {
     case VacuumErrorCode.None:
       return undefined;
-    default: {
+    default:
       return RvcOperationalState.OperationalState.Error;
-    }
   }
-}
-
-/**
- * Create error state structure from vacuum error code.
- * @param errorCode - Vacuum error code
- * @returns Error state structure or undefined if no error
- */
-export function getErrorFromErrorCode(errorCode: VacuumErrorCode): RvcOperationalState.ErrorStateStruct | undefined {
-  const operationalState = getOperationalErrorState(errorCode);
-  if (operationalState) {
-    return {
-      errorStateId: RvcOperationalState.ErrorState.NoError,
-      errorStateLabel: `${RvcOperationalState.ErrorState.NoError}`,
-      errorStateDetails: `Error code: ${errorCode}`,
-    };
-  }
-  return undefined;
 }
 
 /**
@@ -60,35 +42,35 @@ function createErrorState(errorStateId: RvcOperationalState.ErrorState, errorSta
  * @param status - Docking station status containing component states
  * @returns Error state structure or undefined if no error
  */
-export function getErrorFromDSS(status: DockingStationStatus): RvcOperationalState.ErrorStateStruct | undefined {
+export function getErrorFromDSS(status: DockStationStatus): RvcOperationalState.ErrorStateStruct | undefined {
   if (!status) {
     return createErrorState(RvcOperationalState.ErrorState.NoError, 'No Docking Station Status', 'Docking station status is not available.');
   }
 
-  const hasError = hasDockingStationError(status);
+  const hasError = status.hasError();
 
   if (hasError) {
-    if (status.cleanFluidStatus === DockingStationStatusType.Error) {
+    if (status.cleanFluidStatus === DockStationStatusCode.Error) {
       return createErrorState(RvcOperationalState.ErrorState.MopCleaningPadMissing, 'Clean Fluid Error', 'The clean fluid is not available or has an issue.');
     }
 
-    if (status.waterBoxFilterStatus === DockingStationStatusType.Error) {
+    if (status.waterBoxFilterStatus === DockStationStatusCode.Error) {
       return createErrorState(RvcOperationalState.ErrorState.WaterTankEmpty, 'Water Box Filter Error', 'The water box filter is not available or has an issue.');
     }
 
-    if (status.dustBagStatus === DockingStationStatusType.Error) {
+    if (status.dustBagStatus === DockStationStatusCode.Error) {
       return createErrorState(RvcOperationalState.ErrorState.DustBinMissing, 'Dust Bag Error', 'The dust bag is not available or has an issue.');
     }
 
-    if (status.dirtyWaterBoxStatus === DockingStationStatusType.Error) {
+    if (status.dirtyWaterBoxStatus === DockStationStatusCode.Error) {
       return createErrorState(RvcOperationalState.ErrorState.WaterTankEmpty, 'Dirty Water Box Error', 'The dirty water box is not available or has an issue.');
     }
 
-    if (status.clearWaterBoxStatus === DockingStationStatusType.Error) {
+    if (status.clearWaterBoxStatus === DockStationStatusCode.Error) {
       return createErrorState(RvcOperationalState.ErrorState.WaterTankEmpty, 'Clear Water Box Error', 'The clear water box is not available or has an issue.');
     }
 
-    if (status.isUpdownWaterReady === DockingStationStatusType.Error) {
+    if (status.isUpdownWaterReady === DockStationStatusCode.Error) {
       return createErrorState(RvcOperationalState.ErrorState.WaterTankMissing, 'Updown Water Ready Error', 'The updown water tank is not ready or has an issue.');
     }
   }

@@ -5,20 +5,20 @@ import { DeviceNotifyCallback, Factory } from '../types/index.js';
 import {
   ServiceContainer,
   ServiceContainerConfig,
-  AuthenticationService,
   DeviceManagementService,
   AreaManagementService,
   MessageRoutingService,
   PollingService,
   ConnectionService,
 } from '../services/index.js';
+import { AuthenticationCoordinator } from './authentication/AuthenticationCoordinator.js';
 import { RoborockAuthenticateApi } from '../roborockCommunication/api/authClient.js';
-import { Device, Home, RequestMessage, RoomDto, Scene, UserData } from '../roborockCommunication/models/index.js';
+import { Device, Home, RawRoomMappingData, RequestMessage, Scene, UserData } from '../roborockCommunication/models/index.js';
 import { RoborockIoTApi } from '../roborockCommunication/api/iotClient.js';
-import { MessageProcessor } from '../roborockCommunication/mqtt/messageProcessor.js';
-import { PlatformConfigManager } from '../platform/platformConfig.js';
-import { RoomMap, MapInfo, RoomIndexMap } from '../core/application/models/index.js';
+import { PlatformConfigManager } from '../platform/platformConfigManager.js';
+import { MapInfo, RoomIndexMap } from '../core/application/models/index.js';
 import { CleanModeSetting } from '../behaviors/roborock.vacuum/core/CleanModeSetting.js';
+import { AuthenticationResponse } from '../model/AuthenticationResponse.js';
 
 export interface RoborockServiceConfig {
   authenticateApiFactory?: (logger: AnsiLogger, baseUrl: string) => RoborockAuthenticateApi;
@@ -33,7 +33,7 @@ export interface RoborockServiceConfig {
 /** Facade coordinating Auth, Device, Area, and Message services via ServiceContainer. */
 export class RoborockService {
   private readonly container: ServiceContainer;
-  private readonly authService: AuthenticationService;
+  private readonly authCoordinator: AuthenticationCoordinator;
   private readonly deviceService: DeviceManagementService;
   private readonly areaService: AreaManagementService;
   private readonly messageService: MessageRoutingService;
@@ -64,7 +64,7 @@ export class RoborockService {
     }
 
     // Get service instances
-    this.authService = this.container.getAuthenticationService();
+    this.authCoordinator = this.container.getAuthenticationCoordinator();
     this.deviceService = this.container.getDeviceManagementService();
     this.areaService = this.container.getAreaManagementService();
     this.messageService = this.container.getMessageRoutingService();
@@ -73,10 +73,10 @@ export class RoborockService {
   }
 
   // ============================================================================
-  // Authentication Methods (delegate to AuthenticationService)
+  // Authentication Methods (delegate to AuthenticationCoordinator)
   // ============================================================================
 
-  public async authenticate(): Promise<{ userData: UserData | undefined; shouldContinue: boolean }> {
+  public async authenticate(): Promise<AuthenticationResponse> {
     if (!this.configManager) {
       throw new Error('PlatformConfigManager not provided. Cannot authenticate.');
     }
@@ -94,24 +94,24 @@ export class RoborockService {
     );
     let userData: UserData | undefined;
     try {
-      if (method === 'VerificationCode') {
-        userData = await this.authService.authenticate2FAFlow(username, verificationCode);
-      } else {
-        userData = await this.authService.authenticateWithPasswordFlow(username, password);
-      }
+      userData = await this.authCoordinator.authenticate(method, {
+        username,
+        password,
+        verificationCode,
+      });
     } catch (error) {
       this.logger.error(`Authentication failed: ${(error as Error).message}`);
-      return { userData: undefined, shouldContinue: false };
+      return { userData: undefined, shouldContinue: false, isSuccess: false };
     }
 
     if (!userData) {
       this.logger.info('Authentication incomplete. Further action required (e.g., 2FA).');
-      return { userData: undefined, shouldContinue: false };
+      return { userData: undefined, shouldContinue: false, isSuccess: false };
     }
 
     this.logger.info(`Authentication successful for user: ${userData.nickname} (${userData.username})`);
     this.container.setUserData(userData);
-    return { userData, shouldContinue: true };
+    return { userData, shouldContinue: true, isSuccess: true };
   }
 
   // ============================================================================
@@ -188,7 +188,7 @@ export class RoborockService {
   }
 
   /** Get supported cleaning areas for a device. */
-  public getSupportedAreas(duid: string): ServiceArea.Area[] | undefined {
+  public getSupportedAreas(duid: string): ServiceArea.Area[] {
     return this.areaService.getSupportedAreas(duid);
   }
 
@@ -203,8 +203,8 @@ export class RoborockService {
   }
 
   /** Get room mapping for a device. */
-  public async getRoomMap(duid: string, activeMap: number, rooms: RoomDto[]): Promise<RoomMap> {
-    return this.areaService.getRoomMap(duid, activeMap, rooms);
+  public async getRoomMap(duid: string, activeMap: number): Promise<RawRoomMappingData> {
+    return this.areaService.getRoomMap(duid, activeMap);
   }
 
   /** Get all scenes for a home. */
@@ -220,11 +220,6 @@ export class RoborockService {
   // ============================================================================
   // Message Routing Methods (delegate to MessageRoutingService)
   // ============================================================================
-
-  /** Get message processor for a device. */
-  public getMessageProcessor(duid: string): MessageProcessor {
-    return this.messageService.getMessageProcessor(duid);
-  }
 
   /** Get current cleaning mode settings. */
   public async getCleanModeData(duid: string): Promise<CleanModeSetting> {
