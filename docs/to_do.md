@@ -16,4 +16,12 @@
 - [ ] Add unit tests for auth error backoff scenarios
 - [ ] Test network transition behavior
 
+## Authentication Gaps
+
+### Pending
+
+- [ ] Clear `verificationCode` from config on auth failure (behavior 2 gap)
+- [ ] Call `validateAuthentication()` before auth attempt in `DeviceDiscovery.discoverDevices()` or `RoborockService.authenticate()` (behavior 3 gap)
+- [ ] Add integration test for `forceAuthentication` reset in `module.ts` after successful auth (behavior 1 coverage gap)
+
 ## State Resolution Matrix

@@ -222,7 +222,7 @@ export class PlatformRunner {
     const batteryLevel = message.percentage;
     const deviceStatus = message.deviceStatus;
     if (batteryLevel) {
-      robot.updateAttribute(PowerSource.Cluster.id, 'batPercentRemaining', batteryLevel * 2, this.platform.log);
+      robot.setAttribute(PowerSource.Cluster.id, 'batPercentRemaining', batteryLevel * 2, this.platform.log);
       robot.updateAttribute(PowerSource.Cluster.id, 'batChargeLevel', getBatteryStatus(batteryLevel), this.platform.log);
     }
 

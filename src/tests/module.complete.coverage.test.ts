@@ -188,11 +188,11 @@ describe('module.ts - complete coverage', () => {
       platform.registerDevice = vi.fn().mockResolvedValue(undefined);
       platform.setSelectDevice = vi.fn();
 
-      await platform['configureDevice'](mockDevice);
+      await platform.lifecycle.configurator['configureDevice'](mockDevice, platform.roborockService);
       const mockRobot = asPartial<RoborockVacuumCleaner>({ serialNumber: 'device1', device: mockDevice });
       platform.registry.registerRobot(mockRobot);
 
-      await platform['onConfigureDevice']();
+      await platform.lifecycle.configurator['onConfigureDevice'](platform.roborockService);
 
       expect(mockRoborockService.setDeviceNotify).toHaveBeenCalled();
       expect(capturedCallback).toBeDefined();
@@ -202,7 +202,7 @@ describe('module.ts - complete coverage', () => {
         data: { duid: 'device1', battery: 90 },
         duid: 'device1',
       };
-      await capturedCallback(testPayload);
+      capturedCallback(testPayload);
       expect(mockPlatformRunner.updateRobotWithPayload).toHaveBeenCalledWith(testPayload);
 
       expect(mockRoborockService.activateDeviceNotify).toHaveBeenCalledWith(mockDevice);
@@ -281,15 +281,15 @@ describe('module.ts - complete coverage', () => {
       platform.registerDevice = vi.fn().mockResolvedValue(undefined);
       platform.setSelectDevice = vi.fn();
 
-      await asPartial<RoborockMatterbridgePlatform>(platform)['configureDevice'](mockDevice1);
-      await asPartial<RoborockMatterbridgePlatform>(platform)['configureDevice'](mockDevice2);
+      await platform.lifecycle.configurator['configureDevice'](mockDevice1, platform.roborockService);
+      await platform.lifecycle.configurator['configureDevice'](mockDevice2, platform.roborockService);
 
       const mockRobot1 = { serialNumber: 'device1', device: mockDevice1 };
       const mockRobot2 = { serialNumber: 'device2', device: mockDevice2 };
       platform.registry.registerRobot(asPartial<RoborockVacuumCleaner>(mockRobot1));
       platform.registry.registerRobot(asPartial<RoborockVacuumCleaner>(mockRobot2));
 
-      await asPartial<RoborockMatterbridgePlatform>(platform)['onConfigureDevice']();
+      await platform.lifecycle.configurator['onConfigureDevice'](platform.roborockService);
 
       expect(mockRoborockService.activateDeviceNotify).toHaveBeenCalledTimes(1);
       expect(mockRoborockService.activateDeviceNotify).toHaveBeenCalledWith(mockDevice1);
@@ -347,11 +347,11 @@ describe('module.ts - complete coverage', () => {
       platform.registerDevice = vi.fn().mockResolvedValue(undefined);
       platform.setSelectDevice = vi.fn();
 
-      await platform['configureDevice'](mockDevice);
+      await platform.lifecycle.configurator['configureDevice'](mockDevice, platform.roborockService);
       const mockRobot = asPartial<RoborockVacuumCleaner>({ serialNumber: 'device1', device: mockDevice });
       platform.registry.registerRobot(mockRobot);
 
-      await platform['onConfigureDevice']();
+      await platform.lifecycle.configurator['onConfigureDevice'](platform.roborockService);
 
       expect(mockLogger.log).toHaveBeenCalledWith('error', 'requestHomeData (initial) failed: Network timeout');
     });
@@ -408,11 +408,11 @@ describe('module.ts - complete coverage', () => {
       platform.registerDevice = vi.fn().mockResolvedValue(undefined);
       platform.setSelectDevice = vi.fn();
 
-      await platform['configureDevice'](mockDevice);
+      await platform.lifecycle.configurator['configureDevice'](mockDevice, platform.roborockService);
       const mockRobot = asPartial<RoborockVacuumCleaner>({ serialNumber: 'device1', device: mockDevice });
       platform.registry.registerRobot(mockRobot);
 
-      await platform['onConfigureDevice']();
+      await platform.lifecycle.configurator['onConfigureDevice'](platform.roborockService);
 
       expect(mockLogger.log).toHaveBeenCalledWith('error', 'requestHomeData (initial) failed: Connection failed');
     });
@@ -470,7 +470,7 @@ describe('module.ts - complete coverage', () => {
       });
       platform.registry.registerRobot(mockRobot);
 
-      const result = await platform['configureDevice'](mockDevice);
+      const result = await platform.lifecycle.configurator['configureDevice'](mockDevice, platform.roborockService);
 
       expect(result).toBe(true);
       expect(mockRoborockService.getMapInfo).toHaveBeenCalledWith('device1');
@@ -524,7 +524,7 @@ describe('module.ts - complete coverage', () => {
       });
       platform.registry.registerRobot(mockRobot);
 
-      const result = await platform['configureDevice'](mockDevice);
+      const result = await platform.lifecycle.configurator['configureDevice'](mockDevice, platform.roborockService);
 
       expect(result).toBe(true);
     });
@@ -592,7 +592,7 @@ describe('module.ts - complete coverage', () => {
       platform.registerDevice = vi.fn().mockResolvedValue(undefined);
       platform.setSelectDevice = vi.fn();
 
-      const result = await platform['configureDevice'](mockDevice);
+      const result = await platform.lifecycle.configurator['configureDevice'](mockDevice, platform.roborockService);
 
       expect(result).toBe(true);
       expect(mockRoborockService.setSupportedScenes).toHaveBeenCalledWith('device1', expect.any(Array));

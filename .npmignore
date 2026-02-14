@@ -5,3 +5,4 @@ web-for-testing/
 src/
 .tarignore
 .claude
+.jscpd.json

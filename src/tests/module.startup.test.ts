@@ -58,8 +58,8 @@ describe('RoborockMatterbridgePlatform - startup branches', () => {
       setItem: vi.fn(async () => undefined),
     });
 
-    // force startDeviceDiscovery to return false
-    Object.defineProperty(platform, 'startDeviceDiscovery', { value: async () => false });
+    // force discoverDevices to return false
+    vi.spyOn(platform.lifecycle.discovery, 'discoverDevices').mockResolvedValue(false);
 
     await platform.onStart();
 

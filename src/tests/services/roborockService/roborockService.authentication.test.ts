@@ -83,6 +83,7 @@ describe('RoborockService - Authentication', () => {
 
     expect(result.userData).toEqual(mockUserData);
     expect(result.shouldContinue).toBe(true);
+    expect(result.isSuccess).toBe(true);
     expect(mockLogger.info).toHaveBeenCalledWith(expect.stringContaining('Authentication successful'));
   });
 
@@ -93,6 +94,7 @@ describe('RoborockService - Authentication', () => {
 
     expect(result.userData).toBeUndefined();
     expect(result.shouldContinue).toBe(false);
+    expect(result.isSuccess).toBe(false);
     expect(mockLogger.error).toHaveBeenCalledWith(expect.stringContaining('Authentication failed: auth failed'));
   });
 });

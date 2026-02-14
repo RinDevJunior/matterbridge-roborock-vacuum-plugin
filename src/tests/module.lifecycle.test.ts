@@ -129,115 +129,6 @@ describe('module.ts coverage tests', () => {
     });
   });
 
-  describe('startDeviceDiscovery - whitelist filtering', () => {
-    it('should filter devices by whitelist when whitelist is provided', async () => {
-      const mockDevice1 = makeDeviceFixture({ duid: 'device1', name: 'Vacuum 1' });
-      const mockDevice2 = makeDeviceFixture({ duid: 'device2', name: 'Vacuum 2' });
-
-      const config = createMockConfig({
-        whiteList: ['Vacuum 1-device1'],
-      });
-      const platform = new RoborockMatterbridgePlatform(mockMatterbridge, mockLogger, config);
-      platform.persist = mockPersist;
-
-      const mockRoborockService = asPartial<RoborockService>({
-        authenticate: vi.fn().mockResolvedValue({ userData: { uid: 'test' }, shouldContinue: true }),
-        listDevices: vi.fn().mockResolvedValue([mockDevice1, mockDevice2]),
-        initializeMessageClient: vi.fn().mockResolvedValue(undefined),
-      });
-
-      async function startDeviceDiscoveryImpl(p: RoborockMatterbridgePlatform): Promise<boolean> {
-        p.roborockService = mockRoborockService;
-        const { userData, shouldContinue } = await mockRoborockService.authenticate();
-        if (!shouldContinue || !userData) {
-          return false;
-        }
-        const devices = await mockRoborockService.listDevices();
-        const vacuums: Device[] = [];
-        for (const device of devices) {
-          if (p.configManager.isDeviceAllowed({ duid: device.duid, deviceName: device.name })) {
-            vacuums.push(device as Device);
-          }
-        }
-        return vacuums.length > 0;
-      }
-
-      const result = await startDeviceDiscoveryImpl(platform);
-      expect(result).toBe(true);
-    });
-  });
-
-  describe('startDeviceDiscovery - no devices found', () => {
-    it('should return false when no devices are found', async () => {
-      const config = createMockConfig();
-      const platform = new RoborockMatterbridgePlatform(mockMatterbridge, mockLogger, config);
-      platform.persist = mockPersist;
-
-      const mockRoborockService = asPartial<RoborockService>({
-        authenticate: vi.fn().mockResolvedValue({ userData: { uid: 'test' }, shouldContinue: true }),
-        listDevices: vi.fn().mockResolvedValue([]),
-      });
-
-      async function startDeviceDiscoveryNoDevicesImpl(p: RoborockMatterbridgePlatform): Promise<boolean> {
-        p.roborockService = mockRoborockService as RoborockService;
-        const { userData, shouldContinue } = await mockRoborockService.authenticate();
-        if (!shouldContinue || !userData) {
-          return false;
-        }
-        const devices = await mockRoborockService.listDevices();
-        if (devices.length === 0) {
-          p.log.error('Initializing: No device found');
-          return false;
-        }
-        return true;
-      }
-
-      const result = await startDeviceDiscoveryNoDevicesImpl(platform);
-      expect(result).toBe(false);
-    });
-  });
-
-  describe('startDeviceDiscovery - server mode disabled', () => {
-    it('should use only first vacuum when server mode is disabled', async () => {
-      const mockDevice1: Partial<Device> = {
-        duid: 'device1',
-        name: 'Vacuum 1',
-        specs: asPartial<DeviceSpecs>({ model: DeviceModel.S5_MAX }),
-      };
-      const mockDevice2: Partial<Device> = {
-        duid: 'device2',
-        name: 'Vacuum 2',
-        specs: asPartial<DeviceSpecs>({ model: DeviceModel.S5_MAX }),
-      };
-
-      const config = createMockConfig();
-      const platform = new RoborockMatterbridgePlatform(mockMatterbridge, mockLogger, config);
-      platform.persist = mockPersist;
-
-      const mockRoborockService = asPartial<RoborockService>({
-        authenticate: vi.fn().mockResolvedValue({ userData: { uid: 'test' }, shouldContinue: true }),
-        listDevices: vi.fn().mockResolvedValue([mockDevice1, mockDevice2]),
-        initializeMessageClient: vi.fn().mockResolvedValue(undefined),
-      });
-
-      async function startDeviceDiscoveryServerModeImpl(p: RoborockMatterbridgePlatform): Promise<boolean> {
-        p.roborockService = mockRoborockService as RoborockService;
-        const { userData, shouldContinue } = await mockRoborockService.authenticate();
-        if (!shouldContinue || !userData) {
-          return false;
-        }
-        let devices = await mockRoborockService.listDevices();
-        if (!p.configManager.isServerModeEnabled) {
-          devices = [devices[0]];
-        }
-        return devices.length === 1;
-      }
-
-      const result = await startDeviceDiscoveryServerModeImpl(platform);
-      expect(result).toBe(true);
-    });
-  });
-
   describe('onConfigureDevice - no devices or username', () => {
     it('should return early when no devices are registered', async () => {
       const platform = new RoborockMatterbridgePlatform(mockMatterbridge, mockLogger, createMockConfig());
@@ -252,7 +143,7 @@ describe('module.ts coverage tests', () => {
 
       // Ensure lifecycle prerequisites are satisfied so onConfigureDevice is executed via onStart
       Object.defineProperty(platform, 'clearSelect', { value: vi.fn().mockResolvedValue(undefined) });
-      Object.defineProperty(platform, 'startDeviceDiscovery', { value: async () => true });
+      vi.spyOn(platform.lifecycle.discovery, 'discoverDevices').mockResolvedValue(true);
       Object.defineProperty(platform, 'ready', { value: Promise.resolve() });
       platform.persist = mockPersist;
 
@@ -274,7 +165,7 @@ describe('module.ts coverage tests', () => {
 
       // Ensure lifecycle prerequisites are satisfied so onConfigureDevice is executed via onStart
       Object.defineProperty(platform, 'clearSelect', { value: vi.fn().mockResolvedValue(undefined) });
-      Object.defineProperty(platform, 'startDeviceDiscovery', { value: async () => true });
+      vi.spyOn(platform.lifecycle.discovery, 'discoverDevices').mockResolvedValue(true);
       Object.defineProperty(platform, 'ready', { value: Promise.resolve() });
       platform.persist = mockPersist;
 
@@ -295,7 +186,7 @@ describe('module.ts coverage tests', () => {
 
       // Ensure lifecycle prerequisites are satisfied so onConfigureDevice is executed via onStart
       Object.defineProperty(platform, 'clearSelect', { value: vi.fn().mockResolvedValue(undefined) });
-      Object.defineProperty(platform, 'startDeviceDiscovery', { value: async () => true });
+      vi.spyOn(platform.lifecycle.discovery, 'discoverDevices').mockResolvedValue(true);
       Object.defineProperty(platform, 'ready', { value: Promise.resolve() });
       platform.persist = mockPersist;
 
@@ -319,7 +210,7 @@ describe('module.ts coverage tests', () => {
 
       // Ensure lifecycle prerequisites are satisfied so onConfigureDevice is executed via onStart
       Object.defineProperty(platform, 'clearSelect', { value: vi.fn().mockResolvedValue(undefined) });
-      Object.defineProperty(platform, 'startDeviceDiscovery', { value: async () => true });
+      vi.spyOn(platform.lifecycle.discovery, 'discoverDevices').mockResolvedValue(true);
       Object.defineProperty(platform, 'ready', { value: Promise.resolve() });
       platform.persist = mockPersist;
 

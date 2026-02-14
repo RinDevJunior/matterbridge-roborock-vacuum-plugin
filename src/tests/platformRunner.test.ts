@@ -244,7 +244,7 @@ describe('PlatformRunner.updateRobotWithPayload', () => {
 
     runner.updateRobotWithPayload(payload);
 
-    expect(robot.updateAttribute).toHaveBeenCalledWith(PowerSource.Cluster.id, 'batPercentRemaining', 170, mockLogger);
+    expect(robot.setAttribute).toHaveBeenCalledWith(PowerSource.Cluster.id, 'batPercentRemaining', 170, mockLogger);
     expect(robot.updateAttribute).toHaveBeenCalledWith(PowerSource.Cluster.id, 'batChargeLevel', 0, mockLogger);
   });
 
@@ -254,7 +254,7 @@ describe('PlatformRunner.updateRobotWithPayload', () => {
 
     runner.updateRobotWithPayload(payload);
 
-    expect(robot.updateAttribute).toHaveBeenCalledWith(PowerSource.Cluster.id, 'batPercentRemaining', 100, mockLogger);
+    expect(robot.setAttribute).toHaveBeenCalledWith(PowerSource.Cluster.id, 'batPercentRemaining', 100, mockLogger);
     expect(robot.updateAttribute).toHaveBeenCalledWith(PowerSource.Cluster.id, 'batChargeLevel', 1, mockLogger);
     expect(robot.updateAttribute).toHaveBeenCalledWith(PowerSource.Cluster.id, 'batChargeState', PowerSource.BatChargeState.IsCharging, mockLogger);
   });
@@ -265,7 +265,8 @@ describe('PlatformRunner.updateRobotWithPayload', () => {
 
     runner.updateRobotWithPayload(payload);
 
-    expect(robot.updateAttribute).toHaveBeenCalledTimes(2);
+    expect(robot.setAttribute).toHaveBeenCalledTimes(1);
+    expect(robot.updateAttribute).toHaveBeenCalledTimes(1);
     expect(robot.updateAttribute).not.toHaveBeenCalledWith(PowerSource.Cluster.id, 'batChargeState', expect.anything(), mockLogger);
   });
 

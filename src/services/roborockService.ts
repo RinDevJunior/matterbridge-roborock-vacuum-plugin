@@ -18,6 +18,7 @@ import { RoborockIoTApi } from '../roborockCommunication/api/iotClient.js';
 import { PlatformConfigManager } from '../platform/platformConfigManager.js';
 import { MapInfo, RoomIndexMap } from '../core/application/models/index.js';
 import { CleanModeSetting } from '../behaviors/roborock.vacuum/core/CleanModeSetting.js';
+import { AuthenticationResponse } from '../model/AuthenticationResponse.js';
 
 export interface RoborockServiceConfig {
   authenticateApiFactory?: (logger: AnsiLogger, baseUrl: string) => RoborockAuthenticateApi;
@@ -75,7 +76,7 @@ export class RoborockService {
   // Authentication Methods (delegate to AuthenticationCoordinator)
   // ============================================================================
 
-  public async authenticate(): Promise<{ userData: UserData | undefined; shouldContinue: boolean }> {
+  public async authenticate(): Promise<AuthenticationResponse> {
     if (!this.configManager) {
       throw new Error('PlatformConfigManager not provided. Cannot authenticate.');
     }
@@ -100,17 +101,17 @@ export class RoborockService {
       });
     } catch (error) {
       this.logger.error(`Authentication failed: ${(error as Error).message}`);
-      return { userData: undefined, shouldContinue: false };
+      return { userData: undefined, shouldContinue: false, isSuccess: false };
     }
 
     if (!userData) {
       this.logger.info('Authentication incomplete. Further action required (e.g., 2FA).');
-      return { userData: undefined, shouldContinue: false };
+      return { userData: undefined, shouldContinue: false, isSuccess: false };
     }
 
     this.logger.info(`Authentication successful for user: ${userData.nickname} (${userData.username})`);
     this.container.setUserData(userData);
-    return { userData, shouldContinue: true };
+    return { userData, shouldContinue: true, isSuccess: true };
   }
 
   // ============================================================================

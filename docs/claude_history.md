@@ -1,5 +1,93 @@
 # Claude History
 
+## 2026-02-14
+
+### Refactoring: Split `PlatformLifecycle` into 3 classes
+
+**Problem:** `PlatformLifecycle` (~430 lines) handled three distinct concerns: lifecycle orchestration, device configuration, and device discovery.
+
+**Solution:**
+
+- Extracted `DeviceDiscovery` class — owns `roborockService`, handles authentication and device listing
+- Extracted `DeviceConfigurator` class — owns `rrHomeId`, handles device setup, room mapping, and Matterbridge registration
+- Slimmed `PlatformLifecycle` to orchestrator (~180 lines) — delegates to `discovery` and `configurator`
+- Added `roborockService` guard in lifecycle before calling configurator
+- Getter/setter delegation chain: `module.ts` → `lifecycle` → `discovery`/`configurator`
+
+**Files created:**
+
+- `src/platform/deviceDiscovery.ts` — `DeviceDiscovery` class
+- `src/platform/deviceConfigurator.ts` — `DeviceConfigurator` class
+
+**Files modified:**
+
+- `src/platform/platformLifecycle.ts` — Slimmed to orchestrator, delegates to `discovery` and `configurator`
+- `src/tests/platform/platformLifecycle.test.ts` — Updated spies to target `discovery`/`configurator`, set `roborockService` in discovery mocks
+- `src/tests/module.lifecycle.test.ts` — Updated discovery spies
+- `src/tests/module.startup.test.ts` — Updated discovery spies
+- `src/tests/module.complete.coverage.test.ts` — Updated bracket-access to `configurator`, pass `roborockService` args
+
+### Refactoring: Move `onConfigureDevice`, `configureDevice`, `addDevice` to `PlatformLifecycle`
+
+**Problem:** Device configuration methods (`onConfigureDevice`, `configureDevice`, `addDevice`) in `module.ts` were lifecycle concerns connected via callback indirection (`LifecycleDependencies.onConfigureDevice`).
+
+**Solution:**
+
+- Moved all three methods from `module.ts` to `PlatformLifecycle` as private methods
+- `PlatformLifecycle` now owns `rrHomeId` property (set during device configuration)
+- Added getter/setter for `rrHomeId` on `RoborockMatterbridgePlatform` delegating to lifecycle (backward compatibility for `platformRunner.ts`)
+- Removed `onConfigureDevice` from `LifecycleDependencies` interface
+- Created `MapInfoPlatformContext` interface in `RoomMap.ts` to decouple `fromMapInfo` from concrete `RoborockMatterbridgePlatform` type
+- Methods access parent class methods (`validateDevice`, `registerDevice`, `setSelectDevice`, `version`, `matterbridge`) via `this.platform`
+- Cleaned up unused imports from `module.ts`
+
+**Files modified:**
+
+- `src/platform/platformLifecycle.ts` — Added three methods, `rrHomeId`, new imports
+- `src/module.ts` — Removed three methods, added `rrHomeId` getter/setter, cleaned imports
+- `src/core/application/models/RoomMap.ts` — Added `MapInfoPlatformContext` interface, changed `fromMapInfo` parameter type
+- `src/tests/platform/platformLifecycle.test.ts` — Removed `onConfigureDevice` from mock deps, added `onConfigureDevice` spy to onStart tests
+- `src/tests/module.lifecycle.test.ts` — Removed `onConfigureDevice` mock from device config tests
+- `src/tests/module.complete.coverage.test.ts` — Updated bracket-access to go through `platform.lifecycle`
+
+### Refactoring: Move `discoverDevices` to `PlatformLifecycle`
+
+**Problem:** `discoverDevices` in `module.ts` was a lifecycle concern called during `onStart` but lived in the platform class, connected via callback indirection (`LifecycleDependencies.startDeviceDiscovery`).
+
+**Solution:**
+
+- Moved `discoverDevices` method from `module.ts` to `PlatformLifecycle` as a private method
+- `PlatformLifecycle` now owns `roborockService` (creates it during discovery, cleans it up on shutdown)
+- Added `DeviceRegistry` as a constructor parameter to `PlatformLifecycle`
+- Removed `startDeviceDiscovery` and `getRoborockService` from `LifecycleDependencies` interface
+- Added getter/setter for `roborockService` on `RoborockMatterbridgePlatform` delegating to lifecycle (backward compatibility for `platformRunner.ts` and tests)
+- Removed unused `rvcInterval` property from `module.ts`
+- Cleaned up unused imports from `module.ts` (`axios`, `crypto`, `getBaseUrl`, `RoborockAuthenticateApi`, `RoborockIoTApi`, `isSupportedDevice`, `DEFAULT_REFRESH_INTERVAL_SECONDS`)
+
+**Files modified:**
+
+- `src/platform/platformLifecycle.ts` — Added `discoverDevices`, `roborockService` ownership, `DeviceRegistry` param
+- `src/module.ts` — Removed `discoverDevices`, added getter/setter, cleaned imports
+- `src/tests/platform/platformLifecycle.test.ts` — Updated mock deps, constructor calls, shutdown assertions
+- `src/tests/module.lifecycle.test.ts` — Removed discovery simulation tests, updated `startDeviceDiscovery` overrides to spy on lifecycle
+- `src/tests/module.startup.test.ts` — Updated `startDeviceDiscovery` override to spy on lifecycle
+
+## 2026-02-13
+
+### Verification: Authentication Behaviors Audit
+
+**Problem:** Verify three authentication behaviors: (1) cache on success + clear forceAuthentication, (2) prevent start on failure + empty MFA code, (3) handle missing credentials per method.
+
+**Findings:**
+
+- Behavior 1 (auth success): Fully implemented. User data cached via `UserDataRepository.saveUserData()`, `forceAuthentication` reset in `module.ts:161-165`.
+- Behavior 2 (auth failed): Partially implemented. Plugin start is prevented and errors are logged, but MFA code is NOT cleared from config on failure.
+- Behavior 3 (auth not set): Partially implemented. `validateAuthentication()` exists in `PlatformConfigManager` but is never called. Password method sends empty string to API instead of failing early with clear message.
+
+**Documentation:**
+
+- Created `docs/auth_process.md` with detailed analysis and gap identification.
+
 ## 2026-02-10
 
 ### Release: Version 1.1.3-rc16
