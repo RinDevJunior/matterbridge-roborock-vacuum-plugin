@@ -31,7 +31,7 @@ This plugin integrates Roborock vacuum cleaners into the Matter ecosystem via Ma
 **Key Technologies:**
 
 - TypeScript 5.x targeting ESNext
-- Matterbridge 3.5.3
+- Matterbridge 3.5.4
 - Vitest for unit testing
 - MQTT for real-time device communication
 - REST API for Roborock cloud services
@@ -94,7 +94,8 @@ src/module.ts (RoborockMatterbridgePlatform)
 │   ├── platformConfig.ts         # Validates and manages plugin configuration
 │   ├── deviceRegistry.ts         # Stores registered devices and robots
 │   ├── platformState.ts          # Tracks platform and startup state
-│   └── platformLifecycle.ts      # Manages onStart, onConfigure, onShutdown
+│   ├── deviceDiscovery.ts        # Authentication, API calls, device filtering
+│   └── deviceConfigurator.ts     # Device setup, room mapping, Matterbridge registration
 │
 ├── platformRunner.ts             # Orchestrates device updates and message routing
 │   └── uses: runtimes/
@@ -188,7 +189,8 @@ src/module.ts (RoborockMatterbridgePlatform)
 │• platformConfig  │  │• updateRobot()   │  │• authenticate()          │
 │• deviceRegistry  │  │• requestHomeData │  │• listDevices()           │
 │• platformState   │  │                  │  │• initMessageClient()     │
-│• lifecycle       │  │  Uses runtimes/: │  │• startClean/pause/dock   │
+│• deviceDiscovery │  │  Uses runtimes/: │  │• startClean/pause/dock   │
+│• deviceConfig    │
 └──────────────────┘  │  ├ handleLocal   │  │• getMapInformation()     │
                       │  ├ handleCloud   │  └────────┬─────────────────┘
                       │  └ handleHomeData│           │
@@ -343,11 +345,12 @@ src/
 ├── platformRunner.ts            # Orchestrates device updates
 ├── settings.ts                  # Plugin configuration
 │
-├── platform/                    # Platform layer (NEW)
-│   ├── platformLifecycle.ts     # Lifecycle methods
+├── platform/                    # Platform layer
 │   ├── platformConfig.ts        # Config validation
 │   ├── platformState.ts         # State management
-│   └── deviceRegistry.ts        # Device/robot registry
+│   ├── deviceRegistry.ts        # Device/robot registry
+│   ├── deviceDiscovery.ts       # Authentication, API calls, device filtering
+│   └── deviceConfigurator.ts    # Device setup, room mapping, registration
 │
 ├── core/                        # Core domain layer
 │   ├── ServiceContainer.ts      # Port adapter DI container
@@ -623,23 +626,21 @@ src/
 // Platform layer
 registry: DeviceRegistry              // Device/robot storage
 configManager: PlatformConfigManager  // Configuration management
-lifecycle: PlatformLifecycle          // Lifecycle coordination
+discovery: DeviceDiscovery            // Device discovery and authentication
+configurator: DeviceConfigurator      // Device setup and registration
 state: PlatformState                  // Startup state tracking
 
 // Services
-roborockService: RoborockService      // Service facade
+roborockService: RoborockService      // Service facade (via discovery getter)
 platformRunner: PlatformRunner        // Update orchestrator
-clientManager: ClientManager          // MQTT client manager
 persist: LocalStorage                 // Data persistence
 ```
 
 **Key Methods:**
 
-- `onStart()` - Platform initialization (delegates to lifecycle)
-- `onConfigure()` - Device configuration (delegates to lifecycle)
-- `onShutdown()` - Cleanup (delegates to lifecycle)
-- `startDeviceDiscovery()` - Authenticate and discover devices
-- `configureDevice()` - Configure individual device
+- `onStart()` - Initialize storage, validate config, discover devices, configure devices
+- `onConfigure()` - Set up periodic polling interval, handle clearStorageOnStartup
+- `onShutdown()` - Clean up intervals, stop services, optionally unregister devices
 
 ### 2. **PlatformRunner** ([platformRunner.ts](../src/platformRunner.ts))
 
@@ -674,29 +675,30 @@ MQTT/Cloud → PlatformRunner → Runtime Handlers → Robot Update
 
 Located in: [src/platform/](../src/platform/)
 
-### **PlatformLifecycle** ([platformLifecycle.ts](../src/platform/platformLifecycle.ts))
+### **DeviceDiscovery** ([deviceDiscovery.ts](../src/platform/deviceDiscovery.ts))
 
-**Responsibility:** Coordinates platform lifecycle events
+**Responsibility:** Handles authentication, API calls, and device filtering
+
+**Key Properties:**
+
+- `roborockService` — Created during discovery, used by configurator and platform
 
 **Key Methods:**
 
-- `onStart()` - Initialize storage, validate config, start discovery
-- `onConfigure()` - Set up periodic polling interval
-- `onShutdown()` - Clean up resources, stop services
+- `discoverDevices()` — Authenticate, fetch home data, filter supported devices
 
-**Dependencies:**
+### **DeviceConfigurator** ([deviceConfigurator.ts](../src/platform/deviceConfigurator.ts))
 
-```typescript
-interface LifecycleDependencies {
-  getPersistanceStorage: () => LocalStorage;
-  getPlatformRunner: () => PlatformRunner | undefined;
-  getRoborockService: () => RoborockService | undefined;
-  startDeviceDiscovery: () => Promise<boolean>;
-  onConfigureDevice: () => Promise<void>;
-  clearSelect: () => Promise<void>;
-  unregisterAllDevices: (delay?: number) => Promise<void>;
-}
-```
+**Responsibility:** Handles device setup, local network connection, room mapping, and Matterbridge registration
+
+**Key Properties:**
+
+- `rrHomeId` — Set during device configuration
+
+**Key Methods:**
+
+- `onConfigureDevice(roborockService)` — Configure all discovered devices
+- `configureDevice(vacuum, roborockService)` — Configure a single device
 
 ### **PlatformConfigManager** ([platformConfig.ts](../src/platform/platformConfig.ts))
 
@@ -1219,13 +1221,11 @@ module.ts constructor
     ↓
 Create PlatformConfigManager, DeviceRegistry, PlatformState
     ↓
-Create PlatformLifecycle with dependencies
+Create DeviceDiscovery, DeviceConfigurator
     ↓
 onStart() called
     ↓
-PlatformLifecycle.onStart()
-    ↓
-startDeviceDiscovery()
+discovery.discoverDevices()
     ↓
 Create RoborockService (facade)
     ↓

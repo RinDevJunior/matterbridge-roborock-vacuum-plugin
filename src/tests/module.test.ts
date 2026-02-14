@@ -5,7 +5,6 @@ import type { RoborockPluginPlatformConfig } from '../model/RoborockPluginPlatfo
 import { createMockLogger, createMockMatterbridge, asPartial } from './helpers/testUtils.js';
 import type { PlatformMatterbridge } from 'matterbridge';
 
-vi.mock('../platform/platformLifecycle.js');
 vi.mock('../services/roborockService.js');
 vi.mock('../types/roborockVacuumCleaner.js');
 vi.mock('node-persist');
@@ -78,28 +77,6 @@ describe('RoborockMatterbridgePlatform', () => {
   });
 
   describe('lifecycle methods', () => {
-    it('should delegate onStart to lifecycle', async () => {
-      const validMatterbridge = createMockMatterbridge({});
-      const platform = new RoborockMatterbridgePlatform(validMatterbridge, mockLogger, mockConfig);
-      platform.verifyMatterbridgeVersion = vi.fn().mockReturnValue(true);
-
-      platform.lifecycle.onStart = vi.fn().mockResolvedValue(undefined);
-      await platform.onStart('test reason');
-
-      expect(platform.lifecycle.onStart).toHaveBeenCalledWith('test reason');
-    });
-
-    it('should delegate onConfigure to lifecycle', async () => {
-      const validMatterbridge = createMockMatterbridge({});
-      const platform = new RoborockMatterbridgePlatform(validMatterbridge, mockLogger, mockConfig);
-      platform.verifyMatterbridgeVersion = vi.fn().mockReturnValue(true);
-
-      platform.lifecycle.onConfigure = vi.fn().mockResolvedValue(undefined);
-      await platform.onConfigure();
-
-      expect(platform.lifecycle.onConfigure).toHaveBeenCalled();
-    });
-
     it('should change logger level when onChangeLoggerLevel is called', async () => {
       const validMatterbridge = createMockMatterbridge({});
       const platform = new RoborockMatterbridgePlatform(validMatterbridge, mockLogger, mockConfig);

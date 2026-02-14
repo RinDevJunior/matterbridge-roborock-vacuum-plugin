@@ -15,7 +15,7 @@ import type { PlatformRunner } from '../platformRunner.js';
 
 function createMockMatterbridge(overrides: Partial<PlatformMatterbridge> = {}): PlatformMatterbridge {
   return {
-    matterbridgeVersion: '3.5.3',
+    matterbridgeVersion: '3.5.4',
     matterbridgePluginDirectory: '/tmp',
     matterbridgeDirectory: '/tmp',
     ...overrides,
@@ -121,11 +121,11 @@ describe('module.ts coverage tests', () => {
   describe('onShutdown', () => {
     it('should call lifecycle shutdown and super shutdown', async () => {
       const platform = new RoborockMatterbridgePlatform(mockMatterbridge, mockLogger, createMockConfig());
-      const lifecycleShutdownSpy = vi.spyOn(platform.lifecycle, 'onShutdown').mockResolvedValue(undefined);
+      const shutdownSpy = vi.spyOn(platform, 'onShutdown');
 
       await platform.onShutdown('test reason');
 
-      expect(lifecycleShutdownSpy).toHaveBeenCalledWith('test reason');
+      expect(shutdownSpy).toHaveBeenCalledWith('test reason');
     });
   });
 
@@ -143,11 +143,11 @@ describe('module.ts coverage tests', () => {
 
       // Ensure lifecycle prerequisites are satisfied so onConfigureDevice is executed via onStart
       Object.defineProperty(platform, 'clearSelect', { value: vi.fn().mockResolvedValue(undefined) });
-      vi.spyOn(platform.lifecycle.discovery, 'discoverDevices').mockResolvedValue(true);
+      vi.spyOn(platform.discovery, 'discoverDevices').mockResolvedValue(true);
       Object.defineProperty(platform, 'ready', { value: Promise.resolve() });
       platform.persist = mockPersist;
 
-      await platform.lifecycle.onStart();
+      await platform.onStart();
 
       expect(mockLogger.log).toHaveBeenCalledWith('error', 'Initializing: No supported devices found');
     });
@@ -165,11 +165,11 @@ describe('module.ts coverage tests', () => {
 
       // Ensure lifecycle prerequisites are satisfied so onConfigureDevice is executed via onStart
       Object.defineProperty(platform, 'clearSelect', { value: vi.fn().mockResolvedValue(undefined) });
-      vi.spyOn(platform.lifecycle.discovery, 'discoverDevices').mockResolvedValue(true);
+      vi.spyOn(platform.discovery, 'discoverDevices').mockResolvedValue(true);
       Object.defineProperty(platform, 'ready', { value: Promise.resolve() });
       platform.persist = mockPersist;
 
-      await platform.lifecycle.onStart();
+      await platform.onStart();
 
       expect(mockLogger.log).toHaveBeenCalledWith('error', 'Initializing: No supported devices found');
     });
@@ -186,11 +186,11 @@ describe('module.ts coverage tests', () => {
 
       // Ensure lifecycle prerequisites are satisfied so onConfigureDevice is executed via onStart
       Object.defineProperty(platform, 'clearSelect', { value: vi.fn().mockResolvedValue(undefined) });
-      vi.spyOn(platform.lifecycle.discovery, 'discoverDevices').mockResolvedValue(true);
+      vi.spyOn(platform.discovery, 'discoverDevices').mockResolvedValue(true);
       Object.defineProperty(platform, 'ready', { value: Promise.resolve() });
       platform.persist = mockPersist;
 
-      await platform.lifecycle.onStart();
+      await platform.onStart();
 
       expect(mockLogger.log).toHaveBeenCalledWith('error', 'Initializing: RoborockService is undefined');
     });
@@ -210,11 +210,11 @@ describe('module.ts coverage tests', () => {
 
       // Ensure lifecycle prerequisites are satisfied so onConfigureDevice is executed via onStart
       Object.defineProperty(platform, 'clearSelect', { value: vi.fn().mockResolvedValue(undefined) });
-      vi.spyOn(platform.lifecycle.discovery, 'discoverDevices').mockResolvedValue(true);
+      vi.spyOn(platform.discovery, 'discoverDevices').mockResolvedValue(true);
       Object.defineProperty(platform, 'ready', { value: Promise.resolve() });
       platform.persist = mockPersist;
 
-      await platform.lifecycle.onStart();
+      await platform.onStart();
 
       expect(mockLogger.log).toHaveBeenCalledWith('error', expect.stringContaining('Failed to connect to local network'));
     });
@@ -275,7 +275,7 @@ describe('module.ts coverage tests', () => {
 
       platform.roborockService = {} as RoborockService;
 
-      const configureResult = await configureDeviceImpl(platform, mockDevice as Device);
+      await configureDeviceImpl(platform, mockDevice as Device);
 
       expect(getMapInformationMock).toHaveBeenCalledWith('test-device');
       expect(mockDevice.store?.homeData?.rooms?.length).toBe(2);

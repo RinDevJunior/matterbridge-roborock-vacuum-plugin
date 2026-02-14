@@ -9,13 +9,14 @@ import { AreaManagementService } from '../../../services/areaManagementService.j
 import { MessageRoutingService } from '../../../services/messageRoutingService.js';
 import { PollingService } from '../../../services/pollingService.js';
 import { ConnectionService } from '../../../services/connectionService.js';
-import { Device, UserData, Scene, RawRoomMappingData } from '../../../roborockCommunication/models/index.js';
+import { Device, UserData, Scene, RawRoomMappingData, Home } from '../../../roborockCommunication/models/index.js';
 import { CleanModeSetting } from '../../../behaviors/roborock.vacuum/core/CleanModeSetting.js';
 import { MapInfo, RoomIndexMap } from '../../../core/application/models/index.js';
 import { RequestMessage } from '../../../roborockCommunication/models/index.js';
-import { asPartial } from '../../testUtils.js';
+import { asPartial, asType } from '../../testUtils.js';
 import type { LocalStorage } from 'node-persist';
 import type { PlatformConfigManager } from '../../../platform/platformConfigManager.js';
+import { RoborockIoTApi } from '../../../roborockCommunication/api/iotClient.js';
 
 describe('RoborockService - Complete Coverage', () => {
   let service: RoborockService;
@@ -199,7 +200,7 @@ describe('RoborockService - Complete Coverage', () => {
 
     it('should delegate getHomeDataForUpdating to deviceService', async () => {
       const homeData = { id: 123, name: 'Test Home' };
-      vi.mocked(mockDeviceService.getHomeDataForUpdating).mockResolvedValue(homeData as any);
+      vi.mocked(mockDeviceService.getHomeDataForUpdating).mockResolvedValue(asPartial<Home>(homeData));
 
       const result = await service.getHomeDataForUpdating(123);
 
@@ -431,8 +432,8 @@ describe('RoborockService - Complete Coverage', () => {
 
     it('should handle startClean with empty supported areas', async () => {
       vi.mocked(mockAreaService.getSelectedAreas).mockReturnValue([1]);
-      vi.mocked(mockAreaService.getSupportedAreas).mockReturnValue(undefined as any);
-      vi.mocked(mockAreaService.getSupportedRoutines).mockReturnValue(undefined as any);
+      vi.mocked(mockAreaService.getSupportedAreas).mockReturnValue(asType<ServiceArea.Area[]>(undefined));
+      vi.mocked(mockAreaService.getSupportedRoutines).mockReturnValue(asType<ServiceArea.Area[]>(undefined));
 
       await service.startClean('duid');
 
@@ -492,7 +493,7 @@ describe('RoborockService - Complete Coverage', () => {
   describe('Custom API', () => {
     it('should call iotApi.getCustom when initialized', async () => {
       const mockIotApi = { getCustom: vi.fn().mockResolvedValue({ result: 'success' }) };
-      vi.mocked(mockContainer.getIotApi).mockReturnValue(mockIotApi as any);
+      vi.mocked(mockContainer.getIotApi).mockReturnValue(asPartial<RoborockIoTApi>(mockIotApi));
 
       const result = await service.getCustomAPI<{ result: string }>('/custom/endpoint');
 

@@ -7,11 +7,12 @@ import { DeviceManagementService } from '../../services/deviceManagementService.
 import { AreaManagementService } from '../../services/areaManagementService.js';
 import { MessageRoutingService } from '../../services/messageRoutingService.js';
 import { PollingService } from '../../services/pollingService.js';
-import { Device } from '../../roborockCommunication/models/index.js';
+import { Device, UserData } from '../../roborockCommunication/models/index.js';
 import { RoborockAuthenticateApi } from '../../roborockCommunication/api/authClient.js';
 import { RoborockIoTApi } from '../../roborockCommunication/api/iotClient.js';
 import type { LocalStorage } from 'node-persist';
 import type { PlatformConfigManager } from '../../platform/platformConfigManager.js';
+import { asPartial } from '../testUtils.js';
 
 describe('RoborockService - Comprehensive Coverage', () => {
   let service: RoborockService;
@@ -205,10 +206,12 @@ describe('RoborockService - Comprehensive Coverage', () => {
 
   describe('Authentication', () => {
     it('should authenticate with password flow', async () => {
-      (mockAuthCoordinator.authenticate as any).mockResolvedValue({
-        nickname: 'Test User',
-        username: 'testuser',
-      } as any);
+      vi.mocked(mockAuthCoordinator.authenticate)?.mockResolvedValue(
+        asPartial<UserData>({
+          nickname: 'Test User',
+          username: 'testuser',
+        }),
+      );
 
       const result = await service.authenticate();
 
@@ -240,10 +243,12 @@ describe('RoborockService - Comprehensive Coverage', () => {
         mockConfigWith2FA as PlatformConfigManager,
       );
 
-      (mockAuthCoordinator.authenticate as any).mockResolvedValue({
-        nickname: 'Test User',
-        username: 'testuser',
-      } as any);
+      vi.mocked(mockAuthCoordinator.authenticate)?.mockResolvedValue(
+        asPartial<UserData>({
+          nickname: 'Test User',
+          username: 'testuser',
+        }),
+      );
 
       const result = await serviceWith2FA.authenticate();
 
@@ -257,7 +262,7 @@ describe('RoborockService - Comprehensive Coverage', () => {
     });
 
     it('should return false when authentication fails', async () => {
-      (mockAuthCoordinator.authenticate as any).mockRejectedValue(new Error('Auth failed'));
+      vi.mocked(mockAuthCoordinator.authenticate)?.mockRejectedValue(new Error('Auth failed'));
 
       const result = await service.authenticate();
 
@@ -267,7 +272,7 @@ describe('RoborockService - Comprehensive Coverage', () => {
     });
 
     it('should return false when userData is undefined', async () => {
-      (mockAuthCoordinator.authenticate as any).mockResolvedValue(undefined);
+      vi.mocked(mockAuthCoordinator.authenticate)?.mockResolvedValue(undefined);
 
       const result = await service.authenticate();
 
@@ -279,16 +284,13 @@ describe('RoborockService - Comprehensive Coverage', () => {
 
   describe('getCustomAPI', () => {
     it('should throw error when iotApi is not initialized', async () => {
-      const getIotApi = mockContainer.getIotApi as any;
-      getIotApi.mockReturnValue(undefined);
-
+      vi.mocked(mockContainer.getIotApi)?.mockReturnValue(undefined);
       await expect(service.getCustomAPI('/test')).rejects.toThrow('IoT API not initialized. Please login first.');
     });
 
     it('should call iotApi.getCustom when iotApi is initialized', async () => {
       const mockIotApi = { getCustom: vi.fn().mockResolvedValue({ data: 'test' }) };
-      const getIotApi = mockContainer.getIotApi as any;
-      getIotApi.mockReturnValue(mockIotApi);
+      vi.mocked(mockContainer.getIotApi)?.mockReturnValue(asPartial<RoborockIoTApi>(mockIotApi));
 
       const result = await service.getCustomAPI('/test');
 

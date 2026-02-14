@@ -1,4 +1,4 @@
-import mqtt, { IConnackPacket, MqttClient as MqttLibClient } from 'mqtt';
+import mqtt, { ErrorWithReasonCode, IConnackPacket, MqttClient as MqttLibClient } from 'mqtt';
 import { vi, describe, it, expect, beforeEach, afterEach, afterAll } from 'vitest';
 import { AnsiLogger } from 'matterbridge/logger';
 import { asPartial, asType, createMockLogger } from '../../../helpers/testUtils.js';
@@ -478,7 +478,7 @@ describe('MQTTClient', () => {
 
   it('onError should translate error code 5 to "Connection refused: Not authorized"', async () => {
     const mqttClient = createMQTTClient();
-    await mqttClient['onError']({ code: 5 } as any);
+    await mqttClient['onError'](asPartial<ErrorWithReasonCode>({ code: 5 }));
     expect(logger.error).toHaveBeenCalledWith('MQTT connection error: Connection refused: Not authorized');
     expect(mqttClient['connectionBroadcaster'].onError).toHaveBeenCalledWith('mqtt-c6d6afb9', 'MQTT connection error: Connection refused: Not authorized');
   });
@@ -487,10 +487,10 @@ describe('MQTTClient', () => {
     const mqttClient = createMQTTClient();
     expect(mqttClient['consecutiveAuthErrors']).toBe(0);
 
-    await mqttClient['onError']({ code: 5 } as any);
+    await mqttClient['onError'](asPartial<ErrorWithReasonCode>({ code: 5 }));
     expect(mqttClient['consecutiveAuthErrors']).toBe(1);
 
-    await mqttClient['onError']({ code: 5 } as any);
+    await mqttClient['onError'](asPartial<ErrorWithReasonCode>({ code: 5 }));
     expect(mqttClient['consecutiveAuthErrors']).toBe(2);
   });
 
@@ -502,7 +502,7 @@ describe('MQTTClient', () => {
 
     // Trigger 5 consecutive auth errors
     for (let i = 0; i < 5; i++) {
-      await mqttClient['onError']({ code: 5 } as any);
+      await mqttClient['onError'](asPartial<ErrorWithReasonCode>({ code: 5 }));
     }
 
     expect(logger.error).toHaveBeenCalledWith('[MQTTClient] Auth error threshold reached, entering 60-minute backoff');
@@ -525,7 +525,7 @@ describe('MQTTClient', () => {
 
     // Trigger 4 auth errors (below threshold)
     for (let i = 0; i < 4; i++) {
-      await mqttClient['onError']({ code: 5 } as any);
+      await mqttClient['onError'](asPartial<ErrorWithReasonCode>({ code: 5 }));
     }
 
     expect(mqttClient['terminateConnection']).not.toHaveBeenCalled();
@@ -604,7 +604,7 @@ describe('MQTTClient', () => {
     const mqttClient = createMQTTClient();
     mqttClient['subscribeToQueue'] = vi.fn();
 
-    await mqttClient['onConnect'](null as any);
+    await mqttClient['onConnect'](asType<IConnackPacket>(null));
 
     expect(logger.error).toHaveBeenCalledWith('[MQTTClient] onConnect called with no result');
     expect(mqttClient['connected']).toBe(false);

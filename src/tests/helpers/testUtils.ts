@@ -1,7 +1,7 @@
 import { vi } from 'vitest';
 import { AnsiLogger } from 'matterbridge/logger';
 import type { PlatformConfigManager } from '../../platform/platformConfigManager.js';
-import type { PlatformMatterbridge, SystemInformation } from 'matterbridge';
+import type { PlatformMatterbridge } from 'matterbridge';
 import type { RoborockIoTApi } from '../../roborockCommunication/api/iotClient.js';
 import type { RoborockAuthenticateApi } from '../../roborockCommunication/api/authClient.js';
 import { ClientRouter } from '../../roborockCommunication/routing/clientRouter.js';
@@ -204,11 +204,10 @@ export function createMockRoborockService(overrides: Partial<RoborockService> = 
 
 export function createMockMatterbridge(overrides: Partial<PlatformMatterbridge> = {}): PlatformMatterbridge {
   const base: Partial<PlatformMatterbridge> & Record<string, unknown> = {
-    matterbridgeVersion: '3.5.3',
+    matterbridgeVersion: '3.5.4',
     matterbridgePluginDirectory: '/tmp',
     matterbridgeDirectory: '/tmp',
     verifyMatterbridgeVersion: () => true,
-    systemInformation: {} as Partial<SystemInformation> as SystemInformation,
   };
   return { ...base, ...overrides } as Partial<PlatformMatterbridge> as PlatformMatterbridge;
 }
