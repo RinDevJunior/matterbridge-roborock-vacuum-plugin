@@ -38,19 +38,7 @@ jobs:
         run: npm -v
 
       - name: Clone matterbridge repo branch main
-        run: git clone --depth 1 --single-branch --no-tags -b main https://github.com/Luligu/matterbridge.git ../matterbridge
-
-      - name: Install matterbridge dependencies
-        working-directory: ../matterbridge
-        run: npm ci --no-fund --no-audit
-
-      - name: Build matterbridge
-        working-directory: ../matterbridge
-        run: npm run build
-
-      - name: Link matterbridge globally
-        working-directory: ../matterbridge
-        run: npm link --no-fund --no-audit
+        run: npm run precondition
 
       - name: Install plugin dependencies
         run: npm ci --no-fund --no-audit
@@ -91,20 +79,8 @@ jobs:
       - name: Verify Npm version
         run: npm -v
 
-      - name: Clone matterbridge repo branch main
-        run: git clone --depth 1 --single-branch --no-tags -b main https://github.com/Luligu/matterbridge.git ../matterbridge
-
-      - name: Install matterbridge dependencies
-        working-directory: ../matterbridge
-        run: npm ci --no-fund --no-audit
-
-      - name: Build matterbridge
-        working-directory: ../matterbridge
-        run: npm run build
-
-      - name: Link matterbridge globally
-        working-directory: ../matterbridge
-        run: npm link --no-fund --no-audit
+      - name: Install matterbridge
+        run: npm run precondition
 
       - name: Install plugin dependencies
         run: npm ci --no-fund --no-audit
