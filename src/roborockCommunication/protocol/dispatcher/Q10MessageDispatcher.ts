@@ -114,7 +114,7 @@ export class Q10MessageDispatcher implements AbstractMessageDispatcher {
 
   public async getCustomMessage<T = unknown>(duid: string, def: RequestMessage): Promise<T> {
     const request = new RequestMessage({ ...def, messageId: this.messageId });
-    return this.client.get(duid, def) as Promise<T>;
+    return this.client.get(duid, request) as Promise<T>;
   }
 
   public async getCleanModeData(duid: string): Promise<CleanModeSetting> {
