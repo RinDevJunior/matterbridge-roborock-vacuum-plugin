@@ -9,15 +9,6 @@ import { RoomEntity } from '../../core/domain/entities/Room.js';
 const mockLogger = makeLogger();
 
 function createHomeEntity(vacuumRooms: RoomDto[], roomMap: RoomMap | undefined, enableMultipleMap = false, mapInfos: MapEntry[] = []): HomeEntity {
-  const rooms = vacuumRooms.map((r) => new RoomEntity(r.id, r.name));
-  const homeData = {
-    id: 1,
-    name: 'Test Home',
-    products: [],
-    devices: [],
-    receivedDevices: [],
-    rooms,
-  };
   const mapDataDtos = mapInfos.map((entry) => ({
     mapFlag: entry.id,
     add_time: Date.now(),
@@ -242,5 +233,66 @@ describe('getSupportedAreas', () => {
 
     // console.log(`Supported areas: ${JSON.stringify(supportedAreas, null, 2)} `);
     // console.log(`Supported maps: ${JSON.stringify(supportedMaps, null, 2)} `);
+  });
+
+  it('real test 2', () => {
+    const roomMap = new RoomMap([
+      {
+        id: 16,
+        iot_name_id: '12231095',
+        tag: 0,
+        iot_map_id: 1,
+        iot_name: 'Garage',
+      },
+      {
+        id: 17,
+        iot_name_id: '12231033',
+        tag: 0,
+        iot_map_id: 1,
+        iot_name: 'Downstairs Bathroom',
+      },
+      {
+        id: 18,
+        iot_name_id: '12231071',
+        tag: 0,
+        iot_map_id: 1,
+        iot_name: 'TV Room',
+      },
+      {
+        id: 19,
+        iot_name_id: '12231086',
+        tag: 0,
+        iot_map_id: 1,
+        iot_name: 'Bedroom',
+      },
+      {
+        id: 20,
+        iot_name_id: '12231061',
+        tag: 0,
+        iot_map_id: 1,
+        iot_name: 'Garage Entryway',
+      },
+    ]);
+    const mapInfo = new MapInfo({
+      max_multi_map: 1,
+      max_bak_map: 1,
+      multi_map_count: 1,
+      map_info: [
+        {
+          mapFlag: 1,
+          add_time: 1771001870,
+          length: 10,
+          name: 'Downstairs',
+          bak_maps: [{ mapFlag: 4, add_time: 1771000925 }],
+        },
+      ],
+    });
+    const minLogger = makeLogger();
+    const homeInfo = new HomeEntity(123, 'My home', roomMap, mapInfo);
+    const { supportedAreas, supportedMaps } = getSupportedAreas(homeInfo, minLogger);
+    const firstSupportedMap = supportedMaps.length > 0 ? supportedMaps[0] : undefined;
+    const finalResult = supportedAreas.filter((area) => area.mapId === firstSupportedMap?.mapId);
+
+    expect(finalResult.length).greaterThan(0);
   });
 });

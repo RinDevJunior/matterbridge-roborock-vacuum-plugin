@@ -1,7 +1,8 @@
 import { MapRoomDto, MultipleMapDto, RoomDto } from './index.js';
 import { MapInfo, RoomMapping } from '../../../core/application/models/index.js';
 
-export type RawRoomMappingData = [number, string, number][];
+export type RawRoomMappingEntry = [number, string] | [number, string, number | undefined];
+export type RawRoomMappingData = RawRoomMappingEntry[];
 
 export const HomeModelMapper = {
   toRoomMapping(dto: MapRoomDto, rooms: RoomDto[]): RoomMapping {
@@ -15,11 +16,11 @@ export const HomeModelMapper = {
     } satisfies RoomMapping;
   },
 
-  rawArrayToMapRoomDto(raw: [number, string, number], activeMap: number): MapRoomDto {
+  rawArrayToMapRoomDto(raw: RawRoomMappingEntry, activeMap: number): MapRoomDto {
     return {
       id: raw[0],
       iot_name_id: raw[1],
-      tag: raw[2],
+      tag: raw[2] ?? 0,
       iot_map_id: activeMap,
     } satisfies MapRoomDto;
   },
