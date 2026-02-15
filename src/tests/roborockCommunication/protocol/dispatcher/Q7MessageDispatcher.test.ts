@@ -1,7 +1,8 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { Q7MessageDispatcher } from '../../../../roborockCommunication/protocol/dispatcher/Q7MessageDispatcher.js';
 import { asType, asPartial } from '../../../testUtils.js';
-import { RequestMessage } from '../../../../roborockCommunication/models/index.js';
+import { RequestMessage, ResponseBody } from '../../../../roborockCommunication/models/index.js';
+import { Protocol } from '../../../../roborockCommunication/models/protocol.js';
 // --- Mock Factories ---
 function createMockLogger() {
   return {
@@ -76,12 +77,33 @@ describe('Q7MessageDispatcher', () => {
   });
 
   describe('getRoomMap', () => {
-    it('should call client.get and logger.notice, return RoomMap', async () => {
-      client.get.mockResolvedValueOnce([]);
+    it('should return empty array when response is undefined', async () => {
+      client.get.mockResolvedValueOnce(undefined);
       const result = await dispatcher.getRoomMap(duid, 1);
       expect(client.get).toHaveBeenCalled();
-      expect(logger.notice).toHaveBeenCalled();
-      expect(result).toBeInstanceOf(Object); // RoomMap, but type is not checked at runtime
+      expect(result).toEqual([]);
+    });
+
+    it('should call client.get, parse response and return room mapping data', async () => {
+      const mockBuffer = Buffer.from([]);
+      const mockResponse = new ResponseBody({ [Protocol.map_response]: mockBuffer });
+      client.get.mockResolvedValueOnce(mockResponse);
+
+      const parseSpy = vi.spyOn(dispatcher['b01MapParser'], 'parseRooms').mockReturnValue({
+        rooms: [
+          { roomId: 1, roomName: 'Living Room', roomTypeId: 0 },
+          { roomId: 2, roomName: 'Kitchen', roomTypeId: 1 },
+        ],
+      });
+
+      const result = await dispatcher.getRoomMap(duid, 1);
+
+      expect(client.get).toHaveBeenCalled();
+      expect(parseSpy).toHaveBeenCalledWith(mockBuffer);
+      expect(result).toEqual([
+        [1, 'Living Room', 0],
+        [2, 'Kitchen', 1],
+      ]);
     });
   });
 

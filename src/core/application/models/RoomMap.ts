@@ -59,7 +59,7 @@ export class RoomMap {
       return { activeMapId: 0, mapInfo, roomMap: new RoomMap(roomMappings) };
     }
 
-    const activeMap = mapInfo.maps[0]?.id ?? 0;
+    const activeMap = mapInfo.maps?.[0]?.id ?? 0;
 
     // Fall back to room maps
     const roomData = await context.roborockService.getRoomMap(vacuum.duid, activeMap);
