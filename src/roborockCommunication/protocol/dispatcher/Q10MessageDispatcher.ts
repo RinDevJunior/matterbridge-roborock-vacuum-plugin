@@ -10,12 +10,10 @@ import { resolveMopMode, resolveQ10CleanMode, resolveVacuumMode } from '../../he
 import { MapInfo } from '../../../core/application/models/index.js';
 import { MapRoomResponse } from '../../../types/index.js';
 import { CleanModeSetting } from '../../../behaviors/roborock.vacuum/core/CleanModeSetting.js';
-import { B01MapParser } from '../../map/b01/b01MapParser.js';
 import { CleanSequenceType } from '../../../behaviors/roborock.vacuum/enums/CleanSequenceType.js';
 
 export class Q10MessageDispatcher implements AbstractMessageDispatcher {
   public dispatcherName = 'Q10MessageDispatcher';
-  private readonly b01MapParser = new B01MapParser();
   private lastB01Id: number;
 
   private get messageId() {

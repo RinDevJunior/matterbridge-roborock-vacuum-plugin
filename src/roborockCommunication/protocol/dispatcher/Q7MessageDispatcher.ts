@@ -5,17 +5,15 @@ import { RequestMessage } from '../../models/requestMessage.js';
 import { AbstractMessageDispatcher } from './abstractMessageDispatcher.js';
 import { AnsiLogger, debugStringify } from 'matterbridge/logger';
 import { Client } from '../../routing/client.js';
-import { NetworkInfo, Protocol, RawRoomMappingData, ResponseBody } from '../../models/index.js';
+import { NetworkInfo, RawRoomMappingData } from '../../models/index.js';
 import { resolveQ7CleanMode, resolveMopMode, resolveVacuumMode, resolveCleanRoute } from '../../helper/B01VacuumModeResolver.js';
 import { MapInfo } from '../../../core/application/models/index.js';
 import { MapRoomResponse } from '../../../types/device.js';
 import { CleanModeSetting } from '../../../behaviors/roborock.vacuum/core/CleanModeSetting.js';
-import { B01MapParser } from '../../map/b01/b01MapParser.js';
 import { CleanSequenceType } from '../../../behaviors/roborock.vacuum/enums/CleanSequenceType.js';
 
 export class Q7MessageDispatcher implements AbstractMessageDispatcher {
   public dispatcherName = 'Q7MessageDispatcher';
-  private readonly b01MapParser = new B01MapParser();
   private lastB01Id: number;
 
   private get messageId() {
@@ -66,18 +64,18 @@ export class Q7MessageDispatcher implements AbstractMessageDispatcher {
     return response; // TODO: Implement proper room mapping retrieval for Q7
   }
 
-  public async getRoomMap_tmp(duid: string, activeMap: number): Promise<RawRoomMappingData> {
-    const request = new RequestMessage({ messageId: this.messageId, dps: this.createDps(Q7RequestMethod.get_room_mapping, { force: 1, map_type: 0 }) });
-    const response = await this.client.get<ResponseBody>(duid, request);
-    if (!response) {
-      this.logger.error(`Get room map for Q7 device: ${duid}: no response`);
-      return [];
-    }
+  // public async getRoomMap_tmp(duid: string, activeMap: number): Promise<RawRoomMappingData> {
+  //   const request = new RequestMessage({ messageId: this.messageId, dps: this.createDps(Q7RequestMethod.get_room_mapping, { force: 1, map_type: 0 }) });
+  //   const response = await this.client.get<ResponseBody>(duid, request);
+  //   if (!response) {
+  //     this.logger.error(`Get room map for Q7 device: ${duid}: no response`);
+  //     return [];
+  //   }
 
-    const responseData = response.get(Protocol.map_response) as Buffer;
-    const parsed = this.b01MapParser.parseRooms(responseData);
-    return parsed.rooms.map((x) => [x.roomId, x.roomName, x.roomTypeId ?? 0]);
-  }
+  //   const responseData = response.get(Protocol.map_response) as Buffer;
+  //   const parsed = this.b01MapParser.parseRooms(responseData);
+  //   return parsed.rooms.map((x) => [x.roomId, x.roomName, x.roomTypeId ?? 0]);
+  // }
   // #endregion Core Data Retrieval
 
   // #region Cleaning Commands

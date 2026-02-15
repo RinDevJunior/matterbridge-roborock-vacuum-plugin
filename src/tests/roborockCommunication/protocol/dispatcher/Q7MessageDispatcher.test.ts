@@ -86,28 +86,6 @@ describe('Q7MessageDispatcher', () => {
       expect(client.get).toHaveBeenCalled();
       expect(result).toEqual([]);
     });
-
-    it('should call client.get, parse response and return room mapping data', async () => {
-      const mockBuffer = Buffer.from([]);
-      const mockResponse = new ResponseBody({ [Protocol.map_response]: mockBuffer });
-      client.get.mockResolvedValueOnce(mockResponse);
-
-      const parseSpy = vi.spyOn(dispatcher['b01MapParser'], 'parseRooms').mockReturnValue({
-        rooms: [
-          { roomId: 1, roomName: 'Living Room', roomTypeId: 0 },
-          { roomId: 2, roomName: 'Kitchen', roomTypeId: 1 },
-        ],
-      });
-
-      const result = await dispatcher.getRoomMap(duid, 1);
-
-      expect(client.get).toHaveBeenCalled();
-      // expect(parseSpy).toHaveBeenCalledWith(mockBuffer);
-      // expect(result).toEqual([
-      //   [1, 'Living Room', 0],
-      //   [2, 'Kitchen', 1],
-      // ]);
-    });
   });
 
   describe('goHome', () => {
