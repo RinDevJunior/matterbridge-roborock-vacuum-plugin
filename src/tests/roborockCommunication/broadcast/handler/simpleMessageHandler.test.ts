@@ -5,6 +5,7 @@ import { SimpleMessageHandler } from '../../../../roborockCommunication/routing/
 import { BatteryMessage, DeviceStatus, VacuumError } from '../../../../roborockCommunication/models/index.js';
 import { CleanModeSetting } from '../../../../behaviors/roborock.vacuum/core/CleanModeSetting.js';
 import { createMockLogger } from '../../../testUtils.js';
+import { CleanSequenceType } from '../../../../behaviors/roborock.vacuum/enums/CleanSequenceType.js';
 
 describe('SimpleMessageHandler', () => {
   const duid = 'test-duid';
@@ -138,7 +139,7 @@ describe('SimpleMessageHandler', () => {
   it('calls deviceNotify on clean mode update', () => {
     const deviceNotify = vi.fn();
     const handler = new SimpleMessageHandler(duid, logger, deviceNotify);
-    const cleanModeMessage = new CleanModeSetting(102, 203, 25, 300);
+    const cleanModeMessage = new CleanModeSetting(102, 203, 25, 300, CleanSequenceType.Persist);
     handler.onCleanModeUpdate(cleanModeMessage);
     expect(deviceNotify).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -156,7 +157,7 @@ describe('SimpleMessageHandler', () => {
 
   it('logs debug message when deviceNotify is undefined for onCleanModeUpdate', () => {
     const handler = new SimpleMessageHandler(duid, logger, undefined);
-    const cleanModeMessage = new CleanModeSetting(102, 203, 25, 300);
+    const cleanModeMessage = new CleanModeSetting(102, 203, 25, 300, CleanSequenceType.Persist);
     handler.onCleanModeUpdate(cleanModeMessage);
     expect(logger.debug).toHaveBeenCalledWith('[SimpleMessageHandler]: No deviceNotify callback provided');
   });

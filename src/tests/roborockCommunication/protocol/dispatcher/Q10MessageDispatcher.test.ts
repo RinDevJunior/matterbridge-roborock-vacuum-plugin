@@ -2,6 +2,9 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { asPartial, asType } from '../../../helpers/testUtils.js';
 import { Q10MessageDispatcher } from '../../../../roborockCommunication/protocol/dispatcher/Q10MessageDispatcher.js';
 import { RequestMessage } from '../../../../roborockCommunication/models/index.js';
+import { CleanModeSetting } from '../../../../behaviors/roborock.vacuum/core/CleanModeSetting.js';
+import { CleanSequenceType } from '../../../../behaviors/roborock.vacuum/enums/CleanSequenceType.js';
+
 // --- Mock Factories ---
 function createMockLogger() {
   return {
@@ -161,7 +164,7 @@ describe('Q10MessageDispatcher', () => {
   describe('getCleanModeData', () => {
     it('should return a CleanModeSetting object', async () => {
       const result = await dispatcher.getCleanModeData(duid);
-      expect(result).toEqual({ suctionPower: 0, waterFlow: 0, mopRoute: 0, distance_off: 0 });
+      expect(result).toEqual({ suctionPower: 0, waterFlow: 0, mopRoute: 0, distance_off: 0, sequenceType: 0 });
     });
   });
 
@@ -175,7 +178,8 @@ describe('Q10MessageDispatcher', () => {
       dispatcher['setVacuumMode'] = setVacuumMode;
       dispatcher['setWaterMode'] = setWaterMode;
 
-      await dispatcher.changeCleanMode(duid, 1, 2, 3, 4);
+      const setting = new CleanModeSetting(1, 2, 4, 3, CleanSequenceType.Persist);
+      await dispatcher.changeCleanMode(duid, setting);
       expect(setCleanMode).toHaveBeenCalledWith(duid, 1, 2);
       expect(setVacuumMode).toHaveBeenCalledWith(duid, 1);
       expect(setWaterMode).toHaveBeenCalledWith(duid, 2);
@@ -189,7 +193,8 @@ describe('Q10MessageDispatcher', () => {
       dispatcher['setVacuumMode'] = setVacuumMode;
       dispatcher['setWaterMode'] = setWaterMode;
 
-      await dispatcher.changeCleanMode(duid, 0, 2, 3, 4);
+      const setting = new CleanModeSetting(0, 2, 4, 3, CleanSequenceType.Persist);
+      await dispatcher.changeCleanMode(duid, setting);
       expect(setVacuumMode).not.toHaveBeenCalled();
       expect(setWaterMode).toHaveBeenCalledWith(duid, 2);
     });
@@ -202,7 +207,8 @@ describe('Q10MessageDispatcher', () => {
       dispatcher['setVacuumMode'] = setVacuumMode;
       dispatcher['setWaterMode'] = setWaterMode;
 
-      await dispatcher.changeCleanMode(duid, 1, 0, 3, 4);
+      const setting = new CleanModeSetting(1, 0, 4, 3, CleanSequenceType.Persist);
+      await dispatcher.changeCleanMode(duid, setting);
       expect(setVacuumMode).toHaveBeenCalledWith(duid, 1);
       expect(setWaterMode).not.toHaveBeenCalled();
     });

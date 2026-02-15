@@ -17,6 +17,8 @@ import { DockStationStatus } from './model/DockStationStatus.js';
 import { triggerDssError } from './runtimes/handleLocalMessage.js';
 import { state_to_matter_operational_status, state_to_matter_state } from './share/function.js';
 import { VacuumStatus } from './model/VacuumStatus.js';
+import { CleanSequenceType } from './behaviors/roborock.vacuum/enums/CleanSequenceType.js';
+import { smartCleanModeConfigs } from './behaviors/roborock.vacuum/core/cleanModeConfig.js';
 
 type RobotHandler<T = unknown> = (robot: RoborockVacuumCleaner, data: T) => void;
 type PayloadHandler = (payload: MessagePayload) => void;
@@ -159,6 +161,10 @@ export class PlatformRunner {
     );
   }
 
+  private getCleanModeName(mode: number): string {
+    return smartCleanModeConfigs.find((x) => x.mode === mode)?.label ?? 'Not found';
+  }
+
   private getOperationalErrorName(operationalError: number): string {
     return (
       Object.keys(RvcOperationalState.ErrorState).find((key) => RvcOperationalState.ErrorState[key as keyof typeof RvcOperationalState.ErrorState] === operationalError) ||
@@ -289,12 +295,21 @@ export class PlatformRunner {
    * Handle clean mode update messages and update robot clean mode.
    * Processes clean mode settings (suction power, water flow, mop route).
    */
-  private handleCleanModeUpdate(robot: RoborockVacuumCleaner, message: { suctionPower: number; waterFlow: number; distance_off: number; mopRoute: number | undefined }): void {
+  private handleCleanModeUpdate(
+    robot: RoborockVacuumCleaner,
+    message: { suctionPower: number; waterFlow: number; distance_off: number; mopRoute: number | undefined; seq_type: number | undefined },
+  ): void {
     this.platform.log.debug(`Handling clean mode update: ${debugStringify(message)}`);
     const deviceData = robot.device.specs;
 
     // Update RvcCleanMode based on clean mode settings
-    const currentCleanModeSetting = new CleanModeSetting(message.suctionPower, message.waterFlow, message.distance_off, message.mopRoute);
+    const currentCleanModeSetting = new CleanModeSetting(
+      message.suctionPower,
+      message.waterFlow,
+      message.distance_off,
+      message.mopRoute,
+      message.seq_type ?? CleanSequenceType.Persist,
+    );
     if (currentCleanModeSetting.hasFullSettings) {
       robot.cleanModeSetting = currentCleanModeSetting;
       const forceRunAtDefault = this.platform.configManager.forceRunAtDefault;
@@ -302,6 +317,7 @@ export class PlatformRunner {
       const currentCleanMode = currentCleanModeResolver.resolve(currentCleanModeSetting);
 
       if (currentCleanMode) {
+        this.platform.log.debug(`Calculated current clean mode: ${this.getCleanModeName(currentCleanMode)}`);
         robot.updateAttribute(RvcCleanMode.Cluster.id, 'currentMode', currentCleanMode, this.platform.log);
       }
     }

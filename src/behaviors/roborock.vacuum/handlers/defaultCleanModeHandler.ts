@@ -1,7 +1,7 @@
 import { debugStringify } from 'matterbridge/logger';
 import { ModeHandler, HandlerContext } from '../core/modeHandler.js';
 import { getSettingFromCleanMode } from '../core/cleanModeUtils.js';
-import { CleanModeDisplayLabel } from '../core/cleanModeConfig.js';
+import { CleanModeDisplayLabel, CleanModeLabelInfo } from '../core/cleanModeConfig.js';
 
 export class DefaultCleanModeHandler implements ModeHandler {
   private readonly defaultModes: string[] = [CleanModeDisplayLabel.MopAndVacuumDefault, CleanModeDisplayLabel.MopDefault, CleanModeDisplayLabel.VacuumDefault];
@@ -11,6 +11,12 @@ export class DefaultCleanModeHandler implements ModeHandler {
   }
 
   public async handle(duid: string, mode: number, activity: string, context: HandlerContext): Promise<void> {
+    // currently I have no idea to activate Vac followed by mop.
+    // so it will handle as default vac & mop
+    if (mode === CleanModeLabelInfo[CleanModeDisplayLabel.MopAndVaccum_VacFollowedByMop].mode) {
+      mode = CleanModeLabelInfo[CleanModeDisplayLabel.MopAndVacuumDefault].mode;
+    }
+
     const setting =
       context.enableCleanModeMapping && context.cleanModeSettings
         ? (getSettingFromCleanMode(activity, context.cleanModeSettings) ?? context.cleanSettings[mode])

@@ -11,6 +11,7 @@ import { MapInfo } from '../../../core/application/models/index.js';
 import { MapRoomResponse } from '../../../types/device.js';
 import { CleanModeSetting } from '../../../behaviors/roborock.vacuum/core/CleanModeSetting.js';
 import { B01MapParser } from '../../map/b01/b01MapParser.js';
+import { CleanSequenceType } from '../../../behaviors/roborock.vacuum/enums/CleanSequenceType.js';
 
 export class Q7MessageDispatcher implements AbstractMessageDispatcher {
   public dispatcherName = 'Q7MessageDispatcher';
@@ -137,10 +138,11 @@ export class Q7MessageDispatcher implements AbstractMessageDispatcher {
   }
 
   public async getCleanModeData(duid: string): Promise<CleanModeSetting> {
-    return new CleanModeSetting(0, 0, 0, 0); // TODO: Implement retrieval of clean mode data for Q7
+    return new CleanModeSetting(0, 0, 0, 0, CleanSequenceType.Persist); // TODO: Implement retrieval of clean mode data for Q7
   }
 
-  public async changeCleanMode(duid: string, suctionPower: number, waterFlow: number, mopRoute: number, distance_off: number): Promise<void> {
+  public async changeCleanMode(duid: string, setting: CleanModeSetting): Promise<void> {
+    const { suctionPower, waterFlow, distance_off, mopRoute } = setting;
     this.logger?.notice(`Change clean mode for ${duid} to suctionPower: ${suctionPower}, waterFlow: ${waterFlow}, mopRoute: ${mopRoute}, distance_off: ${distance_off}`);
     await this.setCleanMode(duid, suctionPower, waterFlow);
     if (suctionPower !== 0) {

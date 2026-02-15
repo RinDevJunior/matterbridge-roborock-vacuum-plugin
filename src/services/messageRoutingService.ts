@@ -57,9 +57,9 @@ export class MessageRoutingService {
   }
 
   /** Change cleaning mode settings. */
-  public async changeCleanMode(duid: string, { suctionPower, waterFlow, distance_off, mopRoute }: CleanModeSetting): Promise<void> {
+  public async changeCleanMode(duid: string, setting: CleanModeSetting): Promise<void> {
     this.logger.notice('MessageRoutingService - changeCleanMode');
-    return this.getMessageDispatcher(duid).changeCleanMode(duid, suctionPower, waterFlow, mopRoute ?? 0, distance_off);
+    return this.getMessageDispatcher(duid).changeCleanMode(duid, setting);
   }
 
   /** Start cleaning (global, room-specific, or routine). */

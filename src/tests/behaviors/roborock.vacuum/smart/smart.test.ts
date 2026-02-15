@@ -4,7 +4,7 @@ import { BehaviorDeviceGeneric, DeviceCommands } from '../../../../behaviors/Beh
 import { RoborockService } from '../../../../services/roborockService.js';
 import { configureBehavior } from '../../../../share/behaviorFactory.js';
 import { DeviceModel } from '../../../../roborockCommunication/models/deviceModel.js';
-import { MopRoute, MopWaterFlow, VacuumSuctionPower } from '../../../../behaviors/roborock.vacuum/enums/index.js';
+import { CleanSequenceType, MopRoute, MopWaterFlow, VacuumSuctionPower } from '../../../../behaviors/roborock.vacuum/enums/index.js';
 import { CleanModeSettings } from '../../../../model/RoborockPluginPlatformConfig.js';
 import { asPartial, asType, createMockLogger } from '../../../testUtils.js';
 
@@ -58,6 +58,7 @@ describe('setCommandHandlerSmart', () => {
       waterFlow: 0,
       distance_off: 0,
       mopRoute: MopRoute.Smart,
+      sequenceType: CleanSequenceType.Persist,
     });
   });
 
@@ -70,6 +71,7 @@ describe('setCommandHandlerSmart', () => {
       waterFlow: MopWaterFlow.Medium,
       mopRoute: MopRoute.Standard,
       distance_off: 0,
+      sequenceType: CleanSequenceType.Persist,
     });
   });
 
@@ -99,6 +101,7 @@ describe('setCommandHandlerSmart', () => {
       waterFlow: MopWaterFlow.CustomizeWithDistanceOff,
       mopRoute: MopRoute.Fast,
       distance_off: 85,
+      sequenceType: CleanSequenceType.Persist,
     });
   });
 
@@ -110,6 +113,7 @@ describe('setCommandHandlerSmart', () => {
       waterFlow: MopWaterFlow.Off,
       mopRoute: MopRoute.Standard,
       distance_off: 0,
+      sequenceType: CleanSequenceType.Persist,
     });
   });
 
@@ -122,6 +126,7 @@ describe('setCommandHandlerSmart', () => {
       waterFlow: MopWaterFlow.Off,
       mopRoute: MopRoute.DeepPlus,
       distance_off: 0,
+      sequenceType: CleanSequenceType.Persist,
     });
   });
 
@@ -133,6 +138,7 @@ describe('setCommandHandlerSmart', () => {
       waterFlow: MopWaterFlow.Medium,
       mopRoute: MopRoute.Standard,
       distance_off: 0,
+      sequenceType: CleanSequenceType.Persist,
     });
   });
 
@@ -161,6 +167,7 @@ describe('setCommandHandlerSmart', () => {
       waterFlow: MopWaterFlow.CustomizeWithDistanceOff,
       mopRoute: MopRoute.Deep,
       distance_off: 85,
+      sequenceType: CleanSequenceType.Persist,
     });
   });
 

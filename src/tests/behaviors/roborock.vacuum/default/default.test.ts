@@ -3,7 +3,7 @@ import { AnsiLogger } from 'matterbridge/logger';
 import { RoborockService } from '../../../../services/roborockService.js';
 import { createMockLogger } from '../../../testUtils.js';
 
-import { MopRoute, MopWaterFlow, VacuumSuctionPower } from '../../../../behaviors/roborock.vacuum/enums/index.js';
+import { CleanSequenceType, MopRoute, MopWaterFlow, VacuumSuctionPower } from '../../../../behaviors/roborock.vacuum/enums/index.js';
 import { configureBehavior } from '../../../../share/behaviorFactory.js';
 import { DeviceModel } from '../../../../roborockCommunication/models/deviceModel.js';
 import { CleanModeSettings } from '../../../../model/RoborockPluginPlatformConfig.js';
@@ -53,6 +53,7 @@ describe('setDefaultCommandHandler', () => {
       waterFlow: MopWaterFlow.High,
       mopRoute: MopRoute.Fast,
       distance_off: 0,
+      sequenceType: CleanSequenceType.Persist,
     });
   });
 
@@ -64,6 +65,7 @@ describe('setDefaultCommandHandler', () => {
       waterFlow: MopWaterFlow.Off,
       mopRoute: MopRoute.DeepPlus,
       distance_off: 0,
+      sequenceType: CleanSequenceType.Persist,
     });
   });
 
@@ -75,6 +77,7 @@ describe('setDefaultCommandHandler', () => {
       waterFlow: MopWaterFlow.Low,
       mopRoute: MopRoute.Deep,
       distance_off: 0,
+      sequenceType: CleanSequenceType.Persist,
     });
   });
 

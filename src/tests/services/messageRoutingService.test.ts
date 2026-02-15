@@ -8,6 +8,7 @@ import { RequestMessage } from '../../roborockCommunication/models/index.js';
 import { V10MessageDispatcher } from '../../roborockCommunication/protocol/dispatcher/V10MessageDispatcher.js';
 import { CleanModeSetting } from '../../behaviors/roborock.vacuum/core/CleanModeSetting.js';
 import { asPartial } from '../testUtils.js';
+import { CleanSequenceType } from '../../behaviors/roborock.vacuum/enums/CleanSequenceType.js';
 
 function createIntegrationLogger() {
   return { debug: vi.fn(), notice: vi.fn(), warn: vi.fn() } as Partial<AnsiLogger> as AnsiLogger;
@@ -176,7 +177,7 @@ describe('MessageRoutingService', () => {
 
   describe('getCleanModeData', () => {
     const testDuid = 'test-device-456';
-    const mockCleanMode = new CleanModeSetting(100, 200, 0, 302);
+    const mockCleanMode = new CleanModeSetting(100, 200, 0, 302, CleanSequenceType.Persist);
 
     beforeEach(() => {
       messageService.registerMessageDispatcher(testDuid, mockDispatcher as V10MessageDispatcher);
@@ -251,22 +252,22 @@ describe('MessageRoutingService', () => {
     });
 
     it('should change clean mode successfully', async () => {
-      const settings = new CleanModeSetting(105, 203, 0, 302);
+      const settings = new CleanModeSetting(105, 203, 0, 302, CleanSequenceType.Persist);
       await messageService.changeCleanMode(testDuid, settings);
 
-      expect(mockDispatcher.changeCleanMode).toHaveBeenCalledWith(testDuid, 105, 203, 302, 0);
+      expect(mockDispatcher.changeCleanMode).toHaveBeenCalledWith(testDuid, settings);
       expect(mockLogger.notice).toHaveBeenCalledWith('MessageRoutingService - changeCleanMode');
     });
 
     it('should handle zero values in clean mode', async () => {
-      const settings = new CleanModeSetting(0, 0, 0, 0);
+      const settings = new CleanModeSetting(0, 0, 0, 0, CleanSequenceType.Persist);
       await messageService.changeCleanMode(testDuid, settings);
 
-      expect(mockDispatcher.changeCleanMode).toHaveBeenCalledWith(testDuid, 0, 0, 0, 0);
+      expect(mockDispatcher.changeCleanMode).toHaveBeenCalledWith(testDuid, settings);
     });
 
     it('should throw DeviceError when processor not found', async () => {
-      const settings = new CleanModeSetting(105, 203, 0, 302);
+      const settings = new CleanModeSetting(105, 203, 0, 302, CleanSequenceType.Persist);
       await expect(messageService.changeCleanMode('unknown-device', settings)).rejects.toThrow(DeviceError);
     });
   });
@@ -546,7 +547,7 @@ describe('MessageRoutingService', () => {
     });
 
     it('should handle clean mode adjustment workflow', async () => {
-      const mockCleanMode = new CleanModeSetting(101, 202, 0, 302);
+      const mockCleanMode = new CleanModeSetting(101, 202, 0, 302, CleanSequenceType.Persist);
 
       mockDispatcher.getCleanModeData.mockResolvedValue(mockCleanMode);
 
@@ -555,9 +556,9 @@ describe('MessageRoutingService', () => {
       expect(currentMode).toEqual(mockCleanMode);
 
       // Change clean mode
-      const settings = new CleanModeSetting(105, 203, 0, 302);
+      const settings = new CleanModeSetting(105, 203, 0, 302, CleanSequenceType.Persist);
       await messageService.changeCleanMode(testDuid, settings);
-      expect(mockDispatcher.changeCleanMode).toHaveBeenCalledWith(testDuid, 105, 203, 302, 0);
+      expect(mockDispatcher.changeCleanMode).toHaveBeenCalledWith(testDuid, settings);
     });
   });
 

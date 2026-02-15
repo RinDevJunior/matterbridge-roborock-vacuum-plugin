@@ -61,6 +61,7 @@ export class SimpleMessageListener implements AbstractMessageListener {
       cleaningInfo?.water_box_status ?? messageBody.water_box_mode,
       messageBody.distance_off,
       cleaningInfo?.mop_mode ?? messageBody.mop_mode,
+      messageBody.seq_type,
     );
 
     const batteryMessage = new BatteryMessage(message.duid, battery, chargeStatus, state);

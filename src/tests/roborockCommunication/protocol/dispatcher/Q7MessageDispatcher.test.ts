@@ -3,6 +3,9 @@ import { Q7MessageDispatcher } from '../../../../roborockCommunication/protocol/
 import { asType, asPartial } from '../../../testUtils.js';
 import { RequestMessage, ResponseBody } from '../../../../roborockCommunication/models/index.js';
 import { Protocol } from '../../../../roborockCommunication/models/protocol.js';
+import { CleanModeSetting } from '../../../../behaviors/roborock.vacuum/core/CleanModeSetting.js';
+import { CleanSequenceType } from '../../../../behaviors/roborock.vacuum/enums/CleanSequenceType.js';
+
 // --- Mock Factories ---
 function createMockLogger() {
   return {
@@ -185,7 +188,7 @@ describe('Q7MessageDispatcher', () => {
   describe('getCleanModeData', () => {
     it('should return a CleanModeSetting object', async () => {
       const result = await dispatcher.getCleanModeData(duid);
-      expect(result).toEqual({ suctionPower: 0, waterFlow: 0, mopRoute: 0, distance_off: 0 });
+      expect(result).toEqual({ suctionPower: 0, waterFlow: 0, mopRoute: 0, distance_off: 0, sequenceType: 0 });
     });
   });
 
@@ -199,7 +202,8 @@ describe('Q7MessageDispatcher', () => {
       dispatcher['setVacuumMode'] = setVacuumMode;
       dispatcher['setMopMode'] = setMopMode;
 
-      await dispatcher.changeCleanMode(duid, 1, 2, 3, 4);
+      const setting = new CleanModeSetting(1, 2, 4, 3, CleanSequenceType.Persist);
+      await dispatcher.changeCleanMode(duid, setting);
       expect(setCleanMode).toHaveBeenCalledWith(duid, 1, 2);
       expect(setVacuumMode).toHaveBeenCalledWith(duid, 1);
       expect(setMopMode).toHaveBeenCalledWith(duid, 2);
@@ -213,7 +217,8 @@ describe('Q7MessageDispatcher', () => {
       dispatcher['setVacuumMode'] = setVacuumMode;
       dispatcher['setMopMode'] = setMopMode;
 
-      await dispatcher.changeCleanMode(duid, 0, 2, 3, 4);
+      const setting = new CleanModeSetting(0, 2, 4, 3, CleanSequenceType.Persist);
+      await dispatcher.changeCleanMode(duid, setting);
       expect(setVacuumMode).not.toHaveBeenCalled();
       expect(setMopMode).toHaveBeenCalledWith(duid, 2);
     });
@@ -226,7 +231,8 @@ describe('Q7MessageDispatcher', () => {
       dispatcher['setVacuumMode'] = setVacuumMode;
       dispatcher['setMopMode'] = setMopMode;
 
-      await dispatcher.changeCleanMode(duid, 1, 0, 3, 4);
+      const setting = new CleanModeSetting(1, 0, 4, 3, CleanSequenceType.Persist);
+      await dispatcher.changeCleanMode(duid, setting);
       expect(setVacuumMode).toHaveBeenCalledWith(duid, 1);
       expect(setMopMode).not.toHaveBeenCalled();
     });

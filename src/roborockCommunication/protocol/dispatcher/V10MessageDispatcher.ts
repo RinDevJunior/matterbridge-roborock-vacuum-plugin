@@ -6,7 +6,7 @@ import { MapInfo } from '../../../core/application/models/index.js';
 import { MultipleMapDto, RawRoomMappingData } from '../../models/home/index.js';
 import { MapRoomResponse } from '../../../types/index.js';
 import { CleanModeSetting } from '../../../behaviors/roborock.vacuum/core/CleanModeSetting.js';
-import { MopRoute, VacuumSuctionPower } from '../../../behaviors/roborock.vacuum/enums/index.js';
+import { MopRoute, MopWaterFlow, VacuumSuctionPower } from '../../../behaviors/roborock.vacuum/enums/index.js';
 
 export class V10MessageDispatcher implements AbstractMessageDispatcher {
   public dispatcherName = 'V10MessageDispatcher';
@@ -136,10 +136,11 @@ export class V10MessageDispatcher implements AbstractMessageDispatcher {
       waterFlow = waterFlowRaw as number;
     }
 
-    return new CleanModeSetting(suctionPower, waterFlow, distance_off, mopRoute);
+    return new CleanModeSetting(suctionPower, waterFlow, distance_off, mopRoute, undefined);
   }
 
-  public async changeCleanMode(duid: string, suctionPower: number, waterFlow: number, mopRoute: number, distance_off: number): Promise<void> {
+  public async changeCleanMode(duid: string, setting: CleanModeSetting): Promise<void> {
+    const { suctionPower, waterFlow, distance_off, mopRoute } = setting;
     this.logger.notice(`Change clean mode for ${duid} to suctionPower: ${suctionPower}, waterFlow: ${waterFlow}, mopRoute: ${mopRoute}, distance_off: ${distance_off}`);
 
     const currentMopMode = await this.getCustomMessage<number>(duid, new RequestMessage({ method: 'get_custom_mode' }));
@@ -160,8 +161,7 @@ export class V10MessageDispatcher implements AbstractMessageDispatcher {
       await this.client.send(duid, new RequestMessage({ method: 'set_custom_mode', params: [suctionPower] }));
     }
 
-    const CustomizeWithDistanceOff = 207;
-    if (waterFlow && waterFlow == CustomizeWithDistanceOff && distance_off && distance_off != 0) {
+    if (waterFlow && waterFlow == MopWaterFlow.CustomizeWithDistanceOff && distance_off && distance_off != 0) {
       await this.client.send(duid, new RequestMessage({ method: 'set_water_box_custom_mode', params: { 'water_box_mode': waterFlow, 'distance_off': distance_off } }));
     } else if (waterFlow && waterFlow != 0) {
       await this.client.send(duid, new RequestMessage({ method: 'set_water_box_custom_mode', params: [waterFlow] }));

@@ -6,9 +6,15 @@ import { PresetCleanModeHandler } from '../handlers/presetCleanModeHandler.js';
 import { CustomCleanModeHandler } from '../handlers/customCleanModeHandler.js';
 import { SmartPlanHandler } from '../handlers/smartPlanHandler.js';
 import { CleanModeSetting } from './CleanModeSetting.js';
-import { DefaultRvcCleanMode, SmartRvcCleanMode } from './cleanMode.js';
-import { DefaultCleanSetting, SmartCleanSetting } from './cleanSetting.js';
+import { baseCleanModeConfigs, CleanModeDisplayLabel, CleanModeLabelInfo, getModeDisplayMap, getModeSettingsMap, smartCleanModeConfigs } from './cleanModeConfig.js';
 import { baseRunModeConfigs, RunModeConfig } from './runModeConfig.js';
+
+const goVacationEntry = {
+  [CleanModeLabelInfo[CleanModeDisplayLabel.GoVacation].mode]: CleanModeLabelInfo[CleanModeDisplayLabel.GoVacation].label,
+};
+
+const defaultCleanModes = { ...getModeDisplayMap(baseCleanModeConfigs), ...goVacationEntry };
+const smartCleanModes = { ...getModeDisplayMap(smartCleanModeConfigs), ...goVacationEntry };
 
 export interface BehaviorConfig {
   name: string;
@@ -28,8 +34,8 @@ export function createDefaultBehaviorConfig(): BehaviorConfig {
 
   return {
     name: 'DefaultBehavior',
-    cleanModes: DefaultRvcCleanMode,
-    cleanSettings: DefaultCleanSetting,
+    cleanModes: defaultCleanModes,
+    cleanSettings: getModeSettingsMap(baseCleanModeConfigs),
     runModeConfigs: baseRunModeConfigs,
     registry,
   };
@@ -46,8 +52,8 @@ export function createSmartBehaviorConfig(): BehaviorConfig {
 
   return {
     name: 'BehaviorSmart',
-    cleanModes: SmartRvcCleanMode,
-    cleanSettings: SmartCleanSetting,
+    cleanModes: smartCleanModes,
+    cleanSettings: getModeSettingsMap(smartCleanModeConfigs),
     runModeConfigs: baseRunModeConfigs,
     registry,
   };

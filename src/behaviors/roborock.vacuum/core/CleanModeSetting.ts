@@ -6,6 +6,7 @@ export class CleanModeSetting {
     public readonly waterFlow: number,
     public readonly distance_off: number,
     public readonly mopRoute: number | undefined,
+    public readonly sequenceType: number | undefined,
   ) {}
 
   public get hasFullSettings(): boolean {

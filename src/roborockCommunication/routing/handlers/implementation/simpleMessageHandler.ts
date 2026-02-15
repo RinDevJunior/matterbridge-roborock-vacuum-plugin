@@ -63,6 +63,7 @@ export class SimpleMessageHandler implements AbstractMessageHandler {
       data: {
         ...message,
         duid: this.duid,
+        seq_type: message.sequenceType,
       },
     });
   }

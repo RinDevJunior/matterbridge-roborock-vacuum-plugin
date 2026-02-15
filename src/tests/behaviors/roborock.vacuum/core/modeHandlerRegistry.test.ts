@@ -6,6 +6,7 @@ import { createDefaultCleanModeSettings } from '../../../../model/RoborockPlugin
 import type { RoborockService } from '../../../../services/roborockService.js';
 import type { AnsiLogger } from 'matterbridge/logger';
 import { createMockLogger, asPartial } from '../../../helpers/testUtils.js';
+import { CleanSequenceType } from '../../../../behaviors/roborock.vacuum/enums/CleanSequenceType.js';
 
 describe('ModeHandlerRegistry', () => {
   it('registers handlers and returns this for chaining', () => {
@@ -120,7 +121,7 @@ describe('ModeHandlerRegistry', () => {
       roborockService: asPartial<RoborockService>({}),
       logger: { notice: vi.fn() } as Partial<AnsiLogger> as AnsiLogger,
       cleanModeSettings: createDefaultCleanModeSettings(),
-      cleanSettings: { 5: new CleanModeSetting(102, 202, 0, 300) },
+      cleanSettings: { 5: new CleanModeSetting(102, 202, 0, 300, CleanSequenceType.Persist) },
       behaviorName: 'SmartBehavior',
       enableCleanModeMapping: true,
     };

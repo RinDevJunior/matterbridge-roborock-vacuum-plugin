@@ -16,6 +16,7 @@ import * as dockingStationStatus from '../model/DockStationStatus.js';
 import { CleanModeSetting } from '../behaviors/roborock.vacuum/core/CleanModeSetting.js';
 import type { MessagePayload } from '../types/MessagePayloads.js';
 import { ModeResolver } from '../behaviors/roborock.vacuum/core/modeResolver.js';
+import { CleanSequenceType } from '../behaviors/roborock.vacuum/enums/CleanSequenceType.js';
 
 vi.mock('../initialData/index.js', () => ({
   getOperationalErrorState: vi.fn().mockReturnValue(2),
@@ -184,7 +185,7 @@ describe('PlatformRunner.updateRobotWithPayload', () => {
       updateAttribute: vi.fn(),
       getAttribute: vi.fn().mockReturnValue(RvcOperationalState.OperationalState.Docked),
       setAttribute: vi.fn(),
-      cleanModeSetting: new CleanModeSetting(1, 1, 1, 1),
+      cleanModeSetting: new CleanModeSetting(1, 1, 1, 1, CleanSequenceType.Persist),
       dockStationStatus: asPartial<DockStationStatus>({}),
     });
     platform = asPartial<RoborockMatterbridgePlatform>({
@@ -321,7 +322,7 @@ describe('PlatformRunner.updateRobotWithPayload', () => {
         specs: asPartial<DeviceSpecs>({ model: DeviceModel.S7 }),
       }),
       updateAttribute: vi.fn(),
-      cleanModeSetting: new CleanModeSetting(1, 1, 1, 1),
+      cleanModeSetting: new CleanModeSetting(1, 1, 1, 1, CleanSequenceType.Persist),
       dockStationStatus: mockDockStatus,
     });
 
@@ -374,7 +375,7 @@ describe('PlatformRunner.updateRobotWithPayload', () => {
   });
 
   it('should handle CleanModeUpdate message with full settings', () => {
-    const cleanModeMessage = { duid: 'test-duid', suctionPower: 2, waterFlow: 3, distance_off: 1, mopRoute: 1 };
+    const cleanModeMessage = { duid: 'test-duid', suctionPower: 2, waterFlow: 3, distance_off: 1, mopRoute: 1, seq_type: 0 };
     const payload: MessagePayload = { type: NotifyMessageTypes.CleanModeUpdate, data: cleanModeMessage };
 
     runner.updateRobotWithPayload(payload);
@@ -384,7 +385,7 @@ describe('PlatformRunner.updateRobotWithPayload', () => {
   });
 
   it('should not update clean mode when settings are incomplete', () => {
-    const cleanModeMessage = { duid: 'test-duid', suctionPower: 2, waterFlow: 3, distance_off: 1, mopRoute: undefined };
+    const cleanModeMessage = { duid: 'test-duid', suctionPower: 2, waterFlow: 3, distance_off: 1, mopRoute: undefined, seq_type: 0 };
     const payload: MessagePayload = { type: NotifyMessageTypes.CleanModeUpdate, data: cleanModeMessage };
 
     runner.updateRobotWithPayload(payload);
@@ -399,7 +400,7 @@ describe('PlatformRunner.updateRobotWithPayload', () => {
       }),
     );
 
-    const cleanModeMessage = { duid: 'test-duid', suctionPower: 2, waterFlow: 3, distance_off: 1, mopRoute: 1 };
+    const cleanModeMessage = { duid: 'test-duid', suctionPower: 2, waterFlow: 3, distance_off: 1, mopRoute: 1, seq_type: 0 };
     const payload: MessagePayload = { type: NotifyMessageTypes.CleanModeUpdate, data: cleanModeMessage };
 
     runner.updateRobotWithPayload(payload);

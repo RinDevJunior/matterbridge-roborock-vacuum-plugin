@@ -17,6 +17,7 @@ import { asPartial, asType } from '../../testUtils.js';
 import type { LocalStorage } from 'node-persist';
 import type { PlatformConfigManager } from '../../../platform/platformConfigManager.js';
 import { RoborockIoTApi } from '../../../roborockCommunication/api/iotClient.js';
+import { CleanSequenceType } from '../../../behaviors/roborock.vacuum/enums/CleanSequenceType.js';
 
 describe('RoborockService - Complete Coverage', () => {
   let service: RoborockService;
@@ -382,7 +383,7 @@ describe('RoborockService - Complete Coverage', () => {
 
   describe('Message Routing', () => {
     it('should delegate getCleanModeData to messageService', async () => {
-      const cleanMode = new CleanModeSetting(100, 200, 25, 300);
+      const cleanMode = new CleanModeSetting(100, 200, 25, 300, CleanSequenceType.Persist);
       vi.mocked(mockMessageService.getCleanModeData).mockResolvedValue(cleanMode);
 
       const result = await service.getCleanModeData('duid');
@@ -409,7 +410,7 @@ describe('RoborockService - Complete Coverage', () => {
     });
 
     it('should delegate changeCleanMode to messageService', async () => {
-      const settings = new CleanModeSetting(102, 203, 25, 300);
+      const settings = new CleanModeSetting(102, 203, 25, 300, CleanSequenceType.Persist);
 
       await service.changeCleanMode('duid', settings);
 
