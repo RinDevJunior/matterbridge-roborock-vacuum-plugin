@@ -189,10 +189,16 @@ describe('setDefaultCommandHandler', () => {
     expect(roborockService.changeCleanMode).toHaveBeenCalled();
   });
 
-  it('should handle Mop & Vacuum: Custom mode', async () => {
+  it('should handle Mop & Vacuum: Energy Saving mode', async () => {
     const handler = configureBehavior(DeviceModel.Q5, duid, roborockService as RoborockService, false, cleanModeSettings, false, logger);
-    await handler.executeCommand('changeToMode', 10); // 10 = Mop & Vacuum: Custom
+    await handler.executeCommand('changeToMode', 10); // 10 = Mop & Vacuum: Energy Saving
     expect(roborockService.changeCleanMode).toHaveBeenCalled();
+  });
+
+  it('should handle Mop & Vacuum: Vac Follow by Mop mode as unknown since no handler matches', async () => {
+    const handler = configureBehavior(DeviceModel.Q5, duid, roborockService as RoborockService, false, cleanModeSettings, false, logger);
+    await handler.executeCommand('changeToMode', 11); // 11 = Mop & Vacuum: Vac Follow by Mop
+    expect(logger.notice).toHaveBeenCalledWith('DefaultBehavior-changeToMode-Unknown: ', 11);
   });
 
   it('should handle Mop: Max mode', async () => {

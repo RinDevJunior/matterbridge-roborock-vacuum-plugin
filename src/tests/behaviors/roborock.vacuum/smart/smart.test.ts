@@ -218,4 +218,16 @@ describe('setCommandHandlerSmart', () => {
     await handler.executeCommand('changeToMode', 9999);
     expect(logger.notice).toHaveBeenCalledWith('BehaviorSmart-changeToMode-Unknown: ', 9999);
   });
+
+  it('should handle Mop & Vacuum: Energy Saving mode', async () => {
+    const handler = configureBehavior(DeviceModel.QREVO_EDGE_5V1, duid, roborockService, false, cleanModeSettings, false, logger);
+    await handler.executeCommand('changeToMode', 10); // 10 = Energy Saving
+    expect(roborockService.changeCleanMode).toHaveBeenCalled();
+  });
+
+  it('should handle Mop & Vacuum: Vac Follow by Mop mode as unknown since no handler matches', async () => {
+    const handler = configureBehavior(DeviceModel.QREVO_EDGE_5V1, duid, roborockService, false, cleanModeSettings, false, logger);
+    await handler.executeCommand('changeToMode', 11); // 11 = Mop & Vacuum: Vac Follow by Mop
+    expect(logger.notice).toHaveBeenCalledWith('BehaviorSmart-changeToMode-Unknown: ', 11);
+  });
 });
