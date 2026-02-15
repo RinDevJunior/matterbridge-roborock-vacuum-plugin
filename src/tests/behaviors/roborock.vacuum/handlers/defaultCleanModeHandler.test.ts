@@ -74,7 +74,9 @@ describe('DefaultCleanModeHandler', () => {
     it('should use cleanModeSettings when enableCleanModeMapping is true', async () => {
       context.enableCleanModeMapping = true;
       context.cleanModeSettings = {
-        vacmop: { fanMode: 'Max', waterFlowMode: 'High', mopRouteMode: 'Fast' },
+        vacuuming: { fanMode: 'Max', mopRouteMode: 'Standard' },
+        mopping: { waterFlowMode: 'Medium', mopRouteMode: 'Fast', distanceOff: 0 },
+        vacmop: { fanMode: 'Max', waterFlowMode: 'High', mopRouteMode: 'Fast', distanceOff: 0 },
       };
       const defaultMode = CleanModeLabelInfo[CleanModeDisplayLabel.MopAndVacuumDefault].mode;
       await handler.handle(duid, defaultMode, CleanModeDisplayLabel.MopAndVacuumDefault, context);

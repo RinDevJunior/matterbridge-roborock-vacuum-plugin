@@ -58,15 +58,15 @@ export class Q7MessageDispatcher implements AbstractMessageDispatcher {
     return new MapInfo({ max_multi_map: 0, max_bak_map: 0, multi_map_count: 0, map_info: [] });
   }
 
-  public async getRoomMap_backup1(duid: string, activeMap: number): Promise<RawRoomMappingData> {
-    const request = new RequestMessage({ messageId: this.messageId, dps: this.createDps(Q7RequestMethod.get_room_mapping, { map_id: activeMap, prefer_type: 1 }) });
+  public async getRoomMap(duid: string, activeMap: number): Promise<RawRoomMappingData> {
+    const request = new RequestMessage({ messageId: this.messageId, dps: this.createDps(Q7RequestMethod.get_room_mapping_backup_1, { map_id: activeMap, prefer_type: 1 }) });
     const response = (await this.client.get<RawRoomMappingData>(duid, request)) ?? [];
 
     this.logger.notice(`Get room map response for Q7 device ${duid}: ${response ? debugStringify(response) : 'no response'}`);
     return response; // TODO: Implement proper room mapping retrieval for Q7
   }
 
-  public async getRoomMap(duid: string, activeMap: number): Promise<RawRoomMappingData> {
+  public async getRoomMap_tmp(duid: string, activeMap: number): Promise<RawRoomMappingData> {
     const request = new RequestMessage({ messageId: this.messageId, dps: this.createDps(Q7RequestMethod.get_room_mapping, { force: 1, map_type: 0 }) });
     const response = await this.client.get<ResponseBody>(duid, request);
     if (!response) {

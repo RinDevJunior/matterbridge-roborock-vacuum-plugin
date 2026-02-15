@@ -92,19 +92,15 @@ describe('cleanModeConfig', () => {
 
   describe('baseCleanModeConfigs', () => {
     it('should contain VacFollowedByMop config with OneTime sequenceType', () => {
-      const vacFollowedByMop = baseCleanModeConfigs.find(
-        (c) => c.mode === CleanModeLabelInfo[CleanModeDisplayLabel.MopAndVaccum_VacFollowedByMop].mode,
-      );
+      const vacFollowedByMop = baseCleanModeConfigs.find((c) => c.mode === CleanModeLabelInfo[CleanModeDisplayLabel.MopAndVaccum_VacFollowedByMop].mode);
       expect(vacFollowedByMop).toBeDefined();
-      expect(vacFollowedByMop!.setting.sequenceType).toBe(1); // CleanSequenceType.OneTime
+      expect(vacFollowedByMop?.setting.sequenceType).toBe(1); // CleanSequenceType.OneTime
     });
 
     it('should have Persist sequenceType for standard modes', () => {
-      const defaultMode = baseCleanModeConfigs.find(
-        (c) => c.mode === CleanModeLabelInfo[CleanModeDisplayLabel.MopAndVacuumDefault].mode,
-      );
+      const defaultMode = baseCleanModeConfigs.find((c) => c.mode === CleanModeLabelInfo[CleanModeDisplayLabel.MopAndVacuumDefault].mode);
       expect(defaultMode).toBeDefined();
-      expect(defaultMode!.setting.sequenceType).toBe(0); // CleanSequenceType.Persist
+      expect(defaultMode?.setting.sequenceType).toBe(0); // CleanSequenceType.Persist
     });
   });
 
