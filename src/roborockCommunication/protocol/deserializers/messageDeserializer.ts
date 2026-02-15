@@ -19,8 +19,6 @@ export class MessageDeserializer {
     Protocol.general_response,
   ];
 
-  private readonly ignoredProtocols: Protocol[] = [Protocol.map_response];
-
   private readonly messageSerializerFactory = new MessageSerializerFactory();
 
   constructor(context: MessageContext, logger: AnsiLogger) {
@@ -56,10 +54,10 @@ export class MessageDeserializer {
       throw new Error(`[${from}][MessageDeserializer] unknown protocol: ${header.version ?? ''}`);
     }
 
-    if (this.protocolsWithoutPayload.includes(header.protocol) || this.ignoredProtocols.includes(header.protocol)) {
-      const message = new ResponseMessage(duid, header);
-      this.logger.debug(`[${from}][MessageDeserializer] deserialized message without payload: ${debugStringify(message)}`);
-      return message;
+    if (this.protocolsWithoutPayload.includes(header.protocol)) {
+      const responseMessage = new ResponseMessage(duid, header, undefined);
+      this.logger.debug(`[${from}][MessageDeserializer] deserialized message without payload: ${debugStringify(responseMessage)}`);
+      return responseMessage;
     }
 
     // parse message content
@@ -75,7 +73,7 @@ export class MessageDeserializer {
     const localKey = this.context.getLocalKey(duid);
     if (!localKey) {
       this.logger.notice(`Unable to retrieve local key for ${duid}, it should be from other vacuums`);
-      return new ResponseMessage(duid, header);
+      return new ResponseMessage(duid, header, undefined);
     }
 
     const connectNonce = this.context.nonce;
@@ -88,11 +86,18 @@ export class MessageDeserializer {
       const response = this.deserializeRpcResponse(duid, data, header);
       this.logger.debug(`[${from}][MessageDeserializer] deserialized body: ${debugStringify(response.body ?? {})}`);
       return response;
+    } else if (header.protocol === Protocol.map_response) {
+      const body: Record<number, Buffer> = {
+        [Protocol.map_response]: data.payload,
+      };
+      const responseMessage = new ResponseMessage(duid, header, new ResponseBody(body));
+      this.logger.debug(`[${from}][MessageDeserializer] deserialized message for map_response: ${debugStringify(responseMessage)}`);
+      return responseMessage;
     } else {
       this.logger.error(`unknown protocol: ${header.protocol}`);
       const response = this.deserializeUnknownProtocolPayload(duid, data, header);
       this.logger.debug(`[${from}][MessageDeserializer] deserialized body: ${debugStringify(response.body ?? {})}`);
-      return new ResponseMessage(duid, header);
+      return new ResponseMessage(duid, header, undefined);
     }
   }
 

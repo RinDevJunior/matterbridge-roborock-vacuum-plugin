@@ -7,6 +7,9 @@ export enum Q10RequestCode {
 
   rpc_request = 101,
   rpc_response = 102,
+  heart_beat = 110,
+  status = 121,
+
   get_prop = 999, // TODO: Verify
 
   clean_task_type = 138,

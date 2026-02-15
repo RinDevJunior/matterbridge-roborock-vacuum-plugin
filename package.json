@@ -108,6 +108,7 @@
     "binary-parser": "2.3.0",
     "crc-32": "1.2.2",
     "mqtt": "5.14.1",
-    "node-persist-manager": "2.0.0"
+    "node-persist-manager": "2.0.0",
+    "protobufjs": "^8.0.0"
   }
 }

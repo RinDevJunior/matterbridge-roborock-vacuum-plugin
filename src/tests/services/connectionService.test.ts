@@ -155,7 +155,7 @@ describe('ConnectionService', () => {
       await service.initializeMessageClientForLocal(mockDevice);
 
       const listenerCall = vi.mocked(mockClientRouter.registerMessageListener).mock.calls[0][0];
-      const mockMessage = new ResponseMessage(mockDevice.duid, new HeaderMessage('1.0', 2, 0, Date.now(), 0));
+      const mockMessage = new ResponseMessage(mockDevice.duid, new HeaderMessage('1.0', 2, 0, Date.now(), 0), undefined);
       mockMessage.isForProtocol = vi.fn().mockReturnValue(true);
 
       listenerCall.onMessage(mockMessage);
@@ -173,7 +173,7 @@ describe('ConnectionService', () => {
       service.deviceNotify = undefined;
 
       const listenerCall = vi.mocked(mockClientRouter.registerMessageListener).mock.calls[0][0];
-      const mockMessage = new ResponseMessage(mockDevice.duid, new HeaderMessage('1.0', 4, 0, Date.now(), 0));
+      const mockMessage = new ResponseMessage(mockDevice.duid, new HeaderMessage('1.0', 4, 0, Date.now(), 0), undefined);
       mockMessage.isForProtocol = vi.fn().mockReturnValue(false);
 
       expect(() => listenerCall.onMessage(mockMessage)).not.toThrow();
