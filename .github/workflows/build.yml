@@ -8,7 +8,6 @@ on:
   push:
     branches:
       - main
-      - dev
   pull_request:
     types: [opened, synchronize, reopened, edited]
 
@@ -27,7 +26,6 @@ jobs:
         os: [ubuntu-latest, windows-latest, macos-latest]
 
     steps:
-
       - name: Checkout code
         uses: actions/checkout@v4
 
