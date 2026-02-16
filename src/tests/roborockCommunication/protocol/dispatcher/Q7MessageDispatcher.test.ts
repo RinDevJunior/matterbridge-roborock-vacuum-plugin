@@ -183,6 +183,23 @@ describe('Q7MessageDispatcher', () => {
     });
   });
 
+  describe('messageId', () => {
+    it('should return monotonically increasing IDs', () => {
+      const id1 = dispatcher['messageId'];
+      const id2 = dispatcher['messageId'];
+      expect(id2).toBeGreaterThan(id1);
+    });
+
+    it('should increment when Date.now returns same value', () => {
+      const fixedTime = Date.now();
+      vi.spyOn(Date, 'now').mockReturnValue(fixedTime);
+      dispatcher['lastB01Id'] = fixedTime;
+      const id = dispatcher['messageId'];
+      expect(id).toBe(fixedTime + 1);
+      vi.restoreAllMocks();
+    });
+  });
+
   describe('changeCleanMode', () => {
     it('should call setCleanMode, setVacuumMode, setMopMode as needed', async () => {
       const setCleanMode = vi.fn();

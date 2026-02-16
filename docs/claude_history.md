@@ -1,5 +1,19 @@
 # Claude History
 
+## 2026-02-16 (Session 2)
+
+- Added unit tests to increase Codecov patch coverage across 8 files with missing lines.
+- New test files:
+  - `src/tests/roborockCommunication/broadcast/listener/localPingResponseListener.test.ts` (8 tests) — covers ping response handling, timer cleanup
+  - `src/tests/behaviors/roborock.vacuum/core/cleanModeUtils.test.ts` (11 tests) — covers getSettingFromCleanMode with all modes and CustomizeWithDistanceOff
+- Updated test files:
+  - `LocalNetworkClient.test.ts` — added 17 tests: isReady, isConnected branches, sendInternal hello_request bypass, trySendHelloRequest V1/L01 fallback, processHelloResponse, checkConnection reconnect/ping/skip, safeHandler error handling, multi-segment onMessage
+  - `messageContext.test.ts` — added 3 tests: updateMQTTProtocolVersion, getMQTTProtocolVersion, unregisterAllDevices
+  - `messageDeserializer.unit.test.ts` — added 4 tests: unsupported version, ping_response, hello_response, general_response
+  - `Q10MessageDispatcher.test.ts` — added 3 tests: messageId monotonic, Date.now collision, getRoomMap empty
+  - `Q7MessageDispatcher.test.ts` — added 2 tests: messageId monotonic, Date.now collision
+- All 1552 tests pass across 154 test files.
+
 ## 2026-02-16
 
 - Fixed keepConnectionAlive in MQTTClient and LocalNetworkClient to only reconnect when connection is down.

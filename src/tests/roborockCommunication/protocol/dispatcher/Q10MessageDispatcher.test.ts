@@ -168,6 +168,31 @@ describe('Q10MessageDispatcher', () => {
     });
   });
 
+  describe('messageId', () => {
+    it('should return monotonically increasing IDs', () => {
+      const id1 = dispatcher['messageId'];
+      const id2 = dispatcher['messageId'];
+      expect(id2).toBeGreaterThan(id1);
+    });
+
+    it('should increment when Date.now returns same value', () => {
+      const fixedTime = Date.now();
+      vi.spyOn(Date, 'now').mockReturnValue(fixedTime);
+      dispatcher['lastB01Id'] = fixedTime;
+      const id = dispatcher['messageId'];
+      expect(id).toBe(fixedTime + 1);
+      vi.restoreAllMocks();
+    });
+  });
+
+  describe('getRoomMap', () => {
+    it('should return empty array when response has no room_mapping', async () => {
+      client.get.mockResolvedValueOnce({});
+      const result = await dispatcher.getRoomMap(duid, 1);
+      expect(result).toEqual([]);
+    });
+  });
+
   describe('changeCleanMode', () => {
     it('should call setCleanMode, setVacuumMode, setWaterMode as needed', async () => {
       const setCleanMode = vi.fn();
