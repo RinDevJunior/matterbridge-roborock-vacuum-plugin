@@ -102,6 +102,10 @@ export class PlatformRunner {
     if (platform.registry.robotsMap.size === 0 || !platform.rrHomeId) return;
     if (platform.roborockService === undefined) return;
 
+    const robots = platform.registry.robotsMap.values();
+    const allDevicesHaveRealTimeConnection = robots.every((x) => x.device.specs.hasRealTimeConnection);
+    if (allDevicesHaveRealTimeConnection) return;
+
     const homeData = await platform.roborockService.getHomeDataForUpdating(platform.rrHomeId);
     if (homeData === undefined) return;
     this.updateRobotWithPayload({ type: NotifyMessageTypes.HomeData, data: homeData });

@@ -2,6 +2,8 @@
 
 ## Completed
 
+- [x] Improve Codecov patch coverage for module.ts, messageDeserializer, localClient, Q10/Q7 dispatchers, platformRunner
+- [x] Create CHANGELOG for 1.1.4-rc05 release candidate
 - [x] Improve Codecov patch coverage for localClient, localPingResponseListener, messageContext, messageDeserializer, Q10/Q7 dispatchers, cleanModeUtils
 - [x] Fix keepConnectionAlive in MQTTClient and LocalNetworkClient — only reconnect when connection is down
 - [x] Increase patch coverage for dev branch (modeResolver, cleanModeConfig, behaviorConfig, handlers, B01MapParser)

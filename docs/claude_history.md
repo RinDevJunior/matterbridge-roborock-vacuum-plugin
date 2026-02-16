@@ -1,5 +1,24 @@
 # Claude History
 
+## 2026-02-16 (Session 4)
+
+- Added unit tests to improve Codecov patch coverage for 7 files with missing lines.
+- Updated test files:
+  - `module.orchestration.test.ts` — added 5 tests: clearStorageOnStartup early return, alwaysExecuteAuthentication persist clear, roborockService undefined after discovery, onConfigure clearStorage flow, clearStorage error handling
+  - `messageDeserializer.test.ts` — added 3 tests: CRC32 mismatch throw, localKey not found returns undefined body, map_response protocol handling
+  - `LocalNetworkClient.test.ts` — added 3 tests: version fallback to context protocol, processHelloResponse clearing existing interval, safeHandler with non-Error objects
+  - `Q10MessageDispatcher.test.ts` — added 2 tests: real private helpers via client.send, both suctionPower and waterFlow zero
+  - `Q7MessageDispatcher.test.ts` — added 2 tests: real private helpers via client.send, both suctionPower and waterFlow zero
+  - `platformRunner.test.ts` — added 2 tests: skip requestHomeData when all devices have real-time connection, proceed when mixed connections
+
+## 2026-02-16 (Session 3)
+
+- Created CHANGELOG entry for `1.1.4-rc05`.
+- Staged changes include:
+  - Skip `requestHomeData` when all devices have real-time connections (`platformRunner.ts`).
+  - Move `VacFollowedByMop` from base to smart clean mode configs (`cleanModeConfig.ts`).
+  - Tighten `PlatformRunner` type contract, remove optional chaining (`deviceConfigurator.ts`, `module.ts`).
+
 ## 2026-02-16 (Session 2)
 
 - Added unit tests to increase Codecov patch coverage across 8 files with missing lines.

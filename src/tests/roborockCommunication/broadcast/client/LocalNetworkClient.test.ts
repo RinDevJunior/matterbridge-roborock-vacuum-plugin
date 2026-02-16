@@ -570,4 +570,51 @@ describe('LocalNetworkClient', () => {
     await client['onMessage'](combined);
     expect(client['deserializer'].deserialize).toHaveBeenCalledTimes(2);
   });
+
+  it('send() should use context protocol version when request version is undefined', async () => {
+    mockSocket.readyState = 'open';
+    mockSocket.destroyed = false;
+    client['socket'] = mockSocket;
+    client['connected'] = true;
+    const req = asPartial<RequestMessage>({
+      toLocalRequest: vi.fn().mockReturnValue({ version: '1.0', protocol: Protocol.ping_request, method: 'ping' }),
+      secure: false,
+      isForProtocol: vi.fn().mockReturnValue(false),
+      version: undefined,
+      method: 'ping',
+    });
+    await client.send(duid, req);
+    expect(mockContext.getLocalProtocolVersion).toHaveBeenCalledWith(duid);
+    expect(client['serializer'].serialize).toHaveBeenCalled();
+    expect(mockSocket.write).toHaveBeenCalled();
+  });
+
+  it('processHelloResponse() should clear existing checkConnectionInterval before creating new one', async () => {
+    vi.useFakeTimers();
+    const existingInterval = setInterval(() => {}, 1000);
+    client['checkConnectionInterval'] = existingInterval;
+
+    mockContext.updateNonce = vi.fn();
+    mockContext.updateLocalProtocolVersion = vi.fn();
+
+    const response = asPartial<any>({
+      header: { nonce: 42, version: '1.0' },
+    });
+
+    await client['processHelloResponse'](response);
+
+    expect(client['connected']).toBe(true);
+    expect(client['checkConnectionInterval']).toBeDefined();
+    expect(client['checkConnectionInterval']).not.toBe(existingInterval);
+  });
+
+  it('safeHandler() should handle non-Error objects', async () => {
+    const errorFn = vi.fn().mockRejectedValue('string error');
+    const handler = client['safeHandler'](errorFn);
+    handler();
+
+    await new Promise((r) => setTimeout(r, 10));
+    expect(mockLogger.error).toHaveBeenCalledWith(expect.stringContaining('unhandled error'));
+    expect(mockLogger.error).toHaveBeenCalledWith(expect.stringContaining('string error'));
+  });
 });

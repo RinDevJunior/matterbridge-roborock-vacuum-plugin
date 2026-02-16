@@ -153,6 +153,40 @@ describe('RoborockMatterbridgePlatform - orchestration', () => {
 
       expect(mockPersist.init).toHaveBeenCalled();
     });
+
+    it('should return early when clearStorageOnStartup is enabled', async () => {
+      Object.defineProperty(platform.configManager, 'isClearStorageOnStartupEnabled', { get: () => true, configurable: true });
+
+      await platform.onStart('test');
+
+      expect(mockPersist.init).toHaveBeenCalled();
+      expect(platform.configManager.validateConfig).not.toHaveBeenCalled();
+    });
+
+    it('should clear persistence when alwaysExecuteAuthentication is true', async () => {
+      Object.defineProperty(platform.configManager, 'alwaysExecuteAuthentication', { get: () => true, configurable: true });
+      vi.spyOn(platform.discovery, 'discoverDevices').mockImplementation(async () => {
+        platform.discovery.roborockService = asPartial<RoborockService>({});
+        return true;
+      });
+      vi.spyOn(platform.configurator, 'onConfigureDevice').mockResolvedValue(undefined);
+
+      await platform.onStart('test');
+
+      expect(mockPersist.clear).toHaveBeenCalled();
+    });
+
+    it('should fail when roborockService is undefined after discovery', async () => {
+      vi.spyOn(platform.discovery, 'discoverDevices').mockImplementation(async () => {
+        platform.discovery.roborockService = undefined;
+        return true;
+      });
+
+      await platform.onStart('test');
+
+      expect(platform.log.error).toHaveBeenCalledWith('Initializing: RoborockService is undefined');
+      expect(platform.state.isStartupCompleted).toBe(false);
+    });
   });
 
   describe('onConfigure', () => {
@@ -202,6 +236,33 @@ describe('RoborockMatterbridgePlatform - orchestration', () => {
       await vi.advanceTimersByTimeAsync(61000);
 
       expect(platform.log.error).toHaveBeenCalledWith('requestHomeData (interval) failed: string error');
+    });
+
+    it('should clear storage and unregister when clearStorageOnStartup is enabled', async () => {
+      Object.defineProperty(platform.configManager, 'isClearStorageOnStartupEnabled', { get: () => true, configurable: true });
+      Object.defineProperty(platform.configManager, 'rawConfig', {
+        get: () => ({
+          authentication: { verificationCode: 'abc' },
+          advancedFeature: { settings: { clearStorageOnStartup: true } },
+        }),
+        configurable: true,
+      });
+      Object.defineProperty(platform, 'onConfigChanged', { value: vi.fn().mockResolvedValue(undefined), configurable: true });
+
+      await platform.onConfigure();
+
+      expect(platform.log.warn).toHaveBeenCalledWith('Clearing persistence storage as per configuration.');
+      expect(mockPersist.clear).toHaveBeenCalled();
+      expect((platform as any).unregisterAllDevices).toHaveBeenCalled();
+    });
+
+    it('should handle error during clearStorage flow', async () => {
+      Object.defineProperty(platform.configManager, 'isClearStorageOnStartupEnabled', { get: () => true, configurable: true });
+      mockPersist.clear = vi.fn().mockRejectedValue(new Error('Storage error'));
+
+      await platform.onConfigure();
+
+      expect(platform.log.error).toHaveBeenCalledWith(expect.stringContaining('Error clearing persistence storage'));
     });
   });
 

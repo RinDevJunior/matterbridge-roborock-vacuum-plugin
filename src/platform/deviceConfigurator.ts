@@ -26,7 +26,7 @@ export class DeviceConfigurator {
     private readonly platform: MatterbridgeDynamicPlatform,
     private readonly configManager: PlatformConfigManager,
     private readonly registry: DeviceRegistry,
-    private readonly getPlatformRunner: () => PlatformRunner | undefined,
+    private readonly getPlatformRunner: () => PlatformRunner,
     private readonly log: AnsiLogger,
   ) {}
 
@@ -42,8 +42,7 @@ export class DeviceConfigurator {
     const configureSuccess = new Map<string, boolean>();
 
     roborockService.setDeviceNotify((payload) => {
-      const runner = this.getPlatformRunner();
-      runner?.updateRobotWithPayload(payload);
+      this.getPlatformRunner().updateRobotWithPayload(payload);
     });
 
     for (const vacuum of this.registry.getAllDevices()) {
@@ -62,16 +61,14 @@ export class DeviceConfigurator {
     }
 
     try {
-      const runner = this.getPlatformRunner();
-      await runner?.requestHomeData();
+      await this.getPlatformRunner().requestHomeData();
     } catch (error) {
       this.log.error(`requestHomeData (initial) failed: ${error instanceof Error ? error.message : String(error)}`);
     }
 
     // During initial configuration, we delay activating handlers until all devices are configured.
     this.log.notice('Activating device notify handlers');
-    const runner = this.getPlatformRunner();
-    runner?.activateHandlerFunctions();
+    this.getPlatformRunner().activateHandlerFunctions();
 
     this.log.info('onConfigureDevice finished');
   }

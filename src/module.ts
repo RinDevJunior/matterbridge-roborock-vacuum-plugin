@@ -156,7 +156,7 @@ export class RoborockMatterbridgePlatform extends MatterbridgeDynamicPlatform {
 
     this.rvcInterval = setInterval(async () => {
       try {
-        await this.platformRunner?.requestHomeData();
+        await this.platformRunner.requestHomeData();
       } catch (error) {
         this.log.error(`requestHomeData (interval) failed: ${error instanceof Error ? error.message : String(error)}`);
       }

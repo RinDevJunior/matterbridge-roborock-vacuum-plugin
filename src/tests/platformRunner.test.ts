@@ -167,6 +167,53 @@ describe('PlatformRunner.requestHomeData', () => {
     expect(getHomeDataMock).toHaveBeenCalledWith(12345);
     expect(updateRobotWithPayloadSpy).toHaveBeenCalledWith({ type: NotifyMessageTypes.HomeData, data: homeData });
   });
+
+  it('should skip requestHomeData when all devices have real-time connection', async () => {
+    const getHomeDataMock = vi.fn().mockResolvedValue({ devices: [] });
+    const placeholderRobot = asPartial<RoborockVacuumCleaner>({
+      serialNumber: '123',
+      device: asPartial<Device>({ duid: '123', specs: asPartial<DeviceSpecs>({ hasRealTimeConnection: true }) }),
+      updateAttribute: vi.fn(),
+    });
+    platform = asPartial<RoborockMatterbridgePlatform>({
+      registry: createMockDeviceRegistry({}, new Map([['123', placeholderRobot]])),
+      rrHomeId: 12345,
+      roborockService: createMockRoborockService({ getHomeDataForUpdating: getHomeDataMock }),
+      log: createMockLogger(),
+    });
+
+    runner = new PlatformRunner(platform);
+    await runner.requestHomeData();
+
+    expect(getHomeDataMock).not.toHaveBeenCalled();
+  });
+
+  it('should proceed with requestHomeData when not all devices have real-time connection', async () => {
+    const homeData = { devices: [], products: [] };
+    const getHomeDataMock = vi.fn().mockResolvedValue(homeData);
+    const robot1 = asPartial<RoborockVacuumCleaner>({
+      serialNumber: '123',
+      device: asPartial<Device>({ duid: '123', specs: asPartial<DeviceSpecs>({ hasRealTimeConnection: true }) }),
+      updateAttribute: vi.fn(),
+    });
+    const robot2 = asPartial<RoborockVacuumCleaner>({
+      serialNumber: '456',
+      device: asPartial<Device>({ duid: '456', specs: asPartial<DeviceSpecs>({ hasRealTimeConnection: false }) }),
+      updateAttribute: vi.fn(),
+    });
+    platform = asPartial<RoborockMatterbridgePlatform>({
+      registry: createMockDeviceRegistry({}, new Map([['123', robot1], ['456', robot2]])),
+      rrHomeId: 12345,
+      roborockService: createMockRoborockService({ getHomeDataForUpdating: getHomeDataMock }),
+      log: createMockLogger(),
+    });
+
+    runner = new PlatformRunner(platform);
+    vi.spyOn(runner, 'updateRobotWithPayload').mockImplementation(() => {});
+    await runner.requestHomeData();
+
+    expect(getHomeDataMock).toHaveBeenCalledWith(12345);
+  });
 });
 
 describe('PlatformRunner.updateRobotWithPayload', () => {

@@ -4,6 +4,24 @@ All notable changes to this project will be documented in this file.
 
 ---
 
+## [1.1.4-rc05] - 2026-02-16
+
+### Improvements
+
+- Reduced unnecessary API polling — devices with active real-time connections no longer trigger periodic home data requests, improving responsiveness and lowering network overhead.
+- The "Vacuum then Mop" clean mode is now only available on smart-clean-capable devices, ensuring a more accurate mode list per device capability.
+
+### Bug Fixes
+
+- Fixed an issue with the npm publish workflow that caused provenance signing errors during release.
+
+### Internal
+
+- Strengthened type safety across platform runner lifecycle management.
+- Expanded unit test coverage for ping response handling, clean mode utilities, and room mapping.
+
+---
+
 ## [1.1.4-rc04] - 2026-02-16
 
 ### Added

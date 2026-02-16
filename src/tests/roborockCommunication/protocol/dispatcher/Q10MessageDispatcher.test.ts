@@ -235,5 +235,19 @@ describe('Q10MessageDispatcher', () => {
       expect(setVacuumMode).toHaveBeenCalledWith(duid, 1);
       expect(setWaterMode).not.toHaveBeenCalled();
     });
+
+    it('should call real private helpers and send commands via client', async () => {
+      const setting = new CleanModeSetting(2, 3, 4, 1, CleanSequenceType.Persist);
+      await dispatcher.changeCleanMode(duid, setting);
+      // setCleanMode + setVacuumMode + setWaterMode = 3 sends
+      expect(client.send).toHaveBeenCalledTimes(3);
+      expect(logger.notice).toHaveBeenCalledWith(expect.stringContaining('Change clean mode'));
+    });
+
+    it('should only call setCleanMode when both suctionPower and waterFlow are 0', async () => {
+      const setting = new CleanModeSetting(0, 0, 4, 1, CleanSequenceType.Persist);
+      await dispatcher.changeCleanMode(duid, setting);
+      expect(client.send).toHaveBeenCalledTimes(1);
+    });
   });
 });

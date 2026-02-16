@@ -20,7 +20,7 @@ describe('cleanModeConfig', () => {
     });
 
     it('should include VacFollowedByMop entry', () => {
-      const map = getModeDisplayMap(baseCleanModeConfigs);
+      const map = getModeDisplayMap(smartCleanModeConfigs);
       expect(map[CleanModeLabelInfo[CleanModeDisplayLabel.MopAndVaccum_VacFollowedByMop].mode]).toBe(CleanModeDisplayLabel.MopAndVaccum_VacFollowedByMop);
     });
 
@@ -91,12 +91,6 @@ describe('cleanModeConfig', () => {
   });
 
   describe('baseCleanModeConfigs', () => {
-    it('should contain VacFollowedByMop config with OneTime sequenceType', () => {
-      const vacFollowedByMop = baseCleanModeConfigs.find((c) => c.mode === CleanModeLabelInfo[CleanModeDisplayLabel.MopAndVaccum_VacFollowedByMop].mode);
-      expect(vacFollowedByMop).toBeDefined();
-      expect(vacFollowedByMop?.setting.sequenceType).toBe(1); // CleanSequenceType.OneTime
-    });
-
     it('should have Persist sequenceType for standard modes', () => {
       const defaultMode = baseCleanModeConfigs.find((c) => c.mode === CleanModeLabelInfo[CleanModeDisplayLabel.MopAndVacuumDefault].mode);
       expect(defaultMode).toBeDefined();
@@ -110,7 +104,13 @@ describe('cleanModeConfig', () => {
     });
 
     it('should include all base configs plus SmartPlan', () => {
-      expect(smartCleanModeConfigs.length).toBe(baseCleanModeConfigs.length + 1);
+      expect(smartCleanModeConfigs.length).toBe(baseCleanModeConfigs.length + 2);
+    });
+
+    it('should contain VacFollowedByMop config with OneTime sequenceType', () => {
+      const vacFollowedByMop = smartCleanModeConfigs.find((c) => c.mode === CleanModeLabelInfo[CleanModeDisplayLabel.MopAndVaccum_VacFollowedByMop].mode);
+      expect(vacFollowedByMop).toBeDefined();
+      expect(vacFollowedByMop?.setting.sequenceType).toBe(1); // CleanSequenceType.OneTime
     });
   });
 });
