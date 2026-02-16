@@ -15,7 +15,7 @@ import { CleanSequenceType } from '../../../behaviors/roborock.vacuum/enums/Clea
 export class Q7MessageDispatcher implements AbstractMessageDispatcher {
   public dispatcherName = 'Q7MessageDispatcher';
   private lastB01Id: number;
-  //private readonly b01MapParser = new B01MapParser();
+  // private readonly b01MapParser = new B01MapParser();
 
   private get messageId() {
     let tmpMessageId = Date.now();
