@@ -1,5 +1,9 @@
 # Claude History
 
+## 2026-02-16 (Session 5)
+
+- Fixed `platformRunner.ts` Node.js 20 compatibility: spread `Map.values()` into array before calling `.every()` (Iterator Helpers not available in Node.js 20).
+
 ## 2026-02-16 (Session 4)
 
 - Added unit tests to improve Codecov patch coverage for 7 files with missing lines.

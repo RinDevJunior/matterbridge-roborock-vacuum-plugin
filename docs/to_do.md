@@ -2,6 +2,8 @@
 
 ## Completed
 
+- [x] Fix Node.js 20 compatibility: `Map.values().every()` → `[...Map.values()].every()` in platformRunner.ts
+
 - [x] Improve Codecov patch coverage for module.ts, messageDeserializer, localClient, Q10/Q7 dispatchers, platformRunner
 - [x] Create CHANGELOG for 1.1.4-rc05 release candidate
 - [x] Improve Codecov patch coverage for localClient, localPingResponseListener, messageContext, messageDeserializer, Q10/Q7 dispatchers, cleanModeUtils
