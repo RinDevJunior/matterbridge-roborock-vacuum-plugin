@@ -4,6 +4,26 @@ All notable changes to this project will be documented in this file.
 
 ---
 
+## [1.1.4-rc04] - 2026-02-16
+
+### Added
+
+- `LocalPingResponseListener` for local network ping response handling.
+- Unit tests for `LocalPingResponseListener` and `cleanModeUtils`.
+- Room mapping validation in `Q10MessageDispatcher` tests.
+
+### Changed
+
+- Improved connection handling in `MQTTClient` and `LocalNetworkClient`.
+- Renamed `PingResponseListener` to `LocalPingResponseListener`.
+- Updated protocol version management.
+
+### Fixed
+
+- Checkout specific release tag in publish workflow to resolve sigstore provenance error.
+
+---
+
 ## [1.1.3-rc05] - 2026-01-31
 
 ### Changed
