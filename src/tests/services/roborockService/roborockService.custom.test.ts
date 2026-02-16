@@ -43,6 +43,7 @@ describe('RoborockService (unit)', () => {
         persist: asPartial<LocalStorage>({}),
         configManager: asPartial<PlatformConfigManager>({}),
         container: container as ServiceContainer,
+        toastMessage: vi.fn(),
       },
       asPartial<AnsiLogger>(logger),
       asPartial<PlatformConfigManager>({}),

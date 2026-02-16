@@ -19,6 +19,7 @@ import { PlatformConfigManager } from '../platform/platformConfigManager.js';
 import { MapInfo, RoomIndexMap } from '../core/application/models/index.js';
 import { CleanModeSetting } from '../behaviors/roborock.vacuum/core/CleanModeSetting.js';
 import { AuthenticationResponse } from '../model/AuthenticationResponse.js';
+import { WssSendSnackbarMessage } from '../types/WssSendSnackbarMessage.js';
 
 export interface RoborockServiceConfig {
   authenticateApiFactory?: (logger: AnsiLogger, baseUrl: string) => RoborockAuthenticateApi;
@@ -28,6 +29,7 @@ export interface RoborockServiceConfig {
   persist: LocalStorage;
   configManager: PlatformConfigManager;
   container?: ServiceContainer;
+  toastMessage: WssSendSnackbarMessage;
 }
 
 /** Facade coordinating Auth, Device, Area, and Message services via ServiceContainer. */
@@ -39,6 +41,7 @@ export class RoborockService {
   private readonly messageService: MessageRoutingService;
   private readonly pollingService: PollingService;
   private readonly connectionService: ConnectionService;
+  private readonly toastMessage: WssSendSnackbarMessage;
 
   public deviceNotify: DeviceNotifyCallback | undefined;
 
@@ -70,6 +73,7 @@ export class RoborockService {
     this.messageService = this.container.getMessageRoutingService();
     this.pollingService = this.container.getPollingService();
     this.connectionService = this.container.getConnectionService();
+    this.toastMessage = params.toastMessage;
   }
 
   // ============================================================================
@@ -101,15 +105,18 @@ export class RoborockService {
       });
     } catch (error) {
       this.logger.error(`Authentication failed: ${(error as Error).message}`);
+      this.toastMessage(`Authentication failed: ${(error as Error).message}`, 5000, 'error');
       return { userData: undefined, shouldContinue: false, isSuccess: false };
     }
 
     if (!userData) {
       this.logger.info('Authentication incomplete. Further action required (e.g., 2FA).');
+      this.toastMessage('Authentication incomplete. Further action required (e.g., 2FA).');
       return { userData: undefined, shouldContinue: false, isSuccess: false };
     }
 
     this.logger.info(`Authentication successful for user: ${userData.nickname} (${userData.username})`);
+    this.toastMessage(`Authentication successful for user: ${userData.nickname} (${userData.username})`);
     this.container.setUserData(userData);
     return { userData, shouldContinue: true, isSuccess: true };
   }

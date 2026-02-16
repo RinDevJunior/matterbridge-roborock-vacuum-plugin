@@ -53,6 +53,7 @@ describe('RoborockService - Area Management', () => {
         baseUrl: 'https://api.roborock.com',
         persist: createMockLocalStorage(),
         configManager: configManager,
+        toastMessage: vi.fn(),
       },
       mockLogger,
       configManager,

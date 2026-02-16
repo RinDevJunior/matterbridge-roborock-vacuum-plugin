@@ -69,6 +69,7 @@ describe('RoborockService - Authentication', () => {
         persist: persist,
         configManager: mockConfigManager,
         container: mockContainer,
+        toastMessage: vi.fn(),
       },
       mockLogger,
       mockConfigManager,

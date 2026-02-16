@@ -63,6 +63,7 @@ export class DeviceDiscovery {
         baseUrl,
         persist,
         configManager: this.configManager,
+        toastMessage: this.platform.wssSendSnackbarMessage,
       },
       this.log,
       this.configManager,

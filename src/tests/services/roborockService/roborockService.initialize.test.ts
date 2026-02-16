@@ -22,6 +22,7 @@ describe('RoborockService - listDevices', () => {
         baseUrl: 'https://api.roborock.com',
         persist: {} as Partial<LocalStorage> as LocalStorage,
         configManager: asPartial<PlatformConfigManager>({}),
+        toastMessage: vi.fn(),
       },
       mockLogger,
       asPartial<PlatformConfigManager>({}),

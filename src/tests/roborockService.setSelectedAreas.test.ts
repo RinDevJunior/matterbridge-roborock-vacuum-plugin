@@ -59,6 +59,7 @@ describe('RoborockService - startClean', () => {
         refreshInterval: 60000,
         persist: persist,
         configManager: configManager,
+        toastMessage: vi.fn(),
       },
       mockLogger,
       configManager,

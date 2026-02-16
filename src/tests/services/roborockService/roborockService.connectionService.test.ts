@@ -55,6 +55,7 @@ describe('initializeMessageClientForLocal', () => {
         baseUrl: 'https://api.roborock.com',
         persist: persist,
         configManager: configManager,
+        toastMessage: vi.fn(),
       },
       mockLogger,
       configManager,
