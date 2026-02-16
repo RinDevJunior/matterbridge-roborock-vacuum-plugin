@@ -3,7 +3,7 @@ import { AbstractMessageListener } from '../routing/listeners/abstractMessageLis
 import { Protocol, ResponseMessage } from '../models/index.js';
 
 export class LocalPingResponseListener implements AbstractMessageListener {
-  readonly name = 'PingResponseListener';
+  readonly name = 'LocalPingResponseListener';
   private timer?: NodeJS.Timeout;
 
   public lastPingResponse: number;
