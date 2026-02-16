@@ -30,6 +30,7 @@ vi.mock('node:net', () => {
     write() {}
     destroy() {}
     connect() {}
+    setTimeout() {}
     address() {
       return { address: '127.0.0.1', port: 58867 };
     }
@@ -60,6 +61,7 @@ describe('LocalNetworkClient', () => {
     mockContext = {
       nonce: Buffer.from([1, 2, 3, 4]),
       getProtocolVersion: vi.fn().mockReturnValue('1.0'),
+      getLocalProtocolVersion: vi.fn().mockReturnValue('1.0'),
     };
 
     // Create a more realistic socket mock using EventEmitter
@@ -67,6 +69,7 @@ describe('LocalNetworkClient', () => {
       connect: vi.fn(),
       destroy: vi.fn(),
       write: vi.fn(),
+      setTimeout: vi.fn(),
       address: vi.fn().mockReturnValue({ address: '127.0.0.1', port: 58867 }),
       writable: true,
       readable: true,
@@ -104,9 +107,9 @@ describe('LocalNetworkClient', () => {
   afterEach(() => {
     vi.clearAllMocks();
     vi.useRealTimers();
-    if (client?.['pingInterval']) {
-      clearInterval(client['pingInterval']);
-      client['pingInterval'] = undefined;
+    if (client?.['checkConnectionInterval']) {
+      clearInterval(client['checkConnectionInterval']);
+      client['checkConnectionInterval'] = undefined;
     }
   });
 
@@ -131,9 +134,9 @@ describe('LocalNetworkClient', () => {
     expect(socket).not.toBeUndefined();
   });
 
-  it('disconnect() should destroy socket and clear pingInterval', async () => {
+  it('disconnect() should destroy socket and clear checkConnectionInterval', async () => {
     client['socket'] = mockSocket;
-    client['pingInterval'] = setInterval(() => {
+    client['checkConnectionInterval'] = setInterval(() => {
       vi.fn();
     }, 1000);
     await client.disconnect();
@@ -188,7 +191,7 @@ describe('LocalNetworkClient', () => {
 
   it('onDisconnect() should log, set connected false, destroy socket, clear ping, call onDisconnected', async () => {
     client['socket'] = mockSocket;
-    client['pingInterval'] = setInterval(() => {
+    client['checkConnectionInterval'] = setInterval(() => {
       vi.fn();
     }, 1000);
     await client['onDisconnect'](false);
@@ -301,7 +304,7 @@ describe('LocalNetworkClient', () => {
 
   it('onDisconnect() should handle when socket already destroyed', async () => {
     client['socket'] = undefined;
-    client['pingInterval'] = setInterval(() => vi.fn(), 1000);
+    client['checkConnectionInterval'] = setInterval(() => vi.fn(), 1000);
     await client['onDisconnect'](false);
     expect(client['connected']).toBe(false);
     expect(client['connectionBroadcaster'].onDisconnected).toHaveBeenCalled();
@@ -309,7 +312,7 @@ describe('LocalNetworkClient', () => {
 
   it('onDisconnect() should handle when pingInterval is not set', async () => {
     client['socket'] = mockSocket;
-    client['pingInterval'] = undefined;
+    client['checkConnectionInterval'] = undefined;
     await client['onDisconnect'](true);
     expect(mockSocket.destroy).toHaveBeenCalled();
     expect(mockLogger.info).toHaveBeenCalledWith(expect.stringContaining('Had error: true'));
@@ -370,9 +373,9 @@ describe('LocalNetworkClient', () => {
     expect(mockLogger.debug).toHaveBeenCalledWith(expect.stringContaining('socket ended'));
   });
 
-  it('disconnect() should handle when pingInterval is not set', async () => {
+  it('disconnect() should handle when checkConnectionInterval is not set', async () => {
     client['socket'] = mockSocket;
-    client['pingInterval'] = undefined;
+    client['checkConnectionInterval'] = undefined;
     await client.disconnect();
     expect(mockSocket.destroy).toHaveBeenCalled();
     expect(client['socket']).toBeUndefined();

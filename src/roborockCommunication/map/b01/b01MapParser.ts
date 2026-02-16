@@ -1,4 +1,4 @@
-import * as protobuf from 'protobufjs';
+import protobuf from 'protobufjs';
 import { ROBOROCK_PROTO_STR } from './roborockProto.js';
 import { B01RoomInfo, B01MapInfo } from './types.js';
 

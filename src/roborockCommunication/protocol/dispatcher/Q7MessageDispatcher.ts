@@ -15,6 +15,7 @@ import { CleanSequenceType } from '../../../behaviors/roborock.vacuum/enums/Clea
 export class Q7MessageDispatcher implements AbstractMessageDispatcher {
   public dispatcherName = 'Q7MessageDispatcher';
   private lastB01Id: number;
+  //private readonly b01MapParser = new B01MapParser();
 
   private get messageId() {
     let tmpMessageId = Date.now();
@@ -64,7 +65,7 @@ export class Q7MessageDispatcher implements AbstractMessageDispatcher {
     return response; // TODO: Implement proper room mapping retrieval for Q7
   }
 
-  // public async getRoomMap_tmp(duid: string, activeMap: number): Promise<RawRoomMappingData> {
+  // public async getRoomMap(duid: string, activeMap: number): Promise<RawRoomMappingData> {
   //   const request = new RequestMessage({ messageId: this.messageId, dps: this.createDps(Q7RequestMethod.get_room_mapping, { force: 1, map_type: 0 }) });
   //   const response = await this.client.get<ResponseBody>(duid, request);
   //   if (!response) {

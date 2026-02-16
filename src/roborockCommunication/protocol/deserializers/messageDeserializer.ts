@@ -55,7 +55,8 @@ export class MessageDeserializer {
       throw new Error(`[${from}][MessageDeserializer] unknown protocol: ${header.version ?? ''}`);
     }
 
-    if (this.protocolsWithoutPayload.includes(header.protocol) || this.ignoredProtocols.includes(header.protocol)) {
+    if (this.protocolsWithoutPayload.includes(header.protocol)) {
+      // || this.ignoredProtocols.includes(header.protocol)) {
       const responseMessage = new ResponseMessage(duid, header, undefined);
       this.logger.debug(`[${from}][MessageDeserializer] deserialized message without payload: ${debugStringify(responseMessage)}`);
       return responseMessage;

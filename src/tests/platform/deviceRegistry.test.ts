@@ -4,6 +4,7 @@ import { DeviceModel, type Device } from '../../roborockCommunication/models/ind
 import type { RoborockVacuumCleaner } from '../../types/roborockVacuumCleaner.js';
 import { DeviceCategory } from '../../roborockCommunication/models/deviceCategory.js';
 import { asType } from '../testUtils.js';
+import { ProtocolVersion } from '../../roborockCommunication/enums/index.js';
 
 function createMockDevice(serialNumber: string): Device {
   return {
@@ -26,6 +27,7 @@ function createMockDevice(serialNumber: string): Device {
       firmwareVersion: '1.0.0',
       serialNumber,
       model: DeviceModel.Q7_MAX,
+      protocol: ProtocolVersion.V1,
       category: DeviceCategory.VacuumCleaner,
       batteryLevel: 100,
       hasRealTimeConnection: true,

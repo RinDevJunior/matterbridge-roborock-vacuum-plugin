@@ -2,6 +2,10 @@
 
 ## 2026-02-16
 
+- Fixed keepConnectionAlive in MQTTClient and LocalNetworkClient to only reconnect when connection is down.
+  - **MQTTClient**: Removed `end()` + `reconnect()` cycle when already connected (caused empty subscription list on reconnect, leading to message timeouts).
+  - **LocalNetworkClient**: Removed `disconnect().then(() => connect())` when already connected (caused socket destruction and failed hello handshake race condition).
+  - **LocalNetworkClient**: Fixed interval leak — `disconnect()` now clears `keepConnectionAliveInterval`. Fixed `clearTimeout` → `clearInterval` mismatch.
 - Added unit tests to increase patch coverage for dev branch changes.
 - New test files:
   - `src/tests/behaviors/roborock.vacuum/core/modeResolver.test.ts` (21 tests)

@@ -5,6 +5,7 @@ import { DeviceError, DeviceNotFoundError } from '../../errors/index.js';
 import { Device, DeviceModel, Home, Protocol, UserData } from '../../roborockCommunication/models/index.js';
 import { DeviceCategory } from '../../roborockCommunication/models/deviceCategory.js';
 import { makeLogger } from '../testUtils.js';
+import { ProtocolVersion } from '../../roborockCommunication/enums/index.js';
 
 describe('DeviceManagementService', () => {
   let deviceService: DeviceManagementService;
@@ -55,6 +56,7 @@ describe('DeviceManagementService', () => {
       firmwareVersion: '1.0.0',
       serialNumber: 'SN12345',
       model: DeviceModel.QREVO_EDGE_5V1,
+      protocol: ProtocolVersion.V1,
       category: DeviceCategory.VacuumCleaner,
       batteryLevel: 85,
       hasRealTimeConnection: true,

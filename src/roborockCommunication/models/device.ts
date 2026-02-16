@@ -9,6 +9,7 @@ import { UserData } from './userData.js';
 export interface DeviceSpecs {
   id: string;
   firmwareVersion: string;
+  protocol: string;
   serialNumber: string;
   model: DeviceModel;
   category: DeviceCategory;

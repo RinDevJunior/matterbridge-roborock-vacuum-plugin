@@ -1,6 +1,7 @@
 import { DeviceCategory } from '../../roborockCommunication/models/deviceCategory.js';
 import { Device, DeviceModel, Protocol, UserData, Home } from '../../roborockCommunication/models/index.js';
 import { RoomEntity } from '../../core/domain/entities/Room.js';
+import { ProtocolVersion } from '../../roborockCommunication/enums/protocolVersion.js';
 
 /**
  * Fluent builder for creating Device objects in tests.
@@ -33,6 +34,7 @@ export class DeviceBuilder {
       firmwareVersion: '1.0.0',
       serialNumber: 'TEST-SN-123456',
       model: DeviceModel.Q5,
+      protocol: ProtocolVersion.V1,
       category: DeviceCategory.VacuumCleaner,
       batteryLevel: 100,
       hasRealTimeConnection: true,

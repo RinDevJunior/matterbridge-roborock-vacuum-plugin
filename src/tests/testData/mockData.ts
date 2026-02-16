@@ -4,6 +4,7 @@ import { DeviceCategory } from '../../roborockCommunication/models/deviceCategor
 import { MapInfo } from '../../core/application/models/index.js';
 import { asPartial } from '../testUtils.js';
 import { RoomEntity } from '../../core/domain/entities/Room.js';
+import { ProtocolVersion } from '../../roborockCommunication/enums/index.js';
 
 export const supportedAreas: ServiceArea.Area[] = [
   { areaId: 100, mapId: 0, areaInfo: { locationInfo: { locationName: 'Kitchen', floorNumber: 0, areaType: null }, landmarkInfo: null } },
@@ -307,6 +308,7 @@ export const homeData: Home = asPartial<Home>({
         firmwareVersion: '02.28.34',
         serialNumber: 'RCIEBS50900224',
         model: DeviceModel.QREVO_EDGE_5V1,
+        protocol: ProtocolVersion.V1,
         category: DeviceCategory.VacuumCleaner,
         batteryLevel: 100,
         hasRealTimeConnection: true,

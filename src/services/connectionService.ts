@@ -14,7 +14,6 @@ import { Client } from '../roborockCommunication/routing/client.js';
 import { MessageRoutingService } from './messageRoutingService.js';
 import { MessageDispatcherFactory } from '../roborockCommunication/protocol/dispatcher/dispatcherFactory.js';
 import { SimpleMessageListener } from '../roborockCommunication/routing/listeners/implementation/simpleMessageListener.js';
-import { PingResponseListener } from '../roborockCommunication/routing/listeners/implementation/pingResponseListener.js';
 
 /** Manages device connections (MQTT and local network). */
 export class ConnectionService {
@@ -110,9 +109,6 @@ export class ConnectionService {
     const simpleMessageListener = new SimpleMessageListener(device.duid, this.logger);
     simpleMessageListener.registerHandler(new SimpleMessageHandler(device.duid, this.logger, this.deviceNotify));
     this.clientRouter.registerMessageListener(simpleMessageListener);
-
-    const pingResponseListener = new PingResponseListener(device.duid, this.logger);
-    this.clientRouter.registerMessageListener(pingResponseListener);
 
     const store = device.store;
     const messageDispatcher = new MessageDispatcherFactory(this.clientRouter, this.logger).getMessageDispatcher(store.pv, store.model);

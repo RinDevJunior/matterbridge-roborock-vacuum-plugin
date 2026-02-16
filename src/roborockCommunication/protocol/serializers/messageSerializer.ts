@@ -31,7 +31,7 @@ export class MessageSerializer {
   }
 
   private buildBuffer(duid: string, messageId: number, request: RequestMessage): Buffer {
-    const version = request.version ?? this.context.getProtocolVersion(duid);
+    const version = request.version ?? this.context.getMQTTProtocolVersion(duid);
     if (!version || !this.supportedVersions.includes(version)) {
       throw new Error(`[MessageSerializer] unknown protocol: ${version ?? ''}`);
     }

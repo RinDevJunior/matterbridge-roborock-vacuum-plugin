@@ -108,11 +108,9 @@ export class MQTTClient extends AbstractClient {
 
     this.keepConnectionAliveInterval = setInterval(() => {
       if (this.mqttClient && this.connected) {
-        this.logger.debug('[MQTTClient] Reconnecting to keep connection alive');
-        this.mqttClient.end();
-        this.mqttClient.reconnect();
+        this.logger.debug('[MQTTClient] Connection is active, no action needed');
       } else if (this.mqttClient && !this.connected) {
-        this.logger.debug('[MQTTClient] MQTT client exists but not connected, calling reconnect');
+        this.logger.debug('[MQTTClient] MQTT client exists but not connected, reconnecting');
         this.mqttClient = undefined;
         this.connect();
       } else {

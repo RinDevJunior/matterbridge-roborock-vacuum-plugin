@@ -2,6 +2,7 @@ import { Device, DeviceSpecs, DeviceInformation, Home } from '../../roborockComm
 import { DeviceModel } from '../../roborockCommunication/models/deviceModel.js';
 import { DeviceCategory } from '../../roborockCommunication/models/deviceCategory.js';
 import { RoomEntity } from '../../core/domain/entities/Room.js';
+import { ProtocolVersion } from '../../roborockCommunication/enums/index.js';
 
 /**
  * Create a minimal valid Device instance for tests.
@@ -13,6 +14,7 @@ export function makeDeviceFixture(overrides: Partial<Device> = {}): Device {
     firmwareVersion: '01.00.00',
     serialNumber: 'SN123456',
     model: DeviceModel.S6,
+    protocol: ProtocolVersion.V1,
     category: DeviceCategory.VacuumCleaner,
     batteryLevel: 100,
     hasRealTimeConnection: true,

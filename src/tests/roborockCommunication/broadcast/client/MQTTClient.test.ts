@@ -395,8 +395,7 @@ describe('MQTTClient', () => {
     // Fast-forward time by 60 minutes to trigger the interval callback
     vi.advanceTimersByTime(60 * 60 * 1000);
 
-    expect(client.end).toHaveBeenCalled();
-    expect(client.reconnect).toHaveBeenCalled();
+    expect(logger.debug).toHaveBeenCalledWith('[MQTTClient] Connection is active, no action needed');
 
     // Clean up
     clearInterval(mqttClient['keepConnectionAliveInterval']);
@@ -593,7 +592,7 @@ describe('MQTTClient', () => {
     vi.advanceTimersByTime(60 * 60 * 1000);
 
     expect(connectSpy).toHaveBeenCalled();
-    expect(logger.debug).toHaveBeenCalledWith('[MQTTClient] MQTT client exists but not connected, calling reconnect');
+    expect(logger.debug).toHaveBeenCalledWith('[MQTTClient] MQTT client exists but not connected, reconnecting');
 
     // Clean up
     clearInterval(mqttClient['keepConnectionAliveInterval']);

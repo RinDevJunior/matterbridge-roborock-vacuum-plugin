@@ -11,6 +11,7 @@ import { RoborockService } from '../services/roborockService.js';
 import { PlatformConfigManager } from '../platform/platformConfigManager.js';
 import { DeviceRegistry } from '../platform/deviceRegistry.js';
 import { RoborockVacuumCleaner } from '../types/roborockVacuumCleaner.js';
+import { ProtocolVersion } from '../roborockCommunication/enums/index.js';
 
 describe('PlatformRunner.getRoomMapFromDevice', () => {
   let platform: RoborockMatterbridgePlatform;
@@ -75,6 +76,7 @@ describe('PlatformRunner.getRoomMapFromDevice', () => {
         firmwareVersion: '1.0',
         serialNumber: 'SN1',
         model: DeviceModel.QREVO_EDGE_5V1,
+        protocol: ProtocolVersion.V1,
         category: DeviceCategory.VacuumCleaner,
         batteryLevel: 100,
         hasRealTimeConnection: true,

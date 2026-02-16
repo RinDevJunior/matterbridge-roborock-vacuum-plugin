@@ -1,8 +1,8 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { Q7MessageDispatcher } from '../../../../roborockCommunication/protocol/dispatcher/Q7MessageDispatcher.js';
 import { asType, asPartial } from '../../../testUtils.js';
-import { RequestMessage, ResponseBody } from '../../../../roborockCommunication/models/index.js';
-import { Protocol } from '../../../../roborockCommunication/models/protocol.js';
+import { RequestMessage } from '../../../../roborockCommunication/models/index.js';
+
 import { CleanModeSetting } from '../../../../behaviors/roborock.vacuum/core/CleanModeSetting.js';
 import { CleanSequenceType } from '../../../../behaviors/roborock.vacuum/enums/CleanSequenceType.js';
 
@@ -85,6 +85,19 @@ describe('Q7MessageDispatcher', () => {
       const result = await dispatcher.getRoomMap(duid, 1);
       expect(client.get).toHaveBeenCalled();
       expect(result).toEqual([]);
+    });
+
+    it('should call client.get and return room mapping data', async () => {
+      const mockRoomData: [number, string, number][] = [
+        [1, 'Living Room', 0],
+        [2, 'Kitchen', 1],
+      ];
+      client.get.mockResolvedValueOnce(mockRoomData);
+
+      const result = await dispatcher.getRoomMap(duid, 1);
+
+      expect(client.get).toHaveBeenCalled();
+      expect(result).toEqual(mockRoomData);
     });
   });
 
