@@ -452,7 +452,8 @@ describe('LocalNetworkClient', () => {
   });
 
   it('trySendHelloRequest() should try L01 if V1 fails', async () => {
-    const sendHelloSpy = vi.fn()
+    const sendHelloSpy = vi
+      .fn()
       .mockResolvedValueOnce(false) // V1 fails
       .mockResolvedValueOnce(true); // L01 succeeds
     client['sendHelloMessage'] = sendHelloSpy;

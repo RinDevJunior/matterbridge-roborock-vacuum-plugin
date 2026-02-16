@@ -14,31 +14,31 @@ describe('cleanModeUtils', () => {
     it('should return MopDefault settings with defaults when no cleanModeSettings provided', () => {
       const result = getSettingFromCleanMode(CleanModeDisplayLabel.MopDefault);
       expect(result).toBeDefined();
-      expect(result!.suctionPower).toBe(VacuumSuctionPower.Off);
-      expect(result!.waterFlow).toBe(MopWaterFlow.Medium);
-      expect(result!.distance_off).toBe(0);
-      expect(result!.mopRoute).toBe(MopRoute.Standard);
-      expect(result!.sequenceType).toBe(CleanSequenceType.Persist);
+      expect(result?.suctionPower).toBe(VacuumSuctionPower.Off);
+      expect(result?.waterFlow).toBe(MopWaterFlow.Medium);
+      expect(result?.distance_off).toBe(0);
+      expect(result?.mopRoute).toBe(MopRoute.Standard);
+      expect(result?.sequenceType).toBe(CleanSequenceType.Persist);
     });
 
     it('should return VacuumDefault settings with defaults when no cleanModeSettings provided', () => {
       const result = getSettingFromCleanMode(CleanModeDisplayLabel.VacuumDefault);
       expect(result).toBeDefined();
-      expect(result!.suctionPower).toBe(VacuumSuctionPower.Balanced);
-      expect(result!.waterFlow).toBe(MopWaterFlow.Off);
-      expect(result!.distance_off).toBe(0);
-      expect(result!.mopRoute).toBe(MopRoute.Standard);
-      expect(result!.sequenceType).toBe(CleanSequenceType.Persist);
+      expect(result?.suctionPower).toBe(VacuumSuctionPower.Balanced);
+      expect(result?.waterFlow).toBe(MopWaterFlow.Off);
+      expect(result?.distance_off).toBe(0);
+      expect(result?.mopRoute).toBe(MopRoute.Standard);
+      expect(result?.sequenceType).toBe(CleanSequenceType.Persist);
     });
 
     it('should return MopAndVacuumDefault settings with defaults when no cleanModeSettings provided', () => {
       const result = getSettingFromCleanMode(CleanModeDisplayLabel.MopAndVacuumDefault);
       expect(result).toBeDefined();
-      expect(result!.suctionPower).toBe(VacuumSuctionPower.Balanced);
-      expect(result!.waterFlow).toBe(MopWaterFlow.Medium);
-      expect(result!.distance_off).toBe(0);
-      expect(result!.mopRoute).toBe(MopRoute.Standard);
-      expect(result!.sequenceType).toBe(CleanSequenceType.Persist);
+      expect(result?.suctionPower).toBe(VacuumSuctionPower.Balanced);
+      expect(result?.waterFlow).toBe(MopWaterFlow.Medium);
+      expect(result?.distance_off).toBe(0);
+      expect(result?.mopRoute).toBe(MopRoute.Standard);
+      expect(result?.sequenceType).toBe(CleanSequenceType.Persist);
     });
 
     it('should use custom mopping settings when provided', () => {
@@ -48,8 +48,8 @@ describe('cleanModeUtils', () => {
       };
       const result = getSettingFromCleanMode(CleanModeDisplayLabel.MopDefault, settings);
       expect(result).toBeDefined();
-      expect(result!.waterFlow).toBe(MopWaterFlow.Low);
-      expect(result!.mopRoute).toBe(MopRoute.Fast);
+      expect(result?.waterFlow).toBe(MopWaterFlow.Low);
+      expect(result?.mopRoute).toBe(MopRoute.Fast);
     });
 
     it('should use custom vacuuming settings when provided', () => {
@@ -59,8 +59,8 @@ describe('cleanModeUtils', () => {
       };
       const result = getSettingFromCleanMode(CleanModeDisplayLabel.VacuumDefault, settings);
       expect(result).toBeDefined();
-      expect(result!.suctionPower).toBe(VacuumSuctionPower.Max);
-      expect(result!.mopRoute).toBe(MopRoute.Fast);
+      expect(result?.suctionPower).toBe(VacuumSuctionPower.Max);
+      expect(result?.mopRoute).toBe(MopRoute.Fast);
     });
 
     it('should use custom vacmop settings when provided', () => {
@@ -70,9 +70,9 @@ describe('cleanModeUtils', () => {
       };
       const result = getSettingFromCleanMode(CleanModeDisplayLabel.MopAndVacuumDefault, settings);
       expect(result).toBeDefined();
-      expect(result!.suctionPower).toBe(VacuumSuctionPower.Max);
-      expect(result!.waterFlow).toBe(MopWaterFlow.High);
-      expect(result!.mopRoute).toBe(MopRoute.Fast);
+      expect(result?.suctionPower).toBe(VacuumSuctionPower.Max);
+      expect(result?.waterFlow).toBe(MopWaterFlow.High);
+      expect(result?.mopRoute).toBe(MopRoute.Fast);
     });
 
     it('should calculate distance_off for CustomizeWithDistanceOff water flow in MopDefault', () => {
@@ -82,8 +82,8 @@ describe('cleanModeUtils', () => {
       };
       const result = getSettingFromCleanMode(CleanModeDisplayLabel.MopDefault, settings);
       expect(result).toBeDefined();
-      expect(result!.waterFlow).toBe(MopWaterFlow.CustomizeWithDistanceOff);
-      expect(result!.distance_off).toBe(210 - 5 * 30);
+      expect(result?.waterFlow).toBe(MopWaterFlow.CustomizeWithDistanceOff);
+      expect(result?.distance_off).toBe(210 - 5 * 30);
     });
 
     it('should use default distanceOff when not provided for CustomizeWithDistanceOff', () => {
@@ -93,7 +93,7 @@ describe('cleanModeUtils', () => {
       };
       const result = getSettingFromCleanMode(CleanModeDisplayLabel.MopDefault, settings);
       expect(result).toBeDefined();
-      expect(result!.distance_off).toBe(210 - 5 * 25);
+      expect(result?.distance_off).toBe(210 - 5 * 25);
     });
 
     it('should calculate distance_off for CustomizeWithDistanceOff water flow in MopAndVacuumDefault', () => {
@@ -103,8 +103,8 @@ describe('cleanModeUtils', () => {
       };
       const result = getSettingFromCleanMode(CleanModeDisplayLabel.MopAndVacuumDefault, settings);
       expect(result).toBeDefined();
-      expect(result!.waterFlow).toBe(MopWaterFlow.CustomizeWithDistanceOff);
-      expect(result!.distance_off).toBe(210 - 5 * 20);
+      expect(result?.waterFlow).toBe(MopWaterFlow.CustomizeWithDistanceOff);
+      expect(result?.distance_off).toBe(210 - 5 * 20);
     });
 
     it('should fallback to defaults for invalid enum string values', () => {
@@ -114,8 +114,8 @@ describe('cleanModeUtils', () => {
       };
       const result = getSettingFromCleanMode(CleanModeDisplayLabel.MopDefault, settings);
       expect(result).toBeDefined();
-      expect(result!.waterFlow).toBe(MopWaterFlow.Medium);
-      expect(result!.mopRoute).toBe(MopRoute.Standard);
+      expect(result?.waterFlow).toBe(MopWaterFlow.Medium);
+      expect(result?.mopRoute).toBe(MopRoute.Standard);
     });
   });
 });

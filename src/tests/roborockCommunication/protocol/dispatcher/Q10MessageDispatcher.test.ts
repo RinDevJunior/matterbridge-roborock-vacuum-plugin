@@ -86,6 +86,12 @@ describe('Q10MessageDispatcher', () => {
       expect(client.get).toHaveBeenCalled();
       expect(result).toBeInstanceOf(Object); // RoomMap, but type is not checked at runtime
     });
+
+    it('should return empty array when response has no room_mapping', async () => {
+      client.get.mockResolvedValueOnce({});
+      const result = await dispatcher.getRoomMap(duid, 1);
+      expect(result).toEqual([]);
+    });
   });
 
   describe('goHome', () => {
@@ -182,14 +188,6 @@ describe('Q10MessageDispatcher', () => {
       const id = dispatcher['messageId'];
       expect(id).toBe(fixedTime + 1);
       vi.restoreAllMocks();
-    });
-  });
-
-  describe('getRoomMap', () => {
-    it('should return empty array when response has no room_mapping', async () => {
-      client.get.mockResolvedValueOnce({});
-      const result = await dispatcher.getRoomMap(duid, 1);
-      expect(result).toEqual([]);
     });
   });
 
