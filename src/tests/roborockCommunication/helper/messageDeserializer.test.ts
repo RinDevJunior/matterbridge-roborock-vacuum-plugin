@@ -135,7 +135,7 @@ describe('MessageDeserializer', () => {
 
     const preCrc = Buffer.concat([header, contentLen, decodedPayload]);
     const badCrcBuf = Buffer.alloc(4);
-    badCrcBuf.writeUInt32BE(0xDEADBEEF, 0);
+    badCrcBuf.writeUInt32BE(0xdeadbeef, 0);
 
     const full = Buffer.concat([preCrc, badCrcBuf]);
 

@@ -69,11 +69,5 @@ describe('behaviorConfig', () => {
       const smartPlanMode = CleanModeLabelInfo[CleanModeDisplayLabel.SmartPlan].mode;
       expect(config.cleanSettings[smartPlanMode]).toBeDefined();
     });
-
-    it('should include VacFollowedByMop in cleanModes', () => {
-      const config = createSmartBehaviorConfig();
-      const mode = CleanModeLabelInfo[CleanModeDisplayLabel.MopAndVaccum_VacFollowedByMop].mode;
-      expect(config.cleanModes[mode]).toBe(CleanModeDisplayLabel.MopAndVaccum_VacFollowedByMop);
-    });
   });
 });

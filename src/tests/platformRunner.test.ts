@@ -202,7 +202,13 @@ describe('PlatformRunner.requestHomeData', () => {
       updateAttribute: vi.fn(),
     });
     platform = asPartial<RoborockMatterbridgePlatform>({
-      registry: createMockDeviceRegistry({}, new Map([['123', robot1], ['456', robot2]])),
+      registry: createMockDeviceRegistry(
+        {},
+        new Map([
+          ['123', robot1],
+          ['456', robot2],
+        ]),
+      ),
       rrHomeId: 12345,
       roborockService: createMockRoborockService({ getHomeDataForUpdating: getHomeDataMock }),
       log: createMockLogger(),
