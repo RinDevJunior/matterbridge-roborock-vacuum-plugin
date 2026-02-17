@@ -62,6 +62,7 @@ export class RoborockService {
         iotApiFactory: params.iotApiFactory,
         persist: params.persist,
         configManager: params.configManager,
+        toastMessage: params.toastMessage,
       };
       this.container = new ServiceContainer(logger, config);
     }
@@ -111,12 +112,12 @@ export class RoborockService {
 
     if (!userData) {
       this.logger.info('Authentication incomplete. Further action required (e.g., 2FA).');
-      this.toastMessage('Authentication incomplete. Further action required (e.g., 2FA).');
+      this.toastMessage('Authentication incomplete. Further action required (e.g., 2FA).', 5000, 'warning');
       return { userData: undefined, shouldContinue: false, isSuccess: false };
     }
 
     this.logger.info(`Authentication successful for user: ${userData.nickname} (${userData.username})`);
-    this.toastMessage(`Authentication successful for user: ${userData.nickname} (${userData.username})`);
+    this.toastMessage(`Authentication successful for user: ${userData.nickname} (${userData.username})`, 5000, 'success');
     this.container.setUserData(userData);
     return { userData, shouldContinue: true, isSuccess: true };
   }

@@ -55,6 +55,7 @@ describe('ServiceContainer', () => {
       iotApiFactory: vi.fn(() => mockIotApi),
       persist: createMockLocalStorage({ storage: localStorageMock }) as LocalStorage,
       configManager: asPartial<PlatformConfigManager>({}),
+      toastMessage: vi.fn(),
     };
 
     container = new ServiceContainer(mockLogger, config);
@@ -82,6 +83,7 @@ describe('ServiceContainer', () => {
         refreshInterval: 10000,
         persist: {} as LocalStorage,
         configManager: asPartial<PlatformConfigManager>({}),
+        toastMessage: vi.fn(),
       };
 
       const defaultContainer = new ServiceContainer(mockLogger, defaultConfig);

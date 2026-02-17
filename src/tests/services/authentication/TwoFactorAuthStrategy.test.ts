@@ -64,7 +64,7 @@ describe('TwoFactorAuthStrategy', () => {
       },
     });
 
-    strategy = new TwoFactorAuthStrategy(mockAuthService, mockUserDataRepository, mockVerificationCodeService, mockConfigManager, mockLogger);
+    strategy = new TwoFactorAuthStrategy(mockAuthService, mockUserDataRepository, mockVerificationCodeService, mockConfigManager, vi.fn(), mockLogger);
 
     vi.clearAllMocks();
   });
@@ -225,9 +225,7 @@ describe('TwoFactorAuthStrategy', () => {
         const context = createContext('test@example.com');
         await strategy.authenticate(context);
 
-        expect(mockLogger.notice).toHaveBeenCalledWith('============================================');
-        expect(mockLogger.notice).toHaveBeenCalledWith('ACTION REQUIRED: Enter verification code');
-        expect(mockLogger.notice).toHaveBeenCalledWith('A verification code was previously sent to: test@example.com');
+        expect(mockLogger.notice).toHaveBeenCalledWith(expect.stringContaining('A verification code was previously sent to: test@example.com'));
       });
 
       it('should proceed with code request when not rate limited', async () => {
@@ -270,9 +268,7 @@ describe('TwoFactorAuthStrategy', () => {
         const context = createContext('test@example.com');
         await strategy.authenticate(context);
 
-        expect(mockLogger.notice).toHaveBeenCalledWith('A verification code has been sent to: test@example.com');
-        expect(mockLogger.notice).toHaveBeenCalledWith('Enter the 6-digit code in the plugin configuration');
-        expect(mockLogger.notice).toHaveBeenCalledWith('under the "verificationCode" field, then restart the plugin.');
+        expect(mockLogger.notice).toHaveBeenCalledWith(expect.stringContaining('A verification code has been sent to: test@example.com'));
       });
 
       it('should throw error when code request fails', async () => {

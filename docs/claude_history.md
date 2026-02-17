@@ -1,5 +1,10 @@
 # Claude History
 
+## 2026-02-17 (Session 7)
+
+- Created release candidate 1.1.4-rc06: bumped version in `package.json`, `schema.json`, `config.json`. Added CHANGELOG entry for Buy Me a Coffee badge asset.
+- Updated CHANGELOG for 1.1.4-rc06: added improvements for 2FA toast notifications, snackbar severity levels, and WebSocket restart prompt after persistence clear.
+
 ## 2026-02-17 (Session 6)
 
 - Fixed `mqttClient.ts`: resolve `version` on request object in `sendInternal` via `getMQTTProtocolVersion(duid)` before serialization, matching `LocalNetworkClient` pattern. Previously `version` was `undefined` on the request (only resolved inside serializer).

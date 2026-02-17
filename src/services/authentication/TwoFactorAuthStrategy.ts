@@ -7,6 +7,7 @@ import type { IAuthStrategy } from './IAuthStrategy.js';
 import type { AuthContext } from './AuthContext.js';
 import { PlatformConfigManager } from '../../platform/platformConfigManager.js';
 import { BaseAuthStrategy } from './BaseAuthStrategy.js';
+import { WssSendSnackbarMessage } from '../../types/WssSendSnackbarMessage.js';
 
 /** Two-factor authentication strategy with verification code. */
 export class TwoFactorAuthStrategy extends BaseAuthStrategy implements IAuthStrategy {
@@ -15,6 +16,7 @@ export class TwoFactorAuthStrategy extends BaseAuthStrategy implements IAuthStra
     userDataRepository: UserDataRepository,
     private readonly verificationCodeService: VerificationCodeService,
     configManager: PlatformConfigManager,
+    private readonly toastMessage: WssSendSnackbarMessage,
     logger: AnsiLogger,
   ) {
     super(authService, userDataRepository, configManager, logger);
@@ -92,11 +94,13 @@ export class TwoFactorAuthStrategy extends BaseAuthStrategy implements IAuthStra
 
   /** Display verification code banner instructions to user. */
   private logVerificationCodeBanner(email: string, wasPreviouslySent: boolean): void {
-    this.logger.notice('============================================');
-    this.logger.notice('ACTION REQUIRED: Enter verification code');
-    this.logger.notice(`A verification code ${wasPreviouslySent ? 'was previously sent' : 'has been sent'} to: ${email}`);
-    this.logger.notice('Enter the 6-digit code in the plugin configuration');
-    this.logger.notice('under the "verificationCode" field, then restart the plugin.');
-    this.logger.notice('============================================');
+    const message = `============================================
+ACTION REQUIRED: Enter verification code
+A verification code ${wasPreviouslySent ? 'was previously sent' : 'has been sent'} to: ${email}
+Enter the 6-digit code in the plugin configuration
+under the "verificationCode" field, then restart the plugin.
+============================================`;
+    this.logger.notice(message);
+    this.toastMessage(message, 60 * 1000, 'warning');
   }
 }

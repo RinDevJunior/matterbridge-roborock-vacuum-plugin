@@ -140,8 +140,8 @@ export class RoborockMatterbridgePlatform extends MatterbridgeDynamicPlatform {
         .then(() => this.unregisterAllDevices(UNREGISTER_DEVICES_DELAY_MS))
         .then(() => {
           this.log.notice('Please restart the platform now.');
-          this.snackbarMessage('Clear persistence storage as per configuration completed. Please restart the platform now.', 5000, 'info');
-          // this.wssSendRestartRequired();
+          this.snackbarMessage('Clear persistence storage as per configuration completed. Please restart the platform now.', 5000, 'success');
+          this.wssSendRestartRequired();
         })
         .then(() => {
           const config = this.configManager.rawConfig;

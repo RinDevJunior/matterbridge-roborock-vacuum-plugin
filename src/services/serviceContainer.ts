@@ -19,6 +19,7 @@ import { VerificationCodeService } from './authentication/VerificationCodeServic
 import { PasswordAuthStrategy } from './authentication/PasswordAuthStrategy.js';
 import { TwoFactorAuthStrategy } from './authentication/TwoFactorAuthStrategy.js';
 import { RoborockAuthGateway } from '../roborockCommunication/adapters/RoborockAuthGateway.js';
+import { WssSendSnackbarMessage } from '../types/WssSendSnackbarMessage.js';
 
 /** Configuration for ServiceContainer. */
 export interface ServiceContainerConfig {
@@ -28,6 +29,7 @@ export interface ServiceContainerConfig {
   iotApiFactory?: Factory<UserData, RoborockIoTApi>;
   persist: LocalStorage;
   configManager: PlatformConfigManager;
+  toastMessage: WssSendSnackbarMessage;
 }
 
 /** DI container managing service lifecycle. Services are lazily created and cached. */
@@ -98,7 +100,14 @@ export class ServiceContainer {
 
       // Create strategies
       const passwordStrategy = new PasswordAuthStrategy(authService, userDataRepository, this.config.configManager, this.logger);
-      const twoFactorStrategy = new TwoFactorAuthStrategy(authService, userDataRepository, verificationCodeService, this.config.configManager, this.logger);
+      const twoFactorStrategy = new TwoFactorAuthStrategy(
+        authService,
+        userDataRepository,
+        verificationCodeService,
+        this.config.configManager,
+        this.config.toastMessage,
+        this.logger,
+      );
 
       // Create coordinator
       this.authenticationCoordinator = new AuthenticationCoordinator(passwordStrategy, twoFactorStrategy, this.logger);

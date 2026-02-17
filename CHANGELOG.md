@@ -4,6 +4,22 @@ All notable changes to this project will be documented in this file.
 
 ---
 
+## [1.1.4-rc06] - 2026-02-17
+
+### Improvements
+
+- Two-factor authentication now displays a toast notification with verification code instructions, making it easier to spot when action is required.
+- Snackbar messages throughout the plugin now include severity levels (success, warning, info) for clearer visual feedback.
+- After clearing persistence storage, the plugin now triggers an automatic restart prompt via WebSocket instead of requiring manual restart.
+
+### Added
+
+- Added Buy Me a Coffee badge asset for project funding support.
+
+<a href="https://www.buymeacoffee.com/rinnvspktr" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/default-orange.png" alt="Buy Me A Coffee" height="41" width="174"></a>
+
+---
+
 ## [1.1.4-rc05] - 2026-02-17
 
 ### Improvements

@@ -6,6 +6,9 @@
 
 ## Completed
 
+- [x] Create release candidate 1.1.4-rc06 with Buy Me a Coffee badge asset
+- [x] Update CHANGELOG for 1.1.4-rc06 with staged improvements (2FA toast, snackbar severity, WSS restart prompt)
+
 - [x] Fix version undefined in MQTT request — resolve version in `mqttClient.sendInternal` before serialization
 
 - [x] Fix Node.js 20 compatibility: `Map.values().every()` → `[...Map.values()].every()` in platformRunner.ts
