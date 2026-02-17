@@ -8,8 +8,8 @@ import { AbstractMessageListener } from './listeners/abstractMessageListener.js'
 import { Client } from './client.js';
 import { MessageSerializer } from '../protocol/serializers/messageSerializer.js';
 import { MessageDeserializer } from '../protocol/deserializers/messageDeserializer.js';
-import { PendingResponseTracker } from './services/pendingResponseTracker.js';
-import { ResponseBroadcaster } from './listeners/responseBroadcaster.js';
+import { V1PendingResponseTracker } from './services/v1PendingResponseTracker.js';
+import { V1ResponseBroadcaster } from './listeners/v1ResponseBroadcaster.js';
 
 export abstract class AbstractClient implements Client {
   public isInDisconnectingStep = false;
@@ -25,8 +25,8 @@ export abstract class AbstractClient implements Client {
   protected constructor(
     protected readonly logger: AnsiLogger,
     protected readonly context: MessageContext,
-    protected readonly responseBroadcaster: ResponseBroadcaster,
-    private readonly responseTracker: PendingResponseTracker,
+    protected readonly responseBroadcaster: V1ResponseBroadcaster,
+    private readonly responseTracker: V1PendingResponseTracker,
   ) {
     this.serializer = new MessageSerializer(this.context, this.logger);
     this.deserializer = new MessageDeserializer(this.context, this.logger);

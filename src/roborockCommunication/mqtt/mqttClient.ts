@@ -4,8 +4,8 @@ import * as CryptoUtils from '../helper/cryptoHelper.js';
 import { RequestMessage, MessageContext, Rriot, UserData } from '../models/index.js';
 import { AbstractClient } from '../routing/abstractClient.js';
 import { KEEPALIVE_INTERVAL_MS } from '../../constants/timeouts.js';
-import { PendingResponseTracker } from '../routing/services/pendingResponseTracker.js';
-import { ResponseBroadcaster } from '../routing/listeners/responseBroadcaster.js';
+import { V1PendingResponseTracker } from '../routing/services/v1PendingResponseTracker.js';
+import { V1ResponseBroadcaster } from '../routing/listeners/v1ResponseBroadcaster.js';
 
 export class MQTTClient extends AbstractClient {
   protected override clientName = 'MQTTClient';
@@ -19,7 +19,7 @@ export class MQTTClient extends AbstractClient {
   private consecutiveAuthErrors = 0;
   private authErrorBackoffTimeout: NodeJS.Timeout | undefined = undefined;
 
-  public constructor(logger: AnsiLogger, context: MessageContext, userdata: UserData, responseBroadcaster: ResponseBroadcaster, responseTracker: PendingResponseTracker) {
+  public constructor(logger: AnsiLogger, context: MessageContext, userdata: UserData, responseBroadcaster: V1ResponseBroadcaster, responseTracker: V1PendingResponseTracker) {
     super(logger, context, responseBroadcaster, responseTracker);
     this.rriot = userdata.rriot;
 

@@ -6,8 +6,8 @@ import { ProtocolVersion } from '../enums/index.js';
 import { AbstractClient } from '../routing/abstractClient.js';
 import { ChunkBuffer } from '../helper/chunkBuffer.js';
 import { Sequence } from '../helper/sequence.js';
-import { PendingResponseTracker } from '../routing/services/pendingResponseTracker.js';
-import { ResponseBroadcaster } from '../routing/listeners/responseBroadcaster.js';
+import { V1PendingResponseTracker } from '../routing/services/v1PendingResponseTracker.js';
+import { V1ResponseBroadcaster } from '../routing/listeners/v1ResponseBroadcaster.js';
 import { HelloResponseListener } from '../routing/listeners/implementation/helloResponseListener.js';
 import { LocalPingResponseListener } from './localPingResponseListener.js';
 
@@ -27,8 +27,8 @@ export class LocalNetworkClient extends AbstractClient {
     context: MessageContext,
     private readonly duid: string,
     private readonly ip: string,
-    responseBroadcaster: ResponseBroadcaster,
-    responseTracker: PendingResponseTracker,
+    responseBroadcaster: V1ResponseBroadcaster,
+    responseTracker: V1PendingResponseTracker,
   ) {
     super(logger, context, responseBroadcaster, responseTracker);
     this.messageIdSeq = new Sequence(100000, 999999);

@@ -7,25 +7,25 @@ import { AbstractConnectionListener } from './listeners/abstractConnectionListen
 import { AbstractMessageListener } from './listeners/abstractMessageListener.js';
 import { ConnectionBroadcaster } from './listeners/connectionBroadcaster.js';
 import { Client } from './client.js';
-import { PendingResponseTracker } from './services/pendingResponseTracker.js';
-import { ResponseBroadcaster } from './listeners/responseBroadcaster.js';
+import { V1PendingResponseTracker } from './services/v1PendingResponseTracker.js';
+import { V1ResponseBroadcaster } from './listeners/v1ResponseBroadcaster.js';
 
 export class ClientRouter implements Client {
   protected readonly connectionListener = new ConnectionBroadcaster();
-  protected readonly responseBroadcaster: ResponseBroadcaster;
+  protected readonly responseBroadcaster: V1ResponseBroadcaster;
 
   private readonly context: MessageContext;
   private readonly localClients = new Map<string, AbstractClient>();
   private readonly logger: AnsiLogger;
   private mqttClient: MQTTClient;
-  private readonly responseTracker: PendingResponseTracker;
+  private readonly responseTracker: V1PendingResponseTracker;
 
   public constructor(logger: AnsiLogger, userdata: UserData) {
     this.context = new MessageContext(userdata);
     this.logger = logger;
 
-    this.responseTracker = new PendingResponseTracker(this.logger);
-    this.responseBroadcaster = new ResponseBroadcaster(this.responseTracker, this.logger);
+    this.responseTracker = new V1PendingResponseTracker(this.logger);
+    this.responseBroadcaster = new V1ResponseBroadcaster(this.responseTracker, this.logger);
     this.mqttClient = new MQTTClient(logger, this.context, userdata, this.responseBroadcaster, this.responseTracker);
     this.mqttClient.registerConnectionListener(this.connectionListener);
   }

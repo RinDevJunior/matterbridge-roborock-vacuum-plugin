@@ -2,7 +2,7 @@ import { AnsiLogger, debugStringify } from 'matterbridge/logger';
 import { MESSAGE_TIMEOUT_MS } from '../../../constants/index.js';
 import { DpsPayload, Protocol, RequestMessage, ResponseMessage } from '../../models/index.js';
 
-export class PendingResponseTracker {
+export class V1PendingResponseTracker {
   private readonly pending = new Map<
     number,
     {

@@ -1,15 +1,15 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { PendingResponseTracker } from '../../../../roborockCommunication/routing/services/pendingResponseTracker.js';
+import { V1PendingResponseTracker } from '../../../../roborockCommunication/routing/services/v1PendingResponseTracker.js';
 import { HeaderMessage, Protocol, ResponseMessage, ResponseBody, RequestMessage, DpsPayload } from '../../../../roborockCommunication/models/index.js';
 import { makeLogger } from '../../../testUtils.js';
 
 describe('PendingResponseTracker', () => {
-  let tracker: PendingResponseTracker;
+  let tracker: V1PendingResponseTracker;
   let logger: ReturnType<typeof makeLogger>;
 
   beforeEach(() => {
     logger = makeLogger();
-    tracker = new PendingResponseTracker(logger);
+    tracker = new V1PendingResponseTracker(logger);
     vi.useFakeTimers();
   });
 

@@ -4,9 +4,9 @@ import { AnsiLogger } from 'matterbridge/logger';
 import { asPartial, asType, createMockLogger } from '../../../helpers/testUtils.js';
 import { MessageContext, RequestMessage } from '../../../../roborockCommunication/models/index.js';
 import { MQTTClient } from '../../../../roborockCommunication/mqtt/mqttClient.js';
-import { PendingResponseTracker } from '../../../../roborockCommunication/routing/services/pendingResponseTracker.js';
+import { V1PendingResponseTracker } from '../../../../roborockCommunication/routing/services/v1PendingResponseTracker.js';
 import { ConnectionBroadcaster } from '../../../../roborockCommunication/routing/listeners/connectionBroadcaster.js';
-import { ResponseBroadcaster } from '../../../../roborockCommunication/routing/listeners/responseBroadcaster.js';
+import { V1ResponseBroadcaster } from '../../../../roborockCommunication/routing/listeners/v1ResponseBroadcaster.js';
 
 function makeUserdata() {
   return asPartial({ rriot: { r: { m: 'mqtt://broker.example' }, u: 'testuser', k: 'key123', s: 'secret' } });
@@ -20,16 +20,16 @@ describe('MQTTClient (additional)', () => {
   let userdata: any;
   let context: MessageContext;
   let logger: any;
-  let responseBroadcaster: ResponseBroadcaster;
-  let responseTracker: PendingResponseTracker;
+  let responseBroadcaster: V1ResponseBroadcaster;
+  let responseTracker: V1PendingResponseTracker;
 
   beforeEach(() => {
     vi.restoreAllMocks();
     userdata = makeUserdata();
     context = new MessageContext(userdata);
     logger = makeLogger();
-    responseTracker = new PendingResponseTracker(logger);
-    responseBroadcaster = new ResponseBroadcaster(responseTracker, logger);
+    responseTracker = new V1PendingResponseTracker(logger);
+    responseBroadcaster = new V1ResponseBroadcaster(responseTracker, logger);
   });
 
   it('isReady/isConnected reflect internal state', () => {
@@ -127,8 +127,8 @@ describe('MQTTClient', () => {
   let client: any;
   let serializer: any;
   let deserializer: any;
-  let responseBroadcaster: ResponseBroadcaster;
-  let responseTracker: PendingResponseTracker;
+  let responseBroadcaster: V1ResponseBroadcaster;
+  let responseTracker: V1PendingResponseTracker;
   const createdClients: any[] = [];
 
   beforeEach(() => {
@@ -144,8 +144,8 @@ describe('MQTTClient', () => {
     };
     serializer = { serialize: vi.fn(() => ({ buffer: Buffer.from('msg') })) };
     deserializer = { deserialize: vi.fn(() => 'deserialized') };
-    responseTracker = new PendingResponseTracker(logger);
-    responseBroadcaster = new ResponseBroadcaster(responseTracker, logger);
+    responseTracker = new V1PendingResponseTracker(logger);
+    responseBroadcaster = new V1ResponseBroadcaster(responseTracker, logger);
 
     // Mock mqtt client instance
     client = {
@@ -175,7 +175,7 @@ describe('MQTTClient', () => {
       writable: true,
     });
     Object.defineProperty(mqttClient, 'responseBroadcaster', {
-      value: asPartial<ResponseBroadcaster>({
+      value: asPartial<V1ResponseBroadcaster>({
         onMessage: vi.fn(),
         tryResolve: vi.fn(),
       }),

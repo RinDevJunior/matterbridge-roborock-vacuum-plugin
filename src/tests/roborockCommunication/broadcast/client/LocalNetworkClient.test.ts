@@ -10,10 +10,10 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { asPartial, asType } from '../../../helpers/testUtils.js';
 import { LocalNetworkClient } from '../../../../roborockCommunication/local/localClient.js';
 import { Protocol, RequestMessage } from '../../../../roborockCommunication/models/index.js';
-import { PendingResponseTracker } from '../../../../roborockCommunication/routing/services/pendingResponseTracker.js';
+import { V1PendingResponseTracker } from '../../../../roborockCommunication/routing/services/v1PendingResponseTracker.js';
 import { ProtocolVersion } from '../../../../roborockCommunication/enums/protocolVersion.js';
 import { ChunkBuffer } from '../../../../roborockCommunication/helper/chunkBuffer.js';
-import { ResponseBroadcaster } from '../../../../roborockCommunication/routing/listeners/responseBroadcaster.js';
+import { V1ResponseBroadcaster } from '../../../../roborockCommunication/routing/listeners/v1ResponseBroadcaster.js';
 
 vi.mock('node:net', () => {
   class Sket {
@@ -46,8 +46,8 @@ describe('LocalNetworkClient', () => {
   let mockLogger: any;
   let mockContext: any;
   let mockSocket: any;
-  let mockResponseBroadcaster: ResponseBroadcaster;
-  let mockResponseTracker: PendingResponseTracker;
+  let mockResponseBroadcaster: V1ResponseBroadcaster;
+  let mockResponseTracker: V1PendingResponseTracker;
   const duid = 'duid1';
   const ip = '127.0.0.1';
 
@@ -78,8 +78,8 @@ describe('LocalNetworkClient', () => {
 
     globalThis.mockSocketInstance = mockSocket;
 
-    mockResponseTracker = new PendingResponseTracker(mockLogger);
-    mockResponseBroadcaster = new ResponseBroadcaster(mockResponseTracker, mockLogger);
+    mockResponseTracker = new V1PendingResponseTracker(mockLogger);
+    mockResponseBroadcaster = new V1ResponseBroadcaster(mockResponseTracker, mockLogger);
 
     client = new LocalNetworkClient(mockLogger, mockContext, duid, ip, mockResponseBroadcaster, mockResponseTracker);
     Object.defineProperty(client, 'serializer', {
