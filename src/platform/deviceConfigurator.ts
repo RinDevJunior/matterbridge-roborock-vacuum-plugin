@@ -33,8 +33,7 @@ export class DeviceConfigurator {
   public async onConfigureDevice(roborockService: RoborockService): Promise<void> {
     this.log.info('onConfigureDevice start');
 
-    const username = this.configManager.username;
-    if (!this.registry.hasDevices() || !username) {
+    if (!this.registry.hasDevices()) {
       this.log.error('Initializing: No supported devices found');
       return;
     }
@@ -121,67 +120,67 @@ export class DeviceConfigurator {
     return true;
   }
 
-  private async addDevice(device: RoborockVacuumCleaner): Promise<MatterbridgeEndpoint | undefined> {
-    if (!device.serialNumber || !device.deviceName) {
-      this.log.warn('Cannot add device: missing serialNumber or deviceName');
+  private async addDevice(rvc: RoborockVacuumCleaner): Promise<MatterbridgeEndpoint | undefined> {
+    if (!rvc.device.duid || !rvc.deviceName) {
+      this.log.warn('Cannot add device: missing rvc or deviceName');
       return undefined;
     }
-    this.platform.setSelectDevice(device.serialNumber, device.deviceName, undefined, 'hub');
+    this.platform.setSelectDevice(rvc.device.duid, rvc.deviceName, undefined, 'hub');
 
-    const vacuumData = device.device.specs;
-    const hardwareVersionString = vacuumData.firmwareVersion ?? device.device.fv ?? this.platform.matterbridge.matterbridgeVersion;
+    const vacuumData = rvc.device.specs;
+    const hardwareVersionString = vacuumData.firmwareVersion ?? rvc.device.fv ?? this.platform.matterbridge.matterbridgeVersion;
 
-    if (this.platform.validateDevice(device.deviceName)) {
-      device.softwareVersion = parseInt(this.platform.version.replace(/\D/g, ''));
-      device.softwareVersionString = this.platform.version === '' ? 'Unknown' : this.platform.version;
-      device.hardwareVersion = parseInt(hardwareVersionString.replace(/\D/g, ''));
-      device.hardwareVersionString = hardwareVersionString;
+    if (this.platform.validateDevice(rvc.deviceName)) {
+      rvc.softwareVersion = parseInt(this.platform.version.replace(/\D/g, ''));
+      rvc.softwareVersionString = this.platform.version === '' ? 'Unknown' : this.platform.version;
+      rvc.hardwareVersion = parseInt(hardwareVersionString.replace(/\D/g, ''));
+      rvc.hardwareVersionString = hardwareVersionString;
 
-      device.softwareVersion = isValidNumber(device.softwareVersion, 0, UINT32_MAX) ? device.softwareVersion : undefined;
-      device.softwareVersionString = isValidString(device.softwareVersionString) ? device.softwareVersionString.slice(0, 64) : undefined;
-      device.hardwareVersion = isValidNumber(device.hardwareVersion, 0, UINT16_MAX) ? device.hardwareVersion : undefined;
-      device.hardwareVersionString = isValidString(device.hardwareVersionString) ? device.hardwareVersionString.slice(0, 64) : undefined;
+      rvc.softwareVersion = isValidNumber(rvc.softwareVersion, 0, UINT32_MAX) ? rvc.softwareVersion : undefined;
+      rvc.softwareVersionString = isValidString(rvc.softwareVersionString) ? rvc.softwareVersionString.slice(0, 64) : undefined;
+      rvc.hardwareVersion = isValidNumber(rvc.hardwareVersion, 0, UINT16_MAX) ? rvc.hardwareVersion : undefined;
+      rvc.hardwareVersionString = isValidString(rvc.hardwareVersionString) ? rvc.hardwareVersionString.slice(0, 64) : undefined;
 
-      device.vendorName = 'Roborock';
-      device.productName = vacuumData.model;
-      device.productUrl = 'https://github.com/RinDevJunior/matterbridge-roborock-vacuum-plugin';
+      rvc.vendorName = 'Roborock';
+      rvc.productName = vacuumData.model;
+      rvc.productUrl = 'https://github.com/RinDevJunior/matterbridge-roborock-vacuum-plugin';
 
-      const options = device.getClusterServerOptions(BridgedDeviceBasicInformation.Cluster.id);
+      const options = rvc.getClusterServerOptions(BridgedDeviceBasicInformation.Cluster.id);
       if (options) {
-        options.softwareVersion = device.softwareVersion ?? 1;
-        options.softwareVersionString = device.softwareVersionString ?? '1.0.0';
-        options.hardwareVersion = device.hardwareVersion ?? 1;
-        options.hardwareVersionString = device.hardwareVersionString ?? '1.0.0';
+        options.softwareVersion = rvc.softwareVersion ?? 1;
+        options.softwareVersionString = rvc.softwareVersionString ?? '1.0.0';
+        options.hardwareVersion = rvc.hardwareVersion ?? 1;
+        options.hardwareVersionString = rvc.hardwareVersionString ?? '1.0.0';
       }
 
-      device.createDefaultIdentifyClusterServer(0, Identify.IdentifyType.AudibleBeep);
+      rvc.createDefaultIdentifyClusterServer(0, Identify.IdentifyType.AudibleBeep);
 
       // We need to add bridgedNode device type and BridgedDeviceBasicInformation cluster for single class devices that doesn't add it in childbridge mode.
-      if (device.mode === undefined && !device.deviceTypes.has(bridgedNode.code)) {
-        device.deviceTypes.set(bridgedNode.code, bridgedNode);
-        const options = device.getClusterServerOptions(Descriptor.Cluster.id);
+      if (rvc.mode === undefined && !rvc.deviceTypes.has(bridgedNode.code)) {
+        rvc.deviceTypes.set(bridgedNode.code, bridgedNode);
+        const options = rvc.getClusterServerOptions(Descriptor.Cluster.id);
         if (options) {
           const deviceTypeList = options.deviceTypeList as { deviceType: number; revision: number }[];
           if (!deviceTypeList.find((dt) => dt.deviceType === bridgedNode.code)) {
             deviceTypeList.push({ deviceType: bridgedNode.code, revision: bridgedNode.revision });
           }
         }
-        device.createDefaultBridgedDeviceBasicInformationClusterServer(
-          device.deviceName,
-          device.serialNumber,
-          device.vendorId,
-          device.vendorName,
-          device.productName,
-          device.softwareVersion,
-          device.softwareVersionString,
-          device.hardwareVersion,
-          device.hardwareVersionString,
+        rvc.createDefaultBridgedDeviceBasicInformationClusterServer(
+          rvc.deviceName,
+          rvc.device.duid,
+          rvc.vendorId,
+          rvc.vendorName,
+          rvc.productName,
+          rvc.softwareVersion,
+          rvc.softwareVersionString,
+          rvc.hardwareVersion,
+          rvc.hardwareVersionString,
         );
       }
 
-      await this.platform.registerDevice(device);
-      this.registry.registerRobot(device as RoborockVacuumCleaner);
-      return device;
+      await this.platform.registerDevice(rvc);
+      this.registry.registerRobot(rvc as RoborockVacuumCleaner);
+      return rvc;
     } else {
       return undefined;
     }

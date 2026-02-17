@@ -169,14 +169,14 @@ describe('PlatformConfigManager', () => {
       expect(manager.isDeviceAllowed({ duid: 'abc', deviceName: 'dev1' })).toBe(true);
     });
     it('should allow device if whitelisted', () => {
-      config.pluginConfiguration.whiteList = ['abc'];
+      config.pluginConfiguration.whiteList = ['dev1-abc'];
       manager = PlatformConfigManager.create(config, mockLogger);
       expect(manager.isDeviceAllowed({ duid: 'abc', deviceName: 'dev1' })).toBe(true);
     });
     it('should deny device if not in whitelist', () => {
-      config.pluginConfiguration.whiteList = ['dev2-duid456'];
+      config.pluginConfiguration.whiteList = ['dev2-abc'];
       manager = PlatformConfigManager.create(config, mockLogger);
-      expect(manager.isDeviceAllowed({ duid: 'abc', deviceName: 'dev1' })).toBe(false);
+      expect(manager.isDeviceAllowed({ duid: 'abcd', deviceName: 'dev1' })).toBe(false);
     });
     it('should extract duid from whitelist entry', () => {
       expect(manager.extractDuidFromWhitelistEntry('name - duid123')).toBe('duid123');

@@ -84,18 +84,8 @@ describe('DeviceRegistry', () => {
 
       registry.register(device, robot);
 
-      expect(registry.getDevice('SN001')).toBe(device);
-      expect(registry.getRobot('SN001')).toBe(robot);
-    });
-
-    it('should not register when device has no serialNumber', () => {
-      const device = createMockDevice('SN001');
-      device.serialNumber = '';
-      const robot = createMockRobot('SN001');
-
-      registry.register(device, robot);
-
-      expect(registry.size).toBe(0);
+      expect(registry.getDevice('duid-SN001')).toBe(device);
+      expect(registry.getRobot('duid-SN001')).toBe(robot);
     });
 
     it('should not register when device is null', () => {
@@ -123,8 +113,8 @@ describe('DeviceRegistry', () => {
       registry.register(device1, robot1);
       registry.register(device2, robot2);
 
-      expect(registry.getDevice('SN001')).toBe(device2);
-      expect(registry.getRobot('SN001')).toBe(robot2);
+      expect(registry.getDevice('duid-SN001')).toBe(device2);
+      expect(registry.getRobot('duid-SN001')).toBe(robot2);
       expect(registry.size).toBe(1);
     });
   });
@@ -135,17 +125,8 @@ describe('DeviceRegistry', () => {
 
       registry.registerRobot(robot);
 
-      expect(registry.getRobot('SN001')).toBe(robot);
-      expect(registry.getDevice('SN001')).toBeUndefined();
-    });
-
-    it('should not register when robot has no serialNumber', () => {
-      const robot = createMockRobot('SN001');
-      robot.serialNumber = '';
-
-      registry.registerRobot(robot);
-
-      expect(registry.getRobot('SN001')).toBeUndefined();
+      expect(registry.getRobot('duid-SN001')).toBe(robot);
+      expect(registry.getDevice('duid-SN001')).toBeUndefined();
     });
 
     it('should not register when robot is null', () => {
@@ -167,7 +148,7 @@ describe('DeviceRegistry', () => {
       registry.registerRobot(robot1);
       registry.registerRobot(robot2);
 
-      expect(registry.getRobot('SN001')).toBe(robot2);
+      expect(registry.getRobot('duid-SN001')).toBe(robot2);
       expect(registry.getAllRobots()).toHaveLength(1);
     });
   });
@@ -178,8 +159,8 @@ describe('DeviceRegistry', () => {
 
       registry.registerDevice(device);
 
-      expect(registry.getDevice('SN001')).toBe(device);
-      expect(registry.getRobot('SN001')).toBeUndefined();
+      expect(registry.getDevice('duid-SN001')).toBe(device);
+      expect(registry.getRobot('duid-SN001')).toBeUndefined();
     });
 
     it('should not register when device has no serialNumber', () => {
@@ -210,7 +191,7 @@ describe('DeviceRegistry', () => {
       registry.registerDevice(device1);
       registry.registerDevice(device2);
 
-      expect(registry.getDevice('SN001')).toBe(device2);
+      expect(registry.getDevice('duid-SN001')).toBe(device2);
       expect(registry.size).toBe(1);
     });
   });
@@ -221,10 +202,10 @@ describe('DeviceRegistry', () => {
       const robot = createMockRobot('SN001');
       registry.register(device, robot);
 
-      registry.unregister('SN001');
+      registry.unregister('duid-SN001');
 
-      expect(registry.getDevice('SN001')).toBeUndefined();
-      expect(registry.getRobot('SN001')).toBeUndefined();
+      expect(registry.getDevice('duid-SN001')).toBeUndefined();
+      expect(registry.getRobot('duid-SN001')).toBeUndefined();
       expect(registry.size).toBe(0);
     });
 
@@ -242,12 +223,12 @@ describe('DeviceRegistry', () => {
 
       registry.register(device1, robot1);
       registry.register(device2, robot2);
-      registry.unregister('SN001');
+      registry.unregister('duid-SN001');
 
-      expect(registry.getDevice('SN001')).toBeUndefined();
-      expect(registry.getRobot('SN001')).toBeUndefined();
-      expect(registry.getDevice('SN002')).toBe(device2);
-      expect(registry.getRobot('SN002')).toBe(robot2);
+      expect(registry.getDevice('duid-SN001')).toBeUndefined();
+      expect(registry.getRobot('duid-SN001')).toBeUndefined();
+      expect(registry.getDevice('duid-SN002')).toBe(device2);
+      expect(registry.getRobot('duid-SN002')).toBe(robot2);
       expect(registry.size).toBe(1);
     });
   });
@@ -257,7 +238,7 @@ describe('DeviceRegistry', () => {
       const robot = createMockRobot('SN001');
       registry.registerRobot(robot);
 
-      const result = registry.getRobot('SN001');
+      const result = registry.getRobot('duid-SN001');
 
       expect(result).toBe(robot);
     });
@@ -269,7 +250,7 @@ describe('DeviceRegistry', () => {
     });
 
     it('should return undefined for empty registry', () => {
-      const result = registry.getRobot('SN001');
+      const result = registry.getRobot('duid-SN001');
 
       expect(result).toBeUndefined();
     });
@@ -280,7 +261,7 @@ describe('DeviceRegistry', () => {
       const device = createMockDevice('SN001');
       registry.registerDevice(device);
 
-      const result = registry.getDevice('SN001');
+      const result = registry.getDevice('duid-SN001');
 
       expect(result).toBe(device);
     });
@@ -292,7 +273,7 @@ describe('DeviceRegistry', () => {
     });
 
     it('should return undefined for empty registry', () => {
-      const result = registry.getDevice('SN001');
+      const result = registry.getDevice('duid-SN001');
 
       expect(result).toBeUndefined();
     });
@@ -408,7 +389,7 @@ describe('DeviceRegistry', () => {
 
       expect(registry.size).toBe(1);
 
-      registry.unregister('SN001');
+      registry.unregister('duid-SN001');
 
       expect(registry.size).toBe(0);
     });
@@ -458,8 +439,8 @@ describe('DeviceRegistry', () => {
       expect(registry.size).toBe(0);
       expect(registry.getAllRobots()).toHaveLength(0);
       expect(registry.getAllDevices()).toHaveLength(0);
-      expect(registry.getDevice('SN001')).toBeUndefined();
-      expect(registry.getRobot('SN001')).toBeUndefined();
+      expect(registry.getDevice('duid-SN001')).toBeUndefined();
+      expect(registry.getRobot('duid-SN001')).toBeUndefined();
     });
 
     it('should handle clearing empty registry', () => {
@@ -478,7 +459,7 @@ describe('DeviceRegistry', () => {
       registry.registerDevice(device2);
 
       expect(registry.size).toBe(1);
-      expect(registry.getDevice('SN002')).toBe(device2);
+      expect(registry.getDevice('duid-SN002')).toBe(device2);
     });
   });
 
@@ -493,8 +474,8 @@ describe('DeviceRegistry', () => {
       const entries = Array.from(registry.robotEntries());
 
       expect(entries).toHaveLength(2);
-      expect(entries).toContainEqual(['SN001', robot1]);
-      expect(entries).toContainEqual(['SN002', robot2]);
+      expect(entries).toContainEqual(['duid-SN001', robot1]);
+      expect(entries).toContainEqual(['duid-SN002', robot2]);
     });
 
     it('should return empty iterator for empty registry', () => {
@@ -515,8 +496,8 @@ describe('DeviceRegistry', () => {
         serialNumbers.push(sn);
       }
 
-      expect(serialNumbers).toContain('SN001');
-      expect(serialNumbers).toContain('SN002');
+      expect(serialNumbers).toContain('duid-SN001');
+      expect(serialNumbers).toContain('duid-SN002');
     });
   });
 
@@ -531,8 +512,8 @@ describe('DeviceRegistry', () => {
       const entries = Array.from(registry.deviceEntries());
 
       expect(entries).toHaveLength(2);
-      expect(entries).toContainEqual(['SN001', device1]);
-      expect(entries).toContainEqual(['SN002', device2]);
+      expect(entries).toContainEqual(['duid-SN001', device1]);
+      expect(entries).toContainEqual(['duid-SN002', device2]);
     });
 
     it('should return empty iterator for empty registry', () => {
@@ -553,8 +534,8 @@ describe('DeviceRegistry', () => {
         serialNumbers.push(sn);
       }
 
-      expect(serialNumbers).toContain('SN001');
-      expect(serialNumbers).toContain('SN002');
+      expect(serialNumbers).toContain('duid-SN001');
+      expect(serialNumbers).toContain('duid-SN002');
     });
   });
 
@@ -566,7 +547,7 @@ describe('DeviceRegistry', () => {
       const map = registry.robotsMap;
 
       expect(map).toBeInstanceOf(Map);
-      expect(map.get('SN001')).toBe(robot);
+      expect(map.get('duid-SN001')).toBe(robot);
     });
 
     it('should return same map instance', () => {
@@ -582,7 +563,7 @@ describe('DeviceRegistry', () => {
       const robot = createMockRobot('SN001');
       registry.registerRobot(robot);
 
-      expect(map.get('SN001')).toBe(robot);
+      expect(map.get('duid-SN001')).toBe(robot);
     });
   });
 
@@ -594,7 +575,7 @@ describe('DeviceRegistry', () => {
       const map = registry.devicesMap;
 
       expect(map).toBeInstanceOf(Map);
-      expect(map.get('SN001')).toBe(device);
+      expect(map.get('duid-SN001')).toBe(device);
     });
 
     it('should return same map instance', () => {
@@ -610,7 +591,7 @@ describe('DeviceRegistry', () => {
       const device = createMockDevice('SN001');
       registry.registerDevice(device);
 
-      expect(map.get('SN001')).toBe(device);
+      expect(map.get('duid-SN001')).toBe(device);
     });
   });
 
@@ -627,10 +608,10 @@ describe('DeviceRegistry', () => {
 
       expect(registry.size).toBe(2);
       expect(registry.getAllRobots()).toHaveLength(2);
-      expect(registry.getDevice('SN001')).toBe(device1);
-      expect(registry.getDevice('SN002')).toBe(device2);
-      expect(registry.getRobot('SN001')).toBe(robot1);
-      expect(registry.getRobot('SN002')).toBe(robot2);
+      expect(registry.getDevice('duid-SN001')).toBe(device1);
+      expect(registry.getDevice('duid-SN002')).toBe(device2);
+      expect(registry.getRobot('duid-SN001')).toBe(robot1);
+      expect(registry.getRobot('duid-SN002')).toBe(robot2);
     });
 
     describe('edge cases and error handling', () => {
@@ -668,26 +649,19 @@ describe('DeviceRegistry', () => {
         const robot = createMockRobot('SN002');
         registry.register(device, robot);
         // Both device and robot are registered under device.serialNumber (SN001)
-        expect(registry.getDevice('SN001')).toBe(device);
-        expect(registry.getRobot('SN001')).toBe(robot);
-        expect(registry.getRobot('SN002')).toBeUndefined();
-      });
-
-      it('should not register robot if serialNumber is null or undefined', () => {
-        const robot = createMockRobot('SN001');
-        robot.serialNumber = undefined;
-        registry.registerRobot(robot);
-        expect(registry.getAllRobots()).toHaveLength(0);
+        expect(registry.getDevice('duid-SN001')).toBe(device);
+        expect(registry.getRobot('duid-SN001')).toBe(robot);
+        expect(registry.getRobot('duid-SN002')).toBeUndefined();
       });
 
       it('should not register device if serialNumber is null or undefined', () => {
         const device = createMockDevice('SN001');
         // @ts-expect-error: purposely setting serialNumber to null
-        device.serialNumber = null;
+        device.duid = null;
         registry.registerDevice(device);
         expect(registry.size).toBe(0);
         // @ts-expect-error: purposely setting serialNumber to undefined
-        device.serialNumber = undefined;
+        device.duid = undefined;
         registry.registerDevice(device);
         expect(registry.size).toBe(0);
       });
@@ -703,7 +677,7 @@ describe('DeviceRegistry', () => {
       expect(registry.size).toBe(1);
       expect(registry.getAllRobots()).toHaveLength(1);
 
-      registry.unregister('SN001');
+      registry.unregister('duid-SN001');
 
       expect(registry.size).toBe(0);
       expect(registry.getAllRobots()).toHaveLength(1);
@@ -717,16 +691,16 @@ describe('DeviceRegistry', () => {
       expect(registry.size).toBe(1);
       expect(registry.hasDevices()).toBe(true);
 
-      const retrievedDevice = registry.getDevice('SN001');
-      const retrievedRobot = registry.getRobot('SN001');
+      const retrievedDevice = registry.getDevice('duid-SN001');
+      const retrievedRobot = registry.getRobot('duid-SN001');
       expect(retrievedDevice).toBe(device);
       expect(retrievedRobot).toBe(robot);
 
-      registry.unregister('SN001');
+      registry.unregister('duid-SN001');
       expect(registry.size).toBe(0);
       expect(registry.hasDevices()).toBe(false);
-      expect(registry.getDevice('SN001')).toBeUndefined();
-      expect(registry.getRobot('SN001')).toBeUndefined();
+      expect(registry.getDevice('duid-SN001')).toBeUndefined();
+      expect(registry.getRobot('duid-SN001')).toBeUndefined();
     });
   });
 });

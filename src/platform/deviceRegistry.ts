@@ -11,17 +11,16 @@ export class DeviceRegistry {
 
   /**
    * Register a device and its associated robot vacuum cleaner.
-   * Uses serialNumber as the key for consistency with module.ts.
    */
   public register(device: Device, robot: RoborockVacuumCleaner): void {
-    if (!device?.serialNumber) return;
-    this.devices.set(device.serialNumber, device);
-    this.robots.set(device.serialNumber, robot);
+    if (!device?.duid) return;
+    this.devices.set(device.duid, device);
+    this.robots.set(device.duid, robot);
   }
 
   public registerRobot(robot: RoborockVacuumCleaner): void {
-    if (!robot?.serialNumber) return;
-    this.robots.set(robot.serialNumber, robot);
+    if (!robot?.device.duid) return;
+    this.robots.set(robot.device.duid, robot);
   }
 
   /**
@@ -29,30 +28,30 @@ export class DeviceRegistry {
    * Used during device discovery before robot is created.
    */
   public registerDevice(device: Device): void {
-    if (!device?.serialNumber) return;
-    this.devices.set(device.serialNumber, device);
+    if (!device?.duid) return;
+    this.devices.set(device.duid, device);
   }
 
   /**
    * Unregister a device and its robot by serial number.
    */
-  public unregister(serialNumber: string): void {
-    this.devices.delete(serialNumber);
-    this.robots.delete(serialNumber);
+  public unregister(duid: string): void {
+    this.devices.delete(duid);
+    this.robots.delete(duid);
   }
 
   /**
    * Get a robot by serial number.
    */
-  public getRobot(serialNumber: string): RoborockVacuumCleaner | undefined {
-    return this.robots.get(serialNumber);
+  public getRobot(duid: string): RoborockVacuumCleaner | undefined {
+    return this.robots.get(duid);
   }
 
   /**
    * Get a device by serial number.
    */
-  public getDevice(serialNumber: string): Device | undefined {
-    return this.devices.get(serialNumber);
+  public getDevice(duid: string): Device | undefined {
+    return this.devices.get(duid);
   }
 
   /**
