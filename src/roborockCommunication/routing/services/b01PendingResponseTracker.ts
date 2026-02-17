@@ -2,6 +2,7 @@ import { AnsiLogger, debugStringify } from 'matterbridge/logger';
 import { MESSAGE_TIMEOUT_MS } from '../../../constants/index.js';
 import { Q10RequestCode } from '../../enums/Q10RequestCode.js';
 import { Dps, HeaderMessage, RequestMessage, ResponseBody, ResponseMessage } from '../../models/index.js';
+import { PendingResponseTracker } from './pendingResponseTracker.js';
 
 // Reverse map: numeric string → enum name (e.g. '121' → 'state')
 const CODE_NAME_MAP: ReadonlyMap<string, string> = new Map(
@@ -25,7 +26,7 @@ interface PendingEntry {
   overallTimer: NodeJS.Timeout;
 }
 
-export class B01PendingResponseTracker {
+export class B01PendingResponseTracker implements PendingResponseTracker {
   private readonly pending: PendingEntry[] = [];
 
   constructor(

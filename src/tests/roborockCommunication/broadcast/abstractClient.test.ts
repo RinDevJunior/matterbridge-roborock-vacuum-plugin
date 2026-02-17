@@ -5,13 +5,15 @@ import { V1PendingResponseTracker } from '../../../roborockCommunication/routing
 import { createMockLogger, asPartial, asType, mkUser } from '../../helpers/testUtils.js';
 import { AbstractConnectionListener } from '../../../roborockCommunication/routing/listeners/abstractConnectionListener.js';
 import { V1ResponseBroadcaster } from '../../../roborockCommunication/routing/listeners/v1ResponseBroadcaster.js';
+import { ResponseBroadcaster } from '../../../roborockCommunication/routing/listeners/responseBroadcaster.js';
+import { PendingResponseTracker } from '../../../roborockCommunication/routing/services/pendingResponseTracker.js';
 
 class TestClient extends AbstractClient {
   protected clientName = 'TestClient';
   protected shouldReconnect = false;
   private connected = false;
 
-  constructor(logger: any, context: MessageContext, responseBroadcaster: V1ResponseBroadcaster, responseTracker: V1PendingResponseTracker) {
+  constructor(logger: any, context: MessageContext, responseBroadcaster: ResponseBroadcaster, responseTracker: PendingResponseTracker) {
     super(logger, context, responseBroadcaster, responseTracker);
     this.initializeConnectionStateListener(asPartial<AbstractClient>({}));
   }
@@ -91,7 +93,7 @@ describe('AbstractClient', () => {
   it('registerMessageListener adds listener to chain', () => {
     const listener = asPartial<{ name: string; duid: string; onMessage: (...args: unknown[]) => void }>({ name: 'test-listener', duid: 'DUID123', onMessage: vi.fn() });
     client.registerMessageListener(listener);
-    expect(asType<TestClient>(client)['responseBroadcaster']['listeners']).toContain(listener);
+    expect((asType<TestClient>(client)['responseBroadcaster'] as V1ResponseBroadcaster)['listeners']).toContain(listener);
   });
 
   it('isConnected returns connection state', () => {

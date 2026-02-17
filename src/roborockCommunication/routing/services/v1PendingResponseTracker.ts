@@ -1,8 +1,9 @@
 import { AnsiLogger, debugStringify } from 'matterbridge/logger';
 import { MESSAGE_TIMEOUT_MS } from '../../../constants/index.js';
 import { DpsPayload, Protocol, RequestMessage, ResponseMessage } from '../../models/index.js';
+import { PendingResponseTracker } from './pendingResponseTracker.js';
 
-export class V1PendingResponseTracker {
+export class V1PendingResponseTracker implements PendingResponseTracker {
   private readonly pending = new Map<
     number,
     {
@@ -13,7 +14,8 @@ export class V1PendingResponseTracker {
 
   constructor(private readonly logger: AnsiLogger) {}
 
-  public waitFor(messageId: number, request: RequestMessage): Promise<ResponseMessage> {
+  public waitFor(request: RequestMessage, duid: string): Promise<ResponseMessage> {
+    const messageId = request.messageId;
     return new Promise<ResponseMessage>((handler, reject) => {
       this.logger.debug(`Waiting for response to messageId: ${messageId}, method: ${request.method}`);
 

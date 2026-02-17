@@ -7,26 +7,23 @@ import { AbstractConnectionListener } from './listeners/abstractConnectionListen
 import { AbstractMessageListener } from './listeners/abstractMessageListener.js';
 import { ConnectionBroadcaster } from './listeners/connectionBroadcaster.js';
 import { Client } from './client.js';
-import { V1PendingResponseTracker } from './services/v1PendingResponseTracker.js';
-import { V1ResponseBroadcaster } from './listeners/v1ResponseBroadcaster.js';
+import { ResponseBroadcasterFactory } from './listeners/responseBroadcasterFactory.js';
 
 export class ClientRouter implements Client {
   protected readonly connectionListener = new ConnectionBroadcaster();
-  protected readonly responseBroadcaster: V1ResponseBroadcaster;
+  protected readonly broadcasterFactory: ResponseBroadcasterFactory;
 
   private readonly context: MessageContext;
   private readonly localClients = new Map<string, AbstractClient>();
   private readonly logger: AnsiLogger;
   private mqttClient: MQTTClient;
-  private readonly responseTracker: V1PendingResponseTracker;
 
   public constructor(logger: AnsiLogger, userdata: UserData) {
     this.context = new MessageContext(userdata);
     this.logger = logger;
 
-    this.responseTracker = new V1PendingResponseTracker(this.logger);
-    this.responseBroadcaster = new V1ResponseBroadcaster(this.responseTracker, this.logger);
-    this.mqttClient = new MQTTClient(logger, this.context, userdata, this.responseBroadcaster, this.responseTracker);
+    this.broadcasterFactory = new ResponseBroadcasterFactory(this.context, this.logger);
+    this.mqttClient = new MQTTClient(logger, this.context, userdata, this.broadcasterFactory, this.broadcasterFactory);
     this.mqttClient.registerConnectionListener(this.connectionListener);
   }
 
@@ -39,7 +36,7 @@ export class ClientRouter implements Client {
   }
 
   public registerClient(duid: string, ip: string): Client {
-    const localClient = new LocalNetworkClient(this.logger, this.context, duid, ip, this.responseBroadcaster, this.responseTracker);
+    const localClient = new LocalNetworkClient(this.logger, this.context, duid, ip, this.broadcasterFactory, this.broadcasterFactory);
     localClient.registerConnectionListener(this.connectionListener);
 
     this.localClients.set(duid, localClient);
@@ -55,7 +52,7 @@ export class ClientRouter implements Client {
   }
 
   public registerMessageListener(listener: AbstractMessageListener): void {
-    this.responseBroadcaster.register(listener);
+    this.broadcasterFactory.register(listener);
   }
 
   public isConnected(): boolean {
@@ -77,7 +74,7 @@ export class ClientRouter implements Client {
   public async disconnect(): Promise<void> {
     await this.mqttClient.disconnect();
     this.connectionListener.unregister();
-    this.responseBroadcaster.unregister();
+    this.broadcasterFactory.unregister();
     this.context.unregisterAllDevices();
 
     for (const client of this.localClients.values()) {

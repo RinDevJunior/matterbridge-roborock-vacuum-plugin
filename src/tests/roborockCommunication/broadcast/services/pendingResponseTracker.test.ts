@@ -30,7 +30,7 @@ describe('PendingResponseTracker', () => {
     const request = new RequestMessage({ method: 'test', messageId });
     const response = createResponseMessage(messageId);
 
-    const promise = tracker.waitFor(messageId, request);
+    const promise = tracker.waitFor(request, 'duid');
     tracker.tryResolve(response);
 
     await expect(promise).resolves.toEqual({ foo: 'bar' });
@@ -41,7 +41,7 @@ describe('PendingResponseTracker', () => {
     const messageId = 321;
     const request = new RequestMessage({ method: 'test', messageId });
 
-    const promise = tracker.waitFor(messageId, request);
+    const promise = tracker.waitFor(request, 'duid');
 
     expect(tracker['pending'].has(messageId)).toBe(true);
 
@@ -68,8 +68,8 @@ describe('PendingResponseTracker', () => {
     const response1 = createResponseMessage(messageId1, { foo: 'bar' });
     const response2 = createResponseMessage(messageId2, { baz: 'qux' });
 
-    const promise1 = tracker.waitFor(messageId1, request1);
-    const promise2 = tracker.waitFor(messageId2, request2);
+    const promise1 = tracker.waitFor(request1, 'duid');
+    const promise2 = tracker.waitFor(request2, 'duid');
 
     expect(tracker['pending'].size).toBe(2);
 
@@ -85,7 +85,7 @@ describe('PendingResponseTracker', () => {
     const messageId = 456;
     const request = new RequestMessage({ method: 'get_status', messageId });
 
-    tracker.waitFor(messageId, request);
+    tracker.waitFor(request, 'duid');
 
     expect(logger.debug).toHaveBeenCalledWith('Waiting for response to messageId: 456, method: get_status');
   });
@@ -95,7 +95,7 @@ describe('PendingResponseTracker', () => {
     const request = new RequestMessage({ method: 'test', messageId });
     const response = createResponseMessage(messageId, { data: 'value' });
 
-    tracker.waitFor(messageId, request);
+    tracker.waitFor(request, 'duid');
     tracker.tryResolve(response);
 
     expect(logger.debug).toHaveBeenCalledWith('Resolved messageId: 789');
@@ -106,7 +106,7 @@ describe('PendingResponseTracker', () => {
     const request = new RequestMessage({ method: 'test', messageId });
     const response = createResponseMessage(messageId, {});
 
-    const promise = tracker.waitFor(messageId, request);
+    const promise = tracker.waitFor(request, 'duid');
 
     // Resolve immediately
     tracker.tryResolve(response);
@@ -127,8 +127,8 @@ describe('PendingResponseTracker', () => {
     const request1 = new RequestMessage({ method: 'test1', messageId: messageId1 });
     const request2 = new RequestMessage({ method: 'test2', messageId: messageId2 });
 
-    tracker.waitFor(messageId1, request1);
-    tracker.waitFor(messageId2, request2);
+    tracker.waitFor(request1, 'duid');
+    tracker.waitFor(request2, 'duid');
 
     expect(tracker['pending'].size).toBe(2);
 
@@ -143,7 +143,7 @@ describe('PendingResponseTracker', () => {
     const response1 = createResponseMessage(messageId, { first: true });
     const response2 = createResponseMessage(messageId, { second: true });
 
-    const promise = tracker.waitFor(messageId, request);
+    const promise = tracker.waitFor(request, 'duid');
 
     // First resolve should work
     tracker.tryResolve(response1);
@@ -162,7 +162,7 @@ describe('PendingResponseTracker', () => {
     const messageId = 888;
     const request = new RequestMessage({ method: 'test', messageId });
 
-    tracker.waitFor(messageId, request);
+    tracker.waitFor(request, 'duid');
 
     const entry = tracker['pending'].get(messageId);
     expect(entry).toBeDefined();
@@ -189,7 +189,7 @@ describe('PendingResponseTracker', () => {
     const header = new HeaderMessage('1.0', 1, 1, Date.now(), Protocol.general_response);
     const response = new ResponseMessage('duid', header, body);
 
-    const promise = tracker.waitFor(messageId, request);
+    const promise = tracker.waitFor(request, 'duid');
     tracker.tryResolve(response);
 
     await expect(promise).resolves.toEqual(dpsPayload.result);
@@ -222,7 +222,7 @@ describe('PendingResponseTracker', () => {
     const complexResult = [110];
     const response = createResponseMessage(messageId, complexResult);
 
-    const promise = tracker.waitFor(messageId, request);
+    const promise = tracker.waitFor(request, 'duid');
     tracker.tryResolve(response);
 
     await expect(promise).resolves.toEqual(complexResult);
@@ -237,7 +237,7 @@ describe('PendingResponseTracker', () => {
     const header = new HeaderMessage('1.0', 1, 1, Date.now(), Protocol.rpc_response);
     const response = new ResponseMessage('duid', header, body);
 
-    const promise = tracker.waitFor(messageId, request);
+    const promise = tracker.waitFor(request, 'duid');
     tracker.tryResolve(response);
 
     // Should not resolve; advance timers to trigger timeout
@@ -255,7 +255,7 @@ describe('PendingResponseTracker', () => {
     const header = new HeaderMessage('1.0', 1, 1, Date.now(), Protocol.rpc_response);
     const response = new ResponseMessage('duid', header, body);
 
-    const promise = tracker.waitFor(messageId, request);
+    const promise = tracker.waitFor(request, 'duid');
     expect(() => tracker.tryResolve(response)).not.toThrow();
 
     // Ensure pending was not resolved
@@ -272,7 +272,7 @@ describe('PendingResponseTracker', () => {
     const header = new HeaderMessage('1.0', 1, 1, Date.now(), Protocol.rpc_response);
     const response = new ResponseMessage('duid', header, body);
 
-    const promise = tracker.waitFor(messageId, request);
+    const promise = tracker.waitFor(request, 'duid');
     tracker.tryResolve(response);
 
     // ensure the pending entry will eventually time out

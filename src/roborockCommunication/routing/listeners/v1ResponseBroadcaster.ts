@@ -2,8 +2,9 @@ import { AnsiLogger } from 'matterbridge/logger';
 import { ResponseMessage } from '../../models/index.js';
 import { V1PendingResponseTracker } from '../services/v1PendingResponseTracker.js';
 import { AbstractMessageListener } from './abstractMessageListener.js';
+import { ResponseBroadcaster } from './responseBroadcaster.js';
 
-export class V1ResponseBroadcaster {
+export class V1ResponseBroadcaster implements ResponseBroadcaster {
   readonly name = 'ResponseBroadcaster';
 
   private listeners: AbstractMessageListener[] = [];
