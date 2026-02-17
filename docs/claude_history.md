@@ -1,5 +1,13 @@
 # Claude History
 
+## 2026-02-17 (Session 8)
+
+- Created `B01PendingResponseTracker` — collects multiple B01 response messages matching by timestamp and protocol, merges body data, resolves after configurable collection window (default 500ms). Supports configurable timestamp tolerance.
+- Created `B01ResponseBroadcaster` — B01-specific broadcaster that delegates to `B01PendingResponseTracker` for multi-response collection, with same listener dispatch pattern as `ResponseBroadcaster`.
+- Added 10 unit tests for `B01PendingResponseTracker` and 4 for `B01ResponseBroadcaster` (all passing).
+- Added real-data integration test to `B01PendingResponseTracker` using sample data from `exampleData/tmp.log`.
+- Added key mapping in `B01PendingResponseTracker.mapDataKeys` — converts numeric DPS keys to named keys using `Q10RequestCode` enum reverse lookup (e.g. `'121'` → `'state'`, `'122'` → `'battery'`). Unmapped keys stay as numbers.
+
 ## 2026-02-17 (Session 7)
 
 - Created release candidate 1.1.4-rc06: bumped version in `package.json`, `schema.json`, `config.json`. Added CHANGELOG entry for Buy Me a Coffee badge asset.

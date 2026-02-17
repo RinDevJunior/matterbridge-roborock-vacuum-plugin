@@ -177,7 +177,7 @@ describe('MQTTClient', () => {
     Object.defineProperty(mqttClient, 'responseBroadcaster', {
       value: asPartial<ResponseBroadcaster>({
         onMessage: vi.fn(),
-        onResponse: vi.fn(),
+        tryResolve: vi.fn(),
       }),
       writable: true,
     });
@@ -660,7 +660,7 @@ describe('MQTTClient', () => {
   it('onMessage should call both onResponse and onMessage on responseBroadcaster', async () => {
     const mqttClient = createMQTTClient();
     await mqttClient['onMessage']('rr/m/o/user/c6d6afb9/duid1', Buffer.from('msg'));
-    expect(mqttClient['responseBroadcaster'].onResponse).toHaveBeenCalledWith('deserialized');
+    expect(mqttClient['responseBroadcaster'].tryResolve).toHaveBeenCalledWith('deserialized');
     expect(mqttClient['responseBroadcaster'].onMessage).toHaveBeenCalledWith('deserialized');
   });
 

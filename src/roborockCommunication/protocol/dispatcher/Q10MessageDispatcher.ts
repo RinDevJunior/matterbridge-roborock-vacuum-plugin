@@ -1,6 +1,5 @@
 import { AnsiLogger } from 'matterbridge/logger';
 import { DeviceStatus } from '../../models/deviceStatus.js';
-import { CloudMessageResult } from '../../models/messageResult.js';
 import { RequestMessage } from '../../models/requestMessage.js';
 import { AbstractMessageDispatcher } from './abstractMessageDispatcher.js';
 import { Q10RequestCode, Q10RequestMethod } from '../../enums/Q10RequestCode.js';
@@ -17,7 +16,7 @@ export class Q10MessageDispatcher implements AbstractMessageDispatcher {
   private lastB01Id: number;
 
   private get messageId() {
-    let tmpMessageId = Date.now();
+    let tmpMessageId = Math.floor(Date.now() / 1000);
     if (tmpMessageId <= this.lastB01Id) {
       tmpMessageId = this.lastB01Id + 1;
     }
@@ -30,7 +29,7 @@ export class Q10MessageDispatcher implements AbstractMessageDispatcher {
     private readonly logger: AnsiLogger,
     private readonly client: Client,
   ) {
-    this.lastB01Id = Date.now();
+    this.lastB01Id = Math.floor(Date.now() / 1000);
   }
 
   public async getNetworkInfo(duid: string): Promise<NetworkInfo | undefined> {
@@ -40,9 +39,7 @@ export class Q10MessageDispatcher implements AbstractMessageDispatcher {
 
   public async getDeviceStatus(duid: string): Promise<DeviceStatus | undefined> {
     const request = new RequestMessage({ messageId: this.messageId, dps: { [Q10RequestCode.rpc_response]: 1 } });
-    await this.client.get<CloudMessageResult[]>(duid, request);
-
-    // Q10 will return device status via MQTT (or not :) ) messages, so we return undefined here.
+    await this.client.get(duid, request);
     return undefined;
   }
 

@@ -11,7 +11,7 @@ export interface DpsPayload {
   result: unknown;
 }
 
-export type Dps = Record<number | string, string | DpsPayload | Buffer>;
+export type Dps = Record<number | string, string | DpsPayload | Buffer | Record<string, unknown>>;
 
 export interface Payload {
   dps: Dps;

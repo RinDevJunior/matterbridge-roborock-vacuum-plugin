@@ -1,15 +1,15 @@
 import { AnsiLogger } from 'matterbridge/logger';
-import { ResponseMessage } from '../../models/index.js';
-import { PendingResponseTracker } from '../services/pendingResponseTracker.js';
+import { RequestMessage, ResponseMessage } from '../../models/index.js';
+import { B01PendingResponseTracker } from '../services/b01PendingResponseTracker.js';
 import { AbstractMessageListener } from './abstractMessageListener.js';
 
-export class ResponseBroadcaster {
-  readonly name = 'ResponseBroadcaster';
+export class B01ResponseBroadcaster {
+  readonly name = 'B01ResponseBroadcaster';
 
   private listeners: AbstractMessageListener[] = [];
 
   constructor(
-    private readonly tracker: PendingResponseTracker,
+    private readonly tracker: B01PendingResponseTracker,
     private readonly logger: AnsiLogger,
   ) {}
 
@@ -22,19 +22,23 @@ export class ResponseBroadcaster {
     this.listeners = [];
   }
 
+  public waitFor(request: RequestMessage, duid: string): Promise<ResponseMessage> {
+    return this.tracker.waitFor(request, duid);
+  }
+
   public tryResolve(response: ResponseMessage): void {
     this.tracker.tryResolve(response);
   }
 
   public onMessage(message: ResponseMessage): void {
-    this.logger.debug(`[ChainedMessageListener] Dispatching message to ${this.listeners.length} listeners.`);
+    this.logger.debug(`[B01ResponseBroadcaster] Dispatching message to ${this.listeners.length} listeners.`);
     for (const listener of this.listeners) {
       try {
-        this.logger.debug(`[ChainedMessageListener] Invoking listener: ${listener.name}`);
+        this.logger.debug(`[B01ResponseBroadcaster] Invoking listener: ${listener.name}`);
         listener.onMessage(message);
       } catch (error) {
         const errMsg = error instanceof Error ? error.message : String(error);
-        this.logger.error(`[ChainedMessageListener] Error in listener: ${errMsg}`);
+        this.logger.error(`[B01ResponseBroadcaster] Error in listener: ${errMsg}`);
       }
     }
   }

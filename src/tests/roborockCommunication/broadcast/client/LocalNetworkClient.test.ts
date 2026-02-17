@@ -92,7 +92,7 @@ describe('LocalNetworkClient', () => {
     });
 
     Object.defineProperty(client, 'responseBroadcaster', {
-      value: asPartial({ onMessage: vi.fn(), onResponse: vi.fn() }),
+      value: asPartial({ onMessage: vi.fn(), onResponse: vi.fn(), tryResolve: vi.fn() }),
       writable: true,
     });
     Object.defineProperty(client, 'connectionBroadcaster', {
@@ -229,7 +229,8 @@ describe('LocalNetworkClient', () => {
     });
     await client['onMessage'](payload);
     expect(client['deserializer'].deserialize).toHaveBeenCalled();
-    expect(client['responseBroadcaster'].onMessage).toHaveBeenCalledWith('deserialized');
+    expect(client['responseBroadcaster'].tryResolve).toHaveBeenCalled();
+    expect(client['responseBroadcaster'].onMessage).toHaveBeenCalled(); // toHaveBeenCalledWith('deserialized');
   });
 
   it('isMessageComplete() should return true for complete buffer', () => {

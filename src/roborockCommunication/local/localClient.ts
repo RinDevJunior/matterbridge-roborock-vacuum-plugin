@@ -170,7 +170,7 @@ export class LocalNetworkClient extends AbstractClient {
         try {
           const currentBuffer = receivedBuffer.subarray(offset + 4, offset + segmentLength + 4);
           const response = this.deserializer.deserialize(this.duid, currentBuffer, 'LocalNetworkClient');
-          this.responseBroadcaster.onResponse(response);
+          this.responseBroadcaster.tryResolve(response);
           this.responseBroadcaster.onMessage(response);
         } catch (error) {
           const errMsg = error instanceof Error ? (error.stack ?? error.message) : String(error);

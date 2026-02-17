@@ -6,7 +6,7 @@ export enum ProtocolVersion {
 }
 
 export enum NewProtocolVersion {
-  V1 = 'V1',
-  Q7 = 'Q7',
-  Q10 = 'Q10',
+  V1 = '1.0',
+  B01_Q7 = 'B01_Q7',
+  B01_Q10 = 'B01_Q10',
 }

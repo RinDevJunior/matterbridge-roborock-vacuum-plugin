@@ -1,5 +1,5 @@
 import { randomInt } from 'node:crypto';
-import { Q7CleanType, Q7ControlCode, Q7RequestCode, Q7RequestMethod } from '../../enums/Q7RequestCode.js';
+import { Q7CleanType, Q7ControlCode, Q7PropRequestCode, Q7RequestCode, Q7RequestMethod } from '../../enums/Q7RequestCode.js';
 import { DeviceStatus } from '../../models/deviceStatus.js';
 import { RequestMessage } from '../../models/requestMessage.js';
 import { AbstractMessageDispatcher } from './abstractMessageDispatcher.js';
@@ -40,7 +40,25 @@ export class Q7MessageDispatcher implements AbstractMessageDispatcher {
   }
 
   public async getDeviceStatus(duid: string): Promise<DeviceStatus | undefined> {
-    // TODO: Implement getting device status for Q7
+    const request = new RequestMessage({
+      dps: this.createDps(Q7RequestMethod.get_prop, {
+        property: [
+          Q7PropRequestCode.status,
+          Q7PropRequestCode.fault,
+          Q7PropRequestCode.sweep_type,
+          Q7PropRequestCode.mode,
+          Q7PropRequestCode.wind,
+          Q7PropRequestCode.water,
+          Q7PropRequestCode.clean_path_preference,
+          Q7PropRequestCode.quantity,
+          Q7PropRequestCode.cleaning_time,
+          Q7PropRequestCode.cleaning_area,
+          Q7PropRequestCode.clean_finish,
+        ],
+      }),
+    });
+    await this.client.send(duid, request);
+
     return undefined;
   }
 

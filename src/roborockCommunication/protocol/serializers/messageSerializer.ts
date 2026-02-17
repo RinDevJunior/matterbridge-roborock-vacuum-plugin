@@ -26,11 +26,11 @@ export class MessageSerializer {
 
   public serialize(duid: string, request: RequestMessage): SerializeResult {
     const messageId = request.messageId;
-    const buffer = this.buildBuffer(duid, messageId, request);
+    const buffer = this.buildBuffer(duid, request);
     return { messageId: messageId, buffer: buffer };
   }
 
-  private buildBuffer(duid: string, messageId: number, request: RequestMessage): Buffer {
+  private buildBuffer(duid: string, request: RequestMessage): Buffer {
     const version = request.version ?? this.context.getMQTTProtocolVersion(duid);
     if (!version || !this.supportedVersions.includes(version)) {
       throw new Error(`[MessageSerializer] unknown protocol: ${version ?? ''}`);

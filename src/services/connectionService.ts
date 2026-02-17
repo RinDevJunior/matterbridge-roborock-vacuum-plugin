@@ -110,8 +110,10 @@ export class ConnectionService {
     simpleMessageListener.registerHandler(new SimpleMessageHandler(device.duid, this.logger, this.deviceNotify));
     this.clientRouter.registerMessageListener(simpleMessageListener);
 
-    const store = device.store;
-    const messageDispatcher = new MessageDispatcherFactory(this.clientRouter, this.logger).getMessageDispatcher(store.pv, store.model);
+    const deviceSpecs = device.specs;
+    const messageDispatcher = new MessageDispatcherFactory(this.clientRouter, this.logger).getMessageDispatcher(deviceSpecs.protocol, deviceSpecs.model);
+
+    this.logger.debug(`[ConnectionService] Resolve ${messageDispatcher.dispatcherName} for device: ${device.duid}, protocol: ${deviceSpecs.protocol}, model: ${deviceSpecs.model}`);
 
     // Register message listeners
     this.messageRoutingService.registerMessageDispatcher(device.duid, messageDispatcher);

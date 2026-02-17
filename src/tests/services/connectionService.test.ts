@@ -8,6 +8,7 @@ import { AnsiLogger } from 'matterbridge/logger';
 import { MessageRoutingService } from '../../services/messageRoutingService.js';
 import type { Client } from '../../roborockCommunication/routing/client.js';
 import { makeLogger, makeLocalClientStub, makeMockClientRouter, asPartial, asType } from '../testUtils.js';
+import { ProtocolVersion } from '../../roborockCommunication/enums/protocolVersion.js';
 
 describe('ConnectionService', () => {
   let service: ConnectionService;
@@ -21,7 +22,7 @@ describe('ConnectionService', () => {
     name: 'Test Vacuum',
     localKey: 'test-local-key',
     pv: '1.0',
-    specs: { model: 'roborock.vacuum.a187' },
+    specs: { protocol: '1.0', model: 'roborock.vacuum.a187' },
     store: { pv: '1.0', model: 'roborock.vacuum.a187' },
   } as Device;
 
@@ -274,7 +275,7 @@ describe('ConnectionService additional coverage', () => {
   it('should handle B01 protocol and UDP client setup', async () => {
     const device: Device = asPartial<Device>({
       ...mockDevice,
-      specs: asPartial<DeviceSpecs>({ model: DeviceModel.S6, hasRealTimeConnection: false }),
+      specs: asPartial<DeviceSpecs>({ protocol: ProtocolVersion.V1, model: DeviceModel.S6, hasRealTimeConnection: false }),
       pv: 'B01',
       duid: 'b01-duid',
       deviceStatus: { 101: { 81: { ipAddress: '1.2.3.4' } } },
@@ -288,7 +289,7 @@ describe('ConnectionService additional coverage', () => {
   it('should fallback to UDP broadcast if setupLocalClient fails', async () => {
     const device: Device = asPartial<Device>({
       ...mockDevice,
-      specs: asPartial<DeviceSpecs>({ model: DeviceModel.S6, hasRealTimeConnection: false }),
+      specs: asPartial<DeviceSpecs>({ protocol: ProtocolVersion.V1, model: DeviceModel.S6, hasRealTimeConnection: false }),
       pv: 'B01',
       duid: 'b01-duid',
       deviceStatus: { 101: { 82: { ipAddress: '1.2.3.4' } } },
