@@ -1,5 +1,9 @@
 # Claude History
 
+## 2026-02-17 (Session 6)
+
+- Fixed `mqttClient.ts`: resolve `version` on request object in `sendInternal` via `getMQTTProtocolVersion(duid)` before serialization, matching `LocalNetworkClient` pattern. Previously `version` was `undefined` on the request (only resolved inside serializer).
+
 ## 2026-02-16 (Session 5)
 
 - Fixed `platformRunner.ts` Node.js 20 compatibility: spread `Map.values()` into array before calling `.every()` (Iterator Helpers not available in Node.js 20).

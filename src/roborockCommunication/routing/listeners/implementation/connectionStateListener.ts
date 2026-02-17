@@ -59,8 +59,7 @@ export class ConnectionStateListener implements AbstractConnectionListener {
 
     this.client.retryCount++;
 
-    const isInDisconnectingStep = this.client.isInDisconnectingStep;
-    if (isInDisconnectingStep) {
+    if (this.client.isInDisconnectingStep) {
       this.logger.info(`Device with DUID ${duid} is in disconnecting step, skipping re-registration.`);
       return;
     }

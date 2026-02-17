@@ -15,13 +15,18 @@ export class LocalPingResponseListener implements AbstractMessageListener {
     this.lastPingResponse = Date.now();
   }
 
+  public resetLastPingResponse() {
+    this.lastPingResponse = Date.now();
+  }
+
   public onMessage(message: ResponseMessage): void {
     if (message.duid !== this.duid) {
+      this.logger.debug(`[LocalPingResponseListener]: Message DUID ${message.duid} does not match listener DUID ${this.duid}`);
       return;
     }
 
     if (message.isForProtocol(Protocol.ping_response)) {
-      this.logger.debug(`[${this.name}] Received ping response message for DUID ${this.duid}, the local communication is healthy.`);
+      this.logger.debug(`[${this.name}] Received ping response message for ${this.duid}, the local communication is healthy.`);
 
       this.lastPingResponse = Date.now();
 

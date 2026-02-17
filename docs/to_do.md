@@ -1,6 +1,12 @@
 # To Do
 
+## In Progress
+
+- [ ] Investigate MQTT keepalive behavior change (rc04 stopped periodic reconnection — may cause stale connections)
+
 ## Completed
+
+- [x] Fix version undefined in MQTT request — resolve version in `mqttClient.sendInternal` before serialization
 
 - [x] Fix Node.js 20 compatibility: `Map.values().every()` → `[...Map.values()].every()` in platformRunner.ts
 

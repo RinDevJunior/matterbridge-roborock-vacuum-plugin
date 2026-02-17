@@ -66,9 +66,11 @@ export class MQTTClient extends AbstractClient {
   }
 
   public override async disconnect(): Promise<void> {
+    await super.disconnect();
     if (!this.mqttClient || !this.connected) {
       return Promise.resolve();
     }
+
     try {
       if (this.keepConnectionAliveInterval) {
         clearInterval(this.keepConnectionAliveInterval);
@@ -80,7 +82,6 @@ export class MQTTClient extends AbstractClient {
         this.authErrorBackoffTimeout = undefined;
       }
 
-      await super.disconnect();
       this.mqttClient.end();
       this.mqttClient = undefined;
       this.connected = false;
@@ -95,6 +96,7 @@ export class MQTTClient extends AbstractClient {
       return;
     }
     const mqttRequest = request.toMqttRequest();
+    mqttRequest.version = mqttRequest.version ?? this.context.getMQTTProtocolVersion(duid);
     const message = this.serializer.serialize(duid, mqttRequest);
     this.logger.debug(`[MQTTClient] sending message to ${duid}: ${debugStringify(mqttRequest)}`);
     this.mqttClient.publish(`rr/m/i/${this.rriot.u}/${this.mqttUsername}/${duid}`, message.buffer, { qos: 1 });

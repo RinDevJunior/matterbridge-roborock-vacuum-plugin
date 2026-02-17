@@ -133,7 +133,7 @@ describe('MQTTClient', () => {
 
   beforeEach(() => {
     logger = createMockLogger();
-    context = { getProtocolVersion: vi.fn().mockReturnValue('1.0') };
+    context = { getMQTTProtocolVersion: vi.fn().mockReturnValue('1.0') };
     userdata = {
       rriot: {
         u: 'user',
@@ -269,9 +269,13 @@ describe('MQTTClient', () => {
     const mqttClient = createMQTTClient();
     mqttClient['mqttClient'] = client;
     mqttClient['connected'] = true;
-    const request = { toMqttRequest: vi.fn(() => 'req'), method: 'test' };
-    await asType<{ sendInternal(duid: string, req: any): Promise<void> }>(mqttClient).sendInternal('duid1', asType<RequestMessage>(request));
-    expect(serializer.serialize).toHaveBeenCalledWith('duid1', 'req');
+    const request = {
+      toMqttRequest: vi.fn().mockReturnThis(),
+      method: 'test',
+      version: '1.0',
+    };
+    await mqttClient['sendInternal']('duid1', asType<RequestMessage>(request));
+    expect(serializer.serialize).toHaveBeenCalledWith('duid1', expect.objectContaining({ version: '1.0' }));
     expect(client.publish).toHaveBeenCalledWith('rr/m/i/user/c6d6afb9/duid1', Buffer.from('msg'), { qos: 1 });
   });
 

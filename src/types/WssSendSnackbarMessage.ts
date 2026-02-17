@@ -10,7 +10,11 @@ interface FrontendWithSnackbar {
   frontend?: { wssSendSnackbarMessage: WssSendSnackbarMessage };
 }
 
-export function getWssSendSnackbarMessage(platform: MatterbridgeDynamicPlatform): WssSendSnackbarMessage | undefined {
+export function getWssSendSnackbarMessage(platform: MatterbridgeDynamicPlatform): WssSendSnackbarMessage {
   const { frontend } = platform.matterbridge as FrontendWithSnackbar;
-  return (platform as PlatformWithSnackbar).wssSendSnackbarMessage?.bind(platform) ?? frontend?.wssSendSnackbarMessage.bind(frontend);
+  return (
+    (platform as PlatformWithSnackbar).wssSendSnackbarMessage?.bind(platform) ??
+    frontend?.wssSendSnackbarMessage.bind(frontend) ??
+    ((message, _timeout, _severity) => platform.log.notice(message))
+  );
 }

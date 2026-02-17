@@ -65,12 +65,14 @@ export abstract class AbstractClient implements Client {
     if (this.connectionStateListener) {
       this.connectionStateListener.start();
     }
+    this.isInDisconnectingStep = false;
   }
 
   public disconnect(): Promise<void> {
     if (this.connectionStateListener) {
       this.connectionStateListener.stop();
     }
+    this.isInDisconnectingStep = true;
     return Promise.resolve();
   }
 

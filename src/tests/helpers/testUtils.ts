@@ -42,6 +42,7 @@ export function makeMockClientRouter(overrides: Partial<Record<string, unknown>>
     connect: vi.fn(),
     disconnect: vi.fn(),
     isConnected: vi.fn().mockReturnValue(true),
+    isReady: vi.fn().mockReturnValue(true),
     registerClient: vi.fn().mockReturnValue(localClient),
     updateNonce: vi.fn(),
     destroy: vi.fn(),
@@ -60,7 +61,7 @@ export function makeLocalClientStub(overrides: Partial<Record<string, unknown>> 
     isConnected: vi.fn().mockReturnValue(true),
     isReady: vi.fn().mockReturnValue(true),
     ...overrides,
-  } as MockLocalClient;
+  };
 }
 
 // Lightweight LocalStorage mock that satisfies the subset used in tests

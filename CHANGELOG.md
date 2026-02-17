@@ -4,21 +4,27 @@ All notable changes to this project will be documented in this file.
 
 ---
 
-## [1.1.4-rc05] - 2026-02-16
+## [1.1.4-rc05] - 2026-02-17
 
 ### Improvements
 
-- Reduced unnecessary API polling — devices with active real-time connections no longer trigger periodic home data requests, improving responsiveness and lowering network overhead.
-- The "Vacuum then Mop" clean mode is now only available on smart-clean-capable devices, ensuring a more accurate mode list per device capability.
+- Reduced unnecessary API polling — devices with active real-time connections no longer trigger periodic data requests, improving responsiveness and lowering network overhead.
+- The "Vacuum then Mop" clean mode is now only shown on devices that support it, giving a more accurate mode list per device.
+- Dock station errors (e.g., water tank empty, dust bin full, brush jammed) are now reported through Matter operational state, so your smart home controller can display them.
+- Plugin status notifications are now more reliable — if the primary notification channel is unavailable, messages fall back gracefully to alternative channels.
+- Device connection retry logic is now more tolerant of slow networks, reducing premature connection failures.
+- Improved connection stability — the plugin now validates that a device is fully ready before sending commands, reducing failed requests after reconnects.
+- Fixed a race condition during device disconnection that could cause unexpected reconnection loops.
 
 ### Bug Fixes
 
+- Fixed an issue where MQTT commands could fail silently due to a missing protocol version on outgoing requests.
 - Fixed an issue with the npm publish workflow that caused provenance signing errors during release.
 
 ### Internal
 
 - Strengthened type safety across platform runner lifecycle management.
-- Expanded unit test coverage for ping response handling, clean mode utilities, and room mapping.
+- Expanded and updated unit test coverage across connection, communication, and platform modules.
 
 ---
 

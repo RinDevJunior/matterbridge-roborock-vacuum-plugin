@@ -13,6 +13,7 @@ import { getBaseUrl } from '../initialData/regionUrls.js';
 import { RoborockAuthenticateApi } from '../roborockCommunication/api/authClient.js';
 import { RoborockIoTApi } from '../roborockCommunication/api/iotClient.js';
 import type { Device } from '../roborockCommunication/models/index.js';
+import { WssSendSnackbarMessage } from '../types/WssSendSnackbarMessage.js';
 
 /**
  * Handles device discovery: authentication, API calls, and device filtering.
@@ -25,6 +26,7 @@ export class DeviceDiscovery {
     private readonly configManager: PlatformConfigManager,
     private readonly registry: DeviceRegistry,
     private readonly getPersistanceStorage: () => NodePersist.LocalStorage,
+    private readonly toastMessage: WssSendSnackbarMessage,
     private readonly log: AnsiLogger,
   ) {}
 
@@ -63,7 +65,7 @@ export class DeviceDiscovery {
         baseUrl,
         persist,
         configManager: this.configManager,
-        toastMessage: this.platform.wssSendSnackbarMessage,
+        toastMessage: this.toastMessage,
       },
       this.log,
       this.configManager,

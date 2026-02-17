@@ -196,7 +196,7 @@ describe('LocalNetworkClient', () => {
       vi.fn();
     }, 1000);
     await client['onDisconnect'](false);
-    expect(mockLogger.info).toHaveBeenCalled();
+    expect(mockLogger.warn).toHaveBeenCalled();
     expect(client['connected']).toBe(false);
     expect(mockSocket.destroy).toHaveBeenCalled();
     expect(client['socket']).toBeUndefined();
@@ -316,7 +316,7 @@ describe('LocalNetworkClient', () => {
     client['checkConnectionInterval'] = undefined;
     await client['onDisconnect'](true);
     expect(mockSocket.destroy).toHaveBeenCalled();
-    expect(mockLogger.info).toHaveBeenCalledWith(expect.stringContaining('Had error: true'));
+    expect(mockLogger.warn).toHaveBeenCalledWith(expect.stringContaining('Had error: true'));
   });
 
   it('onMessage() should return early if socket is undefined', async () => {
@@ -371,7 +371,7 @@ describe('LocalNetworkClient', () => {
 
   it('onEnd() should log socket ended', async () => {
     await client['onEnd']();
-    expect(mockLogger.debug).toHaveBeenCalledWith(expect.stringContaining('socket ended'));
+    expect(mockLogger.notice).toHaveBeenCalledWith(expect.stringContaining('socket ended'));
   });
 
   it('disconnect() should handle when checkConnectionInterval is not set', async () => {

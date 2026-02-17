@@ -11,7 +11,7 @@ import { resolveDeviceState } from './share/stateResolver.js';
 import { getRunningMode } from './initialData/getSupportedRunModes.js';
 import { CleanModeSetting } from './behaviors/roborock.vacuum/core/CleanModeSetting.js';
 import { getCleanModeResolver } from './share/runtimeHelper.js';
-import { OperationStatusCode } from './roborockCommunication/enums/index.js';
+import { DockErrorCode, OperationStatusCode } from './roborockCommunication/enums/index.js';
 import { INVALID_SEGMENT_ID } from './constants/index.js';
 import { DockStationStatus } from './model/DockStationStatus.js';
 import { triggerDssError } from './runtimes/handleLocalMessage.js';
@@ -202,8 +202,12 @@ export class PlatformRunner {
       return;
     }
 
-    // Process dock station errors (only when vacuum not running)
-    if (this.platform.configManager.includeDockStationStatus && message.dockStationStatus !== undefined && message.dockStationStatus !== null) {
+    if (!this.platform.configManager.includeDockStationStatus) {
+      return;
+    }
+
+    if (message.dockStationStatus !== undefined && message.dockStationStatus !== null) {
+      // Process dock station errors (only when vacuum not running)
       const dockStatus = DockStationStatus.parseDockStationStatus(message.dockStationStatus);
       robot.dockStationStatus = dockStatus;
 
@@ -216,6 +220,19 @@ export class PlatformRunner {
         this.platform.log.debug('No docking station errors detected.');
         robot.updateAttribute(RvcOperationalState.Cluster.id, 'operationalError', { errorStateId: RvcOperationalState.ErrorState.NoError }, this.platform.log);
       }
+      return;
+    }
+
+    if (message.dockErrorCode !== DockErrorCode.None) {
+      const dockStatus = DockStationStatus.parseDockErrorCode(message.dockErrorCode);
+      if (dockStatus !== RvcOperationalState.ErrorState.NoError) {
+        this.platform.log.warn(`Docking station error detected: ${this.getOperationalErrorName(dockStatus)}`);
+        robot.updateAttribute(RvcOperationalState.Cluster.id, 'operationalError', { errorStateId: dockStatus }, this.platform.log);
+      } else {
+        this.platform.log.debug('No docking station errors detected.');
+        robot.updateAttribute(RvcOperationalState.Cluster.id, 'operationalError', { errorStateId: RvcOperationalState.ErrorState.NoError }, this.platform.log);
+      }
+
       return;
     }
 
@@ -321,7 +338,7 @@ export class PlatformRunner {
       const currentCleanMode = currentCleanModeResolver.resolve(currentCleanModeSetting);
 
       if (currentCleanMode) {
-        this.platform.log.debug(`Calculated current clean mode: ${this.getCleanModeName(currentCleanMode)}`);
+        this.platform.log.notice(`Calculated current clean mode: ${this.getCleanModeName(currentCleanMode)}`);
         robot.updateAttribute(RvcCleanMode.Cluster.id, 'currentMode', currentCleanMode, this.platform.log);
       }
     }

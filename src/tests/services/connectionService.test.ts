@@ -135,7 +135,7 @@ describe('ConnectionService', () => {
     });
 
     it('should successfully initialize MQTT client and connect', async () => {
-      vi.spyOn(mockClientRouter, 'isConnected').mockReturnValue(true);
+      vi.spyOn(mockClientRouter, 'isReady').mockReturnValue(true);
       mockClientRouter.get = vi.fn().mockResolvedValue(mockClientRouter);
 
       await service.initializeMessageClient(mockDevice, mockUserData);
@@ -241,7 +241,7 @@ describe('ConnectionService', () => {
 
       await service.initializeMessageClient(mockDevice, mockUserData);
 
-      expect(mockClientRouter.isConnected).toHaveBeenCalled();
+      expect(mockClientRouter.isReady).toHaveBeenCalled();
     });
   });
 });

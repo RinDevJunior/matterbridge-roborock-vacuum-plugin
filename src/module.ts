@@ -15,7 +15,7 @@ import { DeviceDiscovery } from './platform/deviceDiscovery.js';
 import { DeviceConfigurator } from './platform/deviceConfigurator.js';
 import { PlatformState } from './platform/platformState.js';
 import { RoborockPluginPlatformConfig } from './model/RoborockPluginPlatformConfig.js';
-import { getWssSendSnackbarMessage } from './types/WssSendSnackbarMessage.js';
+import { getWssSendSnackbarMessage, WssSendSnackbarMessage } from './types/WssSendSnackbarMessage.js';
 
 export default function initializePlugin(matterbridge: PlatformMatterbridge, log: AnsiLogger, config: PlatformConfig): RoborockMatterbridgePlatform {
   return new RoborockMatterbridgePlatform(matterbridge, log, config as RoborockPluginPlatformConfig);
@@ -37,7 +37,7 @@ export class RoborockMatterbridgePlatform extends MatterbridgeDynamicPlatform {
   public readonly state: PlatformState;
 
   private rvcInterval: NodeJS.Timeout | undefined;
-  private snackbarMessage = getWssSendSnackbarMessage(this);
+  private snackbarMessage: WssSendSnackbarMessage;
 
   public get roborockService(): RoborockService | undefined {
     return this.discovery.roborockService;
@@ -83,7 +83,8 @@ export class RoborockMatterbridgePlatform extends MatterbridgeDynamicPlatform {
     this.platformRunner = new PlatformRunner(this);
 
     // Create discovery and configurator
-    this.discovery = new DeviceDiscovery(this, this.configManager, this.registry, () => this.persist, this.log);
+    this.snackbarMessage = getWssSendSnackbarMessage(this);
+    this.discovery = new DeviceDiscovery(this, this.configManager, this.registry, () => this.persist, this.snackbarMessage, this.log);
     this.configurator = new DeviceConfigurator(this, this.configManager, this.registry, () => this.platformRunner, this.log);
   }
 
@@ -105,7 +106,7 @@ export class RoborockMatterbridgePlatform extends MatterbridgeDynamicPlatform {
 
     if (!this.configManager.validateConfig()) {
       this.log.error('"username" (email address) is required in the config');
-      this.wssSendSnackbarMessage('"username" (email address) is required in the config', 5000, 'error');
+      this.snackbarMessage('"username" (email address) is required in the config', 5000, 'error');
       this.state.setStartupCompleted(false);
       return;
     }
@@ -139,8 +140,8 @@ export class RoborockMatterbridgePlatform extends MatterbridgeDynamicPlatform {
         .then(() => this.unregisterAllDevices(UNREGISTER_DEVICES_DELAY_MS))
         .then(() => {
           this.log.notice('Please restart the platform now.');
-          this.wssSendSnackbarMessage('Clear persistence storage as per configuration completed. Please restart the platform now.', 5000, 'info');
-          this.wssSendRestartRequired();
+          this.snackbarMessage('Clear persistence storage as per configuration completed. Please restart the platform now.', 5000, 'info');
+          // this.wssSendRestartRequired();
         })
         .then(() => {
           const config = this.configManager.rawConfig;
@@ -166,6 +167,8 @@ export class RoborockMatterbridgePlatform extends MatterbridgeDynamicPlatform {
         this.log.error(`requestHomeData (interval) failed: ${error instanceof Error ? error.message : String(error)}`);
       }
     }, intervalMs);
+
+    this.snackbarMessage('Plugin is ready', 5000, 'success');
   }
 
   public override async onShutdown(reason?: string): Promise<void> {

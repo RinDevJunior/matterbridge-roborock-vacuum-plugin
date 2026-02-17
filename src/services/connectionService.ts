@@ -70,7 +70,7 @@ export class ConnectionService {
 
       // Wait for connection
       try {
-        await this.waitForConnection(() => this.clientRouter?.isConnected() ?? false);
+        await this.waitForConnection(() => this.clientRouter?.isReady() ?? false);
         device.specs.hasRealTimeConnection = true;
       } catch {
         throw new DeviceConnectionError(device.duid, 'MQTT connection timeout');
@@ -233,7 +233,7 @@ export class ConnectionService {
       }
 
       localClient.connect();
-      await this.waitForConnection(() => localClient.isConnected());
+      await this.waitForConnection(() => localClient.isReady());
 
       device.specs.hasRealTimeConnection = true;
 

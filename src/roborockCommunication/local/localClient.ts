@@ -70,11 +70,11 @@ export class LocalNetworkClient extends AbstractClient {
   }
 
   public override async disconnect(): Promise<void> {
+    await super.disconnect();
+
     if (!this.socket) {
       return Promise.resolve();
     }
-
-    await super.disconnect();
 
     if (this.checkConnectionInterval) {
       clearInterval(this.checkConnectionInterval);
@@ -114,15 +114,11 @@ export class LocalNetworkClient extends AbstractClient {
   }
 
   private async onDisconnect(hadError: boolean): Promise<void> {
-    this.logger.info(`[LocalNetworkClient]: ${this.duid} socket disconnected. Had error: ${hadError}`);
+    this.logger.warn(`[LocalNetworkClient]: ${this.duid} socket disconnected. Had error: ${hadError}`);
 
     if (this.socket) {
       this.socket.destroy();
       this.socket = undefined;
-    }
-    if (this.checkConnectionInterval) {
-      clearInterval(this.checkConnectionInterval);
-      this.checkConnectionInterval = undefined;
     }
 
     await this.connectionBroadcaster.onDisconnected(this.duid, 'Socket disconnected. Had error: ' + hadError);
@@ -142,11 +138,11 @@ export class LocalNetworkClient extends AbstractClient {
   }
 
   private async onTimeout(): Promise<void> {
-    this.logger.error(` [LocalNetworkClient]: Socket for ${this.duid} timed out.`);
+    this.logger.error(`[LocalNetworkClient]: Socket for ${this.duid} timed out.`);
   }
 
   private async onEnd(): Promise<void> {
-    this.logger.debug(` [LocalNetworkClient]: ${this.duid} socket ended.`);
+    this.logger.notice(`[LocalNetworkClient]: ${this.duid} socket ended.`);
   }
 
   private async onMessage(message: Buffer): Promise<void> {
@@ -257,6 +253,7 @@ export class LocalNetworkClient extends AbstractClient {
     this.context.updateNonce(this.duid, response.header.nonce);
     this.context.updateLocalProtocolVersion(this.duid, response.header.version);
     this.connected = true;
+    this.pingResponseListener.resetLastPingResponse();
 
     if (this.checkConnectionInterval) {
       clearInterval(this.checkConnectionInterval);
@@ -276,7 +273,7 @@ export class LocalNetworkClient extends AbstractClient {
       const now = Date.now();
 
       if (now - this.pingResponseListener.lastPingResponse > 15000) {
-        this.logger.warn(`There is no local ping response for device ${this.duid} for 15s, try reconnect now`);
+        this.logger.warn(`[LocalNetworkClient]: There is no local ping response for device ${this.duid} for 15s, try reconnect now`);
         await this.disconnect();
         this.connect();
         return;
