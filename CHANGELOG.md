@@ -8,13 +8,23 @@ All notable changes to this project will be documented in this file.
 
 ### Improvements
 
-- Two-factor authentication now displays a toast notification with verification code instructions, making it easier to spot when action is required.
-- Snackbar messages throughout the plugin now include severity levels (success, warning, info) for clearer visual feedback.
-- After clearing persistence storage, the plugin now triggers an automatic restart prompt via WebSocket instead of requiring manual restart.
+- **Better notification experience** — Two-factor authentication now shows a toast notification with clear verification code instructions, so you never miss when action is needed.
+- **Clearer status messages** — Notifications throughout the plugin now display with severity levels (success, warning, info) for easier visual distinction.
+- **Automatic restart after clearing storage** — After clearing persistence storage, the plugin now prompts an automatic restart via WebSocket instead of requiring you to do it manually.
+- **Expanded device compatibility** — Devices that do not report a serial number are now properly supported. `DeviceRegistry` uses `duid` instead of serial number as the device identifier.
+- **Improved command reliability** — Communication between the plugin and your vacuum is now more dependable. `MQTTClient` and `LocalClient` now use `tryResolve` for better response tracking, reducing missed or dropped commands.
+- **Broader protocol support** — The plugin now handles multiple device communication protocols more cleanly, improving compatibility across different Roborock models (including B01 series devices). Introduced `V1ResponseBroadcaster`, `B01ResponseBroadcaster`, and `ResponseBroadcasterFactory` to dynamically select the correct handler based on protocol version.
+- **Device status retrieval** — Added support for fetching device status from additional protocol versions, enabling more accurate state reporting. `Q7MessageDispatcher` now supports `getDeviceStatus` for retrieving device status properties.
 
 ### Added
 
-- Added Buy Me a Coffee badge asset for project funding support.
+- Added Buy Me a Coffee badge for project funding support.
+
+### Internal
+
+- Refactored response handling into protocol-specific components (`V1PendingResponseTracker`, `B01PendingResponseTracker`) for better maintainability.
+- Refactored `MessageDispatcherFactory` to support new protocol versions with improved error handling; removed unused `protocolCalculator` module.
+- Added comprehensive unit tests for `B01ResponseBroadcaster`, `B01PendingResponseTracker`, and `MessageDispatcherFactory`.
 
 <a href="https://www.buymeacoffee.com/rinnvspktr" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/default-orange.png" alt="Buy Me A Coffee" height="41" width="174"></a>
 
