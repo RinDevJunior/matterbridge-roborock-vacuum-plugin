@@ -26,6 +26,7 @@ function createMockConfig(overrides: Partial<RoborockPluginPlatformConfig> = {})
         clearStorageOnStartup: false,
         showRoutinesAsRoom: false,
         includeDockStationStatus: false,
+        includeVacuumErrorStatus: false,
         forceRunAtDefault: false,
         useVacationModeToSendVacuumToDock: false,
         enableCleanModeMapping: false,

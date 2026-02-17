@@ -4,6 +4,21 @@ All notable changes to this project will be documented in this file.
 
 ---
 
+## [1.1.4-rc07] - 2026-02-18
+
+### Added
+
+- **Vacuum error status control** — New "Include Vacuum Error Status" option under Advanced features. When disabled (default), vacuum error events are ignored, preventing unnecessary error state changes in Matter. Enable it to have vacuum and dock station errors reported through Matter operational state.
+
+### Internal
+
+- Added `includeVacuumErrorStatus` to schema, config type, config manager, and platform runner.
+- Updated all test fixtures to include the new configuration property.
+
+<a href="https://www.buymeacoffee.com/rinnvspktr" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/default-orange.png" alt="Buy Me A Coffee" height="41" width="174"></a>
+
+---
+
 ## [1.1.4-rc06] - 2026-02-17
 
 ### Improvements

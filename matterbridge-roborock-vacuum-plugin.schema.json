@@ -1,6 +1,6 @@
 {
   "title": "Matterbridge Roborock Vacuum Plugin",
-  "description": "matterbridge-roborock-vacuum-plugin v. 1.1.4-rc06 by https://github.com/RinDevJunior",
+  "description": "matterbridge-roborock-vacuum-plugin v. 1.1.4-rc07 by https://github.com/RinDevJunior",
   "type": "object",
   "properties": {
     "name": {
@@ -173,6 +173,11 @@
                   },
                   "includeDockStationStatus": {
                     "title": "Include Dock Station Status",
+                    "type": "boolean",
+                    "default": false
+                  },
+                  "includeVacuumErrorStatus": {
+                    "title": "Include Vacuum Error Status",
                     "type": "boolean",
                     "default": false
                   },

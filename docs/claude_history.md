@@ -1,5 +1,10 @@
 # Claude History
 
+## 2026-02-18 (Session 9)
+
+- Added `includeVacuumErrorStatus` configuration option under Advanced features. When disabled (default), `handleErrorOccurred` in `platformRunner.ts` is skipped. Updated schema, config type, config manager, platformRunner, and all test files.
+- Created release candidate 1.1.4-rc07: bumped version in `package.json`, `schema.json`, `config.json`. Added CHANGELOG entry for vacuum error status control feature.
+
 ## 2026-02-17 (Session 8)
 
 - Created `B01PendingResponseTracker` — collects multiple B01 response messages matching by timestamp and protocol, merges body data, resolves after configurable collection window (default 500ms). Supports configurable timestamp tolerance.

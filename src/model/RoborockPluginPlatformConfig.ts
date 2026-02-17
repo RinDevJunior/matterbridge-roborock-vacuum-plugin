@@ -34,6 +34,7 @@ export interface AdvancedFeatureSetting {
   clearStorageOnStartup: boolean;
   showRoutinesAsRoom: boolean;
   includeDockStationStatus: boolean;
+  includeVacuumErrorStatus: boolean;
   forceRunAtDefault: boolean;
   useVacationModeToSendVacuumToDock: boolean;
   enableCleanModeMapping: boolean;
@@ -71,6 +72,7 @@ export function createDefaultAdvancedFeature(): AdvancedFeatureConfiguration {
       clearStorageOnStartup: false,
       showRoutinesAsRoom: false,
       includeDockStationStatus: false,
+      includeVacuumErrorStatus: false,
       forceRunAtDefault: false,
       useVacationModeToSendVacuumToDock: false,
       enableCleanModeMapping: false,

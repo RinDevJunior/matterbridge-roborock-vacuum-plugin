@@ -182,6 +182,10 @@ export class PlatformRunner {
    * Prioritizes vacuum errors over docking station errors.
    */
   private handleErrorOccurred(robot: RoborockVacuumCleaner, message: DeviceErrorMessage): void {
+    if (!this.platform.configManager.includeVacuumErrorStatus) {
+      this.platform.log.debug('Skipping error handling: includeVacuumErrorStatus is disabled');
+      return;
+    }
     this.platform.log.debug(`Handling error occurred: ${debugStringify(message)}`);
     const currentOperationState = robot.getAttribute(RvcOperationalState.Cluster.id, 'operationalState');
 

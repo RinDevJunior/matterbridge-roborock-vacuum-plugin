@@ -245,7 +245,7 @@ describe('PlatformRunner.updateRobotWithPayload', () => {
       registry: createMockDeviceRegistry({}, new Map([['test-duid', robot]])),
       log: mockLogger,
       roborockService: createMockRoborockService(),
-      configManager: createMockConfigManager(),
+      configManager: createMockConfigManager({ includeVacuumErrorStatus: true }),
     });
     runner = new PlatformRunner(platform);
     runner.activateHandlerFunctions();
@@ -385,7 +385,7 @@ describe('PlatformRunner.updateRobotWithPayload', () => {
       registry: createMockDeviceRegistry({}, new Map([['test-duid', robotWithErrorStatus]])),
       log: mockLogger,
       roborockService: createMockRoborockService(),
-      configManager: createMockConfigManager({ includeDockStationStatus: true }),
+      configManager: createMockConfigManager({ includeDockStationStatus: true, includeVacuumErrorStatus: true }),
     });
     const runnerWithDockStatus = new PlatformRunner(platformWithDockStatus);
 
@@ -608,7 +608,7 @@ describe('PlatformRunner.updateRobotWithPayload', () => {
       registry: createMockDeviceRegistry({}, new Map([['test-duid', robot]])),
       log: mockLogger,
       roborockService: createMockRoborockService(),
-      configManager: createMockConfigManager({ includeDockStationStatus: true }),
+      configManager: createMockConfigManager({ includeDockStationStatus: true, includeVacuumErrorStatus: true }),
     });
     const runnerWithDockStatus = new PlatformRunner(platformWithDockStatus);
     runnerWithDockStatus.activateHandlerFunctions();
@@ -641,7 +641,7 @@ describe('PlatformRunner.updateRobotWithPayload', () => {
       registry: createMockDeviceRegistry({}, new Map([['test-duid', robot]])),
       log: mockLogger,
       roborockService: createMockRoborockService(),
-      configManager: createMockConfigManager({ includeDockStationStatus: true }),
+      configManager: createMockConfigManager({ includeDockStationStatus: true, includeVacuumErrorStatus: true }),
     });
     const runnerWithDockStatus = new PlatformRunner(platformWithDockStatus);
     runnerWithDockStatus.activateHandlerFunctions();
@@ -704,7 +704,7 @@ describe('PlatformRunner.updateRobotWithPayload', () => {
       registry: createMockDeviceRegistry({}, new Map([['test-duid', robotWithDockError]])),
       log: mockLogger,
       roborockService: createMockRoborockService(),
-      configManager: createMockConfigManager({ includeDockStationStatus: true }),
+      configManager: createMockConfigManager({ includeDockStationStatus: true, includeVacuumErrorStatus: true }),
     });
     const runnerWithDockStatus = new PlatformRunner(platformWithDockStatus);
     runnerWithDockStatus.activateHandlerFunctions();

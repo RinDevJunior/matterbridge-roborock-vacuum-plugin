@@ -129,6 +129,9 @@ export function createMockConfigManager(overrides: Partial<PlatformConfigManager
     get includeDockStationStatus() {
       return overrides.includeDockStationStatus ?? false;
     },
+    get includeVacuumErrorStatus() {
+      return overrides.includeVacuumErrorStatus ?? false;
+    },
     validateConfig: () => true,
     validateAuthentication: () => true,
   };

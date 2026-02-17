@@ -157,6 +157,13 @@ export class PlatformConfigManager {
     return false;
   }
 
+  public get includeVacuumErrorStatus(): boolean {
+    if (this.isAdvancedFeatureEnabled) {
+      return this.advancedFeatureSettings.includeVacuumErrorStatus;
+    }
+    return false;
+  }
+
   public get useVacationModeToSendVacuumToDock(): boolean {
     if (this.isAdvancedFeatureEnabled) {
       return this.advancedFeatureSettings.useVacationModeToSendVacuumToDock;

@@ -65,6 +65,7 @@ describe('module additional tests', () => {
         settings: {
           showRoutinesAsRoom: false,
           includeDockStationStatus: false,
+          includeVacuumErrorStatus: false,
           forceRunAtDefault: false,
           useVacationModeToSendVacuumToDock: false,
           enableCleanModeMapping: false,
@@ -135,6 +136,7 @@ describe('module additional tests', () => {
         settings: {
           showRoutinesAsRoom: false,
           includeDockStationStatus: false,
+          includeVacuumErrorStatus: false,
           forceRunAtDefault: false,
           useVacationModeToSendVacuumToDock: false,
           enableCleanModeMapping: false,

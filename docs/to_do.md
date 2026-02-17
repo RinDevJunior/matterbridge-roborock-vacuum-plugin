@@ -7,6 +7,8 @@
 
 ## Completed
 
+- [x] Add "Include Vacuum Error Status" configuration under Advanced features to gate `handleErrorOccurred` in platformRunner
+
 - [x] Create `B01ResponseBroadcaster` and `B01PendingResponseTracker` for multi-response B01 protocol handling
 - [x] Add real-data integration test to `B01PendingResponseTracker` using example log data
 - [x] Add Q10RequestCode key mapping to `B01PendingResponseTracker` — numeric keys converted to named keys at resolve time
