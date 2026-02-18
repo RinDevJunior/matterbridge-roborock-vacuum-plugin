@@ -52,9 +52,9 @@ Follow these steps to add support for a new device:
 
 ```sh
 sudo npm run precondition
-sudo npm run deepCleanBuild
+sudo npm run build:local
 sudo npm run matterbridge:add
-sudo npm run start:roborock
+sudo npm run start
 ```
 
 ---

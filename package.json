@@ -20,7 +20,7 @@
   },
   "funding": {
     "type": "buymeacoffee",
-    "url": "https://www.google.com/"
+    "url": "https://www.buymeacoffee.com/rinnvspktr"
   },
   "keywords": [
     "matterbridge",
@@ -32,6 +32,7 @@
     "apple home"
   ],
   "engines": {
+    "matterbridge": "^3.5.4",
     "node": ">=20.0.0 <21.0.0 || >=22.0.0 <23.0.0 || >=24.0.0 <25.0.0"
   },
   "scripts": {

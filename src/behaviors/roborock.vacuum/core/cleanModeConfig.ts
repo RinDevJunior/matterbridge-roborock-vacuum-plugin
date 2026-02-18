@@ -13,29 +13,30 @@ export interface CleanModeConfig {
   modeTags: { value: number }[];
 }
 
+// prettier-ignore
 export enum CleanModeDisplayLabel {
-  SmartPlan = 'Smart Plan',
+  SmartPlan =                     'Smart Plan',
 
-  MopAndVacuumDefault = 'Mop & Vacuum: Default',
-  MopAndVacuumQuick = 'Mop & Vacuum: Quick',
-  MopAndVacuumMax = 'Mop & Vacuum: Max',
-  MopAndVacuumMin = 'Mop & Vacuum: Min',
-  MopAndVacuumQuiet = 'Mop & Vacuum: Quiet',
-  MopAndVacuumEnergySaving = 'Mop & Vacuum: Energy Saving',
+  MopAndVacuumDefault =           'Mop & Vacuum: Default',
+  MopAndVacuumQuick =             'Mop & Vacuum: Quick',
+  MopAndVacuumMax =               'Mop & Vacuum: Max',
+  MopAndVacuumMin =               'Mop & Vacuum: Min',
+  MopAndVacuumQuiet =             'Mop & Vacuum: Quiet',
+  MopAndVacuumEnergySaving =      'Mop & Vacuum: Energy Saving',
   MopAndVaccum_VacFollowedByMop = 'Mop & Vacuum: Vac Follow by Mop',
 
-  MopDefault = 'Mop: Default',
-  MopMax = 'Mop: Max',
-  MopMin = 'Mop: Min',
-  MopQuick = 'Mop: Quick',
-  MopDeepClean = 'Mop: DeepClean',
+  MopDefault =                    'Mop: Default',
+  MopMax =                        'Mop: Max',
+  MopMin =                        'Mop: Min',
+  MopQuick =                      'Mop: Quick',
+  MopDeepClean =                  'Mop: DeepClean',
 
-  VacuumDefault = 'Vacuum: Default',
-  VacuumMin = 'Vacuum: Min',
-  VacuumMax = 'Vacuum: Max',
-  VacuumQuiet = 'Vacuum: Quiet',
-  VacuumQuick = 'Vacuum: Quick',
-  GoVacation = 'Go Vacation',
+  VacuumDefault =                 'Vacuum: Default',
+  VacuumMin =                     'Vacuum: Min',
+  VacuumMax =                     'Vacuum: Max',
+  VacuumQuiet =                   'Vacuum: Quiet',
+  VacuumQuick =                   'Vacuum: Quick',
+  GoVacation =                    'Go Vacation',
 }
 
 export type CleanModeLabel =
@@ -63,25 +64,26 @@ interface CleanModeLabelInfoStruct {
   mode: number;
 }
 
+// prettier-ignore
 export const CleanModeLabelInfo: Record<CleanModeLabel, CleanModeLabelInfoStruct> = {
-  [CleanModeDisplayLabel.SmartPlan]: { mode: 4, label: CleanModeDisplayLabel.SmartPlan },
-  [CleanModeDisplayLabel.MopAndVacuumDefault]: { mode: 5, label: CleanModeDisplayLabel.MopAndVacuumDefault },
-  [CleanModeDisplayLabel.MopAndVacuumQuick]: { mode: 6, label: CleanModeDisplayLabel.MopAndVacuumQuick },
-  [CleanModeDisplayLabel.MopAndVacuumMax]: { mode: 7, label: CleanModeDisplayLabel.MopAndVacuumMax },
-  [CleanModeDisplayLabel.MopAndVacuumMin]: { mode: 8, label: CleanModeDisplayLabel.MopAndVacuumMin },
-  [CleanModeDisplayLabel.MopAndVacuumQuiet]: { mode: 9, label: CleanModeDisplayLabel.MopAndVacuumQuiet },
-  [CleanModeDisplayLabel.MopAndVacuumEnergySaving]: { mode: 10, label: CleanModeDisplayLabel.MopAndVacuumEnergySaving },
-  [CleanModeDisplayLabel.MopAndVaccum_VacFollowedByMop]: { mode: 11, label: CleanModeDisplayLabel.MopAndVaccum_VacFollowedByMop },
-  [CleanModeDisplayLabel.MopDefault]: { mode: 31, label: CleanModeDisplayLabel.MopDefault },
-  [CleanModeDisplayLabel.MopMax]: { mode: 32, label: CleanModeDisplayLabel.MopMax },
-  [CleanModeDisplayLabel.MopMin]: { mode: 33, label: CleanModeDisplayLabel.MopMin },
-  [CleanModeDisplayLabel.MopQuick]: { mode: 34, label: CleanModeDisplayLabel.MopQuick },
-  [CleanModeDisplayLabel.MopDeepClean]: { mode: 35, label: CleanModeDisplayLabel.MopDeepClean },
-  [CleanModeDisplayLabel.VacuumDefault]: { mode: 66, label: CleanModeDisplayLabel.VacuumDefault },
-  [CleanModeDisplayLabel.VacuumMax]: { mode: 67, label: CleanModeDisplayLabel.VacuumMax },
-  [CleanModeDisplayLabel.VacuumQuiet]: { mode: 68, label: CleanModeDisplayLabel.VacuumQuiet },
-  [CleanModeDisplayLabel.VacuumQuick]: { mode: 69, label: CleanModeDisplayLabel.VacuumQuick },
-  [CleanModeDisplayLabel.GoVacation]: { mode: 99, label: CleanModeDisplayLabel.GoVacation },
+  [CleanModeDisplayLabel.SmartPlan]:                      { mode: 4, label: CleanModeDisplayLabel.SmartPlan },
+  [CleanModeDisplayLabel.MopAndVacuumDefault]:            { mode: 5, label: CleanModeDisplayLabel.MopAndVacuumDefault },
+  [CleanModeDisplayLabel.MopAndVacuumQuick]:              { mode: 6, label: CleanModeDisplayLabel.MopAndVacuumQuick },
+  [CleanModeDisplayLabel.MopAndVacuumMax]:                { mode: 7, label: CleanModeDisplayLabel.MopAndVacuumMax },
+  [CleanModeDisplayLabel.MopAndVacuumMin]:                { mode: 8, label: CleanModeDisplayLabel.MopAndVacuumMin },
+  [CleanModeDisplayLabel.MopAndVacuumQuiet]:              { mode: 9, label: CleanModeDisplayLabel.MopAndVacuumQuiet },
+  [CleanModeDisplayLabel.MopAndVacuumEnergySaving]:       { mode: 10, label: CleanModeDisplayLabel.MopAndVacuumEnergySaving },
+  [CleanModeDisplayLabel.MopAndVaccum_VacFollowedByMop]:  { mode: 11, label: CleanModeDisplayLabel.MopAndVaccum_VacFollowedByMop },
+  [CleanModeDisplayLabel.MopDefault]:                     { mode: 31, label: CleanModeDisplayLabel.MopDefault },
+  [CleanModeDisplayLabel.MopMax]:                         { mode: 32, label: CleanModeDisplayLabel.MopMax },
+  [CleanModeDisplayLabel.MopMin]:                         { mode: 33, label: CleanModeDisplayLabel.MopMin },
+  [CleanModeDisplayLabel.MopQuick]:                       { mode: 34, label: CleanModeDisplayLabel.MopQuick },
+  [CleanModeDisplayLabel.MopDeepClean]:                   { mode: 35, label: CleanModeDisplayLabel.MopDeepClean },
+  [CleanModeDisplayLabel.VacuumDefault]:                  { mode: 66, label: CleanModeDisplayLabel.VacuumDefault },
+  [CleanModeDisplayLabel.VacuumMax]:                      { mode: 67, label: CleanModeDisplayLabel.VacuumMax },
+  [CleanModeDisplayLabel.VacuumQuiet]:                    { mode: 68, label: CleanModeDisplayLabel.VacuumQuiet },
+  [CleanModeDisplayLabel.VacuumQuick]:                    { mode: 69, label: CleanModeDisplayLabel.VacuumQuick },
+  [CleanModeDisplayLabel.GoVacation]:                     { mode: 99, label: CleanModeDisplayLabel.GoVacation },
 };
 
 /**
