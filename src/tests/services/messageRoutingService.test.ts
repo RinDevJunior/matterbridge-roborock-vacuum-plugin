@@ -9,6 +9,7 @@ import { V10MessageDispatcher } from '../../roborockCommunication/protocol/dispa
 import { CleanModeSetting } from '../../behaviors/roborock.vacuum/core/CleanModeSetting.js';
 import { asPartial } from '../testUtils.js';
 import { CleanSequenceType } from '../../behaviors/roborock.vacuum/enums/CleanSequenceType.js';
+import { AbstractMessageDispatcher } from '../../roborockCommunication/protocol/dispatcher/abstractMessageDispatcher.js';
 
 function createIntegrationLogger() {
   return { debug: vi.fn(), notice: vi.fn(), warn: vi.fn() } as Partial<AnsiLogger> as AnsiLogger;
@@ -47,7 +48,7 @@ describe('MessageRoutingService (integration)', () => {
     expect(iotApi.startScene).toHaveBeenCalledWith(selected[0]);
   });
 
-  it('falls back to global clean when multiple routines selected', async () => {
+  it('start first routine when multiple routines selected', async () => {
     const duid = 'dev-multi';
     const selected = [1, 2];
     const supportedRooms: ServiceArea.Area[] = [];
@@ -57,13 +58,16 @@ describe('MessageRoutingService (integration)', () => {
     ];
 
     const startCleaning = vi.fn(async () => {});
-    const mp: any = { startCleaning };
+    const startScene = vi.fn(async () => {});
+    const mp = asPartial<AbstractMessageDispatcher>({ startCleaning });
 
-    const service = new MessageRoutingService(logger);
+    const iotApi: Partial<RoborockIoTApi> = { startScene };
+    const service = new MessageRoutingService(logger, iotApi as RoborockIoTApi);
     service.registerMessageDispatcher(duid, mp);
 
     await service.startClean(duid, selected, supportedRooms, supportedRoutines);
-    expect(startCleaning).toHaveBeenCalled();
+    expect(startCleaning).not.toHaveBeenCalled();
+    expect(startScene).toHaveBeenCalled();
   });
 
   it('throws when getCleanModeData returns no data', async () => {
@@ -299,7 +303,11 @@ describe('MessageRoutingService', () => {
 
     it('should start routine clean when routine is selected', async () => {
       const selectedRoutines = [1];
-      const supportedRoutines: ServiceArea.Area[] = [{ areaId: 1 } as ServiceArea.Area, { areaId: 2 } as ServiceArea.Area, { areaId: 3 } as ServiceArea.Area];
+      const supportedRoutines: ServiceArea.Area[] = [
+        { areaId: 1, areaInfo: { locationInfo: { locationName: 'Routine 1' } } } as ServiceArea.Area,
+        { areaId: 2, areaInfo: { locationInfo: { locationName: 'Routine 2' } } } as ServiceArea.Area,
+        { areaId: 3, areaInfo: { locationInfo: { locationName: 'Routine 3' } } } as ServiceArea.Area,
+      ];
       mockIotApi.startScene = vi.fn().mockResolvedValue(undefined);
       messageService.setIotApi(mockIotApi);
 
@@ -579,7 +587,7 @@ describe('MessageRoutingService', () => {
     it('should throw DeviceError when routine requires iotApi but not initialized', async () => {
       const serviceWithoutApi = new MessageRoutingService(mockLogger);
       serviceWithoutApi.registerMessageDispatcher(testDuid, mockDispatcher);
-      const supportedRoutines: ServiceArea.Area[] = [{ areaId: 1 } as ServiceArea.Area];
+      const supportedRoutines: ServiceArea.Area[] = [{ areaId: 1, areaInfo: { locationInfo: { locationName: 'Routine 1' } } } as ServiceArea.Area];
 
       await expect(serviceWithoutApi.startClean(testDuid, [1], [], supportedRoutines)).rejects.toThrow(DeviceError);
       await expect(serviceWithoutApi.startClean(testDuid, [1], [], supportedRoutines)).rejects.toThrow('IoT API must be initialized to start scene');

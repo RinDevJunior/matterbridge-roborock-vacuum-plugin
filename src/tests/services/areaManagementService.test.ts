@@ -175,48 +175,6 @@ describe('AreaManagementService', () => {
       expect(selectedAreas).toEqual([]);
     });
 
-    it('should set selected areas with valid index map', () => {
-      const roomMapData = new Map<number, MapInfo>([
-        [0, { roomId: 16, mapId: 1 } as MapInfo],
-        [1, { roomId: 17, mapId: 1 } as MapInfo],
-        [2, { roomId: 18, mapId: 1 } as MapInfo],
-      ]);
-      const indexMap = new RoomIndexMap(roomMapData);
-
-      areaService.setSupportedAreaIndexMap(mockDeviceId, indexMap);
-      areaService.setSelectedAreas(mockDeviceId, [0, 1]);
-
-      const selectedAreas = areaService.getSelectedAreas(mockDeviceId);
-
-      expect(selectedAreas).toEqual([16, 17]);
-      expect(mockLogger.debug).toHaveBeenCalledWith('AreaManagementService - setSelectedAreas', [0, 1]);
-      expect(mockLogger.debug).toHaveBeenCalledWith('AreaManagementService - setSelectedAreas - roomIds', [16, 17]);
-    });
-
-    it('should handle selected areas without index map', () => {
-      areaService.setSelectedAreas(mockDeviceId, [0, 1]);
-
-      const selectedAreas = areaService.getSelectedAreas(mockDeviceId);
-
-      expect(selectedAreas).toEqual([]);
-      expect(mockLogger.warn).toHaveBeenCalledWith('No area index map found for device', mockDeviceId);
-    });
-
-    it('should filter out invalid area IDs', () => {
-      const roomMapData = new Map<number, MapInfo>([
-        [0, { roomId: 16, mapId: 1 } as MapInfo],
-        [1, { roomId: 17, mapId: 1 } as MapInfo],
-      ]);
-      const indexMap = new RoomIndexMap(roomMapData);
-
-      areaService.setSupportedAreaIndexMap(mockDeviceId, indexMap);
-      areaService.setSelectedAreas(mockDeviceId, [0, 1, 999]); // 999 doesn't exist
-
-      const selectedAreas = areaService.getSelectedAreas(mockDeviceId);
-
-      expect(selectedAreas).toEqual([16, 17]);
-    });
-
     it('should handle empty selection', () => {
       const roomMapData = new Map<number, MapInfo>([[0, { roomId: 16, mapId: 1 } as MapInfo]]);
       const indexMap = new RoomIndexMap(roomMapData);
@@ -238,7 +196,7 @@ describe('AreaManagementService', () => {
 
   describe('Supported Routines Management', () => {
     it('should set and get supported routines', () => {
-      areaService.setSupportedScenes(mockDeviceId, mockRoutines);
+      areaService.setSupportedRoutines(mockDeviceId, mockRoutines);
 
       const routines = areaService.getSupportedRoutines(mockDeviceId);
 
@@ -254,7 +212,7 @@ describe('AreaManagementService', () => {
     });
 
     it('should handle empty routines array', () => {
-      areaService.setSupportedScenes(mockDeviceId, []);
+      areaService.setSupportedRoutines(mockDeviceId, []);
 
       const routines = areaService.getSupportedRoutines(mockDeviceId);
 
@@ -405,7 +363,7 @@ describe('AreaManagementService', () => {
     it('should clear all data', () => {
       // Set up some data
       areaService.setSupportedAreas(mockDeviceId, mockAreas);
-      areaService.setSupportedScenes(mockDeviceId, mockRoutines);
+      areaService.setSupportedRoutines(mockDeviceId, mockRoutines);
       const roomMapData = new Map<number, MapInfo>([[0, { roomId: 16, mapId: 1 } as MapInfo]]);
       areaService.setSupportedAreaIndexMap(mockDeviceId, new RoomIndexMap(roomMapData));
       areaService.setSelectedAreas(mockDeviceId, [0]);
@@ -453,7 +411,7 @@ describe('AreaManagementService', () => {
       areaService.setSupportedAreaIndexMap(mockDeviceId, new RoomIndexMap(roomMapData));
 
       // Setup routines
-      areaService.setSupportedScenes(mockDeviceId, mockRoutines);
+      areaService.setSupportedRoutines(mockDeviceId, mockRoutines);
 
       // Select areas
       areaService.setSelectedAreas(mockDeviceId, [0, 2]);
@@ -461,7 +419,7 @@ describe('AreaManagementService', () => {
       // Verify complete setup
       expect(areaService.getSupportedAreas(mockDeviceId)).toEqual(mockAreas);
       expect(areaService.getSupportedRoutines(mockDeviceId)).toEqual(mockRoutines);
-      expect(areaService.getSelectedAreas(mockDeviceId)).toEqual([16, 18]);
+      expect(areaService.getSelectedAreas(mockDeviceId)).toEqual([0, 2]);
     });
 
     it('should handle multiple devices independently', () => {

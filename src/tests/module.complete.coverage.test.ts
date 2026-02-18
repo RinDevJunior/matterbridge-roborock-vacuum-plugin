@@ -580,15 +580,15 @@ describe('module.ts - complete coverage', () => {
         [4, '11100847', 1],
       ] as Partial<RawRoomMappingData> as RawRoomMappingData;
 
-      const mockRoborockService = {
+      const mockRoborockService = asPartial<RoborockService>({
         initializeMessageClientForLocal: vi.fn().mockResolvedValue(true),
         getMapInfo: vi.fn().mockResolvedValue({ allRooms: [] }),
         setSupportedAreas: vi.fn(),
         setSupportedAreaIndexMap: vi.fn(),
-        setSupportedScenes: vi.fn(),
+        setSupportedRoutines: vi.fn(),
         getRoomMap: vi.fn().mockResolvedValue(roomData),
-      };
-      platform.roborockService = asPartial<RoborockService>(mockRoborockService);
+      });
+      platform.roborockService = mockRoborockService;
 
       platform.validateDevice = vi.fn().mockReturnValue(true);
       platform.registerDevice = vi.fn().mockResolvedValue(undefined);
@@ -597,7 +597,7 @@ describe('module.ts - complete coverage', () => {
       const result = await platform.configurator['configureDevice'](mockDevice, platform.roborockService);
 
       expect(result).toBe(true);
-      expect(mockRoborockService.setSupportedScenes).toHaveBeenCalledWith('device1', expect.any(Array));
+      expect(mockRoborockService.setSupportedRoutines).toHaveBeenCalledWith('device1', expect.any(Array));
     });
   });
 });

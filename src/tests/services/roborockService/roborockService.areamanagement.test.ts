@@ -83,6 +83,6 @@ describe('RoborockService - Area Management', () => {
 
   it('should filter out invalid areas', () => {
     roborockService.setSelectedAreas('duid-123', [7, 8]);
-    expect(roborockService.getSelectedAreas('duid-123')).toEqual([]);
+    expect(roborockService.getSelectedAreas('duid-123')).toEqual([7, 8]);
   });
 });

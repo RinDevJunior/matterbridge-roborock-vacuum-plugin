@@ -52,7 +52,7 @@ describe('RoborockService - Comprehensive Coverage', () => {
       getSelectedAreas: vi.fn(),
       setSupportedAreas: vi.fn(),
       setSupportedAreaIndexMap: vi.fn(),
-      setSupportedScenes: vi.fn(),
+      setSupportedRoutines: vi.fn(),
       getSupportedAreas: vi.fn(),
       getSupportedAreasIndexMap: vi.fn(),
       getSupportedRoutines: vi.fn(),

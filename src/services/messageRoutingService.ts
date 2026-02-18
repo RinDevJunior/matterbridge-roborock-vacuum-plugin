@@ -64,54 +64,46 @@ export class MessageRoutingService {
 
   /** Start cleaning (global, room-specific, or routine). */
   public async startClean(duid: string, selectedAreas: number[], supportedRooms: ServiceArea.Area[], supportedRoutines: ServiceArea.Area[]): Promise<void> {
-    let selected = selectedAreas;
-
-    this.logger.debug('MessageRoutingService - begin cleaning', debugStringify({ duid, supportedRooms, supportedRoutines, selected }));
+    this.logger.debug('MessageRoutingService - begin cleaning', debugStringify({ duid, supportedRooms, supportedRoutines, selectedAreas }));
 
     // Handle routines first (higher priority)
     if (supportedRoutines.length > 0) {
-      const result = await this.tryStartRoutineClean(duid, selected, supportedRooms, supportedRoutines);
-      if (result.handled) {
-        return;
-      }
-      // Fall through to room-based clean with filtered selection
-      selected = result.filteredSelection;
+      const handled = await this.tryStartRoutineClean(duid, selectedAreas, supportedRoutines);
+      if (handled) return;
     }
 
     // Handle room-based clean
-    return this.startRoomBasedClean(duid, selected, supportedRooms);
+    return this.startRoomBasedClean(duid, selectedAreas, supportedRooms);
   }
 
   /** Try to start routine-based cleaning. Returns handled status and filtered room selection. */
-  private async tryStartRoutineClean(
-    duid: string,
-    selected: number[],
-    supportedRooms: ServiceArea.Area[],
-    supportedRoutines: ServiceArea.Area[],
-  ): Promise<{ handled: boolean; filteredSelection: number[] }> {
+  private async tryStartRoutineClean(duid: string, selected: number[], supportedRoutines: ServiceArea.Area[]): Promise<boolean> {
     const routines = selected.filter((slt) => supportedRoutines.some((a) => a.areaId === slt));
-    const rooms = selected.filter((slt) => supportedRooms.some((a) => a.areaId === slt));
 
     if (routines.length === 0) {
       // No routines selected, continue with rooms
-      return { handled: false, filteredSelection: rooms };
+      return false;
     }
 
-    if (routines.length > 1) {
-      this.logger.warn('Multiple routines selected - falling back to global clean', { duid, routines });
-      await this.startGlobalClean(duid);
-      return { handled: true, filteredSelection: [] };
+    const sortedRoutines = routines
+      .map((areaId) => supportedRoutines.find((r) => r.areaId === areaId))
+      .filter((area) => area !== undefined)
+      .sort((areaA, areaB) => (areaA.areaInfo.locationInfo?.locationName ?? '').localeCompare(areaB.areaInfo.locationInfo?.locationName ?? ''));
+
+    if (sortedRoutines.length === 0) {
+      // No mapped routine found
+      return false;
     }
 
     // Exactly one routine selected
-    this.logger.debug('Starting routine', { duid, routine: routines[0] });
+    this.logger.debug('Starting routine', { duid, routine: sortedRoutines[0].areaInfo.locationInfo?.locationName });
 
     if (!this.iotApi) {
       throw new DeviceError('IoT API must be initialized to start scene', duid);
     }
 
-    await this.iotApi.startScene(routines[0]);
-    return { handled: true, filteredSelection: [] };
+    await this.iotApi.startScene(sortedRoutines[0].areaId);
+    return true;
   }
 
   /** Start room-based or global cleaning. */

@@ -55,7 +55,7 @@ describe('RoborockService - Complete Coverage', () => {
       getSelectedAreas: vi.fn().mockReturnValue([]),
       setSupportedAreas: vi.fn(),
       setSupportedAreaIndexMap: vi.fn(),
-      setSupportedScenes: vi.fn(),
+      setSupportedRoutines: vi.fn(),
       getSupportedAreas: vi.fn().mockReturnValue([]),
       getSupportedAreasIndexMap: vi.fn(),
       getSupportedRoutines: vi.fn().mockReturnValue([]),
@@ -302,9 +302,9 @@ describe('RoborockService - Complete Coverage', () => {
     it('should delegate setSupportedScenes to areaService', () => {
       const scenes = [asPartial<ServiceArea.Area>({ areaId: 1 })];
 
-      service.setSupportedScenes('duid', scenes as ServiceArea.Area[]);
+      service.setSupportedRoutines('duid', scenes as ServiceArea.Area[]);
 
-      expect(mockAreaService.setSupportedScenes).toHaveBeenCalledWith('duid', scenes);
+      expect(mockAreaService.setSupportedRoutines).toHaveBeenCalledWith('duid', scenes);
     });
 
     it('should delegate getSupportedAreas to areaService', () => {
@@ -419,20 +419,6 @@ describe('RoborockService - Complete Coverage', () => {
       expect(mockMessageService.changeCleanMode).toHaveBeenCalledWith('duid', settings);
     });
 
-    it('should delegate startClean with selected and supported areas', async () => {
-      const selectedAreas = [1, 2];
-      const supportedRooms = [asPartial<ServiceArea.Area>({ areaId: 1 })];
-      const supportedRoutines = [asPartial<ServiceArea.Area>({ areaId: 3 })];
-
-      vi.mocked(mockAreaService.getSelectedAreas).mockReturnValue(selectedAreas);
-      vi.mocked(mockAreaService.getSupportedAreas).mockReturnValue(supportedRooms);
-      vi.mocked(mockAreaService.getSupportedRoutines).mockReturnValue(supportedRoutines);
-
-      await service.startClean('duid');
-
-      expect(mockMessageService.startClean).toHaveBeenCalledWith('duid', selectedAreas, supportedRooms, supportedRoutines);
-    });
-
     it('should handle startClean with empty supported areas', async () => {
       vi.mocked(mockAreaService.getSelectedAreas).mockReturnValue([1]);
       vi.mocked(mockAreaService.getSupportedAreas).mockReturnValue(asType<ServiceArea.Area[]>(undefined));
@@ -440,7 +426,7 @@ describe('RoborockService - Complete Coverage', () => {
 
       await service.startClean('duid');
 
-      expect(mockMessageService.startClean).toHaveBeenCalledWith('duid', [1], [], []);
+      expect(mockMessageService.startClean).toHaveBeenCalledWith('duid', [], [], []);
     });
 
     it('should delegate pauseClean to messageService', async () => {

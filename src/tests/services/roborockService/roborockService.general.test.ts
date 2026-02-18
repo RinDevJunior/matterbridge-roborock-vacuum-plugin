@@ -78,7 +78,7 @@ describe('RoborockService basic behaviors', () => {
     svc.setSelectedAreas('d1', [5]);
 
     const sel = svc.getSelectedAreas('d1');
-    expect(sel).toEqual([42]);
+    expect(sel).toEqual([5]);
   });
 
   it('getCleanModeData throws when message processor not available', async () => {

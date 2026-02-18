@@ -38,7 +38,7 @@ export class RoborockService {
   private readonly authCoordinator: AuthenticationCoordinator;
   private readonly deviceService: DeviceManagementService;
   private readonly areaService: AreaManagementService;
-  private readonly messageService: MessageRoutingService;
+  private readonly messageRoutingService: MessageRoutingService;
   private readonly pollingService: PollingService;
   private readonly connectionService: ConnectionService;
   private readonly toastMessage: WssSendSnackbarMessage;
@@ -71,7 +71,7 @@ export class RoborockService {
     this.authCoordinator = this.container.getAuthenticationCoordinator();
     this.deviceService = this.container.getDeviceManagementService();
     this.areaService = this.container.getAreaManagementService();
-    this.messageService = this.container.getMessageRoutingService();
+    this.messageRoutingService = this.container.getMessageRoutingService();
     this.pollingService = this.container.getPollingService();
     this.connectionService = this.container.getConnectionService();
     this.toastMessage = params.toastMessage;
@@ -191,8 +191,8 @@ export class RoborockService {
   }
 
   /** Set supported cleaning routines/scenes for a device. */
-  public setSupportedScenes(duid: string, routineAsRooms: ServiceArea.Area[]): void {
-    this.areaService.setSupportedScenes(duid, routineAsRooms);
+  public setSupportedRoutines(duid: string, routineAsRooms: ServiceArea.Area[]): void {
+    this.areaService.setSupportedRoutines(duid, routineAsRooms);
   }
 
   /** Get supported cleaning areas for a device. */
@@ -231,60 +231,66 @@ export class RoborockService {
 
   /** Get current cleaning mode settings. */
   public async getCleanModeData(duid: string): Promise<CleanModeSetting> {
-    return this.messageService.getCleanModeData(duid);
+    return this.messageRoutingService.getCleanModeData(duid);
   }
 
   /** Get vacuum's current room from map. */
   public async getRoomIdFromMap(duid: string): Promise<number | undefined> {
-    return this.messageService.getRoomIdFromMap(duid);
+    return this.messageRoutingService.getRoomIdFromMap(duid);
   }
 
   /** Change cleaning mode settings. */
   public async changeCleanMode(duid: string, settings: CleanModeSetting): Promise<void> {
-    return this.messageService.changeCleanMode(duid, settings);
+    return this.messageRoutingService.changeCleanMode(duid, settings);
   }
 
   /** Start cleaning with selected areas. */
   public async startClean(duid: string): Promise<void> {
-    const selectedAreas = this.areaService.getSelectedAreas(duid);
+    const selectedAreaIds = this.areaService.getSelectedAreas(duid);
     const supportedRooms = this.areaService.getSupportedAreas(duid) ?? [];
     const supportedRoutines = this.areaService.getSupportedRoutines(duid) ?? [];
+    const indexMap = this.areaService.getSupportedAreasIndexMap(duid);
 
-    return this.messageService.startClean(duid, selectedAreas, supportedRooms, supportedRoutines);
+    const routineAreaIds = selectedAreaIds.filter((id) => supportedRoutines.some((r) => r.areaId === id));
+    const roomAreaIds = selectedAreaIds.filter((id) => !supportedRoutines.some((r) => r.areaId === id));
+    const roomIds = roomAreaIds.map((areaId) => indexMap?.getRoomId(areaId)).filter((id): id is number => id !== undefined);
+
+    const resolvedSelection = [...routineAreaIds, ...roomIds];
+    return this.messageRoutingService.startClean(duid, resolvedSelection, supportedRooms, supportedRoutines);
   }
 
   /** Pause cleaning. */
   public async pauseClean(duid: string): Promise<void> {
-    return this.messageService.pauseClean(duid);
+    return this.messageRoutingService.pauseClean(duid);
   }
 
   /** Stop cleaning and return to dock. */
   public async stopAndGoHome(duid: string): Promise<void> {
-    return this.messageService.stopAndGoHome(duid);
+    return this.messageRoutingService.stopAndGoHome(duid);
   }
 
   /** Resume paused cleaning. */
   public async resumeClean(duid: string): Promise<void> {
-    return this.messageService.resumeClean(duid);
+    return this.messageRoutingService.resumeClean(duid);
   }
 
   public async stopClean(duid: string): Promise<void> {
-    return this.messageService.stopClean(duid);
+    return this.messageRoutingService.stopClean(duid);
   }
 
   /** Play sound to locate vacuum. */
   public async playSoundToLocate(duid: string): Promise<void> {
-    return this.messageService.playSoundToLocate(duid);
+    return this.messageRoutingService.playSoundToLocate(duid);
   }
 
   /** Execute custom GET request to device. */
   public async customGet<T = unknown>(duid: string, request: RequestMessage): Promise<T> {
-    return this.messageService.customGet<T>(duid, request);
+    return this.messageRoutingService.customGet<T>(duid, request);
   }
 
   /** Send custom command to device (fire-and-forget). */
   public async customSend(duid: string, request: RequestMessage): Promise<void> {
-    return this.messageService.customSend(duid, request);
+    return this.messageRoutingService.customSend(duid, request);
   }
 
   /** Execute custom API GET request. */

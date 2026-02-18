@@ -103,13 +103,13 @@ export class DeviceConfigurator {
     roborockService.setSupportedAreas(vacuum.duid, supportedAreas);
     roborockService.setSupportedAreaIndexMap(vacuum.duid, roomIndexMap);
 
-    let routineAsRoom: ServiceArea.Area[] = [];
+    let routineAsRooms: ServiceArea.Area[] = [];
     if (this.configManager.showRoutinesAsRoom) {
-      routineAsRoom = getSupportedRoutines(vacuum.scenes ?? [], this.log);
-      roborockService.setSupportedScenes(vacuum.duid, routineAsRoom);
+      routineAsRooms = getSupportedRoutines(vacuum.scenes ?? [], this.log);
+      roborockService.setSupportedRoutines(vacuum.duid, routineAsRooms);
     }
 
-    const robot = new RoborockVacuumCleaner(username, vacuum, homeInfo, routineAsRoom, this.configManager, this.log);
+    const robot = new RoborockVacuumCleaner(username, vacuum, homeInfo, routineAsRooms, this.configManager, this.log);
     robot.configureHandler(behaviorHandler);
 
     this.log.info('vacuum:', debugStringify(vacuum));

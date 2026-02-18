@@ -31,18 +31,7 @@ export class AreaManagementService {
 
   public setSelectedAreas(duid: string, selectedAreas: number[]): void {
     this.logger.debug('AreaManagementService - setSelectedAreas', selectedAreas);
-
-    const indexMap = this.supportedAreaIndexMaps.get(duid);
-    if (!indexMap) {
-      this.logger.warn('No area index map found for device', duid);
-      this.selectedAreas.set(duid, []);
-      return;
-    }
-
-    const roomIds = selectedAreas.map((areaId) => indexMap.getRoomId(areaId)).filter((id) => id !== undefined);
-
-    this.logger.debug('AreaManagementService - setSelectedAreas - roomIds', roomIds);
-    this.selectedAreas.set(duid, roomIds);
+    this.selectedAreas.set(duid, selectedAreas);
   }
 
   public getSelectedAreas(duid: string): number[] {
@@ -57,7 +46,7 @@ export class AreaManagementService {
     this.supportedAreaIndexMaps.set(duid, indexMap);
   }
 
-  public setSupportedScenes(duid: string, routineAsRooms: ServiceArea.Area[]): void {
+  public setSupportedRoutines(duid: string, routineAsRooms: ServiceArea.Area[]): void {
     this.supportedRoutines.set(duid, routineAsRooms);
   }
 

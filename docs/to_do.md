@@ -2,6 +2,11 @@
 
 ## In Progress
 
+- [ ] Fix routine selection in `setSelectedAreas` — see `docs/routine-selection-fix-plan.md`
+  - [ ] `areaManagementService.setSelectedAreas`: store raw areaIds (remove RoomIndexMap conversion)
+  - [ ] `roborockService.startClean`: separate routines/rooms, convert room areaIds → roomIds
+  - [ ] `messageRoutingService.tryStartRoutineClean`: fix `rooms` filter + fix `startScene` scene ID
+  - [ ] Add/update tests
 - [ ] Investigate MQTT keepalive behavior change (rc04 stopped periodic reconnection — may cause stale connections)
 - [ ] Integrate `B01ResponseBroadcaster` into dispatcher factory / connection service for B01 devices
 
