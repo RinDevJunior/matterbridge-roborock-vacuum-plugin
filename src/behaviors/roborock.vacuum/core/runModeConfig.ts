@@ -6,7 +6,7 @@ import { RvcOperationalState, RvcRunMode } from 'matterbridge/matter/clusters';
 export interface RunModeConfig {
   mode: number;
   label: RunModeLabel;
-  modeTags: { value: number }[];
+  modeTags: { value: RvcRunMode.ModeTag }[];
 }
 
 export enum RunModeDisplayLabel {

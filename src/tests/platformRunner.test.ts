@@ -745,4 +745,114 @@ describe('PlatformRunner.updateRobotWithPayload', () => {
     expect(mockLogger.debug).toHaveBeenCalledWith(expect.stringContaining('No mapped area found'));
     expect(robot.updateAttribute).not.toHaveBeenCalled();
   });
+
+  it('should skip error handling when includeVacuumErrorStatus is disabled', () => {
+    const platformNoErrorStatus = asPartial<RoborockMatterbridgePlatform>({
+      registry: createMockDeviceRegistry({}, new Map([['test-duid', robot]])),
+      log: mockLogger,
+      roborockService: createMockRoborockService(),
+      configManager: createMockConfigManager({ includeVacuumErrorStatus: false }),
+    });
+    const runnerNoError = new PlatformRunner(platformNoErrorStatus);
+    runnerNoError.activateHandlerFunctions();
+
+    const errorMessage: DeviceErrorMessage = { duid: 'test-duid', vacuumErrorCode: VacuumErrorCode.LidarBlocked, dockErrorCode: DockErrorCode.None, dockStationStatus: undefined };
+    const payload: MessagePayload = { type: NotifyMessageTypes.ErrorOccurred, data: errorMessage };
+
+    runnerNoError.updateRobotWithPayload(payload);
+
+    expect(mockLogger.debug).toHaveBeenCalledWith('Skipping error handling: includeVacuumErrorStatus is disabled');
+    expect(robot.updateAttribute).not.toHaveBeenCalled();
+  });
+
+  it('should handle dockErrorCode error when no dockStationStatus and dockErrorCode is not None', () => {
+    const platformWithDockStatus = asPartial<RoborockMatterbridgePlatform>({
+      registry: createMockDeviceRegistry({}, new Map([['test-duid', robot]])),
+      log: mockLogger,
+      roborockService: createMockRoborockService(),
+      configManager: createMockConfigManager({ includeDockStationStatus: true, includeVacuumErrorStatus: true }),
+    });
+    const runnerWithDock = new PlatformRunner(platformWithDockStatus);
+    runnerWithDock.activateHandlerFunctions();
+
+    const errorMessage: DeviceErrorMessage = { duid: 'test-duid', vacuumErrorCode: VacuumErrorCode.None, dockErrorCode: DockErrorCode.WaterEmpty, dockStationStatus: undefined };
+    const payload: MessagePayload = { type: NotifyMessageTypes.ErrorOccurred, data: errorMessage };
+
+    runnerWithDock.updateRobotWithPayload(payload);
+
+    expect(mockLogger.warn).toHaveBeenCalledWith('Docking station error detected: WaterTankEmpty');
+    expect(robot.updateAttribute).toHaveBeenCalledWith(
+      RvcOperationalState.Cluster.id,
+      'operationalError',
+      { errorStateId: RvcOperationalState.ErrorState.WaterTankEmpty },
+      mockLogger,
+    );
+  });
+
+  it('should clear errors when dockErrorCode is None', () => {
+    vi.mocked(robot.getAttribute).mockReturnValue(RvcOperationalState.OperationalState.Docked);
+    const platformWithDockStatus = asPartial<RoborockMatterbridgePlatform>({
+      registry: createMockDeviceRegistry({}, new Map([['test-duid', robot]])),
+      log: mockLogger,
+      roborockService: createMockRoborockService(),
+      configManager: createMockConfigManager({ includeDockStationStatus: true, includeVacuumErrorStatus: true }),
+    });
+    const runnerWithDock = new PlatformRunner(platformWithDockStatus);
+    runnerWithDock.activateHandlerFunctions();
+
+    const errorMessage: DeviceErrorMessage = { duid: 'test-duid', vacuumErrorCode: VacuumErrorCode.None, dockErrorCode: DockErrorCode.None, dockStationStatus: undefined };
+    const payload: MessagePayload = { type: NotifyMessageTypes.ErrorOccurred, data: errorMessage };
+
+    runnerWithDock.updateRobotWithPayload(payload);
+
+    expect(robot.updateAttribute).toHaveBeenCalledWith(RvcOperationalState.Cluster.id, 'operationalError', { errorStateId: RvcOperationalState.ErrorState.NoError }, mockLogger);
+  });
+
+  it('should transition operational state to Charging when battery is charging and robot is Docked', () => {
+    vi.mocked(robot.getAttribute).mockReturnValue(RvcOperationalState.OperationalState.Docked);
+    vi.mocked(initialDataIndex.getBatteryState).mockReturnValue(PowerSource.BatChargeState.IsCharging);
+
+    const batteryMessage = new BatteryMessage('test-duid', 50, 1, OperationStatusCode.Charging);
+    const payload: MessagePayload = { type: NotifyMessageTypes.BatteryUpdate, data: batteryMessage };
+
+    runner.updateRobotWithPayload(payload);
+
+    expect(robot.updateAttribute).toHaveBeenCalledWith(RvcOperationalState.Cluster.id, 'operationalState', RvcOperationalState.OperationalState.Charging, mockLogger);
+  });
+
+  it('should transition operational state to Docked when battery is fully charged and robot is Charging', () => {
+    vi.mocked(robot.getAttribute).mockReturnValue(RvcOperationalState.OperationalState.Charging);
+    vi.mocked(initialDataIndex.getBatteryState).mockReturnValue(PowerSource.BatChargeState.IsAtFullCharge);
+
+    const batteryMessage = new BatteryMessage('test-duid', 100, 1, OperationStatusCode.Charging);
+    const payload: MessagePayload = { type: NotifyMessageTypes.BatteryUpdate, data: batteryMessage };
+
+    runner.updateRobotWithPayload(payload);
+
+    expect(robot.updateAttribute).toHaveBeenCalledWith(RvcOperationalState.Cluster.id, 'operationalState', RvcOperationalState.OperationalState.Docked, mockLogger);
+  });
+
+  it('should not transition to Charging when battery is charging but robot is not Docked', () => {
+    vi.mocked(robot.getAttribute).mockReturnValue(RvcOperationalState.OperationalState.Running);
+    vi.mocked(initialDataIndex.getBatteryState).mockReturnValue(PowerSource.BatChargeState.IsCharging);
+
+    const batteryMessage = new BatteryMessage('test-duid', 50, 1, OperationStatusCode.Charging);
+    const payload: MessagePayload = { type: NotifyMessageTypes.BatteryUpdate, data: batteryMessage };
+
+    runner.updateRobotWithPayload(payload);
+
+    expect(robot.updateAttribute).not.toHaveBeenCalledWith(RvcOperationalState.Cluster.id, 'operationalState', RvcOperationalState.OperationalState.Charging, mockLogger);
+  });
+
+  it('should not transition to Docked when fully charged but robot is not Charging', () => {
+    vi.mocked(robot.getAttribute).mockReturnValue(RvcOperationalState.OperationalState.Docked);
+    vi.mocked(initialDataIndex.getBatteryState).mockReturnValue(PowerSource.BatChargeState.IsAtFullCharge);
+
+    const batteryMessage = new BatteryMessage('test-duid', 100, 1, OperationStatusCode.Charging);
+    const payload: MessagePayload = { type: NotifyMessageTypes.BatteryUpdate, data: batteryMessage };
+
+    runner.updateRobotWithPayload(payload);
+
+    expect(robot.updateAttribute).not.toHaveBeenCalledWith(RvcOperationalState.Cluster.id, 'operationalState', RvcOperationalState.OperationalState.Docked, mockLogger);
+  });
 });

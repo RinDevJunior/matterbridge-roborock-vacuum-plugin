@@ -164,6 +164,24 @@ describe('PlatformConfigManager', () => {
       expect(manager.alwaysExecuteAuthentication).toBe(false);
       expect(manager.includeDockStationStatus).toBe(true);
     });
+
+    it('should return includeVacuumErrorStatus from settings when advanced feature is enabled', () => {
+      config.advancedFeature = {
+        enableAdvancedFeature: true,
+        settings: { ...createDefaultAdvancedFeature().settings, includeVacuumErrorStatus: true },
+      };
+      manager = PlatformConfigManager.create(config, mockLogger);
+      expect(manager.includeVacuumErrorStatus).toBe(true);
+    });
+
+    it('should return false for includeVacuumErrorStatus when advanced feature is disabled', () => {
+      config.advancedFeature = {
+        enableAdvancedFeature: false,
+        settings: { ...createDefaultAdvancedFeature().settings, includeVacuumErrorStatus: true },
+      };
+      manager = PlatformConfigManager.create(config, mockLogger);
+      expect(manager.includeVacuumErrorStatus).toBe(false);
+    });
   });
 
   describe('device filtering', () => {

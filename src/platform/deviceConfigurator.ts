@@ -13,7 +13,7 @@ import { RoomMap } from '../core/application/models/index.js';
 import { HomeEntity } from '../core/domain/entities/Home.js';
 import { RoborockVacuumCleaner } from '../types/roborockVacuumCleaner.js';
 import { configureBehavior } from '../share/behaviorFactory.js';
-import { getSupportedAreas, getSupportedScenes } from '../initialData/index.js';
+import { getSupportedAreas, getSupportedRoutines } from '../initialData/index.js';
 
 /**
  * Handles device configuration: local network setup, room mapping,
@@ -105,7 +105,7 @@ export class DeviceConfigurator {
 
     let routineAsRoom: ServiceArea.Area[] = [];
     if (this.configManager.showRoutinesAsRoom) {
-      routineAsRoom = getSupportedScenes(vacuum.scenes ?? [], this.log);
+      routineAsRoom = getSupportedRoutines(vacuum.scenes ?? [], this.log);
       roborockService.setSupportedScenes(vacuum.duid, routineAsRoom);
     }
 

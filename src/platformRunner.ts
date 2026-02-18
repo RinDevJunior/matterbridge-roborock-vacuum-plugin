@@ -187,7 +187,7 @@ export class PlatformRunner {
       return;
     }
     this.platform.log.debug(`Handling error occurred: ${debugStringify(message)}`);
-    const currentOperationState = robot.getAttribute(RvcOperationalState.Cluster.id, 'operationalState');
+    const currentOperationState: RvcOperationalState.OperationalState = robot.getAttribute(RvcOperationalState.Cluster.id, 'operationalState');
 
     // Process vacuum errors (highest priority)
     const vacuumStatus = new VacuumStatus(message.vacuumErrorCode ?? 0);
@@ -252,14 +252,25 @@ export class PlatformRunner {
     this.platform.log.debug(`Handling battery update: ${debugStringify(message)}`);
     const batteryLevel = message.percentage;
     const deviceStatus = message.deviceStatus;
+    const batteryChargeLevel = getBatteryStatus(batteryLevel);
+
     if (batteryLevel) {
       robot.setAttribute(PowerSource.Cluster.id, 'batPercentRemaining', batteryLevel * 2, this.platform.log);
-      robot.updateAttribute(PowerSource.Cluster.id, 'batChargeLevel', getBatteryStatus(batteryLevel), this.platform.log);
+      robot.updateAttribute(PowerSource.Cluster.id, 'batChargeLevel', batteryChargeLevel, this.platform.log);
     }
 
     if (batteryLevel && deviceStatus) {
       const batteryChargeState = getBatteryState(deviceStatus, batteryLevel);
       robot.updateAttribute(PowerSource.Cluster.id, 'batChargeState', batteryChargeState, this.platform.log);
+
+      const currentOperationState: RvcOperationalState.OperationalState = robot.getAttribute(RvcOperationalState.Cluster.id, 'operationalState');
+      if (batteryChargeState === PowerSource.BatChargeState.IsCharging && currentOperationState === RvcOperationalState.OperationalState.Docked) {
+        robot.updateAttribute(RvcOperationalState.Cluster.id, 'operationalState', RvcOperationalState.OperationalState.Charging, this.platform.log);
+      }
+
+      if (batteryChargeState === PowerSource.BatChargeState.IsAtFullCharge && currentOperationState === RvcOperationalState.OperationalState.Charging) {
+        robot.updateAttribute(RvcOperationalState.Cluster.id, 'operationalState', RvcOperationalState.OperationalState.Docked, this.platform.log);
+      }
     }
   }
 

@@ -1,31 +1,38 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { B01ResponseBroadcaster } from '../../../../roborockCommunication/routing/listeners/b01ResponseBroadcaster.js';
-import { B01PendingResponseTracker } from '../../../../roborockCommunication/routing/services/b01PendingResponseTracker.js';
+import { V1ResponseBroadcaster } from '../../../../roborockCommunication/routing/listeners/v1ResponseBroadcaster.js';
+import { V1PendingResponseTracker } from '../../../../roborockCommunication/routing/services/v1PendingResponseTracker.js';
 import { HeaderMessage, ResponseBody, ResponseMessage } from '../../../../roborockCommunication/models/index.js';
-import { createMockLogger, asType } from '../../../helpers/testUtils.js';
+import { createMockLogger } from '../../../helpers/testUtils.js';
 import { AnsiLogger } from 'matterbridge/logger';
 import { AbstractMessageListener } from '../../../../roborockCommunication/routing/listeners/abstractMessageListener.js';
 
 function makeResponse(duid = 'test-duid'): ResponseMessage {
-  const header = new HeaderMessage('B01', 1, 0, 101, 102);
-  const body = new ResponseBody({ '101': { '108': 4 } });
+  const header = new HeaderMessage('1.0', 1, 0, 101, 102);
+  const body = new ResponseBody({ '102': { id: 123, result: ['ok'] } });
   return new ResponseMessage(duid, header, body);
 }
 
-describe('B01ResponseBroadcaster', () => {
+describe('V1ResponseBroadcaster', () => {
   let logger: AnsiLogger;
-  let tracker: B01PendingResponseTracker;
-  let broadcaster: B01ResponseBroadcaster;
+  let tracker: V1PendingResponseTracker;
+  let broadcaster: V1ResponseBroadcaster;
 
   beforeEach(() => {
+    vi.useFakeTimers();
     logger = createMockLogger();
-    tracker = new B01PendingResponseTracker(logger, 500, 1);
-    broadcaster = new B01ResponseBroadcaster(tracker, logger);
+    tracker = new V1PendingResponseTracker(logger);
+    broadcaster = new V1ResponseBroadcaster(tracker, logger);
   });
 
   afterEach(() => {
     broadcaster.unregister();
     vi.clearAllMocks();
+    vi.clearAllTimers();
+    vi.useRealTimers();
+  });
+
+  it('should have name ResponseBroadcaster', () => {
+    expect(broadcaster.name).toBe('ResponseBroadcaster');
   });
 
   it('should dispatch message to all registered listeners', () => {
@@ -62,6 +69,21 @@ describe('B01ResponseBroadcaster', () => {
     expect(logger.error).toHaveBeenCalled();
   });
 
+  it('should catch non-Error exceptions and log them', () => {
+    const failingListener: AbstractMessageListener = {
+      name: 'FailListener',
+      duid: 'test',
+      onMessage: vi.fn(() => {
+        throw 'string error';
+      }),
+    };
+
+    broadcaster.register(failingListener);
+    broadcaster.onMessage(makeResponse());
+
+    expect(logger.error).toHaveBeenCalledWith(expect.stringContaining('string error'));
+  });
+
   it('should forward tryResolve to tracker', () => {
     const spy = vi.spyOn(tracker, 'tryResolve');
     const response = makeResponse();
@@ -85,14 +107,10 @@ describe('B01ResponseBroadcaster', () => {
     expect(spy).toHaveBeenCalled();
   });
 
-  it('should delegate waitFor to tracker and reject on cancel', async () => {
-    vi.useFakeTimers();
-    const { RequestMessage } = await import('../../../../roborockCommunication/models/index.js');
-    const request = new RequestMessage({ timestamp: 100, protocol: 101, messageId: 1234, nonce: 5678 });
-    const promise = broadcaster.waitFor(request, 'test-duid');
+  it('should dispatch to no listeners when none registered', () => {
+    const response = makeResponse();
+    broadcaster.onMessage(response);
 
-    tracker.cancelAll();
-    await expect(promise).rejects.toThrow();
-    vi.useRealTimers();
+    expect(logger.debug).toHaveBeenCalledWith(expect.stringContaining('0 listeners'));
   });
 });

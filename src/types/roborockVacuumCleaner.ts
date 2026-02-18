@@ -29,13 +29,6 @@ export class RoborockVacuumCleaner extends RoboticVacuumCleaner {
    */
   constructor(username: string, device: Device, homeInFo: HomeEntity, routineAsRoom: ServiceArea.Area[], configManager: PlatformConfigManager, log: AnsiLogger) {
     const deviceConfig = RoborockVacuumCleaner.initializeDeviceConfiguration(device, homeInFo, routineAsRoom, configManager, log);
-    const firstSupportedMap = deviceConfig.supportedMaps.length > 0 ? deviceConfig.supportedMaps[0] : undefined;
-    const supportedMaps = deviceConfig.supportedMaps;
-    if (!configManager.isMultipleMapEnabled) {
-      supportedMaps.splice(1); // Keep only the first map
-      deviceConfig.supportedAreas = deviceConfig.supportedAreas.filter((area) => area.mapId === firstSupportedMap?.mapId);
-      deviceConfig.supportedAreaAndRoutines = deviceConfig.supportedAreaAndRoutines.filter((area) => area.mapId === firstSupportedMap?.mapId);
-    }
 
     super(
       deviceConfig.deviceName,
@@ -52,7 +45,7 @@ export class RoborockVacuumCleaner extends RoboticVacuumCleaner {
       deviceConfig.supportedAreaAndRoutines,
       undefined,
       deviceConfig.supportedAreas[0].areaId,
-      supportedMaps,
+      deviceConfig.supportedMaps,
     );
 
     log.debug(
@@ -122,16 +115,33 @@ export class RoborockVacuumCleaner extends RoboticVacuumCleaner {
   /**
    * Initialize device configuration including modes, areas, and maps.
    */
-  private static initializeDeviceConfiguration(device: Device, homeInFo: HomeEntity, routineAsRoom: ServiceArea.Area[], configManager: PlatformConfigManager, log: AnsiLogger) {
+  private static initializeDeviceConfiguration(device: Device, homeInFo: HomeEntity, routineAsRooms: ServiceArea.Area[], configManager: PlatformConfigManager, log: AnsiLogger) {
     const cleanModes = getSupportedCleanModes(device.specs.model, configManager);
     const operationalState = getOperationalStates();
-
-    const { supportedAreas, supportedMaps } = getSupportedAreas(homeInFo, log);
-    const supportedAreaAndRoutines = [...supportedAreas, ...routineAsRoom];
+    const result = getSupportedAreas(homeInFo, log);
+    const supportedMaps = result.supportedMaps;
+    let supportedAreas = result.supportedAreas;
     const runModeConfigs = getRunModeOptions(baseRunModeConfigs);
     const deviceName = `${device.name}-${device.duid}`.replace(/\s+/g, '');
 
     const bridgeMode: 'server' | 'matter' = configManager.isServerModeEnabled ? 'server' : 'matter';
+
+    const firstSupportedMap = supportedMaps.length > 0 ? supportedMaps[0] : undefined;
+    if (!configManager.isMultipleMapEnabled) {
+      supportedMaps.splice(1); // Keep only the first map
+      supportedAreas = supportedAreas.filter((area) => area.mapId === firstSupportedMap?.mapId);
+    }
+
+    // temporary use map id 999 for routine
+    if (routineAsRooms.length > 0) {
+      const mapForRoutine: ServiceArea.Map = { mapId: 999, name: 'Routine' };
+      supportedMaps.push(mapForRoutine);
+      routineAsRooms.forEach((rt) => {
+        rt.mapId = 999;
+      });
+    }
+
+    const supportedAreaAndRoutines = [...supportedAreas, ...routineAsRooms];
 
     return {
       deviceName,

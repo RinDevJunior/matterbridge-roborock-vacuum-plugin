@@ -4,6 +4,23 @@ All notable changes to this project will be documented in this file.
 
 ---
 
+## [1.1.4-rc08] - 2026-02-18
+
+### Improvements
+
+- **Smarter charging state transitions** — The vacuum's operational state now automatically transitions between `Charging` and `Docked` based on battery charge state, so your smart home controller always reflects the correct docking status.
+- **Routine areas now grouped under a dedicated map** — Routines shown as rooms are now associated with a synthetic "Routine" map (id 999), enabling proper area grouping in the Matter service area cluster.
+
+### Internal
+
+- Tightened `RunModeConfig.modeTags` type from `number` to `RvcRunMode.ModeTag` for better type safety.
+- Added explicit `RvcOperationalState.OperationalState` type annotation to `currentOperationState` in error and battery handlers.
+- Added unit tests for `ResponseBroadcasterFactory` covering V1/B01 routing, fallback, `waitFor`, `cancelAll`, and context-based protocol version resolution.
+
+<a href="https://www.buymeacoffee.com/rinnvspktr" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/default-orange.png" alt="Buy Me A Coffee" height="41" width="174"></a>
+
+---
+
 ## [1.1.4-rc07] - 2026-02-18
 
 ### Added
