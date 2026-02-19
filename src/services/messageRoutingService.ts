@@ -1,11 +1,11 @@
-import { AnsiLogger, debugStringify } from 'matterbridge/logger';
-import { ServiceArea } from 'matterbridge/matter/clusters';
+import { AnsiLogger } from 'matterbridge/logger';
 import { DeviceError } from '../errors/index.js';
 import { RoborockIoTApi } from '../roborockCommunication/api/iotClient.js';
 import { RawRoomMappingData, RequestMessage } from '../roborockCommunication/models/index.js';
 import { AbstractMessageDispatcher } from '../roborockCommunication/protocol/dispatcher/abstractMessageDispatcher.js';
 import { MapInfo } from '../core/application/models/index.js';
 import { CleanModeSetting } from '../behaviors/roborock.vacuum/core/CleanModeSetting.js';
+import { CleanCommand } from '../model/CleanCommand.js';
 
 export class MessageRoutingService {
   private messageDispatcherMap = new Map<string, AbstractMessageDispatcher>();
@@ -62,66 +62,26 @@ export class MessageRoutingService {
     return this.getMessageDispatcher(duid).changeCleanMode(duid, setting);
   }
 
-  /** Start cleaning (global, room-specific, or routine). */
-  public async startClean(duid: string, selectedAreas: number[], supportedRooms: ServiceArea.Area[], supportedRoutines: ServiceArea.Area[]): Promise<void> {
-    this.logger.debug('MessageRoutingService - begin cleaning', debugStringify({ duid, supportedRooms, supportedRoutines, selectedAreas }));
+  public async startClean(duid: string, command: CleanCommand): Promise<void> {
+    switch (command.type) {
+      case 'routine': {
+        if (!this.iotApi) {
+          throw new DeviceError('IoT API must be initialized to start scene', duid);
+        }
+        this.logger.notice(`[MessageRoutingService] Start routine ${command.routineId}`);
+        await this.iotApi.startScene(command.routineId);
+        return;
+      }
+      case 'room': {
+        this.logger.notice(`[MessageRoutingService] Start room cleaning ${command.roomIds}`);
+        return this.getMessageDispatcher(duid).startRoomCleaning(duid, command.roomIds, 1);
+      }
 
-    // Handle routines first (higher priority)
-    if (supportedRoutines.length > 0) {
-      const handled = await this.tryStartRoutineClean(duid, selectedAreas, supportedRoutines);
-      if (handled) return;
+      case 'global': {
+        this.logger.notice(`[MessageRoutingService] Start global cleaning`);
+        return this.getMessageDispatcher(duid).startCleaning(duid);
+      }
     }
-
-    // Handle room-based clean
-    return this.startRoomBasedClean(duid, selectedAreas, supportedRooms);
-  }
-
-  /** Try to start routine-based cleaning. Returns handled status and filtered room selection. */
-  private async tryStartRoutineClean(duid: string, selected: number[], supportedRoutines: ServiceArea.Area[]): Promise<boolean> {
-    const routines = selected.filter((slt) => supportedRoutines.some((a) => a.areaId === slt));
-
-    if (routines.length === 0) {
-      // No routines selected, continue with rooms
-      return false;
-    }
-
-    const sortedRoutines = routines
-      .map((areaId) => supportedRoutines.find((r) => r.areaId === areaId))
-      .filter((area) => area !== undefined)
-      .sort((areaA, areaB) => (areaA.areaInfo.locationInfo?.locationName ?? '').localeCompare(areaB.areaInfo.locationInfo?.locationName ?? ''));
-
-    if (sortedRoutines.length === 0) {
-      // No mapped routine found
-      return false;
-    }
-
-    // Exactly one routine selected
-    this.logger.debug('Starting routine', { duid, routine: sortedRoutines[0].areaInfo.locationInfo?.locationName });
-
-    if (!this.iotApi) {
-      throw new DeviceError('IoT API must be initialized to start scene', duid);
-    }
-
-    await this.iotApi.startScene(sortedRoutines[0].areaId);
-    return true;
-  }
-
-  /** Start room-based or global cleaning. */
-  private async startRoomBasedClean(duid: string, selected: number[], supportedRooms: ServiceArea.Area[]): Promise<void> {
-    const shouldStartGlobalClean = selected.length === 0 || selected.length === supportedRooms.length || supportedRooms.length === 0;
-
-    if (shouldStartGlobalClean) {
-      this.logger.debug('Starting global clean');
-      return this.startGlobalClean(duid);
-    }
-
-    this.logger.debug('Starting room clean', { duid, selected });
-    return this.getMessageDispatcher(duid).startRoomCleaning(duid, selected, 1);
-  }
-
-  /** Start global cleaning (entire house). */
-  private async startGlobalClean(duid: string): Promise<void> {
-    return this.getMessageDispatcher(duid).startCleaning(duid);
   }
 
   public async pauseClean(duid: string): Promise<void> {

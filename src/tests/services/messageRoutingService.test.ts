@@ -9,7 +9,6 @@ import { V10MessageDispatcher } from '../../roborockCommunication/protocol/dispa
 import { CleanModeSetting } from '../../behaviors/roborock.vacuum/core/CleanModeSetting.js';
 import { asPartial } from '../testUtils.js';
 import { CleanSequenceType } from '../../behaviors/roborock.vacuum/enums/CleanSequenceType.js';
-import { AbstractMessageDispatcher } from '../../roborockCommunication/protocol/dispatcher/abstractMessageDispatcher.js';
 
 function createIntegrationLogger() {
   return { debug: vi.fn(), notice: vi.fn(), warn: vi.fn() } as Partial<AnsiLogger> as AnsiLogger;
@@ -33,41 +32,6 @@ describe('MessageRoutingService (integration)', () => {
     const mp: any = { some: 'processor' };
     service.registerMessageDispatcher(duid, mp);
     expect(service.getMessageDispatcher(duid)).toBe(mp);
-  });
-
-  it('uses IoT API to start a single selected routine', async () => {
-    const duid = 'dev-routine';
-    const selected = [42];
-    const supportedRooms: ServiceArea.Area[] = [];
-    const supportedRoutines: ServiceArea.Area[] = [asPartial<ServiceArea.Area>({ areaId: 42, mapId: null, areaInfo: asPartial({}) })];
-
-    const iotApi: Partial<RoborockIoTApi> = { startScene: vi.fn(async () => {}) };
-    const service = new MessageRoutingService(logger, iotApi as RoborockIoTApi);
-
-    await service.startClean(duid, selected, supportedRooms, supportedRoutines);
-    expect(iotApi.startScene).toHaveBeenCalledWith(selected[0]);
-  });
-
-  it('start first routine when multiple routines selected', async () => {
-    const duid = 'dev-multi';
-    const selected = [1, 2];
-    const supportedRooms: ServiceArea.Area[] = [];
-    const supportedRoutines: ServiceArea.Area[] = [
-      asPartial<ServiceArea.Area>({ areaId: 1, mapId: null, areaInfo: asPartial({}) }),
-      asPartial<ServiceArea.Area>({ areaId: 2, mapId: null, areaInfo: asPartial({}) }),
-    ];
-
-    const startCleaning = vi.fn(async () => {});
-    const startScene = vi.fn(async () => {});
-    const mp = asPartial<AbstractMessageDispatcher>({ startCleaning });
-
-    const iotApi: Partial<RoborockIoTApi> = { startScene };
-    const service = new MessageRoutingService(logger, iotApi as RoborockIoTApi);
-    service.registerMessageDispatcher(duid, mp);
-
-    await service.startClean(duid, selected, supportedRooms, supportedRoutines);
-    expect(startCleaning).not.toHaveBeenCalled();
-    expect(startScene).toHaveBeenCalled();
   });
 
   it('throws when getCleanModeData returns no data', async () => {
@@ -284,34 +248,27 @@ describe('MessageRoutingService', () => {
     });
 
     it('should start global clean when no areas selected', async () => {
-      await messageService.startClean(testDuid, [], [], []);
+      await messageService.startClean(testDuid, { type: 'global' });
 
       expect(mockDispatcher.startCleaning).toHaveBeenCalledWith(testDuid);
       expect(mockDispatcher.startRoomCleaning).not.toHaveBeenCalled();
-      expect(mockLogger.debug).toHaveBeenCalledWith('Starting global clean');
+      expect(mockLogger.notice).toHaveBeenCalledWith(expect.stringContaining('Start global cleaning'));
     });
 
     it('should start room-based clean with selected rooms', async () => {
       const selectedRooms = [16, 17];
-      const supportedRooms: ServiceArea.Area[] = [{ areaId: 16 } as ServiceArea.Area, { areaId: 17 } as ServiceArea.Area, { areaId: 18 } as ServiceArea.Area];
 
-      await messageService.startClean(testDuid, selectedRooms, supportedRooms, []);
+      await messageService.startClean(testDuid, { type: 'room', roomIds: selectedRooms });
 
       expect(mockDispatcher.startRoomCleaning).toHaveBeenCalledWith(testDuid, selectedRooms, 1);
       expect(mockDispatcher.startCleaning).not.toHaveBeenCalled();
     });
 
     it('should start routine clean when routine is selected', async () => {
-      const selectedRoutines = [1];
-      const supportedRoutines: ServiceArea.Area[] = [
-        { areaId: 1, areaInfo: { locationInfo: { locationName: 'Routine 1' } } } as ServiceArea.Area,
-        { areaId: 2, areaInfo: { locationInfo: { locationName: 'Routine 2' } } } as ServiceArea.Area,
-        { areaId: 3, areaInfo: { locationInfo: { locationName: 'Routine 3' } } } as ServiceArea.Area,
-      ];
       mockIotApi.startScene = vi.fn().mockResolvedValue(undefined);
       messageService.setIotApi(mockIotApi);
 
-      await messageService.startClean(testDuid, selectedRoutines, [], supportedRoutines);
+      await messageService.startClean(testDuid, { type: 'routine', routineId: 1 });
 
       expect(mockIotApi.startScene).toHaveBeenCalledWith(1);
     });
@@ -319,13 +276,7 @@ describe('MessageRoutingService', () => {
     it('should fallback to room-based clean when room selected from routines', async () => {
       // When a routine area ID exists but also matches a room, it treats as room
       const selectedRooms = [999];
-      const supportedRooms: ServiceArea.Area[] = [
-        { areaId: 999 } as ServiceArea.Area,
-        { areaId: 1000 } as ServiceArea.Area, // Need at least 2 rooms to avoid global clean
-      ];
-      const supportedRoutines: ServiceArea.Area[] = [{ areaId: 1 } as ServiceArea.Area];
-
-      await messageService.startClean(testDuid, selectedRooms, supportedRooms, supportedRoutines);
+      await messageService.startClean(testDuid, { type: 'room', roomIds: selectedRooms });
 
       expect(mockDispatcher.startRoomCleaning).toHaveBeenCalledWith(testDuid, selectedRooms, 1);
     });
@@ -340,13 +291,9 @@ describe('MessageRoutingService', () => {
         { areaId: 20 } as ServiceArea.Area,
       ];
 
-      await messageService.startClean(testDuid, selectedRooms, supportedRooms, []);
+      await messageService.startClean(testDuid, { type: 'room', roomIds: selectedRooms });
 
       expect(mockDispatcher.startRoomCleaning).toHaveBeenCalledWith(testDuid, selectedRooms, 1);
-    });
-
-    it('should throw DeviceError when processor not found', async () => {
-      await expect(messageService.startClean('unknown-device', [], [], [])).rejects.toThrow(DeviceError);
     });
   });
 
@@ -539,7 +486,7 @@ describe('MessageRoutingService', () => {
       const supportedRooms: ServiceArea.Area[] = [{ areaId: 16 } as ServiceArea.Area, { areaId: 17 } as ServiceArea.Area, { areaId: 18 } as ServiceArea.Area];
 
       // Start room clean
-      await messageService.startClean(testDuid, selectedRooms, supportedRooms, []);
+      await messageService.startClean(testDuid, { type: 'room', roomIds: [16, 17] });
       expect(mockDispatcher.startRoomCleaning).toHaveBeenCalledWith(testDuid, selectedRooms, 1);
 
       // Pause
@@ -581,23 +528,22 @@ describe('MessageRoutingService', () => {
       const error = new Error('Communication timeout');
       mockDispatcher.startCleaning.mockRejectedValue(error);
 
-      await expect(messageService.startClean(testDuid, [], [], [])).rejects.toThrow('Communication timeout');
+      await expect(messageService.startClean(testDuid, { type: 'global' })).rejects.toThrow('Communication timeout');
     });
 
     it('should throw DeviceError when routine requires iotApi but not initialized', async () => {
       const serviceWithoutApi = new MessageRoutingService(mockLogger);
       serviceWithoutApi.registerMessageDispatcher(testDuid, mockDispatcher);
-      const supportedRoutines: ServiceArea.Area[] = [{ areaId: 1, areaInfo: { locationInfo: { locationName: 'Routine 1' } } } as ServiceArea.Area];
 
-      await expect(serviceWithoutApi.startClean(testDuid, [1], [], supportedRoutines)).rejects.toThrow(DeviceError);
-      await expect(serviceWithoutApi.startClean(testDuid, [1], [], supportedRoutines)).rejects.toThrow('IoT API must be initialized to start scene');
+      await expect(serviceWithoutApi.startClean(testDuid, { type: 'routine', routineId: 123 })).rejects.toThrow(DeviceError);
+      await expect(serviceWithoutApi.startClean(testDuid, { type: 'routine', routineId: 123 })).rejects.toThrow('IoT API must be initialized to start scene');
     });
 
     it('should throw meaningful errors for missing processors', async () => {
       const unknownDuid = 'non-existent-device';
 
       await expect(messageService.getCleanModeData(unknownDuid)).rejects.toThrow(`MessageDispatcher not initialized for device ${unknownDuid}`);
-      await expect(messageService.startClean(unknownDuid, [], [], [])).rejects.toThrow(`MessageDispatcher not initialized for device ${unknownDuid}`);
+      await expect(messageService.startClean(unknownDuid, { type: 'global' })).rejects.toThrow(`MessageDispatcher not initialized for device ${unknownDuid}`);
       await expect(messageService.pauseClean(unknownDuid)).rejects.toThrow(`MessageDispatcher not initialized for device ${unknownDuid}`);
     });
   });

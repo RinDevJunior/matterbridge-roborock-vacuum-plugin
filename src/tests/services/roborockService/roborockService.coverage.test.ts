@@ -426,7 +426,7 @@ describe('RoborockService - Complete Coverage', () => {
 
       await service.startClean('duid');
 
-      expect(mockMessageService.startClean).toHaveBeenCalledWith('duid', [], [], []);
+      expect(mockMessageService.startClean).toHaveBeenCalledWith('duid', expect.objectContaining({ type: 'global' }));
     });
 
     it('should delegate pauseClean to messageService', async () => {
