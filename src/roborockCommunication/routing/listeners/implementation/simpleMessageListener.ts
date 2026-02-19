@@ -55,6 +55,11 @@ export class SimpleMessageListener implements AbstractMessageListener {
     const messageBody = deviceStatus.getMessage();
     const cleaningInfo = messageBody.cleaning_info;
 
+    if (!('state' in messageBody)) {
+      this.logger.debug('[SimpleMessageListener]: Message does not contain state');
+      return;
+    }
+
     const state = messageBody.state;
     const cleanMode = new CleanModeSetting(
       cleaningInfo?.fan_power ?? messageBody.fan_power,

@@ -117,7 +117,7 @@ export class RoborockService {
     }
 
     this.logger.info(`Authentication successful for user: ${userData.nickname} (${userData.username})`);
-    this.toastMessage(`Authentication successful for user: ${userData.nickname} (${userData.username})`, 5000, 'success');
+    this.toastMessage(`Authentication successful for user: ${userData.username}`, 5000, 'success');
     this.container.setUserData(userData);
     return { userData, shouldContinue: true, isSuccess: true };
   }
