@@ -168,7 +168,7 @@ export class RoborockMatterbridgePlatform extends MatterbridgeDynamicPlatform {
       }
     }, intervalMs);
 
-    this.snackbarMessage('Plugin is ready', 5000, 'success');
+    this.snackbarMessage('Roborock Vacuum Plugin is ready', 5000, 'success');
   }
 
   public override async onShutdown(reason?: string): Promise<void> {

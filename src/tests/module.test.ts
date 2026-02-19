@@ -43,6 +43,13 @@ function createMockConfig(overrides: Partial<RoborockPluginPlatformConfig> = {})
           mopping: { waterFlowMode: 'Medium', mopRouteMode: 'Standard', distanceOff: 25 },
           vacmop: { fanMode: 'Balanced', waterFlowMode: 'Medium', mopRouteMode: 'Standard', distanceOff: 25 },
         },
+        overrideMatterConfiguration: false,
+        matterOverrideSettings: {
+          matterVendorName: 'xxx',
+          matterVendorId: 123,
+          matterProductName: 'yy',
+          matterProductId: 456,
+        },
       },
     },
     ...overrides,

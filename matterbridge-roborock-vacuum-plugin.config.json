@@ -29,6 +29,7 @@
       "forceRunAtDefault": false,
       "useVacationModeToSendVacuumToDock": false,
       "enableCleanModeMapping": false,
+      "overrideMatterConfiguration": false,
       "cleanModeSettings": {
         "vacuuming": {
           "fanMode": "Balanced",
@@ -45,6 +46,12 @@
           "mopRouteMode": "Standard",
           "distanceOff": 25
         }
+      },
+      "matterOverrideSettings": {
+        "matterVendorName": "Matterbridge",
+        "matterVendorId": 65521,
+        "matterProductName": "Robotic Vaccum Cleaner",
+        "matterProductId": 32768
       }
     }
   }

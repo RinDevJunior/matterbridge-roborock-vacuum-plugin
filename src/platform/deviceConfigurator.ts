@@ -141,9 +141,17 @@ export class DeviceConfigurator {
       rvc.hardwareVersion = isValidNumber(rvc.hardwareVersion, 0, UINT16_MAX) ? rvc.hardwareVersion : undefined;
       rvc.hardwareVersionString = isValidString(rvc.hardwareVersionString) ? rvc.hardwareVersionString.slice(0, 64) : undefined;
 
-      rvc.vendorName = 'Roborock';
-      rvc.productName = vacuumData.model;
-      rvc.productUrl = 'https://github.com/RinDevJunior/matterbridge-roborock-vacuum-plugin';
+      const advancedSettings = this.configManager.advancedFeatureSettings;
+      if (advancedSettings.overrideMatterConfiguration) {
+        const customMatterConfiguration = advancedSettings.matterOverrideSettings;
+        this.platform.log.debug(`customMatterConfiguration: ${debugStringify(customMatterConfiguration)}`);
+
+        rvc.vendorName = customMatterConfiguration.matterVendorName?.length > 0 ? customMatterConfiguration.matterVendorName : 'Matterbridge';
+        rvc.productName = customMatterConfiguration.matterProductName?.length > 0 ? customMatterConfiguration.matterProductName : vacuumData.model;
+        rvc.vendorId = customMatterConfiguration.matterVendorId > 0 ? customMatterConfiguration.matterVendorId : 65521;
+        rvc.productId = customMatterConfiguration.matterProductId > 0 ? customMatterConfiguration.matterProductId : 32768;
+        rvc.productUrl = 'https://github.com/RinDevJunior/matterbridge-roborock-vacuum-plugin';
+      }
 
       const options = rvc.getClusterServerOptions(BridgedDeviceBasicInformation.Cluster.id);
       if (options) {

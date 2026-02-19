@@ -145,6 +145,13 @@ describe('RoborockVacuumCleaner', () => {
           useVacationModeToSendVacuumToDock: false,
           enableCleanModeMapping: false,
           cleanModeSettings: {} as any,
+          overrideMatterConfiguration: false,
+          matterOverrideSettings: {
+            matterVendorName: 'xxx',
+            matterVendorId: 123,
+            matterProductName: 'yy',
+            matterProductId: 456,
+          },
         },
       },
     });
@@ -189,6 +196,13 @@ describe('RoborockVacuumCleaner', () => {
           useVacationModeToSendVacuumToDock: false,
           enableCleanModeMapping: false,
           cleanModeSettings: {} as any,
+          overrideMatterConfiguration: false,
+          matterOverrideSettings: {
+            matterVendorName: 'xxx',
+            matterVendorId: 123,
+            matterProductName: 'yy',
+            matterProductId: 456,
+          },
         },
       },
     });

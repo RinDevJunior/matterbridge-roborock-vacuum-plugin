@@ -196,6 +196,11 @@
                     "type": "boolean",
                     "default": false
                   },
+                  "overrideMatterConfiguration": {
+                    "title": "Override Matter Configuration",
+                    "type": "boolean",
+                    "default": false
+                  },
                   "clearStorageOnStartup": {
                     "title": "Clear Storage On Startup",
                     "description": "Clear persistence storage and re-initialize the plugin on next startup.",
@@ -328,6 +333,69 @@
                             }
                           }
                         ]
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "allOf": [
+              {
+                "properties": {
+                  "enableAdvancedFeature": {
+                    "const": true
+                  }
+                },
+                "required": ["enableAdvancedFeature"]
+              },
+              {
+                "properties": {
+                  "settings": {
+                    "type": "object",
+                    "properties": {
+                      "overrideMatterConfiguration": {
+                        "const": true
+                      }
+                    },
+                    "required": ["overrideMatterConfiguration"]
+                  }
+                },
+                "required": ["settings"]
+              }
+            ]
+          },
+          "then": {
+            "properties": {
+              "settings": {
+                "properties": {
+                  "matterOverrideSettings": {
+                    "title": "Matter Configuration Override Settings",
+                    "type": "object",
+                    "properties": {
+                      "matterVendorName": {
+                        "title": "Vendor Name",
+                        "type": "string",
+                        "default": "Matterbridge"
+                      },
+                      "matterVendorId": {
+                        "title": "Vendor Id",
+                        "type": "number",
+                        "default": 65521
+                      },
+                      "matterProductName": {
+                        "title": "Product Name",
+                        "type": "string",
+                        "default": "Robotic Vaccum Cleaner",
+                        "maxLength": 32
+                      },
+                      "matterProductId": {
+                        "title": "Product Id",
+                        "type": "number",
+                        "default": 32768
                       }
                     }
                   }

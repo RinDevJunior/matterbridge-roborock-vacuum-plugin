@@ -39,6 +39,15 @@ export interface AdvancedFeatureSetting {
   useVacationModeToSendVacuumToDock: boolean;
   enableCleanModeMapping: boolean;
   cleanModeSettings: CleanModeSettings;
+  overrideMatterConfiguration: boolean;
+  matterOverrideSettings: MatterOverrideSettings;
+}
+
+export interface MatterOverrideSettings {
+  matterVendorName: string;
+  matterVendorId: number;
+  matterProductName: string;
+  matterProductId: number;
 }
 
 export interface CleanModeSettings {
@@ -76,6 +85,7 @@ export function createDefaultAdvancedFeature(): AdvancedFeatureConfiguration {
       forceRunAtDefault: false,
       useVacationModeToSendVacuumToDock: false,
       enableCleanModeMapping: false,
+      overrideMatterConfiguration: false,
       cleanModeSettings: {
         vacuuming: {
           fanMode: 'Balanced',
@@ -92,6 +102,12 @@ export function createDefaultAdvancedFeature(): AdvancedFeatureConfiguration {
           mopRouteMode: 'Standard',
           distanceOff: 25,
         },
+      },
+      matterOverrideSettings: {
+        matterVendorName: 'Matterbridge',
+        matterVendorId: 65521,
+        matterProductName: 'Robotic Vaccum Cleaner',
+        matterProductId: 32768,
       },
     },
   };

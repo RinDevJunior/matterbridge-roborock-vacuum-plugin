@@ -1,10 +1,7 @@
 import { getVacuumProperty, isSupportedDevice, isStatusUpdate } from '../share/helper.js';
-import { MapInfo, RoomMap } from '../core/application/models/index.js';
-import { describe, it, test, expect, vi, beforeEach } from 'vitest';
-import { MultipleMapDto, type Device } from '../roborockCommunication/models/index.js';
-import { asType, asPartial } from './testUtils.js';
-import { RoborockPluginPlatformConfig } from '../model/RoborockPluginPlatformConfig.js';
-import { RoborockMatterbridgePlatform } from '../module.js';
+import { describe, test, expect, vi } from 'vitest';
+import { type Device } from '../roborockCommunication/models/index.js';
+import { asType } from './testUtils.js';
 
 describe('helper utilities', () => {
   test('getVacuumProperty returns undefined with no device', () => {

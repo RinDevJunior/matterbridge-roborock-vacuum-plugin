@@ -14,7 +14,7 @@ export function getSupportedCleanModes(model: DeviceModel, configManager: Platfo
 
   let supportedModes = defaultModes;
   if (SMART_MODELS.has(model)) {
-    return (supportedModes = smartModes);
+    supportedModes = smartModes;
   }
 
   return getDefaultSupportedCleanModes(configManager, supportedModes);

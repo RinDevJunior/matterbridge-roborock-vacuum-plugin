@@ -68,6 +68,13 @@ function createMockConfig(overrides: Partial<RoborockPluginPlatformConfig> = {})
             distanceOff: 25,
           },
         },
+        overrideMatterConfiguration: false,
+        matterOverrideSettings: {
+          matterVendorName: 'xxx',
+          matterVendorId: 123,
+          matterProductName: 'yy',
+          matterProductId: 456,
+        },
       },
     },
     persistDirectory: '/tmp',
@@ -367,6 +374,13 @@ describe('module.ts coverage tests', () => {
             includeVacuumErrorStatus: false,
             forceRunAtDefault: true,
             useVacationModeToSendVacuumToDock: true,
+            overrideMatterConfiguration: false,
+            matterOverrideSettings: {
+              matterVendorName: 'xxx',
+              matterVendorId: 123,
+              matterProductName: 'yy',
+              matterProductId: 456,
+            },
           },
         },
       });

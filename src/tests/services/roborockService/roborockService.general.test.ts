@@ -49,6 +49,13 @@ describe('RoborockService basic behaviors', () => {
             mopping: { waterFlowMode: 'Medium', mopRouteMode: 'Standard', distanceOff: 25 },
             vacmop: { fanMode: 'Balanced', waterFlowMode: 'Medium', mopRouteMode: 'Standard', distanceOff: 25 },
           },
+          overrideMatterConfiguration: false,
+          matterOverrideSettings: {
+            matterVendorName: 'xxx',
+            matterVendorId: 123,
+            matterProductName: 'yy',
+            matterProductId: 456,
+          },
         },
       },
     } as RoborockPluginPlatformConfig;
@@ -128,6 +135,13 @@ describe('RoborockService - Facade Pattern Testing', () => {
             vacuuming: { fanMode: 'Balanced', mopRouteMode: 'Standard' },
             mopping: { waterFlowMode: 'Medium', mopRouteMode: 'Standard', distanceOff: 25 },
             vacmop: { fanMode: 'Balanced', waterFlowMode: 'Medium', mopRouteMode: 'Standard', distanceOff: 25 },
+          },
+          overrideMatterConfiguration: false,
+          matterOverrideSettings: {
+            matterVendorName: 'xxx',
+            matterVendorId: 123,
+            matterProductName: 'yy',
+            matterProductId: 456,
           },
         },
       },

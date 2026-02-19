@@ -135,6 +135,13 @@ describe('PlatformConfigManager', () => {
         enableCleanModeMapping: true,
         useVacationModeToSendVacuumToDock: false,
         cleanModeSettings: createDefaultAdvancedFeature().settings.cleanModeSettings,
+        overrideMatterConfiguration: false,
+        matterOverrideSettings: {
+          matterVendorName: 'xxx',
+          matterVendorId: 123,
+          matterProductName: 'yy',
+          matterProductId: 456,
+        },
       };
       config.advancedFeature.enableAdvancedFeature = true;
       manager = PlatformConfigManager.create(config, mockLogger);
@@ -152,6 +159,13 @@ describe('PlatformConfigManager', () => {
           enableCleanModeMapping: false,
           useVacationModeToSendVacuumToDock: false,
           cleanModeSettings: createDefaultAdvancedFeature().settings.cleanModeSettings,
+          overrideMatterConfiguration: false,
+          matterOverrideSettings: {
+            matterVendorName: 'xxx',
+            matterVendorId: 123,
+            matterProductName: 'yy',
+            matterProductId: 456,
+          },
         },
       };
       config.pluginConfiguration.enableServerMode = true;

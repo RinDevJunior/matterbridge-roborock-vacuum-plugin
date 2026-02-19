@@ -10,6 +10,7 @@ import {
   CleanModeSettings,
   createDefaultAdvancedFeature,
   createDefaultCleanModeSettings,
+  MatterOverrideSettings,
   RoborockPluginPlatformConfig,
 } from '../model/RoborockPluginPlatformConfig.js';
 
@@ -66,7 +67,11 @@ export class PlatformConfigManager {
     return true;
   }
 
-  // ─── Getters ────────────────────────────────────────────────────────────────
+  // ─── Authentication Configuration ─────────────────────────────────────────────
+
+  public get alwaysExecuteAuthentication(): boolean {
+    return this.config.authentication.forceAuthentication;
+  }
 
   public get username(): string {
     return this.config.authentication.username;
@@ -89,6 +94,12 @@ export class PlatformConfigManager {
     return configRegion?.toUpperCase() ?? 'US';
   }
 
+  public get rawConfig(): RoborockPluginPlatformConfig {
+    return this.config;
+  }
+
+  // ─── Plugin Configurations ──────────────────────────────────────────────────
+
   public get refreshInterval(): number {
     return this.config.pluginConfiguration.refreshInterval ?? DEFAULT_REFRESH_INTERVAL_SECONDS;
   }
@@ -101,8 +112,12 @@ export class PlatformConfigManager {
     return this.config.pluginConfiguration.unregisterOnShutdown ?? false;
   }
 
-  public get rawConfig(): RoborockPluginPlatformConfig {
-    return this.config;
+  public get isServerModeEnabled(): boolean {
+    return this.config.pluginConfiguration.enableServerMode;
+  }
+
+  public get isMultipleMapEnabled(): boolean {
+    return this.config.pluginConfiguration.enableMultipleMap;
   }
 
   // ─── Experimental Features ──────────────────────────────────────────────────
@@ -130,24 +145,12 @@ export class PlatformConfigManager {
     return createDefaultCleanModeSettings();
   }
 
-  public get isServerModeEnabled(): boolean {
-    return this.config.pluginConfiguration.enableServerMode;
-  }
-
-  public get isMultipleMapEnabled(): boolean {
-    return this.config.pluginConfiguration.enableMultipleMap;
-  }
-
   public get showRoutinesAsRoom(): boolean {
     return this.isAdvancedFeatureEnabled && this.advancedFeatureSettings.showRoutinesAsRoom;
   }
 
   public get forceRunAtDefault(): boolean {
     return this.isAdvancedFeatureEnabled && this.advancedFeatureSettings.forceRunAtDefault;
-  }
-
-  public get alwaysExecuteAuthentication(): boolean {
-    return this.config.authentication.forceAuthentication;
   }
 
   public get includeDockStationStatus(): boolean {
@@ -169,6 +172,21 @@ export class PlatformConfigManager {
       return this.advancedFeatureSettings.useVacationModeToSendVacuumToDock;
     }
     return false;
+  }
+
+  public get overrideMatterConfiguration(): boolean {
+    if (this.isAdvancedFeatureEnabled) {
+      return this.advancedFeatureSettings.overrideMatterConfiguration;
+    }
+    return false;
+  }
+
+  public get matterOverrideSettings(): MatterOverrideSettings | undefined {
+    if (this.isAdvancedFeatureEnabled && this.overrideMatterConfiguration) {
+      return this.advancedFeatureSettings.matterOverrideSettings;
+    }
+
+    return undefined;
   }
 
   // ─── Device Filtering ───────────────────────────────────────────────────────

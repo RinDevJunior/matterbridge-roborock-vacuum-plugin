@@ -113,3 +113,7 @@ export function state_to_matter_operational_status(state: number | undefined): R
       return RvcOperationalState.OperationalState.Docked;
   }
 }
+
+export function asType<T>(v: unknown): T {
+  return v as T;
+}

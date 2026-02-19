@@ -93,6 +93,13 @@ describe('RoborockMatterbridgePlatform - startup branches', () => {
           mopping: { waterFlowMode: 'Low', mopRouteMode: 'Standard', distanceOff: 500 },
           vacmop: { fanMode: 'Silent', waterFlowMode: 'Low', mopRouteMode: 'Standard', distanceOff: 500 },
         },
+        overrideMatterConfiguration: false,
+        matterOverrideSettings: {
+          matterVendorName: 'xxx',
+          matterVendorId: 123,
+          matterProductName: 'yy',
+          matterProductId: 456,
+        },
       },
     } satisfies RoborockPluginPlatformConfig['advancedFeature'];
     const config = {

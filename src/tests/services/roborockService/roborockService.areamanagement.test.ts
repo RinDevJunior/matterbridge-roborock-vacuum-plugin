@@ -40,6 +40,13 @@ describe('RoborockService - Area Management', () => {
             mopping: { waterFlowMode: 'Medium', mopRouteMode: 'Standard', distanceOff: 25 },
             vacmop: { fanMode: 'Balanced', waterFlowMode: 'Medium', mopRouteMode: 'Standard', distanceOff: 25 },
           },
+          overrideMatterConfiguration: false,
+          matterOverrideSettings: {
+            matterVendorName: 'xxx',
+            matterVendorId: 123,
+            matterProductName: 'yy',
+            matterProductId: 456,
+          },
         },
       },
     } as Partial<RoborockPluginPlatformConfig> as RoborockPluginPlatformConfig;

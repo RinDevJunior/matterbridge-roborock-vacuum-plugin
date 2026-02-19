@@ -32,7 +32,7 @@ export class RoborockVacuumCleaner extends RoboticVacuumCleaner {
 
     super(
       deviceConfig.deviceName,
-      device.duid,
+      device.serialNumber ?? device.duid,
       deviceConfig.bridgeMode,
       deviceConfig.runModeConfigs[0].mode,
       deviceConfig.runModeConfigs,
@@ -122,7 +122,6 @@ export class RoborockVacuumCleaner extends RoboticVacuumCleaner {
     const supportedMaps = result.supportedMaps;
     let supportedAreas = result.supportedAreas;
     const runModeConfigs = getRunModeOptions(baseRunModeConfigs);
-    const deviceName = `${device.name}-${device.duid}`.replace(/\s+/g, '');
 
     const bridgeMode: 'server' | 'matter' = configManager.isServerModeEnabled ? 'server' : 'matter';
 
@@ -144,7 +143,7 @@ export class RoborockVacuumCleaner extends RoboticVacuumCleaner {
     const supportedAreaAndRoutines = [...supportedAreas, ...routineAsRooms];
 
     return {
-      deviceName,
+      deviceName: device.name,
       bridgeMode,
       cleanModes,
       runModeConfigs,
