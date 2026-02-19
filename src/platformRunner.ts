@@ -1,17 +1,17 @@
 import { RvcRunMode, PowerSource, ServiceArea, RvcOperationalState, RvcCleanMode } from 'matterbridge/matter/clusters';
-import { getRoomMap, getVacuumProperty, isStatusUpdate } from './helper.js';
+import { getRoomMap, getRoomMapFromDevice, getVacuumProperty, isStatusUpdate } from './helper.js';
 import { getRunningMode } from './initialData/getSupportedRunModes.js';
 import { CloudMessageModel } from './model/CloudMessageModel.js';
 import { RoborockMatterbridgePlatform } from './platform.js';
 import { state_to_matter_operational_status, state_to_matter_state } from './share/function.js';
-import { getBatteryState, getBatteryStatus, getOperationalErrorState } from './initialData/index.js';
+import { getBatteryState, getBatteryStatus, getOperationalErrorState, getSupportedAreas } from './initialData/index.js';
 import { NotifyMessageTypes } from './notifyMessageTypes.js';
 import { CloudMessageResult } from './roborockCommunication/Zmodel/messageResult.js';
 import { Protocol } from './roborockCommunication/broadcast/model/protocol.js';
 import { DpsPayload } from './roborockCommunication/broadcast/model/dps.js';
 import { RoborockVacuumCleaner } from './rvc.js';
 import { hasDockingStationError, parseDockingStationStatus } from './model/DockingStationStatus.js';
-import { BatteryMessage, Device, DeviceErrorMessage, DeviceStatusNotify, Home } from './roborockCommunication/index.js';
+import { AdditionalPropCode, BatteryMessage, Device, DeviceErrorMessage, DeviceStatusNotify, Home } from './roborockCommunication/index.js';
 import { OperationStatusCode } from './roborockCommunication/Zenum/operationStatusCode.js';
 import { getCurrentCleanModeFunc } from './share/runtimeHelper.js';
 import { debugStringify } from 'matterbridge/logger';
@@ -120,6 +120,7 @@ export class PlatformRunner {
             robot.updateAttribute(ServiceArea.Cluster.id, 'selectedAreas', [], platform.log);
           } else {
             const currentMappedAreas = this.platform.roborockService?.getSupportedAreas(duid);
+            const roomIndexMap = this.platform.roborockService?.getSupportedAreasIndexMap(duid);
             const roomMap = await getRoomMap(duid, this.platform);
 
             // Get current room from segment_id
@@ -135,7 +136,10 @@ export class PlatformRunner {
               this.platform.log.debug(
                 `Part1: CurrentRoom: ${segment_id}, room name: ${roomMap?.rooms.find((x) => x.id === segment_id || x.alternativeId === segment_id.toString())?.displayName ?? 'unknown'}`,
               );
-              robot.updateAttribute(ServiceArea.Cluster.id, 'currentArea', segment_id, platform.log);
+
+              const roomIndex = roomIndexMap?.getRoomIndex(segment_id) ?? null;
+
+              robot.updateAttribute(ServiceArea.Cluster.id, 'currentArea', roomIndex, platform.log);
             }
 
             if (segment_id == -1) {
@@ -148,7 +152,8 @@ export class PlatformRunner {
                 this.platform.log.debug(
                   `Part2: TargetRoom: ${target_segment_id}, room name: ${roomMap?.rooms.find((x) => x.id === target_segment_id || x.alternativeId === segment_id.toString())?.displayName ?? 'unknown'}`,
                 );
-                robot.updateAttribute(ServiceArea.Cluster.id, 'currentArea', target_segment_id, platform.log);
+                const roomIndex = roomIndexMap?.getRoomIndex(target_segment_id) ?? null;
+                robot.updateAttribute(ServiceArea.Cluster.id, 'currentArea', roomIndex, platform.log);
               }
             }
 
@@ -280,7 +285,31 @@ export class PlatformRunner {
           });
           break; // Do nothing, handled in local message
         }
-        case Protocol.additional_props:
+        case Protocol.additional_props: {
+          platform.log.notice(`Received additional properties for robot ${duid}: ${debugStringify(data)}`);
+          const propCode = data.dps[Protocol.additional_props] as number;
+          platform.log.debug(`DPS for additional properties: ${propCode}, AdditionalPropCode: ${AdditionalPropCode[propCode]}`);
+
+          // if (propCode === AdditionalPropCode.map_change) {
+          //   platform.log.notice('------------------------ get roomData ----------------------------');
+
+          //   const roomMap = await getRoomMapFromDevice(robot.device, platform);
+
+          //   platform.log.notice('------------------------ Room map updated ------------------------');
+          //   const { supportedAreas, supportedMaps, roomIndexMap } = getSupportedAreas(robot.device.rooms, roomMap, platform.log);
+
+          //   platform.log.notice(`Supported areas: ${debugStringify(supportedAreas)}`);
+          //   platform.log.notice('------------------------ Supported areas updated ------------------');
+
+          //   platform.roborockService?.setSupportedAreas(duid, supportedAreas);
+          //   platform.roborockService?.setSelectedAreas(duid, []);
+          //   robot.updateAttribute(ServiceArea.Cluster.id, 'supportedAreas', supportedAreas, platform.log);
+          //   robot.updateAttribute(ServiceArea.Cluster.id, 'selectedAreas', [], platform.log);
+          //   robot.updateAttribute(ServiceArea.Cluster.id, 'currentArea', null, platform.log);
+          //   robot.updateAttribute(ServiceArea.Cluster.id, 'supportedMaps', supportedMaps, platform.log);
+          // }
+          break;
+        }
         case Protocol.back_type: {
           // TODO: check if this is needed
           break;

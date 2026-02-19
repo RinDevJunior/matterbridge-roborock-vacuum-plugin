@@ -1,11 +1,9 @@
 import { AnsiLogger, debugStringify } from 'matterbridge/logger';
 import { CloudMessageResult } from '../Zmodel/messageResult.js';
-import { RoomInfo } from '../Zmodel/roomInfo.js';
 import { AbstractMessageHandler } from './listener/abstractMessageHandler.js';
 import { SimpleMessageListener } from './listener/index.js';
 import { RequestMessage } from './model/requestMessage.js';
 import { DeviceStatus } from '../Zmodel/deviceStatus.js';
-import { Room } from '../Zmodel/room.js';
 import { Client } from './client.js';
 import { NetworkInfo } from '../Zmodel/networkInfo.js';
 
@@ -58,9 +56,9 @@ export class MessageProcessor {
     return undefined;
   }
 
-  public async getRooms(duid: string, rooms: Room[]): Promise<RoomInfo> {
+  public async getRooms(duid: string): Promise<number[][] | undefined> {
     const request = new RequestMessage({ method: 'get_room_mapping' });
-    return this.client.get<number[][] | undefined>(duid, request).then((response) => new RoomInfo(rooms, response ?? []));
+    return this.client.get<number[][] | undefined>(duid, request); // .then((response) => new RoomInfo(rooms, response ?? []));
   }
 
   public async gotoDock(duid: string): Promise<void> {

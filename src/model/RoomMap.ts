@@ -15,32 +15,47 @@ roomMap = {
 };
 */
 
+import { MapRoom } from '../roborockCommunication/Zmodel/mapInfo.js';
 import { Room } from '../roborockCommunication/Zmodel/room.js';
 
-export class RoomMap {
-  readonly rooms: {
-    id: number;
-    globalId: number | undefined;
-    displayName: string | undefined;
-    alternativeId: string;
-  }[] = [];
+export interface RoomMapEntry {
+  id: number;
+  globalId: number | undefined;
+  displayName?: string;
+  alternativeId: string;
+  mapId?: number;
+}
 
-  constructor(roomData: number[][], rooms: Room[]) {
-    this.rooms = roomData.map((entry) => {
+export interface MapInfo {
+  id: number;
+  name: string | undefined;
+}
+
+export class RoomMap {
+  readonly rooms: RoomMapEntry[];
+  readonly mapInfo?: MapInfo[];
+
+  constructor(roomData: MapRoom[], rooms: Room[], mapInfo: MapInfo[]) {
+    this.rooms = roomData.map(({ id, globalId, tag, mapId }) => {
+      const room = rooms.find((r) => Number(r.id) === Number(globalId) || Number(r.id) === Number(id));
       return {
-        id: entry[0],
-        globalId: Number(entry[1]),
-        displayName: rooms.find((r) => Number(r.id) == Number(entry[1]))?.name,
-        alternativeId: `${entry[0]}${entry[2]}`,
+        id,
+        globalId: globalId !== undefined ? Number(globalId) : undefined,
+        displayName: room?.name,
+        alternativeId: `${id}${tag}`,
+        mapId,
       };
     });
+
+    this.mapInfo = mapInfo;
   }
 
+  // Optionally, add utility methods for clarity
   // getGlobalId(id: number): number | undefined {
-  //   return this.rooms.find((r) => Number(r.id) == Number(id))?.globalId;
+  //   return this.rooms.find((r) => r.id === id)?.globalId;
   // }
 
   // getRoomId(globalId: number): number | undefined {
-  //   return this.rooms.find((r) => Number(r.globalId) == Number(globalId))?.id;
+  //   return this.rooms.find((r) => r.globalId === globalId)?.id;
   // }
 }

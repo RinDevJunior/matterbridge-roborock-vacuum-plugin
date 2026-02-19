@@ -227,8 +227,8 @@ export class RoborockMatterbridgePlatform extends MatterbridgeDynamicPlatform {
     if (vacuum.rooms === undefined || vacuum.rooms.length === 0) {
       this.log.notice(`Fetching map information for device: ${vacuum.name} (${vacuum.duid}) to get rooms`);
       const map_info = await this.roborockService.getMapInformation(vacuum.duid);
-      const rooms = map_info?.maps?.[0]?.rooms ?? [];
-      vacuum.rooms = rooms.map((room) => ({ id: room.id, name: room.displayName }) as Room);
+      const rooms = map_info?.allRooms ?? [];
+      vacuum.rooms = rooms.map((room) => ({ id: room.globalId, name: room.displayName }) as Room);
     }
 
     const roomMap = await getRoomMapFromDevice(vacuum, this);
@@ -244,8 +244,9 @@ export class RoborockMatterbridgePlatform extends MatterbridgeDynamicPlatform {
       this.log,
     );
 
-    const supportedAreas = getSupportedAreas(vacuum.rooms, roomMap, this.log);
+    const { supportedAreas, roomIndexMap } = getSupportedAreas(vacuum.rooms, roomMap, this.log);
     this.roborockService.setSupportedAreas(vacuum.duid, supportedAreas);
+    this.roborockService.setSupportedAreaIndexMap(vacuum.duid, roomIndexMap);
 
     let routineAsRoom: ServiceArea.Area[] = [];
     if (this.enableExperimentalFeature?.enableExperimentalFeature && this.enableExperimentalFeature.advancedFeature?.showRoutinesAsRoom) {
