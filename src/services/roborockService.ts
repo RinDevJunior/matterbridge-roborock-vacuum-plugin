@@ -253,7 +253,7 @@ export class RoborockService {
 
     const routineAreaIds = selectedAreaIds.filter((id) => supportedRoutines.some((r) => r.areaId === id));
     const roomAreaIds = selectedAreaIds.filter((id) => !supportedRoutines.some((r) => r.areaId === id));
-    const roomIds = roomAreaIds.map((areaId) => indexMap?.getRoomId(areaId)).filter((id): id is number => id !== undefined);
+    const roomIds = roomAreaIds.map((areaId) => indexMap?.getRoomId(areaId)).filter((roomId): roomId is number => roomId !== undefined);
 
     const resolvedSelection = [...routineAreaIds, ...roomIds];
     return this.messageRoutingService.startClean(duid, resolvedSelection, supportedRooms, supportedRoutines);
