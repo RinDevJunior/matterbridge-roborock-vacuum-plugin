@@ -4,18 +4,28 @@ All notable changes to this project will be documented in this file.
 
 ---
 
-## [1.1.4-rc08] - 2026-02-18
+## [1.1.4-rc08] - 2026-02-20
+
+### Added
+
+- **Configurable Matter vendor/product ID** — New "Override Matter Configuration" option under Advanced features. When enabled, you can set a custom vendor name, vendor ID, product name, and product ID used during Matter device discovery, replacing the plugin defaults.
+- **Troubleshooting guide for stuck-at-updating issue** — Added a detailed guide (`troubleshoot/STUCK_AT_UPDATING_ISSUE.md`) to help diagnose and resolve network switch compatibility problems that can cause the plugin to get stuck at the "Updating" phase.
+
+### Fixed
+
+- **Message listener stability** — `SimpleMessageListener` now silently ignores invalid or malformed messages instead of failing, improving overall communication reliability.
 
 ### Improvements
 
-- **Smarter charging state transitions** — The vacuum's operational state now automatically transitions between `Charging` and `Docked` based on battery charge state, so your smart home controller always reflects the correct docking status.
-- **Routine areas now grouped under a dedicated map** — Routines shown as rooms are now associated with a synthetic "Routine" map (id 999), enabling proper area grouping in the Matter service area cluster.
+- **Multi-map active map detection** — The plugin now correctly identifies which map is currently active when multiple maps are saved on the vacuum. Rooms are matched to the right map using room ID and name mappings, ensuring accurate area reporting.
+- **Cleaner start cleaning flow** — Cleaning initialization logic has been consolidated from `messageRoutingService` into `roborockService` for clearer responsibility and easier maintenance.
+- **Routine cleaning refactored** — The routine cleaning method has been restructured with a cleaner separation of concerns across `roborockService`, `areaManagementService`, and `messageRoutingService`.
 
 ### Internal
 
-- Tightened `RunModeConfig.modeTags` type from `number` to `RvcRunMode.ModeTag` for better type safety.
-- Added explicit `RvcOperationalState.OperationalState` type annotation to `currentOperationState` in error and battery handlers.
-- Added unit tests for `ResponseBroadcasterFactory` covering V1/B01 routing, fallback, `waitFor`, `cancelAll`, and context-based protocol version resolution.
+- Formatted `roborockService.changeCleanMode` for improved readability.
+- Added `roomMapInfoListener` to handle room-to-map data updates from device messages.
+- Updated tests for `MapInfo`, `RoomIndexMap`, `getSupportedAreas`, `platformRunner`, area management, and routing services.
 
 <a href="https://www.buymeacoffee.com/rinnvspktr" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/default-orange.png" alt="Buy Me A Coffee" height="41" width="174"></a>
 

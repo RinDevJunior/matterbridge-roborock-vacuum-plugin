@@ -20,7 +20,7 @@ import { MapInfo, RoomIndexMap } from '../core/application/models/index.js';
 import { CleanModeSetting } from '../behaviors/roborock.vacuum/core/CleanModeSetting.js';
 import { AuthenticationResponse } from '../model/AuthenticationResponse.js';
 import { WssSendSnackbarMessage } from '../types/WssSendSnackbarMessage.js';
-import { CleanCommand, CleanSelection } from '../model/CleanCommand.js';
+import { CleanCommand } from '../model/CleanCommand.js';
 
 export interface RoborockServiceConfig {
   authenticateApiFactory?: (logger: AnsiLogger, baseUrl: string) => RoborockAuthenticateApi;
@@ -247,11 +247,7 @@ export class RoborockService {
 
   /** Start cleaning with selected areas. */
   public async startClean(duid: string): Promise<void> {
-    const selections = this.resolveSelections(duid);
-    const supportedRooms = this.areaService.getSupportedAreas(duid) ?? [];
-    const supportedRoutines = this.areaService.getSupportedRoutines(duid) ?? [];
-
-    const command = this.resolveCleanCommand(selections, supportedRooms, supportedRoutines);
+    const command = this.buildCleanCommand(duid);
     return this.messageRoutingService.startClean(duid, command);
   }
 
@@ -298,62 +294,33 @@ export class RoborockService {
     return iotApi.getCustom(url) as Promise<T>;
   }
 
-  private resolveSelections(duid: string): CleanSelection[] {
+  private buildCleanCommand(duid: string): CleanCommand {
     const selectedAreaIds = this.areaService.getSelectedAreas(duid);
     const supportedRooms = this.areaService.getSupportedAreas(duid) ?? [];
     const supportedRoutines = this.areaService.getSupportedRoutines(duid) ?? [];
     const indexMap = this.areaService.getSupportedAreasIndexMap(duid);
 
-    const routineSelections = selectedAreaIds
-      .filter((areaId) => supportedRoutines.some((r) => r.areaId === areaId))
+    const selectedRoutines = selectedAreaIds
       .map((areaId) => supportedRoutines.find((r) => r.areaId === areaId))
       .filter((area): area is ServiceArea.Area => area !== undefined)
       .sort((a, b) => (a.areaInfo.locationInfo?.locationName ?? '').localeCompare(b.areaInfo.locationInfo?.locationName ?? ''));
 
-    if (routineSelections.length > 0) {
-      return [
-        {
-          type: 'routine',
-          areaId: routineSelections[0].areaId,
-        },
-      ];
+    if (selectedRoutines.length > 0) {
+      return { type: 'routine', routineId: selectedRoutines[0].areaId };
     }
 
-    const roomSelections = selectedAreaIds
+    const activeMapId = supportedRooms.find((r) => selectedAreaIds.includes(r.areaId))?.mapId;
+    const activeMapRooms = activeMapId != null ? supportedRooms.filter((r) => r.mapId === activeMapId) : supportedRooms;
+
+    const roomIds = selectedAreaIds
       .filter((areaId) => supportedRooms.some((r) => r.areaId === areaId))
-      .map((areaId) => {
-        const roomId = indexMap?.getRoomId(areaId);
-        if (roomId !== undefined) {
-          return { type: 'room', roomId };
-        }
-        return undefined;
-      })
-      .filter((s): s is { type: 'room'; roomId: number } => s !== undefined);
+      .map((areaId) => indexMap?.getRoomId(areaId))
+      .filter((id): id is number => id !== undefined);
 
-    return roomSelections;
-  }
-
-  private resolveCleanCommand(selections: CleanSelection[], supportedRooms: ServiceArea.Area[], supportedRoutines: ServiceArea.Area[]): CleanCommand {
-    const routines = selections.filter((s) => s.type === 'routine');
-
-    if (routines.length > 0) {
-      return {
-        type: 'routine',
-        routineId: routines[0].areaId,
-      };
-    }
-
-    const roomIds = selections.filter((s) => s.type === 'room').map((s) => s.roomId);
-
-    const shouldStartGlobal = roomIds.length === 0 || roomIds.length === supportedRooms.length || supportedRooms.length === 0;
-
-    if (shouldStartGlobal) {
+    if (roomIds.length === 0 || roomIds.length === activeMapRooms.length || activeMapRooms.length === 0) {
       return { type: 'global' };
     }
 
-    return {
-      type: 'room',
-      roomIds,
-    };
+    return { type: 'room', roomIds };
   }
 }
