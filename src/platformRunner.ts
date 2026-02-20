@@ -412,13 +412,15 @@ export class PlatformRunner {
       return;
     }
 
+    const supportedAreas = this.platform.roborockService.getSupportedAreas(robot.device.duid);
+    const activeArea = supportedAreas.find((x) => x.areaId === mappedArea);
     logger.debug(
       `Mapped area found:
         source_segment_id: ${source_segment_id},
         source_target_segment_id: ${source_target_segment_id},
         segment_id: ${segment_id},
         currentMappedAreas: ${debugStringify(roomIndexMap)},
-        result: ${debugStringify(mappedArea)}`,
+        activeArea: ${debugStringify(activeArea)}`,
     );
 
     robot.updateAttribute(ServiceArea.Cluster.id, 'currentArea', mappedArea, logger);
