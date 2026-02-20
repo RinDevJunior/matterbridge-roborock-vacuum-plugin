@@ -4,6 +4,16 @@ All notable changes to this project will be documented in this file.
 
 ---
 
+## [1.1.4-rc10] - 2026-02-21
+
+### Fixed
+
+- **Device identifier consistency** — `RoborockVacuumCleaner` now always uses `duid` as the device identifier instead of falling back to `serialNumber`. This ensures consistent device identity across all models, including those that do not report a serial number.
+
+<a href="https://www.buymeacoffee.com/rinnvspktr" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/default-orange.png" alt="Buy Me A Coffee" height="41" width="174"></a>
+
+---
+
 ## [1.1.4-rc09] - 2026-02-20
 
 ### Fixed
