@@ -4,6 +4,16 @@ All notable changes to this project will be documented in this file.
 
 ---
 
+## [1.1.4-rc12] - 2026-02-21
+
+### Fixed
+
+- **Device name uniqueness** — Device name now includes the `duid` suffix (`{name}-{duid}`) with whitespace stripped, preventing name collisions when multiple vacuums share the same display name.
+
+<a href="https://www.buymeacoffee.com/rinnvspktr" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/default-orange.png" alt="Buy Me A Coffee" height="41" width="174"></a>
+
+---
+
 ## [1.1.4-rc11] - 2026-02-21
 
 ### Fixed

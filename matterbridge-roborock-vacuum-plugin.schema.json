@@ -1,6 +1,6 @@
 {
   "title": "Matterbridge Roborock Vacuum Plugin",
-  "description": "matterbridge-roborock-vacuum-plugin v. 1.1.4-rc11 by https://github.com/RinDevJunior",
+  "description": "matterbridge-roborock-vacuum-plugin v. 1.1.4-rc12 by https://github.com/RinDevJunior",
   "type": "object",
   "properties": {
     "name": {
