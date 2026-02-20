@@ -4,6 +4,16 @@ All notable changes to this project will be documented in this file.
 
 ---
 
+## [1.1.4-rc09] - 2026-02-20
+
+### Fixed
+
+- **Plugin startup crash on old configs** — Fixed `TypeError: Cannot read properties of undefined (reading 'overrideMatterConfiguration')` that occurred when an existing config had an `advancedFeature` object without a nested `settings` block. Advanced feature settings are now safely accessed via config manager methods with proper `?? false` fallbacks, and `matterOverrideSettings` always returns a non-undefined value.
+
+<a href="https://www.buymeacoffee.com/rinnvspktr" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/default-orange.png" alt="Buy Me A Coffee" height="41" width="174"></a>
+
+---
+
 ## [1.1.4-rc08] - 2026-02-20
 
 ### Added

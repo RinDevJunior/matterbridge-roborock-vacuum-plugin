@@ -176,17 +176,18 @@ export class PlatformConfigManager {
 
   public get overrideMatterConfiguration(): boolean {
     if (this.isAdvancedFeatureEnabled) {
-      return this.advancedFeatureSettings.overrideMatterConfiguration;
+      return this.advancedFeatureSettings.overrideMatterConfiguration ?? false;
     }
     return false;
   }
 
-  public get matterOverrideSettings(): MatterOverrideSettings | undefined {
+  public get matterOverrideSettings(): MatterOverrideSettings {
+    const defaultSettings = createDefaultAdvancedFeature().settings.matterOverrideSettings;
     if (this.isAdvancedFeatureEnabled && this.overrideMatterConfiguration) {
-      return this.advancedFeatureSettings.matterOverrideSettings;
+      return this.advancedFeatureSettings.matterOverrideSettings ?? createDefaultAdvancedFeature().settings.matterOverrideSettings;
     }
 
-    return undefined;
+    return defaultSettings;
   }
 
   // ─── Device Filtering ───────────────────────────────────────────────────────

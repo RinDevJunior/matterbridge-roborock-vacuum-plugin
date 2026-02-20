@@ -129,9 +129,8 @@ export class DeviceConfigurator {
       rvc.hardwareVersion = isValidNumber(rvc.hardwareVersion, 0, UINT16_MAX) ? rvc.hardwareVersion : undefined;
       rvc.hardwareVersionString = isValidString(rvc.hardwareVersionString) ? rvc.hardwareVersionString.slice(0, 64) : undefined;
 
-      const advancedSettings = this.configManager.advancedFeatureSettings;
-      if (advancedSettings.overrideMatterConfiguration) {
-        const customMatterConfiguration = advancedSettings.matterOverrideSettings;
+      if (this.configManager.overrideMatterConfiguration) {
+        const customMatterConfiguration = this.configManager.matterOverrideSettings;
         this.platform.log.debug(`customMatterConfiguration: ${debugStringify(customMatterConfiguration)}`);
 
         rvc.vendorName = customMatterConfiguration.matterVendorName?.length > 0 ? customMatterConfiguration.matterVendorName : 'Matterbridge';
