@@ -293,9 +293,9 @@ describe('RoborockIoTApi', () => {
   });
 
   it('startScene should return result if present', async () => {
-    mockAxiosInstance.onPost('user/scene/1/execute').reply(200, { result: 'started' });
+    mockAxiosInstance.onPost('user/scene/1/execute').reply(200, { success: true });
     const result = await api.startScene(1);
-    expect(result).toBe('started');
+    expect(result).toBe(true);
   });
 
   it('startScene should log error and return undefined if result missing', async () => {
