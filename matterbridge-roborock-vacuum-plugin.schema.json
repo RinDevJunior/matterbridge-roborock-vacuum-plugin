@@ -106,10 +106,9 @@
           "default": false
         },
         "enableMultipleMap": {
-          "title": "[Not Available] Enable Multiple Maps",
+          "title": "Enable Multiple Maps",
           "description": "Enable multiple maps support.",
           "type": "boolean",
-          "ui:widget": "hidden",
           "default": false
         },
         "sanitizeSensitiveLogs": {

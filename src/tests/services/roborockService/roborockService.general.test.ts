@@ -7,6 +7,7 @@ import { createMockLogger, createMockLocalStorage, asPartial, asType } from '../
 import { localStorageMock } from '../../testData/localStorageMock.js';
 import { PlatformConfigManager as PlatformConfigManagerStatic } from '../../../platform/platformConfigManager.js';
 import { Device } from '../../../roborockCommunication/models/device.js';
+import { AreaInfo } from '../../../initialData/getSupportedAreas.js';
 
 const logger: AnsiLogger = createMockLogger();
 
@@ -78,7 +79,7 @@ describe('RoborockService basic behaviors', () => {
   it('maps selected area ids to room ids via RoomIndexMap in setSelectedAreas', () => {
     const map = new Map<number, any>();
     map.set(5, { roomId: 42, mapId: 1 });
-    const rim = new RoomIndexMap(map);
+    const rim = new RoomIndexMap(map, new Map());
 
     // Test public API
     svc.setSupportedAreaIndexMap('d1', rim);
@@ -267,10 +268,10 @@ describe('RoborockService - Facade Pattern Testing', () => {
       }).not.toThrow();
 
       // Create a valid RoomIndexMap with mock data
-      const mockRoomMap = new Map<number, { roomId: number; mapId: number }>();
-      mockRoomMap.set(1, { roomId: 10, mapId: 1 });
+      const mockRoomMap = new Map<number, AreaInfo>();
+      mockRoomMap.set(1, { roomId: 10, mapId: 1, roomName: 'rn-1' });
       expect(() => {
-        roborockService.setSupportedAreaIndexMap('device', new RoomIndexMap(mockRoomMap));
+        roborockService.setSupportedAreaIndexMap('device', new RoomIndexMap(mockRoomMap, new Map()));
       }).not.toThrow();
     });
   });

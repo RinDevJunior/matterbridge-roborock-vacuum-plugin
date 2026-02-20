@@ -20,7 +20,7 @@ import { VacuumStatus } from './model/VacuumStatus.js';
 import { CleanSequenceType } from './behaviors/roborock.vacuum/enums/CleanSequenceType.js';
 import { smartCleanModeConfigs } from './behaviors/roborock.vacuum/core/cleanModeConfig.js';
 
-type RobotHandler<T = unknown> = (robot: RoborockVacuumCleaner, data: T) => void;
+type RobotHandler<T = unknown> = (robot: RoborockVacuumCleaner, data: T) => void | Promise<void>;
 type PayloadHandler = (payload: MessagePayload) => void;
 
 export class PlatformRunner {
@@ -363,7 +363,7 @@ export class PlatformRunner {
    * Handle service area update messages and update robot service area attributes.
    * Processes service area changes (supported areas, maps, selected areas, current area).
    */
-  private handleServiceAreaUpdate(robot: RoborockVacuumCleaner, message: { state: OperationStatusCode; cleaningInfo: CleanInformation | undefined }): void {
+  private async handleServiceAreaUpdate(robot: RoborockVacuumCleaner, message: { state: OperationStatusCode; cleaningInfo: CleanInformation | undefined }): Promise<void> {
     const logger = this.platform.log;
 
     if (message.state === OperationStatusCode.Idle) {
@@ -385,25 +385,30 @@ export class PlatformRunner {
       return;
     }
 
-    const service = this.platform.roborockService;
-    if (!service) return;
+    const roomIndexMap = this.platform.roborockService?.getSupportedAreasIndexMap(robot.device.duid);
+    if (!roomIndexMap || !this.platform.roborockService) {
+      logger.error('No room mapping found.');
+      return;
+    }
 
-    const currentMappedAreas = service.getSupportedAreas(robot.device.duid);
+    const roomData = await this.platform.roborockService.getRoomMap(robot.device.duid, robot.homeInFo.activeMapId);
+    robot.homeInFo.activeMapId = robot.homeInFo.mapInfo.getActiveMapId(roomData);
 
     const source_segment_id = message.cleaningInfo.segment_id ?? INVALID_SEGMENT_ID;
     const source_target_segment_id = message.cleaningInfo.target_segment_id ?? INVALID_SEGMENT_ID;
     const segment_id = source_segment_id !== INVALID_SEGMENT_ID ? source_segment_id : source_target_segment_id; // 4
-    const mappedArea = currentMappedAreas?.find((x) => x.areaId == segment_id);
+    const mappedArea = roomIndexMap.getAreaId(segment_id, robot.homeInFo.activeMapId);
 
     if (!mappedArea) {
       logger.debug(
         `No mapped area found, skipping area mapping.
-          source_segment_id: ${source_segment_id}, 
-          source_target_segment_id: ${source_target_segment_id}, 
+          source_segment_id: ${source_segment_id},
+          source_target_segment_id: ${source_target_segment_id},
           segment_id: ${segment_id},
-          currentMappedAreas: ${debugStringify(currentMappedAreas)},
+          currentMappedAreas: ${debugStringify(roomIndexMap)},
           mappedArea: ${mappedArea}`,
       );
+      robot.updateAttribute(ServiceArea.Cluster.id, 'currentArea', null, logger);
       return;
     }
 
@@ -412,16 +417,10 @@ export class PlatformRunner {
         source_segment_id: ${source_segment_id},
         source_target_segment_id: ${source_target_segment_id},
         segment_id: ${segment_id},
-        currentMappedAreas: ${debugStringify(currentMappedAreas)},
+        currentMappedAreas: ${debugStringify(roomIndexMap)},
         result: ${debugStringify(mappedArea)}`,
     );
 
-    if (segment_id !== INVALID_SEGMENT_ID && mappedArea) {
-      robot.updateAttribute(ServiceArea.Cluster.id, 'currentArea', segment_id, logger);
-    }
-
-    if (segment_id === INVALID_SEGMENT_ID) {
-      robot.updateAttribute(ServiceArea.Cluster.id, 'currentArea', null, logger);
-    }
+    robot.updateAttribute(ServiceArea.Cluster.id, 'currentArea', mappedArea, logger);
   }
 }

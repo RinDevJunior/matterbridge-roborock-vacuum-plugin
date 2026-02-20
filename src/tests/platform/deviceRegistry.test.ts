@@ -66,7 +66,6 @@ function createMockRobot(serialNumber: string): RoborockVacuumCleaner {
   return {
     serialNumber,
     device: createMockDevice(serialNumber),
-    username: 'test@example.com',
   } as RoborockVacuumCleaner;
 }
 

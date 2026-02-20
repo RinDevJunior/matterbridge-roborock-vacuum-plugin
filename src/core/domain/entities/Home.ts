@@ -1,6 +1,6 @@
 import { MapInfo } from '../../application/models/MapInfo.js';
 import { RoomMap } from '../../application/models/RoomMap.js';
-import { RoomEntity } from './Room.js';
+import { RoomMapping } from '../../application/models/RoomMapping.js';
 
 /**
  * Domain entity representing a Roborock home.
@@ -12,9 +12,10 @@ export class HomeEntity {
     public readonly name: string,
     public readonly roomMap: RoomMap,
     public readonly mapInfo: MapInfo,
+    public activeMapId: number,
   ) {}
 
-  public get allRooms(): RoomEntity[] {
-    return this.roomMap.rooms.map((room) => new RoomEntity(room.id, room.iot_name));
+  public get rawRooms(): RoomMapping[] {
+    return this.roomMap.rooms.length > 0 ? this.roomMap.rooms : [];
   }
 }

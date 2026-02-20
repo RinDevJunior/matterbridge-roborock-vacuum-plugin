@@ -1,6 +1,6 @@
 import { RoboticVacuumCleaner } from 'matterbridge/devices';
 import { CommandHandlerData, MatterbridgeEndpointCommands } from 'matterbridge';
-import { getOperationalStates, getSupportedAreas, getSupportedCleanModes } from '../initialData/index.js';
+import { getOperationalStates, getSupportedAreas, getSupportedCleanModes, getSupportedRoutines } from '../initialData/index.js';
 import { AnsiLogger, debugStringify } from 'matterbridge/logger';
 import { BehaviorFactoryResult } from '../share/behaviorFactory.js';
 import { ModeBase, RvcOperationalState, ServiceArea } from 'matterbridge/matter/clusters';
@@ -11,24 +11,28 @@ import { PlatformConfigManager } from '../platform/platformConfigManager.js';
 import { baseRunModeConfigs, getRunModeOptions } from '../behaviors/roborock.vacuum/core/runModeConfig.js';
 import { CleanModeSetting } from '../behaviors/roborock.vacuum/core/CleanModeSetting.js';
 import { HomeEntity } from '../core/domain/entities/Home.js';
+import { RoborockService } from '../services/roborockService.js';
 
 interface IdentifyCommandRequest {
   identifyTime?: number;
 }
 
 export class RoborockVacuumCleaner extends RoboticVacuumCleaner {
-  username: string | undefined;
-  device: Device;
   dockStationStatus: DockStationStatus | undefined;
   cleanModeSetting: CleanModeSetting | undefined;
-  homeInfo: HomeEntity;
 
   /**
    * Create a new Roborock Vacuum Cleaner device.
    * Initializes the device with supported cleaning modes, run modes, areas, and routines.
    */
-  constructor(username: string, device: Device, homeInFo: HomeEntity, routineAsRoom: ServiceArea.Area[], configManager: PlatformConfigManager, log: AnsiLogger) {
-    const deviceConfig = RoborockVacuumCleaner.initializeDeviceConfiguration(device, homeInFo, routineAsRoom, configManager, log);
+  constructor(
+    public readonly device: Device,
+    public readonly homeInFo: HomeEntity,
+    configManager: PlatformConfigManager,
+    roborockService: RoborockService,
+    log: AnsiLogger,
+  ) {
+    const deviceConfig = RoborockVacuumCleaner.initializeDeviceConfiguration(device, homeInFo, configManager, roborockService, log);
 
     super(
       deviceConfig.deviceName,
@@ -59,10 +63,6 @@ export class RoborockVacuumCleaner extends RoboticVacuumCleaner {
       Supported Areas and Routines: ${debugStringify(deviceConfig.supportedAreaAndRoutines)},
       Supported Operational States: ${debugStringify(deviceConfig.operationalState)}`,
     );
-
-    this.username = username;
-    this.device = device;
-    this.homeInfo = homeInFo;
   }
 
   /**
@@ -115,7 +115,7 @@ export class RoborockVacuumCleaner extends RoboticVacuumCleaner {
   /**
    * Initialize device configuration including modes, areas, and maps.
    */
-  private static initializeDeviceConfiguration(device: Device, homeInFo: HomeEntity, routineAsRooms: ServiceArea.Area[], configManager: PlatformConfigManager, log: AnsiLogger) {
+  private static initializeDeviceConfiguration(device: Device, homeInFo: HomeEntity, configManager: PlatformConfigManager, roborockService: RoborockService, log: AnsiLogger) {
     const cleanModes = getSupportedCleanModes(device.specs.model, configManager);
     const operationalState = getOperationalStates();
     const result = getSupportedAreas(homeInFo, log);
@@ -131,6 +131,12 @@ export class RoborockVacuumCleaner extends RoboticVacuumCleaner {
       supportedAreas = supportedAreas.filter((area) => area.mapId === firstSupportedMap?.mapId);
     }
 
+    let routineAsRooms: ServiceArea.Area[] = [];
+    if (configManager.showRoutinesAsRoom) {
+      routineAsRooms = getSupportedRoutines(device.scenes ?? [], log);
+      roborockService.setSupportedRoutines(device.duid, routineAsRooms);
+    }
+
     // temporary use map id 999 for routine
     if (routineAsRooms.length > 0) {
       const mapForRoutine: ServiceArea.Map = { mapId: 999, name: 'Routine' };
@@ -139,6 +145,9 @@ export class RoborockVacuumCleaner extends RoboticVacuumCleaner {
         rt.mapId = 999;
       });
     }
+
+    roborockService.setSupportedAreas(device.duid, result.supportedAreas);
+    roborockService.setSupportedAreaIndexMap(device.duid, result.roomIndexMap);
 
     const supportedAreaAndRoutines = [...supportedAreas, ...routineAsRooms];
 

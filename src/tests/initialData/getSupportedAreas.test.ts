@@ -1,10 +1,11 @@
 import { getSupportedAreas } from '../../initialData/getSupportedAreas.js';
-import { RoomMap, RoomMapping, MapInfo, MapEntry } from '../../core/application/models/index.js';
+import { RoomMap, MapInfo, MapEntry } from '../../core/application/models/index.js';
 import { describe, it, expect, beforeEach, vi, test } from 'vitest';
 import type { RoomDto } from '../../roborockCommunication/models/index.js';
 import { makeLogger } from '../testUtils.js';
 import { HomeEntity } from '../../core/domain/entities/Home.js';
 import { RoomEntity } from '../../core/domain/entities/Room.js';
+// import { debugStringify } from 'matterbridge/logger';
 
 const mockLogger = makeLogger();
 
@@ -23,7 +24,7 @@ function createHomeEntity(vacuumRooms: RoomDto[], roomMap: RoomMap | undefined, 
     multi_map_count: mapInfos.length,
     map_info: mapDataDtos,
   });
-  return new HomeEntity(1, 'Test Home', roomMap ?? RoomMap.empty(), mapInfo);
+  return new HomeEntity(1, 'Test Home', roomMap ?? RoomMap.empty(), mapInfo, 0);
 }
 
 describe('getSupportedAreas (legacy)', () => {
@@ -32,19 +33,6 @@ describe('getSupportedAreas (legacy)', () => {
     const res = getSupportedAreas(homeEntity, makeLogger());
     expect(res.supportedAreas.length).toBe(1);
     expect(res.supportedAreas[0]?.areaInfo?.locationInfo?.locationName).toContain('Unknown');
-  });
-
-  test('detect duplicated areas returns duplicated sentinel', () => {
-    const rooms: RoomMapping[] = [
-      { id: 1, iot_name_id: '1', tag: 0, iot_map_id: 0, iot_name: 'Room1' },
-      { id: 1, iot_name_id: '1', tag: 0, iot_map_id: 0, iot_name: 'Room1' },
-    ];
-    const roomMap = new RoomMap(rooms);
-    const vacuumRooms: RoomDto[] = [{ id: 1, name: 'R1' }];
-    const homeEntity = createHomeEntity(vacuumRooms, roomMap, false);
-    const res = getSupportedAreas(homeEntity, makeLogger());
-    expect(res.supportedAreas.length).toBe(1);
-    expect(res.supportedAreas[0]?.areaInfo?.locationInfo?.locationName).toContain('Duplicated');
   });
 
   test('enableMultipleMap returns supportedMaps', () => {
@@ -288,11 +276,114 @@ describe('getSupportedAreas', () => {
       ],
     });
     const minLogger = makeLogger();
-    const homeInfo = new HomeEntity(123, 'My home', roomMap, mapInfo);
+    const homeInfo = new HomeEntity(123, 'My home', roomMap, mapInfo, 0);
     const { supportedAreas, supportedMaps } = getSupportedAreas(homeInfo, minLogger);
     const firstSupportedMap = supportedMaps.length > 0 ? supportedMaps[0] : undefined;
     const finalResult = supportedAreas.filter((area) => area.mapId === firstSupportedMap?.mapId);
 
     expect(finalResult.length).greaterThan(0);
+  });
+
+  it('real test 3', () => {
+    const roomMap = new RoomMap([
+      {
+        id: 1,
+        tag: 14,
+        iot_name_id: '11100845',
+        iot_map_id: 0,
+        iot_name: 'Kitchen',
+      },
+      {
+        id: 2,
+        tag: 9,
+        iot_name_id: '11100849',
+        iot_map_id: 0,
+        iot_name: 'Study',
+      },
+      {
+        id: 3,
+        tag: 6,
+        iot_name_id: '11100842',
+        iot_map_id: 0,
+        iot_name: 'Living room',
+      },
+      {
+        id: 4,
+        tag: 1,
+        iot_name_id: '11100847',
+        iot_map_id: 0,
+        iot_name: 'Bedroom',
+      },
+      {
+        id: 1,
+        tag: 6,
+        iot_name_id: '11100842',
+        iot_map_id: 1,
+        iot_name: 'Living room',
+      },
+      {
+        id: 2,
+        tag: 3,
+        iot_name_id: '12461114',
+        iot_map_id: 1,
+        iot_name: 'Guest bedroom',
+      },
+      {
+        id: 3,
+        tag: 2,
+        iot_name_id: '12461109',
+        iot_map_id: 1,
+        iot_name: 'Master bedroom',
+      },
+      {
+        id: 4,
+        tag: 7,
+        iot_name_id: '12461111',
+        iot_map_id: 1,
+        iot_name: 'Balcony',
+      },
+    ]);
+
+    const mapInfo = new MapInfo({
+      max_multi_map: 4,
+      max_bak_map: 1,
+      multi_map_count: 2,
+      map_info: [
+        {
+          mapFlag: 0,
+          add_time: 1753511673,
+          length: 0,
+          name: 'Map 1',
+          bak_maps: [
+            {
+              mapFlag: 4,
+              add_time: 1753578164,
+            },
+          ],
+        },
+        {
+          mapFlag: 1,
+          add_time: 1753579596,
+          length: 0,
+          name: 'Map 2',
+          bak_maps: [
+            {
+              mapFlag: 5,
+              add_time: 1753578579,
+            },
+          ],
+        },
+      ],
+    });
+
+    const minLogger = makeLogger();
+    const homeInfo = new HomeEntity(123, 'My home', roomMap, mapInfo, 0);
+    const { supportedAreas, supportedMaps, roomIndexMap } = getSupportedAreas(homeInfo, minLogger);
+
+    // console.log(`supportedAreas: ${debugStringify(supportedAreas)}`);
+    // console.log(`supportedMaps: ${debugStringify(supportedMaps)}`);
+    // console.log(`roomIndexMap: ${debugStringify(roomIndexMap)}`);
+    expect(supportedAreas.length).toEqual(8);
+    expect(supportedMaps.length).toEqual(2);
   });
 });

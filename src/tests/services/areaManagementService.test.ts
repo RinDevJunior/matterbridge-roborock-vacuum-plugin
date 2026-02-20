@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { AreaManagementService } from '../../services/areaManagementService.js';
 import { RoomIndexMap } from '../../core/application/models/index.js';
-import { MapInfo } from '../../initialData/getSupportedAreas.js';
+import { AreaInfo, SegmentInfo } from '../../initialData/getSupportedAreas.js';
 import { ServiceArea } from 'matterbridge/matter/clusters';
 import { DeviceError } from '../../errors/index.js';
 import { AnsiLogger } from 'matterbridge/logger';
@@ -147,11 +147,13 @@ describe('AreaManagementService', () => {
 
   describe('Area Index Map Management', () => {
     it('should set and get area index map', () => {
-      const roomMapData = new Map<number, MapInfo>([
-        [0, { roomId: 16, mapId: 1 } as MapInfo],
-        [1, { roomId: 17, mapId: 1 } as MapInfo],
+      const roomMapData = new Map<number, AreaInfo>([
+        [0, { roomId: 16, mapId: 1, roomName: 'rn-1' }],
+        [1, { roomId: 17, mapId: 1, roomName: 'rn-2' }],
       ]);
-      const indexMap = new RoomIndexMap(roomMapData);
+
+      const roomInfo = new Map<string, SegmentInfo>([]);
+      const indexMap = new RoomIndexMap(roomMapData, roomInfo);
 
       areaService.setSupportedAreaIndexMap(mockDeviceId, indexMap);
 
@@ -176,8 +178,9 @@ describe('AreaManagementService', () => {
     });
 
     it('should handle empty selection', () => {
-      const roomMapData = new Map<number, MapInfo>([[0, { roomId: 16, mapId: 1 } as MapInfo]]);
-      const indexMap = new RoomIndexMap(roomMapData);
+      const roomMapData = new Map<number, AreaInfo>([[0, { roomId: 16, mapId: 1, roomName: 'rn-1' }]]);
+      const roomInfo = new Map<string, SegmentInfo>([]);
+      const indexMap = new RoomIndexMap(roomMapData, roomInfo);
 
       areaService.setSupportedAreaIndexMap(mockDeviceId, indexMap);
       areaService.setSelectedAreas(mockDeviceId, []);
@@ -364,8 +367,9 @@ describe('AreaManagementService', () => {
       // Set up some data
       areaService.setSupportedAreas(mockDeviceId, mockAreas);
       areaService.setSupportedRoutines(mockDeviceId, mockRoutines);
-      const roomMapData = new Map<number, MapInfo>([[0, { roomId: 16, mapId: 1 } as MapInfo]]);
-      areaService.setSupportedAreaIndexMap(mockDeviceId, new RoomIndexMap(roomMapData));
+      const roomMapData = new Map<number, AreaInfo>([[0, { roomId: 16, mapId: 1, roomName: 'rn-1' }]]);
+      const roomInfo = new Map<string, SegmentInfo>([]);
+      areaService.setSupportedAreaIndexMap(mockDeviceId, new RoomIndexMap(roomMapData, roomInfo));
       areaService.setSelectedAreas(mockDeviceId, [0]);
 
       // Clear all
@@ -403,12 +407,13 @@ describe('AreaManagementService', () => {
       areaService.setSupportedAreas(mockDeviceId, mockAreas);
 
       // Setup index map
-      const roomMapData = new Map<number, MapInfo>([
-        [0, { roomId: 16, mapId: 1 } as MapInfo],
-        [1, { roomId: 17, mapId: 1 } as MapInfo],
-        [2, { roomId: 18, mapId: 1 } as MapInfo],
+      const roomMapData = new Map<number, AreaInfo>([
+        [0, { roomId: 16, mapId: 1, roomName: 'rn-1' }],
+        [1, { roomId: 17, mapId: 1, roomName: 'rn-2' }],
+        [2, { roomId: 18, mapId: 1, roomName: 'rn-3' }],
       ]);
-      areaService.setSupportedAreaIndexMap(mockDeviceId, new RoomIndexMap(roomMapData));
+      const roomInfo = new Map<string, SegmentInfo>([]);
+      areaService.setSupportedAreaIndexMap(mockDeviceId, new RoomIndexMap(roomMapData, roomInfo));
 
       // Setup routines
       areaService.setSupportedRoutines(mockDeviceId, mockRoutines);

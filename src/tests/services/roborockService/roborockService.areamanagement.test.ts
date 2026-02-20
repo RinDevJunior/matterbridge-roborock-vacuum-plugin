@@ -5,6 +5,7 @@ import { createMockIotApi, createMockAuthApi, createMockLocalStorage, createMock
 import { PlatformConfigManager as PlatformConfigManagerStatic } from '../../../platform/platformConfigManager.js';
 import type { AnsiLogger } from 'matterbridge/logger';
 import type { RoborockPluginPlatformConfig } from '../../../model/RoborockPluginPlatformConfig.js';
+import { SegmentInfo } from '../../../initialData/getSupportedAreas.js';
 
 describe('RoborockService - Area Management', () => {
   let roborockService: RoborockService;
@@ -67,13 +68,15 @@ describe('RoborockService - Area Management', () => {
       configManager,
     );
 
+    const roomInfo = new Map<string, SegmentInfo>([]);
     roborockService.setSupportedAreaIndexMap(
       'duid-123',
       new RoomIndexMap(
         new Map([
-          [1, { roomId: 1, mapId: 1 }],
-          [2, { roomId: 2, mapId: 2 }],
+          [1, { roomId: 1, mapId: 1, roomName: 'rn-1' }],
+          [2, { roomId: 2, mapId: 2, roomName: 'rn-2' }],
         ]),
+        roomInfo,
       ),
     );
   });

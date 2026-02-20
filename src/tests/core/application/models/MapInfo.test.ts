@@ -1,5 +1,5 @@
 import { MapInfo } from '../../../../core/application/models/MapInfo.js';
-import { MultipleMapDto, MapDataDto, MapRoomDto } from '../../../../roborockCommunication/models/home/index.js';
+import { MultipleMapDto } from '../../../../roborockCommunication/models/home/index.js';
 import { describe, it, expect } from 'vitest';
 
 describe('MapInfo', () => {
@@ -109,11 +109,11 @@ describe('MapInfo', () => {
 
       const mapInfo = new MapInfo(multimap);
 
-      expect(mapInfo.maps[0].rooms[0]).toHaveProperty('mapId', 10);
-      expect(mapInfo.maps[1].rooms[0]).toHaveProperty('mapId', 20);
+      expect(mapInfo.maps[0].rooms[0]).toHaveProperty('iot_map_id', 10);
+      expect(mapInfo.maps[1].rooms[0]).toHaveProperty('iot_map_id', 20);
       expect(mapInfo.allRooms).toHaveLength(2);
-      expect(mapInfo.allRooms[0]).toHaveProperty('mapId', 10);
-      expect(mapInfo.allRooms[1]).toHaveProperty('mapId', 20);
+      expect(mapInfo.allRooms[0]).toHaveProperty('iot_map_id', 10);
+      expect(mapInfo.allRooms[1]).toHaveProperty('iot_map_id', 20);
     });
 
     it('should decode URL-encoded map names', () => {
@@ -358,6 +358,169 @@ describe('MapInfo', () => {
       const mapInfo = new MapInfo(multimap);
 
       expect(mapInfo.hasRooms).toBe(false);
+    });
+
+    it('real data test 1', () => {
+      const multimap = {
+        max_multi_map: 4,
+        max_bak_map: 1,
+        multi_map_count: 2,
+        map_info: [
+          {
+            mapFlag: 0,
+            add_time: 1771060270,
+            length: 9,
+            name: 'First Map',
+            bak_maps: [{ mapFlag: 4, add_time: 1771577723 }],
+            rooms: [
+              {
+                id: 1,
+                tag: 14,
+                iot_name_id: '11100845',
+                iot_name: 'Kitchen',
+              },
+              {
+                id: 2,
+                tag: 9,
+                iot_name_id: '11100849',
+                iot_name: 'Study',
+              },
+              {
+                id: 3,
+                tag: 6,
+                iot_name_id: '11100842',
+                iot_name: 'Living room',
+              },
+              {
+                id: 4,
+                tag: 1,
+                iot_name_id: '11100847',
+                iot_name: 'Bedroom',
+              },
+            ],
+            furnitures: [],
+          },
+          {
+            mapFlag: 1,
+            add_time: 1771580198,
+            length: 0,
+            name: '',
+            bak_maps: [{ mapFlag: 5, add_time: 1771579916 }],
+            rooms: [
+              {
+                id: 1,
+                tag: 2,
+                iot_name_id: '12461109',
+                iot_name: 'Master bedroom',
+              },
+              {
+                id: 2,
+                tag: 9,
+                iot_name_id: '11100849',
+                iot_name: 'Study',
+              },
+              {
+                id: 3,
+                tag: 6,
+                iot_name_id: '11100842',
+                iot_name: 'Living room',
+              },
+              {
+                id: 4,
+                tag: 14,
+                iot_name_id: '11100845',
+                iot_name: 'Kitchen',
+              },
+            ],
+            furnitures: [],
+          },
+        ],
+      } satisfies MultipleMapDto;
+
+      const mapInfo = new MapInfo(multimap);
+
+      const roomForMap0 = mapInfo.allRooms.filter((x) => x.iot_map_id === 0);
+      const roomForMap1 = mapInfo.allRooms.filter((x) => x.iot_map_id === 1);
+
+      // console.log(mapInfo.allRooms);
+      expect(mapInfo.hasRooms).toBe(true);
+      expect(roomForMap0.length).toEqual(4);
+      expect(roomForMap1.length).toEqual(4);
+    });
+  });
+
+  describe('getActiveMapId', () => {
+    const multimap = {
+      max_multi_map: 4,
+      max_bak_map: 1,
+      multi_map_count: 2,
+      map_info: [
+        {
+          mapFlag: 0,
+          add_time: 1771060270,
+          length: 9,
+          name: 'First Map',
+          bak_maps: [{ mapFlag: 4, add_time: 1771577723 }],
+          rooms: [
+            { id: 1, tag: 14, iot_name_id: '11100845', iot_name: 'Kitchen' },
+            { id: 2, tag: 9, iot_name_id: '11100849', iot_name: 'Study' },
+            { id: 3, tag: 6, iot_name_id: '11100842', iot_name: 'Living room' },
+            { id: 4, tag: 1, iot_name_id: '11100847', iot_name: 'Bedroom' },
+          ],
+          furnitures: [],
+        },
+        {
+          mapFlag: 1,
+          add_time: 1771580198,
+          length: 4,
+          name: 'abcd',
+          bak_maps: [{ mapFlag: 5, add_time: 1771585501 }],
+          rooms: [
+            { id: 1, tag: 2, iot_name_id: '12461109', iot_name: 'Master bedroom' },
+            { id: 2, tag: 9, iot_name_id: '11100849', iot_name: 'Study' },
+            { id: 3, tag: 6, iot_name_id: '11100842', iot_name: 'Living room' },
+            { id: 4, tag: 14, iot_name_id: '11100845', iot_name: 'Kitchen' },
+          ],
+          furnitures: [],
+        },
+      ],
+    } satisfies MultipleMapDto;
+
+    it('should return mapFlag 0 when roomData matches first map', () => {
+      const mapInfo = new MapInfo(multimap);
+      const roomData = [
+        [1, '11100845', 14],
+        [2, '11100849', 9],
+        [3, '11100842', 6],
+        [4, '11100847', 1],
+      ] satisfies [number, string, number][];
+
+      expect(mapInfo.getActiveMapId(roomData)).toBe(0);
+    });
+
+    it('should return mapFlag 1 when roomData matches second map', () => {
+      const mapInfo = new MapInfo(multimap);
+      const roomData = [
+        [1, '12461109', 2],
+        [2, '11100849', 9],
+        [3, '11100842', 6],
+        [4, '11100845', 14],
+      ] satisfies [number, string, number][];
+
+      expect(mapInfo.getActiveMapId(roomData)).toBe(1);
+    });
+
+    it('should return 0 when roomData matches no map', () => {
+      const mapInfo = new MapInfo(multimap);
+      const roomData = [[1, 'unknown-room', 0]] satisfies [number, string, number][];
+
+      expect(mapInfo.getActiveMapId(roomData)).toBe(0);
+    });
+
+    it('should return 0 when roomData is empty', () => {
+      const mapInfo = new MapInfo(multimap);
+
+      expect(mapInfo.getActiveMapId([])).toBe(0);
     });
   });
 });

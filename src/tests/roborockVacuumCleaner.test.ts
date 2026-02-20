@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { RoborockVacuumCleaner } from '../types/roborockVacuumCleaner.js';
-import { ModeBase, ServiceArea } from 'matterbridge/matter/clusters';
+import { ModeBase } from 'matterbridge/matter/clusters';
 import { AnsiLogger } from 'matterbridge/logger';
 import { BehaviorFactoryResult } from '../share/behaviorFactory.js';
 import { asPartial, asType } from './testUtils.js';
@@ -9,6 +9,7 @@ import { PluginConfiguration, RoborockPluginPlatformConfig } from '../model/Robo
 import { HomeEntity } from '../core/domain/entities/Home.js';
 import { MapInfo } from '../core/application/models/MapInfo.js';
 import { RoomMap } from '../core/application/models/RoomMap.js';
+import { RoborockService } from '../services/roborockService.js';
 
 function createMockLogger(): AnsiLogger {
   return asType<AnsiLogger>({
@@ -28,6 +29,7 @@ describe('RoborockVacuumCleaner', () => {
   let logger: AnsiLogger;
   let vacuum: RoborockVacuumCleaner;
   let configManager: PlatformConfigManager;
+  let roborockService: RoborockService;
 
   beforeEach(() => {
     device = {
@@ -40,7 +42,7 @@ describe('RoborockVacuumCleaner', () => {
     };
     const roomMap = new RoomMap([]);
     const mapInfo = MapInfo.empty();
-    homeInfo = new HomeEntity(1, 'Test Home', roomMap, mapInfo);
+    homeInfo = new HomeEntity(1, 'Test Home', roomMap, mapInfo, 0);
     routineAsRoom = [];
     configManager = PlatformConfigManager.create(
       asPartial<RoborockPluginPlatformConfig>({
@@ -52,13 +54,17 @@ describe('RoborockVacuumCleaner', () => {
       createMockLogger(),
     );
     logger = createMockLogger();
-    vacuum = new RoborockVacuumCleaner('user@example.com', device, homeInfo, routineAsRoom, configManager, logger);
+    roborockService = asPartial<RoborockService>({
+      setSupportedRoutines: vi.fn(),
+      setSupportedAreas: vi.fn(),
+      setSupportedAreaIndexMap: vi.fn(),
+    });
+    vacuum = new RoborockVacuumCleaner(device, homeInfo, configManager, roborockService, logger);
   });
 
   it('should construct with correct properties', () => {
     expect(vacuum).toBeInstanceOf(RoborockVacuumCleaner);
     expect(vacuum.device).toBe(device);
-    expect(vacuum.username).toBe('user@example.com');
   });
 
   it('should call behaviorHandler for identify command', async () => {
@@ -157,8 +163,8 @@ describe('RoborockVacuumCleaner', () => {
     });
     const configManager = PlatformConfigManager.create(expConfig, expLogger);
     const dev = { ...device, data: { model: 'roborock.s7', firmwareVersion: '2.0.0' } };
-    const testHomeInfo = new HomeEntity(1, 'Test', new RoomMap([]), MapInfo.empty());
-    const result = RoborockVacuumCleaner['initializeDeviceConfiguration'](dev, testHomeInfo, [asPartial<ServiceArea.Area>({ areaId: 1 })], configManager, expLogger);
+    const testHomeInfo = new HomeEntity(1, 'Test', new RoomMap([]), MapInfo.empty(), 0);
+    const result = RoborockVacuumCleaner['initializeDeviceConfiguration'](dev, testHomeInfo, configManager, roborockService, expLogger);
     expect(result.cleanModes).toBeDefined();
     expect(result.supportedAreas).toBeDefined();
     expect(result.supportedMaps).toBeDefined();
@@ -207,8 +213,8 @@ describe('RoborockVacuumCleaner', () => {
       },
     });
     const configManager = PlatformConfigManager.create(minConfig, minLogger);
-    const testHomeInfo = new HomeEntity(1, 'Test', new RoomMap([]), MapInfo.empty());
-    const result = RoborockVacuumCleaner['initializeDeviceConfiguration'](device, testHomeInfo, [], configManager, minLogger);
+    const testHomeInfo = new HomeEntity(1, 'Test', new RoomMap([]), MapInfo.empty(), 0);
+    const result = RoborockVacuumCleaner['initializeDeviceConfiguration'](device, testHomeInfo, configManager, roborockService, minLogger);
     expect(result.cleanModes).toBeDefined();
     expect(result.supportedAreas).toBeDefined();
     expect(result.supportedMaps).toBeDefined();

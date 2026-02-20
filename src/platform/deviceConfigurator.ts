@@ -1,7 +1,7 @@
 import type { AnsiLogger } from 'matterbridge/logger';
 import { debugStringify } from 'matterbridge/logger';
 import { MatterbridgeDynamicPlatform, MatterbridgeEndpoint, bridgedNode } from 'matterbridge';
-import { BridgedDeviceBasicInformation, Descriptor, Identify, ServiceArea } from 'matterbridge/matter/clusters';
+import { BridgedDeviceBasicInformation, Descriptor, Identify } from 'matterbridge/matter/clusters';
 import { isValidNumber, isValidString } from 'matterbridge/utils';
 import { UINT16_MAX, UINT32_MAX } from 'matterbridge/matter';
 import { PlatformConfigManager } from './platformConfigManager.js';
@@ -13,7 +13,6 @@ import { RoomMap } from '../core/application/models/index.js';
 import { HomeEntity } from '../core/domain/entities/Home.js';
 import { RoborockVacuumCleaner } from '../types/roborockVacuumCleaner.js';
 import { configureBehavior } from '../share/behaviorFactory.js';
-import { getSupportedAreas, getSupportedRoutines } from '../initialData/index.js';
 
 /**
  * Handles device configuration: local network setup, room mapping,
@@ -73,8 +72,6 @@ export class DeviceConfigurator {
   }
 
   private async configureDevice(vacuum: Device, roborockService: RoborockService): Promise<boolean> {
-    const username = this.configManager.username;
-
     const connectedToLocalNetwork = await roborockService.initializeMessageClientForLocal(vacuum);
 
     if (!connectedToLocalNetwork) {
@@ -83,11 +80,13 @@ export class DeviceConfigurator {
     }
 
     // Fetch rooms if not already available
-    const { mapInfo, roomMap } = await RoomMap.fromMapInfo(vacuum, { roborockService, log: this.log });
+    const { activeMapId, mapInfo, roomMap } = await RoomMap.fromMapInfo(vacuum, { roborockService, log: this.log });
     this.log.debug('Initializing - roomMap: ', debugStringify(roomMap));
 
     const homeData = vacuum.store.homeData;
-    const homeInfo = new HomeEntity(homeData.id, homeData.name, roomMap, mapInfo);
+    const homeInfo = new HomeEntity(homeData.id, homeData.name, roomMap, mapInfo, activeMapId);
+
+    const robot = new RoborockVacuumCleaner(vacuum, homeInfo, this.configManager, roborockService, this.log);
 
     const behaviorHandler = configureBehavior(
       vacuum.specs.model,
@@ -99,17 +98,6 @@ export class DeviceConfigurator {
       this.log,
     );
 
-    const { supportedAreas, roomIndexMap } = getSupportedAreas(homeInfo, this.log);
-    roborockService.setSupportedAreas(vacuum.duid, supportedAreas);
-    roborockService.setSupportedAreaIndexMap(vacuum.duid, roomIndexMap);
-
-    let routineAsRooms: ServiceArea.Area[] = [];
-    if (this.configManager.showRoutinesAsRoom) {
-      routineAsRooms = getSupportedRoutines(vacuum.scenes ?? [], this.log);
-      roborockService.setSupportedRoutines(vacuum.duid, routineAsRooms);
-    }
-
-    const robot = new RoborockVacuumCleaner(username, vacuum, homeInfo, routineAsRooms, this.configManager, this.log);
     robot.configureHandler(behaviorHandler);
 
     this.log.info('vacuum:', debugStringify(vacuum));

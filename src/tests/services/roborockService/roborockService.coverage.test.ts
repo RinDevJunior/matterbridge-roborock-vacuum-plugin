@@ -292,7 +292,7 @@ describe('RoborockService - Complete Coverage', () => {
     });
 
     it('should delegate setSupportedAreaIndexMap to areaService', () => {
-      const indexMap = new RoomIndexMap(new Map());
+      const indexMap = new RoomIndexMap(new Map(), new Map());
 
       service.setSupportedAreaIndexMap('duid', indexMap);
 
@@ -318,7 +318,7 @@ describe('RoborockService - Complete Coverage', () => {
     });
 
     it('should delegate getSupportedAreasIndexMap to areaService', () => {
-      const indexMap = new RoomIndexMap(new Map());
+      const indexMap = new RoomIndexMap(new Map(), new Map());
       vi.mocked(mockAreaService.getSupportedAreasIndexMap).mockReturnValue(indexMap);
 
       const result = service.getSupportedAreasIndexMap('duid');
