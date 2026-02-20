@@ -4,6 +4,22 @@ All notable changes to this project will be documented in this file.
 
 ---
 
+## [1.1.4-rc11] - 2026-02-21
+
+### Fixed
+
+- **Routine scene ID off-by-offset** — `buildCleanCommand` now subtracts `SCENE_AREA_ID_MIN` from the Matter `areaId` before passing it to `startScene`, recovering the correct Roborock scene ID. Previously the Matter offset was included, causing the wrong scene to be triggered and the vacuum doing nothing.
+- **`startScene` response parsing** — `startScene` now checks `apiResponse.success` instead of `apiResponse.result`. The Roborock execute-scene endpoint returns `{"success": true}` with no `result` field; the old check always evaluated to falsy and logged a false failure even when the API call succeeded.
+
+### Internal
+
+- Extracted Hawk authentication logic into private `getHawkAuthentication` and `processExtraHawkValues` methods on `RoborockIoTApi`, matching the Python reference implementation. Nonce now uses URL-safe base64url encoding and the header format matches the Python library exactly.
+- Added `success` and `status` fields to `ApiResponse<T>`.
+
+<a href="https://www.buymeacoffee.com/rinnvspktr" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/default-orange.png" alt="Buy Me A Coffee" height="41" width="174"></a>
+
+---
+
 ## [1.1.4-rc10] - 2026-02-21
 
 ### Fixed

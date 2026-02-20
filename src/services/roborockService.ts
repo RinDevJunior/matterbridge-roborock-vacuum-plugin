@@ -21,6 +21,7 @@ import { CleanModeSetting } from '../behaviors/roborock.vacuum/core/CleanModeSet
 import { AuthenticationResponse } from '../model/AuthenticationResponse.js';
 import { WssSendSnackbarMessage } from '../types/WssSendSnackbarMessage.js';
 import { CleanCommand } from '../model/CleanCommand.js';
+import { SCENE_AREA_ID_MIN } from '../constants/index.js';
 
 export interface RoborockServiceConfig {
   authenticateApiFactory?: (logger: AnsiLogger, baseUrl: string) => RoborockAuthenticateApi;
@@ -306,7 +307,7 @@ export class RoborockService {
       .sort((a, b) => (a.areaInfo.locationInfo?.locationName ?? '').localeCompare(b.areaInfo.locationInfo?.locationName ?? ''));
 
     if (selectedRoutines.length > 0) {
-      return { type: 'routine', routineId: selectedRoutines[0].areaId };
+      return { type: 'routine', routineId: selectedRoutines[0].areaId - SCENE_AREA_ID_MIN };
     }
 
     const activeMapId = supportedRooms.find((r) => selectedAreaIds.includes(r.areaId))?.mapId;
