@@ -33,7 +33,7 @@ const configCache = new Map<string, BehaviorConfig>();
  */
 export function buildBehaviorConfig(model: string): BehaviorConfig {
   if (configCache.has(model)) {
-    return configCache.get(model)!;
+    return configCache.get(model) as BehaviorConfig;
   }
 
   const withSmartPlan = hasSmartPlan(model);

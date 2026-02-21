@@ -26,5 +26,5 @@ export function getCleanModeResolver(model: DeviceModel, forceRunAtDefault: bool
     resolverCache.set(key, resolver);
   }
 
-  return resolverCache.get(key)!;
+  return resolverCache.get(key) as ModeResolver;
 }
