@@ -6,6 +6,7 @@ export class CleanModeSetting {
     public readonly waterFlow: number,
     public readonly distance_off: number,
     public readonly mopRoute: number | undefined,
+    public readonly sequenceType: number | undefined,
   ) {}
 
   public get hasFullSettings(): boolean {
@@ -13,10 +14,18 @@ export class CleanModeSetting {
   }
 
   public get isSmartMode(): boolean {
-    return this.suctionPower === VacuumSuctionPower.Smart || this.waterFlow === MopWaterFlow.Smart || this.mopRoute === MopRoute.Smart;
+    return (
+      this.suctionPower === VacuumSuctionPower.Smart ||
+      this.waterFlow === MopWaterFlow.Smart ||
+      this.mopRoute === MopRoute.Smart
+    );
   }
 
   public get isCustomMode(): boolean {
-    return this.suctionPower === VacuumSuctionPower.Custom || this.waterFlow === MopWaterFlow.Custom || this.mopRoute === MopRoute.Custom;
+    return (
+      this.suctionPower === VacuumSuctionPower.Custom ||
+      this.waterFlow === MopWaterFlow.Custom ||
+      this.mopRoute === MopRoute.Custom
+    );
   }
 }

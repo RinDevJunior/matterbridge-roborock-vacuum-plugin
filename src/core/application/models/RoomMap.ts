@@ -35,7 +35,9 @@ export class RoomMap {
 
   public getRooms(map_info: MapReference[], enableMultipleMap = false): RoomMapping[] {
     const mapid = map_info[0]?.id ?? 0;
-    return enableMultipleMap ? this.roomMappings : this.roomMappings.filter((room) => room.iot_map_id === undefined || room.iot_map_id === mapid);
+    return enableMultipleMap
+      ? this.roomMappings
+      : this.roomMappings.filter((room) => room.iot_map_id === undefined || room.iot_map_id === mapid);
   }
 
   /**
@@ -51,26 +53,28 @@ export class RoomMap {
 
     // Try to get map information first
     const mapInfo = await context.roborockService.getMapInfo(vacuum.duid);
+    const roomData = await context.roborockService.getRoomMap(vacuum.duid, -1);
+
     vacuum.mapInfos = mapInfo.maps;
+    let activeMapId = mapInfo.maps?.[0]?.id ?? 0;
     if (mapInfo.hasRooms) {
       context.log.info(`fromMapInfo - mapInfo: ${debugStringify(mapInfo)}`);
       context.log.info(`fromMapInfo - rooms: ${debugStringify(rooms)}`);
       const roomMappings = mapInfo.allRooms.map((dto) => HomeModelMapper.toRoomMapping(dto, rooms));
-      return { activeMapId: 0, mapInfo, roomMap: new RoomMap(roomMappings) };
+      activeMapId = mapInfo.getActiveMapId(roomData);
+
+      return { activeMapId: activeMapId, mapInfo, roomMap: new RoomMap(roomMappings) };
     }
 
-    const activeMap = 0;
+    // // Fall back to room maps
 
-    // Fall back to room maps
-    const roomData = await context.roborockService.getRoomMap(vacuum.duid, activeMap);
-
-    const mapRoomDtos = roomData.map((raw) => HomeModelMapper.rawArrayToMapRoomDto(raw, activeMap));
+    const mapRoomDtos = roomData.map((raw) => HomeModelMapper.rawArrayToMapRoomDto(raw, activeMapId));
     const roomMappings = mapRoomDtos.map((dto) => HomeModelMapper.toRoomMapping(dto, rooms));
     const roomMap = new RoomMap(roomMappings);
 
     context.log.debug(`fromMapInfo - Room mapping for device ${vacuum.duid}: ${debugStringify(roomMap)}`);
 
-    return { activeMapId: 0, mapInfo, roomMap };
+    return { activeMapId: activeMapId, mapInfo, roomMap };
   }
 
   public static empty(): RoomMap {

@@ -1,6 +1,11 @@
 import { RoboticVacuumCleaner } from 'matterbridge/devices';
 import { CommandHandlerData, MatterbridgeEndpointCommands } from 'matterbridge';
-import { getOperationalStates, getSupportedAreas, getSupportedCleanModes } from '../initialData/index.js';
+import {
+  getOperationalStates,
+  getSupportedAreas,
+  getSupportedCleanModes,
+  getSupportedRoutines,
+} from '../initialData/index.js';
 import { AnsiLogger, debugStringify } from 'matterbridge/logger';
 import { BehaviorFactoryResult } from '../share/behaviorFactory.js';
 import { ModeBase, RvcOperationalState, ServiceArea } from 'matterbridge/matter/clusters';
@@ -11,31 +16,34 @@ import { PlatformConfigManager } from '../platform/platformConfigManager.js';
 import { baseRunModeConfigs, getRunModeOptions } from '../behaviors/roborock.vacuum/core/runModeConfig.js';
 import { CleanModeSetting } from '../behaviors/roborock.vacuum/core/CleanModeSetting.js';
 import { HomeEntity } from '../core/domain/entities/Home.js';
+import { RoborockService } from '../services/roborockService.js';
 
 interface IdentifyCommandRequest {
   identifyTime?: number;
 }
 
 export class RoborockVacuumCleaner extends RoboticVacuumCleaner {
-  username: string | undefined;
-  device: Device;
   dockStationStatus: DockStationStatus | undefined;
   cleanModeSetting: CleanModeSetting | undefined;
-  homeInfo: HomeEntity;
 
   /**
    * Create a new Roborock Vacuum Cleaner device.
    * Initializes the device with supported cleaning modes, run modes, areas, and routines.
    */
-  constructor(username: string, device: Device, homeInFo: HomeEntity, routineAsRoom: ServiceArea.Area[], configManager: PlatformConfigManager, log: AnsiLogger) {
-    const deviceConfig = RoborockVacuumCleaner.initializeDeviceConfiguration(device, homeInFo, routineAsRoom, configManager, log);
-    const firstSupportedMap = deviceConfig.supportedMaps.length > 0 ? deviceConfig.supportedMaps[0] : undefined;
-    const supportedMaps = deviceConfig.supportedMaps;
-    if (!configManager.isMultipleMapEnabled) {
-      supportedMaps.splice(1); // Keep only the first map
-      deviceConfig.supportedAreas = deviceConfig.supportedAreas.filter((area) => area.mapId === firstSupportedMap?.mapId);
-      deviceConfig.supportedAreaAndRoutines = deviceConfig.supportedAreaAndRoutines.filter((area) => area.mapId === firstSupportedMap?.mapId);
-    }
+  constructor(
+    public readonly device: Device,
+    public readonly homeInFo: HomeEntity,
+    configManager: PlatformConfigManager,
+    roborockService: RoborockService,
+    log: AnsiLogger,
+  ) {
+    const deviceConfig = RoborockVacuumCleaner.initializeDeviceConfiguration(
+      device,
+      homeInFo,
+      configManager,
+      roborockService,
+      log,
+    );
 
     super(
       deviceConfig.deviceName,
@@ -52,7 +60,7 @@ export class RoborockVacuumCleaner extends RoboticVacuumCleaner {
       deviceConfig.supportedAreaAndRoutines,
       undefined,
       deviceConfig.supportedAreas[0].areaId,
-      supportedMaps,
+      deviceConfig.supportedMaps,
     );
 
     log.debug(
@@ -66,10 +74,6 @@ export class RoborockVacuumCleaner extends RoboticVacuumCleaner {
       Supported Areas and Routines: ${debugStringify(deviceConfig.supportedAreaAndRoutines)},
       Supported Operational States: ${debugStringify(deviceConfig.operationalState)}`,
     );
-
-    this.username = username;
-    this.device = device;
-    this.homeInfo = homeInFo;
   }
 
   /**
@@ -77,15 +81,22 @@ export class RoborockVacuumCleaner extends RoboticVacuumCleaner {
    * Sets up handlers for identify, area selection, mode changes, and cleaning operations.
    */
   public configureHandler(behaviorHandler: BehaviorFactoryResult): void {
-    this.addCommandHandlerWithErrorHandling(CommandNames.IDENTIFY, async ({ request, cluster, attributes, endpoint }) => {
-      this.log.info(`Identify command received for endpoint ${endpoint}, cluster ${cluster}, attributes ${debugStringify(attributes)}, request: ${JSON.stringify(request)}`);
-      behaviorHandler.executeCommand(CommandNames.IDENTIFY, (request as IdentifyCommandRequest).identifyTime ?? 5);
-    });
+    this.addCommandHandlerWithErrorHandling(
+      CommandNames.IDENTIFY,
+      async ({ request, cluster, attributes, endpoint }) => {
+        this.log.info(
+          `Identify command received for endpoint ${endpoint}, cluster ${cluster}, attributes ${debugStringify(attributes)}, request: ${JSON.stringify(request)}`,
+        );
+        behaviorHandler.executeCommand(CommandNames.IDENTIFY, (request as IdentifyCommandRequest).identifyTime ?? 5);
+      },
+    );
 
     this.addCommandHandlerWithErrorHandling(CommandNames.SELECT_AREAS, async ({ request }) => {
       const { newAreas } = request as ServiceArea.SelectAreasRequest;
       if (!newAreas || newAreas.length === 0) {
-        this.log.info('selectAreas called with empty or undefined areas, it means selecting no areas or all areas, ignoring.');
+        this.log.info(
+          'selectAreas called with empty or undefined areas, it means selecting no areas or all areas, ignoring.',
+        );
         return;
       }
       this.log.info(`Selecting areas: ${newAreas.join(', ')}`);
@@ -122,16 +133,48 @@ export class RoborockVacuumCleaner extends RoboticVacuumCleaner {
   /**
    * Initialize device configuration including modes, areas, and maps.
    */
-  private static initializeDeviceConfiguration(device: Device, homeInFo: HomeEntity, routineAsRoom: ServiceArea.Area[], configManager: PlatformConfigManager, log: AnsiLogger) {
+  private static initializeDeviceConfiguration(
+    device: Device,
+    homeInFo: HomeEntity,
+    configManager: PlatformConfigManager,
+    roborockService: RoborockService,
+    log: AnsiLogger,
+  ) {
     const cleanModes = getSupportedCleanModes(device.specs.model, configManager);
     const operationalState = getOperationalStates();
-
-    const { supportedAreas, supportedMaps } = getSupportedAreas(homeInFo, log);
-    const supportedAreaAndRoutines = [...supportedAreas, ...routineAsRoom];
+    const result = getSupportedAreas(homeInFo, log);
+    const supportedMaps = result.supportedMaps;
+    let supportedAreas = result.supportedAreas;
     const runModeConfigs = getRunModeOptions(baseRunModeConfigs);
-    const deviceName = `${device.name}-${device.duid}`.replace(/\s+/g, '');
 
     const bridgeMode: 'server' | 'matter' = configManager.isServerModeEnabled ? 'server' : 'matter';
+
+    const firstSupportedMap = supportedMaps.length > 0 ? supportedMaps[0] : undefined;
+    if (!configManager.isMultipleMapEnabled) {
+      supportedMaps.splice(1); // Keep only the first map
+      supportedAreas = supportedAreas.filter((area) => area.mapId === firstSupportedMap?.mapId);
+    }
+
+    let routineAsRooms: ServiceArea.Area[] = [];
+    if (configManager.showRoutinesAsRoom) {
+      routineAsRooms = getSupportedRoutines(device.scenes ?? [], log);
+      roborockService.setSupportedRoutines(device.duid, routineAsRooms);
+    }
+
+    // temporary use map id 999 for routine
+    if (routineAsRooms.length > 0) {
+      const mapForRoutine: ServiceArea.Map = { mapId: 999, name: 'Routine' };
+      supportedMaps.push(mapForRoutine);
+      routineAsRooms.forEach((rt) => {
+        rt.mapId = 999;
+      });
+    }
+
+    roborockService.setSupportedAreas(device.duid, result.supportedAreas);
+    roborockService.setSupportedAreaIndexMap(device.duid, result.roomIndexMap);
+
+    const supportedAreaAndRoutines = [...supportedAreas, ...routineAsRooms];
+    const deviceName = `${device.name}-${device.duid}`.replace(/\s+/g, '');
 
     return {
       deviceName,
@@ -149,7 +192,10 @@ export class RoborockVacuumCleaner extends RoboticVacuumCleaner {
    * Helper method to add command handler with error handling.
    * Wraps handler logic in try-catch to avoid code duplication.
    */
-  private addCommandHandlerWithErrorHandling(commandName: keyof MatterbridgeEndpointCommands, handler: (context: CommandHandlerData) => Promise<void>): void {
+  private addCommandHandlerWithErrorHandling(
+    commandName: keyof MatterbridgeEndpointCommands,
+    handler: (context: CommandHandlerData) => Promise<void>,
+  ): void {
     this.addCommandHandler(commandName, async (context: CommandHandlerData) => {
       try {
         await handler(context);

@@ -1,13 +1,11 @@
 import { AnsiLogger } from 'matterbridge/logger';
-import type { IAuthGateway } from '../../core/ports/IAuthGateway.js';
 import { RoborockAuthenticateApi } from '../api/authClient.js';
 import { UserData } from '../models/index.js';
 
 /**
- * Roborock implementation of IAuthGateway.
  * Adapts the RoborockAuthenticateApi to the domain port interface.
  */
-export class RoborockAuthGateway implements IAuthGateway {
+export class RoborockAuthGateway {
   public constructor(
     private readonly authApi: RoborockAuthenticateApi,
     private readonly logger: AnsiLogger,

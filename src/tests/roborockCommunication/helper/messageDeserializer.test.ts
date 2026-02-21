@@ -43,7 +43,8 @@ describe('MessageDeserializer', () => {
 
   it('parses rpc_response and returns a body with parsed dps', async () => {
     vi.spyOn(MessageSerializerFactory.prototype, 'getMessageSerializer').mockReturnValue({
-      encode: (_payload: string, _localKey: string, _timestamp: number, _sequence: number, _nonce: number) => Buffer.alloc(0),
+      encode: (_payload: string, _localKey: string, _timestamp: number, _sequence: number, _nonce: number) =>
+        Buffer.alloc(0),
       decode: (_payload: Buffer) => Buffer.from(JSON.stringify({ dps: { '102': JSON.stringify({ x: 1 }) } })),
     });
 
@@ -81,7 +82,8 @@ describe('MessageDeserializer', () => {
 
   it('handles unknown protocol and returns ResponseMessage without throwing', async () => {
     vi.spyOn(MessageSerializerFactory.prototype, 'getMessageSerializer').mockReturnValue({
-      encode: (_payload: string, _localKey: string, _timestamp: number, _sequence: number, _nonce: number) => Buffer.alloc(0),
+      encode: (_payload: string, _localKey: string, _timestamp: number, _sequence: number, _nonce: number) =>
+        Buffer.alloc(0),
       decode: (_payload: Buffer) => Buffer.from(JSON.stringify({ dps: { test: 'data' } })),
     });
 
@@ -110,5 +112,108 @@ describe('MessageDeserializer', () => {
     const res = des.deserialize('duid', full, 'from');
     expect(res).toBeDefined();
     expect(logger.error).toHaveBeenCalledWith('unknown protocol: 999');
+  });
+
+  it('throws on CRC32 mismatch', () => {
+    vi.spyOn(MessageSerializerFactory.prototype, 'getMessageSerializer').mockReturnValue({
+      encode: (_payload: string, _localKey: string, _timestamp: number, _sequence: number, _nonce: number) =>
+        Buffer.alloc(0),
+      decode: (_payload: Buffer) => Buffer.from(JSON.stringify({ dps: {} })),
+    });
+
+    const context = new MessageContext(asType<UserData>({ rriot: { k: 'k' } }));
+    context.registerDevice('duid', 'local', 'A01', 9);
+    const des = new MessageDeserializer(context, logger);
+
+    const header = Buffer.alloc(17);
+    header.write('A01', 0, 3, 'ascii');
+    header.writeUInt32BE(1, 3);
+    header.writeUInt32BE(2, 7);
+    header.writeUInt32BE(3, 11);
+    header.writeUInt16BE(Protocol.rpc_response, 15);
+
+    const decodedPayload = Buffer.from('encrypted');
+    const contentLen = Buffer.alloc(2);
+    contentLen.writeUInt16BE(decodedPayload.length, 0);
+
+    const preCrc = Buffer.concat([header, contentLen, decodedPayload]);
+    const badCrcBuf = Buffer.alloc(4);
+    badCrcBuf.writeUInt32BE(0xdeadbeef, 0);
+
+    const full = Buffer.concat([preCrc, badCrcBuf]);
+
+    expect(() => des.deserialize('duid', full, 'from')).toThrow(/Wrong CRC32/);
+  });
+
+  it('returns ResponseMessage without body when localKey is not found', () => {
+    vi.spyOn(MessageSerializerFactory.prototype, 'getMessageSerializer').mockReturnValue({
+      encode: (_payload: string, _localKey: string, _timestamp: number, _sequence: number, _nonce: number) =>
+        Buffer.alloc(0),
+      decode: (_payload: Buffer) => Buffer.from(JSON.stringify({ dps: {} })),
+    });
+
+    const context = new MessageContext(asType<UserData>({ rriot: { k: 'k' } }));
+    // Register only 'duid' but query with 'unknown-duid'
+    context.registerDevice('duid', 'local', 'A01', 9);
+    const des = new MessageDeserializer(context, logger);
+
+    const header = Buffer.alloc(17);
+    header.write('A01', 0, 3, 'ascii');
+    header.writeUInt32BE(1, 3);
+    header.writeUInt32BE(2, 7);
+    header.writeUInt32BE(3, 11);
+    header.writeUInt16BE(Protocol.rpc_response, 15);
+
+    const decodedPayload = Buffer.from('encrypted');
+    const contentLen = Buffer.alloc(2);
+    contentLen.writeUInt16BE(decodedPayload.length, 0);
+
+    const preCrc = Buffer.concat([header, contentLen, decodedPayload]);
+    const crc = CRC32.buf(preCrc) >>> 0;
+    const crcBuf = Buffer.alloc(4);
+    crcBuf.writeUInt32BE(crc, 0);
+
+    const full = Buffer.concat([preCrc, crcBuf]);
+
+    const res = des.deserialize('unknown-duid', full, 'from');
+    expect(res).toBeDefined();
+    expect(res.body).toBeUndefined();
+    expect(logger.notice).toHaveBeenCalledWith(expect.stringContaining('Unable to retrieve local key'));
+  });
+
+  it('handles map_response protocol and returns body with map data', () => {
+    vi.spyOn(MessageSerializerFactory.prototype, 'getMessageSerializer').mockReturnValue({
+      encode: (_payload: string, _localKey: string, _timestamp: number, _sequence: number, _nonce: number) =>
+        Buffer.alloc(0),
+      decode: (_payload: Buffer) => Buffer.from([0x01, 0x02, 0x03]),
+    });
+
+    const context = new MessageContext(asType<UserData>({ rriot: { k: 'k' } }));
+    context.registerDevice('duid', 'local', 'A01', 9);
+    const des = new MessageDeserializer(context, logger);
+
+    const header = Buffer.alloc(17);
+    header.write('A01', 0, 3, 'ascii');
+    header.writeUInt32BE(1, 3);
+    header.writeUInt32BE(2, 7);
+    header.writeUInt32BE(3, 11);
+    header.writeUInt16BE(Protocol.map_response, 15);
+
+    const decodedPayload = Buffer.from('mapdata');
+    const contentLen = Buffer.alloc(2);
+    contentLen.writeUInt16BE(decodedPayload.length, 0);
+
+    const preCrc = Buffer.concat([header, contentLen, decodedPayload]);
+    const crc = CRC32.buf(preCrc) >>> 0;
+    const crcBuf = Buffer.alloc(4);
+    crcBuf.writeUInt32BE(crc, 0);
+
+    const full = Buffer.concat([preCrc, crcBuf]);
+
+    const res = des.deserialize('duid', full, 'from');
+    expect(res).toBeDefined();
+    expect(res.isForProtocol(Protocol.map_response)).toBe(true);
+    expect(res.body).toBeDefined();
+    expect(res.body?.data[Protocol.map_response]).toBeDefined();
   });
 });

@@ -1,6 +1,6 @@
 {
   "title": "Matterbridge Roborock Vacuum Plugin",
-  "description": "matterbridge-roborock-vacuum-plugin v. 1.1.3 by https://github.com/RinDevJunior",
+  "description": "matterbridge-roborock-vacuum-plugin v. 1.1.4 by https://github.com/RinDevJunior",
   "type": "object",
   "properties": {
     "name": {
@@ -106,10 +106,9 @@
           "default": false
         },
         "enableMultipleMap": {
-          "title": "[Not Available] Enable Multiple Maps",
+          "title": "Enable Multiple Maps",
           "description": "Enable multiple maps support.",
           "type": "boolean",
-          "ui:widget": "hidden",
           "default": false
         },
         "sanitizeSensitiveLogs": {
@@ -176,6 +175,11 @@
                     "type": "boolean",
                     "default": false
                   },
+                  "includeVacuumErrorStatus": {
+                    "title": "Include Vacuum Error Status",
+                    "type": "boolean",
+                    "default": false
+                  },
                   "forceRunAtDefault": {
                     "title": "Force Run At Default Implementation",
                     "type": "boolean",
@@ -188,6 +192,11 @@
                   },
                   "enableCleanModeMapping": {
                     "title": "Enable Custom Clean Mode Mapping",
+                    "type": "boolean",
+                    "default": false
+                  },
+                  "overrideMatterConfiguration": {
+                    "title": "Override Matter Configuration",
                     "type": "boolean",
                     "default": false
                   },
@@ -323,6 +332,69 @@
                             }
                           }
                         ]
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "allOf": [
+              {
+                "properties": {
+                  "enableAdvancedFeature": {
+                    "const": true
+                  }
+                },
+                "required": ["enableAdvancedFeature"]
+              },
+              {
+                "properties": {
+                  "settings": {
+                    "type": "object",
+                    "properties": {
+                      "overrideMatterConfiguration": {
+                        "const": true
+                      }
+                    },
+                    "required": ["overrideMatterConfiguration"]
+                  }
+                },
+                "required": ["settings"]
+              }
+            ]
+          },
+          "then": {
+            "properties": {
+              "settings": {
+                "properties": {
+                  "matterOverrideSettings": {
+                    "title": "Matter Configuration Override Settings",
+                    "type": "object",
+                    "properties": {
+                      "matterVendorName": {
+                        "title": "Vendor Name",
+                        "type": "string",
+                        "default": "Matterbridge"
+                      },
+                      "matterVendorId": {
+                        "title": "Vendor Id",
+                        "type": "number",
+                        "default": 65521
+                      },
+                      "matterProductName": {
+                        "title": "Product Name",
+                        "type": "string",
+                        "default": "Robotic Vaccum Cleaner",
+                        "maxLength": 32
+                      },
+                      "matterProductId": {
+                        "title": "Product Id",
+                        "type": "number",
+                        "default": 32768
                       }
                     }
                   }

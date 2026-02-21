@@ -7,7 +7,6 @@ import { AreaManagementService } from './areaManagementService.js';
 import { MessageRoutingService } from './messageRoutingService.js';
 import { PollingService } from './pollingService.js';
 import ClientManager from './clientManager.js';
-import { ServiceContainer as CoreServiceContainer } from '../core/ServiceContainer.js';
 import { RoborockAuthenticateApi } from '../roborockCommunication/api/authClient.js';
 import { RoborockIoTApi } from '../roborockCommunication/api/iotClient.js';
 import { UserData } from '../roborockCommunication/models/index.js';
@@ -19,6 +18,8 @@ import { AuthenticationStateRepository } from './authentication/AuthenticationSt
 import { VerificationCodeService } from './authentication/VerificationCodeService.js';
 import { PasswordAuthStrategy } from './authentication/PasswordAuthStrategy.js';
 import { TwoFactorAuthStrategy } from './authentication/TwoFactorAuthStrategy.js';
+import { RoborockAuthGateway } from '../roborockCommunication/adapters/RoborockAuthGateway.js';
+import { WssSendSnackbarMessage } from '../types/WssSendSnackbarMessage.js';
 
 /** Configuration for ServiceContainer. */
 export interface ServiceContainerConfig {
@@ -28,6 +29,7 @@ export interface ServiceContainerConfig {
   iotApiFactory?: Factory<UserData, RoborockIoTApi>;
   persist: LocalStorage;
   configManager: PlatformConfigManager;
+  toastMessage: WssSendSnackbarMessage;
 }
 
 /** DI container managing service lifecycle. Services are lazily created and cached. */
@@ -43,8 +45,8 @@ export class ServiceContainer {
   private readonly authenticateApi: RoborockAuthenticateApi;
   private readonly authenticateApiFactory: (logger: AnsiLogger, baseUrl: string) => RoborockAuthenticateApi;
   private readonly iotApiFactory: Factory<UserData, RoborockIoTApi>;
-  private readonly coreServiceContainer: CoreServiceContainer;
   private readonly clientManager: ClientManager;
+  private readonly authGateway: RoborockAuthGateway;
 
   // User data (set after authentication)
   private userdata?: UserData;
@@ -55,25 +57,22 @@ export class ServiceContainer {
     private readonly config: ServiceContainerConfig,
   ) {
     // Set up factory functions with defaults
-    this.authenticateApiFactory = config.authenticateApiFactory ?? ((logger, baseUrl) => new RoborockAuthenticateApi(logger, undefined, undefined, baseUrl));
+    this.authenticateApiFactory =
+      config.authenticateApiFactory ??
+      ((logger, baseUrl) => new RoborockAuthenticateApi(logger, undefined, undefined, baseUrl));
     this.iotApiFactory = config.iotApiFactory ?? ((logger, ud) => new RoborockIoTApi(ud, logger));
 
     this.clientManager = new ClientManager(this.logger);
 
     // Create login API instance
     this.authenticateApi = this.authenticateApiFactory(logger, config.baseUrl);
-
-    // Create core service container for port adapters
-    this.coreServiceContainer = new CoreServiceContainer(logger, this.authenticateApi);
+    this.authGateway = new RoborockAuthGateway(this.authenticateApi, this.logger);
   }
 
   /** Set user data after login to enable device services. */
   setUserData(userdata: UserData): void {
     this.userdata = userdata;
     this.iotApi = this.iotApiFactory(this.logger, userdata);
-
-    // Initialize core service container with user data
-    this.coreServiceContainer.initialize(userdata);
 
     // Update existing services if they're already created
     if (this.deviceManagementService) {
@@ -91,21 +90,31 @@ export class ServiceContainer {
   /** Get or create AuthenticationCoordinator singleton. */
   getAuthenticationCoordinator(): AuthenticationCoordinator {
     if (!this.authenticationCoordinator) {
-      const authGateway = this.coreServiceContainer.getAuthGateway();
-
       // Create core authentication service
-      const authService = new AuthenticationService(authGateway, this.logger);
+      const authService = new AuthenticationService(this.authGateway, this.logger);
 
       // Create repositories
       const userDataRepository = new UserDataRepository(this.config.persist, this.config.configManager, this.logger);
       const authStateRepository = new AuthenticationStateRepository(this.config.persist);
 
       // Create verification code service
-      const verificationCodeService = new VerificationCodeService(authGateway, authStateRepository, this.logger);
+      const verificationCodeService = new VerificationCodeService(this.authGateway, authStateRepository, this.logger);
 
       // Create strategies
-      const passwordStrategy = new PasswordAuthStrategy(authService, userDataRepository, this.config.configManager, this.logger);
-      const twoFactorStrategy = new TwoFactorAuthStrategy(authService, userDataRepository, verificationCodeService, this.config.configManager, this.logger);
+      const passwordStrategy = new PasswordAuthStrategy(
+        authService,
+        userDataRepository,
+        this.config.configManager,
+        this.logger,
+      );
+      const twoFactorStrategy = new TwoFactorAuthStrategy(
+        authService,
+        userDataRepository,
+        verificationCodeService,
+        this.config.configManager,
+        this.config.toastMessage,
+        this.logger,
+      );
 
       // Create coordinator
       this.authenticationCoordinator = new AuthenticationCoordinator(passwordStrategy, twoFactorStrategy, this.logger);
@@ -115,7 +124,11 @@ export class ServiceContainer {
 
   /** Get or create PollingService singleton. */
   getPollingService(): PollingService {
-    this.pollingService ??= new PollingService(this.config.refreshInterval, this.logger, this.getMessageRoutingService());
+    this.pollingService ??= new PollingService(
+      this.config.refreshInterval,
+      this.logger,
+      this.getMessageRoutingService(),
+    );
     return this.pollingService;
   }
 
@@ -150,7 +163,11 @@ export class ServiceContainer {
   }
 
   getConnectionService(): ConnectionService {
-    return (this.connectionService ??= new ConnectionService(this.clientManager, this.logger, this.getMessageRoutingService()));
+    return (this.connectionService ??= new ConnectionService(
+      this.clientManager,
+      this.logger,
+      this.getMessageRoutingService(),
+    ));
   }
 
   public synchronizeMessageClients(): void {
@@ -212,9 +229,6 @@ export class ServiceContainer {
       await this.pollingService.shutdown();
       this.pollingService = undefined;
     }
-
-    // Dispose core service container
-    await this.coreServiceContainer.shutdown();
 
     // Clear user data
     this.userdata = undefined;

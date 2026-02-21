@@ -1,4 +1,5 @@
 import { RvcOperationalState } from 'matterbridge/matter/clusters';
+import { DockErrorCode } from '../roborockCommunication/enums/vacuumAndDockErrorCode.js';
 
 export enum DockStationStatusCode {
   Unknown = 0,
@@ -81,5 +82,27 @@ export class DockStationStatus {
       extractBits(dss, BitPosition.ClearWaterBox),
       extractBits(dss, BitPosition.IsUpdownWaterReady),
     );
+  }
+
+  public static parseDockErrorCode(dockErrorCode: DockErrorCode): RvcOperationalState.ErrorState {
+    switch (dockErrorCode) {
+      case DockErrorCode.WaterEmpty:
+        return RvcOperationalState.ErrorState.WaterTankEmpty;
+      case DockErrorCode.DuctBlockage:
+        return RvcOperationalState.ErrorState.DustBinFull;
+      case DockErrorCode.WasteWaterTankFull:
+      case DockErrorCode.CleaningTankFullOrBlocked:
+        return RvcOperationalState.ErrorState.DirtyWaterTankFull;
+      case DockErrorCode.MaintenanceBrushJammed:
+        return RvcOperationalState.ErrorState.BrushJammed;
+      case DockErrorCode.DirtyTankLatchOpen:
+        return RvcOperationalState.ErrorState.DirtyWaterTankMissing;
+      case DockErrorCode.NoDustbin:
+        return RvcOperationalState.ErrorState.DustBinMissing;
+      case DockErrorCode.None:
+        return RvcOperationalState.ErrorState.NoError;
+      default:
+        return RvcOperationalState.ErrorState.UnableToCompleteOperation;
+    }
   }
 }

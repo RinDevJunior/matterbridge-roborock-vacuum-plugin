@@ -19,7 +19,13 @@ export class MQTTClient extends AbstractClient {
   private consecutiveAuthErrors = 0;
   private authErrorBackoffTimeout: NodeJS.Timeout | undefined = undefined;
 
-  public constructor(logger: AnsiLogger, context: MessageContext, userdata: UserData, responseBroadcaster: ResponseBroadcaster, responseTracker: PendingResponseTracker) {
+  public constructor(
+    logger: AnsiLogger,
+    context: MessageContext,
+    userdata: UserData,
+    responseBroadcaster: ResponseBroadcaster,
+    responseTracker: PendingResponseTracker,
+  ) {
     super(logger, context, responseBroadcaster, responseTracker);
     this.rriot = userdata.rriot;
 
@@ -66,9 +72,11 @@ export class MQTTClient extends AbstractClient {
   }
 
   public override async disconnect(): Promise<void> {
+    await super.disconnect();
     if (!this.mqttClient || !this.connected) {
       return Promise.resolve();
     }
+
     try {
       if (this.keepConnectionAliveInterval) {
         clearInterval(this.keepConnectionAliveInterval);
@@ -80,12 +88,13 @@ export class MQTTClient extends AbstractClient {
         this.authErrorBackoffTimeout = undefined;
       }
 
-      await super.disconnect();
       this.mqttClient.end();
       this.mqttClient = undefined;
       this.connected = false;
     } catch (error) {
-      this.logger.error(`[MQTTClient] client failed to disconnect with error: ${error instanceof Error ? (error.stack ?? error.message) : String(error)}`);
+      this.logger.error(
+        `[MQTTClient] client failed to disconnect with error: ${error instanceof Error ? (error.stack ?? error.message) : String(error)}`,
+      );
     }
   }
 
@@ -95,9 +104,11 @@ export class MQTTClient extends AbstractClient {
       return;
     }
     const mqttRequest = request.toMqttRequest();
+    mqttRequest.version = mqttRequest.version ?? this.context.getMQTTProtocolVersion(duid);
     const message = this.serializer.serialize(duid, mqttRequest);
-    this.logger.debug(`[MQTTClient] sending message to ${duid}: ${debugStringify(mqttRequest)}`);
-    this.mqttClient.publish(`rr/m/i/${this.rriot.u}/${this.mqttUsername}/${duid}`, message.buffer, { qos: 1 });
+    const topic = `rr/m/i/${this.rriot.u}/${this.mqttUsername}/${duid}`;
+    this.logger.debug(`[MQTTClient] sending message to ${topic}: ${debugStringify(mqttRequest)}`);
+    this.mqttClient.publish(topic, message.buffer, { qos: 1 });
     this.logger.debug(`[MQTTClient] sent message to ${duid}`);
   }
 
@@ -108,11 +119,9 @@ export class MQTTClient extends AbstractClient {
 
     this.keepConnectionAliveInterval = setInterval(() => {
       if (this.mqttClient && this.connected) {
-        this.logger.debug('[MQTTClient] Reconnecting to keep connection alive');
-        this.mqttClient.end();
-        this.mqttClient.reconnect();
+        this.logger.debug('[MQTTClient] Connection is active, no action needed');
       } else if (this.mqttClient && !this.connected) {
-        this.logger.debug('[MQTTClient] MQTT client exists but not connected, calling reconnect');
+        this.logger.debug('[MQTTClient] MQTT client exists but not connected, reconnecting');
         this.mqttClient = undefined;
         this.connect();
       } else {
@@ -151,7 +160,10 @@ export class MQTTClient extends AbstractClient {
       this.logger.error(`[MQTTClient] Failed to subscribe: ${String(err)}`);
       this.connected = false;
 
-      await this.connectionBroadcaster.onDisconnected(`mqtt-${this.mqttUsername}`, `Failed to subscribe to the queue: ${String(err)}`);
+      await this.connectionBroadcaster.onDisconnected(
+        `mqtt-${this.mqttUsername}`,
+        `Failed to subscribe to the queue: ${String(err)}`,
+      );
       return;
     }
     this.logger.info(`[MQTTClient] Connection subscribed: ${subscription ? debugStringify(subscription) : 'unknown'}`);
@@ -239,7 +251,7 @@ export class MQTTClient extends AbstractClient {
     try {
       const duid = topic.split('/').slice(-1)[0];
       const response = this.deserializer.deserialize(duid, message, 'MQTTClient');
-      this.responseBroadcaster.onResponse(response);
+      this.responseBroadcaster.tryResolve(response);
       this.responseBroadcaster.onMessage(response);
     } catch (error) {
       const errMsg = error instanceof Error ? (error.stack ?? error.message) : String(error);

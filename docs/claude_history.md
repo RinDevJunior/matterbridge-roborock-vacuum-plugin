@@ -1,318 +1,86 @@
 # Claude History
 
-## 2026-02-14
-
-### Refactoring: Split `PlatformLifecycle` into 3 classes
-
-**Problem:** `PlatformLifecycle` (~430 lines) handled three distinct concerns: lifecycle orchestration, device configuration, and device discovery.
-
-**Solution:**
-
-- Extracted `DeviceDiscovery` class — owns `roborockService`, handles authentication and device listing
-- Extracted `DeviceConfigurator` class — owns `rrHomeId`, handles device setup, room mapping, and Matterbridge registration
-- Slimmed `PlatformLifecycle` to orchestrator (~180 lines) — delegates to `discovery` and `configurator`
-- Added `roborockService` guard in lifecycle before calling configurator
-- Getter/setter delegation chain: `module.ts` → `lifecycle` → `discovery`/`configurator`
-
-**Files created:**
-
-- `src/platform/deviceDiscovery.ts` — `DeviceDiscovery` class
-- `src/platform/deviceConfigurator.ts` — `DeviceConfigurator` class
-
-**Files modified:**
-
-- `src/platform/platformLifecycle.ts` — Slimmed to orchestrator, delegates to `discovery` and `configurator`
-- `src/tests/platform/platformLifecycle.test.ts` — Updated spies to target `discovery`/`configurator`, set `roborockService` in discovery mocks
-- `src/tests/module.lifecycle.test.ts` — Updated discovery spies
-- `src/tests/module.startup.test.ts` — Updated discovery spies
-- `src/tests/module.complete.coverage.test.ts` — Updated bracket-access to `configurator`, pass `roborockService` args
-
-### Refactoring: Move `onConfigureDevice`, `configureDevice`, `addDevice` to `PlatformLifecycle`
-
-**Problem:** Device configuration methods (`onConfigureDevice`, `configureDevice`, `addDevice`) in `module.ts` were lifecycle concerns connected via callback indirection (`LifecycleDependencies.onConfigureDevice`).
-
-**Solution:**
-
-- Moved all three methods from `module.ts` to `PlatformLifecycle` as private methods
-- `PlatformLifecycle` now owns `rrHomeId` property (set during device configuration)
-- Added getter/setter for `rrHomeId` on `RoborockMatterbridgePlatform` delegating to lifecycle (backward compatibility for `platformRunner.ts`)
-- Removed `onConfigureDevice` from `LifecycleDependencies` interface
-- Created `MapInfoPlatformContext` interface in `RoomMap.ts` to decouple `fromMapInfo` from concrete `RoborockMatterbridgePlatform` type
-- Methods access parent class methods (`validateDevice`, `registerDevice`, `setSelectDevice`, `version`, `matterbridge`) via `this.platform`
-- Cleaned up unused imports from `module.ts`
-
-**Files modified:**
-
-- `src/platform/platformLifecycle.ts` — Added three methods, `rrHomeId`, new imports
-- `src/module.ts` — Removed three methods, added `rrHomeId` getter/setter, cleaned imports
-- `src/core/application/models/RoomMap.ts` — Added `MapInfoPlatformContext` interface, changed `fromMapInfo` parameter type
-- `src/tests/platform/platformLifecycle.test.ts` — Removed `onConfigureDevice` from mock deps, added `onConfigureDevice` spy to onStart tests
-- `src/tests/module.lifecycle.test.ts` — Removed `onConfigureDevice` mock from device config tests
-- `src/tests/module.complete.coverage.test.ts` — Updated bracket-access to go through `platform.lifecycle`
-
-### Refactoring: Move `discoverDevices` to `PlatformLifecycle`
-
-**Problem:** `discoverDevices` in `module.ts` was a lifecycle concern called during `onStart` but lived in the platform class, connected via callback indirection (`LifecycleDependencies.startDeviceDiscovery`).
-
-**Solution:**
-
-- Moved `discoverDevices` method from `module.ts` to `PlatformLifecycle` as a private method
-- `PlatformLifecycle` now owns `roborockService` (creates it during discovery, cleans it up on shutdown)
-- Added `DeviceRegistry` as a constructor parameter to `PlatformLifecycle`
-- Removed `startDeviceDiscovery` and `getRoborockService` from `LifecycleDependencies` interface
-- Added getter/setter for `roborockService` on `RoborockMatterbridgePlatform` delegating to lifecycle (backward compatibility for `platformRunner.ts` and tests)
-- Removed unused `rvcInterval` property from `module.ts`
-- Cleaned up unused imports from `module.ts` (`axios`, `crypto`, `getBaseUrl`, `RoborockAuthenticateApi`, `RoborockIoTApi`, `isSupportedDevice`, `DEFAULT_REFRESH_INTERVAL_SECONDS`)
-
-**Files modified:**
-
-- `src/platform/platformLifecycle.ts` — Added `discoverDevices`, `roborockService` ownership, `DeviceRegistry` param
-- `src/module.ts` — Removed `discoverDevices`, added getter/setter, cleaned imports
-- `src/tests/platform/platformLifecycle.test.ts` — Updated mock deps, constructor calls, shutdown assertions
-- `src/tests/module.lifecycle.test.ts` — Removed discovery simulation tests, updated `startDeviceDiscovery` overrides to spy on lifecycle
-- `src/tests/module.startup.test.ts` — Updated `startDeviceDiscovery` override to spy on lifecycle
-
-## 2026-02-13
-
-### Verification: Authentication Behaviors Audit
-
-**Problem:** Verify three authentication behaviors: (1) cache on success + clear forceAuthentication, (2) prevent start on failure + empty MFA code, (3) handle missing credentials per method.
-
-**Findings:**
-
-- Behavior 1 (auth success): Fully implemented. User data cached via `UserDataRepository.saveUserData()`, `forceAuthentication` reset in `module.ts:161-165`.
-- Behavior 2 (auth failed): Partially implemented. Plugin start is prevented and errors are logged, but MFA code is NOT cleared from config on failure.
-- Behavior 3 (auth not set): Partially implemented. `validateAuthentication()` exists in `PlatformConfigManager` but is never called. Password method sends empty string to API instead of failing early with clear message.
-
-**Documentation:**
-
-- Created `docs/auth_process.md` with detailed analysis and gap identification.
-
-## 2026-02-10
-
-### Release: Version 1.1.3-rc16
-
-**Changes:**
-
-- Updated version from 1.1.3-rc15 to 1.1.3-rc16
-- Updated package.json version and build:package script
-- Updated matterbridge-roborock-vacuum-plugin.schema.json description
-- Updated matterbridge-roborock-vacuum-plugin.config.json version
-- Requires matterbridge@3.5.3
-
-**Files modified:**
-
-- `package.json`
-- `matterbridge-roborock-vacuum-plugin.schema.json`
-- `matterbridge-roborock-vacuum-plugin.config.json`
-
-### Feature: Auth Error Backoff with Selective Reconnection
-
-**Problem:** MQTT service blocks connection due to excessive failed auth requests, and mqtt.js built-in auto-reconnect continues indefinitely after auth errors.
-
-**Solution:**
-
-- Keep mqtt.js auto-reconnect enabled for normal errors (network issues, timeouts, etc.)
-- Implement auth error backoff mode in `MQTTClient`:
-  - Track consecutive auth errors (MQTT error code 5)
-  - After 5 consecutive auth errors: terminate connection, wait 60 minutes, then reconnect
-  - Reset counter on successful connection
-  - Properties: `consecutiveAuthErrors`, `authErrorBackoffTimeout`
-- Implement `terminateConnection()` method:
-  - Clears `keepConnectionAliveInterval` and `authErrorBackoffTimeout`
-  - Calls `mqttClient.end(true)` to force-close and stop auto-reconnect
-  - Cleans up state
-- Fix `ConnectionStateListener.onConnected()`:
-  - Reset `shouldReconnect = true` on successful connection
-  - Restores manual reconnect capability after auth error recovery
-- Added `.unref()` to intervals/timeouts for clean process exit
-
-**Files modified:**
-
-- `src/roborockCommunication/mqtt/mqttClient.ts`
-- `src/roborockCommunication/routing/listeners/implementation/connectionStateListener.ts`
-
-### Fix: Axios Type Incompatibility in Tests
-
-**Problem:** TypeScript error in `iotClient.test.ts` due to module resolution mismatch between axios and axios-mock-adapter types.
-
-**Solution:**
-
-- Added type cast `as any` when passing axios instance to MockAdapter constructor
-- Resolves TypeScript error without affecting test functionality
-
-**Files modified:**
-
-- `src/tests/roborockCommunication/api/iotClient.test.ts`
-
-### Review: handleErrorOccurred Implementation Analysis (Initial)
-
-**Problem:** Code review requested for error handling logic in platformRunner.
-
-**Findings:**
-
-- Critical bug: Early return prevents error clearing when vacuum is running (line 183-184)
-- Type coercion issue: Using `==` instead of `===` (line 183)
-- Falsy value bug: `dockStationStatus = 0` is valid but treated as falsy (line 181)
-- Inconsistent state management between error setting and clearing
-- Complex control flow with 4 exit points
-
-**Files reviewed:**
-
-- `src/platformRunner.ts:167-205`
-- `src/model/VacuumStatus.ts`
-- `src/model/DockStationStatus.ts`
-
-**Documentation:**
-
-- Created `docs/handleErrorOccured_error.md` with detailed analysis and suggested fixes
-
-### Review: handleErrorOccurred Second Review (After User Fixes)
-
-**Problem:** User implemented fixes from first review, second review requested.
-
-**Previous Issues Fixed:**
-
-- ✅ Type coercion: `==` → `===`
-- ✅ Falsy value check: Added explicit null/undefined check for `dockStationStatus`
-- ✅ JSDoc comment completed
-- ⚠️ Error clearing partially fixed but introduced new issues
-
-**New Critical Issues Found:**
-
-- Line 203: Restores `operationalState` to `Error` when clearing dock errors (prevents error→normal transition)
-- Lines 179-183: Forces state to `Running` based on old state, not actual device status
-- Architectural issue: Conflicting state management between `handleErrorOccurred` and `handleDeviceStatusUpdate`
-- Code flow redundancy between lines 179-183 and 187-188
-
-**Recommendations:**
-
-- `handleErrorOccurred` should manage ONLY `operationalError`, not `operationalState` (except setting to Error)
-- Remove line 203 that restores state when clearing dock errors
-- Remove line 182 that redundantly sets state to Running
-- Let `handleDeviceStatusUpdate` be single source of truth for state transitions
-
-**Documentation:**
-
-- Updated `docs/handleErrorOccured_error.md` with second review findings and improved implementation suggestion
-
-### Verification: First Review Issues Status Check
-
-**Problem:** User requested verification of which first review issues are still valid.
-
-**Verification Results:**
-
-✅ **Fully Fixed (3/7):**
-
-- Type coercion `==` → `===`
-- Falsy value check for `dockStationStatus`
-- Truncated JSDoc comment
-
-⚠️ **Partially Fixed (2/7):**
-
-- Early return bug: Error clearing added but introduced new issues
-- Inconsistent state management: Now updates both but line 203 restores Error state
-
-❌ **Not Fixed (2/7):**
-
-- Complex control flow (4 exit points)
-- Method complexity (multiple responsibilities)
-
-**Critical Finding:**
-
-Line 203 bug is the SAME root cause as first review Issue #4, manifesting differently:
-
-- First review: Didn't update state → stuck in Error
-- Current: Updates state incorrectly → restored to Error
-
-**Documentation:**
-
-- Added verification section to `docs/handleErrorOccured_error.md` with detailed status table and comparison
-
-### Cleanup: Documentation Simplification
-
-**Problem:** User requested to clean up documentation and keep only active issues.
-
-**Action:**
-
-- Removed historical context from first review (already fixed issues)
-- Removed verification section (historical comparison)
-- Kept only active critical issues and implementation suggestions
-- Document now focuses on 4 active issues:
-  - Line 203: Restores Error state when clearing dock errors
-  - Lines 179-183: Incorrect state assumption
-  - Architectural issue: Conflicting state management
-  - Code flow redundancy
-
-**Files modified:**
-
-- `docs/handleErrorOccured_error.md`
-
-### Review: handleErrorOccurred Third Review (After Critical Fixes)
-
-**Problem:** User implemented suggested fixes, requested final review.
-
-**Changes Verified:**
-
-- ✅ Removed line 203 that was restoring Error state when clearing dock errors
-- ✅ Removed redundant state update to Running (line 182)
-- ✅ Simplified control flow by removing redundant condition
-- ✅ Now only manages `operationalError` when clearing errors, not `operationalState`
-
-**Assessment:**
-
-✅ **APPROVED** - All critical bugs resolved:
-
-- Critical bug: Error state restoration → FIXED
-- Redundant state updates → FIXED
-- State management architecture → IMPROVED (follows Single Responsibility Principle)
-
-**Remaining Considerations:**
-
-- ⚠️ Potential race condition with `handleDeviceStatusUpdate` (theoretical, needs verification)
-- ℹ️ Message timing and ordering questions (low priority)
-- Code complexity acceptable (4 exit points justified)
-
-**Code Quality:**
-
-| Aspect           | Status      |
-| ---------------- | ----------- |
-| Critical bugs    | ✅ Fixed    |
-| Type safety      | ✅ Good     |
-| State management | ✅ Improved |
-| Error handling   | ✅ Good     |
-| Code clarity     | ✅ Good     |
-| Testability      | ✅ Good     |
-
-**Recommendations:**
-
-1. Deploy and monitor - production-ready
-2. Add unit tests for critical scenarios
-3. Optionally review `handleDeviceStatusUpdate` for race condition mitigation
-
-**Files reviewed:**
-
-- `src/platformRunner.ts:167-208`
-
-**Documentation:**
-
-- Updated `docs/handleErrorOccured_error.md` with final review and approval
-
-### Fix: ESLint Vitest Plugin Configuration Error
-
-**Problem:** ESLint failing with `TypeError: Cannot read properties of undefined (reading 'additionalTestBlockFunctions')` when running lint command.
-
-**Root Cause:** Bug in `@vitest/eslint-plugin` version 1.6.6 where the `vitest/no-standalone-expect` rule incorrectly destructures options parameter in ESLint flat config.
-
-**Solution:**
-
-- Updated `@vitest/eslint-plugin` from 1.6.6 to 1.6.7
-- Properly configured vitest in ESLint flat config by spreading the recommended config
-- Added vitest environment globals to languageOptions
-- Removed unused import `getOperationalErrorState` from `src/platformRunner.ts`
-
-**Files modified:**
-
-- `package.json` - Updated `@vitest/eslint-plugin` to 1.6.7
-- `eslint.config.js` - Properly spread vitest recommended config, added vitest globals
-- `src/platformRunner.ts` - Removed unused import
+## 2026-02-18 (Session 9)
+
+- Added `includeVacuumErrorStatus` configuration option under Advanced features. When disabled (default), `handleErrorOccurred` in `platformRunner.ts` is skipped. Updated schema, config type, config manager, platformRunner, and all test files.
+- Created release candidate 1.1.4-rc07: bumped version in `package.json`, `schema.json`, `config.json`. Added CHANGELOG entry for vacuum error status control feature.
+
+## 2026-02-17 (Session 8)
+
+- Created `B01PendingResponseTracker` — collects multiple B01 response messages matching by timestamp and protocol, merges body data, resolves after configurable collection window (default 500ms). Supports configurable timestamp tolerance.
+- Created `B01ResponseBroadcaster` — B01-specific broadcaster that delegates to `B01PendingResponseTracker` for multi-response collection, with same listener dispatch pattern as `ResponseBroadcaster`.
+- Added 10 unit tests for `B01PendingResponseTracker` and 4 for `B01ResponseBroadcaster` (all passing).
+- Added real-data integration test to `B01PendingResponseTracker` using sample data from `exampleData/tmp.log`.
+- Added key mapping in `B01PendingResponseTracker.mapDataKeys` — converts numeric DPS keys to named keys using `Q10RequestCode` enum reverse lookup (e.g. `'121'` → `'state'`, `'122'` → `'battery'`). Unmapped keys stay as numbers.
+
+## 2026-02-17 (Session 7)
+
+- Created release candidate 1.1.4-rc06: bumped version in `package.json`, `schema.json`, `config.json`. Added CHANGELOG entry for Buy Me a Coffee badge asset.
+- Updated CHANGELOG for 1.1.4-rc06: added improvements for 2FA toast notifications, snackbar severity levels, and WebSocket restart prompt after persistence clear.
+
+## 2026-02-17 (Session 6)
+
+- Fixed `mqttClient.ts`: resolve `version` on request object in `sendInternal` via `getMQTTProtocolVersion(duid)` before serialization, matching `LocalNetworkClient` pattern. Previously `version` was `undefined` on the request (only resolved inside serializer).
+
+## 2026-02-16 (Session 5)
+
+- Fixed `platformRunner.ts` Node.js 20 compatibility: spread `Map.values()` into array before calling `.every()` (Iterator Helpers not available in Node.js 20).
+
+## 2026-02-16 (Session 4)
+
+- Added unit tests to improve Codecov patch coverage for 7 files with missing lines.
+- Updated test files:
+  - `module.orchestration.test.ts` — added 5 tests: clearStorageOnStartup early return, alwaysExecuteAuthentication persist clear, roborockService undefined after discovery, onConfigure clearStorage flow, clearStorage error handling
+  - `messageDeserializer.test.ts` — added 3 tests: CRC32 mismatch throw, localKey not found returns undefined body, map_response protocol handling
+  - `LocalNetworkClient.test.ts` — added 3 tests: version fallback to context protocol, processHelloResponse clearing existing interval, safeHandler with non-Error objects
+  - `Q10MessageDispatcher.test.ts` — added 2 tests: real private helpers via client.send, both suctionPower and waterFlow zero
+  - `Q7MessageDispatcher.test.ts` — added 2 tests: real private helpers via client.send, both suctionPower and waterFlow zero
+  - `platformRunner.test.ts` — added 2 tests: skip requestHomeData when all devices have real-time connection, proceed when mixed connections
+
+## 2026-02-16 (Session 3)
+
+- Created CHANGELOG entry for `1.1.4-rc05`.
+- Staged changes include:
+  - Skip `requestHomeData` when all devices have real-time connections (`platformRunner.ts`).
+  - Move `VacFollowedByMop` from base to smart clean mode configs (`cleanModeConfig.ts`).
+  - Tighten `PlatformRunner` type contract, remove optional chaining (`deviceConfigurator.ts`, `module.ts`).
+
+## 2026-02-16 (Session 2)
+
+- Added unit tests to increase Codecov patch coverage across 8 files with missing lines.
+- New test files:
+  - `src/tests/roborockCommunication/broadcast/listener/localPingResponseListener.test.ts` (8 tests) — covers ping response handling, timer cleanup
+  - `src/tests/behaviors/roborock.vacuum/core/cleanModeUtils.test.ts` (11 tests) — covers getSettingFromCleanMode with all modes and CustomizeWithDistanceOff
+- Updated test files:
+  - `LocalNetworkClient.test.ts` — added 17 tests: isReady, isConnected branches, sendInternal hello_request bypass, trySendHelloRequest V1/L01 fallback, processHelloResponse, checkConnection reconnect/ping/skip, safeHandler error handling, multi-segment onMessage
+  - `messageContext.test.ts` — added 3 tests: updateMQTTProtocolVersion, getMQTTProtocolVersion, unregisterAllDevices
+  - `messageDeserializer.unit.test.ts` — added 4 tests: unsupported version, ping_response, hello_response, general_response
+  - `Q10MessageDispatcher.test.ts` — added 3 tests: messageId monotonic, Date.now collision, getRoomMap empty
+  - `Q7MessageDispatcher.test.ts` — added 2 tests: messageId monotonic, Date.now collision
+- All 1552 tests pass across 154 test files.
+
+## 2026-02-16
+
+- Fixed keepConnectionAlive in MQTTClient and LocalNetworkClient to only reconnect when connection is down.
+  - **MQTTClient**: Removed `end()` + `reconnect()` cycle when already connected (caused empty subscription list on reconnect, leading to message timeouts).
+  - **LocalNetworkClient**: Removed `disconnect().then(() => connect())` when already connected (caused socket destruction and failed hello handshake race condition).
+  - **LocalNetworkClient**: Fixed interval leak — `disconnect()` now clears `keepConnectionAliveInterval`. Fixed `clearTimeout` → `clearInterval` mismatch.
+- Added unit tests to increase patch coverage for dev branch changes.
+- New test files:
+  - `src/tests/behaviors/roborock.vacuum/core/modeResolver.test.ts` (21 tests)
+  - `src/tests/behaviors/roborock.vacuum/core/cleanModeConfig.test.ts` (16 tests)
+  - `src/tests/behaviors/roborock.vacuum/core/behaviorConfig.test.ts` (12 tests)
+  - `src/tests/behaviors/roborock.vacuum/handlers/defaultCleanModeHandler.test.ts` (8 tests)
+  - `src/tests/behaviors/roborock.vacuum/handlers/customCleanModeHandler.test.ts` (3 tests)
+  - `src/tests/roborockCommunication/map/b01MapParser.test.ts` (6 tests)
+- Updated test files:
+  - `src/tests/behaviors/roborock.vacuum/default/default.test.ts` - added VacFollowedByMop and EnergySaving mode tests
+  - `src/tests/behaviors/roborock.vacuum/smart/smart.test.ts` - added VacFollowedByMop and EnergySaving mode tests
+- Coverage improvements: modeResolver 0%→97.56%, b01MapParser 20%→100%, handlers to 100%.
+
+## 2026-02-15
+
+- Created B01 map parser for extracting rooms from protobuf-encoded map data.
+- Added `protobufjs` dependency.
+- Created files: `src/roborockCommunication/map/b01/b01MapParser.ts`, `types.ts`, `roborockProto.ts`.
+- Proto schema minimized to only room-related messages (`RobotMap`, `RoomDataInfo`, `DevicePointInfo`, `MapHeadInfo`).

@@ -4,21 +4,30 @@ import { NotifyMessageTypes } from './types/notifyMessageTypes.js';
 import { debugStringify } from 'matterbridge/logger';
 import { updateFromHomeData } from './runtimes/handleHomeDataMessage.js';
 import type { MessagePayload } from './types/MessagePayloads.js';
-import { BatteryMessage, CleanInformation, DeviceErrorMessage, StatusChangeMessage } from './roborockCommunication/models/index.js';
+import {
+  BatteryMessage,
+  CleanInformation,
+  DeviceErrorMessage,
+  StatusChangeMessage,
+} from './roborockCommunication/models/index.js';
 import { RoborockMatterbridgePlatform } from './module.js';
 import type { RoborockVacuumCleaner } from './types/roborockVacuumCleaner.js';
 import { resolveDeviceState } from './share/stateResolver.js';
 import { getRunningMode } from './initialData/getSupportedRunModes.js';
 import { CleanModeSetting } from './behaviors/roborock.vacuum/core/CleanModeSetting.js';
 import { getCleanModeResolver } from './share/runtimeHelper.js';
-import { OperationStatusCode } from './roborockCommunication/enums/index.js';
+import { DockErrorCode, OperationStatusCode } from './roborockCommunication/enums/index.js';
 import { INVALID_SEGMENT_ID } from './constants/index.js';
 import { DockStationStatus } from './model/DockStationStatus.js';
 import { triggerDssError } from './runtimes/handleLocalMessage.js';
 import { state_to_matter_operational_status, state_to_matter_state } from './share/function.js';
 import { VacuumStatus } from './model/VacuumStatus.js';
+import { CleanSequenceType } from './behaviors/roborock.vacuum/enums/CleanSequenceType.js';
+import { getAllKnownModeConfigs } from './behaviors/roborock.vacuum/core/deviceCapabilityRegistry.js';
 
-type RobotHandler<T = unknown> = (robot: RoborockVacuumCleaner, data: T) => void;
+const allKnownModeConfigs = getAllKnownModeConfigs();
+
+type RobotHandler<T = unknown> = (robot: RoborockVacuumCleaner, data: T) => void | Promise<void>;
 type PayloadHandler = (payload: MessagePayload) => void;
 
 export class PlatformRunner {
@@ -100,6 +109,10 @@ export class PlatformRunner {
     if (platform.registry.robotsMap.size === 0 || !platform.rrHomeId) return;
     if (platform.roborockService === undefined) return;
 
+    const robots = [...platform.registry.robotsMap.values()];
+    const allDevicesHaveRealTimeConnection = robots.every((x) => x.device.specs.hasRealTimeConnection);
+    if (allDevicesHaveRealTimeConnection) return;
+
     const homeData = await platform.roborockService.getHomeDataForUpdating(platform.rrHomeId);
     if (homeData === undefined) return;
     this.updateRobotWithPayload({ type: NotifyMessageTypes.HomeData, data: homeData });
@@ -145,7 +158,11 @@ export class PlatformRunner {
    * Get human-readable name for run mode enum value.
    */
   private getRunModeName(runMode: number): string {
-    return Object.keys(RvcRunMode.ModeTag).find((key) => RvcRunMode.ModeTag[key as keyof typeof RvcRunMode.ModeTag] === runMode) || String(runMode);
+    return (
+      Object.keys(RvcRunMode.ModeTag).find(
+        (key) => RvcRunMode.ModeTag[key as keyof typeof RvcRunMode.ModeTag] === runMode,
+      ) || String(runMode)
+    );
   }
 
   /**
@@ -154,15 +171,23 @@ export class PlatformRunner {
   private getOperationalStateName(operationalState: number): string {
     return (
       Object.keys(RvcOperationalState.OperationalState).find(
-        (key) => RvcOperationalState.OperationalState[key as keyof typeof RvcOperationalState.OperationalState] === operationalState,
+        (key) =>
+          RvcOperationalState.OperationalState[key as keyof typeof RvcOperationalState.OperationalState] ===
+          operationalState,
       ) || String(operationalState)
     );
   }
 
+  private getCleanModeName(mode: number): string {
+    return allKnownModeConfigs.find((x) => x.mode === mode)?.label ?? 'Not found';
+  }
+
   private getOperationalErrorName(operationalError: number): string {
     return (
-      Object.keys(RvcOperationalState.ErrorState).find((key) => RvcOperationalState.ErrorState[key as keyof typeof RvcOperationalState.ErrorState] === operationalError) ||
-      String(operationalError)
+      Object.keys(RvcOperationalState.ErrorState).find(
+        (key) =>
+          RvcOperationalState.ErrorState[key as keyof typeof RvcOperationalState.ErrorState] === operationalError,
+      ) || String(operationalError)
     );
   }
 
@@ -172,46 +197,115 @@ export class PlatformRunner {
    * Prioritizes vacuum errors over docking station errors.
    */
   private handleErrorOccurred(robot: RoborockVacuumCleaner, message: DeviceErrorMessage): void {
+    if (!this.platform.configManager.includeVacuumErrorStatus) {
+      this.platform.log.debug('Skipping error handling: includeVacuumErrorStatus is disabled');
+      return;
+    }
     this.platform.log.debug(`Handling error occurred: ${debugStringify(message)}`);
-    const currentOperationState = robot.getAttribute(RvcOperationalState.Cluster.id, 'operationalState');
+    const currentOperationState: RvcOperationalState.OperationalState = robot.getAttribute(
+      RvcOperationalState.Cluster.id,
+      'operationalState',
+    );
 
     // Process vacuum errors (highest priority)
     const vacuumStatus = new VacuumStatus(message.vacuumErrorCode ?? 0);
     if (vacuumStatus.hasError()) {
       const errorDetail = vacuumStatus.getErrorState();
       this.platform.log.warn(`Vacuum error detected: ${this.getOperationalErrorName(errorDetail)}`);
-      robot.updateAttribute(RvcOperationalState.Cluster.id, 'operationalState', RvcOperationalState.OperationalState.Error, this.platform.log);
-      robot.updateAttribute(RvcOperationalState.Cluster.id, 'operationalError', { errorStateId: errorDetail }, this.platform.log);
+      robot.updateAttribute(
+        RvcOperationalState.Cluster.id,
+        'operationalState',
+        RvcOperationalState.OperationalState.Error,
+        this.platform.log,
+      );
+      robot.updateAttribute(
+        RvcOperationalState.Cluster.id,
+        'operationalError',
+        { errorStateId: errorDetail },
+        this.platform.log,
+      );
       return;
     }
 
     // If vacuum is running with no errors, clear any previous errors and skip dock processing
     if (currentOperationState === RvcOperationalState.OperationalState.Running) {
       this.platform.log.debug('Vacuum running without errors, clearing error state.');
-      robot.updateAttribute(RvcOperationalState.Cluster.id, 'operationalError', { errorStateId: RvcOperationalState.ErrorState.NoError }, this.platform.log);
+      robot.updateAttribute(
+        RvcOperationalState.Cluster.id,
+        'operationalError',
+        { errorStateId: RvcOperationalState.ErrorState.NoError },
+        this.platform.log,
+      );
       return;
     }
 
-    // Process dock station errors (only when vacuum not running)
-    if (this.platform.configManager.includeDockStationStatus && message.dockStationStatus !== undefined && message.dockStationStatus !== null) {
+    if (!this.platform.configManager.includeDockStationStatus) {
+      return;
+    }
+
+    if (message.dockStationStatus !== undefined && message.dockStationStatus !== null) {
+      // Process dock station errors (only when vacuum not running)
       const dockStatus = DockStationStatus.parseDockStationStatus(message.dockStationStatus);
       robot.dockStationStatus = dockStatus;
 
       if (dockStatus.hasError()) {
-        robot.updateAttribute(RvcOperationalState.Cluster.id, 'operationalState', RvcOperationalState.OperationalState.Error, this.platform.log);
+        robot.updateAttribute(
+          RvcOperationalState.Cluster.id,
+          'operationalState',
+          RvcOperationalState.OperationalState.Error,
+          this.platform.log,
+        );
         const errorDetail = dockStatus.getMatterOperationalError();
         this.platform.log.warn(`Docking station error detected: ${this.getOperationalErrorName(errorDetail)}`);
-        robot.updateAttribute(RvcOperationalState.Cluster.id, 'operationalError', { errorStateId: errorDetail }, this.platform.log);
+        robot.updateAttribute(
+          RvcOperationalState.Cluster.id,
+          'operationalError',
+          { errorStateId: errorDetail },
+          this.platform.log,
+        );
       } else {
         this.platform.log.debug('No docking station errors detected.');
-        robot.updateAttribute(RvcOperationalState.Cluster.id, 'operationalError', { errorStateId: RvcOperationalState.ErrorState.NoError }, this.platform.log);
+        robot.updateAttribute(
+          RvcOperationalState.Cluster.id,
+          'operationalError',
+          { errorStateId: RvcOperationalState.ErrorState.NoError },
+          this.platform.log,
+        );
       }
+      return;
+    }
+
+    if (message.dockErrorCode !== DockErrorCode.None) {
+      const dockStatus = DockStationStatus.parseDockErrorCode(message.dockErrorCode);
+      if (dockStatus !== RvcOperationalState.ErrorState.NoError) {
+        this.platform.log.warn(`Docking station error detected: ${this.getOperationalErrorName(dockStatus)}`);
+        robot.updateAttribute(
+          RvcOperationalState.Cluster.id,
+          'operationalError',
+          { errorStateId: dockStatus },
+          this.platform.log,
+        );
+      } else {
+        this.platform.log.debug('No docking station errors detected.');
+        robot.updateAttribute(
+          RvcOperationalState.Cluster.id,
+          'operationalError',
+          { errorStateId: RvcOperationalState.ErrorState.NoError },
+          this.platform.log,
+        );
+      }
+
       return;
     }
 
     // No errors detected and no dock station processing
     this.platform.log.debug('No errors detected, clearing operational error state.');
-    robot.updateAttribute(RvcOperationalState.Cluster.id, 'operationalError', { errorStateId: RvcOperationalState.ErrorState.NoError }, this.platform.log);
+    robot.updateAttribute(
+      RvcOperationalState.Cluster.id,
+      'operationalError',
+      { errorStateId: RvcOperationalState.ErrorState.NoError },
+      this.platform.log,
+    );
   }
 
   /**
@@ -221,14 +315,44 @@ export class PlatformRunner {
     this.platform.log.debug(`Handling battery update: ${debugStringify(message)}`);
     const batteryLevel = message.percentage;
     const deviceStatus = message.deviceStatus;
+    const batteryChargeLevel = getBatteryStatus(batteryLevel);
+
     if (batteryLevel) {
       robot.setAttribute(PowerSource.Cluster.id, 'batPercentRemaining', batteryLevel * 2, this.platform.log);
-      robot.updateAttribute(PowerSource.Cluster.id, 'batChargeLevel', getBatteryStatus(batteryLevel), this.platform.log);
+      robot.updateAttribute(PowerSource.Cluster.id, 'batChargeLevel', batteryChargeLevel, this.platform.log);
     }
 
     if (batteryLevel && deviceStatus) {
       const batteryChargeState = getBatteryState(deviceStatus, batteryLevel);
       robot.updateAttribute(PowerSource.Cluster.id, 'batChargeState', batteryChargeState, this.platform.log);
+
+      const currentOperationState: RvcOperationalState.OperationalState = robot.getAttribute(
+        RvcOperationalState.Cluster.id,
+        'operationalState',
+      );
+      if (
+        batteryChargeState === PowerSource.BatChargeState.IsCharging &&
+        currentOperationState === RvcOperationalState.OperationalState.Docked
+      ) {
+        robot.updateAttribute(
+          RvcOperationalState.Cluster.id,
+          'operationalState',
+          RvcOperationalState.OperationalState.Charging,
+          this.platform.log,
+        );
+      }
+
+      if (
+        batteryChargeState === PowerSource.BatChargeState.IsAtFullCharge &&
+        currentOperationState === RvcOperationalState.OperationalState.Charging
+      ) {
+        robot.updateAttribute(
+          RvcOperationalState.Cluster.id,
+          'operationalState',
+          RvcOperationalState.OperationalState.Docked,
+          this.platform.log,
+        );
+      }
     }
   }
 
@@ -254,8 +378,18 @@ export class PlatformRunner {
     );
 
     // Update Matter attributes
-    robot.updateAttribute(RvcRunMode.Cluster.id, 'currentMode', getRunningMode(resolvedState.runMode), this.platform.log);
-    robot.updateAttribute(RvcOperationalState.Cluster.id, 'operationalState', resolvedState.operationalState, this.platform.log);
+    robot.updateAttribute(
+      RvcRunMode.Cluster.id,
+      'currentMode',
+      getRunningMode(resolvedState.runMode),
+      this.platform.log,
+    );
+    robot.updateAttribute(
+      RvcOperationalState.Cluster.id,
+      'operationalState',
+      resolvedState.operationalState,
+      this.platform.log,
+    );
   }
 
   /**
@@ -263,11 +397,16 @@ export class PlatformRunner {
    * For devices without real-time connection, uses only status code without modifier flags.
    * Converts to StatusChangeMessage with undefined modifiers for state resolution.
    */
-  private handleDeviceStatusSimpleUpdate(robot: RoborockVacuumCleaner, message: { duid: string; status: OperationStatusCode }): void {
+  private handleDeviceStatusSimpleUpdate(
+    robot: RoborockVacuumCleaner,
+    message: { duid: string; status: OperationStatusCode },
+  ): void {
     this.platform.log.debug(`Handling simple device status update: ${debugStringify(message)}`);
 
     const state = state_to_matter_state(message.status);
-    this.platform.log.debug(`Resolved state from simple update: ${state !== undefined ? this.getRunModeName(state) : 'undefined'}`);
+    this.platform.log.debug(
+      `Resolved state from simple update: ${state !== undefined ? this.getRunModeName(state) : 'undefined'}`,
+    );
     if (state !== undefined) {
       robot.updateAttribute(RvcRunMode.Cluster.id, 'currentMode', getRunningMode(state), this.platform.log);
     }
@@ -289,12 +428,27 @@ export class PlatformRunner {
    * Handle clean mode update messages and update robot clean mode.
    * Processes clean mode settings (suction power, water flow, mop route).
    */
-  private handleCleanModeUpdate(robot: RoborockVacuumCleaner, message: { suctionPower: number; waterFlow: number; distance_off: number; mopRoute: number | undefined }): void {
+  private handleCleanModeUpdate(
+    robot: RoborockVacuumCleaner,
+    message: {
+      suctionPower: number;
+      waterFlow: number;
+      distance_off: number;
+      mopRoute: number | undefined;
+      seq_type: number | undefined;
+    },
+  ): void {
     this.platform.log.debug(`Handling clean mode update: ${debugStringify(message)}`);
     const deviceData = robot.device.specs;
 
     // Update RvcCleanMode based on clean mode settings
-    const currentCleanModeSetting = new CleanModeSetting(message.suctionPower, message.waterFlow, message.distance_off, message.mopRoute);
+    const currentCleanModeSetting = new CleanModeSetting(
+      message.suctionPower,
+      message.waterFlow,
+      message.distance_off,
+      message.mopRoute,
+      message.seq_type ?? CleanSequenceType.Persist,
+    );
     if (currentCleanModeSetting.hasFullSettings) {
       robot.cleanModeSetting = currentCleanModeSetting;
       const forceRunAtDefault = this.platform.configManager.forceRunAtDefault;
@@ -302,6 +456,7 @@ export class PlatformRunner {
       const currentCleanMode = currentCleanModeResolver.resolve(currentCleanModeSetting);
 
       if (currentCleanMode) {
+        this.platform.log.notice(`Calculated current clean mode: ${this.getCleanModeName(currentCleanMode)}`);
         robot.updateAttribute(RvcCleanMode.Cluster.id, 'currentMode', currentCleanMode, this.platform.log);
       }
     }
@@ -311,7 +466,10 @@ export class PlatformRunner {
    * Handle service area update messages and update robot service area attributes.
    * Processes service area changes (supported areas, maps, selected areas, current area).
    */
-  private handleServiceAreaUpdate(robot: RoborockVacuumCleaner, message: { state: OperationStatusCode; cleaningInfo: CleanInformation | undefined }): void {
+  private async handleServiceAreaUpdate(
+    robot: RoborockVacuumCleaner,
+    message: { state: OperationStatusCode; cleaningInfo: CleanInformation | undefined },
+  ): Promise<void> {
     const logger = this.platform.log;
 
     if (message.state === OperationStatusCode.Idle) {
@@ -333,43 +491,46 @@ export class PlatformRunner {
       return;
     }
 
-    const service = this.platform.roborockService;
-    if (!service) return;
+    const roomIndexMap = this.platform.roborockService?.getSupportedAreasIndexMap(robot.device.duid);
+    if (!roomIndexMap || !this.platform.roborockService) {
+      logger.error('No room mapping found.');
+      return;
+    }
 
-    const currentMappedAreas = service.getSupportedAreas(robot.device.duid);
+    if (this.platform.configManager.isMultipleMapEnabled) {
+      const roomData = await this.platform.roborockService.getRoomMap(robot.device.duid, robot.homeInFo.activeMapId);
+      robot.homeInFo.activeMapId = robot.homeInFo.mapInfo.getActiveMapId(roomData);
+    }
 
     const source_segment_id = message.cleaningInfo.segment_id ?? INVALID_SEGMENT_ID;
     const source_target_segment_id = message.cleaningInfo.target_segment_id ?? INVALID_SEGMENT_ID;
     const segment_id = source_segment_id !== INVALID_SEGMENT_ID ? source_segment_id : source_target_segment_id; // 4
-    const mappedArea = currentMappedAreas?.find((x) => x.areaId == segment_id);
+    const mappedArea = roomIndexMap.getAreaId(segment_id, robot.homeInFo.activeMapId);
 
     if (!mappedArea) {
       logger.debug(
         `No mapped area found, skipping area mapping.
-          source_segment_id: ${source_segment_id}, 
-          source_target_segment_id: ${source_target_segment_id}, 
+          source_segment_id: ${source_segment_id},
+          source_target_segment_id: ${source_target_segment_id},
           segment_id: ${segment_id},
-          currentMappedAreas: ${debugStringify(currentMappedAreas)},
+          currentMappedAreas: ${debugStringify(roomIndexMap)},
           mappedArea: ${mappedArea}`,
       );
+      robot.updateAttribute(ServiceArea.Cluster.id, 'currentArea', null, logger);
       return;
     }
 
+    const supportedAreas = this.platform.roborockService.getSupportedAreas(robot.device.duid);
+    const activeArea = supportedAreas.find((x) => x.areaId === mappedArea);
     logger.debug(
       `Mapped area found:
         source_segment_id: ${source_segment_id},
         source_target_segment_id: ${source_target_segment_id},
         segment_id: ${segment_id},
-        currentMappedAreas: ${debugStringify(currentMappedAreas)},
-        result: ${debugStringify(mappedArea)}`,
+        currentMappedAreas: ${debugStringify(roomIndexMap)},
+        activeArea: ${debugStringify(activeArea)}`,
     );
 
-    if (segment_id !== INVALID_SEGMENT_ID && mappedArea) {
-      robot.updateAttribute(ServiceArea.Cluster.id, 'currentArea', segment_id, logger);
-    }
-
-    if (segment_id === INVALID_SEGMENT_ID) {
-      robot.updateAttribute(ServiceArea.Cluster.id, 'currentArea', null, logger);
-    }
+    robot.updateAttribute(ServiceArea.Cluster.id, 'currentArea', mappedArea, logger);
   }
 }

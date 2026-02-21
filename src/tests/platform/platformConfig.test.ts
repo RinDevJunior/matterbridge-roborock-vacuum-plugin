@@ -2,7 +2,12 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { PlatformConfigManager } from '../../platform/platformConfigManager.js';
 import type { AnsiLogger } from 'matterbridge/logger';
 import { asPartial, asType } from '../helpers/testUtils.js';
-import { AuthenticationConfiguration, createDefaultAdvancedFeature, PluginConfiguration, RoborockPluginPlatformConfig } from '../../model/RoborockPluginPlatformConfig.js';
+import {
+  AuthenticationConfiguration,
+  createDefaultAdvancedFeature,
+  PluginConfiguration,
+  RoborockPluginPlatformConfig,
+} from '../../model/RoborockPluginPlatformConfig.js';
 
 function createMockLogger(): AnsiLogger {
   return asType<AnsiLogger>({
@@ -72,7 +77,9 @@ describe('PlatformConfigManager', () => {
       config = asPartial<RoborockPluginPlatformConfig>({ ...config, authentication: undefined });
       manager = PlatformConfigManager.create(config, mockLogger);
       expect(manager.validateAuthentication()).toBe(false);
-      expect(mockLogger.error).toHaveBeenCalledWith('Platform config validation failed: "authentication" object is required');
+      expect(mockLogger.error).toHaveBeenCalledWith(
+        'Platform config validation failed: "authentication" object is required',
+      );
     });
     it('should return false and log info if password is missing', () => {
       config.authentication = asPartial<AuthenticationConfiguration>({ authenticationMethod: 'Password' });
@@ -87,7 +94,10 @@ describe('PlatformConfigManager', () => {
       expect(mockLogger.info).toHaveBeenCalledWith('Platform config validation: verification code not provided');
     });
     it('should return true if verificationCode is present for VerificationCode method', () => {
-      config.authentication = asPartial<AuthenticationConfiguration>({ authenticationMethod: 'VerificationCode', verificationCode: '1234' });
+      config.authentication = asPartial<AuthenticationConfiguration>({
+        authenticationMethod: 'VerificationCode',
+        verificationCode: '1234',
+      });
       manager = PlatformConfigManager.create(config, mockLogger);
       expect(manager.validateAuthentication()).toBe(true);
     });
@@ -108,7 +118,10 @@ describe('PlatformConfigManager', () => {
     });
     it('should return refreshInterval or default', () => {
       expect(manager.refreshInterval).toBe(60);
-      config.pluginConfiguration = asPartial<PluginConfiguration>({ ...config.pluginConfiguration, refreshInterval: undefined });
+      config.pluginConfiguration = asPartial<PluginConfiguration>({
+        ...config.pluginConfiguration,
+        refreshInterval: undefined,
+      });
       manager = PlatformConfigManager.create(config, mockLogger);
       expect(manager.refreshInterval).toBeDefined();
     });
@@ -131,9 +144,17 @@ describe('PlatformConfigManager', () => {
         showRoutinesAsRoom: false,
         forceRunAtDefault: false,
         includeDockStationStatus: false,
+        includeVacuumErrorStatus: false,
         enableCleanModeMapping: true,
         useVacationModeToSendVacuumToDock: false,
         cleanModeSettings: createDefaultAdvancedFeature().settings.cleanModeSettings,
+        overrideMatterConfiguration: false,
+        matterOverrideSettings: {
+          matterVendorName: 'xxx',
+          matterVendorId: 123,
+          matterProductName: 'yy',
+          matterProductId: 456,
+        },
       };
       config.advancedFeature.enableAdvancedFeature = true;
       manager = PlatformConfigManager.create(config, mockLogger);
@@ -147,9 +168,17 @@ describe('PlatformConfigManager', () => {
           showRoutinesAsRoom: true,
           forceRunAtDefault: true,
           includeDockStationStatus: true,
+          includeVacuumErrorStatus: false,
           enableCleanModeMapping: false,
           useVacationModeToSendVacuumToDock: false,
           cleanModeSettings: createDefaultAdvancedFeature().settings.cleanModeSettings,
+          overrideMatterConfiguration: false,
+          matterOverrideSettings: {
+            matterVendorName: 'xxx',
+            matterVendorId: 123,
+            matterProductName: 'yy',
+            matterProductId: 456,
+          },
         },
       };
       config.pluginConfiguration.enableServerMode = true;
@@ -162,6 +191,124 @@ describe('PlatformConfigManager', () => {
       expect(manager.alwaysExecuteAuthentication).toBe(false);
       expect(manager.includeDockStationStatus).toBe(true);
     });
+
+    it('should return includeVacuumErrorStatus from settings when advanced feature is enabled', () => {
+      config.advancedFeature = {
+        enableAdvancedFeature: true,
+        settings: { ...createDefaultAdvancedFeature().settings, includeVacuumErrorStatus: true },
+      };
+      manager = PlatformConfigManager.create(config, mockLogger);
+      expect(manager.includeVacuumErrorStatus).toBe(true);
+    });
+
+    it('should return false for includeVacuumErrorStatus when advanced feature is disabled', () => {
+      config.advancedFeature = {
+        enableAdvancedFeature: false,
+        settings: { ...createDefaultAdvancedFeature().settings, includeVacuumErrorStatus: true },
+      };
+      manager = PlatformConfigManager.create(config, mockLogger);
+      expect(manager.includeVacuumErrorStatus).toBe(false);
+    });
+
+    it('should return false for useVacationModeToSendVacuumToDock when advanced feature is disabled', () => {
+      config.advancedFeature = {
+        enableAdvancedFeature: false,
+        settings: { ...createDefaultAdvancedFeature().settings, useVacationModeToSendVacuumToDock: true },
+      };
+      manager = PlatformConfigManager.create(config, mockLogger);
+      expect(manager.useVacationModeToSendVacuumToDock).toBe(false);
+    });
+
+    it('should return true for useVacationModeToSendVacuumToDock when advanced feature is enabled', () => {
+      config.advancedFeature = {
+        enableAdvancedFeature: true,
+        settings: { ...createDefaultAdvancedFeature().settings, useVacationModeToSendVacuumToDock: true },
+      };
+      manager = PlatformConfigManager.create(config, mockLogger);
+      expect(manager.useVacationModeToSendVacuumToDock).toBe(true);
+    });
+
+    it('should return false for overrideMatterConfiguration when advanced feature is disabled', () => {
+      config.advancedFeature = {
+        enableAdvancedFeature: false,
+        settings: { ...createDefaultAdvancedFeature().settings, overrideMatterConfiguration: true },
+      };
+      manager = PlatformConfigManager.create(config, mockLogger);
+      expect(manager.overrideMatterConfiguration).toBe(false);
+    });
+
+    it('should return true for overrideMatterConfiguration when advanced feature is enabled', () => {
+      config.advancedFeature = {
+        enableAdvancedFeature: true,
+        settings: { ...createDefaultAdvancedFeature().settings, overrideMatterConfiguration: true },
+      };
+      manager = PlatformConfigManager.create(config, mockLogger);
+      expect(manager.overrideMatterConfiguration).toBe(true);
+    });
+
+    it('should return custom matterOverrideSettings when advanced feature is enabled and override is true', () => {
+      const customSettings = {
+        matterVendorName: 'MyVendor',
+        matterVendorId: 9999,
+        matterProductName: 'MyProduct',
+        matterProductId: 8888,
+      };
+      config.advancedFeature = {
+        enableAdvancedFeature: true,
+        settings: {
+          ...createDefaultAdvancedFeature().settings,
+          overrideMatterConfiguration: true,
+          matterOverrideSettings: customSettings,
+        },
+      };
+      manager = PlatformConfigManager.create(config, mockLogger);
+      expect(manager.matterOverrideSettings).toEqual(customSettings);
+    });
+
+    it('should return default matterOverrideSettings when advanced feature is disabled', () => {
+      config.advancedFeature = {
+        enableAdvancedFeature: false,
+        settings: { ...createDefaultAdvancedFeature().settings, overrideMatterConfiguration: true },
+      };
+      manager = PlatformConfigManager.create(config, mockLogger);
+      expect(manager.matterOverrideSettings).toBeDefined();
+    });
+
+    it('should return default matterOverrideSettings when overrideMatterConfiguration is false', () => {
+      config.advancedFeature = {
+        enableAdvancedFeature: true,
+        settings: { ...createDefaultAdvancedFeature().settings, overrideMatterConfiguration: false },
+      };
+      manager = PlatformConfigManager.create(config, mockLogger);
+      expect(manager.matterOverrideSettings).toBeDefined();
+    });
+
+    it('should return false for isClearStorageOnStartupEnabled when advanced feature is disabled', () => {
+      config.advancedFeature = {
+        enableAdvancedFeature: false,
+        settings: { ...createDefaultAdvancedFeature().settings, clearStorageOnStartup: true },
+      };
+      manager = PlatformConfigManager.create(config, mockLogger);
+      expect(manager.isClearStorageOnStartupEnabled).toBe(false);
+    });
+
+    it('should return true for isClearStorageOnStartupEnabled when advanced feature is enabled', () => {
+      config.advancedFeature = {
+        enableAdvancedFeature: true,
+        settings: { ...createDefaultAdvancedFeature().settings, clearStorageOnStartup: true },
+      };
+      manager = PlatformConfigManager.create(config, mockLogger);
+      expect(manager.isClearStorageOnStartupEnabled).toBe(true);
+    });
+
+    it('should return false for isCustomCleanModeMappingEnabled when advanced feature is disabled', () => {
+      config.advancedFeature = {
+        enableAdvancedFeature: false,
+        settings: { ...createDefaultAdvancedFeature().settings, enableCleanModeMapping: true },
+      };
+      manager = PlatformConfigManager.create(config, mockLogger);
+      expect(manager.isCustomCleanModeMappingEnabled).toBe(false);
+    });
   });
 
   describe('device filtering', () => {
@@ -169,14 +316,14 @@ describe('PlatformConfigManager', () => {
       expect(manager.isDeviceAllowed({ duid: 'abc', deviceName: 'dev1' })).toBe(true);
     });
     it('should allow device if whitelisted', () => {
-      config.pluginConfiguration.whiteList = ['abc'];
+      config.pluginConfiguration.whiteList = ['dev1-abc'];
       manager = PlatformConfigManager.create(config, mockLogger);
       expect(manager.isDeviceAllowed({ duid: 'abc', deviceName: 'dev1' })).toBe(true);
     });
     it('should deny device if not in whitelist', () => {
-      config.pluginConfiguration.whiteList = ['dev2-duid456'];
+      config.pluginConfiguration.whiteList = ['dev2-abc'];
       manager = PlatformConfigManager.create(config, mockLogger);
-      expect(manager.isDeviceAllowed({ duid: 'abc', deviceName: 'dev1' })).toBe(false);
+      expect(manager.isDeviceAllowed({ duid: 'abcd', deviceName: 'dev1' })).toBe(false);
     });
     it('should extract duid from whitelist entry', () => {
       expect(manager.extractDuidFromWhitelistEntry('name - duid123')).toBe('duid123');

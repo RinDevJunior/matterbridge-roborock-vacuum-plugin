@@ -6,7 +6,7 @@ import { MapInfo } from '../../../core/application/models/index.js';
 import { MultipleMapDto, RawRoomMappingData } from '../../models/home/index.js';
 import { MapRoomResponse } from '../../../types/index.js';
 import { CleanModeSetting } from '../../../behaviors/roborock.vacuum/core/CleanModeSetting.js';
-import { MopRoute, VacuumSuctionPower } from '../../../behaviors/roborock.vacuum/enums/index.js';
+import { MopRoute, MopWaterFlow, VacuumSuctionPower } from '../../../behaviors/roborock.vacuum/enums/index.js';
 
 export class V10MessageDispatcher implements AbstractMessageDispatcher {
   public dispatcherName = 'V10MessageDispatcher';
@@ -42,7 +42,9 @@ export class V10MessageDispatcher implements AbstractMessageDispatcher {
   public async getMapInfo(duid: string): Promise<MapInfo> {
     const request = new RequestMessage({ method: 'get_multi_maps_list' });
     const response = (await this.client.get<MultipleMapDto[]>(duid, request)) ?? [];
-    return new MapInfo(response.length > 0 ? response[0] : { max_multi_map: 0, max_bak_map: 0, multi_map_count: 0, map_info: [] });
+    return new MapInfo(
+      response.length > 0 ? response[0] : { max_multi_map: 0, max_bak_map: 0, multi_map_count: 0, map_info: [] },
+    );
   }
 
   public async getRoomMap(duid: string, activeMap: number): Promise<RawRoomMappingData> {
@@ -136,11 +138,14 @@ export class V10MessageDispatcher implements AbstractMessageDispatcher {
       waterFlow = waterFlowRaw as number;
     }
 
-    return new CleanModeSetting(suctionPower, waterFlow, distance_off, mopRoute);
+    return new CleanModeSetting(suctionPower, waterFlow, distance_off, mopRoute, undefined);
   }
 
-  public async changeCleanMode(duid: string, suctionPower: number, waterFlow: number, mopRoute: number, distance_off: number): Promise<void> {
-    this.logger.notice(`Change clean mode for ${duid} to suctionPower: ${suctionPower}, waterFlow: ${waterFlow}, mopRoute: ${mopRoute}, distance_off: ${distance_off}`);
+  public async changeCleanMode(duid: string, setting: CleanModeSetting): Promise<void> {
+    const { suctionPower, waterFlow, distance_off, mopRoute } = setting;
+    this.logger.notice(
+      `Change clean mode for ${duid} to suctionPower: ${suctionPower}, waterFlow: ${waterFlow}, mopRoute: ${mopRoute}, distance_off: ${distance_off}`,
+    );
 
     const currentMopMode = await this.getCustomMessage<number>(duid, new RequestMessage({ method: 'get_custom_mode' }));
     const smartMopMode = VacuumSuctionPower.Smart;
@@ -160,9 +165,14 @@ export class V10MessageDispatcher implements AbstractMessageDispatcher {
       await this.client.send(duid, new RequestMessage({ method: 'set_custom_mode', params: [suctionPower] }));
     }
 
-    const CustomizeWithDistanceOff = 207;
-    if (waterFlow && waterFlow == CustomizeWithDistanceOff && distance_off && distance_off != 0) {
-      await this.client.send(duid, new RequestMessage({ method: 'set_water_box_custom_mode', params: { 'water_box_mode': waterFlow, 'distance_off': distance_off } }));
+    if (waterFlow && waterFlow == MopWaterFlow.CustomizeWithDistanceOff && distance_off && distance_off != 0) {
+      await this.client.send(
+        duid,
+        new RequestMessage({
+          method: 'set_water_box_custom_mode',
+          params: { 'water_box_mode': waterFlow, 'distance_off': distance_off },
+        }),
+      );
     } else if (waterFlow && waterFlow != 0) {
       await this.client.send(duid, new RequestMessage({ method: 'set_water_box_custom_mode', params: [waterFlow] }));
     }

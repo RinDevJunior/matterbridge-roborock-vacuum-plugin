@@ -203,7 +203,9 @@ describe('RoborockAuthenticateApi', () => {
         .mockResolvedValueOnce({ data: { data: { k: signedKey }, code: 200 } }) // signKeyV3
         .mockResolvedValueOnce({ data: { data: null, code: 500, msg: 'Server error' } }); // login fails
 
-      await expect(api.loginWithCodeV4('test@example.com', '123456')).rejects.toThrow('Authentication failed: Server error code: 500');
+      await expect(api.loginWithCodeV4('test@example.com', '123456')).rejects.toThrow(
+        'Authentication failed: Server error code: 500',
+      );
     });
   });
 

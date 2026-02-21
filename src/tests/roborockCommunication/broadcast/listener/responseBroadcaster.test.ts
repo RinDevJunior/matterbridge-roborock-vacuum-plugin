@@ -1,22 +1,26 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { PendingResponseTracker } from '../../../../roborockCommunication/routing/services/pendingResponseTracker.js';
+import { V1PendingResponseTracker } from '../../../../roborockCommunication/routing/services/v1PendingResponseTracker.js';
 import { makeLogger, asPartial } from '../../../testUtils.js';
 import { HeaderMessage, ResponseMessage } from '../../../../roborockCommunication/models/index.js';
-import { ResponseBroadcaster } from '../../../../roborockCommunication/routing/listeners/responseBroadcaster.js';
+import { V1ResponseBroadcaster } from '../../../../roborockCommunication/routing/listeners/v1ResponseBroadcaster.js';
 
 describe('ResponseBroadcaster', () => {
-  let chained: ResponseBroadcaster;
+  let chained: V1ResponseBroadcaster;
   let listener1: { name: string; duid: string; onMessage: ReturnType<typeof vi.fn<(message: any) => Promise<void>>> };
   let listener2: { name: string; duid: string; onMessage: ReturnType<typeof vi.fn<(message: any) => Promise<void>>> };
-  const message = asPartial<ResponseMessage>({ duid: 'test-duid', header: asPartial<HeaderMessage>({}), get: () => undefined });
+  const message = asPartial<ResponseMessage>({
+    duid: 'test-duid',
+    header: asPartial<HeaderMessage>({}),
+    get: () => undefined,
+  });
 
   const logger = makeLogger();
-  const responseTracker = new PendingResponseTracker(logger);
+  const responseTracker = new V1PendingResponseTracker(logger);
 
   beforeEach(() => {
-    chained = new ResponseBroadcaster(responseTracker, logger);
-    listener1 = { name: 'listener1', duid: 'DUID123', onMessage: vi.fn<(message: any) => Promise<void>>() };
-    listener2 = { name: 'listener2', duid: 'DUID456', onMessage: vi.fn<(message: any) => Promise<void>>() };
+    chained = new V1ResponseBroadcaster(responseTracker, logger);
+    listener1 = { name: 'listener1', duid: 'test-duid', onMessage: vi.fn<(message: any) => Promise<void>>() };
+    listener2 = { name: 'listener2', duid: 'test-duid', onMessage: vi.fn<(message: any) => Promise<void>>() };
   });
 
   it('should call onMessage on all registered listeners', async () => {

@@ -8,7 +8,10 @@ import { PlatformConfigManager } from '../../../platform/platformConfigManager.j
 import { UserData } from '../../../roborockCommunication/models/index.js';
 import { AuthContext } from '../../../services/authentication/AuthContext.js';
 import { createMockLogger, asType, asPartial } from '../../testUtils.js';
-import { AuthenticationConfiguration, RoborockPluginPlatformConfig } from '../../../model/RoborockPluginPlatformConfig.js';
+import {
+  AuthenticationConfiguration,
+  RoborockPluginPlatformConfig,
+} from '../../../model/RoborockPluginPlatformConfig.js';
 
 describe('TwoFactorAuthStrategy', () => {
   let strategy: TwoFactorAuthStrategy;
@@ -64,7 +67,14 @@ describe('TwoFactorAuthStrategy', () => {
       },
     });
 
-    strategy = new TwoFactorAuthStrategy(mockAuthService, mockUserDataRepository, mockVerificationCodeService, mockConfigManager, mockLogger);
+    strategy = new TwoFactorAuthStrategy(
+      mockAuthService,
+      mockUserDataRepository,
+      mockVerificationCodeService,
+      mockConfigManager,
+      vi.fn(),
+      mockLogger,
+    );
 
     vi.clearAllMocks();
   });
@@ -225,9 +235,9 @@ describe('TwoFactorAuthStrategy', () => {
         const context = createContext('test@example.com');
         await strategy.authenticate(context);
 
-        expect(mockLogger.notice).toHaveBeenCalledWith('============================================');
-        expect(mockLogger.notice).toHaveBeenCalledWith('ACTION REQUIRED: Enter verification code');
-        expect(mockLogger.notice).toHaveBeenCalledWith('A verification code was previously sent to: test@example.com');
+        expect(mockLogger.notice).toHaveBeenCalledWith(
+          expect.stringContaining('A verification code was previously sent to: test@example.com'),
+        );
       });
 
       it('should proceed with code request when not rate limited', async () => {
@@ -270,9 +280,9 @@ describe('TwoFactorAuthStrategy', () => {
         const context = createContext('test@example.com');
         await strategy.authenticate(context);
 
-        expect(mockLogger.notice).toHaveBeenCalledWith('A verification code has been sent to: test@example.com');
-        expect(mockLogger.notice).toHaveBeenCalledWith('Enter the 6-digit code in the plugin configuration');
-        expect(mockLogger.notice).toHaveBeenCalledWith('under the "verificationCode" field, then restart the plugin.');
+        expect(mockLogger.notice).toHaveBeenCalledWith(
+          expect.stringContaining('A verification code has been sent to: test@example.com'),
+        );
       });
 
       it('should throw error when code request fails', async () => {
@@ -323,7 +333,9 @@ describe('TwoFactorAuthStrategy', () => {
         const result = await strategy.authenticate(context);
 
         expect(result?.username).toBe('test@example.com');
-        expect(mockUserDataRepository.saveUserData).toHaveBeenCalledWith(expect.objectContaining({ username: 'test@example.com' }));
+        expect(mockUserDataRepository.saveUserData).toHaveBeenCalledWith(
+          expect.objectContaining({ username: 'test@example.com' }),
+        );
       });
 
       it('should save user data after successful authentication', async () => {
@@ -362,7 +374,10 @@ describe('TwoFactorAuthStrategy', () => {
         const result = await strategy.authenticate(context);
 
         expect(result).toBe(mockUserData);
-        expect(mockLogger.warn).toHaveBeenCalledWith('Failed to save user data, but login succeeded:', expect.any(Error));
+        expect(mockLogger.warn).toHaveBeenCalledWith(
+          'Failed to save user data, but login succeeded:',
+          expect.any(Error),
+        );
         expect(mockLogger.notice).toHaveBeenCalledWith('Authentication successful!');
       });
 
@@ -375,7 +390,10 @@ describe('TwoFactorAuthStrategy', () => {
         const result = await strategy.authenticate(context);
 
         expect(result).toBe(mockUserData);
-        expect(mockLogger.warn).toHaveBeenCalledWith('Failed to clear auth state, but login succeeded:', expect.any(Error));
+        expect(mockLogger.warn).toHaveBeenCalledWith(
+          'Failed to clear auth state, but login succeeded:',
+          expect.any(Error),
+        );
         expect(mockLogger.notice).toHaveBeenCalledWith('Authentication successful!');
       });
 

@@ -29,14 +29,18 @@ describe('HelloResponseListener (basic behavior)', () => {
   });
 
   it('resolves when a hello_response is received', async () => {
-    const message = new ResponseMessage('device-1', {
-      version: '1.0',
-      seq: 1,
-      nonce: 1,
-      timestamp: 1,
-      protocol: Protocol.hello_response,
-      isForProtocol: (p: Protocol) => p === Protocol.hello_response,
-    });
+    const message = new ResponseMessage(
+      'device-1',
+      {
+        version: '1.0',
+        seq: 1,
+        nonce: 1,
+        timestamp: 1,
+        protocol: Protocol.hello_response,
+        isForProtocol: (p: Protocol) => p === Protocol.hello_response,
+      },
+      undefined,
+    );
 
     const p = listener.waitFor(protocolVersion);
 
@@ -47,14 +51,18 @@ describe('HelloResponseListener (basic behavior)', () => {
   });
 
   it('rejects after timeout if no hello_response received', async () => {
-    const nonMatching = new ResponseMessage('device-1', {
-      version: '1.0',
-      seq: 2,
-      nonce: 2,
-      timestamp: 2,
-      protocol: Protocol.ping_response,
-      isForProtocol: (p: Protocol) => p === Protocol.ping_response,
-    });
+    const nonMatching = new ResponseMessage(
+      'device-1',
+      {
+        version: '1.0',
+        seq: 2,
+        nonce: 2,
+        timestamp: 2,
+        protocol: Protocol.ping_response,
+        isForProtocol: (p: Protocol) => p === Protocol.ping_response,
+      },
+      undefined,
+    );
 
     const p = listener.waitFor(protocolVersion);
 
@@ -68,14 +76,18 @@ describe('HelloResponseListener (basic behavior)', () => {
   });
 
   it('ignores messages when no handler is registered', () => {
-    const message = new ResponseMessage('device-1', {
-      version: '1.0',
-      seq: 3,
-      nonce: 3,
-      timestamp: 3,
-      protocol: Protocol.hello_response,
-      isForProtocol: (p: Protocol) => p === Protocol.hello_response,
-    });
+    const message = new ResponseMessage(
+      'device-1',
+      {
+        version: '1.0',
+        seq: 3,
+        nonce: 3,
+        timestamp: 3,
+        protocol: Protocol.hello_response,
+        isForProtocol: (p: Protocol) => p === Protocol.hello_response,
+      },
+      undefined,
+    );
 
     // call onMessage without waitFor() being called first
     expect(() => listener.onMessage(message)).not.toThrow();

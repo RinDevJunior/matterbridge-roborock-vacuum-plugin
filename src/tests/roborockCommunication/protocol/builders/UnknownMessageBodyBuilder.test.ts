@@ -5,7 +5,10 @@ import { UnknownMessageBodyBuilder } from '../../../../roborockCommunication/pro
 import { asPartial } from '../../../helpers/testUtils.js';
 import type { UserData } from '../../../../roborockCommunication/models/index.js';
 
-const mkUser = () => asPartial<UserData>({ rriot: { r: { a: 'https://api.example', r: 'r', m: 'm', l: 'l' }, u: 'uid', s: 's', h: 'h', k: 'k' } });
+const mkUser = () =>
+  asPartial<UserData>({
+    rriot: { r: { a: 'https://api.example', r: 'r', m: 'm', l: 'l' }, u: 'uid', s: 's', h: 'h', k: 'k' },
+  });
 
 describe('UnknownMessageBodyBuilder', () => {
   it('throws when body is missing', () => {

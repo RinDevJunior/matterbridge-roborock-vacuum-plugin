@@ -21,11 +21,15 @@ export class VacuumError {
   }
 
   isBinFull(): boolean {
-    return this.vacuumErrorCode === VacuumErrorCode.CleanAutoEmptyDock || this.dockErrorCode == DockErrorCode.DuctBlockage;
+    return (
+      this.vacuumErrorCode === VacuumErrorCode.CleanAutoEmptyDock || this.dockErrorCode == DockErrorCode.DuctBlockage
+    );
   }
 
   isCleanWaterEmpty(): boolean {
-    return this.vacuumErrorCode === VacuumErrorCode.ClearWaterTankEmpty || this.dockErrorCode == DockErrorCode.WaterEmpty;
+    return (
+      this.vacuumErrorCode === VacuumErrorCode.ClearWaterTankEmpty || this.dockErrorCode == DockErrorCode.WaterEmpty
+    );
   }
 
   isWasteWaterFull(): boolean {

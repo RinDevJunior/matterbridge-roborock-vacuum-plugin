@@ -18,7 +18,11 @@ export class HelloResponseListener implements AbstractMessageListener {
     return new Promise<ResponseMessage>((resolve, reject) => {
       this.handler = resolve;
       this.timer = setTimeout(() => {
-        reject(new Error(`[${this.name}] no hello response for ${this.duid} with protocol version ${protocolVersion} within ${HELLO_RESPONSE_TIMEOUT_MS / 1000} second`));
+        reject(
+          new Error(
+            `[${this.name}] no hello response for ${this.duid} with protocol version ${protocolVersion} within ${HELLO_RESPONSE_TIMEOUT_MS / 1000} second`,
+          ),
+        );
       }, HELLO_RESPONSE_TIMEOUT_MS);
     });
   }

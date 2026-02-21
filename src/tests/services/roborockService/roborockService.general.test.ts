@@ -7,6 +7,7 @@ import { createMockLogger, createMockLocalStorage, asPartial, asType } from '../
 import { localStorageMock } from '../../testData/localStorageMock.js';
 import { PlatformConfigManager as PlatformConfigManagerStatic } from '../../../platform/platformConfigManager.js';
 import { Device } from '../../../roborockCommunication/models/device.js';
+import { AreaInfo } from '../../../initialData/getSupportedAreas.js';
 
 const logger: AnsiLogger = createMockLogger();
 
@@ -24,7 +25,13 @@ describe('RoborockService basic behaviors', () => {
       version: '1.0',
       debug: false,
       unregisterOnShutdown: false,
-      authentication: { username: 'test', region: 'US', forceAuthentication: false, authenticationMethod: 'Password', password: '' },
+      authentication: {
+        username: 'test',
+        region: 'US',
+        forceAuthentication: false,
+        authenticationMethod: 'Password',
+        password: '',
+      },
       pluginConfiguration: {
         whiteList: [],
         enableServerMode: false,
@@ -40,6 +47,7 @@ describe('RoborockService basic behaviors', () => {
           clearStorageOnStartup: false,
           showRoutinesAsRoom: false,
           includeDockStationStatus: false,
+          includeVacuumErrorStatus: false,
           forceRunAtDefault: false,
           useVacationModeToSendVacuumToDock: false,
           enableCleanModeMapping: false,
@@ -47,6 +55,13 @@ describe('RoborockService basic behaviors', () => {
             vacuuming: { fanMode: 'Balanced', mopRouteMode: 'Standard' },
             mopping: { waterFlowMode: 'Medium', mopRouteMode: 'Standard', distanceOff: 25 },
             vacmop: { fanMode: 'Balanced', waterFlowMode: 'Medium', mopRouteMode: 'Standard', distanceOff: 25 },
+          },
+          overrideMatterConfiguration: false,
+          matterOverrideSettings: {
+            matterVendorName: 'xxx',
+            matterVendorId: 123,
+            matterProductName: 'yy',
+            matterProductId: 456,
           },
         },
       },
@@ -60,6 +75,7 @@ describe('RoborockService basic behaviors', () => {
         baseUrl: 'https://api.roborock.com',
         persist: persist,
         configManager: configManager,
+        toastMessage: vi.fn(),
       },
       logger,
       configManager,
@@ -69,14 +85,14 @@ describe('RoborockService basic behaviors', () => {
   it('maps selected area ids to room ids via RoomIndexMap in setSelectedAreas', () => {
     const map = new Map<number, any>();
     map.set(5, { roomId: 42, mapId: 1 });
-    const rim = new RoomIndexMap(map);
+    const rim = new RoomIndexMap(map, new Map());
 
     // Test public API
     svc.setSupportedAreaIndexMap('d1', rim);
     svc.setSelectedAreas('d1', [5]);
 
     const sel = svc.getSelectedAreas('d1');
-    expect(sel).toEqual([42]);
+    expect(sel).toEqual([5]);
   });
 
   it('getCleanModeData throws when message processor not available', async () => {
@@ -102,7 +118,13 @@ describe('RoborockService - Facade Pattern Testing', () => {
       version: '1.0',
       debug: false,
       unregisterOnShutdown: false,
-      authentication: { username: 'test', region: 'US', forceAuthentication: false, authenticationMethod: 'Password', password: '' },
+      authentication: {
+        username: 'test',
+        region: 'US',
+        forceAuthentication: false,
+        authenticationMethod: 'Password',
+        password: '',
+      },
       pluginConfiguration: {
         whiteList: [],
         enableServerMode: false,
@@ -118,6 +140,7 @@ describe('RoborockService - Facade Pattern Testing', () => {
           clearStorageOnStartup: false,
           showRoutinesAsRoom: false,
           includeDockStationStatus: false,
+          includeVacuumErrorStatus: false,
           forceRunAtDefault: false,
           useVacationModeToSendVacuumToDock: false,
           enableCleanModeMapping: false,
@@ -125,6 +148,13 @@ describe('RoborockService - Facade Pattern Testing', () => {
             vacuuming: { fanMode: 'Balanced', mopRouteMode: 'Standard' },
             mopping: { waterFlowMode: 'Medium', mopRouteMode: 'Standard', distanceOff: 25 },
             vacmop: { fanMode: 'Balanced', waterFlowMode: 'Medium', mopRouteMode: 'Standard', distanceOff: 25 },
+          },
+          overrideMatterConfiguration: false,
+          matterOverrideSettings: {
+            matterVendorName: 'xxx',
+            matterVendorId: 123,
+            matterProductName: 'yy',
+            matterProductId: 456,
           },
         },
       },
@@ -138,6 +168,7 @@ describe('RoborockService - Facade Pattern Testing', () => {
         baseUrl: 'https://api.roborock.com',
         persist: persist,
         configManager: configManager,
+        toastMessage: vi.fn(),
       },
       logger,
       configManager,
@@ -249,10 +280,10 @@ describe('RoborockService - Facade Pattern Testing', () => {
       }).not.toThrow();
 
       // Create a valid RoomIndexMap with mock data
-      const mockRoomMap = new Map<number, { roomId: number; mapId: number }>();
-      mockRoomMap.set(1, { roomId: 10, mapId: 1 });
+      const mockRoomMap = new Map<number, AreaInfo>();
+      mockRoomMap.set(1, { roomId: 10, mapId: 1, roomName: 'rn-1' });
       expect(() => {
-        roborockService.setSupportedAreaIndexMap('device', new RoomIndexMap(mockRoomMap));
+        roborockService.setSupportedAreaIndexMap('device', new RoomIndexMap(mockRoomMap, new Map()));
       }).not.toThrow();
     });
   });

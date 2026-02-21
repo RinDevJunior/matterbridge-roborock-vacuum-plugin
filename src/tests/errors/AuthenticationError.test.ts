@@ -161,7 +161,13 @@ describe('AuthenticationError', () => {
 
   describe('error hierarchy', () => {
     it('should maintain proper inheritance chain', () => {
-      const errors = [new VerificationCodeExpiredError(), new InvalidCredentialsError(), new InvalidVerificationCodeError(), new TokenExpiredError(), new RateLimitExceededError()];
+      const errors = [
+        new VerificationCodeExpiredError(),
+        new InvalidCredentialsError(),
+        new InvalidVerificationCodeError(),
+        new TokenExpiredError(),
+        new RateLimitExceededError(),
+      ];
 
       errors.forEach((error) => {
         expect(error).toBeInstanceOf(Error);
@@ -170,7 +176,13 @@ describe('AuthenticationError', () => {
     });
 
     it('should all have AUTH_ERROR code', () => {
-      const errors = [new VerificationCodeExpiredError(), new InvalidCredentialsError(), new InvalidVerificationCodeError(), new TokenExpiredError(), new RateLimitExceededError()];
+      const errors = [
+        new VerificationCodeExpiredError(),
+        new InvalidCredentialsError(),
+        new InvalidVerificationCodeError(),
+        new TokenExpiredError(),
+        new RateLimitExceededError(),
+      ];
 
       errors.forEach((error) => {
         expect(error.code).toBe('AUTH_ERROR');

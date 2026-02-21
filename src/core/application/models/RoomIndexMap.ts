@@ -1,26 +1,27 @@
-import { MapInfo } from '../../../initialData/getSupportedAreas.js';
+import { AreaInfo, SegmentInfo } from '../../../initialData/getSupportedAreas.js';
 
 export class RoomIndexMap {
-  public indexMap: Map<number, MapInfo>;
-  public roomMap: Map<string, number>;
+  constructor(
+    public readonly areaInfo: Map<number, AreaInfo>,
+    public readonly roomInfo: Map<string, SegmentInfo>,
+  ) {}
 
-  constructor(roomMap: Map<number, MapInfo>) {
-    this.indexMap = roomMap;
-    this.roomMap = new Map();
-    for (const [areaId, r] of roomMap.entries()) {
-      this.roomMap.set(`${r.roomId}:${r.mapId}`, areaId);
-    }
+  // TODO: find a way to get map id value
+  public getAreaId(roomId: number, mapId: number): number | undefined {
+    return this.roomInfo.get(`${roomId}-${mapId}`)?.areaId;
   }
 
-  public getAreaId(roomId: number, mapId: number): number | undefined {
-    const areaId = this.roomMap.get(`${roomId}:${mapId}`);
-    if (areaId === undefined) {
-      return undefined;
+  public getAreaIdV2(roomId: number): number | undefined {
+    for (const key of this.roomInfo.keys()) {
+      if (key.startsWith(`${roomId}-`)) {
+        return this.roomInfo.get(key)?.areaId;
+      }
     }
-    return areaId;
+
+    return undefined;
   }
 
   public getRoomId(areaId: number): number | undefined {
-    return this.indexMap.get(areaId)?.roomId;
+    return this.areaInfo.get(areaId)?.roomId;
   }
 }

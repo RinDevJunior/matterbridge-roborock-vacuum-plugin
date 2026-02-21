@@ -17,7 +17,11 @@ const simpleUpdateAttribute = (...args: any[]) => mockUpdateAttribute(...args);
 const duid = 'test-duid';
 const robot = asPartial<RoborockVacuumCleaner>({
   updateAttribute: simpleUpdateAttribute,
-  device: asPartial<Device>({ duid, name: 'TestVac', specs: asPartial<DeviceSpecs>({ model: DeviceModel.QREVO_EDGE_5V1 }) }),
+  device: asPartial<Device>({
+    duid,
+    name: 'TestVac',
+    specs: asPartial<DeviceSpecs>({ model: DeviceModel.QREVO_EDGE_5V1 }),
+  }),
 });
 const robots = new Map([[duid, robot]]);
 const registry = asPartial<DeviceRegistry>({
@@ -98,7 +102,10 @@ describe('updateFromHomeData', () => {
     });
     platform.registry.robotsMap.clear();
     platform.registry.robotsMap.set('test-duid', robot);
-    platform.registry.robotsMap.set('test-duid-2', asPartial<RoborockVacuumCleaner>({ ...robot, updateAttribute: vi.fn() }));
+    platform.registry.robotsMap.set(
+      'test-duid-2',
+      asPartial<RoborockVacuumCleaner>({ ...robot, updateAttribute: vi.fn() }),
+    );
 
     await updateFromHomeData(homeDataMultipleDevices, asPartial<RoborockMatterbridgePlatform>(platform));
     // Both devices should be processed
@@ -128,7 +135,9 @@ describe('updateFromHomeData', () => {
 
     await updateFromHomeData(homeDataNoBattery, asPartial<RoborockMatterbridgePlatform>(platform));
     // Battery payload not sent, but DeviceStatus payload still sent because state exists
-    expect(platformRunner.updateRobotWithPayload).toHaveBeenCalledWith(expect.objectContaining({ type: 'DeviceStatusSimple' }));
+    expect(platformRunner.updateRobotWithPayload).toHaveBeenCalledWith(
+      expect.objectContaining({ type: 'DeviceStatusSimple' }),
+    );
   });
 
   it('should handle state without matterState mapping', async () => {
@@ -169,7 +178,11 @@ describe('updateFromHomeData', () => {
   it('should process device when it has docking station status', async () => {
     const robotWithDss = asPartial<RoborockVacuumCleaner>({
       updateAttribute: simpleUpdateAttribute,
-      device: asPartial<Device>({ duid, name: 'TestVac', specs: asPartial<DeviceSpecs>({ model: DeviceModel.QREVO_EDGE_5V1 }) }),
+      device: asPartial<Device>({
+        duid,
+        name: 'TestVac',
+        specs: asPartial<DeviceSpecs>({ model: DeviceModel.QREVO_EDGE_5V1 }),
+      }),
       dockStationStatus: asPartial<DockStationStatus>({
         cleanFluidStatus: 0,
         waterBoxFilterStatus: 0,
@@ -232,7 +245,9 @@ describe('updateFromHomeData', () => {
 
     await updateFromHomeData(homeDataNoBattery, platform);
     // Battery not present so no BatteryUpdate payload sent, but DeviceStatus still sent
-    expect(platformRunner.updateRobotWithPayload).toHaveBeenCalledWith(expect.objectContaining({ type: 'DeviceStatusSimple' }));
+    expect(platformRunner.updateRobotWithPayload).toHaveBeenCalledWith(
+      expect.objectContaining({ type: 'DeviceStatusSimple' }),
+    );
   });
 
   it('should handle zero battery level', async () => {
@@ -245,7 +260,9 @@ describe('updateFromHomeData', () => {
 
     await updateFromHomeData(homeDataZeroBattery, platform);
     // Battery is 0, which is falsy, so no BatteryUpdate payload, but DeviceStatus still sent
-    expect(platformRunner.updateRobotWithPayload).toHaveBeenCalledWith(expect.objectContaining({ type: 'DeviceStatusSimple' }));
+    expect(platformRunner.updateRobotWithPayload).toHaveBeenCalledWith(
+      expect.objectContaining({ type: 'DeviceStatusSimple' }),
+    );
   });
 
   it('should handle homeData without matching product schema', async () => {
@@ -272,7 +289,13 @@ describe('updateFromHomeData', () => {
           specs: { ...homeData.devices[0].specs, model: DeviceModel.Q7_MAX },
         },
       ],
-      products: [asPartial<Product>({ id: homeData.products[0].id, model: robot.device.specs?.model, schema: homeData.products[0].schema })],
+      products: [
+        asPartial<Product>({
+          id: homeData.products[0].id,
+          model: robot.device.specs?.model,
+          schema: homeData.products[0].schema,
+        }),
+      ],
     });
 
     platform.registry.robotsMap.clear();

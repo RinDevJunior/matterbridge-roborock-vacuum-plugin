@@ -8,7 +8,10 @@ import { MessageBodyBuilderFactory } from '../../../roborockCommunication/protoc
 import { MessageSerializerFactory } from '../../../roborockCommunication/protocol/serializers/messageSerializerFactory.js';
 import { makeLogger } from '../../testUtils.js';
 
-const mkUser = () => asPartial<UserData>({ rriot: { r: { a: 'https://api.example', r: 'r', m: 'm', l: 'l' }, u: 'uid', s: 's', h: 'h', k: 'k' } });
+const mkUser = () =>
+  asPartial<UserData>({
+    rriot: { r: { a: 'https://api.example', r: 'r', m: 'm', l: 'l' }, u: 'uid', s: 's', h: 'h', k: 'k' },
+  });
 
 describe('MessageSerializer', () => {
   afterEach(() => {
@@ -42,7 +45,11 @@ describe('MessageSerializer', () => {
   });
 
   it('uses messageBodyBuilder and processor to encode payload', async () => {
-    const ctx = new MessageContext(asPartial<UserData>({ rriot: { r: { a: 'https://api.example', r: 'r', m: 'm', l: 'l' }, u: 'uid', s: 's', h: 'h', k: 'k' } }));
+    const ctx = new MessageContext(
+      asPartial<UserData>({
+        rriot: { r: { a: 'https://api.example', r: 'r', m: 'm', l: 'l' }, u: 'uid', s: 's', h: 'h', k: 'k' },
+      }),
+    );
     ctx.registerDevice('duid-ok', 'lk-secret', '1.0', 77);
 
     // mock the factory methods to return controlled builders/processors
@@ -54,7 +61,15 @@ describe('MessageSerializer', () => {
 
     vi.spyOn(MessageSerializerFactory.prototype, 'getMessageSerializer').mockReturnValue(
       asType<AbstractSerializer>({
-        encode: (_payload: string, _localKey: string, _timestamp: number, _seq: number, _nonce: number, _connectNonce?: number, _ackNonce?: number) => Buffer.from([9, 8, 7]),
+        encode: (
+          _payload: string,
+          _localKey: string,
+          _timestamp: number,
+          _seq: number,
+          _nonce: number,
+          _connectNonce?: number,
+          _ackNonce?: number,
+        ) => Buffer.from([9, 8, 7]),
       }),
     );
 

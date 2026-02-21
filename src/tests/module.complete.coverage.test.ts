@@ -3,7 +3,11 @@ import { AnsiLogger, LogLevel } from 'matterbridge/logger';
 import { PlatformMatterbridge } from 'matterbridge';
 import { RoborockMatterbridgePlatform } from '../module.js';
 import { DeviceSpecs, RawRoomMappingData, type Device, type RoomDto } from '../roborockCommunication/models/index.js';
-import { AdvancedFeatureConfiguration, AdvancedFeatureSetting, RoborockPluginPlatformConfig } from '../model/RoborockPluginPlatformConfig.js';
+import {
+  AdvancedFeatureConfiguration,
+  AdvancedFeatureSetting,
+  RoborockPluginPlatformConfig,
+} from '../model/RoborockPluginPlatformConfig.js';
 import type { LocalStorage } from 'node-persist';
 import type { RoborockService } from '../services/roborockService.js';
 import type { PlatformRunner } from '../platformRunner.js';
@@ -67,7 +71,7 @@ function createMockLogger(): AnsiLogger {
 
 function createMockMatterbridge(): PlatformMatterbridge {
   return {
-    matterbridgeVersion: '3.5.3',
+    matterbridgeVersion: '3.5.5',
     matterbridgePluginDirectory: '/tmp',
     matterbridgeDirectory: '/tmp',
   } satisfies Partial<PlatformMatterbridge> as PlatformMatterbridge;
@@ -76,7 +80,13 @@ function createMockMatterbridge(): PlatformMatterbridge {
 function createMockConfig(overrides: Partial<RoborockPluginPlatformConfig> = {}): RoborockPluginPlatformConfig {
   return {
     name: 'TestPlatform',
-    authentication: { username: 'test', region: 'US', forceAuthentication: false, password: 'test', authenticationMethod: 'Password' },
+    authentication: {
+      username: 'test',
+      region: 'US',
+      forceAuthentication: false,
+      password: 'test',
+      authenticationMethod: 'Password',
+    },
     pluginConfiguration: {
       whiteList: [],
       sanitizeSensitiveLogs: false,
@@ -92,6 +102,7 @@ function createMockConfig(overrides: Partial<RoborockPluginPlatformConfig> = {})
         clearStorageOnStartup: false,
         showRoutinesAsRoom: false,
         includeDockStationStatus: false,
+        includeVacuumErrorStatus: false,
         forceRunAtDefault: false,
         useVacationModeToSendVacuumToDock: false,
         enableCleanModeMapping: true,
@@ -99,6 +110,13 @@ function createMockConfig(overrides: Partial<RoborockPluginPlatformConfig> = {})
           vacuuming: { fanMode: 'Silent', mopRouteMode: 'Standard' },
           mopping: { waterFlowMode: 'Low', mopRouteMode: 'Standard', distanceOff: 0 },
           vacmop: { fanMode: 'Silent', waterFlowMode: 'Low', mopRouteMode: 'Standard', distanceOff: 0 },
+        },
+        overrideMatterConfiguration: false,
+        matterOverrideSettings: {
+          matterVendorName: 'xxx',
+          matterVendorId: 123,
+          matterProductName: 'yy',
+          matterProductId: 456,
         },
       } satisfies AdvancedFeatureSetting,
     } satisfies AdvancedFeatureConfiguration,
@@ -188,11 +206,11 @@ describe('module.ts - complete coverage', () => {
       platform.registerDevice = vi.fn().mockResolvedValue(undefined);
       platform.setSelectDevice = vi.fn();
 
-      await platform.lifecycle.configurator['configureDevice'](mockDevice, platform.roborockService);
+      await platform.configurator['configureDevice'](mockDevice, platform.roborockService);
       const mockRobot = asPartial<RoborockVacuumCleaner>({ serialNumber: 'device1', device: mockDevice });
       platform.registry.registerRobot(mockRobot);
 
-      await platform.lifecycle.configurator['onConfigureDevice'](platform.roborockService);
+      await platform.configurator['onConfigureDevice'](platform.roborockService);
 
       expect(mockRoborockService.setDeviceNotify).toHaveBeenCalled();
       expect(capturedCallback).toBeDefined();
@@ -258,7 +276,9 @@ describe('module.ts - complete coverage', () => {
       ] as Partial<RawRoomMappingData> as RawRoomMappingData;
 
       const mockRoborockService = asPartial<RoborockService>({
-        initializeMessageClientForLocal: vi.fn().mockImplementation((d: Device) => Promise.resolve(d.duid === 'device1')),
+        initializeMessageClientForLocal: vi
+          .fn()
+          .mockImplementation((d: Device) => Promise.resolve(d.duid === 'device1')),
         getMapInfo: vi.fn().mockResolvedValue({ allRooms: [] }),
         setSupportedAreas: vi.fn(),
         setSupportedAreaIndexMap: vi.fn(),
@@ -281,18 +301,19 @@ describe('module.ts - complete coverage', () => {
       platform.registerDevice = vi.fn().mockResolvedValue(undefined);
       platform.setSelectDevice = vi.fn();
 
-      await platform.lifecycle.configurator['configureDevice'](mockDevice1, platform.roborockService);
-      await platform.lifecycle.configurator['configureDevice'](mockDevice2, platform.roborockService);
+      await platform.configurator['configureDevice'](mockDevice1, platform.roborockService);
+      await platform.configurator['configureDevice'](mockDevice2, platform.roborockService);
 
       const mockRobot1 = { serialNumber: 'device1', device: mockDevice1 };
       const mockRobot2 = { serialNumber: 'device2', device: mockDevice2 };
       platform.registry.registerRobot(asPartial<RoborockVacuumCleaner>(mockRobot1));
       platform.registry.registerRobot(asPartial<RoborockVacuumCleaner>(mockRobot2));
 
-      await platform.lifecycle.configurator['onConfigureDevice'](platform.roborockService);
+      await platform.configurator['onConfigureDevice'](platform.roborockService);
 
-      expect(mockRoborockService.activateDeviceNotify).toHaveBeenCalledTimes(1);
+      expect(mockRoborockService.activateDeviceNotify).toHaveBeenCalledTimes(2);
       expect(mockRoborockService.activateDeviceNotify).toHaveBeenCalledWith(mockDevice1);
+      expect(mockRoborockService.activateDeviceNotify).toHaveBeenCalledWith(mockDevice2);
     });
 
     it('should handle requestHomeData Error exception', async () => {
@@ -347,11 +368,11 @@ describe('module.ts - complete coverage', () => {
       platform.registerDevice = vi.fn().mockResolvedValue(undefined);
       platform.setSelectDevice = vi.fn();
 
-      await platform.lifecycle.configurator['configureDevice'](mockDevice, platform.roborockService);
+      await platform.configurator['configureDevice'](mockDevice, platform.roborockService);
       const mockRobot = asPartial<RoborockVacuumCleaner>({ serialNumber: 'device1', device: mockDevice });
       platform.registry.registerRobot(mockRobot);
 
-      await platform.lifecycle.configurator['onConfigureDevice'](platform.roborockService);
+      await platform.configurator['onConfigureDevice'](platform.roborockService);
 
       expect(mockLogger.log).toHaveBeenCalledWith('error', 'requestHomeData (initial) failed: Network timeout');
     });
@@ -408,11 +429,11 @@ describe('module.ts - complete coverage', () => {
       platform.registerDevice = vi.fn().mockResolvedValue(undefined);
       platform.setSelectDevice = vi.fn();
 
-      await platform.lifecycle.configurator['configureDevice'](mockDevice, platform.roborockService);
+      await platform.configurator['configureDevice'](mockDevice, platform.roborockService);
       const mockRobot = asPartial<RoborockVacuumCleaner>({ serialNumber: 'device1', device: mockDevice });
       platform.registry.registerRobot(mockRobot);
 
-      await platform.lifecycle.configurator['onConfigureDevice'](platform.roborockService);
+      await platform.configurator['onConfigureDevice'](platform.roborockService);
 
       expect(mockLogger.log).toHaveBeenCalledWith('error', 'requestHomeData (initial) failed: Connection failed');
     });
@@ -449,11 +470,13 @@ describe('module.ts - complete coverage', () => {
           { id: 2, iot_name: 'Kitchen', tag: 0, iot_name_id: 'room2' },
         ],
         hasRooms: true,
+        getActiveMapId: vi.fn().mockReturnValue(0),
       };
 
       const mockRoborockService = asPartial<RoborockService>({
         initializeMessageClientForLocal: vi.fn().mockResolvedValue(true),
         getMapInfo: vi.fn().mockResolvedValue(mockMapInfo),
+        getRoomMap: vi.fn().mockResolvedValue([]),
         setSupportedAreas: vi.fn(),
         setSupportedAreaIndexMap: vi.fn(),
       });
@@ -466,11 +489,10 @@ describe('module.ts - complete coverage', () => {
       const mockRobot = asPartial<RoborockVacuumCleaner>({
         serialNumber: 'device1',
         device: mockDevice,
-        homeInfo: undefined,
       });
       platform.registry.registerRobot(mockRobot);
 
-      const result = await platform.lifecycle.configurator['configureDevice'](mockDevice, platform.roborockService);
+      const result = await platform.configurator['configureDevice'](mockDevice, platform.roborockService);
 
       expect(result).toBe(true);
       expect(mockRoborockService.getMapInfo).toHaveBeenCalledWith('device1');
@@ -503,11 +525,13 @@ describe('module.ts - complete coverage', () => {
         maps: [],
         allRooms: [{ id: 5, iot_name: 'Bedroom', tag: 0, iot_name_id: 'room5' }],
         hasRooms: true,
+        getActiveMapId: vi.fn().mockReturnValue(0),
       };
 
       const mockRoborockService = {
         initializeMessageClientForLocal: vi.fn().mockResolvedValue(true),
         getMapInfo: vi.fn().mockResolvedValue(mockMapInfo),
+        getRoomMap: vi.fn().mockResolvedValue([]),
         setSupportedAreas: vi.fn(),
         setSupportedAreaIndexMap: vi.fn(),
       };
@@ -520,82 +544,12 @@ describe('module.ts - complete coverage', () => {
       const mockRobot = asPartial<RoborockVacuumCleaner>({
         serialNumber: 'device1',
         device: mockDevice,
-        homeInfo: undefined,
       });
       platform.registry.registerRobot(mockRobot);
 
-      const result = await platform.lifecycle.configurator['configureDevice'](mockDevice, platform.roborockService);
+      const result = await platform.configurator['configureDevice'](mockDevice, platform.roborockService);
 
       expect(result).toBe(true);
-    });
-
-    it('should call setSupportedScenes when showRoutinesAsRoom is enabled and scenes exist', async () => {
-      const mockDevice = asPartial<Device>({
-        duid: 'device1',
-        serialNumber: 'device1',
-        name: 'Vacuum 1',
-        scenes: [],
-        specs: asPartial<DeviceSpecs>({ model: DeviceModel.S7 }),
-        rrHomeId: 123,
-        store: asPartial<Device['store']>({
-          homeData: {
-            id: 123,
-            name: 'Test Home',
-            products: [],
-            devices: [],
-            receivedDevices: [],
-            rooms: [],
-          },
-        }),
-      });
-
-      const config = createMockConfig({
-        advancedFeature: {
-          enableAdvancedFeature: true,
-          settings: {
-            clearStorageOnStartup: false,
-            showRoutinesAsRoom: true,
-            includeDockStationStatus: false,
-            forceRunAtDefault: false,
-            useVacationModeToSendVacuumToDock: false,
-            enableCleanModeMapping: true,
-            cleanModeSettings: {
-              vacuuming: { fanMode: 'Silent', mopRouteMode: 'Standard' },
-              mopping: { waterFlowMode: 'Low', mopRouteMode: 'Standard', distanceOff: 0 },
-              vacmop: { fanMode: 'Silent', waterFlowMode: 'Low', mopRouteMode: 'Standard', distanceOff: 0 },
-            },
-          } satisfies AdvancedFeatureSetting,
-        } satisfies AdvancedFeatureConfiguration,
-      });
-
-      const platform = new RoborockMatterbridgePlatform(mockMatterbridge, mockLogger, config);
-      platform.persist = mockPersist;
-      platform.version = '1.0.0';
-      const roomData = [
-        [1, '11100845', 14],
-        [2, '11100849', 9],
-        [3, '11100842', 6],
-        [4, '11100847', 1],
-      ] as Partial<RawRoomMappingData> as RawRoomMappingData;
-
-      const mockRoborockService = {
-        initializeMessageClientForLocal: vi.fn().mockResolvedValue(true),
-        getMapInfo: vi.fn().mockResolvedValue({ allRooms: [] }),
-        setSupportedAreas: vi.fn(),
-        setSupportedAreaIndexMap: vi.fn(),
-        setSupportedScenes: vi.fn(),
-        getRoomMap: vi.fn().mockResolvedValue(roomData),
-      };
-      platform.roborockService = asPartial<RoborockService>(mockRoborockService);
-
-      platform.validateDevice = vi.fn().mockReturnValue(true);
-      platform.registerDevice = vi.fn().mockResolvedValue(undefined);
-      platform.setSelectDevice = vi.fn();
-
-      const result = await platform.lifecycle.configurator['configureDevice'](mockDevice, platform.roborockService);
-
-      expect(result).toBe(true);
-      expect(mockRoborockService.setSupportedScenes).toHaveBeenCalledWith('device1', expect.any(Array));
     });
   });
 });

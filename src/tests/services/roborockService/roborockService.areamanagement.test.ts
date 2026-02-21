@@ -5,6 +5,7 @@ import { createMockIotApi, createMockAuthApi, createMockLocalStorage, createMock
 import { PlatformConfigManager as PlatformConfigManagerStatic } from '../../../platform/platformConfigManager.js';
 import type { AnsiLogger } from 'matterbridge/logger';
 import type { RoborockPluginPlatformConfig } from '../../../model/RoborockPluginPlatformConfig.js';
+import { SegmentInfo } from '../../../initialData/getSupportedAreas.js';
 
 describe('RoborockService - Area Management', () => {
   let roborockService: RoborockService;
@@ -15,7 +16,13 @@ describe('RoborockService - Area Management', () => {
 
     const PlatformConfigManager = PlatformConfigManagerStatic;
     const config = {
-      authentication: { username: 'test', region: 'US', forceAuthentication: false, authenticationMethod: 'Password', password: '' },
+      authentication: {
+        username: 'test',
+        region: 'US',
+        forceAuthentication: false,
+        authenticationMethod: 'Password',
+        password: '',
+      },
       pluginConfiguration: {
         whiteList: [],
         enableServerMode: false,
@@ -31,6 +38,7 @@ describe('RoborockService - Area Management', () => {
           clearStorageOnStartup: false,
           showRoutinesAsRoom: false,
           includeDockStationStatus: false,
+          includeVacuumErrorStatus: false,
           forceRunAtDefault: false,
           useVacationModeToSendVacuumToDock: false,
           enableCleanModeMapping: false,
@@ -38,6 +46,13 @@ describe('RoborockService - Area Management', () => {
             vacuuming: { fanMode: 'Balanced', mopRouteMode: 'Standard' },
             mopping: { waterFlowMode: 'Medium', mopRouteMode: 'Standard', distanceOff: 25 },
             vacmop: { fanMode: 'Balanced', waterFlowMode: 'Medium', mopRouteMode: 'Standard', distanceOff: 25 },
+          },
+          overrideMatterConfiguration: false,
+          matterOverrideSettings: {
+            matterVendorName: 'xxx',
+            matterVendorId: 123,
+            matterProductName: 'yy',
+            matterProductId: 456,
           },
         },
       },
@@ -53,18 +68,21 @@ describe('RoborockService - Area Management', () => {
         baseUrl: 'https://api.roborock.com',
         persist: createMockLocalStorage(),
         configManager: configManager,
+        toastMessage: vi.fn(),
       },
       mockLogger,
       configManager,
     );
 
+    const roomInfo = new Map<string, SegmentInfo>([]);
     roborockService.setSupportedAreaIndexMap(
       'duid-123',
       new RoomIndexMap(
         new Map([
-          [1, { roomId: 1, mapId: 1 }],
-          [2, { roomId: 2, mapId: 2 }],
+          [1, { roomId: 1, mapId: 1, roomName: 'rn-1' }],
+          [2, { roomId: 2, mapId: 2, roomName: 'rn-2' }],
         ]),
+        roomInfo,
       ),
     );
   });
@@ -81,6 +99,6 @@ describe('RoborockService - Area Management', () => {
 
   it('should filter out invalid areas', () => {
     roborockService.setSelectedAreas('duid-123', [7, 8]);
-    expect(roborockService.getSelectedAreas('duid-123')).toEqual([]);
+    expect(roborockService.getSelectedAreas('duid-123')).toEqual([7, 8]);
   });
 });

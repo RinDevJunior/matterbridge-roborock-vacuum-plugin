@@ -5,7 +5,11 @@ import { Protocol, ResponseMessage } from '../../../models/index.js';
 export class SyncMessageListener implements AbstractMessageListener {
   readonly name = 'SyncMessageListener';
 
-  private readonly acceptedProtocols: Protocol[] = [Protocol.general_request, Protocol.general_response, Protocol.rpc_response];
+  private readonly acceptedProtocols: Protocol[] = [
+    Protocol.general_request,
+    Protocol.general_response,
+    Protocol.rpc_response,
+  ];
 
   constructor(
     public readonly duid: string,

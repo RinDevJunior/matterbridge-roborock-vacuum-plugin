@@ -4,16 +4,49 @@ import { DeviceCategory } from '../../roborockCommunication/models/deviceCategor
 import { MapInfo } from '../../core/application/models/index.js';
 import { asPartial } from '../testUtils.js';
 import { RoomEntity } from '../../core/domain/entities/Room.js';
+import { ProtocolVersion } from '../../roborockCommunication/enums/index.js';
 
 export const supportedAreas: ServiceArea.Area[] = [
-  { areaId: 100, mapId: 0, areaInfo: { locationInfo: { locationName: 'Kitchen', floorNumber: 0, areaType: null }, landmarkInfo: null } },
-  { areaId: 101, mapId: 0, areaInfo: { locationInfo: { locationName: 'Study', floorNumber: 0, areaType: null }, landmarkInfo: null } },
-  { areaId: 102, mapId: 0, areaInfo: { locationInfo: { locationName: 'Living room', floorNumber: 0, areaType: null }, landmarkInfo: null } },
-  { areaId: 103, mapId: 0, areaInfo: { locationInfo: { locationName: 'Bedroom', floorNumber: 0, areaType: null }, landmarkInfo: null } },
-  { areaId: 104, mapId: 1, areaInfo: { locationInfo: { locationName: 'Living room', floorNumber: 1, areaType: null }, landmarkInfo: null } },
-  { areaId: 105, mapId: 1, areaInfo: { locationInfo: { locationName: 'Guest bedroom', floorNumber: 1, areaType: null }, landmarkInfo: null } },
-  { areaId: 106, mapId: 1, areaInfo: { locationInfo: { locationName: 'Master bedroom', floorNumber: 1, areaType: null }, landmarkInfo: null } },
-  { areaId: 107, mapId: 1, areaInfo: { locationInfo: { locationName: 'Balcony', floorNumber: 1, areaType: null }, landmarkInfo: null } },
+  {
+    areaId: 100,
+    mapId: 0,
+    areaInfo: { locationInfo: { locationName: 'Kitchen', floorNumber: 0, areaType: null }, landmarkInfo: null },
+  },
+  {
+    areaId: 101,
+    mapId: 0,
+    areaInfo: { locationInfo: { locationName: 'Study', floorNumber: 0, areaType: null }, landmarkInfo: null },
+  },
+  {
+    areaId: 102,
+    mapId: 0,
+    areaInfo: { locationInfo: { locationName: 'Living room', floorNumber: 0, areaType: null }, landmarkInfo: null },
+  },
+  {
+    areaId: 103,
+    mapId: 0,
+    areaInfo: { locationInfo: { locationName: 'Bedroom', floorNumber: 0, areaType: null }, landmarkInfo: null },
+  },
+  {
+    areaId: 104,
+    mapId: 1,
+    areaInfo: { locationInfo: { locationName: 'Living room', floorNumber: 1, areaType: null }, landmarkInfo: null },
+  },
+  {
+    areaId: 105,
+    mapId: 1,
+    areaInfo: { locationInfo: { locationName: 'Guest bedroom', floorNumber: 1, areaType: null }, landmarkInfo: null },
+  },
+  {
+    areaId: 106,
+    mapId: 1,
+    areaInfo: { locationInfo: { locationName: 'Master bedroom', floorNumber: 1, areaType: null }, landmarkInfo: null },
+  },
+  {
+    areaId: 107,
+    mapId: 1,
+    areaInfo: { locationInfo: { locationName: 'Balcony', floorNumber: 1, areaType: null }, landmarkInfo: null },
+  },
 ];
 
 export const supportedMaps: ServiceArea.Map[] = [
@@ -269,9 +302,30 @@ export const homeData: Home = asPartial<Home>({
         { id: 122, name: '设备电量', code: 'battery', mode: 'ro', type: 'ENUM', property: '{"range": [""]}' },
         { id: 123, name: '清扫模式', code: 'fan_power', mode: 'rw', type: 'ENUM', property: '{"range": [""]}' },
         { id: 124, name: '拖地模式', code: 'water_box_mode', mode: 'rw', type: 'ENUM', property: '{"range": [""]}' },
-        { id: 125, name: '主刷寿命', code: 'main_brush_life', mode: 'rw', type: 'VALUE', property: '{"max": 100, "min": 0, "step": 1, "unit": "null", "scale": 1}' },
-        { id: 126, name: '边刷寿命', code: 'side_brush_life', mode: 'rw', type: 'VALUE', property: '{"max": 100, "min": 0, "step": 1, "unit": "null", "scale": 1}' },
-        { id: 127, name: '滤网寿命', code: 'filter_life', mode: 'rw', type: 'VALUE', property: '{"max": 100, "min": 0, "step": 1, "unit": "null", "scale": 1}' },
+        {
+          id: 125,
+          name: '主刷寿命',
+          code: 'main_brush_life',
+          mode: 'rw',
+          type: 'VALUE',
+          property: '{"max": 100, "min": 0, "step": 1, "unit": "null", "scale": 1}',
+        },
+        {
+          id: 126,
+          name: '边刷寿命',
+          code: 'side_brush_life',
+          mode: 'rw',
+          type: 'VALUE',
+          property: '{"max": 100, "min": 0, "step": 1, "unit": "null", "scale": 1}',
+        },
+        {
+          id: 127,
+          name: '滤网寿命',
+          code: 'filter_life',
+          mode: 'rw',
+          type: 'VALUE',
+          property: '{"max": 100, "min": 0, "step": 1, "unit": "null", "scale": 1}',
+        },
         { id: 128, name: '额外状态', code: 'additional_props', mode: 'ro', type: 'RAW', property: null },
         { id: 130, name: '完成事件', code: 'task_complete', mode: 'ro', type: 'RAW', property: null },
         { id: 131, name: '电量不足任务取消', code: 'task_cancel_low_power', mode: 'ro', type: 'RAW', property: null },
@@ -297,7 +351,21 @@ export const homeData: Home = asPartial<Home>({
       sn: 'RCIEBS50900224',
       featureSet: '2247397454282751',
       newFeatureSet: '00040040282834C9C2FA8F5C7EDEFFFE',
-      deviceStatus: { 120: 0, 121: 8, 122: 100, 123: 110, 124: 209, 125: 93, 126: 69, 127: 86, 128: 0, 133: 1, 134: 0, 135: 0, 139: 0 },
+      deviceStatus: {
+        120: 0,
+        121: 8,
+        122: 100,
+        123: 110,
+        124: 209,
+        125: 93,
+        126: 69,
+        127: 86,
+        128: 0,
+        133: 1,
+        134: 0,
+        135: 0,
+        139: 0,
+      },
       silentOtaSwitch: true,
       rrHomeId: 3645093,
       mapInfos: undefined,
@@ -307,6 +375,7 @@ export const homeData: Home = asPartial<Home>({
         firmwareVersion: '02.28.34',
         serialNumber: 'RCIEBS50900224',
         model: DeviceModel.QREVO_EDGE_5V1,
+        protocol: ProtocolVersion.V1,
         category: DeviceCategory.VacuumCleaner,
         batteryLevel: 100,
         hasRealTimeConnection: true,
@@ -327,7 +396,12 @@ export const homeData: Home = asPartial<Home>({
             s: 'OsErWk',
             h: '195Xn4u3fe',
             k: 'ofKw7nJc',
-            r: { r: 'US', a: 'https://api-us.roborock.com', m: 'ssl://mqtt-us-2.roborock.com:8883', l: 'https://wood-us.roborock.com' },
+            r: {
+              r: 'US',
+              a: 'https://api-us.roborock.com',
+              m: 'ssl://mqtt-us-2.roborock.com:8883',
+              l: 'https://wood-us.roborock.com',
+            },
           },
         },
         localKey: 'v0OKpWXwBmiCk4ku',
@@ -339,7 +413,12 @@ export const homeData: Home = asPartial<Home>({
           products: [],
           devices: [],
           receivedDevices: [],
-          rooms: [new RoomEntity(11100849, 'Study'), new RoomEntity(11100847, 'Bedroom'), new RoomEntity(11100845, 'Kitchen'), new RoomEntity(11100842, 'Living room')],
+          rooms: [
+            new RoomEntity(11100849, 'Study'),
+            new RoomEntity(11100847, 'Bedroom'),
+            new RoomEntity(11100845, 'Kitchen'),
+            new RoomEntity(11100842, 'Living room'),
+          ],
         } satisfies Home,
       },
       schema: [
@@ -350,9 +429,30 @@ export const homeData: Home = asPartial<Home>({
         { id: 122, name: '设备电量', code: 'battery', mode: 'ro', type: 'ENUM', property: '{"range": [""]}' },
         { id: 123, name: '清扫模式', code: 'fan_power', mode: 'rw', type: 'ENUM', property: '{"range": [""]}' },
         { id: 124, name: '拖地模式', code: 'water_box_mode', mode: 'rw', type: 'ENUM', property: '{"range": [""]}' },
-        { id: 125, name: '主刷寿命', code: 'main_brush_life', mode: 'rw', type: 'VALUE', property: '{"max": 100, "min": 0, "step": 1, "unit": "null", "scale": 1}' },
-        { id: 126, name: '边刷寿命', code: 'side_brush_life', mode: 'rw', type: 'VALUE', property: '{"max": 100, "min": 0, "step": 1, "unit": "null", "scale": 1}' },
-        { id: 127, name: '滤网寿命', code: 'filter_life', mode: 'rw', type: 'VALUE', property: '{"max": 100, "min": 0, "step": 1, "unit": "null", "scale": 1}' },
+        {
+          id: 125,
+          name: '主刷寿命',
+          code: 'main_brush_life',
+          mode: 'rw',
+          type: 'VALUE',
+          property: '{"max": 100, "min": 0, "step": 1, "unit": "null", "scale": 1}',
+        },
+        {
+          id: 126,
+          name: '边刷寿命',
+          code: 'side_brush_life',
+          mode: 'rw',
+          type: 'VALUE',
+          property: '{"max": 100, "min": 0, "step": 1, "unit": "null", "scale": 1}',
+        },
+        {
+          id: 127,
+          name: '滤网寿命',
+          code: 'filter_life',
+          mode: 'rw',
+          type: 'VALUE',
+          property: '{"max": 100, "min": 0, "step": 1, "unit": "null", "scale": 1}',
+        },
         { id: 128, name: '额外状态', code: 'additional_props', mode: 'ro', type: 'RAW', property: null },
         { id: 130, name: '完成事件', code: 'task_complete', mode: 'ro', type: 'RAW', property: null },
         { id: 131, name: '电量不足任务取消', code: 'task_cancel_low_power', mode: 'ro', type: 'RAW', property: null },
@@ -452,8 +552,24 @@ export const roomMapFromLog = {
 };
 
 export const currentMappedAreasFromLog: ServiceArea.Area[] = [
-  { areaId: 1, mapId: null, areaInfo: { locationInfo: { locationName: 'Kitchen', floorNumber: 0, areaType: null }, landmarkInfo: null } },
-  { areaId: 2, mapId: null, areaInfo: { locationInfo: { locationName: 'Study', floorNumber: 0, areaType: null }, landmarkInfo: null } },
-  { areaId: 3, mapId: null, areaInfo: { locationInfo: { locationName: 'Living room', floorNumber: 0, areaType: null }, landmarkInfo: null } },
-  { areaId: 4, mapId: null, areaInfo: { locationInfo: { locationName: 'Bedroom', floorNumber: 0, areaType: null }, landmarkInfo: null } },
+  {
+    areaId: 1,
+    mapId: null,
+    areaInfo: { locationInfo: { locationName: 'Kitchen', floorNumber: 0, areaType: null }, landmarkInfo: null },
+  },
+  {
+    areaId: 2,
+    mapId: null,
+    areaInfo: { locationInfo: { locationName: 'Study', floorNumber: 0, areaType: null }, landmarkInfo: null },
+  },
+  {
+    areaId: 3,
+    mapId: null,
+    areaInfo: { locationInfo: { locationName: 'Living room', floorNumber: 0, areaType: null }, landmarkInfo: null },
+  },
+  {
+    areaId: 4,
+    mapId: null,
+    areaInfo: { locationInfo: { locationName: 'Bedroom', floorNumber: 0, areaType: null }, landmarkInfo: null },
+  },
 ];

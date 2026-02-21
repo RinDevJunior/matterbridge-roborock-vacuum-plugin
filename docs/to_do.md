@@ -1,27 +1,32 @@
 # To Do
 
-## Release Management
+## In Progress
 
-### Completed
+- [ ] Fix routine selection in `setSelectedAreas` — see `docs/routine-selection-fix-plan.md`
+  - [ ] `areaManagementService.setSelectedAreas`: store raw areaIds (remove RoomIndexMap conversion)
+  - [ ] `roborockService.startClean`: separate routines/rooms, convert room areaIds → roomIds
+  - [ ] `messageRoutingService.tryStartRoutineClean`: fix `rooms` filter + fix `startScene` scene ID
+  - [ ] Add/update tests
+- [ ] Investigate MQTT keepalive behavior change (rc04 stopped periodic reconnection — may cause stale connections)
+- [ ] Integrate `B01ResponseBroadcaster` into dispatcher factory / connection service for B01 devices
 
-- [x] Create release candidate 1.1.3-rc16
+## Completed
 
-## Connection Issues (High Priority)
+- [x] Add "Include Vacuum Error Status" configuration under Advanced features to gate `handleErrorOccurred` in platformRunner
 
-### Pending
+- [x] Create `B01ResponseBroadcaster` and `B01PendingResponseTracker` for multi-response B01 protocol handling
+- [x] Add real-data integration test to `B01PendingResponseTracker` using example log data
+- [x] Add Q10RequestCode key mapping to `B01PendingResponseTracker` — numeric keys converted to named keys at resolve time
+- [x] Create release candidate 1.1.4-rc06 with Buy Me a Coffee badge asset
+- [x] Update CHANGELOG for 1.1.4-rc06 with staged improvements (2FA toast, snackbar severity, WSS restart prompt)
 
-- [ ] Fix LocalNetworkClient reconnection logic in `localClient.ts:121` - change `if (!this.connected)` to `if (this.connected)`
-- [ ] Fix MQTTClient subscription error handling in `mqttClient.ts:132` - change `if (!err)` to `if (err)`
-- [ ] Add unit tests for reconnection scenarios
-- [ ] Add unit tests for auth error backoff scenarios
-- [ ] Test network transition behavior
+- [x] Fix version undefined in MQTT request — resolve version in `mqttClient.sendInternal` before serialization
 
-## Authentication Gaps
+- [x] Fix Node.js 20 compatibility: `Map.values().every()` → `[...Map.values()].every()` in platformRunner.ts
 
-### Pending
-
-- [ ] Clear `verificationCode` from config on auth failure (behavior 2 gap)
-- [ ] Call `validateAuthentication()` before auth attempt in `DeviceDiscovery.discoverDevices()` or `RoborockService.authenticate()` (behavior 3 gap)
-- [ ] Add integration test for `forceAuthentication` reset in `module.ts` after successful auth (behavior 1 coverage gap)
-
-## State Resolution Matrix
+- [x] Improve Codecov patch coverage for module.ts, messageDeserializer, localClient, Q10/Q7 dispatchers, platformRunner
+- [x] Create CHANGELOG for 1.1.4-rc05 release candidate
+- [x] Improve Codecov patch coverage for localClient, localPingResponseListener, messageContext, messageDeserializer, Q10/Q7 dispatchers, cleanModeUtils
+- [x] Fix keepConnectionAlive in MQTTClient and LocalNetworkClient — only reconnect when connection is down
+- [x] Increase patch coverage for dev branch (modeResolver, cleanModeConfig, behaviorConfig, handlers, B01MapParser)
+- [x] B01 map parser - room extraction from protobuf data

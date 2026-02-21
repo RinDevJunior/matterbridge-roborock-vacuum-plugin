@@ -1,7 +1,7 @@
 import { vi } from 'vitest';
 import { AnsiLogger } from 'matterbridge/logger';
 import type { PlatformConfigManager } from '../../platform/platformConfigManager.js';
-import type { PlatformMatterbridge, SystemInformation } from 'matterbridge';
+import type { PlatformMatterbridge } from 'matterbridge';
 import type { RoborockIoTApi } from '../../roborockCommunication/api/iotClient.js';
 import type { RoborockAuthenticateApi } from '../../roborockCommunication/api/authClient.js';
 import { ClientRouter } from '../../roborockCommunication/routing/clientRouter.js';
@@ -42,6 +42,7 @@ export function makeMockClientRouter(overrides: Partial<Record<string, unknown>>
     connect: vi.fn(),
     disconnect: vi.fn(),
     isConnected: vi.fn().mockReturnValue(true),
+    isReady: vi.fn().mockReturnValue(true),
     registerClient: vi.fn().mockReturnValue(localClient),
     updateNonce: vi.fn(),
     destroy: vi.fn(),
@@ -60,7 +61,7 @@ export function makeLocalClientStub(overrides: Partial<Record<string, unknown>> 
     isConnected: vi.fn().mockReturnValue(true),
     isReady: vi.fn().mockReturnValue(true),
     ...overrides,
-  } as MockLocalClient;
+  };
 }
 
 // Lightweight LocalStorage mock that satisfies the subset used in tests
@@ -128,6 +129,9 @@ export function createMockConfigManager(overrides: Partial<PlatformConfigManager
     get includeDockStationStatus() {
       return overrides.includeDockStationStatus ?? false;
     },
+    get includeVacuumErrorStatus() {
+      return overrides.includeVacuumErrorStatus ?? false;
+    },
     validateConfig: () => true,
     validateAuthentication: () => true,
   };
@@ -168,7 +172,10 @@ export function createMockAuthApi(overrides: Partial<RoborockAuthenticateApi> = 
 
 // Minimal DeviceRegistry mock factory for tests that need a registry instance
 import type { DeviceRegistry } from '../../platform/deviceRegistry.js';
-export function createMockDeviceRegistry(overrides: Partial<DeviceRegistry> = {}, robots?: Map<string, RoborockVacuumCleaner>): DeviceRegistry {
+export function createMockDeviceRegistry(
+  overrides: Partial<DeviceRegistry> = {},
+  robots?: Map<string, RoborockVacuumCleaner>,
+): DeviceRegistry {
   const rmap = robots ?? new Map<string, RoborockVacuumCleaner>();
   const base: Partial<DeviceRegistry> & Record<string, unknown> = {
     robotsMap: rmap,
@@ -204,11 +211,10 @@ export function createMockRoborockService(overrides: Partial<RoborockService> = 
 
 export function createMockMatterbridge(overrides: Partial<PlatformMatterbridge> = {}): PlatformMatterbridge {
   const base: Partial<PlatformMatterbridge> & Record<string, unknown> = {
-    matterbridgeVersion: '3.5.3',
+    matterbridgeVersion: '3.5.5',
     matterbridgePluginDirectory: '/tmp',
     matterbridgeDirectory: '/tmp',
     verifyMatterbridgeVersion: () => true,
-    systemInformation: {} as Partial<SystemInformation> as SystemInformation,
   };
   return { ...base, ...overrides } as Partial<PlatformMatterbridge> as PlatformMatterbridge;
 }
@@ -217,7 +223,10 @@ export function wait(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-export const mkUser = () => asPartial<UserData>({ rriot: { r: { a: 'https://api.example', r: 'r', m: 'm', l: 'l' }, u: 'uid', s: 's', h: 'h', k: 'k' } });
+export const mkUser = () =>
+  asPartial<UserData>({
+    rriot: { r: { a: 'https://api.example', r: 'r', m: 'm', l: 'l' }, u: 'uid', s: 's', h: 'h', k: 'k' },
+  });
 
 export function setReadOnlyProperty<T>(obj: T, key: string | symbol, value: unknown): void {
   Object.defineProperty(obj, key, {

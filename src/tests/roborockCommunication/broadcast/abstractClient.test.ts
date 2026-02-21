@@ -1,17 +1,29 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { AbstractClient } from '../../../roborockCommunication/routing/abstractClient.js';
-import { MessageContext, RequestMessage, UserData, ResponseMessage } from '../../../roborockCommunication/models/index.js';
-import { PendingResponseTracker } from '../../../roborockCommunication/routing/services/pendingResponseTracker.js';
+import {
+  MessageContext,
+  RequestMessage,
+  UserData,
+  ResponseMessage,
+} from '../../../roborockCommunication/models/index.js';
+import { V1PendingResponseTracker } from '../../../roborockCommunication/routing/services/v1PendingResponseTracker.js';
 import { createMockLogger, asPartial, asType, mkUser } from '../../helpers/testUtils.js';
 import { AbstractConnectionListener } from '../../../roborockCommunication/routing/listeners/abstractConnectionListener.js';
+import { V1ResponseBroadcaster } from '../../../roborockCommunication/routing/listeners/v1ResponseBroadcaster.js';
 import { ResponseBroadcaster } from '../../../roborockCommunication/routing/listeners/responseBroadcaster.js';
+import { PendingResponseTracker } from '../../../roborockCommunication/routing/services/pendingResponseTracker.js';
 
 class TestClient extends AbstractClient {
   protected clientName = 'TestClient';
   protected shouldReconnect = false;
   private connected = false;
 
-  constructor(logger: any, context: MessageContext, responseBroadcaster: ResponseBroadcaster, responseTracker: PendingResponseTracker) {
+  constructor(
+    logger: any,
+    context: MessageContext,
+    responseBroadcaster: ResponseBroadcaster,
+    responseTracker: PendingResponseTracker,
+  ) {
     super(logger, context, responseBroadcaster, responseTracker);
     this.initializeConnectionStateListener(asPartial<AbstractClient>({}));
   }
@@ -37,15 +49,15 @@ describe('AbstractClient', () => {
   let client: TestClient;
   let logger: any;
   let context: MessageContext;
-  let responseTracker: PendingResponseTracker;
-  let responseBroadcaster: ResponseBroadcaster;
+  let responseTracker: V1PendingResponseTracker;
+  let responseBroadcaster: V1ResponseBroadcaster;
 
   beforeEach(() => {
     logger = createMockLogger();
     const userdata = mkUser();
     context = new MessageContext(userdata);
-    responseTracker = new PendingResponseTracker(logger);
-    responseBroadcaster = new ResponseBroadcaster(responseTracker, logger);
+    responseTracker = new V1PendingResponseTracker(logger);
+    responseBroadcaster = new V1ResponseBroadcaster(responseTracker, logger);
     client = new TestClient(logger, context, responseBroadcaster, responseTracker);
   });
 
@@ -73,7 +85,9 @@ describe('AbstractClient', () => {
 
     const result = await client.get<unknown>('DUID456', request);
     expect(result).toBeUndefined();
-    expect(vi.mocked(logger.error).mock.calls.some((args: unknown[]) => String(args[0]).includes('test error'))).toBe(true);
+    expect(vi.mocked(logger.error).mock.calls.some((args: unknown[]) => String(args[0]).includes('test error'))).toBe(
+      true,
+    );
   });
 
   it('registerDevice delegates to context', () => {
@@ -89,9 +103,15 @@ describe('AbstractClient', () => {
   });
 
   it('registerMessageListener adds listener to chain', () => {
-    const listener = asPartial<{ name: string; duid: string; onMessage: (...args: unknown[]) => void }>({ name: 'test-listener', duid: 'DUID123', onMessage: vi.fn() });
+    const listener = asPartial<{ name: string; duid: string; onMessage: (...args: unknown[]) => void }>({
+      name: 'test-listener',
+      duid: 'DUID123',
+      onMessage: vi.fn(),
+    });
     client.registerMessageListener(listener);
-    expect(asType<TestClient>(client)['responseBroadcaster']['listeners']).toContain(listener);
+    expect((asType<TestClient>(client)['responseBroadcaster'] as V1ResponseBroadcaster)['listeners']).toContain(
+      listener,
+    );
   });
 
   it('isConnected returns connection state', () => {

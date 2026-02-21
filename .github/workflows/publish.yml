@@ -66,6 +66,8 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.release.tag_name }}
 
       - name: Setup Node.js 24.x
         uses: actions/setup-node@v4
@@ -98,4 +100,4 @@ jobs:
         run: npm run test
 
       - name: Publish to npm with trusted publishing / OIDC
-        run: npm publish --provenance --access public --tag dev
+        run: npm publish --access public --tag dev

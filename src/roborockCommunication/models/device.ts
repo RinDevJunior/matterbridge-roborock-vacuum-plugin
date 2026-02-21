@@ -9,6 +9,7 @@ import { UserData } from './userData.js';
 export interface DeviceSpecs {
   id: string;
   firmwareVersion: string;
+  protocol: string;
   serialNumber: string;
   model: DeviceModel;
   category: DeviceCategory;
@@ -24,7 +25,9 @@ export interface DeviceInformation {
   homeData: Home;
 }
 
-export type DeviceStatusResponsetype = number | Record<string, number | string | boolean | NetworkInfoDTO | TimezoneInfo | Record<number, unknown>>;
+export type DeviceStatusResponsetype =
+  | number
+  | Record<string, number | string | boolean | NetworkInfoDTO | TimezoneInfo | Record<number, unknown>>;
 
 export interface Device {
   duid: string;

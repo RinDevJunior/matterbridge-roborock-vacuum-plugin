@@ -3,6 +3,8 @@ import { AnsiLogger } from 'matterbridge/logger';
 import { DeviceStatus } from '../../../roborockCommunication/models/index.js';
 import { V10MessageDispatcher } from '../../../roborockCommunication/protocol/dispatcher/V10MessageDispatcher.js';
 import { asType } from '../../testUtils.js';
+import { CleanModeSetting } from '../../../behaviors/roborock.vacuum/core/CleanModeSetting.js';
+import { CleanSequenceType } from '../../../behaviors/roborock.vacuum/enums/CleanSequenceType.js';
 
 describe('V10MessageDispatcher', () => {
   let mockClient: any;
@@ -117,7 +119,8 @@ describe('V10MessageDispatcher', () => {
   it('changeCleanMode should call logger.notice and client.send as needed', async () => {
     mockLogger.notice = vi.fn();
     mockClient.get.mockResolvedValueOnce(110); // currentMopMode
-    await processor.changeCleanMode('duid', 101, 207, 306, 5);
+    const setting = new CleanModeSetting(101, 207, 5, 306, CleanSequenceType.Persist);
+    await processor.changeCleanMode('duid', setting);
     expect(mockLogger.notice).toHaveBeenCalled();
   });
 
@@ -145,7 +148,10 @@ describe('V10MessageDispatcher', () => {
   });
 
   it('getCleanModeData should extract distance_off from object response', async () => {
-    mockClient.get.mockResolvedValueOnce([306]).mockResolvedValueOnce([101]).mockResolvedValueOnce({ water_box_mode: 207, distance_off: 10 });
+    mockClient.get
+      .mockResolvedValueOnce([306])
+      .mockResolvedValueOnce([101])
+      .mockResolvedValueOnce({ water_box_mode: 207, distance_off: 10 });
 
     const result = await processor.getCleanModeData('duid');
     expect(result.distance_off).toBe(10);
@@ -153,7 +159,10 @@ describe('V10MessageDispatcher', () => {
   });
 
   it('getCleanModeData should handle object without distance_off', async () => {
-    mockClient.get.mockResolvedValueOnce([306]).mockResolvedValueOnce([101]).mockResolvedValueOnce({ water_box_mode: 207 });
+    mockClient.get
+      .mockResolvedValueOnce([306])
+      .mockResolvedValueOnce([101])
+      .mockResolvedValueOnce({ water_box_mode: 207 });
 
     const result = await processor.getCleanModeData('duid');
     expect(result.distance_off).toBe(0);
@@ -162,19 +171,23 @@ describe('V10MessageDispatcher', () => {
 
   it('changeCleanMode should return early if smartMopMode with smartMopRoute', async () => {
     mockClient.get.mockResolvedValueOnce(110); // smartMopMode
-    await processor.changeCleanMode('duid', 0, 0, 306, 0); // smartMopRoute = 306
+    const setting = new CleanModeSetting(0, 0, 0, 306, CleanSequenceType.Persist);
+    await processor.changeCleanMode('duid', setting); // smartMopRoute = 306
     expect(mockClient.send).not.toHaveBeenCalled();
   });
 
   it('changeCleanMode should return early if customMopMode with customMopRoute', async () => {
     mockClient.get.mockResolvedValueOnce(106); // customMopMode
-    await processor.changeCleanMode('duid', 0, 0, 302, 0); // customMopRoute = 302
+    const setting = new CleanModeSetting(0, 0, 0, 302, CleanSequenceType.Persist);
+    await processor.changeCleanMode('duid', setting); // customMopRoute = 302
     expect(mockClient.send).not.toHaveBeenCalled();
   });
 
   it('changeCleanMode should switch from smart to custom mode first', async () => {
     mockClient.get.mockResolvedValueOnce(110); // smartMopMode
-    await processor.changeCleanMode('duid', 101, 207, 303, 0);
+
+    const setting = new CleanModeSetting(101, 207, 0, 303, CleanSequenceType.Persist);
+    await processor.changeCleanMode('duid', setting);
     expect(mockClient.send).toHaveBeenCalledWith(
       'duid',
       expect.objectContaining({
@@ -185,7 +198,9 @@ describe('V10MessageDispatcher', () => {
 
   it('changeCleanMode should set suctionPower if non-zero', async () => {
     mockClient.get.mockResolvedValueOnce(106); // customMopMode
-    await processor.changeCleanMode('duid', 101, 0, 303, 0);
+
+    const setting = new CleanModeSetting(101, 0, 0, 303, CleanSequenceType.Persist);
+    await processor.changeCleanMode('duid', setting);
     expect(mockClient.send).toHaveBeenCalledWith(
       'duid',
       expect.objectContaining({
@@ -196,7 +211,8 @@ describe('V10MessageDispatcher', () => {
 
   it('changeCleanMode should set water_box_custom_mode with distance_off for CustomizeWithDistanceOff', async () => {
     mockClient.get.mockResolvedValueOnce(106);
-    await processor.changeCleanMode('duid', 0, 207, 0, 5); // 207 is CustomizeWithDistanceOff
+    const setting = new CleanModeSetting(0, 207, 5, 0, CleanSequenceType.Persist);
+    await processor.changeCleanMode('duid', setting); // 207 is CustomizeWithDistanceOff
     expect(mockClient.send).toHaveBeenCalledWith(
       'duid',
       expect.objectContaining({
@@ -208,7 +224,8 @@ describe('V10MessageDispatcher', () => {
 
   it('changeCleanMode should set water_box_custom_mode without distance_off for other modes', async () => {
     mockClient.get.mockResolvedValueOnce(106);
-    await processor.changeCleanMode('duid', 0, 200, 0, 0);
+    const setting = new CleanModeSetting(0, 200, 0, 0, CleanSequenceType.Persist);
+    await processor.changeCleanMode('duid', setting);
     expect(mockClient.send).toHaveBeenCalledWith(
       'duid',
       expect.objectContaining({
@@ -220,7 +237,8 @@ describe('V10MessageDispatcher', () => {
 
   it('changeCleanMode should set mopRoute if non-zero', async () => {
     mockClient.get.mockResolvedValueOnce(106);
-    await processor.changeCleanMode('duid', 0, 0, 303, 0);
+    const setting = new CleanModeSetting(0, 0, 0, 303, CleanSequenceType.Persist);
+    await processor.changeCleanMode('duid', setting);
     expect(mockClient.send).toHaveBeenCalledWith(
       'duid',
       expect.objectContaining({
@@ -232,7 +250,8 @@ describe('V10MessageDispatcher', () => {
   it('changeCleanMode should not set params if all are zero', async () => {
     mockClient.get.mockResolvedValueOnce(106);
     mockClient.send.mockClear();
-    await processor.changeCleanMode('duid', 0, 0, 0, 0);
+    const setting = new CleanModeSetting(0, 0, 0, 0, CleanSequenceType.Persist);
+    await processor.changeCleanMode('duid', setting);
     expect(mockClient.send).not.toHaveBeenCalled();
   });
 });

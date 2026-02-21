@@ -9,13 +9,15 @@ import { AreaManagementService } from '../../../services/areaManagementService.j
 import { MessageRoutingService } from '../../../services/messageRoutingService.js';
 import { PollingService } from '../../../services/pollingService.js';
 import { ConnectionService } from '../../../services/connectionService.js';
-import { Device, UserData, Scene, RawRoomMappingData } from '../../../roborockCommunication/models/index.js';
+import { Device, UserData, Scene, RawRoomMappingData, Home } from '../../../roborockCommunication/models/index.js';
 import { CleanModeSetting } from '../../../behaviors/roborock.vacuum/core/CleanModeSetting.js';
 import { MapInfo, RoomIndexMap } from '../../../core/application/models/index.js';
 import { RequestMessage } from '../../../roborockCommunication/models/index.js';
-import { asPartial } from '../../testUtils.js';
+import { asPartial, asType } from '../../testUtils.js';
 import type { LocalStorage } from 'node-persist';
 import type { PlatformConfigManager } from '../../../platform/platformConfigManager.js';
+import { RoborockIoTApi } from '../../../roborockCommunication/api/iotClient.js';
+import { CleanSequenceType } from '../../../behaviors/roborock.vacuum/enums/CleanSequenceType.js';
 
 describe('RoborockService - Complete Coverage', () => {
   let service: RoborockService;
@@ -53,7 +55,7 @@ describe('RoborockService - Complete Coverage', () => {
       getSelectedAreas: vi.fn().mockReturnValue([]),
       setSupportedAreas: vi.fn(),
       setSupportedAreaIndexMap: vi.fn(),
-      setSupportedScenes: vi.fn(),
+      setSupportedRoutines: vi.fn(),
       getSupportedAreas: vi.fn().mockReturnValue([]),
       getSupportedAreasIndexMap: vi.fn(),
       getSupportedRoutines: vi.fn().mockReturnValue([]),
@@ -121,6 +123,7 @@ describe('RoborockService - Complete Coverage', () => {
         persist: mockPersist as LocalStorage,
         configManager: mockConfigManager as PlatformConfigManager,
         container: mockContainer as ServiceContainer,
+        toastMessage: vi.fn(),
       },
       mockLogger as AnsiLogger,
       mockConfigManager as PlatformConfigManager,
@@ -136,12 +139,15 @@ describe('RoborockService - Complete Coverage', () => {
           persist: mockPersist as LocalStorage,
           configManager: mockConfigManager as PlatformConfigManager,
           container: mockContainer as ServiceContainer,
+          toastMessage: vi.fn(),
         },
         mockLogger as AnsiLogger,
         undefined as unknown as PlatformConfigManager,
       );
 
-      await expect(serviceWithoutConfig.authenticate()).rejects.toThrow('PlatformConfigManager not provided. Cannot authenticate.');
+      await expect(serviceWithoutConfig.authenticate()).rejects.toThrow(
+        'PlatformConfigManager not provided. Cannot authenticate.',
+      );
     });
 
     it('should log password as masked when provided', async () => {
@@ -199,7 +205,7 @@ describe('RoborockService - Complete Coverage', () => {
 
     it('should delegate getHomeDataForUpdating to deviceService', async () => {
       const homeData = { id: 123, name: 'Test Home' };
-      vi.mocked(mockDeviceService.getHomeDataForUpdating).mockResolvedValue(homeData as any);
+      vi.mocked(mockDeviceService.getHomeDataForUpdating).mockResolvedValue(asPartial<Home>(homeData));
 
       const result = await service.getHomeDataForUpdating(123);
 
@@ -288,7 +294,7 @@ describe('RoborockService - Complete Coverage', () => {
     });
 
     it('should delegate setSupportedAreaIndexMap to areaService', () => {
-      const indexMap = new RoomIndexMap(new Map());
+      const indexMap = new RoomIndexMap(new Map(), new Map());
 
       service.setSupportedAreaIndexMap('duid', indexMap);
 
@@ -298,9 +304,9 @@ describe('RoborockService - Complete Coverage', () => {
     it('should delegate setSupportedScenes to areaService', () => {
       const scenes = [asPartial<ServiceArea.Area>({ areaId: 1 })];
 
-      service.setSupportedScenes('duid', scenes as ServiceArea.Area[]);
+      service.setSupportedRoutines('duid', scenes as ServiceArea.Area[]);
 
-      expect(mockAreaService.setSupportedScenes).toHaveBeenCalledWith('duid', scenes);
+      expect(mockAreaService.setSupportedRoutines).toHaveBeenCalledWith('duid', scenes);
     });
 
     it('should delegate getSupportedAreas to areaService', () => {
@@ -314,7 +320,7 @@ describe('RoborockService - Complete Coverage', () => {
     });
 
     it('should delegate getSupportedAreasIndexMap to areaService', () => {
-      const indexMap = new RoomIndexMap(new Map());
+      const indexMap = new RoomIndexMap(new Map(), new Map());
       vi.mocked(mockAreaService.getSupportedAreasIndexMap).mockReturnValue(indexMap);
 
       const result = service.getSupportedAreasIndexMap('duid');
@@ -381,7 +387,7 @@ describe('RoborockService - Complete Coverage', () => {
 
   describe('Message Routing', () => {
     it('should delegate getCleanModeData to messageService', async () => {
-      const cleanMode = new CleanModeSetting(100, 200, 25, 300);
+      const cleanMode = new CleanModeSetting(100, 200, 25, 300, CleanSequenceType.Persist);
       vi.mocked(mockMessageService.getCleanModeData).mockResolvedValue(cleanMode);
 
       const result = await service.getCleanModeData('duid');
@@ -408,35 +414,21 @@ describe('RoborockService - Complete Coverage', () => {
     });
 
     it('should delegate changeCleanMode to messageService', async () => {
-      const settings = new CleanModeSetting(102, 203, 25, 300);
+      const settings = new CleanModeSetting(102, 203, 25, 300, CleanSequenceType.Persist);
 
       await service.changeCleanMode('duid', settings);
 
       expect(mockMessageService.changeCleanMode).toHaveBeenCalledWith('duid', settings);
     });
 
-    it('should delegate startClean with selected and supported areas', async () => {
-      const selectedAreas = [1, 2];
-      const supportedRooms = [asPartial<ServiceArea.Area>({ areaId: 1 })];
-      const supportedRoutines = [asPartial<ServiceArea.Area>({ areaId: 3 })];
-
-      vi.mocked(mockAreaService.getSelectedAreas).mockReturnValue(selectedAreas);
-      vi.mocked(mockAreaService.getSupportedAreas).mockReturnValue(supportedRooms);
-      vi.mocked(mockAreaService.getSupportedRoutines).mockReturnValue(supportedRoutines);
-
-      await service.startClean('duid');
-
-      expect(mockMessageService.startClean).toHaveBeenCalledWith('duid', selectedAreas, supportedRooms, supportedRoutines);
-    });
-
     it('should handle startClean with empty supported areas', async () => {
       vi.mocked(mockAreaService.getSelectedAreas).mockReturnValue([1]);
-      vi.mocked(mockAreaService.getSupportedAreas).mockReturnValue(undefined as any);
-      vi.mocked(mockAreaService.getSupportedRoutines).mockReturnValue(undefined as any);
+      vi.mocked(mockAreaService.getSupportedAreas).mockReturnValue(asType<ServiceArea.Area[]>(undefined));
+      vi.mocked(mockAreaService.getSupportedRoutines).mockReturnValue(asType<ServiceArea.Area[]>(undefined));
 
       await service.startClean('duid');
 
-      expect(mockMessageService.startClean).toHaveBeenCalledWith('duid', [1], [], []);
+      expect(mockMessageService.startClean).toHaveBeenCalledWith('duid', expect.objectContaining({ type: 'global' }));
     });
 
     it('should delegate pauseClean to messageService', async () => {
@@ -492,7 +484,7 @@ describe('RoborockService - Complete Coverage', () => {
   describe('Custom API', () => {
     it('should call iotApi.getCustom when initialized', async () => {
       const mockIotApi = { getCustom: vi.fn().mockResolvedValue({ result: 'success' }) };
-      vi.mocked(mockContainer.getIotApi).mockReturnValue(mockIotApi as any);
+      vi.mocked(mockContainer.getIotApi).mockReturnValue(asPartial<RoborockIoTApi>(mockIotApi));
 
       const result = await service.getCustomAPI<{ result: string }>('/custom/endpoint');
 

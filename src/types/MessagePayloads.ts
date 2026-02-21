@@ -94,6 +94,7 @@ export interface CleanModeUpdatePayload {
     waterFlow: number;
     distance_off: number;
     mopRoute: number | undefined;
+    seq_type: number | undefined;
   };
 }
 

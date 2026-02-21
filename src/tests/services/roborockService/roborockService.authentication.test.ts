@@ -33,7 +33,13 @@ describe('RoborockService - Authentication', () => {
 
     const PlatformConfigManager = PlatformConfigManagerStatic;
     const config = {
-      authentication: { username: 'test@example.com', region: 'US', forceAuthentication: false, authenticationMethod: 'Password', password: 'password123' },
+      authentication: {
+        username: 'test@example.com',
+        region: 'US',
+        forceAuthentication: false,
+        authenticationMethod: 'Password',
+        password: 'password123',
+      },
       pluginConfiguration: {
         whiteList: [],
         enableServerMode: false,
@@ -49,6 +55,7 @@ describe('RoborockService - Authentication', () => {
           clearStorageOnStartup: false,
           showRoutinesAsRoom: false,
           includeDockStationStatus: false,
+          includeVacuumErrorStatus: false,
           forceRunAtDefault: false,
           useVacationModeToSendVacuumToDock: false,
           enableCleanModeMapping: false,
@@ -56,6 +63,13 @@ describe('RoborockService - Authentication', () => {
             vacuuming: { fanMode: 'Balanced', mopRouteMode: 'Standard' },
             mopping: { waterFlowMode: 'Medium', mopRouteMode: 'Standard', distanceOff: 25 },
             vacmop: { fanMode: 'Balanced', waterFlowMode: 'Medium', mopRouteMode: 'Standard', distanceOff: 25 },
+          },
+          overrideMatterConfiguration: false,
+          matterOverrideSettings: {
+            matterVendorName: 'xxx',
+            matterVendorId: 123,
+            matterProductName: 'yy',
+            matterProductId: 456,
           },
         },
       },
@@ -69,6 +83,7 @@ describe('RoborockService - Authentication', () => {
         persist: persist,
         configManager: mockConfigManager,
         container: mockContainer,
+        toastMessage: vi.fn(),
       },
       mockLogger,
       mockConfigManager,

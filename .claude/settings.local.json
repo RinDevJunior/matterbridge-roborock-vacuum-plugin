@@ -11,9 +11,10 @@
       "Bash(npm run coverage:*)",
       "Bash(npm run type-check:*)",
       "Bash(tree:*)",
-      "Bash(cut:*)"
+      "Bash(cut:*)",
+      "Bash(grep:*)"
     ]
   },
   "outputStyle": "default",
-  "spinnerTipsEnabled": false
+  "spinnerTipsEnabled": true
 }

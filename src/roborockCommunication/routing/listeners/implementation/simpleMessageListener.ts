@@ -1,5 +1,13 @@
 import { CleanModeSetting } from '../../../../behaviors/roborock.vacuum/core/CleanModeSetting.js';
-import { BatteryMessage, DeviceStatus, DpsPayload, Protocol, ResponseMessage, StatusChangeMessage, VacuumError } from '../../../models/index.js';
+import {
+  BatteryMessage,
+  DeviceStatus,
+  DpsPayload,
+  Protocol,
+  ResponseMessage,
+  StatusChangeMessage,
+  VacuumError,
+} from '../../../models/index.js';
 import { AbstractMessageHandler } from '../../handlers/abstractMessageHandler.js';
 import { AbstractMessageListener } from '../abstractMessageListener.js';
 import { AnsiLogger } from 'matterbridge/logger';
@@ -20,7 +28,9 @@ export class SimpleMessageListener implements AbstractMessageListener {
 
   public onMessage(message: ResponseMessage): void {
     if (message.duid !== this.duid) {
-      this.logger.debug(`[SimpleMessageListener]: Message DUID ${message.duid} does not match listener DUID ${this.duid}`);
+      this.logger.debug(
+        `[SimpleMessageListener]: Message DUID ${message.duid} does not match listener DUID ${this.duid}`,
+      );
       return;
     }
 
@@ -46,7 +56,13 @@ export class SimpleMessageListener implements AbstractMessageListener {
       return;
     }
 
-    const deviceStatus = new DeviceStatus(message.duid, rpcData.result[0]);
+    const rawResult = rpcData.result[0];
+    if (typeof rawResult !== 'object' || rawResult === null) {
+      this.logger.debug('[SimpleMessageListener]: result[0] is not an object, skipping');
+      return;
+    }
+
+    const deviceStatus = new DeviceStatus(message.duid, rawResult);
     const vacuumErrorCode = deviceStatus.getVacuumErrorCode();
     const dockErrorCode = deviceStatus.getDockErrorCode();
     const dockStationStatusCode = deviceStatus.getDockStationStatus();
@@ -55,21 +71,34 @@ export class SimpleMessageListener implements AbstractMessageListener {
     const messageBody = deviceStatus.getMessage();
     const cleaningInfo = messageBody.cleaning_info;
 
+    if (!('state' in messageBody)) {
+      this.logger.debug('[SimpleMessageListener]: Message does not contain state');
+      return;
+    }
+
     const state = messageBody.state;
     const cleanMode = new CleanModeSetting(
       cleaningInfo?.fan_power ?? messageBody.fan_power,
       cleaningInfo?.water_box_status ?? messageBody.water_box_mode,
       messageBody.distance_off,
       cleaningInfo?.mop_mode ?? messageBody.mop_mode,
+      messageBody.seq_type,
     );
 
     const batteryMessage = new BatteryMessage(message.duid, battery, chargeStatus, state);
 
-    const dockStationStatus = dockStationStatusCode !== undefined ? DockStationStatus.parseDockStationStatus(dockStationStatusCode) : undefined;
+    const dockStationStatus =
+      dockStationStatusCode !== undefined ? DockStationStatus.parseDockStationStatus(dockStationStatusCode) : undefined;
     const hasDockStationError = dockStationStatus?.hasError() ?? false;
 
-    if ((vacuumErrorCode !== undefined && vacuumErrorCode !== 0) || (dockErrorCode !== undefined && dockErrorCode !== 0) || hasDockStationError) {
-      this.logger.debug(`[SimpleMessageListener]: Detected error - vacuum: ${vacuumErrorCode}, dock: ${dockErrorCode}, dss: ${hasDockStationError}`);
+    if (
+      (vacuumErrorCode !== undefined && vacuumErrorCode !== 0) ||
+      (dockErrorCode !== undefined && dockErrorCode !== 0) ||
+      hasDockStationError
+    ) {
+      this.logger.debug(
+        `[SimpleMessageListener]: Detected error - vacuum: ${vacuumErrorCode}, dock: ${dockErrorCode}, dss: ${hasDockStationError}`,
+      );
       this.handler.onError(new VacuumError(message.duid, vacuumErrorCode, dockErrorCode, dockStationStatusCode));
     }
 

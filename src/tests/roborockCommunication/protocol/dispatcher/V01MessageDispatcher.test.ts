@@ -1,6 +1,9 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { asType } from '../../../testUtils.js';
 import { V10MessageDispatcher } from '../../../../roborockCommunication/protocol/dispatcher/V10MessageDispatcher.js';
+import { CleanModeSetting } from '../../../../behaviors/roborock.vacuum/core/CleanModeSetting.js';
+import { CleanSequenceType } from '../../../../behaviors/roborock.vacuum/enums/CleanSequenceType.js';
+
 // --- Mock Factories ---
 function createMockLogger() {
   return {
@@ -198,37 +201,59 @@ describe('V10MessageDispatcher', () => {
   describe('changeCleanMode', () => {
     it('should early return for smart plan', async () => {
       client.get.mockResolvedValueOnce(110); // get_custom_mode
-      await dispatcher.changeCleanMode(duid, 1, 2, 306, 0);
+
+      const setting = new CleanModeSetting(1, 2, 0, 306, CleanSequenceType.Persist);
+      await dispatcher.changeCleanMode(duid, setting);
       expect(client.send).not.toHaveBeenCalled();
     });
     it('should early return for custom plan', async () => {
       client.get.mockResolvedValueOnce(106); // get_custom_mode
-      await dispatcher.changeCleanMode(duid, 1, 2, 302, 0);
+
+      const setting = new CleanModeSetting(1, 2, 0, 302, CleanSequenceType.Persist);
+      await dispatcher.changeCleanMode(duid, setting);
       expect(client.send).not.toHaveBeenCalled();
     });
     it('should send set_mop_mode if currentMopMode == smartMopMode', async () => {
       client.get.mockResolvedValueOnce(110); // get_custom_mode
-      await dispatcher.changeCleanMode(duid, 1, 2, 100, 0);
+
+      const setting = new CleanModeSetting(1, 2, 0, 100, CleanSequenceType.Persist);
+      await dispatcher.changeCleanMode(duid, setting);
       expect(client.send).toHaveBeenCalledWith(duid, expect.objectContaining({ method: 'set_mop_mode' }));
     });
     it('should send set_custom_mode if suctionPower != 0', async () => {
       client.get.mockResolvedValueOnce(0); // get_custom_mode
-      await dispatcher.changeCleanMode(duid, 5, 0, 0, 0);
+
+      const setting = new CleanModeSetting(5, 0, 0, 0, CleanSequenceType.Persist);
+      await dispatcher.changeCleanMode(duid, setting);
       expect(client.send).toHaveBeenCalledWith(duid, expect.objectContaining({ method: 'set_custom_mode' }));
     });
     it('should send set_water_box_custom_mode with distance_off', async () => {
       client.get.mockResolvedValueOnce(0); // get_custom_mode
-      await dispatcher.changeCleanMode(duid, 0, 207, 0, 10);
-      expect(client.send).toHaveBeenCalledWith(duid, expect.objectContaining({ method: 'set_water_box_custom_mode', params: { water_box_mode: 207, distance_off: 10 } }));
+      const setting = new CleanModeSetting(0, 207, 10, 0, CleanSequenceType.Persist);
+      await dispatcher.changeCleanMode(duid, setting);
+      expect(client.send).toHaveBeenCalledWith(
+        duid,
+        expect.objectContaining({
+          method: 'set_water_box_custom_mode',
+          params: { water_box_mode: 207, distance_off: 10 },
+        }),
+      );
     });
     it('should send set_water_box_custom_mode with array param', async () => {
       client.get.mockResolvedValueOnce(0); // get_custom_mode
-      await dispatcher.changeCleanMode(duid, 0, 5, 0, 0);
-      expect(client.send).toHaveBeenCalledWith(duid, expect.objectContaining({ method: 'set_water_box_custom_mode', params: [5] }));
+
+      const setting = new CleanModeSetting(0, 5, 0, 0, CleanSequenceType.Persist);
+      await dispatcher.changeCleanMode(duid, setting);
+      expect(client.send).toHaveBeenCalledWith(
+        duid,
+        expect.objectContaining({ method: 'set_water_box_custom_mode', params: [5] }),
+      );
     });
     it('should send set_mop_mode if mopRoute != 0', async () => {
       client.get.mockResolvedValueOnce(0); // get_custom_mode
-      await dispatcher.changeCleanMode(duid, 0, 0, 8, 0);
+
+      const setting = new CleanModeSetting(0, 0, 0, 8, CleanSequenceType.Persist);
+      await dispatcher.changeCleanMode(duid, setting);
       expect(client.send).toHaveBeenCalledWith(duid, expect.objectContaining({ method: 'set_mop_mode', params: [8] }));
     });
   });

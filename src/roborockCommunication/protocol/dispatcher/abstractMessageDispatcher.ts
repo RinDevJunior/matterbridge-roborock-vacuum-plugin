@@ -22,7 +22,7 @@ export interface AbstractMessageDispatcher {
   getCustomMessage<T = unknown>(duid: string, def: RequestMessage): Promise<T>;
 
   getCleanModeData(duid: string): Promise<CleanModeSetting>;
-  changeCleanMode(duid: string, suctionPower: number, waterFlow: number, mopRoute: number, distance_off: number): Promise<void>;
+  changeCleanMode(duid: string, setting: CleanModeSetting): Promise<void>;
 
   // For core data retrieval
   getHomeMap(duid: string): Promise<MapRoomResponse>;

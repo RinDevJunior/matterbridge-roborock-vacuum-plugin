@@ -13,12 +13,22 @@ import {
 } from '../services/index.js';
 import { AuthenticationCoordinator } from './authentication/AuthenticationCoordinator.js';
 import { RoborockAuthenticateApi } from '../roborockCommunication/api/authClient.js';
-import { Device, Home, RawRoomMappingData, RequestMessage, Scene, UserData } from '../roborockCommunication/models/index.js';
+import {
+  Device,
+  Home,
+  RawRoomMappingData,
+  RequestMessage,
+  Scene,
+  UserData,
+} from '../roborockCommunication/models/index.js';
 import { RoborockIoTApi } from '../roborockCommunication/api/iotClient.js';
 import { PlatformConfigManager } from '../platform/platformConfigManager.js';
 import { MapInfo, RoomIndexMap } from '../core/application/models/index.js';
 import { CleanModeSetting } from '../behaviors/roborock.vacuum/core/CleanModeSetting.js';
 import { AuthenticationResponse } from '../model/AuthenticationResponse.js';
+import { WssSendSnackbarMessage } from '../types/WssSendSnackbarMessage.js';
+import { CleanCommand } from '../model/CleanCommand.js';
+import { SCENE_AREA_ID_MIN } from '../constants/index.js';
 
 export interface RoborockServiceConfig {
   authenticateApiFactory?: (logger: AnsiLogger, baseUrl: string) => RoborockAuthenticateApi;
@@ -28,6 +38,7 @@ export interface RoborockServiceConfig {
   persist: LocalStorage;
   configManager: PlatformConfigManager;
   container?: ServiceContainer;
+  toastMessage: WssSendSnackbarMessage;
 }
 
 /** Facade coordinating Auth, Device, Area, and Message services via ServiceContainer. */
@@ -36,9 +47,10 @@ export class RoborockService {
   private readonly authCoordinator: AuthenticationCoordinator;
   private readonly deviceService: DeviceManagementService;
   private readonly areaService: AreaManagementService;
-  private readonly messageService: MessageRoutingService;
+  private readonly messageRoutingService: MessageRoutingService;
   private readonly pollingService: PollingService;
   private readonly connectionService: ConnectionService;
+  private readonly toastMessage: WssSendSnackbarMessage;
 
   public deviceNotify: DeviceNotifyCallback | undefined;
 
@@ -59,6 +71,7 @@ export class RoborockService {
         iotApiFactory: params.iotApiFactory,
         persist: params.persist,
         configManager: params.configManager,
+        toastMessage: params.toastMessage,
       };
       this.container = new ServiceContainer(logger, config);
     }
@@ -67,9 +80,10 @@ export class RoborockService {
     this.authCoordinator = this.container.getAuthenticationCoordinator();
     this.deviceService = this.container.getDeviceManagementService();
     this.areaService = this.container.getAreaManagementService();
-    this.messageService = this.container.getMessageRoutingService();
+    this.messageRoutingService = this.container.getMessageRoutingService();
     this.pollingService = this.container.getPollingService();
     this.connectionService = this.container.getConnectionService();
+    this.toastMessage = params.toastMessage;
   }
 
   // ============================================================================
@@ -101,15 +115,18 @@ export class RoborockService {
       });
     } catch (error) {
       this.logger.error(`Authentication failed: ${(error as Error).message}`);
+      this.toastMessage(`Authentication failed: ${(error as Error).message}`, 5000, 'error');
       return { userData: undefined, shouldContinue: false, isSuccess: false };
     }
 
     if (!userData) {
       this.logger.info('Authentication incomplete. Further action required (e.g., 2FA).');
+      this.toastMessage('Authentication incomplete. Further action required (e.g., 2FA).', 5000, 'warning');
       return { userData: undefined, shouldContinue: false, isSuccess: false };
     }
 
     this.logger.info(`Authentication successful for user: ${userData.nickname} (${userData.username})`);
+    this.toastMessage(`Authentication successful for user: ${userData.username}`, 5000, 'success');
     this.container.setUserData(userData);
     return { userData, shouldContinue: true, isSuccess: true };
   }
@@ -183,8 +200,8 @@ export class RoborockService {
   }
 
   /** Set supported cleaning routines/scenes for a device. */
-  public setSupportedScenes(duid: string, routineAsRooms: ServiceArea.Area[]): void {
-    this.areaService.setSupportedScenes(duid, routineAsRooms);
+  public setSupportedRoutines(duid: string, routineAsRooms: ServiceArea.Area[]): void {
+    this.areaService.setSupportedRoutines(duid, routineAsRooms);
   }
 
   /** Get supported cleaning areas for a device. */
@@ -223,60 +240,57 @@ export class RoborockService {
 
   /** Get current cleaning mode settings. */
   public async getCleanModeData(duid: string): Promise<CleanModeSetting> {
-    return this.messageService.getCleanModeData(duid);
+    return this.messageRoutingService.getCleanModeData(duid);
   }
 
   /** Get vacuum's current room from map. */
   public async getRoomIdFromMap(duid: string): Promise<number | undefined> {
-    return this.messageService.getRoomIdFromMap(duid);
+    return this.messageRoutingService.getRoomIdFromMap(duid);
   }
 
   /** Change cleaning mode settings. */
   public async changeCleanMode(duid: string, settings: CleanModeSetting): Promise<void> {
-    return this.messageService.changeCleanMode(duid, settings);
+    return this.messageRoutingService.changeCleanMode(duid, settings);
   }
 
   /** Start cleaning with selected areas. */
   public async startClean(duid: string): Promise<void> {
-    const selectedAreas = this.areaService.getSelectedAreas(duid);
-    const supportedRooms = this.areaService.getSupportedAreas(duid) ?? [];
-    const supportedRoutines = this.areaService.getSupportedRoutines(duid) ?? [];
-
-    return this.messageService.startClean(duid, selectedAreas, supportedRooms, supportedRoutines);
+    const command = this.buildCleanCommand(duid);
+    return this.messageRoutingService.startClean(duid, command);
   }
 
   /** Pause cleaning. */
   public async pauseClean(duid: string): Promise<void> {
-    return this.messageService.pauseClean(duid);
+    return this.messageRoutingService.pauseClean(duid);
   }
 
   /** Stop cleaning and return to dock. */
   public async stopAndGoHome(duid: string): Promise<void> {
-    return this.messageService.stopAndGoHome(duid);
+    return this.messageRoutingService.stopAndGoHome(duid);
   }
 
   /** Resume paused cleaning. */
   public async resumeClean(duid: string): Promise<void> {
-    return this.messageService.resumeClean(duid);
+    return this.messageRoutingService.resumeClean(duid);
   }
 
   public async stopClean(duid: string): Promise<void> {
-    return this.messageService.stopClean(duid);
+    return this.messageRoutingService.stopClean(duid);
   }
 
   /** Play sound to locate vacuum. */
   public async playSoundToLocate(duid: string): Promise<void> {
-    return this.messageService.playSoundToLocate(duid);
+    return this.messageRoutingService.playSoundToLocate(duid);
   }
 
   /** Execute custom GET request to device. */
   public async customGet<T = unknown>(duid: string, request: RequestMessage): Promise<T> {
-    return this.messageService.customGet<T>(duid, request);
+    return this.messageRoutingService.customGet<T>(duid, request);
   }
 
   /** Send custom command to device (fire-and-forget). */
   public async customSend(duid: string, request: RequestMessage): Promise<void> {
-    return this.messageService.customSend(duid, request);
+    return this.messageRoutingService.customSend(duid, request);
   }
 
   /** Execute custom API GET request. */
@@ -286,5 +300,37 @@ export class RoborockService {
       throw new Error('IoT API not initialized. Please login first.');
     }
     return iotApi.getCustom(url) as Promise<T>;
+  }
+
+  private buildCleanCommand(duid: string): CleanCommand {
+    const selectedAreaIds = this.areaService.getSelectedAreas(duid);
+    const supportedRooms = this.areaService.getSupportedAreas(duid) ?? [];
+    const supportedRoutines = this.areaService.getSupportedRoutines(duid) ?? [];
+    const indexMap = this.areaService.getSupportedAreasIndexMap(duid);
+
+    const selectedRoutines = selectedAreaIds
+      .map((areaId) => supportedRoutines.find((r) => r.areaId === areaId))
+      .filter((area): area is ServiceArea.Area => area !== undefined)
+      .sort((a, b) =>
+        (a.areaInfo.locationInfo?.locationName ?? '').localeCompare(b.areaInfo.locationInfo?.locationName ?? ''),
+      );
+
+    if (selectedRoutines.length > 0) {
+      return { type: 'routine', routineId: selectedRoutines[0].areaId - SCENE_AREA_ID_MIN };
+    }
+
+    const activeMapId = supportedRooms.find((r) => selectedAreaIds.includes(r.areaId))?.mapId;
+    const activeMapRooms = activeMapId != null ? supportedRooms.filter((r) => r.mapId === activeMapId) : supportedRooms;
+
+    const roomIds = selectedAreaIds
+      .filter((areaId) => supportedRooms.some((r) => r.areaId === areaId))
+      .map((areaId) => indexMap?.getRoomId(areaId))
+      .filter((id): id is number => id !== undefined);
+
+    if (roomIds.length === 0 || roomIds.length === activeMapRooms.length || activeMapRooms.length === 0) {
+      return { type: 'global' };
+    }
+
+    return { type: 'room', roomIds };
   }
 }

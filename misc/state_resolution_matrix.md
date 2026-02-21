@@ -152,22 +152,18 @@
 ## Modifier Priority Chain
 
 0. **Status Override Rules** (Highest Priority)
-
    - **Sleeping Status with inCleaning Override**
-
      - Condition: `status === 2` (Sleeping) AND `inCleaning === true`
      - Effect: Returns `runMode = Cleaning`, `operationalState = Paused`
      - Overrides: ALL other modifiers (early exit, no other modifiers applied)
      - Note: Cannot be combined with `inReturning` or `isExploring` (invalid states)
 
    - **Idle Status Override**
-
      - Condition: `status === 3` (Idle)
      - Effect: Returns `runMode = Idle`, `operationalState = Docked`
      - Overrides: ALL modifiers (early exit, no modifiers applied)
 
    - **Cleaning Status Modifiers** (Explicit Priority Order)
-
      - Condition: `status === 5` (Cleaning)
      - Priority 1: `inWarmup === true` → Returns `runMode = Cleaning`, `operationalState = CleaningMop`
      - Priority 2: `inReturning === true` → Returns `runMode = Cleaning`, `operationalState = SeekingCharger`
@@ -175,26 +171,22 @@
      - Priority 4: `inFreshState` → Not applicable (vacuum does not go to fresh state during cleaning)
 
    - **Charging Status Override**
-
      - Condition: `status === 8` (Charging)
      - Effect: Returns `runMode = Idle`, `operationalState = Docked`
      - Overrides: ALL modifiers (early exit, no modifiers applied)
      - Note: Vacuum cannot charge while actively operating (inReturning, isExploring, etc.)
 
    - **EmptyingDustContainer Status Override**
-
      - Condition: `status === 22` (EmptyingDustContainer)
      - Effect: Returns `runMode = Cleaning`, `operationalState = EmptyingDustBin`
      - Overrides: ALL modifiers (early exit, no modifiers applied)
 
    - **WashingTheMop Status Override**
-
      - Condition: `status === 23` (WashingTheMop)
      - Effect: Returns `runMode = Cleaning`, `operationalState = CleaningMop`
      - Overrides: ALL modifiers (early exit, no modifiers applied)
 
    - **GoingToWashTheMop Status Override**
-
      - Condition: `status === 26` (GoingToWashTheMop)
      - Effect: Returns `runMode = Cleaning`, `operationalState = CleaningMop`
      - Overrides: ALL modifiers (early exit, no modifiers applied)
@@ -205,14 +197,12 @@
      - Overrides: ALL modifiers (early exit, no modifiers applied)
 
 1. **applyInReturningModifier** (High Priority)
-
    - Condition: `inReturning === true`
    - Effect: Sets `runMode = Cleaning`, `operationalState = SeekingCharger`
    - Special Case: When `status === 10` (Paused), maintains `operationalState = Paused` instead of `SeekingCharger`
    - Overrides: All other modifiers
 
 2. **applyIsExploringModifier** (Medium Priority)
-
    - Condition: `isExploring === true && inReturning !== true && status !== 8`
    - Effect: Sets `runMode = Mapping`, keeps operationalState
    - Blocked by: inReturning, Charging status (8)

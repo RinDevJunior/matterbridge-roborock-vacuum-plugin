@@ -1,14 +1,14 @@
 import { AnsiLogger } from 'matterbridge/logger';
-import type { IAuthGateway } from '../../core/ports/IAuthGateway.js';
 import { AuthenticationError } from '../../errors/index.js';
 import { VERIFICATION_CODE_RATE_LIMIT_MS } from '../../constants/index.js';
 import { AuthenticationStateRepository } from './AuthenticationStateRepository.js';
 import type { AuthenticateFlowState } from '../../roborockCommunication/models/index.js';
+import { RoborockAuthGateway } from '../../roborockCommunication/adapters/RoborockAuthGateway.js';
 
 /** Service for managing verification code requests and rate limiting. */
 export class VerificationCodeService {
   constructor(
-    private readonly authGateway: IAuthGateway,
+    private readonly authGateway: RoborockAuthGateway,
     private readonly stateRepository: AuthenticationStateRepository,
     private readonly logger: AnsiLogger,
   ) {}
@@ -20,10 +20,13 @@ export class VerificationCodeService {
       await this.authGateway.requestVerificationCode(email);
     } catch (error) {
       this.logger.error('Failed to request verification code:', { email, error });
-      throw new AuthenticationError('Failed to send verification code. Please check your email address and try again.', {
-        email,
-        originalError: error instanceof Error ? error.message : String(error),
-      });
+      throw new AuthenticationError(
+        'Failed to send verification code. Please check your email address and try again.',
+        {
+          email,
+          originalError: error instanceof Error ? error.message : String(error),
+        },
+      );
     }
   }
 

@@ -2,15 +2,15 @@ import { AnsiLogger } from 'matterbridge/logger';
 import { vi, describe, beforeEach, it, expect, afterEach } from 'vitest';
 import { VerificationCodeService } from '../../../services/authentication/VerificationCodeService.js';
 import { AuthenticationStateRepository } from '../../../services/authentication/AuthenticationStateRepository.js';
-import { IAuthGateway } from '../../../core/ports/IAuthGateway.js';
 import { AuthenticationError } from '../../../errors/index.js';
 import { AuthenticateFlowState } from '../../../roborockCommunication/models/index.js';
 import { createMockLogger, asType, asPartial } from '../../testUtils.js';
 import { VERIFICATION_CODE_RATE_LIMIT_MS } from '../../../constants/index.js';
+import { RoborockAuthGateway } from '../../../roborockCommunication/adapters/RoborockAuthGateway.js';
 
 describe('VerificationCodeService', () => {
   let service: VerificationCodeService;
-  let mockAuthGateway: IAuthGateway;
+  let mockAuthGateway: RoborockAuthGateway;
   let mockStateRepository: AuthenticationStateRepository;
   let mockLogger: AnsiLogger;
   let dateNowSpy: ReturnType<typeof vi.spyOn>;
@@ -19,12 +19,12 @@ describe('VerificationCodeService', () => {
   beforeEach(() => {
     mockLogger = createMockLogger();
 
-    mockAuthGateway = {
+    mockAuthGateway = asPartial<RoborockAuthGateway>({
       requestVerificationCode: vi.fn(),
       authenticate2FA: vi.fn(),
       authenticatePassword: vi.fn(),
       refreshToken: vi.fn(),
-    } satisfies Partial<IAuthGateway> as IAuthGateway;
+    });
 
     mockStateRepository = asPartial<AuthenticationStateRepository>({
       getAuthState: vi.fn(),

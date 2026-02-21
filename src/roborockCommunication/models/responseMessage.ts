@@ -3,15 +3,11 @@ import { Protocol } from './protocol.js';
 import { ResponseBody } from './responseBody.js';
 
 export class ResponseMessage {
-  readonly duid: string;
-  readonly body?: ResponseBody;
-  readonly header: HeaderMessage;
-
-  constructor(duid: string, header: HeaderMessage, body?: ResponseBody) {
-    this.duid = duid;
-    this.body = body;
-    this.header = header;
-  }
+  constructor(
+    public readonly duid: string,
+    public readonly header: HeaderMessage,
+    public readonly body: ResponseBody | undefined,
+  ) {}
 
   public get(index: Protocol): unknown {
     return this.body?.get(index);

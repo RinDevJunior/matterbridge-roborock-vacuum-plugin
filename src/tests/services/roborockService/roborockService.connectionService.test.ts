@@ -20,7 +20,13 @@ describe('initializeMessageClientForLocal', () => {
 
     const PlatformConfigManager = PlatformConfigManagerStatic;
     const config = {
-      authentication: { username: 'test', region: 'US', forceAuthentication: false, authenticationMethod: 'Password', password: '' },
+      authentication: {
+        username: 'test',
+        region: 'US',
+        forceAuthentication: false,
+        authenticationMethod: 'Password',
+        password: '',
+      },
       pluginConfiguration: {
         whiteList: [],
         enableServerMode: false,
@@ -36,6 +42,7 @@ describe('initializeMessageClientForLocal', () => {
           clearStorageOnStartup: false,
           showRoutinesAsRoom: false,
           includeDockStationStatus: false,
+          includeVacuumErrorStatus: false,
           forceRunAtDefault: false,
           useVacationModeToSendVacuumToDock: false,
           enableCleanModeMapping: false,
@@ -43,6 +50,13 @@ describe('initializeMessageClientForLocal', () => {
             vacuuming: { fanMode: 'Balanced', mopRouteMode: 'Standard' },
             mopping: { waterFlowMode: 'Medium', mopRouteMode: 'Standard', distanceOff: 25 },
             vacmop: { fanMode: 'Balanced', waterFlowMode: 'Medium', mopRouteMode: 'Standard', distanceOff: 25 },
+          },
+          overrideMatterConfiguration: false,
+          matterOverrideSettings: {
+            matterVendorName: 'xxx',
+            matterVendorId: 123,
+            matterProductName: 'yy',
+            matterProductId: 456,
           },
         },
       },
@@ -55,6 +69,7 @@ describe('initializeMessageClientForLocal', () => {
         baseUrl: 'https://api.roborock.com',
         persist: persist,
         configManager: configManager,
+        toastMessage: vi.fn(),
       },
       mockLogger,
       configManager,
@@ -67,6 +82,8 @@ describe('initializeMessageClientForLocal', () => {
 
   it('returns false if messageClient is not initialized', async () => {
     // Without message client setup, should throw error
-    await expect(service.initializeMessageClientForLocal(mockDevice)).rejects.toThrow('Message client not initialized in ConnectionService');
+    await expect(service.initializeMessageClientForLocal(mockDevice)).rejects.toThrow(
+      'Message client not initialized in ConnectionService',
+    );
   });
 });

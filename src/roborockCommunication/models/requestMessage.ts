@@ -49,18 +49,21 @@ export class RequestMessage {
     return this;
   }
 
-  public toLocalRequest(pv: string | ProtocolVersion | undefined = undefined): RequestMessage {
+  public toLocalRequest(protocolVersion: string | ProtocolVersion | undefined = undefined): RequestMessage {
     if (this.protocol == Protocol.rpc_request) {
       return new RequestMessage({
         messageId: this.messageId,
+
         protocol: Protocol.general_request,
+        version: protocolVersion,
+
         method: this.method,
         params: this.params,
         secure: this.secure,
-        timestamp: this.timestamp,
-        version: pv ?? this.version,
         dps: this.dps,
-        body: this.body,
+
+        nonce: this.nonce,
+        timestamp: this.timestamp,
       });
     } else {
       return this;

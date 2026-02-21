@@ -42,7 +42,9 @@ export class ConnectionStateListener implements AbstractConnectionListener {
     }
 
     if (message.includes('MQTT connection offline')) {
-      this.logger.notice(`Device ${duid} went offline, likely due to network issues. Waiting for automatic reconnection.`);
+      this.logger.notice(
+        `Device ${duid} went offline, likely due to network issues. Waiting for automatic reconnection.`,
+      );
       this.shouldReconnect = false;
       return;
     }
@@ -59,8 +61,7 @@ export class ConnectionStateListener implements AbstractConnectionListener {
 
     this.client.retryCount++;
 
-    const isInDisconnectingStep = this.client.isInDisconnectingStep;
-    if (isInDisconnectingStep) {
+    if (this.client.isInDisconnectingStep) {
       this.logger.info(`Device with DUID ${duid} is in disconnecting step, skipping re-registration.`);
       return;
     }
@@ -78,7 +79,9 @@ export class ConnectionStateListener implements AbstractConnectionListener {
         this.client.retryCount = 0;
         return;
       }
-      this.logger.info(`Manual reconnect: Re-registering device with DUID ${duid} to ${this.clientName} after ${MANUAL_RECONNECT_DELAY_MS / 1000}s.`);
+      this.logger.info(
+        `Manual reconnect: Re-registering device with DUID ${duid} to ${this.clientName} after ${MANUAL_RECONNECT_DELAY_MS / 1000}s.`,
+      );
       this.client.connect();
     }, MANUAL_RECONNECT_DELAY_MS);
 

@@ -6,7 +6,10 @@ import { MessageDeserializer } from '../../../roborockCommunication/protocol/des
 import { asPartial, asType } from '../../helpers/testUtils.js';
 import type { UserData } from '../../../roborockCommunication/models/index.js';
 
-const mkUser = () => asPartial<UserData>({ rriot: { r: { a: 'https://api.example', r: 'r', m: 'm', l: 'l' }, u: 'uid', s: 's', h: 'h', k: 'k' } });
+const mkUser = () =>
+  asPartial<UserData>({
+    rriot: { r: { a: 'https://api.example', r: 'r', m: 'm', l: 'l' }, u: 'uid', s: 's', h: 'h', k: 'k' },
+  });
 
 const logger: any = { error: vi.fn(), notice: vi.fn(), debug: vi.fn() };
 
@@ -21,7 +24,12 @@ describe('MessageSerializer/Deserializer roundtrip', () => {
     const serializer = new MessageSerializer(ctx, logger);
     const deserializer = new MessageDeserializer(ctx, logger);
 
-    const req = new RequestMessage({ messageId: 54321, protocol: Protocol.rpc_response, nonce: 2222, timestamp: 1600000000 });
+    const req = new RequestMessage({
+      messageId: 54321,
+      protocol: Protocol.rpc_response,
+      nonce: 2222,
+      timestamp: 1600000000,
+    });
     const { buffer } = serializer.serialize(duid, req);
 
     const resp = deserializer.deserialize(duid, buffer, 'local');
@@ -40,7 +48,12 @@ describe('MessageSerializer/Deserializer roundtrip', () => {
 
     const serializer = new MessageSerializer(ctx, logger);
     const deserializer = new MessageDeserializer(ctx, logger);
-    const req = new RequestMessage({ messageId: 111, protocol: Protocol.rpc_response, nonce: 2, timestamp: 1600000010 });
+    const req = new RequestMessage({
+      messageId: 111,
+      protocol: Protocol.rpc_response,
+      nonce: 2,
+      timestamp: 1600000010,
+    });
     const { buffer } = serializer.serialize(duid, req);
 
     // corrupt a byte before the CRC
@@ -57,7 +70,12 @@ describe('MessageSerializer/Deserializer roundtrip', () => {
     ctx1.registerDevice(duid, '0123456789abcdef', '1.0', 1);
 
     const serializer = new MessageSerializer(ctx1, logger);
-    const req = new RequestMessage({ messageId: 222, protocol: Protocol.rpc_response, nonce: 3, timestamp: 1600000020 });
+    const req = new RequestMessage({
+      messageId: 222,
+      protocol: Protocol.rpc_response,
+      nonce: 3,
+      timestamp: 1600000020,
+    });
     const { buffer } = serializer.serialize(duid, req);
 
     // create a new context without registering the device

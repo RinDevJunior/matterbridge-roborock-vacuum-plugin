@@ -112,7 +112,9 @@ describe('AuthenticationCoordinator', () => {
       it('should throw error for unknown authentication method', async () => {
         const context = createContext('test@example.com', 'password123');
 
-        await expect(coordinator.authenticate('UnknownMethod', context)).rejects.toThrow('Unknown authentication method: UnknownMethod');
+        await expect(coordinator.authenticate('UnknownMethod', context)).rejects.toThrow(
+          'Unknown authentication method: UnknownMethod',
+        );
       });
 
       it('should log error with available methods for unknown method', async () => {
@@ -124,7 +126,9 @@ describe('AuthenticationCoordinator', () => {
           // Expected to throw
         }
 
-        expect(mockLogger.error).toHaveBeenCalledWith('Unknown authentication method: InvalidMethod. Available methods: Password, VerificationCode');
+        expect(mockLogger.error).toHaveBeenCalledWith(
+          'Unknown authentication method: InvalidMethod. Available methods: Password, VerificationCode',
+        );
       });
 
       it('should not call any strategy for unknown method', async () => {
@@ -149,7 +153,9 @@ describe('AuthenticationCoordinator', () => {
       it('should throw for case-sensitive method mismatch', async () => {
         const context = createContext('test@example.com', 'password123');
 
-        await expect(coordinator.authenticate('password', context)).rejects.toThrow('Unknown authentication method: password');
+        await expect(coordinator.authenticate('password', context)).rejects.toThrow(
+          'Unknown authentication method: password',
+        );
       });
     });
 

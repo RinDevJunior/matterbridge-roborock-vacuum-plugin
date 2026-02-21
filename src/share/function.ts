@@ -53,7 +53,9 @@ export function state_to_matter_state(state: number): RvcRunMode.ModeTag | undef
  * @param state - The device operational status code
  * @returns Matter operational state, or null for docked/idle states
  */
-export function state_to_matter_operational_status(state: number | undefined): RvcOperationalState.OperationalState | undefined {
+export function state_to_matter_operational_status(
+  state: number | undefined,
+): RvcOperationalState.OperationalState | undefined {
   if (state === undefined) {
     return undefined;
   }
@@ -112,4 +114,8 @@ export function state_to_matter_operational_status(state: number | undefined): R
     default:
       return RvcOperationalState.OperationalState.Docked;
   }
+}
+
+export function asType<T>(v: unknown): T {
+  return v as T;
 }

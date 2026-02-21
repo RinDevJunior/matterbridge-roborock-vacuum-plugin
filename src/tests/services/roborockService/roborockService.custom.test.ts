@@ -26,8 +26,17 @@ describe('RoborockService (unit)', () => {
       getDeviceManagementService: () => ({}),
       getAreaManagementService: () => ({ getSelectedAreas: () => [], getSupportedAreas: () => [] }),
       getMessageRoutingService: () => ({}),
-      getPollingService: () => ({ setDeviceNotify: vi.fn(), activateDeviceNotifyOverLocal: vi.fn(), activateDeviceNotifyOverMQTT: vi.fn(), stopPolling: vi.fn() }),
-      getConnectionService: () => ({ initializeMessageClient: vi.fn(), initializeMessageClientForLocal: vi.fn().mockResolvedValue(false), setDeviceNotify: vi.fn() }),
+      getPollingService: () => ({
+        setDeviceNotify: vi.fn(),
+        activateDeviceNotifyOverLocal: vi.fn(),
+        activateDeviceNotifyOverMQTT: vi.fn(),
+        stopPolling: vi.fn(),
+      }),
+      getConnectionService: () => ({
+        initializeMessageClient: vi.fn(),
+        initializeMessageClientForLocal: vi.fn().mockResolvedValue(false),
+        setDeviceNotify: vi.fn(),
+      }),
       setUserData: vi.fn(),
       getIotApi: () => undefined,
     };
@@ -43,6 +52,7 @@ describe('RoborockService (unit)', () => {
         persist: asPartial<LocalStorage>({}),
         configManager: asPartial<PlatformConfigManager>({}),
         container: container as ServiceContainer,
+        toastMessage: vi.fn(),
       },
       asPartial<AnsiLogger>(logger),
       asPartial<PlatformConfigManager>({}),

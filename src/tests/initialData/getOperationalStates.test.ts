@@ -71,7 +71,11 @@ describe('getOperationalStates', () => {
   });
 
   it('getErrorFromErrorCode returns DustBinMissing for dustbin errors', () => {
-    const dustbinErrors = [VacuumErrorCode.NoDustbin, VacuumErrorCode.StrainerError, VacuumErrorCode.CleanAutoEmptyDock];
+    const dustbinErrors = [
+      VacuumErrorCode.NoDustbin,
+      VacuumErrorCode.StrainerError,
+      VacuumErrorCode.CleanAutoEmptyDock,
+    ];
     for (const code of dustbinErrors) {
       const vacuumStatus = new VacuumStatus(code);
       expect(vacuumStatus.getErrorState()).toBe(RvcOperationalState.ErrorState.DustBinMissing);
@@ -94,7 +98,11 @@ describe('getOperationalStates', () => {
   });
 
   it('getErrorFromErrorCode returns FailedToFindChargingDock for dock errors', () => {
-    const dockErrors = [VacuumErrorCode.DockNotConnectedToPower, VacuumErrorCode.ReturnToDockFail, VacuumErrorCode.DockLocatorError];
+    const dockErrors = [
+      VacuumErrorCode.DockNotConnectedToPower,
+      VacuumErrorCode.ReturnToDockFail,
+      VacuumErrorCode.DockLocatorError,
+    ];
     for (const code of dockErrors) {
       const vacuumStatus = new VacuumStatus(code);
       expect(vacuumStatus.getErrorState()).toBe(RvcOperationalState.ErrorState.FailedToFindChargingDock);
@@ -102,7 +110,11 @@ describe('getOperationalStates', () => {
   });
 
   it('getErrorFromErrorCode returns CannotReachTargetArea for zone errors', () => {
-    const zoneErrors = [VacuumErrorCode.NogoZoneDetected, VacuumErrorCode.InvisibleWallDetected, VacuumErrorCode.CannotCrossCarpet];
+    const zoneErrors = [
+      VacuumErrorCode.NogoZoneDetected,
+      VacuumErrorCode.InvisibleWallDetected,
+      VacuumErrorCode.CannotCrossCarpet,
+    ];
     for (const code of zoneErrors) {
       const vacuumStatus = new VacuumStatus(code);
       expect(vacuumStatus.getErrorState()).toBe(RvcOperationalState.ErrorState.CannotReachTargetArea);
@@ -148,7 +160,11 @@ describe('getOperationalStates', () => {
   });
 
   it('getErrorFromErrorCode returns DirtyWaterTankFull for dirty water errors', () => {
-    const dirtyWaterErrors = [VacuumErrorCode.DirtyWaterBoxHoare, VacuumErrorCode.DrainWaterException, VacuumErrorCode.CleanCarouselWaterFull];
+    const dirtyWaterErrors = [
+      VacuumErrorCode.DirtyWaterBoxHoare,
+      VacuumErrorCode.DrainWaterException,
+      VacuumErrorCode.CleanCarouselWaterFull,
+    ];
     for (const code of dirtyWaterErrors) {
       const vacuumStatus = new VacuumStatus(code);
       expect(vacuumStatus.getErrorState()).toBe(RvcOperationalState.ErrorState.DirtyWaterTankFull);

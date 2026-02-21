@@ -15,7 +15,7 @@ describe('MessageContext', () => {
     const ctx = new MessageContext(mkUser());
     ctx.registerDevice('d1', 'lk', '1.0', 5);
     expect(ctx.getLocalKey('d1')).toBe('lk');
-    expect(ctx.getProtocolVersion('d1')).toBe('1.0');
+    expect(ctx.getLocalProtocolVersion('d1')).toBe('1.0');
     expect(ctx.getDeviceNonce('d1')).toBe(5);
     ctx.updateNonce('d1', 42);
     expect(ctx.getDeviceNonce('d1')).toBe(42);
@@ -38,14 +38,14 @@ describe('MessageContext', () => {
   it('updateProtocolVersion handles non-existent and existing devices', () => {
     const ctx = new MessageContext(mkUser());
     // should not throw for non-existent device
-    expect(() => ctx.updateProtocolVersion('no', '2.0')).not.toThrow();
-    expect(ctx.getProtocolVersion('no')).toBeUndefined();
+    expect(() => ctx.updateLocalProtocolVersion('no', '2.0')).not.toThrow();
+    expect(ctx.getLocalProtocolVersion('no')).toBeUndefined();
 
     // register and then update
     ctx.registerDevice('d2', 'lk2', '1.0', 0);
-    expect(ctx.getProtocolVersion('d2')).toBe('1.0');
-    ctx.updateProtocolVersion('d2', '2.0');
-    expect(ctx.getProtocolVersion('d2')).toBe('2.0');
+    expect(ctx.getLocalProtocolVersion('d2')).toBe('1.0');
+    ctx.updateLocalProtocolVersion('d2', '2.0');
+    expect(ctx.getLocalProtocolVersion('d2')).toBe('2.0');
   });
 
   it('re-registering a device replaces stored values', () => {
@@ -54,14 +54,44 @@ describe('MessageContext', () => {
     expect(ctx.getLocalKey('d3')).toBe('lkA');
     ctx.registerDevice('d3', 'lkB', '2.0', 2);
     expect(ctx.getLocalKey('d3')).toBe('lkB');
-    expect(ctx.getProtocolVersion('d3')).toBe('2.0');
+    expect(ctx.getLocalProtocolVersion('d3')).toBe('2.0');
     expect(ctx.getDeviceNonce('d3')).toBe(2);
   });
 
   it('should return undefined for all getters on non-existent device', () => {
     const ctx = new MessageContext(mkUser());
     expect(ctx.getLocalKey('missing')).toBeUndefined();
-    expect(ctx.getProtocolVersion('missing')).toBeUndefined();
+    expect(ctx.getLocalProtocolVersion('missing')).toBeUndefined();
     expect(ctx.getDeviceNonce('missing')).toBeUndefined();
+  });
+
+  it('updateMQTTProtocolVersion should update version for existing device', () => {
+    const ctx = new MessageContext(mkUser());
+    ctx.registerDevice('d1', 'lk', '1.0', 5);
+    expect(ctx.getMQTTProtocolVersion('d1')).toBe('1.0');
+    ctx.updateMQTTProtocolVersion('d1', '3.0');
+    expect(ctx.getMQTTProtocolVersion('d1')).toBe('3.0');
+  });
+
+  it('updateMQTTProtocolVersion should not throw for non-existent device', () => {
+    const ctx = new MessageContext(mkUser());
+    expect(() => ctx.updateMQTTProtocolVersion('nonexistent', '2.0')).not.toThrow();
+    expect(ctx.getMQTTProtocolVersion('nonexistent')).toBeUndefined();
+  });
+
+  it('getMQTTProtocolVersion should return undefined for non-existent device', () => {
+    const ctx = new MessageContext(mkUser());
+    expect(ctx.getMQTTProtocolVersion('missing')).toBeUndefined();
+  });
+
+  it('unregisterAllDevices should clear all registered devices', () => {
+    const ctx = new MessageContext(mkUser());
+    ctx.registerDevice('d1', 'lk1', '1.0', 1);
+    ctx.registerDevice('d2', 'lk2', '1.0', 2);
+    expect(ctx.getLocalKey('d1')).toBe('lk1');
+    expect(ctx.getLocalKey('d2')).toBe('lk2');
+    ctx.unregisterAllDevices();
+    expect(ctx.getLocalKey('d1')).toBeUndefined();
+    expect(ctx.getLocalKey('d2')).toBeUndefined();
   });
 });

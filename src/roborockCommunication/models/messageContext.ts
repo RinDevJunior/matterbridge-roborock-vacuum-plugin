@@ -4,7 +4,8 @@ import { UserData } from '../models/userData.js';
 
 interface DeviceInfo {
   localKey: string;
-  protocolVersion: string;
+  localProtocolVersion: string;
+  mqttProtocolVersion: string;
   nonce: number | undefined;
 }
 
@@ -21,7 +22,7 @@ export class MessageContext {
   }
 
   public registerDevice(duid: string, localKey: string, pv: string, nonce: number | undefined): void {
-    this.devices.set(duid, { localKey: localKey, protocolVersion: pv, nonce });
+    this.devices.set(duid, { localKey: localKey, localProtocolVersion: pv, mqttProtocolVersion: pv, nonce });
   }
 
   public unregisterAllDevices(): void {
@@ -35,10 +36,17 @@ export class MessageContext {
     }
   }
 
-  public updateProtocolVersion(duid: string, pv: string): void {
+  public updateLocalProtocolVersion(duid: string, pv: string): void {
     const device = this.devices.get(duid);
     if (device) {
-      device.protocolVersion = pv;
+      device.localProtocolVersion = pv;
+    }
+  }
+
+  public updateMQTTProtocolVersion(duid: string, pv: string): void {
+    const device = this.devices.get(duid);
+    if (device) {
+      device.mqttProtocolVersion = pv;
     }
   }
 
@@ -50,8 +58,12 @@ export class MessageContext {
     return this.devices.get(duid)?.localKey;
   }
 
-  public getProtocolVersion(duid: string): string | undefined {
-    return this.devices.get(duid)?.protocolVersion;
+  public getLocalProtocolVersion(duid: string): string | undefined {
+    return this.devices.get(duid)?.localProtocolVersion;
+  }
+
+  public getMQTTProtocolVersion(duid: string): string | undefined {
+    return this.devices.get(duid)?.mqttProtocolVersion;
   }
 
   public getDeviceNonce(duid: string): number | undefined {

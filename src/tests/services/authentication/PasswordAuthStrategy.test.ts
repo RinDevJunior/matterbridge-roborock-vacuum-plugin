@@ -7,7 +7,10 @@ import { PlatformConfigManager } from '../../../platform/platformConfigManager.j
 import { AuthContext } from '../../../services/authentication/AuthContext.js';
 import { UserData } from '../../../roborockCommunication/models/index.js';
 import { createMockLogger, asPartial, asType } from '../../testUtils.js';
-import { AuthenticationConfiguration, RoborockPluginPlatformConfig } from '../../../model/RoborockPluginPlatformConfig.js';
+import {
+  AuthenticationConfiguration,
+  RoborockPluginPlatformConfig,
+} from '../../../model/RoborockPluginPlatformConfig.js';
 
 describe('PasswordAuthStrategy', () => {
   let strategy: PasswordAuthStrategy;
@@ -216,7 +219,10 @@ describe('PasswordAuthStrategy', () => {
 
         const result = await strategy.authenticate(context);
 
-        expect(mockLogger.warn).toHaveBeenCalledWith('Failed to save user data, but login succeeded:', 'String save error');
+        expect(mockLogger.warn).toHaveBeenCalledWith(
+          'Failed to save user data, but login succeeded:',
+          'String save error',
+        );
         expect(result).toEqual(mockUserData);
       });
 

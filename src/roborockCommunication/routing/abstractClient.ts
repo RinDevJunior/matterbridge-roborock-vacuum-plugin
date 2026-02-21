@@ -53,8 +53,6 @@ export abstract class AbstractClient implements Client {
    * Use get() if you need to wait for a response.
    */
   public async send(duid: string, request: RequestMessage): Promise<void> {
-    const pv = this.context.getProtocolVersion(duid);
-    request.version = request.version ?? pv;
     this.sendInternal(duid, request);
   }
 
@@ -67,21 +65,20 @@ export abstract class AbstractClient implements Client {
     if (this.connectionStateListener) {
       this.connectionStateListener.start();
     }
+    this.isInDisconnectingStep = false;
   }
 
   public disconnect(): Promise<void> {
     if (this.connectionStateListener) {
       this.connectionStateListener.stop();
     }
+    this.isInDisconnectingStep = true;
     return Promise.resolve();
   }
 
   public async get<T>(duid: string, request: RequestMessage): Promise<T | undefined> {
     try {
-      const pv = this.context.getProtocolVersion(duid);
-      request.version = request.version ?? pv;
-
-      const responsePromise = this.responseTracker.waitFor(request.messageId, request);
+      const responsePromise = this.responseTracker.waitFor(request, duid);
       this.sendInternal(duid, request);
 
       const response = await responsePromise;

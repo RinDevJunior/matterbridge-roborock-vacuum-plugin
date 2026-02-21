@@ -11,6 +11,7 @@ import { RoborockService } from '../services/roborockService.js';
 import { PlatformConfigManager } from '../platform/platformConfigManager.js';
 import { DeviceRegistry } from '../platform/deviceRegistry.js';
 import { RoborockVacuumCleaner } from '../types/roborockVacuumCleaner.js';
+import { ProtocolVersion } from '../roborockCommunication/enums/index.js';
 
 describe('PlatformRunner.getRoomMapFromDevice', () => {
   let platform: RoborockMatterbridgePlatform;
@@ -75,6 +76,7 @@ describe('PlatformRunner.getRoomMapFromDevice', () => {
         firmwareVersion: '1.0',
         serialNumber: 'SN1',
         model: DeviceModel.QREVO_EDGE_5V1,
+        protocol: ProtocolVersion.V1,
         category: DeviceCategory.VacuumCleaner,
         batteryLevel: 100,
         hasRealTimeConnection: true,
@@ -90,7 +92,12 @@ describe('PlatformRunner.getRoomMapFromDevice', () => {
           products: [],
           devices: [],
           receivedDevices: [],
-          rooms: [new RoomEntity(1, 'Kitchen'), new RoomEntity(2, 'Study'), new RoomEntity(3, 'Living room'), new RoomEntity(4, 'Bedroom')],
+          rooms: [
+            new RoomEntity(1, 'Kitchen'),
+            new RoomEntity(2, 'Study'),
+            new RoomEntity(3, 'Living room'),
+            new RoomEntity(4, 'Bedroom'),
+          ],
         } satisfies Home,
       },
       mapInfos: undefined,
@@ -132,7 +139,12 @@ describe('PlatformRunner.getRoomMapFromDevice', () => {
       products: [],
       devices: [],
       receivedDevices: [],
-      rooms: [new RoomEntity(1, 'Kitchen'), new RoomEntity(2, 'Study'), new RoomEntity(3, 'Living room'), new RoomEntity(4, 'Bedroom')],
+      rooms: [
+        new RoomEntity(1, 'Kitchen'),
+        new RoomEntity(2, 'Study'),
+        new RoomEntity(3, 'Living room'),
+        new RoomEntity(4, 'Bedroom'),
+      ],
     };
     const device = asPartial<Device>({
       duid: 'duid1',
@@ -208,7 +220,12 @@ describe('PlatformRunner.getRoomMapFromDevice', () => {
       products: [],
       devices: [],
       receivedDevices: [],
-      rooms: [new RoomEntity(1, 'Kitchen'), new RoomEntity(2, 'Study'), new RoomEntity(3, 'Living room'), new RoomEntity(4, 'Bedroom')],
+      rooms: [
+        new RoomEntity(1, 'Kitchen'),
+        new RoomEntity(2, 'Study'),
+        new RoomEntity(3, 'Living room'),
+        new RoomEntity(4, 'Bedroom'),
+      ],
     };
     const device = asPartial<Device>({
       duid: 'duid1',
@@ -249,7 +266,12 @@ describe('PlatformRunner.getRoomMapFromDevice', () => {
       products: [],
       devices: [],
       receivedDevices: [],
-      rooms: [new RoomEntity(1, 'Kitchen'), new RoomEntity(2, 'Study'), new RoomEntity(3, 'Living room'), new RoomEntity(4, 'Bedroom')],
+      rooms: [
+        new RoomEntity(1, 'Kitchen'),
+        new RoomEntity(2, 'Study'),
+        new RoomEntity(3, 'Living room'),
+        new RoomEntity(4, 'Bedroom'),
+      ],
     };
     const device = asPartial<Device>({
       duid: 'duid1',
@@ -373,7 +395,9 @@ describe('PlatformRunner.getRoomMapFromDevice', () => {
       [22, '39432524', 13],
     ];
 
-    vi.mocked(roborockService.getRoomMap).mockResolvedValue(roomMapData as Partial<RawRoomMappingData> as RawRoomMappingData);
+    vi.mocked(roborockService.getRoomMap).mockResolvedValue(
+      roomMapData as Partial<RawRoomMappingData> as RawRoomMappingData,
+    );
 
     const { roomMap } = await RoomMap.fromMapInfo(device, platform);
     const expectedRoomMap = new RoomMap([
@@ -441,6 +465,7 @@ describe('PlatformRunner.getRoomMapFromDevice', () => {
       new RoomEntity(12461109, 'Master bedroom'),
       new RoomEntity(12461111, 'Balcony'),
     ];
+
     const homeData: Home = {
       id: 1,
       name: 'Test Home',
@@ -558,7 +583,73 @@ describe('PlatformRunner.getRoomMapFromDevice', () => {
     expect(mapInfoResponse).toBeInstanceOf(MapInfo);
     expect(roomMap).toBeInstanceOf(RoomMap);
     expect(roomMap.rooms.length).toEqual(8);
+  });
 
+  it('real test 3', async () => {
+    const vacuumRooms: RoomDto[] = [
+      new RoomEntity(12231095, 'Garage'),
+      new RoomEntity(12231086, 'Bedroom'),
+      new RoomEntity(12231071, 'TV Room'),
+      new RoomEntity(12231061, 'Garage Entryway'),
+      new RoomEntity(12231033, 'Downstairs Bathroom'),
+      new RoomEntity(11453731, 'Living room'),
+      new RoomEntity(11453727, 'Kitchen'),
+      new RoomEntity(11453415, 'Bathroom'),
+      new RoomEntity(11453409, 'Emile’s Room'),
+      new RoomEntity(11453404, 'Nadia’s Room'),
+      new RoomEntity(11453398, 'Hallway'),
+      new RoomEntity(11453391, 'Dining room'),
+      new RoomEntity(11453384, 'Outside'),
+    ];
+
+    const homeData: Home = {
+      id: 1,
+      name: 'Test Home',
+      products: [],
+      devices: [],
+      receivedDevices: [],
+      rooms: vacuumRooms,
+    };
+    const device = asPartial<Device>({
+      duid: 'duid1',
+      store: asPartial<Device['store']>({ homeData }),
+    });
+
+    const mapInfo = new MapInfo(
+      asPartial<MultipleMapDto>({
+        max_multi_map: 1,
+        max_bak_map: 1,
+        multi_map_count: 1,
+        map_info: [
+          {
+            mapFlag: 1,
+            add_time: 1771001870,
+            length: 10,
+            name: 'Downstairs',
+            bak_maps: [{ mapFlag: 4, add_time: 1771000925 }],
+          },
+        ],
+      }),
+    );
+
+    vi.mocked(roborockService.getMapInfo).mockResolvedValue(mapInfo);
+
+    const roomData = asPartial<RawRoomMappingData>([
+      [16, '12231095'],
+      [17, '12231033'],
+      [18, '12231071'],
+      [19, '12231086'],
+      [20, '12231061'],
+    ]);
+
+    vi.mocked(roborockService.getRoomMap).mockResolvedValue(roomData);
+
+    const { mapInfo: mapInfoResponse, roomMap } = await RoomMap.fromMapInfo(device, platform);
+
+    expect(mapInfoResponse).toBeInstanceOf(MapInfo);
+    expect(roomMap).toBeInstanceOf(RoomMap);
+    expect(roomMap.rooms.length).toEqual(5);
+    expect(roomMap.rooms.every((r) => r.iot_map_id === 1)).toBe(true);
     // console.log('mapInfoResponse:', JSON.stringify(mapInfoResponse, null, 2));
     // console.log('roomMap:', JSON.stringify(roomMap, null, 2));
   });

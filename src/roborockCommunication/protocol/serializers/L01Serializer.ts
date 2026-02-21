@@ -3,7 +3,15 @@ import { AbstractSerializer } from './abstractSerializer.js';
 import * as CryptoUtils from '../../helper/cryptoHelper.js';
 
 export class L01Serializer implements AbstractSerializer {
-  public encode(payload: string, localKey: string, timestamp: number, sequence: number, nonce: number, connectNonce?: number, ackNonce?: number): Buffer<ArrayBuffer> {
+  public encode(
+    payload: string,
+    localKey: string,
+    timestamp: number,
+    sequence: number,
+    nonce: number,
+    connectNonce?: number,
+    ackNonce?: number,
+  ): Buffer<ArrayBuffer> {
     if (!connectNonce || !ackNonce) {
       throw new Error('connectNonce and ackNonce are required for L01 encryption');
     }
@@ -20,7 +28,15 @@ export class L01Serializer implements AbstractSerializer {
     return Buffer.concat([ciphertext, tag]);
   }
 
-  public decode(payload: Buffer, localKey: string, timestamp: number, sequence: number, nonce: number, connectNonce?: number, ackNonce?: number): Buffer<ArrayBuffer> {
+  public decode(
+    payload: Buffer,
+    localKey: string,
+    timestamp: number,
+    sequence: number,
+    nonce: number,
+    connectNonce?: number,
+    ackNonce?: number,
+  ): Buffer<ArrayBuffer> {
     if (!connectNonce || !ackNonce) {
       throw new Error('connectNonce and ackNonce are required for L01 decryption');
     }
@@ -54,7 +70,13 @@ export class L01Serializer implements AbstractSerializer {
     return digest.subarray(0, 12);
   }
 
-  private generateAAD(timestamp: number, nonce: number, sequence: number, connectNonce: number, ackNonce: number): Buffer {
+  private generateAAD(
+    timestamp: number,
+    nonce: number,
+    sequence: number,
+    connectNonce: number,
+    ackNonce: number,
+  ): Buffer {
     const aad = Buffer.alloc(20);
     aad.writeUint32BE(sequence);
     aad.writeUint32BE(connectNonce, 4);

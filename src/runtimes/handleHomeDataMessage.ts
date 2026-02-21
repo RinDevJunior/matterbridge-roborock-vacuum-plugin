@@ -4,6 +4,7 @@ import { debugStringify } from 'matterbridge/logger';
 import { Device, Home } from '../roborockCommunication/models/index.js';
 import { NotifyMessageTypes } from '../types/notifyMessageTypes.js';
 import { DockErrorCode } from '../roborockCommunication/enums/vacuumAndDockErrorCode.js';
+import { CleanSequenceType } from '../behaviors/roborock.vacuum/enums/CleanSequenceType.js';
 
 /**
  * Update robot states from home data polling response.
@@ -28,7 +29,11 @@ export async function updateFromHomeData(homeData: Home, platform: RoborockMatte
       return;
     }
 
-    device.schema = homeData.products.find((prd) => prd.id === device.productId || prd.model === robot.device.specs.model || prd.model === device.specs.model)?.schema ?? [];
+    device.schema =
+      homeData.products.find(
+        (prd) =>
+          prd.id === device.productId || prd.model === robot.device.specs.model || prd.model === device.specs.model,
+      )?.schema ?? [];
     platform.log.debug('updateFromHomeData-homeData:', debugStringify(homeData));
     platform.log.debug('updateFromHomeData-device:', debugStringify(device));
     platform.log.debug('updateFromHomeData-schema:' + debugStringify(device.schema));
@@ -85,6 +90,7 @@ export async function updateFromHomeData(homeData: Home, platform: RoborockMatte
           waterFlow: waterBoxMode,
           distance_off: 0,
           mopRoute: undefined,
+          seq_type: CleanSequenceType.Persist,
         },
       });
     }

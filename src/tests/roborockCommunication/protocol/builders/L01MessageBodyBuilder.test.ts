@@ -6,7 +6,10 @@ import { L01MessageBodyBuilder } from '../../../../roborockCommunication/protoco
 import { asPartial } from '../../../helpers/testUtils.js';
 import type { UserData } from '../../../../roborockCommunication/models/index.js';
 
-const mkUser = () => asPartial<UserData>({ rriot: { r: { a: 'https://api.example', r: 'r', m: 'm', l: 'l' }, u: 'uid', s: 's', h: 'h', k: 'k' } });
+const mkUser = () =>
+  asPartial<UserData>({
+    rriot: { r: { a: 'https://api.example', r: 'r', m: 'm', l: 'l' }, u: 'uid', s: 's', h: 'h', k: 'k' },
+  });
 
 describe('L01MessageBodyBuilder', () => {
   it('builds payload and converts general_request to rpc_request', () => {
@@ -24,7 +27,13 @@ describe('L01MessageBodyBuilder', () => {
   it('includes provided params and method', () => {
     const builder = new L01MessageBodyBuilder();
     const ctx = new MessageContext(mkUser());
-    const req = new RequestMessage({ messageId: 7, protocol: Protocol.rpc_request, method: 'm', params: [1, 2], timestamp: 100 });
+    const req = new RequestMessage({
+      messageId: 7,
+      protocol: Protocol.rpc_request,
+      method: 'm',
+      params: [1, 2],
+      timestamp: 100,
+    });
     const out = builder.buildPayload(req, ctx);
     const parsed = JSON.parse(out);
     const key = Object.keys(parsed.dps)[0];

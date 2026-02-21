@@ -6,7 +6,7 @@ import { RvcOperationalState, RvcRunMode } from 'matterbridge/matter/clusters';
 export interface RunModeConfig {
   mode: number;
   label: RunModeLabel;
-  modeTags: { value: number }[];
+  modeTags: { value: RvcRunMode.ModeTag }[];
 }
 
 export enum RunModeDisplayLabel {
@@ -22,10 +22,11 @@ interface RunModeLabelInfoStruct {
   mode: number;
 }
 
+// prettier-ignore
 export const RunModeLabelInfo: Record<RunModeLabel, RunModeLabelInfoStruct> = {
-  [RunModeDisplayLabel.Idle]: { mode: 1, label: RunModeDisplayLabel.Idle },
+  [RunModeDisplayLabel.Idle]:     { mode: 1, label: RunModeDisplayLabel.Idle },
   [RunModeDisplayLabel.Cleaning]: { mode: 2, label: RunModeDisplayLabel.Cleaning },
-  [RunModeDisplayLabel.Mapping]: { mode: 3, label: RunModeDisplayLabel.Mapping },
+  [RunModeDisplayLabel.Mapping]:  { mode: 3, label: RunModeDisplayLabel.Mapping },
 };
 
 /**

@@ -2,6 +2,10 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { Q7MessageDispatcher } from '../../../../roborockCommunication/protocol/dispatcher/Q7MessageDispatcher.js';
 import { asType, asPartial } from '../../../testUtils.js';
 import { RequestMessage } from '../../../../roborockCommunication/models/index.js';
+
+import { CleanModeSetting } from '../../../../behaviors/roborock.vacuum/core/CleanModeSetting.js';
+import { CleanSequenceType } from '../../../../behaviors/roborock.vacuum/enums/CleanSequenceType.js';
+
 // --- Mock Factories ---
 function createMockLogger() {
   return {
@@ -76,12 +80,24 @@ describe('Q7MessageDispatcher', () => {
   });
 
   describe('getRoomMap', () => {
-    it('should call client.get and logger.notice, return RoomMap', async () => {
-      client.get.mockResolvedValueOnce([]);
+    it('should return empty array when response is undefined', async () => {
+      client.get.mockResolvedValueOnce(undefined);
       const result = await dispatcher.getRoomMap(duid, 1);
       expect(client.get).toHaveBeenCalled();
-      expect(logger.notice).toHaveBeenCalled();
-      expect(result).toBeInstanceOf(Object); // RoomMap, but type is not checked at runtime
+      expect(result).toEqual([]);
+    });
+
+    it('should call client.get and return room mapping data', async () => {
+      const mockRoomData: [number, string, number][] = [
+        [1, 'Living Room', 0],
+        [2, 'Kitchen', 1],
+      ];
+      client.get.mockResolvedValueOnce(mockRoomData);
+
+      const result = await dispatcher.getRoomMap(duid, 1);
+
+      expect(client.get).toHaveBeenCalled();
+      expect(result).toEqual(mockRoomData);
     });
   });
 
@@ -146,7 +162,13 @@ describe('Q7MessageDispatcher', () => {
 
   describe('sendCustomMessage', () => {
     it('should send a custom message', async () => {
-      const def = asPartial<RequestMessage>({ toLocalRequest: vi.fn(), secure: false, isForProtocol: vi.fn(), version: '1.0', method: 'custom' });
+      const def = asPartial<RequestMessage>({
+        toLocalRequest: vi.fn(),
+        secure: false,
+        isForProtocol: vi.fn(),
+        version: '1.0',
+        method: 'custom',
+      });
       await dispatcher.sendCustomMessage(duid, def);
       expect(client.send).toHaveBeenCalled();
     });
@@ -163,7 +185,24 @@ describe('Q7MessageDispatcher', () => {
   describe('getCleanModeData', () => {
     it('should return a CleanModeSetting object', async () => {
       const result = await dispatcher.getCleanModeData(duid);
-      expect(result).toEqual({ suctionPower: 0, waterFlow: 0, mopRoute: 0, distance_off: 0 });
+      expect(result).toEqual({ suctionPower: 0, waterFlow: 0, mopRoute: 0, distance_off: 0, sequenceType: 0 });
+    });
+  });
+
+  describe('messageId', () => {
+    it('should return monotonically increasing IDs', () => {
+      const id1 = dispatcher['messageId'];
+      const id2 = dispatcher['messageId'];
+      expect(id2).toBeGreaterThan(id1);
+    });
+
+    it('should increment when Date.now returns same value', () => {
+      const fixedTime = Date.now();
+      vi.spyOn(Date, 'now').mockReturnValue(fixedTime);
+      dispatcher['lastB01Id'] = fixedTime;
+      const id = dispatcher['messageId'];
+      expect(id).toBe(fixedTime + 1);
+      vi.restoreAllMocks();
     });
   });
 
@@ -177,7 +216,8 @@ describe('Q7MessageDispatcher', () => {
       dispatcher['setVacuumMode'] = setVacuumMode;
       dispatcher['setMopMode'] = setMopMode;
 
-      await dispatcher.changeCleanMode(duid, 1, 2, 3, 4);
+      const setting = new CleanModeSetting(1, 2, 4, 3, CleanSequenceType.Persist);
+      await dispatcher.changeCleanMode(duid, setting);
       expect(setCleanMode).toHaveBeenCalledWith(duid, 1, 2);
       expect(setVacuumMode).toHaveBeenCalledWith(duid, 1);
       expect(setMopMode).toHaveBeenCalledWith(duid, 2);
@@ -191,7 +231,8 @@ describe('Q7MessageDispatcher', () => {
       dispatcher['setVacuumMode'] = setVacuumMode;
       dispatcher['setMopMode'] = setMopMode;
 
-      await dispatcher.changeCleanMode(duid, 0, 2, 3, 4);
+      const setting = new CleanModeSetting(0, 2, 4, 3, CleanSequenceType.Persist);
+      await dispatcher.changeCleanMode(duid, setting);
       expect(setVacuumMode).not.toHaveBeenCalled();
       expect(setMopMode).toHaveBeenCalledWith(duid, 2);
     });
@@ -204,9 +245,24 @@ describe('Q7MessageDispatcher', () => {
       dispatcher['setVacuumMode'] = setVacuumMode;
       dispatcher['setMopMode'] = setMopMode;
 
-      await dispatcher.changeCleanMode(duid, 1, 0, 3, 4);
+      const setting = new CleanModeSetting(1, 0, 4, 3, CleanSequenceType.Persist);
+      await dispatcher.changeCleanMode(duid, setting);
       expect(setVacuumMode).toHaveBeenCalledWith(duid, 1);
       expect(setMopMode).not.toHaveBeenCalled();
+    });
+
+    it('should call real private helpers and send commands via client', async () => {
+      const setting = new CleanModeSetting(2, 3, 4, 1, CleanSequenceType.Persist);
+      await dispatcher.changeCleanMode(duid, setting);
+      // setCleanMode + setVacuumMode + setMopMode = 3 sends
+      expect(client.send).toHaveBeenCalledTimes(3);
+      expect(logger.notice).toHaveBeenCalledWith(expect.stringContaining('Change clean mode'));
+    });
+
+    it('should only call setCleanMode when both suctionPower and waterFlow are 0', async () => {
+      const setting = new CleanModeSetting(0, 0, 4, 1, CleanSequenceType.Persist);
+      await dispatcher.changeCleanMode(duid, setting);
+      expect(client.send).toHaveBeenCalledTimes(1);
     });
   });
 

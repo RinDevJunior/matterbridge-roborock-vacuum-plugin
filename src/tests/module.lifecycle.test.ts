@@ -15,7 +15,7 @@ import type { PlatformRunner } from '../platformRunner.js';
 
 function createMockMatterbridge(overrides: Partial<PlatformMatterbridge> = {}): PlatformMatterbridge {
   return {
-    matterbridgeVersion: '3.5.3',
+    matterbridgeVersion: '3.5.5',
     matterbridgePluginDirectory: '/tmp',
     matterbridgeDirectory: '/tmp',
     ...overrides,
@@ -31,7 +31,13 @@ function createMockConfig(overrides: Partial<RoborockPluginPlatformConfig> = {})
     useInterval: false,
     refreshInterval: 60,
     debug: false,
-    authentication: { username: 'test', region: 'US', forceAuthentication: false, password: 'test', authenticationMethod: 'Password' },
+    authentication: {
+      username: 'test',
+      region: 'US',
+      forceAuthentication: false,
+      password: 'test',
+      authenticationMethod: 'Password',
+    },
     pluginConfiguration: {
       whiteList: [],
       enableServerMode: false,
@@ -47,6 +53,7 @@ function createMockConfig(overrides: Partial<RoborockPluginPlatformConfig> = {})
         clearStorageOnStartup: false,
         showRoutinesAsRoom: false,
         includeDockStationStatus: false,
+        includeVacuumErrorStatus: false,
         forceRunAtDefault: false,
         useVacationModeToSendVacuumToDock: false,
         enableCleanModeMapping: false,
@@ -66,6 +73,13 @@ function createMockConfig(overrides: Partial<RoborockPluginPlatformConfig> = {})
             mopRouteMode: 'Standard',
             distanceOff: 25,
           },
+        },
+        overrideMatterConfiguration: false,
+        matterOverrideSettings: {
+          matterVendorName: 'xxx',
+          matterVendorId: 123,
+          matterProductName: 'yy',
+          matterProductId: 456,
         },
       },
     },
@@ -121,18 +135,21 @@ describe('module.ts coverage tests', () => {
   describe('onShutdown', () => {
     it('should call lifecycle shutdown and super shutdown', async () => {
       const platform = new RoborockMatterbridgePlatform(mockMatterbridge, mockLogger, createMockConfig());
-      const lifecycleShutdownSpy = vi.spyOn(platform.lifecycle, 'onShutdown').mockResolvedValue(undefined);
+      const shutdownSpy = vi.spyOn(platform, 'onShutdown');
 
       await platform.onShutdown('test reason');
 
-      expect(lifecycleShutdownSpy).toHaveBeenCalledWith('test reason');
+      expect(shutdownSpy).toHaveBeenCalledWith('test reason');
     });
   });
 
   describe('onConfigureDevice - no devices or username', () => {
     it('should return early when no devices are registered', async () => {
       const platform = new RoborockMatterbridgePlatform(mockMatterbridge, mockLogger, createMockConfig());
-      platform.platformRunner = asPartial<PlatformRunner>({ requestHomeData: vi.fn(), updateRobotWithPayload: vi.fn() });
+      platform.platformRunner = asPartial<PlatformRunner>({
+        requestHomeData: vi.fn(),
+        updateRobotWithPayload: vi.fn(),
+      });
       platform.roborockService = asPartial<RoborockService>({
         initializeMessageClientForLocal: vi.fn(),
         getMapInfo: vi.fn(),
@@ -143,11 +160,11 @@ describe('module.ts coverage tests', () => {
 
       // Ensure lifecycle prerequisites are satisfied so onConfigureDevice is executed via onStart
       Object.defineProperty(platform, 'clearSelect', { value: vi.fn().mockResolvedValue(undefined) });
-      vi.spyOn(platform.lifecycle.discovery, 'discoverDevices').mockResolvedValue(true);
+      vi.spyOn(platform.discovery, 'discoverDevices').mockResolvedValue(true);
       Object.defineProperty(platform, 'ready', { value: Promise.resolve() });
       platform.persist = mockPersist;
 
-      await platform.lifecycle.onStart();
+      await platform.onStart();
 
       expect(mockLogger.log).toHaveBeenCalledWith('error', 'Initializing: No supported devices found');
     });
@@ -155,7 +172,10 @@ describe('module.ts coverage tests', () => {
     it('should return early when username is missing', async () => {
       const config = createMockConfig({ username: '' });
       const platform = new RoborockMatterbridgePlatform(mockMatterbridge, mockLogger, config);
-      platform.platformRunner = asPartial<PlatformRunner>({ requestHomeData: vi.fn(), updateRobotWithPayload: vi.fn() });
+      platform.platformRunner = asPartial<PlatformRunner>({
+        requestHomeData: vi.fn(),
+        updateRobotWithPayload: vi.fn(),
+      });
       platform.roborockService = asPartial<RoborockService>({
         initializeMessageClientForLocal: vi.fn(),
         getMapInfo: vi.fn(),
@@ -165,18 +185,21 @@ describe('module.ts coverage tests', () => {
 
       // Ensure lifecycle prerequisites are satisfied so onConfigureDevice is executed via onStart
       Object.defineProperty(platform, 'clearSelect', { value: vi.fn().mockResolvedValue(undefined) });
-      vi.spyOn(platform.lifecycle.discovery, 'discoverDevices').mockResolvedValue(true);
+      vi.spyOn(platform.discovery, 'discoverDevices').mockResolvedValue(true);
       Object.defineProperty(platform, 'ready', { value: Promise.resolve() });
       platform.persist = mockPersist;
 
-      await platform.lifecycle.onStart();
+      await platform.onStart();
 
       expect(mockLogger.log).toHaveBeenCalledWith('error', 'Initializing: No supported devices found');
     });
 
     it('should return early when roborockService is undefined', async () => {
       const platform = new RoborockMatterbridgePlatform(mockMatterbridge, mockLogger, createMockConfig());
-      platform.platformRunner = asPartial<PlatformRunner>({ requestHomeData: vi.fn(), updateRobotWithPayload: vi.fn() });
+      platform.platformRunner = asPartial<PlatformRunner>({
+        requestHomeData: vi.fn(),
+        updateRobotWithPayload: vi.fn(),
+      });
       platform.roborockService = undefined;
       const mockDevice: Partial<Device> = {
         duid: 'test-device',
@@ -186,11 +209,11 @@ describe('module.ts coverage tests', () => {
 
       // Ensure lifecycle prerequisites are satisfied so onConfigureDevice is executed via onStart
       Object.defineProperty(platform, 'clearSelect', { value: vi.fn().mockResolvedValue(undefined) });
-      vi.spyOn(platform.lifecycle.discovery, 'discoverDevices').mockResolvedValue(true);
+      vi.spyOn(platform.discovery, 'discoverDevices').mockResolvedValue(true);
       Object.defineProperty(platform, 'ready', { value: Promise.resolve() });
       platform.persist = mockPersist;
 
-      await platform.lifecycle.onStart();
+      await platform.onStart();
 
       expect(mockLogger.log).toHaveBeenCalledWith('error', 'Initializing: RoborockService is undefined');
     });
@@ -201,22 +224,34 @@ describe('module.ts coverage tests', () => {
       const mockDevice = makeDeviceFixture({ duid: 'test-device', name: 'Test Vacuum' });
 
       const platform = new RoborockMatterbridgePlatform(mockMatterbridge, mockLogger, createMockConfig());
-      platform.platformRunner = asPartial<PlatformRunner>({ requestHomeData: vi.fn(), updateRobotWithPayload: vi.fn(), activateHandlerFunctions: vi.fn() });
+      platform.platformRunner = asPartial<PlatformRunner>({
+        requestHomeData: vi.fn(),
+        updateRobotWithPayload: vi.fn(),
+        activateHandlerFunctions: vi.fn(),
+      });
       platform.roborockService = asPartial<RoborockService>({
         initializeMessageClientForLocal: vi.fn().mockResolvedValue(false),
         setDeviceNotify: vi.fn(),
+        getMapInfo: vi.fn().mockResolvedValue({ maps: [], allRooms: [] }),
+        getRoomMap: vi.fn().mockResolvedValue([]),
+        setSupportedAreas: vi.fn(),
+        setSupportedAreaIndexMap: vi.fn(),
+        activateDeviceNotify: vi.fn(),
       });
       platform.registry.registerDevice(mockDevice as Device);
 
       // Ensure lifecycle prerequisites are satisfied so onConfigureDevice is executed via onStart
       Object.defineProperty(platform, 'clearSelect', { value: vi.fn().mockResolvedValue(undefined) });
-      vi.spyOn(platform.lifecycle.discovery, 'discoverDevices').mockResolvedValue(true);
+      vi.spyOn(platform.discovery, 'discoverDevices').mockResolvedValue(true);
       Object.defineProperty(platform, 'ready', { value: Promise.resolve() });
       platform.persist = mockPersist;
 
-      await platform.lifecycle.onStart();
+      await platform.onStart();
 
-      expect(mockLogger.log).toHaveBeenCalledWith('error', expect.stringContaining('Failed to connect to local network'));
+      expect(mockLogger.log).toHaveBeenCalledWith(
+        'warn',
+        expect.stringContaining('could not connect to local network'),
+      );
     });
   });
 
@@ -275,7 +310,7 @@ describe('module.ts coverage tests', () => {
 
       platform.roborockService = {} as RoborockService;
 
-      const configureResult = await configureDeviceImpl(platform, mockDevice as Device);
+      await configureDeviceImpl(platform, mockDevice as Device);
 
       expect(getMapInformationMock).toHaveBeenCalledWith('test-device');
       expect(mockDevice.store?.homeData?.rooms?.length).toBe(2);
@@ -284,7 +319,10 @@ describe('module.ts coverage tests', () => {
 
   // Helper used in tests to exercise the same validation logic performed by the platform's `addDevice` private method.
   // This keeps tests focused and avoids casting to private members while preserving observable behavior.
-  function simulateAddDeviceValidation(p: RoborockMatterbridgePlatform, device: { serialNumber?: string; deviceName?: string }): Promise<Device | undefined> {
+  function simulateAddDeviceValidation(
+    p: RoborockMatterbridgePlatform,
+    device: { serialNumber?: string; deviceName?: string },
+  ): Promise<Device | undefined> {
     if (!device.serialNumber || !device.deviceName) {
       // Match production behavior by calling the logger's warn method
       p.log.warn?.('Cannot add device: missing serialNumber or deviceName');
@@ -363,8 +401,16 @@ describe('module.ts coverage tests', () => {
             },
             showRoutinesAsRoom: true,
             includeDockStationStatus: true,
+            includeVacuumErrorStatus: false,
             forceRunAtDefault: true,
             useVacationModeToSendVacuumToDock: true,
+            overrideMatterConfiguration: false,
+            matterOverrideSettings: {
+              matterVendorName: 'xxx',
+              matterVendorId: 123,
+              matterProductName: 'yy',
+              matterProductId: 456,
+            },
           },
         },
       });

@@ -1,6 +1,6 @@
 {
   "name": "matterbridge-roborock-vacuum-plugin",
-  "version": "1.1.3",
+  "version": "1.1.4",
   "description": "Matterbridge Roborock Vacuum Plugin",
   "author": "https://github.com/RinDevJunior",
   "license": "MIT",
@@ -20,7 +20,7 @@
   },
   "funding": {
     "type": "buymeacoffee",
-    "url": "https://www.google.com/"
+    "url": "https://www.buymeacoffee.com/rinnvspktr"
   },
   "keywords": [
     "matterbridge",
@@ -31,16 +31,14 @@
     "homekit",
     "apple home"
   ],
-  "engines": {
-    "node": ">=20.0.0 <21.0.0 || >=22.0.0 <23.0.0 || >=24.0.0 <25.0.0"
-  },
   "scripts": {
     "precommit": "npm run lint && npm run type-check && npm run dup-check && npm run format:check && npm run test",
-    "precondition": "npm install -g matterbridge@3.5.3",
+    "precondition": "npm install -g matterbridge@3.5.5",
     "build:local": "npm run deepClean && npm install && npm link matterbridge && npm run build && npm run matterbridge:add",
     "build:production": "tsc --project tsconfig.production.json",
     "start": "tsc && matterbridge -childbridge",
-    "build:package": "cd .. && tar --exclude-from='matterbridge-roborock-vacuum-plugin/.tarignore' -czvf matterbridge-roborock-vacuum-plugin-1.1.3.tgz matterbridge-roborock-vacuum-plugin && cd matterbridge-roborock-vacuum-plugin",
+    "build:package": "cd .. && build:compress && cd matterbridge-roborock-vacuum-plugin",
+    "build:compress": "tar --exclude-from='matterbridge-roborock-vacuum-plugin/.tarignore' -czvf matterbridge-roborock-vacuum-plugin-1.1.4.tgz matterbridge-roborock-vacuum-plugin",
     "dup-check": "npx jscpd",
     "build": "tsc",
     "type-check": "tsc --noEmit",
@@ -49,65 +47,60 @@
     "test:file": "vitest run",
     "test:coverage": "vitest run --coverage",
     "test:report": "vitest run --reporter=junit --outputFile=test-report.junit.xml",
-    "start-matterbridge": "matterbridge",
-    "start:bridge": "matterbridge -bridge",
-    "start:childbridge": "matterbridge -childbridge",
     "lint": "eslint --max-warnings=0 .",
     "lint:fix": "eslint --fix --max-warnings=0 .",
     "format": "prettier --write \"**/*.{js,jsx,ts,tsx,json,css,md}\"",
     "format:check": "prettier --check \"**/*.{js,jsx,ts,tsx,json,css,md}\"",
-    "clean": "npx rimraf tsconfig.tsbuildinfo ./dist",
-    "cleanBuild": "npm run clean && npm run build",
-    "cleanBuild:production": "npm run clean && npm run build:production",
-    "deepClean": "npx rimraf tsconfig.tsbuildinfo package-lock.json npm-shrinkwrap.json ./dist ./node_modules",
+    "deepClean": "npx rimraf tsconfig.tsbuildinfo npm-shrinkwrap.json ./dist ./node_modules",
     "checkDependencies": "npx npm-check-updates",
     "updateDependencies": "npx npm-check-updates -u && npm run deepCleanBuild",
-    "git:status": "git status && git branch -vv && git diff main origin/main",
-    "git:hardreset": "git fetch origin && git checkout main && git reset --hard origin/main",
-    "prepublishOnly": "npm run cleanBuild:production && npm pkg delete devDependencies scripts types && npx rimraf ./node_modules && npm install --omit=dev && npm shrinkwrap",
-    "runMeBeforePublish": "npm run lint && npm run format && npm run build && npm run test",
-    "npmPack": "copy package.json package.log && npm run prepublishOnly && npm pack && copy package.log package.json && npm run deepCleanBuild",
-    "npmPublishTagDev": "copy package.json package.log && npm run prepublishOnly && npm publish --tag dev && copy package.log package.json && npm run deepCleanBuild",
-    "npmPublishTagEdge": "copy package.json package.log && npm run prepublishOnly && npm publish --tag edge && copy package.log package.json && npm run deepCleanBuild",
-    "npmPublishTagLatest": "copy package.json package.log && npm run prepublishOnly && npm publish --tag latest && copy package.log package.json && npm run deepCleanBuild",
     "matterbridge:add": "matterbridge -add .\\",
     "matterbridge:remove": "matterbridge -remove .\\",
     "matterbridge:enable": "matterbridge -enable .\\",
     "matterbridge:disable": "matterbridge -disable .\\",
     "matterbridge:list": "matterbridge -list",
     "dev:link": "npm link matterbridge",
-    "dev:unlink": "npm unlink matterbridge",
-    "install:dependencies": "npm install node-ansi-logger node-persist-manager --omit=dev",
-    "install:typescript": "npm install typescript @types/node --save-dev --omit=dev",
-    "install:eslint": "npm uninstall eslint @types/eslint__js && npm install --save-dev @eslint/js typescript-eslint eslint-plugin-n && npm run lint",
-    "install:prettier": "npm install prettier eslint-config-prettier eslint-plugin-prettier --save-dev --omit=dev"
+    "dev:unlink": "npm unlink matterbridge"
+  },
+  "engines": {
+    "matterbridge": "^3.5.5",
+    "node": ">=24 <25"
   },
   "devDependencies": {
-    "@eslint/js": "9.26.0",
-    "@tsconfig/node16": "^16.1.3",
-    "@types/node": "22.15.18",
-    "@vitest/coverage-v8": "4.0.17",
-    "@vitest/eslint-plugin": "^1.6.7",
+    "@eslint/js": "10.0.1",
+    "@types/node": "25.3.0",
+    "@types/node-persist": "3.1.8",
+    "@types/semver": "^7.7.1",
+    "@vitest/coverage-v8": "4.0.18",
+    "@vitest/eslint-plugin": "1.6.9",
     "axios-mock-adapter": "^2.1.0",
-    "eslint-config-prettier": "10.1.5",
-    "eslint-plugin-n": "17.18.0",
-    "eslint-plugin-prettier": "5.4.0",
-    "jscpd": "^4.0.7",
+    "eslint": "10.0.0",
+    "eslint-config-prettier": "10.1.8",
+    "eslint-plugin-n": "17.24.0",
+    "eslint-plugin-prettier": "5.5.5",
+    "jscpd": "^4.0.8",
     "mock-socket": "^9.3.1",
-    "prettier": "3.5.3",
-    "typescript": "^5.8.3",
-    "typescript-eslint": "8.32.1",
-    "vite-tsconfig-paths": "^6.0.4",
-    "vitest": "4.0.17"
+    "npm-check-updates": "19.4.0",
+    "prettier": "3.8.1",
+    "typescript": "5.9.3",
+    "typescript-eslint": "8.56.0",
+    "vite-tsconfig-paths": "^6.1.1",
+    "vitest": "4.0.18"
   },
   "dependencies": {
-    "@types/node-persist": "3.1.8",
     "axios": "1.13.5",
     "axios-logger": "2.8.1",
     "axios-retry": "4.5.0",
     "binary-parser": "2.3.0",
     "crc-32": "1.2.2",
-    "mqtt": "5.14.1",
-    "node-persist-manager": "2.0.0"
+    "mqtt": "5.15.0",
+    "node-persist": "^4.0.4",
+    "node-persist-manager": "2.0.1",
+    "protobufjs": "^8.0.0",
+    "semver": "^7.7.4"
+  },
+  "overrides": {
+    "eslint": "10.0.0",
+    "@eslint/js": "10.0.1"
   }
 }

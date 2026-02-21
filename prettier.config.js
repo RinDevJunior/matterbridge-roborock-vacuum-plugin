@@ -29,7 +29,7 @@ coverage
 // **/*.html
 
 export default {
-  printWidth: 180, // default 80
+  printWidth: 120, // default 80
   tabWidth: 2,
   useTabs: false,
   semi: true,

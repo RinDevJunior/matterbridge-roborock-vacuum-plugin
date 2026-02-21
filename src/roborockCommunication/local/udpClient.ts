@@ -142,10 +142,13 @@ export class LocalNetworkUDPClient {
       return decrypted.toString('utf8');
     } catch (e: unknown) {
       const exception = e as Error;
-      throw new Error(`[LocalNetworkUDPClient] failed to decrypt: ${exception.message}
+      throw new Error(
+        `[LocalNetworkUDPClient] failed to decrypt: ${exception.message}
         iv: ${iv.toString('hex')}
         tag: ${tag.toString('hex')}
-        encrypted: ${ciphertext.toString('hex')}`);
+        encrypted: ${ciphertext.toString('hex')}`,
+        { cause: e },
+      );
     }
   }
 }

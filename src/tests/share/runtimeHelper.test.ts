@@ -2,7 +2,10 @@ import { describe, it, expect } from 'vitest';
 import { getCleanModeResolver } from '../../share/runtimeHelper.js';
 import { DeviceModel } from '../../roborockCommunication/models/index.js';
 import { smartCleanModeConfigs, baseCleanModeConfigs } from '../../behaviors/roborock.vacuum/core/cleanModeConfig.js';
-import { createSmartModeResolver, createDefaultModeResolver } from '../../behaviors/roborock.vacuum/core/modeResolver.js';
+import {
+  createSmartModeResolver,
+  createDefaultModeResolver,
+} from '../../behaviors/roborock.vacuum/core/modeResolver.js';
 
 const smartModeResolver = createSmartModeResolver(smartCleanModeConfigs);
 const defaultModeResolver = createDefaultModeResolver(baseCleanModeConfigs);
