@@ -209,6 +209,106 @@ describe('PlatformConfigManager', () => {
       manager = PlatformConfigManager.create(config, mockLogger);
       expect(manager.includeVacuumErrorStatus).toBe(false);
     });
+
+    it('should return false for useVacationModeToSendVacuumToDock when advanced feature is disabled', () => {
+      config.advancedFeature = {
+        enableAdvancedFeature: false,
+        settings: { ...createDefaultAdvancedFeature().settings, useVacationModeToSendVacuumToDock: true },
+      };
+      manager = PlatformConfigManager.create(config, mockLogger);
+      expect(manager.useVacationModeToSendVacuumToDock).toBe(false);
+    });
+
+    it('should return true for useVacationModeToSendVacuumToDock when advanced feature is enabled', () => {
+      config.advancedFeature = {
+        enableAdvancedFeature: true,
+        settings: { ...createDefaultAdvancedFeature().settings, useVacationModeToSendVacuumToDock: true },
+      };
+      manager = PlatformConfigManager.create(config, mockLogger);
+      expect(manager.useVacationModeToSendVacuumToDock).toBe(true);
+    });
+
+    it('should return false for overrideMatterConfiguration when advanced feature is disabled', () => {
+      config.advancedFeature = {
+        enableAdvancedFeature: false,
+        settings: { ...createDefaultAdvancedFeature().settings, overrideMatterConfiguration: true },
+      };
+      manager = PlatformConfigManager.create(config, mockLogger);
+      expect(manager.overrideMatterConfiguration).toBe(false);
+    });
+
+    it('should return true for overrideMatterConfiguration when advanced feature is enabled', () => {
+      config.advancedFeature = {
+        enableAdvancedFeature: true,
+        settings: { ...createDefaultAdvancedFeature().settings, overrideMatterConfiguration: true },
+      };
+      manager = PlatformConfigManager.create(config, mockLogger);
+      expect(manager.overrideMatterConfiguration).toBe(true);
+    });
+
+    it('should return custom matterOverrideSettings when advanced feature is enabled and override is true', () => {
+      const customSettings = {
+        matterVendorName: 'MyVendor',
+        matterVendorId: 9999,
+        matterProductName: 'MyProduct',
+        matterProductId: 8888,
+      };
+      config.advancedFeature = {
+        enableAdvancedFeature: true,
+        settings: {
+          ...createDefaultAdvancedFeature().settings,
+          overrideMatterConfiguration: true,
+          matterOverrideSettings: customSettings,
+        },
+      };
+      manager = PlatformConfigManager.create(config, mockLogger);
+      expect(manager.matterOverrideSettings).toEqual(customSettings);
+    });
+
+    it('should return default matterOverrideSettings when advanced feature is disabled', () => {
+      config.advancedFeature = {
+        enableAdvancedFeature: false,
+        settings: { ...createDefaultAdvancedFeature().settings, overrideMatterConfiguration: true },
+      };
+      manager = PlatformConfigManager.create(config, mockLogger);
+      expect(manager.matterOverrideSettings).toBeDefined();
+    });
+
+    it('should return default matterOverrideSettings when overrideMatterConfiguration is false', () => {
+      config.advancedFeature = {
+        enableAdvancedFeature: true,
+        settings: { ...createDefaultAdvancedFeature().settings, overrideMatterConfiguration: false },
+      };
+      manager = PlatformConfigManager.create(config, mockLogger);
+      expect(manager.matterOverrideSettings).toBeDefined();
+    });
+
+    it('should return false for isClearStorageOnStartupEnabled when advanced feature is disabled', () => {
+      config.advancedFeature = {
+        enableAdvancedFeature: false,
+        settings: { ...createDefaultAdvancedFeature().settings, clearStorageOnStartup: true },
+      };
+      manager = PlatformConfigManager.create(config, mockLogger);
+      expect(manager.isClearStorageOnStartupEnabled).toBe(false);
+    });
+
+    it('should return true for isClearStorageOnStartupEnabled when advanced feature is enabled', () => {
+      config.advancedFeature = {
+        enableAdvancedFeature: true,
+        settings: { ...createDefaultAdvancedFeature().settings, clearStorageOnStartup: true },
+      };
+      manager = PlatformConfigManager.create(config, mockLogger);
+      expect(manager.isClearStorageOnStartupEnabled).toBe(true);
+    });
+
+    it('should return false for isCustomCleanModeMappingEnabled when advanced feature is disabled', () => {
+      config.advancedFeature = {
+        enableAdvancedFeature: false,
+        settings: { ...createDefaultAdvancedFeature().settings, enableCleanModeMapping: true },
+      };
+      manager = PlatformConfigManager.create(config, mockLogger);
+      expect(manager.isCustomCleanModeMappingEnabled).toBe(false);
+    });
   });
 
   describe('device filtering', () => {

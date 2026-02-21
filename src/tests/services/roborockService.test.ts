@@ -13,6 +13,9 @@ import { RoborockIoTApi } from '../../roborockCommunication/api/iotClient.js';
 import type { LocalStorage } from 'node-persist';
 import type { PlatformConfigManager } from '../../platform/platformConfigManager.js';
 import { asPartial } from '../testUtils.js';
+import type { ServiceArea } from 'matterbridge/matter/clusters';
+import type { RoomIndexMap } from '../../core/application/models/index.js';
+import { SCENE_AREA_ID_MIN } from '../../constants/index.js';
 
 describe('RoborockService - Comprehensive Coverage', () => {
   let service: RoborockService;
@@ -69,10 +72,11 @@ describe('RoborockService - Comprehensive Coverage', () => {
       getCleanModeData: vi.fn(),
       getRoomIdFromMap: vi.fn(),
       changeCleanMode: vi.fn(),
-      startClean: vi.fn(),
+      startClean: vi.fn().mockResolvedValue(undefined),
       pauseClean: vi.fn(),
       stopAndGoHome: vi.fn(),
       resumeClean: vi.fn(),
+      stopClean: vi.fn().mockResolvedValue(undefined),
       playSoundToLocate: vi.fn(),
       customGet: vi.fn(),
       customSend: vi.fn(),
@@ -99,6 +103,8 @@ describe('RoborockService - Comprehensive Coverage', () => {
       }),
       setUserData: vi.fn(),
       getIotApi: vi.fn(),
+      synchronizeMessageClients: vi.fn(),
+      destroy: vi.fn(),
     };
 
     mockPersist = {
@@ -302,6 +308,118 @@ describe('RoborockService - Comprehensive Coverage', () => {
 
       expect(result).toEqual({ data: 'test' });
       expect(mockIotApi.getCustom).toHaveBeenCalledWith('/test');
+    });
+  });
+
+  describe('stopClean', () => {
+    it('should delegate to messageRoutingService.stopClean', async () => {
+      await service.stopClean('duid-1');
+      expect(mockMessageService.stopClean).toHaveBeenCalledWith('duid-1');
+    });
+  });
+
+  describe('setDeviceNotify', () => {
+    it('should set deviceNotify and delegate to pollingService and connectionService', () => {
+      const cb = vi.fn();
+      service.setDeviceNotify(cb);
+      expect(service.deviceNotify).toBe(cb);
+      expect(mockPollingService.setDeviceNotify).toHaveBeenCalledWith(cb);
+    });
+  });
+
+  describe('initializeMessageClientForLocal', () => {
+    it('should delegate to connectionService and return its result', async () => {
+      const mockConnectionService = vi.mocked(mockContainer.getConnectionService)?.();
+      vi.mocked(mockConnectionService?.initializeMessageClientForLocal)?.mockResolvedValue(true);
+
+      const result = await service.initializeMessageClientForLocal(asPartial<Device>({ duid: 'duid-1' }));
+      expect(result).toBe(true);
+    });
+  });
+
+  describe('startClean - buildCleanCommand branches', () => {
+    const duid = 'test-duid';
+
+    function makeArea(areaId: number, mapId: number, name = ''): ServiceArea.Area {
+      return asPartial<ServiceArea.Area>({
+        areaId,
+        mapId,
+        areaInfo: { locationInfo: { locationName: name, floorNumber: 0, areaType: 1 }, landmarkInfo: null },
+      });
+    }
+
+    it('should send routine command when selected area matches a routine', async () => {
+      const routineAreaId = SCENE_AREA_ID_MIN + 10;
+      vi.mocked(mockAreaService.getSelectedAreas)?.mockReturnValue([routineAreaId]);
+      vi.mocked(mockAreaService.getSupportedRoutines)?.mockReturnValue([makeArea(routineAreaId, 0)]);
+      vi.mocked(mockAreaService.getSupportedAreas)?.mockReturnValue([]);
+      vi.mocked(mockAreaService.getSupportedAreasIndexMap)?.mockReturnValue(undefined);
+
+      await service.startClean(duid);
+
+      expect(mockMessageService.startClean).toHaveBeenCalledWith(
+        duid,
+        expect.objectContaining({ type: 'routine', routineId: 10 }),
+      );
+    });
+
+    it('should send global command when no areas are selected', async () => {
+      vi.mocked(mockAreaService.getSelectedAreas)?.mockReturnValue([]);
+      vi.mocked(mockAreaService.getSupportedRoutines)?.mockReturnValue([]);
+      vi.mocked(mockAreaService.getSupportedAreas)?.mockReturnValue([makeArea(1, 1), makeArea(2, 1)]);
+      vi.mocked(mockAreaService.getSupportedAreasIndexMap)?.mockReturnValue(undefined);
+
+      await service.startClean(duid);
+
+      expect(mockMessageService.startClean).toHaveBeenCalledWith(duid, { type: 'global' });
+    });
+
+    it('should send global command when all rooms in active map are selected', async () => {
+      const room1 = makeArea(1, 1);
+      const room2 = makeArea(2, 1);
+      const indexMap = asPartial<RoomIndexMap>({ getRoomId: vi.fn().mockImplementation((id: number) => id + 100) });
+
+      vi.mocked(mockAreaService.getSelectedAreas)?.mockReturnValue([1, 2]);
+      vi.mocked(mockAreaService.getSupportedRoutines)?.mockReturnValue([]);
+      vi.mocked(mockAreaService.getSupportedAreas)?.mockReturnValue([room1, room2]);
+      vi.mocked(mockAreaService.getSupportedAreasIndexMap)?.mockReturnValue(indexMap);
+
+      await service.startClean(duid);
+
+      expect(mockMessageService.startClean).toHaveBeenCalledWith(duid, { type: 'global' });
+    });
+
+    it('should send room command when specific rooms are selected (not all)', async () => {
+      const room1 = makeArea(1, 1);
+      const room2 = makeArea(2, 1);
+      const room3 = makeArea(3, 1);
+      const indexMap = asPartial<RoomIndexMap>({ getRoomId: vi.fn().mockImplementation((id: number) => id + 100) });
+
+      vi.mocked(mockAreaService.getSelectedAreas)?.mockReturnValue([1]);
+      vi.mocked(mockAreaService.getSupportedRoutines)?.mockReturnValue([]);
+      vi.mocked(mockAreaService.getSupportedAreas)?.mockReturnValue([room1, room2, room3]);
+      vi.mocked(mockAreaService.getSupportedAreasIndexMap)?.mockReturnValue(indexMap);
+
+      await service.startClean(duid);
+
+      expect(mockMessageService.startClean).toHaveBeenCalledWith(
+        duid,
+        expect.objectContaining({ type: 'room', roomIds: [101] }),
+      );
+    });
+
+    it('should send global command when selected area has no matching room in indexMap', async () => {
+      const room1 = makeArea(1, 1);
+      const indexMap = asPartial<RoomIndexMap>({ getRoomId: vi.fn().mockReturnValue(undefined) });
+
+      vi.mocked(mockAreaService.getSelectedAreas)?.mockReturnValue([1]);
+      vi.mocked(mockAreaService.getSupportedRoutines)?.mockReturnValue([]);
+      vi.mocked(mockAreaService.getSupportedAreas)?.mockReturnValue([room1]);
+      vi.mocked(mockAreaService.getSupportedAreasIndexMap)?.mockReturnValue(indexMap);
+
+      await service.startClean(duid);
+
+      expect(mockMessageService.startClean).toHaveBeenCalledWith(duid, { type: 'global' });
     });
   });
 });
