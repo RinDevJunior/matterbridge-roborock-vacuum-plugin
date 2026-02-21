@@ -32,7 +32,7 @@ And it stays there indefinitely, never becoming _Ready_.
 - Network mode: `host`
 - Started from version **3.0.4**
 - Frequently upgraded using built-in upgrade button
-- Current version: **3.5.4**
+- Current version: **3.5.5**
 
 ### Docker Stack
 

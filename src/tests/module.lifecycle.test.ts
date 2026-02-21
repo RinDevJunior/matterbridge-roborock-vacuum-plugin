@@ -15,7 +15,7 @@ import type { PlatformRunner } from '../platformRunner.js';
 
 function createMockMatterbridge(overrides: Partial<PlatformMatterbridge> = {}): PlatformMatterbridge {
   return {
-    matterbridgeVersion: '3.5.4',
+    matterbridgeVersion: '3.5.5',
     matterbridgePluginDirectory: '/tmp',
     matterbridgeDirectory: '/tmp',
     ...overrides,

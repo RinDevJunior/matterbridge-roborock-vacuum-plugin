@@ -13,6 +13,7 @@ import { RoomMap } from '../core/application/models/index.js';
 import { HomeEntity } from '../core/domain/entities/Home.js';
 import { RoborockVacuumCleaner } from '../types/roborockVacuumCleaner.js';
 import { configureBehavior } from '../share/behaviorFactory.js';
+import { WssSendSnackbarMessage } from '../types/WssSendSnackbarMessage.js';
 
 /**
  * Handles device configuration: local network setup, room mapping,
@@ -26,6 +27,7 @@ export class DeviceConfigurator {
     private readonly configManager: PlatformConfigManager,
     private readonly registry: DeviceRegistry,
     private readonly getPlatformRunner: () => PlatformRunner,
+    private readonly snackbarMessage: WssSendSnackbarMessage,
     private readonly log: AnsiLogger,
   ) {}
 
@@ -76,6 +78,11 @@ export class DeviceConfigurator {
 
     if (!connectedToLocalNetwork) {
       this.log.warn(`Device ${vacuum.name} (${vacuum.duid}) could not connect to local network, using MQTT only`);
+      this.snackbarMessage(
+        `Vacuum: ${vacuum.name} does not appear to be connected to local network, please double-check`,
+        5000,
+        'error',
+      );
     }
 
     const { activeMapId, mapInfo, roomMap } = await RoomMap.fromMapInfo(vacuum, { roborockService, log: this.log });

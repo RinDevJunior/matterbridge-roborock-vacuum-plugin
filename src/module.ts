@@ -20,6 +20,7 @@ import { DeviceConfigurator } from './platform/deviceConfigurator.js';
 import { PlatformState } from './platform/platformState.js';
 import { RoborockPluginPlatformConfig } from './model/RoborockPluginPlatformConfig.js';
 import { getWssSendSnackbarMessage, WssSendSnackbarMessage } from './types/WssSendSnackbarMessage.js';
+import { checkDependencyVersions } from './share/dependency-check.js';
 
 export default function initializePlugin(
   matterbridge: PlatformMatterbridge,
@@ -71,17 +72,7 @@ export class RoborockMatterbridgePlatform extends MatterbridgeDynamicPlatform {
     super(matterbridge, new FilterLogger(logger, config.pluginConfiguration.sanitizeSensitiveLogs), config);
     logger.logLevel = this.config.pluginConfiguration.debug ? LogLevel.DEBUG : LogLevel.INFO;
 
-    const requiredMatterbridgeVersion = '3.5.4';
-    if (
-      this.verifyMatterbridgeVersion === undefined ||
-      typeof this.verifyMatterbridgeVersion !== 'function' ||
-      !this.verifyMatterbridgeVersion(requiredMatterbridgeVersion)
-    ) {
-      throw new Error(
-        `This plugin requires Matterbridge version >= "${requiredMatterbridgeVersion}".
-        Please update Matterbridge from ${this.matterbridge.matterbridgeVersion} to the latest version in the frontend.`,
-      );
-    }
+    checkDependencyVersions(this);
     this.log.info('Initializing platform:', this.config.name);
 
     // Initialize persistence
@@ -109,6 +100,7 @@ export class RoborockMatterbridgePlatform extends MatterbridgeDynamicPlatform {
       this.configManager,
       this.registry,
       () => this.platformRunner,
+      this.snackbarMessage,
       this.log,
     );
   }

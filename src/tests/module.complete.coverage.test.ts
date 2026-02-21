@@ -71,7 +71,7 @@ function createMockLogger(): AnsiLogger {
 
 function createMockMatterbridge(): PlatformMatterbridge {
   return {
-    matterbridgeVersion: '3.5.4',
+    matterbridgeVersion: '3.5.5',
     matterbridgePluginDirectory: '/tmp',
     matterbridgeDirectory: '/tmp',
   } satisfies Partial<PlatformMatterbridge> as PlatformMatterbridge;

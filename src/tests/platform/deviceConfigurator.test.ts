@@ -15,6 +15,7 @@ import type { PlatformRunner } from '../../platformRunner.js';
 import type { RoborockService } from '../../services/roborockService.js';
 import { DeviceInformation, DeviceModel, DeviceSpecs, type Device } from '../../roborockCommunication/models/index.js';
 import type { RoborockVacuumCleaner } from '../../types/roborockVacuumCleaner.js';
+import type { WssSendSnackbarMessage } from '../../types/WssSendSnackbarMessage.js';
 
 vi.mock('../../core/application/models/index.js', async (importOriginal) => {
   const actual = await importOriginal<typeof import('../../core/application/models/index.js')>();
@@ -83,6 +84,7 @@ describe('DeviceConfigurator', () => {
   let platform: MatterbridgeDynamicPlatform;
   let roborockService: RoborockService;
   let configurator: DeviceConfigurator;
+  let snackbarMessage: WssSendSnackbarMessage;
 
   const makeMockDevice = (duid: string): Device =>
     asPartial<Device>({
@@ -98,6 +100,7 @@ describe('DeviceConfigurator', () => {
 
   beforeEach(() => {
     log = createMockLogger();
+    snackbarMessage = vi.fn() as unknown as WssSendSnackbarMessage;
     configManager = createMockConfigManager({
       isCustomCleanModeMappingEnabled: false,
       forceRunAtDefault: false,
@@ -114,7 +117,7 @@ describe('DeviceConfigurator', () => {
     platform = asPartial<MatterbridgeDynamicPlatform>({
       version: '1.0.0',
       matterbridge: asPartial<MatterbridgeDynamicPlatform['matterbridge']>({
-        matterbridgeVersion: '3.5.4',
+        matterbridgeVersion: '3.5.5',
       }),
       log: createMockLogger(),
       validateDevice: vi.fn().mockReturnValue(true),
@@ -135,7 +138,14 @@ describe('DeviceConfigurator', () => {
         hasDevices: vi.fn().mockReturnValue(false),
         getAllDevices: vi.fn().mockReturnValue([]),
       });
-      configurator = new DeviceConfigurator(platform, configManager, registry, () => platformRunner, log);
+      configurator = new DeviceConfigurator(
+        platform,
+        configManager,
+        registry,
+        () => platformRunner,
+        snackbarMessage,
+        log,
+      );
 
       await configurator.onConfigureDevice(roborockService);
 
@@ -151,7 +161,14 @@ describe('DeviceConfigurator', () => {
         robotsMap: new Map(),
       });
 
-      configurator = new DeviceConfigurator(platform, configManager, registry, () => platformRunner, log);
+      configurator = new DeviceConfigurator(
+        platform,
+        configManager,
+        registry,
+        () => platformRunner,
+        snackbarMessage,
+        log,
+      );
 
       await configurator.onConfigureDevice(roborockService);
 
@@ -168,7 +185,14 @@ describe('DeviceConfigurator', () => {
         robotsMap: new Map(),
       });
 
-      configurator = new DeviceConfigurator(platform, configManager, registry, () => platformRunner, log);
+      configurator = new DeviceConfigurator(
+        platform,
+        configManager,
+        registry,
+        () => platformRunner,
+        snackbarMessage,
+        log,
+      );
 
       await configurator.onConfigureDevice(roborockService);
 
@@ -185,7 +209,14 @@ describe('DeviceConfigurator', () => {
         robotsMap,
       });
 
-      configurator = new DeviceConfigurator(platform, configManager, registry, () => platformRunner, log);
+      configurator = new DeviceConfigurator(
+        platform,
+        configManager,
+        registry,
+        () => platformRunner,
+        snackbarMessage,
+        log,
+      );
 
       await configurator.onConfigureDevice(roborockService);
 
@@ -206,7 +237,14 @@ describe('DeviceConfigurator', () => {
         activateHandlerFunctions: vi.fn(),
       });
 
-      configurator = new DeviceConfigurator(platform, configManager, registry, () => platformRunner, log);
+      configurator = new DeviceConfigurator(
+        platform,
+        configManager,
+        registry,
+        () => platformRunner,
+        snackbarMessage,
+        log,
+      );
 
       await configurator.onConfigureDevice(roborockService);
 
@@ -228,7 +266,14 @@ describe('DeviceConfigurator', () => {
         initializeMessageClientForLocal: vi.fn().mockResolvedValue(false),
       });
 
-      configurator = new DeviceConfigurator(platform, configManager, registry, () => platformRunner, log);
+      configurator = new DeviceConfigurator(
+        platform,
+        configManager,
+        registry,
+        () => platformRunner,
+        snackbarMessage,
+        log,
+      );
 
       await configurator.onConfigureDevice(roborockService);
 
@@ -253,7 +298,14 @@ describe('DeviceConfigurator', () => {
         initializeMessageClientForLocal: vi.fn().mockResolvedValue(false),
       });
 
-      configurator = new DeviceConfigurator(platform, configManager, registry, () => platformRunner, log);
+      configurator = new DeviceConfigurator(
+        platform,
+        configManager,
+        registry,
+        () => platformRunner,
+        snackbarMessage,
+        log,
+      );
 
       await configurator.onConfigureDevice(roborockService);
 

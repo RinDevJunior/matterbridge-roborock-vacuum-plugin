@@ -60,6 +60,10 @@ describe('RoborockVacuumCleaner', () => {
       setSupportedAreaIndexMap: vi.fn(),
     });
     vacuum = new RoborockVacuumCleaner(device, homeInfo, configManager, roborockService, logger);
+    vi.spyOn(vacuum.log, 'info').mockImplementation(() => {});
+    vi.spyOn(vacuum.log, 'warn').mockImplementation(() => {});
+    vi.spyOn(vacuum.log, 'debug').mockImplementation(() => {});
+    vi.spyOn(vacuum.log, 'error').mockImplementation(() => {});
   });
 
   it('should construct with correct properties', () => {

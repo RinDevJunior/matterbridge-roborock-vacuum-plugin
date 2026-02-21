@@ -1,7 +1,7 @@
 {
   "name": "matterbridge-roborock-vacuum-plugin",
   "type": "DynamicPlatform",
-  "version": "1.1.4-rc14",
+  "version": "1.1.4",
   "authentication": {
     "username": "",
     "region": "US",

@@ -4,6 +4,52 @@ All notable changes to this project will be documented in this file.
 
 ---
 
+## [1.1.4] - 2026-02-22
+
+### Breaking Changes
+
+- **Node.js 24 required** — This release requires Node.js `>=24 <25`. If you are running Node.js 22 or earlier, you must upgrade before installing this version.
+- **Matterbridge 3.5.5 required** — This release requires Matterbridge `^3.5.5`. Please update Matterbridge before updating the plugin.
+
+### Added
+
+- **Configurable Matter device identity** — New "Override Matter Configuration" option under Advanced Features. When enabled, you can set a custom vendor name, vendor ID, product name, and product ID used during Matter device discovery, replacing the plugin defaults.
+- **Vacuum error status control** — New "Include Vacuum Error Status" option under Advanced Features. When disabled (default), vacuum error events are ignored, preventing unnecessary error state changes in Matter. Enable it to have vacuum and dock errors reported through Matter operational state.
+- **Automatic restart after clearing storage** — After clearing persistence storage, the plugin now prompts an automatic restart via WebSocket instead of requiring manual intervention.
+
+### Fixed
+
+- **Offline devices not registered** — Devices that fail to connect to the local network are now registered in Matterbridge in MQTT-only mode instead of being silently skipped. Previously, multiple vacuums where only one was on the local network could result in the other never appearing.
+- **Routine cleaning triggered wrong scene** — `buildCleanCommand` now correctly subtracts the area ID offset before passing it to `startScene`, fixing routines doing nothing or triggering the wrong scene.
+- **Plugin startup crash on old configs** — Fixed `TypeError: Cannot read properties of undefined (reading 'overrideMatterConfiguration')` when an existing config had an `advancedFeature` object without a nested `settings` block.
+- **Communication crash on primitive result** — Fixed `Cannot use 'in' operator to search for 'state' in 104` crash when a device returns a primitive value instead of a status object.
+- **MQTT commands failing silently** — Fixed commands that could fail with no error due to a missing protocol version on outgoing requests.
+- **Race condition on disconnect** — Fixed an issue where device disconnection could cause unexpected reconnection loops.
+
+### Improved
+
+- **Multi-device MQTT-only support** — Devices unable to join the local network now fully participate via MQTT, with correct per-device message routing using DUID filtering.
+- **Multiple map active map detection** — The plugin now correctly identifies which map is active when multiple maps are saved. Rooms are matched to the correct map using room ID and name mappings.
+- **Device name uniqueness** — Device name now appends the DUID suffix (`{name}-{duid}`) to prevent name collisions when multiple vacuums share the same display name.
+- **Broader device compatibility** — Devices that do not report a serial number are now fully supported. The plugin uses `duid` as the device identifier across all models.
+- **Dock station error reporting** — Dock errors (water tank empty, dust bin full, brush jammed, etc.) are now reported through Matter operational state.
+- **"Vacuum then Mop" mode visibility** — The combined mode is now only shown on devices that support it, giving a more accurate mode list per device.
+- **Better 2FA experience** — Two-factor authentication now shows a clear toast notification with verification code instructions.
+- **Improved connection readiness** — The plugin now validates that both `isReady()` and `isConnected()` are true before sending commands, reducing failed requests after reconnects.
+- **Reduced API polling** — Devices with an active real-time connection no longer trigger unnecessary periodic data requests.
+- **Clean mode architecture** — Clean mode capability registration is now centralized into `DeviceCapabilityRegistry` for better maintainability across all device models.
+
+### Internal
+
+- Added troubleshooting guide for the stuck-at-updating issue (`troubleshoot/STUCK_AT_UPDATING_ISSUE.md`).
+- Extracted Hawk authentication into private methods matching the Python reference implementation.
+- Refactored start cleaning flow and routine cleaning into `roborockService` for clearer responsibility.
+- Expanded unit test coverage across platform, communication, routing, and service modules.
+
+<a href="https://www.buymeacoffee.com/rinnvspktr" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/default-orange.png" alt="Buy Me A Coffee" height="41" width="174"></a>
+
+---
+
 ## [1.1.4-rc14] - 2026-02-21
 
 ### Fixed
