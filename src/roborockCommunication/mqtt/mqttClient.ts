@@ -106,8 +106,9 @@ export class MQTTClient extends AbstractClient {
     const mqttRequest = request.toMqttRequest();
     mqttRequest.version = mqttRequest.version ?? this.context.getMQTTProtocolVersion(duid);
     const message = this.serializer.serialize(duid, mqttRequest);
-    this.logger.debug(`[MQTTClient] sending message to ${duid}: ${debugStringify(mqttRequest)}`);
-    this.mqttClient.publish(`rr/m/i/${this.rriot.u}/${this.mqttUsername}/${duid}`, message.buffer, { qos: 1 });
+    const topic = `rr/m/i/${this.rriot.u}/${this.mqttUsername}/${duid}`;
+    this.logger.debug(`[MQTTClient] sending message to ${topic}: ${debugStringify(mqttRequest)}`);
+    this.mqttClient.publish(topic, message.buffer, { qos: 1 });
     this.logger.debug(`[MQTTClient] sent message to ${duid}`);
   }
 

@@ -5,7 +5,7 @@ import { AbstractMessageListener } from './abstractMessageListener.js';
 import { ResponseBroadcaster } from './responseBroadcaster.js';
 
 export class V1ResponseBroadcaster implements ResponseBroadcaster {
-  readonly name = 'ResponseBroadcaster';
+  readonly name = 'V1ResponseBroadcaster';
 
   private listeners: AbstractMessageListener[] = [];
 
@@ -28,8 +28,14 @@ export class V1ResponseBroadcaster implements ResponseBroadcaster {
   }
 
   public onMessage(message: ResponseMessage): void {
-    this.logger.debug(`[ChainedMessageListener] Dispatching message to ${this.listeners.length} listeners.`);
-    for (const listener of this.listeners) {
+    const matchedListeners = this.listeners.filter((x) => x.duid === message.duid);
+    if (matchedListeners.length === 0) {
+      this.logger.warn(`[V1ResponseBroadcaster] No listener configurated for ${message.duid}`);
+      return;
+    }
+
+    this.logger.debug(`[ChainedMessageListener] Dispatching message to ${matchedListeners.length} listeners.`);
+    for (const listener of matchedListeners) {
       try {
         this.logger.debug(`[ChainedMessageListener] Invoking listener: ${listener.name}`);
         listener.onMessage(message);

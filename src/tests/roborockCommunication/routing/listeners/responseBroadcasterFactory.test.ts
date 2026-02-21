@@ -54,16 +54,18 @@ describe('ResponseBroadcasterFactory', () => {
   });
 
   it('should register listener to both V1 and B01 broadcasters', () => {
-    const listener: AbstractMessageListener = { name: 'TestListener', duid: 'test', onMessage: vi.fn() };
-    factory.register(listener);
+    const v1Listener: AbstractMessageListener = { name: 'V1Listener', duid: 'v1-duid', onMessage: vi.fn() };
+    const b01Listener: AbstractMessageListener = { name: 'B01Listener', duid: 'b01-duid', onMessage: vi.fn() };
+    factory.register(v1Listener);
+    factory.register(b01Listener);
 
     const v1Response = makeV1Response();
     factory.onMessage(v1Response);
-    expect(listener.onMessage).toHaveBeenCalledWith(v1Response);
+    expect(v1Listener.onMessage).toHaveBeenCalledWith(v1Response);
 
     const b01Response = makeB01Response();
     factory.onMessage(b01Response);
-    expect(listener.onMessage).toHaveBeenCalledWith(b01Response);
+    expect(b01Listener.onMessage).toHaveBeenCalledWith(b01Response);
   });
 
   it('should unregister from both broadcasters', () => {
@@ -87,7 +89,7 @@ describe('ResponseBroadcasterFactory', () => {
   });
 
   it('should route onMessage to V1 broadcaster for V1 responses', () => {
-    const listener: AbstractMessageListener = { name: 'TestListener', duid: 'test', onMessage: vi.fn() };
+    const listener: AbstractMessageListener = { name: 'TestListener', duid: 'v1-duid', onMessage: vi.fn() };
     factory.register(listener);
 
     const response = makeV1Response();
@@ -96,7 +98,7 @@ describe('ResponseBroadcasterFactory', () => {
   });
 
   it('should route onMessage to B01 broadcaster for B01 responses', () => {
-    const listener: AbstractMessageListener = { name: 'TestListener', duid: 'test', onMessage: vi.fn() };
+    const listener: AbstractMessageListener = { name: 'TestListener', duid: 'b01-duid', onMessage: vi.fn() };
     factory.register(listener);
 
     const response = makeB01Response();
@@ -111,7 +113,7 @@ describe('ResponseBroadcasterFactory', () => {
     const body = new ResponseBody({ '101': { '108': 4 } });
     const response = new ResponseMessage('some-duid', header, body);
 
-    const listener: AbstractMessageListener = { name: 'TestListener', duid: 'test', onMessage: vi.fn() };
+    const listener: AbstractMessageListener = { name: 'TestListener', duid: 'some-duid', onMessage: vi.fn() };
     factory.register(listener);
 
     factory.onMessage(response);
@@ -165,7 +167,7 @@ describe('ResponseBroadcasterFactory', () => {
     const body = new ResponseBody({ '102': { id: 123, result: ['ok'] } });
     const response = new ResponseMessage('v1-duid', header, body);
 
-    const listener: AbstractMessageListener = { name: 'TestListener', duid: 'test', onMessage: vi.fn() };
+    const listener: AbstractMessageListener = { name: 'TestListener', duid: 'v1-duid', onMessage: vi.fn() };
     factory.register(listener);
 
     factory.onMessage(response);

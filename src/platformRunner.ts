@@ -497,8 +497,10 @@ export class PlatformRunner {
       return;
     }
 
-    const roomData = await this.platform.roborockService.getRoomMap(robot.device.duid, robot.homeInFo.activeMapId);
-    robot.homeInFo.activeMapId = robot.homeInFo.mapInfo.getActiveMapId(roomData);
+    if (this.platform.configManager.isMultipleMapEnabled) {
+      const roomData = await this.platform.roborockService.getRoomMap(robot.device.duid, robot.homeInFo.activeMapId);
+      robot.homeInFo.activeMapId = robot.homeInFo.mapInfo.getActiveMapId(roomData);
+    }
 
     const source_segment_id = message.cleaningInfo.segment_id ?? INVALID_SEGMENT_ID;
     const source_target_segment_id = message.cleaningInfo.target_segment_id ?? INVALID_SEGMENT_ID;

@@ -94,7 +94,9 @@ describe('PendingResponseTracker', () => {
 
     tracker.waitFor(request, 'duid');
 
-    expect(logger.debug).toHaveBeenCalledWith('Waiting for response to messageId: 456, method: get_status');
+    expect(logger.debug).toHaveBeenCalledWith(
+      '[V1PendingResponseTracker] Waiting for response to messageId: 456, method: get_status',
+    );
   });
 
   it('should log debug when tryResolve is called', () => {

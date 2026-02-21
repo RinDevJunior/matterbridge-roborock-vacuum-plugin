@@ -80,7 +80,9 @@ export class ConnectionService {
 
       // Wait for connection
       try {
-        await this.waitForConnection(() => this.clientRouter?.isReady() ?? false);
+        await this.waitForConnection(() => (this.clientRouter?.isReady() && this.clientRouter?.isConnected()) ?? false);
+        this.logger.debug(`clientRouter.isReady: ${this.clientRouter?.isReady()}`);
+        this.logger.debug(`clientRouter.isConnected: ${this.clientRouter?.isConnected()}`);
         device.specs.hasRealTimeConnection = true;
       } catch {
         throw new DeviceConnectionError(device.duid, 'MQTT connection timeout');

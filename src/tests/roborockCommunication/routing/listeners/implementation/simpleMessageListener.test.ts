@@ -161,6 +161,32 @@ describe('SimpleMessageListener', () => {
       expect(handler.onBatteryUpdate).not.toHaveBeenCalled();
     });
 
+    it('should return early when result[0] is a primitive number (not an object)', () => {
+      listener.registerHandler(handler);
+      const message = asPartial<ResponseMessage>({
+        duid,
+        isForProtocols: vi.fn().mockReturnValue(true),
+        isSimpleOkResponse: vi.fn().mockReturnValue(false),
+        get: vi.fn().mockReturnValue({ result: [104] }),
+      });
+      listener.onMessage(message);
+      expect(logger.debug).toHaveBeenCalledWith('[SimpleMessageListener]: result[0] is not an object, skipping');
+      expect(handler.onBatteryUpdate).not.toHaveBeenCalled();
+    });
+
+    it('should return early when result[0] is null', () => {
+      listener.registerHandler(handler);
+      const message = asPartial<ResponseMessage>({
+        duid,
+        isForProtocols: vi.fn().mockReturnValue(true),
+        isSimpleOkResponse: vi.fn().mockReturnValue(false),
+        get: vi.fn().mockReturnValue({ result: [null] }),
+      });
+      listener.onMessage(message);
+      expect(logger.debug).toHaveBeenCalledWith('[SimpleMessageListener]: result[0] is not an object, skipping');
+      expect(handler.onBatteryUpdate).not.toHaveBeenCalled();
+    });
+
     it('should log debug and return early when message does not contain state', () => {
       listener.registerHandler(handler);
       const message = asPartial<ResponseMessage>({

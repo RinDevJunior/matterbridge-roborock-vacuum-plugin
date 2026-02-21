@@ -4,6 +4,24 @@ All notable changes to this project will be documented in this file.
 
 ---
 
+## [1.1.4-rc14] - 2026-02-21
+
+### Fixed
+
+- **Offline device not registered** — Devices that fail local network connection (e.g. `online: false`) are now registered in Matterbridge in MQTT-only mode instead of being silently skipped. Previously, a failed `get_network_info` request caused an early return, resulting in only one device appearing when multiple vacuums were configured.
+- **Message routing DUID filtering** — `V1ResponseBroadcaster` and `B01ResponseBroadcaster` now filter incoming messages by `duid` before dispatching to listeners, preventing messages intended for one device from being routed to another device's listeners.
+- **Multiple map active map update** — `getRoomMap` is now only called when `isMultipleMapEnabled` is enabled, avoiding unnecessary MQTT requests for single-map setups.
+- **`SimpleMessageListener` crash on non-object result** — Fixed `Cannot use 'in' operator to search for 'state' in 104` error when a device returns a primitive value (e.g. `result: [104]`) instead of a status object. Added `typeof` guard before the `'state' in messageBody` check.
+
+### Improved
+
+- **MQTT connection readiness check** — `initializeMessageClient` now waits for both `isReady()` and `isConnected()` before proceeding, ensuring the MQTT connection is fully established.
+- **MQTT topic logging** — The full MQTT publish topic is now included in the debug log for easier tracing.
+
+<a href="https://www.buymeacoffee.com/rinnvspktr" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/default-orange.png" alt="Buy Me A Coffee" height="41" width="174"></a>
+
+---
+
 ## [1.1.4-rc13] - 2026-02-21
 
 ### Refactored

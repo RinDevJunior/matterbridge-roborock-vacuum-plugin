@@ -32,12 +32,12 @@ describe('V1ResponseBroadcaster', () => {
   });
 
   it('should have name ResponseBroadcaster', () => {
-    expect(broadcaster.name).toBe('ResponseBroadcaster');
+    expect(broadcaster.name).toBe('V1ResponseBroadcaster');
   });
 
   it('should dispatch message to all registered listeners', () => {
-    const listener1: AbstractMessageListener = { name: 'Listener1', duid: 'test', onMessage: vi.fn() };
-    const listener2: AbstractMessageListener = { name: 'Listener2', duid: 'test', onMessage: vi.fn() };
+    const listener1: AbstractMessageListener = { name: 'Listener1', duid: 'test-duid', onMessage: vi.fn() };
+    const listener2: AbstractMessageListener = { name: 'Listener2', duid: 'test-duid', onMessage: vi.fn() };
 
     broadcaster.register(listener1);
     broadcaster.register(listener2);
@@ -52,12 +52,12 @@ describe('V1ResponseBroadcaster', () => {
   it('should catch errors from listeners and continue dispatching', () => {
     const failingListener: AbstractMessageListener = {
       name: 'FailListener',
-      duid: 'test',
+      duid: 'test-duid',
       onMessage: vi.fn(() => {
         throw new Error('listener error');
       }),
     };
-    const goodListener: AbstractMessageListener = { name: 'GoodListener', duid: 'test', onMessage: vi.fn() };
+    const goodListener: AbstractMessageListener = { name: 'GoodListener', duid: 'test-duid', onMessage: vi.fn() };
 
     broadcaster.register(failingListener);
     broadcaster.register(goodListener);
@@ -72,7 +72,7 @@ describe('V1ResponseBroadcaster', () => {
   it('should catch non-Error exceptions and log them', () => {
     const failingListener: AbstractMessageListener = {
       name: 'FailListener',
-      duid: 'test',
+      duid: 'test-duid',
       onMessage: vi.fn(() => {
         throw 'string error';
       }),
@@ -95,7 +95,7 @@ describe('V1ResponseBroadcaster', () => {
 
   it('should clear listeners and cancel tracker on unregister', () => {
     const spy = vi.spyOn(tracker, 'cancelAll');
-    const listener: AbstractMessageListener = { name: 'L', duid: 'test', onMessage: vi.fn() };
+    const listener: AbstractMessageListener = { name: 'L', duid: 'test-duid', onMessage: vi.fn() };
 
     broadcaster.register(listener);
     broadcaster.unregister();
@@ -111,6 +111,6 @@ describe('V1ResponseBroadcaster', () => {
     const response = makeResponse();
     broadcaster.onMessage(response);
 
-    expect(logger.debug).toHaveBeenCalledWith(expect.stringContaining('0 listeners'));
+    expect(logger.warn).toHaveBeenCalledWith(expect.stringContaining('No listener configurated for test-duid'));
   });
 });

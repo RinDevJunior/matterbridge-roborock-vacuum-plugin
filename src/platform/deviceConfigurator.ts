@@ -75,11 +75,9 @@ export class DeviceConfigurator {
     const connectedToLocalNetwork = await roborockService.initializeMessageClientForLocal(vacuum);
 
     if (!connectedToLocalNetwork) {
-      this.log.error(`Failed to connect to local network for device: ${vacuum.name} (${vacuum.duid})`);
-      return false;
+      this.log.warn(`Device ${vacuum.name} (${vacuum.duid}) could not connect to local network, using MQTT only`);
     }
 
-    // Fetch rooms if not already available
     const { activeMapId, mapInfo, roomMap } = await RoomMap.fromMapInfo(vacuum, { roborockService, log: this.log });
     this.log.debug('Initializing - roomMap: ', debugStringify(roomMap));
 

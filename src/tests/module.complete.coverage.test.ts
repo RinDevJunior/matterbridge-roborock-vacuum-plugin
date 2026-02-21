@@ -311,8 +311,9 @@ describe('module.ts - complete coverage', () => {
 
       await platform.configurator['onConfigureDevice'](platform.roborockService);
 
-      expect(mockRoborockService.activateDeviceNotify).toHaveBeenCalledTimes(1);
+      expect(mockRoborockService.activateDeviceNotify).toHaveBeenCalledTimes(2);
       expect(mockRoborockService.activateDeviceNotify).toHaveBeenCalledWith(mockDevice1);
+      expect(mockRoborockService.activateDeviceNotify).toHaveBeenCalledWith(mockDevice2);
     });
 
     it('should handle requestHomeData Error exception', async () => {

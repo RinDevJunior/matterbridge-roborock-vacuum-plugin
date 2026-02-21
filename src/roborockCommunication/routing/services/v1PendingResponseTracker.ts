@@ -17,11 +17,17 @@ export class V1PendingResponseTracker implements PendingResponseTracker {
   public waitFor(request: RequestMessage, duid: string): Promise<ResponseMessage> {
     const messageId = request.messageId;
     return new Promise<ResponseMessage>((handler, reject) => {
-      this.logger.debug(`Waiting for response to messageId: ${messageId}, method: ${request.method}`);
+      this.logger.debug(
+        `[V1PendingResponseTracker] Waiting for response to messageId: ${messageId}, method: ${request.method}`,
+      );
 
       const timer = setTimeout(() => {
         this.pending.delete(messageId);
-        reject(new Error(`Message timeout for messageId: ${messageId}, request: ${debugStringify(request)}`));
+        reject(
+          new Error(
+            `[V1PendingResponseTracker] Message timeout for messageId: ${messageId}, request: ${debugStringify(request)}`,
+          ),
+        );
       }, MESSAGE_TIMEOUT_MS);
 
       this.pending.set(messageId, { handler, timer });
@@ -38,7 +44,7 @@ export class V1PendingResponseTracker implements PendingResponseTracker {
     // example data7: response.body = { data: { 102: { id: 12167, result: [ { max_multi_map: 1, max_bak_map: 1, multi_map_count: 1, map_info: [ { mapFlag: 0, add_time: 1769859941, length: 9, name: 'First Map', bak_maps: [ { mapFlag: 4, add_time: 1753578164 } ], rooms: [ { id: 1, tag: 14, iot_name_id: '11100845', iot_name: 'Kitchen' }, { id: 2, tag: 9, iot_name_id: '11100849', iot_name: 'Study' }, { id: 3, tag: 6, iot_name_id: '11100842', iot_name: 'Living room' }, { id: 4, tag: 1, iot_name_id: '11100847', iot_name: 'Bedroom' } ], furnitures: [  ] } ] } ] } } }, header: { version: '1.0', seq: 3597, nonce: 2611702970, timestamp: 1769873004, protocol: 4 } }
 
     if (!response.body) {
-      this.logger.debug(`Response message has no body: ${debugStringify(response)}`);
+      this.logger.debug(`[V1PendingResponseTracker] Response message has no body: ${debugStringify(response)}`);
       return;
     }
 
@@ -51,7 +57,9 @@ export class V1PendingResponseTracker implements PendingResponseTracker {
     }
 
     if (!dps || (typeof dps.id !== 'number' && typeof dps.id !== 'string')) {
-      this.logger.debug(`No valid DpsPayload with id found in response: ${debugStringify(response)}`);
+      this.logger.debug(
+        `[V1PendingResponseTracker] No valid DpsPayload with id found in response: ${debugStringify(response)}`,
+      );
       return;
     }
 

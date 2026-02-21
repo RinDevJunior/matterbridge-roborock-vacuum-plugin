@@ -56,7 +56,13 @@ export class SimpleMessageListener implements AbstractMessageListener {
       return;
     }
 
-    const deviceStatus = new DeviceStatus(message.duid, rpcData.result[0]);
+    const rawResult = rpcData.result[0];
+    if (typeof rawResult !== 'object' || rawResult === null) {
+      this.logger.debug('[SimpleMessageListener]: result[0] is not an object, skipping');
+      return;
+    }
+
+    const deviceStatus = new DeviceStatus(message.duid, rawResult);
     const vacuumErrorCode = deviceStatus.getVacuumErrorCode();
     const dockErrorCode = deviceStatus.getDockErrorCode();
     const dockStationStatusCode = deviceStatus.getDockStationStatus();

@@ -19,8 +19,8 @@ describe('ResponseBroadcaster', () => {
 
   beforeEach(() => {
     chained = new V1ResponseBroadcaster(responseTracker, logger);
-    listener1 = { name: 'listener1', duid: 'DUID123', onMessage: vi.fn<(message: any) => Promise<void>>() };
-    listener2 = { name: 'listener2', duid: 'DUID456', onMessage: vi.fn<(message: any) => Promise<void>>() };
+    listener1 = { name: 'listener1', duid: 'test-duid', onMessage: vi.fn<(message: any) => Promise<void>>() };
+    listener2 = { name: 'listener2', duid: 'test-duid', onMessage: vi.fn<(message: any) => Promise<void>>() };
   });
 
   it('should call onMessage on all registered listeners', async () => {

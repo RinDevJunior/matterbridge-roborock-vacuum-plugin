@@ -232,6 +232,11 @@ describe('module.ts coverage tests', () => {
       platform.roborockService = asPartial<RoborockService>({
         initializeMessageClientForLocal: vi.fn().mockResolvedValue(false),
         setDeviceNotify: vi.fn(),
+        getMapInfo: vi.fn().mockResolvedValue({ maps: [], allRooms: [] }),
+        getRoomMap: vi.fn().mockResolvedValue([]),
+        setSupportedAreas: vi.fn(),
+        setSupportedAreaIndexMap: vi.fn(),
+        activateDeviceNotify: vi.fn(),
       });
       platform.registry.registerDevice(mockDevice as Device);
 
@@ -244,8 +249,8 @@ describe('module.ts coverage tests', () => {
       await platform.onStart();
 
       expect(mockLogger.log).toHaveBeenCalledWith(
-        'error',
-        expect.stringContaining('Failed to connect to local network'),
+        'warn',
+        expect.stringContaining('could not connect to local network'),
       );
     });
   });

@@ -214,7 +214,7 @@ describe('DeviceConfigurator', () => {
       expect(platformRunner.activateHandlerFunctions).toHaveBeenCalled();
     });
 
-    it('should skip configuration when device fails to connect to local network', async () => {
+    it('should log warn and continue when device fails to connect to local network', async () => {
       const device = makeMockDevice('duid-1');
       registry = createMockDeviceRegistry({
         hasDevices: vi.fn().mockReturnValue(true),
@@ -232,11 +232,11 @@ describe('DeviceConfigurator', () => {
 
       await configurator.onConfigureDevice(roborockService);
 
-      expect(log.error).toHaveBeenCalledWith(expect.stringContaining('Failed to connect to local network'));
-      expect(configurator.rrHomeId).toBeUndefined();
+      expect(log.warn).toHaveBeenCalledWith(expect.stringContaining('could not connect to local network'));
+      expect(configurator.rrHomeId).toBe(device.rrHomeId);
     });
 
-    it('should not activate notify for failed device configurations', async () => {
+    it('should activate notify for device configured in MQTT-only mode', async () => {
       const device = makeMockDevice('duid-1');
       const robot = asPartial<RoborockVacuumCleaner>({ device });
       const robotsMap = new Map([['duid-1', robot]]);
@@ -257,7 +257,7 @@ describe('DeviceConfigurator', () => {
 
       await configurator.onConfigureDevice(roborockService);
 
-      expect(roborockService.activateDeviceNotify).not.toHaveBeenCalled();
+      expect(roborockService.activateDeviceNotify).toHaveBeenCalledWith(device);
     });
   });
 });

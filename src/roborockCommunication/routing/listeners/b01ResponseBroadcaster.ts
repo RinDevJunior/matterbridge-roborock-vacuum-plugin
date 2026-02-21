@@ -32,8 +32,14 @@ export class B01ResponseBroadcaster implements ResponseBroadcaster {
   }
 
   public onMessage(message: ResponseMessage): void {
-    this.logger.debug(`[B01ResponseBroadcaster] Dispatching message to ${this.listeners.length} listeners.`);
-    for (const listener of this.listeners) {
+    const matchedListeners = this.listeners.filter((x) => x.duid === message.duid);
+    if (matchedListeners.length === 0) {
+      this.logger.warn(`[B01ResponseBroadcaster] No listener configurated for ${message.duid}`);
+      return;
+    }
+
+    this.logger.debug(`[B01ResponseBroadcaster] Dispatching message to ${matchedListeners.length} listeners.`);
+    for (const listener of matchedListeners) {
       try {
         this.logger.debug(`[B01ResponseBroadcaster] Invoking listener: ${listener.name}`);
         listener.onMessage(message);

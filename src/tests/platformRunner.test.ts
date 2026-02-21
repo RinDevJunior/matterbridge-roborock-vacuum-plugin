@@ -612,6 +612,7 @@ describe('PlatformRunner.updateRobotWithPayload', () => {
   });
 
   it('should handle ServiceAreaUpdate with cleaningInfo and valid segment_id', async () => {
+    robot.homeInFo.activeMapId = 1;
     const cleaningInfo = asPartial<CleanInformation>({ segment_id: 4, target_segment_id: undefined });
     const mappedArea = { areaId: 4, matterAreaId: 4, mapId: 1 };
     const areaInfo = new Map<number, AreaInfo>([[1, { roomId: 4, mapId: 1, roomName: 'roomName-1' }]]);
@@ -634,6 +635,7 @@ describe('PlatformRunner.updateRobotWithPayload', () => {
   });
 
   it('should handle ServiceAreaUpdate with target_segment_id when segment_id is invalid', async () => {
+    robot.homeInFo.activeMapId = 1;
     const cleaningInfo = asPartial<CleanInformation>({ segment_id: -1, target_segment_id: 5 });
     const mappedArea = { areaId: 5, matterAreaId: 5, mapId: 1 };
 
