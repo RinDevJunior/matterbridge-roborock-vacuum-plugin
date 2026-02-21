@@ -4,6 +4,20 @@ All notable changes to this project will be documented in this file.
 
 ---
 
+## [1.1.4-rc13] - 2026-02-21
+
+### Refactored
+
+- **Clean mode registration** — Centralized clean mode capability registration into `DeviceCapabilityRegistry`, replacing scattered registration logic across multiple handlers. Improved type safety and readability across `cleanModeConfig`, `cleanModeUtils`, `modeResolver`, and related handlers.
+
+### Internal
+
+- Minor code cleanup in `behaviorConfig.ts` and `runtimeHelper.ts`.
+
+<a href="https://www.buymeacoffee.com/rinnvspktr" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/default-orange.png" alt="Buy Me A Coffee" height="41" width="174"></a>
+
+---
+
 ## [1.1.4-rc12] - 2026-02-21
 
 ### Fixed
