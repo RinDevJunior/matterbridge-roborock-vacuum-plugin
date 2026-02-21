@@ -148,35 +148,51 @@ describe('DockStationStatus', () => {
     });
 
     it('should return WaterTankEmpty for DockErrorCode.WaterEmpty', () => {
-      expect(DockStationStatus.parseDockErrorCode(DockErrorCode.WaterEmpty)).toBe(RvcOperationalState.ErrorState.WaterTankEmpty);
+      expect(DockStationStatus.parseDockErrorCode(DockErrorCode.WaterEmpty)).toBe(
+        RvcOperationalState.ErrorState.WaterTankEmpty,
+      );
     });
 
     it('should return DustBinFull for DockErrorCode.DuctBlockage', () => {
-      expect(DockStationStatus.parseDockErrorCode(DockErrorCode.DuctBlockage)).toBe(RvcOperationalState.ErrorState.DustBinFull);
+      expect(DockStationStatus.parseDockErrorCode(DockErrorCode.DuctBlockage)).toBe(
+        RvcOperationalState.ErrorState.DustBinFull,
+      );
     });
 
     it('should return DirtyWaterTankFull for DockErrorCode.WasteWaterTankFull', () => {
-      expect(DockStationStatus.parseDockErrorCode(DockErrorCode.WasteWaterTankFull)).toBe(RvcOperationalState.ErrorState.DirtyWaterTankFull);
+      expect(DockStationStatus.parseDockErrorCode(DockErrorCode.WasteWaterTankFull)).toBe(
+        RvcOperationalState.ErrorState.DirtyWaterTankFull,
+      );
     });
 
     it('should return DirtyWaterTankFull for DockErrorCode.CleaningTankFullOrBlocked', () => {
-      expect(DockStationStatus.parseDockErrorCode(DockErrorCode.CleaningTankFullOrBlocked)).toBe(RvcOperationalState.ErrorState.DirtyWaterTankFull);
+      expect(DockStationStatus.parseDockErrorCode(DockErrorCode.CleaningTankFullOrBlocked)).toBe(
+        RvcOperationalState.ErrorState.DirtyWaterTankFull,
+      );
     });
 
     it('should return BrushJammed for DockErrorCode.MaintenanceBrushJammed', () => {
-      expect(DockStationStatus.parseDockErrorCode(DockErrorCode.MaintenanceBrushJammed)).toBe(RvcOperationalState.ErrorState.BrushJammed);
+      expect(DockStationStatus.parseDockErrorCode(DockErrorCode.MaintenanceBrushJammed)).toBe(
+        RvcOperationalState.ErrorState.BrushJammed,
+      );
     });
 
     it('should return DirtyWaterTankMissing for DockErrorCode.DirtyTankLatchOpen', () => {
-      expect(DockStationStatus.parseDockErrorCode(DockErrorCode.DirtyTankLatchOpen)).toBe(RvcOperationalState.ErrorState.DirtyWaterTankMissing);
+      expect(DockStationStatus.parseDockErrorCode(DockErrorCode.DirtyTankLatchOpen)).toBe(
+        RvcOperationalState.ErrorState.DirtyWaterTankMissing,
+      );
     });
 
     it('should return DustBinMissing for DockErrorCode.NoDustbin', () => {
-      expect(DockStationStatus.parseDockErrorCode(DockErrorCode.NoDustbin)).toBe(RvcOperationalState.ErrorState.DustBinMissing);
+      expect(DockStationStatus.parseDockErrorCode(DockErrorCode.NoDustbin)).toBe(
+        RvcOperationalState.ErrorState.DustBinMissing,
+      );
     });
 
     it('should return UnableToCompleteOperation for unknown error codes', () => {
-      expect(DockStationStatus.parseDockErrorCode(999 as DockErrorCode)).toBe(RvcOperationalState.ErrorState.UnableToCompleteOperation);
+      expect(DockStationStatus.parseDockErrorCode(999 as DockErrorCode)).toBe(
+        RvcOperationalState.ErrorState.UnableToCompleteOperation,
+      );
     });
   });
 });

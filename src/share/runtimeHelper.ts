@@ -1,19 +1,30 @@
 import { DeviceModel } from '../roborockCommunication/models/index.js';
-import { SMART_MODELS } from '../constants/index.js';
-import { baseCleanModeConfigs, smartCleanModeConfigs } from '../behaviors/roborock.vacuum/core/cleanModeConfig.js';
-import { createDefaultModeResolver, createSmartModeResolver, ModeResolver } from '../behaviors/roborock.vacuum/core/modeResolver.js';
+import { baseCleanModeConfigs } from '../behaviors/roborock.vacuum/core/cleanModeConfig.js';
+import {
+  createDefaultModeResolver,
+  createSmartModeResolver,
+  ModeResolver,
+} from '../behaviors/roborock.vacuum/core/modeResolver.js';
+import { getAllModesForDevice, hasSmartPlan } from '../behaviors/roborock.vacuum/core/deviceCapabilityRegistry.js';
 
-const smartModeResolver = createSmartModeResolver(smartCleanModeConfigs);
 const defaultModeResolver = createDefaultModeResolver(baseCleanModeConfigs);
+const resolverCache = new Map<string, ModeResolver>();
 
 /**
- * Get the appropriate clean mode function based on device model.
- * Smart models use different clean mode mappings than default models.
+ * Get the appropriate clean mode resolver based on device model capabilities.
+ * Resolvers are cached per model for efficiency.
  */
 export function getCleanModeResolver(model: DeviceModel, forceRunAtDefault: boolean): ModeResolver {
   if (forceRunAtDefault) {
     return defaultModeResolver;
   }
 
-  return SMART_MODELS.has(model) ? smartModeResolver : defaultModeResolver;
+  const key = model as string;
+  if (!resolverCache.has(key)) {
+    const modes = getAllModesForDevice(key);
+    const resolver = hasSmartPlan(key) ? createSmartModeResolver(modes) : createDefaultModeResolver(modes);
+    resolverCache.set(key, resolver);
+  }
+
+  return resolverCache.get(key)!;
 }

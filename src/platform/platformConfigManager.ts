@@ -184,7 +184,10 @@ export class PlatformConfigManager {
   public get matterOverrideSettings(): MatterOverrideSettings {
     const defaultSettings = createDefaultAdvancedFeature().settings.matterOverrideSettings;
     if (this.isAdvancedFeatureEnabled && this.overrideMatterConfiguration) {
-      return this.advancedFeatureSettings.matterOverrideSettings ?? createDefaultAdvancedFeature().settings.matterOverrideSettings;
+      return (
+        this.advancedFeatureSettings.matterOverrideSettings ??
+        createDefaultAdvancedFeature().settings.matterOverrideSettings
+      );
     }
 
     return defaultSettings;

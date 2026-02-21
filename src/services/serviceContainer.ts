@@ -57,7 +57,9 @@ export class ServiceContainer {
     private readonly config: ServiceContainerConfig,
   ) {
     // Set up factory functions with defaults
-    this.authenticateApiFactory = config.authenticateApiFactory ?? ((logger, baseUrl) => new RoborockAuthenticateApi(logger, undefined, undefined, baseUrl));
+    this.authenticateApiFactory =
+      config.authenticateApiFactory ??
+      ((logger, baseUrl) => new RoborockAuthenticateApi(logger, undefined, undefined, baseUrl));
     this.iotApiFactory = config.iotApiFactory ?? ((logger, ud) => new RoborockIoTApi(ud, logger));
 
     this.clientManager = new ClientManager(this.logger);
@@ -99,7 +101,12 @@ export class ServiceContainer {
       const verificationCodeService = new VerificationCodeService(this.authGateway, authStateRepository, this.logger);
 
       // Create strategies
-      const passwordStrategy = new PasswordAuthStrategy(authService, userDataRepository, this.config.configManager, this.logger);
+      const passwordStrategy = new PasswordAuthStrategy(
+        authService,
+        userDataRepository,
+        this.config.configManager,
+        this.logger,
+      );
       const twoFactorStrategy = new TwoFactorAuthStrategy(
         authService,
         userDataRepository,
@@ -117,7 +124,11 @@ export class ServiceContainer {
 
   /** Get or create PollingService singleton. */
   getPollingService(): PollingService {
-    this.pollingService ??= new PollingService(this.config.refreshInterval, this.logger, this.getMessageRoutingService());
+    this.pollingService ??= new PollingService(
+      this.config.refreshInterval,
+      this.logger,
+      this.getMessageRoutingService(),
+    );
     return this.pollingService;
   }
 
@@ -152,7 +163,11 @@ export class ServiceContainer {
   }
 
   getConnectionService(): ConnectionService {
-    return (this.connectionService ??= new ConnectionService(this.clientManager, this.logger, this.getMessageRoutingService()));
+    return (this.connectionService ??= new ConnectionService(
+      this.clientManager,
+      this.logger,
+      this.getMessageRoutingService(),
+    ));
   }
 
   public synchronizeMessageClients(): void {

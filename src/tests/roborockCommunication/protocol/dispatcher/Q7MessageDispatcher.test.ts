@@ -162,7 +162,13 @@ describe('Q7MessageDispatcher', () => {
 
   describe('sendCustomMessage', () => {
     it('should send a custom message', async () => {
-      const def = asPartial<RequestMessage>({ toLocalRequest: vi.fn(), secure: false, isForProtocol: vi.fn(), version: '1.0', method: 'custom' });
+      const def = asPartial<RequestMessage>({
+        toLocalRequest: vi.fn(),
+        secure: false,
+        isForProtocol: vi.fn(),
+        version: '1.0',
+        method: 'custom',
+      });
       await dispatcher.sendCustomMessage(duid, def);
       expect(client.send).toHaveBeenCalled();
     });

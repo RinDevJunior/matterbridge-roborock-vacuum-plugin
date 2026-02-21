@@ -5,7 +5,10 @@ import { PlatformConfigManager } from '../../../platform/platformConfigManager.j
 import { UserData } from '../../../roborockCommunication/models/index.js';
 import { createMockLogger, asPartial } from '../../testUtils.js';
 import type NodePersist from 'node-persist';
-import { AuthenticationConfiguration, RoborockPluginPlatformConfig } from '../../../model/RoborockPluginPlatformConfig.js';
+import {
+  AuthenticationConfiguration,
+  RoborockPluginPlatformConfig,
+} from '../../../model/RoborockPluginPlatformConfig.js';
 
 describe('UserDataRepository', () => {
   let repository: UserDataRepository;
@@ -121,7 +124,9 @@ describe('UserDataRepository', () => {
 
       const result = await repository.loadUserData('test@example.com');
 
-      expect(mockLogger.debug).toHaveBeenCalledWith('Saved userData region does not match current config, ignoring saved data');
+      expect(mockLogger.debug).toHaveBeenCalledWith(
+        'Saved userData region does not match current config, ignoring saved data',
+      );
       expect(mockPersist.removeItem).toHaveBeenCalledWith('userData');
       expect(result).toBeUndefined();
     });

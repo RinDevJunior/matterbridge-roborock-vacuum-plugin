@@ -1,5 +1,11 @@
 import { describe, it, expect } from 'vitest';
-import { ConfigurationError, MissingConfigurationError, InvalidConfigurationError, MissingCredentialsError, InvalidRegionError } from '../../errors/ConfigurationError.js';
+import {
+  ConfigurationError,
+  MissingConfigurationError,
+  InvalidConfigurationError,
+  MissingCredentialsError,
+  InvalidRegionError,
+} from '../../errors/ConfigurationError.js';
 
 describe('ConfigurationError', () => {
   describe('ConfigurationError', () => {
@@ -82,7 +88,9 @@ describe('ConfigurationError', () => {
       const error = new MissingCredentialsError();
 
       expect(error).toBeInstanceOf(ConfigurationError);
-      expect(error.message).toBe('Authentication credentials are missing. Please provide username and password or verification code.');
+      expect(error.message).toBe(
+        'Authentication credentials are missing. Please provide username and password or verification code.',
+      );
       expect(error.metadata).toEqual({
         reason: 'MISSING_CREDENTIALS',
       });

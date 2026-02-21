@@ -9,7 +9,14 @@ import { RoborockAuthenticateApi } from '../../roborockCommunication/api/authCli
 import { RoborockIoTApi } from '../../roborockCommunication/api/iotClient.js';
 import { UserData } from '../../roborockCommunication/models/index.js';
 import { localStorageMock } from '../testData/localStorageMock.js';
-import { makeLogger, makeMockClientRouter, createMockLocalStorage, createMockAuthApi, createMockIotApi, asPartial } from '../testUtils.js';
+import {
+  makeLogger,
+  makeMockClientRouter,
+  createMockLocalStorage,
+  createMockAuthApi,
+  createMockIotApi,
+  asPartial,
+} from '../testUtils.js';
 import { ClientRouter } from '../../roborockCommunication/routing/clientRouter.js';
 import type { LocalStorage } from 'node-persist';
 import type { PlatformConfigManager } from '../../platform/platformConfigManager.js';
@@ -236,13 +243,17 @@ describe('ServiceContainer', () => {
     });
 
     it('should throw error when ConnectionService is not initialized', () => {
-      expect(() => container.synchronizeMessageClients()).toThrow('Message client not initialized in ConnectionService');
+      expect(() => container.synchronizeMessageClients()).toThrow(
+        'Message client not initialized in ConnectionService',
+      );
     });
 
     it('should throw error when clientRouter is undefined', () => {
       container.getConnectionService();
 
-      expect(() => container.synchronizeMessageClients()).toThrow('Message client not initialized in ConnectionService');
+      expect(() => container.synchronizeMessageClients()).toThrow(
+        'Message client not initialized in ConnectionService',
+      );
     });
   });
 

@@ -1,5 +1,11 @@
 import { describe, it, expect } from 'vitest';
-import { ValidationError, InvalidParameterError, OutOfRangeError, MissingParameterError, InvalidFormatError } from '../../errors/ValidationError.js';
+import {
+  ValidationError,
+  InvalidParameterError,
+  OutOfRangeError,
+  MissingParameterError,
+  InvalidFormatError,
+} from '../../errors/ValidationError.js';
 
 describe('ValidationError', () => {
   describe('ValidationError', () => {

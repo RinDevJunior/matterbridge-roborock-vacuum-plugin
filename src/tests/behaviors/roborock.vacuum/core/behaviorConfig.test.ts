@@ -1,6 +1,12 @@
 import { describe, it, expect } from 'vitest';
-import { createDefaultBehaviorConfig, createSmartBehaviorConfig } from '../../../../behaviors/roborock.vacuum/core/behaviorConfig.js';
-import { CleanModeDisplayLabel, CleanModeLabelInfo } from '../../../../behaviors/roborock.vacuum/core/cleanModeConfig.js';
+import {
+  createDefaultBehaviorConfig,
+  createSmartBehaviorConfig,
+} from '../../../../behaviors/roborock.vacuum/core/behaviorConfig.js';
+import {
+  CleanModeDisplayLabel,
+  CleanModeLabelInfo,
+} from '../../../../behaviors/roborock.vacuum/core/cleanModeConfig.js';
 
 describe('behaviorConfig', () => {
   describe('createDefaultBehaviorConfig', () => {
@@ -17,13 +23,13 @@ describe('behaviorConfig', () => {
 
     it('should include EnergySaving in cleanModes', () => {
       const config = createDefaultBehaviorConfig();
-      const mode = CleanModeLabelInfo[CleanModeDisplayLabel.MopAndVacuumEnergySaving].mode;
-      expect(config.cleanModes[mode]).toBe(CleanModeDisplayLabel.MopAndVacuumEnergySaving);
+      const mode = CleanModeLabelInfo[CleanModeDisplayLabel.VacuumAndMopEnergySaving].mode;
+      expect(config.cleanModes[mode]).toBe(CleanModeDisplayLabel.VacuumAndMopEnergySaving);
     });
 
     it('should have cleanSettings for all base modes', () => {
       const config = createDefaultBehaviorConfig();
-      const defaultMode = CleanModeLabelInfo[CleanModeDisplayLabel.MopAndVacuumDefault].mode;
+      const defaultMode = CleanModeLabelInfo[CleanModeDisplayLabel.VacuumAndMopDefault].mode;
       expect(config.cleanSettings[defaultMode]).toBeDefined();
       expect(config.cleanSettings[defaultMode].hasFullSettings).toBe(true);
     });
@@ -60,8 +66,8 @@ describe('behaviorConfig', () => {
 
     it('should include VacFollowedByMop in cleanModes', () => {
       const config = createSmartBehaviorConfig();
-      const mode = CleanModeLabelInfo[CleanModeDisplayLabel.MopAndVaccum_VacFollowedByMop].mode;
-      expect(config.cleanModes[mode]).toBe(CleanModeDisplayLabel.MopAndVaccum_VacFollowedByMop);
+      const mode = CleanModeLabelInfo[CleanModeDisplayLabel.VacFollowedByMop].mode;
+      expect(config.cleanModes[mode]).toBe(CleanModeDisplayLabel.VacFollowedByMop);
     });
 
     it('should have cleanSettings including SmartPlan', () => {

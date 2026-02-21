@@ -75,26 +75,46 @@ describe('RoborockVacuumCleaner', () => {
       commands: {},
     } satisfies BehaviorFactoryResult;
     vacuum.configureHandler(behaviorHandler);
-    await vacuum.executeCommandHandler('identify', { request: { identifyTime: 5 }, cluster: 1, attributes: {}, endpoint: 1 });
+    await vacuum.executeCommandHandler('identify', {
+      request: { identifyTime: 5 },
+      cluster: 1,
+      attributes: {},
+      endpoint: 1,
+    });
     expect(behaviorHandler.executeCommand).toHaveBeenCalledWith('identify', 5);
   });
 
   it('should warn if selectAreas called with empty areas', async () => {
-    const behaviorHandler = { executeCommand: vi.fn(), setCommandHandler: vi.fn(), log: logger, commands: {} } satisfies BehaviorFactoryResult;
+    const behaviorHandler = {
+      executeCommand: vi.fn(),
+      setCommandHandler: vi.fn(),
+      log: logger,
+      commands: {},
+    } satisfies BehaviorFactoryResult;
     vacuum.configureHandler(behaviorHandler);
     await vacuum.executeCommandHandler('selectAreas', { request: { newAreas: [] } });
     expect(behaviorHandler.executeCommand).not.toHaveBeenCalled();
   });
 
   it('should call behaviorHandler for selectAreas command', async () => {
-    const behaviorHandler = { executeCommand: vi.fn(), setCommandHandler: vi.fn(), log: logger, commands: {} } satisfies BehaviorFactoryResult;
+    const behaviorHandler = {
+      executeCommand: vi.fn(),
+      setCommandHandler: vi.fn(),
+      log: logger,
+      commands: {},
+    } satisfies BehaviorFactoryResult;
     vacuum.configureHandler(behaviorHandler);
     await vacuum.executeCommandHandler('selectAreas', { newAreas: [1, 2] });
     expect(behaviorHandler.executeCommand).toHaveBeenCalledWith('selectAreas', [1, 2]);
   });
 
   it('should call behaviorHandler for changeToMode command', async () => {
-    const behaviorHandler = { executeCommand: vi.fn(), setCommandHandler: vi.fn(), log: logger, commands: {} } satisfies BehaviorFactoryResult;
+    const behaviorHandler = {
+      executeCommand: vi.fn(),
+      setCommandHandler: vi.fn(),
+      log: logger,
+      commands: {},
+    } satisfies BehaviorFactoryResult;
     vacuum.configureHandler(behaviorHandler);
     const request = { newMode: 42 } satisfies ModeBase.ChangeToModeRequest;
     await vacuum.executeCommandHandler('changeToMode', request);
@@ -102,21 +122,36 @@ describe('RoborockVacuumCleaner', () => {
   });
 
   it('should call behaviorHandler for pause command', async () => {
-    const behaviorHandler = { executeCommand: vi.fn(), setCommandHandler: vi.fn(), log: logger, commands: {} } satisfies BehaviorFactoryResult;
+    const behaviorHandler = {
+      executeCommand: vi.fn(),
+      setCommandHandler: vi.fn(),
+      log: logger,
+      commands: {},
+    } satisfies BehaviorFactoryResult;
     vacuum.configureHandler(behaviorHandler);
     await vacuum.executeCommandHandler('pause', { request: {} });
     expect(behaviorHandler.executeCommand).toHaveBeenCalledWith('pause');
   });
 
   it('should call behaviorHandler for resume command', async () => {
-    const behaviorHandler = { executeCommand: vi.fn(), setCommandHandler: vi.fn(), log: logger, commands: {} } satisfies BehaviorFactoryResult;
+    const behaviorHandler = {
+      executeCommand: vi.fn(),
+      setCommandHandler: vi.fn(),
+      log: logger,
+      commands: {},
+    } satisfies BehaviorFactoryResult;
     vacuum.configureHandler(behaviorHandler);
     await vacuum.executeCommandHandler('resume', { request: {} });
     expect(behaviorHandler.executeCommand).toHaveBeenCalledWith('resume');
   });
 
   it('should call behaviorHandler for goHome command', async () => {
-    const behaviorHandler = { executeCommand: vi.fn(), setCommandHandler: vi.fn(), log: logger, commands: {} } satisfies BehaviorFactoryResult;
+    const behaviorHandler = {
+      executeCommand: vi.fn(),
+      setCommandHandler: vi.fn(),
+      log: logger,
+      commands: {},
+    } satisfies BehaviorFactoryResult;
     vacuum.configureHandler(behaviorHandler);
     await vacuum.executeCommandHandler('goHome', { request: {} });
     expect(behaviorHandler.executeCommand).toHaveBeenCalledWith('goHome');
@@ -164,7 +199,13 @@ describe('RoborockVacuumCleaner', () => {
     const configManager = PlatformConfigManager.create(expConfig, expLogger);
     const dev = { ...device, data: { model: 'roborock.s7', firmwareVersion: '2.0.0' } };
     const testHomeInfo = new HomeEntity(1, 'Test', new RoomMap([]), MapInfo.empty(), 0);
-    const result = RoborockVacuumCleaner['initializeDeviceConfiguration'](dev, testHomeInfo, configManager, roborockService, expLogger);
+    const result = RoborockVacuumCleaner['initializeDeviceConfiguration'](
+      dev,
+      testHomeInfo,
+      configManager,
+      roborockService,
+      expLogger,
+    );
     expect(result.cleanModes).toBeDefined();
     expect(result.supportedAreas).toBeDefined();
     expect(result.supportedMaps).toBeDefined();
@@ -214,7 +255,13 @@ describe('RoborockVacuumCleaner', () => {
     });
     const configManager = PlatformConfigManager.create(minConfig, minLogger);
     const testHomeInfo = new HomeEntity(1, 'Test', new RoomMap([]), MapInfo.empty(), 0);
-    const result = RoborockVacuumCleaner['initializeDeviceConfiguration'](device, testHomeInfo, configManager, roborockService, minLogger);
+    const result = RoborockVacuumCleaner['initializeDeviceConfiguration'](
+      device,
+      testHomeInfo,
+      configManager,
+      roborockService,
+      minLogger,
+    );
     expect(result.cleanModes).toBeDefined();
     expect(result.supportedAreas).toBeDefined();
     expect(result.supportedMaps).toBeDefined();

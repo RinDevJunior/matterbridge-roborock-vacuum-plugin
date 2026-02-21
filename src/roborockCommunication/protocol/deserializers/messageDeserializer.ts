@@ -1,7 +1,14 @@
 import CRC32 from 'crc-32';
 import { AnsiLogger, debugStringify } from 'matterbridge/logger';
 import { Parser } from 'binary-parser/dist/binary_parser.js';
-import { ContentMessage, HeaderMessage, MessageContext, Protocol, ResponseBody, ResponseMessage } from '../../models/index.js';
+import {
+  ContentMessage,
+  HeaderMessage,
+  MessageContext,
+  Protocol,
+  ResponseBody,
+  ResponseMessage,
+} from '../../models/index.js';
 import { ProtocolVersion } from '../../enums/index.js';
 import { MessageSerializerFactory } from '../serializers/messageSerializerFactory.js';
 
@@ -10,7 +17,12 @@ export class MessageDeserializer {
   private readonly headerMessageParser: Parser;
   private readonly contentMessageParser: Parser;
   private readonly logger: AnsiLogger;
-  private readonly supportedVersions: string[] = [ProtocolVersion.V1, ProtocolVersion.A01, ProtocolVersion.B01, ProtocolVersion.L01];
+  private readonly supportedVersions: string[] = [
+    ProtocolVersion.V1,
+    ProtocolVersion.A01,
+    ProtocolVersion.B01,
+    ProtocolVersion.L01,
+  ];
   private readonly protocolsWithoutPayload: Protocol[] = [
     Protocol.hello_request,
     Protocol.hello_response,
@@ -47,7 +59,13 @@ export class MessageDeserializer {
 
   public deserialize(duid: string, message: Buffer, from: string): ResponseMessage {
     const rawHeader: HeaderMessage = this.headerMessageParser.parse(message);
-    const header = new HeaderMessage(rawHeader.version, rawHeader.seq, rawHeader.nonce, rawHeader.timestamp, rawHeader.protocol);
+    const header = new HeaderMessage(
+      rawHeader.version,
+      rawHeader.seq,
+      rawHeader.nonce,
+      rawHeader.timestamp,
+      rawHeader.protocol,
+    );
 
     this.logger.debug(`[${from}][MessageDeserializer] deserialized header: ${debugStringify(header)}`);
 
@@ -58,7 +76,9 @@ export class MessageDeserializer {
     if (this.protocolsWithoutPayload.includes(header.protocol)) {
       // || this.ignoredProtocols.includes(header.protocol)) {
       const responseMessage = new ResponseMessage(duid, header, undefined);
-      this.logger.debug(`[${from}][MessageDeserializer] deserialized message without payload: ${debugStringify(responseMessage)}`);
+      this.logger.debug(
+        `[${from}][MessageDeserializer] deserialized message without payload: ${debugStringify(responseMessage)}`,
+      );
       return responseMessage;
     }
 
@@ -82,7 +102,15 @@ export class MessageDeserializer {
     const ackNonce = this.context.getDeviceNonce(duid);
 
     const messageSerializer = this.messageSerializerFactory.getMessageSerializer(header.version);
-    data.payload = messageSerializer.decode(data.payload, localKey, header.timestamp, header.seq, header.nonce, connectNonce, ackNonce);
+    data.payload = messageSerializer.decode(
+      data.payload,
+      localKey,
+      header.timestamp,
+      header.seq,
+      header.nonce,
+      connectNonce,
+      ackNonce,
+    );
 
     if (header.isForProtocol(Protocol.rpc_response) || header.isForProtocol(Protocol.general_request)) {
       const response = this.deserializeRpcResponse(duid, data, header);
@@ -93,7 +121,9 @@ export class MessageDeserializer {
         [Protocol.map_response]: data.payload,
       };
       const responseMessage = new ResponseMessage(duid, header, new ResponseBody(body));
-      this.logger.debug(`[${from}][MessageDeserializer] deserialized message for map_response: ${debugStringify(responseMessage)}`);
+      this.logger.debug(
+        `[${from}][MessageDeserializer] deserialized message for map_response: ${debugStringify(responseMessage)}`,
+      );
       return responseMessage;
     } else {
       this.logger.error(`unknown protocol: ${header.protocol}`);
@@ -118,7 +148,11 @@ export class MessageDeserializer {
     }
   }
 
-  private deserializeUnknownProtocolPayload(duid: string, data: ContentMessage, header: HeaderMessage): ResponseMessage {
+  private deserializeUnknownProtocolPayload(
+    duid: string,
+    data: ContentMessage,
+    header: HeaderMessage,
+  ): ResponseMessage {
     const payload = JSON.parse(data.payload.toString());
     const dps = payload.dps;
     return new ResponseMessage(duid, header, new ResponseBody(dps));

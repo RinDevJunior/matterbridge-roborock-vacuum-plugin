@@ -25,7 +25,9 @@ export interface DeviceInformation {
   homeData: Home;
 }
 
-export type DeviceStatusResponsetype = number | Record<string, number | string | boolean | NetworkInfoDTO | TimezoneInfo | Record<number, unknown>>;
+export type DeviceStatusResponsetype =
+  | number
+  | Record<string, number | string | boolean | NetworkInfoDTO | TimezoneInfo | Record<number, unknown>>;
 
 export interface Device {
   duid: string;

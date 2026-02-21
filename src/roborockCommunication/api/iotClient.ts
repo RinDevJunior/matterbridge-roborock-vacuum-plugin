@@ -14,7 +14,12 @@ export class RoborockIoTApi {
   constructor(userdata: UserData, logger: AnsiLogger, axiosFactory: AxiosStatic = axios) {
     this.logger = logger;
 
-    this.api = axiosFactory.create({ baseURL: userdata.rriot.r.a, timeout: 10000, maxRedirects: 5, httpsAgent: new https.Agent({ keepAlive: true }) });
+    this.api = axiosFactory.create({
+      baseURL: userdata.rriot.r.a,
+      timeout: 10000,
+      maxRedirects: 5,
+      httpsAgent: new https.Agent({ keepAlive: true }),
+    });
 
     // Retry transient network errors (including ECONNRESET) with exponential backoff
     try {
@@ -26,11 +31,14 @@ export class RoborockIoTApi {
           const isNetwork = axiosRetry.isNetworkOrIdempotentRequestError(errTyped);
           const code = errTyped?.code;
           const isEconnreset = code === 'ECONNRESET';
-          const isTimedOut = code === 'ETIMEDOUT' || code === 'ECONNABORTED' || /timeout/i.test(errTyped?.message ?? '');
+          const isTimedOut =
+            code === 'ETIMEDOUT' || code === 'ECONNABORTED' || /timeout/i.test(errTyped?.message ?? '');
           return Boolean(isNetwork || isEconnreset || isTimedOut);
         },
         onRetry: (retryCount: number, error: unknown, _requestConfig: unknown) => {
-          this.logger.warn(`Retrying request, attempt #${retryCount} due to error: ${error ? debugStringify(error) : 'unknown'}`);
+          this.logger.warn(
+            `Retrying request, attempt #${retryCount} due to error: ${error ? debugStringify(error) : 'unknown'}`,
+          );
         },
       });
     } catch (err: unknown) {
@@ -102,8 +110,14 @@ export class RoborockIoTApi {
       if (!homeDataV3) {
         throw new Error('Failed to retrieve the home data from v3 API');
       }
-      homeData.devices = [...homeData.devices, ...homeDataV3.devices.filter((d) => !homeData.devices.some((x) => x.duid === d.duid))];
-      homeData.receivedDevices = [...homeData.receivedDevices, ...homeDataV3.receivedDevices.filter((d) => !homeData.receivedDevices.some((x) => x.duid === d.duid))];
+      homeData.devices = [
+        ...homeData.devices,
+        ...homeDataV3.devices.filter((d) => !homeData.devices.some((x) => x.duid === d.duid)),
+      ];
+      homeData.receivedDevices = [
+        ...homeData.receivedDevices,
+        ...homeDataV3.receivedDevices.filter((d) => !homeData.receivedDevices.some((x) => x.duid === d.duid)),
+      ];
     }
 
     if (homeData.rooms.length === 0) {
@@ -218,12 +232,25 @@ export class RoborockIoTApi {
     return crypto.createHash('md5').update(parts.join('&')).digest('hex');
   }
 
-  private getHawkAuthentication(rriot: { u: string; s: string; h: string }, url: string, params?: Record<string, unknown>, formdata?: Record<string, unknown>): string {
+  private getHawkAuthentication(
+    rriot: { u: string; s: string; h: string },
+    url: string,
+    params?: Record<string, unknown>,
+    formdata?: Record<string, unknown>,
+  ): string {
     const timestamp = Math.floor(Date.now() / 1000);
     const nonce = crypto.randomBytes(6).toString('base64url');
     const paramsStr = this.processExtraHawkValues(params);
     const formdataStr = this.processExtraHawkValues(formdata);
-    const prestr = [rriot.u, rriot.s, nonce, String(timestamp), crypto.createHash('md5').update(url).digest('hex'), paramsStr, formdataStr].join(':');
+    const prestr = [
+      rriot.u,
+      rriot.s,
+      nonce,
+      String(timestamp),
+      crypto.createHash('md5').update(url).digest('hex'),
+      paramsStr,
+      formdataStr,
+    ].join(':');
     const mac = crypto.createHmac('sha256', rriot.h).update(prestr).digest('base64');
     return `Hawk id="${rriot.u}",s="${rriot.s}",ts="${timestamp}",nonce="${nonce}",mac="${mac}"`;
   }

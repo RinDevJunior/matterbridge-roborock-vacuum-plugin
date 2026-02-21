@@ -3,7 +3,11 @@ import { AnsiLogger, LogLevel } from 'matterbridge/logger';
 import { PlatformMatterbridge } from 'matterbridge';
 import { RoborockMatterbridgePlatform } from '../module.js';
 import { DeviceSpecs, RawRoomMappingData, type Device, type RoomDto } from '../roborockCommunication/models/index.js';
-import { AdvancedFeatureConfiguration, AdvancedFeatureSetting, RoborockPluginPlatformConfig } from '../model/RoborockPluginPlatformConfig.js';
+import {
+  AdvancedFeatureConfiguration,
+  AdvancedFeatureSetting,
+  RoborockPluginPlatformConfig,
+} from '../model/RoborockPluginPlatformConfig.js';
 import type { LocalStorage } from 'node-persist';
 import type { RoborockService } from '../services/roborockService.js';
 import type { PlatformRunner } from '../platformRunner.js';
@@ -76,7 +80,13 @@ function createMockMatterbridge(): PlatformMatterbridge {
 function createMockConfig(overrides: Partial<RoborockPluginPlatformConfig> = {}): RoborockPluginPlatformConfig {
   return {
     name: 'TestPlatform',
-    authentication: { username: 'test', region: 'US', forceAuthentication: false, password: 'test', authenticationMethod: 'Password' },
+    authentication: {
+      username: 'test',
+      region: 'US',
+      forceAuthentication: false,
+      password: 'test',
+      authenticationMethod: 'Password',
+    },
     pluginConfiguration: {
       whiteList: [],
       sanitizeSensitiveLogs: false,
@@ -266,7 +276,9 @@ describe('module.ts - complete coverage', () => {
       ] as Partial<RawRoomMappingData> as RawRoomMappingData;
 
       const mockRoborockService = asPartial<RoborockService>({
-        initializeMessageClientForLocal: vi.fn().mockImplementation((d: Device) => Promise.resolve(d.duid === 'device1')),
+        initializeMessageClientForLocal: vi
+          .fn()
+          .mockImplementation((d: Device) => Promise.resolve(d.duid === 'device1')),
         getMapInfo: vi.fn().mockResolvedValue({ allRooms: [] }),
         setSupportedAreas: vi.fn(),
         setSupportedAreaIndexMap: vi.fn(),

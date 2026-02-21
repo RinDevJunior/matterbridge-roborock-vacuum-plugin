@@ -53,9 +53,11 @@ export class ModeResolver {
   }
 
   private resolveFallback(setting: CleanModeSetting): number | undefined {
-    if (setting.suctionPower === VacuumSuctionPower.Off) return CleanModeLabelInfo[CleanModeDisplayLabel.MopDefault].mode;
+    if (setting.suctionPower === VacuumSuctionPower.Off)
+      return CleanModeLabelInfo[CleanModeDisplayLabel.MopDefault].mode;
     if (setting.waterFlow === MopWaterFlow.Off) return CleanModeLabelInfo[CleanModeDisplayLabel.VacuumDefault].mode;
-    if (setting.suctionPower !== VacuumSuctionPower.Off && setting.waterFlow !== MopWaterFlow.Off) return CleanModeLabelInfo[CleanModeDisplayLabel.MopAndVacuumDefault].mode;
+    if (setting.suctionPower !== VacuumSuctionPower.Off && setting.waterFlow !== MopWaterFlow.Off)
+      return CleanModeLabelInfo[CleanModeDisplayLabel.VacuumAndMopDefault].mode;
     return undefined;
   }
 }
@@ -68,10 +70,10 @@ export function createDefaultModeResolver(configs: CleanModeConfig[]): ModeResol
     configs,
     (setting) => {
       if (setting.sequenceType === CleanSequenceType.OneTime) {
-        return CleanModeLabelInfo[CleanModeDisplayLabel.MopAndVaccum_VacFollowedByMop].mode;
+        return CleanModeLabelInfo[CleanModeDisplayLabel.VacFollowedByMop].mode;
       }
       if (setting.isCustomMode) {
-        return CleanModeLabelInfo[CleanModeDisplayLabel.MopAndVacuumEnergySaving].mode;
+        return CleanModeLabelInfo[CleanModeDisplayLabel.VacuumAndMopEnergySaving].mode;
       }
       return undefined;
     },
@@ -90,10 +92,10 @@ export function createSmartModeResolver(configs: CleanModeConfig[]): ModeResolve
         return CleanModeLabelInfo[CleanModeDisplayLabel.SmartPlan].mode;
       }
       if (setting.sequenceType === CleanSequenceType.OneTime) {
-        return CleanModeLabelInfo[CleanModeDisplayLabel.MopAndVaccum_VacFollowedByMop].mode;
+        return CleanModeLabelInfo[CleanModeDisplayLabel.VacFollowedByMop].mode;
       }
       if (setting.isCustomMode) {
-        return CleanModeLabelInfo[CleanModeDisplayLabel.MopAndVacuumEnergySaving].mode;
+        return CleanModeLabelInfo[CleanModeDisplayLabel.VacuumAndMopEnergySaving].mode;
       }
       return undefined;
     },

@@ -98,7 +98,11 @@ export class B01PendingResponseTracker implements PendingResponseTracker {
     const ts = response.header.timestamp;
     const proto = response.header.protocol;
 
-    return ts >= entry.expectedTimestamp && ts < entry.expectedTimestamp + this.timestampTolerance && proto === entry.expectedProtocol;
+    return (
+      ts >= entry.expectedTimestamp &&
+      ts < entry.expectedTimestamp + this.timestampTolerance &&
+      proto === entry.expectedProtocol
+    );
   }
 
   private mergeData(entry: PendingEntry, response: ResponseMessage): void {
@@ -147,7 +151,9 @@ export class B01PendingResponseTracker implements PendingResponseTracker {
 
     entry.lastHeader = response.header;
 
-    this.logger.debug(`[B01PendingResponseTracker] Collected data chunk, keys: ${Object.keys(entry.collectedData).join(', ')}`);
+    this.logger.debug(
+      `[B01PendingResponseTracker] Collected data chunk, keys: ${Object.keys(entry.collectedData).join(', ')}`,
+    );
   }
 
   private findParentObjectKey(entry: PendingEntry): string | undefined {

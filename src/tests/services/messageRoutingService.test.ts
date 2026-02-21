@@ -130,7 +130,9 @@ describe('MessageRoutingService', () => {
 
     it('should throw DeviceError when processor not found', () => {
       expect(() => messageService.getMessageDispatcher('unknown-device')).toThrow(DeviceError);
-      expect(() => messageService.getMessageDispatcher('unknown-device')).toThrow('MessageDispatcher not initialized for device unknown-device');
+      expect(() => messageService.getMessageDispatcher('unknown-device')).toThrow(
+        'MessageDispatcher not initialized for device unknown-device',
+      );
     });
 
     it('should allow multiple processors to be registered', () => {
@@ -389,7 +391,12 @@ describe('MessageRoutingService', () => {
 
       expect(result).toEqual(mockResponse);
       expect(mockDispatcher.getCustomMessage).toHaveBeenCalledWith(testDuid, mockRequest);
-      expect(mockLogger.debug).toHaveBeenCalledWith('MessageRoutingService - customSend-message', 'get_status', [], false);
+      expect(mockLogger.debug).toHaveBeenCalledWith(
+        'MessageRoutingService - customSend-message',
+        'get_status',
+        [],
+        false,
+      );
     });
 
     it('should execute custom GET request with unknown response type', async () => {
@@ -406,7 +413,12 @@ describe('MessageRoutingService', () => {
 
       await messageService.customGet(testDuid, secureRequest);
 
-      expect(mockLogger.debug).toHaveBeenCalledWith('MessageRoutingService - customSend-message', 'get_status', [], true);
+      expect(mockLogger.debug).toHaveBeenCalledWith(
+        'MessageRoutingService - customSend-message',
+        'get_status',
+        [],
+        true,
+      );
     });
 
     it('should throw DeviceError when processor not found', async () => {
@@ -483,7 +495,11 @@ describe('MessageRoutingService', () => {
 
     it('should complete full cleaning workflow', async () => {
       const selectedRooms = [16, 17];
-      const supportedRooms: ServiceArea.Area[] = [{ areaId: 16 } as ServiceArea.Area, { areaId: 17 } as ServiceArea.Area, { areaId: 18 } as ServiceArea.Area];
+      const supportedRooms: ServiceArea.Area[] = [
+        { areaId: 16 } as ServiceArea.Area,
+        { areaId: 17 } as ServiceArea.Area,
+        { areaId: 18 } as ServiceArea.Area,
+      ];
 
       // Start room clean
       await messageService.startClean(testDuid, { type: 'room', roomIds: [16, 17] });
@@ -535,16 +551,26 @@ describe('MessageRoutingService', () => {
       const serviceWithoutApi = new MessageRoutingService(mockLogger);
       serviceWithoutApi.registerMessageDispatcher(testDuid, mockDispatcher);
 
-      await expect(serviceWithoutApi.startClean(testDuid, { type: 'routine', routineId: 123 })).rejects.toThrow(DeviceError);
-      await expect(serviceWithoutApi.startClean(testDuid, { type: 'routine', routineId: 123 })).rejects.toThrow('IoT API must be initialized to start scene');
+      await expect(serviceWithoutApi.startClean(testDuid, { type: 'routine', routineId: 123 })).rejects.toThrow(
+        DeviceError,
+      );
+      await expect(serviceWithoutApi.startClean(testDuid, { type: 'routine', routineId: 123 })).rejects.toThrow(
+        'IoT API must be initialized to start scene',
+      );
     });
 
     it('should throw meaningful errors for missing processors', async () => {
       const unknownDuid = 'non-existent-device';
 
-      await expect(messageService.getCleanModeData(unknownDuid)).rejects.toThrow(`MessageDispatcher not initialized for device ${unknownDuid}`);
-      await expect(messageService.startClean(unknownDuid, { type: 'global' })).rejects.toThrow(`MessageDispatcher not initialized for device ${unknownDuid}`);
-      await expect(messageService.pauseClean(unknownDuid)).rejects.toThrow(`MessageDispatcher not initialized for device ${unknownDuid}`);
+      await expect(messageService.getCleanModeData(unknownDuid)).rejects.toThrow(
+        `MessageDispatcher not initialized for device ${unknownDuid}`,
+      );
+      await expect(messageService.startClean(unknownDuid, { type: 'global' })).rejects.toThrow(
+        `MessageDispatcher not initialized for device ${unknownDuid}`,
+      );
+      await expect(messageService.pauseClean(unknownDuid)).rejects.toThrow(
+        `MessageDispatcher not initialized for device ${unknownDuid}`,
+      );
     });
   });
 });

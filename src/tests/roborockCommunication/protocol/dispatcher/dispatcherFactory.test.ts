@@ -64,12 +64,16 @@ describe('MessageDispatcherFactory', () => {
 
       it('should throw for B01 protocol with unsupported model prefix', () => {
         const factory = createFactory();
-        expect(() => factory.getMessageDispatcher(ProtocolVersion.B01, 'roborock.vacuum.zz01' as DeviceModel)).toThrow(/Unsupported robot model.*for B01 protocol/);
+        expect(() => factory.getMessageDispatcher(ProtocolVersion.B01, 'roborock.vacuum.zz01' as DeviceModel)).toThrow(
+          /Unsupported robot model.*for B01 protocol/,
+        );
       });
 
       it('should throw for B01 protocol when model is undefined', () => {
         const factory = createFactory();
-        expect(() => factory.getMessageDispatcher(ProtocolVersion.B01, undefined as unknown as DeviceModel)).toThrow('Missing robot model, required for B01 protocol');
+        expect(() => factory.getMessageDispatcher(ProtocolVersion.B01, undefined as unknown as DeviceModel)).toThrow(
+          'Missing robot model, required for B01 protocol',
+        );
       });
     });
 

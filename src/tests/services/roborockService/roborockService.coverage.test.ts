@@ -145,7 +145,9 @@ describe('RoborockService - Complete Coverage', () => {
         undefined as unknown as PlatformConfigManager,
       );
 
-      await expect(serviceWithoutConfig.authenticate()).rejects.toThrow('PlatformConfigManager not provided. Cannot authenticate.');
+      await expect(serviceWithoutConfig.authenticate()).rejects.toThrow(
+        'PlatformConfigManager not provided. Cannot authenticate.',
+      );
     });
 
     it('should log password as masked when provided', async () => {

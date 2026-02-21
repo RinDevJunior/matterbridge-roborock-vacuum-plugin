@@ -1,6 +1,15 @@
 import { AnsiLogger } from 'matterbridge/logger';
 import { DeviceError, DeviceNotFoundError } from '../errors/index.js';
-import { Device, DeviceSpecs, DeviceInformation, DeviceModel, Home, Protocol, SceneParam, UserData } from '../roborockCommunication/models/index.js';
+import {
+  Device,
+  DeviceSpecs,
+  DeviceInformation,
+  DeviceModel,
+  Home,
+  Protocol,
+  SceneParam,
+  UserData,
+} from '../roborockCommunication/models/index.js';
 import { RoborockIoTApi } from '../roborockCommunication/api/iotClient.js';
 import { RoborockAuthenticateApi } from '../roborockCommunication/api/authClient.js';
 import { DeviceCategory } from '../roborockCommunication/models/deviceCategory.js';
@@ -45,7 +54,9 @@ export class DeviceManagementService {
       this.logger.debug(`Processing home data for home ID: ${homeInfo.rrHomeId}`);
 
       const products = new Map<string, { model: DeviceModel; category: DeviceCategory }>();
-      homeData.products.forEach((p) => products.set(p.id, { model: p.model as DeviceModel, category: p.category as DeviceCategory }));
+      homeData.products.forEach((p) =>
+        products.set(p.id, { model: p.model as DeviceModel, category: p.category as DeviceCategory }),
+      );
 
       const devices: Device[] = [...homeData.devices, ...homeData.receivedDevices];
 
@@ -59,7 +70,10 @@ export class DeviceManagementService {
           localKey: device.localKey,
           pv: device.pv,
           serialNumber: device.sn,
-          scenes: scenes.filter((sc) => sc.param && (JSON.parse(sc.param) as SceneParam).action.items.some((x) => x.entityId == device.duid)),
+          scenes: scenes.filter(
+            (sc) =>
+              sc.param && (JSON.parse(sc.param) as SceneParam).action.items.some((x) => x.entityId == device.duid),
+          ),
           specs: {
             id: device.duid,
             firmwareVersion: device.fv,
@@ -117,7 +131,9 @@ export class DeviceManagementService {
       }
 
       const products = new Map<string, { model: DeviceModel; category: DeviceCategory }>();
-      homeData.products.forEach((p) => products.set(p.id, { model: p.model as DeviceModel, category: p.category as DeviceCategory }));
+      homeData.products.forEach((p) =>
+        products.set(p.id, { model: p.model as DeviceModel, category: p.category as DeviceCategory }),
+      );
       const devices: Device[] = homeData.devices.length > 0 ? homeData.devices : homeData.receivedDevices;
 
       // Fallback to older API versions if rooms are missing

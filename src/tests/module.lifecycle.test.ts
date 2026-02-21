@@ -31,7 +31,13 @@ function createMockConfig(overrides: Partial<RoborockPluginPlatformConfig> = {})
     useInterval: false,
     refreshInterval: 60,
     debug: false,
-    authentication: { username: 'test', region: 'US', forceAuthentication: false, password: 'test', authenticationMethod: 'Password' },
+    authentication: {
+      username: 'test',
+      region: 'US',
+      forceAuthentication: false,
+      password: 'test',
+      authenticationMethod: 'Password',
+    },
     pluginConfiguration: {
       whiteList: [],
       enableServerMode: false,
@@ -140,7 +146,10 @@ describe('module.ts coverage tests', () => {
   describe('onConfigureDevice - no devices or username', () => {
     it('should return early when no devices are registered', async () => {
       const platform = new RoborockMatterbridgePlatform(mockMatterbridge, mockLogger, createMockConfig());
-      platform.platformRunner = asPartial<PlatformRunner>({ requestHomeData: vi.fn(), updateRobotWithPayload: vi.fn() });
+      platform.platformRunner = asPartial<PlatformRunner>({
+        requestHomeData: vi.fn(),
+        updateRobotWithPayload: vi.fn(),
+      });
       platform.roborockService = asPartial<RoborockService>({
         initializeMessageClientForLocal: vi.fn(),
         getMapInfo: vi.fn(),
@@ -163,7 +172,10 @@ describe('module.ts coverage tests', () => {
     it('should return early when username is missing', async () => {
       const config = createMockConfig({ username: '' });
       const platform = new RoborockMatterbridgePlatform(mockMatterbridge, mockLogger, config);
-      platform.platformRunner = asPartial<PlatformRunner>({ requestHomeData: vi.fn(), updateRobotWithPayload: vi.fn() });
+      platform.platformRunner = asPartial<PlatformRunner>({
+        requestHomeData: vi.fn(),
+        updateRobotWithPayload: vi.fn(),
+      });
       platform.roborockService = asPartial<RoborockService>({
         initializeMessageClientForLocal: vi.fn(),
         getMapInfo: vi.fn(),
@@ -184,7 +196,10 @@ describe('module.ts coverage tests', () => {
 
     it('should return early when roborockService is undefined', async () => {
       const platform = new RoborockMatterbridgePlatform(mockMatterbridge, mockLogger, createMockConfig());
-      platform.platformRunner = asPartial<PlatformRunner>({ requestHomeData: vi.fn(), updateRobotWithPayload: vi.fn() });
+      platform.platformRunner = asPartial<PlatformRunner>({
+        requestHomeData: vi.fn(),
+        updateRobotWithPayload: vi.fn(),
+      });
       platform.roborockService = undefined;
       const mockDevice: Partial<Device> = {
         duid: 'test-device',
@@ -209,7 +224,11 @@ describe('module.ts coverage tests', () => {
       const mockDevice = makeDeviceFixture({ duid: 'test-device', name: 'Test Vacuum' });
 
       const platform = new RoborockMatterbridgePlatform(mockMatterbridge, mockLogger, createMockConfig());
-      platform.platformRunner = asPartial<PlatformRunner>({ requestHomeData: vi.fn(), updateRobotWithPayload: vi.fn(), activateHandlerFunctions: vi.fn() });
+      platform.platformRunner = asPartial<PlatformRunner>({
+        requestHomeData: vi.fn(),
+        updateRobotWithPayload: vi.fn(),
+        activateHandlerFunctions: vi.fn(),
+      });
       platform.roborockService = asPartial<RoborockService>({
         initializeMessageClientForLocal: vi.fn().mockResolvedValue(false),
         setDeviceNotify: vi.fn(),
@@ -224,7 +243,10 @@ describe('module.ts coverage tests', () => {
 
       await platform.onStart();
 
-      expect(mockLogger.log).toHaveBeenCalledWith('error', expect.stringContaining('Failed to connect to local network'));
+      expect(mockLogger.log).toHaveBeenCalledWith(
+        'error',
+        expect.stringContaining('Failed to connect to local network'),
+      );
     });
   });
 
@@ -292,7 +314,10 @@ describe('module.ts coverage tests', () => {
 
   // Helper used in tests to exercise the same validation logic performed by the platform's `addDevice` private method.
   // This keeps tests focused and avoids casting to private members while preserving observable behavior.
-  function simulateAddDeviceValidation(p: RoborockMatterbridgePlatform, device: { serialNumber?: string; deviceName?: string }): Promise<Device | undefined> {
+  function simulateAddDeviceValidation(
+    p: RoborockMatterbridgePlatform,
+    device: { serialNumber?: string; deviceName?: string },
+  ): Promise<Device | undefined> {
     if (!device.serialNumber || !device.deviceName) {
       // Match production behavior by calling the logger's warn method
       p.log.warn?.('Cannot add device: missing serialNumber or deviceName');

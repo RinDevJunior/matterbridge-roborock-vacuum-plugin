@@ -14,7 +14,12 @@ export class MessageSerializer {
   private readonly context: MessageContext;
   private readonly logger: AnsiLogger;
   private sequence = 1;
-  private readonly supportedVersions: string[] = [ProtocolVersion.V1, ProtocolVersion.A01, ProtocolVersion.B01, ProtocolVersion.L01];
+  private readonly supportedVersions: string[] = [
+    ProtocolVersion.V1,
+    ProtocolVersion.A01,
+    ProtocolVersion.B01,
+    ProtocolVersion.L01,
+  ];
   private readonly protocolsWithoutPayload: Protocol[] = [Protocol.hello_request, Protocol.ping_request];
   private readonly messageSerializerFactory = new MessageSerializerFactory();
   private readonly messageBodyBuilderFactory = new MessageBodyBuilderFactory();
@@ -44,12 +49,23 @@ export class MessageSerializer {
         throw new Error(`no local key for device ${duid}`);
       }
 
-      const messageBodyBuilder = this.messageBodyBuilderFactory.getMessageBodyBuilder(version, request.body !== undefined);
+      const messageBodyBuilder = this.messageBodyBuilderFactory.getMessageBodyBuilder(
+        version,
+        request.body !== undefined,
+      );
       const messageSerializer = this.messageSerializerFactory.getMessageSerializer(version);
       const payloadData = messageBodyBuilder.buildPayload(request, this.context);
       const connectNonce = this.context.nonce;
       const ackNonce = this.context.getDeviceNonce(duid);
-      encrypted = messageSerializer.encode(payloadData, localKey, request.timestamp, this.sequence, request.nonce, connectNonce, ackNonce);
+      encrypted = messageSerializer.encode(
+        payloadData,
+        localKey,
+        request.timestamp,
+        this.sequence,
+        request.nonce,
+        connectNonce,
+        ackNonce,
+      );
     }
 
     const msg = Buffer.alloc(23 + encrypted.length);

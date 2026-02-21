@@ -2,7 +2,13 @@ import express, { Request, Response } from 'express';
 import RoborockService from './ext/roborockService.js';
 import ClientManager from './ext/clientManager.js';
 import { AnsiLogger, LogLevel } from 'node-ansi-logger';
-import { Device, RequestMessage, RoborockAuthenticateApi, RoborockIoTApi, UserData } from './ext/roborockCommunication/index.js';
+import {
+  Device,
+  RequestMessage,
+  RoborockAuthenticateApi,
+  RoborockIoTApi,
+  UserData,
+} from './ext/roborockCommunication/index.js';
 import axios from 'axios';
 import { Socket } from 'net';
 import { getAccountStore } from './accountStore.js';

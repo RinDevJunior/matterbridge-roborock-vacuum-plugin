@@ -1,6 +1,11 @@
 import { RoboticVacuumCleaner } from 'matterbridge/devices';
 import { CommandHandlerData, MatterbridgeEndpointCommands } from 'matterbridge';
-import { getOperationalStates, getSupportedAreas, getSupportedCleanModes, getSupportedRoutines } from '../initialData/index.js';
+import {
+  getOperationalStates,
+  getSupportedAreas,
+  getSupportedCleanModes,
+  getSupportedRoutines,
+} from '../initialData/index.js';
 import { AnsiLogger, debugStringify } from 'matterbridge/logger';
 import { BehaviorFactoryResult } from '../share/behaviorFactory.js';
 import { ModeBase, RvcOperationalState, ServiceArea } from 'matterbridge/matter/clusters';
@@ -32,7 +37,13 @@ export class RoborockVacuumCleaner extends RoboticVacuumCleaner {
     roborockService: RoborockService,
     log: AnsiLogger,
   ) {
-    const deviceConfig = RoborockVacuumCleaner.initializeDeviceConfiguration(device, homeInFo, configManager, roborockService, log);
+    const deviceConfig = RoborockVacuumCleaner.initializeDeviceConfiguration(
+      device,
+      homeInFo,
+      configManager,
+      roborockService,
+      log,
+    );
 
     super(
       deviceConfig.deviceName,
@@ -70,15 +81,22 @@ export class RoborockVacuumCleaner extends RoboticVacuumCleaner {
    * Sets up handlers for identify, area selection, mode changes, and cleaning operations.
    */
   public configureHandler(behaviorHandler: BehaviorFactoryResult): void {
-    this.addCommandHandlerWithErrorHandling(CommandNames.IDENTIFY, async ({ request, cluster, attributes, endpoint }) => {
-      this.log.info(`Identify command received for endpoint ${endpoint}, cluster ${cluster}, attributes ${debugStringify(attributes)}, request: ${JSON.stringify(request)}`);
-      behaviorHandler.executeCommand(CommandNames.IDENTIFY, (request as IdentifyCommandRequest).identifyTime ?? 5);
-    });
+    this.addCommandHandlerWithErrorHandling(
+      CommandNames.IDENTIFY,
+      async ({ request, cluster, attributes, endpoint }) => {
+        this.log.info(
+          `Identify command received for endpoint ${endpoint}, cluster ${cluster}, attributes ${debugStringify(attributes)}, request: ${JSON.stringify(request)}`,
+        );
+        behaviorHandler.executeCommand(CommandNames.IDENTIFY, (request as IdentifyCommandRequest).identifyTime ?? 5);
+      },
+    );
 
     this.addCommandHandlerWithErrorHandling(CommandNames.SELECT_AREAS, async ({ request }) => {
       const { newAreas } = request as ServiceArea.SelectAreasRequest;
       if (!newAreas || newAreas.length === 0) {
-        this.log.info('selectAreas called with empty or undefined areas, it means selecting no areas or all areas, ignoring.');
+        this.log.info(
+          'selectAreas called with empty or undefined areas, it means selecting no areas or all areas, ignoring.',
+        );
         return;
       }
       this.log.info(`Selecting areas: ${newAreas.join(', ')}`);
@@ -115,7 +133,13 @@ export class RoborockVacuumCleaner extends RoboticVacuumCleaner {
   /**
    * Initialize device configuration including modes, areas, and maps.
    */
-  private static initializeDeviceConfiguration(device: Device, homeInFo: HomeEntity, configManager: PlatformConfigManager, roborockService: RoborockService, log: AnsiLogger) {
+  private static initializeDeviceConfiguration(
+    device: Device,
+    homeInFo: HomeEntity,
+    configManager: PlatformConfigManager,
+    roborockService: RoborockService,
+    log: AnsiLogger,
+  ) {
     const cleanModes = getSupportedCleanModes(device.specs.model, configManager);
     const operationalState = getOperationalStates();
     const result = getSupportedAreas(homeInFo, log);
@@ -168,7 +192,10 @@ export class RoborockVacuumCleaner extends RoboticVacuumCleaner {
    * Helper method to add command handler with error handling.
    * Wraps handler logic in try-catch to avoid code duplication.
    */
-  private addCommandHandlerWithErrorHandling(commandName: keyof MatterbridgeEndpointCommands, handler: (context: CommandHandlerData) => Promise<void>): void {
+  private addCommandHandlerWithErrorHandling(
+    commandName: keyof MatterbridgeEndpointCommands,
+    handler: (context: CommandHandlerData) => Promise<void>,
+  ): void {
     this.addCommandHandler(commandName, async (context: CommandHandlerData) => {
       try {
         await handler(context);

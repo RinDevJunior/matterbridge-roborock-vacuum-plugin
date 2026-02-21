@@ -19,7 +19,13 @@ export class MQTTClient extends AbstractClient {
   private consecutiveAuthErrors = 0;
   private authErrorBackoffTimeout: NodeJS.Timeout | undefined = undefined;
 
-  public constructor(logger: AnsiLogger, context: MessageContext, userdata: UserData, responseBroadcaster: ResponseBroadcaster, responseTracker: PendingResponseTracker) {
+  public constructor(
+    logger: AnsiLogger,
+    context: MessageContext,
+    userdata: UserData,
+    responseBroadcaster: ResponseBroadcaster,
+    responseTracker: PendingResponseTracker,
+  ) {
     super(logger, context, responseBroadcaster, responseTracker);
     this.rriot = userdata.rriot;
 
@@ -86,7 +92,9 @@ export class MQTTClient extends AbstractClient {
       this.mqttClient = undefined;
       this.connected = false;
     } catch (error) {
-      this.logger.error(`[MQTTClient] client failed to disconnect with error: ${error instanceof Error ? (error.stack ?? error.message) : String(error)}`);
+      this.logger.error(
+        `[MQTTClient] client failed to disconnect with error: ${error instanceof Error ? (error.stack ?? error.message) : String(error)}`,
+      );
     }
   }
 
@@ -151,7 +159,10 @@ export class MQTTClient extends AbstractClient {
       this.logger.error(`[MQTTClient] Failed to subscribe: ${String(err)}`);
       this.connected = false;
 
-      await this.connectionBroadcaster.onDisconnected(`mqtt-${this.mqttUsername}`, `Failed to subscribe to the queue: ${String(err)}`);
+      await this.connectionBroadcaster.onDisconnected(
+        `mqtt-${this.mqttUsername}`,
+        `Failed to subscribe to the queue: ${String(err)}`,
+      );
       return;
     }
     this.logger.info(`[MQTTClient] Connection subscribed: ${subscription ? debugStringify(subscription) : 'unknown'}`);

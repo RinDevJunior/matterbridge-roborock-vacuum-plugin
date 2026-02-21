@@ -62,7 +62,11 @@ describe('MQTTClient (additional)', () => {
 
     expect(spyConnect).toHaveBeenCalledWith(
       userdata.rriot.r.m,
-      expect.objectContaining({ clientId: expect.any(String), username: expect.any(String), password: expect.any(String) }),
+      expect.objectContaining({
+        clientId: expect.any(String),
+        username: expect.any(String),
+        password: expect.any(String),
+      }),
     );
 
     // ensure handlers were attached
@@ -73,7 +77,10 @@ describe('MQTTClient (additional)', () => {
     const client = new MQTTClient(logger, context, userdata, responseBroadcaster, responseTracker);
     const req = new RequestMessage({ method: 'test' });
 
-    await asType<{ sendInternal(duid: string, req: RequestMessage): Promise<void> }>(client).sendInternal('duid-1', req);
+    await asType<{ sendInternal(duid: string, req: RequestMessage): Promise<void> }>(client).sendInternal(
+      'duid-1',
+      req,
+    );
 
     expect(logger.error).toHaveBeenCalled();
   });
@@ -94,7 +101,10 @@ describe('MQTTClient (additional)', () => {
     });
 
     const req = new RequestMessage({ method: 'test' });
-    await asType<{ sendInternal(duid: string, req: RequestMessage): Promise<void> }>(client).sendInternal('my-duid', req);
+    await asType<{ sendInternal(duid: string, req: RequestMessage): Promise<void> }>(client).sendInternal(
+      'my-duid',
+      req,
+    );
 
     expect(mockMqttClient.publish).toHaveBeenCalledTimes(1);
     const topicArg = mockMqttClient.publish.mock.calls[0][0];
@@ -262,7 +272,9 @@ describe('MQTTClient', () => {
     });
     mqttClient['connected'] = true;
     await mqttClient.disconnect();
-    expect(logger.error).toHaveBeenCalledWith(expect.stringContaining('[MQTTClient] client failed to disconnect with error:'));
+    expect(logger.error).toHaveBeenCalledWith(
+      expect.stringContaining('[MQTTClient] client failed to disconnect with error:'),
+    );
   });
 
   it('should publish message if connected', async () => {
@@ -333,7 +345,10 @@ describe('MQTTClient', () => {
     mqttClient['connected'] = true;
     await mqttClient['onError'](new Error('fail'));
     expect(logger.error).toHaveBeenCalledWith(expect.stringContaining('MQTT connection error'));
-    expect(mqttClient['connectionBroadcaster'].onError).toHaveBeenCalledWith('mqtt-c6d6afb9', expect.stringContaining('MQTT connection error'));
+    expect(mqttClient['connectionBroadcaster'].onError).toHaveBeenCalledWith(
+      'mqtt-c6d6afb9',
+      expect.stringContaining('MQTT connection error'),
+    );
   });
 
   it('onReconnect should NOT call subscribeToQueue (subscribe happens in onConnect)', () => {
@@ -454,7 +469,10 @@ describe('MQTTClient', () => {
     const mqttClient = createMQTTClient();
     mqttClient['connected'] = true;
     await mqttClient['onClose']();
-    expect(mqttClient['connectionBroadcaster'].onDisconnected).toHaveBeenCalledWith('mqtt-c6d6afb9', 'MQTT connection closed');
+    expect(mqttClient['connectionBroadcaster'].onDisconnected).toHaveBeenCalledWith(
+      'mqtt-c6d6afb9',
+      'MQTT connection closed',
+    );
     expect(mqttClient['connected']).toBe(false);
   });
 
@@ -470,20 +488,29 @@ describe('MQTTClient', () => {
     mqttClient['connected'] = true;
     await mqttClient['onOffline']();
     expect(mqttClient['connected']).toBe(false);
-    expect(mqttClient['connectionBroadcaster'].onDisconnected).toHaveBeenCalledWith('mqtt-c6d6afb9', 'MQTT connection offline');
+    expect(mqttClient['connectionBroadcaster'].onDisconnected).toHaveBeenCalledWith(
+      'mqtt-c6d6afb9',
+      'MQTT connection offline',
+    );
   });
 
   it('onReconnect should call onReconnect on connectionBroadcaster', () => {
     const mqttClient = createMQTTClient();
     mqttClient['onReconnect']();
-    expect(mqttClient['connectionBroadcaster'].onReconnect).toHaveBeenCalledWith('mqtt-c6d6afb9', 'Attempting to reconnect to MQTT broker');
+    expect(mqttClient['connectionBroadcaster'].onReconnect).toHaveBeenCalledWith(
+      'mqtt-c6d6afb9',
+      'Attempting to reconnect to MQTT broker',
+    );
   });
 
   it('onError should translate error code 5 to "Connection refused: Not authorized"', async () => {
     const mqttClient = createMQTTClient();
     await mqttClient['onError'](asPartial<ErrorWithReasonCode>({ code: 5 }));
     expect(logger.error).toHaveBeenCalledWith('MQTT connection error: Connection refused: Not authorized');
-    expect(mqttClient['connectionBroadcaster'].onError).toHaveBeenCalledWith('mqtt-c6d6afb9', 'MQTT connection error: Connection refused: Not authorized');
+    expect(mqttClient['connectionBroadcaster'].onError).toHaveBeenCalledWith(
+      'mqtt-c6d6afb9',
+      'MQTT connection error: Connection refused: Not authorized',
+    );
   });
 
   it('onError should increment consecutiveAuthErrors for auth errors', async () => {

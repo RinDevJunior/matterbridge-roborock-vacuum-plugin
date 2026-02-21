@@ -12,7 +12,9 @@ describe('L01Serializer', () => {
 
   describe('encode', () => {
     it('should throw when connectNonce is missing', () => {
-      expect(() => serializer.encode('payload', localKey, timestamp, sequence, nonce, undefined, ackNonce)).toThrow('connectNonce and ackNonce are required for L01 encryption');
+      expect(() => serializer.encode('payload', localKey, timestamp, sequence, nonce, undefined, ackNonce)).toThrow(
+        'connectNonce and ackNonce are required for L01 encryption',
+      );
     });
 
     it('should throw when ackNonce is missing', () => {
@@ -22,7 +24,9 @@ describe('L01Serializer', () => {
     });
 
     it('should throw when both nonces are missing', () => {
-      expect(() => serializer.encode('payload', localKey, timestamp, sequence, nonce)).toThrow('connectNonce and ackNonce are required for L01 encryption');
+      expect(() => serializer.encode('payload', localKey, timestamp, sequence, nonce)).toThrow(
+        'connectNonce and ackNonce are required for L01 encryption',
+      );
     });
 
     it('should encode payload when all parameters are provided', () => {
@@ -53,17 +57,23 @@ describe('L01Serializer', () => {
   describe('decode', () => {
     it('should throw when connectNonce is missing', () => {
       const encoded = serializer.encode('payload', localKey, timestamp, sequence, nonce, connectNonce, ackNonce);
-      expect(() => serializer.decode(encoded, localKey, timestamp, sequence, nonce, undefined, ackNonce)).toThrow('connectNonce and ackNonce are required for L01 decryption');
+      expect(() => serializer.decode(encoded, localKey, timestamp, sequence, nonce, undefined, ackNonce)).toThrow(
+        'connectNonce and ackNonce are required for L01 decryption',
+      );
     });
 
     it('should throw when ackNonce is missing', () => {
       const encoded = serializer.encode('payload', localKey, timestamp, sequence, nonce, connectNonce, ackNonce);
-      expect(() => serializer.decode(encoded, localKey, timestamp, sequence, nonce, connectNonce, undefined)).toThrow('connectNonce and ackNonce are required for L01 decryption');
+      expect(() => serializer.decode(encoded, localKey, timestamp, sequence, nonce, connectNonce, undefined)).toThrow(
+        'connectNonce and ackNonce are required for L01 decryption',
+      );
     });
 
     it('should throw when both nonces are missing', () => {
       const encoded = serializer.encode('payload', localKey, timestamp, sequence, nonce, connectNonce, ackNonce);
-      expect(() => serializer.decode(encoded, localKey, timestamp, sequence, nonce)).toThrow('connectNonce and ackNonce are required for L01 decryption');
+      expect(() => serializer.decode(encoded, localKey, timestamp, sequence, nonce)).toThrow(
+        'connectNonce and ackNonce are required for L01 decryption',
+      );
     });
 
     it('should decode encoded payload correctly', () => {
@@ -90,19 +100,33 @@ describe('L01Serializer', () => {
     it('should fail with wrong localKey', () => {
       const originalPayload = 'secret';
       const encoded = serializer.encode(originalPayload, localKey, timestamp, sequence, nonce, connectNonce, ackNonce);
-      expect(() => serializer.decode(encoded, 'wrongkey12345678901234567890123', timestamp, sequence, nonce, connectNonce, ackNonce)).toThrow();
+      expect(() =>
+        serializer.decode(
+          encoded,
+          'wrongkey12345678901234567890123',
+          timestamp,
+          sequence,
+          nonce,
+          connectNonce,
+          ackNonce,
+        ),
+      ).toThrow();
     });
 
     it('should fail with wrong timestamp', () => {
       const originalPayload = 'secret';
       const encoded = serializer.encode(originalPayload, localKey, timestamp, sequence, nonce, connectNonce, ackNonce);
-      expect(() => serializer.decode(encoded, localKey, timestamp + 100, sequence, nonce, connectNonce, ackNonce)).toThrow();
+      expect(() =>
+        serializer.decode(encoded, localKey, timestamp + 100, sequence, nonce, connectNonce, ackNonce),
+      ).toThrow();
     });
 
     it('should fail with wrong nonce', () => {
       const originalPayload = 'secret';
       const encoded = serializer.encode(originalPayload, localKey, timestamp, sequence, nonce, connectNonce, ackNonce);
-      expect(() => serializer.decode(encoded, localKey, timestamp, sequence, nonce + 1, connectNonce, ackNonce)).toThrow();
+      expect(() =>
+        serializer.decode(encoded, localKey, timestamp, sequence, nonce + 1, connectNonce, ackNonce),
+      ).toThrow();
     });
 
     it('should fail with tampered ciphertext', () => {

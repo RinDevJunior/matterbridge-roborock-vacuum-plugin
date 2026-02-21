@@ -1,4 +1,9 @@
-import { MapDataDto, MapRoomDto, MultipleMapDto, RawRoomMappingData } from '../../../roborockCommunication/models/home/index.js';
+import {
+  MapDataDto,
+  MapRoomDto,
+  MultipleMapDto,
+  RawRoomMappingData,
+} from '../../../roborockCommunication/models/home/index.js';
 import decodeComponent from '../../../roborockCommunication/helper/nameDecoder.js';
 
 export interface MapEntry {

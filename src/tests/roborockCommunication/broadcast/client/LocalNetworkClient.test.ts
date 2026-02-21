@@ -153,7 +153,13 @@ describe('LocalNetworkClient', () => {
   it('send() should log error if socket is not connected', async () => {
     client['socket'] = undefined;
     client['connected'] = false;
-    const req = asPartial<RequestMessage>({ toLocalRequest: vi.fn(), secure: false, isForProtocol: vi.fn().mockReturnValue(false), version: '1.0', method: 'test' });
+    const req = asPartial<RequestMessage>({
+      toLocalRequest: vi.fn(),
+      secure: false,
+      isForProtocol: vi.fn().mockReturnValue(false),
+      version: '1.0',
+      method: 'test',
+    });
     await client.send(duid, req);
     expect(mockLogger.error).toHaveBeenCalledWith(expect.stringContaining('socket is not online'));
     expect(mockSocket.write).not.toHaveBeenCalled();
@@ -208,7 +214,10 @@ describe('LocalNetworkClient', () => {
     client['connected'] = false;
     await client['onError'](new Error('fail'));
     expect(mockLogger.error).toHaveBeenCalledWith(expect.stringContaining(' [LocalNetworkClient]: Socket error for'));
-    expect(client['connectionBroadcaster'].onDisconnected).toHaveBeenCalledWith('duid1', expect.stringContaining('fail'));
+    expect(client['connectionBroadcaster'].onDisconnected).toHaveBeenCalledWith(
+      'duid1',
+      expect.stringContaining('fail'),
+    );
   });
 
   it('onMessage() should log debug if message is empty', async () => {

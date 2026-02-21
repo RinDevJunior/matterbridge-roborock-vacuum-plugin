@@ -1,6 +1,12 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { DeviceDiscovery } from '../../platform/deviceDiscovery.js';
-import { asPartial, createMockLogger, createMockLocalStorage, createMockDeviceRegistry, createMockConfigManager } from '../helpers/testUtils.js';
+import {
+  asPartial,
+  createMockLogger,
+  createMockLocalStorage,
+  createMockDeviceRegistry,
+  createMockConfigManager,
+} from '../helpers/testUtils.js';
 import type { AnsiLogger } from 'matterbridge/logger';
 import type { MatterbridgeDynamicPlatform } from 'matterbridge';
 import type { PlatformConfigManager } from '../../platform/platformConfigManager.js';
@@ -61,7 +67,11 @@ describe('DeviceDiscovery', () => {
     Object.defineProperty(configManager, 'refreshInterval', { get: () => 60, configurable: true });
     Object.defineProperty(configManager, 'region', { get: () => 'US', configurable: true });
     Object.defineProperty(configManager, 'isServerModeEnabled', { get: () => true, configurable: true });
-    Object.defineProperty(configManager, 'isDeviceAllowed', { value: vi.fn().mockReturnValue(true), configurable: true, writable: true });
+    Object.defineProperty(configManager, 'isDeviceAllowed', {
+      value: vi.fn().mockReturnValue(true),
+      configurable: true,
+      writable: true,
+    });
 
     registry = createMockDeviceRegistry();
     toastMessage = vi.fn() as WssSendSnackbarMessage;

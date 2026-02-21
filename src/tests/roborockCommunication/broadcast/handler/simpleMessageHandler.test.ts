@@ -19,7 +19,12 @@ describe('SimpleMessageHandler', () => {
     expect(deviceNotify).toHaveBeenCalledWith(
       expect.objectContaining({
         type: NotifyMessageTypes.ErrorOccurred,
-        data: expect.objectContaining({ duid, dockErrorCode: 0, dockStationStatus: 168, vacuumErrorCode: VacuumErrorCode.ClearWaterTankEmpty }),
+        data: expect.objectContaining({
+          duid,
+          dockErrorCode: 0,
+          dockStationStatus: 168,
+          vacuumErrorCode: VacuumErrorCode.ClearWaterTankEmpty,
+        }),
       }),
     );
   });
@@ -32,7 +37,12 @@ describe('SimpleMessageHandler', () => {
     expect(deviceNotify).toHaveBeenCalledWith(
       expect.objectContaining({
         type: NotifyMessageTypes.BatteryUpdate,
-        data: expect.objectContaining({ duid, percentage: 77, deviceStatus: 8, chargeStatus: OperationStatusCode.Charging }),
+        data: expect.objectContaining({
+          duid,
+          percentage: 77,
+          deviceStatus: 8,
+          chargeStatus: OperationStatusCode.Charging,
+        }),
       }),
     );
   });

@@ -1,81 +1,124 @@
-# How to Implement a New Device
+# Developer Guide
 
-Follow these steps to add support for a new device:
+## Prerequisites
 
----
-
-## 0. Precondition
-
-- Matterbridge must be run at childbridge mode
-
-## 1. Check the Model
-
-- Open [`src/roborockCommunication/Zmodel/deviceModel.ts`](src/roborockCommunication/Zmodel/deviceModel.ts).
-- If your model does not exist, **create a new entry** for it.
+- Matterbridge must run in **childbridge** mode.
+- Node.js and npm installed.
 
 ---
 
-## 2. Create a New Behavior Folder
+## Project Structure (Key Files)
 
-- Create a new folder under [`src/behaviors/roborock.vacuum`](src/behaviors/roborock.vacuum) named after the market name of your vacuum.
-- Inside this folder:
-  - **Create a `initalData.ts` file**  
-    _Example:_ [`src/behaviors/roborock.vacuum/smart/initalData.ts`](src/behaviors/roborock.vacuum/smart/initalData.ts)
-    This file defines functions that return initial data for your device. (You can inherit from default or create your own)
-  - **Create an `runtimes.ts` file**  
-    _Example:_ [`src/behaviors/roborock.vacuum/smart/runtimes.ts`](src/behaviors/roborock.vacuum/smart/runtimes.ts)
-    In case you define your own initial data. Create new method that override the default method.
-  - **Create an `abcyxz.ts` file**  
-    _Example:_ [`src/behaviors/roborock.vacuum/smart/smart.ts`](src/behaviors/roborock.vacuum/smart/smart.ts)
-    Define matterbridge command handler logic to sending requests to control your vacuum (start, pause, resume, go home, etc.).
-    (Use in step 4)
+| File                                                                                                                               | Purpose                                                                  |
+| ---------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------ |
+| [`src/roborockCommunication/models/deviceModel.ts`](src/roborockCommunication/models/deviceModel.ts)                               | Enum of all known device models                                          |
+| [`src/behaviors/roborock.vacuum/core/cleanModeConfig.ts`](src/behaviors/roborock.vacuum/core/cleanModeConfig.ts)                   | All clean mode definitions (labels, mode numbers, settings, Matter tags) |
+| [`src/behaviors/roborock.vacuum/core/deviceCapabilityRegistry.ts`](src/behaviors/roborock.vacuum/core/deviceCapabilityRegistry.ts) | Maps each device model → its extra clean modes                           |
+| [`src/behaviors/roborock.vacuum/core/behaviorConfig.ts`](src/behaviors/roborock.vacuum/core/behaviorConfig.ts)                     | Builds `BehaviorConfig` per device (handler chain, mode maps)            |
+| [`src/behaviors/roborock.vacuum/handlers/`](src/behaviors/roborock.vacuum/handlers/)                                               | Clean mode handler implementations                                       |
 
 ---
 
-## 3. Register Your Initial Functions
+## How to Add Support for a New Device
 
-- Add your initial functions to the following files:
-  - [`src/initialData/getSupportedCleanModes.ts`](src/initialData/getSupportedCleanModes.ts)
-  - [`src/initialData/getSupportedRunModes.ts`](src/initialData/getSupportedRunModes.ts)
-  - [`src/initialData/getOperationalStates.ts`](src/initialData/getOperationalStates.ts)
+### Step 1 — Register the device model
 
-## **_*In somecase, you may need to update whole function to support switch case*_**
+Open [`src/roborockCommunication/models/deviceModel.ts`](src/roborockCommunication/models/deviceModel.ts) and add a new entry:
 
-## 4. Update the Behavior Factory
+```ts
+MY_NEW_DEVICE = 'roborock.vacuum.xxxx',  // replace with actual model ID
+```
 
-- Add a new `switch` case to [`src/behaviorFactory.ts`](src/behaviorFactory.ts).
-  - This is where you set the behavior handler for your device.
+### Step 2 — Register its extra clean modes
+
+Open [`src/behaviors/roborock.vacuum/core/deviceCapabilityRegistry.ts`](src/behaviors/roborock.vacuum/core/deviceCapabilityRegistry.ts) and add an entry to `DEVICE_EXTRA_MODES`:
+
+```ts
+// Device that only has Vac Followed by Mop:
+[DeviceModel.MY_NEW_DEVICE]: [vacFollowedByMopModeConfig],
+
+// Device that has Smart Plan + Vac Followed by Mop:
+[DeviceModel.MY_NEW_DEVICE]: [smartPlanModeConfig, vacFollowedByMopModeConfig],
+```
+
+If your device only uses base clean modes (no extra modes), you don't need to add it here — it will use defaults automatically.
+
+> **That's it.** The rest of the system (BehaviorConfig, resolver, supported clean modes) is handled automatically by the registry.
 
 ---
 
-## 5. Build and Run
+## How to Add a New Clean Mode
 
-```sh
-sudo npm run precondition
-sudo npm run build:local
-sudo npm run matterbridge:add
-sudo npm run start
+### Step 1 — Add the label
+
+In [`src/behaviors/roborock.vacuum/core/cleanModeConfig.ts`](src/behaviors/roborock.vacuum/core/cleanModeConfig.ts), add to `CleanModeDisplayLabel`:
+
+```ts
+MyNewMode = 'Vacuum & Mop: My New Mode',
+```
+
+### Step 2 — Add the mode number mapping
+
+In the same file, add to `CleanModeLabelInfo`:
+
+```ts
+[CleanModeDisplayLabel.MyNewMode]: { mode: <mode_number>, label: CleanModeDisplayLabel.MyNewMode },
+```
+
+### Step 3 — Create the config constant
+
+In the same file, export a new `CleanModeConfig`:
+
+```ts
+export const myNewModeConfig: CleanModeConfig = {
+  label: CleanModeLabelInfo[CleanModeDisplayLabel.MyNewMode].label,
+  mode: CleanModeLabelInfo[CleanModeDisplayLabel.MyNewMode].mode,
+  setting: new CleanModeSetting(VacuumSuctionPower.Balanced, MopWaterFlow.Medium, 0, MopRoute.Standard, CleanSequenceType.Persist),
+  modeTags: [{ value: RvcCleanMode.ModeTag.Mop }, { value: RvcCleanMode.ModeTag.Vacuum }],
+};
+```
+
+### Step 4 — (Optional) Add a custom handler
+
+If the mode needs special command logic (like Smart Plan), create a handler in [`src/behaviors/roborock.vacuum/handlers/`](src/behaviors/roborock.vacuum/handlers/):
+
+```ts
+export class MyNewModeHandler implements ModeHandler {
+  public canHandle(_mode: number, activity: string): boolean {
+    return activity === CleanModeDisplayLabel.MyNewMode;
+  }
+
+  public async handle(duid: string, _mode: number, activity: string, context: HandlerContext): Promise<void> {
+    // ...send command to device
+  }
+}
+```
+
+Then register it in [`src/behaviors/roborock.vacuum/core/behaviorConfig.ts`](src/behaviors/roborock.vacuum/core/behaviorConfig.ts) inside `buildBehaviorConfig()`.
+
+If the mode uses standard preset settings (just `changeCleanMode` with the setting), add it to the `presetModes` list in [`src/behaviors/roborock.vacuum/handlers/presetCleanModeHandler.ts`](src/behaviors/roborock.vacuum/handlers/presetCleanModeHandler.ts) instead.
+
+### Step 5 — Register the mode for relevant devices
+
+In [`src/behaviors/roborock.vacuum/core/deviceCapabilityRegistry.ts`](src/behaviors/roborock.vacuum/core/deviceCapabilityRegistry.ts):
+
+```ts
+[DeviceModel.MY_DEVICE]: [myNewModeConfig, ...existingModes],
 ```
 
 ---
 
-## 6. Current issue
-
-- Device show twice in Apple Home
-- Device information shows incorrectly in Apple Home (Device name, firmware ....)
-- Play Sound to Locate (Apple Home) not working
-- Showing wrong location during opration
-
-## 7. Not Tested
-
-- Clean selected room
-
-## 8. TODO
-
-- correct state_to_matter_state
-
-## 9. Build package
+## Build and Run
 
 ```sh
-cd .. && tar -czvf matterbridge-roborock-vacuum-plugin-1.0.1-rc02.tgz matterbridge-roborock-vacuum-plugin && cd matterbridge-roborock-vacuum-plugin
+sudo npm run precondition
+npm run build
+```
+
+---
+
+## Running Tests
+
+```sh
+npm test
 ```

@@ -146,7 +146,11 @@ describe('RoborockIoTApi', () => {
         receivedDevices: [{ duid: 'b' }],
         rooms: [asPartial<RoomEntity>({ id: 1 })],
       };
-      const v3 = { devices: [{ duid: 'c' }], receivedDevices: [{ duid: 'd' }], rooms: [asPartial<RoomEntity>({ id: 2 })] };
+      const v3 = {
+        devices: [{ duid: 'c' }],
+        receivedDevices: [{ duid: 'd' }],
+        rooms: [asPartial<RoomEntity>({ id: 2 })],
+      };
       vi.spyOn(api, 'getHome').mockResolvedValue(
         asPartial<Home>({
           id: 1,
@@ -158,7 +162,11 @@ describe('RoborockIoTApi', () => {
         }),
       );
       vi.spyOn(api, 'getHomev3').mockResolvedValue(
-        asPartial<Home>({ devices: [asPartial<Device>({ duid: 'c' })], receivedDevices: [asPartial<Device>({ duid: 'd' })], rooms: [asPartial<RoomEntity>({ id: 2 })] }),
+        asPartial<Home>({
+          devices: [asPartial<Device>({ duid: 'c' })],
+          receivedDevices: [asPartial<Device>({ duid: 'd' })],
+          rooms: [asPartial<RoomEntity>({ id: 2 })],
+        }),
       );
       const result = await api.getHomeWithProducts(1);
       expect(result?.devices).toContainEqual({ duid: 'a' });
@@ -168,23 +176,41 @@ describe('RoborockIoTApi', () => {
     });
 
     it('throws if v3 API is needed but fails', async () => {
-      vi.spyOn(api, 'getHome').mockResolvedValue(asPartial<Home>({ id: 1, name: 'Home1', products: [asPartial<Product>({ model: DeviceModel.Q10_S5_PLUS })] }));
+      vi.spyOn(api, 'getHome').mockResolvedValue(
+        asPartial<Home>({ id: 1, name: 'Home1', products: [asPartial<Product>({ model: DeviceModel.Q10_S5_PLUS })] }),
+      );
       vi.spyOn(api, 'getHomev3').mockResolvedValue(undefined);
       await expect(api.getHomeWithProducts(1)).rejects.toThrow('Failed to retrieve the home data from v3 API');
     });
 
     it('merges v2 rooms if rooms are empty and v2 returns rooms', async () => {
       vi.spyOn(api, 'getHome').mockResolvedValue(
-        asPartial<Home>({ id: 1, name: 'Home1', products: [asPartial<Product>({ model: 'other.model' })], devices: [], receivedDevices: [], rooms: [] }),
+        asPartial<Home>({
+          id: 1,
+          name: 'Home1',
+          products: [asPartial<Product>({ model: 'other.model' })],
+          devices: [],
+          receivedDevices: [],
+          rooms: [],
+        }),
       );
-      vi.spyOn(api, 'getHomev2').mockResolvedValue(asPartial<Home>({ id: 99, rooms: [asPartial<RoomEntity>({ id: 99 })] }));
+      vi.spyOn(api, 'getHomev2').mockResolvedValue(
+        asPartial<Home>({ id: 99, rooms: [asPartial<RoomEntity>({ id: 99 })] }),
+      );
       const result = await api.getHomeWithProducts(1);
       expect(result?.rooms).toContainEqual({ id: 99 });
     });
 
     it('returns home if rooms are empty and v2 returns no rooms', async () => {
       vi.spyOn(api, 'getHome').mockResolvedValue(
-        asPartial<Home>({ id: 1, name: 'Home1', products: [asPartial<Product>({ model: 'other.model' })], devices: [], receivedDevices: [], rooms: [] }),
+        asPartial<Home>({
+          id: 1,
+          name: 'Home1',
+          products: [asPartial<Product>({ model: 'other.model' })],
+          devices: [],
+          receivedDevices: [],
+          rooms: [],
+        }),
       );
       vi.spyOn(api, 'getHomev2').mockResolvedValue(undefined);
       vi.spyOn(api, 'getHomev3').mockResolvedValue(undefined);
@@ -195,10 +221,19 @@ describe('RoborockIoTApi', () => {
 
     it('merges v3 rooms if v2 has no rooms but v3 does', async () => {
       vi.spyOn(api, 'getHome').mockResolvedValue(
-        asPartial<Home>({ id: 1, name: 'Home1', products: [asPartial<Product>({ model: 'other.model' })], devices: [], receivedDevices: [], rooms: [] }),
+        asPartial<Home>({
+          id: 1,
+          name: 'Home1',
+          products: [asPartial<Product>({ model: 'other.model' })],
+          devices: [],
+          receivedDevices: [],
+          rooms: [],
+        }),
       );
       vi.spyOn(api, 'getHomev2').mockResolvedValue(asPartial<Home>({ id: 99, rooms: [] }));
-      vi.spyOn(api, 'getHomev3').mockResolvedValue(asPartial<Home>({ id: 77, rooms: [asPartial<RoomEntity>({ id: 77, name: 'Garage' })] }));
+      vi.spyOn(api, 'getHomev3').mockResolvedValue(
+        asPartial<Home>({ id: 77, rooms: [asPartial<RoomEntity>({ id: 77, name: 'Garage' })] }),
+      );
 
       const result = await api.getHomeWithProducts(1);
       expect(result?.rooms).toContainEqual({ id: 77, name: 'Garage' });

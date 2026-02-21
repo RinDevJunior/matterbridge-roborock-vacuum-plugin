@@ -15,13 +15,18 @@ const DISTANCE_OFF_DEFAULT = 25;
  * @param cleanModeSettings - Optional user-configured clean mode settings
  * @returns Clean mode setting configuration or undefined if activity not recognized
  */
-export const getSettingFromCleanMode = (activity: string, cleanModeSettings?: CleanModeSettings): CleanModeSetting | undefined => {
+export const getSettingFromCleanMode = (
+  activity: string,
+  cleanModeSettings?: CleanModeSettings,
+): CleanModeSetting | undefined => {
   switch (activity) {
     case CleanModeDisplayLabel.MopDefault: {
       const mopSetting = cleanModeSettings?.mopping;
       const waterFlow = MopWaterFlow[mopSetting?.waterFlowMode as keyof typeof MopWaterFlow] ?? MopWaterFlow.Medium;
       const distance_off =
-        waterFlow === MopWaterFlow.CustomizeWithDistanceOff ? DISTANCE_OFF_BASE - DISTANCE_OFF_MULTIPLIER * (mopSetting?.distanceOff ?? DISTANCE_OFF_DEFAULT) : 0;
+        waterFlow === MopWaterFlow.CustomizeWithDistanceOff
+          ? DISTANCE_OFF_BASE - DISTANCE_OFF_MULTIPLIER * (mopSetting?.distanceOff ?? DISTANCE_OFF_DEFAULT)
+          : 0;
       return new CleanModeSetting(
         VacuumSuctionPower.Off,
         waterFlow,
@@ -40,11 +45,13 @@ export const getSettingFromCleanMode = (activity: string, cleanModeSettings?: Cl
         CleanSequenceType.Persist,
       );
     }
-    case CleanModeDisplayLabel.MopAndVacuumDefault: {
+    case CleanModeDisplayLabel.VacuumAndMopDefault: {
       const vacmopSetting = cleanModeSettings?.vacmop;
       const waterFlow = MopWaterFlow[vacmopSetting?.waterFlowMode as keyof typeof MopWaterFlow] ?? MopWaterFlow.Medium;
       const distance_off =
-        waterFlow === MopWaterFlow.CustomizeWithDistanceOff ? DISTANCE_OFF_BASE - DISTANCE_OFF_MULTIPLIER * (vacmopSetting?.distanceOff ?? DISTANCE_OFF_DEFAULT) : 0;
+        waterFlow === MopWaterFlow.CustomizeWithDistanceOff
+          ? DISTANCE_OFF_BASE - DISTANCE_OFF_MULTIPLIER * (vacmopSetting?.distanceOff ?? DISTANCE_OFF_DEFAULT)
+          : 0;
       return new CleanModeSetting(
         VacuumSuctionPower[vacmopSetting?.fanMode as keyof typeof VacuumSuctionPower] ?? VacuumSuctionPower.Balanced,
         waterFlow,

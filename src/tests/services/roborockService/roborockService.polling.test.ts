@@ -20,7 +20,13 @@ describe('RoborockService - Polling', () => {
     // Create a minimal valid platform config manager for tests
     const PlatformConfigManager = PlatformConfigManagerStatic;
     const config = {
-      authentication: { username: 'test', region: 'US', forceAuthentication: false, authenticationMethod: 'Password', password: '' },
+      authentication: {
+        username: 'test',
+        region: 'US',
+        forceAuthentication: false,
+        authenticationMethod: 'Password',
+        password: '',
+      },
       pluginConfiguration: {
         whiteList: [],
         enableServerMode: false,

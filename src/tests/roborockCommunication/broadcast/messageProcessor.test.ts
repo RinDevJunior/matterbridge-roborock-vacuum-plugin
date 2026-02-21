@@ -148,7 +148,10 @@ describe('V10MessageDispatcher', () => {
   });
 
   it('getCleanModeData should extract distance_off from object response', async () => {
-    mockClient.get.mockResolvedValueOnce([306]).mockResolvedValueOnce([101]).mockResolvedValueOnce({ water_box_mode: 207, distance_off: 10 });
+    mockClient.get
+      .mockResolvedValueOnce([306])
+      .mockResolvedValueOnce([101])
+      .mockResolvedValueOnce({ water_box_mode: 207, distance_off: 10 });
 
     const result = await processor.getCleanModeData('duid');
     expect(result.distance_off).toBe(10);
@@ -156,7 +159,10 @@ describe('V10MessageDispatcher', () => {
   });
 
   it('getCleanModeData should handle object without distance_off', async () => {
-    mockClient.get.mockResolvedValueOnce([306]).mockResolvedValueOnce([101]).mockResolvedValueOnce({ water_box_mode: 207 });
+    mockClient.get
+      .mockResolvedValueOnce([306])
+      .mockResolvedValueOnce([101])
+      .mockResolvedValueOnce({ water_box_mode: 207 });
 
     const result = await processor.getCleanModeData('duid');
     expect(result.distance_off).toBe(0);

@@ -43,7 +43,8 @@ describe('MessageDeserializer', () => {
 
   it('parses rpc_response and returns a body with parsed dps', async () => {
     vi.spyOn(MessageSerializerFactory.prototype, 'getMessageSerializer').mockReturnValue({
-      encode: (_payload: string, _localKey: string, _timestamp: number, _sequence: number, _nonce: number) => Buffer.alloc(0),
+      encode: (_payload: string, _localKey: string, _timestamp: number, _sequence: number, _nonce: number) =>
+        Buffer.alloc(0),
       decode: (_payload: Buffer) => Buffer.from(JSON.stringify({ dps: { '102': JSON.stringify({ x: 1 }) } })),
     });
 
@@ -81,7 +82,8 @@ describe('MessageDeserializer', () => {
 
   it('handles unknown protocol and returns ResponseMessage without throwing', async () => {
     vi.spyOn(MessageSerializerFactory.prototype, 'getMessageSerializer').mockReturnValue({
-      encode: (_payload: string, _localKey: string, _timestamp: number, _sequence: number, _nonce: number) => Buffer.alloc(0),
+      encode: (_payload: string, _localKey: string, _timestamp: number, _sequence: number, _nonce: number) =>
+        Buffer.alloc(0),
       decode: (_payload: Buffer) => Buffer.from(JSON.stringify({ dps: { test: 'data' } })),
     });
 
@@ -114,7 +116,8 @@ describe('MessageDeserializer', () => {
 
   it('throws on CRC32 mismatch', () => {
     vi.spyOn(MessageSerializerFactory.prototype, 'getMessageSerializer').mockReturnValue({
-      encode: (_payload: string, _localKey: string, _timestamp: number, _sequence: number, _nonce: number) => Buffer.alloc(0),
+      encode: (_payload: string, _localKey: string, _timestamp: number, _sequence: number, _nonce: number) =>
+        Buffer.alloc(0),
       decode: (_payload: Buffer) => Buffer.from(JSON.stringify({ dps: {} })),
     });
 
@@ -144,7 +147,8 @@ describe('MessageDeserializer', () => {
 
   it('returns ResponseMessage without body when localKey is not found', () => {
     vi.spyOn(MessageSerializerFactory.prototype, 'getMessageSerializer').mockReturnValue({
-      encode: (_payload: string, _localKey: string, _timestamp: number, _sequence: number, _nonce: number) => Buffer.alloc(0),
+      encode: (_payload: string, _localKey: string, _timestamp: number, _sequence: number, _nonce: number) =>
+        Buffer.alloc(0),
       decode: (_payload: Buffer) => Buffer.from(JSON.stringify({ dps: {} })),
     });
 
@@ -179,7 +183,8 @@ describe('MessageDeserializer', () => {
 
   it('handles map_response protocol and returns body with map data', () => {
     vi.spyOn(MessageSerializerFactory.prototype, 'getMessageSerializer').mockReturnValue({
-      encode: (_payload: string, _localKey: string, _timestamp: number, _sequence: number, _nonce: number) => Buffer.alloc(0),
+      encode: (_payload: string, _localKey: string, _timestamp: number, _sequence: number, _nonce: number) =>
+        Buffer.alloc(0),
       decode: (_payload: Buffer) => Buffer.from([0x01, 0x02, 0x03]),
     });
 

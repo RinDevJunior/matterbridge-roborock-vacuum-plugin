@@ -20,7 +20,13 @@ describe('initializeMessageClientForLocal', () => {
 
     const PlatformConfigManager = PlatformConfigManagerStatic;
     const config = {
-      authentication: { username: 'test', region: 'US', forceAuthentication: false, authenticationMethod: 'Password', password: '' },
+      authentication: {
+        username: 'test',
+        region: 'US',
+        forceAuthentication: false,
+        authenticationMethod: 'Password',
+        password: '',
+      },
       pluginConfiguration: {
         whiteList: [],
         enableServerMode: false,
@@ -76,6 +82,8 @@ describe('initializeMessageClientForLocal', () => {
 
   it('returns false if messageClient is not initialized', async () => {
     // Without message client setup, should throw error
-    await expect(service.initializeMessageClientForLocal(mockDevice)).rejects.toThrow('Message client not initialized in ConnectionService');
+    await expect(service.initializeMessageClientForLocal(mockDevice)).rejects.toThrow(
+      'Message client not initialized in ConnectionService',
+    );
   });
 });

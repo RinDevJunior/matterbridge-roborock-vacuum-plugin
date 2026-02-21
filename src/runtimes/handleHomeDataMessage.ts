@@ -29,7 +29,11 @@ export async function updateFromHomeData(homeData: Home, platform: RoborockMatte
       return;
     }
 
-    device.schema = homeData.products.find((prd) => prd.id === device.productId || prd.model === robot.device.specs.model || prd.model === device.specs.model)?.schema ?? [];
+    device.schema =
+      homeData.products.find(
+        (prd) =>
+          prd.id === device.productId || prd.model === robot.device.specs.model || prd.model === device.specs.model,
+      )?.schema ?? [];
     platform.log.debug('updateFromHomeData-homeData:', debugStringify(homeData));
     platform.log.debug('updateFromHomeData-device:', debugStringify(device));
     platform.log.debug('updateFromHomeData-schema:' + debugStringify(device.schema));

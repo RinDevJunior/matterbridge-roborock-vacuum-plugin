@@ -109,7 +109,9 @@ export class LocalNetworkClient extends AbstractClient {
 
   private async onConnect(): Promise<void> {
     this.logger.debug(`[LocalNetworkClient]: ${this.duid} connected to ${this.ip}`);
-    this.logger.debug(`[LocalNetworkClient]: ${this.duid} socket writable: ${this.socket?.writable}, readable: ${this.socket?.readable}`);
+    this.logger.debug(
+      `[LocalNetworkClient]: ${this.duid} socket writable: ${this.socket?.writable}, readable: ${this.socket?.readable}`,
+    );
     await this.trySendHelloRequest();
   }
 
@@ -179,7 +181,9 @@ export class LocalNetworkClient extends AbstractClient {
         offset += 4 + segmentLength;
       }
     } catch (error) {
-      this.logger.error(`[LocalNetworkClient]: read socket buffer error: ${error instanceof Error ? (error.stack ?? error.message) : String(error)}`);
+      this.logger.error(
+        `[LocalNetworkClient]: read socket buffer error: ${error instanceof Error ? (error.stack ?? error.message) : String(error)}`,
+      );
     }
   }
 
@@ -204,7 +208,9 @@ export class LocalNetworkClient extends AbstractClient {
   private safeHandler<T extends (...args: any[]) => Promise<void>>(fn: T): (...args: Parameters<T>) => void {
     return (...args: Parameters<T>) => {
       fn.apply(this, args).catch((error: unknown) => {
-        this.logger.error(`[LocalNetworkClient]: unhandled error in ${fn.name}: ${error instanceof Error ? (error.stack ?? error.message) : String(error)}`);
+        this.logger.error(
+          `[LocalNetworkClient]: unhandled error in ${fn.name}: ${error instanceof Error ? (error.stack ?? error.message) : String(error)}`,
+        );
       });
     };
   }
@@ -273,7 +279,9 @@ export class LocalNetworkClient extends AbstractClient {
       const now = Date.now();
 
       if (now - this.pingResponseListener.lastPingResponse > 15000) {
-        this.logger.warn(`[LocalNetworkClient]: There is no local ping response for device ${this.duid} for 15s, try reconnect now`);
+        this.logger.warn(
+          `[LocalNetworkClient]: There is no local ping response for device ${this.duid} for 15s, try reconnect now`,
+        );
         await this.disconnect();
         this.connect();
         return;

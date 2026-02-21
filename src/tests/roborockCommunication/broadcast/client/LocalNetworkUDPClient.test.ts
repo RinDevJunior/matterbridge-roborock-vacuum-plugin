@@ -26,7 +26,14 @@ class MockSocket extends EventEmitter {
 /**
  * Create a valid V10 protocol buffer with encrypted payload
  */
-function createV10Buffer(networkInfo: { duid: string; ssid: string; ip: string; mac: string; bssid: string; rssi: number }): Buffer {
+function createV10Buffer(networkInfo: {
+  duid: string;
+  ssid: string;
+  ip: string;
+  mac: string;
+  bssid: string;
+  rssi: number;
+}): Buffer {
   const plaintext = JSON.stringify(networkInfo);
 
   // Pad to 16-byte boundary
@@ -61,7 +68,14 @@ function createV10Buffer(networkInfo: { duid: string; ssid: string; ip: string; 
 /**
  * Create a valid L01 protocol buffer with encrypted payload
  */
-function createL01Buffer(networkInfo: { duid: string; ssid: string; ip: string; mac: string; bssid: string; rssi: number }): Buffer {
+function createL01Buffer(networkInfo: {
+  duid: string;
+  ssid: string;
+  ip: string;
+  mac: string;
+  bssid: string;
+  rssi: number;
+}): Buffer {
   const plaintext = JSON.stringify(networkInfo);
 
   // Build header first (needed for IV generation)

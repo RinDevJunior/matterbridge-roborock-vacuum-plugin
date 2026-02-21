@@ -35,7 +35,9 @@ export class RoomMap {
 
   public getRooms(map_info: MapReference[], enableMultipleMap = false): RoomMapping[] {
     const mapid = map_info[0]?.id ?? 0;
-    return enableMultipleMap ? this.roomMappings : this.roomMappings.filter((room) => room.iot_map_id === undefined || room.iot_map_id === mapid);
+    return enableMultipleMap
+      ? this.roomMappings
+      : this.roomMappings.filter((room) => room.iot_map_id === undefined || room.iot_map_id === mapid);
   }
 
   /**

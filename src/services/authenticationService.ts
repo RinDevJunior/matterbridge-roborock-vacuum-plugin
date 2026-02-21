@@ -1,5 +1,10 @@
 import { AnsiLogger, debugStringify } from 'matterbridge/logger';
-import { AuthenticationError, InvalidCredentialsError, VerificationCodeExpiredError, TokenExpiredError } from '../errors/index.js';
+import {
+  AuthenticationError,
+  InvalidCredentialsError,
+  VerificationCodeExpiredError,
+  TokenExpiredError,
+} from '../errors/index.js';
 import type { UserData } from '../roborockCommunication/models/index.js';
 import { RoborockAuthGateway } from '../roborockCommunication/adapters/RoborockAuthGateway.js';
 

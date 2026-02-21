@@ -231,14 +231,23 @@ describe('V10MessageDispatcher', () => {
       client.get.mockResolvedValueOnce(0); // get_custom_mode
       const setting = new CleanModeSetting(0, 207, 10, 0, CleanSequenceType.Persist);
       await dispatcher.changeCleanMode(duid, setting);
-      expect(client.send).toHaveBeenCalledWith(duid, expect.objectContaining({ method: 'set_water_box_custom_mode', params: { water_box_mode: 207, distance_off: 10 } }));
+      expect(client.send).toHaveBeenCalledWith(
+        duid,
+        expect.objectContaining({
+          method: 'set_water_box_custom_mode',
+          params: { water_box_mode: 207, distance_off: 10 },
+        }),
+      );
     });
     it('should send set_water_box_custom_mode with array param', async () => {
       client.get.mockResolvedValueOnce(0); // get_custom_mode
 
       const setting = new CleanModeSetting(0, 5, 0, 0, CleanSequenceType.Persist);
       await dispatcher.changeCleanMode(duid, setting);
-      expect(client.send).toHaveBeenCalledWith(duid, expect.objectContaining({ method: 'set_water_box_custom_mode', params: [5] }));
+      expect(client.send).toHaveBeenCalledWith(
+        duid,
+        expect.objectContaining({ method: 'set_water_box_custom_mode', params: [5] }),
+      );
     });
     it('should send set_mop_mode if mopRoute != 0', async () => {
       client.get.mockResolvedValueOnce(0); // get_custom_mode

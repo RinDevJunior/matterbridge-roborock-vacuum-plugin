@@ -51,7 +51,19 @@ export {
 } from './CommunicationError.js';
 
 // Configuration errors
-export { ConfigurationError, MissingConfigurationError, InvalidConfigurationError, MissingCredentialsError, InvalidRegionError } from './ConfigurationError.js';
+export {
+  ConfigurationError,
+  MissingConfigurationError,
+  InvalidConfigurationError,
+  MissingCredentialsError,
+  InvalidRegionError,
+} from './ConfigurationError.js';
 
 // Validation errors
-export { ValidationError, InvalidParameterError, OutOfRangeError, MissingParameterError, InvalidFormatError } from './ValidationError.js';
+export {
+  ValidationError,
+  InvalidParameterError,
+  OutOfRangeError,
+  MissingParameterError,
+  InvalidFormatError,
+} from './ValidationError.js';

@@ -95,7 +95,9 @@ export class DeviceDiscovery {
       if (isDeviceAllowed && isDeviceSupported) {
         vacuums.push(device);
       } else {
-        this.log.warn(`Ignoring device: ${device.duid} isDeviceAllowed = ${isDeviceAllowed}, isDeviceSupported = ${isDeviceSupported}`);
+        this.log.warn(
+          `Ignoring device: ${device.duid} isDeviceAllowed = ${isDeviceAllowed}, isDeviceSupported = ${isDeviceSupported}`,
+        );
       }
     }
 

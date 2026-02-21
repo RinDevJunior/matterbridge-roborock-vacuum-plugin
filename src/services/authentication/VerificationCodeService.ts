@@ -20,10 +20,13 @@ export class VerificationCodeService {
       await this.authGateway.requestVerificationCode(email);
     } catch (error) {
       this.logger.error('Failed to request verification code:', { email, error });
-      throw new AuthenticationError('Failed to send verification code. Please check your email address and try again.', {
-        email,
-        originalError: error instanceof Error ? error.message : String(error),
-      });
+      throw new AuthenticationError(
+        'Failed to send verification code. Please check your email address and try again.',
+        {
+          email,
+          originalError: error instanceof Error ? error.message : String(error),
+        },
+      );
     }
   }
 

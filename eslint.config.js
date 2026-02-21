@@ -8,7 +8,16 @@ import pluginVitest from '@vitest/eslint-plugin';
 export default [
   {
     name: 'global ignores',
-    ignores: ['dist/', 'build/', 'node_modules/', 'coverage/', 'exampleData/', 'web-for-testing/', 'vite.config.ts', 'report/'],
+    ignores: [
+      'dist/',
+      'build/',
+      'node_modules/',
+      'coverage/',
+      'exampleData/',
+      'web-for-testing/',
+      'vite.config.ts',
+      'report/',
+    ],
   },
   eslint.configs.recommended,
   ...tseslint.configs.strict,

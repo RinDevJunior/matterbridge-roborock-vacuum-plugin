@@ -11,7 +11,13 @@ describe('RoborockMatterbridgePlatform - startup branches', () => {
     const logger = createMockLogger();
     const config = asPartial<RoborockPluginPlatformConfig>({
       name: 'Test',
-      authentication: { username: '', password: 'pass', region: 'US', forceAuthentication: false, authenticationMethod: 'Password' },
+      authentication: {
+        username: '',
+        password: 'pass',
+        region: 'US',
+        forceAuthentication: false,
+        authenticationMethod: 'Password',
+      },
       pluginConfiguration: {
         whiteList: [],
         sanitizeSensitiveLogs: false,
@@ -39,7 +45,13 @@ describe('RoborockMatterbridgePlatform - startup branches', () => {
     const logger = createMockLogger();
     const config = asPartial<RoborockPluginPlatformConfig>({
       name: 'Test',
-      authentication: { username: 'u@example.com', password: 'pass', region: 'US', forceAuthentication: false, authenticationMethod: 'Password' },
+      authentication: {
+        username: 'u@example.com',
+        password: 'pass',
+        region: 'US',
+        forceAuthentication: false,
+        authenticationMethod: 'Password',
+      },
       pluginConfiguration: {
         whiteList: [],
         sanitizeSensitiveLogs: false,
@@ -68,7 +80,13 @@ describe('RoborockMatterbridgePlatform - startup branches', () => {
 
   it('onConfigure returns early if not started', async () => {
     const logger = createMockLogger();
-    const authentication = { username: 'abc', region: 'US', password: 'pass', authenticationMethod: 'Password', forceAuthentication: false } satisfies AuthenticationConfiguration;
+    const authentication = {
+      username: 'abc',
+      region: 'US',
+      password: 'pass',
+      authenticationMethod: 'Password',
+      forceAuthentication: false,
+    } satisfies AuthenticationConfiguration;
     const pluginConfiguration = {
       whiteList: [],
       sanitizeSensitiveLogs: false,
@@ -119,7 +137,10 @@ describe('RoborockMatterbridgePlatform - startup branches', () => {
   });
 
   // Helper to simulate the private `configureDevice` behavior in tests without casting to private members
-  function simulateConfigureDevice(p: RoborockMatterbridgePlatform, vacuum: Partial<MatterbridgeEndpoint>): Promise<boolean> {
+  function simulateConfigureDevice(
+    p: RoborockMatterbridgePlatform,
+    vacuum: Partial<MatterbridgeEndpoint>,
+  ): Promise<boolean> {
     if (!p.roborockService) {
       p.log.error?.('Initializing: RoborockService is undefined');
       return Promise.resolve(false);
@@ -132,7 +153,13 @@ describe('RoborockMatterbridgePlatform - startup branches', () => {
     const cfg = asPartial<RoborockPluginPlatformConfig>({
       name: 'Test',
       username: 'u@example.com',
-      authentication: { username: 'u@example.com', password: 'pass', region: 'US', forceAuthentication: false, authenticationMethod: 'Password' },
+      authentication: {
+        username: 'u@example.com',
+        password: 'pass',
+        region: 'US',
+        forceAuthentication: false,
+        authenticationMethod: 'Password',
+      },
       pluginConfiguration: {
         whiteList: [],
         sanitizeSensitiveLogs: false,

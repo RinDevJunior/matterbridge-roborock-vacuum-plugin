@@ -42,7 +42,9 @@ export class V10MessageDispatcher implements AbstractMessageDispatcher {
   public async getMapInfo(duid: string): Promise<MapInfo> {
     const request = new RequestMessage({ method: 'get_multi_maps_list' });
     const response = (await this.client.get<MultipleMapDto[]>(duid, request)) ?? [];
-    return new MapInfo(response.length > 0 ? response[0] : { max_multi_map: 0, max_bak_map: 0, multi_map_count: 0, map_info: [] });
+    return new MapInfo(
+      response.length > 0 ? response[0] : { max_multi_map: 0, max_bak_map: 0, multi_map_count: 0, map_info: [] },
+    );
   }
 
   public async getRoomMap(duid: string, activeMap: number): Promise<RawRoomMappingData> {
@@ -141,7 +143,9 @@ export class V10MessageDispatcher implements AbstractMessageDispatcher {
 
   public async changeCleanMode(duid: string, setting: CleanModeSetting): Promise<void> {
     const { suctionPower, waterFlow, distance_off, mopRoute } = setting;
-    this.logger.notice(`Change clean mode for ${duid} to suctionPower: ${suctionPower}, waterFlow: ${waterFlow}, mopRoute: ${mopRoute}, distance_off: ${distance_off}`);
+    this.logger.notice(
+      `Change clean mode for ${duid} to suctionPower: ${suctionPower}, waterFlow: ${waterFlow}, mopRoute: ${mopRoute}, distance_off: ${distance_off}`,
+    );
 
     const currentMopMode = await this.getCustomMessage<number>(duid, new RequestMessage({ method: 'get_custom_mode' }));
     const smartMopMode = VacuumSuctionPower.Smart;
@@ -162,7 +166,13 @@ export class V10MessageDispatcher implements AbstractMessageDispatcher {
     }
 
     if (waterFlow && waterFlow == MopWaterFlow.CustomizeWithDistanceOff && distance_off && distance_off != 0) {
-      await this.client.send(duid, new RequestMessage({ method: 'set_water_box_custom_mode', params: { 'water_box_mode': waterFlow, 'distance_off': distance_off } }));
+      await this.client.send(
+        duid,
+        new RequestMessage({
+          method: 'set_water_box_custom_mode',
+          params: { 'water_box_mode': waterFlow, 'distance_off': distance_off },
+        }),
+      );
     } else if (waterFlow && waterFlow != 0) {
       await this.client.send(duid, new RequestMessage({ method: 'set_water_box_custom_mode', params: [waterFlow] }));
     }

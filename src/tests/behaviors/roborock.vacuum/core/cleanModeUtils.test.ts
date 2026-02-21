@@ -3,7 +3,10 @@ import { getSettingFromCleanMode } from '../../../../behaviors/roborock.vacuum/c
 import { CleanModeDisplayLabel } from '../../../../behaviors/roborock.vacuum/core/cleanModeConfig.js';
 import { MopRoute, MopWaterFlow, VacuumSuctionPower } from '../../../../behaviors/roborock.vacuum/enums/index.js';
 import { CleanSequenceType } from '../../../../behaviors/roborock.vacuum/enums/CleanSequenceType.js';
-import { createDefaultCleanModeSettings, type CleanModeSettings } from '../../../../model/RoborockPluginPlatformConfig.js';
+import {
+  createDefaultCleanModeSettings,
+  type CleanModeSettings,
+} from '../../../../model/RoborockPluginPlatformConfig.js';
 
 describe('cleanModeUtils', () => {
   describe('getSettingFromCleanMode', () => {
@@ -32,7 +35,7 @@ describe('cleanModeUtils', () => {
     });
 
     it('should return MopAndVacuumDefault settings with defaults when no cleanModeSettings provided', () => {
-      const result = getSettingFromCleanMode(CleanModeDisplayLabel.MopAndVacuumDefault);
+      const result = getSettingFromCleanMode(CleanModeDisplayLabel.VacuumAndMopDefault);
       expect(result).toBeDefined();
       expect(result?.suctionPower).toBe(VacuumSuctionPower.Balanced);
       expect(result?.waterFlow).toBe(MopWaterFlow.Medium);
@@ -68,7 +71,7 @@ describe('cleanModeUtils', () => {
         ...createDefaultCleanModeSettings(),
         vacmop: { fanMode: 'Max', waterFlowMode: 'High', mopRouteMode: 'Fast', distanceOff: 25 },
       };
-      const result = getSettingFromCleanMode(CleanModeDisplayLabel.MopAndVacuumDefault, settings);
+      const result = getSettingFromCleanMode(CleanModeDisplayLabel.VacuumAndMopDefault, settings);
       expect(result).toBeDefined();
       expect(result?.suctionPower).toBe(VacuumSuctionPower.Max);
       expect(result?.waterFlow).toBe(MopWaterFlow.High);
@@ -89,7 +92,11 @@ describe('cleanModeUtils', () => {
     it('should use default distanceOff when not provided for CustomizeWithDistanceOff', () => {
       const settings: CleanModeSettings = {
         ...createDefaultCleanModeSettings(),
-        mopping: { waterFlowMode: 'CustomizeWithDistanceOff', mopRouteMode: 'Standard', distanceOff: undefined as unknown as number },
+        mopping: {
+          waterFlowMode: 'CustomizeWithDistanceOff',
+          mopRouteMode: 'Standard',
+          distanceOff: undefined as unknown as number,
+        },
       };
       const result = getSettingFromCleanMode(CleanModeDisplayLabel.MopDefault, settings);
       expect(result).toBeDefined();
@@ -99,9 +106,14 @@ describe('cleanModeUtils', () => {
     it('should calculate distance_off for CustomizeWithDistanceOff water flow in MopAndVacuumDefault', () => {
       const settings: CleanModeSettings = {
         ...createDefaultCleanModeSettings(),
-        vacmop: { fanMode: 'Balanced', waterFlowMode: 'CustomizeWithDistanceOff', mopRouteMode: 'Standard', distanceOff: 20 },
+        vacmop: {
+          fanMode: 'Balanced',
+          waterFlowMode: 'CustomizeWithDistanceOff',
+          mopRouteMode: 'Standard',
+          distanceOff: 20,
+        },
       };
-      const result = getSettingFromCleanMode(CleanModeDisplayLabel.MopAndVacuumDefault, settings);
+      const result = getSettingFromCleanMode(CleanModeDisplayLabel.VacuumAndMopDefault, settings);
       expect(result).toBeDefined();
       expect(result?.waterFlow).toBe(MopWaterFlow.CustomizeWithDistanceOff);
       expect(result?.distance_off).toBe(210 - 5 * 20);

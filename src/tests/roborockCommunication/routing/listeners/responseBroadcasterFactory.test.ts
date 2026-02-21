@@ -1,6 +1,11 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { ResponseBroadcasterFactory } from '../../../../roborockCommunication/routing/listeners/responseBroadcasterFactory.js';
-import { HeaderMessage, RequestMessage, ResponseBody, ResponseMessage } from '../../../../roborockCommunication/models/index.js';
+import {
+  HeaderMessage,
+  RequestMessage,
+  ResponseBody,
+  ResponseMessage,
+} from '../../../../roborockCommunication/models/index.js';
 import { MessageContext } from '../../../../roborockCommunication/models/messageContext.js';
 import { ProtocolVersion } from '../../../../roborockCommunication/enums/index.js';
 import { createMockLogger, asPartial } from '../../../helpers/testUtils.js';
@@ -125,7 +130,13 @@ describe('ResponseBroadcasterFactory', () => {
   });
 
   it('should route waitFor to B01 tracker for B01 devices', async () => {
-    const request = new RequestMessage({ timestamp: 100, protocol: 101, messageId: 1234, nonce: 5678, version: ProtocolVersion.B01 });
+    const request = new RequestMessage({
+      timestamp: 100,
+      protocol: 101,
+      messageId: 1234,
+      nonce: 5678,
+      version: ProtocolVersion.B01,
+    });
 
     const promise = factory.waitFor(request, 'b01-device');
     // B01 tracker rejects on cancelAll
@@ -134,7 +145,13 @@ describe('ResponseBroadcasterFactory', () => {
   });
 
   it('should cancelAll pending requests from B01 tracker', async () => {
-    const request = new RequestMessage({ timestamp: 100, protocol: 101, messageId: 1234, nonce: 5678, version: ProtocolVersion.B01 });
+    const request = new RequestMessage({
+      timestamp: 100,
+      protocol: 101,
+      messageId: 1234,
+      nonce: 5678,
+      version: ProtocolVersion.B01,
+    });
     const promise = factory.waitFor(request, 'b01-device');
 
     factory.cancelAll();

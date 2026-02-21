@@ -1,10 +1,20 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { B01PendingResponseTracker } from '../../../../roborockCommunication/routing/services/b01PendingResponseTracker.js';
-import { HeaderMessage, RequestMessage, ResponseBody, ResponseMessage } from '../../../../roborockCommunication/models/index.js';
+import {
+  HeaderMessage,
+  RequestMessage,
+  ResponseBody,
+  ResponseMessage,
+} from '../../../../roborockCommunication/models/index.js';
 import { createMockLogger } from '../../../helpers/testUtils.js';
 import { AnsiLogger } from 'matterbridge/logger';
 
-function makeResponse(timestamp: number, protocol: number, data: Record<string, unknown>, duid = 'test-duid'): ResponseMessage {
+function makeResponse(
+  timestamp: number,
+  protocol: number,
+  data: Record<string, unknown>,
+  duid = 'test-duid',
+): ResponseMessage {
   const header = new HeaderMessage('B01', 1, 0, timestamp, protocol);
   const body = new ResponseBody(data as ResponseBody['data']);
   return new ResponseMessage(duid, header, body);

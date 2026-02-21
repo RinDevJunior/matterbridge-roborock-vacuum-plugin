@@ -92,7 +92,12 @@ describe('PlatformRunner.getRoomMapFromDevice', () => {
           products: [],
           devices: [],
           receivedDevices: [],
-          rooms: [new RoomEntity(1, 'Kitchen'), new RoomEntity(2, 'Study'), new RoomEntity(3, 'Living room'), new RoomEntity(4, 'Bedroom')],
+          rooms: [
+            new RoomEntity(1, 'Kitchen'),
+            new RoomEntity(2, 'Study'),
+            new RoomEntity(3, 'Living room'),
+            new RoomEntity(4, 'Bedroom'),
+          ],
         } satisfies Home,
       },
       mapInfos: undefined,
@@ -134,7 +139,12 @@ describe('PlatformRunner.getRoomMapFromDevice', () => {
       products: [],
       devices: [],
       receivedDevices: [],
-      rooms: [new RoomEntity(1, 'Kitchen'), new RoomEntity(2, 'Study'), new RoomEntity(3, 'Living room'), new RoomEntity(4, 'Bedroom')],
+      rooms: [
+        new RoomEntity(1, 'Kitchen'),
+        new RoomEntity(2, 'Study'),
+        new RoomEntity(3, 'Living room'),
+        new RoomEntity(4, 'Bedroom'),
+      ],
     };
     const device = asPartial<Device>({
       duid: 'duid1',
@@ -210,7 +220,12 @@ describe('PlatformRunner.getRoomMapFromDevice', () => {
       products: [],
       devices: [],
       receivedDevices: [],
-      rooms: [new RoomEntity(1, 'Kitchen'), new RoomEntity(2, 'Study'), new RoomEntity(3, 'Living room'), new RoomEntity(4, 'Bedroom')],
+      rooms: [
+        new RoomEntity(1, 'Kitchen'),
+        new RoomEntity(2, 'Study'),
+        new RoomEntity(3, 'Living room'),
+        new RoomEntity(4, 'Bedroom'),
+      ],
     };
     const device = asPartial<Device>({
       duid: 'duid1',
@@ -251,7 +266,12 @@ describe('PlatformRunner.getRoomMapFromDevice', () => {
       products: [],
       devices: [],
       receivedDevices: [],
-      rooms: [new RoomEntity(1, 'Kitchen'), new RoomEntity(2, 'Study'), new RoomEntity(3, 'Living room'), new RoomEntity(4, 'Bedroom')],
+      rooms: [
+        new RoomEntity(1, 'Kitchen'),
+        new RoomEntity(2, 'Study'),
+        new RoomEntity(3, 'Living room'),
+        new RoomEntity(4, 'Bedroom'),
+      ],
     };
     const device = asPartial<Device>({
       duid: 'duid1',
@@ -375,7 +395,9 @@ describe('PlatformRunner.getRoomMapFromDevice', () => {
       [22, '39432524', 13],
     ];
 
-    vi.mocked(roborockService.getRoomMap).mockResolvedValue(roomMapData as Partial<RawRoomMappingData> as RawRoomMappingData);
+    vi.mocked(roborockService.getRoomMap).mockResolvedValue(
+      roomMapData as Partial<RawRoomMappingData> as RawRoomMappingData,
+    );
 
     const { roomMap } = await RoomMap.fromMapInfo(device, platform);
     const expectedRoomMap = new RoomMap([

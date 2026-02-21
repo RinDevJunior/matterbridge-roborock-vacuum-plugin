@@ -1,6 +1,10 @@
 import { MatterbridgeDynamicPlatform } from 'matterbridge';
 
-export type WssSendSnackbarMessage = (message: string, timeout?: number, severity?: 'error' | 'success' | 'info' | 'warning') => void;
+export type WssSendSnackbarMessage = (
+  message: string,
+  timeout?: number,
+  severity?: 'error' | 'success' | 'info' | 'warning',
+) => void;
 
 interface PlatformWithSnackbar {
   wssSendSnackbarMessage?: WssSendSnackbarMessage;

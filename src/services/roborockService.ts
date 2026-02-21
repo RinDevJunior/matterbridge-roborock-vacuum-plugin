@@ -13,7 +13,14 @@ import {
 } from '../services/index.js';
 import { AuthenticationCoordinator } from './authentication/AuthenticationCoordinator.js';
 import { RoborockAuthenticateApi } from '../roborockCommunication/api/authClient.js';
-import { Device, Home, RawRoomMappingData, RequestMessage, Scene, UserData } from '../roborockCommunication/models/index.js';
+import {
+  Device,
+  Home,
+  RawRoomMappingData,
+  RequestMessage,
+  Scene,
+  UserData,
+} from '../roborockCommunication/models/index.js';
 import { RoborockIoTApi } from '../roborockCommunication/api/iotClient.js';
 import { PlatformConfigManager } from '../platform/platformConfigManager.js';
 import { MapInfo, RoomIndexMap } from '../core/application/models/index.js';
@@ -304,7 +311,9 @@ export class RoborockService {
     const selectedRoutines = selectedAreaIds
       .map((areaId) => supportedRoutines.find((r) => r.areaId === areaId))
       .filter((area): area is ServiceArea.Area => area !== undefined)
-      .sort((a, b) => (a.areaInfo.locationInfo?.locationName ?? '').localeCompare(b.areaInfo.locationInfo?.locationName ?? ''));
+      .sort((a, b) =>
+        (a.areaInfo.locationInfo?.locationName ?? '').localeCompare(b.areaInfo.locationInfo?.locationName ?? ''),
+      );
 
     if (selectedRoutines.length > 0) {
       return { type: 'routine', routineId: selectedRoutines[0].areaId - SCENE_AREA_ID_MIN };

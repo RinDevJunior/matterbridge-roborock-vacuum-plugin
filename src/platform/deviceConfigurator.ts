@@ -116,7 +116,8 @@ export class DeviceConfigurator {
     this.platform.setSelectDevice(rvc.device.duid, rvc.deviceName, undefined, 'hub');
 
     const vacuumData = rvc.device.specs;
-    const hardwareVersionString = vacuumData.firmwareVersion ?? rvc.device.fv ?? this.platform.matterbridge.matterbridgeVersion;
+    const hardwareVersionString =
+      vacuumData.firmwareVersion ?? rvc.device.fv ?? this.platform.matterbridge.matterbridgeVersion;
 
     if (this.platform.validateDevice(rvc.deviceName)) {
       rvc.softwareVersion = parseInt(this.platform.version.replace(/\D/g, ''));
@@ -125,18 +126,29 @@ export class DeviceConfigurator {
       rvc.hardwareVersionString = hardwareVersionString;
 
       rvc.softwareVersion = isValidNumber(rvc.softwareVersion, 0, UINT32_MAX) ? rvc.softwareVersion : undefined;
-      rvc.softwareVersionString = isValidString(rvc.softwareVersionString) ? rvc.softwareVersionString.slice(0, 64) : undefined;
+      rvc.softwareVersionString = isValidString(rvc.softwareVersionString)
+        ? rvc.softwareVersionString.slice(0, 64)
+        : undefined;
       rvc.hardwareVersion = isValidNumber(rvc.hardwareVersion, 0, UINT16_MAX) ? rvc.hardwareVersion : undefined;
-      rvc.hardwareVersionString = isValidString(rvc.hardwareVersionString) ? rvc.hardwareVersionString.slice(0, 64) : undefined;
+      rvc.hardwareVersionString = isValidString(rvc.hardwareVersionString)
+        ? rvc.hardwareVersionString.slice(0, 64)
+        : undefined;
 
       if (this.configManager.overrideMatterConfiguration) {
         const customMatterConfiguration = this.configManager.matterOverrideSettings;
         this.platform.log.debug(`customMatterConfiguration: ${debugStringify(customMatterConfiguration)}`);
 
-        rvc.vendorName = customMatterConfiguration.matterVendorName?.length > 0 ? customMatterConfiguration.matterVendorName : 'Matterbridge';
-        rvc.productName = customMatterConfiguration.matterProductName?.length > 0 ? customMatterConfiguration.matterProductName : vacuumData.model;
+        rvc.vendorName =
+          customMatterConfiguration.matterVendorName?.length > 0
+            ? customMatterConfiguration.matterVendorName
+            : 'Matterbridge';
+        rvc.productName =
+          customMatterConfiguration.matterProductName?.length > 0
+            ? customMatterConfiguration.matterProductName
+            : vacuumData.model;
         rvc.vendorId = customMatterConfiguration.matterVendorId > 0 ? customMatterConfiguration.matterVendorId : 65521;
-        rvc.productId = customMatterConfiguration.matterProductId > 0 ? customMatterConfiguration.matterProductId : 32768;
+        rvc.productId =
+          customMatterConfiguration.matterProductId > 0 ? customMatterConfiguration.matterProductId : 32768;
         rvc.productUrl = 'https://github.com/RinDevJunior/matterbridge-roborock-vacuum-plugin';
       }
 

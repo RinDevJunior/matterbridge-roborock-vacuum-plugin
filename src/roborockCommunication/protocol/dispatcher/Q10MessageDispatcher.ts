@@ -49,9 +49,14 @@ export class Q10MessageDispatcher implements AbstractMessageDispatcher {
   }
 
   public async getMapInfo(duid: string): Promise<MapInfo> {
-    const request = new RequestMessage({ messageId: this.messageId, dps: { [Q10RequestCode.rpc_request]: { [Q10RequestMethod.multimap]: { 'op': 'list' } } } });
+    const request = new RequestMessage({
+      messageId: this.messageId,
+      dps: { [Q10RequestCode.rpc_request]: { [Q10RequestMethod.multimap]: { 'op': 'list' } } },
+    });
     const response = await this.client.get<object>(duid, request);
-    this.logger.notice(`Get map info response for Q10 device ${duid}: ${response ? JSON.stringify(response) : 'no response'}`);
+    this.logger.notice(
+      `Get map info response for Q10 device ${duid}: ${response ? JSON.stringify(response) : 'no response'}`,
+    );
     return new MapInfo({ max_multi_map: 0, max_bak_map: 0, multi_map_count: 0, map_info: [] });
   }
 
@@ -69,12 +74,18 @@ export class Q10MessageDispatcher implements AbstractMessageDispatcher {
   }
 
   public async startCleaning(duid: string): Promise<void> {
-    const request = new RequestMessage({ messageId: this.messageId, dps: { [Q10RequestCode.app_start]: { 'cmd': 1 } } });
+    const request = new RequestMessage({
+      messageId: this.messageId,
+      dps: { [Q10RequestCode.app_start]: { 'cmd': 1 } },
+    });
     await this.client.send(duid, request);
   }
 
   public async startRoomCleaning(duid: string, roomIds: number[], repeat: number): Promise<void> {
-    const request = new RequestMessage({ messageId: this.messageId, dps: { [Q10RequestCode.app_start]: { 'cmd': 2, 'clean_paramters': roomIds } } });
+    const request = new RequestMessage({
+      messageId: this.messageId,
+      dps: { [Q10RequestCode.app_start]: { 'cmd': 2, 'clean_paramters': roomIds } },
+    });
     await this.client.send(duid, request);
   }
 
@@ -119,7 +130,9 @@ export class Q10MessageDispatcher implements AbstractMessageDispatcher {
 
   public async changeCleanMode(duid: string, setting: CleanModeSetting): Promise<void> {
     const { suctionPower, waterFlow, distance_off, mopRoute } = setting;
-    this.logger?.notice(`Change clean mode for ${duid} to suctionPower: ${suctionPower}, waterFlow: ${waterFlow}, mopRoute: ${mopRoute}, distance_off: ${distance_off}`);
+    this.logger?.notice(
+      `Change clean mode for ${duid} to suctionPower: ${suctionPower}, waterFlow: ${waterFlow}, mopRoute: ${mopRoute}, distance_off: ${distance_off}`,
+    );
     await this.setCleanMode(duid, suctionPower, waterFlow);
     if (suctionPower !== 0) {
       await this.setVacuumMode(duid, suctionPower);
@@ -132,17 +145,26 @@ export class Q10MessageDispatcher implements AbstractMessageDispatcher {
 
   // #region Private Helpers
   private async setCleanMode(duid: string, suctionPower: number, waterFlow: number): Promise<void> {
-    const request = new RequestMessage({ messageId: this.messageId, dps: { [Q10RequestMethod.change_clean_mode]: resolveQ10CleanMode(suctionPower, waterFlow) } });
+    const request = new RequestMessage({
+      messageId: this.messageId,
+      dps: { [Q10RequestMethod.change_clean_mode]: resolveQ10CleanMode(suctionPower, waterFlow) },
+    });
     return this.client.send(duid, request);
   }
 
   private async setVacuumMode(duid: string, mode: number) {
-    const request = new RequestMessage({ messageId: this.messageId, dps: { [Q10RequestMethod.change_vacuum_mode]: resolveVacuumMode(mode) } });
+    const request = new RequestMessage({
+      messageId: this.messageId,
+      dps: { [Q10RequestMethod.change_vacuum_mode]: resolveVacuumMode(mode) },
+    });
     return this.client.send(duid, request);
   }
 
   private async setWaterMode(duid: string, mode: number) {
-    const request = new RequestMessage({ messageId: this.messageId, dps: { [Q10RequestMethod.change_mop_mode]: resolveMopMode(mode) } });
+    const request = new RequestMessage({
+      messageId: this.messageId,
+      dps: { [Q10RequestMethod.change_mop_mode]: resolveMopMode(mode) },
+    });
     return this.client.send(duid, request);
   }
   // #endregion Private Helpers

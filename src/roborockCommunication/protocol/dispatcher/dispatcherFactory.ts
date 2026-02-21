@@ -28,7 +28,9 @@ export class MessageDispatcherFactory {
 
     const robotProtocol = calculateProtocol(version, modelCode);
     const dispatcher = this.builders[robotProtocol];
-    this.logger.debug(`Using ${dispatcher.dispatcherName} for device model ${modelCode} with protocol version ${version}`);
+    this.logger.debug(
+      `Using ${dispatcher.dispatcherName} for device model ${modelCode} with protocol version ${version}`,
+    );
     return dispatcher;
   }
 }

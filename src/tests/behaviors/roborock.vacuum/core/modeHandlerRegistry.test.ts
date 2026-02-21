@@ -126,9 +126,9 @@ describe('ModeHandlerRegistry', () => {
       enableCleanModeMapping: true,
     };
 
-    await registry.handle('duid-123', 5, 'Mop & Vacuum: Default', context);
+    await registry.handle('duid-123', 5, 'Vacuum & Mop: Default', context);
 
-    expect(mockHandle).toHaveBeenCalledWith('duid-123', 5, 'Mop & Vacuum: Default', context);
+    expect(mockHandle).toHaveBeenCalledWith('duid-123', 5, 'Vacuum & Mop: Default', context);
   });
 
   it('handles empty registry gracefully', async () => {

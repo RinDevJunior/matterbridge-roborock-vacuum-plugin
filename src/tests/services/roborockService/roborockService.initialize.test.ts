@@ -61,7 +61,9 @@ describe('RoborockService - listDevices', () => {
 
   it('should return devices with correct mapping', async () => {
     // Mock deviceService.listDevices to return a device array
-    const mockDevices = [{ duid: '1', rrHomeId: 123, rooms: [], localKey: 'lk', pv: 'pv', sn: 'sn', scenes: [], data: {}, store: {} }];
+    const mockDevices = [
+      { duid: '1', rrHomeId: 123, rooms: [], localKey: 'lk', pv: 'pv', sn: 'sn', scenes: [], data: {}, store: {} },
+    ];
     const mockDeviceService = {
       listDevices: vi.fn().mockResolvedValue(mockDevices),
     };
@@ -101,7 +103,18 @@ describe('RoborockService - listDevices', () => {
 
   it('should fallback batteryLevel to 100 if not present', async () => {
     // Device with no battery info should default to 100
-    const device = { duid: '1', specs: {}, store: {}, rrHomeId: 123, rooms: [], localKey: '', pv: '', sn: '', scenes: [], batteryLevel: undefined };
+    const device = {
+      duid: '1',
+      specs: {},
+      store: {},
+      rrHomeId: 123,
+      rooms: [],
+      localKey: '',
+      pv: '',
+      sn: '',
+      scenes: [],
+      batteryLevel: undefined,
+    };
     const mockDeviceService = {
       listDevices: vi.fn().mockResolvedValue([{ ...device, specs: { batteryLevel: undefined } }]),
     };
@@ -131,7 +144,16 @@ describe('RoborockService - listDevices', () => {
     const device = {
       duid: '1',
       data: {},
-      store: { homeData: { id: 123, name: 'Test Home', products: [], devices: [], receivedDevices: [], rooms: [{ id: 1, name: 'Living Room' }] } },
+      store: {
+        homeData: {
+          id: 123,
+          name: 'Test Home',
+          products: [],
+          devices: [],
+          receivedDevices: [],
+          rooms: [{ id: 1, name: 'Living Room' }],
+        },
+      },
       rrHomeId: 123,
       localKey: '',
       pv: '',

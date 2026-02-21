@@ -3,7 +3,11 @@ import { AnsiLogger } from 'matterbridge/logger';
 import type { PlatformMatterbridge, MatterbridgeEndpoint, DeviceTypeDefinition } from 'matterbridge';
 import { RoborockMatterbridgePlatform } from '../module.js';
 import { createMockMatterbridge, createMockLogger, asPartial } from './helpers/testUtils.js';
-import { AdvancedFeatureConfiguration, PluginConfiguration, RoborockPluginPlatformConfig } from '../model/RoborockPluginPlatformConfig.js';
+import {
+  AdvancedFeatureConfiguration,
+  PluginConfiguration,
+  RoborockPluginPlatformConfig,
+} from '../model/RoborockPluginPlatformConfig.js';
 
 describe('module additional tests', () => {
   let mockLogger: AnsiLogger;
@@ -50,7 +54,13 @@ describe('module additional tests', () => {
       refreshInterval: 60,
       debug: false,
       version: '1.0.0',
-      authentication: { username: 'test', region: 'US', forceAuthentication: false, password: 'test', authenticationMethod: 'Password' },
+      authentication: {
+        username: 'test',
+        region: 'US',
+        forceAuthentication: false,
+        password: 'test',
+        authenticationMethod: 'Password',
+      },
       pluginConfiguration: {
         whiteList: [],
         enableServerMode: false,
@@ -78,7 +88,11 @@ describe('module additional tests', () => {
       } as AdvancedFeatureConfiguration,
     });
 
-    const platform = new RoborockMatterbridgePlatform(asPartial<PlatformMatterbridge>(mockMatterbridge), mockLogger, config);
+    const platform = new RoborockMatterbridgePlatform(
+      asPartial<PlatformMatterbridge>(mockMatterbridge),
+      mockLogger,
+      config,
+    );
 
     // Patch registry and configManager (readonly) via defineProperty in tests
     Object.defineProperty(platform, 'registry', { value: mockRegistry });
@@ -92,7 +106,9 @@ describe('module additional tests', () => {
       productName: 'P',
       deviceTypes: new Map<number, DeviceTypeDefinition>(),
       mode: undefined,
-      getClusterServerOptions: (cluster: string) => ({ deviceTypeList: [] as { deviceType: number; revision: number }[] }),
+      getClusterServerOptions: (cluster: string) => ({
+        deviceTypeList: [] as { deviceType: number; revision: number }[],
+      }),
       createDefaultBridgedDeviceBasicInformationClusterServer: vi.fn(),
       createDefaultIdentifyClusterServer: vi.fn(),
     };
@@ -121,7 +137,13 @@ describe('module additional tests', () => {
       refreshInterval: 60,
       debug: false,
       version: '1.0.0',
-      authentication: { username: 'test', region: 'US', forceAuthentication: false, password: 'test', authenticationMethod: 'Password' },
+      authentication: {
+        username: 'test',
+        region: 'US',
+        forceAuthentication: false,
+        password: 'test',
+        authenticationMethod: 'Password',
+      },
       pluginConfiguration: {
         whiteList: [],
         enableServerMode: false,
@@ -162,7 +184,9 @@ describe('module additional tests', () => {
       productName: 'P',
       deviceTypes: new Map<number, DeviceTypeDefinition>(),
       mode: undefined,
-      getClusterServerOptions: (cluster: string) => ({ deviceTypeList: [] as { deviceType: number; revision: number }[] }),
+      getClusterServerOptions: (cluster: string) => ({
+        deviceTypeList: [] as { deviceType: number; revision: number }[],
+      }),
       createDefaultBridgedDeviceBasicInformationClusterServer: vi.fn(),
       createDefaultIdentifyClusterServer: vi.fn(),
     };

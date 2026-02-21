@@ -2,7 +2,12 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { PlatformConfigManager } from '../../platform/platformConfigManager.js';
 import type { AnsiLogger } from 'matterbridge/logger';
 import { asPartial, asType } from '../helpers/testUtils.js';
-import { AuthenticationConfiguration, createDefaultAdvancedFeature, PluginConfiguration, RoborockPluginPlatformConfig } from '../../model/RoborockPluginPlatformConfig.js';
+import {
+  AuthenticationConfiguration,
+  createDefaultAdvancedFeature,
+  PluginConfiguration,
+  RoborockPluginPlatformConfig,
+} from '../../model/RoborockPluginPlatformConfig.js';
 
 function createMockLogger(): AnsiLogger {
   return asType<AnsiLogger>({
@@ -72,7 +77,9 @@ describe('PlatformConfigManager', () => {
       config = asPartial<RoborockPluginPlatformConfig>({ ...config, authentication: undefined });
       manager = PlatformConfigManager.create(config, mockLogger);
       expect(manager.validateAuthentication()).toBe(false);
-      expect(mockLogger.error).toHaveBeenCalledWith('Platform config validation failed: "authentication" object is required');
+      expect(mockLogger.error).toHaveBeenCalledWith(
+        'Platform config validation failed: "authentication" object is required',
+      );
     });
     it('should return false and log info if password is missing', () => {
       config.authentication = asPartial<AuthenticationConfiguration>({ authenticationMethod: 'Password' });
@@ -87,7 +94,10 @@ describe('PlatformConfigManager', () => {
       expect(mockLogger.info).toHaveBeenCalledWith('Platform config validation: verification code not provided');
     });
     it('should return true if verificationCode is present for VerificationCode method', () => {
-      config.authentication = asPartial<AuthenticationConfiguration>({ authenticationMethod: 'VerificationCode', verificationCode: '1234' });
+      config.authentication = asPartial<AuthenticationConfiguration>({
+        authenticationMethod: 'VerificationCode',
+        verificationCode: '1234',
+      });
       manager = PlatformConfigManager.create(config, mockLogger);
       expect(manager.validateAuthentication()).toBe(true);
     });
@@ -108,7 +118,10 @@ describe('PlatformConfigManager', () => {
     });
     it('should return refreshInterval or default', () => {
       expect(manager.refreshInterval).toBe(60);
-      config.pluginConfiguration = asPartial<PluginConfiguration>({ ...config.pluginConfiguration, refreshInterval: undefined });
+      config.pluginConfiguration = asPartial<PluginConfiguration>({
+        ...config.pluginConfiguration,
+        refreshInterval: undefined,
+      });
       manager = PlatformConfigManager.create(config, mockLogger);
       expect(manager.refreshInterval).toBeDefined();
     });

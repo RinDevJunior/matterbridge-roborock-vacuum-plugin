@@ -25,7 +25,13 @@ describe('RoborockService basic behaviors', () => {
       version: '1.0',
       debug: false,
       unregisterOnShutdown: false,
-      authentication: { username: 'test', region: 'US', forceAuthentication: false, authenticationMethod: 'Password', password: '' },
+      authentication: {
+        username: 'test',
+        region: 'US',
+        forceAuthentication: false,
+        authenticationMethod: 'Password',
+        password: '',
+      },
       pluginConfiguration: {
         whiteList: [],
         enableServerMode: false,
@@ -112,7 +118,13 @@ describe('RoborockService - Facade Pattern Testing', () => {
       version: '1.0',
       debug: false,
       unregisterOnShutdown: false,
-      authentication: { username: 'test', region: 'US', forceAuthentication: false, authenticationMethod: 'Password', password: '' },
+      authentication: {
+        username: 'test',
+        region: 'US',
+        forceAuthentication: false,
+        authenticationMethod: 'Password',
+        password: '',
+      },
       pluginConfiguration: {
         whiteList: [],
         enableServerMode: false,

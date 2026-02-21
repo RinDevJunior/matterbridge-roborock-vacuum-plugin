@@ -7,13 +7,21 @@ import { RoborockVacuumCleaner } from '../types/roborockVacuumCleaner.js';
  * Checks current operational state and updates to Error state if appropriate.
  */
 export function triggerDssError(robot: RoborockVacuumCleaner, platform: RoborockMatterbridgePlatform): boolean {
-  const currentOperationState = robot.getAttribute(RvcOperationalState.Cluster.id, 'operationalState') as RvcOperationalState.OperationalState;
+  const currentOperationState = robot.getAttribute(
+    RvcOperationalState.Cluster.id,
+    'operationalState',
+  ) as RvcOperationalState.OperationalState;
   if (currentOperationState === RvcOperationalState.OperationalState.Error) {
     return true;
   }
 
   if (currentOperationState === RvcOperationalState.OperationalState.Docked) {
-    robot.updateAttribute(RvcOperationalState.Cluster.id, 'operationalState', RvcOperationalState.OperationalState.Error, platform.log);
+    robot.updateAttribute(
+      RvcOperationalState.Cluster.id,
+      'operationalState',
+      RvcOperationalState.OperationalState.Error,
+      platform.log,
+    );
     return true;
   }
 

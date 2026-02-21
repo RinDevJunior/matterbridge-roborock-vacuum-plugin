@@ -1,6 +1,11 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { AuthenticationService } from '../../services/authenticationService.js';
-import { AuthenticationError, InvalidCredentialsError, VerificationCodeExpiredError, TokenExpiredError } from '../../errors/index.js';
+import {
+  AuthenticationError,
+  InvalidCredentialsError,
+  VerificationCodeExpiredError,
+  TokenExpiredError,
+} from '../../errors/index.js';
 import type { UserData } from '../../roborockCommunication/models/index.js';
 import { asPartial, makeLogger } from '../testUtils.js';
 import { RoborockAuthGateway } from '../../roborockCommunication/adapters/RoborockAuthGateway.js';
@@ -53,25 +58,36 @@ describe('AuthenticationService', () => {
 
     it('should throw VerificationCodeExpiredError when error message contains expired', async () => {
       vi.mocked(mockAuthGateway.authenticate2FA).mockRejectedValue(new Error('Code expired'));
-      await expect(service.loginWithVerificationCode('test@example.com', '123456')).rejects.toThrow(VerificationCodeExpiredError);
+      await expect(service.loginWithVerificationCode('test@example.com', '123456')).rejects.toThrow(
+        VerificationCodeExpiredError,
+      );
     });
 
     it('should throw VerificationCodeExpiredError when error message contains invalid', async () => {
       vi.mocked(mockAuthGateway.authenticate2FA).mockRejectedValue(new Error('Code invalid'));
-      await expect(service.loginWithVerificationCode('test@example.com', '123456')).rejects.toThrow(VerificationCodeExpiredError);
+      await expect(service.loginWithVerificationCode('test@example.com', '123456')).rejects.toThrow(
+        VerificationCodeExpiredError,
+      );
     });
 
     it('should throw generic AuthenticationError for other errors', async () => {
       vi.mocked(mockAuthGateway.authenticate2FA).mockRejectedValue(new Error('Network error'));
-      await expect(service.loginWithVerificationCode('test@example.com', '123456')).rejects.toThrow(AuthenticationError);
-      await expect(service.loginWithVerificationCode('test@example.com', '123456')).rejects.toThrow('Authentication failed');
+      await expect(service.loginWithVerificationCode('test@example.com', '123456')).rejects.toThrow(
+        AuthenticationError,
+      );
+      await expect(service.loginWithVerificationCode('test@example.com', '123456')).rejects.toThrow(
+        'Authentication failed',
+      );
     });
 
     it('should log debug message when authenticating', async () => {
       const userData = createMockUserData();
       vi.mocked(mockAuthGateway.authenticate2FA).mockResolvedValue(userData);
       await service.loginWithVerificationCode('test@example.com', '123456');
-      expect(mockLogger.debug).toHaveBeenCalledWith('Authenticating with verification code for email:', 'test@example.com');
+      expect(mockLogger.debug).toHaveBeenCalledWith(
+        'Authenticating with verification code for email:',
+        'test@example.com',
+      );
     });
 
     it('should log notice when authentication succeeds', async () => {
@@ -116,7 +132,9 @@ describe('AuthenticationService', () => {
       const userData = createMockUserData();
       vi.mocked(mockAuthGateway.refreshToken).mockRejectedValue(new Error('Network error'));
       await expect(service.loginWithCachedToken('test@example.com', userData)).rejects.toThrow(AuthenticationError);
-      await expect(service.loginWithCachedToken('test@example.com', userData)).rejects.toThrow('Session expired or invalid');
+      await expect(service.loginWithCachedToken('test@example.com', userData)).rejects.toThrow(
+        'Session expired or invalid',
+      );
     });
 
     it('should log debug message when authenticating', async () => {
@@ -130,7 +148,9 @@ describe('AuthenticationService', () => {
       const userData = createMockUserData();
       vi.mocked(mockAuthGateway.refreshToken).mockResolvedValue(userData);
       await service.loginWithCachedToken('test@example.com', userData);
-      expect(mockLogger.notice).toHaveBeenCalledWith('[loginWithCachedToken]: Successfully authenticated with cached token');
+      expect(mockLogger.notice).toHaveBeenCalledWith(
+        '[loginWithCachedToken]: Successfully authenticated with cached token',
+      );
     });
   });
 
@@ -161,7 +181,9 @@ describe('AuthenticationService', () => {
     it('should throw generic AuthenticationError for other errors', async () => {
       vi.mocked(mockAuthGateway.authenticatePassword).mockRejectedValue(new Error('Network error'));
       await expect(service.loginWithPassword('test@example.com', 'pw')).rejects.toThrow(AuthenticationError);
-      await expect(service.loginWithPassword('test@example.com', 'pw')).rejects.toThrow('Authentication failed. Please use verification code login.');
+      await expect(service.loginWithPassword('test@example.com', 'pw')).rejects.toThrow(
+        'Authentication failed. Please use verification code login.',
+      );
     });
 
     it('should log debug when authenticating with password', async () => {

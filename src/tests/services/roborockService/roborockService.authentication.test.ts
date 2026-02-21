@@ -33,7 +33,13 @@ describe('RoborockService - Authentication', () => {
 
     const PlatformConfigManager = PlatformConfigManagerStatic;
     const config = {
-      authentication: { username: 'test@example.com', region: 'US', forceAuthentication: false, authenticationMethod: 'Password', password: 'password123' },
+      authentication: {
+        username: 'test@example.com',
+        region: 'US',
+        forceAuthentication: false,
+        authenticationMethod: 'Password',
+        password: 'password123',
+      },
       pluginConfiguration: {
         whiteList: [],
         enableServerMode: false,

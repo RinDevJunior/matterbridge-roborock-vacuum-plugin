@@ -10,7 +10,13 @@ import type { RoborockPluginPlatformConfig } from '../model/RoborockPluginPlatfo
 function createMockConfig(overrides: Partial<RoborockPluginPlatformConfig> = {}): RoborockPluginPlatformConfig {
   return {
     name: 'TestPlatform',
-    authentication: { username: 'test', region: 'US', forceAuthentication: false, password: 'test', authenticationMethod: 'Password' },
+    authentication: {
+      username: 'test',
+      region: 'US',
+      forceAuthentication: false,
+      password: 'test',
+      authenticationMethod: 'Password',
+    },
     pluginConfiguration: {
       whiteList: [],
       sanitizeSensitiveLogs: false,
@@ -70,7 +76,10 @@ describe('RoborockMatterbridgePlatform - orchestration', () => {
     platform.persist = mockPersist;
     vi.spyOn(platform.configManager, 'validateConfig');
     Object.defineProperty(platform, 'clearSelect', { value: vi.fn().mockResolvedValue(undefined), configurable: true });
-    Object.defineProperty(platform, 'unregisterAllDevices', { value: vi.fn().mockResolvedValue(undefined), configurable: true });
+    Object.defineProperty(platform, 'unregisterAllDevices', {
+      value: vi.fn().mockResolvedValue(undefined),
+      configurable: true,
+    });
   });
 
   afterEach(() => {
@@ -163,7 +172,10 @@ describe('RoborockMatterbridgePlatform - orchestration', () => {
     });
 
     it('should return early when clearStorageOnStartup is enabled', async () => {
-      Object.defineProperty(platform.configManager, 'isClearStorageOnStartupEnabled', { get: () => true, configurable: true });
+      Object.defineProperty(platform.configManager, 'isClearStorageOnStartupEnabled', {
+        get: () => true,
+        configurable: true,
+      });
 
       await platform.onStart('test');
 
@@ -172,7 +184,10 @@ describe('RoborockMatterbridgePlatform - orchestration', () => {
     });
 
     it('should clear persistence when alwaysExecuteAuthentication is true', async () => {
-      Object.defineProperty(platform.configManager, 'alwaysExecuteAuthentication', { get: () => true, configurable: true });
+      Object.defineProperty(platform.configManager, 'alwaysExecuteAuthentication', {
+        get: () => true,
+        configurable: true,
+      });
       vi.spyOn(platform.discovery, 'discoverDevices').mockImplementation(async () => {
         platform.discovery.roborockService = asPartial<RoborockService>({});
         return true;
@@ -226,7 +241,9 @@ describe('RoborockMatterbridgePlatform - orchestration', () => {
 
     it('should handle requestHomeData errors gracefully', async () => {
       platform.state.setStartupCompleted(true);
-      platform.platformRunner = asPartial<PlatformRunner>({ requestHomeData: vi.fn().mockRejectedValue(new Error('Network error')) });
+      platform.platformRunner = asPartial<PlatformRunner>({
+        requestHomeData: vi.fn().mockRejectedValue(new Error('Network error')),
+      });
 
       await platform.onConfigure();
 
@@ -237,7 +254,9 @@ describe('RoborockMatterbridgePlatform - orchestration', () => {
 
     it('should handle non-Error exceptions in requestHomeData', async () => {
       platform.state.setStartupCompleted(true);
-      platform.platformRunner = asPartial<PlatformRunner>({ requestHomeData: vi.fn().mockRejectedValue('string error') });
+      platform.platformRunner = asPartial<PlatformRunner>({
+        requestHomeData: vi.fn().mockRejectedValue('string error'),
+      });
 
       await platform.onConfigure();
 
@@ -247,7 +266,10 @@ describe('RoborockMatterbridgePlatform - orchestration', () => {
     });
 
     it('should clear storage and unregister when clearStorageOnStartup is enabled', async () => {
-      Object.defineProperty(platform.configManager, 'isClearStorageOnStartupEnabled', { get: () => true, configurable: true });
+      Object.defineProperty(platform.configManager, 'isClearStorageOnStartupEnabled', {
+        get: () => true,
+        configurable: true,
+      });
       Object.defineProperty(platform.configManager, 'rawConfig', {
         get: () => ({
           authentication: { verificationCode: 'abc' },
@@ -255,7 +277,10 @@ describe('RoborockMatterbridgePlatform - orchestration', () => {
         }),
         configurable: true,
       });
-      Object.defineProperty(platform, 'onConfigChanged', { value: vi.fn().mockResolvedValue(undefined), configurable: true });
+      Object.defineProperty(platform, 'onConfigChanged', {
+        value: vi.fn().mockResolvedValue(undefined),
+        configurable: true,
+      });
 
       await platform.onConfigure();
 
@@ -265,7 +290,10 @@ describe('RoborockMatterbridgePlatform - orchestration', () => {
     });
 
     it('should handle error during clearStorage flow', async () => {
-      Object.defineProperty(platform.configManager, 'isClearStorageOnStartupEnabled', { get: () => true, configurable: true });
+      Object.defineProperty(platform.configManager, 'isClearStorageOnStartupEnabled', {
+        get: () => true,
+        configurable: true,
+      });
       mockPersist.clear = vi.fn().mockRejectedValue(new Error('Storage error'));
 
       await platform.onConfigure();
@@ -339,7 +367,10 @@ describe('RoborockMatterbridgePlatform - orchestration', () => {
         }),
       );
       (p as { ready?: Promise<void> }).ready = Promise.resolve();
-      Object.defineProperty(p, 'unregisterAllDevices', { value: vi.fn().mockResolvedValue(undefined), configurable: true });
+      Object.defineProperty(p, 'unregisterAllDevices', {
+        value: vi.fn().mockResolvedValue(undefined),
+        configurable: true,
+      });
 
       await p.onShutdown('test');
 

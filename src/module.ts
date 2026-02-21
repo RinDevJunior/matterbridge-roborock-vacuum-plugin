@@ -6,7 +6,11 @@ import { RoborockService } from './services/roborockService.js';
 import { PLUGIN_NAME } from './settings.js';
 import { PlatformRunner } from './platformRunner.js';
 import { FilterLogger } from './share/filterLogger.js';
-import { DEFAULT_REFRESH_INTERVAL_SECONDS, REFRESH_INTERVAL_BUFFER_MS, UNREGISTER_DEVICES_DELAY_MS } from './constants/index.js';
+import {
+  DEFAULT_REFRESH_INTERVAL_SECONDS,
+  REFRESH_INTERVAL_BUFFER_MS,
+  UNREGISTER_DEVICES_DELAY_MS,
+} from './constants/index.js';
 
 // Platform layer imports
 import { DeviceRegistry } from './platform/deviceRegistry.js';
@@ -17,7 +21,11 @@ import { PlatformState } from './platform/platformState.js';
 import { RoborockPluginPlatformConfig } from './model/RoborockPluginPlatformConfig.js';
 import { getWssSendSnackbarMessage, WssSendSnackbarMessage } from './types/WssSendSnackbarMessage.js';
 
-export default function initializePlugin(matterbridge: PlatformMatterbridge, log: AnsiLogger, config: PlatformConfig): RoborockMatterbridgePlatform {
+export default function initializePlugin(
+  matterbridge: PlatformMatterbridge,
+  log: AnsiLogger,
+  config: PlatformConfig,
+): RoborockMatterbridgePlatform {
   return new RoborockMatterbridgePlatform(matterbridge, log, config as RoborockPluginPlatformConfig);
 }
 
@@ -64,7 +72,11 @@ export class RoborockMatterbridgePlatform extends MatterbridgeDynamicPlatform {
     logger.logLevel = this.config.pluginConfiguration.debug ? LogLevel.DEBUG : LogLevel.INFO;
 
     const requiredMatterbridgeVersion = '3.5.4';
-    if (this.verifyMatterbridgeVersion === undefined || typeof this.verifyMatterbridgeVersion !== 'function' || !this.verifyMatterbridgeVersion(requiredMatterbridgeVersion)) {
+    if (
+      this.verifyMatterbridgeVersion === undefined ||
+      typeof this.verifyMatterbridgeVersion !== 'function' ||
+      !this.verifyMatterbridgeVersion(requiredMatterbridgeVersion)
+    ) {
       throw new Error(
         `This plugin requires Matterbridge version >= "${requiredMatterbridgeVersion}".
         Please update Matterbridge from ${this.matterbridge.matterbridgeVersion} to the latest version in the frontend.`,
@@ -84,8 +96,21 @@ export class RoborockMatterbridgePlatform extends MatterbridgeDynamicPlatform {
 
     // Create discovery and configurator
     this.snackbarMessage = getWssSendSnackbarMessage(this);
-    this.discovery = new DeviceDiscovery(this, this.configManager, this.registry, () => this.persist, this.snackbarMessage, this.log);
-    this.configurator = new DeviceConfigurator(this, this.configManager, this.registry, () => this.platformRunner, this.log);
+    this.discovery = new DeviceDiscovery(
+      this,
+      this.configManager,
+      this.registry,
+      () => this.persist,
+      this.snackbarMessage,
+      this.log,
+    );
+    this.configurator = new DeviceConfigurator(
+      this,
+      this.configManager,
+      this.registry,
+      () => this.platformRunner,
+      this.log,
+    );
   }
 
   // #region Lifecycle
@@ -140,7 +165,11 @@ export class RoborockMatterbridgePlatform extends MatterbridgeDynamicPlatform {
         .then(() => this.unregisterAllDevices(UNREGISTER_DEVICES_DELAY_MS))
         .then(() => {
           this.log.notice('Please restart the platform now.');
-          this.snackbarMessage('Clear persistence storage as per configuration completed. Please restart the platform now.', 5000, 'success');
+          this.snackbarMessage(
+            'Clear persistence storage as per configuration completed. Please restart the platform now.',
+            5000,
+            'success',
+          );
           this.wssSendRestartRequired();
         })
         .then(() => {
@@ -158,7 +187,8 @@ export class RoborockMatterbridgePlatform extends MatterbridgeDynamicPlatform {
       return;
     }
 
-    const intervalMs = (this.configManager.refreshInterval ?? DEFAULT_REFRESH_INTERVAL_SECONDS) * 1000 + REFRESH_INTERVAL_BUFFER_MS;
+    const intervalMs =
+      (this.configManager.refreshInterval ?? DEFAULT_REFRESH_INTERVAL_SECONDS) * 1000 + REFRESH_INTERVAL_BUFFER_MS;
 
     this.rvcInterval = setInterval(async () => {
       try {

@@ -9,7 +9,12 @@ import { RoomEntity } from '../../core/domain/entities/Room.js';
 
 const mockLogger = makeLogger();
 
-function createHomeEntity(vacuumRooms: RoomDto[], roomMap: RoomMap | undefined, enableMultipleMap = false, mapInfos: MapEntry[] = []): HomeEntity {
+function createHomeEntity(
+  vacuumRooms: RoomDto[],
+  roomMap: RoomMap | undefined,
+  enableMultipleMap = false,
+  mapInfos: MapEntry[] = [],
+): HomeEntity {
   const mapDataDtos = mapInfos.map((entry) => ({
     mapFlag: entry.id,
     add_time: Date.now(),

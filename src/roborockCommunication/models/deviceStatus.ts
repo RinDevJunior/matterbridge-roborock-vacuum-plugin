@@ -23,7 +23,12 @@ export class DeviceStatus {
     public readonly duid: string,
     private readonly message: CloudMessageResult,
   ) {
-    this.errorStatus = new VacuumError(this.duid, this.message.error_code, this.message.dock_error_status, this.message.dss);
+    this.errorStatus = new VacuumError(
+      this.duid,
+      this.message.error_code,
+      this.message.dock_error_status,
+      this.message.dss,
+    );
   }
 
   getMessage(): CloudMessageResult {

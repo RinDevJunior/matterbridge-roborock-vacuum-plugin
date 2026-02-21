@@ -6,7 +6,10 @@ import { createMockLogger, asPartial, asType, mkUser } from '../../helpers/testU
 
 describe('RoborockAuthenticateApi private helpers', () => {
   const logger = createMockLogger();
-  const api = new RoborockAuthenticateApi(logger, asPartial<AxiosStatic>({ create: () => asPartial<AxiosInstance>({}) }));
+  const api = new RoborockAuthenticateApi(
+    logger,
+    asPartial<AxiosStatic>({ create: () => asPartial<AxiosInstance>({}) }),
+  );
 
   it('auth throws when userdata missing token', () => {
     expect(() => api['auth']('u', { data: undefined, msg: 'no', code: 0 })).toThrow();
@@ -21,15 +24,23 @@ describe('RoborockAuthenticateApi private helpers', () => {
   });
 
   it('authV4 throws on InvalidCode and RateLimited', () => {
-    expect(() => api['authV4']('e', { code: AuthenticateResponseCode.InvalidCode, msg: 'x', data: undefined })).toThrow(/Invalid verification code/);
-    expect(() => api['authV4']('e', { code: AuthenticateResponseCode.RateLimited, msg: 'x', data: undefined })).toThrow(/Rate limited/);
+    expect(() => api['authV4']('e', { code: AuthenticateResponseCode.InvalidCode, msg: 'x', data: undefined })).toThrow(
+      /Invalid verification code/,
+    );
+    expect(() => api['authV4']('e', { code: AuthenticateResponseCode.RateLimited, msg: 'x', data: undefined })).toThrow(
+      /Rate limited/,
+    );
   });
 
   it('signKeyV3 returns k or throws when missing', async () => {
-    const fakeApi = asPartial<AxiosStatic>({ post: (async (..._args: any[]) => ({ data: { data: { k: 'signed' } } })) as any });
+    const fakeApi = asPartial<AxiosStatic>({
+      post: (async (..._args: any[]) => ({ data: { data: { k: 'signed' } } })) as any,
+    });
     await expect(api['signKeyV3'](fakeApi, 's')).resolves.toBe('signed');
 
-    const badApi = asPartial<AxiosStatic>({ post: (async (..._args: any[]) => ({ data: { data: {}, msg: 'err' } })) as any });
+    const badApi = asPartial<AxiosStatic>({
+      post: (async (..._args: any[]) => ({ data: { data: {}, msg: 'err' } })) as any,
+    });
     await expect(api['signKeyV3'](badApi, 's')).rejects.toThrow(/Failed to sign key/);
   });
 

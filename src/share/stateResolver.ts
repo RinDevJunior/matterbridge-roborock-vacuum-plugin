@@ -267,7 +267,11 @@ function applyIsExploringModifier(state: ResolvedState, message: StatusChangeMes
  * @returns Updated state with inFreshState applied
  */
 function applyInFreshStateModifier(state: ResolvedState, message: StatusChangeMessage): ResolvedState {
-  if (message.inFreshState === true && message.status === OperationStatusCode.Charging && message.inReturning !== true) {
+  if (
+    message.inFreshState === true &&
+    message.status === OperationStatusCode.Charging &&
+    message.inReturning !== true
+  ) {
     return {
       runMode: RvcRunMode.ModeTag.Idle,
       operationalState: RvcOperationalState.OperationalState.Docked,

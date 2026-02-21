@@ -77,7 +77,9 @@ describe('PollingService', () => {
     it('should warn and return early when deviceNotify callback is not set', () => {
       service.activateDeviceNotifyOverLocal(mockDevice);
 
-      expect(mockLogger.warn).toHaveBeenCalledWith('Cannot activate device notify over local: deviceNotify callback not set');
+      expect(mockLogger.warn).toHaveBeenCalledWith(
+        'Cannot activate device notify over local: deviceNotify callback not set',
+      );
       expect(mockLogger.debug).not.toHaveBeenCalled();
     });
 

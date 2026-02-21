@@ -172,7 +172,10 @@ export function createMockAuthApi(overrides: Partial<RoborockAuthenticateApi> = 
 
 // Minimal DeviceRegistry mock factory for tests that need a registry instance
 import type { DeviceRegistry } from '../../platform/deviceRegistry.js';
-export function createMockDeviceRegistry(overrides: Partial<DeviceRegistry> = {}, robots?: Map<string, RoborockVacuumCleaner>): DeviceRegistry {
+export function createMockDeviceRegistry(
+  overrides: Partial<DeviceRegistry> = {},
+  robots?: Map<string, RoborockVacuumCleaner>,
+): DeviceRegistry {
   const rmap = robots ?? new Map<string, RoborockVacuumCleaner>();
   const base: Partial<DeviceRegistry> & Record<string, unknown> = {
     robotsMap: rmap,
@@ -220,7 +223,10 @@ export function wait(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-export const mkUser = () => asPartial<UserData>({ rriot: { r: { a: 'https://api.example', r: 'r', m: 'm', l: 'l' }, u: 'uid', s: 's', h: 'h', k: 'k' } });
+export const mkUser = () =>
+  asPartial<UserData>({
+    rriot: { r: { a: 'https://api.example', r: 'r', m: 'm', l: 'l' }, u: 'uid', s: 's', h: 'h', k: 'k' },
+  });
 
 export function setReadOnlyProperty<T>(obj: T, key: string | symbol, value: unknown): void {
   Object.defineProperty(obj, key, {

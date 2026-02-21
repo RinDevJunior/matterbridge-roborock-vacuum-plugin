@@ -8,7 +8,11 @@ describe('ResponseBroadcaster', () => {
   let chained: V1ResponseBroadcaster;
   let listener1: { name: string; duid: string; onMessage: ReturnType<typeof vi.fn<(message: any) => Promise<void>>> };
   let listener2: { name: string; duid: string; onMessage: ReturnType<typeof vi.fn<(message: any) => Promise<void>>> };
-  const message = asPartial<ResponseMessage>({ duid: 'test-duid', header: asPartial<HeaderMessage>({}), get: () => undefined });
+  const message = asPartial<ResponseMessage>({
+    duid: 'test-duid',
+    header: asPartial<HeaderMessage>({}),
+    get: () => undefined,
+  });
 
   const logger = makeLogger();
   const responseTracker = new V1PendingResponseTracker(logger);

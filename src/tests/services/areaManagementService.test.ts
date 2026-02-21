@@ -18,9 +18,16 @@ describe('AreaManagementService', () => {
   let mockMessageRoutingService: any;
 
   const mockDeviceId = 'test-device-1';
-  const mockAreas: ServiceArea.Area[] = [{ areaId: 0, mapId: 1 } as ServiceArea.Area, { areaId: 1, mapId: 1 } as ServiceArea.Area, { areaId: 2, mapId: 1 } as ServiceArea.Area];
+  const mockAreas: ServiceArea.Area[] = [
+    { areaId: 0, mapId: 1 } as ServiceArea.Area,
+    { areaId: 1, mapId: 1 } as ServiceArea.Area,
+    { areaId: 2, mapId: 1 } as ServiceArea.Area,
+  ];
 
-  const mockRoutines: ServiceArea.Area[] = [{ areaId: 100, mapId: 1 } as ServiceArea.Area, { areaId: 101, mapId: 1 } as ServiceArea.Area];
+  const mockRoutines: ServiceArea.Area[] = [
+    { areaId: 100, mapId: 1 } as ServiceArea.Area,
+    { areaId: 101, mapId: 1 } as ServiceArea.Area,
+  ];
 
   beforeEach(() => {
     mockLogger = createMockLogger() as Partial<AnsiLogger> as AnsiLogger;
@@ -74,7 +81,10 @@ describe('AreaManagementService', () => {
     });
 
     it('should initialize with logger and message routing service', () => {
-      const service = new AreaManagementService(mockLogger as AnsiLogger, mockMessageRoutingService as MessageRoutingService);
+      const service = new AreaManagementService(
+        mockLogger as AnsiLogger,
+        mockMessageRoutingService as MessageRoutingService,
+      );
       expect(service).toBeDefined();
     });
 

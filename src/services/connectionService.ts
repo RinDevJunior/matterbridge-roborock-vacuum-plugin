@@ -4,7 +4,13 @@ import type { DeviceNotifyCallback } from '../types/index.js';
 import { DeviceConnectionError, DeviceInitializationError, DeviceError } from '../errors/index.js';
 import { CONNECTION_RETRY_DELAY_MS, MAX_CONNECTION_ATTEMPTS } from '../constants/index.js';
 import { ClientRouter } from '../roborockCommunication/routing/clientRouter.js';
-import { Device, NetworkInfoDTO, Protocol, RPC_Request_Segments, UserData } from '../roborockCommunication/models/index.js';
+import {
+  Device,
+  NetworkInfoDTO,
+  Protocol,
+  RPC_Request_Segments,
+  UserData,
+} from '../roborockCommunication/models/index.js';
 import { MapResponseListener } from '../roborockCommunication/routing/listeners/implementation/mapResponseListener.js';
 import { AbstractUDPMessageListener } from '../roborockCommunication/routing/listeners/abstractUDPMessageListener.js';
 import { ProtocolVersion } from '../roborockCommunication/enums/index.js';
@@ -34,7 +40,11 @@ export class ConnectionService {
   }
 
   /** Wait for connection with retry logic. Returns attempt count. */
-  public async waitForConnection(checkConnection: () => boolean, maxAttempts = MAX_CONNECTION_ATTEMPTS, delayMs = CONNECTION_RETRY_DELAY_MS): Promise<number> {
+  public async waitForConnection(
+    checkConnection: () => boolean,
+    maxAttempts = MAX_CONNECTION_ATTEMPTS,
+    delayMs = CONNECTION_RETRY_DELAY_MS,
+  ): Promise<number> {
     let attempts = 0;
     while (!checkConnection() && attempts < maxAttempts) {
       await this.sleep(delayMs);
@@ -111,9 +121,14 @@ export class ConnectionService {
     this.clientRouter.registerMessageListener(simpleMessageListener);
 
     const deviceSpecs = device.specs;
-    const messageDispatcher = new MessageDispatcherFactory(this.clientRouter, this.logger).getMessageDispatcher(deviceSpecs.protocol, deviceSpecs.model);
+    const messageDispatcher = new MessageDispatcherFactory(this.clientRouter, this.logger).getMessageDispatcher(
+      deviceSpecs.protocol,
+      deviceSpecs.model,
+    );
 
-    this.logger.debug(`[ConnectionService] Resolve ${messageDispatcher.dispatcherName} for device: ${device.duid}, protocol: ${deviceSpecs.protocol}, model: ${deviceSpecs.model}`);
+    this.logger.debug(
+      `[ConnectionService] Resolve ${messageDispatcher.dispatcherName} for device: ${device.duid}, protocol: ${deviceSpecs.protocol}, model: ${deviceSpecs.model}`,
+    );
 
     // Register message listeners
     this.messageRoutingService.registerMessageDispatcher(device.duid, messageDispatcher);
@@ -126,13 +141,16 @@ export class ConnectionService {
       const networkInfo = this.getNetworkInfoFromDeviceStatus(device);
 
       if (networkInfo?.ipAddress) {
-        this.logger.debug(`Device ${device.duid} has network info IP: ${networkInfo.ipAddress}, setting up UDP listener`);
+        this.logger.debug(
+          `Device ${device.duid} has network info IP: ${networkInfo.ipAddress}, setting up UDP listener`,
+        );
         const success = await this.setupLocalClient(device, networkInfo.ipAddress);
         if (success) {
           return true;
         }
 
-        this.logger.error(`Failed to set up local client for device ${device.duid} at IP ${networkInfo.ipAddress} via B01 setup.
+        this.logger
+          .error(`Failed to set up local client for device ${device.duid} at IP ${networkInfo.ipAddress} via B01 setup.
             Continuing to listen for broadcasts.`);
       }
 
@@ -159,7 +177,9 @@ export class ConnectionService {
         return false;
       }
 
-      this.logger.debug(`Device ${device.duid} is on local network, attempting local connection at IP ${networkInfo.ip}`);
+      this.logger.debug(
+        `Device ${device.duid} is on local network, attempting local connection at IP ${networkInfo.ip}`,
+      );
       localIp = networkInfo.ip;
     }
 

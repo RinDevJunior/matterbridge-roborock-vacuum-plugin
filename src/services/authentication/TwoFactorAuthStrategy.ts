@@ -69,7 +69,10 @@ export class TwoFactorAuthStrategy extends BaseAuthStrategy implements IAuthStra
     }
 
     this.logger.notice('Attempting login with verification code...');
-    const userData = await this.authService.loginWithVerificationCode(context.username, context.verificationCode.trim());
+    const userData = await this.authService.loginWithVerificationCode(
+      context.username,
+      context.verificationCode.trim(),
+    );
 
     await this.saveAuthenticationState(userData, context.username);
     this.logger.notice('Authentication successful!');

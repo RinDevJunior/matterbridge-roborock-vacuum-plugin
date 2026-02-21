@@ -14,19 +14,27 @@ describe('cleanModeConfig', () => {
   describe('getModeDisplayMap', () => {
     it('should return a record mapping mode numbers to labels for base configs', () => {
       const map = getModeDisplayMap(baseCleanModeConfigs);
-      expect(map[CleanModeLabelInfo[CleanModeDisplayLabel.MopAndVacuumDefault].mode]).toBe(CleanModeDisplayLabel.MopAndVacuumDefault);
-      expect(map[CleanModeLabelInfo[CleanModeDisplayLabel.VacuumDefault].mode]).toBe(CleanModeDisplayLabel.VacuumDefault);
+      expect(map[CleanModeLabelInfo[CleanModeDisplayLabel.VacuumAndMopDefault].mode]).toBe(
+        CleanModeDisplayLabel.VacuumAndMopDefault,
+      );
+      expect(map[CleanModeLabelInfo[CleanModeDisplayLabel.VacuumDefault].mode]).toBe(
+        CleanModeDisplayLabel.VacuumDefault,
+      );
       expect(map[CleanModeLabelInfo[CleanModeDisplayLabel.MopDefault].mode]).toBe(CleanModeDisplayLabel.MopDefault);
     });
 
     it('should include VacFollowedByMop entry', () => {
       const map = getModeDisplayMap(smartCleanModeConfigs);
-      expect(map[CleanModeLabelInfo[CleanModeDisplayLabel.MopAndVaccum_VacFollowedByMop].mode]).toBe(CleanModeDisplayLabel.MopAndVaccum_VacFollowedByMop);
+      expect(map[CleanModeLabelInfo[CleanModeDisplayLabel.VacFollowedByMop].mode]).toBe(
+        CleanModeDisplayLabel.VacFollowedByMop,
+      );
     });
 
     it('should include EnergySaving entry', () => {
       const map = getModeDisplayMap(baseCleanModeConfigs);
-      expect(map[CleanModeLabelInfo[CleanModeDisplayLabel.MopAndVacuumEnergySaving].mode]).toBe(CleanModeDisplayLabel.MopAndVacuumEnergySaving);
+      expect(map[CleanModeLabelInfo[CleanModeDisplayLabel.VacuumAndMopEnergySaving].mode]).toBe(
+        CleanModeDisplayLabel.VacuumAndMopEnergySaving,
+      );
     });
 
     it('should include SmartPlan in smart configs', () => {
@@ -38,7 +46,7 @@ describe('cleanModeConfig', () => {
   describe('getModeSettingsMap', () => {
     it('should return a record mapping mode numbers to CleanModeSetting instances', () => {
       const map = getModeSettingsMap(baseCleanModeConfigs);
-      const defaultMode = CleanModeLabelInfo[CleanModeDisplayLabel.MopAndVacuumDefault].mode;
+      const defaultMode = CleanModeLabelInfo[CleanModeDisplayLabel.VacuumAndMopDefault].mode;
       const setting = map[defaultMode];
       expect(setting).toBeInstanceOf(CleanModeSetting);
       expect(setting.hasFullSettings).toBe(true);
@@ -77,11 +85,11 @@ describe('cleanModeConfig', () => {
 
   describe('CleanModeLabelInfo', () => {
     it('should have correct mode number for VacFollowedByMop', () => {
-      expect(CleanModeLabelInfo[CleanModeDisplayLabel.MopAndVaccum_VacFollowedByMop].mode).toBe(11);
+      expect(CleanModeLabelInfo[CleanModeDisplayLabel.VacFollowedByMop].mode).toBe(11);
     });
 
     it('should have correct mode number for EnergySaving', () => {
-      expect(CleanModeLabelInfo[CleanModeDisplayLabel.MopAndVacuumEnergySaving].mode).toBe(10);
+      expect(CleanModeLabelInfo[CleanModeDisplayLabel.VacuumAndMopEnergySaving].mode).toBe(10);
     });
 
     it('should have correct label for GoVacation', () => {
@@ -92,7 +100,9 @@ describe('cleanModeConfig', () => {
 
   describe('baseCleanModeConfigs', () => {
     it('should have Persist sequenceType for standard modes', () => {
-      const defaultMode = baseCleanModeConfigs.find((c) => c.mode === CleanModeLabelInfo[CleanModeDisplayLabel.MopAndVacuumDefault].mode);
+      const defaultMode = baseCleanModeConfigs.find(
+        (c) => c.mode === CleanModeLabelInfo[CleanModeDisplayLabel.VacuumAndMopDefault].mode,
+      );
       expect(defaultMode).toBeDefined();
       expect(defaultMode?.setting.sequenceType).toBe(0); // CleanSequenceType.Persist
     });
@@ -108,7 +118,9 @@ describe('cleanModeConfig', () => {
     });
 
     it('should contain VacFollowedByMop config with OneTime sequenceType', () => {
-      const vacFollowedByMop = smartCleanModeConfigs.find((c) => c.mode === CleanModeLabelInfo[CleanModeDisplayLabel.MopAndVaccum_VacFollowedByMop].mode);
+      const vacFollowedByMop = smartCleanModeConfigs.find(
+        (c) => c.mode === CleanModeLabelInfo[CleanModeDisplayLabel.VacFollowedByMop].mode,
+      );
       expect(vacFollowedByMop).toBeDefined();
       expect(vacFollowedByMop?.setting.sequenceType).toBe(1); // CleanSequenceType.OneTime
     });
