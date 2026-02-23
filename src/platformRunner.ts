@@ -128,6 +128,7 @@ export class PlatformRunner {
 
     const timer = setInterval(async () => {
       try {
+        this.platform.log.notice(`Burst polling for a specific device: ${duid}`);
         await this.requestLocalDeviceStatus(duid);
         if (this.isDeviceIdle(duid)) {
           this.stopBurstPolling(duid);
@@ -155,6 +156,7 @@ export class PlatformRunner {
   public stopBurstPolling(duid: string): void {
     const timer = this.burstPollingTimers.get(duid);
     if (timer !== undefined) {
+      this.platform.log.notice(`Stop burst polling for a specific device: ${duid}`);
       clearInterval(timer);
       this.burstPollingTimers.delete(duid);
     }
@@ -172,6 +174,7 @@ export class PlatformRunner {
     const state: RvcOperationalState.OperationalState = robot.getAttribute(
       RvcOperationalState.Cluster.id,
       'operationalState',
+      this.platform.log,
     );
     return (
       state === RvcOperationalState.OperationalState.Docked || state === RvcOperationalState.OperationalState.Charging
@@ -434,8 +437,24 @@ export class PlatformRunner {
     // Resolve state using state resolution matrix
     const resolvedState = resolveDeviceState(message);
     this.platform.log.notice(
-      `Resolved state: runMode=${this.getRunModeName(resolvedState.runMode)}, operationalState=${this.getOperationalStateName(resolvedState.operationalState)}`,
+      `Resolved state: runMode=${this.getRunModeName(resolvedState.runMode)}, operationalState=${this.getOperationalStateName(resolvedState.operationalState)}, rawRunMode=${resolvedState.runMode}, rawOperationState=${resolvedState.operationalState}`,
     );
+
+    const currentOperationState = robot.getAttribute(
+      RvcOperationalState.Cluster.id,
+      'operationalState',
+      this.platform.log,
+    );
+
+    if (
+      currentOperationState === RvcOperationalState.OperationalState.Charging &&
+      resolvedState.runMode === RvcRunMode.ModeTag.Idle &&
+      resolvedState.operationalState === RvcOperationalState.OperationalState.Docked
+    ) {
+      // Device is still charging; skip Docked update and let handleBatteryUpdate transition away from Charging when battery is full.
+      this.platform.log.debug(`Device is still charging, skipping Docked state update`);
+      return;
+    }
 
     // Update Matter attributes
     robot.updateAttribute(

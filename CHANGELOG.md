@@ -11,11 +11,17 @@ All notable changes to this project will be documented in this file.
 - **Per-device model name override** — When "Override Matter Configuration" is enabled, the plugin now auto-populates `deviceProductNames` in the config on first run with each device's serial number and model as the default name. Edit any entry to customise the model name shown in Apple Home per device. Per-device names take priority over the global default product name.
 - **Burst polling after vacuum commands** — After triggering a vacuum action (start, resume, go home), the plugin polls the device every 10 seconds until it reaches an idle/docked state. This ensures Matter reflects the latest state promptly after a command, without relying solely on MQTT or periodic refresh. Polling is scoped per device and auto-starts when the device transitions to a Cleaning or Mapping state.
 
+### Fixed
+
+- **Charging state regression** — `handleDeviceStatusUpdate` no longer overrides `Charging` with `Docked` while the device is still on the dock charging. The transition from `Charging → Docked` is now owned exclusively by `handleBatteryUpdate` once the battery reaches full charge.
+
 ### Improved
 
 - **Apple Home label clarity** — Schema labels for the Matter Configuration Override section now consistently reference "Apple Home" and "Model Name" to make it clearer what each setting affects.
 - **Device name simplification** — Device name no longer appends the DUID suffix, reducing visual noise in device listings.
 - **Serial number detection** — V10-protocol devices now fetch the serial number via `get_serial_number` on first startup. Q7/Q10 devices fall back to the DUID as the serial number.
+- **Burst polling visibility** — Notice logs are now emitted when burst polling starts and stops per device, making it easier to trace polling activity in logs.
+- **Richer state resolution log** — The resolved state notice now includes raw `runMode` and `operationalState` numeric values alongside human-readable names for easier debugging.
 
 <a href="https://www.buymeacoffee.com/rinnvspktr" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/default-orange.png" alt="Buy Me A Coffee" height="41" width="174"></a>
 
