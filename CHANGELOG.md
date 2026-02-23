@@ -9,6 +9,7 @@ All notable changes to this project will be documented in this file.
 ### Added
 
 - **Per-device model name override** — When "Override Matter Configuration" is enabled, the plugin now auto-populates `deviceProductNames` in the config on first run with each device's serial number and model as the default name. Edit any entry to customise the model name shown in Apple Home per device. Per-device names take priority over the global default product name.
+- **Burst polling after vacuum commands** — After triggering a vacuum action (start, resume, go home), the plugin polls the device every 10 seconds until it reaches an idle/docked state. This ensures Matter reflects the latest state promptly after a command, without relying solely on MQTT or periodic refresh. Polling is scoped per device and auto-starts when the device transitions to a Cleaning or Mapping state.
 
 ### Improved
 
