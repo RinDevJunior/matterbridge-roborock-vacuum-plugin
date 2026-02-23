@@ -81,6 +81,8 @@ describe('MessageRoutingService', () => {
       getHomeMap: vi.fn(),
       getCustomMessage: vi.fn(),
       sendCustomMessage: vi.fn(),
+      getSerialNumber: vi.fn(),
+      stopCleaning: vi.fn(),
     };
   }
 
@@ -142,6 +144,35 @@ describe('MessageRoutingService', () => {
 
       expect(messageService.getMessageDispatcher('device-1')).toBe(mockDispatcher);
       expect(messageService.getMessageDispatcher('device-2')).toBe(mockProcessor2);
+    });
+  });
+
+  describe('getSerialNumber', () => {
+    const testDuid = 'test-device-sn';
+
+    beforeEach(() => {
+      messageService.registerMessageDispatcher(testDuid, mockDispatcher as V10MessageDispatcher);
+    });
+
+    it('should return serial number from dispatcher', async () => {
+      mockDispatcher.getSerialNumber.mockResolvedValue('SN-XYZ');
+
+      const result = await messageService.getSerialNumber(testDuid);
+
+      expect(result).toBe('SN-XYZ');
+      expect(mockDispatcher.getSerialNumber).toHaveBeenCalledWith(testDuid);
+    });
+
+    it('should fallback to duid when dispatcher returns undefined', async () => {
+      mockDispatcher.getSerialNumber.mockResolvedValue(undefined);
+
+      const result = await messageService.getSerialNumber(testDuid);
+
+      expect(result).toBe(testDuid);
+    });
+
+    it('should throw DeviceError when dispatcher not registered', async () => {
+      await expect(messageService.getSerialNumber('unknown-device')).rejects.toThrow(DeviceError);
     });
   });
 

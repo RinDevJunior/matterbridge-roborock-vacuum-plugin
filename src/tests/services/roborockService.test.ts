@@ -83,10 +83,12 @@ describe('RoborockService - Comprehensive Coverage', () => {
       setIotApi: vi.fn(),
       getMapInfo: vi.fn(),
       clearAll: vi.fn(),
+      getSerialNumber: vi.fn().mockResolvedValue('SN-ABC'),
     };
     mockPollingService = {
       setDeviceNotify: vi.fn(),
       activateDeviceNotifyOverLocal: vi.fn(),
+      requestStatusOnce: vi.fn().mockResolvedValue(undefined),
       stopPolling: vi.fn(),
       shutdown: vi.fn(),
     };
@@ -315,6 +317,27 @@ describe('RoborockService - Comprehensive Coverage', () => {
     it('should delegate to messageRoutingService.stopClean', async () => {
       await service.stopClean('duid-1');
       expect(mockMessageService.stopClean).toHaveBeenCalledWith('duid-1');
+    });
+  });
+
+  describe('getSerialNumber', () => {
+    it('should delegate to messageRoutingService.getSerialNumber', async () => {
+      vi.mocked(mockMessageService.getSerialNumber)?.mockResolvedValue('SN-ABC');
+
+      const result = await service.getSerialNumber('duid-1');
+
+      expect(result).toBe('SN-ABC');
+      expect(mockMessageService.getSerialNumber).toHaveBeenCalledWith('duid-1');
+    });
+  });
+
+  describe('requestDeviceStatusOnce', () => {
+    it('should delegate to pollingService.requestStatusOnce', async () => {
+      vi.mocked(mockPollingService.requestStatusOnce as ReturnType<typeof vi.fn>)?.mockResolvedValue(undefined);
+
+      await service.requestDeviceStatusOnce('duid-1');
+
+      expect(mockPollingService.requestStatusOnce).toHaveBeenCalledWith('duid-1');
     });
   });
 

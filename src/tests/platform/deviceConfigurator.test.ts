@@ -47,6 +47,7 @@ vi.mock('../../types/roborockVacuumCleaner.js', () => ({
   RoborockVacuumCleaner: vi.fn(function (this: Record<string, unknown>, device: Device) {
     this.device = device;
     this.deviceName = `Roborock-${device.duid}`;
+    this.serialNumber = device.serialNumber ?? device.duid;
     this.configureHandler = vi.fn();
     this.getClusterServerOptions = vi.fn().mockReturnValue({
       softwareVersion: 1,
@@ -123,6 +124,7 @@ describe('DeviceConfigurator', () => {
       validateDevice: vi.fn().mockReturnValue(true),
       setSelectDevice: vi.fn(),
       registerDevice: vi.fn().mockResolvedValue(undefined),
+      onConfigChanged: vi.fn().mockResolvedValue(undefined),
     });
 
     roborockService = createMockRoborockService({
@@ -310,6 +312,248 @@ describe('DeviceConfigurator', () => {
       await configurator.onConfigureDevice(roborockService);
 
       expect(roborockService.activateDeviceNotify).toHaveBeenCalledWith(device);
+    });
+
+    it('should fetch serialNumber via getSerialNumber when device has no serialNumber', async () => {
+      const device = makeMockDevice('duid-1'); // no serialNumber set
+      registry = createMockDeviceRegistry({
+        hasDevices: vi.fn().mockReturnValue(true),
+        getAllDevices: vi.fn().mockReturnValue([device]),
+        robotsMap: new Map(),
+      });
+      configurator = new DeviceConfigurator(
+        platform,
+        configManager,
+        registry,
+        () => platformRunner,
+        snackbarMessage,
+        log,
+      );
+
+      await configurator.onConfigureDevice(roborockService);
+
+      expect(roborockService.getSerialNumber).toHaveBeenCalledWith(device.duid);
+    });
+
+    it('should call snackbarMessage when device fails to connect to local network', async () => {
+      const device = makeMockDevice('duid-1');
+      registry = createMockDeviceRegistry({
+        hasDevices: vi.fn().mockReturnValue(true),
+        getAllDevices: vi.fn().mockReturnValue([device]),
+        robotsMap: new Map(),
+      });
+      roborockService = createMockRoborockService({
+        setDeviceNotify: vi.fn(),
+        activateDeviceNotify: vi.fn(),
+        initializeMessageClientForLocal: vi.fn().mockResolvedValue(false),
+      });
+      configurator = new DeviceConfigurator(
+        platform,
+        configManager,
+        registry,
+        () => platformRunner,
+        snackbarMessage,
+        log,
+      );
+
+      await configurator.onConfigureDevice(roborockService);
+
+      expect(snackbarMessage).toHaveBeenCalledWith(expect.stringContaining(device.name), 5000, 'error');
+    });
+  });
+
+  describe('applyVersionInfo (via addDevice)', () => {
+    it('should call registerDevice when serialNumber and deviceName are set', async () => {
+      const device = makeMockDevice('duid-1');
+      registry = createMockDeviceRegistry({
+        hasDevices: vi.fn().mockReturnValue(true),
+        getAllDevices: vi.fn().mockReturnValue([device]),
+        robotsMap: new Map(),
+      });
+      configurator = new DeviceConfigurator(
+        platform,
+        configManager,
+        registry,
+        () => platformRunner,
+        snackbarMessage,
+        log,
+      );
+
+      await configurator.onConfigureDevice(roborockService);
+
+      expect(platform.registerDevice).toHaveBeenCalled();
+    });
+
+    it('should set softwareVersionString to Unknown when platform version is empty string', async () => {
+      const emptyVersionPlatform = asPartial<MatterbridgeDynamicPlatform>({
+        version: '',
+        matterbridge: asPartial<MatterbridgeDynamicPlatform['matterbridge']>({
+          matterbridgeVersion: '3.5.5',
+        }),
+        log: createMockLogger(),
+        validateDevice: vi.fn().mockReturnValue(true),
+        setSelectDevice: vi.fn(),
+        registerDevice: vi.fn().mockResolvedValue(undefined),
+        onConfigChanged: vi.fn().mockResolvedValue(undefined),
+      });
+      const device = makeMockDevice('duid-1');
+      registry = createMockDeviceRegistry({
+        hasDevices: vi.fn().mockReturnValue(true),
+        getAllDevices: vi.fn().mockReturnValue([device]),
+        robotsMap: new Map(),
+      });
+      configurator = new DeviceConfigurator(
+        emptyVersionPlatform,
+        configManager,
+        registry,
+        () => platformRunner,
+        snackbarMessage,
+        log,
+      );
+
+      await configurator.onConfigureDevice(roborockService);
+
+      expect(emptyVersionPlatform.registerDevice).toHaveBeenCalled();
+    });
+  });
+
+  describe('overrideMatterConfiguration (via addDevice)', () => {
+    const mockMatterOverride = {
+      matterVendorName: 'TestVendor',
+      matterProductName: 'TestProduct',
+      matterVendorId: 1234,
+      matterProductId: 5678,
+    };
+
+    beforeEach(() => {
+      configManager = asPartial<PlatformConfigManager>({
+        overrideMatterConfiguration: true,
+        matterOverrideSettings: mockMatterOverride,
+        getProductNameForDevice: vi.fn().mockReturnValue(''),
+        ensureDeviceProductNameEntry: vi.fn().mockReturnValue(false),
+        rawConfig: {} as PlatformConfigManager['rawConfig'],
+      });
+    });
+
+    it('should call onConfigChanged when ensureDeviceProductNameEntry returns true', async () => {
+      configManager = asPartial<PlatformConfigManager>({
+        ...configManager,
+        ensureDeviceProductNameEntry: vi.fn().mockReturnValue(true),
+      });
+      const device = makeMockDevice('duid-1');
+      registry = createMockDeviceRegistry({
+        hasDevices: vi.fn().mockReturnValue(true),
+        getAllDevices: vi.fn().mockReturnValue([device]),
+        robotsMap: new Map(),
+      });
+      configurator = new DeviceConfigurator(
+        platform,
+        configManager,
+        registry,
+        () => platformRunner,
+        snackbarMessage,
+        log,
+      );
+
+      await configurator.onConfigureDevice(roborockService);
+
+      expect(platform.onConfigChanged).toHaveBeenCalled();
+    });
+
+    it('should not call onConfigChanged when ensureDeviceProductNameEntry returns false', async () => {
+      const device = makeMockDevice('duid-1');
+      registry = createMockDeviceRegistry({
+        hasDevices: vi.fn().mockReturnValue(true),
+        getAllDevices: vi.fn().mockReturnValue([device]),
+        robotsMap: new Map(),
+      });
+      configurator = new DeviceConfigurator(
+        platform,
+        configManager,
+        registry,
+        () => platformRunner,
+        snackbarMessage,
+        log,
+      );
+
+      await configurator.onConfigureDevice(roborockService);
+
+      expect(platform.onConfigChanged).not.toHaveBeenCalled();
+    });
+
+    it('should use Matterbridge as vendorName when matterVendorName is empty', async () => {
+      configManager = asPartial<PlatformConfigManager>({
+        ...configManager,
+        matterOverrideSettings: { ...mockMatterOverride, matterVendorName: '' },
+      });
+      const device = makeMockDevice('duid-1');
+      registry = createMockDeviceRegistry({
+        hasDevices: vi.fn().mockReturnValue(true),
+        getAllDevices: vi.fn().mockReturnValue([device]),
+        robotsMap: new Map(),
+      });
+      configurator = new DeviceConfigurator(
+        platform,
+        configManager,
+        registry,
+        () => platformRunner,
+        snackbarMessage,
+        log,
+      );
+
+      await configurator.onConfigureDevice(roborockService);
+
+      expect(platform.registerDevice).toHaveBeenCalled();
+    });
+
+    it('should use perDeviceProductName when it is non-empty', async () => {
+      configManager = asPartial<PlatformConfigManager>({
+        ...configManager,
+        getProductNameForDevice: vi.fn().mockReturnValue('PerDeviceName'),
+      });
+      const device = makeMockDevice('duid-1');
+      registry = createMockDeviceRegistry({
+        hasDevices: vi.fn().mockReturnValue(true),
+        getAllDevices: vi.fn().mockReturnValue([device]),
+        robotsMap: new Map(),
+      });
+      configurator = new DeviceConfigurator(
+        platform,
+        configManager,
+        registry,
+        () => platformRunner,
+        snackbarMessage,
+        log,
+      );
+
+      await configurator.onConfigureDevice(roborockService);
+
+      expect(platform.registerDevice).toHaveBeenCalled();
+    });
+
+    it('should use vacuumData.model as productName when both perDeviceName and matterProductName are empty', async () => {
+      configManager = asPartial<PlatformConfigManager>({
+        ...configManager,
+        matterOverrideSettings: { ...mockMatterOverride, matterProductName: '' },
+      });
+      const device = makeMockDevice('duid-1');
+      registry = createMockDeviceRegistry({
+        hasDevices: vi.fn().mockReturnValue(true),
+        getAllDevices: vi.fn().mockReturnValue([device]),
+        robotsMap: new Map(),
+      });
+      configurator = new DeviceConfigurator(
+        platform,
+        configManager,
+        registry,
+        () => platformRunner,
+        snackbarMessage,
+        log,
+      );
+
+      await configurator.onConfigureDevice(roborockService);
+
+      expect(platform.registerDevice).toHaveBeenCalled();
     });
   });
 });

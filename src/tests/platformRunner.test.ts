@@ -1166,6 +1166,30 @@ describe('PlatformRunner.updateRobotWithPayload', () => {
     expect(startBurstSpy).not.toHaveBeenCalled();
     vi.useRealTimers();
   });
+
+  it('should skip Docked state update when device is still charging', () => {
+    vi.mocked(robot.getAttribute).mockReturnValue(RvcOperationalState.OperationalState.Charging);
+
+    const statusMessage = {
+      duid: 'test-duid',
+      status: OperationStatusCode.Idle,
+      inCleaning: false,
+      inReturning: false,
+      inFreshState: false,
+      isLocating: false,
+      isExploring: false,
+      inWarmup: false,
+    };
+    runner.updateRobotWithPayload({ type: NotifyMessageTypes.DeviceStatus, data: statusMessage });
+
+    expect(mockLogger.debug).toHaveBeenCalledWith('Device is still charging, skipping Docked state update');
+    expect(robot.updateAttribute).not.toHaveBeenCalledWith(
+      RvcOperationalState.Cluster.id,
+      'operationalState',
+      RvcOperationalState.OperationalState.Docked,
+      expect.anything(),
+    );
+  });
 });
 
 describe('PlatformRunner.startBurstPolling / stopBurstPolling', () => {
@@ -1300,5 +1324,30 @@ describe('PlatformRunner.startBurstPolling / stopBurstPolling', () => {
 
   it('stopAllBurstPolling is safe to call when no timers are active', () => {
     expect(() => runner.stopAllBurstPolling()).not.toThrow();
+  });
+
+  it('should return early when roborockService is undefined during burst polling', async () => {
+    platform.roborockService = undefined;
+    runner.startBurstPolling('duid');
+    await vi.advanceTimersByTimeAsync(10000);
+    expect(mockService.requestDeviceStatusOnce).not.toHaveBeenCalled();
+  });
+
+  it('should log error and continue when requestDeviceStatusOnce throws', async () => {
+    const mockLogger = platform.log as ReturnType<typeof createMockLogger>;
+    vi.mocked(mockService.requestDeviceStatusOnce).mockRejectedValueOnce(new Error('network failure'));
+
+    runner.startBurstPolling('duid');
+    await vi.advanceTimersByTimeAsync(10000);
+
+    expect(mockLogger.error).toHaveBeenCalledWith(expect.stringContaining('network failure'));
+  });
+
+  it('isDeviceIdle should return true when robot is not found in registry', async () => {
+    runner.startBurstPolling('unknown-duid');
+    await vi.advanceTimersByTimeAsync(10000);
+    // unknown-duid not in registry → isDeviceIdle returns true → stopBurstPolling called after first tick
+    await vi.advanceTimersByTimeAsync(10000);
+    expect(mockService.requestDeviceStatusOnce).toHaveBeenCalledTimes(1);
   });
 });

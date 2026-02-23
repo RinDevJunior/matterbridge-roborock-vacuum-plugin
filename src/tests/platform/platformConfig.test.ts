@@ -283,6 +283,21 @@ describe('PlatformConfigManager', () => {
       expect(manager.matterOverrideSettings).toBeDefined();
     });
 
+    it('should return default matterOverrideSettings when enabled+override but matterOverrideSettings is null', () => {
+      config.advancedFeature = {
+        enableAdvancedFeature: true,
+        settings: {
+          ...createDefaultAdvancedFeature().settings,
+          overrideMatterConfiguration: true,
+          matterOverrideSettings: null as unknown as ReturnType<
+            typeof createDefaultAdvancedFeature
+          >['settings']['matterOverrideSettings'],
+        },
+      };
+      manager = PlatformConfigManager.create(config, mockLogger);
+      expect(manager.matterOverrideSettings).toBeDefined();
+    });
+
     it('should return false for isClearStorageOnStartupEnabled when advanced feature is disabled', () => {
       config.advancedFeature = {
         enableAdvancedFeature: false,

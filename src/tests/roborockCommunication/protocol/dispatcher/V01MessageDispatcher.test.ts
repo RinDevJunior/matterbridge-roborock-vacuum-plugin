@@ -54,6 +54,26 @@ describe('V10MessageDispatcher', () => {
     });
   });
 
+  describe('getSerialNumber', () => {
+    it('should return serial_number from response when available', async () => {
+      client.get.mockResolvedValueOnce([{ serial_number: 'SN-123' }]);
+      const result = await dispatcher.getSerialNumber(duid);
+      expect(result).toBe('SN-123');
+    });
+
+    it('should return duid when response is empty array', async () => {
+      client.get.mockResolvedValueOnce([]);
+      const result = await dispatcher.getSerialNumber(duid);
+      expect(result).toBe(duid);
+    });
+
+    it('should return duid when response is undefined', async () => {
+      client.get.mockResolvedValueOnce(undefined);
+      const result = await dispatcher.getSerialNumber(duid);
+      expect(result).toBe(duid);
+    });
+  });
+
   describe('getDeviceStatus', () => {
     it('should call client.get and return DeviceStatus if response', async () => {
       client.get.mockResolvedValueOnce([{ foo: 'bar' }]);

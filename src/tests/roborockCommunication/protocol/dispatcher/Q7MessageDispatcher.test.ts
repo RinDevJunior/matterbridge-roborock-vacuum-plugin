@@ -55,6 +55,13 @@ describe('Q7MessageDispatcher', () => {
     });
   });
 
+  describe('getSerialNumber', () => {
+    it('should return the duid as serial number', async () => {
+      const result = await dispatcher.getSerialNumber(duid);
+      expect(result).toBe(duid);
+    });
+  });
+
   describe('getDeviceStatus', () => {
     it('should return undefined', async () => {
       const result = await dispatcher.getDeviceStatus(duid);
