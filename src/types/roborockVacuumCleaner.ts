@@ -47,7 +47,7 @@ export class RoborockVacuumCleaner extends RoboticVacuumCleaner {
 
     super(
       deviceConfig.deviceName,
-      device.duid,
+      device.sn ?? device.duid,
       deviceConfig.bridgeMode,
       deviceConfig.runModeConfigs[0].mode,
       deviceConfig.runModeConfigs,
@@ -174,7 +174,7 @@ export class RoborockVacuumCleaner extends RoboticVacuumCleaner {
     roborockService.setSupportedAreaIndexMap(device.duid, result.roomIndexMap);
 
     const supportedAreaAndRoutines = [...supportedAreas, ...routineAsRooms];
-    const deviceName = `${device.name}-${device.duid}`.replace(/\s+/g, '');
+    const deviceName = device.name;
 
     return {
       deviceName,

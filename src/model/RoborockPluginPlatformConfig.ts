@@ -43,11 +43,17 @@ export interface AdvancedFeatureSetting {
   matterOverrideSettings: MatterOverrideSettings;
 }
 
+export interface DeviceProductNameOverride {
+  serialNumber: string;
+  productName: string;
+}
+
 export interface MatterOverrideSettings {
   matterVendorName: string;
   matterVendorId: number;
   matterProductName: string;
   matterProductId: number;
+  deviceProductNames?: DeviceProductNameOverride[];
 }
 
 export interface CleanModeSettings {
@@ -108,6 +114,7 @@ export function createDefaultAdvancedFeature(): AdvancedFeatureConfiguration {
         matterVendorId: 65521,
         matterProductName: 'Robotic Vaccum Cleaner',
         matterProductId: 32768,
+        deviceProductNames: [],
       },
     },
   };

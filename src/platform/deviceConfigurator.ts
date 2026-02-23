@@ -8,12 +8,13 @@ import { PlatformConfigManager } from './platformConfigManager.js';
 import { DeviceRegistry } from './deviceRegistry.js';
 import { RoborockService } from '../services/roborockService.js';
 import { PlatformRunner } from '../platformRunner.js';
-import type { Device } from '../roborockCommunication/models/index.js';
+import type { Device, DeviceSpecs } from '../roborockCommunication/models/index.js';
 import { RoomMap } from '../core/application/models/index.js';
 import { HomeEntity } from '../core/domain/entities/Home.js';
 import { RoborockVacuumCleaner } from '../types/roborockVacuumCleaner.js';
 import { configureBehavior } from '../share/behaviorFactory.js';
 import { WssSendSnackbarMessage } from '../types/WssSendSnackbarMessage.js';
+import { MatterOverrideSettings } from '../model/RoborockPluginPlatformConfig.js';
 
 /**
  * Handles device configuration: local network setup, room mapping,
@@ -85,6 +86,11 @@ export class DeviceConfigurator {
       );
     }
 
+    // if vacuum does not response serial number in general response, try to get it via mqtt
+    if (!vacuum.serialNumber) {
+      vacuum.serialNumber = await roborockService.getSerialNumber(vacuum.duid);
+    }
+
     const { activeMapId, mapInfo, roomMap } = await RoomMap.fromMapInfo(vacuum, { roborockService, log: this.log });
     this.log.debug('Initializing - roomMap: ', debugStringify(roomMap));
 
@@ -114,47 +120,26 @@ export class DeviceConfigurator {
   }
 
   private async addDevice(rvc: RoborockVacuumCleaner): Promise<MatterbridgeEndpoint | undefined> {
-    if (!rvc.device.duid || !rvc.deviceName) {
+    if (!rvc.serialNumber || !rvc.deviceName) {
       this.log.warn('Cannot add device: missing rvc or deviceName');
       return undefined;
     }
-    this.platform.setSelectDevice(rvc.device.duid, rvc.deviceName, undefined, 'hub');
+    this.platform.setSelectDevice(rvc.serialNumber, rvc.deviceName, undefined, 'hub');
 
     const vacuumData = rvc.device.specs;
     const hardwareVersionString =
       vacuumData.firmwareVersion ?? rvc.device.fv ?? this.platform.matterbridge.matterbridgeVersion;
 
     if (this.platform.validateDevice(rvc.deviceName)) {
-      rvc.softwareVersion = parseInt(this.platform.version.replace(/\D/g, ''));
-      rvc.softwareVersionString = this.platform.version === '' ? 'Unknown' : this.platform.version;
-      rvc.hardwareVersion = parseInt(hardwareVersionString.replace(/\D/g, ''));
-      rvc.hardwareVersionString = hardwareVersionString;
-
-      rvc.softwareVersion = isValidNumber(rvc.softwareVersion, 0, UINT32_MAX) ? rvc.softwareVersion : undefined;
-      rvc.softwareVersionString = isValidString(rvc.softwareVersionString)
-        ? rvc.softwareVersionString.slice(0, 64)
-        : undefined;
-      rvc.hardwareVersion = isValidNumber(rvc.hardwareVersion, 0, UINT16_MAX) ? rvc.hardwareVersion : undefined;
-      rvc.hardwareVersionString = isValidString(rvc.hardwareVersionString)
-        ? rvc.hardwareVersionString.slice(0, 64)
-        : undefined;
+      this.applyVersionInfo(rvc, hardwareVersionString);
 
       if (this.configManager.overrideMatterConfiguration) {
         const customMatterConfiguration = this.configManager.matterOverrideSettings;
         this.platform.log.debug(`customMatterConfiguration: ${debugStringify(customMatterConfiguration)}`);
-
-        rvc.vendorName =
-          customMatterConfiguration.matterVendorName?.length > 0
-            ? customMatterConfiguration.matterVendorName
-            : 'Matterbridge';
-        rvc.productName =
-          customMatterConfiguration.matterProductName?.length > 0
-            ? customMatterConfiguration.matterProductName
-            : vacuumData.model;
-        rvc.vendorId = customMatterConfiguration.matterVendorId > 0 ? customMatterConfiguration.matterVendorId : 65521;
-        rvc.productId =
-          customMatterConfiguration.matterProductId > 0 ? customMatterConfiguration.matterProductId : 32768;
-        rvc.productUrl = 'https://github.com/RinDevJunior/matterbridge-roborock-vacuum-plugin';
+        const configChanged = this.overrideMatterConfiguration(rvc, vacuumData, customMatterConfiguration);
+        if (configChanged) {
+          await this.platform.onConfigChanged(this.configManager.rawConfig);
+        }
       }
 
       const options = rvc.getClusterServerOptions(BridgedDeviceBasicInformation.Cluster.id);
@@ -179,7 +164,7 @@ export class DeviceConfigurator {
         }
         rvc.createDefaultBridgedDeviceBasicInformationClusterServer(
           rvc.deviceName,
-          rvc.device.duid,
+          rvc.serialNumber,
           rvc.vendorId,
           rvc.vendorName,
           rvc.productName,
@@ -196,5 +181,46 @@ export class DeviceConfigurator {
     } else {
       return undefined;
     }
+  }
+
+  private applyVersionInfo(rvc: RoborockVacuumCleaner, hardwareVersionString: string): void {
+    rvc.softwareVersion = parseInt(this.platform.version.replace(/\D/g, ''));
+    rvc.softwareVersionString = this.platform.version === '' ? 'Unknown' : this.platform.version;
+    rvc.hardwareVersion = parseInt(hardwareVersionString.replace(/\D/g, ''));
+    rvc.hardwareVersionString = hardwareVersionString;
+
+    rvc.softwareVersion = isValidNumber(rvc.softwareVersion, 0, UINT32_MAX) ? rvc.softwareVersion : undefined;
+    rvc.softwareVersionString = isValidString(rvc.softwareVersionString)
+      ? rvc.softwareVersionString.slice(0, 64)
+      : undefined;
+    rvc.hardwareVersion = isValidNumber(rvc.hardwareVersion, 0, UINT16_MAX) ? rvc.hardwareVersion : undefined;
+    rvc.hardwareVersionString = isValidString(rvc.hardwareVersionString)
+      ? rvc.hardwareVersionString.slice(0, 64)
+      : undefined;
+  }
+
+  private overrideMatterConfiguration(
+    rvc: RoborockVacuumCleaner,
+    vacuumData: DeviceSpecs,
+    customMatterConfiguration: MatterOverrideSettings,
+  ): boolean {
+    rvc.vendorName =
+      customMatterConfiguration.matterVendorName?.length > 0
+        ? customMatterConfiguration.matterVendorName
+        : 'Matterbridge';
+
+    const perDeviceProductName = this.configManager.getProductNameForDevice(rvc.serialNumber ?? '');
+    rvc.productName =
+      perDeviceProductName && perDeviceProductName.length > 0
+        ? perDeviceProductName
+        : customMatterConfiguration.matterProductName?.length > 0
+          ? customMatterConfiguration.matterProductName
+          : vacuumData.model;
+
+    rvc.vendorId = customMatterConfiguration.matterVendorId > 0 ? customMatterConfiguration.matterVendorId : 65521;
+    rvc.productId = customMatterConfiguration.matterProductId > 0 ? customMatterConfiguration.matterProductId : 32768;
+    rvc.productUrl = 'https://github.com/RinDevJunior/matterbridge-roborock-vacuum-plugin';
+
+    return this.configManager.ensureDeviceProductNameEntry(rvc.serialNumber ?? '', vacuumData.model);
   }
 }

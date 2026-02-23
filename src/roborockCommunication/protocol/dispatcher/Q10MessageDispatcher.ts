@@ -37,6 +37,10 @@ export class Q10MessageDispatcher implements AbstractMessageDispatcher {
     return undefined;
   }
 
+  public async getSerialNumber(duid: string): Promise<string | undefined> {
+    return duid;
+  }
+
   public async getDeviceStatus(duid: string): Promise<DeviceStatus | undefined> {
     const request = new RequestMessage({ messageId: this.messageId, dps: { [Q10RequestCode.rpc_response]: 1 } });
     await this.client.get(duid, request);

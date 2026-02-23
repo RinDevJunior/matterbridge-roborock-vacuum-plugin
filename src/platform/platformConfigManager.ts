@@ -193,13 +193,34 @@ export class PlatformConfigManager {
     return defaultSettings;
   }
 
+  public getProductNameForDevice(serialNumber: string): string | undefined {
+    if (!this.isAdvancedFeatureEnabled || !this.overrideMatterConfiguration) {
+      return undefined;
+    }
+    const deviceProductNames = this.advancedFeatureSettings.matterOverrideSettings?.deviceProductNames ?? [];
+    return deviceProductNames.find((d) => d.serialNumber === serialNumber)?.productName;
+  }
+
+  public ensureDeviceProductNameEntry(serialNumber: string, defaultProductName: string): boolean {
+    if (!this.isAdvancedFeatureEnabled || !this.overrideMatterConfiguration) {
+      return false;
+    }
+    const settings = this.advancedFeatureSettings?.matterOverrideSettings;
+    if (!settings) return false;
+
+    settings.deviceProductNames ??= [];
+    if (settings.deviceProductNames.some((d) => d.serialNumber === serialNumber)) return false;
+
+    settings.deviceProductNames.push({ serialNumber, productName: defaultProductName });
+    return true;
+  }
+
   // ─── Device Filtering ───────────────────────────────────────────────────────
 
   public isDeviceAllowed(device: { duid?: string; deviceName?: string }): boolean {
     // If whitelist present, require match
     if (this.hasWhiteListConfig) {
-      const duid = device.duid ?? this.extractDuidFromDeviceName(device.deviceName);
-      const name = device.deviceName ?? '';
+      const { duid, deviceName: name = '' } = device;
 
       for (const entry of this.config.pluginConfiguration.whiteList) {
         if (this.matchesListEntry(entry, duid, name)) return true;
@@ -221,12 +242,5 @@ export class PlatformConfigManager {
     if (duid && entry.includes(duid)) return true;
     if (name && entry.trim() === name.trim()) return true;
     return false;
-  }
-
-  private extractDuidFromDeviceName(deviceName?: string): string | undefined {
-    if (!deviceName) return undefined;
-    const parts = deviceName.split('-');
-    if (parts.length >= 2) return parts[1].trim();
-    return undefined;
   }
 }

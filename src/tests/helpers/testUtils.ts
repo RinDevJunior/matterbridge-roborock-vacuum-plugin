@@ -205,6 +205,7 @@ export function createMockRoborockService(overrides: Partial<RoborockService> = 
     getSelectedAreas: vi.fn().mockReturnValue([]),
     getMapInfo: vi.fn().mockResolvedValue({ maps: [], allRooms: [] }),
     getRoomMap: vi.fn().mockResolvedValue(new Map()),
+    getSerialNumber: vi.fn().mockResolvedValue('mock-serial'),
   };
   return { ...base, ...overrides } as Partial<RoborockService> as RoborockService;
 }

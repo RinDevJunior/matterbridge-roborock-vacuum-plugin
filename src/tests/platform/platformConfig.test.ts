@@ -309,19 +309,177 @@ describe('PlatformConfigManager', () => {
       manager = PlatformConfigManager.create(config, mockLogger);
       expect(manager.isCustomCleanModeMappingEnabled).toBe(false);
     });
+
+    describe('getProductNameForDevice', () => {
+      it('should return undefined when advanced feature is disabled', () => {
+        config.advancedFeature = {
+          enableAdvancedFeature: false,
+          settings: {
+            ...createDefaultAdvancedFeature().settings,
+            overrideMatterConfiguration: true,
+            matterOverrideSettings: {
+              ...createDefaultAdvancedFeature().settings.matterOverrideSettings,
+              deviceProductNames: [{ serialNumber: 'SN123', productName: 'My Vacuum' }],
+            },
+          },
+        };
+        manager = PlatformConfigManager.create(config, mockLogger);
+        expect(manager.getProductNameForDevice('SN123')).toBeUndefined();
+      });
+
+      it('should return undefined when overrideMatterConfiguration is false', () => {
+        config.advancedFeature = {
+          enableAdvancedFeature: true,
+          settings: {
+            ...createDefaultAdvancedFeature().settings,
+            overrideMatterConfiguration: false,
+            matterOverrideSettings: {
+              ...createDefaultAdvancedFeature().settings.matterOverrideSettings,
+              deviceProductNames: [{ serialNumber: 'SN123', productName: 'My Vacuum' }],
+            },
+          },
+        };
+        manager = PlatformConfigManager.create(config, mockLogger);
+        expect(manager.getProductNameForDevice('SN123')).toBeUndefined();
+      });
+
+      it('should return undefined when serial number does not match', () => {
+        config.advancedFeature = {
+          enableAdvancedFeature: true,
+          settings: {
+            ...createDefaultAdvancedFeature().settings,
+            overrideMatterConfiguration: true,
+            matterOverrideSettings: {
+              ...createDefaultAdvancedFeature().settings.matterOverrideSettings,
+              deviceProductNames: [{ serialNumber: 'SN123', productName: 'My Vacuum' }],
+            },
+          },
+        };
+        manager = PlatformConfigManager.create(config, mockLogger);
+        expect(manager.getProductNameForDevice('SN999')).toBeUndefined();
+      });
+
+      it('should return per-device product name when serial number matches', () => {
+        config.advancedFeature = {
+          enableAdvancedFeature: true,
+          settings: {
+            ...createDefaultAdvancedFeature().settings,
+            overrideMatterConfiguration: true,
+            matterOverrideSettings: {
+              ...createDefaultAdvancedFeature().settings.matterOverrideSettings,
+              deviceProductNames: [
+                { serialNumber: 'SN123', productName: 'Living Room Vacuum' },
+                { serialNumber: 'SN456', productName: 'Bedroom Vacuum' },
+              ],
+            },
+          },
+        };
+        manager = PlatformConfigManager.create(config, mockLogger);
+        expect(manager.getProductNameForDevice('SN123')).toBe('Living Room Vacuum');
+        expect(manager.getProductNameForDevice('SN456')).toBe('Bedroom Vacuum');
+      });
+
+      it('should return undefined when deviceProductNames is empty', () => {
+        config.advancedFeature = {
+          enableAdvancedFeature: true,
+          settings: {
+            ...createDefaultAdvancedFeature().settings,
+            overrideMatterConfiguration: true,
+            matterOverrideSettings: {
+              ...createDefaultAdvancedFeature().settings.matterOverrideSettings,
+              deviceProductNames: [],
+            },
+          },
+        };
+        manager = PlatformConfigManager.create(config, mockLogger);
+        expect(manager.getProductNameForDevice('SN123')).toBeUndefined();
+      });
+
+      it('should return undefined when deviceProductNames is not set', () => {
+        config.advancedFeature = {
+          enableAdvancedFeature: true,
+          settings: {
+            ...createDefaultAdvancedFeature().settings,
+            overrideMatterConfiguration: true,
+            matterOverrideSettings: {
+              matterVendorName: 'Matterbridge',
+              matterVendorId: 65521,
+              matterProductName: 'Default Vacuum',
+              matterProductId: 32768,
+            },
+          },
+        };
+        manager = PlatformConfigManager.create(config, mockLogger);
+        expect(manager.getProductNameForDevice('SN123')).toBeUndefined();
+      });
+    });
+
+    describe('ensureDeviceProductNameEntry', () => {
+      beforeEach(() => {
+        config.advancedFeature = {
+          enableAdvancedFeature: true,
+          settings: {
+            ...createDefaultAdvancedFeature().settings,
+            overrideMatterConfiguration: true,
+            matterOverrideSettings: {
+              ...createDefaultAdvancedFeature().settings.matterOverrideSettings,
+              deviceProductNames: [],
+            },
+          },
+        };
+        manager = PlatformConfigManager.create(config, mockLogger);
+      });
+
+      it('should return false when advanced feature is disabled', () => {
+        config.advancedFeature.enableAdvancedFeature = false;
+        manager = PlatformConfigManager.create(config, mockLogger);
+        expect(manager.ensureDeviceProductNameEntry('SN123', 'Vacuum Model')).toBe(false);
+      });
+
+      it('should return false when overrideMatterConfiguration is false', () => {
+        config.advancedFeature.settings.overrideMatterConfiguration = false;
+        manager = PlatformConfigManager.create(config, mockLogger);
+        expect(manager.ensureDeviceProductNameEntry('SN123', 'Vacuum Model')).toBe(false);
+      });
+
+      it('should add entry and return true when serial number not present', () => {
+        const result = manager.ensureDeviceProductNameEntry('SN123', 'Vacuum Model');
+        expect(result).toBe(true);
+        expect(manager.getProductNameForDevice('SN123')).toBe('Vacuum Model');
+      });
+
+      it('should return false and not duplicate when entry already exists', () => {
+        manager.ensureDeviceProductNameEntry('SN123', 'Vacuum Model');
+        const result = manager.ensureDeviceProductNameEntry('SN123', 'Other Name');
+        expect(result).toBe(false);
+        expect(manager.getProductNameForDevice('SN123')).toBe('Vacuum Model');
+      });
+
+      it('should add multiple entries for different serial numbers', () => {
+        manager.ensureDeviceProductNameEntry('SN123', 'Living Room');
+        manager.ensureDeviceProductNameEntry('SN456', 'Bedroom');
+        expect(manager.getProductNameForDevice('SN123')).toBe('Living Room');
+        expect(manager.getProductNameForDevice('SN456')).toBe('Bedroom');
+      });
+    });
   });
 
   describe('device filtering', () => {
     it('should allow device if whitelist is empty', () => {
       expect(manager.isDeviceAllowed({ duid: 'abc', deviceName: 'dev1' })).toBe(true);
     });
-    it('should allow device if whitelisted', () => {
-      config.pluginConfiguration.whiteList = ['dev1-abc'];
+    it('should allow device if whitelisted by duid', () => {
+      config.pluginConfiguration.whiteList = ['abc'];
+      manager = PlatformConfigManager.create(config, mockLogger);
+      expect(manager.isDeviceAllowed({ duid: 'abc', deviceName: 'dev1' })).toBe(true);
+    });
+    it('should allow device if whitelisted by name', () => {
+      config.pluginConfiguration.whiteList = ['dev1'];
       manager = PlatformConfigManager.create(config, mockLogger);
       expect(manager.isDeviceAllowed({ duid: 'abc', deviceName: 'dev1' })).toBe(true);
     });
     it('should deny device if not in whitelist', () => {
-      config.pluginConfiguration.whiteList = ['dev2-abc'];
+      config.pluginConfiguration.whiteList = ['dev2'];
       manager = PlatformConfigManager.create(config, mockLogger);
       expect(manager.isDeviceAllowed({ duid: 'abcd', deviceName: 'dev1' })).toBe(false);
     });
@@ -333,10 +491,6 @@ describe('PlatformConfigManager', () => {
       expect(manager['matchesListEntry']('abc', 'abc', 'dev1')).toBe(true);
       expect(manager['matchesListEntry']('dev1', 'abc', 'dev1')).toBe(true);
       expect(manager['matchesListEntry']('other', 'abc', 'dev1')).toBe(false);
-    });
-    it('should extract duid from device name', () => {
-      expect(manager['extractDuidFromDeviceName']('name - duid123')).toBe('duid123');
-      expect(manager['extractDuidFromDeviceName']('single')).toBeUndefined();
     });
   });
 });

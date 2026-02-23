@@ -50,6 +50,10 @@ export class Q7MessageDispatcher implements AbstractMessageDispatcher {
     return undefined;
   }
 
+  public async getSerialNumber(duid: string): Promise<string | undefined> {
+    return duid;
+  }
+
   public async getDeviceStatus(duid: string): Promise<DeviceStatus | undefined> {
     const request = new RequestMessage({
       dps: this.createDps(Q7RequestMethod.get_prop, {

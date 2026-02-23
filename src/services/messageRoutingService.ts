@@ -40,6 +40,11 @@ export class MessageRoutingService {
     return this.getMessageDispatcher(duid).getRoomMap(duid, activeMap);
   }
 
+  public async getSerialNumber(duid: string): Promise<string> {
+    const sn = await this.getMessageDispatcher(duid).getSerialNumber(duid);
+    return sn ?? duid;
+  }
+
   /** Get current cleaning mode settings. */
   public async getCleanModeData(duid: string): Promise<CleanModeSetting> {
     this.logger.notice('MessageRoutingService - getCleanModeData');

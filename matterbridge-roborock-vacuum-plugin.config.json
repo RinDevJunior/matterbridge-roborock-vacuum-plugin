@@ -51,7 +51,8 @@
         "matterVendorName": "Matterbridge",
         "matterVendorId": 65521,
         "matterProductName": "Robotic Vaccum Cleaner",
-        "matterProductId": 32768
+        "matterProductId": 32768,
+        "deviceProductNames": []
       }
     }
   }

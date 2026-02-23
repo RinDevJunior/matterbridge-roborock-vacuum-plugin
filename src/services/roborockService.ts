@@ -140,6 +140,10 @@ export class RoborockService {
     return this.deviceService.listDevices();
   }
 
+  public async getSerialNumber(duid: string): Promise<string> {
+    return this.messageRoutingService.getSerialNumber(duid);
+  }
+
   /** Get home data for periodic updates. */
   public async getHomeDataForUpdating(homeid: number): Promise<Home | undefined> {
     return this.deviceService.getHomeDataForUpdating(homeid);

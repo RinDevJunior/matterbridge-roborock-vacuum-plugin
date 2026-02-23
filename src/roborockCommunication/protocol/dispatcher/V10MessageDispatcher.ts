@@ -20,6 +20,12 @@ export class V10MessageDispatcher implements AbstractMessageDispatcher {
     return await this.client.get(duid, request);
   }
 
+  public async getSerialNumber(duid: string): Promise<string | undefined> {
+    const request = new RequestMessage({ method: 'get_serial_number' });
+    const response = await this.client.get<{ serial_number: string }[]>(duid, request);
+    return response && response.length > 0 ? response[0].serial_number : duid;
+  }
+
   public async getDeviceStatus(duid: string): Promise<DeviceStatus | undefined> {
     const request = new RequestMessage({ method: 'get_prop', params: ['get_status'] });
     const response = await this.client.get<CloudMessageResult[]>(duid, request);

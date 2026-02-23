@@ -386,7 +386,7 @@
                         "default": 65521
                       },
                       "matterProductName": {
-                        "title": "Product Name",
+                        "title": "Default Model Name in Apple Home (all devices)",
                         "type": "string",
                         "default": "Robotic Vaccum Cleaner",
                         "maxLength": 32
@@ -395,6 +395,27 @@
                         "title": "Product Id",
                         "type": "number",
                         "default": 32768
+                      },
+                      "deviceProductNames": {
+                        "title": "Per-Device Model Name (Apple Home) - auto-populated on first run",
+                        "description": "Shown as 'Model' in Apple Home. Auto-populated with default values on first run. Edit each entry to customise the name per device. Takes priority over the Default Model Name above.",
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "serialNumber": {
+                              "title": "Serial Number",
+                              "description": "Device serial number (sn) or duid",
+                              "type": "string"
+                            },
+                            "productName": {
+                              "title": "Model Name (shown in Apple Home)",
+                              "type": "string",
+                              "maxLength": 32
+                            }
+                          },
+                          "required": ["serialNumber", "productName"]
+                        }
                       }
                     }
                   }

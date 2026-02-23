@@ -38,10 +38,11 @@ vi.mock('../../services/roborockService.js', () => ({
   }),
 }));
 
-function makeDevice(duid: string, model: DeviceModel | string, name = 'TestVac'): Device {
+function makeDevice(duid: string, model: DeviceModel | string, name = 'TestVac', serialNumber = '123'): Device {
   return asPartial<Device>({
     duid,
     name,
+    serialNumber,
     specs: asPartial<DeviceSpecs>({ model: model as DeviceModel }),
   });
 }

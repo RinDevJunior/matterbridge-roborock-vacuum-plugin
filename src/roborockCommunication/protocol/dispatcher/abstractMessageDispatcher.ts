@@ -28,4 +28,5 @@ export interface AbstractMessageDispatcher {
   getHomeMap(duid: string): Promise<MapRoomResponse>;
   getMapInfo(duid: string): Promise<MapInfo>;
   getRoomMap(duid: string, activeMap: number): Promise<RawRoomMappingData>;
+  getSerialNumber(duid: string): Promise<string | undefined>;
 }
