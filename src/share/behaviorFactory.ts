@@ -22,11 +22,21 @@ export function configureBehavior(
   cleanModeSettings: CleanModeSettings | undefined,
   forceRunAtDefault: boolean,
   logger: AnsiLogger,
+  onActionTriggered: () => void,
 ): BehaviorFactoryResult {
   const modelKey = forceRunAtDefault ? '' : (model as string);
   const config = buildBehaviorConfig(modelKey);
   const deviceHandler = new BehaviorDeviceGeneric<DeviceEndpointCommands>(logger);
-  setCommandHandler(duid, deviceHandler, logger, roborockService, enableCleanModeMapping, cleanModeSettings, config);
+  setCommandHandler(
+    duid,
+    deviceHandler,
+    logger,
+    roborockService,
+    enableCleanModeMapping,
+    cleanModeSettings,
+    config,
+    onActionTriggered,
+  );
   return deviceHandler;
 }
 
@@ -38,6 +48,7 @@ function setCommandHandler(
   enableCleanModeMapping: boolean,
   cleanModeSettings: CleanModeSettings | undefined,
   config: BehaviorConfig,
+  onActionTriggered: () => void,
 ): void {
   const runModeMap = getRunModeDisplayMap(config.runModeConfigs);
   handler.setCommandHandler(CommandNames.CHANGE_TO_MODE, async (newMode: number) => {
@@ -51,7 +62,8 @@ function setCommandHandler(
       behaviorName: config.name,
     };
     await config.registry.handle(duid, newMode, activity, context);
+    onActionTriggered();
   });
 
-  registerCommonCommands(duid, handler, logger, roborockService, config.name);
+  registerCommonCommands(duid, handler, logger, roborockService, config.name, onActionTriggered);
 }

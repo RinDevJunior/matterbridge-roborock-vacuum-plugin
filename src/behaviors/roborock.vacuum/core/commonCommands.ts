@@ -8,6 +8,7 @@ export function registerCommonCommands(
   logger: AnsiLogger,
   roborockService: RoborockService,
   behaviorName: string,
+  onActionTriggered: () => void,
 ): void {
   handler.setCommandHandler(CommandNames.SELECT_AREAS, async (newAreas: number[] | undefined) => {
     logger.notice(`${behaviorName}-selectAreas: ${newAreas}`);
@@ -22,11 +23,13 @@ export function registerCommonCommands(
   handler.setCommandHandler(CommandNames.RESUME, async () => {
     logger.notice(`${behaviorName}-Resume`);
     await roborockService.resumeClean(duid);
+    onActionTriggered();
   });
 
   handler.setCommandHandler(CommandNames.GO_HOME, async () => {
     logger.notice(`${behaviorName}-GoHome`);
     await roborockService.stopAndGoHome(duid);
+    onActionTriggered();
   });
 
   handler.setCommandHandler(CommandNames.IDENTIFY, async () => {

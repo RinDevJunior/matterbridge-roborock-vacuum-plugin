@@ -47,6 +47,17 @@ export class PollingService {
     }, this.refreshInterval * LOCAL_REFRESH_INTERVAL_MULTIPLIER);
   }
 
+  /** Trigger a one-shot local status request without affecting the recurring interval. */
+  async requestStatusOnce(duid: string): Promise<void> {
+    const messageDispatcher = this.messageRoutingService.getMessageDispatcher(duid);
+    if (!messageDispatcher) return;
+    try {
+      await messageDispatcher.getDeviceStatus(duid);
+    } catch (error) {
+      this.logger.error('Failed to get device status:', error);
+    }
+  }
+
   /** Stop all polling intervals. */
   stopPolling(): void {
     this.stopLocalPolling();

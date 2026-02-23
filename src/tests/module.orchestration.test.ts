@@ -320,7 +320,10 @@ describe('RoborockMatterbridgePlatform - orchestration', () => {
 
     it('should clear polling interval if it exists', async () => {
       platform.state.setStartupCompleted(true);
-      platform.platformRunner = asPartial<PlatformRunner>({ requestHomeData: vi.fn().mockResolvedValue(undefined) });
+      platform.platformRunner = asPartial<PlatformRunner>({
+        requestHomeData: vi.fn().mockResolvedValue(undefined),
+        stopAllBurstPolling: vi.fn(),
+      });
 
       await platform.onConfigure();
       await platform.onShutdown('test');

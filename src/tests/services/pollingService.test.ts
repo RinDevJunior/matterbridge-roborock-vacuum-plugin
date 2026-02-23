@@ -151,6 +151,39 @@ describe('PollingService', () => {
     });
   });
 
+  describe('requestStatusOnce', () => {
+    it('should call getDeviceStatus for the given duid', async () => {
+      await service.requestStatusOnce(mockDevice.duid);
+      expect(mockMessageDispatcher.getDeviceStatus).toHaveBeenCalledWith(mockDevice.duid);
+    });
+
+    it('should return early when no dispatcher is found', async () => {
+      vi.mocked(mockMessageRoutingService.getMessageDispatcher).mockReturnValue(
+        asType<AbstractMessageDispatcher>(undefined),
+      );
+      await service.requestStatusOnce(mockDevice.duid);
+      expect(mockMessageDispatcher.getDeviceStatus).not.toHaveBeenCalled();
+    });
+
+    it('should log error and not throw when getDeviceStatus fails', async () => {
+      const testError = new Error('Network timeout');
+      vi.mocked(mockMessageDispatcher.getDeviceStatus).mockRejectedValue(testError);
+      await expect(service.requestStatusOnce(mockDevice.duid)).resolves.not.toThrow();
+      expect(mockLogger.error).toHaveBeenCalledWith('Failed to get device status:', testError);
+    });
+
+    it('should not affect the recurring polling interval', async () => {
+      const mockCallback = vi.fn();
+      service.setDeviceNotify(mockCallback);
+      service.activateDeviceNotifyOverLocal(mockDevice);
+      const intervalBefore = service['localRequestDeviceStatusInterval'];
+
+      await service.requestStatusOnce(mockDevice.duid);
+
+      expect(service['localRequestDeviceStatusInterval']).toBe(intervalBefore);
+    });
+  });
+
   describe('stopPolling', () => {
     it('should clear the polling interval', () => {
       const mockCallback = vi.fn();

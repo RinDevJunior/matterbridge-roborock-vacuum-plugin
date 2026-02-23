@@ -80,3 +80,8 @@ export const FAILURE_THRESHOLD = 5;
  * Backoff delay after consecutive failures (30 minutes).
  */
 export const BACKOFF_DELAY_MS = 30 * 60 * 1000;
+
+/**
+ * Polling interval during burst mode after a vacuum command is triggered (10 seconds).
+ */
+export const BURST_POLLING_INTERVAL_MS = 10000;

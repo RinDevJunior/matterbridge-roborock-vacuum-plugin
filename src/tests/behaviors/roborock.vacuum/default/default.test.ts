@@ -53,6 +53,7 @@ describe('setDefaultCommandHandler', () => {
       cleanModeSettings,
       false,
       logger,
+      vi.fn(),
     );
     await handler.executeCommand('changeToMode', 2); // 2 = Cleaning
     expect(roborockService.startClean).toHaveBeenCalledWith(duid);
@@ -67,6 +68,7 @@ describe('setDefaultCommandHandler', () => {
       cleanModeSettings,
       false,
       logger,
+      vi.fn(),
     );
     await handler.executeCommand('changeToMode', 31); // 31 = Mop Default
     expect(roborockService.changeCleanMode).toHaveBeenCalledWith(duid, {
@@ -87,6 +89,7 @@ describe('setDefaultCommandHandler', () => {
       cleanModeSettings,
       false,
       logger,
+      vi.fn(),
     );
     await handler.executeCommand('changeToMode', 66); // 66 = Vacuum Default
     expect(roborockService.changeCleanMode).toHaveBeenCalledWith(duid, {
@@ -107,6 +110,7 @@ describe('setDefaultCommandHandler', () => {
       cleanModeSettings,
       false,
       logger,
+      vi.fn(),
     );
     await handler.executeCommand('changeToMode', 5); // 5 = Vac & Mop Default
     expect(roborockService.changeCleanMode).toHaveBeenCalledWith(duid, {
@@ -127,6 +131,7 @@ describe('setDefaultCommandHandler', () => {
       cleanModeSettings,
       false,
       logger,
+      vi.fn(),
     );
     await handler.executeCommand('selectAreas', [1, 2, 3]);
     expect(roborockService.setSelectedAreas).toHaveBeenCalledWith(duid, [1, 2, 3]);
@@ -141,6 +146,7 @@ describe('setDefaultCommandHandler', () => {
       cleanModeSettings,
       false,
       logger,
+      vi.fn(),
     );
     await handler.executeCommand('pause');
     expect(roborockService.pauseClean).toHaveBeenCalledWith(duid);
@@ -155,6 +161,7 @@ describe('setDefaultCommandHandler', () => {
       cleanModeSettings,
       false,
       logger,
+      vi.fn(),
     );
     await handler.executeCommand('resume');
     expect(roborockService.resumeClean).toHaveBeenCalledWith(duid);
@@ -169,6 +176,7 @@ describe('setDefaultCommandHandler', () => {
       cleanModeSettings,
       false,
       logger,
+      vi.fn(),
     );
     await handler.executeCommand('goHome');
     expect(roborockService.stopAndGoHome).toHaveBeenCalledWith(duid);
@@ -183,6 +191,7 @@ describe('setDefaultCommandHandler', () => {
       cleanModeSettings,
       false,
       logger,
+      vi.fn(),
     );
     await handler.executeCommand('identify', 1);
     expect(roborockService.playSoundToLocate).toHaveBeenCalledWith(duid);
@@ -197,6 +206,7 @@ describe('setDefaultCommandHandler', () => {
       cleanModeSettings,
       false,
       logger,
+      vi.fn(),
     );
     await handler.executeCommand('changeToMode', 99); // 99 = Go Vacation
     expect(roborockService.stopAndGoHome).toHaveBeenCalledWith(duid);
@@ -211,6 +221,7 @@ describe('setDefaultCommandHandler', () => {
       cleanModeSettings,
       false,
       logger,
+      vi.fn(),
     );
     await handler.executeCommand('changeToMode', 6); // 6 = Vacuum & Mop: Quick
     expect(roborockService.changeCleanMode).toHaveBeenCalled();
@@ -225,6 +236,7 @@ describe('setDefaultCommandHandler', () => {
       cleanModeSettings,
       false,
       logger,
+      vi.fn(),
     );
     await handler.executeCommand('changeToMode', 67); // 67 = Vacuum: Max
     expect(roborockService.changeCleanMode).toHaveBeenCalled();
@@ -239,6 +251,7 @@ describe('setDefaultCommandHandler', () => {
       cleanModeSettings,
       false,
       logger,
+      vi.fn(),
     );
     await handler.executeCommand('changeToMode', 33); // 33 = Mop: Min
     expect(roborockService.changeCleanMode).toHaveBeenCalled();
@@ -253,6 +266,7 @@ describe('setDefaultCommandHandler', () => {
       cleanModeSettings,
       false,
       logger,
+      vi.fn(),
     );
     await handler.executeCommand('changeToMode', 9999); // Unknown mode
     expect(logger.notice).toHaveBeenCalledWith('DefaultBehavior-changeToMode-Unknown: ', 9999);
@@ -267,6 +281,7 @@ describe('setDefaultCommandHandler', () => {
       undefined,
       false,
       logger,
+      vi.fn(),
     );
     await handler.executeCommand('changeToMode', 31); // 31 = Mop Default
     expect(roborockService.changeCleanMode).toHaveBeenCalled();
@@ -281,6 +296,7 @@ describe('setDefaultCommandHandler', () => {
       cleanModeSettings,
       false,
       logger,
+      vi.fn(),
     );
     await handler.executeCommand('changeToMode', 68); // 68 = Vacuum: Quiet (Min in list)
     expect(roborockService.changeCleanMode).toHaveBeenCalled();
@@ -295,6 +311,7 @@ describe('setDefaultCommandHandler', () => {
       cleanModeSettings,
       false,
       logger,
+      vi.fn(),
     );
     await handler.executeCommand('changeToMode', 35); // 35 = Mop: DeepClean
     expect(roborockService.changeCleanMode).toHaveBeenCalled();
@@ -309,6 +326,7 @@ describe('setDefaultCommandHandler', () => {
       cleanModeSettings,
       false,
       logger,
+      vi.fn(),
     );
     await handler.executeCommand('changeToMode', 7); // 7 = Vacuum & Mop: Max
     expect(roborockService.changeCleanMode).toHaveBeenCalled();
@@ -323,6 +341,7 @@ describe('setDefaultCommandHandler', () => {
       cleanModeSettings,
       false,
       logger,
+      vi.fn(),
     );
     await handler.executeCommand('changeToMode', 8); // 8 = Vacuum & Mop: Min
     expect(roborockService.changeCleanMode).toHaveBeenCalled();
@@ -337,6 +356,7 @@ describe('setDefaultCommandHandler', () => {
       cleanModeSettings,
       false,
       logger,
+      vi.fn(),
     );
     await handler.executeCommand('changeToMode', 9); // 9 = Vacuum & Mop: Quiet
     expect(roborockService.changeCleanMode).toHaveBeenCalled();
@@ -351,6 +371,7 @@ describe('setDefaultCommandHandler', () => {
       cleanModeSettings,
       false,
       logger,
+      vi.fn(),
     );
     await handler.executeCommand('changeToMode', 69); // 69 = Vacuum: Quick
     expect(roborockService.changeCleanMode).toHaveBeenCalled();
@@ -365,6 +386,7 @@ describe('setDefaultCommandHandler', () => {
       cleanModeSettings,
       false,
       logger,
+      vi.fn(),
     );
     await handler.executeCommand('changeToMode', 34); // 34 = Mop: Quick
     expect(roborockService.changeCleanMode).toHaveBeenCalled();
@@ -379,6 +401,7 @@ describe('setDefaultCommandHandler', () => {
       cleanModeSettings,
       false,
       logger,
+      vi.fn(),
     );
     await handler.executeCommand('changeToMode', 10); // 10 = Vacuum & Mop: Energy Saving
     expect(roborockService.changeCleanMode).toHaveBeenCalled();
@@ -393,6 +416,7 @@ describe('setDefaultCommandHandler', () => {
       cleanModeSettings,
       false,
       logger,
+      vi.fn(),
     );
     await handler.executeCommand('changeToMode', 11); // 11 = Vacuum & Mop: Vac Follow by Mop
     expect(logger.notice).toHaveBeenCalledWith('DefaultBehavior-changeToMode-Unknown: ', 11);
@@ -407,6 +431,7 @@ describe('setDefaultCommandHandler', () => {
       cleanModeSettings,
       false,
       logger,
+      vi.fn(),
     );
     await handler.executeCommand('changeToMode', 32); // 32 = Mop: Max
     expect(roborockService.changeCleanMode).toHaveBeenCalled();

@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { PlatformRunner } from '../platformRunner.js';
 import { NotifyMessageTypes } from '../types/notifyMessageTypes.js';
 import { RoborockMatterbridgePlatform } from '../module.js';
@@ -47,15 +47,18 @@ vi.mock('../share/stateResolver.js', () => ({
   resolveDeviceState: vi.fn((message) => {
     const { status } = message;
     if (status === OperationStatusCode.Cleaning) {
-      return { runMode: 1, operationalState: 1 }; // Cleaning + Running
+      return { runMode: 16385, operationalState: 1 }; // Cleaning (ModeTag=16385) + Running
+    }
+    if (status === OperationStatusCode.Mapping) {
+      return { runMode: 16386, operationalState: 1 }; // Mapping (ModeTag=16386) + Running
     }
     if (status === OperationStatusCode.Idle) {
-      return { runMode: 0, operationalState: 66 }; // Idle + Docked
+      return { runMode: 16384, operationalState: 66 }; // Idle (ModeTag=16384) + Docked
     }
     if (status === OperationStatusCode.Unknown) {
-      return { runMode: 0, operationalState: 66 }; // Idle + Docked
+      return { runMode: 16384, operationalState: 66 }; // Idle + Docked
     }
-    return { runMode: 0, operationalState: 66 }; // Default: Idle + Docked
+    return { runMode: 16384, operationalState: 66 }; // Default: Idle + Docked
   }),
 }));
 
@@ -1085,5 +1088,217 @@ describe('PlatformRunner.updateRobotWithPayload', () => {
       RvcOperationalState.OperationalState.Docked,
       mockLogger,
     );
+  });
+
+  it('should auto-start burst polling when device enters Cleaning state', () => {
+    vi.useFakeTimers();
+    const startBurstSpy = vi.spyOn(runner, 'startBurstPolling');
+    const statusMessage = {
+      duid: 'test-duid',
+      status: OperationStatusCode.Cleaning,
+      inCleaning: true,
+      inReturning: false,
+      inFreshState: false,
+      isLocating: false,
+      isExploring: false,
+      inWarmup: false,
+    };
+    runner.updateRobotWithPayload({ type: NotifyMessageTypes.DeviceStatus, data: statusMessage });
+
+    expect(startBurstSpy).toHaveBeenCalledWith('test-duid');
+    vi.useRealTimers();
+  });
+
+  it('should auto-start burst polling when device enters Mapping state', () => {
+    vi.useFakeTimers();
+    const startBurstSpy = vi.spyOn(runner, 'startBurstPolling');
+    const statusMessage = {
+      duid: 'test-duid',
+      status: OperationStatusCode.Mapping,
+      inCleaning: false,
+      inReturning: false,
+      inFreshState: false,
+      isLocating: false,
+      isExploring: true,
+      inWarmup: false,
+    };
+    runner.updateRobotWithPayload({ type: NotifyMessageTypes.DeviceStatus, data: statusMessage });
+
+    expect(startBurstSpy).toHaveBeenCalledWith('test-duid');
+    vi.useRealTimers();
+  });
+
+  it('should not auto-start burst polling when device is in Idle state', () => {
+    const startBurstSpy = vi.spyOn(runner, 'startBurstPolling');
+    const statusMessage = {
+      duid: 'test-duid',
+      status: OperationStatusCode.Charging,
+      inCleaning: false,
+      inReturning: false,
+      inFreshState: false,
+      isLocating: false,
+      isExploring: false,
+      inWarmup: false,
+    };
+    runner.updateRobotWithPayload({ type: NotifyMessageTypes.DeviceStatus, data: statusMessage });
+
+    expect(startBurstSpy).not.toHaveBeenCalled();
+  });
+
+  it('should not start a second burst polling if already active for the device', () => {
+    vi.useFakeTimers();
+    const startBurstSpy = vi.spyOn(runner, 'startBurstPolling');
+    runner.startBurstPolling('test-duid'); // manually start first
+    startBurstSpy.mockClear();
+
+    const statusMessage = {
+      duid: 'test-duid',
+      status: OperationStatusCode.Cleaning,
+      inCleaning: true,
+      inReturning: false,
+      inFreshState: false,
+      isLocating: false,
+      isExploring: false,
+      inWarmup: false,
+    };
+    runner.updateRobotWithPayload({ type: NotifyMessageTypes.DeviceStatus, data: statusMessage });
+
+    expect(startBurstSpy).not.toHaveBeenCalled();
+    vi.useRealTimers();
+  });
+});
+
+describe('PlatformRunner.startBurstPolling / stopBurstPolling', () => {
+  let platform: RoborockMatterbridgePlatform;
+  let runner: PlatformRunner;
+  let robot: RoborockVacuumCleaner;
+  let mockService: ReturnType<typeof createMockRoborockService>;
+
+  beforeEach(() => {
+    vi.useFakeTimers();
+
+    robot = asPartial<RoborockVacuumCleaner>({
+      device: asPartial<Device>({ duid: 'duid', specs: asPartial<DeviceSpecs>({ hasRealTimeConnection: false }) }),
+      getAttribute: vi.fn().mockReturnValue(RvcOperationalState.OperationalState.Running),
+    });
+    mockService = createMockRoborockService({
+      getHomeDataForUpdating: vi.fn().mockResolvedValue({ devices: [] }),
+    });
+    platform = asPartial<RoborockMatterbridgePlatform>({
+      registry: createMockDeviceRegistry({}, new Map([['duid', robot]])),
+      rrHomeId: 1,
+      roborockService: mockService,
+      log: createMockLogger(),
+    });
+    runner = new PlatformRunner(platform);
+    runner.activateHandlerFunctions();
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it('should call requestDeviceStatusOnce on each burst interval', async () => {
+    runner.startBurstPolling('duid');
+    await vi.advanceTimersByTimeAsync(10000);
+    expect(mockService.requestDeviceStatusOnce).toHaveBeenCalledTimes(1);
+
+    await vi.advanceTimersByTimeAsync(10000);
+    expect(mockService.requestDeviceStatusOnce).toHaveBeenCalledTimes(2);
+  });
+
+  it('should not start a second interval if already running for same duid', async () => {
+    runner.startBurstPolling('duid');
+    runner.startBurstPolling('duid');
+
+    await vi.advanceTimersByTimeAsync(10000);
+    expect(mockService.requestDeviceStatusOnce).toHaveBeenCalledTimes(1);
+  });
+
+  it('should run independent timers for different duids', async () => {
+    const robot2 = asPartial<RoborockVacuumCleaner>({
+      device: asPartial<Device>({ duid: 'duid2', specs: asPartial<DeviceSpecs>({ hasRealTimeConnection: false }) }),
+      getAttribute: vi.fn().mockReturnValue(RvcOperationalState.OperationalState.Running),
+    });
+    platform.registry.robotsMap.set('duid2', robot2);
+
+    runner.startBurstPolling('duid');
+    runner.startBurstPolling('duid2');
+
+    await vi.advanceTimersByTimeAsync(10000);
+    expect(mockService.requestDeviceStatusOnce).toHaveBeenCalledWith('duid');
+    expect(mockService.requestDeviceStatusOnce).toHaveBeenCalledWith('duid2');
+  });
+
+  it('stopBurstPolling should cancel the timer for that device', async () => {
+    runner.startBurstPolling('duid');
+    await vi.advanceTimersByTimeAsync(10000);
+    expect(mockService.requestDeviceStatusOnce).toHaveBeenCalledTimes(1);
+
+    runner.stopBurstPolling('duid');
+    await vi.advanceTimersByTimeAsync(20000);
+    expect(mockService.requestDeviceStatusOnce).toHaveBeenCalledTimes(1);
+  });
+
+  it('stopBurstPolling is safe to call when not running', () => {
+    expect(() => runner.stopBurstPolling('duid')).not.toThrow();
+  });
+
+  it('should stop polling when device reaches idle/docked state', async () => {
+    vi.mocked(robot.getAttribute).mockReturnValue(RvcOperationalState.OperationalState.Docked);
+
+    runner.startBurstPolling('duid');
+    await vi.advanceTimersByTimeAsync(10000); // first tick: poll + detect idle → stop
+    expect(mockService.requestDeviceStatusOnce).toHaveBeenCalledTimes(1);
+
+    await vi.advanceTimersByTimeAsync(10000); // no further ticks after stop
+    expect(mockService.requestDeviceStatusOnce).toHaveBeenCalledTimes(1);
+  });
+
+  it('should continue polling when device is not yet idle', async () => {
+    vi.mocked(robot.getAttribute).mockReturnValue(RvcOperationalState.OperationalState.Running);
+
+    runner.startBurstPolling('duid');
+    await vi.advanceTimersByTimeAsync(10000);
+    expect(mockService.requestDeviceStatusOnce).toHaveBeenCalledTimes(1);
+
+    await vi.advanceTimersByTimeAsync(10000);
+    expect(mockService.requestDeviceStatusOnce).toHaveBeenCalledTimes(2);
+  });
+
+  it('should only poll the specific device that triggered burst polling', async () => {
+    const robot2 = asPartial<RoborockVacuumCleaner>({
+      device: asPartial<Device>({ duid: 'duid2', specs: asPartial<DeviceSpecs>({ hasRealTimeConnection: false }) }),
+      getAttribute: vi.fn().mockReturnValue(RvcOperationalState.OperationalState.Running),
+    });
+    platform.registry.robotsMap.set('duid2', robot2);
+
+    runner.startBurstPolling('duid'); // only 'duid', not 'duid2'
+    await vi.advanceTimersByTimeAsync(10000);
+
+    expect(mockService.requestDeviceStatusOnce).toHaveBeenCalledWith('duid');
+    expect(mockService.requestDeviceStatusOnce).not.toHaveBeenCalledWith('duid2');
+  });
+
+  it('stopAllBurstPolling should cancel all active timers', async () => {
+    const robot2 = asPartial<RoborockVacuumCleaner>({
+      device: asPartial<Device>({ duid: 'duid2', specs: asPartial<DeviceSpecs>({ hasRealTimeConnection: false }) }),
+      getAttribute: vi.fn().mockReturnValue(RvcOperationalState.OperationalState.Running),
+    });
+    platform.registry.robotsMap.set('duid2', robot2);
+
+    runner.startBurstPolling('duid');
+    runner.startBurstPolling('duid2');
+    await vi.advanceTimersByTimeAsync(10000);
+    const callsBefore = vi.mocked(mockService.requestDeviceStatusOnce).mock.calls.length;
+
+    runner.stopAllBurstPolling();
+    await vi.advanceTimersByTimeAsync(10000);
+
+    expect(vi.mocked(mockService.requestDeviceStatusOnce).mock.calls.length).toBe(callsBefore);
+  });
+
+  it('stopAllBurstPolling is safe to call when no timers are active', () => {
+    expect(() => runner.stopAllBurstPolling()).not.toThrow();
   });
 });

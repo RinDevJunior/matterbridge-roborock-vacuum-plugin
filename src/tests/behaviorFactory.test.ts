@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { configureBehavior } from '../share/behaviorFactory.js';
 import { DeviceModel } from '../roborockCommunication/models/index.js';
 import { RoborockService } from '../services/roborockService.js';
@@ -11,6 +11,7 @@ describe('configureBehavior', () => {
   const cleanModeSettings: CleanModeSettings = {} as CleanModeSettings;
   const roborockService = {} as RoborockService;
   const logger = createMockLogger();
+  const onActionTriggered = vi.fn();
 
   it('returns smart handler for smart model', () => {
     const result = configureBehavior(
@@ -21,12 +22,22 @@ describe('configureBehavior', () => {
       cleanModeSettings,
       false,
       logger,
+      onActionTriggered,
     );
     expect(result).toBeInstanceOf(BehaviorDeviceGeneric);
   });
 
   it('returns default handler for non-smart model', () => {
-    const result = configureBehavior('non-smart-model', duid, roborockService, false, cleanModeSettings, false, logger);
+    const result = configureBehavior(
+      'non-smart-model',
+      duid,
+      roborockService,
+      false,
+      cleanModeSettings,
+      false,
+      logger,
+      onActionTriggered,
+    );
     expect(result).toBeInstanceOf(BehaviorDeviceGeneric);
   });
 
@@ -39,6 +50,7 @@ describe('configureBehavior', () => {
       cleanModeSettings,
       true,
       logger,
+      onActionTriggered,
     );
     expect(result).toBeInstanceOf(BehaviorDeviceGeneric);
   });

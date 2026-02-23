@@ -174,6 +174,11 @@ export class RoborockService {
     this.pollingService.activateDeviceNotifyOverLocal(device);
   }
 
+  /** Trigger a one-shot local/MQTT status request for a device. */
+  public async requestDeviceStatusOnce(duid: string): Promise<void> {
+    await this.pollingService.requestStatusOnce(duid);
+  }
+
   /** Stop service and clean up resources. */
   public stopService(): void {
     this.container.destroy();

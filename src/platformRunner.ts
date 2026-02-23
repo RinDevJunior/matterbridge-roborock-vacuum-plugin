@@ -17,7 +17,7 @@ import { getRunningMode } from './initialData/getSupportedRunModes.js';
 import { CleanModeSetting } from './behaviors/roborock.vacuum/core/CleanModeSetting.js';
 import { getCleanModeResolver } from './share/runtimeHelper.js';
 import { DockErrorCode, OperationStatusCode } from './roborockCommunication/enums/index.js';
-import { INVALID_SEGMENT_ID } from './constants/index.js';
+import { BURST_POLLING_INTERVAL_MS, INVALID_SEGMENT_ID } from './constants/index.js';
 import { DockStationStatus } from './model/DockStationStatus.js';
 import { triggerDssError } from './runtimes/handleLocalMessage.js';
 import { state_to_matter_operational_status, state_to_matter_state } from './share/function.js';
@@ -33,6 +33,7 @@ type PayloadHandler = (payload: MessagePayload) => void;
 export class PlatformRunner {
   private activateHandlers = false;
   private readonly payloadHandlers: Map<NotifyMessageTypes, PayloadHandler>;
+  private readonly burstPollingTimers = new Map<string, NodeJS.Timeout>();
 
   constructor(private readonly platform: RoborockMatterbridgePlatform) {
     this.payloadHandlers = new Map([
@@ -116,6 +117,65 @@ export class PlatformRunner {
     const homeData = await platform.roborockService.getHomeDataForUpdating(platform.rrHomeId);
     if (homeData === undefined) return;
     this.updateRobotWithPayload({ type: NotifyMessageTypes.HomeData, data: homeData });
+  }
+
+  /**
+   * Start burst polling for a specific device: poll every BURST_POLLING_INTERVAL_MS
+   * until the device becomes idle/docked after a vacuum command is triggered.
+   */
+  public startBurstPolling(duid: string): void {
+    if (this.burstPollingTimers.has(duid)) return;
+
+    const timer = setInterval(async () => {
+      try {
+        await this.requestLocalDeviceStatus(duid);
+        if (this.isDeviceIdle(duid)) {
+          this.stopBurstPolling(duid);
+        }
+      } catch (error) {
+        this.platform.log.error(`Burst polling failed: ${error instanceof Error ? error.message : String(error)}`);
+      }
+    }, BURST_POLLING_INTERVAL_MS);
+
+    this.burstPollingTimers.set(duid, timer);
+  }
+
+  /**
+   * Stop burst polling for all devices and clear all timers.
+   */
+  public stopAllBurstPolling(): void {
+    for (const duid of this.burstPollingTimers.keys()) {
+      this.stopBurstPolling(duid);
+    }
+  }
+
+  /**
+   * Stop burst polling for a specific device and clear its timer.
+   */
+  public stopBurstPolling(duid: string): void {
+    const timer = this.burstPollingTimers.get(duid);
+    if (timer !== undefined) {
+      clearInterval(timer);
+      this.burstPollingTimers.delete(duid);
+    }
+  }
+
+  private async requestLocalDeviceStatus(duid: string): Promise<void> {
+    const { roborockService } = this.platform;
+    if (roborockService === undefined) return;
+    await roborockService.requestDeviceStatusOnce(duid);
+  }
+
+  private isDeviceIdle(duid: string): boolean {
+    const robot = this.platform.registry.robotsMap.get(duid);
+    if (!robot) return true;
+    const state: RvcOperationalState.OperationalState = robot.getAttribute(
+      RvcOperationalState.Cluster.id,
+      'operationalState',
+    );
+    return (
+      state === RvcOperationalState.OperationalState.Docked || state === RvcOperationalState.OperationalState.Charging
+    );
   }
 
   /**
@@ -390,6 +450,13 @@ export class PlatformRunner {
       resolvedState.operationalState,
       this.platform.log,
     );
+
+    // Auto-start burst polling when the device enters an active state
+    const isActive =
+      resolvedState.runMode === RvcRunMode.ModeTag.Cleaning || resolvedState.runMode === RvcRunMode.ModeTag.Mapping;
+    if (isActive && !this.burstPollingTimers.has(robot.device.duid)) {
+      this.startBurstPolling(robot.device.duid);
+    }
   }
 
   /**
