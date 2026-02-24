@@ -4,6 +4,21 @@ All notable changes to this project will be documented in this file.
 
 ---
 
+## [1.1.5-rc02] - 2026-02-24
+
+### Added
+
+- **Device OTA status handling** — The plugin now handles protocol 500 (`device_status_ota`) messages from the device. Firmware update status, progress, and device online/offline events are logged automatically.
+
+### Fixed
+
+- **Local client reconnect loop** — After a 15-second ping silence triggers a reconnect, stale `close`/`error` events from the old socket are now suppressed via an `intentionalDisconnect` flag, preventing the new socket from being torn down before the handshake completes.
+- **MQTT fallback during local reconnect** — While the local client is reconnecting, `ClientRouter` now falls back to MQTT and emits a notice log instead of silently failing or waiting.
+
+<a href="https://www.buymeacoffee.com/rinnvspktr" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/default-orange.png" alt="Buy Me A Coffee" height="41" width="174"></a>
+
+---
+
 ## [1.1.5-rc01] - 2026-02-23
 
 ### Added
