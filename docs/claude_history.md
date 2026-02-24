@@ -1,5 +1,14 @@
 # Claude History
 
+## 2026-02-24 (Session 10)
+
+- Added `Protocol.device_status_ota` (500) with `deserializeDeviceStatusOta` in `MessageDeserializer` and new `DeviceStatusListener` to log firmware update status/progress and device online/offline events.
+- Fixed `LocalNetworkClient` reconnect: added `intentionalDisconnect` flag so stale `close`/`error` events from the old socket are suppressed after a ping-timeout reconnect, preventing the new socket from being torn down mid-handshake.
+- Added `isReconnecting()` to `LocalNetworkClient`; `ClientRouter.getLocalClient` now falls back to MQTT with a notice log while the local client is reconnecting.
+- Removed dead-code `SyncMessageListener`.
+- Added unit tests: `localNetworkClient.reconnect.test.ts` (4 tests) and 3 new cases in `deviceConfigurator.test.ts` for missing coverage (`addDevice` early return, null cluster options, duplicate bridgedNode guard).
+- Created release candidate `1.1.5-rc02`: bumped version in `package.json`, `package-lock.json`, `schema.json`, `config.json`. Added CHANGELOG entry.
+
 ## 2026-02-18 (Session 9)
 
 - Added `includeVacuumErrorStatus` configuration option under Advanced features. When disabled (default), `handleErrorOccurred` in `platformRunner.ts` is skipped. Updated schema, config type, config manager, platformRunner, and all test files.

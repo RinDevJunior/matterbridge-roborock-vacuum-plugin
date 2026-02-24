@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { DeviceConfigurator } from '../../platform/deviceConfigurator.js';
 import type { MatterbridgeDynamicPlatform, MatterbridgeEndpoint } from 'matterbridge';
+import { bridgedNode } from 'matterbridge';
 import type { AnsiLogger } from 'matterbridge/logger';
 import {
   asPartial,
@@ -14,7 +15,7 @@ import type { DeviceRegistry } from '../../platform/deviceRegistry.js';
 import type { PlatformRunner } from '../../platformRunner.js';
 import type { RoborockService } from '../../services/roborockService.js';
 import { DeviceInformation, DeviceModel, DeviceSpecs, type Device } from '../../roborockCommunication/models/index.js';
-import type { RoborockVacuumCleaner } from '../../types/roborockVacuumCleaner.js';
+import { RoborockVacuumCleaner } from '../../types/roborockVacuumCleaner.js';
 import type { WssSendSnackbarMessage } from '../../types/WssSendSnackbarMessage.js';
 
 vi.mock('../../core/application/models/index.js', async (importOriginal) => {
@@ -537,6 +538,129 @@ describe('DeviceConfigurator', () => {
         matterOverrideSettings: { ...mockMatterOverride, matterProductName: '' },
       });
       const device = makeMockDevice('duid-1');
+      registry = createMockDeviceRegistry({
+        hasDevices: vi.fn().mockReturnValue(true),
+        getAllDevices: vi.fn().mockReturnValue([device]),
+        robotsMap: new Map(),
+      });
+      configurator = new DeviceConfigurator(
+        platform,
+        configManager,
+        registry,
+        () => platformRunner,
+        snackbarMessage,
+        log,
+      );
+
+      await configurator.onConfigureDevice(roborockService);
+
+      expect(platform.registerDevice).toHaveBeenCalled();
+    });
+  });
+
+  describe('addDevice edge cases', () => {
+    it('should return undefined and log warn when rvc has no serialNumber', async () => {
+      const device = makeMockDevice('duid-no-serial');
+      vi.mocked(RoborockVacuumCleaner).mockImplementationOnce(function (this: RoborockVacuumCleaner) {
+        Object.assign(
+          this,
+          asPartial<RoborockVacuumCleaner>({
+            device,
+            deviceName: `Roborock-${device.duid}`,
+            serialNumber: undefined,
+            configureHandler: vi.fn(),
+            getClusterServerOptions: vi.fn().mockReturnValue(null),
+            createDefaultIdentifyClusterServer: vi.fn(),
+            createDefaultBridgedDeviceBasicInformationClusterServer: vi.fn(),
+            mode: undefined,
+            deviceTypes: new Map(),
+          }),
+        );
+      });
+
+      registry = createMockDeviceRegistry({
+        hasDevices: vi.fn().mockReturnValue(true),
+        getAllDevices: vi.fn().mockReturnValue([device]),
+        robotsMap: new Map(),
+      });
+      configurator = new DeviceConfigurator(
+        platform,
+        configManager,
+        registry,
+        () => platformRunner,
+        snackbarMessage,
+        log,
+      );
+
+      await configurator.onConfigureDevice(roborockService);
+
+      expect(log.warn).toHaveBeenCalledWith(expect.stringContaining('Cannot add device: missing rvc or deviceName'));
+      expect(platform.registerDevice).not.toHaveBeenCalled();
+    });
+
+    it('should skip BridgedDeviceBasicInformation cluster options when getClusterServerOptions returns null', async () => {
+      const device = makeMockDevice('duid-null-options');
+      vi.mocked(RoborockVacuumCleaner).mockImplementationOnce(function (this: RoborockVacuumCleaner) {
+        Object.assign(
+          this,
+          asPartial<RoborockVacuumCleaner>({
+            device,
+            deviceName: `Roborock-${device.duid}`,
+            serialNumber: device.duid,
+            configureHandler: vi.fn(),
+            getClusterServerOptions: vi.fn().mockReturnValue(null),
+            createDefaultIdentifyClusterServer: vi.fn(),
+            createDefaultBridgedDeviceBasicInformationClusterServer: vi.fn(),
+            mode: undefined,
+            deviceTypes: new Map(),
+          }),
+        );
+      });
+
+      registry = createMockDeviceRegistry({
+        hasDevices: vi.fn().mockReturnValue(true),
+        getAllDevices: vi.fn().mockReturnValue([device]),
+        robotsMap: new Map(),
+      });
+      configurator = new DeviceConfigurator(
+        platform,
+        configManager,
+        registry,
+        () => platformRunner,
+        snackbarMessage,
+        log,
+      );
+
+      await configurator.onConfigureDevice(roborockService);
+
+      expect(platform.registerDevice).toHaveBeenCalled();
+    });
+
+    it('should not duplicate bridgedNode in deviceTypeList when it is already present', async () => {
+      const device = makeMockDevice('duid-dup-bridged');
+      vi.mocked(RoborockVacuumCleaner).mockImplementationOnce(function (this: RoborockVacuumCleaner) {
+        Object.assign(
+          this,
+          asPartial<RoborockVacuumCleaner>({
+            device,
+            deviceName: `Roborock-${device.duid}`,
+            serialNumber: device.duid,
+            configureHandler: vi.fn(),
+            getClusterServerOptions: vi.fn().mockReturnValue({
+              softwareVersion: 1,
+              softwareVersionString: '1.0.0',
+              hardwareVersion: 1,
+              hardwareVersionString: '1.0.0',
+              deviceTypeList: [{ deviceType: bridgedNode.code, revision: bridgedNode.revision }],
+            }),
+            createDefaultIdentifyClusterServer: vi.fn(),
+            createDefaultBridgedDeviceBasicInformationClusterServer: vi.fn(),
+            mode: undefined,
+            deviceTypes: new Map(),
+          }),
+        );
+      });
+
       registry = createMockDeviceRegistry({
         hasDevices: vi.fn().mockReturnValue(true),
         getAllDevices: vi.fn().mockReturnValue([device]),

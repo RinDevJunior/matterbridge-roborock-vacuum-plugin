@@ -12,6 +12,13 @@
 
 ## Completed
 
+- [x] Add `Protocol.device_status_ota` (500) with `deserializeDeviceStatusOta` and `DeviceStatusListener` for firmware update/online status logging
+- [x] Fix `LocalNetworkClient` reconnect: `intentionalDisconnect` flag suppresses stale `close`/`error` events from old socket after ping-timeout reconnect
+- [x] Add `isReconnecting()` to `LocalNetworkClient`; `ClientRouter.getLocalClient` falls back to MQTT with notice log while reconnecting
+- [x] Remove dead-code `SyncMessageListener`
+- [x] Add unit tests: `localNetworkClient.reconnect.test.ts` (4 tests) + 3 new cases in `deviceConfigurator.test.ts`
+- [x] Create release candidate 1.1.5-rc02: bumped version, updated CHANGELOG
+
 - [x] Add "Include Vacuum Error Status" configuration under Advanced features to gate `handleErrorOccurred` in platformRunner
 
 - [x] Create `B01ResponseBroadcaster` and `B01PendingResponseTracker` for multi-response B01 protocol handling

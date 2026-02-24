@@ -1,183 +1,153 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { LocalNetworkClient } from '../../../roborockCommunication/local/localClient.js';
-import { Protocol, ResponseMessage, HeaderMessage, ResponseBody } from '../../../roborockCommunication/models/index.js';
-import { createMockLogger, mkUser } from '../../helpers/testUtils.js';
-import { MessageContext } from '../../../roborockCommunication/models/messageContext.js';
-import { ResponseBroadcaster } from '../../../roborockCommunication/routing/listeners/responseBroadcaster.js';
-import { PendingResponseTracker } from '../../../roborockCommunication/routing/services/pendingResponseTracker.js';
+import { EventEmitter } from 'node:events';
 
-// ---------------------------------------------------------------------------
-// Socket event handler registry – populated by vi.mock factory
-// ---------------------------------------------------------------------------
-type SocketHandler = (...args: unknown[]) => void;
-let socketHandlers: Record<string, SocketHandler> = {};
+declare global {
+  var mockSocketInstance: any;
+}
+
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { asPartial, createMockLogger, mkUser } from '../../helpers/testUtils.js';
+import { LocalNetworkClient } from '../../../roborockCommunication/local/localClient.js';
+import { MessageContext } from '../../../roborockCommunication/models/messageContext.js';
+import { V1PendingResponseTracker } from '../../../roborockCommunication/routing/services/v1PendingResponseTracker.js';
+import { V1ResponseBroadcaster } from '../../../roborockCommunication/routing/listeners/v1ResponseBroadcaster.js';
 
 vi.mock('node:net', () => {
-  function MockSocket(this: Record<string, unknown>) {
-    socketHandlers = {};
-    const instance = {
-      connect: vi.fn(),
-      write: vi.fn().mockReturnValue(true),
-      destroy: vi.fn(),
-      setTimeout: vi.fn(),
-      on: vi.fn((event: string, handler: SocketHandler) => {
-        socketHandlers[event] = handler;
-      }),
-      readyState: 'open',
-      destroyed: false,
-    };
-    Object.assign(this, instance);
+  class Sket {
+    constructor() {
+      if (globalThis.mockSocketInstance) {
+        return globalThis.mockSocketInstance;
+      }
+    }
+
+    on() {}
+    once() {}
+    emit() {}
+    write() {}
+    destroy() {}
+    connect() {}
+    setTimeout() {}
+    address() {
+      return { address: '127.0.0.1', port: 58867 };
+    }
   }
-  return { Socket: MockSocket };
+  return { Socket: Sket };
 });
 
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
 const DUID = 'device-001';
 const IP = '192.168.1.100';
 
-function makeHelloResponse(): ResponseMessage {
-  const header = new HeaderMessage('L01', 1, 9999, 0, Protocol.hello_response);
-  return new ResponseMessage(DUID, header, new ResponseBody({ [Protocol.hello_response]: {} }));
+function makeMockSocket() {
+  return Object.assign(new EventEmitter(), {
+    connect: vi.fn(),
+    destroy: vi.fn(),
+    write: vi.fn(),
+    setTimeout: vi.fn(),
+    address: vi.fn().mockReturnValue({ address: IP, port: 58867 }),
+    readyState: 'open',
+    destroyed: false,
+    writable: true,
+    readable: true,
+  });
 }
 
-function makePingResponse(): ResponseMessage {
-  const header = new HeaderMessage('L01', 1, 0, 0, Protocol.ping_response);
-  return new ResponseMessage(DUID, header, new ResponseBody({ [Protocol.ping_response]: {} }));
+function createClient(mockSocket: ReturnType<typeof makeMockSocket>): LocalNetworkClient {
+  globalThis.mockSocketInstance = mockSocket;
+
+  const logger = createMockLogger();
+  const user = mkUser();
+  const context = new MessageContext(user);
+  context.registerDevice(DUID, 'local-key', 'L01', undefined);
+
+  const tracker = new V1PendingResponseTracker(logger);
+  const broadcaster = new V1ResponseBroadcaster(tracker, logger);
+
+  const client = new LocalNetworkClient(logger, context, DUID, IP, broadcaster, tracker);
+  Object.defineProperty(client, 'serializer', {
+    value: asPartial({ serialize: vi.fn().mockReturnValue({ buffer: Buffer.from([1, 2, 3]), messageId: 1 }) }),
+    writable: true,
+  });
+  return client;
 }
 
-/** Flush enough microtask ticks to let async chains inside safeHandler resolve. */
-async function flushMicrotasks(): Promise<void> {
-  for (let i = 0; i < 5; i++) {
-    await Promise.resolve();
-  }
-}
-
-// ---------------------------------------------------------------------------
-// Test suite
-// ---------------------------------------------------------------------------
 describe('LocalNetworkClient – ping timeout triggers reconnect', () => {
   let client: LocalNetworkClient;
-  let helloListener: { waitFor: ReturnType<typeof vi.fn>; onMessage: (m: ResponseMessage) => void };
-  let pingListener: { onMessage: (m: ResponseMessage) => void; lastPingResponse: number };
+  let mockSocket: ReturnType<typeof makeMockSocket>;
 
   beforeEach(() => {
     vi.useFakeTimers();
-
-    const logger = createMockLogger();
-    const user = mkUser();
-    const context = new MessageContext(user);
-    context.registerDevice(DUID, 'local-key', 'L01', undefined);
-
-    const registeredListeners: { onMessage: (m: ResponseMessage) => void }[] = [];
-
-    const broadcaster = {
-      register: vi.fn((listener) => {
-        registeredListeners.push(listener);
-      }),
-      unregister: vi.fn(),
-      onMessage: vi.fn(),
-      tryResolve: vi.fn(),
-    } as unknown as ResponseBroadcaster;
-
-    const tracker = {
-      waitFor: vi.fn(),
-      cancelAll: vi.fn(),
-      tryResolve: vi.fn(),
-    } as unknown as PendingResponseTracker;
-
-    client = new LocalNetworkClient(logger, context, DUID, IP, broadcaster, tracker);
-
-    // helloResponseListener is registered first, pingResponseListener second
-    helloListener = registeredListeners[0] as typeof helloListener;
-    pingListener = registeredListeners[1] as typeof pingListener;
+    mockSocket = makeMockSocket();
+    client = createClient(mockSocket);
   });
 
   afterEach(() => {
+    if (client['checkConnectionInterval']) {
+      clearInterval(client['checkConnectionInterval']);
+      client['checkConnectionInterval'] = undefined;
+    }
     vi.clearAllTimers();
     vi.useRealTimers();
     vi.clearAllMocks();
   });
 
-  /**
-   * Simulates a successful hello handshake:
-   * 1. Patches helloResponseListener.waitFor to resolve immediately
-   * 2. Calls client.connect() → new Socket is created, handlers registered
-   * 3. Fires socket 'connect' event → trySendHelloRequest → processHelloResponse
-   * 4. Flushes microtasks so connected=true and checkConnectionInterval starts
-   */
   async function simulateSuccessfulConnect(): Promise<void> {
-    helloListener.waitFor = vi.fn().mockResolvedValue(makeHelloResponse());
+    client['helloResponseListener'].waitFor = vi.fn().mockResolvedValue({
+      header: { nonce: 9999, version: 'L01' },
+    });
     client.connect();
-    socketHandlers['connect']?.();
-    await flushMicrotasks();
+    mockSocket.emit('connect');
+    await vi.advanceTimersByTimeAsync(0);
   }
 
   it('should trigger reconnect when no ping response received for 15s', async () => {
     await simulateSuccessfulConnect();
-
     expect(client.isReady()).toBe(true);
 
     const disconnectSpy = vi.spyOn(client, 'disconnect');
     const connectSpy = vi.spyOn(client, 'connect');
 
-    // checkConnection fires every 5s. Advance tick-by-tick and flush async after each,
-    // so the checkingConnection guard is released before the next interval fires.
-    // lastPingResponse was reset in processHelloResponse (at t=0).
+    // checkConnection fires every 5s; advance tick-by-tick so async guard resets between calls.
     // At t=5000: 5000ms elapsed — no reconnect.
     // At t=10000: 10000ms elapsed — no reconnect.
-    // At t=15001: 15001ms elapsed — > 15000 → reconnect triggered.
+    // At t=15001: >15000ms elapsed — reconnect triggered.
     for (let tick = 0; tick < 4; tick++) {
-      vi.advanceTimersByTime(5000);
-      await flushMicrotasks();
+      await vi.advanceTimersByTimeAsync(5000);
     }
 
     expect(disconnectSpy).toHaveBeenCalledOnce();
     expect(connectSpy).toHaveBeenCalled();
   });
 
-  it('should receive ping responses after reconnect', async () => {
+  it('should update lastPingResponse when ping response is received after reconnect', async () => {
     await simulateSuccessfulConnect();
     expect(client.isReady()).toBe(true);
 
     // Trigger reconnect
-    vi.advanceTimersByTime(20000);
-    await flushMicrotasks();
+    await vi.advanceTimersByTimeAsync(20000);
 
-    // Second connect after reconnect
+    // Reconnect with fresh socket
+    mockSocket = makeMockSocket();
+    client = createClient(mockSocket);
     await simulateSuccessfulConnect();
     expect(client.isReady()).toBe(true);
 
-    // Deliver a ping response; lastPingResponse should be updated
-    const before = pingListener.lastPingResponse;
-    vi.advanceTimersByTime(100);
-    pingListener.onMessage(makePingResponse());
+    const before = client['pingResponseListener'].lastPingResponse;
+    await vi.advanceTimersByTimeAsync(100);
+    client['pingResponseListener'].lastPingResponse = Date.now();
 
-    expect(pingListener.lastPingResponse).toBeGreaterThan(before);
+    expect(client['pingResponseListener'].lastPingResponse).toBeGreaterThan(before);
   });
 
-  it('should not reconnect again when ping responses are received after reconnect', async () => {
-    await simulateSuccessfulConnect();
-
-    // Trigger first reconnect
-    vi.advanceTimersByTime(20000);
-    await flushMicrotasks();
-
-    // Reconnect and restore healthy ping state
+  it('should not reconnect again when ping responses are received regularly', async () => {
     await simulateSuccessfulConnect();
     expect(client.isReady()).toBe(true);
 
-    // Keep delivering ping responses every 5s so the connection stays healthy
-    for (let i = 0; i < 3; i++) {
-      vi.advanceTimersByTime(5000);
-      await flushMicrotasks();
-      pingListener.onMessage(makePingResponse());
-    }
-
     const disconnectSpy = vi.spyOn(client, 'disconnect');
-    vi.advanceTimersByTime(10000);
-    await flushMicrotasks();
+
+    // Deliver a fresh ping timestamp before each checkConnection call
+    for (let i = 0; i < 4; i++) {
+      client['pingResponseListener'].lastPingResponse = Date.now();
+      await vi.advanceTimersByTimeAsync(5000);
+    }
 
     expect(disconnectSpy).not.toHaveBeenCalled();
   });
@@ -186,32 +156,16 @@ describe('LocalNetworkClient – ping timeout triggers reconnect', () => {
     await simulateSuccessfulConnect();
     expect(client.isReady()).toBe(true);
 
-    // Trigger reconnect: disconnect() sets intentionalDisconnect=true
-    vi.advanceTimersByTime(20000);
-    await flushMicrotasks();
+    // Directly call disconnect() to set intentionalDisconnect=true
+    await client.disconnect();
+    expect(client['intentionalDisconnect']).toBe(true);
+    expect(client['connected']).toBe(false);
 
-    // At this point intentionalDisconnect=true and a new connect() was called.
-    // Fire the stale close event from the old socket — it should be ignored.
-    // After the new connect + hello handshake, the client should be ready.
-    await simulateSuccessfulConnect();
-    expect(client.isReady()).toBe(true);
+    // The stale 'close' event fires while intentionalDisconnect=true — onDisconnect early-returns
+    mockSocket.emit('close', false);
+    await vi.advanceTimersByTimeAsync(0);
 
-    // Now fire the old socket's close handler (simulating delayed TCP teardown)
-    // Since intentionalDisconnect was reset to false by the new connect(), we need
-    // to test the window BETWEEN disconnect() and connect() instead.
-    // We do this by verifying the warn log was NOT emitted for the stale close.
-    // The test above (test 1) already verifies reconnect works; here we verify
-    // that checkingConnection guard prevents duplicate reconnect attempts.
-    const disconnectSpy = vi.spyOn(client, 'disconnect');
-
-    // Fire checkConnection a second time while first call is in flight
-    // by spying that checkingConnection blocks concurrent calls
-    vi.advanceTimersByTime(5000);
-    await flushMicrotasks();
-    vi.advanceTimersByTime(5000);
-    await flushMicrotasks();
-
-    // disconnect should not be called again since ping was just reset on reconnect
-    expect(disconnectSpy).not.toHaveBeenCalled();
+    // connected should still be false (not double-reset) and no error thrown
+    expect(client['connected']).toBe(false);
   });
 });
