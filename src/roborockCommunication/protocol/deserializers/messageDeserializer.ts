@@ -125,6 +125,8 @@ export class MessageDeserializer {
         `[${from}][MessageDeserializer] deserialized message for map_response: ${debugStringify(responseMessage)}`,
       );
       return responseMessage;
+    } else if (header.protocol === Protocol.device_status_ota) {
+      return this.deserializeDeviceStatusOta(duid, data, header, from);
     } else {
       this.logger.error(`unknown protocol: ${header.protocol}`);
       const response = this.deserializeUnknownProtocolPayload(duid, data, header);
@@ -146,6 +148,23 @@ export class MessageDeserializer {
     if (dps[indexString] !== undefined) {
       dps[indexString] = JSON.parse(dps[indexString] as string);
     }
+  }
+
+  private deserializeDeviceStatusOta(
+    duid: string,
+    data: ContentMessage,
+    header: HeaderMessage,
+    from: string,
+  ): ResponseMessage {
+    try {
+      const parsedData = JSON.parse(data.payload.toString('utf8'));
+      return new ResponseMessage(duid, header, new ResponseBody({ [Protocol.device_status_ota]: parsedData }));
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : String(error);
+      this.logger.warn(`[${from}][MessageDeserializer][${duid}] device_status_ota parse error: ${message}`);
+    }
+
+    return new ResponseMessage(duid, header, undefined);
   }
 
   private deserializeUnknownProtocolPayload(

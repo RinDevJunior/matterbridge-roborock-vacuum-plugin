@@ -24,7 +24,6 @@ export enum Protocol {
   drying_status = 134,
   back_type = 139, // WTF is this
   map_response = 301,
-  some_thing_happened_when_socket_closed = 500,
   offline_status = 135,
   clean_times = 136,
   cleaning_reference = 137,
@@ -32,6 +31,7 @@ export enum Protocol {
   dock_task_type = 140,
   cleaning_progress = 141,
   fc_state = 142,
+  device_status_ota = 500,
 }
 
 export enum RPC_Request_Segments {

@@ -326,7 +326,7 @@ describe('LocalNetworkClient', () => {
     client['checkConnectionInterval'] = undefined;
     await client['onDisconnect'](true);
     expect(mockSocket.destroy).toHaveBeenCalled();
-    expect(mockLogger.warn).toHaveBeenCalledWith(expect.stringContaining('Had error: true'));
+    expect(mockLogger.warn).toHaveBeenCalledWith(expect.stringContaining('Is having error'));
   });
 
   it('onMessage() should return early if socket is undefined', async () => {

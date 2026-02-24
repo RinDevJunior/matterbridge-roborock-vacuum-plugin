@@ -20,6 +20,7 @@ import { Client } from '../roborockCommunication/routing/client.js';
 import { MessageRoutingService } from './messageRoutingService.js';
 import { MessageDispatcherFactory } from '../roborockCommunication/protocol/dispatcher/dispatcherFactory.js';
 import { SimpleMessageListener } from '../roborockCommunication/routing/listeners/implementation/simpleMessageListener.js';
+import { DeviceStatusListener } from '../roborockCommunication/routing/listeners/implementation/deviceStatusListener.js';
 
 /** Manages device connections (MQTT and local network). */
 export class ConnectionService {
@@ -120,6 +121,10 @@ export class ConnectionService {
 
     const simpleMessageListener = new SimpleMessageListener(device.duid, this.logger);
     simpleMessageListener.registerHandler(new SimpleMessageHandler(device.duid, this.logger, this.deviceNotify));
+
+    const deviceStatusListener = new DeviceStatusListener(device.duid, this.logger);
+
+    this.clientRouter.registerMessageListener(deviceStatusListener);
     this.clientRouter.registerMessageListener(simpleMessageListener);
 
     const deviceSpecs = device.specs;

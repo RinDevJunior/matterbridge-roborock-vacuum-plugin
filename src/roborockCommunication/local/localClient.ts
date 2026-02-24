@@ -21,6 +21,7 @@ export class LocalNetworkClient extends AbstractClient {
   private helloResponseListener: HelloResponseListener;
   private pingResponseListener: LocalPingResponseListener;
   private connected = false;
+  private intentionalDisconnect = false;
 
   constructor(
     logger: AnsiLogger,
@@ -43,6 +44,10 @@ export class LocalNetworkClient extends AbstractClient {
     return this.connected;
   }
 
+  public isReconnecting(): boolean {
+    return this.intentionalDisconnect;
+  }
+
   public override isConnected(): boolean {
     return !!this.socket && this.socket.readyState === 'open' && !this.socket.destroyed;
   }
@@ -51,6 +56,10 @@ export class LocalNetworkClient extends AbstractClient {
     if (this.socket) {
       return; // Already connected
     }
+
+    this.intentionalDisconnect = false;
+
+    this.logger.notice(`Trying to connect to ip: ${this.ip}`);
 
     super.connect();
     this.buffer.reset();
@@ -81,8 +90,10 @@ export class LocalNetworkClient extends AbstractClient {
       this.checkConnectionInterval = undefined;
     }
 
+    this.intentionalDisconnect = true;
     this.socket.destroy();
     this.socket = undefined;
+    this.connected = false;
   }
 
   protected async sendInternal(duid: string, request: RequestMessage): Promise<void> {
@@ -116,18 +127,28 @@ export class LocalNetworkClient extends AbstractClient {
   }
 
   private async onDisconnect(hadError: boolean): Promise<void> {
-    this.logger.warn(`[LocalNetworkClient]: ${this.duid} socket disconnected. Had error: ${hadError}`);
+    if (this.intentionalDisconnect) {
+      return;
+    }
+
+    this.logger.warn(
+      `[LocalNetworkClient]: ${this.duid} socket disconnected. ${hadError ? 'Is having error' : 'No error detected'}`,
+    );
 
     if (this.socket) {
       this.socket.destroy();
       this.socket = undefined;
     }
 
-    await this.connectionBroadcaster.onDisconnected(this.duid, 'Socket disconnected. Had error: ' + hadError);
     this.connected = false;
+    await this.connectionBroadcaster.onDisconnected(this.duid, 'Socket disconnected. Had error: ' + hadError);
   }
 
   private async onError(error: Error): Promise<void> {
+    if (this.intentionalDisconnect) {
+      return;
+    }
+
     this.logger.error(` [LocalNetworkClient]: Socket error for ${this.duid}: ${error.message}`);
 
     if (this.socket) {
@@ -135,8 +156,8 @@ export class LocalNetworkClient extends AbstractClient {
       this.socket = undefined;
     }
 
-    await this.connectionBroadcaster.onDisconnected(this.duid, `Socket error: ${error.message}`);
     this.connected = false;
+    await this.connectionBroadcaster.onDisconnected(this.duid, `Socket error: ${error.message}`);
   }
 
   private async onTimeout(): Promise<void> {

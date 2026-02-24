@@ -107,10 +107,16 @@ export class ClientRouter implements Client {
 
   private getLocalClient(duid: string): Client {
     const localClient = this.localClients.get(duid);
-    if (localClient === undefined || !localClient.isReady()) {
+    if (localClient === undefined) {
       return this.mqttClient;
-    } else {
-      return localClient;
     }
+    if (localClient instanceof LocalNetworkClient && localClient.isReconnecting()) {
+      this.logger.notice(`[ClientRouter] Local client for ${duid} is reconnecting, falling back to MQTT`);
+      return this.mqttClient;
+    }
+    if (!localClient.isReady()) {
+      return this.mqttClient;
+    }
+    return localClient;
   }
 }
