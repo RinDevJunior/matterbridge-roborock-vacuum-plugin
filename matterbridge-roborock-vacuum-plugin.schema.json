@@ -200,6 +200,11 @@
                     "type": "boolean",
                     "default": false
                   },
+                  "enableEmailNotification": {
+                    "title": "Enable Email Notification",
+                    "type": "boolean",
+                    "default": false
+                  },
                   "clearStorageOnStartup": {
                     "title": "Clear Storage On Startup",
                     "description": "Clear persistence storage and re-initialize the plugin on next startup.",
@@ -418,6 +423,76 @@
                         }
                       }
                     }
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "allOf": [
+              {
+                "properties": {
+                  "enableAdvancedFeature": {
+                    "const": true
+                  }
+                },
+                "required": ["enableAdvancedFeature"]
+              },
+              {
+                "properties": {
+                  "settings": {
+                    "type": "object",
+                    "properties": {
+                      "enableEmailNotification": {
+                        "const": true
+                      }
+                    },
+                    "required": ["enableEmailNotification"]
+                  }
+                },
+                "required": ["settings"]
+              }
+            ]
+          },
+          "then": {
+            "properties": {
+              "settings": {
+                "properties": {
+                  "emailNotificationSettings": {
+                    "title": "Email Server Settings",
+                    "type": "object",
+                    "properties": {
+                      "smtpHost": {
+                        "title": "SMTP Host",
+                        "type": "string"
+                      },
+                      "smtpPort": {
+                        "title": "SMTP Port",
+                        "type": "number",
+                        "default": 587
+                      },
+                      "smtpSecure": {
+                        "title": "Use TLS (port 465)",
+                        "type": "boolean",
+                        "default": false
+                      },
+                      "smtpUser": {
+                        "title": "SMTP Username",
+                        "type": "string"
+                      },
+                      "smtpPassword": {
+                        "title": "SMTP Password",
+                        "type": "string",
+                        "ui:widget": "password"
+                      },
+                      "recipient": {
+                        "title": "Recipient Email",
+                        "type": "string"
+                      }
+                    },
+                    "required": ["smtpHost", "smtpUser", "smtpPassword", "recipient"]
                   }
                 }
               }

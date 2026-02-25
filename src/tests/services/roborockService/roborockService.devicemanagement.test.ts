@@ -64,6 +64,8 @@ describe('RoborockService - listDevices', () => {
             matterProductName: 'yy',
             matterProductId: 456,
           },
+          enableEmailNotification: false,
+          emailNotificationSettings: {},
         },
       },
     } as RoborockPluginPlatformConfig;
@@ -274,6 +276,8 @@ describe('getHomeDataForUpdating', () => {
             matterProductName: 'yy',
             matterProductId: 456,
           },
+          enableEmailNotification: false,
+          emailNotificationSettings: {},
         },
       },
     } as RoborockPluginPlatformConfig;
@@ -379,6 +383,8 @@ describe('Device Management Methods', () => {
             matterProductName: 'yy',
             matterProductId: 456,
           },
+          enableEmailNotification: false,
+          emailNotificationSettings: {},
         },
       },
     } as RoborockPluginPlatformConfig;

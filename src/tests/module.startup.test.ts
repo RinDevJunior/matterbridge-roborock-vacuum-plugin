@@ -118,6 +118,8 @@ describe('RoborockMatterbridgePlatform - startup branches', () => {
           matterProductName: 'yy',
           matterProductId: 456,
         },
+        enableEmailNotification: false,
+        emailNotificationSettings: {},
       },
     } satisfies RoborockPluginPlatformConfig['advancedFeature'];
     const config = {

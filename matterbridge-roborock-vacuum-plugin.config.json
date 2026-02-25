@@ -53,7 +53,9 @@
         "matterProductName": "Robotic Vaccum Cleaner",
         "matterProductId": 32768,
         "deviceProductNames": []
-      }
+      },
+      "enableEmailNotification": false,
+      "emailNotificationSettings": {}
     }
   }
 }

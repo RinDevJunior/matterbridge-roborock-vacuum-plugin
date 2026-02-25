@@ -81,6 +81,8 @@ function createMockConfig(overrides: Partial<RoborockPluginPlatformConfig> = {})
           matterProductName: 'yy',
           matterProductId: 456,
         },
+        enableEmailNotification: false,
+        emailNotificationSettings: {},
       },
     },
     persistDirectory: '/tmp',
@@ -411,6 +413,8 @@ describe('module.ts coverage tests', () => {
               matterProductName: 'yy',
               matterProductId: 456,
             },
+            enableEmailNotification: false,
+            emailNotificationSettings: {},
           },
         },
       });

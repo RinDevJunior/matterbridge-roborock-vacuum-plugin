@@ -50,6 +50,8 @@ function createMockConfig(overrides: Partial<RoborockPluginPlatformConfig> = {})
           matterProductName: 'yy',
           matterProductId: 456,
         },
+        enableEmailNotification: false,
+        emailNotificationSettings: {},
       },
     },
     ...overrides,

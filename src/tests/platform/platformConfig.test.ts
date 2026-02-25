@@ -155,6 +155,8 @@ describe('PlatformConfigManager', () => {
           matterProductName: 'yy',
           matterProductId: 456,
         },
+        enableEmailNotification: false,
+        emailNotificationSettings: {},
       };
       config.advancedFeature.enableAdvancedFeature = true;
       manager = PlatformConfigManager.create(config, mockLogger);
@@ -179,6 +181,8 @@ describe('PlatformConfigManager', () => {
             matterProductName: 'yy',
             matterProductId: 456,
           },
+          enableEmailNotification: false,
+          emailNotificationSettings: {},
         },
       };
       config.pluginConfiguration.enableServerMode = true;
@@ -476,6 +480,73 @@ describe('PlatformConfigManager', () => {
         expect(manager.getProductNameForDevice('SN123')).toBe('Living Room');
         expect(manager.getProductNameForDevice('SN456')).toBe('Bedroom');
       });
+    });
+  });
+
+  describe('email notification', () => {
+    it('should return false for isEmailNotificationEnabled when advanced feature is disabled', () => {
+      config.advancedFeature = {
+        enableAdvancedFeature: false,
+        settings: { ...createDefaultAdvancedFeature().settings, enableEmailNotification: true },
+      };
+      manager = PlatformConfigManager.create(config, mockLogger);
+      expect(manager.isEmailNotificationEnabled).toBe(false);
+    });
+
+    it('should return false for isEmailNotificationEnabled when enabled flag is false', () => {
+      config.advancedFeature = {
+        enableAdvancedFeature: true,
+        settings: { ...createDefaultAdvancedFeature().settings, enableEmailNotification: false },
+      };
+      manager = PlatformConfigManager.create(config, mockLogger);
+      expect(manager.isEmailNotificationEnabled).toBe(false);
+    });
+
+    it('should return true for isEmailNotificationEnabled when advanced feature and email are both enabled', () => {
+      config.advancedFeature = {
+        enableAdvancedFeature: true,
+        settings: { ...createDefaultAdvancedFeature().settings, enableEmailNotification: true },
+      };
+      manager = PlatformConfigManager.create(config, mockLogger);
+      expect(manager.isEmailNotificationEnabled).toBe(true);
+    });
+
+    it('should return undefined for emailNotificationSettings when email notification is disabled', () => {
+      config.advancedFeature = {
+        enableAdvancedFeature: false,
+        settings: {
+          ...createDefaultAdvancedFeature().settings,
+          enableEmailNotification: true,
+          emailNotificationSettings: {
+            smtpHost: 'smtp.example.com',
+            smtpUser: 'u',
+            smtpPassword: 'p',
+            recipient: 'r@r.com',
+          },
+        },
+      };
+      manager = PlatformConfigManager.create(config, mockLogger);
+      expect(manager.emailNotificationSettings).toBeUndefined();
+    });
+
+    it('should return emailNotificationSettings when email notification is enabled', () => {
+      const emailSettings = {
+        smtpHost: 'smtp.example.com',
+        smtpPort: 587,
+        smtpUser: 'user@example.com',
+        smtpPassword: 'secret',
+        recipient: 'alert@example.com',
+      };
+      config.advancedFeature = {
+        enableAdvancedFeature: true,
+        settings: {
+          ...createDefaultAdvancedFeature().settings,
+          enableEmailNotification: true,
+          emailNotificationSettings: emailSettings,
+        },
+      };
+      manager = PlatformConfigManager.create(config, mockLogger);
+      expect(manager.emailNotificationSettings).toEqual(emailSettings);
     });
   });
 

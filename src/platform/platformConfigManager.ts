@@ -10,6 +10,7 @@ import {
   CleanModeSettings,
   createDefaultAdvancedFeature,
   createDefaultCleanModeSettings,
+  EmailNotificationSettings,
   MatterOverrideSettings,
   RoborockPluginPlatformConfig,
 } from '../model/RoborockPluginPlatformConfig.js';
@@ -213,6 +214,15 @@ export class PlatformConfigManager {
 
     settings.deviceProductNames.push({ serialNumber, productName: defaultProductName });
     return true;
+  }
+
+  public get isEmailNotificationEnabled(): boolean {
+    return this.isAdvancedFeatureEnabled && (this.advancedFeatureSettings.enableEmailNotification ?? false);
+  }
+
+  public get emailNotificationSettings(): EmailNotificationSettings | undefined {
+    if (!this.isEmailNotificationEnabled) return undefined;
+    return this.advancedFeatureSettings.emailNotificationSettings;
   }
 
   // ─── Device Filtering ───────────────────────────────────────────────────────

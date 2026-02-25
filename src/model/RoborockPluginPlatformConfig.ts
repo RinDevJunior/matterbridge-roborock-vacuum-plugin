@@ -30,6 +30,15 @@ export interface AdvancedFeatureConfiguration {
   settings: AdvancedFeatureSetting;
 }
 
+export interface EmailNotificationSettings {
+  smtpHost?: string;
+  smtpPort?: number;
+  smtpSecure?: boolean;
+  smtpUser?: string;
+  smtpPassword?: string;
+  recipient?: string;
+}
+
 export interface AdvancedFeatureSetting {
   clearStorageOnStartup: boolean;
   showRoutinesAsRoom: boolean;
@@ -41,6 +50,8 @@ export interface AdvancedFeatureSetting {
   cleanModeSettings: CleanModeSettings;
   overrideMatterConfiguration: boolean;
   matterOverrideSettings: MatterOverrideSettings;
+  enableEmailNotification: boolean;
+  emailNotificationSettings: EmailNotificationSettings;
 }
 
 export interface DeviceProductNameOverride {
@@ -116,6 +127,8 @@ export function createDefaultAdvancedFeature(): AdvancedFeatureConfiguration {
         matterProductId: 32768,
         deviceProductNames: [],
       },
+      enableEmailNotification: false,
+      emailNotificationSettings: {},
     },
   };
 }

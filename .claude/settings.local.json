@@ -12,7 +12,8 @@
       "Bash(npm run type-check:*)",
       "Bash(tree:*)",
       "Bash(cut:*)",
-      "Bash(grep:*)"
+      "Bash(grep:*)",
+      "Bash(npm install:*)"
     ]
   },
   "outputStyle": "default",

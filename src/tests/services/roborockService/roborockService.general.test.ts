@@ -63,6 +63,8 @@ describe('RoborockService basic behaviors', () => {
             matterProductName: 'yy',
             matterProductId: 456,
           },
+          enableEmailNotification: false,
+          emailNotificationSettings: {},
         },
       },
     } as RoborockPluginPlatformConfig;
@@ -156,6 +158,8 @@ describe('RoborockService - Facade Pattern Testing', () => {
             matterProductName: 'yy',
             matterProductId: 456,
           },
+          enableEmailNotification: false,
+          emailNotificationSettings: {},
         },
       },
     } as RoborockPluginPlatformConfig;

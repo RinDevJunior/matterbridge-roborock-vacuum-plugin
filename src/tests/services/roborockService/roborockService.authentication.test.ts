@@ -71,6 +71,8 @@ describe('RoborockService - Authentication', () => {
             matterProductName: 'yy',
             matterProductId: 456,
           },
+          enableEmailNotification: false,
+          emailNotificationSettings: {},
         },
       },
     } as Partial<RoborockPluginPlatformConfig> as RoborockPluginPlatformConfig;

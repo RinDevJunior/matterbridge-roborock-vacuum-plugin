@@ -167,6 +167,7 @@ export class ServiceContainer {
       this.clientManager,
       this.logger,
       this.getMessageRoutingService(),
+      this.config.configManager,
     ));
   }
 

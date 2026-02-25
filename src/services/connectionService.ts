@@ -21,6 +21,9 @@ import { MessageRoutingService } from './messageRoutingService.js';
 import { MessageDispatcherFactory } from '../roborockCommunication/protocol/dispatcher/dispatcherFactory.js';
 import { SimpleMessageListener } from '../roborockCommunication/routing/listeners/implementation/simpleMessageListener.js';
 import { DeviceStatusListener } from '../roborockCommunication/routing/listeners/implementation/deviceStatusListener.js';
+import { PlatformConfigManager } from '../platform/platformConfigManager.js';
+import { EmailNotificationService } from './emailNotificationService.js';
+import { DisconnectNotificationListener } from '../roborockCommunication/routing/listeners/implementation/disconnectNotificationListener.js';
 
 /** Manages device connections (MQTT and local network). */
 export class ConnectionService {
@@ -28,12 +31,22 @@ export class ConnectionService {
   ipMap = new Map<string, string>();
   localClientMap = new Map<string, Client>();
   deviceNotify: DeviceNotifyCallback | undefined;
+  private emailService: EmailNotificationService | undefined;
 
   constructor(
     private readonly clientManager: ClientManager,
     private readonly logger: AnsiLogger,
     private readonly messageRoutingService: MessageRoutingService,
+    private readonly configManager?: PlatformConfigManager,
   ) {}
+
+  private getEmailService(): EmailNotificationService | undefined {
+    if (!this.configManager?.isEmailNotificationEnabled) return undefined;
+    const settings = this.configManager.emailNotificationSettings;
+    if (!settings) return undefined;
+    this.emailService ??= new EmailNotificationService(settings, this.logger);
+    return this.emailService;
+  }
 
   /** Set callback for device notifications. */
   public setDeviceNotify(callback: DeviceNotifyCallback): void {
@@ -78,6 +91,14 @@ export class ConnectionService {
 
       this.clientRouter.registerDevice(device.duid, device.localKey, device.pv, undefined);
       this.clientRouter.connect();
+
+      // Register email notification listener if enabled (covers both MQTT and local via shared broadcaster)
+      const emailService = this.getEmailService();
+      if (emailService) {
+        this.clientRouter.registerConnectionListener(
+          new DisconnectNotificationListener(emailService, this.logger, 'MQTT'),
+        );
+      }
 
       // Wait for connection
       try {

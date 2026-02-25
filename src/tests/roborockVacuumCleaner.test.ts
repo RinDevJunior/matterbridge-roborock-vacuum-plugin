@@ -197,6 +197,8 @@ describe('RoborockVacuumCleaner', () => {
             matterProductName: 'yy',
             matterProductId: 456,
           },
+          enableEmailNotification: false,
+          emailNotificationSettings: {},
         },
       },
     });
@@ -254,6 +256,8 @@ describe('RoborockVacuumCleaner', () => {
             matterProductName: 'yy',
             matterProductId: 456,
           },
+          enableEmailNotification: false,
+          emailNotificationSettings: {},
         },
       },
     });
