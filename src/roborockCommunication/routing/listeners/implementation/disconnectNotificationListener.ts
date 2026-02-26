@@ -21,7 +21,13 @@ export class DisconnectNotificationListener implements AbstractConnectionListene
     );
   }
 
-  public async onConnected(_duid: string): Promise<void> {}
-  public async onError(_duid: string, _message: string): Promise<void> {}
-  public async onReconnect(_duid: string, _message: string): Promise<void> {}
+  public async onConnected(_duid: string): Promise<void> {
+    this.logger.debug(_duid);
+  }
+  public async onError(_duid: string, _message: string): Promise<void> {
+    this.logger.debug(_duid);
+  }
+  public async onReconnect(_duid: string, _message: string): Promise<void> {
+    this.logger.debug(_duid);
+  }
 }

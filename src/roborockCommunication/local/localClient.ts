@@ -64,18 +64,37 @@ export class LocalNetworkClient extends AbstractClient {
     super.connect();
     this.buffer.reset();
     this.socket = new Socket();
+    const socket = this.socket;
 
     // Socket event listeners
-    this.socket.on('close', this.safeHandler(this.onDisconnect));
-    this.socket.on('end', this.safeHandler(this.onEnd));
-    this.socket.on('error', this.safeHandler(this.onError));
-    this.socket.on('connect', this.safeHandler(this.onConnect));
-    this.socket.on('timeout', this.safeHandler(this.onTimeout));
+    socket.on(
+      'close',
+      this.safeHandler(async (hadError: boolean) => {
+        if (this.socket !== socket) return;
+        await this.onDisconnect(hadError);
+      }),
+    );
+    socket.on(
+      'end',
+      this.safeHandler(async () => {
+        if (this.socket !== socket) return;
+        await this.onEnd();
+      }),
+    );
+    socket.on(
+      'error',
+      this.safeHandler(async (error: Error) => {
+        if (this.socket !== socket) return;
+        await this.onError(error);
+      }),
+    );
+    socket.on('connect', this.safeHandler(this.onConnect));
+    socket.on('timeout', this.safeHandler(this.onTimeout));
 
     // Data event listener
-    this.socket.on('data', this.safeHandler(this.onMessage));
-    this.socket.setTimeout(15000);
-    this.socket.connect(58867, this.ip);
+    socket.on('data', this.safeHandler(this.onMessage));
+    socket.setTimeout(15000);
+    socket.connect(58867, this.ip);
   }
 
   public override async disconnect(): Promise<void> {

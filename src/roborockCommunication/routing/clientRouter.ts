@@ -10,21 +10,23 @@ import { Client } from './client.js';
 import { ResponseBroadcasterFactory } from './listeners/responseBroadcasterFactory.js';
 
 export class ClientRouter implements Client {
-  protected readonly connectionListener = new ConnectionBroadcaster();
+  protected readonly connectionBroadcaster: ConnectionBroadcaster;
   protected readonly broadcasterFactory: ResponseBroadcasterFactory;
 
   private readonly context: MessageContext;
   private readonly localClients = new Map<string, AbstractClient>();
-  private readonly logger: AnsiLogger;
   private mqttClient: MQTTClient;
 
-  public constructor(logger: AnsiLogger, userdata: UserData) {
+  public constructor(
+    private readonly logger: AnsiLogger,
+    userdata: UserData,
+  ) {
     this.context = new MessageContext(userdata);
-    this.logger = logger;
 
     this.broadcasterFactory = new ResponseBroadcasterFactory(this.context, this.logger);
     this.mqttClient = new MQTTClient(logger, this.context, userdata, this.broadcasterFactory, this.broadcasterFactory);
-    this.mqttClient.registerConnectionListener(this.connectionListener);
+    this.connectionBroadcaster = new ConnectionBroadcaster(this.logger);
+    this.mqttClient.registerConnectionListener(this.connectionBroadcaster);
   }
 
   public registerDevice(duid: string, localKey: string, pv: string, nonce: number | undefined): void {
@@ -44,7 +46,7 @@ export class ClientRouter implements Client {
       this.broadcasterFactory,
       this.broadcasterFactory,
     );
-    localClient.registerConnectionListener(this.connectionListener);
+    localClient.registerConnectionListener(this.connectionBroadcaster);
 
     this.localClients.set(duid, localClient);
     return localClient;
@@ -55,7 +57,7 @@ export class ClientRouter implements Client {
   }
 
   public registerConnectionListener(listener: AbstractConnectionListener): void {
-    this.connectionListener.register(listener);
+    this.connectionBroadcaster.register(listener);
   }
 
   public registerMessageListener(listener: AbstractMessageListener): void {
@@ -80,7 +82,7 @@ export class ClientRouter implements Client {
 
   public async disconnect(): Promise<void> {
     await this.mqttClient.disconnect();
-    this.connectionListener.unregister();
+    this.connectionBroadcaster.unregister();
     this.broadcasterFactory.unregister();
     this.context.unregisterAllDevices();
 

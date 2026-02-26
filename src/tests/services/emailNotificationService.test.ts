@@ -56,9 +56,7 @@ describe('EmailNotificationService', () => {
       const service = new EmailNotificationService(createSettings(), mockLogger);
 
       await service.send('Test Subject', 'Test Body');
-
-      expect(mockSendMail).toHaveBeenCalledOnce();
-      expect(mockSendMail).toHaveBeenCalledWith({
+      expect(mockSendMail).toHaveBeenCalledExactlyOnceWith({
         from: 'user@example.com',
         to: 'recipient@example.com',
         subject: 'Test Subject',

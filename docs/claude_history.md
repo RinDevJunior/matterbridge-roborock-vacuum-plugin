@@ -1,5 +1,10 @@
 # Claude History
 
+## 2026-02-26 (Session 11)
+
+- Fixed `LocalNetworkClient` stale socket race condition on ping-timeout reconnect: replaced `intentionalDisconnect` flag (time-based, shared mutable state) with closure-captured socket reference in `close`/`error`/`end` event handlers. Old socket events are now identity-checked (`this.socket !== socket`) and ignored, preventing the new socket from being destroyed mid-handshake.
+- See detailed write-up: `docs/bugfix-local-reconnect-stale-socket.md`
+
 ## 2026-02-24 (Session 10)
 
 - Added `Protocol.device_status_ota` (500) with `deserializeDeviceStatusOta` in `MessageDeserializer` and new `DeviceStatusListener` to log firmware update status/progress and device online/offline events.

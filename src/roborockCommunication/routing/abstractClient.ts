@@ -15,7 +15,7 @@ export abstract class AbstractClient implements Client {
   public isInDisconnectingStep = false;
   public retryCount = 0;
 
-  protected readonly connectionBroadcaster = new ConnectionBroadcaster();
+  protected readonly connectionBroadcaster: ConnectionBroadcaster;
   protected readonly serializer: MessageSerializer;
   protected readonly deserializer: MessageDeserializer;
   protected connectionStateListener: ConnectionStateListener | undefined;
@@ -30,6 +30,7 @@ export abstract class AbstractClient implements Client {
   ) {
     this.serializer = new MessageSerializer(this.context, this.logger);
     this.deserializer = new MessageDeserializer(this.context, this.logger);
+    this.connectionBroadcaster = new ConnectionBroadcaster(this.logger);
   }
 
   abstract isConnected(): boolean;

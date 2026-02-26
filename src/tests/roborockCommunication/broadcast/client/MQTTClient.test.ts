@@ -414,7 +414,7 @@ describe('MQTTClient', () => {
     // Fast-forward time by 60 minutes to trigger the interval callback
     vi.advanceTimersByTime(60 * 60 * 1000);
 
-    expect(logger.debug).toHaveBeenCalledWith('[MQTTClient] Connection is active, no action needed');
+    expect(logger.debug).toHaveBeenCalledWith('[MQTTClient] Force reconnecting to ensure fresh connection');
 
     // Clean up
     clearInterval(mqttClient['keepConnectionAliveInterval']);
@@ -610,12 +610,12 @@ describe('MQTTClient', () => {
     expect(mqttClient['connected']).toBe(false);
   });
 
-  it('keepConnectionAlive should reconnect when client exists but not connected', () => {
+  it('keepConnectionAlive should reconnect when client does not exists', () => {
     vi.useFakeTimers();
     const mqttClient = createMQTTClient();
     const connectSpy = vi.spyOn(mqttClient, 'connect');
     const originalClient = mqttClient['mqttClient'];
-    mqttClient['mqttClient'] = client;
+    mqttClient['mqttClient'] = undefined;
     mqttClient['connected'] = false;
     mqttClient['keepConnectionAlive']();
 
@@ -623,7 +623,9 @@ describe('MQTTClient', () => {
     vi.advanceTimersByTime(60 * 60 * 1000);
 
     expect(connectSpy).toHaveBeenCalled();
-    expect(logger.debug).toHaveBeenCalledWith('[MQTTClient] MQTT client exists but not connected, reconnecting');
+    expect(logger.info).toHaveBeenCalledWith(
+      '[MQTTClient] Force reconnecting to ensure fresh connection (new connection)',
+    );
 
     // Clean up
     clearInterval(mqttClient['keepConnectionAliveInterval']);

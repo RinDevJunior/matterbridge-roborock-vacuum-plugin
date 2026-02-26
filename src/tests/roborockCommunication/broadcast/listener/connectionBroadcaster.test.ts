@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { ConnectionBroadcaster } from '../../../../roborockCommunication/routing/listeners/connectionBroadcaster.js';
+import { makeLogger } from '../../../testUtils.js';
 
 describe('ConnectionBroadcaster', () => {
   let chained: ConnectionBroadcaster;
@@ -7,7 +8,7 @@ describe('ConnectionBroadcaster', () => {
   let listener2: any;
 
   beforeEach(() => {
-    chained = new ConnectionBroadcaster();
+    chained = new ConnectionBroadcaster(makeLogger());
     listener1 = {
       onConnected: vi.fn().mockResolvedValue(undefined),
       onDisconnected: vi.fn().mockResolvedValue(undefined),

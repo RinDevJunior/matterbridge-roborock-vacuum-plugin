@@ -4,7 +4,7 @@ All notable changes to this project will be documented in this file.
 
 ---
 
-## [1.1.5-rc02] - 2026-02-24
+## [1.1.5-rc02] - 2026-02-27
 
 ### Added
 
@@ -12,8 +12,11 @@ All notable changes to this project will be documented in this file.
 
 ### Fixed
 
-- **Local client reconnect loop** — After a 15-second ping silence triggers a reconnect, stale `close`/`error` events from the old socket are now suppressed via an `intentionalDisconnect` flag, preventing the new socket from being torn down before the handshake completes.
+- **Local client stale socket race condition** — Replaced the `intentionalDisconnect` flag (shared mutable state, time-sensitive) with a closure-captured socket reference in `close`, `error`, and `end` event handlers. When a ping-timeout reconnect fires, the old socket's async `close` event is now rejected via identity check (`this.socket !== socket`), preventing it from destroying the newly created socket mid-handshake.
 - **MQTT fallback during local reconnect** — While the local client is reconnecting, `ClientRouter` now falls back to MQTT and emits a notice log instead of silently failing or waiting.
+- **`ConnectionBroadcaster` now requires a logger** — Constructor updated to accept `AnsiLogger`; `register` and `unregister` now emit notice logs for observability.
+- **`ClientRouter` field rename** — `connectionListener` renamed to `connectionBroadcaster` for naming consistency with `AbstractClient`.
+- **`DisconnectNotificationListener` stub methods** — `onConnected`, `onError`, and `onReconnect` now log the duid at debug level instead of being empty stubs.
 
 <a href="https://www.buymeacoffee.com/rinnvspktr" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/default-orange.png" alt="Buy Me A Coffee" height="41" width="174"></a>
 

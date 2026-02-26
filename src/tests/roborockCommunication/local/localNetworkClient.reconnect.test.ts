@@ -1,7 +1,7 @@
 import { EventEmitter } from 'node:events';
 
 declare global {
-  var mockSocketInstance: any;
+  var mockSocketQueue: ReturnType<typeof makeMockSocket>[];
 }
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
@@ -12,25 +12,10 @@ import { V1PendingResponseTracker } from '../../../roborockCommunication/routing
 import { V1ResponseBroadcaster } from '../../../roborockCommunication/routing/listeners/v1ResponseBroadcaster.js';
 
 vi.mock('node:net', () => {
-  class Sket {
-    constructor() {
-      if (globalThis.mockSocketInstance) {
-        return globalThis.mockSocketInstance;
-      }
-    }
-
-    on() {}
-    once() {}
-    emit() {}
-    write() {}
-    destroy() {}
-    connect() {}
-    setTimeout() {}
-    address() {
-      return { address: '127.0.0.1', port: 58867 };
-    }
+  function Socket(this: any): any {
+    return globalThis.mockSocketQueue?.shift();
   }
-  return { Socket: Sket };
+  return { Socket };
 });
 
 const DUID = 'device-001';
@@ -50,9 +35,7 @@ function makeMockSocket() {
   });
 }
 
-function createClient(mockSocket: ReturnType<typeof makeMockSocket>): LocalNetworkClient {
-  globalThis.mockSocketInstance = mockSocket;
-
+function createClient(): LocalNetworkClient {
   const logger = createMockLogger();
   const user = mkUser();
   const context = new MessageContext(user);
@@ -71,12 +54,11 @@ function createClient(mockSocket: ReturnType<typeof makeMockSocket>): LocalNetwo
 
 describe('LocalNetworkClient – ping timeout triggers reconnect', () => {
   let client: LocalNetworkClient;
-  let mockSocket: ReturnType<typeof makeMockSocket>;
 
   beforeEach(() => {
     vi.useFakeTimers();
-    mockSocket = makeMockSocket();
-    client = createClient(mockSocket);
+    globalThis.mockSocketQueue = [];
+    client = createClient();
   });
 
   afterEach(() => {
@@ -89,21 +71,26 @@ describe('LocalNetworkClient – ping timeout triggers reconnect', () => {
     vi.clearAllMocks();
   });
 
-  async function simulateSuccessfulConnect(): Promise<void> {
+  async function simulateSuccessfulConnect(socket: ReturnType<typeof makeMockSocket>): Promise<void> {
     client['helloResponseListener'].waitFor = vi.fn().mockResolvedValue({
       header: { nonce: 9999, version: 'L01' },
     });
     client.connect();
-    mockSocket.emit('connect');
+    socket.emit('connect');
     await vi.advanceTimersByTimeAsync(0);
   }
 
   it('should trigger reconnect when no ping response received for 15s', async () => {
-    await simulateSuccessfulConnect();
+    const socket = makeMockSocket();
+    globalThis.mockSocketQueue = [socket];
+    await simulateSuccessfulConnect(socket);
     expect(client.isReady()).toBe(true);
 
     const disconnectSpy = vi.spyOn(client, 'disconnect');
     const connectSpy = vi.spyOn(client, 'connect');
+
+    // Pre-populate queue for the reconnect's connect() call
+    globalThis.mockSocketQueue = [makeMockSocket()];
 
     // checkConnection fires every 5s; advance tick-by-tick so async guard resets between calls.
     // At t=5000: 5000ms elapsed — no reconnect.
@@ -118,16 +105,20 @@ describe('LocalNetworkClient – ping timeout triggers reconnect', () => {
   });
 
   it('should update lastPingResponse when ping response is received after reconnect', async () => {
-    await simulateSuccessfulConnect();
+    const socket = makeMockSocket();
+    globalThis.mockSocketQueue = [socket];
+    await simulateSuccessfulConnect(socket);
     expect(client.isReady()).toBe(true);
 
-    // Trigger reconnect
+    // Pre-populate queue for the reconnect's connect() call
+    globalThis.mockSocketQueue = [makeMockSocket()];
     await vi.advanceTimersByTimeAsync(20000);
 
-    // Reconnect with fresh socket
-    mockSocket = makeMockSocket();
-    client = createClient(mockSocket);
-    await simulateSuccessfulConnect();
+    // Reconnect with fresh client and socket
+    client = createClient();
+    const socket2 = makeMockSocket();
+    globalThis.mockSocketQueue = [socket2];
+    await simulateSuccessfulConnect(socket2);
     expect(client.isReady()).toBe(true);
 
     const before = client['pingResponseListener'].lastPingResponse;
@@ -138,7 +129,9 @@ describe('LocalNetworkClient – ping timeout triggers reconnect', () => {
   });
 
   it('should not reconnect again when ping responses are received regularly', async () => {
-    await simulateSuccessfulConnect();
+    const socket = makeMockSocket();
+    globalThis.mockSocketQueue = [socket];
+    await simulateSuccessfulConnect(socket);
     expect(client.isReady()).toBe(true);
 
     const disconnectSpy = vi.spyOn(client, 'disconnect');
@@ -152,20 +145,99 @@ describe('LocalNetworkClient – ping timeout triggers reconnect', () => {
     expect(disconnectSpy).not.toHaveBeenCalled();
   });
 
-  it('should suppress stale close event from old socket during reconnect', async () => {
-    await simulateSuccessfulConnect();
-    expect(client.isReady()).toBe(true);
+  it('should suppress stale close event from old socket when no new socket exists', async () => {
+    const socket = makeMockSocket();
+    globalThis.mockSocketQueue = [socket];
+    await simulateSuccessfulConnect(socket);
+    expect(client['connected']).toBe(true);
 
-    // Directly call disconnect() to set intentionalDisconnect=true
+    // Disconnect — socket reference captured in closure is no longer this.socket
     await client.disconnect();
-    expect(client['intentionalDisconnect']).toBe(true);
     expect(client['connected']).toBe(false);
 
-    // The stale 'close' event fires while intentionalDisconnect=true — onDisconnect early-returns
-    mockSocket.emit('close', false);
+    // Stale 'close' event: socket !== this.socket (undefined) → handler returns early
+    socket.emit('close', false);
     await vi.advanceTimersByTimeAsync(0);
 
-    // connected should still be false (not double-reset) and no error thrown
     expect(client['connected']).toBe(false);
+  });
+
+  describe('stale socket race condition (closure-based guard)', () => {
+    it('should not destroy new socket when old socket fires stale close event after reconnect', async () => {
+      const socketA = makeMockSocket();
+      const socketB = makeMockSocket();
+      globalThis.mockSocketQueue = [socketA, socketB];
+
+      await simulateSuccessfulConnect(socketA);
+      expect(client.isReady()).toBe(true);
+
+      // disconnect() destroys socketA, connect() creates socketB
+      await client.disconnect();
+      client.connect();
+
+      // socketA fires stale 'close' (as happens async in real Node.js after destroy())
+      // handler checks: this.socket (socketB) !== socket (socketA) → returns early
+      socketA.emit('close', false);
+      await vi.advanceTimersByTimeAsync(0);
+
+      expect(socketB.destroy).not.toHaveBeenCalled();
+    });
+
+    it('should not destroy new socket when old socket fires stale error event after reconnect', async () => {
+      const socketA = makeMockSocket();
+      const socketB = makeMockSocket();
+      globalThis.mockSocketQueue = [socketA, socketB];
+
+      await simulateSuccessfulConnect(socketA);
+      expect(client.isReady()).toBe(true);
+
+      await client.disconnect();
+      client.connect();
+
+      // socketA fires stale 'error'
+      socketA.emit('error', new Error('stale network error'));
+      await vi.advanceTimersByTimeAsync(0);
+
+      expect(socketB.destroy).not.toHaveBeenCalled();
+    });
+
+    it('should process close event from the current socket normally', async () => {
+      const socket = makeMockSocket();
+      globalThis.mockSocketQueue = [socket];
+
+      await simulateSuccessfulConnect(socket);
+      expect(client['connected']).toBe(true);
+
+      // 'close' from the current socket → this.socket === socket → processed
+      socket.emit('close', false);
+      await vi.advanceTimersByTimeAsync(0);
+
+      expect(client['connected']).toBe(false);
+    });
+
+    it('should not destroy new socket when ping-timeout reconnect fires old socket close event late', async () => {
+      const socketA = makeMockSocket();
+      const socketB = makeMockSocket();
+      globalThis.mockSocketQueue = [socketA, socketB];
+
+      await simulateSuccessfulConnect(socketA);
+      expect(client.isReady()).toBe(true);
+
+      // Pre-populate hello mock for socketB reconnect
+      client['helloResponseListener'].waitFor = vi.fn().mockResolvedValue({
+        header: { nonce: 9999, version: 'L01' },
+      });
+
+      // Advance past 15s ping timeout — checkConnection calls disconnect() + connect()
+      for (let tick = 0; tick < 4; tick++) {
+        await vi.advanceTimersByTimeAsync(5000);
+      }
+
+      // socketA fires its 'close' event late (after connect() has set this.socket = socketB)
+      socketA.emit('close', false);
+      await vi.advanceTimersByTimeAsync(0);
+
+      expect(socketB.destroy).not.toHaveBeenCalled();
+    });
   });
 });

@@ -57,7 +57,7 @@ describe('ClientRouter', () => {
   it('registerConnectionListener should call connectionListener.register', () => {
     const router = new ClientRouter(mockLogger, mockUserData);
     const listener = asType<AbstractConnectionListener>({});
-    const spy = vi.spyOn(router['connectionListener'], 'register');
+    const spy = vi.spyOn(router['connectionBroadcaster'], 'register');
     router.registerConnectionListener(listener);
     expect(spy).toHaveBeenCalledWith(listener);
   });

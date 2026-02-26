@@ -1,13 +1,18 @@
 import { AbstractConnectionListener } from './abstractConnectionListener.js';
+import { AnsiLogger } from 'matterbridge/logger';
 
 export class ConnectionBroadcaster implements AbstractConnectionListener {
   private listeners: AbstractConnectionListener[] = [];
 
+  constructor(private readonly logger: AnsiLogger) {}
+
   public register(listener: AbstractConnectionListener): void {
+    this.logger.notice(`[ConnectionBroadcaster] register listener`);
     this.listeners.push(listener);
   }
 
   public unregister(): void {
+    this.logger.notice(`[ConnectionBroadcaster] unregister listener`);
     this.listeners = [];
   }
 
