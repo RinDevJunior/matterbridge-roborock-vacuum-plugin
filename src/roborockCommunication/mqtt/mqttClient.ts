@@ -115,21 +115,20 @@ export class MQTTClient extends AbstractClient {
   private keepConnectionAlive(): void {
     if (this.keepConnectionAliveInterval) {
       clearInterval(this.keepConnectionAliveInterval);
+      this.keepConnectionAliveInterval.unref();
     }
 
+    // Always do a reconnect because the mqtt sometimes does not response any more
     this.keepConnectionAliveInterval = setInterval(() => {
-      if (this.mqttClient && this.connected) {
-        this.logger.debug('[MQTTClient] Connection is active, no action needed');
-      } else if (this.mqttClient && !this.connected) {
-        this.logger.debug('[MQTTClient] MQTT client exists but not connected, reconnecting');
-        this.mqttClient = undefined;
-        this.connect();
+      if (this.mqttClient) {
+        this.logger.debug('[MQTTClient] Force reconnecting to ensure fresh connection');
+        this.mqttClient.end();
+        this.mqttClient.reconnect();
       } else {
-        this.logger.debug('[MQTTClient] MQTT client not initialized, calling connect to establish connection');
+        this.logger.info('[MQTTClient] Force reconnecting to ensure fresh connection (new connection)');
         this.connect();
       }
     }, KEEPALIVE_INTERVAL_MS);
-    this.keepConnectionAliveInterval.unref();
   }
 
   private async onConnect(result: IConnackPacket): Promise<void> {
