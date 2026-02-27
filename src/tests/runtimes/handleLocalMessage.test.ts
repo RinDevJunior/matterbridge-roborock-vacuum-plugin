@@ -1,26 +1,37 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { RvcOperationalState } from 'matterbridge/matter/clusters';
 import { triggerDssError } from '../../runtimes/handleLocalMessage.js';
-import { asPartial } from '../helpers/testUtils.js';
+import { createMockLogger, asPartial } from '../helpers/testUtils.js';
 import type { RoborockVacuumCleaner } from '../../types/roborockVacuumCleaner.js';
 import type { RoborockMatterbridgePlatform } from '../../module.js';
-import type { AnsiLogger } from 'matterbridge/logger';
 
-const makePlatform = (): RoborockMatterbridgePlatform =>
-  asPartial<RoborockMatterbridgePlatform>({
-    log: { info: vi.fn(), error: vi.fn(), debug: vi.fn(), warn: vi.fn() } as unknown as AnsiLogger,
-  });
-
-const makeRobot = (operationalState: RvcOperationalState.OperationalState): RoborockVacuumCleaner =>
-  asPartial<RoborockVacuumCleaner>({
+function createMockRobot(operationalState: RvcOperationalState.OperationalState): RoborockVacuumCleaner {
+  return asPartial<RoborockVacuumCleaner>({
     getAttribute: vi.fn().mockReturnValue(operationalState),
     updateAttribute: vi.fn(),
   });
+}
+
+function createMockPlatform(): RoborockMatterbridgePlatform {
+  return asPartial<RoborockMatterbridgePlatform>({
+    log: createMockLogger(),
+  });
+}
 
 describe('triggerDssError', () => {
+  let platform: RoborockMatterbridgePlatform;
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    platform = createMockPlatform();
+  });
+
+  afterEach(() => {
+    vi.clearAllMocks();
+  });
+
   it('should return true and not update when already in Error state', () => {
-    const robot = makeRobot(RvcOperationalState.OperationalState.Error);
-    const platform = makePlatform();
+    const robot = createMockRobot(RvcOperationalState.OperationalState.Error);
 
     const result = triggerDssError(robot, platform);
 
@@ -29,8 +40,7 @@ describe('triggerDssError', () => {
   });
 
   it('should update to Error and return true when state is Docked', () => {
-    const robot = makeRobot(RvcOperationalState.OperationalState.Docked);
-    const platform = makePlatform();
+    const robot = createMockRobot(RvcOperationalState.OperationalState.Docked);
 
     const result = triggerDssError(robot, platform);
 
@@ -44,8 +54,7 @@ describe('triggerDssError', () => {
   });
 
   it('should return false when state is Running', () => {
-    const robot = makeRobot(RvcOperationalState.OperationalState.Running);
-    const platform = makePlatform();
+    const robot = createMockRobot(RvcOperationalState.OperationalState.Running);
 
     const result = triggerDssError(robot, platform);
 
@@ -54,8 +63,7 @@ describe('triggerDssError', () => {
   });
 
   it('should return false when state is SeekingCharger', () => {
-    const robot = makeRobot(RvcOperationalState.OperationalState.SeekingCharger);
-    const platform = makePlatform();
+    const robot = createMockRobot(RvcOperationalState.OperationalState.SeekingCharger);
 
     const result = triggerDssError(robot, platform);
 

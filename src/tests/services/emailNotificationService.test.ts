@@ -95,4 +95,25 @@ describe('EmailNotificationService', () => {
       expect(mockSendMail).toHaveBeenCalledWith(expect.objectContaining({ from: '', to: '' }));
     });
   });
+
+  describe('sendTestEmail', () => {
+    it('should send email with correct test subject and body', async () => {
+      const service = new EmailNotificationService(createSettings(), mockLogger);
+
+      await service.sendTestEmail();
+
+      expect(mockSendMail).toHaveBeenCalledOnce();
+      const call = mockSendMail.mock.calls[0][0];
+      expect(call.subject).toBe('[Roborock] Email notification setup successful');
+      expect(call.text).toContain('Your email notification settings are working correctly.');
+    });
+
+    it('should not throw when sendMail fails', async () => {
+      mockSendMail.mockRejectedValue(new Error('SMTP error'));
+      const service = new EmailNotificationService(createSettings(), mockLogger);
+
+      await expect(service.sendTestEmail()).resolves.toBeUndefined();
+      expect(mockLogger.error).toHaveBeenCalled();
+    });
+  });
 });
