@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { AuthenticationStateRepository } from '../../../services/authentication/AuthenticationStateRepository.js';
-import { createMockLocalStorage } from '../../helpers/testUtils.js';
+import { createMockLocalStorage, asPartial } from '../../helpers/testUtils.js';
 import type { AuthenticateFlowState } from '../../../roborockCommunication/models/index.js';
 
 describe('AuthenticationStateRepository', () => {
@@ -19,7 +19,7 @@ describe('AuthenticationStateRepository', () => {
 
   describe('getAuthState', () => {
     it('should return the stored auth state', async () => {
-      const state = { state: 'authenticated' } satisfies Partial<AuthenticateFlowState> as AuthenticateFlowState;
+      const state = asPartial<AuthenticateFlowState>({ email: 'user@example.com' });
       vi.mocked(persist.getItem).mockResolvedValue(state);
 
       const result = await repo.getAuthState();
@@ -39,7 +39,7 @@ describe('AuthenticationStateRepository', () => {
 
   describe('saveAuthState', () => {
     it('should persist the auth state with correct key', async () => {
-      const state = { state: 'pending' } satisfies Partial<AuthenticateFlowState> as AuthenticateFlowState;
+      const state = asPartial<AuthenticateFlowState>({ email: 'user@example.com' });
 
       await repo.saveAuthState(state);
 

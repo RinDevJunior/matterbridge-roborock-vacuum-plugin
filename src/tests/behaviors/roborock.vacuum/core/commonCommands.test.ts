@@ -1,12 +1,16 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { registerCommonCommands } from '../../../../behaviors/roborock.vacuum/core/commonCommands.js';
-import { BehaviorDeviceGeneric, CommandNames } from '../../../../behaviors/BehaviorDeviceGeneric.js';
-import { createMockLogger, asPartial, createMockRoborockService } from '../../../helpers/testUtils.js';
-import type { DeviceCommands } from '../../../../behaviors/BehaviorDeviceGeneric.js';
+import {
+  BehaviorDeviceGeneric,
+  CommandNames,
+  DeviceEndpointCommands,
+  DeviceCommands,
+} from '../../../../behaviors/BehaviorDeviceGeneric.js';
+import { createMockLogger, asPartial } from '../../../helpers/testUtils.js';
 import type { RoborockService } from '../../../../services/roborockService.js';
 
-function createMockHandler(): BehaviorDeviceGeneric<DeviceCommands> {
-  return new BehaviorDeviceGeneric<DeviceCommands>(createMockLogger());
+function createMockHandler(): BehaviorDeviceGeneric<DeviceEndpointCommands> {
+  return new BehaviorDeviceGeneric<DeviceEndpointCommands>(createMockLogger());
 }
 
 function createMockService(): RoborockService {
@@ -23,9 +27,9 @@ function createMockService(): RoborockService {
 describe('registerCommonCommands', () => {
   const duid = 'test-duid';
   const behaviorName = 'TestBehavior';
-  let handler: BehaviorDeviceGeneric<DeviceCommands>;
+  let handler: BehaviorDeviceGeneric<DeviceEndpointCommands>;
   let service: RoborockService;
-  let onActionTriggered: ReturnType<typeof vi.fn>;
+  let onActionTriggered: () => void;
   let logger: ReturnType<typeof createMockLogger>;
 
   beforeEach(() => {
@@ -33,8 +37,15 @@ describe('registerCommonCommands', () => {
     logger = createMockLogger();
     handler = createMockHandler();
     service = createMockService();
-    onActionTriggered = vi.fn();
-    registerCommonCommands(duid, handler, logger, service, behaviorName, onActionTriggered);
+    onActionTriggered = vi.fn() as unknown as () => void;
+    registerCommonCommands(
+      duid,
+      handler as BehaviorDeviceGeneric<DeviceCommands>,
+      logger,
+      service,
+      behaviorName,
+      onActionTriggered,
+    );
   });
 
   afterEach(() => {
@@ -49,7 +60,7 @@ describe('registerCommonCommands', () => {
     });
 
     it('should call setSelectedAreas with empty array when undefined is passed', async () => {
-      await handler.executeCommand(CommandNames.SELECT_AREAS, undefined);
+      await handler.executeCommand(CommandNames.SELECT_AREAS, undefined as unknown as number[]);
       expect(service.setSelectedAreas).toHaveBeenCalledWith(duid, []);
     });
   });
@@ -83,7 +94,7 @@ describe('registerCommonCommands', () => {
 
   describe('IDENTIFY command', () => {
     it('should call playSoundToLocate and not trigger onActionTriggered', async () => {
-      await handler.executeCommand(CommandNames.IDENTIFY);
+      await handler.executeCommand(CommandNames.IDENTIFY, 0);
       expect(service.playSoundToLocate).toHaveBeenCalledWith(duid);
       expect(onActionTriggered).not.toHaveBeenCalled();
       expect(logger.notice).toHaveBeenCalledWith(`${behaviorName}-identify`);
@@ -100,8 +111,15 @@ describe('registerCommonCommands', () => {
   });
 
   it('should throw when registering same command handler twice', () => {
-    expect(() => registerCommonCommands(duid, handler, logger, service, behaviorName, onActionTriggered)).toThrow(
-      /Handler already registered/,
-    );
+    expect(() =>
+      registerCommonCommands(
+        duid,
+        handler as BehaviorDeviceGeneric<DeviceCommands>,
+        logger,
+        service,
+        behaviorName,
+        onActionTriggered,
+      ),
+    ).toThrow(/Handler already registered/);
   });
 });

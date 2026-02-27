@@ -7,7 +7,9 @@ import { createMockLogger } from '../../../helpers/testUtils.js';
 import type { Dps } from '../../../../roborockCommunication/models/dps.js';
 
 function createMockMessage(protocol: Protocol, payload: Record<string, unknown>): ResponseMessage {
-  const header = { isForProtocol: (p: Protocol) => p === protocol } satisfies { isForProtocol: (p: Protocol) => boolean };
+  const header = { isForProtocol: (p: Protocol) => p === protocol } satisfies {
+    isForProtocol: (p: Protocol) => boolean;
+  };
   const body = new ResponseBody({ [protocol.toString()]: payload } satisfies Dps);
   return new ResponseMessage('test-duid', header as never, body);
 }
@@ -39,14 +41,18 @@ describe('DeviceStatusListener', () => {
     });
 
     it('should ignore message when body is undefined', () => {
-      const header = { isForProtocol: (p: Protocol) => p === Protocol.device_status_ota } satisfies { isForProtocol: (p: Protocol) => boolean };
+      const header = { isForProtocol: (p: Protocol) => p === Protocol.device_status_ota } satisfies {
+        isForProtocol: (p: Protocol) => boolean;
+      };
       const message = new ResponseMessage('test-duid', header as never, undefined);
       listener.onMessage(message);
       expect(logger.info).not.toHaveBeenCalled();
     });
 
     it('should ignore message when payload is a string', () => {
-      const header = { isForProtocol: (p: Protocol) => p === Protocol.device_status_ota } satisfies { isForProtocol: (p: Protocol) => boolean };
+      const header = { isForProtocol: (p: Protocol) => p === Protocol.device_status_ota } satisfies {
+        isForProtocol: (p: Protocol) => boolean;
+      };
       const body = new ResponseBody({ [Protocol.device_status_ota.toString()]: 'invalid' } satisfies Dps);
       const message = new ResponseMessage('test-duid', header as never, body);
       listener.onMessage(message);

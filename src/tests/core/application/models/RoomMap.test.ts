@@ -4,7 +4,9 @@ import { MapInfo } from '../../../../core/application/models/MapInfo.js';
 import { createMockLogger, asPartial, createMockRoborockService } from '../../../helpers/testUtils.js';
 import type { RoomMapping } from '../../../../core/application/models/RoomMapping.js';
 import type { MapInfoPlatformContext, MapReference } from '../../../../core/application/models/RoomMap.js';
-import type { Device } from '../../../../roborockCommunication/models/device.js';
+import type { Device, DeviceInformation } from '../../../../roborockCommunication/models/device.js';
+import type { Home } from '../../../../roborockCommunication/models/home.js';
+import type { RoborockService } from '../../../../services/roborockService.js';
 
 function createRoomMapping(id: number, iot_map_id: number, overrides: Partial<RoomMapping> = {}): RoomMapping {
   return {
@@ -20,7 +22,7 @@ function createRoomMapping(id: number, iot_map_id: number, overrides: Partial<Ro
 function createMockDevice(): Device {
   return asPartial<Device>({
     duid: 'test-duid',
-    store: { homeData: { rooms: [] } },
+    store: asPartial<DeviceInformation>({ homeData: asPartial<Home>({ rooms: [] }) }),
     mapInfos: undefined,
   });
 }
@@ -102,10 +104,12 @@ describe('RoomMap', () => {
 
   describe('fromMapInfo', () => {
     let context: MapInfoPlatformContext;
+    let roborockService: RoborockService;
 
     beforeEach(() => {
+      roborockService = createMockRoborockService();
       context = {
-        roborockService: createMockRoborockService(),
+        roborockService,
         log: createMockLogger(),
       };
     });
@@ -139,8 +143,8 @@ describe('RoomMap', () => {
         ],
       });
       const roomData: [number, string][] = [[1, 'room1']];
-      vi.mocked(context.roborockService!.getMapInfo).mockResolvedValue(mapInfo);
-      vi.mocked(context.roborockService!.getRoomMap).mockResolvedValue(roomData);
+      vi.mocked(roborockService.getMapInfo).mockResolvedValue(mapInfo);
+      vi.mocked(roborockService.getRoomMap).mockResolvedValue(roomData);
       const device = createMockDevice();
 
       const result = await RoomMap.fromMapInfo(device, context);
@@ -158,9 +162,12 @@ describe('RoomMap', () => {
         multi_map_count: 1,
         map_info: [{ mapFlag: 3, add_time: 0, length: 0, name: 'Home', bak_maps: [] }],
       });
-      const roomData: [number, string][] = [[1, 'room1'], [2, 'room2']];
-      vi.mocked(context.roborockService!.getMapInfo).mockResolvedValue(mapInfo);
-      vi.mocked(context.roborockService!.getRoomMap).mockResolvedValue(roomData);
+      const roomData: [number, string][] = [
+        [1, 'room1'],
+        [2, 'room2'],
+      ];
+      vi.mocked(roborockService.getMapInfo).mockResolvedValue(mapInfo);
+      vi.mocked(roborockService.getRoomMap).mockResolvedValue(roomData);
       const device = createMockDevice();
 
       const result = await RoomMap.fromMapInfo(device, context);
@@ -172,8 +179,8 @@ describe('RoomMap', () => {
 
     it('should set activeMapId to 0 when maps array is empty', async () => {
       const mapInfo = MapInfo.empty();
-      vi.mocked(context.roborockService!.getMapInfo).mockResolvedValue(mapInfo);
-      vi.mocked(context.roborockService!.getRoomMap).mockResolvedValue([]);
+      vi.mocked(roborockService.getMapInfo).mockResolvedValue(mapInfo);
+      vi.mocked(roborockService.getRoomMap).mockResolvedValue([]);
       const device = createMockDevice();
 
       const result = await RoomMap.fromMapInfo(device, context);
