@@ -215,6 +215,71 @@ describe('LocalNetworkClient – ping timeout triggers reconnect', () => {
       expect(client['connected']).toBe(false);
     });
 
+    it('isReconnecting should return true after disconnect and false after connect', async () => {
+      const socket = makeMockSocket();
+      globalThis.mockSocketQueue = [socket];
+      await simulateSuccessfulConnect(socket);
+
+      expect(client.isReconnecting()).toBe(false);
+
+      await client.disconnect();
+      expect(client.isReconnecting()).toBe(true);
+
+      globalThis.mockSocketQueue = [makeMockSocket()];
+      client.connect();
+      expect(client.isReconnecting()).toBe(false);
+    });
+
+    it('should suppress onDisconnect when intentionalDisconnect is true', async () => {
+      const socket = makeMockSocket();
+      globalThis.mockSocketQueue = [socket];
+      await simulateSuccessfulConnect(socket);
+
+      await client.disconnect(); // sets intentionalDisconnect = true
+      // Emit close from the disconnected socket — handler checks intentionalDisconnect guard
+      socket.emit('close', false);
+      await vi.advanceTimersByTimeAsync(0);
+
+      // No onDisconnected broadcast expected — intentionalDisconnect suppresses it
+      expect(client['connected']).toBe(false);
+    });
+
+    it('should suppress onError when intentionalDisconnect is true', async () => {
+      const socket = makeMockSocket();
+      globalThis.mockSocketQueue = [socket];
+      await simulateSuccessfulConnect(socket);
+
+      await client.disconnect(); // sets intentionalDisconnect = true
+      socket.emit('error', new Error('intentional suppressed error'));
+      await vi.advanceTimersByTimeAsync(0);
+
+      expect(client['connected']).toBe(false);
+    });
+
+    it('onTimeout should log error', async () => {
+      const socket = makeMockSocket();
+      globalThis.mockSocketQueue = [socket];
+      const logger = client['logger'] as ReturnType<typeof createMockLogger>;
+      await simulateSuccessfulConnect(socket);
+
+      socket.emit('timeout');
+      await vi.advanceTimersByTimeAsync(0);
+
+      expect(logger.error).toHaveBeenCalledWith(expect.stringContaining('timed out'));
+    });
+
+    it('onEnd should log notice', async () => {
+      const socket = makeMockSocket();
+      globalThis.mockSocketQueue = [socket];
+      const logger = client['logger'] as ReturnType<typeof createMockLogger>;
+      await simulateSuccessfulConnect(socket);
+
+      socket.emit('end');
+      await vi.advanceTimersByTimeAsync(0);
+
+      expect(logger.notice).toHaveBeenCalledWith(expect.stringContaining('socket ended'));
+    });
+
     it('should not destroy new socket when ping-timeout reconnect fires old socket close event late', async () => {
       const socketA = makeMockSocket();
       const socketB = makeMockSocket();

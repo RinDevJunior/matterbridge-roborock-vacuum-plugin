@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { DeviceConfigurator } from '../../platform/deviceConfigurator.js';
-import type { MatterbridgeDynamicPlatform, MatterbridgeEndpoint } from 'matterbridge';
+import type { MatterbridgeDynamicPlatform } from 'matterbridge';
 import { bridgedNode } from 'matterbridge';
 import type { AnsiLogger } from 'matterbridge/logger';
 import {
@@ -15,6 +15,7 @@ import type { DeviceRegistry } from '../../platform/deviceRegistry.js';
 import type { PlatformRunner } from '../../platformRunner.js';
 import type { RoborockService } from '../../services/roborockService.js';
 import { DeviceInformation, DeviceModel, DeviceSpecs, type Device } from '../../roborockCommunication/models/index.js';
+import { createDefaultAdvancedFeature } from '../../model/RoborockPluginPlatformConfig.js';
 import { RoborockVacuumCleaner } from '../../types/roborockVacuumCleaner.js';
 import type { WssSendSnackbarMessage } from '../../types/WssSendSnackbarMessage.js';
 
@@ -617,6 +618,97 @@ describe('DeviceConfigurator', () => {
         );
       });
 
+      registry = createMockDeviceRegistry({
+        hasDevices: vi.fn().mockReturnValue(true),
+        getAllDevices: vi.fn().mockReturnValue([device]),
+        robotsMap: new Map(),
+      });
+      configurator = new DeviceConfigurator(
+        platform,
+        configManager,
+        registry,
+        () => platformRunner,
+        snackbarMessage,
+        log,
+      );
+
+      await configurator.onConfigureDevice(roborockService);
+
+      expect(platform.registerDevice).toHaveBeenCalled();
+    });
+
+    it('should return undefined when validateDevice returns false', async () => {
+      const validateFalsePlatform = asPartial<MatterbridgeDynamicPlatform>({
+        ...platform,
+        validateDevice: vi.fn().mockReturnValue(false),
+      });
+      const device = makeMockDevice('duid-no-validate');
+      registry = createMockDeviceRegistry({
+        hasDevices: vi.fn().mockReturnValue(true),
+        getAllDevices: vi.fn().mockReturnValue([device]),
+        robotsMap: new Map(),
+      });
+      configurator = new DeviceConfigurator(
+        validateFalsePlatform,
+        configManager,
+        registry,
+        () => platformRunner,
+        snackbarMessage,
+        log,
+      );
+
+      await configurator.onConfigureDevice(roborockService);
+
+      expect(validateFalsePlatform.registerDevice).not.toHaveBeenCalled();
+    });
+
+    it('should use matterbridgeVersion as hardwareVersionString when firmwareVersion and fv are both undefined', async () => {
+      const device = asPartial<Device>({
+        duid: 'duid-no-fw',
+        name: 'Vacuum-duid-no-fw',
+        rrHomeId: 1,
+        fv: undefined,
+        specs: asPartial<DeviceSpecs>({ model: DeviceModel.S7, firmwareVersion: undefined }),
+        store: asPartial<DeviceInformation>({
+          homeData: { id: 1, name: 'Home', rooms: [], products: [], devices: [], receivedDevices: [] },
+        }),
+      });
+      registry = createMockDeviceRegistry({
+        hasDevices: vi.fn().mockReturnValue(true),
+        getAllDevices: vi.fn().mockReturnValue([device]),
+        robotsMap: new Map(),
+      });
+      configurator = new DeviceConfigurator(
+        platform,
+        configManager,
+        registry,
+        () => platformRunner,
+        snackbarMessage,
+        log,
+      );
+
+      await configurator.onConfigureDevice(roborockService);
+
+      expect(platform.registerDevice).toHaveBeenCalled();
+    });
+
+    it('should use default vendorId and productId when matterVendorId and matterProductId are 0', async () => {
+      configManager = asPartial<PlatformConfigManager>({
+        overrideMatterConfiguration: true,
+        matterOverrideSettings: {
+          matterVendorName: 'Vendor',
+          matterProductName: 'Product',
+          matterVendorId: 0,
+          matterProductId: 0,
+        },
+        getProductNameForDevice: vi.fn().mockReturnValue(''),
+        ensureDeviceProductNameEntry: vi.fn().mockReturnValue(false),
+        rawConfig: {} as PlatformConfigManager['rawConfig'],
+        isCustomCleanModeMappingEnabled: false,
+        forceRunAtDefault: false,
+        cleanModeSettings: createDefaultAdvancedFeature().settings.cleanModeSettings,
+      });
+      const device = makeMockDevice('duid-default-ids');
       registry = createMockDeviceRegistry({
         hasDevices: vi.fn().mockReturnValue(true),
         getAllDevices: vi.fn().mockReturnValue([device]),

@@ -503,4 +503,24 @@ describe('ConnectionService - sendTestEmailNotification', () => {
     const service = new ConnectionService(mockClientManager, mockLogger, mockMessageRoutingService, configManager);
     await expect(service.sendTestEmailNotification()).resolves.toBeUndefined();
   });
+
+  it('should reuse cached emailService on second call', async () => {
+    const settings = asPartial<EmailNotificationSettings>({
+      smtpHost: 'smtp.example.com',
+      smtpPort: 587,
+      smtpSecure: false,
+      smtpUser: 'user@example.com',
+      smtpPassword: 'pass',
+      recipient: 'to@example.com',
+    });
+    const configManager = asPartial<PlatformConfigManager>({
+      isEmailNotificationEnabled: true,
+      emailNotificationSettings: settings,
+    });
+    const service = new ConnectionService(mockClientManager, mockLogger, mockMessageRoutingService, configManager);
+    await service.sendTestEmailNotification();
+    const firstInstance = service['emailService'];
+    await service.sendTestEmailNotification();
+    expect(service['emailService']).toBe(firstInstance);
+  });
 });
