@@ -30,4 +30,11 @@ export class EmailNotificationService {
       );
     }
   }
+
+  public async sendTestEmail(): Promise<void> {
+    await this.send(
+      '[Roborock] Email notification setup successful',
+      `Your email notification settings are working correctly.\n\nTime: ${new Date().toISOString()}`,
+    );
+  }
 }

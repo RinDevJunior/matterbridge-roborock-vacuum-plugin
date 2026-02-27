@@ -8,6 +8,7 @@ All notable changes to this project will be documented in this file.
 
 ### Added
 
+- **Email notification test on startup** — When email notifications are enabled, the plugin now sends a test email on `onConfigure` to verify the SMTP settings are correct. A successful email confirms your configuration is working.
 - **Device OTA status handling** — The plugin now handles protocol 500 (`device_status_ota`) messages from the device. Firmware update status, progress, and device online/offline events are logged automatically.
 
 ### Fixed

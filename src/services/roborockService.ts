@@ -162,6 +162,11 @@ export class RoborockService {
     return result;
   }
 
+  /** Send a test email to verify email notification settings. */
+  public async sendTestEmailNotification(): Promise<void> {
+    await this.connectionService.sendTestEmailNotification();
+  }
+
   /** Set callback for device status notifications. */
   public setDeviceNotify(callback: DeviceNotifyCallback): void {
     this.deviceNotify = callback;

@@ -40,6 +40,13 @@ export class ConnectionService {
     private readonly configManager?: PlatformConfigManager,
   ) {}
 
+  public async sendTestEmailNotification(): Promise<void> {
+    const emailService = this.getEmailService();
+    if (emailService) {
+      await emailService.sendTestEmail();
+    }
+  }
+
   private getEmailService(): EmailNotificationService | undefined {
     if (!this.configManager?.isEmailNotificationEnabled) return undefined;
     const settings = this.configManager.emailNotificationSettings;

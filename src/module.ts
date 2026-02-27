@@ -191,6 +191,10 @@ export class RoborockMatterbridgePlatform extends MatterbridgeDynamicPlatform {
     }, intervalMs);
 
     this.snackbarMessage('Roborock Vacuum Plugin is ready', 5000, 'success');
+
+    if (this.configManager.isEmailNotificationEnabled && this.discovery.roborockService) {
+      await this.discovery.roborockService.sendTestEmailNotification();
+    }
   }
 
   public override async onShutdown(reason?: string): Promise<void> {
