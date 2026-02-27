@@ -393,5 +393,71 @@ describe('RoborockMatterbridgePlatform - orchestration', () => {
 
       expect(platform.state.isStartupCompleted).toBe(false);
     });
+
+    it('should call stopAllBurstPolling on shutdown when platformRunner is set', async () => {
+      platform.platformRunner = asPartial<PlatformRunner>({
+        requestHomeData: vi.fn().mockResolvedValue(undefined),
+        stopAllBurstPolling: vi.fn(),
+      });
+
+      await platform.onShutdown('test');
+
+      expect(platform.platformRunner.stopAllBurstPolling).toHaveBeenCalled();
+    });
+  });
+
+  describe('onConfigure - email notification', () => {
+    it('should send test email notification when enabled and roborockService is available', async () => {
+      platform.state.setStartupCompleted(true);
+      platform.platformRunner = asPartial<PlatformRunner>({ requestHomeData: vi.fn().mockResolvedValue(undefined) });
+
+      const mockSendTestEmail = vi.fn().mockResolvedValue(undefined);
+      platform.discovery.roborockService = asPartial<RoborockService>({
+        sendTestEmailNotification: mockSendTestEmail,
+      });
+
+      Object.defineProperty(platform.configManager, 'isEmailNotificationEnabled', {
+        get: () => true,
+        configurable: true,
+      });
+
+      await platform.onConfigure();
+
+      expect(mockSendTestEmail).toHaveBeenCalledOnce();
+    });
+
+    it('should not send test email when email notification is disabled', async () => {
+      platform.state.setStartupCompleted(true);
+      platform.platformRunner = asPartial<PlatformRunner>({ requestHomeData: vi.fn().mockResolvedValue(undefined) });
+
+      const mockSendTestEmail = vi.fn().mockResolvedValue(undefined);
+      platform.discovery.roborockService = asPartial<RoborockService>({
+        sendTestEmailNotification: mockSendTestEmail,
+      });
+
+      Object.defineProperty(platform.configManager, 'isEmailNotificationEnabled', {
+        get: () => false,
+        configurable: true,
+      });
+
+      await platform.onConfigure();
+
+      expect(mockSendTestEmail).not.toHaveBeenCalled();
+    });
+
+    it('should not send test email when roborockService is undefined', async () => {
+      platform.state.setStartupCompleted(true);
+      platform.platformRunner = asPartial<PlatformRunner>({ requestHomeData: vi.fn().mockResolvedValue(undefined) });
+      platform.discovery.roborockService = undefined;
+
+      Object.defineProperty(platform.configManager, 'isEmailNotificationEnabled', {
+        get: () => true,
+        configurable: true,
+      });
+
+      await platform.onConfigure();
+
+      expect(platform.log.notice).toHaveBeenCalledWith('onConfigure called');
+    });
   });
 });

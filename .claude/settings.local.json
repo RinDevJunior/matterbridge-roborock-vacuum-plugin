@@ -14,7 +14,10 @@
       "Bash(cut:*)",
       "Bash(grep:*)",
       "Bash(npm install:*)",
-      "WebFetch(domain:api.codecov.io)"
+      "WebFetch(domain:api.codecov.io)",
+      "Bash(curl:*)",
+      "Bash(python3:*)",
+      "Bash(npm run precommit:*)"
     ]
   },
   "outputStyle": "default",

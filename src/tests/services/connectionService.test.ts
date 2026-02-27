@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { ConnectionService } from '../../services/connectionService.js';
 import ClientManager from '../../services/clientManager.js';
 import { DeviceConnectionError, DeviceInitializationError } from '../../errors/index.js';
@@ -15,6 +15,8 @@ import { AnsiLogger } from 'matterbridge/logger';
 import { MessageRoutingService } from '../../services/messageRoutingService.js';
 import type { Client } from '../../roborockCommunication/routing/client.js';
 import { makeLogger, makeLocalClientStub, makeMockClientRouter, asPartial, asType } from '../testUtils.js';
+import type { PlatformConfigManager } from '../../platform/platformConfigManager.js';
+import type { EmailNotificationSettings } from '../../model/RoborockPluginPlatformConfig.js';
 import { ProtocolVersion } from '../../roborockCommunication/enums/protocolVersion.js';
 
 describe('ConnectionService', () => {
@@ -421,5 +423,59 @@ describe('ConnectionService additional coverage', () => {
     await service.shutdown();
     expect(service.ipMap.size).toBe(0);
     expect(service.localClientMap.size).toBe(0);
+  });
+});
+
+describe('ConnectionService - sendTestEmailNotification', () => {
+  let mockLogger: ReturnType<typeof makeLogger>;
+  let mockClientManager: ClientManager;
+  let mockMessageRoutingService: MessageRoutingService;
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockLogger = makeLogger();
+    mockClientManager = asPartial<ClientManager>({ get: vi.fn() });
+    mockMessageRoutingService = asPartial<MessageRoutingService>({ registerMessageDispatcher: vi.fn() });
+  });
+
+  afterEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('should do nothing when configManager is undefined', async () => {
+    const service = new ConnectionService(mockClientManager, mockLogger, mockMessageRoutingService);
+    await expect(service.sendTestEmailNotification()).resolves.toBeUndefined();
+  });
+
+  it('should do nothing when email notification is disabled', async () => {
+    const configManager = asPartial<PlatformConfigManager>({ isEmailNotificationEnabled: false });
+    const service = new ConnectionService(mockClientManager, mockLogger, mockMessageRoutingService, configManager);
+    await expect(service.sendTestEmailNotification()).resolves.toBeUndefined();
+  });
+
+  it('should do nothing when emailNotificationSettings is undefined', async () => {
+    const configManager = asPartial<PlatformConfigManager>({
+      isEmailNotificationEnabled: true,
+      emailNotificationSettings: undefined,
+    });
+    const service = new ConnectionService(mockClientManager, mockLogger, mockMessageRoutingService, configManager);
+    await expect(service.sendTestEmailNotification()).resolves.toBeUndefined();
+  });
+
+  it('should send test email when email notification is enabled with valid settings', async () => {
+    const settings = asPartial<EmailNotificationSettings>({
+      smtpHost: 'smtp.example.com',
+      smtpPort: 587,
+      smtpSecure: false,
+      smtpUser: 'user@example.com',
+      smtpPassword: 'pass',
+      recipient: 'to@example.com',
+    });
+    const configManager = asPartial<PlatformConfigManager>({
+      isEmailNotificationEnabled: true,
+      emailNotificationSettings: settings,
+    });
+    const service = new ConnectionService(mockClientManager, mockLogger, mockMessageRoutingService, configManager);
+    await expect(service.sendTestEmailNotification()).resolves.toBeUndefined();
   });
 });

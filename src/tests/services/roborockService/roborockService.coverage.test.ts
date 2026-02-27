@@ -77,17 +77,20 @@ describe('RoborockService - Complete Coverage', () => {
       playSoundToLocate: vi.fn(),
       customGet: vi.fn(),
       customSend: vi.fn(),
+      getSerialNumber: vi.fn().mockResolvedValue('SN-1234'),
     });
 
     mockPollingService = {
       setDeviceNotify: vi.fn(),
       activateDeviceNotifyOverLocal: vi.fn(),
+      requestStatusOnce: vi.fn().mockResolvedValue(undefined),
     };
 
     mockConnectionService = asPartial<ConnectionService>({
       initializeMessageClient: vi.fn(),
       initializeMessageClientForLocal: vi.fn().mockResolvedValue(true),
       setDeviceNotify: vi.fn(),
+      sendTestEmailNotification: vi.fn().mockResolvedValue(undefined),
     });
 
     mockContainer = asPartial<ServiceContainer>({
@@ -490,6 +493,81 @@ describe('RoborockService - Complete Coverage', () => {
 
       expect(result).toEqual({ result: 'success' });
       expect(mockIotApi.getCustom).toHaveBeenCalledWith('/custom/endpoint');
+    });
+  });
+
+  describe('Delegation methods', () => {
+    it('should delegate listDevices to deviceService', async () => {
+      const devices = [asPartial<Device>({ duid: 'd1' })];
+      vi.mocked(mockDeviceService.listDevices).mockResolvedValue(devices);
+
+      const result = await service.listDevices();
+
+      expect(result).toBe(devices);
+      expect(mockDeviceService.listDevices).toHaveBeenCalled();
+    });
+
+    it('should delegate getSerialNumber to messageRoutingService', async () => {
+      const result = await service.getSerialNumber('d1');
+
+      expect(result).toBe('SN-1234');
+      expect(mockMessageService.getSerialNumber).toHaveBeenCalledWith('d1');
+    });
+
+    it('should delegate getHomeDataForUpdating to deviceService', async () => {
+      const home = asPartial<Home>({ id: 1, name: 'Home' });
+      vi.mocked(mockDeviceService.getHomeDataForUpdating).mockResolvedValue(home);
+
+      const result = await service.getHomeDataForUpdating(1);
+
+      expect(result).toBe(home);
+      expect(mockDeviceService.getHomeDataForUpdating).toHaveBeenCalledWith(1);
+    });
+
+    it('should delegate initializeMessageClientForLocal to connectionService and synchronize', async () => {
+      const device = asPartial<Device>({ duid: 'd1' });
+
+      const result = await service.initializeMessageClientForLocal(device);
+
+      expect(result).toBe(true);
+      expect(mockConnectionService.initializeMessageClientForLocal).toHaveBeenCalledWith(device);
+      expect(mockContainer.synchronizeMessageClients).toHaveBeenCalled();
+    });
+
+    it('should delegate sendTestEmailNotification to connectionService', async () => {
+      await service.sendTestEmailNotification();
+
+      expect(mockConnectionService.sendTestEmailNotification).toHaveBeenCalled();
+    });
+
+    it('should delegate setDeviceNotify to pollingService and connectionService', () => {
+      const callback = vi.fn();
+
+      service.setDeviceNotify(callback);
+
+      expect(service.deviceNotify).toBe(callback);
+      expect(mockPollingService.setDeviceNotify).toHaveBeenCalledWith(callback);
+      expect(mockConnectionService.setDeviceNotify).toHaveBeenCalledWith(callback);
+    });
+
+    it('should delegate activateDeviceNotify to pollingService', () => {
+      const device = asPartial<Device>({ duid: 'd1' });
+
+      service.activateDeviceNotify(device);
+
+      expect(mockPollingService.activateDeviceNotifyOverLocal).toHaveBeenCalledWith(device);
+    });
+
+    it('should delegate requestDeviceStatusOnce to pollingService', async () => {
+      await service.requestDeviceStatusOnce('d1');
+
+      expect(mockPollingService.requestStatusOnce).toHaveBeenCalledWith('d1');
+    });
+
+    it('should delegate stopService to container.destroy', () => {
+      service.stopService();
+
+      expect(mockContainer.destroy).toHaveBeenCalled();
     });
   });
 });
