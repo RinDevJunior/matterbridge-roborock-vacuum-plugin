@@ -16,7 +16,7 @@ const makeMockLogger = (): AnsiLogger =>
 
 const makeMessage = (protocol: Protocol, payload: unknown): ResponseMessage => {
   const header = { isForProtocol: (p: Protocol) => p === protocol } as never;
-  const body = new ResponseBody({ [protocol.toString()]: payload });
+  const body = new ResponseBody({ [protocol.toString()]: payload as Record<string, unknown> });
   return new ResponseMessage('test-duid', header, body);
 };
 
