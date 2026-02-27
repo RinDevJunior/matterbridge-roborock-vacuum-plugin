@@ -172,4 +172,26 @@ describe('ClientRouter', () => {
     router['mqttClient'] = mockMQTTClient;
     expect(router['getLocalClient']('duid')).toBe(mockMQTTClient);
   });
+
+  it('getLocalClient should return mqttClient when localClient isReady returns false', () => {
+    mockLocalNetworkClient.isReady = vi.fn().mockReturnValue(false);
+    const router = new ClientRouter(mockLogger, mockUserData);
+    router['mqttClient'] = mockMQTTClient;
+    router['localClients'].set('duid', mockLocalNetworkClient);
+    expect(router['getLocalClient']('duid')).toBe(mockMQTTClient);
+  });
+
+  it('getLocalClient should return mqttClient when no localClient is registered for duid', () => {
+    const router = new ClientRouter(mockLogger, mockUserData);
+    router['mqttClient'] = mockMQTTClient;
+    expect(router['getLocalClient']('unknown-duid')).toBe(mockMQTTClient);
+  });
+
+  it('getLocalClient should return mqttClient when LocalNetworkClient isReconnecting', () => {
+    const router = new ClientRouter(mockLogger, mockUserData);
+    router['mqttClient'] = mockMQTTClient;
+    const localClient = router.registerClient('duid', '127.0.0.1');
+    (localClient as unknown as { intentionalDisconnect: boolean }).intentionalDisconnect = true;
+    expect(router['getLocalClient']('duid')).toBe(mockMQTTClient);
+  });
 });

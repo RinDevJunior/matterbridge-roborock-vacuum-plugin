@@ -216,4 +216,76 @@ describe('MessageDeserializer', () => {
     expect(res.body).toBeDefined();
     expect(res.body?.data[Protocol.map_response]).toBeDefined();
   });
+
+  it('handles device_status_ota protocol and returns body with parsed JSON', () => {
+    const otaPayload = { state: 'idle', progress: 0 };
+    vi.spyOn(MessageSerializerFactory.prototype, 'getMessageSerializer').mockReturnValue({
+      encode: (_payload: string, _localKey: string, _timestamp: number, _sequence: number, _nonce: number) =>
+        Buffer.alloc(0),
+      decode: (_payload: Buffer) => Buffer.from(JSON.stringify(otaPayload)),
+    });
+
+    const context = new MessageContext(asType<UserData>({ rriot: { k: 'k' } }));
+    context.registerDevice('duid', 'local', 'A01', 9);
+    const des = new MessageDeserializer(context, logger);
+
+    const header = Buffer.alloc(17);
+    header.write('A01', 0, 3, 'ascii');
+    header.writeUInt32BE(1, 3);
+    header.writeUInt32BE(2, 7);
+    header.writeUInt32BE(3, 11);
+    header.writeUInt16BE(Protocol.device_status_ota, 15);
+
+    const decodedPayload = Buffer.from('encrypted');
+    const contentLen = Buffer.alloc(2);
+    contentLen.writeUInt16BE(decodedPayload.length, 0);
+
+    const preCrc = Buffer.concat([header, contentLen, decodedPayload]);
+    const crc = CRC32.buf(preCrc) >>> 0;
+    const crcBuf = Buffer.alloc(4);
+    crcBuf.writeUInt32BE(crc, 0);
+
+    const full = Buffer.concat([preCrc, crcBuf]);
+
+    const res = des.deserialize('duid', full, 'from');
+    expect(res).toBeDefined();
+    expect(res.isForProtocol(Protocol.device_status_ota)).toBe(true);
+    expect(res.body).toBeDefined();
+    expect(res.body?.data[Protocol.device_status_ota]).toEqual(otaPayload);
+  });
+
+  it('handles device_status_ota parse error and returns ResponseMessage without body', () => {
+    vi.spyOn(MessageSerializerFactory.prototype, 'getMessageSerializer').mockReturnValue({
+      encode: (_payload: string, _localKey: string, _timestamp: number, _sequence: number, _nonce: number) =>
+        Buffer.alloc(0),
+      decode: (_payload: Buffer) => Buffer.from('not valid json {{{'),
+    });
+
+    const context = new MessageContext(asType<UserData>({ rriot: { k: 'k' } }));
+    context.registerDevice('duid', 'local', 'A01', 9);
+    const des = new MessageDeserializer(context, logger);
+
+    const header = Buffer.alloc(17);
+    header.write('A01', 0, 3, 'ascii');
+    header.writeUInt32BE(1, 3);
+    header.writeUInt32BE(2, 7);
+    header.writeUInt32BE(3, 11);
+    header.writeUInt16BE(Protocol.device_status_ota, 15);
+
+    const decodedPayload = Buffer.from('encrypted');
+    const contentLen = Buffer.alloc(2);
+    contentLen.writeUInt16BE(decodedPayload.length, 0);
+
+    const preCrc = Buffer.concat([header, contentLen, decodedPayload]);
+    const crc = CRC32.buf(preCrc) >>> 0;
+    const crcBuf = Buffer.alloc(4);
+    crcBuf.writeUInt32BE(crc, 0);
+
+    const full = Buffer.concat([preCrc, crcBuf]);
+
+    const res = des.deserialize('duid', full, 'from');
+    expect(res).toBeDefined();
+    expect(res.body).toBeUndefined();
+    expect(logger.warn).toHaveBeenCalledWith(expect.stringContaining('device_status_ota parse error'));
+  });
 });
