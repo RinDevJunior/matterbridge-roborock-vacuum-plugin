@@ -39,6 +39,7 @@ export function makeMockClientRouter(overrides: Partial<Record<string, unknown>>
   return {
     registerDevice: vi.fn(),
     registerMessageListener: vi.fn(),
+    registerConnectionListener: vi.fn(),
     connect: vi.fn(),
     disconnect: vi.fn(),
     isConnected: vi.fn().mockReturnValue(true),

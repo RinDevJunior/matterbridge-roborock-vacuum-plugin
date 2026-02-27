@@ -461,6 +461,21 @@ describe('PlatformConfigManager', () => {
         expect(manager.ensureDeviceProductNameEntry('SN123', 'Vacuum Model')).toBe(false);
       });
 
+      it('should return false when matterOverrideSettings is undefined', () => {
+        config.advancedFeature = {
+          enableAdvancedFeature: true,
+          settings: {
+            ...createDefaultAdvancedFeature().settings,
+            overrideMatterConfiguration: true,
+            matterOverrideSettings: undefined as unknown as ReturnType<
+              typeof createDefaultAdvancedFeature
+            >['settings']['matterOverrideSettings'],
+          },
+        };
+        manager = PlatformConfigManager.create(config, mockLogger);
+        expect(manager.ensureDeviceProductNameEntry('SN123', 'Vacuum Model')).toBe(false);
+      });
+
       it('should add entry and return true when serial number not present', () => {
         const result = manager.ensureDeviceProductNameEntry('SN123', 'Vacuum Model');
         expect(result).toBe(true);

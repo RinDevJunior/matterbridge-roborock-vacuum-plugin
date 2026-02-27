@@ -165,6 +165,31 @@ describe('ConnectionService', () => {
       expect(mockLogger.debug).toHaveBeenCalledWith('clientRouter connected for device:', mockDevice.duid);
     });
 
+    it('should register DisconnectNotificationListener when email notification is enabled', async () => {
+      vi.spyOn(mockClientRouter, 'isReady').mockReturnValue(true);
+      const configManager = asPartial<PlatformConfigManager>({
+        isEmailNotificationEnabled: true,
+        emailNotificationSettings: asPartial<EmailNotificationSettings>({
+          smtpHost: 'smtp.example.com',
+          smtpPort: 587,
+          smtpSecure: false,
+          smtpUser: 'user@example.com',
+          smtpPassword: 'pass',
+          recipient: 'to@example.com',
+        }),
+      });
+      const serviceWithEmail = new ConnectionService(
+        mockClientManager as Partial<ClientManager> as ClientManager,
+        mockLogger as Partial<AnsiLogger> as AnsiLogger,
+        mockMessageRoutingService as Partial<MessageRoutingService> as MessageRoutingService,
+        configManager,
+      );
+
+      await serviceWithEmail.initializeMessageClient(mockDevice, mockUserData);
+
+      expect(mockClientRouter.registerConnectionListener).toHaveBeenCalled();
+    });
+
     it('should ignore battery protocol messages', async () => {
       vi.spyOn(mockClientRouter, 'isConnected').mockReturnValue(true);
       const mockCallback = vi.fn();

@@ -94,6 +94,12 @@ describe('EmailNotificationService', () => {
 
       expect(mockSendMail).toHaveBeenCalledWith(expect.objectContaining({ from: '', to: '' }));
     });
+
+    it('should use default port 587 and secure false when smtpPort and smtpSecure are undefined', async () => {
+      new EmailNotificationService(createSettings({ smtpPort: undefined, smtpSecure: undefined }), mockLogger);
+
+      expect(nodemailer.createTransport).toHaveBeenCalledWith(expect.objectContaining({ port: 587, secure: false }));
+    });
   });
 
   describe('sendTestEmail', () => {

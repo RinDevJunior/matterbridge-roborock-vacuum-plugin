@@ -1343,6 +1343,16 @@ describe('PlatformRunner.startBurstPolling / stopBurstPolling', () => {
     expect(mockLogger.error).toHaveBeenCalledWith(expect.stringContaining('network failure'));
   });
 
+  it('should log stringified non-Error when requestDeviceStatusOnce throws a non-Error', async () => {
+    const mockLogger = platform.log as ReturnType<typeof createMockLogger>;
+    vi.mocked(mockService.requestDeviceStatusOnce).mockRejectedValueOnce('string error');
+
+    runner.startBurstPolling('duid');
+    await vi.advanceTimersByTimeAsync(10000);
+
+    expect(mockLogger.error).toHaveBeenCalledWith(expect.stringContaining('string error'));
+  });
+
   it('isDeviceIdle should return true when robot is not found in registry', async () => {
     runner.startBurstPolling('unknown-duid');
     await vi.advanceTimersByTimeAsync(10000);
