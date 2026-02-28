@@ -4,12 +4,14 @@ All notable changes to this project will be documented in this file.
 
 ---
 
-## [1.1.5-rc02] - 2026-02-27
+## [1.1.5-rc02] - 2026-02-28
 
 ### Added
 
 - **Email notification test on startup** — When email notifications are enabled, the plugin now sends a test email on `onConfigure` to verify the SMTP settings are correct. A successful email confirms your configuration is working.
 - **Device OTA status handling** — The plugin now handles protocol 500 (`device_status_ota`) messages from the device. Firmware update status, progress, and device online/offline events are logged automatically.
+- **Full MQTT lifecycle email notifications** — Email notifications now cover all MQTT connection events: connected, offline, close, and error — giving complete visibility into connectivity changes.
+- **Extended dock type support** — New `DockType` enum values added for broader dock hardware compatibility.
 
 ### Fixed
 
@@ -18,6 +20,14 @@ All notable changes to this project will be documented in this file.
 - **`ConnectionBroadcaster` now requires a logger** — Constructor updated to accept `AnsiLogger`; `register` and `unregister` now emit notice logs for observability.
 - **`ClientRouter` field rename** — `connectionListener` renamed to `connectionBroadcaster` for naming consistency with `AbstractClient`.
 - **`DisconnectNotificationListener` stub methods** — `onConnected`, `onError`, and `onReconnect` now log the duid at debug level instead of being empty stubs.
+- **State resolution priority for Cleaning** — Fixed incorrect state priority order: `isLocating`/`isExploring` now takes precedence over `inWarmup`, which takes precedence over `inReturning`, matching actual device behaviour.
+- **Missing mopping statuses in area check** — `platformRunner` now correctly recognises mopping variants (e.g. `CleaningMopping`, `WashingMop`) when checking whether a device is in an active cleaning state.
+
+### Improved
+
+- **Connection lifecycle clarity** — `AbstractConnectionListener` now exposes `onOffline` and `onClose` as distinct callbacks instead of a single `onDisconnected`, allowing listeners to distinguish a network loss from an explicit connection close.
+- **Reduced response noise** — `V1ResponseBroadcaster` now silently drops simple ok responses, cutting down on redundant log output.
+- **Message result type safety** — `MessageResult` now uses strongly-typed enums (`OperationStatusCode`, `DockType`, etc.) instead of raw numeric values, reducing the risk of mis-mapped states.
 
 <a href="https://www.buymeacoffee.com/rinnvspktr" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/default-orange.png" alt="Buy Me A Coffee" height="41" width="174"></a>
 
