@@ -90,7 +90,7 @@ export class DeviceDiscovery {
     let vacuums: Device[] = [];
 
     for (const device of devices) {
-      const isDeviceAllowed = this.configManager.isDeviceAllowed({ duid: device.duid, deviceName: device.name });
+      const isDeviceAllowed = this.configManager.isDeviceAllowed({ duid: device.duid });
       const isDeviceSupported = isSupportedDevice(device.specs.model);
       if (isDeviceAllowed && isDeviceSupported) {
         vacuums.push(device);

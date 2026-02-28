@@ -39,9 +39,11 @@
 Requires matterbridge@3.5.5
 
 - **Matterbridge must be run in child bridge mode** for proper operation.
-- **Use one Matterbridge instance per Roborock vacuum.**  
-  If you have more than one vacuum, please run separate instances.
-  Please put the <**Vacuum name**>-<**duid**> of device you want to use into **whiteList** section in the plugin configuration popup.
+- **By default, one Matterbridge instance supports one Roborock vacuum.**
+  If you have more than one vacuum, you can either:
+  - Run separate Matterbridge instances (one per vacuum), or
+  - **Enable Server Mode** in the plugin configuration — this allows a single Matterbridge instance to host multiple vacuums at once.
+- To control which device(s) are exposed, add their **DUID(s)** to the **White List** in the plugin configuration. If the list is empty, all supported devices are exposed (limited to one unless Server Mode is enabled).
 
   More details available here: [Discussion #264](https://github.com/Luligu/matterbridge/discussions/264)
 
@@ -74,10 +76,7 @@ To get the **DUID** for your devices, you have two options:
 
 - **Under active development**
 - Requires **`matterbridge@3.5.5`**
-- ⚠️ **Known Issue:**
 
-* Vacuum may appear as **two devices** in Apple Home
-* Error: Wrong CRC32 2241274590, expected 0 -> this is normal error and not impact to plugin functionality
 * ---
 
 ### ➡️ [See Supported & Tested Roborock Devices](./README_SUPPORTED.md)

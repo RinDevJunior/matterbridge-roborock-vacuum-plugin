@@ -1,6 +1,6 @@
 {
   "title": "Matterbridge Roborock Vacuum Plugin",
-  "description": "matterbridge-roborock-vacuum-plugin v. 1.1.5-rc04 by https://github.com/RinDevJunior",
+  "description": "matterbridge-roborock-vacuum-plugin v. 1.1.5-rc05 by https://github.com/RinDevJunior",
   "type": "object",
   "properties": {
     "name": {
@@ -91,7 +91,7 @@
       "properties": {
         "whiteList": {
           "title": "White list devices",
-          "description": "(ONLY SET IF YOU HAVE MULTIPLE VACUUMS) Only THE FIRST ONE device with <Name>-<duid> in the list will be exposed. If the list is empty, THE FIRST device will be exposed.",
+          "description": "Only expose devices whose DUID is in this list. If empty, all supported devices are exposed (limited to one unless Server Mode is enabled).",
           "type": "array",
           "items": {
             "type": "string"

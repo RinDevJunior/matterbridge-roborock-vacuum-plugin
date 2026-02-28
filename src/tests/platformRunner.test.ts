@@ -597,7 +597,9 @@ describe('PlatformRunner.updateRobotWithPayload', () => {
 
     runner.updateRobotWithPayload(payload);
 
-    expect(mockLogger.notice).toHaveBeenCalledWith('No cleaning_info, setting currentArea to null');
+    expect(mockLogger.notice).toHaveBeenCalledWith(
+      'Vacuum is cleaning with no cleaning_info, setting currentArea to null',
+    );
     expect(robot.updateAttribute).toHaveBeenCalledWith(ServiceArea.Cluster.id, 'currentArea', null, mockLogger);
     expect(robot.updateAttribute).toHaveBeenCalledWith(ServiceArea.Cluster.id, 'selectedAreas', [], mockLogger);
   });

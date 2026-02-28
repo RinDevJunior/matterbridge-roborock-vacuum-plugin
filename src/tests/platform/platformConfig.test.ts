@@ -567,31 +567,22 @@ describe('PlatformConfigManager', () => {
 
   describe('device filtering', () => {
     it('should allow device if whitelist is empty', () => {
-      expect(manager.isDeviceAllowed({ duid: 'abc', deviceName: 'dev1' })).toBe(true);
+      expect(manager.isDeviceAllowed({ duid: 'abc' })).toBe(true);
     });
     it('should allow device if whitelisted by duid', () => {
       config.pluginConfiguration.whiteList = ['abc'];
       manager = PlatformConfigManager.create(config, mockLogger);
-      expect(manager.isDeviceAllowed({ duid: 'abc', deviceName: 'dev1' })).toBe(true);
+      expect(manager.isDeviceAllowed({ duid: 'abc' })).toBe(true);
     });
-    it('should allow device if whitelisted by name', () => {
-      config.pluginConfiguration.whiteList = ['dev1'];
+    it('should deny device if duid is not in whitelist', () => {
+      config.pluginConfiguration.whiteList = ['abc'];
       manager = PlatformConfigManager.create(config, mockLogger);
-      expect(manager.isDeviceAllowed({ duid: 'abc', deviceName: 'dev1' })).toBe(true);
+      expect(manager.isDeviceAllowed({ duid: 'xyz' })).toBe(false);
     });
-    it('should deny device if not in whitelist', () => {
-      config.pluginConfiguration.whiteList = ['dev2'];
+    it('should deny device if whitelist has entries but duid is undefined', () => {
+      config.pluginConfiguration.whiteList = ['abc'];
       manager = PlatformConfigManager.create(config, mockLogger);
-      expect(manager.isDeviceAllowed({ duid: 'abcd', deviceName: 'dev1' })).toBe(false);
-    });
-    it('should extract duid from whitelist entry', () => {
-      expect(manager.extractDuidFromWhitelistEntry('name - duid123')).toBe('duid123');
-      expect(manager.extractDuidFromWhitelistEntry('single')).toBeUndefined();
-    });
-    it('should match list entry by duid or name', () => {
-      expect(manager['matchesListEntry']('abc', 'abc', 'dev1')).toBe(true);
-      expect(manager['matchesListEntry']('dev1', 'abc', 'dev1')).toBe(true);
-      expect(manager['matchesListEntry']('other', 'abc', 'dev1')).toBe(false);
+      expect(manager.isDeviceAllowed({})).toBe(false);
     });
   });
 });

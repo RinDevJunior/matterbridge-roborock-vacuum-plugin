@@ -4,6 +4,25 @@ All notable changes to this project will be documented in this file.
 
 ---
 
+## [1.1.5-rc05] - 2026-02-28
+
+### Fixed
+
+- **Single-room `currentArea` preserved when `cleaning_info` is absent** — When a vacuum is cleaning with exactly one room selected and no `cleaning_info` is reported, `currentArea` is now set to that room's area ID instead of being cleared to null. Previously this caused Apple Home to lose track of which room was being cleaned in single-room scenarios.
+
+### Breaking Changed
+
+- **Whitelist now accepts DUIDs only** — Device filtering via the White List configuration now matches on DUID exclusively. The previous `<Name>-<duid>` format and name-based matching are no longer supported; enter the raw DUID string directly.
+
+### Improved
+
+- **Server Mode documented in README** — Added clear guidance explaining that Server Mode allows a single Matterbridge instance to host multiple vacuums, as an alternative to running separate instances.
+- **Whitelist schema description updated** — The plugin configuration UI now shows an accurate description of the White List field, reflecting the duid-only format and its interaction with Server Mode.
+
+<a href="https://www.buymeacoffee.com/rinnvspktr" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/default-orange.png" alt="Buy Me A Coffee" height="41" width="174"></a>
+
+---
+
 ## [1.1.5-rc04] - 2026-02-28
 
 ### Fixed

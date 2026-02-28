@@ -227,30 +227,10 @@ export class PlatformConfigManager {
 
   // ─── Device Filtering ───────────────────────────────────────────────────────
 
-  public isDeviceAllowed(device: { duid?: string; deviceName?: string }): boolean {
-    // If whitelist present, require match
+  public isDeviceAllowed(device: { duid?: string }): boolean {
     if (this.hasWhiteListConfig) {
-      const { duid, deviceName: name = '' } = device;
-
-      for (const entry of this.config.pluginConfiguration.whiteList) {
-        if (this.matchesListEntry(entry, duid, name)) return true;
-      }
-      return false;
+      return this.config.pluginConfiguration.whiteList.some((entry) => entry === device.duid);
     }
-
     return true;
-  }
-
-  public extractDuidFromWhitelistEntry(entry: string): string | undefined {
-    const parts = entry.split('-');
-    if (parts.length >= 2) return parts[1].trim();
-    return undefined;
-  }
-
-  private matchesListEntry(entry: string, duid?: string, name?: string): boolean {
-    if (!entry) return false;
-    if (duid && entry.includes(duid)) return true;
-    if (name && entry.trim() === name.trim()) return true;
-    return false;
   }
 }
