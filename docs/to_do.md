@@ -12,6 +12,7 @@
 
 ## Completed
 
+- [x] Improve PR 116 patch coverage: add `burstPollingManager.test.ts` (16 tests)
 - [x] Refactor `platformRunner.ts` — items 1, 2, 4 from `docs/platformRunner-refactor-plan.md`
   - [x] Extract `BurstPollingManager` → `src/platform/burstPollingManager.ts`
   - [x] Extract name resolver utils → `src/share/matterStateNames.ts`

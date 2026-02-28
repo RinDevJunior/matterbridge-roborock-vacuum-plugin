@@ -1,5 +1,9 @@
 # Claude History
 
+## 2026-02-28 (Session 13)
+
+- Added `src/tests/platform/burstPollingManager.test.ts` (16 tests) to improve PR 116 patch coverage for `BurstPollingManager` — covers startBurstPolling (happy/early-return/error paths), stopBurstPolling, stopAllBurstPolling, has, requestLocalDeviceStatus (undefined service), isDeviceIdle (robot not found, Docked, Charging, Running). Used `vi.useFakeTimers()` with `advanceTimersByTimeAsync(15000)` to trigger the 10s interval callback.
+
 ## 2026-02-28 (Session 12)
 
 - Refactored `platformRunner.ts` per `docs/platformRunner-refactor-plan.md`:
