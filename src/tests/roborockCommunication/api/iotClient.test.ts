@@ -1,5 +1,12 @@
-import axios, { AxiosStatic } from 'axios';
 import { vi, describe, it, expect, beforeEach, afterEach } from 'vitest';
+
+vi.mock('axios-logger', () => ({
+  requestLogger: (request: unknown) => request,
+  responseLogger: () => undefined,
+  errorLogger: (error: unknown) => Promise.reject(error),
+}));
+
+import axios, { AxiosStatic } from 'axios';
 import { AnsiLogger } from 'matterbridge/logger';
 import MockAdapter from 'axios-mock-adapter';
 import { RoborockIoTApi } from '../../../roborockCommunication/api/iotClient.js';
