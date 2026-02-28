@@ -596,9 +596,18 @@ export class PlatformRunner {
         message.state === OperationStatusCode.ZoneMopping) &&
       !message.cleaningInfo
     ) {
-      logger.notice('No cleaning_info, setting currentArea to null');
-      robot.updateAttribute(ServiceArea.Cluster.id, 'currentArea', null, this.platform.log);
-      robot.updateAttribute(ServiceArea.Cluster.id, 'selectedAreas', [], this.platform.log);
+      logger.notice('Vacuum is cleaning with no cleaning_info, setting currentArea to null');
+      const selectedAreas: ServiceArea.Area[] =
+        robot.getAttribute(ServiceArea.Cluster.id, 'selectedAreas', this.platform.log) ?? [];
+
+      // if vacuum is set to clean only one room, set it when there is no cleaning_info found.
+      if (selectedAreas.length === 1) {
+        robot.updateAttribute(ServiceArea.Cluster.id, 'currentArea', selectedAreas[0].areaId, this.platform.log);
+      } else {
+        robot.updateAttribute(ServiceArea.Cluster.id, 'currentArea', null, this.platform.log);
+        robot.updateAttribute(ServiceArea.Cluster.id, 'selectedAreas', [], this.platform.log);
+      }
+
       return;
     }
 
