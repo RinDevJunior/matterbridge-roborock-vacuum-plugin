@@ -5,10 +5,31 @@ import { HeaderMessage, ResponseBody, ResponseMessage } from '../../../../roboro
 import { createMockLogger } from '../../../helpers/testUtils.js';
 import { AnsiLogger } from 'matterbridge/logger';
 import { AbstractMessageListener } from '../../../../roborockCommunication/routing/listeners/abstractMessageListener.js';
+import { asPartial } from '../../../helpers/testUtils.js';
 
 function makeResponse(duid = 'test-duid'): ResponseMessage {
   const header = new HeaderMessage('1.0', 1, 0, 101, 102);
-  const body = new ResponseBody({ '102': { id: 123, result: ['ok'] } });
+  const body = new ResponseBody({
+    '102': {
+      id: 123,
+      result: [
+        {
+          max_multi_map: 1,
+          max_bak_map: 1,
+          multi_map_count: 1,
+          map_info: [
+            {
+              mapFlag: 0,
+              add_time: 1772129131,
+              length: 8,
+              name: 'Upstairs',
+              bak_maps: [{ mapFlag: 4, add_time: 1771954828 }],
+            },
+          ],
+        },
+      ],
+    },
+  });
   return new ResponseMessage(duid, header, body);
 }
 
@@ -107,10 +128,17 @@ describe('V1ResponseBroadcaster', () => {
     expect(spy).toHaveBeenCalled();
   });
 
-  it('should dispatch to no listeners when none registered', () => {
-    const response = makeResponse();
-    broadcaster.onMessage(response);
+  it('should ignore simple ok responses', () => {
+    const message = asPartial<ResponseMessage>({
+      duid: 'test-duid',
+      header: asPartial<HeaderMessage>({}),
+      get: () => undefined,
+      isSimpleOkResponse: () => true,
+    });
+    broadcaster.onMessage(message);
 
-    expect(logger.warn).toHaveBeenCalledWith(expect.stringContaining('No listener configurated for test-duid'));
+    expect(logger.debug).toHaveBeenCalledWith(
+      expect.stringContaining(`[V1ResponseBroadcaster] Ignoring simple 'ok' response`),
+    );
   });
 });

@@ -261,13 +261,16 @@ export class PlatformRunner {
    */
   private handleErrorOccurred(robot: RoborockVacuumCleaner, message: DeviceErrorMessage): void {
     if (!this.platform.configManager.includeVacuumErrorStatus) {
-      this.platform.log.debug('Skipping error handling: includeVacuumErrorStatus is disabled');
+      this.platform.log.debug(
+        `Skipping error handling: includeVacuumErrorStatus is disabled, message: ${debugStringify(message)}`,
+      );
       return;
     }
     this.platform.log.debug(`Handling error occurred: ${debugStringify(message)}`);
     const currentOperationState: RvcOperationalState.OperationalState = robot.getAttribute(
       RvcOperationalState.Cluster.id,
       'operationalState',
+      this.platform.log,
     );
 
     // Process vacuum errors (highest priority)
@@ -381,7 +384,7 @@ export class PlatformRunner {
     const batteryChargeLevel = getBatteryStatus(batteryLevel);
 
     if (batteryLevel) {
-      robot.setAttribute(PowerSource.Cluster.id, 'batPercentRemaining', batteryLevel * 2, this.platform.log);
+      robot.updateAttribute(PowerSource.Cluster.id, 'batPercentRemaining', batteryLevel * 2, this.platform.log);
       robot.updateAttribute(PowerSource.Cluster.id, 'batChargeLevel', batteryChargeLevel, this.platform.log);
     }
 
@@ -392,6 +395,7 @@ export class PlatformRunner {
       const currentOperationState: RvcOperationalState.OperationalState = robot.getAttribute(
         RvcOperationalState.Cluster.id,
         'operationalState',
+        this.platform.log,
       );
       if (
         batteryChargeState === PowerSource.BatChargeState.IsCharging &&
@@ -434,16 +438,27 @@ export class PlatformRunner {
       return;
     }
 
-    // Resolve state using state resolution matrix
-    const resolvedState = resolveDeviceState(message);
-    this.platform.log.notice(
-      `Resolved state: runMode=${this.getRunModeName(resolvedState.runMode)}, operationalState=${this.getOperationalStateName(resolvedState.operationalState)}, rawRunMode=${resolvedState.runMode}, rawOperationState=${resolvedState.operationalState}`,
-    );
-
-    const currentOperationState = robot.getAttribute(
+    const currentOperationState: RvcOperationalState.OperationalState = robot.getAttribute(
       RvcOperationalState.Cluster.id,
       'operationalState',
       this.platform.log,
+    );
+    const currentRunMode: RvcRunMode.ModeTag = robot.getAttribute(
+      RvcRunMode.Cluster.id,
+      'currentMode',
+      this.platform.log,
+    );
+
+    // Resolve state using state resolution matrix
+    const resolvedState = resolveDeviceState(message);
+    this.platform.log.notice(
+      `[${robot.device.duid}] Resolved state:
+      runMode=${this.getRunModeName(resolvedState.runMode)},
+      operationalState=${this.getOperationalStateName(resolvedState.operationalState)},
+      newRunMode=${resolvedState.runMode},
+      newOperationState=${resolvedState.operationalState},
+      currentRunMode=${currentRunMode},
+      currentOperationState=${currentOperationState}`,
     );
 
     if (
@@ -565,7 +580,22 @@ export class PlatformRunner {
       return;
     }
 
-    if (message.state === OperationStatusCode.Cleaning && !message.cleaningInfo) {
+    if (
+      (message.state === OperationStatusCode.Cleaning ||
+        message.state === OperationStatusCode.Mapping ||
+        message.state === OperationStatusCode.RoomClean ||
+        message.state === OperationStatusCode.ZoneClean ||
+        message.state === OperationStatusCode.SpotCleaning ||
+        message.state === OperationStatusCode.CleanMopCleaning ||
+        message.state === OperationStatusCode.CleanMopMopping ||
+        message.state === OperationStatusCode.RoomCleanMopCleaning ||
+        message.state === OperationStatusCode.RoomCleanMopMopping ||
+        message.state === OperationStatusCode.ZoneCleanMopCleaning ||
+        message.state === OperationStatusCode.ZoneCleanMopMopping ||
+        message.state === OperationStatusCode.RoomMopping ||
+        message.state === OperationStatusCode.ZoneMopping) &&
+      !message.cleaningInfo
+    ) {
       logger.notice('No cleaning_info, setting currentArea to null');
       robot.updateAttribute(ServiceArea.Cluster.id, 'currentArea', null, this.platform.log);
       robot.updateAttribute(ServiceArea.Cluster.id, 'selectedAreas', [], this.platform.log);

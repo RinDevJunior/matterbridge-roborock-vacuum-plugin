@@ -19,9 +19,9 @@ export interface ResolvedState {
  *
  * 2. **Cleaning Status Special Overrides**
  *    - When status = 5 (Cleaning), modifiers apply in explicit priority order:
- *      a. inWarmup (Highest) - Sets CleaningMop operational state
- *      b. inReturning (Second) - Sets SeekingCharger operational state
- *      c. isLocating/isExploring (Third) - Sets UpdatingMaps operational state
+ *      a. isLocating/isExploring (Highest) - Sets UpdatingMaps operational state
+ *      b. inWarmup (Second) - Sets CleaningMop operational state
+ *      c. inReturning (Third) - Sets SeekingCharger operational state
  *      d. inFreshState (N/A) - Not applicable to Cleaning status
  *
  * 3. **Modifier Priority Chain**
@@ -89,8 +89,16 @@ export function resolveDeviceState(message: StatusChangeMessage): ResolvedState 
   // When status = 5 (Cleaning), apply modifiers in explicit priority order
 
   if (status === OperationStatusCode.Cleaning) {
-    // Priority 1: inWarmup (Highest) - Row 13
-    // Overrides ALL other flags including inReturning
+    // Priority 1: isLocating/isExploring (Highest) - Rows 14-15
+    // Map update operations override all other flags during cleaning
+    if (message.isLocating === true || message.isExploring === true) {
+      return {
+        runMode: RvcRunMode.ModeTag.Cleaning,
+        operationalState: RvcOperationalState.OperationalState.UpdatingMaps,
+      };
+    }
+
+    // Priority 2: inWarmup (Second) - Row 13
     if (message.inWarmup === true) {
       return {
         runMode: RvcRunMode.ModeTag.Cleaning,
@@ -98,21 +106,11 @@ export function resolveDeviceState(message: StatusChangeMessage): ResolvedState 
       };
     }
 
-    // Priority 2: inReturning (Second) - Rows 16-19
-    // Vacuum returning to dock overrides map updates
+    // Priority 3: inReturning (Third) - Rows 16-19
     if (message.inReturning === true) {
       return {
         runMode: RvcRunMode.ModeTag.Cleaning,
         operationalState: RvcOperationalState.OperationalState.SeekingCharger,
-      };
-    }
-
-    // Priority 3: isLocating/isExploring (Third) - Rows 14-15
-    // Map update operations during cleaning
-    if (message.isLocating === true || message.isExploring === true) {
-      return {
-        runMode: RvcRunMode.ModeTag.Cleaning,
-        operationalState: RvcOperationalState.OperationalState.UpdatingMaps,
       };
     }
 

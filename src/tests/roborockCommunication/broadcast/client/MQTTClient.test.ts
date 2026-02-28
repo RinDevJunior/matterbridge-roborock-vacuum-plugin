@@ -179,6 +179,8 @@ describe('MQTTClient', () => {
       value: asPartial<ConnectionBroadcaster>({
         onConnected: vi.fn(),
         onDisconnected: vi.fn(),
+        onOffline: vi.fn(),
+        onClose: vi.fn(),
         onError: vi.fn(),
         onReconnect: vi.fn(),
       }),
@@ -465,33 +467,27 @@ describe('MQTTClient', () => {
     expect(client.end).not.toHaveBeenCalled();
   });
 
-  it('onClose should call onDisconnected only if connected', async () => {
+  it('onClose should call onClose only if connected', async () => {
     const mqttClient = createMQTTClient();
     mqttClient['connected'] = true;
     await mqttClient['onClose']();
-    expect(mqttClient['connectionBroadcaster'].onDisconnected).toHaveBeenCalledWith(
-      'mqtt-c6d6afb9',
-      'MQTT connection closed',
-    );
+    expect(mqttClient['connectionBroadcaster'].onClose).toHaveBeenCalledWith('mqtt-c6d6afb9');
     expect(mqttClient['connected']).toBe(false);
   });
 
-  it('onClose should not call onDisconnected if already disconnected', async () => {
+  it('onClose should not call onClose if already disconnected', async () => {
     const mqttClient = createMQTTClient();
     mqttClient['connected'] = false;
     await mqttClient['onClose']();
-    expect(mqttClient['connectionBroadcaster'].onDisconnected).not.toHaveBeenCalled();
+    expect(mqttClient['connectionBroadcaster'].onClose).not.toHaveBeenCalled();
   });
 
-  it('onOffline should set connected to false and call onDisconnected', async () => {
+  it('onOffline should set connected to false and call onOffline', async () => {
     const mqttClient = createMQTTClient();
     mqttClient['connected'] = true;
     await mqttClient['onOffline']();
     expect(mqttClient['connected']).toBe(false);
-    expect(mqttClient['connectionBroadcaster'].onDisconnected).toHaveBeenCalledWith(
-      'mqtt-c6d6afb9',
-      'MQTT connection offline',
-    );
+    expect(mqttClient['connectionBroadcaster'].onOffline).toHaveBeenCalledWith('mqtt-c6d6afb9');
   });
 
   it('onReconnect should call onReconnect on connectionBroadcaster', () => {

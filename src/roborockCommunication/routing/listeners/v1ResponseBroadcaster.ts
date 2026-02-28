@@ -28,20 +28,25 @@ export class V1ResponseBroadcaster implements ResponseBroadcaster {
   }
 
   public onMessage(message: ResponseMessage): void {
+    if (message.isSimpleOkResponse()) {
+      this.logger.debug(`[V1ResponseBroadcaster] Ignoring simple 'ok' response`);
+      return;
+    }
+
     const matchedListeners = this.listeners.filter((x) => x.duid === message.duid);
     if (matchedListeners.length === 0) {
       this.logger.warn(`[V1ResponseBroadcaster] No listener configurated for ${message.duid}`);
       return;
     }
 
-    this.logger.debug(`[ChainedMessageListener] Dispatching message to ${matchedListeners.length} listeners.`);
+    this.logger.debug(`[V1ResponseBroadcaster] Dispatching message to ${matchedListeners.length} listeners.`);
     for (const listener of matchedListeners) {
       try {
-        this.logger.debug(`[ChainedMessageListener] Invoking listener: ${listener.name}`);
+        this.logger.debug(`[V1ResponseBroadcaster] Invoking listener: ${listener.name}`);
         listener.onMessage(message);
       } catch (error) {
         const errMsg = error instanceof Error ? error.message : String(error);
-        this.logger.error(`[ChainedMessageListener] Error in listener: ${errMsg}`);
+        this.logger.error(`[V1ResponseBroadcaster] Error in listener: ${errMsg}`);
       }
     }
   }

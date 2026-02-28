@@ -14,7 +14,27 @@ import { AbstractMessageListener } from '../../../../roborockCommunication/routi
 
 function makeV1Response(duid = 'v1-duid'): ResponseMessage {
   const header = new HeaderMessage('1.0', 1, 0, 101, 102);
-  const body = new ResponseBody({ '102': { id: 123, result: ['ok'] } });
+  const body = new ResponseBody({
+    '102': {
+      id: 123,
+      result: [
+        {
+          max_multi_map: 1,
+          max_bak_map: 1,
+          multi_map_count: 1,
+          map_info: [
+            {
+              mapFlag: 0,
+              add_time: 1772129131,
+              length: 8,
+              name: 'Upstairs',
+              bak_maps: [{ mapFlag: 4, add_time: 1771954828 }],
+            },
+          ],
+        },
+      ],
+    },
+  });
   return new ResponseMessage(duid, header, body);
 }
 
@@ -164,7 +184,27 @@ describe('ResponseBroadcasterFactory', () => {
     vi.mocked(context.getMQTTProtocolVersion).mockReturnValue(ProtocolVersion.V1);
 
     const header = new HeaderMessage(undefined as unknown as string, 1, 0, 101, 102);
-    const body = new ResponseBody({ '102': { id: 123, result: ['ok'] } });
+    const body = new ResponseBody({
+      '102': {
+        id: 123,
+        result: [
+          {
+            max_multi_map: 1,
+            max_bak_map: 1,
+            multi_map_count: 1,
+            map_info: [
+              {
+                mapFlag: 0,
+                add_time: 1772129131,
+                length: 8,
+                name: 'Upstairs',
+                bak_maps: [{ mapFlag: 4, add_time: 1771954828 }],
+              },
+            ],
+          },
+        ],
+      },
+    });
     const response = new ResponseMessage('v1-duid', header, body);
 
     const listener: AbstractMessageListener = { name: 'TestListener', duid: 'v1-duid', onMessage: vi.fn() };

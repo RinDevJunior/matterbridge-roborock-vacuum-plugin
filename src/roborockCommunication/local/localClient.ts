@@ -59,7 +59,7 @@ export class LocalNetworkClient extends AbstractClient {
 
     this.intentionalDisconnect = false;
 
-    this.logger.notice(`Trying to connect to ip: ${this.ip}`);
+    this.logger.notice(`[LocalNetworkClient] [${this.duid}] Trying to connect to ip: ${this.ip}`);
 
     super.connect();
     this.buffer.reset();
@@ -117,12 +117,16 @@ export class LocalNetworkClient extends AbstractClient {
 
   protected async sendInternal(duid: string, request: RequestMessage): Promise<void> {
     if (!this.socket || !this.isConnected()) {
-      this.logger.error(`${duid}: socket is not online, , ${debugStringify(request)}`);
+      this.logger.error(
+        `[LocalNetworkClient] [${this.duid}]: socket is not online, request: ${debugStringify(request)}`,
+      );
       return;
     }
 
     if (!request.isForProtocol(Protocol.hello_request) && !this.connected) {
-      this.logger.error(`${duid}: socket is not connected, cannot send request, ${debugStringify(request)}`);
+      this.logger.error(
+        `[LocalNetworkClient] [${this.duid}]: socket is not connected, cannot send request, request: ${debugStringify(request)}`,
+      );
       return;
     }
 
@@ -151,7 +155,7 @@ export class LocalNetworkClient extends AbstractClient {
     }
 
     this.logger.warn(
-      `[LocalNetworkClient]: ${this.duid} socket disconnected. ${hadError ? 'Is having error' : 'No error detected'}`,
+      `[LocalNetworkClient] [${this.duid}]: socket disconnected. ${hadError ? 'Is having error' : 'No error detected'}`,
     );
 
     if (this.socket) {
@@ -168,7 +172,7 @@ export class LocalNetworkClient extends AbstractClient {
       return;
     }
 
-    this.logger.error(` [LocalNetworkClient]: Socket error for ${this.duid}: ${error.message}`);
+    this.logger.error(`[LocalNetworkClient]: Socket error for ${this.duid}: ${error.message}`);
 
     if (this.socket) {
       this.socket.destroy();

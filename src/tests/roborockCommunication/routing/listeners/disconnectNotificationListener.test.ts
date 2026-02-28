@@ -71,20 +71,20 @@ describe('DisconnectNotificationListener', () => {
   });
 
   describe('no-op handlers', () => {
-    it('onConnected should not call emailService.send', async () => {
+    it('onConnected should call emailService.send', async () => {
       const listener = new DisconnectNotificationListener(mockEmailService, mockLogger, 'Local');
 
       await listener.onConnected('device-001');
 
-      expect(mockEmailService.send).not.toHaveBeenCalled();
+      expect(mockEmailService.send).toHaveBeenCalled();
     });
 
-    it('onError should not call emailService.send', async () => {
+    it('onError should call emailService.send', async () => {
       const listener = new DisconnectNotificationListener(mockEmailService, mockLogger, 'Local');
 
       await listener.onError('device-001', 'some error');
 
-      expect(mockEmailService.send).not.toHaveBeenCalled();
+      expect(mockEmailService.send).toHaveBeenCalled();
     });
 
     it('onReconnect should not call emailService.send', async () => {

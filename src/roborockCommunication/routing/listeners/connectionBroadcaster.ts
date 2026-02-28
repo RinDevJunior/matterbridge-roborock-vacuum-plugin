@@ -28,6 +28,18 @@ export class ConnectionBroadcaster implements AbstractConnectionListener {
     }
   }
 
+  public async onOffline(duid: string): Promise<void> {
+    for (const listener of this.listeners) {
+      await listener.onOffline(duid);
+    }
+  }
+
+  public async onClose(duid: string): Promise<void> {
+    for (const listener of this.listeners) {
+      await listener.onClose(duid);
+    }
+  }
+
   public async onError(duid: string, message: string): Promise<void> {
     for (const listener of this.listeners) {
       await listener.onError(duid, message);

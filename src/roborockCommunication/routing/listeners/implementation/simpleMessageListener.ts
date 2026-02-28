@@ -96,9 +96,6 @@ export class SimpleMessageListener implements AbstractMessageListener {
       (dockErrorCode !== undefined && dockErrorCode !== 0) ||
       hasDockStationError
     ) {
-      this.logger.debug(
-        `[SimpleMessageListener]: Detected error - vacuum: ${vacuumErrorCode}, dock: ${dockErrorCode}, dss: ${hasDockStationError}`,
-      );
       this.handler.onError(new VacuumError(message.duid, vacuumErrorCode, dockErrorCode, dockStationStatusCode));
     }
 

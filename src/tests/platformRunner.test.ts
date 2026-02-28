@@ -360,7 +360,7 @@ describe('PlatformRunner.updateRobotWithPayload', () => {
 
     runner.updateRobotWithPayload(payload);
 
-    expect(robot.setAttribute).toHaveBeenCalledWith(PowerSource.Cluster.id, 'batPercentRemaining', 170, mockLogger);
+    expect(robot.updateAttribute).toHaveBeenCalledWith(PowerSource.Cluster.id, 'batPercentRemaining', 170, mockLogger);
     expect(robot.updateAttribute).toHaveBeenCalledWith(PowerSource.Cluster.id, 'batChargeLevel', 0, mockLogger);
   });
 
@@ -370,7 +370,7 @@ describe('PlatformRunner.updateRobotWithPayload', () => {
 
     runner.updateRobotWithPayload(payload);
 
-    expect(robot.setAttribute).toHaveBeenCalledWith(PowerSource.Cluster.id, 'batPercentRemaining', 100, mockLogger);
+    expect(robot.updateAttribute).toHaveBeenCalledWith(PowerSource.Cluster.id, 'batPercentRemaining', 100, mockLogger);
     expect(robot.updateAttribute).toHaveBeenCalledWith(PowerSource.Cluster.id, 'batChargeLevel', 1, mockLogger);
     expect(robot.updateAttribute).toHaveBeenCalledWith(
       PowerSource.Cluster.id,
@@ -385,9 +385,7 @@ describe('PlatformRunner.updateRobotWithPayload', () => {
     const payload: MessagePayload = { type: NotifyMessageTypes.BatteryUpdate, data: batteryMessage };
 
     runner.updateRobotWithPayload(payload);
-
-    expect(robot.setAttribute).toHaveBeenCalledTimes(1);
-    expect(robot.updateAttribute).toHaveBeenCalledTimes(1);
+    expect(robot.updateAttribute).toHaveBeenCalledTimes(2);
     expect(robot.updateAttribute).not.toHaveBeenCalledWith(
       PowerSource.Cluster.id,
       'batChargeState',
@@ -960,7 +958,9 @@ describe('PlatformRunner.updateRobotWithPayload', () => {
 
     runnerNoError.updateRobotWithPayload(payload);
 
-    expect(mockLogger.debug).toHaveBeenCalledWith('Skipping error handling: includeVacuumErrorStatus is disabled');
+    expect(mockLogger.debug).toHaveBeenCalledWith(
+      expect.stringContaining('Skipping error handling: includeVacuumErrorStatus is disabled'),
+    );
     expect(robot.updateAttribute).not.toHaveBeenCalled();
   });
 

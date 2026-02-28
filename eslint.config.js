@@ -1,9 +1,10 @@
 // @ts-check
 import eslint from '@eslint/js';
 import tseslint from 'typescript-eslint';
-import eslintPluginPrettier from 'eslint-plugin-prettier/recommended';
+import pluginPrettierRecommended from 'eslint-plugin-prettier/recommended';
 import eslintPluginN from 'eslint-plugin-n';
 import pluginVitest from '@vitest/eslint-plugin';
+import pluginSimpleImportSort from 'eslint-plugin-simple-import-sort';
 
 export default [
   {
@@ -24,14 +25,18 @@ export default [
   ...tseslint.configs.stylistic,
   // ...tseslint.configs.strictTypeChecked,
   // ...tseslint.configs.stylisticTypeChecked,
-  eslintPluginPrettier,
+  pluginPrettierRecommended,
   {
+    name: 'Global Configuration',
     languageOptions: {
       ecmaVersion: 'latest',
       sourceType: 'module',
     },
     linterOptions: {
       reportUnusedDisableDirectives: 'warn',
+    },
+    plugins: {
+      'simple-import-sort': pluginSimpleImportSort,
     },
     rules: {
       'no-console': 'warn',
@@ -106,6 +111,9 @@ export default [
       globals: {
         ...pluginVitest.environments.env.globals,
       },
+    },
+    plugins: {
+      vitest: pluginVitest,
     },
     rules: {
       ...pluginVitest.configs.recommended.rules,

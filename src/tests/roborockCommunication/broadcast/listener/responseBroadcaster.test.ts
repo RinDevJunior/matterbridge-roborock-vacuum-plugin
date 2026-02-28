@@ -12,6 +12,7 @@ describe('ResponseBroadcaster', () => {
     duid: 'test-duid',
     header: asPartial<HeaderMessage>({}),
     get: () => undefined,
+    isSimpleOkResponse: () => false,
   });
 
   const logger = makeLogger();
@@ -23,11 +24,11 @@ describe('ResponseBroadcaster', () => {
     listener2 = { name: 'listener2', duid: 'test-duid', onMessage: vi.fn<(message: any) => Promise<void>>() };
   });
 
-  it('should call onMessage on all registered listeners', async () => {
+  it('should call onMessage on all registered listeners', () => {
     chained.register(listener1);
     chained.register(listener2);
 
-    await chained.onMessage(message);
+    chained.onMessage(message);
 
     expect(listener1.onMessage).toHaveBeenCalledWith(message);
     expect(listener2.onMessage).toHaveBeenCalledWith(message);
@@ -37,7 +38,7 @@ describe('ResponseBroadcaster', () => {
     expect(() => chained.onMessage(message)).not.toThrow();
   });
 
-  it('should call listeners in order', async () => {
+  it('should call listeners in order', () => {
     const callOrder: string[] = [];
     listener1.onMessage.mockImplementation(async () => {
       callOrder.push('first');
@@ -49,7 +50,7 @@ describe('ResponseBroadcaster', () => {
     chained.register(listener1);
     chained.register(listener2);
 
-    await chained.onMessage(message);
+    chained.onMessage(message);
 
     expect(callOrder).toEqual(['first', 'second']);
   });

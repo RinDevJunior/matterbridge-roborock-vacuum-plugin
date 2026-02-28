@@ -222,7 +222,7 @@ export class MQTTClient extends AbstractClient {
 
   private async onClose(): Promise<void> {
     if (this.connected) {
-      await this.connectionBroadcaster.onDisconnected(`mqtt-${this.mqttUsername}`, 'MQTT connection closed');
+      await this.connectionBroadcaster.onClose(`mqtt-${this.mqttUsername}`);
     }
 
     this.connected = false;
@@ -230,7 +230,7 @@ export class MQTTClient extends AbstractClient {
 
   private async onOffline(): Promise<void> {
     this.connected = false;
-    await this.connectionBroadcaster.onDisconnected('mqtt-' + this.mqttUsername, 'MQTT connection offline');
+    await this.connectionBroadcaster.onOffline(`mqtt-${this.mqttUsername}`);
   }
 
   private onReconnect(): void {

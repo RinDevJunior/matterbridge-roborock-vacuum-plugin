@@ -213,7 +213,7 @@ describe('LocalNetworkClient', () => {
     client['socket'] = mockSocket;
     client['connected'] = false;
     await client['onError'](new Error('fail'));
-    expect(mockLogger.error).toHaveBeenCalledWith(expect.stringContaining(' [LocalNetworkClient]: Socket error for'));
+    expect(mockLogger.error).toHaveBeenCalledWith(expect.stringContaining('[LocalNetworkClient]: Socket error for'));
     expect(client['connectionBroadcaster'].onDisconnected).toHaveBeenCalledWith(
       'duid1',
       expect.stringContaining('fail'),

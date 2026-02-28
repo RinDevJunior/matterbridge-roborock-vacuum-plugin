@@ -1,13 +1,15 @@
+import { OperationStatusCode, VacuumErrorCode, DockType, DockErrorCode } from '../enums/index.js';
+
 export interface CloudMessageResult {
   msg_ver: number;
   msg_seq: number;
-  state: number;
+  state: OperationStatusCode | number;
   battery: number;
   clean_time: number;
   clean_area: number;
-  error_code: number;
+  error_code: VacuumErrorCode | number;
   map_present: number;
-  in_cleaning: number;
+  in_cleaning: InCleaningStatus | number;
   in_returning: number;
   in_fresh_state: number;
   lab_status: number;
@@ -29,7 +31,7 @@ export interface CloudMessageResult {
   is_exploring?: number;
   adbumper_status: number[];
   water_shortage_status?: number;
-  dock_type: number;
+  dock_type: DockType | number;
   dust_collection_status: number;
   auto_dust_collection: number;
   avoid_count?: number;
@@ -38,7 +40,7 @@ export interface CloudMessageResult {
   in_warmup?: number;
   collision_avoid_status?: number;
   switch_map_mode: number;
-  dock_error_status: number;
+  dock_error_status: DockErrorCode | number;
   charge_status: number;
   unsave_map_reason?: number;
   unsave_map_flag?: number;
@@ -72,4 +74,11 @@ export enum CarpetCleanMode {
   Ignore = 2,
   Cross = 3,
   DynamicLift = 200, // TODO
+}
+
+export enum InCleaningStatus {
+  Complete = 0,
+  GlobalCleanNotComplete = 1,
+  ZoneCleanNotComplete = 2,
+  SegmentCleanNotComplete = 3,
 }

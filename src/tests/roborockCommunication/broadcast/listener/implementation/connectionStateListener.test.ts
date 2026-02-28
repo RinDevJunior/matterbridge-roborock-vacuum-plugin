@@ -116,7 +116,7 @@ describe('ConnectionStateListener', () => {
     const client = makeClient();
     const listener = new ConnectionStateListener(logger, client, 'TEST');
     listener.start();
-    await listener.onDisconnected('DUID8', 'Connection refused: Not authorized');
+    await listener.onError('DUID8', 'Connection refused: Not authorized');
     expect(logger.notice).toHaveBeenCalledWith(expect.stringContaining('authorization error'));
     expect(client.connect).not.toHaveBeenCalled();
   });
@@ -126,7 +126,7 @@ describe('ConnectionStateListener', () => {
     const client = makeClient();
     const listener = new ConnectionStateListener(logger, client, 'TEST');
     listener.start();
-    await listener.onDisconnected('DUID9', 'MQTT connection offline');
+    await listener.onOffline('DUID9');
     expect(logger.notice).toHaveBeenCalledWith(expect.stringContaining('went offline'));
     expect(client.connect).not.toHaveBeenCalled();
   });

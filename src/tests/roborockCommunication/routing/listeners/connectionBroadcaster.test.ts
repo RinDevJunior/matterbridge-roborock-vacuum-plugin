@@ -7,6 +7,8 @@ function createMockConnectionListener(): AbstractConnectionListener {
   return {
     onConnected: vi.fn().mockResolvedValue(undefined),
     onDisconnected: vi.fn().mockResolvedValue(undefined),
+    onOffline: vi.fn().mockResolvedValue(undefined),
+    onClose: vi.fn().mockResolvedValue(undefined),
     onError: vi.fn().mockResolvedValue(undefined),
     onReconnect: vi.fn().mockResolvedValue(undefined),
   };
@@ -76,6 +78,28 @@ describe('ConnectionBroadcaster', () => {
       await broadcaster.onDisconnected('duid-1', 'connection lost');
 
       expect(listener.onDisconnected).toHaveBeenCalledWith('duid-1', 'connection lost');
+    });
+  });
+
+  describe('onOffline', () => {
+    it('should call onOffline on all registered listeners', async () => {
+      const listener = createMockConnectionListener();
+      broadcaster.register(listener);
+
+      await broadcaster.onOffline('duid-1');
+
+      expect(listener.onOffline).toHaveBeenCalledWith('duid-1');
+    });
+  });
+
+  describe('onClose', () => {
+    it('should call onClose on all registered listeners', async () => {
+      const listener = createMockConnectionListener();
+      broadcaster.register(listener);
+
+      await broadcaster.onClose('duid-1');
+
+      expect(listener.onClose).toHaveBeenCalledWith('duid-1');
     });
   });
 

@@ -267,30 +267,30 @@ describe('resolveDeviceState - 56-row State Resolution Matrix', () => {
         const message = new StatusChangeMessage(
           'test-duid',
           OperationStatusCode.Cleaning,
-          undefined,
-          true,
-          undefined,
-          undefined,
-          true,
-          undefined,
+          undefined, // inCleaning
+          true, // inReturning
+          undefined, // inFreshState
+          undefined, // isLocating
+          true, // isExploring
+          undefined, // inWarmup
         );
 
         const result = resolveDeviceState(message);
 
         expect(result.runMode).toBe(RvcRunMode.ModeTag.Cleaning);
-        expect(result.operationalState).toBe(RvcOperationalState.OperationalState.SeekingCharger);
+        expect(result.operationalState).toBe(RvcOperationalState.OperationalState.UpdatingMaps);
       });
 
       it('should override inFreshState when both are true - Row 18', () => {
         const message = new StatusChangeMessage(
           'test-duid',
           OperationStatusCode.Cleaning,
-          undefined,
-          true,
-          true,
-          undefined,
-          undefined,
-          undefined,
+          undefined, // inCleaning
+          true, // inReturning
+          true, // inFreshState
+          undefined, // isLocating
+          undefined, // isExploring
+          undefined, // inWarmup
         );
 
         const result = resolveDeviceState(message);
@@ -314,7 +314,7 @@ describe('resolveDeviceState - 56-row State Resolution Matrix', () => {
         const result = resolveDeviceState(message);
 
         expect(result.runMode).toBe(RvcRunMode.ModeTag.Cleaning);
-        expect(result.operationalState).toBe(RvcOperationalState.OperationalState.SeekingCharger);
+        expect(result.operationalState).toBe(RvcOperationalState.OperationalState.UpdatingMaps);
       });
 
       it('should maintain Paused state when status is Paused - Row 33', () => {
