@@ -107,7 +107,7 @@ export class DeviceConfigurator {
       this.configManager.cleanModeSettings,
       this.configManager.forceRunAtDefault,
       this.log,
-      () => this.getPlatformRunner().startBurstPolling(vacuum.duid),
+      () => this.getPlatformRunner().burstPolling.startBurstPolling(vacuum.duid),
     );
 
     robot.configureHandler(behaviorHandler);

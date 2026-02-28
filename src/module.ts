@@ -206,7 +206,7 @@ export class RoborockMatterbridgePlatform extends MatterbridgeDynamicPlatform {
       this.rvcInterval = undefined;
     }
 
-    this.platformRunner.stopAllBurstPolling();
+    this.platformRunner.burstPolling.stopAllBurstPolling();
 
     if (this.roborockService) {
       this.roborockService.stopService();

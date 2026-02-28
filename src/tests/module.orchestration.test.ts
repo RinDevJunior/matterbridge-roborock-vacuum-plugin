@@ -5,6 +5,7 @@ import { RoborockMatterbridgePlatform } from '../module.js';
 import { asPartial, createMockLogger, createMockMatterbridge, createMockLocalStorage } from './helpers/testUtils.js';
 import type { RoborockService } from '../services/roborockService.js';
 import type { PlatformRunner } from '../platformRunner.js';
+import type { BurstPollingManager } from '../platform/burstPollingManager.js';
 import type { RoborockPluginPlatformConfig } from '../model/RoborockPluginPlatformConfig.js';
 
 function createMockConfig(overrides: Partial<RoborockPluginPlatformConfig> = {}): RoborockPluginPlatformConfig {
@@ -324,7 +325,7 @@ describe('RoborockMatterbridgePlatform - orchestration', () => {
       platform.state.setStartupCompleted(true);
       platform.platformRunner = asPartial<PlatformRunner>({
         requestHomeData: vi.fn().mockResolvedValue(undefined),
-        stopAllBurstPolling: vi.fn(),
+        burstPolling: asPartial<BurstPollingManager>({ stopAllBurstPolling: vi.fn() }),
       });
 
       await platform.onConfigure();
@@ -397,12 +398,12 @@ describe('RoborockMatterbridgePlatform - orchestration', () => {
     it('should call stopAllBurstPolling on shutdown when platformRunner is set', async () => {
       platform.platformRunner = asPartial<PlatformRunner>({
         requestHomeData: vi.fn().mockResolvedValue(undefined),
-        stopAllBurstPolling: vi.fn(),
+        burstPolling: asPartial<BurstPollingManager>({ stopAllBurstPolling: vi.fn() }),
       });
 
       await platform.onShutdown('test');
 
-      expect(platform.platformRunner.stopAllBurstPolling).toHaveBeenCalled();
+      expect(platform.platformRunner.burstPolling.stopAllBurstPolling).toHaveBeenCalled();
     });
   });
 

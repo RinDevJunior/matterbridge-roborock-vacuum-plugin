@@ -1,5 +1,14 @@
 # Claude History
 
+## 2026-02-28 (Session 12)
+
+- Refactored `platformRunner.ts` per `docs/platformRunner-refactor-plan.md`:
+  - **Item 1**: Extracted burst polling into `src/platform/burstPollingManager.ts` (`BurstPollingManager` class).
+  - **Item 2**: Extracted name resolver pure functions into `src/share/matterStateNames.ts` (`getRunModeName`, `getOperationalStateName`, `getCleanModeName`, `getOperationalErrorName`).
+  - **Item 4**: Replaced `payloadHandlers` Map + inline type-guard lambdas with a clean `switch` in `updateRobotWithPayload`.
+  - Removed 3 wrapper methods (`startBurstPolling`, `stopBurstPolling`, `stopAllBurstPolling`) from `PlatformRunner` — callers now use `runner.burstPolling.xxx()` directly.
+  - Updated `module.ts`, `deviceConfigurator.ts`, `platformRunner.test.ts`, and `module.orchestration.test.ts` accordingly.
+
 ## 2026-02-26 (Session 11)
 
 - Fixed `LocalNetworkClient` stale socket race condition on ping-timeout reconnect: replaced `intentionalDisconnect` flag (time-based, shared mutable state) with closure-captured socket reference in `close`/`error`/`end` event handlers. Old socket events are now identity-checked (`this.socket !== socket`) and ignored, preventing the new socket from being destroyed mid-handshake.

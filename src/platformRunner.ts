@@ -17,83 +17,28 @@ import { getRunningMode } from './initialData/getSupportedRunModes.js';
 import { CleanModeSetting } from './behaviors/roborock.vacuum/core/CleanModeSetting.js';
 import { getCleanModeResolver } from './share/runtimeHelper.js';
 import { DockErrorCode, OperationStatusCode } from './roborockCommunication/enums/index.js';
-import { BURST_POLLING_INTERVAL_MS, INVALID_SEGMENT_ID } from './constants/index.js';
+import { INVALID_SEGMENT_ID } from './constants/index.js';
+import { BurstPollingManager } from './platform/burstPollingManager.js';
 import { DockStationStatus } from './model/DockStationStatus.js';
 import { triggerDssError } from './runtimes/handleLocalMessage.js';
 import { state_to_matter_operational_status, state_to_matter_state } from './share/function.js';
 import { VacuumStatus } from './model/VacuumStatus.js';
 import { CleanSequenceType } from './behaviors/roborock.vacuum/enums/CleanSequenceType.js';
-import { getAllKnownModeConfigs } from './behaviors/roborock.vacuum/core/deviceCapabilityRegistry.js';
-
-const allKnownModeConfigs = getAllKnownModeConfigs();
+import {
+  getCleanModeName,
+  getOperationalErrorName,
+  getOperationalStateName,
+  getRunModeName,
+} from './share/matterStateNames.js';
 
 type RobotHandler<T = unknown> = (robot: RoborockVacuumCleaner, data: T) => void | Promise<void>;
-type PayloadHandler = (payload: MessagePayload) => void;
 
 export class PlatformRunner {
   private activateHandlers = false;
-  private readonly payloadHandlers: Map<NotifyMessageTypes, PayloadHandler>;
-  private readonly burstPollingTimers = new Map<string, NodeJS.Timeout>();
+  public readonly burstPolling: BurstPollingManager;
 
   constructor(private readonly platform: RoborockMatterbridgePlatform) {
-    this.payloadHandlers = new Map([
-      [
-        NotifyMessageTypes.ErrorOccurred,
-        (p) => {
-          if (p.type === NotifyMessageTypes.ErrorOccurred) {
-            this.executeWithRobot(p.data.duid, p.data, this.handleErrorOccurred.bind(this));
-          }
-        },
-      ],
-      [
-        NotifyMessageTypes.BatteryUpdate,
-        (p) => {
-          if (p.type === NotifyMessageTypes.BatteryUpdate) {
-            this.executeWithRobot(p.data.duid, p.data, this.handleBatteryUpdate.bind(this));
-          }
-        },
-      ],
-      [
-        NotifyMessageTypes.DeviceStatus,
-        (p) => {
-          if (p.type === NotifyMessageTypes.DeviceStatus) {
-            this.executeWithRobot(p.data.duid, p.data, this.handleDeviceStatusUpdate.bind(this));
-          }
-        },
-      ],
-      [
-        NotifyMessageTypes.DeviceStatusSimple,
-        (p) => {
-          if (p.type === NotifyMessageTypes.DeviceStatusSimple) {
-            this.executeWithRobot(p.data.duid, p.data, this.handleDeviceStatusSimpleUpdate.bind(this));
-          }
-        },
-      ],
-      [
-        NotifyMessageTypes.CleanModeUpdate,
-        (p) => {
-          if (p.type === NotifyMessageTypes.CleanModeUpdate) {
-            this.executeWithRobot(p.data.duid, p.data, this.handleCleanModeUpdate.bind(this));
-          }
-        },
-      ],
-      [
-        NotifyMessageTypes.ServiceAreaUpdate,
-        (p) => {
-          if (p.type === NotifyMessageTypes.ServiceAreaUpdate) {
-            this.executeWithRobot(p.data.duid, p.data, this.handleServiceAreaUpdate.bind(this));
-          }
-        },
-      ],
-      [
-        NotifyMessageTypes.HomeData,
-        (p) => {
-          if (p.type === NotifyMessageTypes.HomeData) {
-            updateFromHomeData(p.data, this.platform);
-          }
-        },
-      ],
-    ]);
+    this.burstPolling = new BurstPollingManager(platform);
   }
 
   public activateHandlerFunctions(): void {
@@ -120,79 +65,37 @@ export class PlatformRunner {
   }
 
   /**
-   * Start burst polling for a specific device: poll every BURST_POLLING_INTERVAL_MS
-   * until the device becomes idle/docked after a vacuum command is triggered.
-   */
-  public startBurstPolling(duid: string): void {
-    if (this.burstPollingTimers.has(duid)) return;
-
-    const timer = setInterval(async () => {
-      try {
-        this.platform.log.notice(`Burst polling for a specific device: ${duid}`);
-        await this.requestLocalDeviceStatus(duid);
-        if (this.isDeviceIdle(duid)) {
-          this.stopBurstPolling(duid);
-        }
-      } catch (error) {
-        this.platform.log.error(`Burst polling failed: ${error instanceof Error ? error.message : String(error)}`);
-      }
-    }, BURST_POLLING_INTERVAL_MS);
-
-    this.burstPollingTimers.set(duid, timer);
-  }
-
-  /**
-   * Stop burst polling for all devices and clear all timers.
-   */
-  public stopAllBurstPolling(): void {
-    for (const duid of this.burstPollingTimers.keys()) {
-      this.stopBurstPolling(duid);
-    }
-  }
-
-  /**
-   * Stop burst polling for a specific device and clear its timer.
-   */
-  public stopBurstPolling(duid: string): void {
-    const timer = this.burstPollingTimers.get(duid);
-    if (timer !== undefined) {
-      this.platform.log.notice(`Stop burst polling for a specific device: ${duid}`);
-      clearInterval(timer);
-      this.burstPollingTimers.delete(duid);
-    }
-  }
-
-  private async requestLocalDeviceStatus(duid: string): Promise<void> {
-    const { roborockService } = this.platform;
-    if (roborockService === undefined) return;
-    await roborockService.requestDeviceStatusOnce(duid);
-  }
-
-  private isDeviceIdle(duid: string): boolean {
-    const robot = this.platform.registry.robotsMap.get(duid);
-    if (!robot) return true;
-    const state: RvcOperationalState.OperationalState = robot.getAttribute(
-      RvcOperationalState.Cluster.id,
-      'operationalState',
-      this.platform.log,
-    );
-    return (
-      state === RvcOperationalState.OperationalState.Docked || state === RvcOperationalState.OperationalState.Charging
-    );
-  }
-
-  /**
    * Update robot state based on message payload.
    * Routes to appropriate handler using type-safe discriminated unions.
    */
   public updateRobotWithPayload(payload: MessagePayload): void {
     if (!this.activateHandlers) return;
 
-    const handler = this.payloadHandlers.get(payload.type);
-    if (handler) {
-      handler(payload);
-    } else {
-      this.platform.log.warn(`No handler registered for message type: ${payload.type}`);
+    const { type } = payload;
+    switch (type) {
+      case NotifyMessageTypes.ErrorOccurred:
+        this.executeWithRobot(payload.data.duid, payload.data, this.handleErrorOccurred.bind(this));
+        break;
+      case NotifyMessageTypes.BatteryUpdate:
+        this.executeWithRobot(payload.data.duid, payload.data, this.handleBatteryUpdate.bind(this));
+        break;
+      case NotifyMessageTypes.DeviceStatus:
+        this.executeWithRobot(payload.data.duid, payload.data, this.handleDeviceStatusUpdate.bind(this));
+        break;
+      case NotifyMessageTypes.DeviceStatusSimple:
+        this.executeWithRobot(payload.data.duid, payload.data, this.handleDeviceStatusSimpleUpdate.bind(this));
+        break;
+      case NotifyMessageTypes.CleanModeUpdate:
+        this.executeWithRobot(payload.data.duid, payload.data, this.handleCleanModeUpdate.bind(this));
+        break;
+      case NotifyMessageTypes.ServiceAreaUpdate:
+        this.executeWithRobot(payload.data.duid, payload.data, this.handleServiceAreaUpdate.bind(this));
+        break;
+      case NotifyMessageTypes.HomeData:
+        updateFromHomeData(payload.data, this.platform);
+        break;
+      default:
+        this.platform.log.warn(`No handler registered for message type: ${type}`);
     }
   }
 
@@ -218,43 +121,6 @@ export class PlatformRunner {
   }
 
   /**
-   * Get human-readable name for run mode enum value.
-   */
-  private getRunModeName(runMode: number): string {
-    return (
-      Object.keys(RvcRunMode.ModeTag).find(
-        (key) => RvcRunMode.ModeTag[key as keyof typeof RvcRunMode.ModeTag] === runMode,
-      ) || String(runMode)
-    );
-  }
-
-  /**
-   * Get human-readable name for operational state enum value.
-   */
-  private getOperationalStateName(operationalState: number): string {
-    return (
-      Object.keys(RvcOperationalState.OperationalState).find(
-        (key) =>
-          RvcOperationalState.OperationalState[key as keyof typeof RvcOperationalState.OperationalState] ===
-          operationalState,
-      ) || String(operationalState)
-    );
-  }
-
-  private getCleanModeName(mode: number): string {
-    return allKnownModeConfigs.find((x) => x.mode === mode)?.label ?? 'Not found';
-  }
-
-  private getOperationalErrorName(operationalError: number): string {
-    return (
-      Object.keys(RvcOperationalState.ErrorState).find(
-        (key) =>
-          RvcOperationalState.ErrorState[key as keyof typeof RvcOperationalState.ErrorState] === operationalError,
-      ) || String(operationalError)
-    );
-  }
-
-  /**
    * Handle error occurred messages and update robot operational state.
    * Processes vacuum and docking station errors, updating Matter attributes accordingly.
    * Prioritizes vacuum errors over docking station errors.
@@ -277,7 +143,7 @@ export class PlatformRunner {
     const vacuumStatus = new VacuumStatus(message.vacuumErrorCode ?? 0);
     if (vacuumStatus.hasError()) {
       const errorDetail = vacuumStatus.getErrorState();
-      this.platform.log.warn(`Vacuum error detected: ${this.getOperationalErrorName(errorDetail)}`);
+      this.platform.log.warn(`Vacuum error detected: ${getOperationalErrorName(errorDetail)}`);
       robot.updateAttribute(
         RvcOperationalState.Cluster.id,
         'operationalState',
@@ -322,7 +188,7 @@ export class PlatformRunner {
           this.platform.log,
         );
         const errorDetail = dockStatus.getMatterOperationalError();
-        this.platform.log.warn(`Docking station error detected: ${this.getOperationalErrorName(errorDetail)}`);
+        this.platform.log.warn(`Docking station error detected: ${getOperationalErrorName(errorDetail)}`);
         robot.updateAttribute(
           RvcOperationalState.Cluster.id,
           'operationalError',
@@ -344,7 +210,7 @@ export class PlatformRunner {
     if (message.dockErrorCode !== DockErrorCode.None) {
       const dockStatus = DockStationStatus.parseDockErrorCode(message.dockErrorCode);
       if (dockStatus !== RvcOperationalState.ErrorState.NoError) {
-        this.platform.log.warn(`Docking station error detected: ${this.getOperationalErrorName(dockStatus)}`);
+        this.platform.log.warn(`Docking station error detected: ${getOperationalErrorName(dockStatus)}`);
         robot.updateAttribute(
           RvcOperationalState.Cluster.id,
           'operationalError',
@@ -453,8 +319,8 @@ export class PlatformRunner {
     const resolvedState = resolveDeviceState(message);
     this.platform.log.notice(
       `[${robot.device.duid}] Resolved state:
-      runMode=${this.getRunModeName(resolvedState.runMode)},
-      operationalState=${this.getOperationalStateName(resolvedState.operationalState)},
+      runMode=${getRunModeName(resolvedState.runMode)},
+      operationalState=${getOperationalStateName(resolvedState.operationalState)},
       newRunMode=${resolvedState.runMode},
       newOperationState=${resolvedState.operationalState},
       currentRunMode=${currentRunMode},
@@ -488,8 +354,8 @@ export class PlatformRunner {
     // Auto-start burst polling when the device enters an active state
     const isActive =
       resolvedState.runMode === RvcRunMode.ModeTag.Cleaning || resolvedState.runMode === RvcRunMode.ModeTag.Mapping;
-    if (isActive && !this.burstPollingTimers.has(robot.device.duid)) {
-      this.startBurstPolling(robot.device.duid);
+    if (isActive && !this.burstPolling.has(robot.device.duid)) {
+      this.burstPolling.startBurstPolling(robot.device.duid);
     }
   }
 
@@ -506,7 +372,7 @@ export class PlatformRunner {
 
     const state = state_to_matter_state(message.status);
     this.platform.log.debug(
-      `Resolved state from simple update: ${state !== undefined ? this.getRunModeName(state) : 'undefined'}`,
+      `Resolved state from simple update: ${state !== undefined ? getRunModeName(state) : 'undefined'}`,
     );
     if (state !== undefined) {
       robot.updateAttribute(RvcRunMode.Cluster.id, 'currentMode', getRunningMode(state), this.platform.log);
@@ -520,7 +386,7 @@ export class PlatformRunner {
       return;
     }
     if (operationalStateId !== undefined) {
-      this.platform.log.debug(`Updating operational state to: ${this.getOperationalStateName(operationalStateId)}`);
+      this.platform.log.debug(`Updating operational state to: ${getOperationalStateName(operationalStateId)}`);
       robot.updateAttribute(RvcOperationalState.Cluster.id, 'operationalState', operationalStateId, this.platform.log);
     }
   }
@@ -557,7 +423,7 @@ export class PlatformRunner {
       const currentCleanMode = currentCleanModeResolver.resolve(currentCleanModeSetting);
 
       if (currentCleanMode) {
-        this.platform.log.notice(`Calculated current clean mode: ${this.getCleanModeName(currentCleanMode)}`);
+        this.platform.log.notice(`Calculated current clean mode: ${getCleanModeName(currentCleanMode)}`);
         robot.updateAttribute(RvcCleanMode.Cluster.id, 'currentMode', currentCleanMode, this.platform.log);
       }
     }

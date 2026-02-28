@@ -12,6 +12,13 @@
 
 ## Completed
 
+- [x] Refactor `platformRunner.ts` — items 1, 2, 4 from `docs/platformRunner-refactor-plan.md`
+  - [x] Extract `BurstPollingManager` → `src/platform/burstPollingManager.ts`
+  - [x] Extract name resolver utils → `src/share/matterStateNames.ts`
+  - [x] Replace `payloadHandlers` Map with `switch` in `updateRobotWithPayload`
+  - [x] Remove wrapper delegate methods from `PlatformRunner`; callers use `burstPolling` directly
+- [ ] platformRunner-refactor item 3: extract `handleErrorOccurred` and `handleServiceAreaUpdate` into `src/runtimes/`
+
 - [x] Add `Protocol.device_status_ota` (500) with `deserializeDeviceStatusOta` and `DeviceStatusListener` for firmware update/online status logging
 - [x] Fix `LocalNetworkClient` reconnect: `intentionalDisconnect` flag suppresses stale `close`/`error` events from old socket after ping-timeout reconnect
 - [x] Add `isReconnecting()` to `LocalNetworkClient`; `ClientRouter.getLocalClient` falls back to MQTT with notice log while reconnecting
