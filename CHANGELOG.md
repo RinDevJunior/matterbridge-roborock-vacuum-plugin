@@ -14,6 +14,7 @@ All notable changes to this project will be documented in this file.
 ### Breaking Changed
 
 - **Whitelist now accepts DUIDs only** — Device filtering via the White List configuration now matches on DUID exclusively. The previous `<Name>-<duid>` format and name-based matching are no longer supported; enter the raw DUID string directly.
+- **Requires matterbridge@3.5.6** — This release upgrades the minimum required Matterbridge version to `3.5.6`. Please run `npm install -g matterbridge@3.5.6` before updating the plugin.
 
 ### Improved
 
