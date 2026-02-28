@@ -95,7 +95,7 @@ To get the **DUID** for your devices, you have two options:
 - **Under active development**
 - Requires **`matterbridge@3.5.5`**
 
-* ---
+---
 
 ### ➡️ [See Supported & Tested Roborock Devices](./README_SUPPORTED.md)
 
