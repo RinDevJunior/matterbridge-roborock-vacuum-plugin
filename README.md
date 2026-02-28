@@ -8,6 +8,9 @@
   <a href="https://www.npmjs.com/package/matterbridge-roborock-vacuum-plugin">
     <img src="https://img.shields.io/npm/v/matterbridge-roborock-vacuum-plugin.svg" alt="npm version" />
   </a>
+  <a href="https://www.npmjs.com/package/matterbridge-roborock-vacuum-plugin?activeTab=versions">
+    <img src="https://img.shields.io/npm/v/matterbridge-roborock-vacuum-plugin/dev.svg" alt="npm dev version" />
+  </a>
   <a href="https://www.npmjs.com/package/matterbridge-roborock-vacuum-plugin">
     <img src="https://img.shields.io/npm/dt/matterbridge-roborock-vacuum-plugin.svg" alt="npm downloads" />
   </a>
@@ -19,6 +22,12 @@
   </a>
   <a href="https://www.npmjs.com/package/matterbridge">
     <img src="https://img.shields.io/badge/powered%20by-matterbridge-blue" alt="powered by Matterbridge" />
+  </a>
+  <a href="https://github.com/prettier/prettier">
+    <img src="https://img.shields.io/badge/styled_with-Prettier-f8bc45.svg?logo=prettier" alt="styled with prettier" />
+  </a>
+  <a href="https://github.com/eslint/eslint">
+    <img src="https://img.shields.io/badge/linted_with-ES_Lint-4B32C3.svg?logo=eslint" alt="linted with eslint" />
   </a>
   <a href="https://www.npmjs.com/package/node-ansi-logger">
     <img src="https://img.shields.io/badge/powered%20by-node--ansi--logger-blue" alt="powered by node-ansi-logger" />

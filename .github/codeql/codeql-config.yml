@@ -1,0 +1,13 @@
+name: CodeQL Config
+
+paths-ignore:
+  - '**/*.md'
+  - '**/*.json'
+  - '**/*.yml'
+  - '**/*.yaml'
+  - 'src/test/**'
+  - 'dist/**'
+  - 'node_modules/**'
+  - 'coverage/**'
+  - '**/*.spec.ts'
+  - '**/*.test.ts'
