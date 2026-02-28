@@ -4,6 +4,16 @@ All notable changes to this project will be documented in this file.
 
 ---
 
+## [1.1.5-rc04] - 2026-02-28
+
+### Fixed
+
+- **MQTT subscription race condition on connect** — `subscribeToQueue()` is now called before awaiting `connectionBroadcaster.onConnected()`. Previously, if an email notification was enabled, the SMTP send inside `onConnected` could delay the subscription long enough for a `get_network_info` response to arrive before the response topic was subscribed — causing a timeout and MQTT-only fallback on every startup.
+
+<a href="https://www.buymeacoffee.com/rinnvspktr" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/default-orange.png" alt="Buy Me A Coffee" height="41" width="174"></a>
+
+---
+
 ## [1.1.5-rc03] - 2026-02-28
 
 ### Added

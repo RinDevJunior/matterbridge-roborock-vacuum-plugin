@@ -140,8 +140,8 @@ export class MQTTClient extends AbstractClient {
     this.connected = true;
     this.consecutiveAuthErrors = 0;
     this.logger.info(`[MQTTClient] connected to MQTT broker with result: ${debugStringify(result)}`);
-    await this.connectionBroadcaster.onConnected(`mqtt-${this.mqttUsername}`);
     this.subscribeToQueue();
+    await this.connectionBroadcaster.onConnected(`mqtt-${this.mqttUsername}`);
   }
 
   private subscribeToQueue(): void {
