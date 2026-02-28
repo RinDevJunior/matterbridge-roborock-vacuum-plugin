@@ -9,6 +9,7 @@ All notable changes to this project will be documented in this file.
 ### Fixed
 
 - **Single-room `currentArea` preserved when `cleaning_info` is absent** — When a vacuum is cleaning with exactly one room selected and no `cleaning_info` is reported, `currentArea` is now set to that room's area ID instead of being cleared to null. Previously this caused Apple Home to lose track of which room was being cleaned in single-room scenarios.
+- **Email notifications suppressed during periodic keep-alive reconnects** — `MQTTClient` now tracks forced reconnections initiated by `keepConnectionAlive` via an `isForceReconnecting` flag. `onClose` and `onConnected` broadcaster events are skipped when the reconnection is intentional, so email alerts are only sent on genuine connection loss or errors.
 
 ### Breaking Changed
 

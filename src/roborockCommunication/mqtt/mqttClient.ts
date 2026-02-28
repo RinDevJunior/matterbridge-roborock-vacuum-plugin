@@ -16,6 +16,7 @@ export class MQTTClient extends AbstractClient {
   private mqttClient: MqttLibClient | undefined = undefined;
   private keepConnectionAliveInterval: NodeJS.Timeout | undefined = undefined;
   private connected = false;
+  private isForceReconnecting = false;
   private consecutiveAuthErrors = 0;
   private authErrorBackoffTimeout: NodeJS.Timeout | undefined = undefined;
 
@@ -122,6 +123,7 @@ export class MQTTClient extends AbstractClient {
     this.keepConnectionAliveInterval = setInterval(() => {
       if (this.mqttClient) {
         this.logger.debug('[MQTTClient] Force reconnecting to ensure fresh connection');
+        this.isForceReconnecting = true;
         this.mqttClient.end();
         this.mqttClient.reconnect();
       } else {
@@ -137,11 +139,17 @@ export class MQTTClient extends AbstractClient {
       return;
     }
 
+    const wasForceReconnecting = this.isForceReconnecting;
+    this.isForceReconnecting = false;
+
     this.connected = true;
     this.consecutiveAuthErrors = 0;
     this.logger.info(`[MQTTClient] connected to MQTT broker with result: ${debugStringify(result)}`);
     this.subscribeToQueue();
-    await this.connectionBroadcaster.onConnected(`mqtt-${this.mqttUsername}`);
+
+    if (!wasForceReconnecting) {
+      await this.connectionBroadcaster.onConnected(`mqtt-${this.mqttUsername}`);
+    }
   }
 
   private subscribeToQueue(): void {
@@ -221,7 +229,7 @@ export class MQTTClient extends AbstractClient {
   }
 
   private async onClose(): Promise<void> {
-    if (this.connected) {
+    if (this.connected && !this.isForceReconnecting) {
       await this.connectionBroadcaster.onClose(`mqtt-${this.mqttUsername}`);
     }
 

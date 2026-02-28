@@ -482,6 +482,47 @@ describe('MQTTClient', () => {
     expect(mqttClient['connectionBroadcaster'].onClose).not.toHaveBeenCalled();
   });
 
+  it('should broadcast onClose and onConnected when MQTT disconnects unexpectedly (real disconnect)', async () => {
+    const mqttClient = createMQTTClient();
+    mqttClient['mqttClient'] = client;
+    mqttClient['connected'] = true;
+    mqttClient['isForceReconnecting'] = false;
+    mqttClient['subscribeToQueue'] = vi.fn();
+
+    await mqttClient['onClose']();
+
+    expect(mqttClient['connectionBroadcaster'].onClose).toHaveBeenCalledWith('mqtt-c6d6afb9');
+    expect(mqttClient['connected']).toBe(false);
+
+    await mqttClient['onConnect'](asType<IConnackPacket>({}));
+
+    expect(mqttClient['connectionBroadcaster'].onConnected).toHaveBeenCalledWith('mqtt-c6d6afb9');
+  });
+
+  it('should NOT broadcast onClose or onConnected when keepConnectionAlive forces reconnect', async () => {
+    vi.useFakeTimers();
+    const mqttClient = createMQTTClient();
+    mqttClient['mqttClient'] = client;
+    mqttClient['connected'] = true;
+    mqttClient['subscribeToQueue'] = vi.fn();
+
+    mqttClient['keepConnectionAlive']();
+    vi.advanceTimersByTime(60 * 60 * 1000);
+
+    expect(mqttClient['isForceReconnecting']).toBe(true);
+
+    await mqttClient['onClose']();
+    expect(mqttClient['connectionBroadcaster'].onClose).not.toHaveBeenCalled();
+
+    await mqttClient['onConnect'](asType<IConnackPacket>({}));
+    expect(mqttClient['connectionBroadcaster'].onConnected).not.toHaveBeenCalled();
+
+    expect(mqttClient['isForceReconnecting']).toBe(false);
+
+    clearInterval(mqttClient['keepConnectionAliveInterval']);
+    vi.useRealTimers();
+  });
+
   it('onOffline should set connected to false and call onOffline', async () => {
     const mqttClient = createMQTTClient();
     mqttClient['connected'] = true;
