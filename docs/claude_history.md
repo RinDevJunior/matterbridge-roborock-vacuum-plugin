@@ -1,5 +1,13 @@
 # Claude History
 
+## 2026-03-01 (Session 14)
+
+- Debugged `stateResolver.ts`: Sleeping (2) + `inCleaning=true` was resolving to Idle+Docked instead of Cleaning+Paused.
+  - Root cause: no Sleeping handler in Priority 0 — fell through to `getBaseState` → `state_to_matter_state(2)` = Idle, `state_to_matter_operational_status(2)` = Docked.
+  - Fix: added Sleeping override (Rows 8–10) in Priority 0 block of `resolveDeviceState`.
+  - Also fixed stale test "should handle Sleeping status - Row 8" (wrong label → "Row 10", wrong expectation Docked → Paused).
+- Audited `stateResolver.ts` vs `misc/state_resolution_matrix.md` — found 4 discrepancies, documented in `docs/stateResolver-bugs.md`.
+
 ## 2026-02-28 (Session 13)
 
 - Added `src/tests/platform/burstPollingManager.test.ts` (16 tests) to improve PR 116 patch coverage for `BurstPollingManager` — covers startBurstPolling (happy/early-return/error paths), stopBurstPolling, stopAllBurstPolling, has, requestLocalDeviceStatus (undefined service), isDeviceIdle (robot not found, Docked, Charging, Running). Used `vi.useFakeTimers()` with `advanceTimersByTimeAsync(15000)` to trigger the 10s interval callback.

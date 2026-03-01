@@ -11,11 +11,12 @@ export interface ResolvedState {
 /**
  * Resolves the robot's state based on status code and modifier flags.
  *
- * Implements a 47-row state resolution matrix with three priority levels:
+ * Implements a 48-row state resolution matrix with three priority levels:
  *
  * 1. **Status Override Rules** (Highest Priority)
  *    - Certain status codes ignore ALL modifier flags
- *    - Examples: Idle (3), WashingTheMop (23), GoingToWashTheMop (26), etc.
+ *    - Examples: Sleeping (2), Idle (3), InError (12), WashingTheMop (23), GoingToWashTheMop (26), etc.
+ *    - Sleeping (2): inCleaning=true → Cleaning+Paused; isExploring=true → Mapping+Paused; base → Idle+Paused
  *
  * 2. **Cleaning Status Special Overrides**
  *    - When status = 5 (Cleaning), modifiers apply in explicit priority order:
@@ -26,7 +27,7 @@ export interface ResolvedState {
  *
  * 3. **Modifier Priority Chain**
  *    - For all other cases, modifiers apply in priority order:
- *      a. inReturning (High) - Sets SeekingCharger operational state (ignored for Paused, InError, ReturnToDock, ReturningDock)
+ *      a. inReturning (High) - Sets SeekingCharger operational state (ignored for Paused, ReturnToDock, ReturningDock)
  *      b. isExploring (Medium) - Changes run mode to Mapping (blocked on Charging)
  *      c. inFreshState (Low) - No longer used (redundant with Charging base state)
  *
@@ -43,11 +44,56 @@ export function resolveDeviceState(message: StatusChangeMessage): ResolvedState 
   // ═══════════════════════════════════════════════════════════════════════════
   // These status codes ignore ALL modifier flags and always return fixed states
 
+  // Sleeping Status Override - Rows 8-10
+  if (status === OperationStatusCode.Sleeping) {
+    // Row 8: inCleaning=true overrides all other flags → Cleaning + Paused
+    if (message.inCleaning === true) {
+      return {
+        runMode: RvcRunMode.ModeTag.Cleaning,
+        operationalState: RvcOperationalState.OperationalState.Paused,
+      };
+    }
+    // Row 9: isExploring=true (without inCleaning) → Mapping + Paused
+    if (message.isExploring === true) {
+      return {
+        runMode: RvcRunMode.ModeTag.Mapping,
+        operationalState: RvcOperationalState.OperationalState.Paused,
+      };
+    }
+    // Row 10: Base → Idle + Paused
+    return {
+      runMode: RvcRunMode.ModeTag.Idle,
+      operationalState: RvcOperationalState.OperationalState.Paused,
+    };
+  }
+
   // Idle Status Override - Row 11
   if (status === OperationStatusCode.Idle) {
     return {
       runMode: RvcRunMode.ModeTag.Idle,
       operationalState: RvcOperationalState.OperationalState.Docked,
+    };
+  }
+
+  // InError Status Override - Rows 31-33
+  if (status === OperationStatusCode.InError) {
+    if (message.inCleaning === true) {
+      return {
+        runMode: RvcRunMode.ModeTag.Cleaning,
+        operationalState: RvcOperationalState.OperationalState.Error,
+      };
+    }
+
+    if (message.isExploring === true) {
+      return {
+        runMode: RvcRunMode.ModeTag.Mapping,
+        operationalState: RvcOperationalState.OperationalState.Error,
+      };
+    }
+
+    return {
+      runMode: RvcRunMode.ModeTag.Idle,
+      operationalState: RvcOperationalState.OperationalState.Error,
     };
   }
 
@@ -88,7 +134,21 @@ export function resolveDeviceState(message: StatusChangeMessage): ResolvedState 
   // ═══════════════════════════════════════════════════════════════════════════
   // When status = 5 (Cleaning), apply modifiers in explicit priority order
 
-  if (status === OperationStatusCode.Cleaning) {
+  if (
+    status === OperationStatusCode.Cleaning ||
+    status === OperationStatusCode.ManualMode ||
+    status === OperationStatusCode.RoomClean ||
+    status === OperationStatusCode.ZoneClean ||
+    status === OperationStatusCode.SpotCleaning ||
+    status === OperationStatusCode.CleanMopCleaning ||
+    status === OperationStatusCode.CleanMopMopping ||
+    status === OperationStatusCode.RoomCleanMopCleaning ||
+    status === OperationStatusCode.RoomCleanMopMopping ||
+    status === OperationStatusCode.ZoneCleanMopCleaning ||
+    status === OperationStatusCode.ZoneCleanMopMopping ||
+    status === OperationStatusCode.RoomMopping ||
+    status === OperationStatusCode.ZoneMopping
+  ) {
     // Priority 1: isLocating/isExploring (Highest) - Rows 14-15
     // Map update operations override all other flags during cleaning
     if (message.isLocating === true || message.isExploring === true) {
@@ -189,7 +249,7 @@ function getBaseState(message: StatusChangeMessage): ResolvedState {
  * When inReturning=true, robot is seeking charger regardless of other flags.
  * Sets runMode to Cleaning and operationalState to SeekingCharger.
  *
- * Special Cases: For certain statuses (Paused, InError, ReturnToDock, ReturningDock),
+ * Special Cases: For certain statuses (Paused, ReturnToDock, ReturningDock),
  * the operational state is fixed by the status itself, so inReturning is ignored entirely.
  * These statuses only use isExploring to determine run mode (Cleaning vs Mapping).
  *
@@ -204,7 +264,6 @@ function applyInReturningModifier(state: ResolvedState, message: StatusChangeMes
     // Skip inReturning for statuses with fixed operational states
     if (
       message.status === OperationStatusCode.Paused ||
-      message.status === OperationStatusCode.InError ||
       message.status === OperationStatusCode.ReturnToDock ||
       message.status === OperationStatusCode.ReturningDock
     ) {

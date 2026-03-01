@@ -29,6 +29,7 @@ import {
   getOperationalErrorName,
   getOperationalStateName,
   getRunModeName,
+  getRunModeNameV2,
 } from './share/matterStateNames.js';
 
 type RobotHandler<T = unknown> = (robot: RoborockVacuumCleaner, data: T) => void | Promise<void>;
@@ -304,27 +305,22 @@ export class PlatformRunner {
       return;
     }
 
+    const currentRunMode: number = robot.getAttribute(RvcRunMode.Cluster.id, 'currentMode');
+
     const currentOperationState: RvcOperationalState.OperationalState = robot.getAttribute(
       RvcOperationalState.Cluster.id,
       'operationalState',
-      this.platform.log,
-    );
-    const currentRunMode: RvcRunMode.ModeTag = robot.getAttribute(
-      RvcRunMode.Cluster.id,
-      'currentMode',
-      this.platform.log,
     );
 
     // Resolve state using state resolution matrix
     const resolvedState = resolveDeviceState(message);
+
     this.platform.log.notice(
       `[${robot.device.duid}] Resolved state:
-      runMode=${getRunModeName(resolvedState.runMode)},
-      operationalState=${getOperationalStateName(resolvedState.operationalState)},
-      newRunMode=${resolvedState.runMode},
-      newOperationState=${resolvedState.operationalState},
-      currentRunMode=${currentRunMode},
-      currentOperationState=${currentOperationState}`,
+      currentRunMode=${getRunModeNameV2(currentRunMode)}, code=${currentRunMode}
+      currentOperationState=${getOperationalStateName(currentOperationState)}, code=${currentOperationState}
+      newRunMode=${getRunModeName(resolvedState.runMode)}, code=${getRunningMode(resolvedState.runMode)}
+      newOperationalState=${getOperationalStateName(resolvedState.operationalState)}, code=${resolvedState.operationalState}`,
     );
 
     if (
@@ -447,7 +443,8 @@ export class PlatformRunner {
     }
 
     if (
-      (message.state === OperationStatusCode.Cleaning ||
+      (message.state === OperationStatusCode.Paused ||
+        message.state === OperationStatusCode.Cleaning ||
         message.state === OperationStatusCode.Mapping ||
         message.state === OperationStatusCode.RoomClean ||
         message.state === OperationStatusCode.ZoneClean ||

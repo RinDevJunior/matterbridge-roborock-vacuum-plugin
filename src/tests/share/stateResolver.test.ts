@@ -369,8 +369,8 @@ describe('resolveDeviceState - 56-row State Resolution Matrix', () => {
 
         const result = resolveDeviceState(message);
 
-        expect(result.runMode).toBe(RvcRunMode.ModeTag.Mapping);
-        expect(result.operationalState).toBe(RvcOperationalState.OperationalState.Running);
+        expect(result.runMode).toBe(RvcRunMode.ModeTag.Cleaning);
+        expect(result.operationalState).toBe(RvcOperationalState.OperationalState.UpdatingMaps);
       });
 
       it('should change runMode to Mapping for ReturningDock - Row 22', () => {
@@ -597,7 +597,7 @@ describe('resolveDeviceState - 56-row State Resolution Matrix', () => {
         expect(result.operationalState).toBe(RvcOperationalState.OperationalState.Running);
       });
 
-      it('should handle Sleeping status - Row 8', () => {
+      it('should handle Sleeping status base case - Row 10', () => {
         const message = new StatusChangeMessage(
           'test-duid',
           OperationStatusCode.Sleeping,
@@ -612,7 +612,25 @@ describe('resolveDeviceState - 56-row State Resolution Matrix', () => {
         const result = resolveDeviceState(message);
 
         expect(result.runMode).toBe(RvcRunMode.ModeTag.Idle);
-        expect(result.operationalState).toBe(RvcOperationalState.OperationalState.Docked);
+        expect(result.operationalState).toBe(RvcOperationalState.OperationalState.Paused);
+      });
+
+      it('should handle InError status - Row 31', () => {
+        const message = new StatusChangeMessage(
+          'test-duid',
+          OperationStatusCode.InError,
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+        );
+
+        const result = resolveDeviceState(message);
+
+        expect(result.runMode).toBe(RvcRunMode.ModeTag.Idle);
+        expect(result.operationalState).toBe(RvcOperationalState.OperationalState.Error);
       });
 
       it('should handle ChargingError status - Row 35', () => {
@@ -1228,6 +1246,24 @@ describe('resolveDeviceState - 56-row State Resolution Matrix', () => {
 
       expect(result.runMode).toBe(RvcRunMode.ModeTag.Idle);
       expect(result.operationalState).toBe(RvcOperationalState.OperationalState.Docked);
+    });
+
+    it('should handle paused cleaning for a long time', () => {
+      const message = new StatusChangeMessage(
+        'test-duid',
+        OperationStatusCode.Sleeping,
+        true,
+        false,
+        false,
+        false,
+        false,
+        undefined,
+      );
+
+      const result = resolveDeviceState(message);
+
+      expect(result.runMode).toBe(RvcRunMode.ModeTag.Cleaning);
+      expect(result.operationalState).toBe(RvcOperationalState.OperationalState.Paused);
     });
   });
 });

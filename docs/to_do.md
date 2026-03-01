@@ -2,6 +2,8 @@
 
 ## In Progress
 
+- [ ] Fix `stateResolver.ts` bugs — see `docs/stateResolver-bugs.md`
+
 - [ ] Fix routine selection in `setSelectedAreas` — see `docs/routine-selection-fix-plan.md`
   - [ ] `areaManagementService.setSelectedAreas`: store raw areaIds (remove RoomIndexMap conversion)
   - [ ] `roborockService.startClean`: separate routines/rooms, convert room areaIds → roomIds

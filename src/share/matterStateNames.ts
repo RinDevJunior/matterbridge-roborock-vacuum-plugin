@@ -1,7 +1,9 @@
 import { RvcOperationalState, RvcRunMode } from 'matterbridge/matter/clusters';
 import { getAllKnownModeConfigs } from '../behaviors/roborock.vacuum/core/deviceCapabilityRegistry.js';
+import { baseRunModeConfigs } from '../behaviors/roborock.vacuum/core/runModeConfig.js';
 
-const allKnownModeConfigs = getAllKnownModeConfigs();
+const allKnownCleanModeConfigs = getAllKnownModeConfigs();
+const allKnownRunModeConfigs = baseRunModeConfigs;
 
 export function getRunModeName(runMode: number): string {
   return (
@@ -22,7 +24,7 @@ export function getOperationalStateName(operationalState: number): string {
 }
 
 export function getCleanModeName(mode: number): string {
-  return allKnownModeConfigs.find((x) => x.mode === mode)?.label ?? 'Not found';
+  return allKnownCleanModeConfigs.find((x) => x.mode === mode)?.label ?? 'Not found';
 }
 
 export function getOperationalErrorName(operationalError: number): string {
@@ -31,4 +33,8 @@ export function getOperationalErrorName(operationalError: number): string {
       (key) => RvcOperationalState.ErrorState[key as keyof typeof RvcOperationalState.ErrorState] === operationalError,
     ) || String(operationalError)
   );
+}
+
+export function getRunModeNameV2(mode: number): string {
+  return allKnownRunModeConfigs.find((x) => x.mode === mode)?.label ?? 'Not found';
 }
