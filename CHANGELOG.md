@@ -4,12 +4,16 @@ All notable changes to this project will be documented in this file.
 
 ---
 
-## [1.1.5-rc05] - 2026-02-28
+## [1.1.5-rc05] - 2026-03-01
 
 ### Fixed
 
 - **Single-room `currentArea` preserved when `cleaning_info` is absent** — When a vacuum is cleaning with exactly one room selected and no `cleaning_info` is reported, `currentArea` is now set to that room's area ID instead of being cleared to null. Previously this caused Apple Home to lose track of which room was being cleaned in single-room scenarios.
 - **Email notifications suppressed during periodic keep-alive reconnects** — `MQTTClient` now tracks forced reconnections initiated by `keepConnectionAlive` via an `isForceReconnecting` flag. `onClose` and `onConnected` broadcaster events are skipped when the reconnection is intentional, so email alerts are only sent on genuine connection loss or errors.
+- **State resolver expanded to all active cleaning statuses** — `ManualMode`, `RoomClean`, `ZoneClean`, `SpotCleaning`, and all mop variants now fully respect modifier flags (`isLocating`, `isExploring`, `inWarmup`, `inReturning`). Previously only the base `Cleaning (5)` status applied these modifiers, causing incorrect run mode and operational state for all other cleaning variants.
+- **Sleeping status correctly resolved** — `Sleeping (2)` is now a Priority 0 override: returns `Cleaning+Paused` when `inCleaning` is set, `Mapping+Paused` when `isExploring` is set, and `Idle+Paused` for the base case. Previously it fell through to the generic modifier chain and could produce incorrect states.
+- **InError status correctly resolved** — `InError (12)` is now a Priority 0 override: returns `Cleaning+Error` when `inCleaning` is set, `Mapping+Error` when `isExploring` is set, and `Idle+Error` for the base case.
+- **`Paused` status included in area-context check** — `cleaning_info` is now considered relevant when the vacuum is paused, preserving area and map context across pause events.
 
 ### Breaking Changed
 
@@ -20,6 +24,7 @@ All notable changes to this project will be documented in this file.
 
 - **Server Mode documented in README** — Added clear guidance explaining that Server Mode allows a single Matterbridge instance to host multiple vacuums, as an alternative to running separate instances.
 - **Whitelist schema description updated** — The plugin configuration UI now shows an accurate description of the White List field, reflecting the duid-only format and its interaction with Server Mode.
+- **State change logging shows both name and numeric code** — Run mode and operational state notifications now include the human-readable label alongside the numeric code for both current and resolved states, making it easier to trace state transitions in logs.
 
 <a href="https://www.buymeacoffee.com/rinnvspktr" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/default-orange.png" alt="Buy Me A Coffee" height="41" width="174"></a>
 
