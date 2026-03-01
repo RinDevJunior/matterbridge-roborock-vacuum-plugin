@@ -91,7 +91,7 @@ describe('PlatformRunner.updateRobotWithPayload - resolved state logging', () =>
 
     expect(mockLogger.notice).toHaveBeenCalledOnce();
     const logOutput = vi.mocked(mockLogger.notice).mock.calls[0][0] as string;
-    console.log('log.notice output:\n', logOutput);
+    // console.log('log.notice output:\n', logOutput);
     expect(logOutput).toContain('[test-duid] Resolved state:');
 
     expect(robot.updateAttribute).toHaveBeenCalledWith(RvcRunMode.Cluster.id, 'currentMode', 2, mockLogger);

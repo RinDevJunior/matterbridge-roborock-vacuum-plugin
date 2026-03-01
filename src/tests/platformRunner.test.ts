@@ -610,8 +610,10 @@ describe('PlatformRunner.updateRobotWithPayload', () => {
 
     runner.updateRobotWithPayload(payload);
 
-    expect(mockLogger.debug).toHaveBeenCalledWith('No cleaning_info available, skipping service area update');
-    expect(robot.updateAttribute).not.toHaveBeenCalled();
+    expect(mockLogger.notice).toHaveBeenCalledWith(
+      'Vacuum is cleaning with no cleaning_info, setting currentArea to null',
+    );
+    expect(robot.updateAttribute).toHaveBeenCalled();
   });
 
   it('should handle ServiceAreaUpdate with cleaningInfo and valid segment_id', async () => {
