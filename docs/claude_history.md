@@ -1,5 +1,11 @@
 # Claude History
 
+## 2026-03-02 (Session 15)
+
+- Bumped version to `1.1.5-rc07`.
+- Updated `package.json` (version + buildpackage filename), `schema.json`, `config.json`, and `CHANGELOG.md`.
+- Changelog entry: fixed `selectedAreas` type (`ServiceArea.Area[]` → `number[]`) correcting `.areaId` access in single-room cleaning.
+
 ## 2026-03-01 (Session 14)
 
 - Debugged `stateResolver.ts`: Sleeping (2) + `inCleaning=true` was resolving to Idle+Docked instead of Cleaning+Paused.

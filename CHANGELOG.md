@@ -4,6 +4,16 @@ All notable changes to this project will be documented in this file.
 
 ---
 
+## [1.1.5-rc07] - 2026-03-02
+
+### Fixed
+
+- **Correct type of `selectedAreas`** — `selectedAreas` attribute is now typed as `number[]` instead of `ServiceArea.Area[]`, matching the actual attribute value stored in Matter. This fixes incorrect property access (`.areaId`) when setting `currentArea` for single-room cleaning scenarios.
+
+<a href="https://www.buymeacoffee.com/rinnvspktr" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/default-orange.png" alt="Buy Me A Coffee" height="41" width="174"></a>
+
+---
+
 ## [1.1.5-rc06] - 2026-03-01
 
 ### Fixed

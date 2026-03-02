@@ -14,6 +14,10 @@
 
 ## Completed
 
+- [x] Release `1.1.5-rc07` — correct type of `selectedAreas` (`ServiceArea.Area[]` → `number[]`)
+
+## Previously Completed
+
 - [x] Improve PR 116 patch coverage: add `burstPollingManager.test.ts` (16 tests)
 - [x] Refactor `platformRunner.ts` — items 1, 2, 4 from `docs/platformRunner-refactor-plan.md`
   - [x] Extract `BurstPollingManager` → `src/platform/burstPollingManager.ts`
