@@ -11,7 +11,7 @@ export class DeviceStatusListener implements AbstractMessageListener {
     private readonly logger: AnsiLogger,
   ) {}
 
-  public onMessage(message: ResponseMessage): void {
+  public async onMessage(message: ResponseMessage): Promise<void> {
     if (!message.isForProtocol(Protocol.device_status_ota)) {
       return;
     }

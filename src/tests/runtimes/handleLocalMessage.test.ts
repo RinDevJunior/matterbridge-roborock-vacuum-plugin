@@ -8,7 +8,7 @@ import type { RoborockMatterbridgePlatform } from '../../module.js';
 function createMockRobot(operationalState: RvcOperationalState.OperationalState): RoborockVacuumCleaner {
   return asPartial<RoborockVacuumCleaner>({
     getAttribute: vi.fn().mockReturnValue(operationalState),
-    updateAttribute: vi.fn(),
+    updateAttribute: vi.fn().mockResolvedValue(true),
   });
 }
 
@@ -30,19 +30,19 @@ describe('triggerDssError', () => {
     vi.clearAllMocks();
   });
 
-  it('should return true and not update when already in Error state', () => {
+  it('should return true and not update when already in Error state', async () => {
     const robot = createMockRobot(RvcOperationalState.OperationalState.Error);
 
-    const result = triggerDssError(robot, platform);
+    const result = await triggerDssError(robot, platform);
 
     expect(result).toBe(true);
     expect(robot.updateAttribute).not.toHaveBeenCalled();
   });
 
-  it('should update to Error and return true when state is Docked', () => {
+  it('should update to Error and return true when state is Docked', async () => {
     const robot = createMockRobot(RvcOperationalState.OperationalState.Docked);
 
-    const result = triggerDssError(robot, platform);
+    const result = await triggerDssError(robot, platform);
 
     expect(result).toBe(true);
     expect(robot.updateAttribute).toHaveBeenCalledWith(
@@ -53,19 +53,19 @@ describe('triggerDssError', () => {
     );
   });
 
-  it('should return false when state is Running', () => {
+  it('should return false when state is Running', async () => {
     const robot = createMockRobot(RvcOperationalState.OperationalState.Running);
 
-    const result = triggerDssError(robot, platform);
+    const result = await triggerDssError(robot, platform);
 
     expect(result).toBe(false);
     expect(robot.updateAttribute).not.toHaveBeenCalled();
   });
 
-  it('should return false when state is SeekingCharger', () => {
+  it('should return false when state is SeekingCharger', async () => {
     const robot = createMockRobot(RvcOperationalState.OperationalState.SeekingCharger);
 
-    const result = triggerDssError(robot, platform);
+    const result = await triggerDssError(robot, platform);
 
     expect(result).toBe(false);
     expect(robot.updateAttribute).not.toHaveBeenCalled();

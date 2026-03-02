@@ -170,7 +170,6 @@ export class RoborockService {
   /** Set callback for device status notifications. */
   public setDeviceNotify(callback: DeviceNotifyCallback): void {
     this.deviceNotify = callback;
-    this.pollingService.setDeviceNotify(callback);
     this.connectionService.setDeviceNotify(callback);
   }
 

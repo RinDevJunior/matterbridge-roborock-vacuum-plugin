@@ -31,7 +31,7 @@ export class B01ResponseBroadcaster implements ResponseBroadcaster {
     this.tracker.tryResolve(response);
   }
 
-  public onMessage(message: ResponseMessage): void {
+  public async onMessage(message: ResponseMessage): Promise<void> {
     const matchedListeners = this.listeners.filter((x) => x.duid === message.duid);
     if (matchedListeners.length === 0) {
       this.logger.warn(`[B01ResponseBroadcaster] No listener configurated for ${message.duid}`);
@@ -42,7 +42,7 @@ export class B01ResponseBroadcaster implements ResponseBroadcaster {
     for (const listener of matchedListeners) {
       try {
         this.logger.debug(`[B01ResponseBroadcaster] Invoking listener: ${listener.name}`);
-        listener.onMessage(message);
+        await listener.onMessage(message);
       } catch (error) {
         const errMsg = error instanceof Error ? error.message : String(error);
         this.logger.error(`[B01ResponseBroadcaster] Error in listener: ${errMsg}`);

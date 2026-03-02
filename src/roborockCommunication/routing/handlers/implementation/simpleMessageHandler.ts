@@ -11,13 +11,13 @@ export class SimpleMessageHandler implements AbstractMessageHandler {
     private readonly deviceNotify: DeviceNotifyCallback | undefined,
   ) {}
 
-  public onError(error: VacuumError): void {
+  public async onError(error: VacuumError): Promise<void> {
     if (!this.deviceNotify) {
       this.logger.debug(`[SimpleMessageHandler]: No deviceNotify callback provided`);
-      return;
+      return Promise.resolve();
     }
 
-    this.deviceNotify({
+    await this.deviceNotify({
       type: NotifyMessageTypes.ErrorOccurred,
       data: {
         duid: error.duid,
@@ -28,37 +28,37 @@ export class SimpleMessageHandler implements AbstractMessageHandler {
     });
   }
 
-  public onBatteryUpdate(message: BatteryMessage): void {
+  public async onBatteryUpdate(message: BatteryMessage): Promise<void> {
     if (!this.deviceNotify) {
       this.logger.debug(`[SimpleMessageHandler]: No deviceNotify callback provided`);
-      return;
+      return Promise.resolve();
     }
 
-    this.deviceNotify({
+    await this.deviceNotify({
       type: NotifyMessageTypes.BatteryUpdate,
       data: message,
     });
   }
 
-  public onStatusChanged(message: StatusChangeMessage): void {
+  public async onStatusChanged(message: StatusChangeMessage): Promise<void> {
     if (!this.deviceNotify) {
       this.logger.debug(`[SimpleMessageHandler]: No deviceNotify callback provided`);
-      return;
+      return Promise.resolve();
     }
 
-    this.deviceNotify({
+    await this.deviceNotify({
       type: NotifyMessageTypes.DeviceStatus,
       data: message,
     });
   }
 
-  public onCleanModeUpdate(message: CleanModeSetting): void {
+  public async onCleanModeUpdate(message: CleanModeSetting): Promise<void> {
     if (!this.deviceNotify) {
       this.logger.debug(`[SimpleMessageHandler]: No deviceNotify callback provided`);
-      return;
+      return Promise.resolve();
     }
 
-    this.deviceNotify({
+    await this.deviceNotify({
       type: NotifyMessageTypes.CleanModeUpdate,
       data: {
         ...message,
@@ -68,19 +68,20 @@ export class SimpleMessageHandler implements AbstractMessageHandler {
     });
   }
 
-  public onServiceAreaUpdate(message: ServiceAreaUpdateMessage): void {
+  public async onServiceAreaUpdate(message: ServiceAreaUpdateMessage): Promise<void> {
     if (!this.deviceNotify) {
       this.logger.debug(`[SimpleMessageHandler]: No deviceNotify callback provided`);
-      return;
+      return Promise.resolve();
     }
 
-    this.deviceNotify({
+    await this.deviceNotify({
       type: NotifyMessageTypes.ServiceAreaUpdate,
       data: message,
     });
   }
 
-  public onAdditionalProps(value: number): void {
+  public onAdditionalProps(value: number): Promise<void> {
     // Implement additional properties handling logic here
+    return Promise.resolve();
   }
 }

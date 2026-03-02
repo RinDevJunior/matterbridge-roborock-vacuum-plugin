@@ -9,6 +9,7 @@ import {
 import { V1PendingResponseTracker } from '../../../roborockCommunication/routing/services/v1PendingResponseTracker.js';
 import { createMockLogger, asPartial, asType, mkUser } from '../../helpers/testUtils.js';
 import { AbstractConnectionListener } from '../../../roborockCommunication/routing/listeners/abstractConnectionListener.js';
+import { AbstractMessageListener } from '../../../roborockCommunication/routing/listeners/abstractMessageListener.js';
 import { V1ResponseBroadcaster } from '../../../roborockCommunication/routing/listeners/v1ResponseBroadcaster.js';
 import { ResponseBroadcaster } from '../../../roborockCommunication/routing/listeners/responseBroadcaster.js';
 import { PendingResponseTracker } from '../../../roborockCommunication/routing/services/pendingResponseTracker.js';
@@ -103,10 +104,10 @@ describe('AbstractClient', () => {
   });
 
   it('registerMessageListener adds listener to chain', () => {
-    const listener = asPartial<{ name: string; duid: string; onMessage: (...args: unknown[]) => void }>({
+    const listener = asPartial<AbstractMessageListener>({
       name: 'test-listener',
       duid: 'DUID123',
-      onMessage: vi.fn(),
+      onMessage: vi.fn().mockResolvedValue(undefined),
     });
     client.registerMessageListener(listener);
     expect((asType<TestClient>(client)['responseBroadcaster'] as V1ResponseBroadcaster)['listeners']).toContain(

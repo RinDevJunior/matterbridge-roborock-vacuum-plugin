@@ -19,7 +19,7 @@ export class LocalPingResponseListener implements AbstractMessageListener {
     this.lastPingResponse = Date.now();
   }
 
-  public onMessage(message: ResponseMessage): void {
+  public async onMessage(message: ResponseMessage): Promise<void> {
     if (message.duid !== this.duid) {
       this.logger.debug(
         `[LocalPingResponseListener]: Message DUID ${message.duid} does not match listener DUID ${this.duid}`,

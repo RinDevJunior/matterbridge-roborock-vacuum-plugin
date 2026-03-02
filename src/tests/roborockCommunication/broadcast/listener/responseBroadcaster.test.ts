@@ -20,25 +20,33 @@ describe('ResponseBroadcaster', () => {
 
   beforeEach(() => {
     chained = new V1ResponseBroadcaster(responseTracker, logger);
-    listener1 = { name: 'listener1', duid: 'test-duid', onMessage: vi.fn<(message: any) => Promise<void>>() };
-    listener2 = { name: 'listener2', duid: 'test-duid', onMessage: vi.fn<(message: any) => Promise<void>>() };
+    listener1 = {
+      name: 'listener1',
+      duid: 'test-duid',
+      onMessage: vi.fn<(message: any) => Promise<void>>().mockResolvedValue(undefined),
+    };
+    listener2 = {
+      name: 'listener2',
+      duid: 'test-duid',
+      onMessage: vi.fn<(message: any) => Promise<void>>().mockResolvedValue(undefined),
+    };
   });
 
-  it('should call onMessage on all registered listeners', () => {
+  it('should call onMessage on all registered listeners', async () => {
     chained.register(listener1);
     chained.register(listener2);
 
-    chained.onMessage(message);
+    await chained.onMessage(message);
 
     expect(listener1.onMessage).toHaveBeenCalledWith(message);
     expect(listener2.onMessage).toHaveBeenCalledWith(message);
   });
 
-  it('should not fail if no listeners registered', () => {
-    expect(() => chained.onMessage(message)).not.toThrow();
+  it('should not fail if no listeners registered', async () => {
+    await expect(chained.onMessage(message)).resolves.toBeUndefined();
   });
 
-  it('should call listeners in order', () => {
+  it('should call listeners in order', async () => {
     const callOrder: string[] = [];
     listener1.onMessage.mockImplementation(async () => {
       callOrder.push('first');
@@ -50,7 +58,7 @@ describe('ResponseBroadcaster', () => {
     chained.register(listener1);
     chained.register(listener2);
 
-    chained.onMessage(message);
+    await chained.onMessage(message);
 
     expect(callOrder).toEqual(['first', 'second']);
   });

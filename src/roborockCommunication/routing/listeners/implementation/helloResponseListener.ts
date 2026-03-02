@@ -27,7 +27,7 @@ export class HelloResponseListener implements AbstractMessageListener {
     });
   }
 
-  public onMessage(message: ResponseMessage): void {
+  public async onMessage(message: ResponseMessage): Promise<void> {
     if (message.duid !== this.duid) {
       return;
     }

@@ -26,7 +26,7 @@ export class SimpleMessageListener implements AbstractMessageListener {
     this.handler = handler;
   }
 
-  public onMessage(message: ResponseMessage): void {
+  public async onMessage(message: ResponseMessage): Promise<void> {
     if (message.duid !== this.duid) {
       this.logger.debug(
         `[SimpleMessageListener]: Message DUID ${message.duid} does not match listener DUID ${this.duid}`,
@@ -73,7 +73,7 @@ export class SimpleMessageListener implements AbstractMessageListener {
 
     if (!('state' in messageBody)) {
       this.logger.debug('[SimpleMessageListener]: Message does not contain state');
-      return;
+      return Promise.resolve();
     }
 
     const state = messageBody.state;
@@ -96,7 +96,7 @@ export class SimpleMessageListener implements AbstractMessageListener {
       (dockErrorCode !== undefined && dockErrorCode !== 0) ||
       hasDockStationError
     ) {
-      this.handler.onError(new VacuumError(message.duid, vacuumErrorCode, dockErrorCode, dockStationStatusCode));
+      await this.handler.onError(new VacuumError(message.duid, vacuumErrorCode, dockErrorCode, dockStationStatusCode));
     }
 
     const statusChangeMessage = new StatusChangeMessage(
@@ -110,10 +110,10 @@ export class SimpleMessageListener implements AbstractMessageListener {
       messageBody.in_warmup !== undefined ? Boolean(messageBody.in_warmup) : undefined,
     );
 
-    this.handler.onBatteryUpdate(batteryMessage);
-    this.handler.onStatusChanged(statusChangeMessage);
-    this.handler.onCleanModeUpdate(cleanMode);
-    this.handler.onServiceAreaUpdate({
+    await this.handler.onBatteryUpdate(batteryMessage);
+    await this.handler.onStatusChanged(statusChangeMessage);
+    await this.handler.onCleanModeUpdate(cleanMode);
+    await this.handler.onServiceAreaUpdate({
       duid: message.duid,
       state: state,
       cleaningInfo: cleaningInfo,

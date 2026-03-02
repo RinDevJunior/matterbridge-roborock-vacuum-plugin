@@ -34,15 +34,15 @@ describe('SimpleMessageListener', () => {
     listener.registerHandler(handler);
   });
 
-  it('should do nothing if no handler registered', () => {
+  it('should do nothing if no handler registered', async () => {
     const l = new SimpleMessageListener('123', logger);
-    expect(() => l.onMessage(message as ResponseMessage)).not.toThrow();
+    await l.onMessage(message as ResponseMessage);
     expect(logger.error).toHaveBeenCalled();
   });
 
-  it('should do nothing if message is not rpc_response', () => {
+  it('should do nothing if message is not rpc_response', async () => {
     message.isForProtocol.mockImplementation((proto: Protocol) => proto === Protocol.battery).mockReturnValue(false);
-    listener.onMessage(message);
+    await listener.onMessage(message);
     expect(handler.onStatusChanged).not.toHaveBeenCalled();
     expect(handler.onError).not.toHaveBeenCalled();
     expect(handler.onBatteryUpdate).not.toHaveBeenCalled();
@@ -67,7 +67,7 @@ describe('SimpleMessageListener', () => {
       id: 15472,
       result: [{ battery: 50, state: 8, error_code: 5, dock_error_status: 0, dock_type: 1 }],
     });
-    listener.onMessage(message);
+    await listener.onMessage(message);
     expect(handler.onBatteryUpdate).toHaveBeenCalledWith(expect.objectContaining({ percentage: 50 }));
     expect(handler.onStatusChanged).toHaveBeenCalledWith(expect.anything());
     expect(handler.onError).toHaveBeenCalledWith(expect.objectContaining({ vacuumErrorCode: 5 }));
@@ -76,7 +76,7 @@ describe('SimpleMessageListener', () => {
   it('should handle rpc_response with empty result', async () => {
     message.isForProtocols.mockReturnValue(true);
     message.get.mockReturnValue({ id: 15472, result: [] });
-    listener.onMessage(message);
+    await listener.onMessage(message);
     expect(handler.onBatteryUpdate).not.toHaveBeenCalled();
     expect(handler.onStatusChanged).not.toHaveBeenCalled();
     expect(handler.onError).not.toHaveBeenCalled();
@@ -85,7 +85,7 @@ describe('SimpleMessageListener', () => {
   it('should handle rpc_response with no result field', async () => {
     message.isForProtocols.mockReturnValue(true);
     message.get.mockReturnValue({ id: 15472 });
-    listener.onMessage(message);
+    await listener.onMessage(message);
     expect(handler.onBatteryUpdate).not.toHaveBeenCalled();
     expect(handler.onStatusChanged).not.toHaveBeenCalled();
     expect(handler.onError).not.toHaveBeenCalled();
@@ -94,7 +94,7 @@ describe('SimpleMessageListener', () => {
   it('should do nothing if message duid does not match listener duid', async () => {
     message.duid = '456';
     message.isForProtocol.mockImplementation((proto: Protocol) => proto === Protocol.rpc_response);
-    listener.onMessage(message);
+    await listener.onMessage(message);
     expect(handler.onBatteryUpdate).not.toHaveBeenCalled();
     expect(handler.onStatusChanged).not.toHaveBeenCalled();
     expect(handler.onError).not.toHaveBeenCalled();
@@ -109,7 +109,7 @@ describe('SimpleMessageListener', () => {
       id: 15472,
       result: [{ battery: 75, state: 8, error_code: 0, dock_error_status: 3, dock_type: 1 }],
     });
-    listener.onMessage(message);
+    await listener.onMessage(message);
     expect(handler.onBatteryUpdate).toHaveBeenCalledWith(expect.objectContaining({ percentage: 75 }));
     expect(handler.onStatusChanged).toHaveBeenCalledWith(expect.anything());
     expect(handler.onError).toHaveBeenCalledWith(expect.objectContaining({ dockErrorCode: 3 }));
@@ -121,7 +121,7 @@ describe('SimpleMessageListener', () => {
       id: 15472,
       result: [{ battery: 60, state: 8, error_code: 2, dock_error_status: 1, dock_type: 1 }],
     });
-    listener.onMessage(message);
+    await listener.onMessage(message);
     expect(handler.onBatteryUpdate).toHaveBeenCalledWith(expect.objectContaining({ percentage: 60 }));
     expect(handler.onStatusChanged).toHaveBeenCalledWith(expect.anything());
     expect(handler.onError).toHaveBeenCalledWith(expect.objectContaining({ vacuumErrorCode: 2, dockErrorCode: 1 }));
@@ -130,7 +130,7 @@ describe('SimpleMessageListener', () => {
   it('should ignore simple ok response', async () => {
     message.isForProtocols.mockReturnValue(true);
     message.isSimpleOkResponse = vi.fn().mockReturnValue(true);
-    listener.onMessage(message);
+    await listener.onMessage(message);
     expect(handler.onBatteryUpdate).not.toHaveBeenCalled();
     expect(handler.onStatusChanged).not.toHaveBeenCalled();
     expect(handler.onError).not.toHaveBeenCalled();

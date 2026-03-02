@@ -81,7 +81,6 @@ describe('RoborockService - Complete Coverage', () => {
     });
 
     mockPollingService = {
-      setDeviceNotify: vi.fn(),
       activateDeviceNotifyOverLocal: vi.fn(),
       requestStatusOnce: vi.fn().mockResolvedValue(undefined),
     };
@@ -253,7 +252,6 @@ describe('RoborockService - Complete Coverage', () => {
       service.setDeviceNotify(callback);
 
       expect(service.deviceNotify).toBe(callback);
-      expect(mockPollingService.setDeviceNotify).toHaveBeenCalledWith(callback);
       expect(mockConnectionService.setDeviceNotify).toHaveBeenCalledWith(callback);
     });
 
@@ -546,7 +544,6 @@ describe('RoborockService - Complete Coverage', () => {
       service.setDeviceNotify(callback);
 
       expect(service.deviceNotify).toBe(callback);
-      expect(mockPollingService.setDeviceNotify).toHaveBeenCalledWith(callback);
       expect(mockConnectionService.setDeviceNotify).toHaveBeenCalledWith(callback);
     });
 

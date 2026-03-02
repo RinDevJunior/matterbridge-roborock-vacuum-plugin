@@ -65,28 +65,8 @@ describe('PollingService', () => {
     vi.useRealTimers();
   });
 
-  describe('setDeviceNotify', () => {
-    it('should set the device notification callback', () => {
-      const mockCallback = vi.fn();
-      service.setDeviceNotify(mockCallback);
-      expect(service['deviceNotify']).toBe(mockCallback);
-    });
-  });
-
   describe('activateDeviceNotifyOverLocal', () => {
-    it('should warn and return early when deviceNotify callback is not set', () => {
-      service.activateDeviceNotifyOverLocal(mockDevice);
-
-      expect(mockLogger.warn).toHaveBeenCalledWith(
-        'Cannot activate device notify over local: deviceNotify callback not set',
-      );
-      expect(mockLogger.debug).not.toHaveBeenCalled();
-    });
-
     it('should activate polling and start interval', () => {
-      const mockCallback = vi.fn();
-      service.setDeviceNotify(mockCallback);
-
       service.activateDeviceNotifyOverLocal(mockDevice);
 
       expect(mockLogger.debug).toHaveBeenCalledWith('Activating device status polling for:', mockDevice.duid);
@@ -94,9 +74,6 @@ describe('PollingService', () => {
     });
 
     it('should clear existing interval before creating new one', () => {
-      const mockCallback = vi.fn();
-      service.setDeviceNotify(mockCallback);
-
       service.activateDeviceNotifyOverLocal(mockDevice);
       const firstInterval = service['localRequestDeviceStatusInterval'];
 
@@ -107,13 +84,11 @@ describe('PollingService', () => {
     });
 
     it('should handle multiple polling cycles', async () => {
-      const mockCallback = vi.fn();
       const mockMessageData = { state: 8, error_code: 0, dock_error_status: 0, dock_type: 1 };
       const mockResponse = {
         getMessage: () => mockMessageData,
       };
       mockMessageDispatcher.getDeviceStatus = vi.fn().mockResolvedValue(mockResponse as never);
-      service.setDeviceNotify(mockCallback);
 
       service.activateDeviceNotifyOverLocal(mockDevice);
 
@@ -125,29 +100,14 @@ describe('PollingService', () => {
     });
 
     it('should handle getDeviceStatus errors gracefully', async () => {
-      const mockCallback = vi.fn();
       const testError = new Error('Network timeout');
       mockMessageDispatcher.getDeviceStatus = vi.fn().mockRejectedValue(testError);
-      service.setDeviceNotify(mockCallback);
 
       service.activateDeviceNotifyOverLocal(mockDevice);
 
       await vi.advanceTimersByTimeAsync(TEST_REFRESH_INTERVAL * LOCAL_REFRESH_INTERVAL_MULTIPLIER);
 
       expect(mockLogger.error).toHaveBeenCalledWith('Failed to get device status:', testError);
-      expect(mockCallback).not.toHaveBeenCalled();
-    });
-
-    it('should handle null/undefined response from getDeviceStatus', async () => {
-      const mockCallback = vi.fn();
-      mockMessageDispatcher.getDeviceStatus = vi.fn().mockResolvedValue(null as never);
-      service.setDeviceNotify(mockCallback);
-
-      service.activateDeviceNotifyOverLocal(mockDevice);
-
-      await vi.advanceTimersByTimeAsync(TEST_REFRESH_INTERVAL * LOCAL_REFRESH_INTERVAL_MULTIPLIER);
-
-      expect(mockCallback).not.toHaveBeenCalled();
     });
   });
 
@@ -173,8 +133,6 @@ describe('PollingService', () => {
     });
 
     it('should not affect the recurring polling interval', async () => {
-      const mockCallback = vi.fn();
-      service.setDeviceNotify(mockCallback);
       service.activateDeviceNotifyOverLocal(mockDevice);
       const intervalBefore = service['localRequestDeviceStatusInterval'];
 
@@ -186,8 +144,6 @@ describe('PollingService', () => {
 
   describe('stopPolling', () => {
     it('should clear the polling interval', () => {
-      const mockCallback = vi.fn();
-      service.setDeviceNotify(mockCallback);
       service.activateDeviceNotifyOverLocal(mockDevice);
 
       expect(service['localRequestDeviceStatusInterval']).toBeDefined();
@@ -205,12 +161,10 @@ describe('PollingService', () => {
     });
 
     it('should prevent further polling after stopPolling is called', async () => {
-      const mockCallback = vi.fn();
       mockMessageDispatcher.getDeviceStatus = vi.fn().mockResolvedValue({
         errorStatus: { error: 0 },
         message: { state: 8 },
       } as never);
-      service.setDeviceNotify(mockCallback);
 
       service.activateDeviceNotifyOverLocal(mockDevice);
       service.stopPolling();
@@ -223,14 +177,11 @@ describe('PollingService', () => {
 
   describe('shutdown', () => {
     it('should stop polling and clear deviceNotify callback', async () => {
-      const mockCallback = vi.fn();
-      service.setDeviceNotify(mockCallback);
       service.activateDeviceNotifyOverLocal(mockDevice);
 
       await service.shutdown();
 
       expect(service['localRequestDeviceStatusInterval']).toBeUndefined();
-      expect(service['deviceNotify']).toBeUndefined();
     });
 
     it('should handle shutdown when nothing is active', async () => {
@@ -238,12 +189,10 @@ describe('PollingService', () => {
     });
 
     it('should prevent polling after shutdown', async () => {
-      const mockCallback = vi.fn();
       mockMessageDispatcher.getDeviceStatus = vi.fn().mockResolvedValue({
         errorStatus: { error: 0 },
         message: { state: 8 },
       } as never);
-      service.setDeviceNotify(mockCallback);
 
       service.activateDeviceNotifyOverLocal(mockDevice);
       await service.shutdown();
@@ -256,7 +205,6 @@ describe('PollingService', () => {
 
   describe('integration scenarios', () => {
     it('should switch from local to MQTT polling', async () => {
-      const mockCallback = vi.fn();
       const localResponse = {
         errorStatus: { error: 0 },
         message: { state: 8 },
@@ -266,7 +214,6 @@ describe('PollingService', () => {
         message: { state: 5 },
       };
       mockMessageDispatcher.getDeviceStatus = vi.fn().mockResolvedValue(localResponse as never);
-      service.setDeviceNotify(mockCallback);
 
       service.activateDeviceNotifyOverLocal(mockDevice);
       await vi.advanceTimersByTimeAsync(TEST_REFRESH_INTERVAL * LOCAL_REFRESH_INTERVAL_MULTIPLIER);
@@ -278,9 +225,6 @@ describe('PollingService', () => {
     });
 
     it('should handle rapid activation/deactivation cycles', () => {
-      const mockCallback = vi.fn();
-      service.setDeviceNotify(mockCallback);
-
       for (let i = 0; i < 5; i++) {
         service.activateDeviceNotifyOverLocal(mockDevice);
         service.stopPolling();

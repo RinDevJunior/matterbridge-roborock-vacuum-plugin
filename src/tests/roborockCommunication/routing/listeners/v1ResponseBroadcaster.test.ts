@@ -56,15 +56,23 @@ describe('V1ResponseBroadcaster', () => {
     expect(broadcaster.name).toBe('V1ResponseBroadcaster');
   });
 
-  it('should dispatch message to all registered listeners', () => {
-    const listener1: AbstractMessageListener = { name: 'Listener1', duid: 'test-duid', onMessage: vi.fn() };
-    const listener2: AbstractMessageListener = { name: 'Listener2', duid: 'test-duid', onMessage: vi.fn() };
+  it('should dispatch message to all registered listeners', async () => {
+    const listener1: AbstractMessageListener = {
+      name: 'Listener1',
+      duid: 'test-duid',
+      onMessage: vi.fn().mockResolvedValue(undefined),
+    };
+    const listener2: AbstractMessageListener = {
+      name: 'Listener2',
+      duid: 'test-duid',
+      onMessage: vi.fn().mockResolvedValue(undefined),
+    };
 
     broadcaster.register(listener1);
     broadcaster.register(listener2);
 
     const response = makeResponse();
-    broadcaster.onMessage(response);
+    await broadcaster.onMessage(response);
 
     expect(listener1.onMessage).toHaveBeenCalledWith(response);
     expect(listener2.onMessage).toHaveBeenCalledWith(response);

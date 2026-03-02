@@ -12,12 +12,12 @@ import {
 
 function createMockHandler(): AbstractMessageHandler {
   return asPartial<AbstractMessageHandler>({
-    onBatteryUpdate: vi.fn(),
-    onStatusChanged: vi.fn(),
-    onCleanModeUpdate: vi.fn(),
-    onServiceAreaUpdate: vi.fn(),
-    onError: vi.fn(),
-    onAdditionalProps: vi.fn(),
+    onBatteryUpdate: vi.fn().mockResolvedValue(undefined),
+    onStatusChanged: vi.fn().mockResolvedValue(undefined),
+    onCleanModeUpdate: vi.fn().mockResolvedValue(undefined),
+    onServiceAreaUpdate: vi.fn().mockResolvedValue(undefined),
+    onError: vi.fn().mockResolvedValue(undefined),
+    onAdditionalProps: vi.fn().mockResolvedValue(undefined),
   });
 }
 
@@ -69,16 +69,16 @@ describe('SimpleMessageListener', () => {
   });
 
   describe('registerHandler', () => {
-    it('should register a handler and allow message processing', () => {
+    it('should register a handler and allow message processing', async () => {
       listener.registerHandler(handler);
       const message = makeRpcResponseMessage(duid, baseResultBody);
-      listener.onMessage(message);
+      await listener.onMessage(message);
       expect(handler.onBatteryUpdate).toHaveBeenCalled();
     });
   });
 
   describe('onMessage - early returns', () => {
-    it('should log debug and return early when DUID does not match', () => {
+    it('should log debug and return early when DUID does not match', async () => {
       listener.registerHandler(handler);
       const message = asPartial<ResponseMessage>({
         duid: 'different-duid',
@@ -86,19 +86,19 @@ describe('SimpleMessageListener', () => {
         isSimpleOkResponse: vi.fn(),
         get: vi.fn(),
       });
-      listener.onMessage(message);
+      await listener.onMessage(message);
       expect(logger.debug).toHaveBeenCalledWith(expect.stringContaining('does not match'));
       expect(handler.onBatteryUpdate).not.toHaveBeenCalled();
     });
 
-    it('should log error and return early when no handler is registered', () => {
+    it('should log error and return early when no handler is registered', async () => {
       const message = makeRpcResponseMessage(duid, baseResultBody);
-      listener.onMessage(message);
+      await listener.onMessage(message);
       expect(logger.error).toHaveBeenCalledWith('[SimpleMessageListener]: No handler registered');
       expect(handler.onBatteryUpdate).not.toHaveBeenCalled();
     });
 
-    it('should log debug and return early when message is not for correct protocols', () => {
+    it('should log debug and return early when message is not for correct protocols', async () => {
       listener.registerHandler(handler);
       const message = asPartial<ResponseMessage>({
         duid,
@@ -106,12 +106,12 @@ describe('SimpleMessageListener', () => {
         isSimpleOkResponse: vi.fn(),
         get: vi.fn(),
       });
-      listener.onMessage(message);
+      await listener.onMessage(message);
       expect(logger.debug).toHaveBeenCalledWith(expect.stringContaining('not for general_request or rpc_response'));
       expect(handler.onBatteryUpdate).not.toHaveBeenCalled();
     });
 
-    it('should log debug and return early for simple OK response', () => {
+    it('should log debug and return early for simple OK response', async () => {
       listener.registerHandler(handler);
       const message = asPartial<ResponseMessage>({
         duid,
@@ -119,12 +119,12 @@ describe('SimpleMessageListener', () => {
         isSimpleOkResponse: vi.fn().mockReturnValue(true),
         get: vi.fn(),
       });
-      listener.onMessage(message);
+      await listener.onMessage(message);
       expect(logger.debug).toHaveBeenCalledWith(expect.stringContaining("Ignoring simple 'ok' response"));
       expect(handler.onBatteryUpdate).not.toHaveBeenCalled();
     });
 
-    it('should log debug and return early when no rpc_response data', () => {
+    it('should log debug and return early when no rpc_response data', async () => {
       listener.registerHandler(handler);
       const message = asPartial<ResponseMessage>({
         duid,
@@ -132,12 +132,12 @@ describe('SimpleMessageListener', () => {
         isSimpleOkResponse: vi.fn().mockReturnValue(false),
         get: vi.fn().mockReturnValue(null),
       });
-      listener.onMessage(message);
+      await listener.onMessage(message);
       expect(logger.debug).toHaveBeenCalledWith(expect.stringContaining('No rpc_response data'));
       expect(handler.onBatteryUpdate).not.toHaveBeenCalled();
     });
 
-    it('should return early when result array is empty', () => {
+    it('should return early when result array is empty', async () => {
       listener.registerHandler(handler);
       const message = asPartial<ResponseMessage>({
         duid,
@@ -145,11 +145,11 @@ describe('SimpleMessageListener', () => {
         isSimpleOkResponse: vi.fn().mockReturnValue(false),
         get: vi.fn().mockReturnValue({ result: [] }),
       });
-      listener.onMessage(message);
+      await listener.onMessage(message);
       expect(handler.onBatteryUpdate).not.toHaveBeenCalled();
     });
 
-    it('should return early when result is not an array', () => {
+    it('should return early when result is not an array', async () => {
       listener.registerHandler(handler);
       const message = asPartial<ResponseMessage>({
         duid,
@@ -157,11 +157,11 @@ describe('SimpleMessageListener', () => {
         isSimpleOkResponse: vi.fn().mockReturnValue(false),
         get: vi.fn().mockReturnValue({ result: 'not-an-array' }),
       });
-      listener.onMessage(message);
+      await listener.onMessage(message);
       expect(handler.onBatteryUpdate).not.toHaveBeenCalled();
     });
 
-    it('should return early when result[0] is a primitive number (not an object)', () => {
+    it('should return early when result[0] is a primitive number (not an object)', async () => {
       listener.registerHandler(handler);
       const message = asPartial<ResponseMessage>({
         duid,
@@ -169,12 +169,12 @@ describe('SimpleMessageListener', () => {
         isSimpleOkResponse: vi.fn().mockReturnValue(false),
         get: vi.fn().mockReturnValue({ result: [104] }),
       });
-      listener.onMessage(message);
+      await listener.onMessage(message);
       expect(logger.debug).toHaveBeenCalledWith('[SimpleMessageListener]: result[0] is not an object, skipping');
       expect(handler.onBatteryUpdate).not.toHaveBeenCalled();
     });
 
-    it('should return early when result[0] is null', () => {
+    it('should return early when result[0] is null', async () => {
       listener.registerHandler(handler);
       const message = asPartial<ResponseMessage>({
         duid,
@@ -182,12 +182,12 @@ describe('SimpleMessageListener', () => {
         isSimpleOkResponse: vi.fn().mockReturnValue(false),
         get: vi.fn().mockReturnValue({ result: [null] }),
       });
-      listener.onMessage(message);
+      await listener.onMessage(message);
       expect(logger.debug).toHaveBeenCalledWith('[SimpleMessageListener]: result[0] is not an object, skipping');
       expect(handler.onBatteryUpdate).not.toHaveBeenCalled();
     });
 
-    it('should log debug and return early when message does not contain state', () => {
+    it('should log debug and return early when message does not contain state', async () => {
       listener.registerHandler(handler);
       const message = asPartial<ResponseMessage>({
         duid,
@@ -195,17 +195,17 @@ describe('SimpleMessageListener', () => {
         isSimpleOkResponse: vi.fn().mockReturnValue(false),
         get: vi.fn().mockReturnValue({ result: [{ battery: 80 }] }),
       });
-      listener.onMessage(message);
+      await listener.onMessage(message);
       expect(logger.debug).toHaveBeenCalledWith('[SimpleMessageListener]: Message does not contain state');
       expect(handler.onBatteryUpdate).not.toHaveBeenCalled();
     });
   });
 
   describe('onMessage - successful processing', () => {
-    it('should call all handlers when message is valid and no errors', () => {
+    it('should call all handlers when message is valid and no errors', async () => {
       listener.registerHandler(handler);
       const message = makeRpcResponseMessage(duid, baseResultBody);
-      listener.onMessage(message);
+      await listener.onMessage(message);
       expect(handler.onBatteryUpdate).toHaveBeenCalled();
       expect(handler.onStatusChanged).toHaveBeenCalled();
       expect(handler.onCleanModeUpdate).toHaveBeenCalled();
@@ -213,35 +213,35 @@ describe('SimpleMessageListener', () => {
       expect(handler.onError).not.toHaveBeenCalled();
     });
 
-    it('should call onError when vacuum error code is non-zero', () => {
+    it('should call onError when vacuum error code is non-zero', async () => {
       listener.registerHandler(handler);
       const message = makeRpcResponseMessage(duid, {
         ...baseResultBody,
         error_code: VacuumErrorCode.LidarBlocked,
       });
-      listener.onMessage(message);
+      await listener.onMessage(message);
       expect(handler.onError).toHaveBeenCalled();
       expect(handler.onBatteryUpdate).toHaveBeenCalled();
     });
 
-    it('should call onError when dock error code is non-zero', () => {
+    it('should call onError when dock error code is non-zero', async () => {
       listener.registerHandler(handler);
       const message = makeRpcResponseMessage(duid, {
         ...baseResultBody,
         dock_error_status: DockErrorCode.WaterEmpty,
       });
-      listener.onMessage(message);
+      await listener.onMessage(message);
       expect(handler.onError).toHaveBeenCalled();
     });
 
-    it('should process message with cleaning_info', () => {
+    it('should process message with cleaning_info', async () => {
       listener.registerHandler(handler);
       const message = makeRpcResponseMessage(duid, {
         ...baseResultBody,
         state: OperationStatusCode.Cleaning,
         cleaning_info: { fan_power: 102, water_box_status: 203, mop_mode: 300, segment_id: 4 },
       });
-      listener.onMessage(message);
+      await listener.onMessage(message);
       expect(handler.onBatteryUpdate).toHaveBeenCalled();
       expect(handler.onServiceAreaUpdate).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -251,7 +251,7 @@ describe('SimpleMessageListener', () => {
       );
     });
 
-    it('should process boolean flags from in_cleaning, in_returning, etc.', () => {
+    it('should process boolean flags from in_cleaning, in_returning, etc.', async () => {
       listener.registerHandler(handler);
       const message = makeRpcResponseMessage(duid, {
         ...baseResultBody,
@@ -263,7 +263,7 @@ describe('SimpleMessageListener', () => {
         is_exploring: 1,
         in_warmup: 0,
       });
-      listener.onMessage(message);
+      await listener.onMessage(message);
       expect(handler.onStatusChanged).toHaveBeenCalledWith(
         expect.objectContaining({
           inCleaning: true,
@@ -276,14 +276,14 @@ describe('SimpleMessageListener', () => {
       );
     });
 
-    it('should use cleaning_info fan_power when present', () => {
+    it('should use cleaning_info fan_power when present', async () => {
       listener.registerHandler(handler);
       const message = makeRpcResponseMessage(duid, {
         ...baseResultBody,
         fan_power: 102,
         cleaning_info: { fan_power: 200, water_box_status: 250, mop_mode: 300 },
       });
-      listener.onMessage(message);
+      await listener.onMessage(message);
       expect(handler.onCleanModeUpdate).toHaveBeenCalledWith(
         expect.objectContaining({ suctionPower: 200, waterFlow: 250 }),
       );

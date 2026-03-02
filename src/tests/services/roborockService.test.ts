@@ -86,7 +86,6 @@ describe('RoborockService - Comprehensive Coverage', () => {
       getSerialNumber: vi.fn().mockResolvedValue('SN-ABC'),
     };
     mockPollingService = {
-      setDeviceNotify: vi.fn(),
       activateDeviceNotifyOverLocal: vi.fn(),
       requestStatusOnce: vi.fn().mockResolvedValue(undefined),
       stopPolling: vi.fn(),
@@ -346,7 +345,6 @@ describe('RoborockService - Comprehensive Coverage', () => {
       const cb = vi.fn();
       service.setDeviceNotify(cb);
       expect(service.deviceNotify).toBe(cb);
-      expect(mockPollingService.setDeviceNotify).toHaveBeenCalledWith(cb);
     });
   });
 

@@ -11,11 +11,11 @@ describe('SimpleMessageHandler', () => {
   const duid = 'test-duid';
   const logger = createMockLogger();
 
-  it('calls deviceNotify on error', () => {
-    const deviceNotify = vi.fn();
+  it('calls deviceNotify on error', async () => {
+    const deviceNotify = vi.fn().mockResolvedValue(undefined);
     const handler = new SimpleMessageHandler(duid, logger, deviceNotify);
     const error = new VacuumError(duid, VacuumErrorCode.ClearWaterTankEmpty, DockErrorCode.None, 168);
-    handler.onError(error);
+    await handler.onError(error);
     expect(deviceNotify).toHaveBeenCalledWith(
       expect.objectContaining({
         type: NotifyMessageTypes.ErrorOccurred,
@@ -29,11 +29,11 @@ describe('SimpleMessageHandler', () => {
     );
   });
 
-  it('calls deviceNotify on battery update', () => {
-    const deviceNotify = vi.fn();
+  it('calls deviceNotify on battery update', async () => {
+    const deviceNotify = vi.fn().mockResolvedValue(undefined);
     const handler = new SimpleMessageHandler(duid, logger, deviceNotify);
     const batteryMessage = new BatteryMessage(duid, 77, 8, OperationStatusCode.Charging);
-    handler.onBatteryUpdate(batteryMessage);
+    await handler.onBatteryUpdate(batteryMessage);
     expect(deviceNotify).toHaveBeenCalledWith(
       expect.objectContaining({
         type: NotifyMessageTypes.BatteryUpdate,
@@ -47,8 +47,8 @@ describe('SimpleMessageHandler', () => {
     );
   });
 
-  it('calls deviceNotify on status changed', () => {
-    const deviceNotify = vi.fn();
+  it('calls deviceNotify on status changed', async () => {
+    const deviceNotify = vi.fn().mockResolvedValue(undefined);
     const handler = new SimpleMessageHandler(duid, logger, deviceNotify);
     const message = {
       msg_ver: 1,
@@ -82,7 +82,7 @@ describe('SimpleMessageHandler', () => {
       dock_error_status: DockErrorCode.None,
       charge_status: 0,
     };
-    handler.onStatusChanged({
+    await handler.onStatusChanged({
       duid,
       status: message.state,
       inCleaning: Boolean(message.in_cleaning),
@@ -109,31 +109,31 @@ describe('SimpleMessageHandler', () => {
     );
   });
 
-  it('does nothing if deviceNotify is undefined', () => {
+  it('does nothing if deviceNotify is undefined', async () => {
     const handler = new SimpleMessageHandler(duid, logger, undefined);
     const error = new VacuumError(duid, VacuumErrorCode.ClearWaterTankEmpty, DockErrorCode.None, 168);
     const batteryMessage = new BatteryMessage(duid, 50, undefined, undefined);
-    expect(() => handler.onError(error)).not.toThrow();
-    expect(() => handler.onBatteryUpdate(batteryMessage)).not.toThrow();
+    await expect(handler.onError(error)).resolves.toBeUndefined();
+    await expect(handler.onBatteryUpdate(batteryMessage)).resolves.toBeUndefined();
   });
 
-  it('logs debug message when deviceNotify is undefined for onError', () => {
+  it('logs debug message when deviceNotify is undefined for onError', async () => {
     const handler = new SimpleMessageHandler(duid, logger, undefined);
     const error = new VacuumError(duid, VacuumErrorCode.ClearWaterTankEmpty, DockErrorCode.None, 168);
-    handler.onError(error);
+    await handler.onError(error);
     expect(logger.debug).toHaveBeenCalledWith('[SimpleMessageHandler]: No deviceNotify callback provided');
   });
 
-  it('logs debug message when deviceNotify is undefined for onBatteryUpdate', () => {
+  it('logs debug message when deviceNotify is undefined for onBatteryUpdate', async () => {
     const handler = new SimpleMessageHandler(duid, logger, undefined);
     const batteryMessage = new BatteryMessage(duid, 50, undefined, undefined);
-    handler.onBatteryUpdate(batteryMessage);
+    await handler.onBatteryUpdate(batteryMessage);
     expect(logger.debug).toHaveBeenCalledWith('[SimpleMessageHandler]: No deviceNotify callback provided');
   });
 
-  it('logs debug message when deviceNotify is undefined for onStatusChanged', () => {
+  it('logs debug message when deviceNotify is undefined for onStatusChanged', async () => {
     const handler = new SimpleMessageHandler(duid, logger, undefined);
-    handler.onStatusChanged({
+    await handler.onStatusChanged({
       duid,
       status: 0,
       inCleaning: false,
@@ -146,11 +146,11 @@ describe('SimpleMessageHandler', () => {
     expect(logger.debug).toHaveBeenCalledWith('[SimpleMessageHandler]: No deviceNotify callback provided');
   });
 
-  it('calls deviceNotify on clean mode update', () => {
-    const deviceNotify = vi.fn();
+  it('calls deviceNotify on clean mode update', async () => {
+    const deviceNotify = vi.fn().mockResolvedValue(undefined);
     const handler = new SimpleMessageHandler(duid, logger, deviceNotify);
     const cleanModeMessage = new CleanModeSetting(102, 203, 25, 300, CleanSequenceType.Persist);
-    handler.onCleanModeUpdate(cleanModeMessage);
+    await handler.onCleanModeUpdate(cleanModeMessage);
     expect(deviceNotify).toHaveBeenCalledWith(
       expect.objectContaining({
         type: NotifyMessageTypes.CleanModeUpdate,
@@ -165,22 +165,22 @@ describe('SimpleMessageHandler', () => {
     );
   });
 
-  it('logs debug message when deviceNotify is undefined for onCleanModeUpdate', () => {
+  it('logs debug message when deviceNotify is undefined for onCleanModeUpdate', async () => {
     const handler = new SimpleMessageHandler(duid, logger, undefined);
     const cleanModeMessage = new CleanModeSetting(102, 203, 25, 300, CleanSequenceType.Persist);
-    handler.onCleanModeUpdate(cleanModeMessage);
+    await handler.onCleanModeUpdate(cleanModeMessage);
     expect(logger.debug).toHaveBeenCalledWith('[SimpleMessageHandler]: No deviceNotify callback provided');
   });
 
-  it('calls deviceNotify on service area update', () => {
-    const deviceNotify = vi.fn();
+  it('calls deviceNotify on service area update', async () => {
+    const deviceNotify = vi.fn().mockResolvedValue(undefined);
     const handler = new SimpleMessageHandler(duid, logger, deviceNotify);
     const serviceAreaMessage = {
       duid,
       state: OperationStatusCode.Cleaning,
       cleaningInfo: undefined,
     };
-    handler.onServiceAreaUpdate(serviceAreaMessage);
+    await handler.onServiceAreaUpdate(serviceAreaMessage);
     expect(deviceNotify).toHaveBeenCalledWith(
       expect.objectContaining({
         type: NotifyMessageTypes.ServiceAreaUpdate,
@@ -189,19 +189,19 @@ describe('SimpleMessageHandler', () => {
     );
   });
 
-  it('logs debug message when deviceNotify is undefined for onServiceAreaUpdate', () => {
+  it('logs debug message when deviceNotify is undefined for onServiceAreaUpdate', async () => {
     const handler = new SimpleMessageHandler(duid, logger, undefined);
     const serviceAreaMessage = {
       duid,
       state: OperationStatusCode.Cleaning,
       cleaningInfo: undefined,
     };
-    handler.onServiceAreaUpdate(serviceAreaMessage);
+    await handler.onServiceAreaUpdate(serviceAreaMessage);
     expect(logger.debug).toHaveBeenCalledWith('[SimpleMessageHandler]: No deviceNotify callback provided');
   });
 
-  it('onAdditionalProps does not throw', () => {
-    const handler = new SimpleMessageHandler(duid, logger, vi.fn());
-    expect(() => handler.onAdditionalProps(123)).not.toThrow();
+  it('onAdditionalProps does not throw', async () => {
+    const handler = new SimpleMessageHandler(duid, logger, vi.fn().mockResolvedValue(undefined));
+    await expect(handler.onAdditionalProps(123)).resolves.toBeUndefined();
   });
 });

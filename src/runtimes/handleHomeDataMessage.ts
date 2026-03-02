@@ -47,7 +47,7 @@ export async function updateFromHomeData(homeData: Home, platform: RoborockMatte
     const chargeStatus = getVacuumProperty(device, 'charge_status');
 
     if (errorCode && errorCode !== 0) {
-      platform.platformRunner.updateRobotWithPayload({
+      await platform.platformRunner.updateRobotWithPayload({
         type: NotifyMessageTypes.ErrorOccurred,
         data: {
           duid: device.duid,
@@ -59,7 +59,7 @@ export async function updateFromHomeData(homeData: Home, platform: RoborockMatte
     }
 
     if (batteryLevel) {
-      platform.platformRunner.updateRobotWithPayload({
+      await platform.platformRunner.updateRobotWithPayload({
         type: NotifyMessageTypes.BatteryUpdate,
         data: {
           duid: device.duid,
@@ -72,7 +72,7 @@ export async function updateFromHomeData(homeData: Home, platform: RoborockMatte
 
     if (state && !deviceData.hasRealTimeConnection) {
       platform.log.notice(`hasRealTimeConnection is false, updating device status from home data: ${state}`);
-      platform.platformRunner.updateRobotWithPayload({
+      await platform.platformRunner.updateRobotWithPayload({
         type: NotifyMessageTypes.DeviceStatusSimple,
         data: {
           duid: device.duid,
@@ -82,7 +82,7 @@ export async function updateFromHomeData(homeData: Home, platform: RoborockMatte
     }
 
     if (suctionPower && waterBoxMode) {
-      platform.platformRunner.updateRobotWithPayload({
+      await platform.platformRunner.updateRobotWithPayload({
         type: NotifyMessageTypes.CleanModeUpdate,
         data: {
           duid: device.duid,

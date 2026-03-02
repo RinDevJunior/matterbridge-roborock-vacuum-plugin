@@ -27,7 +27,7 @@ export class V1ResponseBroadcaster implements ResponseBroadcaster {
     this.tracker.tryResolve(response);
   }
 
-  public onMessage(message: ResponseMessage): void {
+  public async onMessage(message: ResponseMessage): Promise<void> {
     if (message.isSimpleOkResponse()) {
       this.logger.debug(`[V1ResponseBroadcaster] Ignoring simple 'ok' response`);
       return;
@@ -43,7 +43,7 @@ export class V1ResponseBroadcaster implements ResponseBroadcaster {
     for (const listener of matchedListeners) {
       try {
         this.logger.debug(`[V1ResponseBroadcaster] Invoking listener: ${listener.name}`);
-        listener.onMessage(message);
+        await listener.onMessage(message);
       } catch (error) {
         const errMsg = error instanceof Error ? error.message : String(error);
         this.logger.error(`[V1ResponseBroadcaster] Error in listener: ${errMsg}`);

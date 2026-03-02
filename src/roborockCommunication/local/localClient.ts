@@ -217,7 +217,7 @@ export class LocalNetworkClient extends AbstractClient {
           const currentBuffer = receivedBuffer.subarray(offset + 4, offset + segmentLength + 4);
           const response = this.deserializer.deserialize(this.duid, currentBuffer, 'LocalNetworkClient');
           this.responseBroadcaster.tryResolve(response);
-          this.responseBroadcaster.onMessage(response);
+          await this.responseBroadcaster.onMessage(response);
         } catch (error) {
           const errMsg = error instanceof Error ? (error.stack ?? error.message) : String(error);
           this.logger.error(`[LocalNetworkClient]: unable to process message with error: ${errMsg}`);

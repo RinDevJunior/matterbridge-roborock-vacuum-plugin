@@ -38,29 +38,29 @@ describe('LocalPingResponseListener', () => {
     expect(listener.duid).toBe(duid);
   });
 
-  it('should ignore messages for different duid', () => {
+  it('should ignore messages for different duid', async () => {
     const initialPingResponse = listener.lastPingResponse;
     const message = asPartial<ResponseMessage>({
       duid: 'other-duid',
       isForProtocol: vi.fn().mockReturnValue(true),
     });
 
-    listener.onMessage(message);
+    await listener.onMessage(message);
     expect(listener.lastPingResponse).toBe(initialPingResponse);
   });
 
-  it('should ignore messages that are not ping_response', () => {
+  it('should ignore messages that are not ping_response', async () => {
     const initialPingResponse = listener.lastPingResponse;
     const message = asPartial<ResponseMessage>({
       duid,
       isForProtocol: vi.fn().mockReturnValue(false),
     });
 
-    listener.onMessage(message);
+    await listener.onMessage(message);
     expect(listener.lastPingResponse).toBe(initialPingResponse);
   });
 
-  it('should update lastPingResponse on ping_response message', () => {
+  it('should update lastPingResponse on ping_response message', async () => {
     const oldTimestamp = listener.lastPingResponse - 10000;
     listener.lastPingResponse = oldTimestamp;
 
@@ -69,12 +69,12 @@ describe('LocalPingResponseListener', () => {
       isForProtocol: vi.fn((protocol: Protocol) => protocol === Protocol.ping_response),
     });
 
-    listener.onMessage(message);
+    await listener.onMessage(message);
     expect(listener.lastPingResponse).toBeGreaterThan(oldTimestamp);
     expect(logger.debug).toHaveBeenCalledWith(expect.stringContaining('Received ping response message'));
   });
 
-  it('should clear and unref timer on ping_response message when timer exists', () => {
+  it('should clear and unref timer on ping_response message when timer exists', async () => {
     const mockTimer = {
       unref: vi.fn(),
     } as unknown as NodeJS.Timeout;
@@ -87,12 +87,12 @@ describe('LocalPingResponseListener', () => {
       isForProtocol: vi.fn((protocol: Protocol) => protocol === Protocol.ping_response),
     });
 
-    listener.onMessage(message);
+    await listener.onMessage(message);
     expect(clearTimeout).toHaveBeenCalledWith(mockTimer);
     expect(mockTimer.unref).toHaveBeenCalled();
   });
 
-  it('should not throw when timer is undefined on ping_response message', () => {
+  it('should not throw when timer is undefined on ping_response message', async () => {
     listener['timer'] = undefined;
 
     const message = asPartial<ResponseMessage>({
@@ -100,6 +100,6 @@ describe('LocalPingResponseListener', () => {
       isForProtocol: vi.fn((protocol: Protocol) => protocol === Protocol.ping_response),
     });
 
-    expect(() => listener.onMessage(message)).not.toThrow();
+    await expect(listener.onMessage(message)).resolves.toBeUndefined();
   });
 });

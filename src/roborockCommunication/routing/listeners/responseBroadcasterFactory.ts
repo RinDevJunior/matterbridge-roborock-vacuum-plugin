@@ -43,9 +43,9 @@ export class ResponseBroadcasterFactory implements ResponseBroadcaster, PendingR
     broadcaster.tryResolve(response);
   }
 
-  public onMessage(message: ResponseMessage): void {
+  public async onMessage(message: ResponseMessage): Promise<void> {
     const broadcaster = this.getBroadcasterForResponse(message);
-    broadcaster.onMessage(message);
+    await broadcaster.onMessage(message);
   }
 
   public waitFor(request: RequestMessage, duid: string): Promise<ResponseMessage> {

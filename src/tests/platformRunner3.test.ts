@@ -25,7 +25,7 @@ vi.mock('../runtimes/handleHomeDataMessage.js', () => ({
 }));
 
 vi.mock('../runtimes/handleLocalMessage.js', () => ({
-  triggerDssError: vi.fn(),
+  triggerDssError: vi.fn().mockResolvedValue(false),
 }));
 
 vi.mock('../model/DockStationStatus.js', async (importOriginal) => {
@@ -52,7 +52,7 @@ describe('PlatformRunner.updateRobotWithPayload - resolved state logging', () =>
         duid: 'test-duid',
         specs: asPartial<DeviceSpecs>({ model: DeviceModel.S7 }),
       }),
-      updateAttribute: vi.fn(),
+      updateAttribute: vi.fn().mockResolvedValue(true),
       getAttribute: vi.fn().mockImplementation((clusterId: number, attribute: string) => {
         if (clusterId === RvcRunMode.Cluster.id && attribute === 'currentMode') return 1;
         if (clusterId === RvcOperationalState.Cluster.id && attribute === 'operationalState')
@@ -74,7 +74,7 @@ describe('PlatformRunner.updateRobotWithPayload - resolved state logging', () =>
     vi.clearAllMocks();
   });
 
-  it('should log resolved state for Paused status (status=10) with inCleaning=true', () => {
+  it('should log resolved state for Paused status (status=10) with inCleaning=true', async () => {
     const statusMessage = {
       duid: 'test-duid',
       status: OperationStatusCode.Paused,
@@ -87,7 +87,7 @@ describe('PlatformRunner.updateRobotWithPayload - resolved state logging', () =>
     };
     const payload: MessagePayload = { type: NotifyMessageTypes.DeviceStatus, data: statusMessage };
 
-    runner.updateRobotWithPayload(payload);
+    await runner.updateRobotWithPayload(payload);
 
     expect(mockLogger.notice).toHaveBeenCalledOnce();
     const logOutput = vi.mocked(mockLogger.notice).mock.calls[0][0] as string;

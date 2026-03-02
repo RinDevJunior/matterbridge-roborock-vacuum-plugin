@@ -6,7 +6,10 @@ import { RoborockVacuumCleaner } from '../types/roborockVacuumCleaner.js';
  * Trigger docking station status error if conditions are met.
  * Checks current operational state and updates to Error state if appropriate.
  */
-export function triggerDssError(robot: RoborockVacuumCleaner, platform: RoborockMatterbridgePlatform): boolean {
+export async function triggerDssError(
+  robot: RoborockVacuumCleaner,
+  platform: RoborockMatterbridgePlatform,
+): Promise<boolean> {
   const currentOperationState = robot.getAttribute(
     RvcOperationalState.Cluster.id,
     'operationalState',
@@ -16,7 +19,7 @@ export function triggerDssError(robot: RoborockVacuumCleaner, platform: Roborock
   }
 
   if (currentOperationState === RvcOperationalState.OperationalState.Docked) {
-    robot.updateAttribute(
+    await robot.updateAttribute(
       RvcOperationalState.Cluster.id,
       'operationalState',
       RvcOperationalState.OperationalState.Error,

@@ -6,5 +6,5 @@ export interface ResponseBroadcaster {
   register(listener: AbstractMessageListener): void;
   unregister(): void;
   tryResolve(response: ResponseMessage): void;
-  onMessage(message: ResponseMessage): void;
+  onMessage(message: ResponseMessage): Promise<void>;
 }
