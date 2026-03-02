@@ -9,6 +9,11 @@ All notable changes to this project will be documented in this file.
 ### Fixed
 
 - **Correct type of `selectedAreas`** — `selectedAreas` attribute is now typed as `number[]` instead of `ServiceArea.Area[]`, matching the actual attribute value stored in Matter. This fixes incorrect property access (`.areaId`) when setting `currentArea` for single-room cleaning scenarios.
+- **Properly await all async calls** — All message handler functions in `PlatformRunner`, `B01ResponseBroadcaster`, `V1ResponseBroadcaster`, and related routing layers now correctly `await` async operations (`executeWithRobot`, `updateRobotWithPayload`, `triggerDssError`, `updateFromHomeData`, broadcaster `onMessage`). Previously these were fire-and-forget, which could cause unhandled promise rejections and race conditions.
+
+### Improved
+
+- **`deviceNotify` callback removed from `PollingService`** — The callback was unused after the async refactor and has been removed to simplify the service interface.
 
 <a href="https://www.buymeacoffee.com/rinnvspktr" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/default-orange.png" alt="Buy Me A Coffee" height="41" width="174"></a>
 
