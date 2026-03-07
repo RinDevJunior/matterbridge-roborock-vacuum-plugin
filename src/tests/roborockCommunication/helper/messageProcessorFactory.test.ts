@@ -1,11 +1,11 @@
-import { describe, it, expect } from 'vitest';
+import { describe, expect, it } from 'vitest';
 
 import { ProtocolVersion } from '../../../roborockCommunication/enums/protocolVersion.js';
-import { V01Serializer } from '../../../roborockCommunication/protocol/serializers/V01Serializer.js';
 import { A01Serializer } from '../../../roborockCommunication/protocol/serializers/A01Serializer.js';
 import { B01Serializer } from '../../../roborockCommunication/protocol/serializers/B01Serializer.js';
 import { L01Serializer } from '../../../roborockCommunication/protocol/serializers/L01Serializer.js';
 import { MessageSerializerFactory } from '../../../roborockCommunication/protocol/serializers/messageSerializerFactory.js';
+import { V01Serializer } from '../../../roborockCommunication/protocol/serializers/V01Serializer.js';
 
 describe('MessageProcessorFactory', () => {
 	it('returns correct serializer instances for known protocol versions', () => {

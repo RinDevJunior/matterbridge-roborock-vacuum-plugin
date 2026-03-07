@@ -1,5 +1,6 @@
-import semver from 'semver';
 import { MatterbridgeDynamicPlatform } from 'matterbridge';
+import semver from 'semver';
+
 import { ENGINES, PLUGIN_NAME, PLUGIN_VERSION } from '../settings.js';
 
 /** Log and validate critical package and runtime versions. */

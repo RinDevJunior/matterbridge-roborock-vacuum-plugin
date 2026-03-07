@@ -1,12 +1,13 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { AnsiLogger } from 'matterbridge/logger';
-import { PollingService } from '../../services/pollingService.js';
-import { MessageRoutingService } from '../../services/messageRoutingService.js';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+
 import { LOCAL_REFRESH_INTERVAL_MULTIPLIER, MQTT_REFRESH_INTERVAL_MULTIPLIER } from '../../constants/index.js';
-import { NotifyMessageTypes } from '../../types/notifyMessageTypes.js';
 import { Device } from '../../roborockCommunication/models/index.js';
 import { AbstractMessageDispatcher } from '../../roborockCommunication/protocol/dispatcher/abstractMessageDispatcher.js';
-import { createMockLogger, asPartial, asType } from '../helpers/testUtils.js';
+import { MessageRoutingService } from '../../services/messageRoutingService.js';
+import { PollingService } from '../../services/pollingService.js';
+import { NotifyMessageTypes } from '../../types/notifyMessageTypes.js';
+import { asPartial, asType, createMockLogger } from '../helpers/testUtils.js';
 
 describe('PollingService', () => {
 	let service: PollingService;

@@ -1,10 +1,11 @@
-import { RoomMapping } from './RoomMapping.js';
-import { HomeModelMapper } from '../../../roborockCommunication/models/home/mappers.js';
 import type { AnsiLogger } from 'matterbridge/logger';
 import { debugStringify } from 'matterbridge/logger';
+
 import { Device } from '../../../roborockCommunication/models/device.js';
-import { MapInfo } from './MapInfo.js';
+import { HomeModelMapper } from '../../../roborockCommunication/models/home/mappers.js';
 import type { RoborockService } from '../../../services/roborockService.js';
+import { MapInfo } from './MapInfo.js';
+import { RoomMapping } from './RoomMapping.js';
 
 export interface MapInfoPlatformContext {
 	roborockService: RoborockService | undefined;

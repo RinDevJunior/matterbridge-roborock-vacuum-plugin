@@ -1,4 +1,5 @@
-import { describe, it, expect } from 'vitest';
+import { describe, expect, it } from 'vitest';
+
 import { L01Serializer } from '../../../../roborockCommunication/protocol/serializers/L01Serializer.js';
 
 describe('L01Serializer', () => {

@@ -1,20 +1,21 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { DefaultCleanModeHandler } from '../../../../behaviors/roborock.vacuum/handlers/defaultCleanModeHandler.js';
+import { AnsiLogger } from 'matterbridge/logger';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+
 import {
 	CleanModeDisplayLabel,
 	CleanModeLabelInfo,
 } from '../../../../behaviors/roborock.vacuum/core/cleanModeConfig.js';
 import { CleanModeSetting } from '../../../../behaviors/roborock.vacuum/core/CleanModeSetting.js';
+import { HandlerContext } from '../../../../behaviors/roborock.vacuum/core/modeHandler.js';
 import {
 	CleanSequenceType,
 	MopRoute,
 	MopWaterFlow,
 	VacuumSuctionPower,
 } from '../../../../behaviors/roborock.vacuum/enums/index.js';
-import { HandlerContext } from '../../../../behaviors/roborock.vacuum/core/modeHandler.js';
-import { asPartial } from '../../../testUtils.js';
+import { DefaultCleanModeHandler } from '../../../../behaviors/roborock.vacuum/handlers/defaultCleanModeHandler.js';
 import { RoborockService } from '../../../../services/roborockService.js';
-import { AnsiLogger } from 'matterbridge/logger';
+import { asPartial } from '../../../testUtils.js';
 
 describe('DefaultCleanModeHandler', () => {
 	let handler: DefaultCleanModeHandler;

@@ -1,12 +1,13 @@
-import { describe, it, expect } from 'vitest';
+import { describe, expect, it } from 'vitest';
+
 import {
-	DeviceError,
-	DeviceNotFoundError,
-	DeviceConnectionError,
-	DeviceOfflineError,
 	DeviceCommandError,
-	UnsupportedDeviceError,
+	DeviceConnectionError,
+	DeviceError,
 	DeviceInitializationError,
+	DeviceNotFoundError,
+	DeviceOfflineError,
+	UnsupportedDeviceError,
 } from '../../errors/DeviceError.js';
 
 describe('DeviceError', () => {

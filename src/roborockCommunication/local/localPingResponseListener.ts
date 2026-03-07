@@ -1,6 +1,7 @@
 import { AnsiLogger } from 'matterbridge/logger';
-import { AbstractMessageListener } from '../routing/listeners/abstractMessageListener.js';
+
 import { Protocol, ResponseMessage } from '../models/index.js';
+import { AbstractMessageListener } from '../routing/listeners/abstractMessageListener.js';
 
 export class LocalPingResponseListener implements AbstractMessageListener {
 	readonly name = 'LocalPingResponseListener';

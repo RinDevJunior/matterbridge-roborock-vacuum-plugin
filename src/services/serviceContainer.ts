@@ -1,25 +1,26 @@
 import { AnsiLogger } from 'matterbridge/logger';
 import { LocalStorage } from 'node-persist';
-import type { Factory } from '../types/index.js';
-import { AuthenticationService } from './authenticationService.js';
-import { DeviceManagementService } from './deviceManagementService.js';
-import { AreaManagementService } from './areaManagementService.js';
-import { MessageRoutingService } from './messageRoutingService.js';
-import { PollingService } from './pollingService.js';
-import ClientManager from './clientManager.js';
+
+import { PlatformConfigManager } from '../platform/platformConfigManager.js';
+import { RoborockAuthGateway } from '../roborockCommunication/adapters/RoborockAuthGateway.js';
 import { RoborockAuthenticateApi } from '../roborockCommunication/api/authClient.js';
 import { RoborockIoTApi } from '../roborockCommunication/api/iotClient.js';
 import { UserData } from '../roborockCommunication/models/index.js';
-import { PlatformConfigManager } from '../platform/platformConfigManager.js';
-import { ConnectionService } from './connectionService.js';
+import type { Factory } from '../types/index.js';
+import { WssSendSnackbarMessage } from '../types/WssSendSnackbarMessage.js';
+import { AreaManagementService } from './areaManagementService.js';
 import { AuthenticationCoordinator } from './authentication/AuthenticationCoordinator.js';
-import { UserDataRepository } from './authentication/UserDataRepository.js';
 import { AuthenticationStateRepository } from './authentication/AuthenticationStateRepository.js';
-import { VerificationCodeService } from './authentication/VerificationCodeService.js';
 import { PasswordAuthStrategy } from './authentication/PasswordAuthStrategy.js';
 import { TwoFactorAuthStrategy } from './authentication/TwoFactorAuthStrategy.js';
-import { RoborockAuthGateway } from '../roborockCommunication/adapters/RoborockAuthGateway.js';
-import { WssSendSnackbarMessage } from '../types/WssSendSnackbarMessage.js';
+import { UserDataRepository } from './authentication/UserDataRepository.js';
+import { VerificationCodeService } from './authentication/VerificationCodeService.js';
+import { AuthenticationService } from './authenticationService.js';
+import ClientManager from './clientManager.js';
+import { ConnectionService } from './connectionService.js';
+import { DeviceManagementService } from './deviceManagementService.js';
+import { MessageRoutingService } from './messageRoutingService.js';
+import { PollingService } from './pollingService.js';
 
 /** Configuration for ServiceContainer. */
 export interface ServiceContainerConfig {

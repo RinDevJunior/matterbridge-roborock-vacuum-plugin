@@ -1,8 +1,8 @@
-import { Device, DeviceSpecs, DeviceInformation, Home } from '../../roborockCommunication/models/index.js';
-import { DeviceModel } from '../../roborockCommunication/models/deviceModel.js';
-import { DeviceCategory } from '../../roborockCommunication/models/deviceCategory.js';
 import { RoomEntity } from '../../core/domain/entities/Room.js';
 import { ProtocolVersion } from '../../roborockCommunication/enums/index.js';
+import { DeviceCategory } from '../../roborockCommunication/models/deviceCategory.js';
+import { DeviceModel } from '../../roborockCommunication/models/deviceModel.js';
+import { Device, DeviceInformation, DeviceSpecs, Home } from '../../roborockCommunication/models/index.js';
 
 /**
  * Create a minimal valid Device instance for tests.

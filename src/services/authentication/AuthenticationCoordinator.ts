@@ -1,7 +1,8 @@
 import { AnsiLogger } from 'matterbridge/logger';
+
 import type { UserData } from '../../roborockCommunication/models/index.js';
-import type { IAuthStrategy } from './IAuthStrategy.js';
 import type { AuthContext } from './AuthContext.js';
+import type { IAuthStrategy } from './IAuthStrategy.js';
 import { PasswordAuthStrategy } from './PasswordAuthStrategy.js';
 import { TwoFactorAuthStrategy } from './TwoFactorAuthStrategy.js';
 

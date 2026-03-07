@@ -1,4 +1,5 @@
 import { AnsiLogger } from 'matterbridge/logger';
+
 import { ResponseMessage } from '../../models/index.js';
 import { V1PendingResponseTracker } from '../services/v1PendingResponseTracker.js';
 import { AbstractMessageListener } from './abstractMessageListener.js';

@@ -1,7 +1,8 @@
+import { describe, expect, it, vi } from 'vitest';
+
 import { getSupportedRoutines } from '../../initialData/getSupportedRoutines.js';
-import { describe, it, expect, vi } from 'vitest';
-import { makeLogger } from '../testUtils.js';
 import { asPartial } from '../helpers/testUtils.js';
+import { makeLogger } from '../testUtils.js';
 
 describe('getSupportedRoutines', () => {
 	it('returns empty array and logs debug when routine missing', () => {

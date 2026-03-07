@@ -1,11 +1,12 @@
 import { AnsiLogger } from 'matterbridge/logger';
-import { vi, describe, beforeEach, it, expect } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+
+import { UserData } from '../../../roborockCommunication/models/index.js';
+import { AuthContext } from '../../../services/authentication/AuthContext.js';
 import { AuthenticationCoordinator } from '../../../services/authentication/AuthenticationCoordinator.js';
 import { PasswordAuthStrategy } from '../../../services/authentication/PasswordAuthStrategy.js';
 import { TwoFactorAuthStrategy } from '../../../services/authentication/TwoFactorAuthStrategy.js';
-import { AuthContext } from '../../../services/authentication/AuthContext.js';
-import { UserData } from '../../../roborockCommunication/models/index.js';
-import { createMockLogger, asPartial } from '../../testUtils.js';
+import { asPartial, createMockLogger } from '../../testUtils.js';
 
 describe('AuthenticationCoordinator', () => {
 	let coordinator: AuthenticationCoordinator;

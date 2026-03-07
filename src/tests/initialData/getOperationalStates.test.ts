@@ -1,9 +1,10 @@
-import { describe, it, expect } from 'vitest';
 import { RvcOperationalState } from 'matterbridge/matter/clusters';
-import { getOperationalErrorState, getErrorFromDSS } from '../../initialData/getOperationalStates.js';
-import { VacuumErrorCode } from '../../roborockCommunication/enums/vacuumAndDockErrorCode.js';
-import { DockStationStatusCode, DockStationStatus } from '../../model/DockStationStatus.js';
+import { describe, expect, it } from 'vitest';
+
+import { getErrorFromDSS, getOperationalErrorState } from '../../initialData/getOperationalStates.js';
+import { DockStationStatus, DockStationStatusCode } from '../../model/DockStationStatus.js';
 import { VacuumStatus } from '../../model/VacuumStatus.js';
+import { VacuumErrorCode } from '../../roborockCommunication/enums/vacuumAndDockErrorCode.js';
 import { asType } from '../testUtils.js';
 
 describe('getOperationalStates', () => {

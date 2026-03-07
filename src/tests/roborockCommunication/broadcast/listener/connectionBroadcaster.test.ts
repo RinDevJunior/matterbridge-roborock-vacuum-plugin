@@ -1,4 +1,5 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+
 import { ConnectionBroadcaster } from '../../../../roborockCommunication/routing/listeners/connectionBroadcaster.js';
 import { makeLogger } from '../../../testUtils.js';
 

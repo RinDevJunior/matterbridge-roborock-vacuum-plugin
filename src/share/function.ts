@@ -1,5 +1,6 @@
+import { RvcOperationalState, RvcRunMode } from 'matterbridge/matter/clusters';
+
 import { OperationStatusCode } from '../roborockCommunication/enums/index.js';
-import { RvcRunMode, RvcOperationalState } from 'matterbridge/matter/clusters';
 
 /**
  * Convert device operational status code to Matter run mode tag.
@@ -116,6 +117,7 @@ export function state_to_matter_operational_status(
 	}
 }
 
+// eslint-disable-next-line @typescript-eslint/no-unnecessary-type-parameters
 export function asType<T>(v: unknown): T {
 	return v as T;
 }

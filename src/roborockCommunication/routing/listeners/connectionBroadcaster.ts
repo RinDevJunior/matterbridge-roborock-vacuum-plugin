@@ -1,5 +1,6 @@
-import { AbstractConnectionListener } from './abstractConnectionListener.js';
 import { AnsiLogger } from 'matterbridge/logger';
+
+import { AbstractConnectionListener } from './abstractConnectionListener.js';
 
 export class ConnectionBroadcaster implements AbstractConnectionListener {
 	private listeners: AbstractConnectionListener[] = [];

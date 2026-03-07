@@ -4,10 +4,10 @@
  * @module types/MessagePayloads
  */
 
-import { NotifyMessageTypes } from './notifyMessageTypes.js';
-import { CleanInformation, Home, CleanProcess } from '../roborockCommunication/models/index.js';
-import { OperationStatusCode } from '../roborockCommunication/enums/operationStatusCode.js';
 import { DockErrorCode, VacuumErrorCode } from '../roborockCommunication/enums/index.js';
+import { OperationStatusCode } from '../roborockCommunication/enums/operationStatusCode.js';
+import { CleanInformation, CleanProcess, Home } from '../roborockCommunication/models/index.js';
+import { NotifyMessageTypes } from './notifyMessageTypes.js';
 
 export interface ServiceAreaUpdateMessage {
 	duid: string;

@@ -1,11 +1,11 @@
 import { DeviceModel } from '../../../roborockCommunication/models/index.js';
 import {
+	baseCleanModeConfigs,
 	CleanModeConfig,
 	CleanModeDisplayLabel,
-	baseCleanModeConfigs,
 	smartPlanModeConfig,
-	vacFollowedByMopModeConfig,
 	vacAndMopDeepModeConfig,
+	vacFollowedByMopModeConfig,
 } from './cleanModeConfig.js';
 
 /**

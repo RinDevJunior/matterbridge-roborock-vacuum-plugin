@@ -1,12 +1,13 @@
-import { describe, it, expect } from 'vitest';
+import { describe, expect, it } from 'vitest';
+
 import {
 	baseCleanModeConfigs,
-	smartCleanModeConfigs,
 	CleanModeDisplayLabel,
 	CleanModeLabelInfo,
 	getModeDisplayMap,
-	getModeSettingsMap,
 	getModeOptions,
+	getModeSettingsMap,
+	smartCleanModeConfigs,
 } from '../../../../behaviors/roborock.vacuum/core/cleanModeConfig.js';
 import { CleanModeSetting } from '../../../../behaviors/roborock.vacuum/core/CleanModeSetting.js';
 

@@ -1,6 +1,7 @@
 import { RvcOperationalState } from 'matterbridge/matter/clusters';
-import { RoborockMatterbridgePlatform } from '../module.js';
+
 import { BURST_POLLING_INTERVAL_MS } from '../constants/index.js';
+import { RoborockMatterbridgePlatform } from '../module.js';
 
 /**
  * Manages burst polling for robot vacuum devices.

@@ -1,22 +1,23 @@
-import { RoboticVacuumCleaner } from 'matterbridge/devices';
 import { CommandHandlerData, MatterbridgeEndpointCommands } from 'matterbridge';
+import { RoboticVacuumCleaner } from 'matterbridge/devices';
+import { AnsiLogger, debugStringify } from 'matterbridge/logger';
+import { ModeBase, RvcOperationalState, ServiceArea } from 'matterbridge/matter/clusters';
+
+import { CommandNames } from '../behaviors/BehaviorDeviceGeneric.js';
+import { CleanModeSetting } from '../behaviors/roborock.vacuum/core/CleanModeSetting.js';
+import { baseRunModeConfigs, getRunModeOptions } from '../behaviors/roborock.vacuum/core/runModeConfig.js';
+import { HomeEntity } from '../core/domain/entities/Home.js';
 import {
 	getOperationalStates,
 	getSupportedAreas,
 	getSupportedCleanModes,
 	getSupportedRoutines,
 } from '../initialData/index.js';
-import { AnsiLogger, debugStringify } from 'matterbridge/logger';
-import { BehaviorFactoryResult } from '../share/behaviorFactory.js';
-import { ModeBase, RvcOperationalState, ServiceArea } from 'matterbridge/matter/clusters';
-import { CommandNames } from '../behaviors/BehaviorDeviceGeneric.js';
 import { DockStationStatus } from '../model/DockStationStatus.js';
-import { Device } from '../roborockCommunication/models/index.js';
 import { PlatformConfigManager } from '../platform/platformConfigManager.js';
-import { baseRunModeConfigs, getRunModeOptions } from '../behaviors/roborock.vacuum/core/runModeConfig.js';
-import { CleanModeSetting } from '../behaviors/roborock.vacuum/core/CleanModeSetting.js';
-import { HomeEntity } from '../core/domain/entities/Home.js';
+import { Device } from '../roborockCommunication/models/index.js';
 import { RoborockService } from '../services/roborockService.js';
+import { BehaviorFactoryResult } from '../share/behaviorFactory.js';
 
 interface IdentifyCommandRequest {
 	identifyTime?: number;
@@ -200,7 +201,7 @@ export class RoborockVacuumCleaner extends RoboticVacuumCleaner {
 			try {
 				await handler(context);
 			} catch (error) {
-				this.log.error(`Error executing ${String(commandName)} command: ${error}`);
+				this.log.error(`Error executing ${commandName} command: ${error}`);
 				throw error;
 			}
 		});

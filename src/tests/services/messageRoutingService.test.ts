@@ -1,14 +1,15 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { AnsiLogger } from 'matterbridge/logger';
-import { MessageRoutingService } from '../../services/messageRoutingService.js';
-import { DeviceError } from '../../errors/index.js';
 import { ServiceArea } from 'matterbridge/matter/clusters';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+
+import { CleanModeSetting } from '../../behaviors/roborock.vacuum/core/CleanModeSetting.js';
+import { CleanSequenceType } from '../../behaviors/roborock.vacuum/enums/CleanSequenceType.js';
+import { DeviceError } from '../../errors/index.js';
 import { RoborockIoTApi } from '../../roborockCommunication/api/iotClient.js';
 import { RequestMessage } from '../../roborockCommunication/models/index.js';
 import { V10MessageDispatcher } from '../../roborockCommunication/protocol/dispatcher/V10MessageDispatcher.js';
-import { CleanModeSetting } from '../../behaviors/roborock.vacuum/core/CleanModeSetting.js';
+import { MessageRoutingService } from '../../services/messageRoutingService.js';
 import { asPartial } from '../testUtils.js';
-import { CleanSequenceType } from '../../behaviors/roborock.vacuum/enums/CleanSequenceType.js';
 
 function createIntegrationLogger() {
 	return { debug: vi.fn(), notice: vi.fn(), warn: vi.fn() } as Partial<AnsiLogger> as AnsiLogger;

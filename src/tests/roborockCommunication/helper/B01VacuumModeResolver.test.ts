@@ -1,11 +1,12 @@
-import { describe, it, expect } from 'vitest';
+import { describe, expect, it } from 'vitest';
+
 import {
-	resolveVacuumMode,
-	resolveMopMode,
 	resolveCleanRoute,
+	resolveMopMode,
+	resolveMopModeWithDistanceOff,
 	resolveQ7CleanMode,
 	resolveQ10CleanMode,
-	resolveMopModeWithDistanceOff,
+	resolveVacuumMode,
 } from '../../../roborockCommunication/helper/B01VacuumModeResolver.js';
 
 // Match the real values in ../../behaviors/roborock.vacuum/b01/q7.ts

@@ -1,6 +1,7 @@
 import { AnsiLogger } from 'matterbridge/logger';
-import { BehaviorDeviceGeneric, CommandNames, DeviceCommands } from '../../BehaviorDeviceGeneric.js';
+
 import { RoborockService } from '../../../services/roborockService.js';
+import { BehaviorDeviceGeneric, CommandNames, DeviceCommands } from '../../BehaviorDeviceGeneric.js';
 
 export function registerCommonCommands(
 	duid: string,

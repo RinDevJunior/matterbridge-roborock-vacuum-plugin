@@ -1,8 +1,9 @@
 import type { ServiceArea } from 'matterbridge/matter/clusters';
-import { DeviceBuilder } from './device-builder.js';
+
+import { RoomEntity } from '../../core/domain/entities/Room.js';
 import { CloudMessageResult, DeviceModel, Home, Scene, UserData } from '../../roborockCommunication/models/index.js';
 import { asPartial } from '../testUtils.js';
-import { RoomEntity } from '../../core/domain/entities/Room.js';
+import { DeviceBuilder } from './device-builder.js';
 
 /**
  * Generates a mock UserData object for testing.

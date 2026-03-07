@@ -1,18 +1,20 @@
+import crypto from 'node:crypto';
+
+import * as axios from 'axios';
+import { MatterbridgeDynamicPlatform } from 'matterbridge';
 import type { AnsiLogger } from 'matterbridge/logger';
 import { debugStringify } from 'matterbridge/logger';
-import * as axios from 'axios';
-import crypto from 'node:crypto';
 import NodePersist from 'node-persist';
-import { MatterbridgeDynamicPlatform } from 'matterbridge';
-import { PlatformConfigManager } from './platformConfigManager.js';
-import { DeviceRegistry } from './deviceRegistry.js';
-import { RoborockService } from '../services/roborockService.js';
-import { isSupportedDevice } from '../share/helper.js';
+
 import { getBaseUrl } from '../initialData/regionUrls.js';
 import { RoborockAuthenticateApi } from '../roborockCommunication/api/authClient.js';
 import { RoborockIoTApi } from '../roborockCommunication/api/iotClient.js';
 import type { Device } from '../roborockCommunication/models/index.js';
+import { RoborockService } from '../services/roborockService.js';
+import { isSupportedDevice } from '../share/helper.js';
 import { WssSendSnackbarMessage } from '../types/WssSendSnackbarMessage.js';
+import { DeviceRegistry } from './deviceRegistry.js';
+import { PlatformConfigManager } from './platformConfigManager.js';
 
 /**
  * Handles device discovery: authentication, API calls, and device filtering.

@@ -1,6 +1,7 @@
 import crypto from 'node:crypto';
-import { AbstractSerializer } from './abstractSerializer.js';
+
 import * as CryptoUtils from '../../helper/cryptoHelper.js';
+import { AbstractSerializer } from './abstractSerializer.js';
 
 export class L01Serializer implements AbstractSerializer {
 	public encode(

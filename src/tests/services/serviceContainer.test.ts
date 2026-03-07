@@ -1,25 +1,26 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { AnsiLogger } from 'matterbridge/logger';
-import { ServiceContainer, ServiceContainerConfig } from '../../services/serviceContainer.js';
-import { AuthenticationCoordinator } from '../../services/authentication/AuthenticationCoordinator.js';
-import { DeviceManagementService } from '../../services/deviceManagementService.js';
-import { AreaManagementService } from '../../services/areaManagementService.js';
-import { MessageRoutingService } from '../../services/messageRoutingService.js';
+import type { LocalStorage } from 'node-persist';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+
+import type { PlatformConfigManager } from '../../platform/platformConfigManager.js';
 import { RoborockAuthenticateApi } from '../../roborockCommunication/api/authClient.js';
 import { RoborockIoTApi } from '../../roborockCommunication/api/iotClient.js';
 import { UserData } from '../../roborockCommunication/models/index.js';
+import { ClientRouter } from '../../roborockCommunication/routing/clientRouter.js';
+import { AreaManagementService } from '../../services/areaManagementService.js';
+import { AuthenticationCoordinator } from '../../services/authentication/AuthenticationCoordinator.js';
+import { DeviceManagementService } from '../../services/deviceManagementService.js';
+import { MessageRoutingService } from '../../services/messageRoutingService.js';
+import { ServiceContainer, ServiceContainerConfig } from '../../services/serviceContainer.js';
 import { localStorageMock } from '../testData/localStorageMock.js';
 import {
-	makeLogger,
-	makeMockClientRouter,
-	createMockLocalStorage,
+	asPartial,
 	createMockAuthApi,
 	createMockIotApi,
-	asPartial,
+	createMockLocalStorage,
+	makeLogger,
+	makeMockClientRouter,
 } from '../testUtils.js';
-import { ClientRouter } from '../../roborockCommunication/routing/clientRouter.js';
-import type { LocalStorage } from 'node-persist';
-import type { PlatformConfigManager } from '../../platform/platformConfigManager.js';
 
 describe('ServiceContainer', () => {
 	let container: ServiceContainer;

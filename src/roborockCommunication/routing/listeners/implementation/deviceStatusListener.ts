@@ -1,7 +1,8 @@
 import { AnsiLogger } from 'matterbridge/logger';
+
+import { DeviceOTAData } from '../../../models/deviceOTAData.js';
 import { Protocol, ResponseMessage } from '../../../models/index.js';
 import { AbstractMessageListener } from '../abstractMessageListener.js';
-import { DeviceOTAData } from '../../../models/deviceOTAData.js';
 
 export class DeviceStatusListener implements AbstractMessageListener {
 	readonly name = 'DeviceStatusListener';

@@ -1,41 +1,42 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { PlatformRunner } from '../platformRunner.js';
-import { NotifyMessageTypes } from '../types/notifyMessageTypes.js';
-import { RoborockMatterbridgePlatform } from '../module.js';
-import { RoborockVacuumCleaner } from '../types/roborockVacuumCleaner.js';
-import {
-	Device,
-	DeviceSpecs,
-	DeviceModel,
-	BatteryMessage,
-	DeviceErrorMessage,
-	CleanInformation,
-	Home,
-} from '../roborockCommunication/models/index.js';
-import {
-	asPartial,
-	createMockLogger,
-	createMockDeviceRegistry,
-	createMockRoborockService,
-	createMockConfigManager,
-	asType,
-} from './testUtils.js';
 import { PowerSource, RvcCleanMode, RvcOperationalState, RvcRunMode, ServiceArea } from 'matterbridge/matter/clusters';
-import { DockErrorCode, OperationStatusCode, VacuumErrorCode } from '../roborockCommunication/enums/index.js';
-import type { DockStationStatus } from '../model/DockStationStatus.js';
-import * as initialDataIndex from '../initialData/index.js';
-import * as runtimeHelper from '../share/runtimeHelper.js';
-import * as handleHomeDataMessage from '../runtimes/handleHomeDataMessage.js';
-import * as handleLocalMessage from '../runtimes/handleLocalMessage.js';
-import * as dockingStationStatus from '../model/DockStationStatus.js';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+
 import { CleanModeSetting } from '../behaviors/roborock.vacuum/core/CleanModeSetting.js';
-import type { MessagePayload } from '../types/MessagePayloads.js';
 import { ModeResolver } from '../behaviors/roborock.vacuum/core/modeResolver.js';
 import { CleanSequenceType } from '../behaviors/roborock.vacuum/enums/CleanSequenceType.js';
-import { RoomIndexMap } from '../core/application/models/RoomIndexMap.js';
-import { AreaInfo, SegmentInfo } from '../initialData/getSupportedAreas.js';
-import { HomeEntity } from '../core/domain/entities/Home.js';
 import { MapInfo } from '../core/application/models/index.js';
+import { RoomIndexMap } from '../core/application/models/RoomIndexMap.js';
+import { HomeEntity } from '../core/domain/entities/Home.js';
+import { AreaInfo, SegmentInfo } from '../initialData/getSupportedAreas.js';
+import * as initialDataIndex from '../initialData/index.js';
+import type { DockStationStatus } from '../model/DockStationStatus.js';
+import * as dockingStationStatus from '../model/DockStationStatus.js';
+import { RoborockMatterbridgePlatform } from '../module.js';
+import { PlatformRunner } from '../platformRunner.js';
+import { DockErrorCode, OperationStatusCode, VacuumErrorCode } from '../roborockCommunication/enums/index.js';
+import {
+	BatteryMessage,
+	CleanInformation,
+	Device,
+	DeviceErrorMessage,
+	DeviceModel,
+	DeviceSpecs,
+	Home,
+} from '../roborockCommunication/models/index.js';
+import * as handleHomeDataMessage from '../runtimes/handleHomeDataMessage.js';
+import * as handleLocalMessage from '../runtimes/handleLocalMessage.js';
+import * as runtimeHelper from '../share/runtimeHelper.js';
+import type { MessagePayload } from '../types/MessagePayloads.js';
+import { NotifyMessageTypes } from '../types/notifyMessageTypes.js';
+import { RoborockVacuumCleaner } from '../types/roborockVacuumCleaner.js';
+import {
+	asPartial,
+	asType,
+	createMockConfigManager,
+	createMockDeviceRegistry,
+	createMockLogger,
+	createMockRoborockService,
+} from './testUtils.js';
 
 vi.mock('../initialData/index.js', () => ({
 	getOperationalErrorState: vi.fn().mockReturnValue(2),

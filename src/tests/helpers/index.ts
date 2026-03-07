@@ -3,11 +3,11 @@
  * @module tests/helpers
  */
 
-export { DeviceBuilder, createTestDevice } from './device-builder.js';
+export { createTestDevice, DeviceBuilder } from './device-builder.js';
 export {
-	generateMockUserData,
-	generateMockHome,
-	generateMockDeviceStatus,
 	generateMockAreas,
+	generateMockDeviceStatus,
+	generateMockHome,
 	generateMockScenes,
+	generateMockUserData,
 } from './mock-generators.js';

@@ -1,10 +1,12 @@
-import { default as axios, AxiosInstance, AxiosError, AxiosStatic } from 'axios';
-import axiosRetry from 'axios-retry';
-import https from 'node:https';
 import crypto from 'node:crypto';
-import { AnsiLogger, debugStringify } from 'matterbridge/logger';
-import { ApiResponse, Home, UserData, Scene } from '../models/index.js';
+import https from 'node:https';
+
+import { AxiosError, AxiosInstance, AxiosStatic, default as axios } from 'axios';
 import * as AxiosLogger from 'axios-logger';
+import axiosRetry from 'axios-retry';
+import { AnsiLogger, debugStringify } from 'matterbridge/logger';
+
+import { ApiResponse, Home, Scene, UserData } from '../models/index.js';
 
 export class RoborockIoTApi {
 	logger: AnsiLogger;
@@ -33,7 +35,7 @@ export class RoborockIoTApi {
 					const isEconnreset = code === 'ECONNRESET';
 					const isTimedOut =
 						code === 'ETIMEDOUT' || code === 'ECONNABORTED' || /timeout/i.test(errTyped?.message ?? '');
-					return Boolean(isNetwork || isEconnreset || isTimedOut);
+					return isNetwork || isEconnreset || isTimedOut;
 				},
 				onRetry: (retryCount: number, error: unknown, _requestConfig: unknown) => {
 					this.logger.warn(

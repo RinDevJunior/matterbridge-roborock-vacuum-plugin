@@ -1,5 +1,7 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { ResponseBroadcasterFactory } from '../../../../roborockCommunication/routing/listeners/responseBroadcasterFactory.js';
+import { AnsiLogger } from 'matterbridge/logger';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+
+import { ProtocolVersion } from '../../../../roborockCommunication/enums/index.js';
 import {
 	HeaderMessage,
 	RequestMessage,
@@ -7,10 +9,9 @@ import {
 	ResponseMessage,
 } from '../../../../roborockCommunication/models/index.js';
 import { MessageContext } from '../../../../roborockCommunication/models/messageContext.js';
-import { ProtocolVersion } from '../../../../roborockCommunication/enums/index.js';
-import { createMockLogger, asPartial } from '../../../helpers/testUtils.js';
-import { AnsiLogger } from 'matterbridge/logger';
 import { AbstractMessageListener } from '../../../../roborockCommunication/routing/listeners/abstractMessageListener.js';
+import { ResponseBroadcasterFactory } from '../../../../roborockCommunication/routing/listeners/responseBroadcasterFactory.js';
+import { asPartial, createMockLogger } from '../../../helpers/testUtils.js';
 
 function makeV1Response(duid = 'v1-duid'): ResponseMessage {
 	const header = new HeaderMessage('1.0', 1, 0, 101, 102);

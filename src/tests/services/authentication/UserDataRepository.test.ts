@@ -1,14 +1,15 @@
 import { AnsiLogger } from 'matterbridge/logger';
-import { vi, describe, beforeEach, it, expect } from 'vitest';
-import { UserDataRepository } from '../../../services/authentication/UserDataRepository.js';
-import { PlatformConfigManager } from '../../../platform/platformConfigManager.js';
-import { UserData } from '../../../roborockCommunication/models/index.js';
-import { createMockLogger, asPartial } from '../../testUtils.js';
 import type NodePersist from 'node-persist';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+
 import {
 	AuthenticationConfiguration,
 	RoborockPluginPlatformConfig,
 } from '../../../model/RoborockPluginPlatformConfig.js';
+import { PlatformConfigManager } from '../../../platform/platformConfigManager.js';
+import { UserData } from '../../../roborockCommunication/models/index.js';
+import { UserDataRepository } from '../../../services/authentication/UserDataRepository.js';
+import { asPartial, createMockLogger } from '../../testUtils.js';
 
 describe('UserDataRepository', () => {
 	let repository: UserDataRepository;

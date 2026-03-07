@@ -1,10 +1,11 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { AnsiLogger } from 'matterbridge/logger';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+
+import { HeaderMessage, ResponseBody, ResponseMessage } from '../../../../roborockCommunication/models/index.js';
+import { AbstractMessageListener } from '../../../../roborockCommunication/routing/listeners/abstractMessageListener.js';
 import { V1ResponseBroadcaster } from '../../../../roborockCommunication/routing/listeners/v1ResponseBroadcaster.js';
 import { V1PendingResponseTracker } from '../../../../roborockCommunication/routing/services/v1PendingResponseTracker.js';
-import { HeaderMessage, ResponseBody, ResponseMessage } from '../../../../roborockCommunication/models/index.js';
 import { createMockLogger } from '../../../helpers/testUtils.js';
-import { AnsiLogger } from 'matterbridge/logger';
-import { AbstractMessageListener } from '../../../../roborockCommunication/routing/listeners/abstractMessageListener.js';
 import { asPartial } from '../../../helpers/testUtils.js';
 
 function makeResponse(duid = 'test-duid'): ResponseMessage {
@@ -103,7 +104,7 @@ describe('V1ResponseBroadcaster', () => {
 			name: 'FailListener',
 			duid: 'test-duid',
 			onMessage: vi.fn(() => {
-				throw 'string error';
+				throw Error('string error');
 			}),
 		};
 

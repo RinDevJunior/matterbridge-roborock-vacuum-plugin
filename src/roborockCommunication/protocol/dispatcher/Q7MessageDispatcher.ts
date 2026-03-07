@@ -1,4 +1,11 @@
 import { randomInt } from 'node:crypto';
+
+import { AnsiLogger, debugStringify } from 'matterbridge/logger';
+
+import { CleanModeSetting } from '../../../behaviors/roborock.vacuum/core/CleanModeSetting.js';
+import { CleanSequenceType } from '../../../behaviors/roborock.vacuum/enums/CleanSequenceType.js';
+import { MapInfo } from '../../../core/application/models/index.js';
+import { MapRoomResponse } from '../../../types/device.js';
 import {
 	Q7CleanType,
 	Q7ControlCode,
@@ -6,22 +13,17 @@ import {
 	Q7RequestCode,
 	Q7RequestMethod,
 } from '../../enums/Q7RequestCode.js';
-import { DeviceStatus } from '../../models/deviceStatus.js';
-import { RequestMessage } from '../../models/requestMessage.js';
-import { AbstractMessageDispatcher } from './abstractMessageDispatcher.js';
-import { AnsiLogger, debugStringify } from 'matterbridge/logger';
-import { Client } from '../../routing/client.js';
-import { NetworkInfo, RawRoomMappingData } from '../../models/index.js';
 import {
-	resolveQ7CleanMode,
-	resolveMopMode,
-	resolveVacuumMode,
 	resolveCleanRoute,
+	resolveMopMode,
+	resolveQ7CleanMode,
+	resolveVacuumMode,
 } from '../../helper/B01VacuumModeResolver.js';
-import { MapInfo } from '../../../core/application/models/index.js';
-import { MapRoomResponse } from '../../../types/device.js';
-import { CleanModeSetting } from '../../../behaviors/roborock.vacuum/core/CleanModeSetting.js';
-import { CleanSequenceType } from '../../../behaviors/roborock.vacuum/enums/CleanSequenceType.js';
+import { DeviceStatus } from '../../models/deviceStatus.js';
+import { NetworkInfo, RawRoomMappingData } from '../../models/index.js';
+import { RequestMessage } from '../../models/requestMessage.js';
+import { Client } from '../../routing/client.js';
+import { AbstractMessageDispatcher } from './abstractMessageDispatcher.js';
 
 export class Q7MessageDispatcher implements AbstractMessageDispatcher {
 	public dispatcherName = 'Q7MessageDispatcher';

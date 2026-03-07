@@ -1,10 +1,11 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { beforeEach, describe, expect, it } from 'vitest';
+
 import { DeviceRegistry } from '../../platform/deviceRegistry.js';
-import { DeviceModel, type Device } from '../../roborockCommunication/models/index.js';
-import type { RoborockVacuumCleaner } from '../../types/roborockVacuumCleaner.js';
-import { DeviceCategory } from '../../roborockCommunication/models/deviceCategory.js';
-import { asType } from '../testUtils.js';
 import { ProtocolVersion } from '../../roborockCommunication/enums/index.js';
+import { DeviceCategory } from '../../roborockCommunication/models/deviceCategory.js';
+import { type Device, DeviceModel } from '../../roborockCommunication/models/index.js';
+import type { RoborockVacuumCleaner } from '../../types/roborockVacuumCleaner.js';
+import { asType } from '../testUtils.js';
 
 function createMockDevice(serialNumber: string): Device {
 	return {

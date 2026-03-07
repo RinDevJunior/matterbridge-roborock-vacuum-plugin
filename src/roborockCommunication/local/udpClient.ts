@@ -1,11 +1,13 @@
+import crypto from 'node:crypto';
 import * as dgram from 'node:dgram';
 import { Socket } from 'node:dgram';
+
 import { Parser } from 'binary-parser/dist/binary_parser.js';
-import crypto from 'node:crypto';
 import CRC32 from 'crc-32';
 import { AnsiLogger } from 'matterbridge/logger';
-import { NetworkInfo } from '../models/index.js';
+
 import { ProtocolVersion } from '../enums/index.js';
+import { NetworkInfo } from '../models/index.js';
 import { AbstractUDPMessageListener } from '../routing/listeners/abstractUDPMessageListener.js';
 
 export class LocalNetworkUDPClient {

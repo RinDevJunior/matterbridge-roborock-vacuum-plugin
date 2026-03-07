@@ -1,4 +1,4 @@
-import { OperationStatusCode, VacuumErrorCode, DockType, DockErrorCode } from '../enums/index.js';
+import { DockErrorCode, DockType, OperationStatusCode, VacuumErrorCode } from '../enums/index.js';
 
 export interface CloudMessageResult {
 	msg_ver: number;

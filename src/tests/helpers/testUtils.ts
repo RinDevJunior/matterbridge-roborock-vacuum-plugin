@@ -1,11 +1,12 @@
-import { vi } from 'vitest';
-import { AnsiLogger } from 'matterbridge/logger';
-import type { PlatformConfigManager } from '../../platform/platformConfigManager.js';
 import type { PlatformMatterbridge } from 'matterbridge';
-import type { RoborockIoTApi } from '../../roborockCommunication/api/iotClient.js';
+import { AnsiLogger } from 'matterbridge/logger';
+import { vi } from 'vitest';
+
+import type { PlatformConfigManager } from '../../platform/platformConfigManager.js';
 import type { RoborockAuthenticateApi } from '../../roborockCommunication/api/authClient.js';
-import { ClientRouter } from '../../roborockCommunication/routing/clientRouter.js';
+import type { RoborockIoTApi } from '../../roborockCommunication/api/iotClient.js';
 import type { Device, UserData } from '../../roborockCommunication/models/index.js';
+import { ClientRouter } from '../../roborockCommunication/routing/clientRouter.js';
 import type { RoborockVacuumCleaner } from '../../types/roborockVacuumCleaner.js';
 /**
  * Shared testing utilities for unit tests.
@@ -66,7 +67,7 @@ export function makeLocalClientStub(overrides: Partial<Record<string, unknown>> 
 }
 
 // Lightweight LocalStorage mock that satisfies the subset used in tests
-import type { LocalStorage, DatumOptions, WriteFileResult, DeleteFileResult } from 'node-persist';
+import type { DatumOptions, DeleteFileResult, LocalStorage, WriteFileResult } from 'node-persist';
 export function createMockLocalStorage(overrides: Partial<Record<string, unknown>> = {}): LocalStorage {
 	const base: Partial<LocalStorage> = {
 		init: vi.fn(),

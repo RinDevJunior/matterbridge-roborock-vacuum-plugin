@@ -1,12 +1,13 @@
 import { AnsiLogger } from 'matterbridge/logger';
-import { AbstractClient } from './abstractClient.js';
-import { MessageContext, RequestMessage, UserData } from '../models/index.js';
+
 import { LocalNetworkClient } from '../local/localClient.js';
+import { MessageContext, RequestMessage, UserData } from '../models/index.js';
 import { MQTTClient } from '../mqtt/mqttClient.js';
+import { AbstractClient } from './abstractClient.js';
+import { Client } from './client.js';
 import { AbstractConnectionListener } from './listeners/abstractConnectionListener.js';
 import { AbstractMessageListener } from './listeners/abstractMessageListener.js';
 import { ConnectionBroadcaster } from './listeners/connectionBroadcaster.js';
-import { Client } from './client.js';
 import { ResponseBroadcasterFactory } from './listeners/responseBroadcasterFactory.js';
 
 export class ClientRouter implements Client {

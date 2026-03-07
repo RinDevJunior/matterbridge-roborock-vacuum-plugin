@@ -1,10 +1,10 @@
-import { describe, it, expect, vi } from 'vitest';
 import { AnsiLogger } from 'matterbridge/logger';
+import { describe, expect, it, vi } from 'vitest';
+
+import type { UserData } from '../../../roborockCommunication/models/index.js';
 import { MessageContext, Protocol } from '../../../roborockCommunication/models/index.js';
 import { MessageDeserializer } from '../../../roborockCommunication/protocol/deserializers/messageDeserializer.js';
-
 import { asType, mkUser } from '../../helpers/testUtils.js';
-import type { UserData } from '../../../roborockCommunication/models/index.js';
 
 function buildHeaderBuffer(version: string, seq: number, nonce: number, timestamp: number, protocol: number): Buffer {
 	const buf = Buffer.alloc(3 + 4 + 4 + 4 + 2);

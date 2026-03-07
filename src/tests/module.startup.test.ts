@@ -1,10 +1,11 @@
-import { describe, it, expect, vi } from 'vitest';
+import type { MatterbridgeEndpoint, PlatformMatterbridge } from 'matterbridge';
 import { AnsiLogger } from 'matterbridge/logger';
-import type { PlatformMatterbridge, MatterbridgeEndpoint } from 'matterbridge';
 import type { LocalStorage } from 'node-persist';
-import { RoborockMatterbridgePlatform } from '../module.js';
+import { describe, expect, it, vi } from 'vitest';
+
 import { AuthenticationConfiguration, RoborockPluginPlatformConfig } from '../model/RoborockPluginPlatformConfig.js';
-import { createMockLocalStorage, createMockLogger, asPartial, createMockMatterbridge } from './helpers/testUtils.js';
+import { RoborockMatterbridgePlatform } from '../module.js';
+import { asPartial, createMockLocalStorage, createMockLogger, createMockMatterbridge } from './helpers/testUtils.js';
 
 describe('RoborockMatterbridgePlatform - startup branches', () => {
 	it('onStart returns early when username is undefined', async () => {

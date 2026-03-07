@@ -1,10 +1,11 @@
-import { describe, it, expect } from 'vitest';
+import { describe, expect, it } from 'vitest';
+
 import {
 	ConfigurationError,
-	MissingConfigurationError,
 	InvalidConfigurationError,
-	MissingCredentialsError,
 	InvalidRegionError,
+	MissingConfigurationError,
+	MissingCredentialsError,
 } from '../../errors/ConfigurationError.js';
 
 describe('ConfigurationError', () => {

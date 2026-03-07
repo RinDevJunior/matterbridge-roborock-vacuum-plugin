@@ -1,6 +1,7 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { SimpleMessageListener } from '../../../../../roborockCommunication/routing/listeners/implementation/simpleMessageListener.js';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+
 import { HeaderMessage, Protocol, ResponseMessage } from '../../../../../roborockCommunication/models/index.js';
+import { SimpleMessageListener } from '../../../../../roborockCommunication/routing/listeners/implementation/simpleMessageListener.js';
 
 describe('SimpleMessageListener', () => {
 	let listener: SimpleMessageListener;

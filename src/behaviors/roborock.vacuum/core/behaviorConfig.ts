@@ -1,15 +1,15 @@
-import { ModeHandlerRegistry } from './modeHandlerRegistry.js';
-import { CleaningModeHandler } from '../handlers/cleaningModeHandler.js';
-import { GoVacationHandler } from '../handlers/goVacationHandler.js';
-import { DefaultCleanModeHandler } from '../handlers/defaultCleanModeHandler.js';
-import { PresetCleanModeHandler } from '../handlers/presetCleanModeHandler.js';
-import { CustomCleanModeHandler } from '../handlers/customCleanModeHandler.js';
-import { SmartPlanHandler } from '../handlers/smartPlanHandler.js';
-import { CleanModeSetting } from './CleanModeSetting.js';
-import { CleanModeDisplayLabel, CleanModeLabelInfo, getModeDisplayMap, getModeSettingsMap } from './cleanModeConfig.js';
-import { baseRunModeConfigs, RunModeConfig } from './runModeConfig.js';
-import { getAllModesForDevice, hasSmartPlan } from './deviceCapabilityRegistry.js';
 import { DeviceModel } from '../../../roborockCommunication/models/index.js';
+import { CleaningModeHandler } from '../handlers/cleaningModeHandler.js';
+import { CustomCleanModeHandler } from '../handlers/customCleanModeHandler.js';
+import { DefaultCleanModeHandler } from '../handlers/defaultCleanModeHandler.js';
+import { GoVacationHandler } from '../handlers/goVacationHandler.js';
+import { PresetCleanModeHandler } from '../handlers/presetCleanModeHandler.js';
+import { SmartPlanHandler } from '../handlers/smartPlanHandler.js';
+import { CleanModeDisplayLabel, CleanModeLabelInfo, getModeDisplayMap, getModeSettingsMap } from './cleanModeConfig.js';
+import { CleanModeSetting } from './CleanModeSetting.js';
+import { getAllModesForDevice, hasSmartPlan } from './deviceCapabilityRegistry.js';
+import { ModeHandlerRegistry } from './modeHandlerRegistry.js';
+import { baseRunModeConfigs, RunModeConfig } from './runModeConfig.js';
 
 const goVacationEntry = {
 	[CleanModeLabelInfo[CleanModeDisplayLabel.GoVacation].mode]:

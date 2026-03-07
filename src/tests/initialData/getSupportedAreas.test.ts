@@ -1,10 +1,11 @@
-import { getSupportedAreas } from '../../initialData/getSupportedAreas.js';
-import { RoomMap, MapInfo, MapEntry } from '../../core/application/models/index.js';
-import { describe, it, expect, beforeEach, vi, test } from 'vitest';
-import type { RoomDto } from '../../roborockCommunication/models/index.js';
-import { makeLogger } from '../testUtils.js';
+import { beforeEach, describe, expect, it, test, vi } from 'vitest';
+
+import { MapEntry, MapInfo, RoomMap } from '../../core/application/models/index.js';
 import { HomeEntity } from '../../core/domain/entities/Home.js';
 import { RoomEntity } from '../../core/domain/entities/Room.js';
+import { getSupportedAreas } from '../../initialData/getSupportedAreas.js';
+import type { RoomDto } from '../../roborockCommunication/models/index.js';
+import { makeLogger } from '../testUtils.js';
 // import { debugStringify } from 'matterbridge/logger';
 
 const mockLogger = makeLogger();

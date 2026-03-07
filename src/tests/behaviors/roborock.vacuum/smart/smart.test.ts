@@ -1,9 +1,7 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { AnsiLogger } from 'matterbridge/logger';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+
 import { BehaviorDeviceGeneric, DeviceCommands } from '../../../../behaviors/BehaviorDeviceGeneric.js';
-import { RoborockService } from '../../../../services/roborockService.js';
-import { configureBehavior } from '../../../../share/behaviorFactory.js';
-import { DeviceModel } from '../../../../roborockCommunication/models/deviceModel.js';
 import {
 	CleanSequenceType,
 	MopRoute,
@@ -11,6 +9,9 @@ import {
 	VacuumSuctionPower,
 } from '../../../../behaviors/roborock.vacuum/enums/index.js';
 import { CleanModeSettings } from '../../../../model/RoborockPluginPlatformConfig.js';
+import { DeviceModel } from '../../../../roborockCommunication/models/deviceModel.js';
+import { RoborockService } from '../../../../services/roborockService.js';
+import { configureBehavior } from '../../../../share/behaviorFactory.js';
 import { asPartial, asType, createMockLogger } from '../../../testUtils.js';
 
 describe('setCommandHandlerSmart', () => {

@@ -1,7 +1,8 @@
-import { describe, it, expect } from 'vitest';
-import { state_to_matter_state, state_to_matter_operational_status } from '../../share/function.js';
-import { RvcRunMode, RvcOperationalState } from 'matterbridge/matter/clusters';
+import { RvcOperationalState, RvcRunMode } from 'matterbridge/matter/clusters';
+import { describe, expect, it } from 'vitest';
+
 import { OperationStatusCode } from '../../roborockCommunication/enums/index.js';
+import { state_to_matter_operational_status, state_to_matter_state } from '../../share/function.js';
 
 describe('share/function helpers', () => {
 	describe('state_to_matter_state', () => {

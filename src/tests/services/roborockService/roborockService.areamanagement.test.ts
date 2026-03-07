@@ -1,11 +1,12 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { RoborockService } from '../../../services/roborockService.js';
-import { RoomIndexMap } from '../../../core/application/models/index.js';
-import { createMockIotApi, createMockAuthApi, createMockLocalStorage, createMockLogger } from '../../testUtils.js';
-import { PlatformConfigManager as PlatformConfigManagerStatic } from '../../../platform/platformConfigManager.js';
 import type { AnsiLogger } from 'matterbridge/logger';
-import type { RoborockPluginPlatformConfig } from '../../../model/RoborockPluginPlatformConfig.js';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+
+import { RoomIndexMap } from '../../../core/application/models/index.js';
 import { SegmentInfo } from '../../../initialData/getSupportedAreas.js';
+import type { RoborockPluginPlatformConfig } from '../../../model/RoborockPluginPlatformConfig.js';
+import { PlatformConfigManager as PlatformConfigManagerStatic } from '../../../platform/platformConfigManager.js';
+import { RoborockService } from '../../../services/roborockService.js';
+import { createMockAuthApi, createMockIotApi, createMockLocalStorage, createMockLogger } from '../../testUtils.js';
 
 describe('RoborockService - Area Management', () => {
 	let roborockService: RoborockService;

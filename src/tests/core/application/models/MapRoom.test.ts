@@ -1,4 +1,5 @@
-import { describe, it, expect } from 'vitest';
+import { describe, expect, it } from 'vitest';
+
 import { MapRoom } from '../../../../core/application/models/MapRoom.js';
 import type { MapRoomDto } from '../../../../roborockCommunication/models/home/index.js';
 

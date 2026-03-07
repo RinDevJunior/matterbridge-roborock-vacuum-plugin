@@ -1,9 +1,10 @@
 import { AnsiLogger } from 'matterbridge/logger';
-import ClientManager from './clientManager.js';
-import type { DeviceNotifyCallback } from '../types/index.js';
-import { DeviceConnectionError, DeviceInitializationError, DeviceError } from '../errors/index.js';
+
 import { CONNECTION_RETRY_DELAY_MS, MAX_CONNECTION_ATTEMPTS } from '../constants/index.js';
-import { ClientRouter } from '../roborockCommunication/routing/clientRouter.js';
+import { DeviceConnectionError, DeviceError, DeviceInitializationError } from '../errors/index.js';
+import { PlatformConfigManager } from '../platform/platformConfigManager.js';
+import { ProtocolVersion } from '../roborockCommunication/enums/index.js';
+import { LocalNetworkUDPClient } from '../roborockCommunication/local/udpClient.js';
 import {
 	Device,
 	NetworkInfoDTO,
@@ -11,19 +12,19 @@ import {
 	RPC_Request_Segments,
 	UserData,
 } from '../roborockCommunication/models/index.js';
-import { MapResponseListener } from '../roborockCommunication/routing/listeners/implementation/mapResponseListener.js';
-import { AbstractUDPMessageListener } from '../roborockCommunication/routing/listeners/abstractUDPMessageListener.js';
-import { ProtocolVersion } from '../roborockCommunication/enums/index.js';
-import { SimpleMessageHandler } from '../roborockCommunication/routing/handlers/implementation/simpleMessageHandler.js';
-import { LocalNetworkUDPClient } from '../roborockCommunication/local/udpClient.js';
-import { Client } from '../roborockCommunication/routing/client.js';
-import { MessageRoutingService } from './messageRoutingService.js';
 import { MessageDispatcherFactory } from '../roborockCommunication/protocol/dispatcher/dispatcherFactory.js';
-import { SimpleMessageListener } from '../roborockCommunication/routing/listeners/implementation/simpleMessageListener.js';
+import { Client } from '../roborockCommunication/routing/client.js';
+import { ClientRouter } from '../roborockCommunication/routing/clientRouter.js';
+import { SimpleMessageHandler } from '../roborockCommunication/routing/handlers/implementation/simpleMessageHandler.js';
+import { AbstractUDPMessageListener } from '../roborockCommunication/routing/listeners/abstractUDPMessageListener.js';
 import { DeviceStatusListener } from '../roborockCommunication/routing/listeners/implementation/deviceStatusListener.js';
-import { PlatformConfigManager } from '../platform/platformConfigManager.js';
-import { EmailNotificationService } from './emailNotificationService.js';
 import { DisconnectNotificationListener } from '../roborockCommunication/routing/listeners/implementation/disconnectNotificationListener.js';
+import { MapResponseListener } from '../roborockCommunication/routing/listeners/implementation/mapResponseListener.js';
+import { SimpleMessageListener } from '../roborockCommunication/routing/listeners/implementation/simpleMessageListener.js';
+import type { DeviceNotifyCallback } from '../types/index.js';
+import ClientManager from './clientManager.js';
+import { EmailNotificationService } from './emailNotificationService.js';
+import { MessageRoutingService } from './messageRoutingService.js';
 
 /** Manages device connections (MQTT and local network). */
 export class ConnectionService {

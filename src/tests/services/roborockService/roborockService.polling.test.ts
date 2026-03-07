@@ -1,11 +1,12 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { RoborockService } from '../../../services/roborockService.js';
+import type { AnsiLogger } from 'matterbridge/logger';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+
+import type { RoborockPluginPlatformConfig } from '../../../model/RoborockPluginPlatformConfig.js';
+import { PlatformConfigManager as PlatformConfigManagerStatic } from '../../../platform/platformConfigManager.js';
 import { Device } from '../../../roborockCommunication/models/index.js';
+import { RoborockService } from '../../../services/roborockService.js';
 import { localStorageMock } from '../../testData/localStorageMock.js';
 import { createMockLocalStorage, createMockLogger } from '../../testUtils.js';
-import { PlatformConfigManager as PlatformConfigManagerStatic } from '../../../platform/platformConfigManager.js';
-import type { RoborockPluginPlatformConfig } from '../../../model/RoborockPluginPlatformConfig.js';
-import type { AnsiLogger } from 'matterbridge/logger';
 
 describe('RoborockService - Polling', () => {
 	let roborockService: RoborockService;

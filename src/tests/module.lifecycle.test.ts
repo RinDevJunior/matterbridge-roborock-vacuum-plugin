@@ -1,17 +1,18 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { PlatformMatterbridge } from 'matterbridge';
 import { AnsiLogger, LogLevel } from 'matterbridge/logger';
 import type { LocalStorage } from 'node-persist';
-import { PlatformMatterbridge } from 'matterbridge';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+
+import { RoborockPluginPlatformConfig } from '../model/RoborockPluginPlatformConfig.js';
 import { RoborockMatterbridgePlatform } from '../module.js';
 import initializePlugin from '../module.js';
-import type { Device, DeviceSpecs } from '../roborockCommunication/models/index.js';
-import { DeviceModel } from '../roborockCommunication/models/deviceModel.js';
-import { makeDeviceFixture } from './helpers/fixtures.js';
-import { RoborockPluginPlatformConfig } from '../model/RoborockPluginPlatformConfig.js';
-import { RoborockService } from '../services/roborockService.js';
-import { createMockLogger, createMockLocalStorage } from './helpers/testUtils.js';
-import { asPartial } from './testUtils.js';
 import type { PlatformRunner } from '../platformRunner.js';
+import { DeviceModel } from '../roborockCommunication/models/deviceModel.js';
+import type { Device, DeviceSpecs } from '../roborockCommunication/models/index.js';
+import { RoborockService } from '../services/roborockService.js';
+import { makeDeviceFixture } from './helpers/fixtures.js';
+import { createMockLocalStorage, createMockLogger } from './helpers/testUtils.js';
+import { asPartial } from './testUtils.js';
 
 function createMockMatterbridge(overrides: Partial<PlatformMatterbridge> = {}): PlatformMatterbridge {
 	return {

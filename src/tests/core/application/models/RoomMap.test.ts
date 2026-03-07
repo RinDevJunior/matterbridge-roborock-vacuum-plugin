@@ -1,12 +1,13 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { RoomMap } from '../../../../core/application/models/RoomMap.js';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+
 import { MapInfo } from '../../../../core/application/models/MapInfo.js';
-import { createMockLogger, asPartial, createMockRoborockService } from '../../../helpers/testUtils.js';
-import type { RoomMapping } from '../../../../core/application/models/RoomMapping.js';
 import type { MapInfoPlatformContext, MapReference } from '../../../../core/application/models/RoomMap.js';
+import { RoomMap } from '../../../../core/application/models/RoomMap.js';
+import type { RoomMapping } from '../../../../core/application/models/RoomMapping.js';
 import type { Device, DeviceInformation } from '../../../../roborockCommunication/models/device.js';
 import type { Home } from '../../../../roborockCommunication/models/home.js';
 import type { RoborockService } from '../../../../services/roborockService.js';
+import { asPartial, createMockLogger, createMockRoborockService } from '../../../helpers/testUtils.js';
 
 function createRoomMapping(id: number, iot_map_id: number, overrides: Partial<RoomMapping> = {}): RoomMapping {
 	return {

@@ -1,17 +1,18 @@
 import { AnsiLogger } from 'matterbridge/logger';
-import { vi, describe, beforeEach, it, expect } from 'vitest';
-import { TwoFactorAuthStrategy } from '../../../services/authentication/TwoFactorAuthStrategy.js';
-import { AuthenticationService } from '../../../services/authenticationService.js';
-import { UserDataRepository } from '../../../services/authentication/UserDataRepository.js';
-import { VerificationCodeService } from '../../../services/authentication/VerificationCodeService.js';
-import { PlatformConfigManager } from '../../../platform/platformConfigManager.js';
-import { UserData } from '../../../roborockCommunication/models/index.js';
-import { AuthContext } from '../../../services/authentication/AuthContext.js';
-import { createMockLogger, asType, asPartial } from '../../testUtils.js';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+
 import {
 	AuthenticationConfiguration,
 	RoborockPluginPlatformConfig,
 } from '../../../model/RoborockPluginPlatformConfig.js';
+import { PlatformConfigManager } from '../../../platform/platformConfigManager.js';
+import { UserData } from '../../../roborockCommunication/models/index.js';
+import { AuthContext } from '../../../services/authentication/AuthContext.js';
+import { TwoFactorAuthStrategy } from '../../../services/authentication/TwoFactorAuthStrategy.js';
+import { UserDataRepository } from '../../../services/authentication/UserDataRepository.js';
+import { VerificationCodeService } from '../../../services/authentication/VerificationCodeService.js';
+import { AuthenticationService } from '../../../services/authenticationService.js';
+import { asPartial, asType, createMockLogger } from '../../testUtils.js';
 
 describe('TwoFactorAuthStrategy', () => {
 	let strategy: TwoFactorAuthStrategy;

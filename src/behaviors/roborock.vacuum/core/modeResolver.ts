@@ -1,6 +1,6 @@
 import { CleanSequenceType, MopWaterFlow, VacuumSuctionPower } from '../enums/index.js';
+import { CleanModeConfig, CleanModeDisplayLabel, CleanModeLabelInfo } from './cleanModeConfig.js';
 import { CleanModeSetting } from './CleanModeSetting.js';
-import { CleanModeDisplayLabel, CleanModeLabelInfo, CleanModeConfig } from './cleanModeConfig.js';
 
 enum BehaviorType {
 	Default = 'default',

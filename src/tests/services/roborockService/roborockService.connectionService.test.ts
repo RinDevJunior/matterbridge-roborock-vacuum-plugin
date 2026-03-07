@@ -1,11 +1,12 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import type { AnsiLogger } from 'matterbridge/logger';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+
+import type { RoborockPluginPlatformConfig } from '../../../model/RoborockPluginPlatformConfig.js';
+import { PlatformConfigManager as PlatformConfigManagerStatic } from '../../../platform/platformConfigManager.js';
 import { RoborockService } from '../../../services/roborockService.js';
+import { makeDeviceFixture } from '../../helpers/fixtures.js';
 import { makeLogger } from '../../testUtils.js';
 import { createMockLocalStorage } from '../../testUtils.js';
-import type { RoborockPluginPlatformConfig } from '../../../model/RoborockPluginPlatformConfig.js';
-import type { AnsiLogger } from 'matterbridge/logger';
-import { PlatformConfigManager as PlatformConfigManagerStatic } from '../../../platform/platformConfigManager.js';
-import { makeDeviceFixture } from '../../helpers/fixtures.js';
 
 describe('initializeMessageClientForLocal', () => {
 	let service: RoborockService;

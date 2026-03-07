@@ -1,16 +1,17 @@
-import { describe, it, expect } from 'vitest';
-import {
-	ModeResolver,
-	createDefaultModeResolver,
-	createSmartModeResolver,
-} from '../../../../behaviors/roborock.vacuum/core/modeResolver.js';
-import { CleanModeSetting } from '../../../../behaviors/roborock.vacuum/core/CleanModeSetting.js';
+import { describe, expect, it } from 'vitest';
+
 import {
 	baseCleanModeConfigs,
-	smartCleanModeConfigs,
 	CleanModeDisplayLabel,
 	CleanModeLabelInfo,
+	smartCleanModeConfigs,
 } from '../../../../behaviors/roborock.vacuum/core/cleanModeConfig.js';
+import { CleanModeSetting } from '../../../../behaviors/roborock.vacuum/core/CleanModeSetting.js';
+import {
+	createDefaultModeResolver,
+	createSmartModeResolver,
+	ModeResolver,
+} from '../../../../behaviors/roborock.vacuum/core/modeResolver.js';
 import {
 	CleanSequenceType,
 	MopRoute,

@@ -1,12 +1,13 @@
 import { AnsiLogger, debugStringify } from 'matterbridge/logger';
-import { AbstractMessageDispatcher } from './abstractMessageDispatcher.js';
-import { CloudMessageResult, DeviceStatus, NetworkInfo, RequestMessage } from '../../models/index.js';
-import { Client } from '../../routing/client.js';
-import { MapInfo } from '../../../core/application/models/index.js';
-import { MultipleMapDto, RawRoomMappingData } from '../../models/home/index.js';
-import { MapRoomResponse } from '../../../types/index.js';
+
 import { CleanModeSetting } from '../../../behaviors/roborock.vacuum/core/CleanModeSetting.js';
 import { MopRoute, MopWaterFlow, VacuumSuctionPower } from '../../../behaviors/roborock.vacuum/enums/index.js';
+import { MapInfo } from '../../../core/application/models/index.js';
+import { MapRoomResponse } from '../../../types/index.js';
+import { MultipleMapDto, RawRoomMappingData } from '../../models/home/index.js';
+import { CloudMessageResult, DeviceStatus, NetworkInfo, RequestMessage } from '../../models/index.js';
+import { Client } from '../../routing/client.js';
+import { AbstractMessageDispatcher } from './abstractMessageDispatcher.js';
 
 export class V10MessageDispatcher implements AbstractMessageDispatcher {
 	public dispatcherName = 'V10MessageDispatcher';

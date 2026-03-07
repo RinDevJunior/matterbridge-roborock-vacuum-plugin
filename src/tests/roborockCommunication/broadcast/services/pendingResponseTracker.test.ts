@@ -1,13 +1,14 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { V1PendingResponseTracker } from '../../../../roborockCommunication/routing/services/v1PendingResponseTracker.js';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+
 import {
+	DpsPayload,
 	HeaderMessage,
 	Protocol,
-	ResponseMessage,
-	ResponseBody,
 	RequestMessage,
-	DpsPayload,
+	ResponseBody,
+	ResponseMessage,
 } from '../../../../roborockCommunication/models/index.js';
+import { V1PendingResponseTracker } from '../../../../roborockCommunication/routing/services/v1PendingResponseTracker.js';
 import { makeLogger } from '../../../testUtils.js';
 
 describe('PendingResponseTracker', () => {

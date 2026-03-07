@@ -1,11 +1,11 @@
-import { DeviceModel } from '../roborockCommunication/models/index.js';
 import { baseCleanModeConfigs } from '../behaviors/roborock.vacuum/core/cleanModeConfig.js';
+import { getAllModesForDevice, hasSmartPlan } from '../behaviors/roborock.vacuum/core/deviceCapabilityRegistry.js';
 import {
 	createDefaultModeResolver,
 	createSmartModeResolver,
 	ModeResolver,
 } from '../behaviors/roborock.vacuum/core/modeResolver.js';
-import { getAllModesForDevice, hasSmartPlan } from '../behaviors/roborock.vacuum/core/deviceCapabilityRegistry.js';
+import { DeviceModel } from '../roborockCommunication/models/index.js';
 
 const defaultModeResolver = createDefaultModeResolver(baseCleanModeConfigs);
 const resolverCache = new Map<string, ModeResolver>();

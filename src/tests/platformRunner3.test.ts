@@ -1,24 +1,25 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { PlatformRunner } from '../platformRunner.js';
-import { NotifyMessageTypes } from '../types/notifyMessageTypes.js';
+import { RvcOperationalState, RvcRunMode } from 'matterbridge/matter/clusters';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+
+import { CleanModeSetting } from '../behaviors/roborock.vacuum/core/CleanModeSetting.js';
+import { CleanSequenceType } from '../behaviors/roborock.vacuum/enums/CleanSequenceType.js';
+import { MapInfo } from '../core/application/models/index.js';
+import { HomeEntity } from '../core/domain/entities/Home.js';
+import type { DockStationStatus } from '../model/DockStationStatus.js';
 import { RoborockMatterbridgePlatform } from '../module.js';
+import { PlatformRunner } from '../platformRunner.js';
+import { OperationStatusCode } from '../roborockCommunication/enums/index.js';
+import { Device, DeviceModel, DeviceSpecs } from '../roborockCommunication/models/index.js';
+import type { MessagePayload } from '../types/MessagePayloads.js';
+import { NotifyMessageTypes } from '../types/notifyMessageTypes.js';
 import { RoborockVacuumCleaner } from '../types/roborockVacuumCleaner.js';
-import { Device, DeviceSpecs, DeviceModel } from '../roborockCommunication/models/index.js';
 import {
 	asPartial,
-	createMockLogger,
-	createMockDeviceRegistry,
-	createMockRoborockService,
 	createMockConfigManager,
+	createMockDeviceRegistry,
+	createMockLogger,
+	createMockRoborockService,
 } from './testUtils.js';
-import { RvcOperationalState, RvcRunMode } from 'matterbridge/matter/clusters';
-import { OperationStatusCode } from '../roborockCommunication/enums/index.js';
-import type { DockStationStatus } from '../model/DockStationStatus.js';
-import { CleanModeSetting } from '../behaviors/roborock.vacuum/core/CleanModeSetting.js';
-import type { MessagePayload } from '../types/MessagePayloads.js';
-import { CleanSequenceType } from '../behaviors/roborock.vacuum/enums/CleanSequenceType.js';
-import { HomeEntity } from '../core/domain/entities/Home.js';
-import { MapInfo } from '../core/application/models/index.js';
 
 vi.mock('../runtimes/handleHomeDataMessage.js', () => ({
 	updateFromHomeData: vi.fn(),

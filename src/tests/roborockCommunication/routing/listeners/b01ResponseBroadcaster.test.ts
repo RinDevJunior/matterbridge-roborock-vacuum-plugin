@@ -1,10 +1,11 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { AnsiLogger } from 'matterbridge/logger';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+
+import { HeaderMessage, ResponseBody, ResponseMessage } from '../../../../roborockCommunication/models/index.js';
+import { AbstractMessageListener } from '../../../../roborockCommunication/routing/listeners/abstractMessageListener.js';
 import { B01ResponseBroadcaster } from '../../../../roborockCommunication/routing/listeners/b01ResponseBroadcaster.js';
 import { B01PendingResponseTracker } from '../../../../roborockCommunication/routing/services/b01PendingResponseTracker.js';
-import { HeaderMessage, ResponseBody, ResponseMessage } from '../../../../roborockCommunication/models/index.js';
-import { createMockLogger, asType } from '../../../helpers/testUtils.js';
-import { AnsiLogger } from 'matterbridge/logger';
-import { AbstractMessageListener } from '../../../../roborockCommunication/routing/listeners/abstractMessageListener.js';
+import { asType, createMockLogger } from '../../../helpers/testUtils.js';
 
 function makeResponse(duid = 'test-duid'): ResponseMessage {
 	const header = new HeaderMessage('B01', 1, 0, 101, 102);

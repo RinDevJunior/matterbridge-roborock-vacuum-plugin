@@ -1,4 +1,5 @@
 import { RvcOperationalState } from 'matterbridge/matter/clusters';
+
 import { RoborockMatterbridgePlatform } from '../module.js';
 import { RoborockVacuumCleaner } from '../types/roborockVacuumCleaner.js';
 

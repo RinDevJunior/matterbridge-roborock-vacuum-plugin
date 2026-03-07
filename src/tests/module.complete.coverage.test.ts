@@ -1,20 +1,21 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { AnsiLogger, LogLevel } from 'matterbridge/logger';
 import { PlatformMatterbridge } from 'matterbridge';
-import { RoborockMatterbridgePlatform } from '../module.js';
-import { DeviceSpecs, RawRoomMappingData, type Device, type RoomDto } from '../roborockCommunication/models/index.js';
+import { AnsiLogger, LogLevel } from 'matterbridge/logger';
+import type { LocalStorage } from 'node-persist';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+
 import {
 	AdvancedFeatureConfiguration,
 	AdvancedFeatureSetting,
 	RoborockPluginPlatformConfig,
 } from '../model/RoborockPluginPlatformConfig.js';
-import type { LocalStorage } from 'node-persist';
-import type { RoborockService } from '../services/roborockService.js';
+import { RoborockMatterbridgePlatform } from '../module.js';
 import type { PlatformRunner } from '../platformRunner.js';
-import { DeviceModel } from '../roborockCommunication/models/deviceModel.js';
 import { DeviceCategory } from '../roborockCommunication/models/deviceCategory.js';
-import { asPartial } from './helpers/testUtils.js';
+import { DeviceModel } from '../roborockCommunication/models/deviceModel.js';
+import { type Device, DeviceSpecs, RawRoomMappingData, type RoomDto } from '../roborockCommunication/models/index.js';
+import type { RoborockService } from '../services/roborockService.js';
 import { RoborockVacuumCleaner } from '../types/roborockVacuumCleaner.js';
+import { asPartial } from './helpers/testUtils.js';
 
 vi.mock('../share/behaviorFactory.js', () => ({
 	configureBehavior: vi.fn().mockReturnValue({ handler: vi.fn() }),

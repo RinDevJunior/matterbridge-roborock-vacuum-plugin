@@ -1,6 +1,7 @@
 import { PowerSource } from 'matterbridge/matter/clusters';
+
+import { BATTERY_FULL, BATTERY_THRESHOLD_OK, BATTERY_THRESHOLD_WARNING } from '../constants/index.js';
 import { OperationStatusCode } from '../roborockCommunication/enums/index.js';
-import { BATTERY_THRESHOLD_OK, BATTERY_THRESHOLD_WARNING, BATTERY_FULL } from '../constants/index.js';
 
 /**
  * Determine battery charge level based on percentage.

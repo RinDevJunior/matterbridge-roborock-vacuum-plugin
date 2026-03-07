@@ -1,15 +1,16 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { RoborockVacuumCleaner } from '../types/roborockVacuumCleaner.js';
-import { ModeBase } from 'matterbridge/matter/clusters';
 import { AnsiLogger } from 'matterbridge/logger';
-import { BehaviorFactoryResult } from '../share/behaviorFactory.js';
-import { asPartial, asType } from './testUtils.js';
-import { PlatformConfigManager } from '../platform/platformConfigManager.js';
-import { PluginConfiguration, RoborockPluginPlatformConfig } from '../model/RoborockPluginPlatformConfig.js';
-import { HomeEntity } from '../core/domain/entities/Home.js';
+import { ModeBase } from 'matterbridge/matter/clusters';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+
 import { MapInfo } from '../core/application/models/MapInfo.js';
 import { RoomMap } from '../core/application/models/RoomMap.js';
+import { HomeEntity } from '../core/domain/entities/Home.js';
+import { PluginConfiguration, RoborockPluginPlatformConfig } from '../model/RoborockPluginPlatformConfig.js';
+import { PlatformConfigManager } from '../platform/platformConfigManager.js';
 import { RoborockService } from '../services/roborockService.js';
+import { BehaviorFactoryResult } from '../share/behaviorFactory.js';
+import { RoborockVacuumCleaner } from '../types/roborockVacuumCleaner.js';
+import { asPartial, asType } from './testUtils.js';
 
 function createMockLogger(): AnsiLogger {
 	return asType<AnsiLogger>({

@@ -1,7 +1,7 @@
 import type { UserData } from '../../roborockCommunication/models/index.js';
-import type { IAuthStrategy } from './IAuthStrategy.js';
 import type { AuthContext } from './AuthContext.js';
 import { BaseAuthStrategy } from './BaseAuthStrategy.js';
+import type { IAuthStrategy } from './IAuthStrategy.js';
 
 /** Password authentication strategy with token caching. */
 export class PasswordAuthStrategy extends BaseAuthStrategy implements IAuthStrategy {

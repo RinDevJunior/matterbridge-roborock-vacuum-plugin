@@ -1,22 +1,23 @@
-import { vi, describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('axios-logger', () => ({
 	requestLogger: (request: unknown) => request,
 	responseLogger: () => undefined,
-	errorLogger: (error: unknown) => Promise.reject(error),
+	errorLogger: (error: Error) => Promise.reject(error),
 }));
 
 import axios, { AxiosStatic } from 'axios';
-import { AnsiLogger } from 'matterbridge/logger';
 import MockAdapter from 'axios-mock-adapter';
-import { RoborockIoTApi } from '../../../roborockCommunication/api/iotClient.js';
-import { UserData } from '../../../roborockCommunication/models/userData.js';
-import { asType, asPartial, createMockLogger } from '../../helpers/testUtils.js';
-import { Home } from '../../../roborockCommunication/models/home.js';
-import { DeviceModel } from '../../../roborockCommunication/models/deviceModel.js';
-import { Product } from '../../../roborockCommunication/models/product.js';
-import { Device } from '../../../roborockCommunication/models/index.js';
+import { AnsiLogger } from 'matterbridge/logger';
+
 import { RoomEntity } from '../../../core/domain/entities/Room.js';
+import { RoborockIoTApi } from '../../../roborockCommunication/api/iotClient.js';
+import { DeviceModel } from '../../../roborockCommunication/models/deviceModel.js';
+import { Home } from '../../../roborockCommunication/models/home.js';
+import { Device } from '../../../roborockCommunication/models/index.js';
+import { Product } from '../../../roborockCommunication/models/product.js';
+import { UserData } from '../../../roborockCommunication/models/userData.js';
+import { asPartial, asType, createMockLogger } from '../../helpers/testUtils.js';
 
 const makeUserData = () => ({ rriot: { r: { a: 'https://api.example' }, u: 'uid', s: 's', h: 'hmac' } });
 

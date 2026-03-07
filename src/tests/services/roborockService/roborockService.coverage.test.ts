@@ -1,23 +1,24 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { AnsiLogger } from 'matterbridge/logger';
 import { ServiceArea } from 'matterbridge/matter/clusters';
-import { RoborockService } from '../../../services/roborockService.js';
-import { ServiceContainer } from '../../../services/serviceContainer.js';
-import { AuthenticationCoordinator } from '../../../services/authentication/AuthenticationCoordinator.js';
-import { DeviceManagementService } from '../../../services/deviceManagementService.js';
-import { AreaManagementService } from '../../../services/areaManagementService.js';
-import { MessageRoutingService } from '../../../services/messageRoutingService.js';
-import { PollingService } from '../../../services/pollingService.js';
-import { ConnectionService } from '../../../services/connectionService.js';
-import { Device, UserData, Scene, RawRoomMappingData, Home } from '../../../roborockCommunication/models/index.js';
-import { CleanModeSetting } from '../../../behaviors/roborock.vacuum/core/CleanModeSetting.js';
-import { MapInfo, RoomIndexMap } from '../../../core/application/models/index.js';
-import { RequestMessage } from '../../../roborockCommunication/models/index.js';
-import { asPartial, asType } from '../../testUtils.js';
 import type { LocalStorage } from 'node-persist';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+
+import { CleanModeSetting } from '../../../behaviors/roborock.vacuum/core/CleanModeSetting.js';
+import { CleanSequenceType } from '../../../behaviors/roborock.vacuum/enums/CleanSequenceType.js';
+import { MapInfo, RoomIndexMap } from '../../../core/application/models/index.js';
 import type { PlatformConfigManager } from '../../../platform/platformConfigManager.js';
 import { RoborockIoTApi } from '../../../roborockCommunication/api/iotClient.js';
-import { CleanSequenceType } from '../../../behaviors/roborock.vacuum/enums/CleanSequenceType.js';
+import { Device, Home, RawRoomMappingData, Scene, UserData } from '../../../roborockCommunication/models/index.js';
+import { RequestMessage } from '../../../roborockCommunication/models/index.js';
+import { AreaManagementService } from '../../../services/areaManagementService.js';
+import { AuthenticationCoordinator } from '../../../services/authentication/AuthenticationCoordinator.js';
+import { ConnectionService } from '../../../services/connectionService.js';
+import { DeviceManagementService } from '../../../services/deviceManagementService.js';
+import { MessageRoutingService } from '../../../services/messageRoutingService.js';
+import { PollingService } from '../../../services/pollingService.js';
+import { RoborockService } from '../../../services/roborockService.js';
+import { ServiceContainer } from '../../../services/serviceContainer.js';
+import { asPartial, asType } from '../../testUtils.js';
 
 describe('RoborockService - Complete Coverage', () => {
 	let service: RoborockService;

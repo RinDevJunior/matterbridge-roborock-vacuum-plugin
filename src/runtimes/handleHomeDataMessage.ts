@@ -1,10 +1,11 @@
-import { getVacuumProperty } from '../share/helper.js';
-import { RoborockMatterbridgePlatform } from '../module.js';
 import { debugStringify } from 'matterbridge/logger';
-import { Device, Home } from '../roborockCommunication/models/index.js';
-import { NotifyMessageTypes } from '../types/notifyMessageTypes.js';
-import { DockErrorCode } from '../roborockCommunication/enums/vacuumAndDockErrorCode.js';
+
 import { CleanSequenceType } from '../behaviors/roborock.vacuum/enums/CleanSequenceType.js';
+import { RoborockMatterbridgePlatform } from '../module.js';
+import { DockErrorCode } from '../roborockCommunication/enums/vacuumAndDockErrorCode.js';
+import { Device, Home } from '../roborockCommunication/models/index.js';
+import { getVacuumProperty } from '../share/helper.js';
+import { NotifyMessageTypes } from '../types/notifyMessageTypes.js';
 
 /**
  * Update robot states from home data polling response.

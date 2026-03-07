@@ -1,12 +1,13 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import type { PlatformMatterbridge } from 'matterbridge';
 import type { LocalStorage } from 'node-persist';
-import { RoborockMatterbridgePlatform } from '../module.js';
-import { asPartial, createMockLogger, createMockMatterbridge, createMockLocalStorage } from './helpers/testUtils.js';
-import type { RoborockService } from '../services/roborockService.js';
-import type { PlatformRunner } from '../platformRunner.js';
-import type { BurstPollingManager } from '../platform/burstPollingManager.js';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+
 import type { RoborockPluginPlatformConfig } from '../model/RoborockPluginPlatformConfig.js';
+import { RoborockMatterbridgePlatform } from '../module.js';
+import type { BurstPollingManager } from '../platform/burstPollingManager.js';
+import type { PlatformRunner } from '../platformRunner.js';
+import type { RoborockService } from '../services/roborockService.js';
+import { asPartial, createMockLocalStorage, createMockLogger, createMockMatterbridge } from './helpers/testUtils.js';
 
 function createMockConfig(overrides: Partial<RoborockPluginPlatformConfig> = {}): RoborockPluginPlatformConfig {
 	return {

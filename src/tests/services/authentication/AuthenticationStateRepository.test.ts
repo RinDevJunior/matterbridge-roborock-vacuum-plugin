@@ -1,7 +1,8 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { AuthenticationStateRepository } from '../../../services/authentication/AuthenticationStateRepository.js';
-import { createMockLocalStorage, asPartial } from '../../helpers/testUtils.js';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+
 import type { AuthenticateFlowState } from '../../../roborockCommunication/models/index.js';
+import { AuthenticationStateRepository } from '../../../services/authentication/AuthenticationStateRepository.js';
+import { asPartial, createMockLocalStorage } from '../../helpers/testUtils.js';
 
 describe('AuthenticationStateRepository', () => {
 	let persist: ReturnType<typeof createMockLocalStorage>;

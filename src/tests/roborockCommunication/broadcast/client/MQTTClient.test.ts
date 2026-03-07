@@ -1,12 +1,13 @@
-import mqtt, { ErrorWithReasonCode, IConnackPacket, MqttClient as MqttLibClient } from 'mqtt';
-import { vi, describe, it, expect, beforeEach, afterEach, afterAll } from 'vitest';
 import { AnsiLogger } from 'matterbridge/logger';
-import { asPartial, asType, createMockLogger } from '../../../helpers/testUtils.js';
+import mqtt, { ErrorWithReasonCode, IConnackPacket, MqttClient as MqttLibClient } from 'mqtt';
+import { afterAll, afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+
 import { MessageContext, RequestMessage } from '../../../../roborockCommunication/models/index.js';
 import { MQTTClient } from '../../../../roborockCommunication/mqtt/mqttClient.js';
-import { V1PendingResponseTracker } from '../../../../roborockCommunication/routing/services/v1PendingResponseTracker.js';
 import { ConnectionBroadcaster } from '../../../../roborockCommunication/routing/listeners/connectionBroadcaster.js';
 import { V1ResponseBroadcaster } from '../../../../roborockCommunication/routing/listeners/v1ResponseBroadcaster.js';
+import { V1PendingResponseTracker } from '../../../../roborockCommunication/routing/services/v1PendingResponseTracker.js';
+import { asPartial, asType, createMockLogger } from '../../../helpers/testUtils.js';
 
 function makeUserdata() {
 	return asPartial({ rriot: { r: { m: 'mqtt://broker.example' }, u: 'testuser', k: 'key123', s: 'secret' } });
@@ -733,7 +734,7 @@ describe('MQTTClient', () => {
 	it('onMessage should handle non-Error objects', async () => {
 		const mqttClient = createMQTTClient();
 		deserializer.deserialize.mockImplementation(() => {
-			throw 'string error';
+			throw Error('string error');
 		});
 		await mqttClient['onMessage']('topic/duid', Buffer.from('msg'));
 		expect(logger.error).toHaveBeenCalledWith(expect.stringContaining('unable to process message'));

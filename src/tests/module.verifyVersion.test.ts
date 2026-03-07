@@ -1,5 +1,6 @@
-import { describe, it, expect } from 'vitest';
 import { AnsiLogger } from 'matterbridge/logger';
+import { describe, expect, it } from 'vitest';
+
 import { RoborockMatterbridgePlatform } from '../module.js';
 import { createMockLogger } from './helpers/testUtils.js';
 

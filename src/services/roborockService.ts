@@ -1,18 +1,15 @@
 import { AnsiLogger } from 'matterbridge/logger';
 import { ServiceArea } from 'matterbridge/matter/clusters';
 import { LocalStorage } from 'node-persist';
-import { DeviceNotifyCallback, Factory } from '../types/index.js';
-import {
-	ServiceContainer,
-	ServiceContainerConfig,
-	DeviceManagementService,
-	AreaManagementService,
-	MessageRoutingService,
-	PollingService,
-	ConnectionService,
-} from '../services/index.js';
-import { AuthenticationCoordinator } from './authentication/AuthenticationCoordinator.js';
+
+import { CleanModeSetting } from '../behaviors/roborock.vacuum/core/CleanModeSetting.js';
+import { SCENE_AREA_ID_MIN } from '../constants/index.js';
+import { MapInfo, RoomIndexMap } from '../core/application/models/index.js';
+import { AuthenticationResponse } from '../model/AuthenticationResponse.js';
+import { CleanCommand } from '../model/CleanCommand.js';
+import { PlatformConfigManager } from '../platform/platformConfigManager.js';
 import { RoborockAuthenticateApi } from '../roborockCommunication/api/authClient.js';
+import { RoborockIoTApi } from '../roborockCommunication/api/iotClient.js';
 import {
 	Device,
 	Home,
@@ -21,14 +18,18 @@ import {
 	Scene,
 	UserData,
 } from '../roborockCommunication/models/index.js';
-import { RoborockIoTApi } from '../roborockCommunication/api/iotClient.js';
-import { PlatformConfigManager } from '../platform/platformConfigManager.js';
-import { MapInfo, RoomIndexMap } from '../core/application/models/index.js';
-import { CleanModeSetting } from '../behaviors/roborock.vacuum/core/CleanModeSetting.js';
-import { AuthenticationResponse } from '../model/AuthenticationResponse.js';
+import {
+	AreaManagementService,
+	ConnectionService,
+	DeviceManagementService,
+	MessageRoutingService,
+	PollingService,
+	ServiceContainer,
+	ServiceContainerConfig,
+} from '../services/index.js';
+import { DeviceNotifyCallback, Factory } from '../types/index.js';
 import { WssSendSnackbarMessage } from '../types/WssSendSnackbarMessage.js';
-import { CleanCommand } from '../model/CleanCommand.js';
-import { SCENE_AREA_ID_MIN } from '../constants/index.js';
+import { AuthenticationCoordinator } from './authentication/AuthenticationCoordinator.js';
 
 export interface RoborockServiceConfig {
 	authenticateApiFactory?: (logger: AnsiLogger, baseUrl: string) => RoborockAuthenticateApi;

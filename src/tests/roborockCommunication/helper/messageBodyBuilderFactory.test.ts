@@ -1,4 +1,5 @@
-import { describe, it, expect } from 'vitest';
+import { describe, expect, it } from 'vitest';
+
 import { ProtocolVersion } from '../../../roborockCommunication/enums/index.js';
 import { MessageContext, RequestMessage } from '../../../roborockCommunication/models/index.js';
 import { MessageBodyBuilderFactory } from '../../../roborockCommunication/protocol/builders/messageBodyBuilderFactory.js';

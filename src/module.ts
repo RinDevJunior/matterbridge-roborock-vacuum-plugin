@@ -1,26 +1,27 @@
-import { PlatformMatterbridge, MatterbridgeDynamicPlatform, PlatformConfig } from 'matterbridge';
-import NodePersist from 'node-persist';
 import Path from 'node:path';
+
+import { MatterbridgeDynamicPlatform, PlatformConfig, PlatformMatterbridge } from 'matterbridge';
 import { AnsiLogger, LogLevel } from 'matterbridge/logger';
-import { RoborockService } from './services/roborockService.js';
-import { PLUGIN_NAME } from './settings.js';
-import { PlatformRunner } from './platformRunner.js';
-import { FilterLogger } from './share/filterLogger.js';
+import NodePersist from 'node-persist';
+
 import {
 	DEFAULT_REFRESH_INTERVAL_SECONDS,
 	REFRESH_INTERVAL_BUFFER_MS,
 	UNREGISTER_DEVICES_DELAY_MS,
 } from './constants/index.js';
-
+import { RoborockPluginPlatformConfig } from './model/RoborockPluginPlatformConfig.js';
+import { DeviceConfigurator } from './platform/deviceConfigurator.js';
+import { DeviceDiscovery } from './platform/deviceDiscovery.js';
 // Platform layer imports
 import { DeviceRegistry } from './platform/deviceRegistry.js';
 import { PlatformConfigManager } from './platform/platformConfigManager.js';
-import { DeviceDiscovery } from './platform/deviceDiscovery.js';
-import { DeviceConfigurator } from './platform/deviceConfigurator.js';
 import { PlatformState } from './platform/platformState.js';
-import { RoborockPluginPlatformConfig } from './model/RoborockPluginPlatformConfig.js';
-import { getWssSendSnackbarMessage, WssSendSnackbarMessage } from './types/WssSendSnackbarMessage.js';
+import { PlatformRunner } from './platformRunner.js';
+import { RoborockService } from './services/roborockService.js';
+import { PLUGIN_NAME } from './settings.js';
 import { checkDependencyVersions } from './share/dependency-check.js';
+import { FilterLogger } from './share/filterLogger.js';
+import { getWssSendSnackbarMessage, WssSendSnackbarMessage } from './types/WssSendSnackbarMessage.js';
 
 export default function initializePlugin(
 	matterbridge: PlatformMatterbridge,
@@ -170,7 +171,7 @@ export class RoborockMatterbridgePlatform extends MatterbridgeDynamicPlatform {
 					config.advancedFeature.settings.clearStorageOnStartup = false;
 					return this.onConfigChanged(config);
 				})
-				.catch((error) => {
+				.catch((error: unknown) => {
 					this.log.error(`Error clearing persistence storage: ${error}`);
 				});
 		}

@@ -1,6 +1,6 @@
 import { CleanModeSettings } from '../../../model/RoborockPluginPlatformConfig.js';
-import { MopRoute, MopWaterFlow, VacuumSuctionPower } from '../enums/index.js';
 import { CleanSequenceType } from '../enums/CleanSequenceType.js';
+import { MopRoute, MopWaterFlow, VacuumSuctionPower } from '../enums/index.js';
 import { CleanModeDisplayLabel } from './cleanModeConfig.js';
 import { CleanModeSetting } from './CleanModeSetting.js';
 

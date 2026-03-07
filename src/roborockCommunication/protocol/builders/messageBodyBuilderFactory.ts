@@ -1,8 +1,8 @@
 import { ProtocolVersion } from '../../enums/index.js';
 import { A01MessageBodyBuilder } from './A01MessageBodyBuilder.js';
+import { AbstractMessageBodyBuilder } from './abstractMessageBodyBuilder.js';
 import { B01MessageBodyBuilder } from './B01MessageBodyBuilder.js';
 import { L01MessageBodyBuilder } from './L01MessageBodyBuilder.js';
-import { AbstractMessageBodyBuilder } from './abstractMessageBodyBuilder.js';
 import { UnknownMessageBodyBuilder } from './UnknownMessageBodyBuilder.js';
 import { V01MessageBodyBuilder } from './V01MessageBodyBuilder.js';
 

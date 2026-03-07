@@ -1,23 +1,24 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { DeviceConfigurator } from '../../platform/deviceConfigurator.js';
 import type { MatterbridgeDynamicPlatform } from 'matterbridge';
 import { bridgedNode } from 'matterbridge';
 import type { AnsiLogger } from 'matterbridge/logger';
-import {
-	asPartial,
-	createMockLogger,
-	createMockConfigManager,
-	createMockDeviceRegistry,
-	createMockRoborockService,
-} from '../helpers/testUtils.js';
-import type { PlatformConfigManager } from '../../platform/platformConfigManager.js';
-import type { DeviceRegistry } from '../../platform/deviceRegistry.js';
-import type { PlatformRunner } from '../../platformRunner.js';
-import type { RoborockService } from '../../services/roborockService.js';
-import { DeviceInformation, DeviceModel, DeviceSpecs, type Device } from '../../roborockCommunication/models/index.js';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+
 import { createDefaultAdvancedFeature } from '../../model/RoborockPluginPlatformConfig.js';
+import { DeviceConfigurator } from '../../platform/deviceConfigurator.js';
+import type { DeviceRegistry } from '../../platform/deviceRegistry.js';
+import type { PlatformConfigManager } from '../../platform/platformConfigManager.js';
+import type { PlatformRunner } from '../../platformRunner.js';
+import { type Device, DeviceInformation, DeviceModel, DeviceSpecs } from '../../roborockCommunication/models/index.js';
+import type { RoborockService } from '../../services/roborockService.js';
 import { RoborockVacuumCleaner } from '../../types/roborockVacuumCleaner.js';
 import type { WssSendSnackbarMessage } from '../../types/WssSendSnackbarMessage.js';
+import {
+	asPartial,
+	createMockConfigManager,
+	createMockDeviceRegistry,
+	createMockLogger,
+	createMockRoborockService,
+} from '../helpers/testUtils.js';
 
 vi.mock('../../core/application/models/index.js', async (importOriginal) => {
 	const actual = await importOriginal<typeof import('../../core/application/models/index.js')>();

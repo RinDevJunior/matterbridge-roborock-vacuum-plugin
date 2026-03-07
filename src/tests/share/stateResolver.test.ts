@@ -1,8 +1,9 @@
-import { describe, it, expect } from 'vitest';
-import { resolveDeviceState } from '../../share/stateResolver.js';
-import { StatusChangeMessage } from '../../roborockCommunication/models/deviceStatus.js';
+import { RvcOperationalState, RvcRunMode } from 'matterbridge/matter/clusters';
+import { describe, expect, it } from 'vitest';
+
 import { OperationStatusCode } from '../../roborockCommunication/enums/index.js';
-import { RvcRunMode, RvcOperationalState } from 'matterbridge/matter/clusters';
+import { StatusChangeMessage } from '../../roborockCommunication/models/deviceStatus.js';
+import { resolveDeviceState } from '../../share/stateResolver.js';
 
 describe('resolveDeviceState - 56-row State Resolution Matrix', () => {
 	describe('Priority 0: Status Override Rules (Highest Priority)', () => {

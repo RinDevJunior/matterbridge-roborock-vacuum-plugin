@@ -1,21 +1,22 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { AnsiLogger } from 'matterbridge/logger';
-import { RoborockService } from '../../services/roborockService.js';
-import { ServiceContainer } from '../../services/serviceContainer.js';
-import { AuthenticationCoordinator } from '../../services/authentication/AuthenticationCoordinator.js';
-import { DeviceManagementService } from '../../services/deviceManagementService.js';
-import { AreaManagementService } from '../../services/areaManagementService.js';
-import { MessageRoutingService } from '../../services/messageRoutingService.js';
-import { PollingService } from '../../services/pollingService.js';
-import { Device, UserData } from '../../roborockCommunication/models/index.js';
+import type { ServiceArea } from 'matterbridge/matter/clusters';
+import type { LocalStorage } from 'node-persist';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+
+import { SCENE_AREA_ID_MIN } from '../../constants/index.js';
+import type { RoomIndexMap } from '../../core/application/models/index.js';
+import type { PlatformConfigManager } from '../../platform/platformConfigManager.js';
 import { RoborockAuthenticateApi } from '../../roborockCommunication/api/authClient.js';
 import { RoborockIoTApi } from '../../roborockCommunication/api/iotClient.js';
-import type { LocalStorage } from 'node-persist';
-import type { PlatformConfigManager } from '../../platform/platformConfigManager.js';
+import { Device, UserData } from '../../roborockCommunication/models/index.js';
+import { AreaManagementService } from '../../services/areaManagementService.js';
+import { AuthenticationCoordinator } from '../../services/authentication/AuthenticationCoordinator.js';
+import { DeviceManagementService } from '../../services/deviceManagementService.js';
+import { MessageRoutingService } from '../../services/messageRoutingService.js';
+import { PollingService } from '../../services/pollingService.js';
+import { RoborockService } from '../../services/roborockService.js';
+import { ServiceContainer } from '../../services/serviceContainer.js';
 import { asPartial } from '../testUtils.js';
-import type { ServiceArea } from 'matterbridge/matter/clusters';
-import type { RoomIndexMap } from '../../core/application/models/index.js';
-import { SCENE_AREA_ID_MIN } from '../../constants/index.js';
 
 describe('RoborockService - Comprehensive Coverage', () => {
 	let service: RoborockService;

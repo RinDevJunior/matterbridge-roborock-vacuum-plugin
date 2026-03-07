@@ -1,11 +1,12 @@
-import { describe, it, expect } from 'vitest';
+import { describe, expect, it } from 'vitest';
+
 import {
 	AuthenticationError,
-	VerificationCodeExpiredError,
 	InvalidCredentialsError,
 	InvalidVerificationCodeError,
-	TokenExpiredError,
 	RateLimitExceededError,
+	TokenExpiredError,
+	VerificationCodeExpiredError,
 } from '../../errors/AuthenticationError.js';
 
 describe('AuthenticationError', () => {

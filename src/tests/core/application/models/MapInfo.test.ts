@@ -1,6 +1,7 @@
+import { describe, expect, it } from 'vitest';
+
 import { MapInfo } from '../../../../core/application/models/MapInfo.js';
 import { MultipleMapDto } from '../../../../roborockCommunication/models/home/index.js';
-import { describe, it, expect } from 'vitest';
 
 describe('MapInfo', () => {
 	describe('constructor', () => {

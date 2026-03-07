@@ -1,4 +1,5 @@
-import { describe, it, expect } from 'vitest';
+import { describe, expect, it } from 'vitest';
+
 import { MessageContext, UserData } from '../../../../roborockCommunication/models/index.js';
 import { asPartial, asType, mkUser } from '../../../helpers/testUtils.js';
 

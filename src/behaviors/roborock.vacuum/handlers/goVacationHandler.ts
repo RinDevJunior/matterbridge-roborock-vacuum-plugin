@@ -1,5 +1,5 @@
 import { CleanModeDisplayLabel } from '../core/cleanModeConfig.js';
-import { ModeHandler, HandlerContext } from '../core/modeHandler.js';
+import { HandlerContext, ModeHandler } from '../core/modeHandler.js';
 
 export class GoVacationHandler implements ModeHandler {
 	public canHandle(_mode: number, activity: string): boolean {

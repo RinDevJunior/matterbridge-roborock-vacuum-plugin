@@ -1,7 +1,8 @@
-import { describe, it, expect } from 'vitest';
-import { MessageDispatcherFactory } from '../../../../roborockCommunication/protocol/dispatcher/dispatcherFactory.js';
-import { ProtocolVersion, NewProtocolVersion } from '../../../../roborockCommunication/enums/index.js';
+import { describe, expect, it } from 'vitest';
+
+import { NewProtocolVersion, ProtocolVersion } from '../../../../roborockCommunication/enums/index.js';
 import { DeviceModel } from '../../../../roborockCommunication/models/deviceModel.js';
+import { MessageDispatcherFactory } from '../../../../roborockCommunication/protocol/dispatcher/dispatcherFactory.js';
 import { createMockLogger, makeMockClientRouter } from '../../../helpers/testUtils.js';
 
 describe('MessageDispatcherFactory', () => {

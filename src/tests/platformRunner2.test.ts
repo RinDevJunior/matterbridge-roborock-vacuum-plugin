@@ -1,17 +1,18 @@
-import { RoomMap, MapInfo } from '../core/application/models/index.js';
-import { Device, RawRoomMappingData, Home, RoomDto, MultipleMapDto } from '../roborockCommunication/models/index.js';
-import { DeviceModel } from '../roborockCommunication/models/deviceModel.js';
-import { DeviceCategory } from '../roborockCommunication/models/deviceCategory.js';
-import { UserData } from '../roborockCommunication/models/userData.js';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+
+import { MapInfo, RoomMap } from '../core/application/models/index.js';
 import { RoomEntity } from '../core/domain/entities/Room.js';
-import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { asPartial, createMockLogger } from './testUtils.js';
 import { RoborockMatterbridgePlatform } from '../module.js';
-import { RoborockService } from '../services/roborockService.js';
-import { PlatformConfigManager } from '../platform/platformConfigManager.js';
 import { DeviceRegistry } from '../platform/deviceRegistry.js';
-import { RoborockVacuumCleaner } from '../types/roborockVacuumCleaner.js';
+import { PlatformConfigManager } from '../platform/platformConfigManager.js';
 import { ProtocolVersion } from '../roborockCommunication/enums/index.js';
+import { DeviceCategory } from '../roborockCommunication/models/deviceCategory.js';
+import { DeviceModel } from '../roborockCommunication/models/deviceModel.js';
+import { Device, Home, MultipleMapDto, RawRoomMappingData, RoomDto } from '../roborockCommunication/models/index.js';
+import { UserData } from '../roborockCommunication/models/userData.js';
+import { RoborockService } from '../services/roborockService.js';
+import { RoborockVacuumCleaner } from '../types/roborockVacuumCleaner.js';
+import { asPartial, createMockLogger } from './testUtils.js';
 
 describe('PlatformRunner.getRoomMapFromDevice', () => {
 	let platform: RoborockMatterbridgePlatform;

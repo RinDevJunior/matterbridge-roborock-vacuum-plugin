@@ -1,4 +1,5 @@
 import { AnsiLogger } from 'matterbridge/logger';
+
 import { CleanModeSetting } from '../../../../behaviors/roborock.vacuum/core/CleanModeSetting.js';
 import { DeviceNotifyCallback, NotifyMessageTypes, ServiceAreaUpdateMessage } from '../../../../types/index.js';
 import { BatteryMessage, StatusChangeMessage, VacuumError } from '../../../models/index.js';

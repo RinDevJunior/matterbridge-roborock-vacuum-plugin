@@ -1,7 +1,8 @@
 import { RvcCleanMode } from 'matterbridge/matter/clusters';
-import { CleanModeSetting } from './CleanModeSetting.js';
-import { MopRoute, MopWaterFlow, VacuumSuctionPower } from '../enums/index.js';
+
 import { CleanSequenceType } from '../enums/CleanSequenceType.js';
+import { MopRoute, MopWaterFlow, VacuumSuctionPower } from '../enums/index.js';
+import { CleanModeSetting } from './CleanModeSetting.js';
 
 /**
  * Complete mode configuration including display name, settings, and Matter tags.

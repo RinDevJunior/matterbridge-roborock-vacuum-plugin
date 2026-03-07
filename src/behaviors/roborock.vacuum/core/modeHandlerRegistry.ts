@@ -1,4 +1,4 @@
-import { ModeHandler, HandlerContext } from './modeHandler.js';
+import { HandlerContext, ModeHandler } from './modeHandler.js';
 
 export class ModeHandlerRegistry {
 	private readonly handlers: ModeHandler[] = [];

@@ -1,4 +1,5 @@
 import { AnsiLogger, debugStringify } from 'matterbridge/logger';
+
 import { Protocol, ResponseMessage } from '../../../models/index.js';
 import { AbstractMessageListener } from '../abstractMessageListener.js';
 

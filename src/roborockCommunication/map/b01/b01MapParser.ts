@@ -1,6 +1,7 @@
 import protobuf from 'protobufjs';
+
 import { ROBOROCK_PROTO_STR } from './roborockProto.js';
-import { B01RoomInfo, B01MapInfo } from './types.js';
+import { B01MapInfo, B01RoomInfo } from './types.js';
 
 export class B01MapParser {
 	private readonly robotMapType: protobuf.Type;

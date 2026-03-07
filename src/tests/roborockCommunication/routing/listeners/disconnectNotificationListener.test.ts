@@ -1,7 +1,8 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import type { AnsiLogger } from 'matterbridge/logger';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+
 import { DisconnectNotificationListener } from '../../../../roborockCommunication/routing/listeners/implementation/disconnectNotificationListener.js';
 import { EmailNotificationService } from '../../../../services/emailNotificationService.js';
-import type { AnsiLogger } from 'matterbridge/logger';
 import { asPartial, asType } from '../../../helpers/testUtils.js';
 
 function createMockLogger(): AnsiLogger {

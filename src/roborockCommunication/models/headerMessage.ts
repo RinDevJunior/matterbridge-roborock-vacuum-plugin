@@ -16,6 +16,6 @@ export class HeaderMessage {
 	}
 
 	public isForProtocol(protocol: Protocol): boolean {
-		return this.protocol === Number(protocol);
+		return this.protocol === protocol;
 	}
 }

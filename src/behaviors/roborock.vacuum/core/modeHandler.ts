@@ -1,7 +1,8 @@
 import { AnsiLogger } from 'matterbridge/logger';
+
+import { CleanModeSettings } from '../../../model/RoborockPluginPlatformConfig.js';
 import { RoborockService } from '../../../services/roborockService.js';
 import { CleanModeSetting } from './CleanModeSetting.js';
-import { CleanModeSettings } from '../../../model/RoborockPluginPlatformConfig.js';
 
 export interface ModeHandler {
 	canHandle(mode: number, activity: string): boolean;

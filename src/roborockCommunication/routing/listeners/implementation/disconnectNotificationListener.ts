@@ -1,6 +1,7 @@
 import type { AnsiLogger } from 'matterbridge/logger';
-import { AbstractConnectionListener } from '../abstractConnectionListener.js';
+
 import { EmailNotificationService } from '../../../../services/emailNotificationService.js';
+import { AbstractConnectionListener } from '../abstractConnectionListener.js';
 
 export type ConnectionType = 'Local' | 'MQTT';
 

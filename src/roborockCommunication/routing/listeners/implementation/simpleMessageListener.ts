@@ -1,4 +1,7 @@
+import { AnsiLogger } from 'matterbridge/logger';
+
 import { CleanModeSetting } from '../../../../behaviors/roborock.vacuum/core/CleanModeSetting.js';
+import { DockStationStatus } from '../../../../model/DockStationStatus.js';
 import {
 	BatteryMessage,
 	DeviceStatus,
@@ -10,8 +13,6 @@ import {
 } from '../../../models/index.js';
 import { AbstractMessageHandler } from '../../handlers/abstractMessageHandler.js';
 import { AbstractMessageListener } from '../abstractMessageListener.js';
-import { AnsiLogger } from 'matterbridge/logger';
-import { DockStationStatus } from '../../../../model/DockStationStatus.js';
 
 export class SimpleMessageListener implements AbstractMessageListener {
 	readonly name = 'SimpleMessageListener';

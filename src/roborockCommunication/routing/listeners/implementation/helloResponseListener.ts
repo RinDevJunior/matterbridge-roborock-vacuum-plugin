@@ -1,7 +1,8 @@
 import { AnsiLogger, debugStringify } from 'matterbridge/logger';
-import { AbstractMessageListener } from '../abstractMessageListener.js';
-import { Protocol, ResponseMessage } from '../../../models/index.js';
+
 import { HELLO_RESPONSE_TIMEOUT_MS } from '../../../../constants/index.js';
+import { Protocol, ResponseMessage } from '../../../models/index.js';
+import { AbstractMessageListener } from '../abstractMessageListener.js';
 
 export class HelloResponseListener implements AbstractMessageListener {
 	readonly name = 'HelloResponseListener';

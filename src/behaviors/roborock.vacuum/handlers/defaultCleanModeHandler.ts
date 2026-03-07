@@ -1,7 +1,8 @@
 import { debugStringify } from 'matterbridge/logger';
-import { ModeHandler, HandlerContext } from '../core/modeHandler.js';
-import { getSettingFromCleanMode } from '../core/cleanModeUtils.js';
+
 import { CleanModeDisplayLabel, CleanModeLabelInfo } from '../core/cleanModeConfig.js';
+import { getSettingFromCleanMode } from '../core/cleanModeUtils.js';
+import { HandlerContext, ModeHandler } from '../core/modeHandler.js';
 
 export class DefaultCleanModeHandler implements ModeHandler {
 	private readonly defaultModes: string[] = [

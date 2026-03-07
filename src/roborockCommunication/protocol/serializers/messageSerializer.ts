@@ -1,7 +1,8 @@
 import CRC32 from 'crc-32';
 import { AnsiLogger } from 'matterbridge/logger';
-import { MessageContext, Protocol, RequestMessage } from '../../models/index.js';
+
 import { ProtocolVersion } from '../../enums/index.js';
+import { MessageContext, Protocol, RequestMessage } from '../../models/index.js';
 import { MessageBodyBuilderFactory } from '../builders/messageBodyBuilderFactory.js';
 import { MessageSerializerFactory } from './messageSerializerFactory.js';
 

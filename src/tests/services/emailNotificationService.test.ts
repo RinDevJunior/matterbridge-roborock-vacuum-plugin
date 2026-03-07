@@ -1,8 +1,9 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { EmailNotificationService } from '../../services/emailNotificationService.js';
 import type { AnsiLogger } from 'matterbridge/logger';
-import { asType } from '../helpers/testUtils.js';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+
 import type { EmailNotificationSettings } from '../../model/RoborockPluginPlatformConfig.js';
+import { EmailNotificationService } from '../../services/emailNotificationService.js';
+import { asType } from '../helpers/testUtils.js';
 
 vi.mock('nodemailer', () => ({
 	default: {

@@ -1,10 +1,12 @@
-import axios, { AxiosInstance, AxiosStatic } from 'axios';
 import crypto from 'node:crypto';
-import { AnsiLogger } from 'matterbridge/logger';
 import { URLSearchParams } from 'node:url';
-import { BaseUrl, HomeInfo, UserData, AuthenticateResponse } from '../models/index.js';
-import { AuthenticateResponseCode } from '../enums/index.js';
+
+import axios, { AxiosInstance, AxiosStatic } from 'axios';
 import * as AxiosLogger from 'axios-logger';
+import { AnsiLogger } from 'matterbridge/logger';
+
+import { AuthenticateResponseCode } from '../enums/index.js';
+import { AuthenticateResponse, BaseUrl, HomeInfo, UserData } from '../models/index.js';
 
 export class RoborockAuthenticateApi {
 	private sessionId: string;

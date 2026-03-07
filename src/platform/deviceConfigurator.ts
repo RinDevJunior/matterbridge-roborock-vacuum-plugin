@@ -1,20 +1,21 @@
+import { bridgedNode, MatterbridgeDynamicPlatform, MatterbridgeEndpoint } from 'matterbridge';
 import type { AnsiLogger } from 'matterbridge/logger';
 import { debugStringify } from 'matterbridge/logger';
-import { MatterbridgeDynamicPlatform, MatterbridgeEndpoint, bridgedNode } from 'matterbridge';
+import { UINT16_MAX, UINT32_MAX } from 'matterbridge/matter';
 import { BridgedDeviceBasicInformation, Descriptor, Identify } from 'matterbridge/matter/clusters';
 import { isValidNumber, isValidString } from 'matterbridge/utils';
-import { UINT16_MAX, UINT32_MAX } from 'matterbridge/matter';
-import { PlatformConfigManager } from './platformConfigManager.js';
-import { DeviceRegistry } from './deviceRegistry.js';
-import { RoborockService } from '../services/roborockService.js';
-import { PlatformRunner } from '../platformRunner.js';
-import type { Device, DeviceSpecs } from '../roborockCommunication/models/index.js';
+
 import { RoomMap } from '../core/application/models/index.js';
 import { HomeEntity } from '../core/domain/entities/Home.js';
-import { RoborockVacuumCleaner } from '../types/roborockVacuumCleaner.js';
-import { configureBehavior } from '../share/behaviorFactory.js';
-import { WssSendSnackbarMessage } from '../types/WssSendSnackbarMessage.js';
 import { MatterOverrideSettings } from '../model/RoborockPluginPlatformConfig.js';
+import { PlatformRunner } from '../platformRunner.js';
+import type { Device, DeviceSpecs } from '../roborockCommunication/models/index.js';
+import { RoborockService } from '../services/roborockService.js';
+import { configureBehavior } from '../share/behaviorFactory.js';
+import { RoborockVacuumCleaner } from '../types/roborockVacuumCleaner.js';
+import { WssSendSnackbarMessage } from '../types/WssSendSnackbarMessage.js';
+import { DeviceRegistry } from './deviceRegistry.js';
+import { PlatformConfigManager } from './platformConfigManager.js';
 
 /**
  * Handles device configuration: local network setup, room mapping,
@@ -177,7 +178,7 @@ export class DeviceConfigurator {
 			}
 
 			await this.platform.registerDevice(rvc);
-			this.registry.registerRobot(rvc as RoborockVacuumCleaner);
+			this.registry.registerRobot(rvc);
 			return rvc;
 		} else {
 			return undefined;

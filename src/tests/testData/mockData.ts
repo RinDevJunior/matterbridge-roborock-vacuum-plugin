@@ -1,10 +1,11 @@
 import { ServiceArea } from 'matterbridge/matter/clusters';
-import { CloudMessageResult, DeviceModel, Home } from '../../roborockCommunication/models/index.js';
-import { DeviceCategory } from '../../roborockCommunication/models/deviceCategory.js';
+
 import { MapInfo } from '../../core/application/models/index.js';
-import { asPartial } from '../testUtils.js';
 import { RoomEntity } from '../../core/domain/entities/Room.js';
 import { ProtocolVersion } from '../../roborockCommunication/enums/index.js';
+import { DeviceCategory } from '../../roborockCommunication/models/deviceCategory.js';
+import { CloudMessageResult, DeviceModel, Home } from '../../roborockCommunication/models/index.js';
+import { asPartial } from '../testUtils.js';
 
 export const supportedAreas: ServiceArea.Area[] = [
 	{

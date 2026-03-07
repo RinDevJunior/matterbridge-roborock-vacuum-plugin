@@ -1,11 +1,12 @@
-import { NotifyMessageTypes } from '../../../../types/notifyMessageTypes.js';
-import { describe, it, expect, vi } from 'vitest';
-import { DockErrorCode, OperationStatusCode, VacuumErrorCode } from '../../../../roborockCommunication/enums/index.js';
-import { SimpleMessageHandler } from '../../../../roborockCommunication/routing/handlers/implementation/simpleMessageHandler.js';
-import { BatteryMessage, DeviceStatus, VacuumError } from '../../../../roborockCommunication/models/index.js';
+import { describe, expect, it, vi } from 'vitest';
+
 import { CleanModeSetting } from '../../../../behaviors/roborock.vacuum/core/CleanModeSetting.js';
-import { createMockLogger } from '../../../testUtils.js';
 import { CleanSequenceType } from '../../../../behaviors/roborock.vacuum/enums/CleanSequenceType.js';
+import { DockErrorCode, OperationStatusCode, VacuumErrorCode } from '../../../../roborockCommunication/enums/index.js';
+import { BatteryMessage, DeviceStatus, VacuumError } from '../../../../roborockCommunication/models/index.js';
+import { SimpleMessageHandler } from '../../../../roborockCommunication/routing/handlers/implementation/simpleMessageHandler.js';
+import { NotifyMessageTypes } from '../../../../types/notifyMessageTypes.js';
+import { createMockLogger } from '../../../testUtils.js';
 
 describe('SimpleMessageHandler', () => {
 	const duid = 'test-duid';

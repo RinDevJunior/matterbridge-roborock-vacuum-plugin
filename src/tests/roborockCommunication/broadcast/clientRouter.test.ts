@@ -1,9 +1,10 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+
 import { RequestMessage, UserData } from '../../../roborockCommunication/models/index.js';
 import { ClientRouter } from '../../../roborockCommunication/routing/clientRouter.js';
-import { asType, asPartial } from '../../testUtils.js';
 import { AbstractConnectionListener } from '../../../roborockCommunication/routing/listeners/abstractConnectionListener.js';
 import { AbstractMessageListener } from '../../../roborockCommunication/routing/listeners/abstractMessageListener.js';
+import { asPartial, asType } from '../../testUtils.js';
 
 describe('ClientRouter', () => {
 	let mockLogger: any;

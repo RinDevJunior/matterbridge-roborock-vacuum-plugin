@@ -1,4 +1,5 @@
 import { RvcOperationalState } from 'matterbridge/matter/clusters';
+
 import { DockErrorCode } from '../roborockCommunication/enums/vacuumAndDockErrorCode.js';
 
 export enum DockStationStatusCode {

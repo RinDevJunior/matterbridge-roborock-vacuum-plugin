@@ -1,7 +1,8 @@
-import { vi, describe, it, expect } from 'vitest';
-import { ConnectionStateListener } from '../../../../../roborockCommunication/routing/listeners/implementation/connectionStateListener.js';
-import { createMockLogger, asPartial, asType } from '../../../../testUtils.js';
+import { describe, expect, it, vi } from 'vitest';
+
 import { AbstractClient } from '../../../../../roborockCommunication/routing/abstractClient.js';
+import { ConnectionStateListener } from '../../../../../roborockCommunication/routing/listeners/implementation/connectionStateListener.js';
+import { asPartial, asType, createMockLogger } from '../../../../testUtils.js';
 
 function makeClient(overrides: Partial<AbstractClient> = {}) {
 	return asPartial<AbstractClient>({

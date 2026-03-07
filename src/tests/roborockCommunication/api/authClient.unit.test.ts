@@ -1,8 +1,9 @@
-import { describe, it, expect, vi } from 'vitest';
-import type { AxiosStatic, AxiosInstance } from 'axios';
+import type { AxiosInstance, AxiosStatic } from 'axios';
+import { describe, expect, it, vi } from 'vitest';
+
 import { RoborockAuthenticateApi } from '../../../roborockCommunication/api/authClient.js';
 import { AuthenticateResponseCode } from '../../../roborockCommunication/enums/index.js';
-import { createMockLogger, asPartial, asType, mkUser } from '../../helpers/testUtils.js';
+import { asPartial, asType, createMockLogger, mkUser } from '../../helpers/testUtils.js';
 
 describe('RoborockAuthenticateApi private helpers', () => {
 	const logger = createMockLogger();

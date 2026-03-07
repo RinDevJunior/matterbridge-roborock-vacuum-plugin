@@ -1,7 +1,8 @@
-import { describe, test, expect, vi } from 'vitest';
+import { describe, expect, test, vi } from 'vitest';
+
 import { MessageContext, Protocol, RequestMessage } from '../../../roborockCommunication/models/index.js';
-import { MessageSerializer } from '../../../roborockCommunication/protocol/serializers/messageSerializer.js';
 import { MessageDeserializer } from '../../../roborockCommunication/protocol/deserializers/messageDeserializer.js';
+import { MessageSerializer } from '../../../roborockCommunication/protocol/serializers/messageSerializer.js';
 
 const logger: any = { debug: vi.fn(), notice: vi.fn(), error: vi.fn() };
 

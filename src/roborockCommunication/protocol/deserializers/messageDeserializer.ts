@@ -1,6 +1,8 @@
+import { Parser } from 'binary-parser/dist/binary_parser.js';
 import CRC32 from 'crc-32';
 import { AnsiLogger, debugStringify } from 'matterbridge/logger';
-import { Parser } from 'binary-parser/dist/binary_parser.js';
+
+import { ProtocolVersion } from '../../enums/index.js';
 import {
 	ContentMessage,
 	HeaderMessage,
@@ -9,7 +11,6 @@ import {
 	ResponseBody,
 	ResponseMessage,
 } from '../../models/index.js';
-import { ProtocolVersion } from '../../enums/index.js';
 import { MessageSerializerFactory } from '../serializers/messageSerializerFactory.js';
 
 export class MessageDeserializer {

@@ -19,51 +19,51 @@ export { BaseError } from './BaseError.js';
 // Authentication errors
 export {
 	AuthenticationError,
-	VerificationCodeExpiredError,
 	InvalidCredentialsError,
 	InvalidVerificationCodeError,
-	TokenExpiredError,
 	RateLimitExceededError,
+	TokenExpiredError,
+	VerificationCodeExpiredError,
 } from './AuthenticationError.js';
 
 // Device errors
 export {
-	DeviceError,
-	DeviceNotFoundError,
-	DeviceConnectionError,
-	DeviceOfflineError,
 	DeviceCommandError,
-	UnsupportedDeviceError,
+	DeviceConnectionError,
+	DeviceError,
 	DeviceInitializationError,
+	DeviceNotFoundError,
+	DeviceOfflineError,
+	UnsupportedDeviceError,
 } from './DeviceError.js';
 
 // Communication errors
 export {
+	APIError,
 	CommunicationError,
-	TimeoutError,
+	DeserializationError,
+	LocalNetworkError,
+	MQTTConnectionError,
 	NetworkError,
 	ProtocolError,
-	MQTTConnectionError,
-	LocalNetworkError,
-	APIError,
 	SerializationError,
-	DeserializationError,
+	TimeoutError,
 } from './CommunicationError.js';
 
 // Configuration errors
 export {
 	ConfigurationError,
-	MissingConfigurationError,
 	InvalidConfigurationError,
-	MissingCredentialsError,
 	InvalidRegionError,
+	MissingConfigurationError,
+	MissingCredentialsError,
 } from './ConfigurationError.js';
 
 // Validation errors
 export {
-	ValidationError,
-	InvalidParameterError,
-	OutOfRangeError,
-	MissingParameterError,
 	InvalidFormatError,
+	InvalidParameterError,
+	MissingParameterError,
+	OutOfRangeError,
+	ValidationError,
 } from './ValidationError.js';

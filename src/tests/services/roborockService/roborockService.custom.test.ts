@@ -1,11 +1,12 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { RoborockService } from '../../../services/roborockService.js';
+import type { AnsiLogger } from 'matterbridge/logger';
+import type { LocalStorage } from 'node-persist';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+
+import type { PlatformConfigManager } from '../../../platform/platformConfigManager.js';
 import type { RoborockAuthenticateApi } from '../../../roborockCommunication/api/authClient.js';
 import type { RoborockIoTApi } from '../../../roborockCommunication/api/iotClient.js';
-import type { LocalStorage } from 'node-persist';
-import type { PlatformConfigManager } from '../../../platform/platformConfigManager.js';
-import type { AnsiLogger } from 'matterbridge/logger';
 import type { ServiceContainer } from '../../../services/index.js';
+import { RoborockService } from '../../../services/roborockService.js';
 import { asPartial } from '../../testUtils.js';
 
 describe('RoborockService (unit)', () => {

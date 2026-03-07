@@ -1,11 +1,12 @@
-import { describe, it, expect } from 'vitest';
-import { getSettingFromCleanMode } from '../../../../behaviors/roborock.vacuum/core/cleanModeUtils.js';
+import { describe, expect, it } from 'vitest';
+
 import { CleanModeDisplayLabel } from '../../../../behaviors/roborock.vacuum/core/cleanModeConfig.js';
-import { MopRoute, MopWaterFlow, VacuumSuctionPower } from '../../../../behaviors/roborock.vacuum/enums/index.js';
+import { getSettingFromCleanMode } from '../../../../behaviors/roborock.vacuum/core/cleanModeUtils.js';
 import { CleanSequenceType } from '../../../../behaviors/roborock.vacuum/enums/CleanSequenceType.js';
+import { MopRoute, MopWaterFlow, VacuumSuctionPower } from '../../../../behaviors/roborock.vacuum/enums/index.js';
 import {
-	createDefaultCleanModeSettings,
 	type CleanModeSettings,
+	createDefaultCleanModeSettings,
 } from '../../../../model/RoborockPluginPlatformConfig.js';
 
 describe('cleanModeUtils', () => {

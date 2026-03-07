@@ -1,9 +1,10 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { RvcOperationalState } from 'matterbridge/matter/clusters';
-import { triggerDssError } from '../../runtimes/handleLocalMessage.js';
-import { createMockLogger, asPartial } from '../helpers/testUtils.js';
-import type { RoborockVacuumCleaner } from '../../types/roborockVacuumCleaner.js';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+
 import type { RoborockMatterbridgePlatform } from '../../module.js';
+import { triggerDssError } from '../../runtimes/handleLocalMessage.js';
+import type { RoborockVacuumCleaner } from '../../types/roborockVacuumCleaner.js';
+import { asPartial, createMockLogger } from '../helpers/testUtils.js';
 
 function createMockRobot(operationalState: RvcOperationalState.OperationalState): RoborockVacuumCleaner {
 	return asPartial<RoborockVacuumCleaner>({

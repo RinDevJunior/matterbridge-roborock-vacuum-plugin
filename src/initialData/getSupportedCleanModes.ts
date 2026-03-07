@@ -1,6 +1,5 @@
 import { RvcCleanMode } from 'matterbridge/matter/clusters';
-import { DeviceModel } from '../roborockCommunication/models/index.js';
-import { PlatformConfigManager } from '../platform/platformConfigManager.js';
+
 import {
 	baseCleanModeConfigs,
 	CleanModeDisplayLabel,
@@ -8,6 +7,8 @@ import {
 	getModeOptions,
 } from '../behaviors/roborock.vacuum/core/cleanModeConfig.js';
 import { getAllModesForDevice } from '../behaviors/roborock.vacuum/core/deviceCapabilityRegistry.js';
+import { PlatformConfigManager } from '../platform/platformConfigManager.js';
+import { DeviceModel } from '../roborockCommunication/models/index.js';
 
 const defaultModes = getModeOptions(baseCleanModeConfigs);
 

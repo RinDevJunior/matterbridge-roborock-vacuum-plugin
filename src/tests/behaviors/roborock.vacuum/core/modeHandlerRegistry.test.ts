@@ -1,12 +1,13 @@
-import { describe, it, expect, vi } from 'vitest';
-import { ModeHandlerRegistry } from '../../../../behaviors/roborock.vacuum/core/modeHandlerRegistry.js';
-import { ModeHandler, HandlerContext } from '../../../../behaviors/roborock.vacuum/core/modeHandler.js';
+import type { AnsiLogger } from 'matterbridge/logger';
+import { describe, expect, it, vi } from 'vitest';
+
 import { CleanModeSetting } from '../../../../behaviors/roborock.vacuum/core/CleanModeSetting.js';
+import { HandlerContext, ModeHandler } from '../../../../behaviors/roborock.vacuum/core/modeHandler.js';
+import { ModeHandlerRegistry } from '../../../../behaviors/roborock.vacuum/core/modeHandlerRegistry.js';
+import { CleanSequenceType } from '../../../../behaviors/roborock.vacuum/enums/CleanSequenceType.js';
 import { createDefaultCleanModeSettings } from '../../../../model/RoborockPluginPlatformConfig.js';
 import type { RoborockService } from '../../../../services/roborockService.js';
-import type { AnsiLogger } from 'matterbridge/logger';
-import { createMockLogger, asPartial } from '../../../helpers/testUtils.js';
-import { CleanSequenceType } from '../../../../behaviors/roborock.vacuum/enums/CleanSequenceType.js';
+import { asPartial, createMockLogger } from '../../../helpers/testUtils.js';
 
 describe('ModeHandlerRegistry', () => {
 	it('registers handlers and returns this for chaining', () => {

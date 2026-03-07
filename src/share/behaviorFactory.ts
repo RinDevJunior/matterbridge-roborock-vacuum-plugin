@@ -1,12 +1,13 @@
 import { AnsiLogger } from 'matterbridge/logger';
+
 import { BehaviorDeviceGeneric, CommandNames, DeviceEndpointCommands } from '../behaviors/BehaviorDeviceGeneric.js';
-import { RoborockService } from '../services/roborockService.js';
 import { BehaviorConfig, buildBehaviorConfig } from '../behaviors/roborock.vacuum/core/behaviorConfig.js';
 import { registerCommonCommands } from '../behaviors/roborock.vacuum/core/commonCommands.js';
 import { HandlerContext } from '../behaviors/roborock.vacuum/core/modeHandler.js';
-import { DeviceModel } from '../roborockCommunication/models/index.js';
 import { getRunModeDisplayMap } from '../behaviors/roborock.vacuum/core/runModeConfig.js';
 import { CleanModeSettings } from '../model/RoborockPluginPlatformConfig.js';
+import { DeviceModel } from '../roborockCommunication/models/index.js';
+import { RoborockService } from '../services/roborockService.js';
 
 export type BehaviorFactoryResult = BehaviorDeviceGeneric<DeviceEndpointCommands>;
 
@@ -24,7 +25,7 @@ export function configureBehavior(
 	logger: AnsiLogger,
 	onActionTriggered: () => void,
 ): BehaviorFactoryResult {
-	const modelKey = forceRunAtDefault ? '' : (model as string);
+	const modelKey = forceRunAtDefault ? '' : model;
 	const config = buildBehaviorConfig(modelKey);
 	const deviceHandler = new BehaviorDeviceGeneric<DeviceEndpointCommands>(logger);
 	setCommandHandler(

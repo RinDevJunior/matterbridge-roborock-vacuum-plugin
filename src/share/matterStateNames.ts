@@ -1,4 +1,5 @@
 import { RvcOperationalState, RvcRunMode } from 'matterbridge/matter/clusters';
+
 import { getAllKnownModeConfigs } from '../behaviors/roborock.vacuum/core/deviceCapabilityRegistry.js';
 import { baseRunModeConfigs } from '../behaviors/roborock.vacuum/core/runModeConfig.js';
 

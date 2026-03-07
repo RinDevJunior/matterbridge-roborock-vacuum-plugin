@@ -1,11 +1,12 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { DeviceManagementService } from '../../services/deviceManagementService.js';
-import { createMockIotApi, createMockAuthApi } from '../helpers/testUtils.js';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+
 import { DeviceError, DeviceNotFoundError } from '../../errors/index.js';
-import { Device, DeviceModel, Home, Protocol, UserData } from '../../roborockCommunication/models/index.js';
-import { DeviceCategory } from '../../roborockCommunication/models/deviceCategory.js';
-import { makeLogger } from '../testUtils.js';
 import { ProtocolVersion } from '../../roborockCommunication/enums/index.js';
+import { DeviceCategory } from '../../roborockCommunication/models/deviceCategory.js';
+import { Device, DeviceModel, Home, Protocol, UserData } from '../../roborockCommunication/models/index.js';
+import { DeviceManagementService } from '../../services/deviceManagementService.js';
+import { createMockAuthApi, createMockIotApi } from '../helpers/testUtils.js';
+import { makeLogger } from '../testUtils.js';
 
 describe('DeviceManagementService', () => {
 	let deviceService: DeviceManagementService;

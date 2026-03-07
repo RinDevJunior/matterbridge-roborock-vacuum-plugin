@@ -3,6 +3,7 @@
  */
 
 import type { ServiceArea } from 'matterbridge/matter/clusters';
+
 import { RoomIndexMap } from '../core/application/models/index.js';
 
 /**

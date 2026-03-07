@@ -1,6 +1,7 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+
 import { LocalPingResponseListener } from '../../../../roborockCommunication/local/localPingResponseListener.js';
-import { Protocol, ResponseMessage, HeaderMessage } from '../../../../roborockCommunication/models/index.js';
+import { HeaderMessage, Protocol, ResponseMessage } from '../../../../roborockCommunication/models/index.js';
 import { asPartial } from '../../../helpers/testUtils.js';
 
 function createMockLogger() {

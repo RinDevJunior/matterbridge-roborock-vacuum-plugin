@@ -1,4 +1,5 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
+
 import { BehaviorDeviceGeneric, DeviceCommands } from '../../behaviors/BehaviorDeviceGeneric.js';
 import { createMockLogger } from '../helpers/testUtils.js';
 

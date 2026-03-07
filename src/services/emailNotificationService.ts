@@ -1,5 +1,6 @@
-import nodemailer from 'nodemailer';
 import type { AnsiLogger } from 'matterbridge/logger';
+import nodemailer from 'nodemailer';
+
 import type { EmailNotificationSettings } from '../model/RoborockPluginPlatformConfig.js';
 
 export class EmailNotificationService {

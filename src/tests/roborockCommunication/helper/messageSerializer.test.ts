@@ -1,11 +1,12 @@
-import { describe, it, expect, vi, afterEach } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+
 import { MessageContext, Protocol, RequestMessage, UserData } from '../../../roborockCommunication/models/index.js';
-import { asPartial, asType } from '../../helpers/testUtils.js';
 import type { AbstractMessageBodyBuilder } from '../../../roborockCommunication/protocol/builders/abstractMessageBodyBuilder.js';
+import { MessageBodyBuilderFactory } from '../../../roborockCommunication/protocol/builders/messageBodyBuilderFactory.js';
 import type { AbstractSerializer } from '../../../roborockCommunication/protocol/serializers/abstractSerializer.js';
 import { MessageSerializer } from '../../../roborockCommunication/protocol/serializers/messageSerializer.js';
-import { MessageBodyBuilderFactory } from '../../../roborockCommunication/protocol/builders/messageBodyBuilderFactory.js';
 import { MessageSerializerFactory } from '../../../roborockCommunication/protocol/serializers/messageSerializerFactory.js';
+import { asPartial, asType } from '../../helpers/testUtils.js';
 import { makeLogger } from '../../testUtils.js';
 
 const mkUser = () =>

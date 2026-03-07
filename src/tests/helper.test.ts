@@ -1,6 +1,7 @@
-import { getVacuumProperty, isSupportedDevice, isStatusUpdate } from '../share/helper.js';
-import { describe, test, expect, vi } from 'vitest';
+import { describe, expect, test, vi } from 'vitest';
+
 import { type Device } from '../roborockCommunication/models/index.js';
+import { getVacuumProperty, isStatusUpdate, isSupportedDevice } from '../share/helper.js';
 import { asType } from './testUtils.js';
 
 describe('helper utilities', () => {

@@ -1,4 +1,4 @@
-import crypto, { CipherKey, BinaryLike } from 'node:crypto';
+import crypto, { BinaryLike, CipherKey } from 'node:crypto';
 
 export function md5bin(str: BinaryLike): Buffer {
 	return crypto.createHash('md5').update(str).digest();

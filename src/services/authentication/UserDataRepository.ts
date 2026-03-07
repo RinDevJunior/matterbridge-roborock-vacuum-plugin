@@ -1,7 +1,8 @@
-import type NodePersist from 'node-persist';
-import type { UserData } from '../../roborockCommunication/models/index.js';
 import { AnsiLogger } from 'matterbridge/logger';
+import type NodePersist from 'node-persist';
+
 import { PlatformConfigManager } from '../../platform/platformConfigManager.js';
+import type { UserData } from '../../roborockCommunication/models/index.js';
 
 /** Repository for persisting and retrieving user data. */
 export class UserDataRepository {

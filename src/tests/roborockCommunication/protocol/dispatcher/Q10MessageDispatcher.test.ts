@@ -1,9 +1,10 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { asPartial, asType } from '../../../helpers/testUtils.js';
-import { Q10MessageDispatcher } from '../../../../roborockCommunication/protocol/dispatcher/Q10MessageDispatcher.js';
-import { RequestMessage } from '../../../../roborockCommunication/models/index.js';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+
 import { CleanModeSetting } from '../../../../behaviors/roborock.vacuum/core/CleanModeSetting.js';
 import { CleanSequenceType } from '../../../../behaviors/roborock.vacuum/enums/CleanSequenceType.js';
+import { RequestMessage } from '../../../../roborockCommunication/models/index.js';
+import { Q10MessageDispatcher } from '../../../../roborockCommunication/protocol/dispatcher/Q10MessageDispatcher.js';
+import { asPartial, asType } from '../../../helpers/testUtils.js';
 
 // --- Mock Factories ---
 function createMockLogger() {

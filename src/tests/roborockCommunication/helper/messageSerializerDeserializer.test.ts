@@ -1,10 +1,10 @@
-import { describe, it, expect, vi } from 'vitest';
-import { MessageContext, Protocol, RequestMessage } from '../../../roborockCommunication/models/index.js';
-import { MessageSerializer } from '../../../roborockCommunication/protocol/serializers/messageSerializer.js';
-import { MessageDeserializer } from '../../../roborockCommunication/protocol/deserializers/messageDeserializer.js';
+import { describe, expect, it, vi } from 'vitest';
 
-import { asPartial, asType } from '../../helpers/testUtils.js';
 import type { UserData } from '../../../roborockCommunication/models/index.js';
+import { MessageContext, Protocol, RequestMessage } from '../../../roborockCommunication/models/index.js';
+import { MessageDeserializer } from '../../../roborockCommunication/protocol/deserializers/messageDeserializer.js';
+import { MessageSerializer } from '../../../roborockCommunication/protocol/serializers/messageSerializer.js';
+import { asPartial, asType } from '../../helpers/testUtils.js';
 
 const mkUser = () =>
 	asPartial<UserData>({

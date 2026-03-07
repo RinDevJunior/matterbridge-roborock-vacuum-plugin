@@ -1,4 +1,5 @@
 import { RvcOperationalState } from 'matterbridge/matter/clusters';
+
 import { VacuumErrorCode } from '../roborockCommunication/enums/index.js';
 
 export class VacuumStatus {

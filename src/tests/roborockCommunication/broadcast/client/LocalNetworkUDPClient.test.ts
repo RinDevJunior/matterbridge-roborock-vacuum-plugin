@@ -1,12 +1,14 @@
-import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
-import { AnsiLogger } from 'matterbridge/logger';
 import crypto from 'node:crypto';
-import CRC32 from 'crc-32';
 import * as dgram from 'node:dgram';
 import { EventEmitter } from 'node:events';
+
+import CRC32 from 'crc-32';
+import { AnsiLogger } from 'matterbridge/logger';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+
 import { LocalNetworkUDPClient } from '../../../../roborockCommunication/local/udpClient.js';
 import { AbstractUDPMessageListener } from '../../../../roborockCommunication/routing/listeners/abstractUDPMessageListener.js';
-import { createMockLogger, asType } from '../../../helpers/testUtils.js';
+import { asType, createMockLogger } from '../../../helpers/testUtils.js';
 
 // Mock dgram module
 vi.mock('node:dgram', () => {

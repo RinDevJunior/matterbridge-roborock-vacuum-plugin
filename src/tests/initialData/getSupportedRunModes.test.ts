@@ -1,5 +1,6 @@
-import { describe, it, expect } from 'vitest';
 import { RvcRunMode } from 'matterbridge/matter/clusters';
+import { describe, expect, it } from 'vitest';
+
 import { getRunningMode } from '../../initialData/getSupportedRunModes.js';
 
 describe('getRunningMode', () => {

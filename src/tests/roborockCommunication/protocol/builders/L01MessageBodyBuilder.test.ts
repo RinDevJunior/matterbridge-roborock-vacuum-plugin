@@ -1,10 +1,11 @@
-import { describe, it, expect } from 'vitest';
+import { describe, expect, it } from 'vitest';
+
+import type { UserData } from '../../../../roborockCommunication/models/index.js';
 import { MessageContext } from '../../../../roborockCommunication/models/messageContext.js';
 import { Protocol } from '../../../../roborockCommunication/models/protocol.js';
 import { RequestMessage } from '../../../../roborockCommunication/models/requestMessage.js';
 import { L01MessageBodyBuilder } from '../../../../roborockCommunication/protocol/builders/L01MessageBodyBuilder.js';
 import { asPartial } from '../../../helpers/testUtils.js';
-import type { UserData } from '../../../../roborockCommunication/models/index.js';
 
 const mkUser = () =>
 	asPartial<UserData>({

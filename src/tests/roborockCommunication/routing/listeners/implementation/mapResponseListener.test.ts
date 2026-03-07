@@ -1,7 +1,8 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { MapResponseListener } from '../../../../../roborockCommunication/routing/listeners/implementation/mapResponseListener.js';
-import { asType, asPartial } from '../../../../testUtils.js';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+
 import { ResponseMessage } from '../../../../../roborockCommunication/models/index.js';
+import { MapResponseListener } from '../../../../../roborockCommunication/routing/listeners/implementation/mapResponseListener.js';
+import { asPartial, asType } from '../../../../testUtils.js';
 
 function createMockLogger() {
 	return {

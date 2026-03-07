@@ -1,6 +1,7 @@
 import { AnsiLogger } from 'matterbridge/logger';
-import { ClientRouter } from '../roborockCommunication/routing/clientRouter.js';
+
 import { UserData } from '../roborockCommunication/models/index.js';
+import { ClientRouter } from '../roborockCommunication/routing/clientRouter.js';
 
 /** Manages ClientRouter instances per user with caching and cleanup. */
 export default class ClientManager {

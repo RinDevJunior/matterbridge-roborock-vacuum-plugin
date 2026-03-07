@@ -1,15 +1,16 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { updateFromHomeData } from '../../runtimes/handleHomeDataMessage.js';
-import { homeData } from '../testData/mockData.js';
-import { DeviceSpecs, DeviceModel, Device, Home, Product } from '../../roborockCommunication/models/index.js';
-import type { DockStationStatus } from '../../model/DockStationStatus.js';
-import type { RoborockVacuumCleaner } from '../../types/roborockVacuumCleaner.js';
-import type { RoborockMatterbridgePlatform } from '../../module.js';
-import { asPartial, asType } from '../testUtils.js';
-import type { DeviceRegistry } from '../../platform/deviceRegistry.js';
-import type { RoborockService } from '../../services/roborockService.js';
 import type { AnsiLogger } from 'matterbridge/logger';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+
+import type { DockStationStatus } from '../../model/DockStationStatus.js';
+import type { RoborockMatterbridgePlatform } from '../../module.js';
+import type { DeviceRegistry } from '../../platform/deviceRegistry.js';
 import { PlatformRunner } from '../../platformRunner.js';
+import { Device, DeviceModel, DeviceSpecs, Home, Product } from '../../roborockCommunication/models/index.js';
+import { updateFromHomeData } from '../../runtimes/handleHomeDataMessage.js';
+import type { RoborockService } from '../../services/roborockService.js';
+import type { RoborockVacuumCleaner } from '../../types/roborockVacuumCleaner.js';
+import { homeData } from '../testData/mockData.js';
+import { asPartial, asType } from '../testUtils.js';
 
 // Mocks
 const mockUpdateAttribute = vi.fn();

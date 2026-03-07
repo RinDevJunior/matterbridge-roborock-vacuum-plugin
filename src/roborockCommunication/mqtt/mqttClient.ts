@@ -1,11 +1,12 @@
-import mqtt, { ErrorWithReasonCode, IConnackPacket, ISubscriptionGrant, MqttClient as MqttLibClient } from 'mqtt';
 import { AnsiLogger, debugStringify } from 'matterbridge/logger';
-import * as CryptoUtils from '../helper/cryptoHelper.js';
-import { RequestMessage, MessageContext, Rriot, UserData } from '../models/index.js';
-import { AbstractClient } from '../routing/abstractClient.js';
+import mqtt, { ErrorWithReasonCode, IConnackPacket, ISubscriptionGrant, MqttClient as MqttLibClient } from 'mqtt';
+
 import { KEEPALIVE_INTERVAL_MS } from '../../constants/timeouts.js';
-import { PendingResponseTracker } from '../routing/services/pendingResponseTracker.js';
+import * as CryptoUtils from '../helper/cryptoHelper.js';
+import { MessageContext, RequestMessage, Rriot, UserData } from '../models/index.js';
+import { AbstractClient } from '../routing/abstractClient.js';
 import { ResponseBroadcaster } from '../routing/listeners/responseBroadcaster.js';
+import { PendingResponseTracker } from '../routing/services/pendingResponseTracker.js';
 
 export class MQTTClient extends AbstractClient {
 	protected override clientName = 'MQTTClient';
@@ -30,8 +31,8 @@ export class MQTTClient extends AbstractClient {
 		super(logger, context, responseBroadcaster, responseTracker);
 		this.rriot = userdata.rriot;
 
-		this.mqttUsername = CryptoUtils.md5hex(`${String(userdata.rriot.u)}:${String(userdata.rriot.k)}`).substring(2, 10);
-		this.mqttPassword = CryptoUtils.md5hex(`${String(userdata.rriot.s)}:${String(userdata.rriot.k)}`).substring(16);
+		this.mqttUsername = CryptoUtils.md5hex(`${userdata.rriot.u}:${userdata.rriot.k}`).substring(2, 10);
+		this.mqttPassword = CryptoUtils.md5hex(`${userdata.rriot.s}:${userdata.rriot.k}`).substring(16);
 
 		this.initializeConnectionStateListener(this);
 	}

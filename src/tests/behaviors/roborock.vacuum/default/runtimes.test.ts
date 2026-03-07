@@ -1,14 +1,15 @@
-import { describe, it, expect } from 'vitest';
-import { VacuumSuctionPower, MopRoute, MopWaterFlow } from '../../../../behaviors/roborock.vacuum/enums/index.js';
-import { createDefaultModeResolver } from '../../../../behaviors/roborock.vacuum/core/modeResolver.js';
+import { describe, expect, it } from 'vitest';
+
 import {
 	baseCleanModeConfigs,
 	CleanModeDisplayLabel,
 	CleanModeLabelInfo,
 } from '../../../../behaviors/roborock.vacuum/core/cleanModeConfig.js';
 import { CleanModeSetting } from '../../../../behaviors/roborock.vacuum/core/CleanModeSetting.js';
-import { asType } from '../../../testUtils.js';
+import { createDefaultModeResolver } from '../../../../behaviors/roborock.vacuum/core/modeResolver.js';
 import { CleanSequenceType } from '../../../../behaviors/roborock.vacuum/enums/CleanSequenceType.js';
+import { MopRoute, MopWaterFlow, VacuumSuctionPower } from '../../../../behaviors/roborock.vacuum/enums/index.js';
+import { asType } from '../../../testUtils.js';
 
 const defaultModeResolver = createDefaultModeResolver(baseCleanModeConfigs);
 

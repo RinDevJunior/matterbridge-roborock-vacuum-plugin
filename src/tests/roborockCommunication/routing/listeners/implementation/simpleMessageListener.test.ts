@@ -1,14 +1,15 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { SimpleMessageListener } from '../../../../../roborockCommunication/routing/listeners/implementation/simpleMessageListener.js';
-import { ResponseMessage } from '../../../../../roborockCommunication/models/index.js';
-import { AbstractMessageHandler } from '../../../../../roborockCommunication/routing/handlers/abstractMessageHandler.js';
-import { asPartial, createMockLogger } from '../../../../helpers/testUtils.js';
 import { AnsiLogger } from 'matterbridge/logger';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+
 import {
 	DockErrorCode,
 	OperationStatusCode,
 	VacuumErrorCode,
 } from '../../../../../roborockCommunication/enums/index.js';
+import { ResponseMessage } from '../../../../../roborockCommunication/models/index.js';
+import { AbstractMessageHandler } from '../../../../../roborockCommunication/routing/handlers/abstractMessageHandler.js';
+import { SimpleMessageListener } from '../../../../../roborockCommunication/routing/listeners/implementation/simpleMessageListener.js';
+import { asPartial, createMockLogger } from '../../../../helpers/testUtils.js';
 
 function createMockHandler(): AbstractMessageHandler {
 	return asPartial<AbstractMessageHandler>({

@@ -1,5 +1,6 @@
-import { describe, it, expect } from 'vitest';
-import { getBatteryStatus, getBatteryState } from '../../initialData/getBatteryStatus.js';
+import { describe, expect, it } from 'vitest';
+
+import { getBatteryState, getBatteryStatus } from '../../initialData/getBatteryStatus.js';
 import { OperationStatusCode } from '../../roborockCommunication/enums/operationStatusCode.js';
 import { asType } from '../testUtils.js';
 

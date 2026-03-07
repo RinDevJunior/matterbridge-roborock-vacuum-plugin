@@ -1,13 +1,14 @@
-import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
 import type { AnsiLogger } from 'matterbridge/logger';
-import type { RoborockPluginPlatformConfig } from '../../../model/RoborockPluginPlatformConfig.js';
-import { RoborockService } from '../../../services/roborockService.js';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+
 import { RoomIndexMap } from '../../../core/application/models/index.js';
-import { createMockLogger, createMockLocalStorage, asPartial, asType } from '../../helpers/testUtils.js';
-import { localStorageMock } from '../../testData/localStorageMock.js';
+import { AreaInfo } from '../../../initialData/getSupportedAreas.js';
+import type { RoborockPluginPlatformConfig } from '../../../model/RoborockPluginPlatformConfig.js';
 import { PlatformConfigManager as PlatformConfigManagerStatic } from '../../../platform/platformConfigManager.js';
 import { Device } from '../../../roborockCommunication/models/device.js';
-import { AreaInfo } from '../../../initialData/getSupportedAreas.js';
+import { RoborockService } from '../../../services/roborockService.js';
+import { asPartial, asType, createMockLocalStorage, createMockLogger } from '../../helpers/testUtils.js';
+import { localStorageMock } from '../../testData/localStorageMock.js';
 
 const logger: AnsiLogger = createMockLogger();
 

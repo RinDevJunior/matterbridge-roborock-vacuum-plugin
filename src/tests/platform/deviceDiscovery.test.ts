@@ -1,19 +1,20 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import type { MatterbridgeDynamicPlatform } from 'matterbridge';
+import type { AnsiLogger } from 'matterbridge/logger';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+
 import { DeviceDiscovery } from '../../platform/deviceDiscovery.js';
+import type { DeviceRegistry } from '../../platform/deviceRegistry.js';
+import type { PlatformConfigManager } from '../../platform/platformConfigManager.js';
+import { DeviceModel } from '../../roborockCommunication/models/deviceModel.js';
+import type { Device, DeviceSpecs } from '../../roborockCommunication/models/index.js';
+import type { WssSendSnackbarMessage } from '../../types/WssSendSnackbarMessage.js';
 import {
 	asPartial,
-	createMockLogger,
-	createMockLocalStorage,
-	createMockDeviceRegistry,
 	createMockConfigManager,
+	createMockDeviceRegistry,
+	createMockLocalStorage,
+	createMockLogger,
 } from '../helpers/testUtils.js';
-import type { AnsiLogger } from 'matterbridge/logger';
-import type { MatterbridgeDynamicPlatform } from 'matterbridge';
-import type { PlatformConfigManager } from '../../platform/platformConfigManager.js';
-import type { DeviceRegistry } from '../../platform/deviceRegistry.js';
-import type { Device, DeviceSpecs } from '../../roborockCommunication/models/index.js';
-import { DeviceModel } from '../../roborockCommunication/models/deviceModel.js';
-import type { WssSendSnackbarMessage } from '../../types/WssSendSnackbarMessage.js';
 
 const mockAuthenticate = vi.hoisted(() => vi.fn());
 const mockListDevices = vi.hoisted(() => vi.fn());

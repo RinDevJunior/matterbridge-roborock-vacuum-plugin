@@ -1,11 +1,12 @@
-import { NewProtocolVersion, ProtocolVersion } from '../../enums/index.js';
-import { AbstractMessageDispatcher } from './abstractMessageDispatcher.js';
-import { Q10MessageDispatcher } from './Q10MessageDispatcher.js';
-import { Q7MessageDispatcher } from './Q7MessageDispatcher.js';
-import { V10MessageDispatcher } from './V10MessageDispatcher.js';
 import { AnsiLogger } from 'matterbridge/logger';
+
+import { NewProtocolVersion, ProtocolVersion } from '../../enums/index.js';
 import { DeviceModel } from '../../models/deviceModel.js';
 import { ClientRouter } from '../../routing/clientRouter.js';
+import { AbstractMessageDispatcher } from './abstractMessageDispatcher.js';
+import { Q7MessageDispatcher } from './Q7MessageDispatcher.js';
+import { Q10MessageDispatcher } from './Q10MessageDispatcher.js';
+import { V10MessageDispatcher } from './V10MessageDispatcher.js';
 
 export class MessageDispatcherFactory {
 	private readonly builders: Record<NewProtocolVersion, AbstractMessageDispatcher>;

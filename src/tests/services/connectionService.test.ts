@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('nodemailer', () => ({
 	default: {
@@ -8,25 +8,26 @@ vi.mock('nodemailer', () => ({
 	},
 }));
 
-import { ConnectionService } from '../../services/connectionService.js';
-import ClientManager from '../../services/clientManager.js';
+import { AnsiLogger } from 'matterbridge/logger';
+
 import { DeviceConnectionError, DeviceInitializationError } from '../../errors/index.js';
+import type { EmailNotificationSettings } from '../../model/RoborockPluginPlatformConfig.js';
+import type { PlatformConfigManager } from '../../platform/platformConfigManager.js';
+import { ProtocolVersion } from '../../roborockCommunication/enums/protocolVersion.js';
 import {
 	Device,
-	DeviceSpecs,
 	DeviceModel,
+	DeviceSpecs,
 	HeaderMessage,
 	ResponseMessage,
 	UserData,
 } from '../../roborockCommunication/models/index.js';
-import { ClientRouter } from '../../roborockCommunication/routing/clientRouter.js';
-import { AnsiLogger } from 'matterbridge/logger';
-import { MessageRoutingService } from '../../services/messageRoutingService.js';
 import type { Client } from '../../roborockCommunication/routing/client.js';
-import { makeLogger, makeLocalClientStub, makeMockClientRouter, asPartial, asType } from '../testUtils.js';
-import type { PlatformConfigManager } from '../../platform/platformConfigManager.js';
-import type { EmailNotificationSettings } from '../../model/RoborockPluginPlatformConfig.js';
-import { ProtocolVersion } from '../../roborockCommunication/enums/protocolVersion.js';
+import { ClientRouter } from '../../roborockCommunication/routing/clientRouter.js';
+import ClientManager from '../../services/clientManager.js';
+import { ConnectionService } from '../../services/connectionService.js';
+import { MessageRoutingService } from '../../services/messageRoutingService.js';
+import { asPartial, asType, makeLocalClientStub, makeLogger, makeMockClientRouter } from '../testUtils.js';
 
 describe('ConnectionService', () => {
 	let service: ConnectionService;

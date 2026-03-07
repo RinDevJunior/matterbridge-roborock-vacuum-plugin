@@ -1,24 +1,20 @@
-import { PowerSource, RvcCleanMode, RvcOperationalState, RvcRunMode, ServiceArea } from 'matterbridge/matter/clusters';
-import { getBatteryState, getBatteryStatus } from './initialData/index.js';
-import { NotifyMessageTypes } from './types/notifyMessageTypes.js';
 import { debugStringify } from 'matterbridge/logger';
-import { updateFromHomeData } from './runtimes/handleHomeDataMessage.js';
-import type { MessagePayload, ServiceAreaUpdateMessage } from './types/MessagePayloads.js';
-import { BatteryMessage, DeviceErrorMessage, StatusChangeMessage } from './roborockCommunication/models/index.js';
-import { RoborockMatterbridgePlatform } from './module.js';
-import type { RoborockVacuumCleaner } from './types/roborockVacuumCleaner.js';
-import { resolveDeviceState } from './share/stateResolver.js';
-import { getRunningMode } from './initialData/getSupportedRunModes.js';
+import { PowerSource, RvcCleanMode, RvcOperationalState, RvcRunMode, ServiceArea } from 'matterbridge/matter/clusters';
+
 import { CleanModeSetting } from './behaviors/roborock.vacuum/core/CleanModeSetting.js';
-import { getCleanModeResolver } from './share/runtimeHelper.js';
-import { DockErrorCode, OperationStatusCode } from './roborockCommunication/enums/index.js';
+import { CleanSequenceType } from './behaviors/roborock.vacuum/enums/CleanSequenceType.js';
 import { INVALID_SEGMENT_ID } from './constants/index.js';
-import { BurstPollingManager } from './platform/burstPollingManager.js';
+import { getRunningMode } from './initialData/getSupportedRunModes.js';
+import { getBatteryState, getBatteryStatus } from './initialData/index.js';
 import { DockStationStatus } from './model/DockStationStatus.js';
+import { VacuumStatus } from './model/VacuumStatus.js';
+import { RoborockMatterbridgePlatform } from './module.js';
+import { BurstPollingManager } from './platform/burstPollingManager.js';
+import { DockErrorCode, OperationStatusCode } from './roborockCommunication/enums/index.js';
+import { BatteryMessage, DeviceErrorMessage, StatusChangeMessage } from './roborockCommunication/models/index.js';
+import { updateFromHomeData } from './runtimes/handleHomeDataMessage.js';
 import { triggerDssError } from './runtimes/handleLocalMessage.js';
 import { state_to_matter_operational_status, state_to_matter_state } from './share/function.js';
-import { VacuumStatus } from './model/VacuumStatus.js';
-import { CleanSequenceType } from './behaviors/roborock.vacuum/enums/CleanSequenceType.js';
 import {
 	getCleanModeName,
 	getOperationalErrorName,
@@ -26,6 +22,11 @@ import {
 	getRunModeName,
 	getRunModeNameV2,
 } from './share/matterStateNames.js';
+import { getCleanModeResolver } from './share/runtimeHelper.js';
+import { resolveDeviceState } from './share/stateResolver.js';
+import type { MessagePayload, ServiceAreaUpdateMessage } from './types/MessagePayloads.js';
+import { NotifyMessageTypes } from './types/notifyMessageTypes.js';
+import type { RoborockVacuumCleaner } from './types/roborockVacuumCleaner.js';
 
 type RobotHandler<T = unknown> = (robot: RoborockVacuumCleaner, data: T) => void | Promise<void>;
 

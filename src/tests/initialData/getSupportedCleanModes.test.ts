@@ -1,7 +1,8 @@
+import { RvcCleanMode } from 'matterbridge/matter/clusters';
+import { describe, expect, it } from 'vitest';
+
 import { getSupportedCleanModes } from '../../initialData/getSupportedCleanModes.js';
 import { DeviceModel } from '../../roborockCommunication/models/deviceModel.js';
-import { describe, it, expect } from 'vitest';
-import { RvcCleanMode } from 'matterbridge/matter/clusters';
 import { createMockConfigManager } from '../helpers/testUtils.js';
 
 describe('getSupportedCleanModes', () => {

@@ -1,13 +1,14 @@
 import { AnsiLogger } from 'matterbridge/logger';
+
+import { PlatformConfigManager } from '../../platform/platformConfigManager.js';
 import type { UserData } from '../../roborockCommunication/models/index.js';
+import { WssSendSnackbarMessage } from '../../types/WssSendSnackbarMessage.js';
 import { AuthenticationService } from '../authenticationService.js';
+import type { AuthContext } from './AuthContext.js';
+import { BaseAuthStrategy } from './BaseAuthStrategy.js';
+import type { IAuthStrategy } from './IAuthStrategy.js';
 import { UserDataRepository } from './UserDataRepository.js';
 import { VerificationCodeService } from './VerificationCodeService.js';
-import type { IAuthStrategy } from './IAuthStrategy.js';
-import type { AuthContext } from './AuthContext.js';
-import { PlatformConfigManager } from '../../platform/platformConfigManager.js';
-import { BaseAuthStrategy } from './BaseAuthStrategy.js';
-import { WssSendSnackbarMessage } from '../../types/WssSendSnackbarMessage.js';
 
 /** Two-factor authentication strategy with verification code. */
 export class TwoFactorAuthStrategy extends BaseAuthStrategy implements IAuthStrategy {
@@ -29,7 +30,8 @@ export class TwoFactorAuthStrategy extends BaseAuthStrategy implements IAuthStra
 		}
 
 		if (!this.hasVerificationCode(context)) {
-			return await this.handleVerificationCodeRequest(context.username);
+			await this.handleVerificationCodeRequest(context.username);
+			return undefined;
 		}
 
 		return await this.authenticateWithCode(context);
@@ -39,16 +41,15 @@ export class TwoFactorAuthStrategy extends BaseAuthStrategy implements IAuthStra
 		return !!context.verificationCode && context.verificationCode.trim() !== '';
 	}
 
-	private async handleVerificationCodeRequest(username: string): Promise<undefined> {
+	private async handleVerificationCodeRequest(username: string): Promise<void> {
 		if (await this.verificationCodeService.isRateLimited()) {
 			const waitSeconds = await this.verificationCodeService.getRemainingWaitTime();
 			this.logger.warn(`Please wait ${waitSeconds} seconds before requesting another code.`);
 			this.logVerificationCodeBanner(username, true);
-			return undefined;
+			return;
 		}
 
 		await this.requestVerificationCode(username);
-		return undefined;
 	}
 
 	private async requestVerificationCode(username: string): Promise<void> {

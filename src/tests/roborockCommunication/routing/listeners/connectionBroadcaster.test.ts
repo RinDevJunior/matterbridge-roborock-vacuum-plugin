@@ -1,7 +1,8 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+
+import type { AbstractConnectionListener } from '../../../../roborockCommunication/routing/listeners/abstractConnectionListener.js';
 import { ConnectionBroadcaster } from '../../../../roborockCommunication/routing/listeners/connectionBroadcaster.js';
 import { createMockLogger } from '../../../helpers/testUtils.js';
-import type { AbstractConnectionListener } from '../../../../roborockCommunication/routing/listeners/abstractConnectionListener.js';
 
 function createMockConnectionListener(): AbstractConnectionListener {
 	return {

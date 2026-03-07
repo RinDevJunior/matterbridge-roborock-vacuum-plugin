@@ -1,10 +1,12 @@
-import { AnsiLogger, debugStringify } from 'matterbridge/logger';
-import { ServiceArea } from 'matterbridge/matter/clusters';
-import { RoomIndexMap, RoomMapping } from '../core/application/models/index.js';
 import { randomInt } from 'node:crypto';
-import { DEFAULT_AREA_ID_UNKNOWN, RANDOM_ROOM_MIN, RANDOM_ROOM_MAX } from '../constants/index.js';
-import { HomeEntity } from '../core/domain/entities/Home.js';
+
+import { AnsiLogger, debugStringify } from 'matterbridge/logger';
 import { AreaNamespaceTag } from 'matterbridge/matter';
+import { ServiceArea } from 'matterbridge/matter/clusters';
+
+import { DEFAULT_AREA_ID_UNKNOWN, RANDOM_ROOM_MAX, RANDOM_ROOM_MIN } from '../constants/index.js';
+import { RoomIndexMap, RoomMapping } from '../core/application/models/index.js';
+import { HomeEntity } from '../core/domain/entities/Home.js';
 
 export interface AreaInfo {
 	mapId: number | null;

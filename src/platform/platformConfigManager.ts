@@ -4,6 +4,7 @@
  */
 
 import type { AnsiLogger } from 'matterbridge/logger';
+
 import { DEFAULT_REFRESH_INTERVAL_SECONDS } from '../constants/index.js';
 import {
 	AdvancedFeatureSetting,

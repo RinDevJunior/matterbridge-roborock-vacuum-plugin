@@ -1,7 +1,8 @@
+import { RvcOperationalState } from 'matterbridge/matter/clusters';
+import { describe, expect, it } from 'vitest';
+
 import { DockStationStatus, DockStationStatusCode } from '../../model/DockStationStatus.js';
 import { DockErrorCode } from '../../roborockCommunication/enums/vacuumAndDockErrorCode.js';
-import { RvcOperationalState } from 'matterbridge/matter/clusters';
-import { describe, it, expect } from 'vitest';
 
 describe('DockStationStatus', () => {
 	it('should parse docking station status correctly', () => {

@@ -1,7 +1,8 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { AnsiLogger } from 'matterbridge/logger';
-import ClientManager from '../../services/clientManager.js';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+
 import { UserData } from '../../roborockCommunication/models/index.js';
+import ClientManager from '../../services/clientManager.js';
 import { makeLogger } from '../testUtils.js';
 
 describe('ClientManager', () => {

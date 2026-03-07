@@ -1,7 +1,8 @@
 import { AnsiLogger } from 'matterbridge/logger';
-import { AbstractConnectionListener } from '../abstractConnectionListener.js';
-import { AbstractClient } from '../../abstractClient.js';
+
 import { MANUAL_RECONNECT_DELAY_MS, MAX_RETRY_COUNT } from '../../../../constants/index.js';
+import { AbstractClient } from '../../abstractClient.js';
+import { AbstractConnectionListener } from '../abstractConnectionListener.js';
 
 export class ConnectionStateListener implements AbstractConnectionListener {
 	protected shouldReconnect = false;

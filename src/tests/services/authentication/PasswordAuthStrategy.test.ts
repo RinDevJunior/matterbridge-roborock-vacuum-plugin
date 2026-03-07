@@ -1,16 +1,17 @@
 import { AnsiLogger } from 'matterbridge/logger';
-import { vi, describe, beforeEach, it, expect } from 'vitest';
-import { PasswordAuthStrategy } from '../../../services/authentication/PasswordAuthStrategy.js';
-import { AuthenticationService } from '../../../services/authenticationService.js';
-import { UserDataRepository } from '../../../services/authentication/UserDataRepository.js';
-import { PlatformConfigManager } from '../../../platform/platformConfigManager.js';
-import { AuthContext } from '../../../services/authentication/AuthContext.js';
-import { UserData } from '../../../roborockCommunication/models/index.js';
-import { createMockLogger, asPartial, asType } from '../../testUtils.js';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+
 import {
 	AuthenticationConfiguration,
 	RoborockPluginPlatformConfig,
 } from '../../../model/RoborockPluginPlatformConfig.js';
+import { PlatformConfigManager } from '../../../platform/platformConfigManager.js';
+import { UserData } from '../../../roborockCommunication/models/index.js';
+import { AuthContext } from '../../../services/authentication/AuthContext.js';
+import { PasswordAuthStrategy } from '../../../services/authentication/PasswordAuthStrategy.js';
+import { UserDataRepository } from '../../../services/authentication/UserDataRepository.js';
+import { AuthenticationService } from '../../../services/authenticationService.js';
+import { asPartial, asType, createMockLogger } from '../../testUtils.js';
 
 describe('PasswordAuthStrategy', () => {
 	let strategy: PasswordAuthStrategy;

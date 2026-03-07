@@ -1,14 +1,15 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { AreaManagementService } from '../../services/areaManagementService.js';
-import { RoomIndexMap } from '../../core/application/models/index.js';
-import { AreaInfo, SegmentInfo } from '../../initialData/getSupportedAreas.js';
-import { ServiceArea } from 'matterbridge/matter/clusters';
-import { DeviceError } from '../../errors/index.js';
 import { AnsiLogger } from 'matterbridge/logger';
-import { MessageRoutingService } from '../../services/index.js';
+import { ServiceArea } from 'matterbridge/matter/clusters';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+
+import { RoomIndexMap } from '../../core/application/models/index.js';
+import { DeviceError } from '../../errors/index.js';
+import { AreaInfo, SegmentInfo } from '../../initialData/getSupportedAreas.js';
 import { RoborockIoTApi } from '../../roborockCommunication/api/iotClient.js';
-import { ClientRouter } from '../../roborockCommunication/routing/clientRouter.js';
 import { Scene } from '../../roborockCommunication/models/scene.js';
+import { ClientRouter } from '../../roborockCommunication/routing/clientRouter.js';
+import { AreaManagementService } from '../../services/areaManagementService.js';
+import { MessageRoutingService } from '../../services/index.js';
 
 describe('AreaManagementService', () => {
 	let areaService: AreaManagementService;

@@ -1,9 +1,10 @@
-import { describe, it, expect, vi } from 'vitest';
-import { configureBehavior } from '../share/behaviorFactory.js';
-import { DeviceModel } from '../roborockCommunication/models/index.js';
-import { RoborockService } from '../services/roborockService.js';
+import { describe, expect, it, vi } from 'vitest';
+
 import { BehaviorDeviceGeneric } from '../behaviors/BehaviorDeviceGeneric.js';
 import { CleanModeSettings } from '../model/RoborockPluginPlatformConfig.js';
+import { DeviceModel } from '../roborockCommunication/models/index.js';
+import { RoborockService } from '../services/roborockService.js';
+import { configureBehavior } from '../share/behaviorFactory.js';
 import { createMockLogger } from './helpers/testUtils.js';
 
 describe('configureBehavior', () => {

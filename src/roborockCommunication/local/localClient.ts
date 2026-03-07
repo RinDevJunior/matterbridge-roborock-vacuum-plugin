@@ -1,14 +1,16 @@
 import { Socket } from 'node:net';
 import { clearInterval } from 'node:timers';
+
 import { AnsiLogger, debugStringify } from 'matterbridge/logger';
-import { Protocol, ResponseMessage, MessageContext, RequestMessage } from '../models/index.js';
+
 import { ProtocolVersion } from '../enums/index.js';
-import { AbstractClient } from '../routing/abstractClient.js';
 import { ChunkBuffer } from '../helper/chunkBuffer.js';
 import { Sequence } from '../helper/sequence.js';
-import { PendingResponseTracker } from '../routing/services/pendingResponseTracker.js';
-import { ResponseBroadcaster } from '../routing/listeners/responseBroadcaster.js';
+import { MessageContext, Protocol, RequestMessage, ResponseMessage } from '../models/index.js';
+import { AbstractClient } from '../routing/abstractClient.js';
 import { HelloResponseListener } from '../routing/listeners/implementation/helloResponseListener.js';
+import { ResponseBroadcaster } from '../routing/listeners/responseBroadcaster.js';
+import { PendingResponseTracker } from '../routing/services/pendingResponseTracker.js';
 import { LocalPingResponseListener } from './localPingResponseListener.js';
 
 export class LocalNetworkClient extends AbstractClient {
@@ -164,7 +166,7 @@ export class LocalNetworkClient extends AbstractClient {
 		}
 
 		this.connected = false;
-		await this.connectionBroadcaster.onDisconnected(this.duid, 'Socket disconnected. Had error: ' + hadError);
+		await this.connectionBroadcaster.onDisconnected(this.duid, `Socket disconnected. Had error: ${hadError}`);
 	}
 
 	private async onError(error: Error): Promise<void> {

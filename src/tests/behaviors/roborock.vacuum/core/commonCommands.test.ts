@@ -1,13 +1,14 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { registerCommonCommands } from '../../../../behaviors/roborock.vacuum/core/commonCommands.js';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+
 import {
 	BehaviorDeviceGeneric,
 	CommandNames,
-	DeviceEndpointCommands,
 	DeviceCommands,
+	DeviceEndpointCommands,
 } from '../../../../behaviors/BehaviorDeviceGeneric.js';
-import { createMockLogger, asPartial } from '../../../helpers/testUtils.js';
+import { registerCommonCommands } from '../../../../behaviors/roborock.vacuum/core/commonCommands.js';
 import type { RoborockService } from '../../../../services/roborockService.js';
+import { asPartial, createMockLogger } from '../../../helpers/testUtils.js';
 
 function createMockHandler(): BehaviorDeviceGeneric<DeviceEndpointCommands> {
 	return new BehaviorDeviceGeneric<DeviceEndpointCommands>(createMockLogger());

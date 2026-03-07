@@ -1,8 +1,9 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+
 import { HELLO_RESPONSE_TIMEOUT_MS } from '../../../../../constants/timeouts.js';
 import { Protocol, ResponseMessage } from '../../../../../roborockCommunication/models/index.js';
-import { asPartial, createMockLogger } from '../../../../helpers/testUtils.js';
 import { HelloResponseListener } from '../../../../../roborockCommunication/routing/listeners/implementation/helloResponseListener.js';
+import { asPartial, createMockLogger } from '../../../../helpers/testUtils.js';
 
 const DUID = 'test-duid';
 const protocolVersion = '1.0';

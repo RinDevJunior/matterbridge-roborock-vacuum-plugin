@@ -1,5 +1,5 @@
-import { describe, it, expect } from 'vitest';
-import { asPartial, asType } from '../../../helpers/testUtils.js';
+import { describe, expect, it } from 'vitest';
+
 import {
 	Dps,
 	HeaderMessage,
@@ -7,6 +7,7 @@ import {
 	ResponseBody,
 	ResponseMessage,
 } from '../../../../roborockCommunication/models/index.js';
+import { asPartial, asType } from '../../../helpers/testUtils.js';
 
 describe('ResponseMessage', () => {
 	it('stores duid and dps and exposes contain/get', () => {

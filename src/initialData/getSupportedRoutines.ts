@@ -1,7 +1,9 @@
+import { randomInt } from 'node:crypto';
+
 import { AnsiLogger, debugStringify } from 'matterbridge/logger';
 import { ServiceArea } from 'matterbridge/matter/clusters';
-import { randomInt } from 'node:crypto';
-import { SCENE_AREA_ID_MIN, SCENE_AREA_ID_MAX } from '../constants/index.js';
+
+import { SCENE_AREA_ID_MAX, SCENE_AREA_ID_MIN } from '../constants/index.js';
 import { Scene } from '../roborockCommunication/models/index.js';
 
 /**

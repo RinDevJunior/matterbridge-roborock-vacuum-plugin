@@ -1,13 +1,14 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import type { DeviceTypeDefinition, MatterbridgeEndpoint, PlatformMatterbridge } from 'matterbridge';
 import { AnsiLogger } from 'matterbridge/logger';
-import type { PlatformMatterbridge, MatterbridgeEndpoint, DeviceTypeDefinition } from 'matterbridge';
-import { RoborockMatterbridgePlatform } from '../module.js';
-import { createMockMatterbridge, createMockLogger, asPartial } from './helpers/testUtils.js';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+
 import {
 	AdvancedFeatureConfiguration,
 	PluginConfiguration,
 	RoborockPluginPlatformConfig,
 } from '../model/RoborockPluginPlatformConfig.js';
+import { RoborockMatterbridgePlatform } from '../module.js';
+import { asPartial, createMockLogger, createMockMatterbridge } from './helpers/testUtils.js';
 
 describe('module additional tests', () => {
 	let mockLogger: AnsiLogger;

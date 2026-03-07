@@ -1,18 +1,19 @@
 import { AnsiLogger } from 'matterbridge/logger';
+
 import { DeviceError, DeviceNotFoundError } from '../errors/index.js';
+import { RoborockAuthenticateApi } from '../roborockCommunication/api/authClient.js';
+import { RoborockIoTApi } from '../roborockCommunication/api/iotClient.js';
+import { DeviceCategory } from '../roborockCommunication/models/deviceCategory.js';
 import {
 	Device,
-	DeviceSpecs,
 	DeviceInformation,
 	DeviceModel,
+	DeviceSpecs,
 	Home,
 	Protocol,
 	SceneParam,
 	UserData,
 } from '../roborockCommunication/models/index.js';
-import { RoborockIoTApi } from '../roborockCommunication/api/iotClient.js';
-import { RoborockAuthenticateApi } from '../roborockCommunication/api/authClient.js';
-import { DeviceCategory } from '../roborockCommunication/models/deviceCategory.js';
 
 /** Handles device discovery, initialization, and lifecycle. */
 export class DeviceManagementService {

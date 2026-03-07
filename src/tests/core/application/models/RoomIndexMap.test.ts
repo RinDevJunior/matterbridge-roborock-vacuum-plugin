@@ -1,4 +1,5 @@
-import { describe, it, expect } from 'vitest';
+import { describe, expect, it } from 'vitest';
+
 import { RoomIndexMap } from '../../../../core/application/models/RoomIndexMap.js';
 import type { AreaInfo, SegmentInfo } from '../../../../initialData/getSupportedAreas.js';
 

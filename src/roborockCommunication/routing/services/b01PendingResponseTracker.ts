@@ -1,4 +1,5 @@
 import { AnsiLogger, debugStringify } from 'matterbridge/logger';
+
 import { MESSAGE_TIMEOUT_MS } from '../../../constants/index.js';
 import { Q10RequestCode } from '../../enums/Q10RequestCode.js';
 import { Dps, HeaderMessage, RequestMessage, ResponseBody, ResponseMessage } from '../../models/index.js';

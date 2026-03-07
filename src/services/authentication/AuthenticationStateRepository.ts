@@ -1,4 +1,5 @@
 import type NodePersist from 'node-persist';
+
 import type { AuthenticateFlowState } from '../../roborockCommunication/models/index.js';
 
 /** Repository for persisting and retrieving authentication flow state. */

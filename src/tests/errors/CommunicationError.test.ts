@@ -1,14 +1,15 @@
-import { describe, it, expect } from 'vitest';
+import { describe, expect, it } from 'vitest';
+
 import {
+	APIError,
 	CommunicationError,
-	TimeoutError,
+	DeserializationError,
+	LocalNetworkError,
+	MQTTConnectionError,
 	NetworkError,
 	ProtocolError,
-	MQTTConnectionError,
-	LocalNetworkError,
-	APIError,
 	SerializationError,
-	DeserializationError,
+	TimeoutError,
 } from '../../errors/CommunicationError.js';
 
 describe('CommunicationError', () => {

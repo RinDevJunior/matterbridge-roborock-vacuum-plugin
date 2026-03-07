@@ -1,5 +1,6 @@
-import { describe, it, expect, beforeEach } from 'vitest';
 import * as protobuf from 'protobufjs';
+import { beforeEach, describe, expect, it } from 'vitest';
+
 import { B01MapParser } from '../../../roborockCommunication/map/b01/b01MapParser.js';
 import { ROBOROCK_PROTO_STR } from '../../../roborockCommunication/map/b01/roborockProto.js';
 

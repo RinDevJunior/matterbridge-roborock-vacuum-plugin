@@ -1,7 +1,8 @@
 import { AnsiLogger } from 'matterbridge/logger';
-import { vi, describe, beforeEach, it, expect } from 'vitest';
-import { RoborockAuthGateway } from '../../../roborockCommunication/adapters/RoborockAuthGateway.js';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+
 import { AuthenticationError } from '../../../errors/index.js';
+import { RoborockAuthGateway } from '../../../roborockCommunication/adapters/RoborockAuthGateway.js';
 import { UserData } from '../../../roborockCommunication/models/index.js';
 import { asType, createMockLogger } from '../../testUtils.js';
 

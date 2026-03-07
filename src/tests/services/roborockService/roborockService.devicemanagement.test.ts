@@ -1,14 +1,15 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { AnsiLogger } from 'matterbridge/logger';
-import { RoborockService } from '../../../services/roborockService.js';
-import { ServiceContainer } from '../../../services/serviceContainer.js';
-import { makeLogger, createMockLocalStorage, asPartial, asType } from '../../testUtils.js';
-import { localStorageMock } from '../../testData/localStorageMock.js';
-import { PlatformConfigManager as PlatformConfigManagerStatic } from '../../../platform/platformConfigManager.js';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+
 import type { RoborockPluginPlatformConfig } from '../../../model/RoborockPluginPlatformConfig.js';
+import { PlatformConfigManager as PlatformConfigManagerStatic } from '../../../platform/platformConfigManager.js';
 import { RoborockAuthenticateApi } from '../../../roborockCommunication/api/authClient.js';
 import { RoborockIoTApi } from '../../../roborockCommunication/api/iotClient.js';
 import { Device, DeviceInformation, DeviceSpecs } from '../../../roborockCommunication/models/device.js';
+import { RoborockService } from '../../../services/roborockService.js';
+import { ServiceContainer } from '../../../services/serviceContainer.js';
+import { localStorageMock } from '../../testData/localStorageMock.js';
+import { asPartial, asType, createMockLocalStorage, makeLogger } from '../../testUtils.js';
 
 describe('RoborockService - listDevices', () => {
 	let roborockService: RoborockService;

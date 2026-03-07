@@ -1,9 +1,10 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { BurstPollingManager } from '../../platform/burstPollingManager.js';
-import { RoborockMatterbridgePlatform } from '../../module.js';
 import { RvcOperationalState } from 'matterbridge/matter/clusters';
-import { asPartial, createMockLogger, createMockDeviceRegistry, createMockRoborockService } from '../testUtils.js';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+
+import { RoborockMatterbridgePlatform } from '../../module.js';
+import { BurstPollingManager } from '../../platform/burstPollingManager.js';
 import type { RoborockVacuumCleaner } from '../../types/roborockVacuumCleaner.js';
+import { asPartial, createMockDeviceRegistry, createMockLogger, createMockRoborockService } from '../testUtils.js';
 
 function makePlatform(overrides: Partial<RoborockMatterbridgePlatform> = {}): RoborockMatterbridgePlatform {
 	return asPartial<RoborockMatterbridgePlatform>({

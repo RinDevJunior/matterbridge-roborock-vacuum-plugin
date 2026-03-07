@@ -1,14 +1,15 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { AuthenticationService } from '../../services/authenticationService.js';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+
 import {
 	AuthenticationError,
 	InvalidCredentialsError,
-	VerificationCodeExpiredError,
 	TokenExpiredError,
+	VerificationCodeExpiredError,
 } from '../../errors/index.js';
-import type { UserData } from '../../roborockCommunication/models/index.js';
-import { asPartial, makeLogger } from '../testUtils.js';
 import { RoborockAuthGateway } from '../../roborockCommunication/adapters/RoborockAuthGateway.js';
+import type { UserData } from '../../roborockCommunication/models/index.js';
+import { AuthenticationService } from '../../services/authenticationService.js';
+import { asPartial, makeLogger } from '../testUtils.js';
 
 const mockAuthGateway = asPartial<RoborockAuthGateway>({
 	requestVerificationCode: vi.fn(),

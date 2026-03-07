@@ -1,6 +1,7 @@
-import { RvcRunMode, RvcOperationalState } from 'matterbridge/matter/clusters';
-import { StatusChangeMessage } from '../roborockCommunication/models/deviceStatus.js';
+import { RvcOperationalState, RvcRunMode } from 'matterbridge/matter/clusters';
+
 import { OperationStatusCode } from '../roborockCommunication/enums/operationStatusCode.js';
+import { StatusChangeMessage } from '../roborockCommunication/models/deviceStatus.js';
 import { state_to_matter_operational_status, state_to_matter_state } from './function.js';
 
 export interface ResolvedState {

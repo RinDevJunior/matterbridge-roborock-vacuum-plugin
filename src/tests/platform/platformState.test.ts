@@ -1,5 +1,6 @@
-import { describe, it, expect, beforeEach } from 'vitest';
-import { PlatformState, DeviceState, HomeData } from '../../platform/platformState.js';
+import { beforeEach, describe, expect, it } from 'vitest';
+
+import { DeviceState, HomeData, PlatformState } from '../../platform/platformState.js';
 import { asType } from '../helpers/testUtils.js';
 
 describe('PlatformState', () => {

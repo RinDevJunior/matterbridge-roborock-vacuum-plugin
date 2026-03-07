@@ -1,10 +1,11 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { DeviceStatusListener } from '../../../../roborockCommunication/routing/listeners/implementation/deviceStatusListener.js';
-import { ResponseMessage } from '../../../../roborockCommunication/models/responseMessage.js';
-import { ResponseBody } from '../../../../roborockCommunication/models/responseBody.js';
-import { Protocol } from '../../../../roborockCommunication/models/protocol.js';
-import { createMockLogger } from '../../../helpers/testUtils.js';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+
 import type { Dps } from '../../../../roborockCommunication/models/dps.js';
+import { Protocol } from '../../../../roborockCommunication/models/protocol.js';
+import { ResponseBody } from '../../../../roborockCommunication/models/responseBody.js';
+import { ResponseMessage } from '../../../../roborockCommunication/models/responseMessage.js';
+import { DeviceStatusListener } from '../../../../roborockCommunication/routing/listeners/implementation/deviceStatusListener.js';
+import { createMockLogger } from '../../../helpers/testUtils.js';
 
 function createMockMessage(protocol: Protocol, payload: Record<string, unknown>): ResponseMessage {
 	const header = { isForProtocol: (p: Protocol) => p === protocol } satisfies {

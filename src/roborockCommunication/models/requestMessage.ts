@@ -1,6 +1,7 @@
+import { randomInt } from 'node:crypto';
+
 import { ProtocolVersion } from '../enums/index.js';
 import { Protocol } from './protocol.js';
-import { randomInt } from 'node:crypto';
 
 export interface ProtocolRequest {
 	messageId?: number;

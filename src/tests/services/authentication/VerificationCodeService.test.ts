@@ -1,12 +1,13 @@
 import { AnsiLogger } from 'matterbridge/logger';
-import { vi, describe, beforeEach, it, expect, afterEach } from 'vitest';
-import { VerificationCodeService } from '../../../services/authentication/VerificationCodeService.js';
-import { AuthenticationStateRepository } from '../../../services/authentication/AuthenticationStateRepository.js';
-import { AuthenticationError } from '../../../errors/index.js';
-import { AuthenticateFlowState } from '../../../roborockCommunication/models/index.js';
-import { createMockLogger, asType, asPartial } from '../../testUtils.js';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+
 import { VERIFICATION_CODE_RATE_LIMIT_MS } from '../../../constants/index.js';
+import { AuthenticationError } from '../../../errors/index.js';
 import { RoborockAuthGateway } from '../../../roborockCommunication/adapters/RoborockAuthGateway.js';
+import { AuthenticateFlowState } from '../../../roborockCommunication/models/index.js';
+import { AuthenticationStateRepository } from '../../../services/authentication/AuthenticationStateRepository.js';
+import { VerificationCodeService } from '../../../services/authentication/VerificationCodeService.js';
+import { asPartial, asType, createMockLogger } from '../../testUtils.js';
 
 describe('VerificationCodeService', () => {
 	let service: VerificationCodeService;

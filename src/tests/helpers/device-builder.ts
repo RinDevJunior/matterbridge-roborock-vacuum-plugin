@@ -1,7 +1,7 @@
-import { DeviceCategory } from '../../roborockCommunication/models/deviceCategory.js';
-import { Device, DeviceModel, Protocol, UserData, Home } from '../../roborockCommunication/models/index.js';
 import { RoomEntity } from '../../core/domain/entities/Room.js';
 import { ProtocolVersion } from '../../roborockCommunication/enums/protocolVersion.js';
+import { DeviceCategory } from '../../roborockCommunication/models/deviceCategory.js';
+import { Device, DeviceModel, Home, Protocol, UserData } from '../../roborockCommunication/models/index.js';
 
 /**
  * Fluent builder for creating Device objects in tests.

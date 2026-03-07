@@ -1,5 +1,5 @@
-import { MapRoomDto, MultipleMapDto, RoomDto } from './index.js';
 import { MapInfo, RoomMapping } from '../../../core/application/models/index.js';
+import { MapRoomDto, MultipleMapDto, RoomDto } from './index.js';
 
 export type RawRoomMappingEntry = [number, string] | [number, string, number | undefined];
 export type RawRoomMappingData = RawRoomMappingEntry[];

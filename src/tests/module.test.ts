@@ -1,9 +1,10 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { RoborockMatterbridgePlatform } from '../module.js';
-import { LogLevel } from 'matterbridge/logger';
-import type { RoborockPluginPlatformConfig } from '../model/RoborockPluginPlatformConfig.js';
-import { createMockLogger, createMockMatterbridge, asPartial } from './helpers/testUtils.js';
 import type { PlatformMatterbridge } from 'matterbridge';
+import { LogLevel } from 'matterbridge/logger';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+
+import type { RoborockPluginPlatformConfig } from '../model/RoborockPluginPlatformConfig.js';
+import { RoborockMatterbridgePlatform } from '../module.js';
+import { asPartial, createMockLogger, createMockMatterbridge } from './helpers/testUtils.js';
 
 vi.mock('../services/roborockService.js');
 vi.mock('../types/roborockVacuumCleaner.js');

@@ -1,9 +1,10 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
 import CRC32 from 'crc-32';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+
+import { MessageContext, Protocol, UserData } from '../../../roborockCommunication/models/index.js';
 import { MessageDeserializer } from '../../../roborockCommunication/protocol/deserializers/messageDeserializer.js';
-import { Protocol, MessageContext, UserData } from '../../../roborockCommunication/models/index.js';
-import { asPartial, asType, mkUser } from '../../helpers/testUtils.js';
 import { MessageSerializerFactory } from '../../../roborockCommunication/protocol/serializers/messageSerializerFactory.js';
+import { asPartial, asType, mkUser } from '../../helpers/testUtils.js';
 import { makeLogger } from '../../testUtils.js';
 
 describe('MessageDeserializer', () => {

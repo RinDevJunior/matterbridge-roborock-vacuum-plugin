@@ -1,7 +1,8 @@
 import { AnsiLogger } from 'matterbridge/logger';
+
 import { LOCAL_REFRESH_INTERVAL_MULTIPLIER } from '../constants/index.js';
-import { MessageRoutingService } from './messageRoutingService.js';
 import { Device } from '../roborockCommunication/models/index.js';
+import { MessageRoutingService } from './messageRoutingService.js';
 
 /** Polls device status via local network or MQTT. */
 export class PollingService {

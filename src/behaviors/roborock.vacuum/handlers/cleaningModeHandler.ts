@@ -1,4 +1,4 @@
-import { ModeHandler, HandlerContext } from '../core/modeHandler.js';
+import { HandlerContext, ModeHandler } from '../core/modeHandler.js';
 import { RunModeDisplayLabel } from '../core/runModeConfig.js';
 
 export class CleaningModeHandler implements ModeHandler {

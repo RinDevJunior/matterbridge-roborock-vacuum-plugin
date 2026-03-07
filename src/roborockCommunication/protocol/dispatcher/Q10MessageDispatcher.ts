@@ -1,15 +1,16 @@
 import { AnsiLogger } from 'matterbridge/logger';
-import { DeviceStatus } from '../../models/deviceStatus.js';
-import { RequestMessage } from '../../models/requestMessage.js';
-import { AbstractMessageDispatcher } from './abstractMessageDispatcher.js';
-import { Q10RequestCode, Q10RequestMethod } from '../../enums/Q10RequestCode.js';
-import { Client } from '../../routing/client.js';
-import { NetworkInfo, RawRoomMappingData } from '../../models/index.js';
-import { resolveMopMode, resolveQ10CleanMode, resolveVacuumMode } from '../../helper/B01VacuumModeResolver.js';
-import { MapInfo } from '../../../core/application/models/index.js';
-import { MapRoomResponse } from '../../../types/index.js';
+
 import { CleanModeSetting } from '../../../behaviors/roborock.vacuum/core/CleanModeSetting.js';
 import { CleanSequenceType } from '../../../behaviors/roborock.vacuum/enums/CleanSequenceType.js';
+import { MapInfo } from '../../../core/application/models/index.js';
+import { MapRoomResponse } from '../../../types/index.js';
+import { Q10RequestCode, Q10RequestMethod } from '../../enums/Q10RequestCode.js';
+import { resolveMopMode, resolveQ10CleanMode, resolveVacuumMode } from '../../helper/B01VacuumModeResolver.js';
+import { DeviceStatus } from '../../models/deviceStatus.js';
+import { NetworkInfo, RawRoomMappingData } from '../../models/index.js';
+import { RequestMessage } from '../../models/requestMessage.js';
+import { Client } from '../../routing/client.js';
+import { AbstractMessageDispatcher } from './abstractMessageDispatcher.js';
 
 export class Q10MessageDispatcher implements AbstractMessageDispatcher {
 	public dispatcherName = 'Q10MessageDispatcher';
