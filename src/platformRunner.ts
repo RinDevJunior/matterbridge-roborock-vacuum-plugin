@@ -36,6 +36,23 @@ type RobotHandler<T = unknown> = (robot: RoborockVacuumCleaner, data: T) => void
 
 export class PlatformRunner {
 	private activateHandlers = false;
+
+	private static readonly CLEANING_STATES = new Set([
+		OperationStatusCode.RoomClean,
+		OperationStatusCode.ZoneClean,
+		OperationStatusCode.SpotCleaning,
+		OperationStatusCode.RoomMopping,
+		OperationStatusCode.ZoneMopping,
+		OperationStatusCode.RoomCleanMopCleaning,
+		OperationStatusCode.RoomCleanMopMopping,
+		OperationStatusCode.ZoneCleanMopCleaning,
+		OperationStatusCode.ZoneCleanMopMopping,
+		OperationStatusCode.Paused,
+		OperationStatusCode.Cleaning,
+		OperationStatusCode.Mapping,
+		OperationStatusCode.CleanMopCleaning,
+		OperationStatusCode.CleanMopMopping,
+	]);
 	public readonly burstPolling: BurstPollingManager;
 
 	constructor(private readonly platform: RoborockMatterbridgePlatform) {
@@ -127,6 +144,7 @@ export class PlatformRunner {
 	 * Prioritizes vacuum errors over docking station errors.
 	 */
 	private async handleErrorOccurred(robot: RoborockVacuumCleaner, message: DeviceErrorMessage): Promise<void> {
+		this.platform.log.debug(`Handling error occurred: ${debugStringify(message)}`);
 		if (!this.platform.configManager.includeVacuumErrorStatus) {
 			this.platform.log.debug(
 				`Skipping error handling: includeVacuumErrorStatus is disabled, message: ${debugStringify(message)}`,
@@ -439,50 +457,17 @@ export class PlatformRunner {
 		message: ServiceAreaUpdateMessage,
 	): Promise<void> {
 		const logger = this.platform.log;
+		logger.debug(`Handling service area update: ${debugStringify(message)}`);
 
 		if (message.state === OperationStatusCode.Idle) {
 			logger.debug('Robot is idle, updating selectedAreas from Roborock service');
 			const selectedAreas = this.platform.roborockService?.getSelectedAreas(robot.device.duid) ?? [];
-			await robot.updateAttribute(ServiceArea.Cluster.id, 'selectedAreas', selectedAreas, this.platform.log);
+			await robot.updateAttribute(ServiceArea.Cluster.id, 'selectedAreas', selectedAreas, logger);
 			return;
 		}
 
-		if (
-			(message.state === OperationStatusCode.Paused ||
-				message.state === OperationStatusCode.Cleaning ||
-				message.state === OperationStatusCode.Mapping ||
-				message.state === OperationStatusCode.RoomClean ||
-				message.state === OperationStatusCode.ZoneClean ||
-				message.state === OperationStatusCode.SpotCleaning ||
-				message.state === OperationStatusCode.CleanMopCleaning ||
-				message.state === OperationStatusCode.CleanMopMopping ||
-				message.state === OperationStatusCode.RoomCleanMopCleaning ||
-				message.state === OperationStatusCode.RoomCleanMopMopping ||
-				message.state === OperationStatusCode.ZoneCleanMopCleaning ||
-				message.state === OperationStatusCode.ZoneCleanMopMopping ||
-				message.state === OperationStatusCode.RoomMopping ||
-				message.state === OperationStatusCode.ZoneMopping) &&
-			!message.cleaningInfo
-		) {
-			logger.notice('Vacuum is cleaning with no cleaning_info');
-
-			if (message.cleaningProcess.clean_area === 0 || message.cleaningProcess.clean_time === 0) {
-				await robot.updateAttribute(ServiceArea.Cluster.id, 'currentArea', null, this.platform.log);
-			}
-
-			const selectedAreas: number[] =
-				robot.getAttribute(ServiceArea.Cluster.id, 'selectedAreas', this.platform.log) ??
-				this.platform.roborockService?.getSelectedAreas(message.duid) ??
-				[];
-
-			// if vacuum is set to clean only one room, set it when there is no cleaning_info found.
-			if (selectedAreas.length === 1) {
-				await robot.updateAttribute(ServiceArea.Cluster.id, 'currentArea', selectedAreas[0], this.platform.log);
-			} else {
-				await robot.updateAttribute(ServiceArea.Cluster.id, 'currentArea', null, this.platform.log);
-				await robot.updateAttribute(ServiceArea.Cluster.id, 'selectedAreas', [], this.platform.log);
-			}
-
+		if (!message.cleaningInfo && PlatformRunner.CLEANING_STATES.has(message.state)) {
+			await this.handleCleaningWithoutInfo(robot, message);
 			return;
 		}
 
@@ -490,6 +475,52 @@ export class PlatformRunner {
 			logger.debug('No cleaning_info available, skipping service area update');
 			return;
 		}
+
+		await this.resolveAreaFromCleaningInfo(robot, message);
+	}
+
+	private getSelectedAreas(robot: RoborockVacuumCleaner, message: ServiceAreaUpdateMessage): number[] {
+		return (
+			robot.getAttribute(ServiceArea.Cluster.id, 'selectedAreas', this.platform.log) ??
+			this.platform.roborockService?.getSelectedAreas(message.duid) ??
+			[]
+		);
+	}
+
+	private async handleCleaningWithoutInfo(
+		robot: RoborockVacuumCleaner,
+		message: ServiceAreaUpdateMessage,
+	): Promise<void> {
+		const logger = this.platform.log;
+		logger.notice('Vacuum is cleaning with no cleaning_info');
+
+		const selectedAreas = this.getSelectedAreas(robot, message);
+
+		if (message.cleaningProcess.clean_area === 0 || message.cleaningProcess.clean_time === 0) {
+			// Robot not started cleaning yet → "Traveling to room"
+			await robot.updateAttribute(ServiceArea.Cluster.id, 'selectedAreas', selectedAreas, logger);
+			await robot.updateAttribute(ServiceArea.Cluster.id, 'currentArea', null, logger);
+			return;
+		}
+
+		if (selectedAreas.length === 1) {
+			// Single room → "Cleaning (Room)"
+			await robot.updateAttribute(ServiceArea.Cluster.id, 'selectedAreas', selectedAreas, logger);
+			await robot.updateAttribute(ServiceArea.Cluster.id, 'currentArea', selectedAreas[0], logger);
+		} else {
+			// Multiple rooms, no cleaningInfo → "Preparing" (workaround)
+			await robot.updateAttribute(ServiceArea.Cluster.id, 'selectedAreas', [], logger);
+			await robot.updateAttribute(ServiceArea.Cluster.id, 'currentArea', null, logger);
+		}
+	}
+
+	private async resolveAreaFromCleaningInfo(
+		robot: RoborockVacuumCleaner,
+		message: ServiceAreaUpdateMessage,
+	): Promise<void> {
+		const logger = this.platform.log;
+		const { cleaningInfo } = message;
+		if (!cleaningInfo) return;
 
 		const roomIndexMap = this.platform.roborockService?.getSupportedAreasIndexMap(robot.device.duid);
 		if (!roomIndexMap || !this.platform.roborockService) {
@@ -502,19 +533,18 @@ export class PlatformRunner {
 			robot.homeInFo.activeMapId = robot.homeInFo.mapInfo.getActiveMapId(roomData);
 		}
 
-		const source_segment_id = message.cleaningInfo.segment_id ?? INVALID_SEGMENT_ID;
-		const source_target_segment_id = message.cleaningInfo.target_segment_id ?? INVALID_SEGMENT_ID;
-		const segment_id = source_segment_id !== INVALID_SEGMENT_ID ? source_segment_id : source_target_segment_id; // 4
+		const source_segment_id = cleaningInfo.segment_id ?? INVALID_SEGMENT_ID;
+		const source_target_segment_id = cleaningInfo.target_segment_id ?? INVALID_SEGMENT_ID;
+		const segment_id = source_segment_id !== INVALID_SEGMENT_ID ? source_segment_id : source_target_segment_id;
 		const mappedArea = roomIndexMap.getAreaId(segment_id, robot.homeInFo.activeMapId);
 
 		if (!mappedArea) {
 			logger.debug(
 				`No mapped area found, skipping area mapping.
-          source_segment_id: ${source_segment_id},
-          source_target_segment_id: ${source_target_segment_id},
-          segment_id: ${segment_id},
-          currentMappedAreas: ${debugStringify(roomIndexMap)},
-          mappedArea: ${mappedArea}`,
+        source_segment_id: ${source_segment_id},
+        source_target_segment_id: ${source_target_segment_id},
+        segment_id: ${segment_id},
+        currentMappedAreas: ${debugStringify(roomIndexMap)}`,
 			);
 			await robot.updateAttribute(ServiceArea.Cluster.id, 'currentArea', null, logger);
 			return;
@@ -524,11 +554,11 @@ export class PlatformRunner {
 		const activeArea = supportedAreas.find((x) => x.areaId === mappedArea);
 		logger.debug(
 			`Mapped area found:
-        source_segment_id: ${source_segment_id},
-        source_target_segment_id: ${source_target_segment_id},
-        segment_id: ${segment_id},
-        currentMappedAreas: ${debugStringify(roomIndexMap)},
-        activeArea: ${debugStringify(activeArea)}`,
+      source_segment_id: ${source_segment_id},
+      source_target_segment_id: ${source_target_segment_id},
+      segment_id: ${segment_id},
+      currentMappedAreas: ${debugStringify(roomIndexMap)},
+      activeArea: ${debugStringify(activeArea)}`,
 		);
 
 		await robot.updateAttribute(ServiceArea.Cluster.id, 'currentArea', mappedArea, logger);

@@ -593,28 +593,55 @@ describe('PlatformRunner.updateRobotWithPayload', () => {
 		);
 	});
 
-	it('should handle ServiceAreaUpdate when state is Cleaning without cleaningInfo', async () => {
-		const serviceAreaMessage = { duid: 'test-duid', state: OperationStatusCode.Cleaning, cleaningInfo: undefined };
+	it('should handle ServiceAreaUpdate when state is Cleaning without cleaningInfo and clean_area is 0 (Traveling to room)', async () => {
+		const selectedAreas = [1, 2];
+		vi.mocked(platform.roborockService!.getSelectedAreas).mockReturnValue(selectedAreas);
+		vi.mocked(robot.getAttribute).mockReturnValue(undefined);
+		const serviceAreaMessage = {
+			duid: 'test-duid',
+			state: OperationStatusCode.Cleaning,
+			cleaningInfo: undefined,
+			cleaningProcess: { clean_area: 0, clean_time: 0 },
+		};
 		const payload: MessagePayload = { type: NotifyMessageTypes.ServiceAreaUpdate, data: serviceAreaMessage };
 
 		await runner.updateRobotWithPayload(payload);
 
-		expect(mockLogger.notice).toHaveBeenCalledWith(
-			'Vacuum is cleaning with no cleaning_info, setting currentArea to null',
-		);
+		expect(mockLogger.notice).toHaveBeenCalledWith('Vacuum is cleaning with no cleaning_info');
+		expect(robot.updateAttribute).toHaveBeenCalledWith(ServiceArea.Cluster.id, 'selectedAreas', selectedAreas, mockLogger);
 		expect(robot.updateAttribute).toHaveBeenCalledWith(ServiceArea.Cluster.id, 'currentArea', null, mockLogger);
+	});
+
+	it('should handle ServiceAreaUpdate when state is Cleaning without cleaningInfo and multiple rooms (Preparing)', async () => {
+		vi.mocked(platform.roborockService!.getSelectedAreas).mockReturnValue([1, 2]);
+		vi.mocked(robot.getAttribute).mockReturnValue(undefined);
+		const serviceAreaMessage = {
+			duid: 'test-duid',
+			state: OperationStatusCode.Cleaning,
+			cleaningInfo: undefined,
+			cleaningProcess: { clean_area: 100, clean_time: 60 },
+		};
+		const payload: MessagePayload = { type: NotifyMessageTypes.ServiceAreaUpdate, data: serviceAreaMessage };
+
+		await runner.updateRobotWithPayload(payload);
+
+		expect(mockLogger.notice).toHaveBeenCalledWith('Vacuum is cleaning with no cleaning_info');
 		expect(robot.updateAttribute).toHaveBeenCalledWith(ServiceArea.Cluster.id, 'selectedAreas', [], mockLogger);
+		expect(robot.updateAttribute).toHaveBeenCalledWith(ServiceArea.Cluster.id, 'currentArea', null, mockLogger);
 	});
 
 	it('should handle ServiceAreaUpdate when cleaningInfo is missing for non-cleaning state', async () => {
-		const serviceAreaMessage = { duid: 'test-duid', state: OperationStatusCode.Paused, cleaningInfo: undefined };
+		const serviceAreaMessage = {
+			duid: 'test-duid',
+			state: OperationStatusCode.Paused,
+			cleaningInfo: undefined,
+			cleaningProcess: { clean_area: 0, clean_time: 0 },
+		};
 		const payload: MessagePayload = { type: NotifyMessageTypes.ServiceAreaUpdate, data: serviceAreaMessage };
 
 		await runner.updateRobotWithPayload(payload);
 
-		expect(mockLogger.notice).toHaveBeenCalledWith(
-			'Vacuum is cleaning with no cleaning_info, setting currentArea to null',
-		);
+		expect(mockLogger.notice).toHaveBeenCalledWith('Vacuum is cleaning with no cleaning_info');
 		expect(robot.updateAttribute).toHaveBeenCalled();
 	});
 
