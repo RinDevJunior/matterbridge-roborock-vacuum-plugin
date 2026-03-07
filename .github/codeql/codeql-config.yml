@@ -11,3 +11,4 @@ paths-ignore:
   - 'coverage/**'
   - '**/*.spec.ts'
   - '**/*.test.ts'
+  - 'web-for-testing/**'
