@@ -9,54 +9,54 @@ import type { ServiceContainer } from '../../../services/index.js';
 import { asPartial } from '../../testUtils.js';
 
 describe('RoborockService (unit)', () => {
-  let logger: any;
-  let container: any;
-  let authService: any;
+	let logger: any;
+	let container: any;
+	let authService: any;
 
-  beforeEach(() => {
-    logger = { debug: vi.fn(), notice: vi.fn(), error: vi.fn() };
+	beforeEach(() => {
+		logger = { debug: vi.fn(), notice: vi.fn(), error: vi.fn() };
 
-    authService = {
-      authenticate: vi.fn(),
-    };
+		authService = {
+			authenticate: vi.fn(),
+		};
 
-    // Minimal container mock used by RoborockService when injected
-    container = {
-      getAuthenticationCoordinator: () => authService,
-      getDeviceManagementService: () => ({}),
-      getAreaManagementService: () => ({ getSelectedAreas: () => [], getSupportedAreas: () => [] }),
-      getMessageRoutingService: () => ({}),
-      getPollingService: () => ({
-        setDeviceNotify: vi.fn(),
-        activateDeviceNotifyOverLocal: vi.fn(),
-        activateDeviceNotifyOverMQTT: vi.fn(),
-        stopPolling: vi.fn(),
-      }),
-      getConnectionService: () => ({
-        initializeMessageClient: vi.fn(),
-        initializeMessageClientForLocal: vi.fn().mockResolvedValue(false),
-        setDeviceNotify: vi.fn(),
-      }),
-      setUserData: vi.fn(),
-      getIotApi: () => undefined,
-    };
-  });
+		// Minimal container mock used by RoborockService when injected
+		container = {
+			getAuthenticationCoordinator: () => authService,
+			getDeviceManagementService: () => ({}),
+			getAreaManagementService: () => ({ getSelectedAreas: () => [], getSupportedAreas: () => [] }),
+			getMessageRoutingService: () => ({}),
+			getPollingService: () => ({
+				setDeviceNotify: vi.fn(),
+				activateDeviceNotifyOverLocal: vi.fn(),
+				activateDeviceNotifyOverMQTT: vi.fn(),
+				stopPolling: vi.fn(),
+			}),
+			getConnectionService: () => ({
+				initializeMessageClient: vi.fn(),
+				initializeMessageClientForLocal: vi.fn().mockResolvedValue(false),
+				setDeviceNotify: vi.fn(),
+			}),
+			setUserData: vi.fn(),
+			getIotApi: () => undefined,
+		};
+	});
 
-  it('getCustomAPI throws when IoT API not initialized', async () => {
-    const svc = new RoborockService(
-      {
-        authenticateApiFactory: () => asPartial<RoborockAuthenticateApi>({}),
-        iotApiFactory: () => asPartial<RoborockIoTApi>({}),
-        refreshInterval: 10,
-        baseUrl: 'https://api.roborock.com',
-        persist: asPartial<LocalStorage>({}),
-        configManager: asPartial<PlatformConfigManager>({}),
-        container: container as ServiceContainer,
-        toastMessage: vi.fn(),
-      },
-      asPartial<AnsiLogger>(logger),
-      asPartial<PlatformConfigManager>({}),
-    );
-    await expect(svc.getCustomAPI('/some')).rejects.toThrow(/IoT API not initialized/);
-  });
+	it('getCustomAPI throws when IoT API not initialized', async () => {
+		const svc = new RoborockService(
+			{
+				authenticateApiFactory: () => asPartial<RoborockAuthenticateApi>({}),
+				iotApiFactory: () => asPartial<RoborockIoTApi>({}),
+				refreshInterval: 10,
+				baseUrl: 'https://api.roborock.com',
+				persist: asPartial<LocalStorage>({}),
+				configManager: asPartial<PlatformConfigManager>({}),
+				container: container as ServiceContainer,
+				toastMessage: vi.fn(),
+			},
+			asPartial<AnsiLogger>(logger),
+			asPartial<PlatformConfigManager>({}),
+		);
+		await expect(svc.getCustomAPI('/some')).rejects.toThrow(/IoT API not initialized/);
+	});
 });

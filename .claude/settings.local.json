@@ -1,26 +1,26 @@
 {
-  "permissions": {
-    "allow": [
-      "Bash(npm run test:*)",
-      "Bash(npm run test:coverage:*)",
-      "Bash(npm run lint:fix:*)",
-      "Bash(npm run build:local:*)",
-      "Bash(clear:*)",
-      "Bash(npm test:*)",
-      "Bash(npx vitest:*)",
-      "Bash(npm run coverage:*)",
-      "Bash(npm run type-check:*)",
-      "Bash(tree:*)",
-      "Bash(cut:*)",
-      "Bash(grep:*)",
-      "Bash(npm install:*)",
-      "WebFetch(domain:api.codecov.io)",
-      "Bash(curl:*)",
-      "Bash(python3:*)",
-      "Bash(npm run precommit:*)",
-      "mcp__codecov__get_pull_request_coverage"
-    ]
-  },
-  "outputStyle": "default",
-  "spinnerTipsEnabled": true
+	"permissions": {
+		"allow": [
+			"Bash(npm run test:*)",
+			"Bash(npm run test:coverage:*)",
+			"Bash(npm run lint:fix:*)",
+			"Bash(npm run build:local:*)",
+			"Bash(clear:*)",
+			"Bash(npm test:*)",
+			"Bash(npx vitest:*)",
+			"Bash(npm run coverage:*)",
+			"Bash(npm run type-check:*)",
+			"Bash(tree:*)",
+			"Bash(cut:*)",
+			"Bash(grep:*)",
+			"Bash(npm install:*)",
+			"WebFetch(domain:api.codecov.io)",
+			"Bash(curl:*)",
+			"Bash(python3:*)",
+			"Bash(npm run precommit:*)",
+			"mcp__codecov__get_pull_request_coverage"
+		]
+	},
+	"outputStyle": "default",
+	"spinnerTipsEnabled": true
 }

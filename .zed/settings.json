@@ -1,8 +1,8 @@
 {
-  "context_servers": {
-    "codecov": {
-      "command": "npx",
-      "args": ["codecov-mcp"]
-    }
-  }
+	"context_servers": {
+		"codecov": {
+			"command": "npx",
+			"args": ["codecov-mcp"]
+		}
+	}
 }

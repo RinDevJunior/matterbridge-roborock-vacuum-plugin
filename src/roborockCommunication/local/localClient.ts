@@ -12,337 +12,337 @@ import { HelloResponseListener } from '../routing/listeners/implementation/hello
 import { LocalPingResponseListener } from './localPingResponseListener.js';
 
 export class LocalNetworkClient extends AbstractClient {
-  protected override clientName = 'LocalNetworkClient';
+	protected override clientName = 'LocalNetworkClient';
 
-  private socket: Socket | undefined = undefined;
-  private buffer: ChunkBuffer = new ChunkBuffer();
-  private messageIdSeq: Sequence;
-  private checkConnectionInterval: NodeJS.Timeout | undefined;
-  private helloResponseListener: HelloResponseListener;
-  private pingResponseListener: LocalPingResponseListener;
-  private connected = false;
-  private intentionalDisconnect = false;
+	private socket: Socket | undefined = undefined;
+	private buffer: ChunkBuffer = new ChunkBuffer();
+	private messageIdSeq: Sequence;
+	private checkConnectionInterval: NodeJS.Timeout | undefined;
+	private helloResponseListener: HelloResponseListener;
+	private pingResponseListener: LocalPingResponseListener;
+	private connected = false;
+	private intentionalDisconnect = false;
 
-  constructor(
-    logger: AnsiLogger,
-    context: MessageContext,
-    private readonly duid: string,
-    private readonly ip: string,
-    responseBroadcaster: ResponseBroadcaster,
-    responseTracker: PendingResponseTracker,
-  ) {
-    super(logger, context, responseBroadcaster, responseTracker);
-    this.messageIdSeq = new Sequence(100000, 999999);
+	constructor(
+		logger: AnsiLogger,
+		context: MessageContext,
+		private readonly duid: string,
+		private readonly ip: string,
+		responseBroadcaster: ResponseBroadcaster,
+		responseTracker: PendingResponseTracker,
+	) {
+		super(logger, context, responseBroadcaster, responseTracker);
+		this.messageIdSeq = new Sequence(100000, 999999);
 
-    this.helloResponseListener = new HelloResponseListener(this.duid, logger);
-    this.pingResponseListener = new LocalPingResponseListener(this.duid, logger);
-    this.responseBroadcaster.register(this.helloResponseListener);
-    this.responseBroadcaster.register(this.pingResponseListener);
-  }
+		this.helloResponseListener = new HelloResponseListener(this.duid, logger);
+		this.pingResponseListener = new LocalPingResponseListener(this.duid, logger);
+		this.responseBroadcaster.register(this.helloResponseListener);
+		this.responseBroadcaster.register(this.pingResponseListener);
+	}
 
-  public override isReady(): boolean {
-    return this.connected;
-  }
+	public override isReady(): boolean {
+		return this.connected;
+	}
 
-  public isReconnecting(): boolean {
-    return this.intentionalDisconnect;
-  }
+	public isReconnecting(): boolean {
+		return this.intentionalDisconnect;
+	}
 
-  public override isConnected(): boolean {
-    return !!this.socket && this.socket.readyState === 'open' && !this.socket.destroyed;
-  }
+	public override isConnected(): boolean {
+		return !!this.socket && this.socket.readyState === 'open' && !this.socket.destroyed;
+	}
 
-  public override connect(): void {
-    if (this.socket) {
-      return; // Already connected
-    }
+	public override connect(): void {
+		if (this.socket) {
+			return; // Already connected
+		}
 
-    this.intentionalDisconnect = false;
+		this.intentionalDisconnect = false;
 
-    this.logger.notice(`[LocalNetworkClient] [${this.duid}] Trying to connect to ip: ${this.ip}`);
+		this.logger.notice(`[LocalNetworkClient] [${this.duid}] Trying to connect to ip: ${this.ip}`);
 
-    super.connect();
-    this.buffer.reset();
-    this.socket = new Socket();
-    const socket = this.socket;
+		super.connect();
+		this.buffer.reset();
+		this.socket = new Socket();
+		const socket = this.socket;
 
-    // Socket event listeners
-    socket.on(
-      'close',
-      this.safeHandler(async (hadError: boolean) => {
-        if (this.socket !== socket) return;
-        await this.onDisconnect(hadError);
-      }),
-    );
-    socket.on(
-      'end',
-      this.safeHandler(async () => {
-        if (this.socket !== socket) return;
-        await this.onEnd();
-      }),
-    );
-    socket.on(
-      'error',
-      this.safeHandler(async (error: Error) => {
-        if (this.socket !== socket) return;
-        await this.onError(error);
-      }),
-    );
-    socket.on('connect', this.safeHandler(this.onConnect));
-    socket.on('timeout', this.safeHandler(this.onTimeout));
+		// Socket event listeners
+		socket.on(
+			'close',
+			this.safeHandler(async (hadError: boolean) => {
+				if (this.socket !== socket) return;
+				await this.onDisconnect(hadError);
+			}),
+		);
+		socket.on(
+			'end',
+			this.safeHandler(async () => {
+				if (this.socket !== socket) return;
+				await this.onEnd();
+			}),
+		);
+		socket.on(
+			'error',
+			this.safeHandler(async (error: Error) => {
+				if (this.socket !== socket) return;
+				await this.onError(error);
+			}),
+		);
+		socket.on('connect', this.safeHandler(this.onConnect));
+		socket.on('timeout', this.safeHandler(this.onTimeout));
 
-    // Data event listener
-    socket.on('data', this.safeHandler(this.onMessage));
-    socket.setTimeout(15000);
-    socket.connect(58867, this.ip);
-  }
+		// Data event listener
+		socket.on('data', this.safeHandler(this.onMessage));
+		socket.setTimeout(15000);
+		socket.connect(58867, this.ip);
+	}
 
-  public override async disconnect(): Promise<void> {
-    await super.disconnect();
+	public override async disconnect(): Promise<void> {
+		await super.disconnect();
 
-    if (!this.socket) {
-      return Promise.resolve();
-    }
+		if (!this.socket) {
+			return Promise.resolve();
+		}
 
-    if (this.checkConnectionInterval) {
-      clearInterval(this.checkConnectionInterval);
-      this.checkConnectionInterval = undefined;
-    }
+		if (this.checkConnectionInterval) {
+			clearInterval(this.checkConnectionInterval);
+			this.checkConnectionInterval = undefined;
+		}
 
-    this.intentionalDisconnect = true;
-    this.socket.destroy();
-    this.socket = undefined;
-    this.connected = false;
-  }
+		this.intentionalDisconnect = true;
+		this.socket.destroy();
+		this.socket = undefined;
+		this.connected = false;
+	}
 
-  protected async sendInternal(duid: string, request: RequestMessage): Promise<void> {
-    if (!this.socket || !this.isConnected()) {
-      this.logger.error(
-        `[LocalNetworkClient] [${this.duid}]: socket is not online, request: ${debugStringify(request)}`,
-      );
-      return;
-    }
+	protected async sendInternal(duid: string, request: RequestMessage): Promise<void> {
+		if (!this.socket || !this.isConnected()) {
+			this.logger.error(
+				`[LocalNetworkClient] [${this.duid}]: socket is not online, request: ${debugStringify(request)}`,
+			);
+			return;
+		}
 
-    if (!request.isForProtocol(Protocol.hello_request) && !this.connected) {
-      this.logger.error(
-        `[LocalNetworkClient] [${this.duid}]: socket is not connected, cannot send request, request: ${debugStringify(request)}`,
-      );
-      return;
-    }
+		if (!request.isForProtocol(Protocol.hello_request) && !this.connected) {
+			this.logger.error(
+				`[LocalNetworkClient] [${this.duid}]: socket is not connected, cannot send request, request: ${debugStringify(request)}`,
+			);
+			return;
+		}
 
-    const protocolVersion = request.version ?? this.context.getLocalProtocolVersion(duid);
-    const localRequest = request.toLocalRequest(protocolVersion);
-    const message = this.serializer.serialize(duid, localRequest);
+		const protocolVersion = request.version ?? this.context.getLocalProtocolVersion(duid);
+		const localRequest = request.toLocalRequest(protocolVersion);
+		const message = this.serializer.serialize(duid, localRequest);
 
-    this.logger.debug(
-      `[LocalNetworkClient] sending message ${message.messageId}, protocol version: ${localRequest.version}, protocol:${Protocol[localRequest.protocol]}, method:${localRequest.method}, secure:${request.secure} to ${duid}`,
-    );
-    this.socket.write(this.wrapWithLengthData(message.buffer));
-    this.logger.debug(`[LocalNetworkClient] sent message ${message.messageId} to ${duid}`);
-  }
+		this.logger.debug(
+			`[LocalNetworkClient] sending message ${message.messageId}, protocol version: ${localRequest.version}, protocol:${Protocol[localRequest.protocol]}, method:${localRequest.method}, secure:${request.secure} to ${duid}`,
+		);
+		this.socket.write(this.wrapWithLengthData(message.buffer));
+		this.logger.debug(`[LocalNetworkClient] sent message ${message.messageId} to ${duid}`);
+	}
 
-  private async onConnect(): Promise<void> {
-    this.logger.debug(`[LocalNetworkClient]: ${this.duid} connected to ${this.ip}`);
-    this.logger.debug(
-      `[LocalNetworkClient]: ${this.duid} socket writable: ${this.socket?.writable}, readable: ${this.socket?.readable}`,
-    );
-    await this.trySendHelloRequest();
-  }
+	private async onConnect(): Promise<void> {
+		this.logger.debug(`[LocalNetworkClient]: ${this.duid} connected to ${this.ip}`);
+		this.logger.debug(
+			`[LocalNetworkClient]: ${this.duid} socket writable: ${this.socket?.writable}, readable: ${this.socket?.readable}`,
+		);
+		await this.trySendHelloRequest();
+	}
 
-  private async onDisconnect(hadError: boolean): Promise<void> {
-    if (this.intentionalDisconnect) {
-      return;
-    }
+	private async onDisconnect(hadError: boolean): Promise<void> {
+		if (this.intentionalDisconnect) {
+			return;
+		}
 
-    this.logger.warn(
-      `[LocalNetworkClient] [${this.duid}]: socket disconnected. ${hadError ? 'Is having error' : 'No error detected'}`,
-    );
+		this.logger.warn(
+			`[LocalNetworkClient] [${this.duid}]: socket disconnected. ${hadError ? 'Is having error' : 'No error detected'}`,
+		);
 
-    if (this.socket) {
-      this.socket.destroy();
-      this.socket = undefined;
-    }
+		if (this.socket) {
+			this.socket.destroy();
+			this.socket = undefined;
+		}
 
-    this.connected = false;
-    await this.connectionBroadcaster.onDisconnected(this.duid, 'Socket disconnected. Had error: ' + hadError);
-  }
+		this.connected = false;
+		await this.connectionBroadcaster.onDisconnected(this.duid, 'Socket disconnected. Had error: ' + hadError);
+	}
 
-  private async onError(error: Error): Promise<void> {
-    if (this.intentionalDisconnect) {
-      return;
-    }
+	private async onError(error: Error): Promise<void> {
+		if (this.intentionalDisconnect) {
+			return;
+		}
 
-    this.logger.error(`[LocalNetworkClient]: Socket error for ${this.duid}: ${error.message}`);
+		this.logger.error(`[LocalNetworkClient]: Socket error for ${this.duid}: ${error.message}`);
 
-    if (this.socket) {
-      this.socket.destroy();
-      this.socket = undefined;
-    }
+		if (this.socket) {
+			this.socket.destroy();
+			this.socket = undefined;
+		}
 
-    this.connected = false;
-    await this.connectionBroadcaster.onDisconnected(this.duid, `Socket error: ${error.message}`);
-  }
+		this.connected = false;
+		await this.connectionBroadcaster.onDisconnected(this.duid, `Socket error: ${error.message}`);
+	}
 
-  private async onTimeout(): Promise<void> {
-    this.logger.error(`[LocalNetworkClient]: Socket for ${this.duid} timed out.`);
-  }
+	private async onTimeout(): Promise<void> {
+		this.logger.error(`[LocalNetworkClient]: Socket for ${this.duid} timed out.`);
+	}
 
-  private async onEnd(): Promise<void> {
-    this.logger.notice(`[LocalNetworkClient]: ${this.duid} socket ended.`);
-  }
+	private async onEnd(): Promise<void> {
+		this.logger.notice(`[LocalNetworkClient]: ${this.duid} socket ended.`);
+	}
 
-  private async onMessage(message: Buffer): Promise<void> {
-    if (!this.socket) {
-      return;
-    }
+	private async onMessage(message: Buffer): Promise<void> {
+		if (!this.socket) {
+			return;
+		}
 
-    if (!message || message.length == 0) {
-      this.logger.debug('[LocalNetworkClient] received empty message from socket.');
-      return;
-    }
+		if (!message || message.length == 0) {
+			this.logger.debug('[LocalNetworkClient] received empty message from socket.');
+			return;
+		}
 
-    try {
-      this.buffer.append(message);
+		try {
+			this.buffer.append(message);
 
-      const receivedBuffer = this.buffer.get();
-      if (!this.isMessageComplete(receivedBuffer)) {
-        return;
-      }
-      this.buffer.reset();
+			const receivedBuffer = this.buffer.get();
+			if (!this.isMessageComplete(receivedBuffer)) {
+				return;
+			}
+			this.buffer.reset();
 
-      let offset = 0;
-      while (offset + 4 <= receivedBuffer.length) {
-        const segmentLength = receivedBuffer.readUInt32BE(offset);
-        try {
-          const currentBuffer = receivedBuffer.subarray(offset + 4, offset + segmentLength + 4);
-          const response = this.deserializer.deserialize(this.duid, currentBuffer, 'LocalNetworkClient');
-          this.responseBroadcaster.tryResolve(response);
-          await this.responseBroadcaster.onMessage(response);
-        } catch (error) {
-          const errMsg = error instanceof Error ? (error.stack ?? error.message) : String(error);
-          this.logger.error(`[LocalNetworkClient]: unable to process message with error: ${errMsg}`);
-        }
-        offset += 4 + segmentLength;
-      }
-    } catch (error) {
-      this.logger.error(
-        `[LocalNetworkClient]: read socket buffer error: ${error instanceof Error ? (error.stack ?? error.message) : String(error)}`,
-      );
-    }
-  }
+			let offset = 0;
+			while (offset + 4 <= receivedBuffer.length) {
+				const segmentLength = receivedBuffer.readUInt32BE(offset);
+				try {
+					const currentBuffer = receivedBuffer.subarray(offset + 4, offset + segmentLength + 4);
+					const response = this.deserializer.deserialize(this.duid, currentBuffer, 'LocalNetworkClient');
+					this.responseBroadcaster.tryResolve(response);
+					await this.responseBroadcaster.onMessage(response);
+				} catch (error) {
+					const errMsg = error instanceof Error ? (error.stack ?? error.message) : String(error);
+					this.logger.error(`[LocalNetworkClient]: unable to process message with error: ${errMsg}`);
+				}
+				offset += 4 + segmentLength;
+			}
+		} catch (error) {
+			this.logger.error(
+				`[LocalNetworkClient]: read socket buffer error: ${error instanceof Error ? (error.stack ?? error.message) : String(error)}`,
+			);
+		}
+	}
 
-  private isMessageComplete(buffer: Buffer): boolean {
-    let totalLength = 0;
-    let offset = 0;
+	private isMessageComplete(buffer: Buffer): boolean {
+		let totalLength = 0;
+		let offset = 0;
 
-    while (offset + 4 <= buffer.length) {
-      const segmentLength = buffer.readUInt32BE(offset);
-      totalLength += 4 + segmentLength;
-      offset += 4 + segmentLength;
+		while (offset + 4 <= buffer.length) {
+			const segmentLength = buffer.readUInt32BE(offset);
+			totalLength += 4 + segmentLength;
+			offset += 4 + segmentLength;
 
-      if (offset > buffer.length) {
-        return false;
-      }
-    }
+			if (offset > buffer.length) {
+				return false;
+			}
+		}
 
-    return totalLength <= buffer.length;
-  }
+		return totalLength <= buffer.length;
+	}
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  private safeHandler<T extends (...args: any[]) => Promise<void>>(fn: T): (...args: Parameters<T>) => void {
-    return (...args: Parameters<T>) => {
-      fn.apply(this, args).catch((error: unknown) => {
-        this.logger.error(
-          `[LocalNetworkClient]: unhandled error in ${fn.name}: ${error instanceof Error ? (error.stack ?? error.message) : String(error)}`,
-        );
-      });
-    };
-  }
+	// eslint-disable-next-line @typescript-eslint/no-explicit-any
+	private safeHandler<T extends (...args: any[]) => Promise<void>>(fn: T): (...args: Parameters<T>) => void {
+		return (...args: Parameters<T>) => {
+			fn.apply(this, args).catch((error: unknown) => {
+				this.logger.error(
+					`[LocalNetworkClient]: unhandled error in ${fn.name}: ${error instanceof Error ? (error.stack ?? error.message) : String(error)}`,
+				);
+			});
+		};
+	}
 
-  private wrapWithLengthData(buffer: Buffer): Buffer {
-    const lengthBuffer = Buffer.alloc(4);
-    lengthBuffer.writeUInt32BE(buffer.length, 0);
-    return Buffer.concat([lengthBuffer, buffer]);
-  }
+	private wrapWithLengthData(buffer: Buffer): Buffer {
+		const lengthBuffer = Buffer.alloc(4);
+		lengthBuffer.writeUInt32BE(buffer.length, 0);
+		return Buffer.concat([lengthBuffer, buffer]);
+	}
 
-  private async trySendHelloRequest(): Promise<void> {
-    const isV1 = await this.sendHelloMessage(ProtocolVersion.V1);
-    if (!isV1) {
-      await this.sendHelloMessage(ProtocolVersion.L01);
-    }
-  }
+	private async trySendHelloRequest(): Promise<void> {
+		const isV1 = await this.sendHelloMessage(ProtocolVersion.V1);
+		if (!isV1) {
+			await this.sendHelloMessage(ProtocolVersion.L01);
+		}
+	}
 
-  private async sendHelloMessage(version: ProtocolVersion): Promise<boolean> {
-    const request = new RequestMessage({
-      version: version,
-      protocol: Protocol.hello_request,
-      messageId: this.messageIdSeq.next(),
-      nonce: this.context.nonce,
-    });
+	private async sendHelloMessage(version: ProtocolVersion): Promise<boolean> {
+		const request = new RequestMessage({
+			version: version,
+			protocol: Protocol.hello_request,
+			messageId: this.messageIdSeq.next(),
+			nonce: this.context.nonce,
+		});
 
-    try {
-      const responsePromise = this.helloResponseListener.waitFor(version);
-      await this.send(this.duid, request);
-      const response = await responsePromise;
-      await this.processHelloResponse(response);
-      return true;
-    } catch (error) {
-      this.logger.error(`[LocalNetworkClient]: ${this.duid} failed to receive hello response: ${error}`);
-      return false;
-    }
-  }
+		try {
+			const responsePromise = this.helloResponseListener.waitFor(version);
+			await this.send(this.duid, request);
+			const response = await responsePromise;
+			await this.processHelloResponse(response);
+			return true;
+		} catch (error) {
+			this.logger.error(`[LocalNetworkClient]: ${this.duid} failed to receive hello response: ${error}`);
+			return false;
+		}
+	}
 
-  private async processHelloResponse(response: ResponseMessage): Promise<void> {
-    this.logger.info(`[LocalNetworkClient]: ${this.duid} received hello response: ${debugStringify(response)}`);
+	private async processHelloResponse(response: ResponseMessage): Promise<void> {
+		this.logger.info(`[LocalNetworkClient]: ${this.duid} received hello response: ${debugStringify(response)}`);
 
-    if (response.header === undefined) {
-      this.logger.error(`[LocalNetworkClient]: ${this.duid} hello response missing header.`);
-      return;
-    }
+		if (response.header === undefined) {
+			this.logger.error(`[LocalNetworkClient]: ${this.duid} hello response missing header.`);
+			return;
+		}
 
-    this.context.updateNonce(this.duid, response.header.nonce);
-    this.context.updateLocalProtocolVersion(this.duid, response.header.version);
-    this.connected = true;
-    this.pingResponseListener.resetLastPingResponse();
+		this.context.updateNonce(this.duid, response.header.nonce);
+		this.context.updateLocalProtocolVersion(this.duid, response.header.version);
+		this.connected = true;
+		this.pingResponseListener.resetLastPingResponse();
 
-    if (this.checkConnectionInterval) {
-      clearInterval(this.checkConnectionInterval);
-    }
-    this.checkConnectionInterval = setInterval(this.checkConnection.bind(this), 5000);
-  }
+		if (this.checkConnectionInterval) {
+			clearInterval(this.checkConnectionInterval);
+		}
+		this.checkConnectionInterval = setInterval(this.checkConnection.bind(this), 5000);
+	}
 
-  private checkingConnection = false;
+	private checkingConnection = false;
 
-  private async checkConnection(): Promise<void> {
-    if (this.checkingConnection) {
-      return;
-    }
-    this.checkingConnection = true;
+	private async checkConnection(): Promise<void> {
+		if (this.checkingConnection) {
+			return;
+		}
+		this.checkingConnection = true;
 
-    try {
-      const now = Date.now();
+		try {
+			const now = Date.now();
 
-      if (now - this.pingResponseListener.lastPingResponse > 15000) {
-        this.logger.warn(
-          `[LocalNetworkClient]: There is no local ping response for device ${this.duid} for 15s, try reconnect now`,
-        );
-        await this.disconnect();
-        this.connect();
-        return;
-      }
+			if (now - this.pingResponseListener.lastPingResponse > 15000) {
+				this.logger.warn(
+					`[LocalNetworkClient]: There is no local ping response for device ${this.duid} for 15s, try reconnect now`,
+				);
+				await this.disconnect();
+				this.connect();
+				return;
+			}
 
-      await this.sendPingRequest();
-    } finally {
-      this.checkingConnection = false;
-    }
-  }
+			await this.sendPingRequest();
+		} finally {
+			this.checkingConnection = false;
+		}
+	}
 
-  private async sendPingRequest(): Promise<void> {
-    const request = new RequestMessage({
-      version: this.context.getLocalProtocolVersion(this.duid),
-      protocol: Protocol.ping_request,
-      messageId: this.messageIdSeq.next(),
-    });
-    await this.send(this.duid, request);
-  }
+	private async sendPingRequest(): Promise<void> {
+		const request = new RequestMessage({
+			version: this.context.getLocalProtocolVersion(this.duid),
+			protocol: Protocol.ping_request,
+			messageId: this.messageIdSeq.next(),
+		});
+		await this.send(this.duid, request);
+	}
 }

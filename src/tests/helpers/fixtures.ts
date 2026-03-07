@@ -9,63 +9,63 @@ import { ProtocolVersion } from '../../roborockCommunication/enums/index.js';
  * Override any fields via the `overrides` parameter.
  */
 export function makeDeviceFixture(overrides: Partial<Device> = {}): Device {
-  const baseData: DeviceSpecs = {
-    id: 'device-id',
-    firmwareVersion: '01.00.00',
-    serialNumber: 'SN123456',
-    model: DeviceModel.S6,
-    protocol: ProtocolVersion.V1,
-    category: DeviceCategory.VacuumCleaner,
-    batteryLevel: 100,
-    hasRealTimeConnection: true,
-  };
+	const baseData: DeviceSpecs = {
+		id: 'device-id',
+		firmwareVersion: '01.00.00',
+		serialNumber: 'SN123456',
+		model: DeviceModel.S6,
+		protocol: ProtocolVersion.V1,
+		category: DeviceCategory.VacuumCleaner,
+		batteryLevel: 100,
+		hasRealTimeConnection: true,
+	};
 
-  const baseStore: DeviceInformation = {
-    userData: {
-      username: 'tester',
-      uid: 0,
-      tokentype: 'Bearer',
-      token: 'token',
-      rruid: 'rrid',
-      region: 'us',
-      countrycode: 'US',
-      country: 'US',
-      nickname: 'tester',
-      rriot: { u: '', s: '', h: '', k: '', r: { a: '', m: '', r: '', l: '' } },
-    },
-    localKey: 'local-key',
-    pv: '1.0',
-    model: DeviceModel.S6,
-    homeData: {
-      id: 1,
-      name: 'Test Home',
-      products: [],
-      devices: [],
-      receivedDevices: [],
-      rooms: [new RoomEntity(1, 'Living Room'), new RoomEntity(2, 'Kitchen')],
-    } satisfies Home,
-  };
+	const baseStore: DeviceInformation = {
+		userData: {
+			username: 'tester',
+			uid: 0,
+			tokentype: 'Bearer',
+			token: 'token',
+			rruid: 'rrid',
+			region: 'us',
+			countrycode: 'US',
+			country: 'US',
+			nickname: 'tester',
+			rriot: { u: '', s: '', h: '', k: '', r: { a: '', m: '', r: '', l: '' } },
+		},
+		localKey: 'local-key',
+		pv: '1.0',
+		model: DeviceModel.S6,
+		homeData: {
+			id: 1,
+			name: 'Test Home',
+			products: [],
+			devices: [],
+			receivedDevices: [],
+			rooms: [new RoomEntity(1, 'Living Room'), new RoomEntity(2, 'Kitchen')],
+		} satisfies Home,
+	};
 
-  const base: Device = {
-    duid: 'duid-1',
-    name: 'Test Vacuum',
-    sn: 'SN123456',
-    serialNumber: 'SN123456',
-    activeTime: Date.now(),
-    createTime: Date.now(),
-    localKey: 'local-key',
-    pv: '1.0',
-    online: true,
-    productId: 'product-id',
-    rrHomeId: 1,
-    fv: '01.00.00',
-    deviceStatus: {},
-    schema: [],
-    specs: baseData,
-    store: baseStore,
-    scenes: [],
-    mapInfos: undefined,
-  } as Device;
+	const base: Device = {
+		duid: 'duid-1',
+		name: 'Test Vacuum',
+		sn: 'SN123456',
+		serialNumber: 'SN123456',
+		activeTime: Date.now(),
+		createTime: Date.now(),
+		localKey: 'local-key',
+		pv: '1.0',
+		online: true,
+		productId: 'product-id',
+		rrHomeId: 1,
+		fv: '01.00.00',
+		deviceStatus: {},
+		schema: [],
+		specs: baseData,
+		store: baseStore,
+		scenes: [],
+		mapInfos: undefined,
+	} as Device;
 
-  return { ...base, ...overrides } as Device;
+	return { ...base, ...overrides } as Device;
 }

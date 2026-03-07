@@ -1,11 +1,11 @@
 import { DeviceModel } from '../../../roborockCommunication/models/index.js';
 import {
-  CleanModeConfig,
-  CleanModeDisplayLabel,
-  baseCleanModeConfigs,
-  smartPlanModeConfig,
-  vacFollowedByMopModeConfig,
-  vacAndMopDeepModeConfig,
+	CleanModeConfig,
+	CleanModeDisplayLabel,
+	baseCleanModeConfigs,
+	smartPlanModeConfig,
+	vacFollowedByMopModeConfig,
+	vacAndMopDeepModeConfig,
 } from './cleanModeConfig.js';
 
 /**
@@ -25,10 +25,10 @@ import {
  * 6. Add the mode to the relevant device entries below
  */
 export const DEVICE_EXTRA_MODES: Partial<Record<string, CleanModeConfig[]>> = {
-  [DeviceModel.QREVO_EDGE_5V1]: [smartPlanModeConfig, vacFollowedByMopModeConfig],
-  [DeviceModel.QREVO_PLUS]: [smartPlanModeConfig, vacFollowedByMopModeConfig],
-  [DeviceModel.QREVO_MAXV]: [smartPlanModeConfig, vacFollowedByMopModeConfig],
-  [DeviceModel.Q10_S5_PLUS]: [vacFollowedByMopModeConfig, vacAndMopDeepModeConfig],
+	[DeviceModel.QREVO_EDGE_5V1]: [smartPlanModeConfig, vacFollowedByMopModeConfig],
+	[DeviceModel.QREVO_PLUS]: [smartPlanModeConfig, vacFollowedByMopModeConfig],
+	[DeviceModel.QREVO_MAXV]: [smartPlanModeConfig, vacFollowedByMopModeConfig],
+	[DeviceModel.Q10_S5_PLUS]: [vacFollowedByMopModeConfig, vacAndMopDeepModeConfig],
 };
 
 /**
@@ -36,21 +36,21 @@ export const DEVICE_EXTRA_MODES: Partial<Record<string, CleanModeConfig[]>> = {
  * Returns an empty array if the device has no extra modes.
  */
 export function getExtraModes(model: string): CleanModeConfig[] {
-  return DEVICE_EXTRA_MODES[model] ?? [];
+	return DEVICE_EXTRA_MODES[model] ?? [];
 }
 
 /**
  * Check if a device supports the Smart Plan clean mode.
  */
 export function hasSmartPlan(model: string): boolean {
-  return getExtraModes(model).some((c) => c.label === CleanModeDisplayLabel.SmartPlan);
+	return getExtraModes(model).some((c) => c.label === CleanModeDisplayLabel.SmartPlan);
 }
 
 /**
  * Get all clean modes for a device: extra modes first, then base modes.
  */
 export function getAllModesForDevice(model: string): CleanModeConfig[] {
-  return [...getExtraModes(model), ...baseCleanModeConfigs];
+	return [...getExtraModes(model), ...baseCleanModeConfigs];
 }
 
 /**
@@ -58,12 +58,12 @@ export function getAllModesForDevice(model: string): CleanModeConfig[] {
  * Useful for mode label lookups when the device model is not available.
  */
 export function getAllKnownModeConfigs(): CleanModeConfig[] {
-  const allExtra = (Object.values(DEVICE_EXTRA_MODES) as CleanModeConfig[][]).flat();
-  const uniqueByMode = new Map<number, CleanModeConfig>();
-  for (const config of [...allExtra, ...baseCleanModeConfigs]) {
-    if (!uniqueByMode.has(config.mode)) {
-      uniqueByMode.set(config.mode, config);
-    }
-  }
-  return [...uniqueByMode.values()];
+	const allExtra = (Object.values(DEVICE_EXTRA_MODES) as CleanModeConfig[][]).flat();
+	const uniqueByMode = new Map<number, CleanModeConfig>();
+	for (const config of [...allExtra, ...baseCleanModeConfigs]) {
+		if (!uniqueByMode.has(config.mode)) {
+			uniqueByMode.set(config.mode, config);
+		}
+	}
+	return [...uniqueByMode.values()];
 }

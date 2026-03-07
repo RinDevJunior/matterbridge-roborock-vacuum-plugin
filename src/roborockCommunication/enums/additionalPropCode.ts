@@ -1,3 +1,3 @@
 export enum AdditionalPropCode {
-  map_change = 4,
+	map_change = 4,
 }

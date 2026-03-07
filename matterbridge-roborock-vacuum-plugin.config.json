@@ -1,61 +1,61 @@
 {
-  "name": "matterbridge-roborock-vacuum-plugin",
-  "type": "DynamicPlatform",
-  "version": "1.1.5-rc07",
-  "authentication": {
-    "username": "",
-    "region": "US",
-    "forceAuthentication": false,
-    "authenticationMethod": "VerificationCode",
-    "verificationCode": "",
-    "password": ""
-  },
-  "pluginConfiguration": {
-    "whiteList": [],
-    "enableServerMode": false,
-    "enableMultipleMap": false,
-    "sanitizeSensitiveLogs": true,
-    "refreshInterval": 60,
-    "debug": true,
-    "unregisterOnShutdown": false
-  },
-  "advancedFeature": {
-    "enableAdvancedFeature": false,
-    "settings": {
-      "clearStorageOnStartup": false,
-      "showRoutinesAsRoom": false,
-      "includeDockStationStatus": false,
-      "includeVacuumErrorStatus": false,
-      "forceRunAtDefault": false,
-      "useVacationModeToSendVacuumToDock": false,
-      "enableCleanModeMapping": false,
-      "overrideMatterConfiguration": false,
-      "cleanModeSettings": {
-        "vacuuming": {
-          "fanMode": "Balanced",
-          "mopRouteMode": "Standard"
-        },
-        "mopping": {
-          "waterFlowMode": "Medium",
-          "mopRouteMode": "Standard",
-          "distanceOff": 25
-        },
-        "vacmop": {
-          "fanMode": "Balanced",
-          "waterFlowMode": "Medium",
-          "mopRouteMode": "Standard",
-          "distanceOff": 25
-        }
-      },
-      "matterOverrideSettings": {
-        "matterVendorName": "Matterbridge",
-        "matterVendorId": 65521,
-        "matterProductName": "Robotic Vaccum Cleaner",
-        "matterProductId": 32768,
-        "deviceProductNames": []
-      },
-      "enableEmailNotification": false,
-      "emailNotificationSettings": {}
-    }
-  }
+	"name": "matterbridge-roborock-vacuum-plugin",
+	"type": "DynamicPlatform",
+	"version": "1.1.5-rc07",
+	"authentication": {
+		"username": "",
+		"region": "US",
+		"forceAuthentication": false,
+		"authenticationMethod": "VerificationCode",
+		"verificationCode": "",
+		"password": ""
+	},
+	"pluginConfiguration": {
+		"whiteList": [],
+		"enableServerMode": false,
+		"enableMultipleMap": false,
+		"sanitizeSensitiveLogs": true,
+		"refreshInterval": 60,
+		"debug": true,
+		"unregisterOnShutdown": false
+	},
+	"advancedFeature": {
+		"enableAdvancedFeature": false,
+		"settings": {
+			"clearStorageOnStartup": false,
+			"showRoutinesAsRoom": false,
+			"includeDockStationStatus": false,
+			"includeVacuumErrorStatus": false,
+			"forceRunAtDefault": false,
+			"useVacationModeToSendVacuumToDock": false,
+			"enableCleanModeMapping": false,
+			"overrideMatterConfiguration": false,
+			"cleanModeSettings": {
+				"vacuuming": {
+					"fanMode": "Balanced",
+					"mopRouteMode": "Standard"
+				},
+				"mopping": {
+					"waterFlowMode": "Medium",
+					"mopRouteMode": "Standard",
+					"distanceOff": 25
+				},
+				"vacmop": {
+					"fanMode": "Balanced",
+					"waterFlowMode": "Medium",
+					"mopRouteMode": "Standard",
+					"distanceOff": 25
+				}
+			},
+			"matterOverrideSettings": {
+				"matterVendorName": "Matterbridge",
+				"matterVendorId": 65521,
+				"matterProductName": "Robotic Vaccum Cleaner",
+				"matterProductId": 32768,
+				"deviceProductNames": []
+			},
+			"enableEmailNotification": false,
+			"emailNotificationSettings": {}
+		}
+	}
 }

@@ -16,51 +16,51 @@ const DISTANCE_OFF_DEFAULT = 25;
  * @returns Clean mode setting configuration or undefined if activity not recognized
  */
 export const getSettingFromCleanMode = (
-  activity: string,
-  cleanModeSettings?: CleanModeSettings,
+	activity: string,
+	cleanModeSettings?: CleanModeSettings,
 ): CleanModeSetting | undefined => {
-  switch (activity) {
-    case CleanModeDisplayLabel.MopDefault: {
-      const mopSetting = cleanModeSettings?.mopping;
-      const waterFlow = MopWaterFlow[mopSetting?.waterFlowMode as keyof typeof MopWaterFlow] ?? MopWaterFlow.Medium;
-      const distance_off =
-        waterFlow === MopWaterFlow.CustomizeWithDistanceOff
-          ? DISTANCE_OFF_BASE - DISTANCE_OFF_MULTIPLIER * (mopSetting?.distanceOff ?? DISTANCE_OFF_DEFAULT)
-          : 0;
-      return new CleanModeSetting(
-        VacuumSuctionPower.Off,
-        waterFlow,
-        distance_off,
-        MopRoute[mopSetting?.mopRouteMode as keyof typeof MopRoute] ?? MopRoute.Standard,
-        CleanSequenceType.Persist,
-      );
-    }
-    case CleanModeDisplayLabel.VacuumDefault: {
-      const vacuumSetting = cleanModeSettings?.vacuuming;
-      return new CleanModeSetting(
-        VacuumSuctionPower[vacuumSetting?.fanMode as keyof typeof VacuumSuctionPower] ?? VacuumSuctionPower.Balanced,
-        MopWaterFlow.Off,
-        0,
-        MopRoute[vacuumSetting?.mopRouteMode as keyof typeof MopRoute] ?? MopRoute.Standard,
-        CleanSequenceType.Persist,
-      );
-    }
-    case CleanModeDisplayLabel.VacuumAndMopDefault: {
-      const vacmopSetting = cleanModeSettings?.vacmop;
-      const waterFlow = MopWaterFlow[vacmopSetting?.waterFlowMode as keyof typeof MopWaterFlow] ?? MopWaterFlow.Medium;
-      const distance_off =
-        waterFlow === MopWaterFlow.CustomizeWithDistanceOff
-          ? DISTANCE_OFF_BASE - DISTANCE_OFF_MULTIPLIER * (vacmopSetting?.distanceOff ?? DISTANCE_OFF_DEFAULT)
-          : 0;
-      return new CleanModeSetting(
-        VacuumSuctionPower[vacmopSetting?.fanMode as keyof typeof VacuumSuctionPower] ?? VacuumSuctionPower.Balanced,
-        waterFlow,
-        distance_off,
-        MopRoute[vacmopSetting?.mopRouteMode as keyof typeof MopRoute] ?? MopRoute.Standard,
-        CleanSequenceType.Persist,
-      );
-    }
-    default:
-      return undefined;
-  }
+	switch (activity) {
+		case CleanModeDisplayLabel.MopDefault: {
+			const mopSetting = cleanModeSettings?.mopping;
+			const waterFlow = MopWaterFlow[mopSetting?.waterFlowMode as keyof typeof MopWaterFlow] ?? MopWaterFlow.Medium;
+			const distance_off =
+				waterFlow === MopWaterFlow.CustomizeWithDistanceOff
+					? DISTANCE_OFF_BASE - DISTANCE_OFF_MULTIPLIER * (mopSetting?.distanceOff ?? DISTANCE_OFF_DEFAULT)
+					: 0;
+			return new CleanModeSetting(
+				VacuumSuctionPower.Off,
+				waterFlow,
+				distance_off,
+				MopRoute[mopSetting?.mopRouteMode as keyof typeof MopRoute] ?? MopRoute.Standard,
+				CleanSequenceType.Persist,
+			);
+		}
+		case CleanModeDisplayLabel.VacuumDefault: {
+			const vacuumSetting = cleanModeSettings?.vacuuming;
+			return new CleanModeSetting(
+				VacuumSuctionPower[vacuumSetting?.fanMode as keyof typeof VacuumSuctionPower] ?? VacuumSuctionPower.Balanced,
+				MopWaterFlow.Off,
+				0,
+				MopRoute[vacuumSetting?.mopRouteMode as keyof typeof MopRoute] ?? MopRoute.Standard,
+				CleanSequenceType.Persist,
+			);
+		}
+		case CleanModeDisplayLabel.VacuumAndMopDefault: {
+			const vacmopSetting = cleanModeSettings?.vacmop;
+			const waterFlow = MopWaterFlow[vacmopSetting?.waterFlowMode as keyof typeof MopWaterFlow] ?? MopWaterFlow.Medium;
+			const distance_off =
+				waterFlow === MopWaterFlow.CustomizeWithDistanceOff
+					? DISTANCE_OFF_BASE - DISTANCE_OFF_MULTIPLIER * (vacmopSetting?.distanceOff ?? DISTANCE_OFF_DEFAULT)
+					: 0;
+			return new CleanModeSetting(
+				VacuumSuctionPower[vacmopSetting?.fanMode as keyof typeof VacuumSuctionPower] ?? VacuumSuctionPower.Balanced,
+				waterFlow,
+				distance_off,
+				MopRoute[vacmopSetting?.mopRouteMode as keyof typeof MopRoute] ?? MopRoute.Standard,
+				CleanSequenceType.Persist,
+			);
+		}
+		default:
+			return undefined;
+	}
 };

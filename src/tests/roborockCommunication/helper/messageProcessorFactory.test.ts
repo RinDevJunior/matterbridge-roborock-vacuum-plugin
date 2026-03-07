@@ -8,24 +8,24 @@ import { L01Serializer } from '../../../roborockCommunication/protocol/serialize
 import { MessageSerializerFactory } from '../../../roborockCommunication/protocol/serializers/messageSerializerFactory.js';
 
 describe('MessageProcessorFactory', () => {
-  it('returns correct serializer instances for known protocol versions', () => {
-    const f = new MessageSerializerFactory();
+	it('returns correct serializer instances for known protocol versions', () => {
+		const f = new MessageSerializerFactory();
 
-    const v1 = f.getMessageSerializer(ProtocolVersion.V1);
-    expect(v1).toBeInstanceOf(V01Serializer);
+		const v1 = f.getMessageSerializer(ProtocolVersion.V1);
+		expect(v1).toBeInstanceOf(V01Serializer);
 
-    const a01 = f.getMessageSerializer(ProtocolVersion.A01);
-    expect(a01).toBeInstanceOf(A01Serializer);
+		const a01 = f.getMessageSerializer(ProtocolVersion.A01);
+		expect(a01).toBeInstanceOf(A01Serializer);
 
-    const b01 = f.getMessageSerializer(ProtocolVersion.B01);
-    expect(b01).toBeInstanceOf(B01Serializer);
+		const b01 = f.getMessageSerializer(ProtocolVersion.B01);
+		expect(b01).toBeInstanceOf(B01Serializer);
 
-    const l01 = f.getMessageSerializer(ProtocolVersion.L01);
-    expect(l01).toBeInstanceOf(L01Serializer);
-  });
+		const l01 = f.getMessageSerializer(ProtocolVersion.L01);
+		expect(l01).toBeInstanceOf(L01Serializer);
+	});
 
-  it('throws when requesting unknown protocol version', () => {
-    const f = new MessageSerializerFactory();
-    expect(() => f.getMessageSerializer('UNKNOWN')).toThrow(/No serializer found/);
-  });
+	it('throws when requesting unknown protocol version', () => {
+		const f = new MessageSerializerFactory();
+		expect(() => f.getMessageSerializer('UNKNOWN')).toThrow(/No serializer found/);
+	});
 });

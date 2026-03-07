@@ -7,10 +7,10 @@ import { CleanSequenceType } from '../enums/CleanSequenceType.js';
  * Complete mode configuration including display name, settings, and Matter tags.
  */
 export interface CleanModeConfig {
-  mode: number;
-  label: string;
-  setting: CleanModeSetting;
-  modeTags: { value: number }[];
+	mode: number;
+	label: string;
+	setting: CleanModeSetting;
+	modeTags: { value: number }[];
 }
 
 // prettier-ignore
@@ -41,29 +41,29 @@ export enum CleanModeDisplayLabel {
 }
 
 export type CleanModeLabel =
-  | CleanModeDisplayLabel.SmartPlan
-  | CleanModeDisplayLabel.VacuumAndMopDefault
-  | CleanModeDisplayLabel.VacuumAndMopQuick
-  | CleanModeDisplayLabel.VacuumAndMopMax
-  | CleanModeDisplayLabel.VacuumAndMopMin
-  | CleanModeDisplayLabel.VacuumAndMopQuiet
-  | CleanModeDisplayLabel.VacuumAndMopEnergySaving
-  | CleanModeDisplayLabel.VacuumAndMopDeep
-  | CleanModeDisplayLabel.MopDefault
-  | CleanModeDisplayLabel.MopMax
-  | CleanModeDisplayLabel.MopMin
-  | CleanModeDisplayLabel.MopQuick
-  | CleanModeDisplayLabel.MopDeep
-  | CleanModeDisplayLabel.VacuumDefault
-  | CleanModeDisplayLabel.VacuumMax
-  | CleanModeDisplayLabel.VacuumQuiet
-  | CleanModeDisplayLabel.VacuumQuick
-  | CleanModeDisplayLabel.GoVacation
-  | CleanModeDisplayLabel.VacFollowedByMop;
+	| CleanModeDisplayLabel.SmartPlan
+	| CleanModeDisplayLabel.VacuumAndMopDefault
+	| CleanModeDisplayLabel.VacuumAndMopQuick
+	| CleanModeDisplayLabel.VacuumAndMopMax
+	| CleanModeDisplayLabel.VacuumAndMopMin
+	| CleanModeDisplayLabel.VacuumAndMopQuiet
+	| CleanModeDisplayLabel.VacuumAndMopEnergySaving
+	| CleanModeDisplayLabel.VacuumAndMopDeep
+	| CleanModeDisplayLabel.MopDefault
+	| CleanModeDisplayLabel.MopMax
+	| CleanModeDisplayLabel.MopMin
+	| CleanModeDisplayLabel.MopQuick
+	| CleanModeDisplayLabel.MopDeep
+	| CleanModeDisplayLabel.VacuumDefault
+	| CleanModeDisplayLabel.VacuumMax
+	| CleanModeDisplayLabel.VacuumQuiet
+	| CleanModeDisplayLabel.VacuumQuick
+	| CleanModeDisplayLabel.GoVacation
+	| CleanModeDisplayLabel.VacFollowedByMop;
 
 interface CleanModeLabelInfoStruct {
-  label: CleanModeLabel;
-  mode: number;
+	label: CleanModeLabel;
+	mode: number;
 }
 
 // prettier-ignore
@@ -93,210 +93,210 @@ export const CleanModeLabelInfo: Record<CleanModeLabel, CleanModeLabelInfoStruct
  * Base clean mode configurations shared across all device types.
  */
 export const baseCleanModeConfigs: CleanModeConfig[] = [
-  {
-    label: CleanModeLabelInfo[CleanModeDisplayLabel.VacuumAndMopDefault].label,
-    mode: CleanModeLabelInfo[CleanModeDisplayLabel.VacuumAndMopDefault].mode,
-    setting: new CleanModeSetting(
-      VacuumSuctionPower.Balanced,
-      MopWaterFlow.Medium,
-      0,
-      MopRoute.Standard,
-      CleanSequenceType.Persist,
-    ),
-    modeTags: [
-      { value: RvcCleanMode.ModeTag.Mop },
-      { value: RvcCleanMode.ModeTag.Vacuum },
-      { value: RvcCleanMode.ModeTag.Auto },
-    ],
-  },
-  {
-    label: CleanModeLabelInfo[CleanModeDisplayLabel.VacuumAndMopQuick].label,
-    mode: CleanModeLabelInfo[CleanModeDisplayLabel.VacuumAndMopQuick].mode,
-    setting: new CleanModeSetting(
-      VacuumSuctionPower.Balanced,
-      MopWaterFlow.Medium,
-      0,
-      MopRoute.Fast,
-      CleanSequenceType.Persist,
-    ),
-    modeTags: [
-      { value: RvcCleanMode.ModeTag.Mop },
-      { value: RvcCleanMode.ModeTag.Vacuum },
-      { value: RvcCleanMode.ModeTag.Quick },
-    ],
-  },
-  {
-    label: CleanModeLabelInfo[CleanModeDisplayLabel.VacuumAndMopMax].label,
-    mode: CleanModeLabelInfo[CleanModeDisplayLabel.VacuumAndMopMax].mode,
-    setting: new CleanModeSetting(
-      VacuumSuctionPower.Max,
-      MopWaterFlow.Medium,
-      0,
-      MopRoute.Standard,
-      CleanSequenceType.Persist,
-    ),
-    modeTags: [
-      { value: RvcCleanMode.ModeTag.Mop },
-      { value: RvcCleanMode.ModeTag.Vacuum },
-      { value: RvcCleanMode.ModeTag.Max },
-    ],
-  },
-  {
-    label: CleanModeLabelInfo[CleanModeDisplayLabel.VacuumAndMopMin].label,
-    mode: CleanModeLabelInfo[CleanModeDisplayLabel.VacuumAndMopMin].mode,
-    setting: new CleanModeSetting(
-      VacuumSuctionPower.Balanced,
-      MopWaterFlow.Low,
-      0,
-      MopRoute.Standard,
-      CleanSequenceType.Persist,
-    ),
-    modeTags: [
-      { value: RvcCleanMode.ModeTag.Mop },
-      { value: RvcCleanMode.ModeTag.Vacuum },
-      { value: RvcCleanMode.ModeTag.Min },
-    ],
-  },
-  {
-    label: CleanModeLabelInfo[CleanModeDisplayLabel.VacuumAndMopQuiet].label,
-    mode: CleanModeLabelInfo[CleanModeDisplayLabel.VacuumAndMopQuiet].mode,
-    setting: new CleanModeSetting(
-      VacuumSuctionPower.Quiet,
-      MopWaterFlow.Medium,
-      0,
-      MopRoute.Standard,
-      CleanSequenceType.Persist,
-    ),
-    modeTags: [
-      { value: RvcCleanMode.ModeTag.Mop },
-      { value: RvcCleanMode.ModeTag.Vacuum },
-      { value: RvcCleanMode.ModeTag.Quiet },
-    ],
-  },
-  {
-    label: CleanModeLabelInfo[CleanModeDisplayLabel.VacuumAndMopEnergySaving].label,
-    mode: CleanModeLabelInfo[CleanModeDisplayLabel.VacuumAndMopEnergySaving].mode,
-    setting: new CleanModeSetting(
-      VacuumSuctionPower.Custom,
-      MopWaterFlow.Custom,
-      0,
-      MopRoute.Custom,
-      CleanSequenceType.Persist,
-    ),
-    modeTags: [
-      { value: RvcCleanMode.ModeTag.Mop },
-      { value: RvcCleanMode.ModeTag.Vacuum },
-      { value: RvcCleanMode.ModeTag.LowEnergy },
-    ],
-  },
-  {
-    label: CleanModeLabelInfo[CleanModeDisplayLabel.MopDefault].label,
-    mode: CleanModeLabelInfo[CleanModeDisplayLabel.MopDefault].mode,
-    setting: new CleanModeSetting(
-      VacuumSuctionPower.Off,
-      MopWaterFlow.Medium,
-      0,
-      MopRoute.Standard,
-      CleanSequenceType.Persist,
-    ),
-    modeTags: [{ value: RvcCleanMode.ModeTag.Mop }, { value: RvcCleanMode.ModeTag.Auto }],
-  },
-  {
-    label: CleanModeLabelInfo[CleanModeDisplayLabel.MopMax].label,
-    mode: CleanModeLabelInfo[CleanModeDisplayLabel.MopMax].mode,
-    setting: new CleanModeSetting(
-      VacuumSuctionPower.Off,
-      MopWaterFlow.High,
-      0,
-      MopRoute.Standard,
-      CleanSequenceType.Persist,
-    ),
-    modeTags: [{ value: RvcCleanMode.ModeTag.Mop }, { value: RvcCleanMode.ModeTag.Max }],
-  },
-  {
-    label: CleanModeLabelInfo[CleanModeDisplayLabel.MopMin].label,
-    mode: CleanModeLabelInfo[CleanModeDisplayLabel.MopMin].mode,
-    setting: new CleanModeSetting(
-      VacuumSuctionPower.Off,
-      MopWaterFlow.Low,
-      0,
-      MopRoute.Standard,
-      CleanSequenceType.Persist,
-    ),
-    modeTags: [{ value: RvcCleanMode.ModeTag.Mop }, { value: RvcCleanMode.ModeTag.Min }],
-  },
-  {
-    label: CleanModeLabelInfo[CleanModeDisplayLabel.MopQuick].label,
-    mode: CleanModeLabelInfo[CleanModeDisplayLabel.MopQuick].mode,
-    setting: new CleanModeSetting(
-      VacuumSuctionPower.Off,
-      MopWaterFlow.Medium,
-      0,
-      MopRoute.Fast,
-      CleanSequenceType.Persist,
-    ),
-    modeTags: [{ value: RvcCleanMode.ModeTag.Mop }, { value: RvcCleanMode.ModeTag.Quick }],
-  },
-  {
-    label: CleanModeLabelInfo[CleanModeDisplayLabel.MopDeep].label,
-    mode: CleanModeLabelInfo[CleanModeDisplayLabel.MopDeep].mode,
-    setting: new CleanModeSetting(
-      VacuumSuctionPower.Off,
-      MopWaterFlow.Medium,
-      0,
-      MopRoute.Deep,
-      CleanSequenceType.Persist,
-    ),
-    modeTags: [{ value: RvcCleanMode.ModeTag.Mop }, { value: RvcCleanMode.ModeTag.DeepClean }],
-  },
-  {
-    label: CleanModeLabelInfo[CleanModeDisplayLabel.VacuumDefault].label,
-    mode: CleanModeLabelInfo[CleanModeDisplayLabel.VacuumDefault].mode,
-    setting: new CleanModeSetting(
-      VacuumSuctionPower.Balanced,
-      MopWaterFlow.Off,
-      0,
-      MopRoute.Standard,
-      CleanSequenceType.Persist,
-    ),
-    modeTags: [{ value: RvcCleanMode.ModeTag.Vacuum }, { value: RvcCleanMode.ModeTag.Auto }],
-  },
-  {
-    label: CleanModeLabelInfo[CleanModeDisplayLabel.VacuumMax].label,
-    mode: CleanModeLabelInfo[CleanModeDisplayLabel.VacuumMax].mode,
-    setting: new CleanModeSetting(
-      VacuumSuctionPower.Max,
-      MopWaterFlow.Off,
-      0,
-      MopRoute.Standard,
-      CleanSequenceType.Persist,
-    ),
-    modeTags: [{ value: RvcCleanMode.ModeTag.Vacuum }, { value: RvcCleanMode.ModeTag.Max }],
-  },
-  {
-    label: CleanModeLabelInfo[CleanModeDisplayLabel.VacuumQuiet].label,
-    mode: CleanModeLabelInfo[CleanModeDisplayLabel.VacuumQuiet].mode,
-    setting: new CleanModeSetting(
-      VacuumSuctionPower.Quiet,
-      MopWaterFlow.Off,
-      0,
-      MopRoute.Standard,
-      CleanSequenceType.Persist,
-    ),
-    modeTags: [{ value: RvcCleanMode.ModeTag.Vacuum }, { value: RvcCleanMode.ModeTag.Quiet }],
-  },
-  {
-    label: CleanModeLabelInfo[CleanModeDisplayLabel.VacuumQuick].label,
-    mode: CleanModeLabelInfo[CleanModeDisplayLabel.VacuumQuick].mode,
-    setting: new CleanModeSetting(
-      VacuumSuctionPower.Balanced,
-      MopWaterFlow.Off,
-      0,
-      MopRoute.Fast,
-      CleanSequenceType.Persist,
-    ),
-    modeTags: [{ value: RvcCleanMode.ModeTag.Vacuum }, { value: RvcCleanMode.ModeTag.Quick }],
-  },
+	{
+		label: CleanModeLabelInfo[CleanModeDisplayLabel.VacuumAndMopDefault].label,
+		mode: CleanModeLabelInfo[CleanModeDisplayLabel.VacuumAndMopDefault].mode,
+		setting: new CleanModeSetting(
+			VacuumSuctionPower.Balanced,
+			MopWaterFlow.Medium,
+			0,
+			MopRoute.Standard,
+			CleanSequenceType.Persist,
+		),
+		modeTags: [
+			{ value: RvcCleanMode.ModeTag.Mop },
+			{ value: RvcCleanMode.ModeTag.Vacuum },
+			{ value: RvcCleanMode.ModeTag.Auto },
+		],
+	},
+	{
+		label: CleanModeLabelInfo[CleanModeDisplayLabel.VacuumAndMopQuick].label,
+		mode: CleanModeLabelInfo[CleanModeDisplayLabel.VacuumAndMopQuick].mode,
+		setting: new CleanModeSetting(
+			VacuumSuctionPower.Balanced,
+			MopWaterFlow.Medium,
+			0,
+			MopRoute.Fast,
+			CleanSequenceType.Persist,
+		),
+		modeTags: [
+			{ value: RvcCleanMode.ModeTag.Mop },
+			{ value: RvcCleanMode.ModeTag.Vacuum },
+			{ value: RvcCleanMode.ModeTag.Quick },
+		],
+	},
+	{
+		label: CleanModeLabelInfo[CleanModeDisplayLabel.VacuumAndMopMax].label,
+		mode: CleanModeLabelInfo[CleanModeDisplayLabel.VacuumAndMopMax].mode,
+		setting: new CleanModeSetting(
+			VacuumSuctionPower.Max,
+			MopWaterFlow.Medium,
+			0,
+			MopRoute.Standard,
+			CleanSequenceType.Persist,
+		),
+		modeTags: [
+			{ value: RvcCleanMode.ModeTag.Mop },
+			{ value: RvcCleanMode.ModeTag.Vacuum },
+			{ value: RvcCleanMode.ModeTag.Max },
+		],
+	},
+	{
+		label: CleanModeLabelInfo[CleanModeDisplayLabel.VacuumAndMopMin].label,
+		mode: CleanModeLabelInfo[CleanModeDisplayLabel.VacuumAndMopMin].mode,
+		setting: new CleanModeSetting(
+			VacuumSuctionPower.Balanced,
+			MopWaterFlow.Low,
+			0,
+			MopRoute.Standard,
+			CleanSequenceType.Persist,
+		),
+		modeTags: [
+			{ value: RvcCleanMode.ModeTag.Mop },
+			{ value: RvcCleanMode.ModeTag.Vacuum },
+			{ value: RvcCleanMode.ModeTag.Min },
+		],
+	},
+	{
+		label: CleanModeLabelInfo[CleanModeDisplayLabel.VacuumAndMopQuiet].label,
+		mode: CleanModeLabelInfo[CleanModeDisplayLabel.VacuumAndMopQuiet].mode,
+		setting: new CleanModeSetting(
+			VacuumSuctionPower.Quiet,
+			MopWaterFlow.Medium,
+			0,
+			MopRoute.Standard,
+			CleanSequenceType.Persist,
+		),
+		modeTags: [
+			{ value: RvcCleanMode.ModeTag.Mop },
+			{ value: RvcCleanMode.ModeTag.Vacuum },
+			{ value: RvcCleanMode.ModeTag.Quiet },
+		],
+	},
+	{
+		label: CleanModeLabelInfo[CleanModeDisplayLabel.VacuumAndMopEnergySaving].label,
+		mode: CleanModeLabelInfo[CleanModeDisplayLabel.VacuumAndMopEnergySaving].mode,
+		setting: new CleanModeSetting(
+			VacuumSuctionPower.Custom,
+			MopWaterFlow.Custom,
+			0,
+			MopRoute.Custom,
+			CleanSequenceType.Persist,
+		),
+		modeTags: [
+			{ value: RvcCleanMode.ModeTag.Mop },
+			{ value: RvcCleanMode.ModeTag.Vacuum },
+			{ value: RvcCleanMode.ModeTag.LowEnergy },
+		],
+	},
+	{
+		label: CleanModeLabelInfo[CleanModeDisplayLabel.MopDefault].label,
+		mode: CleanModeLabelInfo[CleanModeDisplayLabel.MopDefault].mode,
+		setting: new CleanModeSetting(
+			VacuumSuctionPower.Off,
+			MopWaterFlow.Medium,
+			0,
+			MopRoute.Standard,
+			CleanSequenceType.Persist,
+		),
+		modeTags: [{ value: RvcCleanMode.ModeTag.Mop }, { value: RvcCleanMode.ModeTag.Auto }],
+	},
+	{
+		label: CleanModeLabelInfo[CleanModeDisplayLabel.MopMax].label,
+		mode: CleanModeLabelInfo[CleanModeDisplayLabel.MopMax].mode,
+		setting: new CleanModeSetting(
+			VacuumSuctionPower.Off,
+			MopWaterFlow.High,
+			0,
+			MopRoute.Standard,
+			CleanSequenceType.Persist,
+		),
+		modeTags: [{ value: RvcCleanMode.ModeTag.Mop }, { value: RvcCleanMode.ModeTag.Max }],
+	},
+	{
+		label: CleanModeLabelInfo[CleanModeDisplayLabel.MopMin].label,
+		mode: CleanModeLabelInfo[CleanModeDisplayLabel.MopMin].mode,
+		setting: new CleanModeSetting(
+			VacuumSuctionPower.Off,
+			MopWaterFlow.Low,
+			0,
+			MopRoute.Standard,
+			CleanSequenceType.Persist,
+		),
+		modeTags: [{ value: RvcCleanMode.ModeTag.Mop }, { value: RvcCleanMode.ModeTag.Min }],
+	},
+	{
+		label: CleanModeLabelInfo[CleanModeDisplayLabel.MopQuick].label,
+		mode: CleanModeLabelInfo[CleanModeDisplayLabel.MopQuick].mode,
+		setting: new CleanModeSetting(
+			VacuumSuctionPower.Off,
+			MopWaterFlow.Medium,
+			0,
+			MopRoute.Fast,
+			CleanSequenceType.Persist,
+		),
+		modeTags: [{ value: RvcCleanMode.ModeTag.Mop }, { value: RvcCleanMode.ModeTag.Quick }],
+	},
+	{
+		label: CleanModeLabelInfo[CleanModeDisplayLabel.MopDeep].label,
+		mode: CleanModeLabelInfo[CleanModeDisplayLabel.MopDeep].mode,
+		setting: new CleanModeSetting(
+			VacuumSuctionPower.Off,
+			MopWaterFlow.Medium,
+			0,
+			MopRoute.Deep,
+			CleanSequenceType.Persist,
+		),
+		modeTags: [{ value: RvcCleanMode.ModeTag.Mop }, { value: RvcCleanMode.ModeTag.DeepClean }],
+	},
+	{
+		label: CleanModeLabelInfo[CleanModeDisplayLabel.VacuumDefault].label,
+		mode: CleanModeLabelInfo[CleanModeDisplayLabel.VacuumDefault].mode,
+		setting: new CleanModeSetting(
+			VacuumSuctionPower.Balanced,
+			MopWaterFlow.Off,
+			0,
+			MopRoute.Standard,
+			CleanSequenceType.Persist,
+		),
+		modeTags: [{ value: RvcCleanMode.ModeTag.Vacuum }, { value: RvcCleanMode.ModeTag.Auto }],
+	},
+	{
+		label: CleanModeLabelInfo[CleanModeDisplayLabel.VacuumMax].label,
+		mode: CleanModeLabelInfo[CleanModeDisplayLabel.VacuumMax].mode,
+		setting: new CleanModeSetting(
+			VacuumSuctionPower.Max,
+			MopWaterFlow.Off,
+			0,
+			MopRoute.Standard,
+			CleanSequenceType.Persist,
+		),
+		modeTags: [{ value: RvcCleanMode.ModeTag.Vacuum }, { value: RvcCleanMode.ModeTag.Max }],
+	},
+	{
+		label: CleanModeLabelInfo[CleanModeDisplayLabel.VacuumQuiet].label,
+		mode: CleanModeLabelInfo[CleanModeDisplayLabel.VacuumQuiet].mode,
+		setting: new CleanModeSetting(
+			VacuumSuctionPower.Quiet,
+			MopWaterFlow.Off,
+			0,
+			MopRoute.Standard,
+			CleanSequenceType.Persist,
+		),
+		modeTags: [{ value: RvcCleanMode.ModeTag.Vacuum }, { value: RvcCleanMode.ModeTag.Quiet }],
+	},
+	{
+		label: CleanModeLabelInfo[CleanModeDisplayLabel.VacuumQuick].label,
+		mode: CleanModeLabelInfo[CleanModeDisplayLabel.VacuumQuick].mode,
+		setting: new CleanModeSetting(
+			VacuumSuctionPower.Balanced,
+			MopWaterFlow.Off,
+			0,
+			MopRoute.Fast,
+			CleanSequenceType.Persist,
+		),
+		modeTags: [{ value: RvcCleanMode.ModeTag.Vacuum }, { value: RvcCleanMode.ModeTag.Quick }],
+	},
 ];
 
 /**
@@ -304,14 +304,14 @@ export const baseCleanModeConfigs: CleanModeConfig[] = [
  * Exported for use in deviceCapabilityRegistry.ts.
  */
 export const smartPlanModeConfig: CleanModeConfig = {
-  label: CleanModeLabelInfo[CleanModeDisplayLabel.SmartPlan].label,
-  mode: CleanModeLabelInfo[CleanModeDisplayLabel.SmartPlan].mode,
-  setting: new CleanModeSetting(0, 0, 0, MopRoute.Smart, CleanSequenceType.Persist),
-  modeTags: [
-    { value: RvcCleanMode.ModeTag.Mop },
-    { value: RvcCleanMode.ModeTag.Vacuum },
-    { value: RvcCleanMode.ModeTag.Auto },
-  ],
+	label: CleanModeLabelInfo[CleanModeDisplayLabel.SmartPlan].label,
+	mode: CleanModeLabelInfo[CleanModeDisplayLabel.SmartPlan].mode,
+	setting: new CleanModeSetting(0, 0, 0, MopRoute.Smart, CleanSequenceType.Persist),
+	modeTags: [
+		{ value: RvcCleanMode.ModeTag.Mop },
+		{ value: RvcCleanMode.ModeTag.Vacuum },
+		{ value: RvcCleanMode.ModeTag.Auto },
+	],
 };
 
 /**
@@ -319,37 +319,37 @@ export const smartPlanModeConfig: CleanModeConfig = {
  * Exported for use in deviceCapabilityRegistry.ts.
  */
 export const vacFollowedByMopModeConfig: CleanModeConfig = {
-  label: CleanModeLabelInfo[CleanModeDisplayLabel.VacFollowedByMop].label,
-  mode: CleanModeLabelInfo[CleanModeDisplayLabel.VacFollowedByMop].mode,
-  setting: new CleanModeSetting(
-    VacuumSuctionPower.Balanced,
-    MopWaterFlow.Low,
-    0,
-    MopRoute.Standard,
-    CleanSequenceType.OneTime,
-  ),
-  modeTags: [
-    { value: RvcCleanMode.ModeTag.Mop },
-    { value: RvcCleanMode.ModeTag.Vacuum },
-    { value: RvcCleanMode.ModeTag.VacuumThenMop },
-  ],
+	label: CleanModeLabelInfo[CleanModeDisplayLabel.VacFollowedByMop].label,
+	mode: CleanModeLabelInfo[CleanModeDisplayLabel.VacFollowedByMop].mode,
+	setting: new CleanModeSetting(
+		VacuumSuctionPower.Balanced,
+		MopWaterFlow.Low,
+		0,
+		MopRoute.Standard,
+		CleanSequenceType.OneTime,
+	),
+	modeTags: [
+		{ value: RvcCleanMode.ModeTag.Mop },
+		{ value: RvcCleanMode.ModeTag.Vacuum },
+		{ value: RvcCleanMode.ModeTag.VacuumThenMop },
+	],
 };
 
 export const vacAndMopDeepModeConfig: CleanModeConfig = {
-  label: CleanModeLabelInfo[CleanModeDisplayLabel.VacuumAndMopDeep].label,
-  mode: CleanModeLabelInfo[CleanModeDisplayLabel.VacuumAndMopDeep].mode,
-  setting: new CleanModeSetting(
-    VacuumSuctionPower.Balanced,
-    MopWaterFlow.Medium,
-    0,
-    MopRoute.Deep,
-    CleanSequenceType.Persist,
-  ),
-  modeTags: [
-    { value: RvcCleanMode.ModeTag.Mop },
-    { value: RvcCleanMode.ModeTag.Vacuum },
-    { value: RvcCleanMode.ModeTag.DeepClean },
-  ],
+	label: CleanModeLabelInfo[CleanModeDisplayLabel.VacuumAndMopDeep].label,
+	mode: CleanModeLabelInfo[CleanModeDisplayLabel.VacuumAndMopDeep].mode,
+	setting: new CleanModeSetting(
+		VacuumSuctionPower.Balanced,
+		MopWaterFlow.Medium,
+		0,
+		MopRoute.Deep,
+		CleanSequenceType.Persist,
+	),
+	modeTags: [
+		{ value: RvcCleanMode.ModeTag.Mop },
+		{ value: RvcCleanMode.ModeTag.Vacuum },
+		{ value: RvcCleanMode.ModeTag.DeepClean },
+	],
 };
 
 /**
@@ -357,26 +357,26 @@ export const vacAndMopDeepModeConfig: CleanModeConfig = {
  * @deprecated Use deviceCapabilityRegistry.ts to manage per-device modes.
  */
 export const smartCleanModeConfigs: CleanModeConfig[] = [
-  smartPlanModeConfig,
-  vacFollowedByMopModeConfig,
-  ...baseCleanModeConfigs,
+	smartPlanModeConfig,
+	vacFollowedByMopModeConfig,
+	...baseCleanModeConfigs,
 ];
 
 /**
  * Helper functions to extract different views of the configuration.
  */
 export function getModeDisplayMap(configs: CleanModeConfig[]): Record<number, string> {
-  return Object.fromEntries(configs.map((c) => [c.mode, c.label]));
+	return Object.fromEntries(configs.map((c) => [c.mode, c.label]));
 }
 
 export function getModeSettingsMap(configs: CleanModeConfig[]): Record<number, CleanModeSetting> {
-  return Object.fromEntries(configs.map((c) => [c.mode, c.setting]));
+	return Object.fromEntries(configs.map((c) => [c.mode, c.setting]));
 }
 
 export function getModeOptions(configs: CleanModeConfig[]): RvcCleanMode.ModeOption[] {
-  return configs.map((c) => ({
-    mode: c.mode,
-    label: c.label,
-    modeTags: c.modeTags,
-  }));
+	return configs.map((c) => ({
+		mode: c.mode,
+		label: c.label,
+		modeTags: c.modeTags,
+	}));
 }

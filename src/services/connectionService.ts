@@ -5,11 +5,11 @@ import { DeviceConnectionError, DeviceInitializationError, DeviceError } from '.
 import { CONNECTION_RETRY_DELAY_MS, MAX_CONNECTION_ATTEMPTS } from '../constants/index.js';
 import { ClientRouter } from '../roborockCommunication/routing/clientRouter.js';
 import {
-  Device,
-  NetworkInfoDTO,
-  Protocol,
-  RPC_Request_Segments,
-  UserData,
+	Device,
+	NetworkInfoDTO,
+	Protocol,
+	RPC_Request_Segments,
+	UserData,
 } from '../roborockCommunication/models/index.js';
 import { MapResponseListener } from '../roborockCommunication/routing/listeners/implementation/mapResponseListener.js';
 import { AbstractUDPMessageListener } from '../roborockCommunication/routing/listeners/abstractUDPMessageListener.js';
@@ -27,290 +27,290 @@ import { DisconnectNotificationListener } from '../roborockCommunication/routing
 
 /** Manages device connections (MQTT and local network). */
 export class ConnectionService {
-  clientRouter: ClientRouter | undefined;
-  ipMap = new Map<string, string>();
-  localClientMap = new Map<string, Client>();
-  deviceNotify: DeviceNotifyCallback | undefined;
-  private emailService: EmailNotificationService | undefined;
+	clientRouter: ClientRouter | undefined;
+	ipMap = new Map<string, string>();
+	localClientMap = new Map<string, Client>();
+	deviceNotify: DeviceNotifyCallback | undefined;
+	private emailService: EmailNotificationService | undefined;
 
-  constructor(
-    private readonly clientManager: ClientManager,
-    private readonly logger: AnsiLogger,
-    private readonly messageRoutingService: MessageRoutingService,
-    private readonly configManager?: PlatformConfigManager,
-  ) {}
+	constructor(
+		private readonly clientManager: ClientManager,
+		private readonly logger: AnsiLogger,
+		private readonly messageRoutingService: MessageRoutingService,
+		private readonly configManager?: PlatformConfigManager,
+	) {}
 
-  public async sendTestEmailNotification(): Promise<void> {
-    const emailService = this.getEmailService();
-    if (emailService) {
-      await emailService.sendTestEmail();
-    }
-  }
+	public async sendTestEmailNotification(): Promise<void> {
+		const emailService = this.getEmailService();
+		if (emailService) {
+			await emailService.sendTestEmail();
+		}
+	}
 
-  private getEmailService(): EmailNotificationService | undefined {
-    if (!this.configManager?.isEmailNotificationEnabled) return undefined;
-    const settings = this.configManager.emailNotificationSettings;
-    if (!settings) return undefined;
-    this.emailService ??= new EmailNotificationService(settings, this.logger);
-    return this.emailService;
-  }
+	private getEmailService(): EmailNotificationService | undefined {
+		if (!this.configManager?.isEmailNotificationEnabled) return undefined;
+		const settings = this.configManager.emailNotificationSettings;
+		if (!settings) return undefined;
+		this.emailService ??= new EmailNotificationService(settings, this.logger);
+		return this.emailService;
+	}
 
-  /** Set callback for device notifications. */
-  public setDeviceNotify(callback: DeviceNotifyCallback): void {
-    this.deviceNotify = callback;
-  }
+	/** Set callback for device notifications. */
+	public setDeviceNotify(callback: DeviceNotifyCallback): void {
+		this.deviceNotify = callback;
+	}
 
-  /** Wait for connection with retry logic. Returns attempt count. */
-  public async waitForConnection(
-    checkConnection: () => boolean,
-    maxAttempts = MAX_CONNECTION_ATTEMPTS,
-    delayMs = CONNECTION_RETRY_DELAY_MS,
-  ): Promise<number> {
-    let attempts = 0;
-    while (!checkConnection() && attempts < maxAttempts) {
-      await this.sleep(delayMs);
-      attempts++;
-    }
+	/** Wait for connection with retry logic. Returns attempt count. */
+	public async waitForConnection(
+		checkConnection: () => boolean,
+		maxAttempts = MAX_CONNECTION_ATTEMPTS,
+		delayMs = CONNECTION_RETRY_DELAY_MS,
+	): Promise<number> {
+		let attempts = 0;
+		while (!checkConnection() && attempts < maxAttempts) {
+			await this.sleep(delayMs);
+			attempts++;
+		}
 
-    if (!checkConnection()) {
-      throw new Error(`Connection timeout after ${attempts} attempts`);
-    }
+		if (!checkConnection()) {
+			throw new Error(`Connection timeout after ${attempts} attempts`);
+		}
 
-    return attempts;
-  }
+		return attempts;
+	}
 
-  /**
-   * Initialize the message client for cloud/MQTT communication.
-   * Registers device, sets up message listeners, and waits for connection.
-   */
-  public async initializeMessageClient(device: Device, userdata: UserData): Promise<void> {
-    if (!this.clientManager) {
-      throw new DeviceInitializationError(device.duid, 'ClientManager not initialized');
-    }
+	/**
+	 * Initialize the message client for cloud/MQTT communication.
+	 * Registers device, sets up message listeners, and waits for connection.
+	 */
+	public async initializeMessageClient(device: Device, userdata: UserData): Promise<void> {
+		if (!this.clientManager) {
+			throw new DeviceInitializationError(device.duid, 'ClientManager not initialized');
+		}
 
-    try {
-      this.clientRouter = this.clientManager.get(userdata);
-      if (!this.clientRouter) {
-        throw new DeviceInitializationError(device.duid, 'Failed to get ClientRouter from ClientManager');
-      }
+		try {
+			this.clientRouter = this.clientManager.get(userdata);
+			if (!this.clientRouter) {
+				throw new DeviceInitializationError(device.duid, 'Failed to get ClientRouter from ClientManager');
+			}
 
-      this.logger.debug('Initializing message client for device:', device.duid);
+			this.logger.debug('Initializing message client for device:', device.duid);
 
-      this.clientRouter.registerDevice(device.duid, device.localKey, device.pv, undefined);
-      this.clientRouter.connect();
+			this.clientRouter.registerDevice(device.duid, device.localKey, device.pv, undefined);
+			this.clientRouter.connect();
 
-      // Register email notification listener if enabled (covers both MQTT and local via shared broadcaster)
-      const emailService = this.getEmailService();
-      if (emailService) {
-        this.clientRouter.registerConnectionListener(
-          new DisconnectNotificationListener(emailService, this.logger, 'MQTT'),
-        );
-      }
+			// Register email notification listener if enabled (covers both MQTT and local via shared broadcaster)
+			const emailService = this.getEmailService();
+			if (emailService) {
+				this.clientRouter.registerConnectionListener(
+					new DisconnectNotificationListener(emailService, this.logger, 'MQTT'),
+				);
+			}
 
-      // Wait for connection
-      try {
-        await this.waitForConnection(() => (this.clientRouter?.isReady() && this.clientRouter?.isConnected()) ?? false);
-        this.logger.debug(`clientRouter.isReady: ${this.clientRouter?.isReady()}`);
-        this.logger.debug(`clientRouter.isConnected: ${this.clientRouter?.isConnected()}`);
-        device.specs.hasRealTimeConnection = true;
-      } catch {
-        throw new DeviceConnectionError(device.duid, 'MQTT connection timeout');
-      }
+			// Wait for connection
+			try {
+				await this.waitForConnection(() => (this.clientRouter?.isReady() && this.clientRouter?.isConnected()) ?? false);
+				this.logger.debug(`clientRouter.isReady: ${this.clientRouter?.isReady()}`);
+				this.logger.debug(`clientRouter.isConnected: ${this.clientRouter?.isConnected()}`);
+				device.specs.hasRealTimeConnection = true;
+			} catch {
+				throw new DeviceConnectionError(device.duid, 'MQTT connection timeout');
+			}
 
-      this.logger.debug('clientRouter connected for device:', device.duid);
-    } catch (error) {
-      this.logger.error('Failed to initialize message client:', error);
-      if (error instanceof DeviceError) {
-        throw error;
-      }
-      throw new DeviceInitializationError(device.duid, error instanceof Error ? error.message : String(error));
-    }
-  }
+			this.logger.debug('clientRouter connected for device:', device.duid);
+		} catch (error) {
+			this.logger.error('Failed to initialize message client:', error);
+			if (error instanceof DeviceError) {
+				throw error;
+			}
+			throw new DeviceInitializationError(device.duid, error instanceof Error ? error.message : String(error));
+		}
+	}
 
-  /**
-   * Initialize local network client for direct device communication.
-   * Creates message processor, retrieves device IP, and establishes local connection.
-   * Devices with protocol version B01 will skip local connection and use MQTT only.
-   */
-  public async initializeMessageClientForLocal(device: Device): Promise<boolean> {
-    this.logger.debug('Initializing local network client for device:', device.duid);
+	/**
+	 * Initialize local network client for direct device communication.
+	 * Creates message processor, retrieves device IP, and establishes local connection.
+	 * Devices with protocol version B01 will skip local connection and use MQTT only.
+	 */
+	public async initializeMessageClientForLocal(device: Device): Promise<boolean> {
+		this.logger.debug('Initializing local network client for device:', device.duid);
 
-    if (!this.clientRouter) {
-      this.logger.error('clientRouter not initialized');
-      return false;
-    }
+		if (!this.clientRouter) {
+			this.logger.error('clientRouter not initialized');
+			return false;
+		}
 
-    if (!this.deviceNotify) {
-      this.logger.error('deviceNotify callback not set');
-      return false;
-    }
+		if (!this.deviceNotify) {
+			this.logger.error('deviceNotify callback not set');
+			return false;
+		}
 
-    this.clientRouter.registerMessageListener(new MapResponseListener(device.duid, this.logger));
+		this.clientRouter.registerMessageListener(new MapResponseListener(device.duid, this.logger));
 
-    const simpleMessageListener = new SimpleMessageListener(device.duid, this.logger);
-    simpleMessageListener.registerHandler(new SimpleMessageHandler(device.duid, this.logger, this.deviceNotify));
+		const simpleMessageListener = new SimpleMessageListener(device.duid, this.logger);
+		simpleMessageListener.registerHandler(new SimpleMessageHandler(device.duid, this.logger, this.deviceNotify));
 
-    const deviceStatusListener = new DeviceStatusListener(device.duid, this.logger);
+		const deviceStatusListener = new DeviceStatusListener(device.duid, this.logger);
 
-    this.clientRouter.registerMessageListener(deviceStatusListener);
-    this.clientRouter.registerMessageListener(simpleMessageListener);
+		this.clientRouter.registerMessageListener(deviceStatusListener);
+		this.clientRouter.registerMessageListener(simpleMessageListener);
 
-    const deviceSpecs = device.specs;
-    const messageDispatcher = new MessageDispatcherFactory(this.clientRouter, this.logger).getMessageDispatcher(
-      deviceSpecs.protocol,
-      deviceSpecs.model,
-    );
+		const deviceSpecs = device.specs;
+		const messageDispatcher = new MessageDispatcherFactory(this.clientRouter, this.logger).getMessageDispatcher(
+			deviceSpecs.protocol,
+			deviceSpecs.model,
+		);
 
-    this.logger.debug(
-      `[ConnectionService] Resolve ${messageDispatcher.dispatcherName} for device: ${device.duid}, protocol: ${deviceSpecs.protocol}, model: ${deviceSpecs.model}`,
-    );
+		this.logger.debug(
+			`[ConnectionService] Resolve ${messageDispatcher.dispatcherName} for device: ${device.duid}, protocol: ${deviceSpecs.protocol}, model: ${deviceSpecs.model}`,
+		);
 
-    // Register message listeners
-    this.messageRoutingService.registerMessageDispatcher(device.duid, messageDispatcher);
+		// Register message listeners
+		this.messageRoutingService.registerMessageDispatcher(device.duid, messageDispatcher);
 
-    // B01 devices use MQTT-only communication
-    if (device.pv === ProtocolVersion.B01) {
-      this.logger.debug(`Device: ${device.duid} uses B01 protocol, switch to use UDPClient`);
-      const localNetworkUDPClient = new LocalNetworkUDPClient(this.logger);
+		// B01 devices use MQTT-only communication
+		if (device.pv === ProtocolVersion.B01) {
+			this.logger.debug(`Device: ${device.duid} uses B01 protocol, switch to use UDPClient`);
+			const localNetworkUDPClient = new LocalNetworkUDPClient(this.logger);
 
-      const networkInfo = this.getNetworkInfoFromDeviceStatus(device);
+			const networkInfo = this.getNetworkInfoFromDeviceStatus(device);
 
-      if (networkInfo?.ipAddress) {
-        this.logger.debug(
-          `Device ${device.duid} has network info IP: ${networkInfo.ipAddress}, setting up UDP listener`,
-        );
-        const success = await this.setupLocalClient(device, networkInfo.ipAddress);
-        if (success) {
-          return true;
-        }
+			if (networkInfo?.ipAddress) {
+				this.logger.debug(
+					`Device ${device.duid} has network info IP: ${networkInfo.ipAddress}, setting up UDP listener`,
+				);
+				const success = await this.setupLocalClient(device, networkInfo.ipAddress);
+				if (success) {
+					return true;
+				}
 
-        this.logger
-          .error(`Failed to set up local client for device ${device.duid} at IP ${networkInfo.ipAddress} via B01 setup.
+				this.logger
+					.error(`Failed to set up local client for device ${device.duid} at IP ${networkInfo.ipAddress} via B01 setup.
             Continuing to listen for broadcasts.`);
-      }
+			}
 
-      localNetworkUDPClient.registerListener({
-        onMessage: async (duid: string, ip: string): Promise<void> => {
-          this.logger.debug(`Received UDP broadcast from device ${duid} at IP ${ip}`);
-          await this.setupLocalClient(device, ip);
-        },
-      } as AbstractUDPMessageListener);
+			localNetworkUDPClient.registerListener({
+				onMessage: async (duid: string, ip: string): Promise<void> => {
+					this.logger.debug(`Received UDP broadcast from device ${duid} at IP ${ip}`);
+					await this.setupLocalClient(device, ip);
+				},
+			} as AbstractUDPMessageListener);
 
-      localNetworkUDPClient.connect();
-      return true;
-    }
+			localNetworkUDPClient.connect();
+			return true;
+		}
 
-    // Get device IP address from network info
-    let localIp = this.ipMap.get(device.duid);
+		// Get device IP address from network info
+		let localIp = this.ipMap.get(device.duid);
 
-    if (!localIp) {
-      this.logger.debug(`Device ${device.duid} IP not cached, fetching from device`);
-      const networkInfo = await messageDispatcher.getNetworkInfo(device.duid);
+		if (!localIp) {
+			this.logger.debug(`Device ${device.duid} IP not cached, fetching from device`);
+			const networkInfo = await messageDispatcher.getNetworkInfo(device.duid);
 
-      if (!networkInfo?.ip) {
-        this.logger.warn('Failed to get network info, using MQTT only for device:', device.duid);
-        return false;
-      }
+			if (!networkInfo?.ip) {
+				this.logger.warn('Failed to get network info, using MQTT only for device:', device.duid);
+				return false;
+			}
 
-      this.logger.debug(
-        `Device ${device.duid} is on local network, attempting local connection at IP ${networkInfo.ip}`,
-      );
-      localIp = networkInfo.ip;
-    }
+			this.logger.debug(
+				`Device ${device.duid} is on local network, attempting local connection at IP ${networkInfo.ip}`,
+			);
+			localIp = networkInfo.ip;
+		}
 
-    if (localIp) {
-      return await this.setupLocalClient(device, localIp);
-    }
+		if (localIp) {
+			return await this.setupLocalClient(device, localIp);
+		}
 
-    return false;
-  }
+		return false;
+	}
 
-  /**
-   * Get the current message client instance.
-   * @returns The active ClientRouter or undefined if not initialized
-   */
-  getMessageClient(): ClientRouter | undefined {
-    return this.clientRouter;
-  }
+	/**
+	 * Get the current message client instance.
+	 * @returns The active ClientRouter or undefined if not initialized
+	 */
+	getMessageClient(): ClientRouter | undefined {
+		return this.clientRouter;
+	}
 
-  /**
-   * Shutdown all connections and cleanup resources.
-   */
-  async shutdown(): Promise<void> {
-    // Disconnect main message client
-    if (this.clientRouter) {
-      try {
-        this.clientRouter.disconnect();
-      } catch (error) {
-        this.logger.error('Error disconnecting message client:', error);
-      }
-      this.clientRouter = undefined;
-    }
+	/**
+	 * Shutdown all connections and cleanup resources.
+	 */
+	async shutdown(): Promise<void> {
+		// Disconnect main message client
+		if (this.clientRouter) {
+			try {
+				this.clientRouter.disconnect();
+			} catch (error) {
+				this.logger.error('Error disconnecting message client:', error);
+			}
+			this.clientRouter = undefined;
+		}
 
-    // Disconnect all local clients
-    for (const [duid, client] of this.localClientMap) {
-      try {
-        this.logger.debug('Disconnecting local client:', duid);
-        client.disconnect();
-      } catch (error) {
-        this.logger.error(`Error disconnecting local client ${duid}:`, error);
-      }
-    }
+		// Disconnect all local clients
+		for (const [duid, client] of this.localClientMap) {
+			try {
+				this.logger.debug('Disconnecting local client:', duid);
+				client.disconnect();
+			} catch (error) {
+				this.logger.error(`Error disconnecting local client ${duid}:`, error);
+			}
+		}
 
-    // Clear all state
-    this.localClientMap.clear();
-    this.ipMap.clear();
+		// Clear all state
+		this.localClientMap.clear();
+		this.ipMap.clear();
 
-    this.clientRouter = undefined;
-    this.deviceNotify = undefined;
-  }
+		this.clientRouter = undefined;
+		this.deviceNotify = undefined;
+	}
 
-  /**
-   * Sleep for specified milliseconds.
-   * @param ms - Milliseconds to sleep
-   */
-  private async sleep(ms: number): Promise<void> {
-    return new Promise((resolve) => setTimeout(resolve, ms));
-  }
+	/**
+	 * Sleep for specified milliseconds.
+	 * @param ms - Milliseconds to sleep
+	 */
+	private async sleep(ms: number): Promise<void> {
+		return new Promise((resolve) => setTimeout(resolve, ms));
+	}
 
-  /**
-   * Helper: Set up a local client for the given device and IP.
-   */
-  private async setupLocalClient(device: Device, ip: string): Promise<boolean> {
-    if (!this.clientRouter) {
-      this.logger.error('clientRouter not initialized');
-      return false;
-    }
+	/**
+	 * Helper: Set up a local client for the given device and IP.
+	 */
+	private async setupLocalClient(device: Device, ip: string): Promise<boolean> {
+		if (!this.clientRouter) {
+			this.logger.error('clientRouter not initialized');
+			return false;
+		}
 
-    try {
-      const localClient = this.clientRouter.registerClient(device.duid, ip);
-      if (!localClient) {
-        this.logger.error(`Failed to create local client for device ${device.duid} at IP ${ip}`);
-        return false;
-      }
+		try {
+			const localClient = this.clientRouter.registerClient(device.duid, ip);
+			if (!localClient) {
+				this.logger.error(`Failed to create local client for device ${device.duid} at IP ${ip}`);
+				return false;
+			}
 
-      localClient.connect();
-      await this.waitForConnection(() => localClient.isReady());
+			localClient.connect();
+			await this.waitForConnection(() => localClient.isReady());
 
-      device.specs.hasRealTimeConnection = true;
+			device.specs.hasRealTimeConnection = true;
 
-      this.ipMap.set(device.duid, ip);
-      this.localClientMap.set(device.duid, localClient);
-      this.logger.debug(`Local connection established for device ${device.duid} at ${ip}`);
-      return true;
-    } catch (error) {
-      this.logger.error(`Error setting up local client for device ${device.duid} at IP ${ip}:`, error);
-      return false;
-    }
-  }
+			this.ipMap.set(device.duid, ip);
+			this.localClientMap.set(device.duid, localClient);
+			this.logger.debug(`Local connection established for device ${device.duid} at ${ip}`);
+			return true;
+		} catch (error) {
+			this.logger.error(`Error setting up local client for device ${device.duid} at IP ${ip}:`, error);
+			return false;
+		}
+	}
 
-  /**
-   * Extract network info from device status.
-   */
-  private getNetworkInfoFromDeviceStatus(device: Device): NetworkInfoDTO | undefined {
-    const rpcRequest = device.deviceStatus?.[Protocol.rpc_request];
-    if (!rpcRequest) return undefined;
+	/**
+	 * Extract network info from device status.
+	 */
+	private getNetworkInfoFromDeviceStatus(device: Device): NetworkInfoDTO | undefined {
+		const rpcRequest = device.deviceStatus?.[Protocol.rpc_request];
+		if (!rpcRequest) return undefined;
 
-    return (rpcRequest as Record<number, unknown>)[RPC_Request_Segments.network_info] as NetworkInfoDTO | undefined;
-  }
+		return (rpcRequest as Record<number, unknown>)[RPC_Request_Segments.network_info] as NetworkInfoDTO | undefined;
+	}
 }

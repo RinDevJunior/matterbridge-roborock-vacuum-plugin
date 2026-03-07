@@ -7,125 +7,125 @@ import pluginVitest from '@vitest/eslint-plugin';
 import pluginSimpleImportSort from 'eslint-plugin-simple-import-sort';
 
 export default [
-  {
-    name: 'global ignores',
-    ignores: [
-      'dist/',
-      'build/',
-      'node_modules/',
-      'coverage/',
-      'exampleData/',
-      'web-for-testing/',
-      'vite.config.ts',
-      'report/',
-    ],
-  },
-  eslint.configs.recommended,
-  ...tseslint.configs.strict,
-  ...tseslint.configs.stylistic,
-  // ...tseslint.configs.strictTypeChecked,
-  // ...tseslint.configs.stylisticTypeChecked,
-  pluginPrettierRecommended,
-  {
-    name: 'Global Configuration',
-    languageOptions: {
-      ecmaVersion: 'latest',
-      sourceType: 'module',
-    },
-    linterOptions: {
-      reportUnusedDisableDirectives: 'warn',
-    },
-    plugins: {
-      'simple-import-sort': pluginSimpleImportSort,
-    },
-    rules: {
-      'no-console': 'warn',
-      'no-undef': 'off',
-      'spaced-comment': ['error', 'always'],
-      '@typescript-eslint/no-unused-vars': [
-        'error',
-        {
-          'args': 'none',
-          'varsIgnorePattern': '^_',
-        },
-      ],
-      // Relax strict rules that cause too many errors initially
-      '@typescript-eslint/no-unnecessary-condition': 'off',
-      '@typescript-eslint/restrict-template-expressions': 'off',
-      '@typescript-eslint/no-unsafe-assignment': 'off',
-      '@typescript-eslint/no-unsafe-member-access': 'off',
-      '@typescript-eslint/no-unsafe-call': 'off',
-      '@typescript-eslint/no-unsafe-return': 'off',
-      '@typescript-eslint/no-unsafe-argument': 'off',
-      '@typescript-eslint/unbound-method': 'off',
-      '@typescript-eslint/no-floating-promises': 'off',
-      '@typescript-eslint/require-await': 'off',
-      '@typescript-eslint/no-misused-promises': 'off',
-      '@typescript-eslint/no-unsafe-enum-comparison': 'off',
-    },
-  },
-  {
-    name: 'node',
-    files: ['**/*.ts'],
-    plugins: {
-      n: eslintPluginN,
-    },
-    rules: {
-      'n/prefer-node-protocol': 'error',
-    },
-  },
-  {
-    name: 'javascript',
-    files: ['**/*.js'],
-    ...tseslint.configs.disableTypeChecked,
-  },
-  {
-    name: 'typescript',
-    files: ['**/*.ts'],
-    ignores: ['**/*.test.ts', '**/*.spec.ts', '**/tests/**/*.ts'],
-    languageOptions: {
-      ecmaVersion: 'latest',
-      sourceType: 'module',
-      parser: tseslint.parser,
-      parserOptions: {
-        project: './tsconfig.json',
-        tsconfigRootDir: import.meta.dirname,
-      },
-    },
-    plugins: {
-      '@typescript-eslint': tseslint.plugin,
-    },
-  },
-  {
-    ...pluginVitest.configs.recommended,
-    name: 'vitest',
-    files: ['**/*.spec.ts', '**/*.test.ts', 'src/tests/**/*.ts'],
-    languageOptions: {
-      sourceType: 'module',
-      ecmaVersion: 'latest',
-      parser: tseslint.parser,
-      parserOptions: {
-        project: './tsconfig.vitest.json',
-        tsconfigRootDir: import.meta.dirname,
-      },
-      globals: {
-        ...pluginVitest.environments.env.globals,
-      },
-    },
-    plugins: {
-      vitest: pluginVitest,
-    },
-    rules: {
-      ...pluginVitest.configs.recommended.rules,
-      // Override/add rules specific to test files here
-      'no-unused-vars': 'off', // Disable base rule for unused variables in test files
-      '@typescript-eslint/no-unused-vars': 'off', // Disable TypeScript rule for unused variables in test files
-      '@typescript-eslint/no-explicit-any': 'off', // Allow 'any' type in test files
-      '@typescript-eslint/no-empty-function': 'off', // Allow empty functions in test files
-      '@typescript-eslint/no-floating-promises': 'off', // Allow floating promises in tests
-      '@typescript-eslint/require-await': 'off', // Allow async without await in tests
-      '@typescript-eslint/no-deprecated': 'off', // Allow testing deprecated methods
-      'jsdoc/require-jsdoc': 'off', // Disable JSDoc rule in test files
-    },
-  },
+	{
+		name: 'global ignores',
+		ignores: [
+			'dist/',
+			'build/',
+			'node_modules/',
+			'coverage/',
+			'exampleData/',
+			'web-for-testing/',
+			'vite.config.ts',
+			'report/',
+		],
+	},
+	eslint.configs.recommended,
+	...tseslint.configs.strict,
+	...tseslint.configs.stylistic,
+	// ...tseslint.configs.strictTypeChecked,
+	// ...tseslint.configs.stylisticTypeChecked,
+	pluginPrettierRecommended,
+	{
+		name: 'Global Configuration',
+		languageOptions: {
+			ecmaVersion: 'latest',
+			sourceType: 'module',
+		},
+		linterOptions: {
+			reportUnusedDisableDirectives: 'warn',
+		},
+		plugins: {
+			'simple-import-sort': pluginSimpleImportSort,
+		},
+		rules: {
+			'no-console': 'warn',
+			'no-undef': 'off',
+			'spaced-comment': ['error', 'always'],
+			'@typescript-eslint/no-unused-vars': [
+				'error',
+				{
+					'args': 'none',
+					'varsIgnorePattern': '^_',
+				},
+			],
+			// Relax strict rules that cause too many errors initially
+			'@typescript-eslint/no-unnecessary-condition': 'off',
+			'@typescript-eslint/restrict-template-expressions': 'off',
+			'@typescript-eslint/no-unsafe-assignment': 'off',
+			'@typescript-eslint/no-unsafe-member-access': 'off',
+			'@typescript-eslint/no-unsafe-call': 'off',
+			'@typescript-eslint/no-unsafe-return': 'off',
+			'@typescript-eslint/no-unsafe-argument': 'off',
+			'@typescript-eslint/unbound-method': 'off',
+			'@typescript-eslint/no-floating-promises': 'off',
+			'@typescript-eslint/require-await': 'off',
+			'@typescript-eslint/no-misused-promises': 'off',
+			'@typescript-eslint/no-unsafe-enum-comparison': 'off',
+		},
+	},
+	{
+		name: 'node',
+		files: ['**/*.ts'],
+		plugins: {
+			n: eslintPluginN,
+		},
+		rules: {
+			'n/prefer-node-protocol': 'error',
+		},
+	},
+	{
+		name: 'javascript',
+		files: ['**/*.js'],
+		...tseslint.configs.disableTypeChecked,
+	},
+	{
+		name: 'typescript',
+		files: ['**/*.ts'],
+		ignores: ['**/*.test.ts', '**/*.spec.ts', '**/tests/**/*.ts'],
+		languageOptions: {
+			ecmaVersion: 'latest',
+			sourceType: 'module',
+			parser: tseslint.parser,
+			parserOptions: {
+				project: './tsconfig.json',
+				tsconfigRootDir: import.meta.dirname,
+			},
+		},
+		plugins: {
+			'@typescript-eslint': tseslint.plugin,
+		},
+	},
+	{
+		...pluginVitest.configs.recommended,
+		name: 'vitest',
+		files: ['**/*.spec.ts', '**/*.test.ts', 'src/tests/**/*.ts'],
+		languageOptions: {
+			sourceType: 'module',
+			ecmaVersion: 'latest',
+			parser: tseslint.parser,
+			parserOptions: {
+				project: './tsconfig.vitest.json',
+				tsconfigRootDir: import.meta.dirname,
+			},
+			globals: {
+				...pluginVitest.environments.env.globals,
+			},
+		},
+		plugins: {
+			vitest: pluginVitest,
+		},
+		rules: {
+			...pluginVitest.configs.recommended.rules,
+			// Override/add rules specific to test files here
+			'no-unused-vars': 'off', // Disable base rule for unused variables in test files
+			'@typescript-eslint/no-unused-vars': 'off', // Disable TypeScript rule for unused variables in test files
+			'@typescript-eslint/no-explicit-any': 'off', // Allow 'any' type in test files
+			'@typescript-eslint/no-empty-function': 'off', // Allow empty functions in test files
+			'@typescript-eslint/no-floating-promises': 'off', // Allow floating promises in tests
+			'@typescript-eslint/require-await': 'off', // Allow async without await in tests
+			'@typescript-eslint/no-deprecated': 'off', // Allow testing deprecated methods
+			'jsdoc/require-jsdoc': 'off', // Disable JSDoc rule in test files
+		},
+	},
 ];

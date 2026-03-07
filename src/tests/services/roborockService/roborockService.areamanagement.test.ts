@@ -8,99 +8,99 @@ import type { RoborockPluginPlatformConfig } from '../../../model/RoborockPlugin
 import { SegmentInfo } from '../../../initialData/getSupportedAreas.js';
 
 describe('RoborockService - Area Management', () => {
-  let roborockService: RoborockService;
-  let mockLogger: ReturnType<typeof createMockLogger>;
+	let roborockService: RoborockService;
+	let mockLogger: ReturnType<typeof createMockLogger>;
 
-  beforeEach(() => {
-    mockLogger = createMockLogger();
+	beforeEach(() => {
+		mockLogger = createMockLogger();
 
-    const PlatformConfigManager = PlatformConfigManagerStatic;
-    const config = {
-      authentication: {
-        username: 'test',
-        region: 'US',
-        forceAuthentication: false,
-        authenticationMethod: 'Password',
-        password: '',
-      },
-      pluginConfiguration: {
-        whiteList: [],
-        enableServerMode: false,
-        enableMultipleMap: false,
-        sanitizeSensitiveLogs: false,
-        refreshInterval: 10,
-        debug: false,
-        unregisterOnShutdown: false,
-      },
-      advancedFeature: {
-        enableAdvancedFeature: false,
-        settings: {
-          clearStorageOnStartup: false,
-          showRoutinesAsRoom: false,
-          includeDockStationStatus: false,
-          includeVacuumErrorStatus: false,
-          forceRunAtDefault: false,
-          useVacationModeToSendVacuumToDock: false,
-          enableCleanModeMapping: false,
-          cleanModeSettings: {
-            vacuuming: { fanMode: 'Balanced', mopRouteMode: 'Standard' },
-            mopping: { waterFlowMode: 'Medium', mopRouteMode: 'Standard', distanceOff: 25 },
-            vacmop: { fanMode: 'Balanced', waterFlowMode: 'Medium', mopRouteMode: 'Standard', distanceOff: 25 },
-          },
-          overrideMatterConfiguration: false,
-          matterOverrideSettings: {
-            matterVendorName: 'xxx',
-            matterVendorId: 123,
-            matterProductName: 'yy',
-            matterProductId: 456,
-          },
-          enableEmailNotification: false,
-          emailNotificationSettings: {},
-        },
-      },
-    } as Partial<RoborockPluginPlatformConfig> as RoborockPluginPlatformConfig;
+		const PlatformConfigManager = PlatformConfigManagerStatic;
+		const config = {
+			authentication: {
+				username: 'test',
+				region: 'US',
+				forceAuthentication: false,
+				authenticationMethod: 'Password',
+				password: '',
+			},
+			pluginConfiguration: {
+				whiteList: [],
+				enableServerMode: false,
+				enableMultipleMap: false,
+				sanitizeSensitiveLogs: false,
+				refreshInterval: 10,
+				debug: false,
+				unregisterOnShutdown: false,
+			},
+			advancedFeature: {
+				enableAdvancedFeature: false,
+				settings: {
+					clearStorageOnStartup: false,
+					showRoutinesAsRoom: false,
+					includeDockStationStatus: false,
+					includeVacuumErrorStatus: false,
+					forceRunAtDefault: false,
+					useVacationModeToSendVacuumToDock: false,
+					enableCleanModeMapping: false,
+					cleanModeSettings: {
+						vacuuming: { fanMode: 'Balanced', mopRouteMode: 'Standard' },
+						mopping: { waterFlowMode: 'Medium', mopRouteMode: 'Standard', distanceOff: 25 },
+						vacmop: { fanMode: 'Balanced', waterFlowMode: 'Medium', mopRouteMode: 'Standard', distanceOff: 25 },
+					},
+					overrideMatterConfiguration: false,
+					matterOverrideSettings: {
+						matterVendorName: 'xxx',
+						matterVendorId: 123,
+						matterProductName: 'yy',
+						matterProductId: 456,
+					},
+					enableEmailNotification: false,
+					emailNotificationSettings: {},
+				},
+			},
+		} as Partial<RoborockPluginPlatformConfig> as RoborockPluginPlatformConfig;
 
-    const configManager = PlatformConfigManager.create(config, mockLogger as AnsiLogger);
+		const configManager = PlatformConfigManager.create(config, mockLogger as AnsiLogger);
 
-    roborockService = new RoborockService(
-      {
-        authenticateApiFactory: () => createMockAuthApi(),
-        iotApiFactory: () => createMockIotApi(),
-        refreshInterval: 10,
-        baseUrl: 'https://api.roborock.com',
-        persist: createMockLocalStorage(),
-        configManager: configManager,
-        toastMessage: vi.fn(),
-      },
-      mockLogger,
-      configManager,
-    );
+		roborockService = new RoborockService(
+			{
+				authenticateApiFactory: () => createMockAuthApi(),
+				iotApiFactory: () => createMockIotApi(),
+				refreshInterval: 10,
+				baseUrl: 'https://api.roborock.com',
+				persist: createMockLocalStorage(),
+				configManager: configManager,
+				toastMessage: vi.fn(),
+			},
+			mockLogger,
+			configManager,
+		);
 
-    const roomInfo = new Map<string, SegmentInfo>([]);
-    roborockService.setSupportedAreaIndexMap(
-      'duid-123',
-      new RoomIndexMap(
-        new Map([
-          [1, { roomId: 1, mapId: 1, roomName: 'rn-1' }],
-          [2, { roomId: 2, mapId: 2, roomName: 'rn-2' }],
-        ]),
-        roomInfo,
-      ),
-    );
-  });
+		const roomInfo = new Map<string, SegmentInfo>([]);
+		roborockService.setSupportedAreaIndexMap(
+			'duid-123',
+			new RoomIndexMap(
+				new Map([
+					[1, { roomId: 1, mapId: 1, roomName: 'rn-1' }],
+					[2, { roomId: 2, mapId: 2, roomName: 'rn-2' }],
+				]),
+				roomInfo,
+			),
+		);
+	});
 
-  it('should set selected areas', () => {
-    roborockService.setSelectedAreas('duid-123', [1, 2]);
-    expect(roborockService.getSelectedAreas('duid-123')).toEqual([1, 2]);
-  });
+	it('should set selected areas', () => {
+		roborockService.setSelectedAreas('duid-123', [1, 2]);
+		expect(roborockService.getSelectedAreas('duid-123')).toEqual([1, 2]);
+	});
 
-  it('should clear selected areas', () => {
-    roborockService.setSelectedAreas('duid-123', []);
-    expect(roborockService.getSelectedAreas('duid-123')).toEqual([]);
-  });
+	it('should clear selected areas', () => {
+		roborockService.setSelectedAreas('duid-123', []);
+		expect(roborockService.getSelectedAreas('duid-123')).toEqual([]);
+	});
 
-  it('should filter out invalid areas', () => {
-    roborockService.setSelectedAreas('duid-123', [7, 8]);
-    expect(roborockService.getSelectedAreas('duid-123')).toEqual([7, 8]);
-  });
+	it('should filter out invalid areas', () => {
+		roborockService.setSelectedAreas('duid-123', [7, 8]);
+		expect(roborockService.getSelectedAreas('duid-123')).toEqual([7, 8]);
+	});
 });

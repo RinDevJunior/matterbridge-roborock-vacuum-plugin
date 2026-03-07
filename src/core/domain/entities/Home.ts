@@ -7,15 +7,15 @@ import { RoomMapping } from '../../application/models/RoomMapping.js';
  * A home contains devices and rooms.
  */
 export class HomeEntity {
-  constructor(
-    public readonly id: number,
-    public readonly name: string,
-    public readonly roomMap: RoomMap,
-    public readonly mapInfo: MapInfo,
-    public activeMapId: number,
-  ) {}
+	constructor(
+		public readonly id: number,
+		public readonly name: string,
+		public readonly roomMap: RoomMap,
+		public readonly mapInfo: MapInfo,
+		public activeMapId: number,
+	) {}
 
-  public get rawRooms(): RoomMapping[] {
-    return this.roomMap.rooms.length > 0 ? this.roomMap.rooms : [];
-  }
+	public get rawRooms(): RoomMapping[] {
+		return this.roomMap.rooms.length > 0 ? this.roomMap.rooms : [];
+	}
 }

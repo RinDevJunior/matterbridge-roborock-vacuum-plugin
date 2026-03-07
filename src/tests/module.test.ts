@@ -10,91 +10,91 @@ vi.mock('../types/roborockVacuumCleaner.js');
 vi.mock('node-persist');
 
 function createMockConfig(overrides: Partial<RoborockPluginPlatformConfig> = {}): RoborockPluginPlatformConfig {
-  return asPartial<RoborockPluginPlatformConfig>({
-    name: 'Test Platform',
-    type: 'DynamicPlatform',
-    authentication: {
-      username: 'test@example.com',
-      region: 'US',
-      forceAuthentication: false,
-      authenticationMethod: 'VerificationCode',
-    },
-    pluginConfiguration: {
-      whiteList: [],
-      enableServerMode: false,
-      enableMultipleMap: false,
-      sanitizeSensitiveLogs: false,
-      refreshInterval: 30,
-      debug: false,
-      unregisterOnShutdown: false,
-    },
-    advancedFeature: {
-      enableAdvancedFeature: false,
-      settings: {
-        clearStorageOnStartup: false,
-        showRoutinesAsRoom: false,
-        includeDockStationStatus: false,
-        includeVacuumErrorStatus: false,
-        forceRunAtDefault: false,
-        useVacationModeToSendVacuumToDock: false,
-        enableCleanModeMapping: false,
-        cleanModeSettings: {
-          vacuuming: { fanMode: 'Balanced', mopRouteMode: 'Standard' },
-          mopping: { waterFlowMode: 'Medium', mopRouteMode: 'Standard', distanceOff: 25 },
-          vacmop: { fanMode: 'Balanced', waterFlowMode: 'Medium', mopRouteMode: 'Standard', distanceOff: 25 },
-        },
-        overrideMatterConfiguration: false,
-        matterOverrideSettings: {
-          matterVendorName: 'xxx',
-          matterVendorId: 123,
-          matterProductName: 'yy',
-          matterProductId: 456,
-        },
-        enableEmailNotification: false,
-        emailNotificationSettings: {},
-      },
-    },
-    ...overrides,
-  });
+	return asPartial<RoborockPluginPlatformConfig>({
+		name: 'Test Platform',
+		type: 'DynamicPlatform',
+		authentication: {
+			username: 'test@example.com',
+			region: 'US',
+			forceAuthentication: false,
+			authenticationMethod: 'VerificationCode',
+		},
+		pluginConfiguration: {
+			whiteList: [],
+			enableServerMode: false,
+			enableMultipleMap: false,
+			sanitizeSensitiveLogs: false,
+			refreshInterval: 30,
+			debug: false,
+			unregisterOnShutdown: false,
+		},
+		advancedFeature: {
+			enableAdvancedFeature: false,
+			settings: {
+				clearStorageOnStartup: false,
+				showRoutinesAsRoom: false,
+				includeDockStationStatus: false,
+				includeVacuumErrorStatus: false,
+				forceRunAtDefault: false,
+				useVacationModeToSendVacuumToDock: false,
+				enableCleanModeMapping: false,
+				cleanModeSettings: {
+					vacuuming: { fanMode: 'Balanced', mopRouteMode: 'Standard' },
+					mopping: { waterFlowMode: 'Medium', mopRouteMode: 'Standard', distanceOff: 25 },
+					vacmop: { fanMode: 'Balanced', waterFlowMode: 'Medium', mopRouteMode: 'Standard', distanceOff: 25 },
+				},
+				overrideMatterConfiguration: false,
+				matterOverrideSettings: {
+					matterVendorName: 'xxx',
+					matterVendorId: 123,
+					matterProductName: 'yy',
+					matterProductId: 456,
+				},
+				enableEmailNotification: false,
+				emailNotificationSettings: {},
+			},
+		},
+		...overrides,
+	});
 }
 
 describe('RoborockMatterbridgePlatform', () => {
-  let mockMatterbridge: PlatformMatterbridge;
-  let mockLogger: ReturnType<typeof createMockLogger>;
-  let mockConfig: RoborockPluginPlatformConfig;
+	let mockMatterbridge: PlatformMatterbridge;
+	let mockLogger: ReturnType<typeof createMockLogger>;
+	let mockConfig: RoborockPluginPlatformConfig;
 
-  beforeEach(() => {
-    mockLogger = createMockLogger();
-    mockMatterbridge = createMockMatterbridge();
-    mockConfig = createMockConfig();
-  });
+	beforeEach(() => {
+		mockLogger = createMockLogger();
+		mockMatterbridge = createMockMatterbridge();
+		mockConfig = createMockConfig();
+	});
 
-  describe('constructor', () => {
-    it('should set debug log level when debug is enabled', () => {
-      const debugConfig = createMockConfig({
-        pluginConfiguration: {
-          ...mockConfig.pluginConfiguration,
-          debug: true,
-        },
-      });
-      const validMatterbridge = createMockMatterbridge({});
+	describe('constructor', () => {
+		it('should set debug log level when debug is enabled', () => {
+			const debugConfig = createMockConfig({
+				pluginConfiguration: {
+					...mockConfig.pluginConfiguration,
+					debug: true,
+				},
+			});
+			const validMatterbridge = createMockMatterbridge({});
 
-      const platform = new RoborockMatterbridgePlatform(validMatterbridge, mockLogger, debugConfig);
-      platform.verifyMatterbridgeVersion = vi.fn().mockReturnValue(true);
+			const platform = new RoborockMatterbridgePlatform(validMatterbridge, mockLogger, debugConfig);
+			platform.verifyMatterbridgeVersion = vi.fn().mockReturnValue(true);
 
-      expect(platform.log.logLevel).toBe(LogLevel.DEBUG);
-    });
-  });
+			expect(platform.log.logLevel).toBe(LogLevel.DEBUG);
+		});
+	});
 
-  describe('lifecycle methods', () => {
-    it('should change logger level when onChangeLoggerLevel is called', async () => {
-      const validMatterbridge = createMockMatterbridge({});
-      const platform = new RoborockMatterbridgePlatform(validMatterbridge, mockLogger, mockConfig);
-      platform.verifyMatterbridgeVersion = vi.fn().mockReturnValue(true);
+	describe('lifecycle methods', () => {
+		it('should change logger level when onChangeLoggerLevel is called', async () => {
+			const validMatterbridge = createMockMatterbridge({});
+			const platform = new RoborockMatterbridgePlatform(validMatterbridge, mockLogger, mockConfig);
+			platform.verifyMatterbridgeVersion = vi.fn().mockReturnValue(true);
 
-      await platform.onChangeLoggerLevel(LogLevel.ERROR);
+			await platform.onChangeLoggerLevel(LogLevel.ERROR);
 
-      expect(platform.log.logLevel).toBe(LogLevel.ERROR);
-    });
-  });
+			expect(platform.log.logLevel).toBe(LogLevel.ERROR);
+		});
+	});
 });

@@ -1,8 +1,8 @@
 export const REGION_URLS: Record<string, string> = {
-  US: 'https://usiot.roborock.com',
-  EU: 'https://euiot.roborock.com',
-  CN: 'https://cniot.roborock.com',
-  RU: 'https://ruiot.roborock.com',
+	US: 'https://usiot.roborock.com',
+	EU: 'https://euiot.roborock.com',
+	CN: 'https://cniot.roborock.com',
+	RU: 'https://ruiot.roborock.com',
 };
 
 /**
@@ -11,6 +11,6 @@ export const REGION_URLS: Record<string, string> = {
  * @returns Base URL for the specified region, defaults to US if region not found
  */
 export function getBaseUrl(region?: string): string {
-  const r = region?.toUpperCase() ?? 'US';
-  return REGION_URLS[r] ?? REGION_URLS.US;
+	const r = region?.toUpperCase() ?? 'US';
+	return REGION_URLS[r] ?? REGION_URLS.US;
 }

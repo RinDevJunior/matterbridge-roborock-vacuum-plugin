@@ -1,17 +1,17 @@
 interface MqttOtaStatus {
-  status?: string;
+	status?: string;
 }
 
 interface MqttOtaProgress {
-  progress?: number;
+	progress?: number;
 }
 
 interface MqttOtaData {
-  mqttOtaStatus?: MqttOtaStatus;
-  mqttOtaProgress?: MqttOtaProgress;
+	mqttOtaStatus?: MqttOtaStatus;
+	mqttOtaProgress?: MqttOtaProgress;
 }
 
 export interface DeviceOTAData {
-  mqttOtaData?: MqttOtaData;
-  online?: boolean;
+	mqttOtaData?: MqttOtaData;
+	online?: boolean;
 }

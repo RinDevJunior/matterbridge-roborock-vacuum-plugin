@@ -4,54 +4,54 @@ import { createMockLocalStorage, asPartial } from '../../helpers/testUtils.js';
 import type { AuthenticateFlowState } from '../../../roborockCommunication/models/index.js';
 
 describe('AuthenticationStateRepository', () => {
-  let persist: ReturnType<typeof createMockLocalStorage>;
-  let repo: AuthenticationStateRepository;
+	let persist: ReturnType<typeof createMockLocalStorage>;
+	let repo: AuthenticationStateRepository;
 
-  beforeEach(() => {
-    vi.clearAllMocks();
-    persist = createMockLocalStorage();
-    repo = new AuthenticationStateRepository(persist);
-  });
+	beforeEach(() => {
+		vi.clearAllMocks();
+		persist = createMockLocalStorage();
+		repo = new AuthenticationStateRepository(persist);
+	});
 
-  afterEach(() => {
-    vi.clearAllMocks();
-  });
+	afterEach(() => {
+		vi.clearAllMocks();
+	});
 
-  describe('getAuthState', () => {
-    it('should return the stored auth state', async () => {
-      const state = asPartial<AuthenticateFlowState>({ email: 'user@example.com' });
-      vi.mocked(persist.getItem).mockResolvedValue(state);
+	describe('getAuthState', () => {
+		it('should return the stored auth state', async () => {
+			const state = asPartial<AuthenticateFlowState>({ email: 'user@example.com' });
+			vi.mocked(persist.getItem).mockResolvedValue(state);
 
-      const result = await repo.getAuthState();
+			const result = await repo.getAuthState();
 
-      expect(persist.getItem).toHaveBeenCalledWith('authenticateFlowState');
-      expect(result).toBe(state);
-    });
+			expect(persist.getItem).toHaveBeenCalledWith('authenticateFlowState');
+			expect(result).toBe(state);
+		});
 
-    it('should return undefined when no state is stored', async () => {
-      vi.mocked(persist.getItem).mockResolvedValue(undefined);
+		it('should return undefined when no state is stored', async () => {
+			vi.mocked(persist.getItem).mockResolvedValue(undefined);
 
-      const result = await repo.getAuthState();
+			const result = await repo.getAuthState();
 
-      expect(result).toBeUndefined();
-    });
-  });
+			expect(result).toBeUndefined();
+		});
+	});
 
-  describe('saveAuthState', () => {
-    it('should persist the auth state with correct key', async () => {
-      const state = asPartial<AuthenticateFlowState>({ email: 'user@example.com' });
+	describe('saveAuthState', () => {
+		it('should persist the auth state with correct key', async () => {
+			const state = asPartial<AuthenticateFlowState>({ email: 'user@example.com' });
 
-      await repo.saveAuthState(state);
+			await repo.saveAuthState(state);
 
-      expect(persist.setItem).toHaveBeenCalledWith('authenticateFlowState', state);
-    });
-  });
+			expect(persist.setItem).toHaveBeenCalledWith('authenticateFlowState', state);
+		});
+	});
 
-  describe('clearAuthState', () => {
-    it('should remove the persisted auth state', async () => {
-      await repo.clearAuthState();
+	describe('clearAuthState', () => {
+		it('should remove the persisted auth state', async () => {
+			await repo.clearAuthState();
 
-      expect(persist.removeItem).toHaveBeenCalledWith('authenticateFlowState');
-    });
-  });
+			expect(persist.removeItem).toHaveBeenCalledWith('authenticateFlowState');
+		});
+	});
 });

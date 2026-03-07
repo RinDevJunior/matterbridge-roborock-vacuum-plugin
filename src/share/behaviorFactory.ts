@@ -15,55 +15,55 @@ export type BehaviorFactoryResult = BehaviorDeviceGeneric<DeviceEndpointCommands
  * Creates and initializes the appropriate command handler for the device model.
  */
 export function configureBehavior(
-  model: DeviceModel | string,
-  duid: string,
-  roborockService: RoborockService,
-  enableCleanModeMapping: boolean,
-  cleanModeSettings: CleanModeSettings | undefined,
-  forceRunAtDefault: boolean,
-  logger: AnsiLogger,
-  onActionTriggered: () => void,
+	model: DeviceModel | string,
+	duid: string,
+	roborockService: RoborockService,
+	enableCleanModeMapping: boolean,
+	cleanModeSettings: CleanModeSettings | undefined,
+	forceRunAtDefault: boolean,
+	logger: AnsiLogger,
+	onActionTriggered: () => void,
 ): BehaviorFactoryResult {
-  const modelKey = forceRunAtDefault ? '' : (model as string);
-  const config = buildBehaviorConfig(modelKey);
-  const deviceHandler = new BehaviorDeviceGeneric<DeviceEndpointCommands>(logger);
-  setCommandHandler(
-    duid,
-    deviceHandler,
-    logger,
-    roborockService,
-    enableCleanModeMapping,
-    cleanModeSettings,
-    config,
-    onActionTriggered,
-  );
-  return deviceHandler;
+	const modelKey = forceRunAtDefault ? '' : (model as string);
+	const config = buildBehaviorConfig(modelKey);
+	const deviceHandler = new BehaviorDeviceGeneric<DeviceEndpointCommands>(logger);
+	setCommandHandler(
+		duid,
+		deviceHandler,
+		logger,
+		roborockService,
+		enableCleanModeMapping,
+		cleanModeSettings,
+		config,
+		onActionTriggered,
+	);
+	return deviceHandler;
 }
 
 function setCommandHandler(
-  duid: string,
-  handler: BehaviorDeviceGeneric<DeviceEndpointCommands>,
-  logger: AnsiLogger,
-  roborockService: RoborockService,
-  enableCleanModeMapping: boolean,
-  cleanModeSettings: CleanModeSettings | undefined,
-  config: BehaviorConfig,
-  onActionTriggered: () => void,
+	duid: string,
+	handler: BehaviorDeviceGeneric<DeviceEndpointCommands>,
+	logger: AnsiLogger,
+	roborockService: RoborockService,
+	enableCleanModeMapping: boolean,
+	cleanModeSettings: CleanModeSettings | undefined,
+	config: BehaviorConfig,
+	onActionTriggered: () => void,
 ): void {
-  const runModeMap = getRunModeDisplayMap(config.runModeConfigs);
-  handler.setCommandHandler(CommandNames.CHANGE_TO_MODE, async (newMode: number) => {
-    const activity = runModeMap[newMode] || config.cleanModes[newMode];
-    const context: HandlerContext = {
-      roborockService,
-      logger,
-      enableCleanModeMapping: enableCleanModeMapping,
-      cleanModeSettings,
-      cleanSettings: config.cleanSettings,
-      behaviorName: config.name,
-    };
-    await config.registry.handle(duid, newMode, activity, context);
-    onActionTriggered();
-  });
+	const runModeMap = getRunModeDisplayMap(config.runModeConfigs);
+	handler.setCommandHandler(CommandNames.CHANGE_TO_MODE, async (newMode: number) => {
+		const activity = runModeMap[newMode] || config.cleanModes[newMode];
+		const context: HandlerContext = {
+			roborockService,
+			logger,
+			enableCleanModeMapping: enableCleanModeMapping,
+			cleanModeSettings,
+			cleanSettings: config.cleanSettings,
+			behaviorName: config.name,
+		};
+		await config.registry.handle(duid, newMode, activity, context);
+		onActionTriggered();
+	});
 
-  registerCommonCommands(duid, handler, logger, roborockService, config.name, onActionTriggered);
+	registerCommonCommands(duid, handler, logger, roborockService, config.name, onActionTriggered);
 }

@@ -9,11 +9,11 @@
  * @property globalId - (Optional) Global ID for enhanced identification
  */
 export interface MapRoomDto {
-  id: number;
-  tag: number;
-  iot_name_id: string;
-  iot_name?: string;
+	id: number;
+	tag: number;
+	iot_name_id: string;
+	iot_name?: string;
 
-  /* Optional fields for enhanced identification */
-  iot_map_id?: number;
+	/* Optional fields for enhanced identification */
+	iot_map_id?: number;
 }

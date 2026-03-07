@@ -7,51 +7,51 @@ import { CleanModeSettings } from '../model/RoborockPluginPlatformConfig.js';
 import { createMockLogger } from './helpers/testUtils.js';
 
 describe('configureBehavior', () => {
-  const duid = 'test-duid';
-  const cleanModeSettings: CleanModeSettings = {} as CleanModeSettings;
-  const roborockService = {} as RoborockService;
-  const logger = createMockLogger();
-  const onActionTriggered = vi.fn();
+	const duid = 'test-duid';
+	const cleanModeSettings: CleanModeSettings = {} as CleanModeSettings;
+	const roborockService = {} as RoborockService;
+	const logger = createMockLogger();
+	const onActionTriggered = vi.fn();
 
-  it('returns smart handler for smart model', () => {
-    const result = configureBehavior(
-      DeviceModel.QREVO_EDGE_5V1,
-      duid,
-      roborockService,
-      false,
-      cleanModeSettings,
-      false,
-      logger,
-      onActionTriggered,
-    );
-    expect(result).toBeInstanceOf(BehaviorDeviceGeneric);
-  });
+	it('returns smart handler for smart model', () => {
+		const result = configureBehavior(
+			DeviceModel.QREVO_EDGE_5V1,
+			duid,
+			roborockService,
+			false,
+			cleanModeSettings,
+			false,
+			logger,
+			onActionTriggered,
+		);
+		expect(result).toBeInstanceOf(BehaviorDeviceGeneric);
+	});
 
-  it('returns default handler for non-smart model', () => {
-    const result = configureBehavior(
-      'non-smart-model',
-      duid,
-      roborockService,
-      false,
-      cleanModeSettings,
-      false,
-      logger,
-      onActionTriggered,
-    );
-    expect(result).toBeInstanceOf(BehaviorDeviceGeneric);
-  });
+	it('returns default handler for non-smart model', () => {
+		const result = configureBehavior(
+			'non-smart-model',
+			duid,
+			roborockService,
+			false,
+			cleanModeSettings,
+			false,
+			logger,
+			onActionTriggered,
+		);
+		expect(result).toBeInstanceOf(BehaviorDeviceGeneric);
+	});
 
-  it('returns default handler if forceRunAtDefault is true, even for smart model', () => {
-    const result = configureBehavior(
-      DeviceModel.QREVO_EDGE_5V1,
-      duid,
-      roborockService,
-      false,
-      cleanModeSettings,
-      true,
-      logger,
-      onActionTriggered,
-    );
-    expect(result).toBeInstanceOf(BehaviorDeviceGeneric);
-  });
+	it('returns default handler if forceRunAtDefault is true, even for smart model', () => {
+		const result = configureBehavior(
+			DeviceModel.QREVO_EDGE_5V1,
+			duid,
+			roborockService,
+			false,
+			cleanModeSettings,
+			true,
+			logger,
+			onActionTriggered,
+		);
+		expect(result).toBeInstanceOf(BehaviorDeviceGeneric);
+	});
 });

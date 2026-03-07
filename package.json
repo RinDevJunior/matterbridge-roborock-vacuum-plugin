@@ -1,110 +1,110 @@
 {
-  "name": "matterbridge-roborock-vacuum-plugin",
-  "version": "1.1.5-rc07",
-  "description": "Matterbridge Roborock Vacuum Plugin",
-  "author": "https://github.com/RinDevJunior",
-  "license": "MIT",
-  "homepage": "https://github.com/RinDevJunior/matterbridge-roborock-vacuum-plugin",
-  "type": "module",
-  "main": "dist/module.js",
-  "types": "dist/module.d.ts",
-  "publishConfig": {
-    "access": "public"
-  },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/RinDevJunior/matterbridge-roborock-vacuum-plugin.git"
-  },
-  "bugs": {
-    "url": "https://github.com/RinDevJunior/matterbridge-roborock-vacuum-plugin/issues"
-  },
-  "funding": {
-    "type": "buymeacoffee",
-    "url": "https://www.buymeacoffee.com/rinnvspktr"
-  },
-  "keywords": [
-    "matterbridge",
-    "roborock",
-    "matter",
-    "matter.js",
-    "plugin",
-    "homekit",
-    "apple home"
-  ],
-  "scripts": {
-    "precommit": "npm run lint && npm run type-check && npm run dup-check && npm run format:check && npm run test",
-    "precondition": "npm install -g matterbridge@3.5.6",
-    "build:local": "npm run deepClean && npm install && npm link matterbridge && npm run build && npm run matterbridge:add",
-    "build:production": "tsc --project tsconfig.production.json",
-    "start": "tsc && matterbridge -childbridge",
-    "build:package": "cd .. && build:compress && cd matterbridge-roborock-vacuum-plugin",
-    "build:compress": "tar --exclude-from='matterbridge-roborock-vacuum-plugin/.tarignore' -czvf matterbridge-roborock-vacuum-plugin-1.1.5-rc07.tgz matterbridge-roborock-vacuum-plugin",
-    "dup-check": "npx jscpd",
-    "build": "tsc",
-    "type-check": "tsc --noEmit",
-    "watch": "tsc --watch",
-    "test": "vitest run",
-    "test:file": "vitest run",
-    "test:coverage": "vitest run --coverage",
-    "test:report": "vitest run --reporter=junit --outputFile=test-report.junit.xml",
-    "lint": "eslint --max-warnings=0 .",
-    "lint:fix": "eslint --fix --max-warnings=0 .",
-    "format": "prettier --write \"**/*.{js,jsx,ts,tsx,json,css,md}\"",
-    "format:check": "prettier --check \"**/*.{js,jsx,ts,tsx,json,css,md}\"",
-    "deepClean": "npx rimraf tsconfig.tsbuildinfo npm-shrinkwrap.json ./dist ./node_modules",
-    "checkDependencies": "npx npm-check-updates",
-    "updateDependencies": "npx npm-check-updates -u && npm run deepCleanBuild",
-    "matterbridge:add": "matterbridge -add .\\",
-    "matterbridge:remove": "matterbridge -remove .\\",
-    "matterbridge:enable": "matterbridge -enable .\\",
-    "matterbridge:disable": "matterbridge -disable .\\",
-    "matterbridge:list": "matterbridge -list",
-    "dev:link": "npm link matterbridge",
-    "dev:unlink": "npm unlink matterbridge"
-  },
-  "engines": {
-    "matterbridge": "^3.5.6",
-    "node": ">=24 <25"
-  },
-  "devDependencies": {
-    "@eslint/js": "10.0.1",
-    "@types/node": "25.3.0",
-    "@types/node-persist": "3.1.8",
-    "@types/nodemailer": "^7.0.11",
-    "@types/semver": "^7.7.1",
-    "@vitest/coverage-v8": "4.0.18",
-    "@vitest/eslint-plugin": "1.6.9",
-    "axios-mock-adapter": "^2.1.0",
-    "eslint": "10.0.2",
-    "eslint-config-prettier": "10.1.8",
-    "eslint-plugin-n": "17.24.0",
-    "eslint-plugin-prettier": "5.5.5",
-    "eslint-plugin-simple-import-sort": "12.1.1",
-    "jscpd": "^4.0.8",
-    "mock-socket": "^9.3.1",
-    "npm-check-updates": "19.4.0",
-    "prettier": "3.8.1",
-    "rimraf": "^6.1.3",
-    "typescript": "5.9.3",
-    "typescript-eslint": "8.56.0",
-    "vite-tsconfig-paths": "^6.1.1",
-    "vitest": "4.0.18"
-  },
-  "dependencies": {
-    "axios": "1.13.5",
-    "axios-logger": "2.8.1",
-    "axios-retry": "4.5.0",
-    "binary-parser": "2.3.0",
-    "crc-32": "1.2.2",
-    "mqtt": "5.15.0",
-    "node-persist": "^4.0.4",
-    "node-persist-manager": "2.0.1",
-    "nodemailer": "^8.0.1",
-    "protobufjs": "^8.0.0",
-    "semver": "^7.7.4"
-  },
-  "overrides": {
-    "eslint": "10.0.2",
-    "@eslint/js": "10.0.1"
-  }
+	"name": "matterbridge-roborock-vacuum-plugin",
+	"version": "1.1.5-rc07",
+	"description": "Matterbridge Roborock Vacuum Plugin",
+	"author": "https://github.com/RinDevJunior",
+	"license": "MIT",
+	"homepage": "https://github.com/RinDevJunior/matterbridge-roborock-vacuum-plugin",
+	"type": "module",
+	"main": "dist/module.js",
+	"types": "dist/module.d.ts",
+	"publishConfig": {
+		"access": "public"
+	},
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/RinDevJunior/matterbridge-roborock-vacuum-plugin.git"
+	},
+	"bugs": {
+		"url": "https://github.com/RinDevJunior/matterbridge-roborock-vacuum-plugin/issues"
+	},
+	"funding": {
+		"type": "buymeacoffee",
+		"url": "https://www.buymeacoffee.com/rinnvspktr"
+	},
+	"keywords": [
+		"matterbridge",
+		"roborock",
+		"matter",
+		"matter.js",
+		"plugin",
+		"homekit",
+		"apple home"
+	],
+	"scripts": {
+		"precommit": "npm run lint && npm run type-check && npm run dup-check && npm run format:check && npm run test",
+		"precondition": "npm install -g matterbridge@3.5.6",
+		"build:local": "npm run deepClean && npm install && npm link matterbridge && npm run build && npm run matterbridge:add",
+		"build:production": "tsc --project tsconfig.production.json",
+		"start": "tsc && matterbridge -childbridge",
+		"build:package": "cd .. && build:compress && cd matterbridge-roborock-vacuum-plugin",
+		"build:compress": "tar --exclude-from='matterbridge-roborock-vacuum-plugin/.tarignore' -czvf matterbridge-roborock-vacuum-plugin-1.1.5-rc07.tgz matterbridge-roborock-vacuum-plugin",
+		"dup-check": "npx jscpd",
+		"build": "tsc",
+		"type-check": "tsc --noEmit",
+		"watch": "tsc --watch",
+		"test": "vitest run",
+		"test:file": "vitest run",
+		"test:coverage": "vitest run --coverage",
+		"test:report": "vitest run --reporter=junit --outputFile=test-report.junit.xml",
+		"lint": "eslint --max-warnings=0 .",
+		"lint:fix": "eslint --fix --max-warnings=0 .",
+		"format": "prettier --write \"**/*.{js,jsx,ts,tsx,json,css,md}\"",
+		"format:check": "prettier --check \"**/*.{js,jsx,ts,tsx,json,css,md}\"",
+		"deepClean": "npx rimraf tsconfig.tsbuildinfo npm-shrinkwrap.json ./dist ./node_modules",
+		"checkDependencies": "npx npm-check-updates",
+		"updateDependencies": "npx npm-check-updates -u && npm run deepCleanBuild",
+		"matterbridge:add": "matterbridge -add .\\",
+		"matterbridge:remove": "matterbridge -remove .\\",
+		"matterbridge:enable": "matterbridge -enable .\\",
+		"matterbridge:disable": "matterbridge -disable .\\",
+		"matterbridge:list": "matterbridge -list",
+		"dev:link": "npm link matterbridge",
+		"dev:unlink": "npm unlink matterbridge"
+	},
+	"engines": {
+		"matterbridge": "^3.5.6",
+		"node": ">=24 <25"
+	},
+	"devDependencies": {
+		"@eslint/js": "10.0.1",
+		"@types/node": "25.3.0",
+		"@types/node-persist": "3.1.8",
+		"@types/nodemailer": "^7.0.11",
+		"@types/semver": "^7.7.1",
+		"@vitest/coverage-v8": "4.0.18",
+		"@vitest/eslint-plugin": "1.6.9",
+		"axios-mock-adapter": "^2.1.0",
+		"eslint": "10.0.2",
+		"eslint-config-prettier": "10.1.8",
+		"eslint-plugin-n": "17.24.0",
+		"eslint-plugin-prettier": "5.5.5",
+		"eslint-plugin-simple-import-sort": "12.1.1",
+		"jscpd": "^4.0.8",
+		"mock-socket": "^9.3.1",
+		"npm-check-updates": "19.4.0",
+		"prettier": "3.8.1",
+		"rimraf": "^6.1.3",
+		"typescript": "5.9.3",
+		"typescript-eslint": "8.56.0",
+		"vite-tsconfig-paths": "^6.1.1",
+		"vitest": "4.0.18"
+	},
+	"dependencies": {
+		"axios": "1.13.5",
+		"axios-logger": "2.8.1",
+		"axios-retry": "4.5.0",
+		"binary-parser": "2.3.0",
+		"crc-32": "1.2.2",
+		"mqtt": "5.15.0",
+		"node-persist": "^4.0.4",
+		"node-persist-manager": "2.0.1",
+		"nodemailer": "^8.0.1",
+		"protobufjs": "^8.0.0",
+		"semver": "^7.7.4"
+	},
+	"overrides": {
+		"eslint": "10.0.2",
+		"@eslint/js": "10.0.1"
+	}
 }

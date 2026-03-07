@@ -8,82 +8,82 @@ import type { RoborockPluginPlatformConfig } from '../../../model/RoborockPlugin
 import type { AnsiLogger } from 'matterbridge/logger';
 
 describe('RoborockService - Polling', () => {
-  let roborockService: RoborockService;
-  let mockLogger: AnsiLogger;
+	let roborockService: RoborockService;
+	let mockLogger: AnsiLogger;
 
-  beforeEach(async () => {
-    mockLogger = createMockLogger();
+	beforeEach(async () => {
+		mockLogger = createMockLogger();
 
-    // Use localStorage mock for tests
-    const persist = createMockLocalStorage();
+		// Use localStorage mock for tests
+		const persist = createMockLocalStorage();
 
-    // Create a minimal valid platform config manager for tests
-    const PlatformConfigManager = PlatformConfigManagerStatic;
-    const config = {
-      authentication: {
-        username: 'test',
-        region: 'US',
-        forceAuthentication: false,
-        authenticationMethod: 'Password',
-        password: '',
-      },
-      pluginConfiguration: {
-        whiteList: [],
-        enableServerMode: false,
-        enableMultipleMap: false,
-        sanitizeSensitiveLogs: false,
-        refreshInterval: 10,
-        debug: false,
-        unregisterOnShutdown: false,
-      },
-      advancedFeature: {
-        enableAdvancedFeature: false,
-        settings: {
-          clearStorageOnStartup: false,
-          showRoutinesAsRoom: false,
-          includeDockStationStatus: false,
-          includeVacuumErrorStatus: false,
-          forceRunAtDefault: false,
-          useVacationModeToSendVacuumToDock: false,
-          enableCleanModeMapping: false,
-          cleanModeSettings: {
-            vacuuming: { fanMode: 'Balanced', mopRouteMode: 'Standard' },
-            mopping: { waterFlowMode: 'Medium', mopRouteMode: 'Standard', distanceOff: 25 },
-            vacmop: { fanMode: 'Balanced', waterFlowMode: 'Medium', mopRouteMode: 'Standard', distanceOff: 25 },
-          },
-          overrideMatterConfiguration: false,
-          matterOverrideSettings: {
-            matterVendorName: 'xxx',
-            matterVendorId: 123,
-            matterProductName: 'yy',
-            matterProductId: 456,
-          },
-          enableEmailNotification: false,
-          emailNotificationSettings: {},
-        },
-      },
-    } as Partial<RoborockPluginPlatformConfig> as RoborockPluginPlatformConfig;
-    const configManager = PlatformConfigManager.create(config, mockLogger as AnsiLogger);
+		// Create a minimal valid platform config manager for tests
+		const PlatformConfigManager = PlatformConfigManagerStatic;
+		const config = {
+			authentication: {
+				username: 'test',
+				region: 'US',
+				forceAuthentication: false,
+				authenticationMethod: 'Password',
+				password: '',
+			},
+			pluginConfiguration: {
+				whiteList: [],
+				enableServerMode: false,
+				enableMultipleMap: false,
+				sanitizeSensitiveLogs: false,
+				refreshInterval: 10,
+				debug: false,
+				unregisterOnShutdown: false,
+			},
+			advancedFeature: {
+				enableAdvancedFeature: false,
+				settings: {
+					clearStorageOnStartup: false,
+					showRoutinesAsRoom: false,
+					includeDockStationStatus: false,
+					includeVacuumErrorStatus: false,
+					forceRunAtDefault: false,
+					useVacationModeToSendVacuumToDock: false,
+					enableCleanModeMapping: false,
+					cleanModeSettings: {
+						vacuuming: { fanMode: 'Balanced', mopRouteMode: 'Standard' },
+						mopping: { waterFlowMode: 'Medium', mopRouteMode: 'Standard', distanceOff: 25 },
+						vacmop: { fanMode: 'Balanced', waterFlowMode: 'Medium', mopRouteMode: 'Standard', distanceOff: 25 },
+					},
+					overrideMatterConfiguration: false,
+					matterOverrideSettings: {
+						matterVendorName: 'xxx',
+						matterVendorId: 123,
+						matterProductName: 'yy',
+						matterProductId: 456,
+					},
+					enableEmailNotification: false,
+					emailNotificationSettings: {},
+				},
+			},
+		} as Partial<RoborockPluginPlatformConfig> as RoborockPluginPlatformConfig;
+		const configManager = PlatformConfigManager.create(config, mockLogger as AnsiLogger);
 
-    roborockService = new RoborockService(
-      {
-        refreshInterval: 10,
-        baseUrl: 'https://api.roborock.com',
-        persist: persist,
-        configManager: configManager,
-        toastMessage: vi.fn(),
-      },
-      mockLogger,
-      configManager,
-    );
-  });
+		roborockService = new RoborockService(
+			{
+				refreshInterval: 10,
+				baseUrl: 'https://api.roborock.com',
+				persist: persist,
+				configManager: configManager,
+				toastMessage: vi.fn(),
+			},
+			mockLogger,
+			configManager,
+		);
+	});
 
-  it('activateDeviceNotify delegates to device service', () => {
-    const device: Device = { duid: 'test-duid' } as Device;
+	it('activateDeviceNotify delegates to device service', () => {
+		const device: Device = { duid: 'test-duid' } as Device;
 
-    // Test that method exists and doesn't throw with basic call
-    expect(() => {
-      roborockService.activateDeviceNotify(device);
-    }).not.toThrow();
-  });
+		// Test that method exists and doesn't throw with basic call
+		expect(() => {
+			roborockService.activateDeviceNotify(device);
+		}).not.toThrow();
+	});
 });

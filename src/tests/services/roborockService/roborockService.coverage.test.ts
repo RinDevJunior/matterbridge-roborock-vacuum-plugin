@@ -20,551 +20,551 @@ import { RoborockIoTApi } from '../../../roborockCommunication/api/iotClient.js'
 import { CleanSequenceType } from '../../../behaviors/roborock.vacuum/enums/CleanSequenceType.js';
 
 describe('RoborockService - Complete Coverage', () => {
-  let service: RoborockService;
-  let mockLogger: Partial<AnsiLogger>;
-  let mockContainer: ServiceContainer;
-  let mockAuthCoordinator: AuthenticationCoordinator;
-  let mockDeviceService: DeviceManagementService;
-  let mockAreaService: AreaManagementService;
-  let mockMessageService: MessageRoutingService;
-  let mockPollingService: Partial<PollingService>;
-  let mockConnectionService: ConnectionService;
-  let mockPersist: Partial<LocalStorage>;
-  let mockConfigManager: Partial<PlatformConfigManager> & { verificationCode?: string };
-
-  beforeEach(() => {
-    mockLogger = {
-      debug: vi.fn(),
-      info: vi.fn(),
-      warn: vi.fn(),
-      error: vi.fn(),
-      notice: vi.fn(),
-    };
-
-    mockAuthCoordinator = asPartial<AuthenticationCoordinator>({
-      authenticate: vi.fn(),
-    });
-
-    mockDeviceService = asPartial<DeviceManagementService>({
-      listDevices: vi.fn(),
-      getHomeDataForUpdating: vi.fn(),
-    });
-
-    mockAreaService = asPartial<AreaManagementService>({
-      setSelectedAreas: vi.fn(),
-      getSelectedAreas: vi.fn().mockReturnValue([]),
-      setSupportedAreas: vi.fn(),
-      setSupportedAreaIndexMap: vi.fn(),
-      setSupportedRoutines: vi.fn(),
-      getSupportedAreas: vi.fn().mockReturnValue([]),
-      getSupportedAreasIndexMap: vi.fn(),
-      getSupportedRoutines: vi.fn().mockReturnValue([]),
-      getMapInfo: vi.fn(),
-      getRoomMap: vi.fn(),
-      getScenes: vi.fn(),
-      startScene: vi.fn(),
-    });
-
-    mockMessageService = asPartial<MessageRoutingService>({
-      getCleanModeData: vi.fn(),
-      getRoomIdFromMap: vi.fn(),
-      changeCleanMode: vi.fn(),
-      startClean: vi.fn(),
-      pauseClean: vi.fn(),
-      stopAndGoHome: vi.fn(),
-      resumeClean: vi.fn(),
-      stopClean: vi.fn(),
-      playSoundToLocate: vi.fn(),
-      customGet: vi.fn(),
-      customSend: vi.fn(),
-      getSerialNumber: vi.fn().mockResolvedValue('SN-1234'),
-    });
-
-    mockPollingService = {
-      activateDeviceNotifyOverLocal: vi.fn(),
-      requestStatusOnce: vi.fn().mockResolvedValue(undefined),
-    };
-
-    mockConnectionService = asPartial<ConnectionService>({
-      initializeMessageClient: vi.fn(),
-      initializeMessageClientForLocal: vi.fn().mockResolvedValue(true),
-      setDeviceNotify: vi.fn(),
-      sendTestEmailNotification: vi.fn().mockResolvedValue(undefined),
-    });
-
-    mockContainer = asPartial<ServiceContainer>({
-      getAuthenticationCoordinator: vi.fn().mockReturnValue(mockAuthCoordinator),
-      getDeviceManagementService: vi.fn().mockReturnValue(mockDeviceService),
-      getAreaManagementService: vi.fn().mockReturnValue(mockAreaService),
-      getMessageRoutingService: vi.fn().mockReturnValue(mockMessageService),
-      getPollingService: vi.fn().mockReturnValue(mockPollingService),
-      getConnectionService: vi.fn().mockReturnValue(mockConnectionService),
-      setUserData: vi.fn(),
-      getIotApi: vi.fn(),
-      synchronizeMessageClients: vi.fn(),
-      destroy: vi.fn(),
-    });
-
-    mockPersist = {
-      init: vi.fn().mockResolvedValue(undefined),
-      getItem: vi.fn().mockResolvedValue(undefined),
-      setItem: vi.fn().mockResolvedValue(undefined),
-    };
-
-    mockConfigManager = {
-      username: 'testuser',
-      password: 'testpass',
-      verificationCode: undefined,
-      authenticationMethod: 'Password',
-    };
-
-    service = new RoborockService(
-      {
-        refreshInterval: 10,
-        baseUrl: 'https://api.roborock.com',
-        persist: mockPersist as LocalStorage,
-        configManager: mockConfigManager as PlatformConfigManager,
-        container: mockContainer as ServiceContainer,
-        toastMessage: vi.fn(),
-      },
-      mockLogger as AnsiLogger,
-      mockConfigManager as PlatformConfigManager,
-    );
-  });
-
-  describe('Authentication', () => {
-    it('should throw error when configManager is not provided', async () => {
-      const serviceWithoutConfig = new RoborockService(
-        {
-          refreshInterval: 10,
-          baseUrl: 'https://api.roborock.com',
-          persist: mockPersist as LocalStorage,
-          configManager: mockConfigManager as PlatformConfigManager,
-          container: mockContainer as ServiceContainer,
-          toastMessage: vi.fn(),
-        },
-        mockLogger as AnsiLogger,
-        undefined as unknown as PlatformConfigManager,
-      );
-
-      await expect(serviceWithoutConfig.authenticate()).rejects.toThrow(
-        'PlatformConfigManager not provided. Cannot authenticate.',
-      );
-    });
-
-    it('should log password as masked when provided', async () => {
-      vi.mocked(mockAuthCoordinator.authenticate).mockResolvedValue({
-        nickname: 'Test',
-        username: 'test',
-      } as UserData);
-
-      await service.authenticate();
-
-      expect(mockLogger.debug).toHaveBeenCalledWith(expect.stringContaining('******'));
-    });
-
-    it('should log verification code as masked when provided', async () => {
-      mockConfigManager.verificationCode = '123456';
-      vi.mocked(mockAuthCoordinator.authenticate).mockResolvedValue({
-        nickname: 'Test',
-        username: 'test',
-      } as UserData);
-
-      await service.authenticate();
+	let service: RoborockService;
+	let mockLogger: Partial<AnsiLogger>;
+	let mockContainer: ServiceContainer;
+	let mockAuthCoordinator: AuthenticationCoordinator;
+	let mockDeviceService: DeviceManagementService;
+	let mockAreaService: AreaManagementService;
+	let mockMessageService: MessageRoutingService;
+	let mockPollingService: Partial<PollingService>;
+	let mockConnectionService: ConnectionService;
+	let mockPersist: Partial<LocalStorage>;
+	let mockConfigManager: Partial<PlatformConfigManager> & { verificationCode?: string };
+
+	beforeEach(() => {
+		mockLogger = {
+			debug: vi.fn(),
+			info: vi.fn(),
+			warn: vi.fn(),
+			error: vi.fn(),
+			notice: vi.fn(),
+		};
+
+		mockAuthCoordinator = asPartial<AuthenticationCoordinator>({
+			authenticate: vi.fn(),
+		});
+
+		mockDeviceService = asPartial<DeviceManagementService>({
+			listDevices: vi.fn(),
+			getHomeDataForUpdating: vi.fn(),
+		});
+
+		mockAreaService = asPartial<AreaManagementService>({
+			setSelectedAreas: vi.fn(),
+			getSelectedAreas: vi.fn().mockReturnValue([]),
+			setSupportedAreas: vi.fn(),
+			setSupportedAreaIndexMap: vi.fn(),
+			setSupportedRoutines: vi.fn(),
+			getSupportedAreas: vi.fn().mockReturnValue([]),
+			getSupportedAreasIndexMap: vi.fn(),
+			getSupportedRoutines: vi.fn().mockReturnValue([]),
+			getMapInfo: vi.fn(),
+			getRoomMap: vi.fn(),
+			getScenes: vi.fn(),
+			startScene: vi.fn(),
+		});
+
+		mockMessageService = asPartial<MessageRoutingService>({
+			getCleanModeData: vi.fn(),
+			getRoomIdFromMap: vi.fn(),
+			changeCleanMode: vi.fn(),
+			startClean: vi.fn(),
+			pauseClean: vi.fn(),
+			stopAndGoHome: vi.fn(),
+			resumeClean: vi.fn(),
+			stopClean: vi.fn(),
+			playSoundToLocate: vi.fn(),
+			customGet: vi.fn(),
+			customSend: vi.fn(),
+			getSerialNumber: vi.fn().mockResolvedValue('SN-1234'),
+		});
+
+		mockPollingService = {
+			activateDeviceNotifyOverLocal: vi.fn(),
+			requestStatusOnce: vi.fn().mockResolvedValue(undefined),
+		};
+
+		mockConnectionService = asPartial<ConnectionService>({
+			initializeMessageClient: vi.fn(),
+			initializeMessageClientForLocal: vi.fn().mockResolvedValue(true),
+			setDeviceNotify: vi.fn(),
+			sendTestEmailNotification: vi.fn().mockResolvedValue(undefined),
+		});
+
+		mockContainer = asPartial<ServiceContainer>({
+			getAuthenticationCoordinator: vi.fn().mockReturnValue(mockAuthCoordinator),
+			getDeviceManagementService: vi.fn().mockReturnValue(mockDeviceService),
+			getAreaManagementService: vi.fn().mockReturnValue(mockAreaService),
+			getMessageRoutingService: vi.fn().mockReturnValue(mockMessageService),
+			getPollingService: vi.fn().mockReturnValue(mockPollingService),
+			getConnectionService: vi.fn().mockReturnValue(mockConnectionService),
+			setUserData: vi.fn(),
+			getIotApi: vi.fn(),
+			synchronizeMessageClients: vi.fn(),
+			destroy: vi.fn(),
+		});
+
+		mockPersist = {
+			init: vi.fn().mockResolvedValue(undefined),
+			getItem: vi.fn().mockResolvedValue(undefined),
+			setItem: vi.fn().mockResolvedValue(undefined),
+		};
+
+		mockConfigManager = {
+			username: 'testuser',
+			password: 'testpass',
+			verificationCode: undefined,
+			authenticationMethod: 'Password',
+		};
+
+		service = new RoborockService(
+			{
+				refreshInterval: 10,
+				baseUrl: 'https://api.roborock.com',
+				persist: mockPersist as LocalStorage,
+				configManager: mockConfigManager as PlatformConfigManager,
+				container: mockContainer as ServiceContainer,
+				toastMessage: vi.fn(),
+			},
+			mockLogger as AnsiLogger,
+			mockConfigManager as PlatformConfigManager,
+		);
+	});
+
+	describe('Authentication', () => {
+		it('should throw error when configManager is not provided', async () => {
+			const serviceWithoutConfig = new RoborockService(
+				{
+					refreshInterval: 10,
+					baseUrl: 'https://api.roborock.com',
+					persist: mockPersist as LocalStorage,
+					configManager: mockConfigManager as PlatformConfigManager,
+					container: mockContainer as ServiceContainer,
+					toastMessage: vi.fn(),
+				},
+				mockLogger as AnsiLogger,
+				undefined as unknown as PlatformConfigManager,
+			);
+
+			await expect(serviceWithoutConfig.authenticate()).rejects.toThrow(
+				'PlatformConfigManager not provided. Cannot authenticate.',
+			);
+		});
+
+		it('should log password as masked when provided', async () => {
+			vi.mocked(mockAuthCoordinator.authenticate).mockResolvedValue({
+				nickname: 'Test',
+				username: 'test',
+			} as UserData);
+
+			await service.authenticate();
+
+			expect(mockLogger.debug).toHaveBeenCalledWith(expect.stringContaining('******'));
+		});
+
+		it('should log verification code as masked when provided', async () => {
+			mockConfigManager.verificationCode = '123456';
+			vi.mocked(mockAuthCoordinator.authenticate).mockResolvedValue({
+				nickname: 'Test',
+				username: 'test',
+			} as UserData);
+
+			await service.authenticate();
 
-      expect(mockLogger.debug).toHaveBeenCalledWith(expect.stringContaining('******'));
-    });
+			expect(mockLogger.debug).toHaveBeenCalledWith(expect.stringContaining('******'));
+		});
 
-    it('should log success message with user nickname and username', async () => {
-      const userData = { nickname: 'TestUser', username: 'test@example.com' } as UserData;
-      vi.mocked(mockAuthCoordinator.authenticate).mockResolvedValue(userData);
+		it('should log success message with user nickname and username', async () => {
+			const userData = { nickname: 'TestUser', username: 'test@example.com' } as UserData;
+			vi.mocked(mockAuthCoordinator.authenticate).mockResolvedValue(userData);
 
-      await service.authenticate();
+			await service.authenticate();
 
-      expect(mockLogger.info).toHaveBeenCalledWith('Authentication successful for user: TestUser (test@example.com)');
-    });
+			expect(mockLogger.info).toHaveBeenCalledWith('Authentication successful for user: TestUser (test@example.com)');
+		});
 
-    it('should call setUserData on container when authentication succeeds', async () => {
-      const userData = { nickname: 'Test', username: 'test' } as UserData;
-      vi.mocked(mockAuthCoordinator.authenticate).mockResolvedValue(userData);
+		it('should call setUserData on container when authentication succeeds', async () => {
+			const userData = { nickname: 'Test', username: 'test' } as UserData;
+			vi.mocked(mockAuthCoordinator.authenticate).mockResolvedValue(userData);
 
-      await service.authenticate();
+			await service.authenticate();
 
-      expect(mockContainer.setUserData).toHaveBeenCalledWith(userData);
-    });
-  });
+			expect(mockContainer.setUserData).toHaveBeenCalledWith(userData);
+		});
+	});
 
-  describe('Device Management', () => {
-    it('should delegate listDevices to deviceService', async () => {
-      const devices = [{ duid: 'test-device' }] as Device[];
-      vi.mocked(mockDeviceService.listDevices).mockResolvedValue(devices);
+	describe('Device Management', () => {
+		it('should delegate listDevices to deviceService', async () => {
+			const devices = [{ duid: 'test-device' }] as Device[];
+			vi.mocked(mockDeviceService.listDevices).mockResolvedValue(devices);
 
-      const result = await service.listDevices();
+			const result = await service.listDevices();
 
-      expect(result).toEqual(devices);
-      expect(mockDeviceService.listDevices).toHaveBeenCalled();
-    });
+			expect(result).toEqual(devices);
+			expect(mockDeviceService.listDevices).toHaveBeenCalled();
+		});
 
-    it('should delegate getHomeDataForUpdating to deviceService', async () => {
-      const homeData = { id: 123, name: 'Test Home' };
-      vi.mocked(mockDeviceService.getHomeDataForUpdating).mockResolvedValue(asPartial<Home>(homeData));
+		it('should delegate getHomeDataForUpdating to deviceService', async () => {
+			const homeData = { id: 123, name: 'Test Home' };
+			vi.mocked(mockDeviceService.getHomeDataForUpdating).mockResolvedValue(asPartial<Home>(homeData));
 
-      const result = await service.getHomeDataForUpdating(123);
+			const result = await service.getHomeDataForUpdating(123);
 
-      expect(result).toEqual(homeData);
-      expect(mockDeviceService.getHomeDataForUpdating).toHaveBeenCalledWith(123);
-    });
+			expect(result).toEqual(homeData);
+			expect(mockDeviceService.getHomeDataForUpdating).toHaveBeenCalledWith(123);
+		});
 
-    it('should initialize message client and synchronize', async () => {
-      const device = { duid: 'test' } as Device;
-      const userData = { username: 'test' } as UserData;
+		it('should initialize message client and synchronize', async () => {
+			const device = { duid: 'test' } as Device;
+			const userData = { username: 'test' } as UserData;
 
-      await service.initializeMessageClient(device, userData);
+			await service.initializeMessageClient(device, userData);
 
-      expect(mockConnectionService.initializeMessageClient).toHaveBeenCalledWith(device, userData);
-      expect(mockContainer.synchronizeMessageClients).toHaveBeenCalled();
-    });
+			expect(mockConnectionService.initializeMessageClient).toHaveBeenCalledWith(device, userData);
+			expect(mockContainer.synchronizeMessageClients).toHaveBeenCalled();
+		});
 
-    it('should initialize local message client and synchronize', async () => {
-      const device = { duid: 'test' } as Device;
-      vi.mocked(mockConnectionService.initializeMessageClientForLocal).mockResolvedValue(true);
+		it('should initialize local message client and synchronize', async () => {
+			const device = { duid: 'test' } as Device;
+			vi.mocked(mockConnectionService.initializeMessageClientForLocal).mockResolvedValue(true);
 
-      const result = await service.initializeMessageClientForLocal(device);
+			const result = await service.initializeMessageClientForLocal(device);
 
-      expect(result).toBe(true);
-      expect(mockConnectionService.initializeMessageClientForLocal).toHaveBeenCalledWith(device);
-      expect(mockContainer.synchronizeMessageClients).toHaveBeenCalled();
-    });
+			expect(result).toBe(true);
+			expect(mockConnectionService.initializeMessageClientForLocal).toHaveBeenCalledWith(device);
+			expect(mockContainer.synchronizeMessageClients).toHaveBeenCalled();
+		});
 
-    it('should handle local message client initialization failure', async () => {
-      const device = { duid: 'test' } as Device;
-      vi.mocked(mockConnectionService.initializeMessageClientForLocal).mockResolvedValue(false);
+		it('should handle local message client initialization failure', async () => {
+			const device = { duid: 'test' } as Device;
+			vi.mocked(mockConnectionService.initializeMessageClientForLocal).mockResolvedValue(false);
 
-      const result = await service.initializeMessageClientForLocal(device);
+			const result = await service.initializeMessageClientForLocal(device);
 
-      expect(result).toBe(false);
-      expect(mockContainer.synchronizeMessageClients).toHaveBeenCalled();
-    });
+			expect(result).toBe(false);
+			expect(mockContainer.synchronizeMessageClients).toHaveBeenCalled();
+		});
 
-    it('should set device notify callback on both polling and connection services', () => {
-      const callback = vi.fn();
+		it('should set device notify callback on both polling and connection services', () => {
+			const callback = vi.fn();
 
-      service.setDeviceNotify(callback);
+			service.setDeviceNotify(callback);
 
-      expect(service.deviceNotify).toBe(callback);
-      expect(mockConnectionService.setDeviceNotify).toHaveBeenCalledWith(callback);
-    });
+			expect(service.deviceNotify).toBe(callback);
+			expect(mockConnectionService.setDeviceNotify).toHaveBeenCalledWith(callback);
+		});
 
-    it('should activate device notify for local network', () => {
-      const device = { duid: 'test' } as Device;
+		it('should activate device notify for local network', () => {
+			const device = { duid: 'test' } as Device;
 
-      service.activateDeviceNotify(device);
+			service.activateDeviceNotify(device);
 
-      expect(mockPollingService.activateDeviceNotifyOverLocal).toHaveBeenCalledWith(device);
-    });
+			expect(mockPollingService.activateDeviceNotifyOverLocal).toHaveBeenCalledWith(device);
+		});
 
-    it('should destroy container when stopping service', () => {
-      service.stopService();
+		it('should destroy container when stopping service', () => {
+			service.stopService();
 
-      expect(mockContainer.destroy).toHaveBeenCalled();
-    });
-  });
+			expect(mockContainer.destroy).toHaveBeenCalled();
+		});
+	});
 
-  describe('Area Management', () => {
-    it('should delegate setSelectedAreas to areaService', () => {
-      service.setSelectedAreas('duid', [1, 2, 3]);
+	describe('Area Management', () => {
+		it('should delegate setSelectedAreas to areaService', () => {
+			service.setSelectedAreas('duid', [1, 2, 3]);
 
-      expect(mockAreaService.setSelectedAreas).toHaveBeenCalledWith('duid', [1, 2, 3]);
-    });
+			expect(mockAreaService.setSelectedAreas).toHaveBeenCalledWith('duid', [1, 2, 3]);
+		});
 
-    it('should delegate getSelectedAreas to areaService', () => {
-      vi.mocked(mockAreaService.getSelectedAreas).mockReturnValue([1, 2]);
+		it('should delegate getSelectedAreas to areaService', () => {
+			vi.mocked(mockAreaService.getSelectedAreas).mockReturnValue([1, 2]);
 
-      const result = service.getSelectedAreas('duid');
+			const result = service.getSelectedAreas('duid');
 
-      expect(result).toEqual([1, 2]);
-      expect(mockAreaService.getSelectedAreas).toHaveBeenCalledWith('duid');
-    });
+			expect(result).toEqual([1, 2]);
+			expect(mockAreaService.getSelectedAreas).toHaveBeenCalledWith('duid');
+		});
 
-    it('should delegate setSupportedAreas to areaService', () => {
-      const areas = [asPartial<ServiceArea.Area>({ areaId: 1 })];
+		it('should delegate setSupportedAreas to areaService', () => {
+			const areas = [asPartial<ServiceArea.Area>({ areaId: 1 })];
 
-      service.setSupportedAreas('duid', areas as ServiceArea.Area[]);
+			service.setSupportedAreas('duid', areas as ServiceArea.Area[]);
 
-      expect(mockAreaService.setSupportedAreas).toHaveBeenCalledWith('duid', areas);
-    });
+			expect(mockAreaService.setSupportedAreas).toHaveBeenCalledWith('duid', areas);
+		});
 
-    it('should delegate setSupportedAreaIndexMap to areaService', () => {
-      const indexMap = new RoomIndexMap(new Map(), new Map());
+		it('should delegate setSupportedAreaIndexMap to areaService', () => {
+			const indexMap = new RoomIndexMap(new Map(), new Map());
 
-      service.setSupportedAreaIndexMap('duid', indexMap);
+			service.setSupportedAreaIndexMap('duid', indexMap);
 
-      expect(mockAreaService.setSupportedAreaIndexMap).toHaveBeenCalledWith('duid', indexMap);
-    });
+			expect(mockAreaService.setSupportedAreaIndexMap).toHaveBeenCalledWith('duid', indexMap);
+		});
 
-    it('should delegate setSupportedScenes to areaService', () => {
-      const scenes = [asPartial<ServiceArea.Area>({ areaId: 1 })];
+		it('should delegate setSupportedScenes to areaService', () => {
+			const scenes = [asPartial<ServiceArea.Area>({ areaId: 1 })];
 
-      service.setSupportedRoutines('duid', scenes as ServiceArea.Area[]);
+			service.setSupportedRoutines('duid', scenes as ServiceArea.Area[]);
 
-      expect(mockAreaService.setSupportedRoutines).toHaveBeenCalledWith('duid', scenes);
-    });
+			expect(mockAreaService.setSupportedRoutines).toHaveBeenCalledWith('duid', scenes);
+		});
 
-    it('should delegate getSupportedAreas to areaService', () => {
-      const areas = [asPartial<ServiceArea.Area>({ areaId: 1 })];
-      vi.mocked(mockAreaService.getSupportedAreas).mockReturnValue(areas);
+		it('should delegate getSupportedAreas to areaService', () => {
+			const areas = [asPartial<ServiceArea.Area>({ areaId: 1 })];
+			vi.mocked(mockAreaService.getSupportedAreas).mockReturnValue(areas);
 
-      const result = service.getSupportedAreas('duid');
+			const result = service.getSupportedAreas('duid');
 
-      expect(result).toEqual(areas);
-      expect(mockAreaService.getSupportedAreas).toHaveBeenCalledWith('duid');
-    });
+			expect(result).toEqual(areas);
+			expect(mockAreaService.getSupportedAreas).toHaveBeenCalledWith('duid');
+		});
 
-    it('should delegate getSupportedAreasIndexMap to areaService', () => {
-      const indexMap = new RoomIndexMap(new Map(), new Map());
-      vi.mocked(mockAreaService.getSupportedAreasIndexMap).mockReturnValue(indexMap);
+		it('should delegate getSupportedAreasIndexMap to areaService', () => {
+			const indexMap = new RoomIndexMap(new Map(), new Map());
+			vi.mocked(mockAreaService.getSupportedAreasIndexMap).mockReturnValue(indexMap);
 
-      const result = service.getSupportedAreasIndexMap('duid');
+			const result = service.getSupportedAreasIndexMap('duid');
 
-      expect(result).toEqual(indexMap);
-      expect(mockAreaService.getSupportedAreasIndexMap).toHaveBeenCalledWith('duid');
-    });
+			expect(result).toEqual(indexMap);
+			expect(mockAreaService.getSupportedAreasIndexMap).toHaveBeenCalledWith('duid');
+		});
 
-    it('should return undefined when getSupportedAreasIndexMap has no data', () => {
-      vi.mocked(mockAreaService.getSupportedAreasIndexMap).mockReturnValue(undefined);
+		it('should return undefined when getSupportedAreasIndexMap has no data', () => {
+			vi.mocked(mockAreaService.getSupportedAreasIndexMap).mockReturnValue(undefined);
 
-      const result = service.getSupportedAreasIndexMap('duid');
+			const result = service.getSupportedAreasIndexMap('duid');
 
-      expect(result).toBeUndefined();
-    });
+			expect(result).toBeUndefined();
+		});
 
-    it('should delegate getMapInfo to areaService', async () => {
-      const mapInfo = MapInfo.empty();
-      vi.mocked(mockAreaService.getMapInfo).mockResolvedValue(mapInfo);
+		it('should delegate getMapInfo to areaService', async () => {
+			const mapInfo = MapInfo.empty();
+			vi.mocked(mockAreaService.getMapInfo).mockResolvedValue(mapInfo);
 
-      const result = await service.getMapInfo('duid');
+			const result = await service.getMapInfo('duid');
 
-      expect(result).toEqual(mapInfo);
-      expect(mockAreaService.getMapInfo).toHaveBeenCalledWith('duid');
-    });
+			expect(result).toEqual(mapInfo);
+			expect(mockAreaService.getMapInfo).toHaveBeenCalledWith('duid');
+		});
 
-    it('should delegate getRoomMap to areaService', async () => {
-      const roomMap = asPartial<RawRoomMappingData>([]);
-      vi.mocked(mockAreaService.getRoomMap).mockResolvedValue(roomMap);
+		it('should delegate getRoomMap to areaService', async () => {
+			const roomMap = asPartial<RawRoomMappingData>([]);
+			vi.mocked(mockAreaService.getRoomMap).mockResolvedValue(roomMap);
 
-      const result = await service.getRoomMap('duid', 1);
+			const result = await service.getRoomMap('duid', 1);
 
-      expect(result).toEqual(roomMap);
-      expect(mockAreaService.getRoomMap).toHaveBeenCalledWith('duid', 1);
-    });
+			expect(result).toEqual(roomMap);
+			expect(mockAreaService.getRoomMap).toHaveBeenCalledWith('duid', 1);
+		});
 
-    it('should delegate getScenes to areaService', async () => {
-      const scenes = [{ id: 1, name: 'Scene 1' }] as Scene[];
-      vi.mocked(mockAreaService.getScenes).mockResolvedValue(scenes);
+		it('should delegate getScenes to areaService', async () => {
+			const scenes = [{ id: 1, name: 'Scene 1' }] as Scene[];
+			vi.mocked(mockAreaService.getScenes).mockResolvedValue(scenes);
 
-      const result = await service.getScenes(123);
+			const result = await service.getScenes(123);
 
-      expect(result).toEqual(scenes);
-      expect(mockAreaService.getScenes).toHaveBeenCalledWith(123);
-    });
+			expect(result).toEqual(scenes);
+			expect(mockAreaService.getScenes).toHaveBeenCalledWith(123);
+		});
 
-    it('should return undefined when getScenes has no data', async () => {
-      vi.mocked(mockAreaService.getScenes).mockResolvedValue(undefined);
+		it('should return undefined when getScenes has no data', async () => {
+			vi.mocked(mockAreaService.getScenes).mockResolvedValue(undefined);
 
-      const result = await service.getScenes(123);
+			const result = await service.getScenes(123);
 
-      expect(result).toBeUndefined();
-    });
+			expect(result).toBeUndefined();
+		});
 
-    it('should delegate startScene to areaService', async () => {
-      vi.mocked(mockAreaService.startScene).mockResolvedValue({ success: true });
+		it('should delegate startScene to areaService', async () => {
+			vi.mocked(mockAreaService.startScene).mockResolvedValue({ success: true });
 
-      const result = await service.startScene(1);
+			const result = await service.startScene(1);
 
-      expect(result).toEqual({ success: true });
-      expect(mockAreaService.startScene).toHaveBeenCalledWith(1);
-    });
-  });
+			expect(result).toEqual({ success: true });
+			expect(mockAreaService.startScene).toHaveBeenCalledWith(1);
+		});
+	});
 
-  describe('Message Routing', () => {
-    it('should delegate getCleanModeData to messageService', async () => {
-      const cleanMode = new CleanModeSetting(100, 200, 25, 300, CleanSequenceType.Persist);
-      vi.mocked(mockMessageService.getCleanModeData).mockResolvedValue(cleanMode);
+	describe('Message Routing', () => {
+		it('should delegate getCleanModeData to messageService', async () => {
+			const cleanMode = new CleanModeSetting(100, 200, 25, 300, CleanSequenceType.Persist);
+			vi.mocked(mockMessageService.getCleanModeData).mockResolvedValue(cleanMode);
 
-      const result = await service.getCleanModeData('duid');
+			const result = await service.getCleanModeData('duid');
 
-      expect(result).toEqual(cleanMode);
-      expect(mockMessageService.getCleanModeData).toHaveBeenCalledWith('duid');
-    });
+			expect(result).toEqual(cleanMode);
+			expect(mockMessageService.getCleanModeData).toHaveBeenCalledWith('duid');
+		});
 
-    it('should delegate getRoomIdFromMap to messageService', async () => {
-      vi.mocked(mockMessageService.getRoomIdFromMap).mockResolvedValue(5);
+		it('should delegate getRoomIdFromMap to messageService', async () => {
+			vi.mocked(mockMessageService.getRoomIdFromMap).mockResolvedValue(5);
 
-      const result = await service.getRoomIdFromMap('duid');
+			const result = await service.getRoomIdFromMap('duid');
 
-      expect(result).toBe(5);
-      expect(mockMessageService.getRoomIdFromMap).toHaveBeenCalledWith('duid');
-    });
+			expect(result).toBe(5);
+			expect(mockMessageService.getRoomIdFromMap).toHaveBeenCalledWith('duid');
+		});
 
-    it('should return undefined when getRoomIdFromMap has no data', async () => {
-      vi.mocked(mockMessageService.getRoomIdFromMap).mockResolvedValue(undefined);
+		it('should return undefined when getRoomIdFromMap has no data', async () => {
+			vi.mocked(mockMessageService.getRoomIdFromMap).mockResolvedValue(undefined);
 
-      const result = await service.getRoomIdFromMap('duid');
+			const result = await service.getRoomIdFromMap('duid');
 
-      expect(result).toBeUndefined();
-    });
+			expect(result).toBeUndefined();
+		});
 
-    it('should delegate changeCleanMode to messageService', async () => {
-      const settings = new CleanModeSetting(102, 203, 25, 300, CleanSequenceType.Persist);
+		it('should delegate changeCleanMode to messageService', async () => {
+			const settings = new CleanModeSetting(102, 203, 25, 300, CleanSequenceType.Persist);
 
-      await service.changeCleanMode('duid', settings);
+			await service.changeCleanMode('duid', settings);
 
-      expect(mockMessageService.changeCleanMode).toHaveBeenCalledWith('duid', settings);
-    });
+			expect(mockMessageService.changeCleanMode).toHaveBeenCalledWith('duid', settings);
+		});
 
-    it('should handle startClean with empty supported areas', async () => {
-      vi.mocked(mockAreaService.getSelectedAreas).mockReturnValue([1]);
-      vi.mocked(mockAreaService.getSupportedAreas).mockReturnValue(asType<ServiceArea.Area[]>(undefined));
-      vi.mocked(mockAreaService.getSupportedRoutines).mockReturnValue(asType<ServiceArea.Area[]>(undefined));
+		it('should handle startClean with empty supported areas', async () => {
+			vi.mocked(mockAreaService.getSelectedAreas).mockReturnValue([1]);
+			vi.mocked(mockAreaService.getSupportedAreas).mockReturnValue(asType<ServiceArea.Area[]>(undefined));
+			vi.mocked(mockAreaService.getSupportedRoutines).mockReturnValue(asType<ServiceArea.Area[]>(undefined));
 
-      await service.startClean('duid');
+			await service.startClean('duid');
 
-      expect(mockMessageService.startClean).toHaveBeenCalledWith('duid', expect.objectContaining({ type: 'global' }));
-    });
+			expect(mockMessageService.startClean).toHaveBeenCalledWith('duid', expect.objectContaining({ type: 'global' }));
+		});
 
-    it('should delegate pauseClean to messageService', async () => {
-      await service.pauseClean('duid');
+		it('should delegate pauseClean to messageService', async () => {
+			await service.pauseClean('duid');
 
-      expect(mockMessageService.pauseClean).toHaveBeenCalledWith('duid');
-    });
+			expect(mockMessageService.pauseClean).toHaveBeenCalledWith('duid');
+		});
 
-    it('should delegate stopAndGoHome to messageService', async () => {
-      await service.stopAndGoHome('duid');
+		it('should delegate stopAndGoHome to messageService', async () => {
+			await service.stopAndGoHome('duid');
 
-      expect(mockMessageService.stopAndGoHome).toHaveBeenCalledWith('duid');
-    });
+			expect(mockMessageService.stopAndGoHome).toHaveBeenCalledWith('duid');
+		});
 
-    it('should delegate resumeClean to messageService', async () => {
-      await service.resumeClean('duid');
+		it('should delegate resumeClean to messageService', async () => {
+			await service.resumeClean('duid');
 
-      expect(mockMessageService.resumeClean).toHaveBeenCalledWith('duid');
-    });
+			expect(mockMessageService.resumeClean).toHaveBeenCalledWith('duid');
+		});
 
-    it('should delegate stopClean to messageService', async () => {
-      await service.stopClean('duid');
+		it('should delegate stopClean to messageService', async () => {
+			await service.stopClean('duid');
 
-      expect(mockMessageService.stopClean).toHaveBeenCalledWith('duid');
-    });
+			expect(mockMessageService.stopClean).toHaveBeenCalledWith('duid');
+		});
 
-    it('should delegate playSoundToLocate to messageService', async () => {
-      await service.playSoundToLocate('duid');
+		it('should delegate playSoundToLocate to messageService', async () => {
+			await service.playSoundToLocate('duid');
 
-      expect(mockMessageService.playSoundToLocate).toHaveBeenCalledWith('duid');
-    });
+			expect(mockMessageService.playSoundToLocate).toHaveBeenCalledWith('duid');
+		});
 
-    it('should delegate customGet to messageService', async () => {
-      const request = { method: 'get_status' } as RequestMessage;
-      const response = { state: 8 };
-      vi.mocked(mockMessageService.customGet).mockResolvedValue(response);
+		it('should delegate customGet to messageService', async () => {
+			const request = { method: 'get_status' } as RequestMessage;
+			const response = { state: 8 };
+			vi.mocked(mockMessageService.customGet).mockResolvedValue(response);
 
-      const result = await service.customGet('duid', request);
+			const result = await service.customGet('duid', request);
 
-      expect(result).toEqual(response);
-      expect(mockMessageService.customGet).toHaveBeenCalledWith('duid', request);
-    });
+			expect(result).toEqual(response);
+			expect(mockMessageService.customGet).toHaveBeenCalledWith('duid', request);
+		});
 
-    it('should delegate customSend to messageService', async () => {
-      const request = { method: 'app_start' } as RequestMessage;
+		it('should delegate customSend to messageService', async () => {
+			const request = { method: 'app_start' } as RequestMessage;
 
-      await service.customSend('duid', request);
+			await service.customSend('duid', request);
 
-      expect(mockMessageService.customSend).toHaveBeenCalledWith('duid', request);
-    });
-  });
+			expect(mockMessageService.customSend).toHaveBeenCalledWith('duid', request);
+		});
+	});
 
-  describe('Custom API', () => {
-    it('should call iotApi.getCustom when initialized', async () => {
-      const mockIotApi = { getCustom: vi.fn().mockResolvedValue({ result: 'success' }) };
-      vi.mocked(mockContainer.getIotApi).mockReturnValue(asPartial<RoborockIoTApi>(mockIotApi));
+	describe('Custom API', () => {
+		it('should call iotApi.getCustom when initialized', async () => {
+			const mockIotApi = { getCustom: vi.fn().mockResolvedValue({ result: 'success' }) };
+			vi.mocked(mockContainer.getIotApi).mockReturnValue(asPartial<RoborockIoTApi>(mockIotApi));
 
-      const result = await service.getCustomAPI<{ result: string }>('/custom/endpoint');
+			const result = await service.getCustomAPI<{ result: string }>('/custom/endpoint');
 
-      expect(result).toEqual({ result: 'success' });
-      expect(mockIotApi.getCustom).toHaveBeenCalledWith('/custom/endpoint');
-    });
-  });
+			expect(result).toEqual({ result: 'success' });
+			expect(mockIotApi.getCustom).toHaveBeenCalledWith('/custom/endpoint');
+		});
+	});
 
-  describe('Delegation methods', () => {
-    it('should delegate listDevices to deviceService', async () => {
-      const devices = [asPartial<Device>({ duid: 'd1' })];
-      vi.mocked(mockDeviceService.listDevices).mockResolvedValue(devices);
+	describe('Delegation methods', () => {
+		it('should delegate listDevices to deviceService', async () => {
+			const devices = [asPartial<Device>({ duid: 'd1' })];
+			vi.mocked(mockDeviceService.listDevices).mockResolvedValue(devices);
 
-      const result = await service.listDevices();
+			const result = await service.listDevices();
 
-      expect(result).toBe(devices);
-      expect(mockDeviceService.listDevices).toHaveBeenCalled();
-    });
+			expect(result).toBe(devices);
+			expect(mockDeviceService.listDevices).toHaveBeenCalled();
+		});
 
-    it('should delegate getSerialNumber to messageRoutingService', async () => {
-      const result = await service.getSerialNumber('d1');
+		it('should delegate getSerialNumber to messageRoutingService', async () => {
+			const result = await service.getSerialNumber('d1');
 
-      expect(result).toBe('SN-1234');
-      expect(mockMessageService.getSerialNumber).toHaveBeenCalledWith('d1');
-    });
+			expect(result).toBe('SN-1234');
+			expect(mockMessageService.getSerialNumber).toHaveBeenCalledWith('d1');
+		});
 
-    it('should delegate getHomeDataForUpdating to deviceService', async () => {
-      const home = asPartial<Home>({ id: 1, name: 'Home' });
-      vi.mocked(mockDeviceService.getHomeDataForUpdating).mockResolvedValue(home);
+		it('should delegate getHomeDataForUpdating to deviceService', async () => {
+			const home = asPartial<Home>({ id: 1, name: 'Home' });
+			vi.mocked(mockDeviceService.getHomeDataForUpdating).mockResolvedValue(home);
 
-      const result = await service.getHomeDataForUpdating(1);
+			const result = await service.getHomeDataForUpdating(1);
 
-      expect(result).toBe(home);
-      expect(mockDeviceService.getHomeDataForUpdating).toHaveBeenCalledWith(1);
-    });
+			expect(result).toBe(home);
+			expect(mockDeviceService.getHomeDataForUpdating).toHaveBeenCalledWith(1);
+		});
 
-    it('should delegate initializeMessageClientForLocal to connectionService and synchronize', async () => {
-      const device = asPartial<Device>({ duid: 'd1' });
+		it('should delegate initializeMessageClientForLocal to connectionService and synchronize', async () => {
+			const device = asPartial<Device>({ duid: 'd1' });
 
-      const result = await service.initializeMessageClientForLocal(device);
+			const result = await service.initializeMessageClientForLocal(device);
 
-      expect(result).toBe(true);
-      expect(mockConnectionService.initializeMessageClientForLocal).toHaveBeenCalledWith(device);
-      expect(mockContainer.synchronizeMessageClients).toHaveBeenCalled();
-    });
+			expect(result).toBe(true);
+			expect(mockConnectionService.initializeMessageClientForLocal).toHaveBeenCalledWith(device);
+			expect(mockContainer.synchronizeMessageClients).toHaveBeenCalled();
+		});
 
-    it('should delegate sendTestEmailNotification to connectionService', async () => {
-      await service.sendTestEmailNotification();
+		it('should delegate sendTestEmailNotification to connectionService', async () => {
+			await service.sendTestEmailNotification();
 
-      expect(mockConnectionService.sendTestEmailNotification).toHaveBeenCalled();
-    });
+			expect(mockConnectionService.sendTestEmailNotification).toHaveBeenCalled();
+		});
 
-    it('should delegate setDeviceNotify to pollingService and connectionService', () => {
-      const callback = vi.fn();
+		it('should delegate setDeviceNotify to pollingService and connectionService', () => {
+			const callback = vi.fn();
 
-      service.setDeviceNotify(callback);
+			service.setDeviceNotify(callback);
 
-      expect(service.deviceNotify).toBe(callback);
-      expect(mockConnectionService.setDeviceNotify).toHaveBeenCalledWith(callback);
-    });
+			expect(service.deviceNotify).toBe(callback);
+			expect(mockConnectionService.setDeviceNotify).toHaveBeenCalledWith(callback);
+		});
 
-    it('should delegate activateDeviceNotify to pollingService', () => {
-      const device = asPartial<Device>({ duid: 'd1' });
+		it('should delegate activateDeviceNotify to pollingService', () => {
+			const device = asPartial<Device>({ duid: 'd1' });
 
-      service.activateDeviceNotify(device);
+			service.activateDeviceNotify(device);
 
-      expect(mockPollingService.activateDeviceNotifyOverLocal).toHaveBeenCalledWith(device);
-    });
+			expect(mockPollingService.activateDeviceNotifyOverLocal).toHaveBeenCalledWith(device);
+		});
 
-    it('should delegate requestDeviceStatusOnce to pollingService', async () => {
-      await service.requestDeviceStatusOnce('d1');
+		it('should delegate requestDeviceStatusOnce to pollingService', async () => {
+			await service.requestDeviceStatusOnce('d1');
 
-      expect(mockPollingService.requestStatusOnce).toHaveBeenCalledWith('d1');
-    });
+			expect(mockPollingService.requestStatusOnce).toHaveBeenCalledWith('d1');
+		});
 
-    it('should delegate stopService to container.destroy', () => {
-      service.stopService();
+		it('should delegate stopService to container.destroy', () => {
+			service.stopService();
 
-      expect(mockContainer.destroy).toHaveBeenCalled();
-    });
-  });
+			expect(mockContainer.destroy).toHaveBeenCalled();
+		});
+	});
 });

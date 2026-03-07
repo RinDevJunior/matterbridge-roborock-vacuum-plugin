@@ -12,16 +12,16 @@ import { getAllModesForDevice, hasSmartPlan } from './deviceCapabilityRegistry.j
 import { DeviceModel } from '../../../roborockCommunication/models/index.js';
 
 const goVacationEntry = {
-  [CleanModeLabelInfo[CleanModeDisplayLabel.GoVacation].mode]:
-    CleanModeLabelInfo[CleanModeDisplayLabel.GoVacation].label,
+	[CleanModeLabelInfo[CleanModeDisplayLabel.GoVacation].mode]:
+		CleanModeLabelInfo[CleanModeDisplayLabel.GoVacation].label,
 };
 
 export interface BehaviorConfig {
-  name: string;
-  cleanModes: Record<number, string>;
-  cleanSettings: Record<number, CleanModeSetting>;
-  runModeConfigs: RunModeConfig[];
-  registry: ModeHandlerRegistry;
+	name: string;
+	cleanModes: Record<number, string>;
+	cleanSettings: Record<number, CleanModeSetting>;
+	runModeConfigs: RunModeConfig[];
+	registry: ModeHandlerRegistry;
 }
 
 const configCache = new Map<string, BehaviorConfig>();
@@ -32,46 +32,46 @@ const configCache = new Map<string, BehaviorConfig>();
  * Results are cached per model for efficiency.
  */
 export function buildBehaviorConfig(model: string): BehaviorConfig {
-  if (configCache.has(model)) {
-    return configCache.get(model) as BehaviorConfig;
-  }
+	if (configCache.has(model)) {
+		return configCache.get(model) as BehaviorConfig;
+	}
 
-  const withSmartPlan = hasSmartPlan(model);
-  const allModes = getAllModesForDevice(model);
+	const withSmartPlan = hasSmartPlan(model);
+	const allModes = getAllModesForDevice(model);
 
-  const registry = new ModeHandlerRegistry().register(new CleaningModeHandler()).register(new GoVacationHandler());
+	const registry = new ModeHandlerRegistry().register(new CleaningModeHandler()).register(new GoVacationHandler());
 
-  if (withSmartPlan) {
-    registry.register(new SmartPlanHandler());
-  }
+	if (withSmartPlan) {
+		registry.register(new SmartPlanHandler());
+	}
 
-  registry
-    .register(new DefaultCleanModeHandler())
-    .register(new PresetCleanModeHandler())
-    .register(new CustomCleanModeHandler());
+	registry
+		.register(new DefaultCleanModeHandler())
+		.register(new PresetCleanModeHandler())
+		.register(new CustomCleanModeHandler());
 
-  const config: BehaviorConfig = {
-    name: withSmartPlan ? 'BehaviorSmart' : 'DefaultBehavior',
-    cleanModes: { ...getModeDisplayMap(allModes), ...goVacationEntry },
-    cleanSettings: getModeSettingsMap(allModes),
-    runModeConfigs: baseRunModeConfigs,
-    registry,
-  };
+	const config: BehaviorConfig = {
+		name: withSmartPlan ? 'BehaviorSmart' : 'DefaultBehavior',
+		cleanModes: { ...getModeDisplayMap(allModes), ...goVacationEntry },
+		cleanSettings: getModeSettingsMap(allModes),
+		runModeConfigs: baseRunModeConfigs,
+		registry,
+	};
 
-  configCache.set(model, config);
-  return config;
+	configCache.set(model, config);
+	return config;
 }
 
 /**
  * @deprecated Use buildBehaviorConfig(model) instead.
  */
 export function createDefaultBehaviorConfig(): BehaviorConfig {
-  return buildBehaviorConfig('');
+	return buildBehaviorConfig('');
 }
 
 /**
  * @deprecated Use buildBehaviorConfig(model) instead.
  */
 export function createSmartBehaviorConfig(): BehaviorConfig {
-  return buildBehaviorConfig(DeviceModel.QREVO_EDGE_5V1);
+	return buildBehaviorConfig(DeviceModel.QREVO_EDGE_5V1);
 }
