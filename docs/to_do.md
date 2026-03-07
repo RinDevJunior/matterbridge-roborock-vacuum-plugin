@@ -14,6 +14,7 @@
 
 ## Completed
 
+- [x] Release `1.1.5-rc08` — refactor `handleServiceAreaUpdate` into dedicated helpers
 - [x] Release `1.1.5-rc07` — correct type of `selectedAreas` (`ServiceArea.Area[]` → `number[]`)
 
 ## Previously Completed

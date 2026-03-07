@@ -18,7 +18,8 @@
 			"Bash(curl:*)",
 			"Bash(python3:*)",
 			"Bash(npm run precommit:*)",
-			"mcp__codecov__get_pull_request_coverage"
+			"mcp__codecov__get_pull_request_coverage",
+			"Bash(npx tsc --noEmit)"
 		]
 	},
 	"outputStyle": "default",

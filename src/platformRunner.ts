@@ -4,12 +4,7 @@ import { NotifyMessageTypes } from './types/notifyMessageTypes.js';
 import { debugStringify } from 'matterbridge/logger';
 import { updateFromHomeData } from './runtimes/handleHomeDataMessage.js';
 import type { MessagePayload, ServiceAreaUpdateMessage } from './types/MessagePayloads.js';
-import {
-	BatteryMessage,
-	CleanInformation,
-	DeviceErrorMessage,
-	StatusChangeMessage,
-} from './roborockCommunication/models/index.js';
+import { BatteryMessage, DeviceErrorMessage, StatusChangeMessage } from './roborockCommunication/models/index.js';
 import { RoborockMatterbridgePlatform } from './module.js';
 import type { RoborockVacuumCleaner } from './types/roborockVacuumCleaner.js';
 import { resolveDeviceState } from './share/stateResolver.js';

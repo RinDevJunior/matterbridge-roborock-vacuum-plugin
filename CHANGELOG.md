@@ -4,6 +4,16 @@ All notable changes to this project will be documented in this file.
 
 ---
 
+## [1.1.5-rc08] - 2026-03-07
+
+### Fixed
+
+- **"Traveling to room" now stays visible until cleaning actually starts** — Previously, Apple Home would flash "Traveling to room" for only a brief moment before switching to "Vacuuming", even while the robot was still on its way. The plugin now correctly holds the "Traveling to room" status until the robot has reached the room and begun cleaning. The plugin uses `clean_area` and `clean_time` from the robot's status to detect whether cleaning has actually started: as long as both remain at zero, the robot is still traveling and Apple Home will reflect that accurately.
+
+<a href="https://www.buymeacoffee.com/rinnvspktr" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/default-orange.png" alt="Buy Me A Coffee" height="41" width="174"></a>
+
+---
+
 ## [1.1.5-rc07] - 2026-03-02
 
 ### Fixed

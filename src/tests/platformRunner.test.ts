@@ -580,7 +580,12 @@ describe('PlatformRunner.updateRobotWithPayload', () => {
 			getSelectedAreas: vi.fn().mockReturnValue(selectedAreas),
 		});
 
-		const serviceAreaMessage = { duid: 'test-duid', state: OperationStatusCode.Idle, cleaningInfo: undefined };
+		const serviceAreaMessage = {
+			duid: 'test-duid',
+			state: OperationStatusCode.Idle,
+			cleaningInfo: undefined,
+			cleaningProcess: { clean_area: 0, clean_time: 0 },
+		};
 		const payload: MessagePayload = { type: NotifyMessageTypes.ServiceAreaUpdate, data: serviceAreaMessage };
 
 		await runner.updateRobotWithPayload(payload);
@@ -595,7 +600,7 @@ describe('PlatformRunner.updateRobotWithPayload', () => {
 
 	it('should handle ServiceAreaUpdate when state is Cleaning without cleaningInfo and clean_area is 0 (Traveling to room)', async () => {
 		const selectedAreas = [1, 2];
-		vi.mocked(platform.roborockService!.getSelectedAreas).mockReturnValue(selectedAreas);
+		platform.roborockService = createMockRoborockService({ getSelectedAreas: vi.fn().mockReturnValue(selectedAreas) });
 		vi.mocked(robot.getAttribute).mockReturnValue(undefined);
 		const serviceAreaMessage = {
 			duid: 'test-duid',
@@ -608,12 +613,17 @@ describe('PlatformRunner.updateRobotWithPayload', () => {
 		await runner.updateRobotWithPayload(payload);
 
 		expect(mockLogger.notice).toHaveBeenCalledWith('Vacuum is cleaning with no cleaning_info');
-		expect(robot.updateAttribute).toHaveBeenCalledWith(ServiceArea.Cluster.id, 'selectedAreas', selectedAreas, mockLogger);
+		expect(robot.updateAttribute).toHaveBeenCalledWith(
+			ServiceArea.Cluster.id,
+			'selectedAreas',
+			selectedAreas,
+			mockLogger,
+		);
 		expect(robot.updateAttribute).toHaveBeenCalledWith(ServiceArea.Cluster.id, 'currentArea', null, mockLogger);
 	});
 
 	it('should handle ServiceAreaUpdate when state is Cleaning without cleaningInfo and multiple rooms (Preparing)', async () => {
-		vi.mocked(platform.roborockService!.getSelectedAreas).mockReturnValue([1, 2]);
+		platform.roborockService = createMockRoborockService({ getSelectedAreas: vi.fn().mockReturnValue([1, 2]) });
 		vi.mocked(robot.getAttribute).mockReturnValue(undefined);
 		const serviceAreaMessage = {
 			duid: 'test-duid',
@@ -659,7 +669,12 @@ describe('PlatformRunner.updateRobotWithPayload', () => {
 			getSupportedAreasIndexMap: vi.fn().mockReturnValue(indexMap),
 		});
 
-		const serviceAreaMessage = { duid: 'test-duid', state: OperationStatusCode.Cleaning, cleaningInfo };
+		const serviceAreaMessage = {
+			duid: 'test-duid',
+			state: OperationStatusCode.Cleaning,
+			cleaningInfo,
+			cleaningProcess: { clean_area: 0, clean_time: 0 },
+		};
 		const payload: MessagePayload = { type: NotifyMessageTypes.ServiceAreaUpdate, data: serviceAreaMessage };
 
 		runner.updateRobotWithPayload(payload);
@@ -683,7 +698,12 @@ describe('PlatformRunner.updateRobotWithPayload', () => {
 			getSupportedAreasIndexMap: vi.fn().mockReturnValue(indexMap),
 		});
 
-		const serviceAreaMessage = { duid: 'test-duid', state: OperationStatusCode.Cleaning, cleaningInfo };
+		const serviceAreaMessage = {
+			duid: 'test-duid',
+			state: OperationStatusCode.Cleaning,
+			cleaningInfo,
+			cleaningProcess: { clean_area: 0, clean_time: 0 },
+		};
 		const payload: MessagePayload = { type: NotifyMessageTypes.ServiceAreaUpdate, data: serviceAreaMessage };
 
 		runner.updateRobotWithPayload(payload);
@@ -705,7 +725,12 @@ describe('PlatformRunner.updateRobotWithPayload', () => {
 			getSupportedAreasIndexMap: vi.fn().mockReturnValue(indexMap),
 		});
 
-		const serviceAreaMessage = { duid: 'test-duid', state: OperationStatusCode.Cleaning, cleaningInfo };
+		const serviceAreaMessage = {
+			duid: 'test-duid',
+			state: OperationStatusCode.Cleaning,
+			cleaningInfo,
+			cleaningProcess: { clean_area: 0, clean_time: 0 },
+		};
 		const payload: MessagePayload = { type: NotifyMessageTypes.ServiceAreaUpdate, data: serviceAreaMessage };
 
 		runner.updateRobotWithPayload(payload);
@@ -725,7 +750,12 @@ describe('PlatformRunner.updateRobotWithPayload', () => {
 			getSupportedAreasIndexMap: vi.fn().mockReturnValue(indexMap),
 		});
 
-		const serviceAreaMessage = { duid: 'test-duid', state: OperationStatusCode.Cleaning, cleaningInfo };
+		const serviceAreaMessage = {
+			duid: 'test-duid',
+			state: OperationStatusCode.Cleaning,
+			cleaningInfo,
+			cleaningProcess: { clean_area: 0, clean_time: 0 },
+		};
 		const payload: MessagePayload = { type: NotifyMessageTypes.ServiceAreaUpdate, data: serviceAreaMessage };
 
 		runner.updateRobotWithPayload(payload);
@@ -738,7 +768,12 @@ describe('PlatformRunner.updateRobotWithPayload', () => {
 	it('should return early when roborockService is undefined for ServiceAreaUpdate', async () => {
 		platform.roborockService = undefined;
 		const cleaningInfo = asPartial<CleanInformation>({ segment_id: 4, target_segment_id: undefined });
-		const serviceAreaMessage = { duid: 'test-duid', state: OperationStatusCode.Cleaning, cleaningInfo };
+		const serviceAreaMessage = {
+			duid: 'test-duid',
+			state: OperationStatusCode.Cleaning,
+			cleaningInfo,
+			cleaningProcess: { clean_area: 0, clean_time: 0 },
+		};
 		const payload: MessagePayload = { type: NotifyMessageTypes.ServiceAreaUpdate, data: serviceAreaMessage };
 
 		await runner.updateRobotWithPayload(payload);
@@ -947,7 +982,12 @@ describe('PlatformRunner.updateRobotWithPayload', () => {
 			getSelectedAreas: vi.fn().mockReturnValue([]),
 		});
 
-		const serviceAreaMessage = { duid: 'test-duid', state: OperationStatusCode.Idle, cleaningInfo: undefined };
+		const serviceAreaMessage = {
+			duid: 'test-duid',
+			state: OperationStatusCode.Idle,
+			cleaningInfo: undefined,
+			cleaningProcess: { clean_area: 0, clean_time: 0 },
+		};
 		const payload: MessagePayload = { type: NotifyMessageTypes.ServiceAreaUpdate, data: serviceAreaMessage };
 
 		await runner.updateRobotWithPayload(payload);
@@ -962,7 +1002,12 @@ describe('PlatformRunner.updateRobotWithPayload', () => {
 			getSupportedAreasIndexMap: vi.fn().mockReturnValue(undefined),
 		});
 
-		const serviceAreaMessage = { duid: 'test-duid', state: OperationStatusCode.Cleaning, cleaningInfo };
+		const serviceAreaMessage = {
+			duid: 'test-duid',
+			state: OperationStatusCode.Cleaning,
+			cleaningInfo,
+			cleaningProcess: { clean_area: 0, clean_time: 0 },
+		};
 		const payload: MessagePayload = { type: NotifyMessageTypes.ServiceAreaUpdate, data: serviceAreaMessage };
 
 		await runner.updateRobotWithPayload(payload);

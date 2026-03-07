@@ -179,6 +179,7 @@ describe('SimpleMessageHandler', () => {
 			duid,
 			state: OperationStatusCode.Cleaning,
 			cleaningInfo: undefined,
+			cleaningProcess: { clean_area: 0, clean_time: 0 },
 		};
 		await handler.onServiceAreaUpdate(serviceAreaMessage);
 		expect(deviceNotify).toHaveBeenCalledWith(
@@ -195,6 +196,7 @@ describe('SimpleMessageHandler', () => {
 			duid,
 			state: OperationStatusCode.Cleaning,
 			cleaningInfo: undefined,
+			cleaningProcess: { clean_area: 0, clean_time: 0 },
 		};
 		await handler.onServiceAreaUpdate(serviceAreaMessage);
 		expect(logger.debug).toHaveBeenCalledWith('[SimpleMessageHandler]: No deviceNotify callback provided');

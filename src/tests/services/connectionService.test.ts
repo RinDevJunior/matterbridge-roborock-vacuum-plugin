@@ -1,4 +1,13 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+
+vi.mock('nodemailer', () => ({
+	default: {
+		createTransport: vi.fn().mockReturnValue({
+			sendMail: vi.fn().mockResolvedValue(undefined),
+		}),
+	},
+}));
+
 import { ConnectionService } from '../../services/connectionService.js';
 import ClientManager from '../../services/clientManager.js';
 import { DeviceConnectionError, DeviceInitializationError } from '../../errors/index.js';

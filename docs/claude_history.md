@@ -1,5 +1,11 @@
 # Claude History
 
+## 2026-03-07 (Session 16)
+
+- Bumped version to `1.1.5-rc08`.
+- Updated `package.json` (version + buildpackage filename), `schema.json`, `config.json`, and `CHANGELOG.md`.
+- Changelog entry: refactored `handleServiceAreaUpdate` into dedicated helpers with clear 3-branch dispatch.
+
 ## 2026-03-02 (Session 15)
 
 - Bumped version to `1.1.5-rc07`.
