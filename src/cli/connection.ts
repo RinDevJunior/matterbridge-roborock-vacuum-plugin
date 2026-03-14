@@ -33,5 +33,7 @@ export async function connectDevice(duid: string, session: CliSession, logger: A
 		device.specs.model,
 	);
 
+	console.log(`Message dispatcher: ${dispatcher.dispatcherName}`);
+
 	return { clientRouter, dispatcher };
 }

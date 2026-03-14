@@ -6,6 +6,7 @@ import { cmdDevices } from './commands/devices.js';
 import { cmdLogin } from './commands/login.js';
 import { cmdMapInfo } from './commands/mapInfo.js';
 import { cmdPause } from './commands/pause.js';
+import { cmdPing } from './commands/ping.js';
 import { cmdRooms } from './commands/rooms.js';
 import { cmdStart } from './commands/start.js';
 import { cmdStatus } from './commands/status.js';
@@ -45,6 +46,7 @@ export async function main(): Promise<void> {
 			case 'start':
 			case 'stop':
 			case 'pause':
+			case 'ping':
 			case 'rooms':
 			case 'map-info':
 			case 'custom': {
@@ -57,6 +59,7 @@ export async function main(): Promise<void> {
 				else if (command === 'start') await cmdStart(duid, session, logger);
 				else if (command === 'stop') await cmdStop(duid, session, logger);
 				else if (command === 'pause') await cmdPause(duid, session, logger);
+				else if (command === 'ping') await cmdPing(duid, session, logger);
 				else if (command === 'rooms') await cmdRooms(duid, session, logger);
 				else if (command === 'map-info') await cmdMapInfo(duid, session, logger);
 				else {

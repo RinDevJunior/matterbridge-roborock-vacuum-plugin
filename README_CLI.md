@@ -32,6 +32,7 @@ npm run cli -- --command <command> [--duid <duid>]
 | `start`    | `--duid <duid>`                                              | Start cleaning                  |
 | `stop`     | `--duid <duid>`                                              | Stop cleaning                   |
 | `pause`    | `--duid <duid>`                                              | Pause cleaning                  |
+| `ping`     | `--duid <duid>`                                              | Beep robot (find_me)            |
 | `rooms`    | `--duid <duid>`                                              | Get room mapping                |
 | `map-info` | `--duid <duid>`                                              | Get map info (all maps + rooms) |
 | `custom`   | `--duid <duid> --method <m> [--params <json>] [--send true]` | Send/get custom command         |
@@ -148,6 +149,16 @@ Pause cleaning in place.
 
 ```bash
 npm run cli -- --command pause --duid <duid>
+```
+
+---
+
+### `ping`
+
+Beep the robot to locate it (`find_me`).
+
+```bash
+npm run cli -- --command ping --duid <duid>
 ```
 
 ---
