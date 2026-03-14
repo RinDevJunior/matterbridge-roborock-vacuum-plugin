@@ -20,28 +20,33 @@ npm run build
 npm run cli -- --command <command> [--duid <duid>] [--debug]
 ```
 
-| Option    | Description            |
-| --------- | ---------------------- |
-| `--help`  | Show help message      |
-| `--debug` | Enable debug logging   |
+| Option    | Description                                           |
+| --------- | ----------------------------------------------------- |
+| `--help`  | Show help message                                     |
+| `--debug` | Enable debug logging                                  |
+| `--local` | Send commands via local network (TCP) instead of MQTT |
 
 ---
 
 ## Commands
 
-| Command                 | Arguments                                                    | Description                     |
-| ----------------------- | ------------------------------------------------------------ | ------------------------------- |
-| [`login`](#login)       | —                                                            | Authenticate and save session   |
-| [`devices`](#devices)   | —                                                            | List all devices                |
-| [`status`](#status)     | `--duid <duid>`                                              | Get device status via MQTT      |
-| [`start`](#start)       | `--duid <duid>`                                              | Start cleaning                  |
-| [`stop`](#stop)         | `--duid <duid>`                                              | Stop cleaning                   |
-| [`pause`](#pause)       | `--duid <duid>`                                              | Pause cleaning                  |
-| [`ping`](#ping)         | `--duid <duid>`                                              | Beep robot (find_me)            |
-| [`room-info`](#room-info)       | `--duid <duid>`                                              | Get room mapping                |
-| [`map-info`](#map-info) | `--duid <duid>`                                              | Get map info (all maps + room-info) |
-| [`custom`](#custom)     | `--duid <duid> --method <m> [--params <json>] [--send true]` | Send/get custom command         |
-| [`--help`](#help)       | —                                                            | Show help message               |
+| Command                         | Arguments                                                    | Description                     |
+| ------------------------------- | ------------------------------------------------------------ | ------------------------------- |
+| [`login`](#login)               | —                                                            | Authenticate and save session   |
+| [`devices`](#devices)           | —                                                            | List all devices                |
+| [`status`](#status)             | `--duid <duid>`                                              | Get device status via MQTT      |
+| [`start`](#start)               | `--duid <duid>`                                              | Start cleaning                  |
+| [`stop`](#stop)                 | `--duid <duid>`                                              | Stop cleaning                   |
+| [`pause`](#pause)               | `--duid <duid>`                                              | Pause cleaning                  |
+| [`resume`](#resume)             | `--duid <duid>`                                              | Resume cleaning                 |
+| [`ping`](#ping)                 | `--duid <duid>`                                              | Beep robot (find_me)            |
+| [`clean-mode`](#clean-mode)     | `--duid <duid>`                                              | Get current clean mode settings |
+| [`room-info`](#room-info)       | `--duid <duid>`                                              | Get room mapping (active map)   |
+| [`map-info`](#map-info)         | `--duid <duid>`                                              | Get all maps with rooms         |
+| [`scenes`](#scenes)             | `--duid <duid> [--detail]`                                   | List cleaning scenes/routines   |
+| [`network-info`](#network-info) | `--duid <duid>`                                              | Get WiFi/network info           |
+| [`custom`](#custom)             | `--duid <duid> --method <m> [--params <json>] [--send true]` | Send/get custom command         |
+| [`--help`](#help)               | —                                                            | Show help message               |
 
 ---
 
@@ -158,12 +163,64 @@ npm run cli -- --command pause --duid <duid>
 
 ---
 
+### `resume`
+
+Resume cleaning after pause.
+
+```bash
+npm run cli -- --command resume --duid <duid>
+```
+
+---
+
 ### `ping`
 
 Beep the robot to locate it (`find_me`).
 
 ```bash
 npm run cli -- --command ping --duid <duid>
+```
+
+---
+
+### `clean-mode`
+
+Get the current clean mode settings (suction power, water flow, mop route).
+
+```bash
+npm run cli -- --command clean-mode --duid <duid>
+```
+
+Output:
+
+```
+Clean mode for device abc123:
+
+  suction_power: 102
+  water_flow:    200
+  distance_off:  0
+  mop_route:     300
+  sequence_type: (not supported)
+```
+
+---
+
+### `scenes`
+
+List all cleaning scenes/routines configured for the device's home. Use `--detail` to include the raw `param` field.
+
+```bash
+npm run cli -- --command scenes --duid <duid>
+npm run cli -- --command scenes --duid <duid> --detail
+```
+
+Output:
+
+```
+Scenes for device abc123:
+
+  id=1  name=Daily Clean  type=cleanScene  enabled=true
+  id=2  name=Bedroom      type=cleanScene  enabled=false
 ```
 
 ---
@@ -214,6 +271,30 @@ Map: Default Map 1 (id=0)  room-info=2
   id=16  tag=4  iot_name_id=abc  name=Living Room
   id=17  tag=5  iot_name_id=def  name=Kitchen
 ```
+
+---
+
+### `network-info`
+
+Get WiFi and network info for a device (SSID, IP, MAC, BSSID, signal strength).
+
+```bash
+npm run cli -- --command network-info --duid <duid>
+```
+
+Output:
+
+```
+Network info for device abc123:
+
+  ssid:  MyWiFi
+  ip:    192.168.1.42
+  mac:   AA:BB:CC:DD:EE:FF
+  bssid: 11:22:33:44:55:66
+  rssi:  -55 dBm
+```
+
+> Note: Not supported on all device protocols (Q7, Q10). Returns a message if unsupported.
 
 ---
 
@@ -306,5 +387,6 @@ After `login`, credentials are cached in `.cli-session.json` at the project root
 ## Notes
 
 - Commands that control the vacuum (`status`, `start`, `stop`, `pause`) connect via MQTT and time out after **10 seconds** if the device is unreachable.
+- Use `--local` to route commands over the local TCP connection (port 58867) instead of MQTT. The device IP is fetched automatically via `get_network_info`. Not supported on Q7/Q10 protocol devices.
 - The default authentication endpoint is `https://usiot.roborock.com` (US region). If your account is in EU/CN/RU, the API resolves the correct regional URL automatically after providing your email.
 - Log output is suppressed by default (level `DEBUG`). Internal API/MQTT logs will not appear unless there is a warning or error.

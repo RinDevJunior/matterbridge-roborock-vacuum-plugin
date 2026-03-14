@@ -1,13 +1,17 @@
 import { LogLevel } from 'matterbridge/logger';
 import { AnsiLogger } from 'matterbridge/logger';
 
+import { cmdCleanMode } from './commands/cleanMode.js';
 import { cmdCustom } from './commands/custom.js';
 import { cmdDevices } from './commands/devices.js';
 import { cmdLogin } from './commands/login.js';
 import { cmdMapInfo } from './commands/mapInfo.js';
+import { cmdNetworkInfo } from './commands/networkInfo.js';
 import { cmdPause } from './commands/pause.js';
 import { cmdPing } from './commands/ping.js';
+import { cmdResume } from './commands/resume.js';
 import { cmdRooms } from './commands/rooms.js';
+import { cmdScenes } from './commands/scenes.js';
 import { cmdStart } from './commands/start.js';
 import { cmdStatus } from './commands/status.js';
 import { cmdStop } from './commands/stop.js';
@@ -51,27 +55,41 @@ export async function main(): Promise<void> {
 			process.exit(1);
 		}
 
+		const local = args['local'] === 'true';
+
 		switch (command) {
 			case 'status':
-				await cmdStatus(duid, session, logger);
+				await cmdStatus(duid, session, logger, local);
 				break;
 			case 'start':
-				await cmdStart(duid, session, logger);
+				await cmdStart(duid, session, logger, local);
 				break;
 			case 'stop':
-				await cmdStop(duid, session, logger);
+				await cmdStop(duid, session, logger, local);
 				break;
 			case 'pause':
-				await cmdPause(duid, session, logger);
+				await cmdPause(duid, session, logger, local);
+				break;
+			case 'resume':
+				await cmdResume(duid, session, logger, local);
 				break;
 			case 'ping':
-				await cmdPing(duid, session, logger);
+				await cmdPing(duid, session, logger, local);
 				break;
 			case 'room-info':
-				await cmdRooms(duid, session, logger);
+				await cmdRooms(duid, session, logger, local);
 				break;
 			case 'map-info':
-				await cmdMapInfo(duid, session, logger);
+				await cmdMapInfo(duid, session, logger, local);
+				break;
+			case 'clean-mode':
+				await cmdCleanMode(duid, session, logger, local);
+				break;
+			case 'network-info':
+				await cmdNetworkInfo(duid, session, logger);
+				break;
+			case 'scenes':
+				await cmdScenes(duid, session, logger, args['detail'] === 'true');
 				break;
 			case 'custom': {
 				const method = args['method'];
@@ -82,7 +100,7 @@ export async function main(): Promise<void> {
 				const rawParams = args['params'];
 				const params = rawParams ? (JSON.parse(rawParams) as unknown[] | Record<string, unknown>) : undefined;
 				const send = args['send'] === 'true';
-				await cmdCustom(duid, method, params, send, session, logger);
+				await cmdCustom(duid, method, params, send, session, logger, local);
 				break;
 			}
 			default:

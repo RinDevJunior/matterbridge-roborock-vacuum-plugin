@@ -20,8 +20,13 @@ export async function cmdDevices(session: CliSession, logger: AnsiLogger): Promi
 	const devices = buildDevices(homeData, homeInfo.rrHomeId, session.userData);
 	saveSession({ email: session.email, userData: session.userData, devices });
 
-	console.log(`Found ${devices.length} device(s):`);
-	devices.forEach((d) => {
-		console.log(`  duid: ${d.duid}  name: ${d.name}  model: ${d.specs.model}  pv: ${d.pv}  online: ${d.online}`);
+	console.log(`Found ${devices.length} device(s):\n`);
+	devices.forEach((d, i) => {
+		console.log(`  [${i + 1}] duid:     ${d.duid}`);
+		console.log(`      name:     ${d.name}`);
+		console.log(`      model:    ${d.specs.model}`);
+		console.log(`      pv:       ${d.pv}`);
+		console.log(`      firmware: ${d.fv}`);
+		console.log(`      online:   ${d.online}\n`);
 	});
 }

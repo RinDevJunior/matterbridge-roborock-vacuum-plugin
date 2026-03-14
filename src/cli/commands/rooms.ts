@@ -4,11 +4,11 @@ import { HomeModelMapper } from '../../roborockCommunication/models/home/mappers
 import { connectDevice } from '../connection.js';
 import { CliSession } from '../types.js';
 
-export async function cmdRooms(duid: string, session: CliSession, logger: AnsiLogger): Promise<void> {
+export async function cmdRooms(duid: string, session: CliSession, logger: AnsiLogger, local = false): Promise<void> {
 	const device = session.devices.find((d) => d.duid === duid);
 	if (!device) throw new Error(`Device not found: ${duid}`);
 
-	const { clientRouter, dispatcher } = await connectDevice(duid, session, logger);
+	const { clientRouter, dispatcher } = await connectDevice(duid, session, logger, local);
 	try {
 		const rawData = await dispatcher.getRoomMap(duid, -1);
 

@@ -11,8 +11,9 @@ export async function cmdCustom(
 	send: boolean,
 	session: CliSession,
 	logger: AnsiLogger,
+	local = false,
 ): Promise<void> {
-	const { clientRouter, dispatcher } = await connectDevice(duid, session, logger);
+	const { clientRouter, dispatcher } = await connectDevice(duid, session, logger, local);
 	try {
 		const request = new RequestMessage({ method, params });
 		if (send) {
