@@ -1,8 +1,10 @@
 import { LogLevel } from 'matterbridge/logger';
 import { AnsiLogger } from 'matterbridge/logger';
 
+import { cmdCustom } from './commands/custom.js';
 import { cmdDevices } from './commands/devices.js';
 import { cmdLogin } from './commands/login.js';
+import { cmdMapInfo } from './commands/mapInfo.js';
 import { cmdPause } from './commands/pause.js';
 import { cmdRooms } from './commands/rooms.js';
 import { cmdStart } from './commands/start.js';
@@ -43,7 +45,9 @@ export async function main(): Promise<void> {
 			case 'start':
 			case 'stop':
 			case 'pause':
-			case 'rooms': {
+			case 'rooms':
+			case 'map-info':
+			case 'custom': {
 				const duid = args['duid'];
 				if (!duid) {
 					console.error(`--duid is required for command: ${command}`);
@@ -53,7 +57,19 @@ export async function main(): Promise<void> {
 				else if (command === 'start') await cmdStart(duid, session, logger);
 				else if (command === 'stop') await cmdStop(duid, session, logger);
 				else if (command === 'pause') await cmdPause(duid, session, logger);
-				else await cmdRooms(duid, session, logger);
+				else if (command === 'rooms') await cmdRooms(duid, session, logger);
+				else if (command === 'map-info') await cmdMapInfo(duid, session, logger);
+				else {
+					const method = args['method'];
+					if (!method) {
+						console.error('--method is required for command: custom');
+						process.exit(1);
+					}
+					const rawParams = args['params'];
+					const params = rawParams ? (JSON.parse(rawParams) as unknown[] | Record<string, unknown>) : undefined;
+					const send = args['send'] === 'true';
+					await cmdCustom(duid, method, params, send, session, logger);
+				}
 				break;
 			}
 			default:

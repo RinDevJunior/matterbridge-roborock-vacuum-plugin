@@ -24,16 +24,18 @@ npm run cli -- --command <command> [--duid <duid>]
 
 ## Commands
 
-| Command   | Arguments       | Description                   |
-| --------- | --------------- | ----------------------------- |
-| `login`   | —               | Authenticate and save session |
-| `devices` | —               | List all devices              |
-| `status`  | `--duid <duid>` | Get device status via MQTT    |
-| `start`   | `--duid <duid>` | Start cleaning                |
-| `stop`    | `--duid <duid>` | Stop cleaning                 |
-| `pause`   | `--duid <duid>` | Pause cleaning                |
-| `rooms`   | `--duid <duid>` | Get room mapping              |
-| `help`    | —               | Show help message             |
+| Command    | Arguments                                                    | Description                     |
+| ---------- | ------------------------------------------------------------ | ------------------------------- |
+| `login`    | —                                                            | Authenticate and save session   |
+| `devices`  | —                                                            | List all devices                |
+| `status`   | `--duid <duid>`                                              | Get device status via MQTT      |
+| `start`    | `--duid <duid>`                                              | Start cleaning                  |
+| `stop`     | `--duid <duid>`                                              | Stop cleaning                   |
+| `pause`    | `--duid <duid>`                                              | Pause cleaning                  |
+| `rooms`    | `--duid <duid>`                                              | Get room mapping                |
+| `map-info` | `--duid <duid>`                                              | Get map info (all maps + rooms) |
+| `custom`   | `--duid <duid> --method <m> [--params <json>] [--send true]` | Send/get custom command         |
+| `help`     | —                                                            | Show help message               |
 
 ---
 
@@ -175,6 +177,71 @@ Room mapping for device abc123:
 
 Room mapping (fallback):
   id=16  tag=4  iot_name_id=abc  name=Living Room
+```
+
+---
+
+### `map-info`
+
+Get map info for a device. Shows all maps with their IDs, names, and rooms per map.
+
+```bash
+npm run cli -- --command map-info --duid <duid>
+```
+
+Output:
+
+```
+Map info for device abc123:
+
+Map: Default Map 1 (id=0)  rooms=2
+  id=16  tag=4  iot_name_id=abc  name=Living Room
+  id=17  tag=5  iot_name_id=def  name=Kitchen
+```
+
+---
+
+### `custom`
+
+Send or get a custom MQTT command with optional params.
+
+| Argument      | Required | Description                             |
+| ------------- | -------- | --------------------------------------- |
+| `--duid`      | yes      | Device ID                               |
+| `--method`    | yes      | RPC method name (e.g. `get_status`)     |
+| `--params`    | no       | JSON-encoded params array or object     |
+| `--send true` | no       | Fire-and-forget (default: get response) |
+
+**Get response:**
+
+```bash
+npm run cli -- --command custom --duid <duid> --method get_status
+```
+
+```bash
+npm run cli -- --command custom --duid <duid> --method get_clean_summary --params '[{"start_time":0}]'
+```
+
+Output:
+
+```json
+Response: {
+  "clean_time": 3600,
+  "clean_area": 12000,
+  ...
+}
+```
+
+**Fire-and-forget (send only, no response):**
+
+```bash
+npm run cli -- --command custom --duid <duid> --method set_clean_motor_mode --params '[{"fan_power":102}]' --send true
+```
+
+Output:
+
+```
+Sent: set_clean_motor_mode
 ```
 
 ---

@@ -16,7 +16,7 @@ export async function cmdLogin(logger: AnsiLogger): Promise<void> {
 
 	const code = await prompt('Verification code: ');
 	const userData = await authClient.loginWithCodeV4(email, code);
-	console.log(`Logged in as: ${userData.username}`);
+	console.log(`Logged in as: ${userData.username ?? email}`);
 
 	const homeInfo = await authClient.getBasicHomeInfo();
 	if (!homeInfo?.rrHomeId) throw new Error('No home found');
