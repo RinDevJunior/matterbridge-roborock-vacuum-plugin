@@ -4,6 +4,28 @@ All notable changes to this project will be documented in this file.
 
 ---
 
+## [1.1.5-rc09] - 2026-03-14
+
+### Changed
+
+- **Requires matterbridge@3.6.1** — Minimum required Matterbridge version bumped to `3.6.1`. Run `npm install -g matterbridge@3.6.1` before updating.
+- **`vendorId` now uses `VendorId` type** — Assignment updated to use the correct `VendorId` type for stricter type safety.
+
+### Improved
+
+- **`PollingService` now tracks one interval per device** — Previously, if an account had two vacuums, activating local polling for the second vacuum would cancel the first vacuum's polling interval, leaving only one vacuum syncing status at a time. Each device now maintains its own independent polling interval keyed by DUID, so all vacuums on the same account sync concurrently.
+
+### Fixed
+
+- **ESLint: `B01VacuumModeResolver` converted from class to const object** — Resolves `@typescript-eslint/no-extraneous-class` error; all callers remain unchanged.
+- **ESLint: async assertions properly awaited in tests** — `vitest/valid-expect` errors resolved by inlining awaited assertions instead of capturing them in variables.
+- **ESLint: array type notation unified** — `Array<T>` replaced with `T[]` to satisfy `@typescript-eslint/array-type`.
+- **Test: `pending.has(messageId)` fixed to use correct string key** — Map key is `duid:messageId` (string), not the raw numeric `messageId`.
+
+<a href="https://www.buymeacoffee.com/rinnvspktr" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/default-orange.png" alt="Buy Me A Coffee" height="41" width="174"></a>
+
+---
+
 ## [1.1.5-rc08] - 2026-03-07
 
 ### Fixed
