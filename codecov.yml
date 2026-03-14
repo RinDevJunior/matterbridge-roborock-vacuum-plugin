@@ -1,6 +1,9 @@
 codecov:
   branch: main
 
+ignore:
+  - "src/cli/**"
+
 # Global YAML [lower on hierarchy]
 coverage:
   round: down
