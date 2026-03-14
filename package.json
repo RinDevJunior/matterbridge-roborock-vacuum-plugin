@@ -37,6 +37,7 @@
 		"build:local": "npm run deepClean && npm install && npm link matterbridge && npm run build && npm run matterbridge:add",
 		"build:production": "tsc --project tsconfig.production.json",
 		"start": "tsc && matterbridge -childbridge",
+		"cli": "node dist/cli.js",
 		"build:package": "cd .. && build:compress && cd matterbridge-roborock-vacuum-plugin",
 		"build:compress": "tar --exclude-from='matterbridge-roborock-vacuum-plugin/.tarignore' -czvf matterbridge-roborock-vacuum-plugin-1.1.5-rc09.tgz matterbridge-roborock-vacuum-plugin",
 		"dup-check": "npx jscpd",

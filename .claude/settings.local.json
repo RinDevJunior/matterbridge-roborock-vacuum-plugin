@@ -20,7 +20,9 @@
 			"Bash(npm run precommit:*)",
 			"mcp__codecov__get_pull_request_coverage",
 			"Bash(npx tsc --noEmit)",
-			"Bash(npm run:*)"
+			"Bash(npm run:*)",
+			"Bash(xargs -I {} basename {})",
+			"Bash(find /Volumes/ExternalSSD/code/matterbridge-roborock-vacuum-plugin/node_modules/matterbridge/node_modules -name *.d.ts)"
 		]
 	},
 	"outputStyle": "default",

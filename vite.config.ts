@@ -13,7 +13,7 @@ export default defineConfig({
 	plugins: [tsconfigPaths()],
 	test: {
 		include: ['src/**/*.test.ts', 'src/**/*.spec.ts'],
-		exclude: ['dist', 'node_modules', 'src/pluginTemplate/**'],
+		exclude: ['dist', 'node_modules', 'src/pluginTemplate/**', 'src/cli/**', 'src/cli.ts'],
 		globals: true,
 		clearMocks: true,
 		restoreMocks: true,

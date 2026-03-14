@@ -1,0 +1,224 @@
+# Roborock CLI — Developer Debug Tool
+
+A standalone CLI to interact with the Roborock API and control vacuum devices directly, without running the full Matterbridge plugin. Useful for debugging, testing API responses, and sending commands during development.
+
+---
+
+## Setup
+
+Build the project first:
+
+```bash
+npm run build
+```
+
+---
+
+## Usage
+
+```bash
+npm run cli -- --command <command> [--duid <duid>]
+```
+
+---
+
+## Commands
+
+| Command   | Arguments       | Description                   |
+| --------- | --------------- | ----------------------------- |
+| `login`   | —               | Authenticate and save session |
+| `devices` | —               | List all devices              |
+| `status`  | `--duid <duid>` | Get device status via MQTT    |
+| `start`   | `--duid <duid>` | Start cleaning                |
+| `stop`    | `--duid <duid>` | Stop cleaning                 |
+| `pause`   | `--duid <duid>` | Pause cleaning                |
+| `rooms`   | `--duid <duid>` | Get room mapping              |
+| `help`    | —               | Show help message             |
+
+---
+
+### `login`
+
+Authenticate with your Roborock account. Sends a verification code to your email.
+
+```bash
+npm run cli -- --command login
+```
+
+Prompts:
+
+```
+Email: your@email.com
+Sending verification code...
+Verification code: 123456
+```
+
+On success, saves session to `.cli-session.json` and lists discovered devices:
+
+```
+Logged in as: your@email.com
+Session saved. Found 2 device(s).
+  • abc123  Living Room Vacuum  model=roborock.vacuum.a08  pv=A01
+  • def456  Bedroom Vacuum      model=roborock.vacuum.a15  pv=B01
+```
+
+> Session is stored locally in `.cli-session.json` (gitignored). Re-run `login` if the session expires.
+
+---
+
+### `devices`
+
+List all devices in your home. Refreshes the device list in the session.
+
+```bash
+npm run cli -- --command devices
+```
+
+Output:
+
+```
+Found 2 device(s):
+  duid:   abc123
+  name:   Living Room Vacuum
+  model:  roborock.vacuum.a08
+  pv:     A01
+  online: true
+
+  duid:   def456
+  name:   Bedroom Vacuum
+  model:  roborock.vacuum.a15
+  pv:     B01
+  online: false
+```
+
+---
+
+### `status`
+
+Get the current status of a device via MQTT.
+
+```bash
+npm run cli -- --command status --duid <duid>
+```
+
+Example:
+
+```bash
+npm run cli -- --command status --duid abc123
+```
+
+Output:
+
+```json
+Device status: {
+  "state": 8,
+  "battery": 100,
+  "clean_time": 0,
+  ...
+}
+```
+
+---
+
+### `start`
+
+Start cleaning.
+
+```bash
+npm run cli -- --command start --duid <duid>
+```
+
+---
+
+### `stop`
+
+Stop cleaning and return to dock.
+
+```bash
+npm run cli -- --command stop --duid <duid>
+```
+
+---
+
+### `pause`
+
+Pause cleaning in place.
+
+```bash
+npm run cli -- --command pause --duid <duid>
+```
+
+---
+
+### `rooms`
+
+Get room mapping for a device. Shows room IDs, tags, and names — useful for debugging room IDs before using room-based cleaning.
+
+```bash
+npm run cli -- --command rooms --duid <duid>
+```
+
+Output (multi-map device):
+
+```
+Room mapping for device abc123:
+
+Map: Default Map 1 (id=0)
+  id=16  tag=4  iot_name_id=abc  name=Living Room
+  id=17  tag=5  iot_name_id=def  name=Kitchen
+```
+
+Output (fallback for devices without multi-map support):
+
+```
+Room mapping for device abc123:
+
+Room mapping (fallback):
+  id=16  tag=4  iot_name_id=abc  name=Living Room
+```
+
+---
+
+### `help`
+
+Show all available commands and examples.
+
+```bash
+npm run cli -- --command help
+```
+
+---
+
+## Typical Workflow
+
+```bash
+# 1. Build
+npm run build
+
+# 2. Login once
+npm run cli -- --command login
+
+# 3. List devices to get duid
+npm run cli -- --command devices
+
+# 4. Send commands
+npm run cli -- --command status --duid abc123
+npm run cli -- --command rooms  --duid abc123
+npm run cli -- --command start  --duid abc123
+npm run cli -- --command pause  --duid abc123
+npm run cli -- --command stop   --duid abc123
+```
+
+---
+
+## Session File
+
+After `login`, credentials are cached in `.cli-session.json` at the project root. This file is gitignored and contains your `UserData` and device list. Delete it to force re-login.
+
+---
+
+## Notes
+
+- Commands that control the vacuum (`status`, `start`, `stop`, `pause`) connect via MQTT and time out after **10 seconds** if the device is unreachable.
+- The default authentication endpoint is `https://usiot.roborock.com` (US region). If your account is in EU/CN/RU, the API resolves the correct regional URL automatically after providing your email.
+- Log output is suppressed by default (level `WARN`). Internal API/MQTT logs will not appear unless there is a warning or error.
