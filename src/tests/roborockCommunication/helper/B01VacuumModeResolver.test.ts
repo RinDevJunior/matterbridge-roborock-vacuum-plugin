@@ -1,13 +1,15 @@
 import { describe, expect, it } from 'vitest';
 
-import {
-	resolveCleanRoute,
+import { B01VacuumModeResolver } from '../../../roborockCommunication/helper/B01VacuumModeResolver.js';
+
+const {
+	resolveVacuumMode,
 	resolveMopMode,
-	resolveMopModeWithDistanceOff,
+	resolveCleanRoute,
 	resolveQ7CleanMode,
 	resolveQ10CleanMode,
-	resolveVacuumMode,
-} from '../../../roborockCommunication/helper/B01VacuumModeResolver.js';
+	resolveMopModeWithDistanceOff,
+} = B01VacuumModeResolver;
 
 // Match the real values in ../../behaviors/roborock.vacuum/b01/q7.ts
 const Q7VacuumSuctionPower = {

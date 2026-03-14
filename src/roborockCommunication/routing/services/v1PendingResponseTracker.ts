@@ -6,7 +6,7 @@ import { PendingResponseTracker } from './pendingResponseTracker.js';
 
 export class V1PendingResponseTracker implements PendingResponseTracker {
 	private readonly pending = new Map<
-		number,
+		string,
 		{
 			handler: (response: ResponseMessage) => void;
 			timer: NodeJS.Timeout;
@@ -15,15 +15,20 @@ export class V1PendingResponseTracker implements PendingResponseTracker {
 
 	constructor(private readonly logger: AnsiLogger) {}
 
+	private pendingKey(duid: string, messageId: number | string): string {
+		return `${duid}:${messageId}`;
+	}
+
 	public waitFor(request: RequestMessage, duid: string): Promise<ResponseMessage> {
 		const messageId = request.messageId;
+		const key = this.pendingKey(duid, messageId);
 		return new Promise<ResponseMessage>((handler, reject) => {
 			this.logger.debug(
 				`[V1PendingResponseTracker] Waiting for response to messageId: ${messageId}, method: ${request.method}`,
 			);
 
 			const timer = setTimeout(() => {
-				this.pending.delete(messageId);
+				this.pending.delete(key);
 				reject(
 					new Error(
 						`[V1PendingResponseTracker] Message timeout for messageId: ${messageId}, request: ${debugStringify(request)}`,
@@ -31,7 +36,7 @@ export class V1PendingResponseTracker implements PendingResponseTracker {
 				);
 			}, MESSAGE_TIMEOUT_MS);
 
-			this.pending.set(messageId, { handler, timer });
+			this.pending.set(key, { handler, timer });
 		});
 	}
 
@@ -65,12 +70,13 @@ export class V1PendingResponseTracker implements PendingResponseTracker {
 		}
 
 		const messageId = dps.id;
+		const key = this.pendingKey(response.duid, messageId);
 
-		const entry = this.pending.get(messageId);
+		const entry = this.pending.get(key);
 		if (entry) {
 			clearTimeout(entry.timer);
 			entry.timer.unref();
-			this.pending.delete(messageId);
+			this.pending.delete(key);
 			this.logger.debug(`Resolved messageId: ${messageId}`);
 			entry.handler(dps.result as ResponseMessage);
 		}

@@ -19,7 +19,8 @@
 			"Bash(python3:*)",
 			"Bash(npm run precommit:*)",
 			"mcp__codecov__get_pull_request_coverage",
-			"Bash(npx tsc --noEmit)"
+			"Bash(npx tsc --noEmit)",
+			"Bash(npm run:*)"
 		]
 	},
 	"outputStyle": "default",

@@ -22,6 +22,12 @@ describe('PollingService', () => {
 		localKey: 'test-local-key',
 	} as Device;
 
+	const mockDevice2: Device = {
+		duid: 'test-duid-456',
+		name: 'Test Vacuum 2',
+		localKey: 'test-local-key-2',
+	} as Device;
+
 	beforeEach(() => {
 		vi.clearAllMocks();
 		vi.useFakeTimers();
@@ -71,15 +77,15 @@ describe('PollingService', () => {
 			service.activateDeviceNotifyOverLocal(mockDevice);
 
 			expect(mockLogger.debug).toHaveBeenCalledWith('Activating device status polling for:', mockDevice.duid);
-			expect(service['localRequestDeviceStatusInterval']).toBeDefined();
+			expect(service['localIntervals'].has(mockDevice.duid)).toBe(true);
 		});
 
-		it('should clear existing interval before creating new one', () => {
+		it('should clear existing interval before creating new one for the same device', () => {
 			service.activateDeviceNotifyOverLocal(mockDevice);
-			const firstInterval = service['localRequestDeviceStatusInterval'];
+			const firstInterval = service['localIntervals'].get(mockDevice.duid);
 
 			service.activateDeviceNotifyOverLocal(mockDevice);
-			const secondInterval = service['localRequestDeviceStatusInterval'];
+			const secondInterval = service['localIntervals'].get(mockDevice.duid);
 
 			expect(firstInterval).not.toBe(secondInterval);
 		});
@@ -135,11 +141,11 @@ describe('PollingService', () => {
 
 		it('should not affect the recurring polling interval', async () => {
 			service.activateDeviceNotifyOverLocal(mockDevice);
-			const intervalBefore = service['localRequestDeviceStatusInterval'];
+			const intervalBefore = service['localIntervals'].get(mockDevice.duid);
 
 			await service.requestStatusOnce(mockDevice.duid);
 
-			expect(service['localRequestDeviceStatusInterval']).toBe(intervalBefore);
+			expect(service['localIntervals'].get(mockDevice.duid)).toBe(intervalBefore);
 		});
 	});
 
@@ -147,18 +153,18 @@ describe('PollingService', () => {
 		it('should clear the polling interval', () => {
 			service.activateDeviceNotifyOverLocal(mockDevice);
 
-			expect(service['localRequestDeviceStatusInterval']).toBeDefined();
+			expect(service['localIntervals'].has(mockDevice.duid)).toBe(true);
 
 			service.stopPolling();
 
-			expect(service['localRequestDeviceStatusInterval']).toBeUndefined();
+			expect(service['localIntervals'].size).toBe(0);
 		});
 
 		it('should handle calling stopPolling when no interval is active', () => {
 			expect(() => {
 				service.stopPolling();
 			}).not.toThrow();
-			expect(service['localRequestDeviceStatusInterval']).toBeUndefined();
+			expect(service['localIntervals'].size).toBe(0);
 		});
 
 		it('should prevent further polling after stopPolling is called', async () => {
@@ -182,7 +188,7 @@ describe('PollingService', () => {
 
 			await service.shutdown();
 
-			expect(service['localRequestDeviceStatusInterval']).toBeUndefined();
+			expect(service['localIntervals'].size).toBe(0);
 		});
 
 		it('should handle shutdown when nothing is active', async () => {
@@ -201,6 +207,32 @@ describe('PollingService', () => {
 			await vi.advanceTimersByTimeAsync(TEST_REFRESH_INTERVAL * LOCAL_REFRESH_INTERVAL_MULTIPLIER * 3);
 
 			expect(mockMessageDispatcher.getDeviceStatus).not.toHaveBeenCalled();
+		});
+	});
+
+	describe('multi-device polling', () => {
+		it('should not stop device1 polling when device2 is activated', async () => {
+			service.activateDeviceNotifyOverLocal(mockDevice);
+			service.activateDeviceNotifyOverLocal(mockDevice2);
+
+			await vi.advanceTimersByTimeAsync(TEST_REFRESH_INTERVAL * LOCAL_REFRESH_INTERVAL_MULTIPLIER);
+
+			const calls = vi.mocked(mockMessageDispatcher.getDeviceStatus).mock.calls;
+			const device1Calls = calls.filter(([duid]) => duid === mockDevice.duid);
+			expect(device1Calls.length).toBeGreaterThan(0);
+		});
+
+		it('should poll both devices independently when two devices are activated', async () => {
+			service.activateDeviceNotifyOverLocal(mockDevice);
+			service.activateDeviceNotifyOverLocal(mockDevice2);
+
+			await vi.advanceTimersByTimeAsync(TEST_REFRESH_INTERVAL * LOCAL_REFRESH_INTERVAL_MULTIPLIER);
+
+			const calls = vi.mocked(mockMessageDispatcher.getDeviceStatus).mock.calls;
+			const device1Calls = calls.filter(([duid]) => duid === mockDevice.duid);
+			const device2Calls = calls.filter(([duid]) => duid === mockDevice2.duid);
+			expect(device1Calls.length).toBeGreaterThan(0);
+			expect(device2Calls.length).toBeGreaterThan(0);
 		});
 	});
 
@@ -231,7 +263,7 @@ describe('PollingService', () => {
 				service.stopPolling();
 			}
 
-			expect(service['localRequestDeviceStatusInterval']).toBeUndefined();
+			expect(service['localIntervals'].size).toBe(0);
 		});
 	});
 });

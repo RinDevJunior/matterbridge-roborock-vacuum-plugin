@@ -13,12 +13,7 @@ import {
 	Q7RequestCode,
 	Q7RequestMethod,
 } from '../../enums/Q7RequestCode.js';
-import {
-	resolveCleanRoute,
-	resolveMopMode,
-	resolveQ7CleanMode,
-	resolveVacuumMode,
-} from '../../helper/B01VacuumModeResolver.js';
+import { B01VacuumModeResolver } from '../../helper/B01VacuumModeResolver.js';
 import { DeviceStatus } from '../../models/deviceStatus.js';
 import { NetworkInfo, RawRoomMappingData } from '../../models/index.js';
 import { RequestMessage } from '../../models/requestMessage.js';
@@ -224,7 +219,9 @@ export class Q7MessageDispatcher implements AbstractMessageDispatcher {
 	private async setCleanMode(duid: string, suctionPower: number, waterFlow: number): Promise<void> {
 		const request = new RequestMessage({
 			messageId: this.messageId,
-			dps: this.createDps(Q7RequestMethod.set_prop, { 'mode': resolveQ7CleanMode(suctionPower, waterFlow) }),
+			dps: this.createDps(Q7RequestMethod.set_prop, {
+				'mode': B01VacuumModeResolver.resolveQ7CleanMode(suctionPower, waterFlow),
+			}),
 		});
 		await this.client.send(duid, request);
 	}
@@ -232,7 +229,7 @@ export class Q7MessageDispatcher implements AbstractMessageDispatcher {
 	private async setVacuumMode(duid: string, suctionPower: number): Promise<void> {
 		const request = new RequestMessage({
 			messageId: this.messageId,
-			dps: this.createDps(Q7RequestMethod.set_prop, { 'wind': resolveVacuumMode(suctionPower) }),
+			dps: this.createDps(Q7RequestMethod.set_prop, { 'wind': B01VacuumModeResolver.resolveVacuumMode(suctionPower) }),
 		});
 		await this.client.send(duid, request);
 	}
@@ -240,7 +237,7 @@ export class Q7MessageDispatcher implements AbstractMessageDispatcher {
 	private async setMopMode(duid: string, waterFlow: number): Promise<void> {
 		const request = new RequestMessage({
 			messageId: this.messageId,
-			dps: this.createDps(Q7RequestMethod.set_prop, { 'water': resolveMopMode(waterFlow) }),
+			dps: this.createDps(Q7RequestMethod.set_prop, { 'water': B01VacuumModeResolver.resolveMopMode(waterFlow) }),
 		});
 		await this.client.send(duid, request);
 	}
@@ -248,7 +245,9 @@ export class Q7MessageDispatcher implements AbstractMessageDispatcher {
 	async setCleanRoute(duid: string, mopRoute: number): Promise<void> {
 		const request = new RequestMessage({
 			messageId: this.messageId,
-			dps: this.createDps(Q7RequestMethod.set_prop, { 'clean_path_preference': resolveCleanRoute(mopRoute) }),
+			dps: this.createDps(Q7RequestMethod.set_prop, {
+				'clean_path_preference': B01VacuumModeResolver.resolveCleanRoute(mopRoute),
+			}),
 		});
 		await this.client.send(duid, request);
 	}

@@ -1,5 +1,15 @@
 # Claude History
 
+## 2026-03-14 (Session 17)
+
+- Fixed multi-device polling bug in `PollingService`: second vacuum was stopping first vacuum's polling interval.
+  - Replaced single `localRequestDeviceStatusInterval` with `Map<string, NodeJS.Timeout>` keyed by `duid`.
+- Audited all services for multi-device bugs. Found and fixed 1 real bug:
+  - **V1PendingResponseTracker**: messageId collision between devices — changed key from `messageId` (number) to `${duid}:${messageId}` (string).
+  - B01PendingResponseTracker was already correctly handling duid isolation via `entry.duid === response.duid` in `matches()`.
+- Added new test file `v1PendingResponseTracker.test.ts` (6 tests) + 2 multi-device tests in B01 tracker.
+- Updated existing tests in `pendingResponseTracker.test.ts` to use new string key format.
+
 ## 2026-03-07 (Session 16)
 
 - Bumped version to `1.1.5-rc08`.

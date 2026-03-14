@@ -5,7 +5,7 @@ import { CleanSequenceType } from '../../../behaviors/roborock.vacuum/enums/Clea
 import { MapInfo } from '../../../core/application/models/index.js';
 import { MapRoomResponse } from '../../../types/index.js';
 import { Q10RequestCode, Q10RequestMethod } from '../../enums/Q10RequestCode.js';
-import { resolveMopMode, resolveQ10CleanMode, resolveVacuumMode } from '../../helper/B01VacuumModeResolver.js';
+import { B01VacuumModeResolver } from '../../helper/B01VacuumModeResolver.js';
 import { DeviceStatus } from '../../models/deviceStatus.js';
 import { NetworkInfo, RawRoomMappingData } from '../../models/index.js';
 import { RequestMessage } from '../../models/requestMessage.js';
@@ -152,7 +152,9 @@ export class Q10MessageDispatcher implements AbstractMessageDispatcher {
 	private async setCleanMode(duid: string, suctionPower: number, waterFlow: number): Promise<void> {
 		const request = new RequestMessage({
 			messageId: this.messageId,
-			dps: { [Q10RequestMethod.change_clean_mode]: resolveQ10CleanMode(suctionPower, waterFlow) },
+			dps: {
+				[Q10RequestMethod.change_clean_mode]: B01VacuumModeResolver.resolveQ10CleanMode(suctionPower, waterFlow),
+			},
 		});
 		return this.client.send(duid, request);
 	}
@@ -160,7 +162,9 @@ export class Q10MessageDispatcher implements AbstractMessageDispatcher {
 	private async setVacuumMode(duid: string, mode: number) {
 		const request = new RequestMessage({
 			messageId: this.messageId,
-			dps: { [Q10RequestMethod.change_vacuum_mode]: resolveVacuumMode(mode) },
+			dps: {
+				[Q10RequestMethod.change_vacuum_mode]: B01VacuumModeResolver.resolveVacuumMode(mode),
+			},
 		});
 		return this.client.send(duid, request);
 	}
@@ -168,7 +172,9 @@ export class Q10MessageDispatcher implements AbstractMessageDispatcher {
 	private async setWaterMode(duid: string, mode: number) {
 		const request = new RequestMessage({
 			messageId: this.messageId,
-			dps: { [Q10RequestMethod.change_mop_mode]: resolveMopMode(mode) },
+			dps: {
+				[Q10RequestMethod.change_mop_mode]: B01VacuumModeResolver.resolveMopMode(mode),
+			},
 		});
 		return this.client.send(duid, request);
 	}

@@ -42,7 +42,7 @@ describe('PendingResponseTracker', () => {
 		tracker.tryResolve(response);
 
 		await expect(promise).resolves.toEqual({ foo: 'bar' });
-		expect(tracker['pending'].has(messageId)).toBe(false);
+		expect(tracker['pending'].has('duid:123')).toBe(false);
 	});
 
 	it('should reject after timeout if not resolved', async () => {
@@ -51,12 +51,12 @@ describe('PendingResponseTracker', () => {
 
 		const promise = tracker.waitFor(request, 'duid');
 
-		expect(tracker['pending'].has(messageId)).toBe(true);
+		expect(tracker['pending'].has('duid:321')).toBe(true);
 
 		vi.advanceTimersByTime(10000);
 
 		await expect(promise).rejects.toThrow('Message timeout for messageId: 321');
-		expect(tracker['pending'].has(messageId)).toBe(false);
+		expect(tracker['pending'].has('duid:321')).toBe(false);
 	});
 
 	it('should do nothing when tryResolve called with non-existent messageId', () => {
@@ -65,7 +65,7 @@ describe('PendingResponseTracker', () => {
 
 		tracker.tryResolve(response);
 
-		expect(tracker['pending'].has(messageId)).toBe(false);
+		expect(tracker['pending'].has(`duid:${messageId}`)).toBe(false);
 	});
 
 	it('should handle multiple pending requests', async () => {
@@ -174,12 +174,12 @@ describe('PendingResponseTracker', () => {
 
 		tracker.waitFor(request, 'duid');
 
-		const entry = tracker['pending'].get(messageId);
+		const entry = tracker['pending'].get('duid:888');
 		expect(entry).toBeDefined();
 		expect(entry?.timer).toBeDefined();
 
 		// Verify timer was created (will be unref'd internally)
-		expect(tracker['pending'].has(messageId)).toBe(true);
+		expect(tracker['pending'].has('duid:888')).toBe(true);
 	});
 
 	it('should warn when response has no body', () => {
@@ -203,7 +203,7 @@ describe('PendingResponseTracker', () => {
 		tracker.tryResolve(response);
 
 		await expect(promise).resolves.toEqual(dpsPayload.result);
-		expect(tracker['pending'].has(messageId)).toBe(false);
+		expect(tracker['pending'].has(`duid:${messageId}`)).toBe(false);
 	});
 
 	it('should return without throwing when response missing DPS payload', () => {
@@ -236,7 +236,7 @@ describe('PendingResponseTracker', () => {
 		tracker.tryResolve(response);
 
 		await expect(promise).resolves.toEqual(complexResult);
-		expect(tracker['pending'].has(messageId)).toBe(false);
+		expect(tracker['pending'].has(`duid:${messageId}`)).toBe(false);
 	});
 
 	it('should resolve when rpc_response payload is a number', async () => {
@@ -254,7 +254,7 @@ describe('PendingResponseTracker', () => {
 		vi.advanceTimersByTime(10000);
 
 		await expect(promise).rejects.toThrow(`Message timeout for messageId: ${messageId}`);
-		expect(tracker['pending'].has(messageId)).toBe(false);
+		expect(tracker['pending'].has(`duid:${messageId}`)).toBe(false);
 	});
 
 	it('should not resolve when id is present in another data mapping', async () => {
@@ -271,7 +271,7 @@ describe('PendingResponseTracker', () => {
 		// Ensure pending was not resolved
 		vi.advanceTimersByTime(10000);
 		await expect(promise).rejects.toThrow(`Message timeout for messageId: ${messageId}`);
-		expect(tracker['pending'].has(messageId)).toBe(false);
+		expect(tracker['pending'].has(`duid:${messageId}`)).toBe(false);
 	});
 
 	it('should reject after timeout when id is a numeric string', async () => {
@@ -288,6 +288,6 @@ describe('PendingResponseTracker', () => {
 		// ensure the pending entry will eventually time out
 		vi.advanceTimersByTime(10000);
 		await expect(promise).rejects.toThrow(`Message timeout for messageId: ${messageId}`);
-		expect(tracker['pending'].has(messageId)).toBe(false);
+		expect(tracker['pending'].has(`duid:${messageId}`)).toBe(false);
 	});
 });

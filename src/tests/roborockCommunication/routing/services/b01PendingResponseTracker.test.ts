@@ -295,6 +295,42 @@ describe('B01PendingResponseTracker', () => {
 		});
 	});
 
+	it('should not resolve device1 entry with response from device2 when timestamp and protocol match', async () => {
+		const device1 = 'device-1';
+		const device2 = 'device-2';
+		const request = makeRequest(100, 101);
+
+		const device1Promise = tracker.waitFor(request, device1);
+
+		// Response arrives but from device2 — should NOT match device1's pending entry
+		tracker.tryResolve(makeResponse(101, 102, { '101': { '108': 4 } }, device2));
+
+		// device1's collectedData should remain empty (device2's response was rejected)
+		const pending = tracker['pending'] as { duid: string; collectedData: Record<string, unknown> }[];
+		expect(Object.keys(pending[0].collectedData).length).toBe(0);
+
+		// cleanup: advance to trigger overall timeout
+		vi.advanceTimersByTime(10000);
+		await expect(device1Promise).rejects.toThrow('Timeout');
+	});
+
+	it('should independently resolve two devices with same timestamp and protocol', async () => {
+		const device1 = 'device-1';
+		const device2 = 'device-2';
+		const request = makeRequest(100, 101);
+
+		const device1Promise = tracker.waitFor(request, device1);
+		const device2Promise = tracker.waitFor(request, device2);
+
+		tracker.tryResolve(makeResponse(101, 102, { '101': { '108': 4 } }, device1));
+		tracker.tryResolve(makeResponse(101, 102, { '101': { '36': 105 } }, device2));
+		vi.advanceTimersByTime(500);
+
+		const [result1, result2] = await Promise.all([device1Promise, device2Promise]);
+		expect((result1.body?.data['rpc_request'] as Record<string, unknown>)['voice_version']).toBe(4);
+		expect((result2.body?.data['rpc_request'] as Record<string, unknown>)['voice_language']).toBe(105);
+	});
+
 	it('should ignore responses with no body', async () => {
 		const request = makeRequest(100, 101);
 		const promise = tracker.waitFor(request, duid);

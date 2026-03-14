@@ -6,7 +6,7 @@ import { MessageRoutingService } from './messageRoutingService.js';
 
 /** Polls device status via local network or MQTT. */
 export class PollingService {
-	private localRequestDeviceStatusInterval: NodeJS.Timeout | undefined;
+	private localIntervals = new Map<string, NodeJS.Timeout>();
 
 	constructor(
 		private readonly refreshInterval: number,
@@ -16,12 +16,11 @@ export class PollingService {
 
 	/** Start polling device status via local UDP. */
 	activateDeviceNotifyOverLocal(device: Device): void {
-		// Clear any existing interval
-		this.stopLocalPolling();
+		this.stopLocalPollingForDevice(device.duid);
 
 		this.logger.debug('Activating device status polling for:', device.duid);
 
-		this.localRequestDeviceStatusInterval = setInterval(async () => {
+		const interval = setInterval(async () => {
 			try {
 				const messageDispatcher = this.messageRoutingService.getMessageDispatcher(device.duid);
 				if (!messageDispatcher) {
@@ -34,6 +33,8 @@ export class PollingService {
 				this.logger.error('Failed to get device status:', error);
 			}
 		}, this.refreshInterval * LOCAL_REFRESH_INTERVAL_MULTIPLIER);
+
+		this.localIntervals.set(device.duid, interval);
 	}
 
 	/** Trigger a one-shot local status request without affecting the recurring interval. */
@@ -49,13 +50,17 @@ export class PollingService {
 
 	/** Stop all polling intervals. */
 	stopPolling(): void {
-		this.stopLocalPolling();
+		for (const interval of this.localIntervals.values()) {
+			clearInterval(interval);
+		}
+		this.localIntervals.clear();
 	}
 
-	private stopLocalPolling(): void {
-		if (this.localRequestDeviceStatusInterval !== undefined) {
-			clearInterval(this.localRequestDeviceStatusInterval);
-			this.localRequestDeviceStatusInterval = undefined;
+	private stopLocalPollingForDevice(duid: string): void {
+		const interval = this.localIntervals.get(duid);
+		if (interval !== undefined) {
+			clearInterval(interval);
+			this.localIntervals.delete(duid);
 		}
 	}
 

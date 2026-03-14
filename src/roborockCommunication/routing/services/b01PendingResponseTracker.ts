@@ -102,7 +102,8 @@ export class B01PendingResponseTracker implements PendingResponseTracker {
 		return (
 			ts >= entry.expectedTimestamp &&
 			ts < entry.expectedTimestamp + this.timestampTolerance &&
-			proto === entry.expectedProtocol
+			proto === entry.expectedProtocol &&
+			entry.duid === response.duid
 		);
 	}
 
