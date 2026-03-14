@@ -39,7 +39,7 @@ export class RequestMessage {
 
 		this.version = args.version;
 		this.dps = args.dps;
-		this.body = args.body ?? undefined;
+		this.body = args.body;
 	}
 
 	public isForProtocol(protocol: Protocol): boolean {

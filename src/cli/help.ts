@@ -1,29 +1,46 @@
+const b = '\x1b[1m'; // bold
+const c = '\x1b[36m'; // cyan
+const y = '\x1b[33m'; // yellow
+const g = '\x1b[32m'; // green
+const d = '\x1b[2m'; // dim
+const r = '\x1b[0m'; // reset
+
+function row(name: string, args: string, desc: string): string {
+	const paddedName = name.padEnd(9);
+	const paddedArgs = args.padEnd(36);
+	return `  ${g}${paddedName}${r}${d}${paddedArgs}${r}${desc}`;
+}
+
 export const HELP_TEXT = `
-Usage:
-  npm run cli -- --command <command> [options]
+${b}Usage:${r}
+  npm run cli -- --command ${c}<command>${r} [options]
 
-Commands:
-  login                                                   Authenticate and save session
-  devices                                                 List all devices
-  status   --duid <duid>                                  Get device status via MQTT
-  start    --duid <duid>                                  Start cleaning
-  stop     --duid <duid>                                  Stop cleaning and return to dock
-  pause    --duid <duid>                                  Pause cleaning
-  ping     --duid <duid>                                  Beep robot to locate it (find_me)
-  rooms    --duid <duid>                                  Get room mapping (active map)
-  map-info --duid <duid>                                  Get all maps with rooms
-  custom   --duid <duid> --method <method>                Send/get a custom MQTT command
-           [--params <json>] [--send true]                  --send true = fire-and-forget
-  help                                                    Show this help message
+${b}Options:${r}
+  ${y}--help ${r}   Show this help message
+  ${y}--debug${r}   Enable debug logging
 
-Examples:
-  npm run cli -- --command login
-  npm run cli -- --command devices
-  npm run cli -- --command status   --duid <duid>
-  npm run cli -- --command start    --duid <duid>
-  npm run cli -- --command ping     --duid <duid>
-  npm run cli -- --command rooms    --duid <duid>
-  npm run cli -- --command map-info --duid <duid>
-  npm run cli -- --command custom   --duid <duid> --method get_status
-  npm run cli -- --command custom   --duid <duid> --method set_clean_motor_mode --params '[{"fan_power":102}]' --send true
+${b}Commands:${r}
+${row('login', '', 'Authenticate and save session')}
+${row('devices', '', 'List all devices')}
+${row('status', '--duid <duid>', 'Get device status via MQTT')}
+${row('start', '--duid <duid>', 'Start cleaning')}
+${row('stop', '--duid <duid>', 'Stop cleaning and return to dock')}
+${row('pause', '--duid <duid>', 'Pause cleaning')}
+${row('ping', '--duid <duid>', 'Beep robot to locate it (find_me)')}
+${row('room-info', '--duid <duid>', 'Get room mapping (active map)')}
+${row('map-info', '--duid <duid>', 'Get all maps with rooms')}
+${row('custom', '--duid <duid> --method <method>', 'Send/get a custom MQTT command')}
+${' '.repeat(11)}${d}[--params <json>] [--send true]   ${r}--send true = fire-and-forget
+
+${b}Examples:${r}
+  npm run cli -- ${y}--help${r}
+  npm run cli -- --command ${g}login${r}
+  npm run cli -- --command ${g}devices${r}
+  npm run cli -- --command ${g}status     ${r}--duid ${c}<duid>${r}
+  npm run cli -- --command ${g}start      ${r}--duid ${c}<duid>${r}
+  npm run cli -- --command ${g}ping       ${r}--duid ${c}<duid>${r}
+  npm run cli -- --command ${g}room-info  ${r}--duid ${c}<duid>${r}
+  npm run cli -- --command ${g}map-info   ${r}--duid ${c}<duid>${r}
+  npm run cli -- --command ${g}custom     ${r}--duid ${c}<duid>${r} --method get_prop --params '["get_status"]'
+  npm run cli -- --command ${g}custom     ${r}--duid ${c}<duid>${r} --method set_clean_motor_mode --params '[{"fan_power":102}]' --send true
 `;

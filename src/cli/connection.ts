@@ -3,6 +3,7 @@ import { AnsiLogger } from 'matterbridge/logger';
 import { AbstractMessageDispatcher } from '../roborockCommunication/protocol/dispatcher/abstractMessageDispatcher.js';
 import { MessageDispatcherFactory } from '../roborockCommunication/protocol/dispatcher/dispatcherFactory.js';
 import { ClientRouter } from '../roborockCommunication/routing/clientRouter.js';
+import { LoggingMessageListener } from './loggingMessageListener.js';
 import { CliSession, CONNECT_POLL_MS, CONNECT_TIMEOUT_MS } from './types.js';
 
 export interface DeviceConnection {
@@ -25,6 +26,7 @@ export async function connectDevice(duid: string, session: CliSession, logger: A
 
 	const clientRouter = new ClientRouter(logger, session.userData);
 	clientRouter.registerDevice(duid, device.localKey, device.pv, undefined);
+	clientRouter.registerMessageListener(new LoggingMessageListener(duid, logger));
 	clientRouter.connect();
 	await waitForConnection(clientRouter);
 

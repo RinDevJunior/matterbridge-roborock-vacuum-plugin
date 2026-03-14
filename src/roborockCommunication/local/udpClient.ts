@@ -146,9 +146,9 @@ export class LocalNetworkUDPClient {
 			const exception = e as Error;
 			throw new Error(
 				`[LocalNetworkUDPClient] failed to decrypt: ${exception.message}
-        iv: ${iv.toString('hex')}
-        tag: ${tag.toString('hex')}
-        encrypted: ${ciphertext.toString('hex')}`,
+				iv: ${iv.toString('hex')}
+				tag: ${tag.toString('hex')}
+				encrypted: ${ciphertext.toString('hex')}`,
 				{ cause: e },
 			);
 		}

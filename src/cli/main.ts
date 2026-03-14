@@ -19,12 +19,14 @@ export async function main(): Promise<void> {
 	const args = parseArgs(process.argv.slice(2));
 	const command = args['command'];
 
-	if (!command || command === 'help') {
+	const help = args['help'] === 'true';
+	if (!command || command === 'help' || help) {
 		console.log(HELP_TEXT);
-		process.exit(command ? 0 : 1);
+		process.exit(command || help ? 0 : 1);
 	}
 
-	const logger = AnsiLogger.create({ logName: 'CLI', logLevel: LogLevel.WARN });
+	const debug = args['debug'] === 'true';
+	const logger = AnsiLogger.create({ logName: 'CLI', logLevel: debug ? LogLevel.DEBUG : LogLevel.WARN });
 
 	try {
 		if (command === 'login') {
@@ -38,41 +40,49 @@ export async function main(): Promise<void> {
 			process.exit(1);
 		}
 
+		if (command === 'devices') {
+			await cmdDevices(session, logger);
+			return;
+		}
+
+		const duid = args['duid'];
+		if (!duid) {
+			console.error(`--duid is required for command: ${command}`);
+			process.exit(1);
+		}
+
 		switch (command) {
-			case 'devices':
-				await cmdDevices(session, logger);
-				break;
 			case 'status':
+				await cmdStatus(duid, session, logger);
+				break;
 			case 'start':
+				await cmdStart(duid, session, logger);
+				break;
 			case 'stop':
+				await cmdStop(duid, session, logger);
+				break;
 			case 'pause':
+				await cmdPause(duid, session, logger);
+				break;
 			case 'ping':
-			case 'rooms':
+				await cmdPing(duid, session, logger);
+				break;
+			case 'room-info':
+				await cmdRooms(duid, session, logger);
+				break;
 			case 'map-info':
+				await cmdMapInfo(duid, session, logger);
+				break;
 			case 'custom': {
-				const duid = args['duid'];
-				if (!duid) {
-					console.error(`--duid is required for command: ${command}`);
+				const method = args['method'];
+				if (!method) {
+					console.error('--method is required for command: custom');
 					process.exit(1);
 				}
-				if (command === 'status') await cmdStatus(duid, session, logger);
-				else if (command === 'start') await cmdStart(duid, session, logger);
-				else if (command === 'stop') await cmdStop(duid, session, logger);
-				else if (command === 'pause') await cmdPause(duid, session, logger);
-				else if (command === 'ping') await cmdPing(duid, session, logger);
-				else if (command === 'rooms') await cmdRooms(duid, session, logger);
-				else if (command === 'map-info') await cmdMapInfo(duid, session, logger);
-				else {
-					const method = args['method'];
-					if (!method) {
-						console.error('--method is required for command: custom');
-						process.exit(1);
-					}
-					const rawParams = args['params'];
-					const params = rawParams ? (JSON.parse(rawParams) as unknown[] | Record<string, unknown>) : undefined;
-					const send = args['send'] === 'true';
-					await cmdCustom(duid, method, params, send, session, logger);
-				}
+				const rawParams = args['params'];
+				const params = rawParams ? (JSON.parse(rawParams) as unknown[] | Record<string, unknown>) : undefined;
+				const send = args['send'] === 'true';
+				await cmdCustom(duid, method, params, send, session, logger);
 				break;
 			}
 			default:

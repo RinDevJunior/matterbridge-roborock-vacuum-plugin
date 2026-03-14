@@ -3,7 +3,15 @@ import { AnsiLogger, debugStringify } from 'matterbridge/logger';
 import { MESSAGE_TIMEOUT_MS } from '../../../constants/index.js';
 import { Q10RequestCode } from '../../enums/Q10RequestCode.js';
 import { Dps, HeaderMessage, RequestMessage, ResponseBody, ResponseMessage } from '../../models/index.js';
+import { Protocol } from '../../models/protocol.js';
 import { PendingResponseTracker } from './pendingResponseTracker.js';
+
+const RESPONSE_PROTOCOL_MAP = new Map<Protocol, ReadonlySet<Protocol>>([
+	[Protocol.hello_request, new Set([Protocol.hello_response])],
+	[Protocol.ping_request, new Set([Protocol.ping_response])],
+	[Protocol.general_request, new Set([Protocol.general_response])],
+	[Protocol.rpc_request, new Set([Protocol.rpc_response])],
+]);
 
 // Reverse map: numeric string → enum name (e.g. '121' → 'state')
 const CODE_NAME_MAP: ReadonlyMap<string, string> = new Map(
@@ -18,7 +26,7 @@ const DEFAULT_TIMESTAMP_TOLERANCE = 1;
 interface PendingEntry {
 	duid: string;
 	expectedTimestamp: number;
-	expectedProtocol: number;
+	expectedProtocols: ReadonlySet<Protocol>;
 	collectedData: Dps;
 	lastHeader: HeaderMessage;
 	resolve: (response: ResponseMessage) => void;
@@ -39,10 +47,11 @@ export class B01PendingResponseTracker implements PendingResponseTracker {
 	public waitFor(request: RequestMessage, duid: string): Promise<ResponseMessage> {
 		return new Promise<ResponseMessage>((resolve, reject) => {
 			const expectedTimestamp = request.timestamp + 1;
-			const expectedProtocol = request.protocol + 1;
+			const expectedProtocols = RESPONSE_PROTOCOL_MAP.get(request.protocol) ?? new Set([request.protocol + 1]);
 
 			this.logger.debug(
-				`[B01PendingResponseTracker] Waiting for responses with timestamp in [${expectedTimestamp}, ${expectedTimestamp + this.timestampTolerance - 1}], protocol: ${expectedProtocol}`,
+				`[B01PendingResponseTracker] Waiting for responses with timestamp in [${expectedTimestamp}, ${expectedTimestamp + this.timestampTolerance - 1}], 
+				protocols: ${[...expectedProtocols].join(', ')}`,
 			);
 
 			const overallTimer = setTimeout(() => {
@@ -57,7 +66,7 @@ export class B01PendingResponseTracker implements PendingResponseTracker {
 			const entry: PendingEntry = {
 				duid,
 				expectedTimestamp,
-				expectedProtocol,
+				expectedProtocols,
 				collectedData: {},
 				lastHeader: new HeaderMessage('', 0, 0, 0, 0),
 				resolve,
@@ -102,7 +111,7 @@ export class B01PendingResponseTracker implements PendingResponseTracker {
 		return (
 			ts >= entry.expectedTimestamp &&
 			ts < entry.expectedTimestamp + this.timestampTolerance &&
-			proto === entry.expectedProtocol &&
+			entry.expectedProtocols.has(proto) &&
 			entry.duid === response.duid
 		);
 	}

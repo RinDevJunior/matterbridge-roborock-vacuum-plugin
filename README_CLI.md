@@ -17,26 +17,31 @@ npm run build
 ## Usage
 
 ```bash
-npm run cli -- --command <command> [--duid <duid>]
+npm run cli -- --command <command> [--duid <duid>] [--debug]
 ```
+
+| Option    | Description            |
+| --------- | ---------------------- |
+| `--help`  | Show help message      |
+| `--debug` | Enable debug logging   |
 
 ---
 
 ## Commands
 
-| Command    | Arguments                                                    | Description                     |
-| ---------- | ------------------------------------------------------------ | ------------------------------- |
-| `login`    | —                                                            | Authenticate and save session   |
-| `devices`  | —                                                            | List all devices                |
-| `status`   | `--duid <duid>`                                              | Get device status via MQTT      |
-| `start`    | `--duid <duid>`                                              | Start cleaning                  |
-| `stop`     | `--duid <duid>`                                              | Stop cleaning                   |
-| `pause`    | `--duid <duid>`                                              | Pause cleaning                  |
-| `ping`     | `--duid <duid>`                                              | Beep robot (find_me)            |
-| `rooms`    | `--duid <duid>`                                              | Get room mapping                |
-| `map-info` | `--duid <duid>`                                              | Get map info (all maps + rooms) |
-| `custom`   | `--duid <duid> --method <m> [--params <json>] [--send true]` | Send/get custom command         |
-| `help`     | —                                                            | Show help message               |
+| Command                 | Arguments                                                    | Description                     |
+| ----------------------- | ------------------------------------------------------------ | ------------------------------- |
+| [`login`](#login)       | —                                                            | Authenticate and save session   |
+| [`devices`](#devices)   | —                                                            | List all devices                |
+| [`status`](#status)     | `--duid <duid>`                                              | Get device status via MQTT      |
+| [`start`](#start)       | `--duid <duid>`                                              | Start cleaning                  |
+| [`stop`](#stop)         | `--duid <duid>`                                              | Stop cleaning                   |
+| [`pause`](#pause)       | `--duid <duid>`                                              | Pause cleaning                  |
+| [`ping`](#ping)         | `--duid <duid>`                                              | Beep robot (find_me)            |
+| [`room-info`](#room-info)       | `--duid <duid>`                                              | Get room mapping                |
+| [`map-info`](#map-info) | `--duid <duid>`                                              | Get map info (all maps + room-info) |
+| [`custom`](#custom)     | `--duid <duid> --method <m> [--params <json>] [--send true]` | Send/get custom command         |
+| [`--help`](#help)       | —                                                            | Show help message               |
 
 ---
 
@@ -163,12 +168,12 @@ npm run cli -- --command ping --duid <duid>
 
 ---
 
-### `rooms`
+### `room-info`
 
 Get room mapping for a device. Shows room IDs, tags, and names — useful for debugging room IDs before using room-based cleaning.
 
 ```bash
-npm run cli -- --command rooms --duid <duid>
+npm run cli -- --command room-info --duid <duid>
 ```
 
 Output (multi-map device):
@@ -194,7 +199,7 @@ Room mapping (fallback):
 
 ### `map-info`
 
-Get map info for a device. Shows all maps with their IDs, names, and rooms per map.
+Get map info for a device. Shows all maps with their IDs, names, and room-info per map.
 
 ```bash
 npm run cli -- --command map-info --duid <duid>
@@ -205,7 +210,7 @@ Output:
 ```
 Map info for device abc123:
 
-Map: Default Map 1 (id=0)  rooms=2
+Map: Default Map 1 (id=0)  room-info=2
   id=16  tag=4  iot_name_id=abc  name=Living Room
   id=17  tag=5  iot_name_id=def  name=Kitchen
 ```
@@ -262,7 +267,7 @@ Sent: set_clean_motor_mode
 Show all available commands and examples.
 
 ```bash
-npm run cli -- --command help
+npm run cli -- --help
 ```
 
 ---
@@ -281,10 +286,13 @@ npm run cli -- --command devices
 
 # 4. Send commands
 npm run cli -- --command status --duid abc123
-npm run cli -- --command rooms  --duid abc123
+npm run cli -- --command room-info  --duid abc123
 npm run cli -- --command start  --duid abc123
 npm run cli -- --command pause  --duid abc123
 npm run cli -- --command stop   --duid abc123
+
+# 5. Debug mode (verbose logging)
+npm run cli -- --command status --duid abc123 --debug
 ```
 
 ---
@@ -299,4 +307,4 @@ After `login`, credentials are cached in `.cli-session.json` at the project root
 
 - Commands that control the vacuum (`status`, `start`, `stop`, `pause`) connect via MQTT and time out after **10 seconds** if the device is unreachable.
 - The default authentication endpoint is `https://usiot.roborock.com` (US region). If your account is in EU/CN/RU, the API resolves the correct regional URL automatically after providing your email.
-- Log output is suppressed by default (level `WARN`). Internal API/MQTT logs will not appear unless there is a warning or error.
+- Log output is suppressed by default (level `DEBUG`). Internal API/MQTT logs will not appear unless there is a warning or error.
