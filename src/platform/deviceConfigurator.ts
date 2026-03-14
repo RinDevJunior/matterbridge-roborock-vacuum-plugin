@@ -1,7 +1,7 @@
 import { bridgedNode, MatterbridgeDynamicPlatform, MatterbridgeEndpoint } from 'matterbridge';
 import type { AnsiLogger } from 'matterbridge/logger';
 import { debugStringify } from 'matterbridge/logger';
-import { UINT16_MAX, UINT32_MAX } from 'matterbridge/matter';
+import { UINT16_MAX, UINT32_MAX, VendorId } from 'matterbridge/matter';
 import { BridgedDeviceBasicInformation, Descriptor, Identify } from 'matterbridge/matter/clusters';
 import { isValidNumber, isValidString } from 'matterbridge/utils';
 
@@ -152,7 +152,7 @@ export class DeviceConfigurator {
 				options.hardwareVersionString = rvc.hardwareVersionString ?? '1.0.0';
 			}
 
-			rvc.createDefaultIdentifyClusterServer(0, Identify.IdentifyType.AudibleBeep);
+			rvc.createDefaultIdentifyClusterServer(5, Identify.IdentifyType.AudibleBeep);
 
 			// We need to add bridgedNode device type and BridgedDeviceBasicInformation cluster for single class devices that doesn't add it in childbridge mode.
 			if (rvc.mode === undefined && !rvc.deviceTypes.has(bridgedNode.code)) {
@@ -219,7 +219,8 @@ export class DeviceConfigurator {
 					? customMatterConfiguration.matterProductName
 					: vacuumData.model;
 
-		rvc.vendorId = customMatterConfiguration.matterVendorId > 0 ? customMatterConfiguration.matterVendorId : 65521;
+		const matterVendorId = customMatterConfiguration.matterVendorId;
+		rvc.vendorId = VendorId.isValid(matterVendorId) ? VendorId(matterVendorId) : 65521;
 		rvc.productId = customMatterConfiguration.matterProductId > 0 ? customMatterConfiguration.matterProductId : 32768;
 		rvc.productUrl = 'https://github.com/RinDevJunior/matterbridge-roborock-vacuum-plugin';
 

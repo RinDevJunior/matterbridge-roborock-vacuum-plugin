@@ -33,7 +33,7 @@
 	],
 	"scripts": {
 		"precommit": "npm run lint && npm run type-check && npm run dup-check && npm run format:check && npm run test",
-		"precondition": "npm install -g matterbridge@3.5.6",
+		"precondition": "npm install -g matterbridge@3.6.1",
 		"build:local": "npm run deepClean && npm install && npm link matterbridge && npm run build && npm run matterbridge:add",
 		"build:production": "tsc --project tsconfig.production.json",
 		"start": "tsc && matterbridge -childbridge",
@@ -63,7 +63,7 @@
 		"dev:unlink": "npm unlink matterbridge"
 	},
 	"engines": {
-		"matterbridge": "^3.5.6",
+		"matterbridge": "^3.6.1",
 		"node": ">=24 <25"
 	},
 	"devDependencies": {
