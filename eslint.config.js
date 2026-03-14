@@ -162,7 +162,7 @@ export default defineConfig([
 	},
 	{
 		name: 'CLI file',
-		files: ['src/cli.ts'],
+		files: ['src/cli.ts', 'src/cli/**'],
 		rules: {
 			'no-console': 'off',
 			'n/no-process-exit': 'off',
@@ -171,7 +171,7 @@ export default defineConfig([
 	{
 		name: 'JSON Files',
 		files: ['**/*.json'],
-		ignores: ['**/devcontainer.json'], // Ignore devcontainer.json files
+		ignores: ['**/devcontainer.json', '.cli-session.json'], // Ignore devcontainer.json files
 		plugins: { json },
 		language: 'json/json',
 		rules: {
