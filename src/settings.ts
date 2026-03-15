@@ -1,12 +1,12 @@
 import { readFileSync } from 'node:fs';
-import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 interface PackageJson {
-  engines: Record<string, string>;
-  name: string;
-  version: string;
-  homepage: string;
+	engines: Record<string, string>;
+	name: string;
+	version: string;
+	homepage: string;
 }
 
 const PACKAGE_JSON = join(dirname(fileURLToPath(import.meta.url)), '..', 'package.json');

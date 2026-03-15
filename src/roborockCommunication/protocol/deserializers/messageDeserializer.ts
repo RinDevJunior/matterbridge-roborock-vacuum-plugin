@@ -1,160 +1,180 @@
+import { Parser } from 'binary-parser/dist/binary_parser.js';
 import CRC32 from 'crc-32';
 import { AnsiLogger, debugStringify } from 'matterbridge/logger';
-import { Parser } from 'binary-parser/dist/binary_parser.js';
-import {
-  ContentMessage,
-  HeaderMessage,
-  MessageContext,
-  Protocol,
-  ResponseBody,
-  ResponseMessage,
-} from '../../models/index.js';
+
 import { ProtocolVersion } from '../../enums/index.js';
+import {
+	ContentMessage,
+	HeaderMessage,
+	MessageContext,
+	Protocol,
+	ResponseBody,
+	ResponseMessage,
+} from '../../models/index.js';
 import { MessageSerializerFactory } from '../serializers/messageSerializerFactory.js';
 
 export class MessageDeserializer {
-  private readonly context: MessageContext;
-  private readonly headerMessageParser: Parser;
-  private readonly contentMessageParser: Parser;
-  private readonly logger: AnsiLogger;
-  private readonly supportedVersions: string[] = [
-    ProtocolVersion.V1,
-    ProtocolVersion.A01,
-    ProtocolVersion.B01,
-    ProtocolVersion.L01,
-  ];
-  private readonly protocolsWithoutPayload: Protocol[] = [
-    Protocol.hello_request,
-    Protocol.hello_response,
-    Protocol.ping_request,
-    Protocol.ping_response,
-    Protocol.general_response,
-  ];
-  private readonly ignoredProtocols: Protocol[] = [Protocol.map_response];
+	private readonly context: MessageContext;
+	private readonly headerMessageParser: Parser;
+	private readonly contentMessageParser: Parser;
+	private readonly logger: AnsiLogger;
+	private readonly supportedVersions: string[] = [
+		ProtocolVersion.V1,
+		ProtocolVersion.A01,
+		ProtocolVersion.B01,
+		ProtocolVersion.L01,
+	];
+	private readonly protocolsWithoutPayload: Protocol[] = [
+		Protocol.hello_request,
+		Protocol.hello_response,
+		Protocol.ping_request,
+		Protocol.ping_response,
+		Protocol.general_response,
+	];
+	private readonly ignoredProtocols: Protocol[] = [Protocol.map_response];
 
-  private readonly messageSerializerFactory = new MessageSerializerFactory();
+	private readonly messageSerializerFactory = new MessageSerializerFactory();
 
-  constructor(context: MessageContext, logger: AnsiLogger) {
-    this.context = context;
-    this.logger = logger;
+	constructor(context: MessageContext, logger: AnsiLogger) {
+		this.context = context;
+		this.logger = logger;
 
-    this.headerMessageParser = new Parser()
-      .endianness('big')
-      .string('version', {
-        length: 3,
-      })
-      .uint32('seq')
-      .uint32('nonce')
-      .uint32('timestamp')
-      .uint16('protocol');
+		this.headerMessageParser = new Parser()
+			.endianness('big')
+			.string('version', {
+				length: 3,
+			})
+			.uint32('seq')
+			.uint32('nonce')
+			.uint32('timestamp')
+			.uint16('protocol');
 
-    this.contentMessageParser = new Parser()
-      .endianness('big')
-      .uint16('payloadLen')
-      .buffer('payload', {
-        length: 'payloadLen',
-      })
-      .uint32('crc32');
-  }
+		this.contentMessageParser = new Parser()
+			.endianness('big')
+			.uint16('payloadLen')
+			.buffer('payload', {
+				length: 'payloadLen',
+			})
+			.uint32('crc32');
+	}
 
-  public deserialize(duid: string, message: Buffer, from: string): ResponseMessage {
-    const rawHeader: HeaderMessage = this.headerMessageParser.parse(message);
-    const header = new HeaderMessage(
-      rawHeader.version,
-      rawHeader.seq,
-      rawHeader.nonce,
-      rawHeader.timestamp,
-      rawHeader.protocol,
-    );
+	public deserialize(duid: string, message: Buffer, from: string): ResponseMessage {
+		const rawHeader: HeaderMessage = this.headerMessageParser.parse(message);
+		const header = new HeaderMessage(
+			rawHeader.version,
+			rawHeader.seq,
+			rawHeader.nonce,
+			rawHeader.timestamp,
+			rawHeader.protocol,
+		);
 
-    this.logger.debug(`[${from}][MessageDeserializer] deserialized header: ${debugStringify(header)}`);
+		this.logger.debug(`[${from}][MessageDeserializer] deserialized header: ${debugStringify(header)}`);
 
-    if (!this.supportedVersions.includes(header.version)) {
-      throw new Error(`[${from}][MessageDeserializer] unknown protocol: ${header.version ?? ''}`);
-    }
+		if (!this.supportedVersions.includes(header.version)) {
+			throw new Error(`[${from}][MessageDeserializer] unknown protocol: ${header.version ?? ''}`);
+		}
 
-    if (this.protocolsWithoutPayload.includes(header.protocol)) {
-      // || this.ignoredProtocols.includes(header.protocol)) {
-      const responseMessage = new ResponseMessage(duid, header, undefined);
-      this.logger.debug(
-        `[${from}][MessageDeserializer] deserialized message without payload: ${debugStringify(responseMessage)}`,
-      );
-      return responseMessage;
-    }
+		if (this.protocolsWithoutPayload.includes(header.protocol)) {
+			// || this.ignoredProtocols.includes(header.protocol)) {
+			const responseMessage = new ResponseMessage(duid, header, undefined);
+			this.logger.debug(
+				`[${from}][MessageDeserializer] deserialized message without payload: ${debugStringify(responseMessage)}`,
+			);
+			return responseMessage;
+		}
 
-    // parse message content
-    const data: ContentMessage = this.contentMessageParser.parse(message.subarray(this.headerMessageParser.sizeOf()));
+		// parse message content
+		const data: ContentMessage = this.contentMessageParser.parse(message.subarray(this.headerMessageParser.sizeOf()));
 
-    // check crc32
-    const crc32 = CRC32.buf(message.subarray(0, message.length - 4)) >>> 0;
-    const expectedCrc32 = message.readUInt32BE(message.length - 4);
-    if (crc32 != expectedCrc32) {
-      throw new Error(`Wrong CRC32 ${crc32}, expected ${expectedCrc32}`);
-    }
+		// check crc32
+		const crc32 = CRC32.buf(message.subarray(0, message.length - 4)) >>> 0;
+		const expectedCrc32 = message.readUInt32BE(message.length - 4);
+		if (crc32 != expectedCrc32) {
+			throw new Error(`Wrong CRC32 ${crc32}, expected ${expectedCrc32}`);
+		}
 
-    const localKey = this.context.getLocalKey(duid);
-    if (!localKey) {
-      this.logger.notice(`Unable to retrieve local key for ${duid}, it should be from other vacuums`);
-      return new ResponseMessage(duid, header, undefined);
-    }
+		const localKey = this.context.getLocalKey(duid);
+		if (!localKey) {
+			this.logger.notice(`Unable to retrieve local key for ${duid}, it should be from other vacuums`);
+			return new ResponseMessage(duid, header, undefined);
+		}
 
-    const connectNonce = this.context.nonce;
-    const ackNonce = this.context.getDeviceNonce(duid);
+		const connectNonce = this.context.nonce;
+		const ackNonce = this.context.getDeviceNonce(duid);
 
-    const messageSerializer = this.messageSerializerFactory.getMessageSerializer(header.version);
-    data.payload = messageSerializer.decode(
-      data.payload,
-      localKey,
-      header.timestamp,
-      header.seq,
-      header.nonce,
-      connectNonce,
-      ackNonce,
-    );
+		const messageSerializer = this.messageSerializerFactory.getMessageSerializer(header.version);
+		data.payload = messageSerializer.decode(
+			data.payload,
+			localKey,
+			header.timestamp,
+			header.seq,
+			header.nonce,
+			connectNonce,
+			ackNonce,
+		);
 
-    if (header.isForProtocol(Protocol.rpc_response) || header.isForProtocol(Protocol.general_request)) {
-      const response = this.deserializeRpcResponse(duid, data, header);
-      this.logger.debug(`[${from}][MessageDeserializer] deserialized body: ${debugStringify(response.body ?? {})}`);
-      return response;
-    } else if (header.protocol === Protocol.map_response) {
-      const body: Record<number, Buffer> = {
-        [Protocol.map_response]: data.payload,
-      };
-      const responseMessage = new ResponseMessage(duid, header, new ResponseBody(body));
-      this.logger.debug(
-        `[${from}][MessageDeserializer] deserialized message for map_response: ${debugStringify(responseMessage)}`,
-      );
-      return responseMessage;
-    } else {
-      this.logger.error(`unknown protocol: ${header.protocol}`);
-      const response = this.deserializeUnknownProtocolPayload(duid, data, header);
-      this.logger.debug(`[${from}][MessageDeserializer] deserialized body: ${debugStringify(response.body ?? {})}`);
-      return new ResponseMessage(duid, header, undefined);
-    }
-  }
+		if (header.isForProtocol(Protocol.rpc_response) || header.isForProtocol(Protocol.general_request)) {
+			const response = this.deserializeRpcResponse(duid, data, header);
+			this.logger.debug(`[${from}][MessageDeserializer] deserialized body: ${debugStringify(response.body ?? {})}`);
+			return response;
+		} else if (header.protocol === Protocol.map_response) {
+			const body: Record<number, Buffer> = {
+				[Protocol.map_response]: data.payload,
+			};
+			const responseMessage = new ResponseMessage(duid, header, new ResponseBody(body));
+			this.logger.debug(
+				`[${from}][MessageDeserializer] deserialized message for map_response: ${debugStringify(responseMessage)}`,
+			);
+			return responseMessage;
+		} else if (header.protocol === Protocol.device_status_ota) {
+			return this.deserializeDeviceStatusOta(duid, data, header, from);
+		} else {
+			this.logger.error(`unknown protocol: ${header.protocol}`);
+			const response = this.deserializeUnknownProtocolPayload(duid, data, header);
+			this.logger.debug(`[${from}][MessageDeserializer] deserialized body: ${debugStringify(response.body ?? {})}`);
+			return new ResponseMessage(duid, header, undefined);
+		}
+	}
 
-  private deserializeRpcResponse(duid: string, data: ContentMessage, header: HeaderMessage): ResponseMessage {
-    const payload = JSON.parse(data.payload.toString());
-    const dps = payload.dps;
-    this.parseJsonInDps(dps, Protocol.general_request);
-    this.parseJsonInDps(dps, Protocol.rpc_response);
-    return new ResponseMessage(duid, header, new ResponseBody(dps));
-  }
+	private deserializeRpcResponse(duid: string, data: ContentMessage, header: HeaderMessage): ResponseMessage {
+		const payload = JSON.parse(data.payload.toString());
+		const dps = payload.dps;
+		this.parseJsonInDps(dps, Protocol.general_request);
+		this.parseJsonInDps(dps, Protocol.rpc_response);
+		return new ResponseMessage(duid, header, new ResponseBody(dps));
+	}
 
-  private parseJsonInDps(dps: Record<string, unknown>, index: Protocol) {
-    const indexString = index.toString();
-    if (dps[indexString] !== undefined) {
-      dps[indexString] = JSON.parse(dps[indexString] as string);
-    }
-  }
+	private parseJsonInDps(dps: Record<string, unknown>, index: Protocol) {
+		const indexString = index.toString();
+		if (dps[indexString] !== undefined) {
+			dps[indexString] = JSON.parse(dps[indexString] as string);
+		}
+	}
 
-  private deserializeUnknownProtocolPayload(
-    duid: string,
-    data: ContentMessage,
-    header: HeaderMessage,
-  ): ResponseMessage {
-    const payload = JSON.parse(data.payload.toString());
-    const dps = payload.dps;
-    return new ResponseMessage(duid, header, new ResponseBody(dps));
-  }
+	private deserializeDeviceStatusOta(
+		duid: string,
+		data: ContentMessage,
+		header: HeaderMessage,
+		from: string,
+	): ResponseMessage {
+		try {
+			const parsedData = JSON.parse(data.payload.toString('utf8'));
+			return new ResponseMessage(duid, header, new ResponseBody({ [Protocol.device_status_ota]: parsedData }));
+		} catch (error: unknown) {
+			const message = error instanceof Error ? error.message : String(error);
+			this.logger.warn(`[${from}][MessageDeserializer][${duid}] device_status_ota parse error: ${message}`);
+		}
+
+		return new ResponseMessage(duid, header, undefined);
+	}
+
+	private deserializeUnknownProtocolPayload(
+		duid: string,
+		data: ContentMessage,
+		header: HeaderMessage,
+	): ResponseMessage {
+		const payload = JSON.parse(data.payload.toString());
+		const dps = payload.dps;
+		return new ResponseMessage(duid, header, new ResponseBody(dps));
+	}
 }

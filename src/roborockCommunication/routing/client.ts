@@ -3,19 +3,19 @@ import { AbstractConnectionListener } from './listeners/abstractConnectionListen
 import { AbstractMessageListener } from './listeners/abstractMessageListener.js';
 
 export interface Client {
-  registerConnectionListener(listener: AbstractConnectionListener): void;
+	registerConnectionListener(listener: AbstractConnectionListener): void;
 
-  registerMessageListener(listener: AbstractMessageListener): void;
+	registerMessageListener(listener: AbstractMessageListener): void;
 
-  isConnected(): boolean;
+	isConnected(): boolean;
 
-  isReady(): boolean;
+	isReady(): boolean;
 
-  connect(): void;
+	connect(): void;
 
-  disconnect(): Promise<void>;
+	disconnect(): Promise<void>;
 
-  send(duid: string, request: RequestMessage): Promise<void>;
+	send(duid: string, request: RequestMessage): Promise<void>;
 
-  get<T>(duid: string, request: RequestMessage): Promise<T | undefined>;
+	get<T>(duid: string, request: RequestMessage): Promise<T | undefined>;
 }

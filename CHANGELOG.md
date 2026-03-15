@@ -4,6 +4,208 @@ All notable changes to this project will be documented in this file.
 
 ---
 
+## [1.1.5] - 2026-03-15
+
+### Changed
+
+- **Requires matterbridge@3.6.1** — Official release of `1.1.5`. Minimum required Matterbridge version is `3.6.1`.
+
+### Added
+
+- **Burst polling after vacuum commands** — Polls device every 10 seconds until idle/docked after triggering start, resume, or go home.
+- **Per-device model name override** — Auto-populates `deviceProductNames` in config on first run when "Override Matter Configuration" is enabled.
+- **Full MQTT lifecycle email notifications** — Covers connected, offline, close, and error events.
+- **Device OTA status handling** — Handles protocol 500 (`device_status_ota`) messages for firmware update status and progress.
+- **Email notification test on startup** — Sends a test email on `onConfigure` to verify SMTP settings.
+
+### Fixed
+
+- **"Traveling to room" status accuracy** — Stays visible until cleaning actually starts, using `clean_area` and `clean_time` to detect travel vs. cleaning.
+- **State resolver expanded** — All active cleaning statuses (`ManualMode`, `RoomClean`, `ZoneClean`, `SpotCleaning`, mop variants) now fully respect modifier flags.
+- **Sleeping and InError statuses** — Both are now Priority 0 overrides returning correct states based on `inCleaning` and `isExploring` flags.
+- **`Paused` status preserves area context** — `cleaning_info` is now considered relevant when the vacuum is paused.
+- **Single-room `currentArea` preserved** — When `cleaning_info` is absent and only one room is selected, `currentArea` is set to that room's area ID.
+- **Email notifications suppressed during keep-alive reconnects** — `isForceReconnecting` flag prevents false alerts on intentional reconnections.
+- **Charging state regression** — `handleDeviceStatusUpdate` no longer overrides `Charging` with `Docked` while still charging.
+- **MQTT subscription race condition** — `subscribeToQueue()` called before `connectionBroadcaster.onConnected()` to avoid missed responses.
+- **Local client stale socket race condition** — Closure-captured socket reference prevents old `close` events from destroying newly created sockets.
+- **MQTT fallback during local reconnect** — `ClientRouter` falls back to MQTT and logs a notice while local client is reconnecting.
+- **`correct type of selectedAreas`** — Typed as `number[]` instead of `ServiceArea.Area[]`, fixing incorrect `.areaId` access.
+- **Properly await all async calls** — All message handler functions now correctly `await` async operations to prevent unhandled rejections.
+- **Per-device polling interval** — Each device now maintains its own independent polling interval keyed by DUID, fixing multi-vacuum sync.
+- **`vendorId` type safety** — Uses `VendorId` type for correct type assignment.
+- **`B01VacuumModeResolver` class to const** — Resolves `@typescript-eslint/no-extraneous-class` ESLint error.
+- **Test async assertions awaited** — Fixes `vitest/valid-expect` ESLint errors.
+- **Array type notation unified** — `Array<T>` replaced with `T[]`.
+- **`pending.has(messageId)` key fix** — Map key is `duid:messageId` string, not raw numeric `messageId`.
+
+### Improved
+
+- **Connection lifecycle clarity** — `AbstractConnectionListener` exposes `onOffline` and `onClose` as distinct callbacks.
+- **Reduced response noise** — `V1ResponseBroadcaster` silently drops simple ok responses.
+- **Message result type safety** — `MessageResult` uses strongly-typed enums instead of raw numeric values.
+- **`deviceNotify` callback removed** from `PollingService` — Unused after async refactor.
+- **Whitelist accepts DUIDs only** — Simplified to raw DUID string matching.
+- **State change logging** — Includes both human-readable label and numeric code for easier tracing.
+
+<a href="https://www.buymeacoffee.com/rinnvspktr" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/default-orange.png" alt="Buy Me A Coffee" height="41" width="174"></a>
+
+---
+
+## [1.1.5-rc09] - 2026-03-14
+
+### Changed
+
+- **Requires matterbridge@3.6.1** — Minimum required Matterbridge version bumped to `3.6.1`. Run `npm install -g matterbridge@3.6.1` before updating.
+- **`vendorId` now uses `VendorId` type** — Assignment updated to use the correct `VendorId` type for stricter type safety.
+
+### Improved
+
+- **`PollingService` now tracks one interval per device** — Previously, if an account had two vacuums, activating local polling for the second vacuum would cancel the first vacuum's polling interval, leaving only one vacuum syncing status at a time. Each device now maintains its own independent polling interval keyed by DUID, so all vacuums on the same account sync concurrently.
+
+### Fixed
+
+- **ESLint: `B01VacuumModeResolver` converted from class to const object** — Resolves `@typescript-eslint/no-extraneous-class` error; all callers remain unchanged.
+- **ESLint: async assertions properly awaited in tests** — `vitest/valid-expect` errors resolved by inlining awaited assertions instead of capturing them in variables.
+- **ESLint: array type notation unified** — `Array<T>` replaced with `T[]` to satisfy `@typescript-eslint/array-type`.
+- **Test: `pending.has(messageId)` fixed to use correct string key** — Map key is `duid:messageId` (string), not the raw numeric `messageId`.
+
+<a href="https://www.buymeacoffee.com/rinnvspktr" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/default-orange.png" alt="Buy Me A Coffee" height="41" width="174"></a>
+
+---
+
+## [1.1.5-rc08] - 2026-03-07
+
+### Fixed
+
+- **"Traveling to room" now stays visible until cleaning actually starts** — Previously, Apple Home would flash "Traveling to room" for only a brief moment before switching to "Vacuuming", even while the robot was still on its way. The plugin now correctly holds the "Traveling to room" status until the robot has reached the room and begun cleaning. The plugin uses `clean_area` and `clean_time` from the robot's status to detect whether cleaning has actually started: as long as both remain at zero, the robot is still traveling and Apple Home will reflect that accurately.
+
+<a href="https://www.buymeacoffee.com/rinnvspktr" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/default-orange.png" alt="Buy Me A Coffee" height="41" width="174"></a>
+
+---
+
+## [1.1.5-rc07] - 2026-03-02
+
+### Fixed
+
+- **Correct type of `selectedAreas`** — `selectedAreas` attribute is now typed as `number[]` instead of `ServiceArea.Area[]`, matching the actual attribute value stored in Matter. This fixes incorrect property access (`.areaId`) when setting `currentArea` for single-room cleaning scenarios.
+- **Properly await all async calls** — All message handler functions in `PlatformRunner`, `B01ResponseBroadcaster`, `V1ResponseBroadcaster`, and related routing layers now correctly `await` async operations (`executeWithRobot`, `updateRobotWithPayload`, `triggerDssError`, `updateFromHomeData`, broadcaster `onMessage`). Previously these were fire-and-forget, which could cause unhandled promise rejections and race conditions.
+
+### Improved
+
+- **`deviceNotify` callback removed from `PollingService`** — The callback was unused after the async refactor and has been removed to simplify the service interface.
+
+<a href="https://www.buymeacoffee.com/rinnvspktr" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/default-orange.png" alt="Buy Me A Coffee" height="41" width="174"></a>
+
+---
+
+## [1.1.5-rc06] - 2026-03-01
+
+### Fixed
+
+- **State resolver expanded to all active cleaning statuses** — `ManualMode`, `RoomClean`, `ZoneClean`, `SpotCleaning`, and all mop variants now fully respect modifier flags (`isLocating`, `isExploring`, `inWarmup`, `inReturning`). Previously only the base `Cleaning (5)` status applied these modifiers, causing incorrect run mode and operational state for all other cleaning variants.
+- **Sleeping status correctly resolved** — `Sleeping (2)` is now a Priority 0 override: returns `Cleaning+Paused` when `inCleaning` is set, `Mapping+Paused` when `isExploring` is set, and `Idle+Paused` for the base case. Previously it fell through to the generic modifier chain and could produce incorrect states.
+- **InError status correctly resolved** — `InError (12)` is now a Priority 0 override: returns `Cleaning+Error` when `inCleaning` is set, `Mapping+Error` when `isExploring` is set, and `Idle+Error` for the base case.
+- **`Paused` status included in area-context check** — `cleaning_info` is now considered relevant when the vacuum is paused, preserving area and map context across pause events.
+
+---
+
+## [1.1.5-rc05] - 2026-02-28
+
+### Fixed
+
+- **Single-room `currentArea` preserved when `cleaning_info` is absent** — When a vacuum is cleaning with exactly one room selected and no `cleaning_info` is reported, `currentArea` is now set to that room's area ID instead of being cleared to null. Previously this caused Apple Home to lose track of which room was being cleaned in single-room scenarios.
+- **Email notifications suppressed during periodic keep-alive reconnects** — `MQTTClient` now tracks forced reconnections initiated by `keepConnectionAlive` via an `isForceReconnecting` flag. `onClose` and `onConnected` broadcaster events are skipped when the reconnection is intentional, so email alerts are only sent on genuine connection loss or errors.
+
+### Breaking Changed
+
+- **Whitelist now accepts DUIDs only** — Device filtering via the White List configuration now matches on DUID exclusively. The previous `<Name>-<duid>` format and name-based matching are no longer supported; enter the raw DUID string directly.
+- **Requires matterbridge@3.5.6** — This release upgrades the minimum required Matterbridge version to `3.5.6`. Please run `npm install -g matterbridge@3.5.6` before updating the plugin.
+
+### Improved
+
+- **Server Mode documented in README** — Added clear guidance explaining that Server Mode allows a single Matterbridge instance to host multiple vacuums, as an alternative to running separate instances.
+- **Whitelist schema description updated** — The plugin configuration UI now shows an accurate description of the White List field, reflecting the duid-only format and its interaction with Server Mode.
+- **State change logging shows both name and numeric code** — Run mode and operational state notifications now include the human-readable label alongside the numeric code for both current and resolved states, making it easier to trace state transitions in logs.
+
+<a href="https://www.buymeacoffee.com/rinnvspktr" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/default-orange.png" alt="Buy Me A Coffee" height="41" width="174"></a>
+
+---
+
+## [1.1.5-rc04] - 2026-02-28
+
+### Fixed
+
+- **MQTT subscription race condition on connect** — `subscribeToQueue()` is now called before awaiting `connectionBroadcaster.onConnected()`. Previously, if an email notification was enabled, the SMTP send inside `onConnected` could delay the subscription long enough for a `get_network_info` response to arrive before the response topic was subscribed — causing a timeout and MQTT-only fallback on every startup.
+
+<a href="https://www.buymeacoffee.com/rinnvspktr" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/default-orange.png" alt="Buy Me A Coffee" height="41" width="174"></a>
+
+---
+
+## [1.1.5-rc03] - 2026-02-28
+
+### Added
+
+- **Full MQTT lifecycle email notifications** — Email notifications now cover all MQTT connection events: connected, offline, close, and error — giving complete visibility into connectivity changes.
+- **Extended dock type support** — New `DockType` enum values added for broader dock hardware compatibility.
+
+### Fixed
+
+- **State resolution priority for Cleaning** — Fixed incorrect state priority order: `isLocating`/`isExploring` now takes precedence over `inWarmup`, which takes precedence over `inReturning`, matching actual device behaviour.
+- **Missing mopping statuses in area check** — The guard that resets `currentArea` and `selectedAreas` when no `cleaningInfo` is present now covers all mopping and combined clean+mop operation codes (`RoomMopping`, `ZoneMopping`, `CleanMopCleaning`, `CleanMopMopping`, and their room/zone variants). Previously these states bypassed the check, leaving stale area data in Matter.
+
+### Improved
+
+- **Connection lifecycle clarity** — `AbstractConnectionListener` now exposes `onOffline` and `onClose` as distinct callbacks instead of a single `onDisconnected`, allowing listeners to distinguish a network loss from an explicit connection close.
+- **Reduced response noise** — `V1ResponseBroadcaster` now silently drops simple ok responses, cutting down on redundant log output.
+- **Message result type safety** — `MessageResult` now uses strongly-typed enums (`OperationStatusCode`, `DockType`, etc.) instead of raw numeric values, reducing the risk of mis-mapped states.
+
+<a href="https://www.buymeacoffee.com/rinnvspktr" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/default-orange.png" alt="Buy Me A Coffee" height="41" width="174"></a>
+
+---
+
+## [1.1.5-rc02] - 2026-02-27
+
+### Added
+
+- **Email notification test on startup** — When email notifications are enabled, the plugin now sends a test email on `onConfigure` to verify the SMTP settings are correct. A successful email confirms your configuration is working.
+- **Device OTA status handling** — The plugin now handles protocol 500 (`device_status_ota`) messages from the device. Firmware update status, progress, and device online/offline events are logged automatically.
+
+### Fixed
+
+- **Local client stale socket race condition** — Replaced the `intentionalDisconnect` flag (shared mutable state, time-sensitive) with a closure-captured socket reference in `close`, `error`, and `end` event handlers. When a ping-timeout reconnect fires, the old socket's async `close` event is now rejected via identity check (`this.socket !== socket`), preventing it from destroying the newly created socket mid-handshake.
+- **MQTT fallback during local reconnect** — While the local client is reconnecting, `ClientRouter` now falls back to MQTT and emits a notice log instead of silently failing or waiting.
+- **`ConnectionBroadcaster` now requires a logger** — Constructor updated to accept `AnsiLogger`; `register` and `unregister` now emit notice logs for observability.
+- **`ClientRouter` field rename** — `connectionListener` renamed to `connectionBroadcaster` for naming consistency with `AbstractClient`.
+- **`DisconnectNotificationListener` stub methods** — `onConnected`, `onError`, and `onReconnect` now log the duid at debug level instead of being empty stubs.
+
+<a href="https://www.buymeacoffee.com/rinnvspktr" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/default-orange.png" alt="Buy Me A Coffee" height="41" width="174"></a>
+
+---
+
+## [1.1.5-rc01] - 2026-02-23
+
+### Added
+
+- **Per-device model name override** — When "Override Matter Configuration" is enabled, the plugin now auto-populates `deviceProductNames` in the config on first run with each device's serial number and model as the default name. Edit any entry to customise the model name shown in Apple Home per device. Per-device names take priority over the global default product name.
+- **Burst polling after vacuum commands** — After triggering a vacuum action (start, resume, go home), the plugin polls the device every 10 seconds until it reaches an idle/docked state. This ensures Matter reflects the latest state promptly after a command, without relying solely on MQTT or periodic refresh. Polling is scoped per device and auto-starts when the device transitions to a Cleaning or Mapping state.
+
+### Fixed
+
+- **Charging state regression** — `handleDeviceStatusUpdate` no longer overrides `Charging` with `Docked` while the device is still on the dock charging. The transition from `Charging → Docked` is now owned exclusively by `handleBatteryUpdate` once the battery reaches full charge.
+
+### Improved
+
+- **Apple Home label clarity** — Schema labels for the Matter Configuration Override section now consistently reference "Apple Home" and "Model Name" to make it clearer what each setting affects.
+- **Device name simplification** — Device name no longer appends the DUID suffix, reducing visual noise in device listings.
+- **Serial number detection** — V10-protocol devices now fetch the serial number via `get_serial_number` on first startup. Q7/Q10 devices fall back to the DUID as the serial number.
+- **Burst polling visibility** — Notice logs are now emitted when burst polling starts and stops per device, making it easier to trace polling activity in logs.
+- **Richer state resolution log** — The resolved state notice now includes raw `runMode` and `operationalState` numeric values alongside human-readable names for easier debugging.
+
+<a href="https://www.buymeacoffee.com/rinnvspktr" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/default-orange.png" alt="Buy Me A Coffee" height="41" width="174"></a>
+
+---
+
 ## [1.1.4] - 2026-02-22
 
 ### Breaking Changes

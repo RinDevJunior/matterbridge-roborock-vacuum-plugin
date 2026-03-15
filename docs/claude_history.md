@@ -1,5 +1,62 @@
 # Claude History
 
+## 2026-03-14 (Session 17)
+
+- Fixed multi-device polling bug in `PollingService`: second vacuum was stopping first vacuum's polling interval.
+  - Replaced single `localRequestDeviceStatusInterval` with `Map<string, NodeJS.Timeout>` keyed by `duid`.
+- Audited all services for multi-device bugs. Found and fixed 1 real bug:
+  - **V1PendingResponseTracker**: messageId collision between devices — changed key from `messageId` (number) to `${duid}:${messageId}` (string).
+  - B01PendingResponseTracker was already correctly handling duid isolation via `entry.duid === response.duid` in `matches()`.
+- Added new test file `v1PendingResponseTracker.test.ts` (6 tests) + 2 multi-device tests in B01 tracker.
+- Updated existing tests in `pendingResponseTracker.test.ts` to use new string key format.
+
+## 2026-03-07 (Session 16)
+
+- Bumped version to `1.1.5-rc08`.
+- Updated `package.json` (version + buildpackage filename), `schema.json`, `config.json`, and `CHANGELOG.md`.
+- Changelog entry: refactored `handleServiceAreaUpdate` into dedicated helpers with clear 3-branch dispatch.
+
+## 2026-03-02 (Session 15)
+
+- Bumped version to `1.1.5-rc07`.
+- Updated `package.json` (version + buildpackage filename), `schema.json`, `config.json`, and `CHANGELOG.md`.
+- Changelog entry: fixed `selectedAreas` type (`ServiceArea.Area[]` → `number[]`) correcting `.areaId` access in single-room cleaning.
+
+## 2026-03-01 (Session 14)
+
+- Debugged `stateResolver.ts`: Sleeping (2) + `inCleaning=true` was resolving to Idle+Docked instead of Cleaning+Paused.
+  - Root cause: no Sleeping handler in Priority 0 — fell through to `getBaseState` → `state_to_matter_state(2)` = Idle, `state_to_matter_operational_status(2)` = Docked.
+  - Fix: added Sleeping override (Rows 8–10) in Priority 0 block of `resolveDeviceState`.
+  - Also fixed stale test "should handle Sleeping status - Row 8" (wrong label → "Row 10", wrong expectation Docked → Paused).
+- Audited `stateResolver.ts` vs `misc/state_resolution_matrix.md` — found 4 discrepancies, documented in `docs/stateResolver-bugs.md`.
+
+## 2026-02-28 (Session 13)
+
+- Added `src/tests/platform/burstPollingManager.test.ts` (16 tests) to improve PR 116 patch coverage for `BurstPollingManager` — covers startBurstPolling (happy/early-return/error paths), stopBurstPolling, stopAllBurstPolling, has, requestLocalDeviceStatus (undefined service), isDeviceIdle (robot not found, Docked, Charging, Running). Used `vi.useFakeTimers()` with `advanceTimersByTimeAsync(15000)` to trigger the 10s interval callback.
+
+## 2026-02-28 (Session 12)
+
+- Refactored `platformRunner.ts` per `docs/platformRunner-refactor-plan.md`:
+  - **Item 1**: Extracted burst polling into `src/platform/burstPollingManager.ts` (`BurstPollingManager` class).
+  - **Item 2**: Extracted name resolver pure functions into `src/share/matterStateNames.ts` (`getRunModeName`, `getOperationalStateName`, `getCleanModeName`, `getOperationalErrorName`).
+  - **Item 4**: Replaced `payloadHandlers` Map + inline type-guard lambdas with a clean `switch` in `updateRobotWithPayload`.
+  - Removed 3 wrapper methods (`startBurstPolling`, `stopBurstPolling`, `stopAllBurstPolling`) from `PlatformRunner` — callers now use `runner.burstPolling.xxx()` directly.
+  - Updated `module.ts`, `deviceConfigurator.ts`, `platformRunner.test.ts`, and `module.orchestration.test.ts` accordingly.
+
+## 2026-02-26 (Session 11)
+
+- Fixed `LocalNetworkClient` stale socket race condition on ping-timeout reconnect: replaced `intentionalDisconnect` flag (time-based, shared mutable state) with closure-captured socket reference in `close`/`error`/`end` event handlers. Old socket events are now identity-checked (`this.socket !== socket`) and ignored, preventing the new socket from being destroyed mid-handshake.
+- See detailed write-up: `docs/bugfix-local-reconnect-stale-socket.md`
+
+## 2026-02-24 (Session 10)
+
+- Added `Protocol.device_status_ota` (500) with `deserializeDeviceStatusOta` in `MessageDeserializer` and new `DeviceStatusListener` to log firmware update status/progress and device online/offline events.
+- Fixed `LocalNetworkClient` reconnect: added `intentionalDisconnect` flag so stale `close`/`error` events from the old socket are suppressed after a ping-timeout reconnect, preventing the new socket from being torn down mid-handshake.
+- Added `isReconnecting()` to `LocalNetworkClient`; `ClientRouter.getLocalClient` now falls back to MQTT with a notice log while the local client is reconnecting.
+- Removed dead-code `SyncMessageListener`.
+- Added unit tests: `localNetworkClient.reconnect.test.ts` (4 tests) and 3 new cases in `deviceConfigurator.test.ts` for missing coverage (`addDevice` early return, null cluster options, duplicate bridgedNode guard).
+- Created release candidate `1.1.5-rc02`: bumped version in `package.json`, `package-lock.json`, `schema.json`, `config.json`. Added CHANGELOG entry.
+
 ## 2026-02-18 (Session 9)
 
 - Added `includeVacuumErrorStatus` configuration option under Advanced features. When disabled (default), `handleErrorOccurred` in `platformRunner.ts` is skipped. Updated schema, config type, config manager, platformRunner, and all test files.

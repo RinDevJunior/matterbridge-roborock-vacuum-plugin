@@ -18,52 +18,52 @@ export { BaseError } from './BaseError.js';
 
 // Authentication errors
 export {
-  AuthenticationError,
-  VerificationCodeExpiredError,
-  InvalidCredentialsError,
-  InvalidVerificationCodeError,
-  TokenExpiredError,
-  RateLimitExceededError,
+	AuthenticationError,
+	InvalidCredentialsError,
+	InvalidVerificationCodeError,
+	RateLimitExceededError,
+	TokenExpiredError,
+	VerificationCodeExpiredError,
 } from './AuthenticationError.js';
 
 // Device errors
 export {
-  DeviceError,
-  DeviceNotFoundError,
-  DeviceConnectionError,
-  DeviceOfflineError,
-  DeviceCommandError,
-  UnsupportedDeviceError,
-  DeviceInitializationError,
+	DeviceCommandError,
+	DeviceConnectionError,
+	DeviceError,
+	DeviceInitializationError,
+	DeviceNotFoundError,
+	DeviceOfflineError,
+	UnsupportedDeviceError,
 } from './DeviceError.js';
 
 // Communication errors
 export {
-  CommunicationError,
-  TimeoutError,
-  NetworkError,
-  ProtocolError,
-  MQTTConnectionError,
-  LocalNetworkError,
-  APIError,
-  SerializationError,
-  DeserializationError,
+	APIError,
+	CommunicationError,
+	DeserializationError,
+	LocalNetworkError,
+	MQTTConnectionError,
+	NetworkError,
+	ProtocolError,
+	SerializationError,
+	TimeoutError,
 } from './CommunicationError.js';
 
 // Configuration errors
 export {
-  ConfigurationError,
-  MissingConfigurationError,
-  InvalidConfigurationError,
-  MissingCredentialsError,
-  InvalidRegionError,
+	ConfigurationError,
+	InvalidConfigurationError,
+	InvalidRegionError,
+	MissingConfigurationError,
+	MissingCredentialsError,
 } from './ConfigurationError.js';
 
 // Validation errors
 export {
-  ValidationError,
-  InvalidParameterError,
-  OutOfRangeError,
-  MissingParameterError,
-  InvalidFormatError,
+	InvalidFormatError,
+	InvalidParameterError,
+	MissingParameterError,
+	OutOfRangeError,
+	ValidationError,
 } from './ValidationError.js';

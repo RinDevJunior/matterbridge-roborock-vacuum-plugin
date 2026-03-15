@@ -13,21 +13,21 @@
  * ```
  */
 
-export { AuthenticationService } from './authenticationService.js';
-export { DeviceManagementService } from './deviceManagementService.js';
 export { AreaManagementService } from './areaManagementService.js';
-export { MessageRoutingService } from './messageRoutingService.js';
-export { PollingService } from './pollingService.js';
-export { default as ClientManager } from './clientManager.js';
-export { ServiceContainer } from './serviceContainer.js';
-export type { ServiceContainerConfig } from './serviceContainer.js';
-export { ConnectionService } from './connectionService.js';
+export type { AuthContext } from './authentication/AuthContext.js';
 export { AuthenticationCoordinator } from './authentication/AuthenticationCoordinator.js';
-export { UserDataRepository } from './authentication/UserDataRepository.js';
 export { AuthenticationStateRepository } from './authentication/AuthenticationStateRepository.js';
-export { VerificationCodeService } from './authentication/VerificationCodeService.js';
 export { BaseAuthStrategy } from './authentication/BaseAuthStrategy.js';
+export type { IAuthStrategy } from './authentication/IAuthStrategy.js';
 export { PasswordAuthStrategy } from './authentication/PasswordAuthStrategy.js';
 export { TwoFactorAuthStrategy } from './authentication/TwoFactorAuthStrategy.js';
-export type { IAuthStrategy } from './authentication/IAuthStrategy.js';
-export type { AuthContext } from './authentication/AuthContext.js';
+export { UserDataRepository } from './authentication/UserDataRepository.js';
+export { VerificationCodeService } from './authentication/VerificationCodeService.js';
+export { AuthenticationService } from './authenticationService.js';
+export { default as ClientManager } from './clientManager.js';
+export { ConnectionService } from './connectionService.js';
+export { DeviceManagementService } from './deviceManagementService.js';
+export { MessageRoutingService } from './messageRoutingService.js';
+export { PollingService } from './pollingService.js';
+export type { ServiceContainerConfig } from './serviceContainer.js';
+export { ServiceContainer } from './serviceContainer.js';

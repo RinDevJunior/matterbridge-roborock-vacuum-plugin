@@ -4,15 +4,16 @@
  * @module types/MessagePayloads
  */
 
-import { NotifyMessageTypes } from './notifyMessageTypes.js';
-import { CleanInformation, Home } from '../roborockCommunication/models/index.js';
-import { OperationStatusCode } from '../roborockCommunication/enums/operationStatusCode.js';
 import { DockErrorCode, VacuumErrorCode } from '../roborockCommunication/enums/index.js';
+import { OperationStatusCode } from '../roborockCommunication/enums/operationStatusCode.js';
+import { CleanInformation, CleanProcess, Home } from '../roborockCommunication/models/index.js';
+import { NotifyMessageTypes } from './notifyMessageTypes.js';
 
 export interface ServiceAreaUpdateMessage {
-  duid: string;
-  state: OperationStatusCode;
-  cleaningInfo: CleanInformation | undefined;
+	duid: string;
+	state: OperationStatusCode;
+	cleaningProcess: CleanProcess;
+	cleaningInfo: CleanInformation | undefined;
 }
 
 /**
@@ -20,8 +21,8 @@ export interface ServiceAreaUpdateMessage {
  * Contains complete home and device information from REST API.
  */
 export interface HomeDataPayload {
-  type: NotifyMessageTypes.HomeData;
-  data: Home;
+	type: NotifyMessageTypes.HomeData;
+	data: Home;
 }
 
 /**
@@ -29,13 +30,13 @@ export interface HomeDataPayload {
  * Contains battery percentage from device notifications.
  */
 export interface BatteryUpdatePayload {
-  type: NotifyMessageTypes.BatteryUpdate;
-  data: {
-    duid: string;
-    percentage: number;
-    chargeStatus: number | undefined;
-    deviceStatus: number | undefined;
-  };
+	type: NotifyMessageTypes.BatteryUpdate;
+	data: {
+		duid: string;
+		percentage: number;
+		chargeStatus: number | undefined;
+		deviceStatus: number | undefined;
+	};
 }
 
 /**
@@ -43,13 +44,13 @@ export interface BatteryUpdatePayload {
  * Contains error codes and device identifier.
  */
 export interface ErrorOccurredPayload {
-  type: NotifyMessageTypes.ErrorOccurred;
-  data: {
-    duid: string;
-    vacuumErrorCode: VacuumErrorCode;
-    dockErrorCode: DockErrorCode;
-    dockStationStatus: number | undefined;
-  };
+	type: NotifyMessageTypes.ErrorOccurred;
+	data: {
+		duid: string;
+		vacuumErrorCode: VacuumErrorCode;
+		dockErrorCode: DockErrorCode;
+		dockStationStatus: number | undefined;
+	};
 }
 
 /**
@@ -57,17 +58,17 @@ export interface ErrorOccurredPayload {
  * Contains complete device status from status change notifications.
  */
 export interface DeviceStatusPayload {
-  type: NotifyMessageTypes.DeviceStatus;
-  data: {
-    duid: string;
-    status: OperationStatusCode;
-    inCleaning: boolean | undefined;
-    inReturning: boolean | undefined;
-    inFreshState: boolean | undefined;
-    isLocating: boolean | undefined;
-    isExploring: boolean | undefined;
-    inWarmup: boolean | undefined;
-  };
+	type: NotifyMessageTypes.DeviceStatus;
+	data: {
+		duid: string;
+		status: OperationStatusCode;
+		inCleaning: boolean | undefined;
+		inReturning: boolean | undefined;
+		inFreshState: boolean | undefined;
+		isLocating: boolean | undefined;
+		isExploring: boolean | undefined;
+		inWarmup: boolean | undefined;
+	};
 }
 
 /**
@@ -75,11 +76,11 @@ export interface DeviceStatusPayload {
  * Contains only status code from home data API for devices without real-time connection.
  */
 export interface DeviceStatusSimplePayload {
-  type: NotifyMessageTypes.DeviceStatusSimple;
-  data: {
-    duid: string;
-    status: OperationStatusCode;
-  };
+	type: NotifyMessageTypes.DeviceStatusSimple;
+	data: {
+		duid: string;
+		status: OperationStatusCode;
+	};
 }
 
 /**
@@ -87,15 +88,15 @@ export interface DeviceStatusSimplePayload {
  * Contains clean mode settings (suction power, water flow, mop route).
  */
 export interface CleanModeUpdatePayload {
-  type: NotifyMessageTypes.CleanModeUpdate;
-  data: {
-    duid: string;
-    suctionPower: number;
-    waterFlow: number;
-    distance_off: number;
-    mopRoute: number | undefined;
-    seq_type: number | undefined;
-  };
+	type: NotifyMessageTypes.CleanModeUpdate;
+	data: {
+		duid: string;
+		suctionPower: number;
+		waterFlow: number;
+		distance_off: number;
+		mopRoute: number | undefined;
+		seq_type: number | undefined;
+	};
 }
 
 /**
@@ -103,8 +104,8 @@ export interface CleanModeUpdatePayload {
  * Contains service area and map updates (supported areas, maps, selected areas, current area).
  */
 export interface ServiceAreaUpdatePayload {
-  type: NotifyMessageTypes.ServiceAreaUpdate;
-  data: ServiceAreaUpdateMessage;
+	type: NotifyMessageTypes.ServiceAreaUpdate;
+	data: ServiceAreaUpdateMessage;
 }
 
 /**
@@ -128,10 +129,10 @@ export interface ServiceAreaUpdatePayload {
  * ```
  */
 export type MessagePayload =
-  | HomeDataPayload
-  | BatteryUpdatePayload
-  | ErrorOccurredPayload
-  | DeviceStatusPayload
-  | DeviceStatusSimplePayload
-  | CleanModeUpdatePayload
-  | ServiceAreaUpdatePayload;
+	| HomeDataPayload
+	| BatteryUpdatePayload
+	| ErrorOccurredPayload
+	| DeviceStatusPayload
+	| DeviceStatusSimplePayload
+	| CleanModeUpdatePayload
+	| ServiceAreaUpdatePayload;

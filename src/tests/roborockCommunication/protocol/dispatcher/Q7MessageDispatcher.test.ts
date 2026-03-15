@@ -1,275 +1,282 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { Q7MessageDispatcher } from '../../../../roborockCommunication/protocol/dispatcher/Q7MessageDispatcher.js';
-import { asType, asPartial } from '../../../testUtils.js';
-import { RequestMessage } from '../../../../roborockCommunication/models/index.js';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { CleanModeSetting } from '../../../../behaviors/roborock.vacuum/core/CleanModeSetting.js';
 import { CleanSequenceType } from '../../../../behaviors/roborock.vacuum/enums/CleanSequenceType.js';
+import { RequestMessage } from '../../../../roborockCommunication/models/index.js';
+import { Q7MessageDispatcher } from '../../../../roborockCommunication/protocol/dispatcher/Q7MessageDispatcher.js';
+import { asPartial, asType } from '../../../testUtils.js';
 
 // --- Mock Factories ---
 function createMockLogger() {
-  return {
-    notice: vi.fn(),
-    info: vi.fn(),
-    warn: vi.fn(),
-    error: vi.fn(),
-    debug: vi.fn(),
-  };
+	return {
+		notice: vi.fn(),
+		info: vi.fn(),
+		warn: vi.fn(),
+		error: vi.fn(),
+		debug: vi.fn(),
+	};
 }
 
 function createMockClient() {
-  return {
-    send: vi.fn().mockResolvedValue(undefined),
-    get: vi.fn().mockResolvedValue(undefined),
-    isConnected: vi.fn().mockReturnValue(true),
-    connect: vi.fn(),
-    disconnect: vi.fn(),
-    registerConnectionListener: vi.fn(),
-    registerMessageListener: vi.fn(),
-  };
+	return {
+		send: vi.fn().mockResolvedValue(undefined),
+		get: vi.fn().mockResolvedValue(undefined),
+		isConnected: vi.fn().mockReturnValue(true),
+		connect: vi.fn(),
+		disconnect: vi.fn(),
+		registerConnectionListener: vi.fn(),
+		registerMessageListener: vi.fn(),
+	};
 }
 
 // --- Test Suite ---
 describe('Q7MessageDispatcher', () => {
-  let logger: ReturnType<typeof createMockLogger>;
-  let client: ReturnType<typeof createMockClient>;
-  let dispatcher: Q7MessageDispatcher;
-  const duid = 'test-duid';
+	let logger: ReturnType<typeof createMockLogger>;
+	let client: ReturnType<typeof createMockClient>;
+	let dispatcher: Q7MessageDispatcher;
+	const duid = 'test-duid';
 
-  beforeEach(() => {
-    logger = createMockLogger();
-    client = createMockClient();
-    dispatcher = new Q7MessageDispatcher(asType(logger), asType(client));
-  });
+	beforeEach(() => {
+		logger = createMockLogger();
+		client = createMockClient();
+		dispatcher = new Q7MessageDispatcher(asType(logger), asType(client));
+	});
 
-  afterEach(() => {
-    vi.clearAllMocks();
-    vi.clearAllTimers();
-    vi.useRealTimers();
-  });
+	afterEach(() => {
+		vi.clearAllMocks();
+		vi.clearAllTimers();
+		vi.useRealTimers();
+	});
 
-  describe('getNetworkInfo', () => {
-    it('should return undefined', async () => {
-      const result = await dispatcher.getNetworkInfo(duid);
-      expect(result).toBeUndefined();
-    });
-  });
+	describe('getNetworkInfo', () => {
+		it('should return undefined', async () => {
+			const result = await dispatcher.getNetworkInfo(duid);
+			expect(result).toBeUndefined();
+		});
+	});
 
-  describe('getDeviceStatus', () => {
-    it('should return undefined', async () => {
-      const result = await dispatcher.getDeviceStatus(duid);
-      expect(result).toBeUndefined();
-    });
-  });
+	describe('getSerialNumber', () => {
+		it('should return the duid as serial number', async () => {
+			const result = await dispatcher.getSerialNumber(duid);
+			expect(result).toBe(duid);
+		});
+	});
 
-  describe('getHomeMap', () => {
-    it('should return an empty object', async () => {
-      const result = await dispatcher.getHomeMap(duid);
-      expect(result).toEqual({});
-    });
-  });
+	describe('getDeviceStatus', () => {
+		it('should return undefined', async () => {
+			const result = await dispatcher.getDeviceStatus(duid);
+			expect(result).toBeUndefined();
+		});
+	});
 
-  describe('getMapInfo', () => {
-    it('should call client.get and logger.notice, return MapInfo', async () => {
-      client.get.mockResolvedValueOnce({});
-      const result = await dispatcher.getMapInfo(duid);
-      expect(client.get).toHaveBeenCalled();
-      expect(logger.notice).toHaveBeenCalled();
-      expect(result).toBeInstanceOf(Object); // MapInfo, but type is not checked at runtime
-    });
-  });
+	describe('getHomeMap', () => {
+		it('should return an empty object', async () => {
+			const result = await dispatcher.getHomeMap(duid);
+			expect(result).toEqual({});
+		});
+	});
 
-  describe('getRoomMap', () => {
-    it('should return empty array when response is undefined', async () => {
-      client.get.mockResolvedValueOnce(undefined);
-      const result = await dispatcher.getRoomMap(duid, 1);
-      expect(client.get).toHaveBeenCalled();
-      expect(result).toEqual([]);
-    });
+	describe('getMapInfo', () => {
+		it('should call client.get and logger.notice, return MapInfo', async () => {
+			client.get.mockResolvedValueOnce({});
+			const result = await dispatcher.getMapInfo(duid);
+			expect(client.get).toHaveBeenCalled();
+			expect(logger.notice).toHaveBeenCalled();
+			expect(result).toBeInstanceOf(Object); // MapInfo, but type is not checked at runtime
+		});
+	});
 
-    it('should call client.get and return room mapping data', async () => {
-      const mockRoomData: [number, string, number][] = [
-        [1, 'Living Room', 0],
-        [2, 'Kitchen', 1],
-      ];
-      client.get.mockResolvedValueOnce(mockRoomData);
+	describe('getRoomMap', () => {
+		it('should return empty array when response is undefined', async () => {
+			client.get.mockResolvedValueOnce(undefined);
+			const result = await dispatcher.getRoomMap(duid, 1);
+			expect(client.get).toHaveBeenCalled();
+			expect(result).toEqual([]);
+		});
 
-      const result = await dispatcher.getRoomMap(duid, 1);
+		it('should call client.get and return room mapping data', async () => {
+			const mockRoomData: [number, string, number][] = [
+				[1, 'Living Room', 0],
+				[2, 'Kitchen', 1],
+			];
+			client.get.mockResolvedValueOnce(mockRoomData);
 
-      expect(client.get).toHaveBeenCalled();
-      expect(result).toEqual(mockRoomData);
-    });
-  });
+			const result = await dispatcher.getRoomMap(duid, 1);
 
-  describe('goHome', () => {
-    it('should send a charge command', async () => {
-      await dispatcher.goHome(duid);
-      expect(client.send).toHaveBeenCalled();
-    });
-  });
+			expect(client.get).toHaveBeenCalled();
+			expect(result).toEqual(mockRoomData);
+		});
+	});
 
-  describe('startCleaning', () => {
-    it('should call startRoomCleaning with empty roomIds and repeat 1', async () => {
-      const spy = vi.spyOn(dispatcher, 'startRoomCleaning').mockResolvedValue(undefined);
-      await dispatcher.startCleaning(duid);
-      expect(spy).toHaveBeenCalledWith(duid, [], 1);
-    });
-  });
+	describe('goHome', () => {
+		it('should send a charge command', async () => {
+			await dispatcher.goHome(duid);
+			expect(client.send).toHaveBeenCalled();
+		});
+	});
 
-  describe('startRoomCleaning', () => {
-    it('should send a start room cleaning command', async () => {
-      await dispatcher.startRoomCleaning(duid, [1, 2], 2);
-      expect(client.send).toHaveBeenCalled();
-    });
-  });
+	describe('startCleaning', () => {
+		it('should call startRoomCleaning with empty roomIds and repeat 1', async () => {
+			const spy = vi.spyOn(dispatcher, 'startRoomCleaning').mockResolvedValue(undefined);
+			await dispatcher.startCleaning(duid);
+			expect(spy).toHaveBeenCalledWith(duid, [], 1);
+		});
+	});
 
-  describe('pauseCleaning', () => {
-    it('should send a pause command', async () => {
-      await dispatcher.pauseCleaning(duid);
-      expect(client.send).toHaveBeenCalled();
-    });
-  });
+	describe('startRoomCleaning', () => {
+		it('should send a start room cleaning command', async () => {
+			await dispatcher.startRoomCleaning(duid, [1, 2], 2);
+			expect(client.send).toHaveBeenCalled();
+		});
+	});
 
-  describe('resumeCleaning', () => {
-    it('should call startCleaning', async () => {
-      const spy = vi.spyOn(dispatcher, 'startCleaning').mockResolvedValue(undefined);
-      await dispatcher.resumeCleaning(duid);
-      expect(spy).toHaveBeenCalledWith(duid);
-    });
-  });
+	describe('pauseCleaning', () => {
+		it('should send a pause command', async () => {
+			await dispatcher.pauseCleaning(duid);
+			expect(client.send).toHaveBeenCalled();
+		});
+	});
 
-  describe('resumeRoomCleaning', () => {
-    it('should call startRoomCleaning with empty roomIds and repeat 1', async () => {
-      const spy = vi.spyOn(dispatcher, 'startRoomCleaning').mockResolvedValue(undefined);
-      await dispatcher.resumeRoomCleaning(duid);
-      expect(spy).toHaveBeenCalledWith(duid, [], 1);
-    });
-  });
+	describe('resumeCleaning', () => {
+		it('should call startCleaning', async () => {
+			const spy = vi.spyOn(dispatcher, 'startCleaning').mockResolvedValue(undefined);
+			await dispatcher.resumeCleaning(duid);
+			expect(spy).toHaveBeenCalledWith(duid);
+		});
+	});
 
-  describe('stopCleaning', () => {
-    it('should send a stop command', async () => {
-      await dispatcher.stopCleaning(duid);
-      expect(client.send).toHaveBeenCalled();
-    });
-  });
+	describe('resumeRoomCleaning', () => {
+		it('should call startRoomCleaning with empty roomIds and repeat 1', async () => {
+			const spy = vi.spyOn(dispatcher, 'startRoomCleaning').mockResolvedValue(undefined);
+			await dispatcher.resumeRoomCleaning(duid);
+			expect(spy).toHaveBeenCalledWith(duid, [], 1);
+		});
+	});
 
-  describe('findMyRobot', () => {
-    it('should send a find_me command', async () => {
-      await dispatcher.findMyRobot(duid);
-      expect(client.send).toHaveBeenCalled();
-    });
-  });
+	describe('stopCleaning', () => {
+		it('should send a stop command', async () => {
+			await dispatcher.stopCleaning(duid);
+			expect(client.send).toHaveBeenCalled();
+		});
+	});
 
-  describe('sendCustomMessage', () => {
-    it('should send a custom message', async () => {
-      const def = asPartial<RequestMessage>({
-        toLocalRequest: vi.fn(),
-        secure: false,
-        isForProtocol: vi.fn(),
-        version: '1.0',
-        method: 'custom',
-      });
-      await dispatcher.sendCustomMessage(duid, def);
-      expect(client.send).toHaveBeenCalled();
-    });
-  });
+	describe('findMyRobot', () => {
+		it('should send a find_me command', async () => {
+			await dispatcher.findMyRobot(duid);
+			expect(client.send).toHaveBeenCalled();
+		});
+	});
 
-  describe('getCustomMessage', () => {
-    it('should get a custom message', async () => {
-      const def = asPartial<RequestMessage>({ dps: { foo: 'bar' } });
-      await dispatcher.getCustomMessage(duid, def);
-      expect(client.get).toHaveBeenCalled();
-    });
-  });
+	describe('sendCustomMessage', () => {
+		it('should send a custom message', async () => {
+			const def = asPartial<RequestMessage>({
+				toLocalRequest: vi.fn(),
+				secure: false,
+				isForProtocol: vi.fn(),
+				version: '1.0',
+				method: 'custom',
+			});
+			await dispatcher.sendCustomMessage(duid, def);
+			expect(client.send).toHaveBeenCalled();
+		});
+	});
 
-  describe('getCleanModeData', () => {
-    it('should return a CleanModeSetting object', async () => {
-      const result = await dispatcher.getCleanModeData(duid);
-      expect(result).toEqual({ suctionPower: 0, waterFlow: 0, mopRoute: 0, distance_off: 0, sequenceType: 0 });
-    });
-  });
+	describe('getCustomMessage', () => {
+		it('should get a custom message', async () => {
+			const def = asPartial<RequestMessage>({ dps: { foo: 'bar' } });
+			await dispatcher.getCustomMessage(duid, def);
+			expect(client.get).toHaveBeenCalled();
+		});
+	});
 
-  describe('messageId', () => {
-    it('should return monotonically increasing IDs', () => {
-      const id1 = dispatcher['messageId'];
-      const id2 = dispatcher['messageId'];
-      expect(id2).toBeGreaterThan(id1);
-    });
+	describe('getCleanModeData', () => {
+		it('should return a CleanModeSetting object', async () => {
+			const result = await dispatcher.getCleanModeData(duid);
+			expect(result).toEqual({ suctionPower: 0, waterFlow: 0, mopRoute: 0, distance_off: 0, sequenceType: 0 });
+		});
+	});
 
-    it('should increment when Date.now returns same value', () => {
-      const fixedTime = Date.now();
-      vi.spyOn(Date, 'now').mockReturnValue(fixedTime);
-      dispatcher['lastB01Id'] = fixedTime;
-      const id = dispatcher['messageId'];
-      expect(id).toBe(fixedTime + 1);
-      vi.restoreAllMocks();
-    });
-  });
+	describe('messageId', () => {
+		it('should return monotonically increasing IDs', () => {
+			const id1 = dispatcher['messageId'];
+			const id2 = dispatcher['messageId'];
+			expect(id2).toBeGreaterThan(id1);
+		});
 
-  describe('changeCleanMode', () => {
-    it('should call setCleanMode, setVacuumMode, setMopMode as needed', async () => {
-      const setCleanMode = vi.fn();
-      const setVacuumMode = vi.fn();
-      const setMopMode = vi.fn();
+		it('should increment when Date.now returns same value', () => {
+			const fixedTime = Date.now();
+			vi.spyOn(Date, 'now').mockReturnValue(fixedTime);
+			dispatcher['lastB01Id'] = fixedTime;
+			const id = dispatcher['messageId'];
+			expect(id).toBe(fixedTime + 1);
+			vi.restoreAllMocks();
+		});
+	});
 
-      dispatcher['setCleanMode'] = setCleanMode;
-      dispatcher['setVacuumMode'] = setVacuumMode;
-      dispatcher['setMopMode'] = setMopMode;
+	describe('changeCleanMode', () => {
+		it('should call setCleanMode, setVacuumMode, setMopMode as needed', async () => {
+			const setCleanMode = vi.fn();
+			const setVacuumMode = vi.fn();
+			const setMopMode = vi.fn();
 
-      const setting = new CleanModeSetting(1, 2, 4, 3, CleanSequenceType.Persist);
-      await dispatcher.changeCleanMode(duid, setting);
-      expect(setCleanMode).toHaveBeenCalledWith(duid, 1, 2);
-      expect(setVacuumMode).toHaveBeenCalledWith(duid, 1);
-      expect(setMopMode).toHaveBeenCalledWith(duid, 2);
-    });
-    it('should not call setVacuumMode if suctionPower is 0', async () => {
-      const setCleanMode = vi.fn();
-      const setVacuumMode = vi.fn();
-      const setMopMode = vi.fn();
+			dispatcher['setCleanMode'] = setCleanMode;
+			dispatcher['setVacuumMode'] = setVacuumMode;
+			dispatcher['setMopMode'] = setMopMode;
 
-      dispatcher['setCleanMode'] = setCleanMode;
-      dispatcher['setVacuumMode'] = setVacuumMode;
-      dispatcher['setMopMode'] = setMopMode;
+			const setting = new CleanModeSetting(1, 2, 4, 3, CleanSequenceType.Persist);
+			await dispatcher.changeCleanMode(duid, setting);
+			expect(setCleanMode).toHaveBeenCalledWith(duid, 1, 2);
+			expect(setVacuumMode).toHaveBeenCalledWith(duid, 1);
+			expect(setMopMode).toHaveBeenCalledWith(duid, 2);
+		});
+		it('should not call setVacuumMode if suctionPower is 0', async () => {
+			const setCleanMode = vi.fn();
+			const setVacuumMode = vi.fn();
+			const setMopMode = vi.fn();
 
-      const setting = new CleanModeSetting(0, 2, 4, 3, CleanSequenceType.Persist);
-      await dispatcher.changeCleanMode(duid, setting);
-      expect(setVacuumMode).not.toHaveBeenCalled();
-      expect(setMopMode).toHaveBeenCalledWith(duid, 2);
-    });
-    it('should not call setMopMode if waterFlow is 0', async () => {
-      const setCleanMode = vi.fn();
-      const setVacuumMode = vi.fn();
-      const setMopMode = vi.fn();
+			dispatcher['setCleanMode'] = setCleanMode;
+			dispatcher['setVacuumMode'] = setVacuumMode;
+			dispatcher['setMopMode'] = setMopMode;
 
-      dispatcher['setCleanMode'] = setCleanMode;
-      dispatcher['setVacuumMode'] = setVacuumMode;
-      dispatcher['setMopMode'] = setMopMode;
+			const setting = new CleanModeSetting(0, 2, 4, 3, CleanSequenceType.Persist);
+			await dispatcher.changeCleanMode(duid, setting);
+			expect(setVacuumMode).not.toHaveBeenCalled();
+			expect(setMopMode).toHaveBeenCalledWith(duid, 2);
+		});
+		it('should not call setMopMode if waterFlow is 0', async () => {
+			const setCleanMode = vi.fn();
+			const setVacuumMode = vi.fn();
+			const setMopMode = vi.fn();
 
-      const setting = new CleanModeSetting(1, 0, 4, 3, CleanSequenceType.Persist);
-      await dispatcher.changeCleanMode(duid, setting);
-      expect(setVacuumMode).toHaveBeenCalledWith(duid, 1);
-      expect(setMopMode).not.toHaveBeenCalled();
-    });
+			dispatcher['setCleanMode'] = setCleanMode;
+			dispatcher['setVacuumMode'] = setVacuumMode;
+			dispatcher['setMopMode'] = setMopMode;
 
-    it('should call real private helpers and send commands via client', async () => {
-      const setting = new CleanModeSetting(2, 3, 4, 1, CleanSequenceType.Persist);
-      await dispatcher.changeCleanMode(duid, setting);
-      // setCleanMode + setVacuumMode + setMopMode = 3 sends
-      expect(client.send).toHaveBeenCalledTimes(3);
-      expect(logger.notice).toHaveBeenCalledWith(expect.stringContaining('Change clean mode'));
-    });
+			const setting = new CleanModeSetting(1, 0, 4, 3, CleanSequenceType.Persist);
+			await dispatcher.changeCleanMode(duid, setting);
+			expect(setVacuumMode).toHaveBeenCalledWith(duid, 1);
+			expect(setMopMode).not.toHaveBeenCalled();
+		});
 
-    it('should only call setCleanMode when both suctionPower and waterFlow are 0', async () => {
-      const setting = new CleanModeSetting(0, 0, 4, 1, CleanSequenceType.Persist);
-      await dispatcher.changeCleanMode(duid, setting);
-      expect(client.send).toHaveBeenCalledTimes(1);
-    });
-  });
+		it('should call real private helpers and send commands via client', async () => {
+			const setting = new CleanModeSetting(2, 3, 4, 1, CleanSequenceType.Persist);
+			await dispatcher.changeCleanMode(duid, setting);
+			// setCleanMode + setVacuumMode + setMopMode = 3 sends
+			expect(client.send).toHaveBeenCalledTimes(3);
+			expect(logger.notice).toHaveBeenCalledWith(expect.stringContaining('Change clean mode'));
+		});
 
-  describe('setCleanRoute', () => {
-    it('should send a set_prop command for clean_path_preference', async () => {
-      await dispatcher.setCleanRoute(duid, 1);
-      expect(client.send).toHaveBeenCalled();
-    });
-  });
+		it('should only call setCleanMode when both suctionPower and waterFlow are 0', async () => {
+			const setting = new CleanModeSetting(0, 0, 4, 1, CleanSequenceType.Persist);
+			await dispatcher.changeCleanMode(duid, setting);
+			expect(client.send).toHaveBeenCalledTimes(1);
+		});
+	});
+
+	describe('setCleanRoute', () => {
+		it('should send a set_prop command for clean_path_preference', async () => {
+			await dispatcher.setCleanRoute(duid, 1);
+			expect(client.send).toHaveBeenCalled();
+		});
+	});
 });

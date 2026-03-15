@@ -11,7 +11,7 @@ export type { Factory } from './factories.js';
 export type { MapRoomResponse, Security } from './device.js';
 
 // Callback types
-export type { SaveUserDataCallback, LoadUserDataCallback } from './callbacks.js';
+export type { LoadUserDataCallback, SaveUserDataCallback } from './callbacks.js';
 
 // State management types
 export type { DeviceState, RoutineStartResult } from './state.js';
@@ -25,5 +25,4 @@ export type { DeviceNotifyCallback } from './communication.js';
 
 // Message payload types
 export * from './MessagePayloads.js';
-
 export { NotifyMessageTypes } from './notifyMessageTypes.js';

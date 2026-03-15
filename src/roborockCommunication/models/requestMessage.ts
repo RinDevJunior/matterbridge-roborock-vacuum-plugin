@@ -1,72 +1,73 @@
-import { ProtocolVersion } from '../enums/index.js';
-import { Protocol } from './protocol.js';
 import { randomInt } from 'node:crypto';
 
+import { ProtocolVersion } from '../enums/index.js';
+import { Protocol } from './protocol.js';
+
 export interface ProtocolRequest {
-  messageId?: number;
-  protocol?: Protocol;
-  method?: string | undefined;
-  params?: unknown[] | Record<string, unknown> | undefined;
-  secure?: boolean;
-  nonce?: number;
-  timestamp?: number;
-  version?: string;
-  dps?: Record<string, unknown>;
-  body?: string;
+	messageId?: number;
+	protocol?: Protocol;
+	method?: string | undefined;
+	params?: unknown[] | Record<string, unknown> | undefined;
+	secure?: boolean;
+	nonce?: number;
+	timestamp?: number;
+	version?: string;
+	dps?: Record<string, unknown>;
+	body?: string;
 }
 
 export class RequestMessage {
-  public version: string | undefined;
-  public readonly messageId: number;
-  public readonly protocol: Protocol;
-  public readonly method: string | undefined;
-  public readonly params: unknown[] | Record<string, unknown> | undefined;
-  public readonly secure: boolean;
-  public readonly timestamp: number;
-  public readonly nonce: number;
-  public readonly dps: Record<string, unknown> | undefined;
-  public readonly body: string | undefined;
+	public version: string | undefined;
+	public readonly messageId: number;
+	public readonly protocol: Protocol;
+	public readonly method: string | undefined;
+	public readonly params: unknown[] | Record<string, unknown> | undefined;
+	public readonly secure: boolean;
+	public readonly timestamp: number;
+	public readonly nonce: number;
+	public readonly dps: Record<string, unknown> | undefined;
+	public readonly body: string | undefined;
 
-  constructor(args: ProtocolRequest) {
-    this.messageId = args.messageId ?? randomInt(10000, 32767);
-    this.protocol = args.protocol ?? Protocol.rpc_request;
-    this.method = args.method;
-    this.params = args.params;
-    this.secure = args.secure ?? false;
-    this.nonce = args.nonce ?? randomInt(10000, 32767);
-    this.timestamp = args.timestamp ?? Math.floor(Date.now() / 1000);
+	constructor(args: ProtocolRequest) {
+		this.messageId = args.messageId ?? randomInt(10000, 32767);
+		this.protocol = args.protocol ?? Protocol.rpc_request;
+		this.method = args.method;
+		this.params = args.params;
+		this.secure = args.secure ?? false;
+		this.nonce = args.nonce ?? randomInt(10000, 32767);
+		this.timestamp = args.timestamp ?? Math.floor(Date.now() / 1000);
 
-    this.version = args.version;
-    this.dps = args.dps;
-    this.body = args.body ?? undefined;
-  }
+		this.version = args.version;
+		this.dps = args.dps;
+		this.body = args.body;
+	}
 
-  public isForProtocol(protocol: Protocol): boolean {
-    return this.protocol === protocol;
-  }
+	public isForProtocol(protocol: Protocol): boolean {
+		return this.protocol === protocol;
+	}
 
-  public toMqttRequest(): this {
-    return this;
-  }
+	public toMqttRequest(): this {
+		return this;
+	}
 
-  public toLocalRequest(protocolVersion: string | ProtocolVersion | undefined = undefined): RequestMessage {
-    if (this.protocol == Protocol.rpc_request) {
-      return new RequestMessage({
-        messageId: this.messageId,
+	public toLocalRequest(protocolVersion: string | ProtocolVersion | undefined = undefined): RequestMessage {
+		if (this.protocol == Protocol.rpc_request) {
+			return new RequestMessage({
+				messageId: this.messageId,
 
-        protocol: Protocol.general_request,
-        version: protocolVersion,
+				protocol: Protocol.general_request,
+				version: protocolVersion,
 
-        method: this.method,
-        params: this.params,
-        secure: this.secure,
-        dps: this.dps,
+				method: this.method,
+				params: this.params,
+				secure: this.secure,
+				dps: this.dps,
 
-        nonce: this.nonce,
-        timestamp: this.timestamp,
-      });
-    } else {
-      return this;
-    }
-  }
+				nonce: this.nonce,
+				timestamp: this.timestamp,
+			});
+		} else {
+			return this;
+		}
+	}
 }

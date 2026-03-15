@@ -1,8 +1,8 @@
 export interface DeviceSchema {
-  id: number;
-  name: string;
-  code: string;
-  mode: string;
-  type: string;
-  property: unknown;
+	id: number;
+	name: string;
+	code: string;
+	mode: string;
+	type: string;
+	property: unknown;
 }

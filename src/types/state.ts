@@ -3,6 +3,7 @@
  */
 
 import type { ServiceArea } from 'matterbridge/matter/clusters';
+
 import { RoomIndexMap } from '../core/application/models/index.js';
 
 /**
@@ -10,10 +11,10 @@ import { RoomIndexMap } from '../core/application/models/index.js';
  * Manages cleaning areas, routines, and area index mappings.
  */
 export interface DeviceState {
-  supportedAreas?: ServiceArea.Area[];
-  supportedRoutines?: ServiceArea.Area[];
-  selectedAreas?: number[];
-  areaIndexMap?: RoomIndexMap;
+	supportedAreas?: ServiceArea.Area[];
+	supportedRoutines?: ServiceArea.Area[];
+	selectedAreas?: number[];
+	areaIndexMap?: RoomIndexMap;
 }
 
 /**
@@ -21,6 +22,6 @@ export interface DeviceState {
  * Indicates if routine was handled and provides filtered room selection.
  */
 export interface RoutineStartResult {
-  handled: boolean;
-  filteredSelection: number[];
+	handled: boolean;
+	filteredSelection: number[];
 }

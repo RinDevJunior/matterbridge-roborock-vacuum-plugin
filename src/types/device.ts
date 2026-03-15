@@ -1,7 +1,7 @@
 export interface MapRoomResponse {
-  vacuumRoom?: number;
+	vacuumRoom?: number;
 }
 
 export interface Security {
-  nonce: number;
+	nonce: number;
 }

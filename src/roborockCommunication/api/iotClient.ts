@@ -1,257 +1,259 @@
-import { default as axios, AxiosInstance, AxiosError, AxiosStatic } from 'axios';
-import axiosRetry from 'axios-retry';
-import https from 'node:https';
 import crypto from 'node:crypto';
-import { AnsiLogger, debugStringify } from 'matterbridge/logger';
-import { ApiResponse, Home, UserData, Scene } from '../models/index.js';
+import https from 'node:https';
+
+import { AxiosError, AxiosInstance, AxiosStatic, default as axios } from 'axios';
 import * as AxiosLogger from 'axios-logger';
+import axiosRetry from 'axios-retry';
+import { AnsiLogger, debugStringify } from 'matterbridge/logger';
+
+import { ApiResponse, Home, Scene, UserData } from '../models/index.js';
 
 export class RoborockIoTApi {
-  logger: AnsiLogger;
-  private readonly api: AxiosInstance;
-  private readonly vacuumNeedAPIV3 = ['roborock.vacuum.ss07']; // Q10 S5 Plus
+	logger: AnsiLogger;
+	private readonly api: AxiosInstance;
+	private readonly vacuumNeedAPIV3 = ['roborock.vacuum.ss07']; // Q10 S5 Plus
 
-  constructor(userdata: UserData, logger: AnsiLogger, axiosFactory: AxiosStatic = axios) {
-    this.logger = logger;
+	constructor(userdata: UserData, logger: AnsiLogger, axiosFactory: AxiosStatic = axios) {
+		this.logger = logger;
 
-    this.api = axiosFactory.create({
-      baseURL: userdata.rriot.r.a,
-      timeout: 10000,
-      maxRedirects: 5,
-      httpsAgent: new https.Agent({ keepAlive: true }),
-    });
+		this.api = axiosFactory.create({
+			baseURL: userdata.rriot.r.a,
+			timeout: 10000,
+			maxRedirects: 5,
+			httpsAgent: new https.Agent({ keepAlive: true }),
+		});
 
-    // Retry transient network errors (including ECONNRESET) with exponential backoff
-    try {
-      axiosRetry(this.api, {
-        retries: 3,
-        retryDelay: axiosRetry.exponentialDelay,
-        retryCondition: (error: unknown) => {
-          const errTyped = error as AxiosError;
-          const isNetwork = axiosRetry.isNetworkOrIdempotentRequestError(errTyped);
-          const code = errTyped?.code;
-          const isEconnreset = code === 'ECONNRESET';
-          const isTimedOut =
-            code === 'ETIMEDOUT' || code === 'ECONNABORTED' || /timeout/i.test(errTyped?.message ?? '');
-          return Boolean(isNetwork || isEconnreset || isTimedOut);
-        },
-        onRetry: (retryCount: number, error: unknown, _requestConfig: unknown) => {
-          this.logger.warn(
-            `Retrying request, attempt #${retryCount} due to error: ${error ? debugStringify(error) : 'unknown'}`,
-          );
-        },
-      });
-    } catch (err: unknown) {
-      this.logger.error(`Failed to configure axios-retry: ${err ? debugStringify(err) : 'unknown'}`);
-    }
+		// Retry transient network errors (including ECONNRESET) with exponential backoff
+		try {
+			axiosRetry(this.api, {
+				retries: 3,
+				retryDelay: axiosRetry.exponentialDelay,
+				retryCondition: (error: unknown) => {
+					const errTyped = error as AxiosError;
+					const isNetwork = axiosRetry.isNetworkOrIdempotentRequestError(errTyped);
+					const code = errTyped?.code;
+					const isEconnreset = code === 'ECONNRESET';
+					const isTimedOut =
+						code === 'ETIMEDOUT' || code === 'ECONNABORTED' || /timeout/i.test(errTyped?.message ?? '');
+					return isNetwork || isEconnreset || isTimedOut;
+				},
+				onRetry: (retryCount: number, error: unknown, _requestConfig: unknown) => {
+					this.logger.warn(
+						`Retrying request, attempt #${retryCount} due to error: ${error ? debugStringify(error) : 'unknown'}`,
+					);
+				},
+			});
+		} catch (err: unknown) {
+			this.logger.error(`Failed to configure axios-retry: ${err ? debugStringify(err) : 'unknown'}`);
+		}
 
-    this.api.interceptors.request.use((config) => {
-      try {
-        const url = this.api ? new URL(this.api.getUri(config)).pathname : '';
-        config.headers.Authorization = this.getHawkAuthentication(userdata.rriot, url);
-      } catch (error) {
-        this.logger.error(`Failed to initialize RESTAPI ${error ? debugStringify(error) : 'undefined'}`);
-      }
-      return config;
-    });
+		this.api.interceptors.request.use((config) => {
+			try {
+				const url = this.api ? new URL(this.api.getUri(config)).pathname : '';
+				config.headers.Authorization = this.getHawkAuthentication(userdata.rriot, url);
+			} catch (error) {
+				this.logger.error(`Failed to initialize RESTAPI ${error ? debugStringify(error) : 'undefined'}`);
+			}
+			return config;
+		});
 
-    this.api.interceptors.request.use((request) => {
-      return AxiosLogger.requestLogger(request, {
-        prefixText: 'Roborock IoT API',
-        dateFormat: 'HH:MM:ss',
-        headers: true,
-        data: true,
-        method: true,
-        url: true,
-        params: true,
-        logger: this.logger.debug.bind(this.logger),
-      });
-    }, AxiosLogger.errorLogger);
+		this.api.interceptors.request.use((request) => {
+			return AxiosLogger.requestLogger(request, {
+				prefixText: 'Roborock IoT API',
+				dateFormat: 'HH:MM:ss',
+				headers: true,
+				data: true,
+				method: true,
+				url: true,
+				params: true,
+				logger: this.logger.debug.bind(this.logger),
+			});
+		}, AxiosLogger.errorLogger);
 
-    this.api.interceptors.response.use((response) => {
-      AxiosLogger.responseLogger(response, {
-        prefixText: 'Roborock IoT API',
-        dateFormat: 'HH:MM:ss',
-        headers: true,
-        data: true,
-        status: true,
-        statusText: true,
-        params: true,
-        logger: this.logger.debug.bind(this.logger),
-      });
-      return response;
-    }, AxiosLogger.errorLogger);
-  }
+		this.api.interceptors.response.use((response) => {
+			AxiosLogger.responseLogger(response, {
+				prefixText: 'Roborock IoT API',
+				dateFormat: 'HH:MM:ss',
+				headers: true,
+				data: true,
+				status: true,
+				statusText: true,
+				params: true,
+				logger: this.logger.debug.bind(this.logger),
+			});
+			return response;
+		}, AxiosLogger.errorLogger);
+	}
 
-  public async getHomeWithProducts(homeId: number): Promise<Home | undefined> {
-    let homeData = await this.getHome(homeId);
-    let homeDataV2: Home | undefined;
-    let homeDataV3: Home | undefined;
-    if (!homeData) {
-      this.logger.error('[getHomeWithProducts Step 1] Failed to retrieve the home data');
-      homeDataV2 = await this.getHomev2(homeId);
-      homeData = homeDataV2;
-    }
+	public async getHomeWithProducts(homeId: number): Promise<Home | undefined> {
+		let homeData = await this.getHome(homeId);
+		let homeDataV2: Home | undefined;
+		let homeDataV3: Home | undefined;
+		if (!homeData) {
+			this.logger.error('[getHomeWithProducts Step 1] Failed to retrieve the home data');
+			homeDataV2 = await this.getHomev2(homeId);
+			homeData = homeDataV2;
+		}
 
-    if (!homeData) {
-      this.logger.error('[getHomeWithProducts Step 2] Failed to retrieve the home data');
-      homeDataV3 = await this.getHomev3(homeId);
-      homeData = homeDataV3;
-    }
+		if (!homeData) {
+			this.logger.error('[getHomeWithProducts Step 2] Failed to retrieve the home data');
+			homeDataV3 = await this.getHomev3(homeId);
+			homeData = homeDataV3;
+		}
 
-    if (!homeData) {
-      this.logger.error('[getHomeWithProducts Step 3] Failed to retrieve the home data');
-      return undefined;
-    }
+		if (!homeData) {
+			this.logger.error('[getHomeWithProducts Step 3] Failed to retrieve the home data');
+			return undefined;
+		}
 
-    if (homeData.products.some((p) => this.vacuumNeedAPIV3.includes(p.model))) {
-      this.logger.debug('Using v3 API for home data retrieval');
-      homeDataV3 = homeDataV3 ?? (await this.getHomev3(homeId));
-      if (!homeDataV3) {
-        throw new Error('Failed to retrieve the home data from v3 API');
-      }
-      homeData.devices = [
-        ...homeData.devices,
-        ...homeDataV3.devices.filter((d) => !homeData.devices.some((x) => x.duid === d.duid)),
-      ];
-      homeData.receivedDevices = [
-        ...homeData.receivedDevices,
-        ...homeDataV3.receivedDevices.filter((d) => !homeData.receivedDevices.some((x) => x.duid === d.duid)),
-      ];
-    }
+		if (homeData.products.some((p) => this.vacuumNeedAPIV3.includes(p.model))) {
+			this.logger.debug('Using v3 API for home data retrieval');
+			homeDataV3 = homeDataV3 ?? (await this.getHomev3(homeId));
+			if (!homeDataV3) {
+				throw new Error('Failed to retrieve the home data from v3 API');
+			}
+			homeData.devices = [
+				...homeData.devices,
+				...homeDataV3.devices.filter((d) => !homeData.devices.some((x) => x.duid === d.duid)),
+			];
+			homeData.receivedDevices = [
+				...homeData.receivedDevices,
+				...homeDataV3.receivedDevices.filter((d) => !homeData.receivedDevices.some((x) => x.duid === d.duid)),
+			];
+		}
 
-    if (homeData.rooms.length === 0) {
-      homeDataV2 = homeDataV2 ?? (await this.getHomev2(homeId));
-      if (homeDataV2?.rooms && homeDataV2.rooms.length > 0) {
-        homeData.rooms = homeDataV2.rooms;
-      } else {
-        homeDataV3 = homeDataV3 ?? (await this.getHomev3(homeId));
-        if (homeDataV3?.rooms && homeDataV3.rooms.length > 0) {
-          homeData.rooms = homeDataV3.rooms;
-        }
-      }
-    }
+		if (homeData.rooms.length === 0) {
+			homeDataV2 = homeDataV2 ?? (await this.getHomev2(homeId));
+			if (homeDataV2?.rooms && homeDataV2.rooms.length > 0) {
+				homeData.rooms = homeDataV2.rooms;
+			} else {
+				homeDataV3 = homeDataV3 ?? (await this.getHomev3(homeId));
+				if (homeDataV3?.rooms && homeDataV3.rooms.length > 0) {
+					homeData.rooms = homeDataV3.rooms;
+				}
+			}
+		}
 
-    return homeData;
-  }
+		return homeData;
+	}
 
-  public async getHome(homeId: number): Promise<Home | undefined> {
-    try {
-      const result = await this.api.get(`user/homes/${homeId}`);
-      const apiResponse: ApiResponse<Home> = result.data;
-      if (apiResponse.result) {
-        return apiResponse.result;
-      }
-      this.logger.error('[getHome] Failed to retrieve the home data');
-      return undefined;
-    } catch (error) {
-      this.logger.error(`[getHome] Failed: ${error ? debugStringify(error) : 'unknown'}`);
-      return undefined;
-    }
-  }
+	public async getHome(homeId: number): Promise<Home | undefined> {
+		try {
+			const result = await this.api.get(`user/homes/${homeId}`);
+			const apiResponse: ApiResponse<Home> = result.data;
+			if (apiResponse.result) {
+				return apiResponse.result;
+			}
+			this.logger.error('[getHome] Failed to retrieve the home data');
+			return undefined;
+		} catch (error) {
+			this.logger.error(`[getHome] Failed: ${error ? debugStringify(error) : 'unknown'}`);
+			return undefined;
+		}
+	}
 
-  public async getHomev2(homeId: number): Promise<Home | undefined> {
-    try {
-      const result = await this.api.get(`v2/user/homes/${homeId}`);
-      const apiResponse: ApiResponse<Home> = result.data;
-      if (apiResponse.result) {
-        return apiResponse.result;
-      }
-      this.logger.error('[getHomev2] Failed to retrieve the home data');
-      return undefined;
-    } catch (error) {
-      this.logger.error(`[getHomev2] Failed: ${error ? debugStringify(error) : 'unknown'}`);
-      return undefined;
-    }
-  }
+	public async getHomev2(homeId: number): Promise<Home | undefined> {
+		try {
+			const result = await this.api.get(`v2/user/homes/${homeId}`);
+			const apiResponse: ApiResponse<Home> = result.data;
+			if (apiResponse.result) {
+				return apiResponse.result;
+			}
+			this.logger.error('[getHomev2] Failed to retrieve the home data');
+			return undefined;
+		} catch (error) {
+			this.logger.error(`[getHomev2] Failed: ${error ? debugStringify(error) : 'unknown'}`);
+			return undefined;
+		}
+	}
 
-  public async getHomev3(homeId: number): Promise<Home | undefined> {
-    try {
-      const result = await this.api.get(`v3/user/homes/${homeId}`); // can be v3 also
-      const apiResponse: ApiResponse<Home> = result.data;
-      if (apiResponse.result) {
-        return apiResponse.result;
-      }
-      this.logger.error('[getHomev3] Failed to retrieve the home data');
-      return undefined;
-    } catch (error) {
-      this.logger.error(`[getHomev3] Failed: ${error ? debugStringify(error) : 'unknown'}`);
-      return undefined;
-    }
-  }
+	public async getHomev3(homeId: number): Promise<Home | undefined> {
+		try {
+			const result = await this.api.get(`v3/user/homes/${homeId}`); // can be v3 also
+			const apiResponse: ApiResponse<Home> = result.data;
+			if (apiResponse.result) {
+				return apiResponse.result;
+			}
+			this.logger.error('[getHomev3] Failed to retrieve the home data');
+			return undefined;
+		} catch (error) {
+			this.logger.error(`[getHomev3] Failed: ${error ? debugStringify(error) : 'unknown'}`);
+			return undefined;
+		}
+	}
 
-  public async getScenes(homeId: number): Promise<Scene[] | undefined> {
-    try {
-      const result = await this.api.get(`user/scene/home/${homeId}`);
-      const apiResponse: ApiResponse<Scene[]> = result.data;
-      if (apiResponse.result) {
-        return apiResponse.result;
-      }
-      this.logger.error('[getScenes] Failed to retrieve scenes');
-      return undefined;
-    } catch (error) {
-      this.logger.error(`[getScenes] Failed: ${error ? debugStringify(error) : 'unknown'}`);
-      return undefined;
-    }
-  }
+	public async getScenes(homeId: number): Promise<Scene[] | undefined> {
+		try {
+			const result = await this.api.get(`user/scene/home/${homeId}`);
+			const apiResponse: ApiResponse<Scene[]> = result.data;
+			if (apiResponse.result) {
+				return apiResponse.result;
+			}
+			this.logger.error('[getScenes] Failed to retrieve scenes');
+			return undefined;
+		} catch (error) {
+			this.logger.error(`[getScenes] Failed: ${error ? debugStringify(error) : 'unknown'}`);
+			return undefined;
+		}
+	}
 
-  public async startScene(sceneId: number): Promise<unknown> {
-    try {
-      const result = await this.api.post(`user/scene/${sceneId}/execute`);
-      const apiResponse: ApiResponse<unknown> = result.data;
-      if (apiResponse.success) {
-        return apiResponse.success;
-      }
-      this.logger.error('[startScene] Failed to execute scene');
-      return undefined;
-    } catch (error) {
-      this.logger.error(`[startScene] Failed: ${error ? debugStringify(error) : 'unknown'}`);
-      return undefined;
-    }
-  }
+	public async startScene(sceneId: number): Promise<unknown> {
+		try {
+			const result = await this.api.post(`user/scene/${sceneId}/execute`);
+			const apiResponse: ApiResponse<unknown> = result.data;
+			if (apiResponse.success) {
+				return apiResponse.success;
+			}
+			this.logger.error('[startScene] Failed to execute scene');
+			return undefined;
+		} catch (error) {
+			this.logger.error(`[startScene] Failed: ${error ? debugStringify(error) : 'unknown'}`);
+			return undefined;
+		}
+	}
 
-  public async getCustom(url: string): Promise<unknown> {
-    try {
-      const result = await this.api.get(url);
-      const apiResponse: ApiResponse<unknown> = result.data;
-      if (apiResponse.result) {
-        return apiResponse.result;
-      }
-      this.logger.error('[getCustom] Failed to execute custom request');
-      return undefined;
-    } catch (error) {
-      this.logger.error(`[getCustom] Failed: ${error ? debugStringify(error) : 'unknown'}`);
-      return undefined;
-    }
-  }
+	public async getCustom(url: string): Promise<unknown> {
+		try {
+			const result = await this.api.get(url);
+			const apiResponse: ApiResponse<unknown> = result.data;
+			if (apiResponse.result) {
+				return apiResponse.result;
+			}
+			this.logger.error('[getCustom] Failed to execute custom request');
+			return undefined;
+		} catch (error) {
+			this.logger.error(`[getCustom] Failed: ${error ? debugStringify(error) : 'unknown'}`);
+			return undefined;
+		}
+	}
 
-  private processExtraHawkValues(values: Record<string, unknown> | undefined): string {
-    if (values === undefined) return '';
-    const sortedKeys = Object.keys(values).sort();
-    const parts = sortedKeys.map((key) => `${key}=${values[key]}`);
-    return crypto.createHash('md5').update(parts.join('&')).digest('hex');
-  }
+	private processExtraHawkValues(values: Record<string, unknown> | undefined): string {
+		if (values === undefined) return '';
+		const sortedKeys = Object.keys(values).sort();
+		const parts = sortedKeys.map((key) => `${key}=${values[key]}`);
+		return crypto.createHash('md5').update(parts.join('&')).digest('hex');
+	}
 
-  private getHawkAuthentication(
-    rriot: { u: string; s: string; h: string },
-    url: string,
-    params?: Record<string, unknown>,
-    formdata?: Record<string, unknown>,
-  ): string {
-    const timestamp = Math.floor(Date.now() / 1000);
-    const nonce = crypto.randomBytes(6).toString('base64url');
-    const paramsStr = this.processExtraHawkValues(params);
-    const formdataStr = this.processExtraHawkValues(formdata);
-    const prestr = [
-      rriot.u,
-      rriot.s,
-      nonce,
-      String(timestamp),
-      crypto.createHash('md5').update(url).digest('hex'),
-      paramsStr,
-      formdataStr,
-    ].join(':');
-    const mac = crypto.createHmac('sha256', rriot.h).update(prestr).digest('base64');
-    return `Hawk id="${rriot.u}",s="${rriot.s}",ts="${timestamp}",nonce="${nonce}",mac="${mac}"`;
-  }
+	private getHawkAuthentication(
+		rriot: { u: string; s: string; h: string },
+		url: string,
+		params?: Record<string, unknown>,
+		formdata?: Record<string, unknown>,
+	): string {
+		const timestamp = Math.floor(Date.now() / 1000);
+		const nonce = crypto.randomBytes(6).toString('base64url');
+		const paramsStr = this.processExtraHawkValues(params);
+		const formdataStr = this.processExtraHawkValues(formdata);
+		const prestr = [
+			rriot.u,
+			rriot.s,
+			nonce,
+			String(timestamp),
+			crypto.createHash('md5').update(url).digest('hex'),
+			paramsStr,
+			formdataStr,
+		].join(':');
+		const mac = crypto.createHmac('sha256', rriot.h).update(prestr).digest('base64');
+		return `Hawk id="${rriot.u}",s="${rriot.s}",ts="${timestamp}",nonce="${nonce}",mac="${mac}"`;
+	}
 }

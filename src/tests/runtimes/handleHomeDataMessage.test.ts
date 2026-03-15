@@ -1,307 +1,308 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { updateFromHomeData } from '../../runtimes/handleHomeDataMessage.js';
-import { homeData } from '../testData/mockData.js';
-import { DeviceSpecs, DeviceModel, Device, Home, Product } from '../../roborockCommunication/models/index.js';
-import type { DockStationStatus } from '../../model/DockStationStatus.js';
-import type { RoborockVacuumCleaner } from '../../types/roborockVacuumCleaner.js';
-import type { RoborockMatterbridgePlatform } from '../../module.js';
-import { asPartial, asType } from '../testUtils.js';
-import type { DeviceRegistry } from '../../platform/deviceRegistry.js';
-import type { RoborockService } from '../../services/roborockService.js';
 import type { AnsiLogger } from 'matterbridge/logger';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+
+import type { DockStationStatus } from '../../model/DockStationStatus.js';
+import type { RoborockMatterbridgePlatform } from '../../module.js';
+import type { DeviceRegistry } from '../../platform/deviceRegistry.js';
 import { PlatformRunner } from '../../platformRunner.js';
+import { Device, DeviceModel, DeviceSpecs, Home, Product } from '../../roborockCommunication/models/index.js';
+import { updateFromHomeData } from '../../runtimes/handleHomeDataMessage.js';
+import type { RoborockService } from '../../services/roborockService.js';
+import type { RoborockVacuumCleaner } from '../../types/roborockVacuumCleaner.js';
+import { homeData } from '../testData/mockData.js';
+import { asPartial, asType } from '../testUtils.js';
 
 // Mocks
 const mockUpdateAttribute = vi.fn();
 const simpleUpdateAttribute = (...args: any[]) => mockUpdateAttribute(...args);
 const duid = 'test-duid';
 const robot = asPartial<RoborockVacuumCleaner>({
-  updateAttribute: simpleUpdateAttribute,
-  device: asPartial<Device>({
-    duid,
-    name: 'TestVac',
-    specs: asPartial<DeviceSpecs>({ model: DeviceModel.QREVO_EDGE_5V1 }),
-  }),
+	updateAttribute: simpleUpdateAttribute,
+	device: asPartial<Device>({
+		duid,
+		name: 'TestVac',
+		specs: asPartial<DeviceSpecs>({ model: DeviceModel.QREVO_EDGE_5V1 }),
+	}),
 });
 const robots = new Map([[duid, robot]]);
 const registry = asPartial<DeviceRegistry>({
-  get robotsMap() {
-    return robots;
-  },
-  getRobot: (id: string) => robots.get(id) as RoborockVacuumCleaner | undefined,
-  hasDevices: () => robots.size > 0,
-  registerRobot: vi.fn(),
+	get robotsMap() {
+		return robots;
+	},
+	getRobot: (id: string) => robots.get(id) as RoborockVacuumCleaner | undefined,
+	hasDevices: () => robots.size > 0,
+	registerRobot: vi.fn(),
 });
 const platformRunner = asPartial<PlatformRunner>({
-  updateRobotWithPayload: vi.fn(),
+	updateRobotWithPayload: vi.fn(),
 });
 
 const platform = asPartial<RoborockMatterbridgePlatform>({
-  registry: asPartial<DeviceRegistry>(registry),
-  log: asType<AnsiLogger>({
-    error: vi.fn(),
-    debug: vi.fn(),
-    notice: vi.fn(),
-    fatal: vi.fn(),
-  }),
-  platformRunner,
-  roborockService: asPartial<RoborockService>({}),
+	registry: asPartial<DeviceRegistry>(registry),
+	log: asType<AnsiLogger>({
+		error: vi.fn(),
+		debug: vi.fn(),
+		notice: vi.fn(),
+		fatal: vi.fn(),
+	}),
+	platformRunner,
+	roborockService: asPartial<RoborockService>({}),
 });
 
 describe('updateFromHomeData', () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-  });
+	beforeEach(() => {
+		vi.clearAllMocks();
+	});
 
-  it('should update robot attributes when valid data is provided', async () => {
-    await updateFromHomeData(homeData, asPartial<RoborockMatterbridgePlatform>(platform));
+	it('should update robot attributes when valid data is provided', async () => {
+		await updateFromHomeData(homeData, asPartial<RoborockMatterbridgePlatform>(platform));
 
-    expect(platformRunner.updateRobotWithPayload).toHaveBeenCalled();
-    expect(platform.log.error).not.toHaveBeenCalled();
-  });
+		expect(platformRunner.updateRobotWithPayload).toHaveBeenCalled();
+		expect(platform.log.error).not.toHaveBeenCalled();
+	});
 
-  it('should log error if robot is not found', async () => {
-    platform.registry.robotsMap.clear();
-    await updateFromHomeData(homeData, asPartial<RoborockMatterbridgePlatform>(platform));
-    expect(platform.log.error).not.toHaveBeenCalledWith(expect.stringContaining('Robot with DUID'));
-  });
+	it('should log error if robot is not found', async () => {
+		platform.registry.robotsMap.clear();
+		await updateFromHomeData(homeData, asPartial<RoborockMatterbridgePlatform>(platform));
+		expect(platform.log.error).not.toHaveBeenCalledWith(expect.stringContaining('Robot with DUID'));
+	});
 
-  it('should log error if device data is undefined', async () => {
-    platform.registry.robotsMap.clear();
-    // Simulate device missing data by removing the data property
-    platform.registry.robotsMap.set('test-duid', asPartial<RoborockVacuumCleaner>({ ...robot, device: asPartial({}) }));
-    await updateFromHomeData(homeData, asPartial<RoborockMatterbridgePlatform>(platform));
-    expect(platform.log.error).toHaveBeenCalledWith('Device not found in home data');
-  });
+	it('should log error if device data is undefined', async () => {
+		platform.registry.robotsMap.clear();
+		// Simulate device missing data by removing the data property
+		platform.registry.robotsMap.set('test-duid', asPartial<RoborockVacuumCleaner>({ ...robot, device: asPartial({}) }));
+		await updateFromHomeData(homeData, asPartial<RoborockMatterbridgePlatform>(platform));
+		expect(platform.log.error).toHaveBeenCalledWith('Device not found in home data');
+	});
 
-  it('should return early if no state or matterState', async () => {
-    const homeDataWithoutState = asPartial<Home>({
-      ...homeData,
-      devices: [{ ...homeData.devices[0], deviceStatus: {} }],
-    });
-    platform.registry.robotsMap.clear();
-    platform.registry.robotsMap.set('test-duid', robot);
-    await updateFromHomeData(homeDataWithoutState, asPartial<RoborockMatterbridgePlatform>(platform));
-    expect(mockUpdateAttribute).not.toHaveBeenCalled();
-  });
+	it('should return early if no state or matterState', async () => {
+		const homeDataWithoutState = asPartial<Home>({
+			...homeData,
+			devices: [{ ...homeData.devices[0], deviceStatus: {} }],
+		});
+		platform.registry.robotsMap.clear();
+		platform.registry.robotsMap.set('test-duid', robot);
+		await updateFromHomeData(homeDataWithoutState, asPartial<RoborockMatterbridgePlatform>(platform));
+		expect(mockUpdateAttribute).not.toHaveBeenCalled();
+	});
 
-  it('should return early if platform has no robots', async () => {
-    platform.registry.robotsMap.clear();
-    await updateFromHomeData(homeData, asPartial<RoborockMatterbridgePlatform>(platform));
-    // Should not throw, just return early
-    expect(platform.log.error).not.toHaveBeenCalled();
-  });
+	it('should return early if platform has no robots', async () => {
+		platform.registry.robotsMap.clear();
+		await updateFromHomeData(homeData, asPartial<RoborockMatterbridgePlatform>(platform));
+		// Should not throw, just return early
+		expect(platform.log.error).not.toHaveBeenCalled();
+	});
 
-  it('should skip robot update when robot is found but continue to next device', async () => {
-    const homeDataMultipleDevices = asPartial<Home>({
-      ...homeData,
-      devices: [
-        { ...homeData.devices[0], duid: 'test-duid' }, // This one should succeed
-        { ...homeData.devices[0], duid: 'test-duid-2' }, // Second device
-      ],
-    });
-    platform.registry.robotsMap.clear();
-    platform.registry.robotsMap.set('test-duid', robot);
-    platform.registry.robotsMap.set(
-      'test-duid-2',
-      asPartial<RoborockVacuumCleaner>({ ...robot, updateAttribute: vi.fn() }),
-    );
+	it('should skip robot update when robot is found but continue to next device', async () => {
+		const homeDataMultipleDevices = asPartial<Home>({
+			...homeData,
+			devices: [
+				{ ...homeData.devices[0], duid: 'test-duid' }, // This one should succeed
+				{ ...homeData.devices[0], duid: 'test-duid-2' }, // Second device
+			],
+		});
+		platform.registry.robotsMap.clear();
+		platform.registry.robotsMap.set('test-duid', robot);
+		platform.registry.robotsMap.set(
+			'test-duid-2',
+			asPartial<RoborockVacuumCleaner>({ ...robot, updateAttribute: vi.fn() }),
+		);
 
-    await updateFromHomeData(homeDataMultipleDevices, asPartial<RoborockMatterbridgePlatform>(platform));
-    // Both devices should be processed
-    expect(platformRunner.updateRobotWithPayload).toHaveBeenCalled();
-  });
+		await updateFromHomeData(homeDataMultipleDevices, asPartial<RoborockMatterbridgePlatform>(platform));
+		// Both devices should be processed
+		expect(platformRunner.updateRobotWithPayload).toHaveBeenCalled();
+	});
 
-  it('should handle when device is filtered out before loop', async () => {
-    const homeDataUnknownDevice = asPartial<Home>({
-      ...homeData,
-      devices: [{ ...homeData.devices[0], duid: 'unknown-duid' }],
-    });
-    platform.registry.robotsMap.clear();
-    platform.registry.robotsMap.set('test-duid', robot); // Robot exists but no matching device
+	it('should handle when device is filtered out before loop', async () => {
+		const homeDataUnknownDevice = asPartial<Home>({
+			...homeData,
+			devices: [{ ...homeData.devices[0], duid: 'unknown-duid' }],
+		});
+		platform.registry.robotsMap.clear();
+		platform.registry.robotsMap.set('test-duid', robot); // Robot exists but no matching device
 
-    await updateFromHomeData(homeDataUnknownDevice, asPartial<RoborockMatterbridgePlatform>(platform));
-    // No devices should match the filter, so no updates
-    expect(mockUpdateAttribute).not.toHaveBeenCalled();
-  });
+		await updateFromHomeData(homeDataUnknownDevice, asPartial<RoborockMatterbridgePlatform>(platform));
+		// No devices should match the filter, so no updates
+		expect(mockUpdateAttribute).not.toHaveBeenCalled();
+	});
 
-  it('should handle missing battery level', async () => {
-    const homeDataNoBattery = asPartial<Home>({
-      ...homeData,
-      devices: [{ ...homeData.devices[0], deviceStatus: asPartial({ state: 8 }) }],
-    });
-    platform.registry.robotsMap.clear();
-    platform.registry.robotsMap.set('test-duid', robot);
+	it('should handle missing battery level', async () => {
+		const homeDataNoBattery = asPartial<Home>({
+			...homeData,
+			devices: [{ ...homeData.devices[0], deviceStatus: asPartial({ state: 8 }) }],
+		});
+		platform.registry.robotsMap.clear();
+		platform.registry.robotsMap.set('test-duid', robot);
 
-    await updateFromHomeData(homeDataNoBattery, asPartial<RoborockMatterbridgePlatform>(platform));
-    // Battery payload not sent, but DeviceStatus payload still sent because state exists
-    expect(platformRunner.updateRobotWithPayload).toHaveBeenCalledWith(
-      expect.objectContaining({ type: 'DeviceStatusSimple' }),
-    );
-  });
+		await updateFromHomeData(homeDataNoBattery, asPartial<RoborockMatterbridgePlatform>(platform));
+		// Battery payload not sent, but DeviceStatus payload still sent because state exists
+		expect(platformRunner.updateRobotWithPayload).toHaveBeenCalledWith(
+			expect.objectContaining({ type: 'DeviceStatusSimple' }),
+		);
+	});
 
-  it('should handle state without matterState mapping', async () => {
-    const homeDataInvalidState = asPartial<Home>({
-      ...homeData,
-      devices: [{ ...homeData.devices[0], deviceStatus: asPartial({ state: 9999, battery: 100 }) }], // Truly unmapped state
-    });
-    platform.registry.robotsMap.clear();
-    platform.registry.robotsMap.set('test-duid', robot);
-    await updateFromHomeData(homeDataInvalidState, asPartial<RoborockMatterbridgePlatform>(platform));
-    // Should update status via platformRunner
-    expect(platformRunner.updateRobotWithPayload).toHaveBeenCalled();
-  });
+	it('should handle state without matterState mapping', async () => {
+		const homeDataInvalidState = asPartial<Home>({
+			...homeData,
+			devices: [{ ...homeData.devices[0], deviceStatus: asPartial({ state: 9999, battery: 100 }) }], // Truly unmapped state
+		});
+		platform.registry.robotsMap.clear();
+		platform.registry.robotsMap.set('test-duid', robot);
+		await updateFromHomeData(homeDataInvalidState, asPartial<RoborockMatterbridgePlatform>(platform));
+		// Should update status via platformRunner
+		expect(platformRunner.updateRobotWithPayload).toHaveBeenCalled();
+	});
 
-  it('should return early when state is undefined', async () => {
-    const homeDataNoState = asPartial<Home>({
-      ...homeData,
-      devices: [{ ...homeData.devices[0], deviceStatus: {} }],
-    });
-    platform.registry.robotsMap.clear();
-    platform.registry.robotsMap.set('test-duid', robot);
-    await updateFromHomeData(homeDataNoState, asPartial<RoborockMatterbridgePlatform>(platform));
-    expect(mockUpdateAttribute).not.toHaveBeenCalled();
-  });
+	it('should return early when state is undefined', async () => {
+		const homeDataNoState = asPartial<Home>({
+			...homeData,
+			devices: [{ ...homeData.devices[0], deviceStatus: {} }],
+		});
+		platform.registry.robotsMap.clear();
+		platform.registry.robotsMap.set('test-duid', robot);
+		await updateFromHomeData(homeDataNoState, asPartial<RoborockMatterbridgePlatform>(platform));
+		expect(mockUpdateAttribute).not.toHaveBeenCalled();
+	});
 
-  it('should handle missing operational state', async () => {
-    const homeDataNoOpState = asPartial<Home>({
-      ...homeData,
-      devices: [{ ...homeData.devices[0], deviceStatus: asPartial({ state: 9999, battery: 100 }) }], // Truly unmapped state
-    });
-    platform.registry.robotsMap.clear();
-    platform.registry.robotsMap.set('test-duid', robot);
-    await updateFromHomeData(homeDataNoOpState, asPartial<RoborockMatterbridgePlatform>(platform));
-    // Should update status via platformRunner
-    expect(platformRunner.updateRobotWithPayload).toHaveBeenCalled();
-  });
+	it('should handle missing operational state', async () => {
+		const homeDataNoOpState = asPartial<Home>({
+			...homeData,
+			devices: [{ ...homeData.devices[0], deviceStatus: asPartial({ state: 9999, battery: 100 }) }], // Truly unmapped state
+		});
+		platform.registry.robotsMap.clear();
+		platform.registry.robotsMap.set('test-duid', robot);
+		await updateFromHomeData(homeDataNoOpState, asPartial<RoborockMatterbridgePlatform>(platform));
+		// Should update status via platformRunner
+		expect(platformRunner.updateRobotWithPayload).toHaveBeenCalled();
+	});
 
-  it('should process device when it has docking station status', async () => {
-    const robotWithDss = asPartial<RoborockVacuumCleaner>({
-      updateAttribute: simpleUpdateAttribute,
-      device: asPartial<Device>({
-        duid,
-        name: 'TestVac',
-        specs: asPartial<DeviceSpecs>({ model: DeviceModel.QREVO_EDGE_5V1 }),
-      }),
-      dockStationStatus: asPartial<DockStationStatus>({
-        cleanFluidStatus: 0,
-        waterBoxFilterStatus: 0,
-        dustBagStatus: 0,
-        dirtyWaterBoxStatus: 0,
-        clearWaterBoxStatus: 0,
-        isUpdownWaterReady: 0,
-      }), // No error
-    });
-    platform.registry.robotsMap.clear();
-    platform.registry.robotsMap.set('test-duid', robotWithDss);
+	it('should process device when it has docking station status', async () => {
+		const robotWithDss = asPartial<RoborockVacuumCleaner>({
+			updateAttribute: simpleUpdateAttribute,
+			device: asPartial<Device>({
+				duid,
+				name: 'TestVac',
+				specs: asPartial<DeviceSpecs>({ model: DeviceModel.QREVO_EDGE_5V1 }),
+			}),
+			dockStationStatus: asPartial<DockStationStatus>({
+				cleanFluidStatus: 0,
+				waterBoxFilterStatus: 0,
+				dustBagStatus: 0,
+				dirtyWaterBoxStatus: 0,
+				clearWaterBoxStatus: 0,
+				isUpdownWaterReady: 0,
+			}), // No error
+		});
+		platform.registry.robotsMap.clear();
+		platform.registry.robotsMap.set('test-duid', robotWithDss);
 
-    await updateFromHomeData(homeData, asPartial<RoborockMatterbridgePlatform>(platform));
-    // Should process normally when no dss error
-    expect(platformRunner.updateRobotWithPayload).toHaveBeenCalled();
-  });
+		await updateFromHomeData(homeData, asPartial<RoborockMatterbridgePlatform>(platform));
+		// Should process normally when no dss error
+		expect(platformRunner.updateRobotWithPayload).toHaveBeenCalled();
+	});
 
-  it('should log error and continue when robot is removed during processing', async () => {
-    // Create a custom platform that removes robot during get()
-    const robots = new Map([['test-duid', robot]]);
-    const customPlatform = asPartial<RoborockMatterbridgePlatform>({
-      log: platform.log,
-      roborockService: asPartial<RoborockService>({}),
-      registry: asPartial<DeviceRegistry>({
-        get robotsMap() {
-          return robots;
-        },
-        getRobot: (id: string) => {
-          if (id === 'test-duid') return undefined; // Simulate robot removed
-          return robots.get(id);
-        },
-        hasDevices: () => robots.size > 0,
-        registerRobot: vi.fn(),
-      }),
-    });
+	it('should log error and continue when robot is removed during processing', async () => {
+		// Create a custom platform that removes robot during get()
+		const robots = new Map([['test-duid', robot]]);
+		const customPlatform = asPartial<RoborockMatterbridgePlatform>({
+			log: platform.log,
+			roborockService: asPartial<RoborockService>({}),
+			registry: asPartial<DeviceRegistry>({
+				get robotsMap() {
+					return robots;
+				},
+				getRobot: (id: string) => {
+					if (id === 'test-duid') return undefined; // Simulate robot removed
+					return robots.get(id);
+				},
+				hasDevices: () => robots.size > 0,
+				registerRobot: vi.fn(),
+			}),
+		});
 
-    await updateFromHomeData(homeData, asPartial<RoborockMatterbridgePlatform>(customPlatform));
-    expect(platform.log.error).toHaveBeenCalledWith(expect.stringContaining('Robot not found: test-duid'));
-  });
+		await updateFromHomeData(homeData, asPartial<RoborockMatterbridgePlatform>(customPlatform));
+		expect(platform.log.error).toHaveBeenCalledWith(expect.stringContaining('Robot not found: test-duid'));
+	});
 
-  it('should update batChargeState when batteryLevel exists', async () => {
-    const homeDataWithBattery = asPartial<Home>({
-      ...homeData,
-      devices: [{ ...homeData.devices[0], deviceStatus: asPartial({ state: 8, battery: 50 }) }],
-    });
-    platform.registry.robotsMap.clear();
-    platform.registry.robotsMap.set('test-duid', robot);
+	it('should update batChargeState when batteryLevel exists', async () => {
+		const homeDataWithBattery = asPartial<Home>({
+			...homeData,
+			devices: [{ ...homeData.devices[0], deviceStatus: asPartial({ state: 8, battery: 50 }) }],
+		});
+		platform.registry.robotsMap.clear();
+		platform.registry.robotsMap.set('test-duid', robot);
 
-    await updateFromHomeData(homeDataWithBattery, asPartial<RoborockMatterbridgePlatform>(platform));
-    expect(platformRunner.updateRobotWithPayload).toHaveBeenCalled();
-  });
+		await updateFromHomeData(homeDataWithBattery, asPartial<RoborockMatterbridgePlatform>(platform));
+		expect(platformRunner.updateRobotWithPayload).toHaveBeenCalled();
+	});
 
-  it('should not update batChargeState when batteryLevel is missing', async () => {
-    const homeDataNoBattery = asPartial<Home>({
-      ...homeData,
-      devices: [{ ...homeData.devices[0], deviceStatus: asPartial({ state: 8 }) }],
-    });
-    platform.registry.robotsMap.clear();
-    platform.registry.robotsMap.set('test-duid', robot);
+	it('should not update batChargeState when batteryLevel is missing', async () => {
+		const homeDataNoBattery = asPartial<Home>({
+			...homeData,
+			devices: [{ ...homeData.devices[0], deviceStatus: asPartial({ state: 8 }) }],
+		});
+		platform.registry.robotsMap.clear();
+		platform.registry.robotsMap.set('test-duid', robot);
 
-    await updateFromHomeData(homeDataNoBattery, platform);
-    // Battery not present so no BatteryUpdate payload sent, but DeviceStatus still sent
-    expect(platformRunner.updateRobotWithPayload).toHaveBeenCalledWith(
-      expect.objectContaining({ type: 'DeviceStatusSimple' }),
-    );
-  });
+		await updateFromHomeData(homeDataNoBattery, platform);
+		// Battery not present so no BatteryUpdate payload sent, but DeviceStatus still sent
+		expect(platformRunner.updateRobotWithPayload).toHaveBeenCalledWith(
+			expect.objectContaining({ type: 'DeviceStatusSimple' }),
+		);
+	});
 
-  it('should handle zero battery level', async () => {
-    const homeDataZeroBattery = asPartial<Home>({
-      ...homeData,
-      devices: [{ ...homeData.devices[0], deviceStatus: asPartial({ state: 8, battery: 0 }) }],
-    });
-    platform.registry.robotsMap.clear();
-    platform.registry.robotsMap.set('test-duid', robot);
+	it('should handle zero battery level', async () => {
+		const homeDataZeroBattery = asPartial<Home>({
+			...homeData,
+			devices: [{ ...homeData.devices[0], deviceStatus: asPartial({ state: 8, battery: 0 }) }],
+		});
+		platform.registry.robotsMap.clear();
+		platform.registry.robotsMap.set('test-duid', robot);
 
-    await updateFromHomeData(homeDataZeroBattery, platform);
-    // Battery is 0, which is falsy, so no BatteryUpdate payload, but DeviceStatus still sent
-    expect(platformRunner.updateRobotWithPayload).toHaveBeenCalledWith(
-      expect.objectContaining({ type: 'DeviceStatusSimple' }),
-    );
-  });
+		await updateFromHomeData(homeDataZeroBattery, platform);
+		// Battery is 0, which is falsy, so no BatteryUpdate payload, but DeviceStatus still sent
+		expect(platformRunner.updateRobotWithPayload).toHaveBeenCalledWith(
+			expect.objectContaining({ type: 'DeviceStatusSimple' }),
+		);
+	});
 
-  it('should handle homeData without matching product schema', async () => {
-    const homeDataNoSchema = asPartial<Home>({
-      ...homeData,
-      products: [], // No products means schema won't be found
-      devices: [{ ...homeData.devices[0], deviceStatus: asPartial({ state: 8, battery: 100 }) }],
-    });
-    platform.registry.robotsMap.clear();
-    platform.registry.robotsMap.set('test-duid', robot);
+	it('should handle homeData without matching product schema', async () => {
+		const homeDataNoSchema = asPartial<Home>({
+			...homeData,
+			products: [], // No products means schema won't be found
+			devices: [{ ...homeData.devices[0], deviceStatus: asPartial({ state: 8, battery: 100 }) }],
+		});
+		platform.registry.robotsMap.clear();
+		platform.registry.robotsMap.set('test-duid', robot);
 
-    await updateFromHomeData(homeDataNoSchema, platform);
-    // Should still process but schema will be empty array
-    expect(platformRunner.updateRobotWithPayload).toHaveBeenCalled();
-  });
+		await updateFromHomeData(homeDataNoSchema, platform);
+		// Should still process but schema will be empty array
+		expect(platformRunner.updateRobotWithPayload).toHaveBeenCalled();
+	});
 
-  it('should use registered robot model to match product schema when home payload model differs', async () => {
-    const homeDataMismatch = asPartial<Home>({
-      ...homeData,
-      devices: [
-        {
-          ...homeData.devices[0],
-          deviceStatus: asPartial({ state: 8, battery: 100 }),
-          specs: { ...homeData.devices[0].specs, model: DeviceModel.Q7_MAX },
-        },
-      ],
-      products: [
-        asPartial<Product>({
-          id: homeData.products[0].id,
-          model: robot.device.specs?.model,
-          schema: homeData.products[0].schema,
-        }),
-      ],
-    });
+	it('should use registered robot model to match product schema when home payload model differs', async () => {
+		const homeDataMismatch = asPartial<Home>({
+			...homeData,
+			devices: [
+				{
+					...homeData.devices[0],
+					deviceStatus: asPartial({ state: 8, battery: 100 }),
+					specs: { ...homeData.devices[0].specs, model: DeviceModel.Q7_MAX },
+				},
+			],
+			products: [
+				asPartial<Product>({
+					id: homeData.products[0].id,
+					model: robot.device.specs?.model,
+					schema: homeData.products[0].schema,
+				}),
+			],
+		});
 
-    platform.registry.robotsMap.clear();
-    platform.registry.robotsMap.set('test-duid', robot);
+		platform.registry.robotsMap.clear();
+		platform.registry.robotsMap.set('test-duid', robot);
 
-    await updateFromHomeData(homeDataMismatch, platform);
-    expect(platformRunner.updateRobotWithPayload).toHaveBeenCalled();
-  });
+		await updateFromHomeData(homeDataMismatch, platform);
+		expect(platformRunner.updateRobotWithPayload).toHaveBeenCalled();
+	});
 });

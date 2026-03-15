@@ -1,3 +1,3 @@
 export enum DeviceCategory {
-  VacuumCleaner = 'robot.vacuum.cleaner',
+	VacuumCleaner = 'robot.vacuum.cleaner',
 }

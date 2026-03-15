@@ -1,6 +1,6 @@
 export interface AuthenticateFlowState {
-  email: string;
-  codeRequestedAt?: number;
-  country?: string;
-  countryCode?: string;
+	email: string;
+	codeRequestedAt?: number;
+	country?: string;
+	countryCode?: string;
 }

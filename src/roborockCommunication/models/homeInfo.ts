@@ -1,5 +1,5 @@
 export interface HomeInfo {
-  id: number;
-  name: string;
-  rrHomeId: number;
+	id: number;
+	name: string;
+	rrHomeId: number;
 }

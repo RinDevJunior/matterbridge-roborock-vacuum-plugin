@@ -55,7 +55,7 @@
 - `-` = undefined
 - `*` = any value (ignored)
 
-## Comprehensive State Resolution Matrix (47 Rows)
+## Comprehensive State Resolution Matrix (48 Rows)
 
 **Note:** The flags `inReturning`, `isExploring`, `inFreshState`, `inWarmup`, `isLocating`, and `inCleaning` are used in state resolution based on specific status conditions.
 
@@ -82,9 +82,9 @@
   - **inReturning=true**: Invalid state (vacuum cannot be sleeping and returning)
 - When device status is **Idle (3)**, all modifier flags are ignored and the resolved state is always **Idle (16384) + Docked (66)**.
 - When device status is **Cleaning (5)**, modifiers apply in explicit priority order:
-  1. **inWarmup=true** (highest): → **Cleaning (16385) + CleaningMop (68)**
-  2. **inReturning=true** (second): → **Cleaning (16385) + SeekingCharger (64)**
-  3. **isLocating=true OR isExploring=true** (third): → **Cleaning (16385) + UpdatingMaps (70)**
+  1. **isLocating=true OR isExploring=true** (highest): → **Cleaning (16385) + UpdatingMaps (70)**
+  2. **inWarmup=true** (second): → **Cleaning (16385) + CleaningMop (68)**
+  3. **inReturning=true** (third): → **Cleaning (16385) + SeekingCharger (64)**
   4. **inFreshState** (N/A): Not applicable to Cleaning status
 - When device status is **Charging (8)**, all modifier flags are ignored and the resolved state is always **Idle (16384) + Docked (66)**.
 - When device status is **EmptyingDustContainer (22)**, all modifier flags are ignored and the resolved state is always **Cleaning (16385) + EmptyingDustBin (67)**.
@@ -108,11 +108,11 @@
 | 10  | 2      | Sleeping      | F          | -           | -            | -          | -           | -        | Idle     | 16384          | Paused            | 2              | Base                                          |
 | 11  | 3      | Idle          | \*         | \*          | \*           | \*         | \*          | \*       | Idle     | 16384          | Docked            | 66             | Idle Override (All flags ignored)             |
 | 12  | 5      | Cleaning      | -          | -           | -            | -          | -           | -        | Cleaning | 16385          | Running           | 1              | Base                                          |
-| 13  | 5      | Cleaning      | \*         | \*          | \*           | \*         | \*          | T        | Cleaning | 16385          | CleaningMop       | 68             | Cleaning+inWarmup Override (Priority 1)       |
-| 14  | 5      | Cleaning      | \*         | -           | \*           | T          | \*          | -        | Cleaning | 16385          | UpdatingMaps      | 70             | Cleaning+isLocating Override (Priority 3)     |
-| 15  | 5      | Cleaning      | \*         | -           | \*           | \*         | T           | -        | Cleaning | 16385          | UpdatingMaps      | 70             | Cleaning+isExploring Override (Priority 3)    |
-| 16  | 5      | Cleaning      | -          | T           | -            | -          | -           | -        | Cleaning | 16385          | SeekingCharger    | 64             | inReturning (Priority 2)                      |
-| 17  | 5      | Cleaning      | -          | T           | -            | -          | T           | -        | Cleaning | 16385          | SeekingCharger    | 64             | inReturning (Priority 2 beats isExploring)    |
+| 13  | 5      | Cleaning      | \*         | -           | \*           | -          | -           | T        | Cleaning | 16385          | CleaningMop       | 68             | Cleaning+inWarmup Override (Priority 2)       |
+| 14  | 5      | Cleaning      | \*         | \*          | \*           | T          | \*          | \*       | Cleaning | 16385          | UpdatingMaps      | 70             | Cleaning+isLocating Override (Priority 1)     |
+| 15  | 5      | Cleaning      | \*         | \*          | \*           | -          | T           | \*       | Cleaning | 16385          | UpdatingMaps      | 70             | Cleaning+isExploring Override (Priority 1)    |
+| 16  | 5      | Cleaning      | -          | T           | -            | -          | -           | -        | Cleaning | 16385          | SeekingCharger    | 64             | inReturning (Priority 3)                      |
+| 17  | 5      | Cleaning      | -          | T           | -            | -          | -           | T        | Cleaning | 16385          | SeekingCharger    | 64             | inReturning (Priority 3 beats inWarmup)       |
 | 18  | 6      | ReturningDock | -          | -           | -            | -          | -           | -        | Cleaning | 16385          | SeekingCharger    | 64             | Base                                          |
 | 19  | 6      | ReturningDock | -          | -           | -            | -          | T           | -        | Mapping  | 16386          | SeekingCharger    | 64             | isExploring                                   |
 | 20  | 7      | ManualMode    | -          | -           | -            | -          | -           | -        | Cleaning | 16385          | Running           | 1              | Base                                          |
@@ -131,23 +131,24 @@
 | 28  | 11     | SpotCleaning          | -          | T           | -            | -          | -           | -        | Cleaning | 16385          | SeekingCharger    | 64             | inReturning                                        |
 | 29  | 11     | SpotCleaning          | -          | -           | -            | T          | -           | -        | Cleaning | 16385          | UpdatingMaps      | 70             | isLocating                                         |
 | 30  | 11     | SpotCleaning          | -          | -           | -            | -          | T           | -        | Cleaning | 16385          | UpdatingMaps      | 70             | isExploring                                        |
-| 31  | 12     | InError               | -          | -           | -            | -          | -           | -        | Cleaning | 16385          | Error             | 3              | Base                                               |
-| 32  | 12     | InError               | -          | -           | -            | -          | T           | -        | Mapping  | 16386          | Error             | 3              | isExploring                                        |
-| 33  | 15     | ReturnToDock          | -          | -           | -            | -          | -           | -        | Cleaning | 16385          | SeekingCharger    | 64             | Base                                               |
-| 34  | 15     | ReturnToDock          | -          | -           | -            | -          | T           | -        | Mapping  | 16386          | SeekingCharger    | 64             | isExploring                                        |
-| 35  | 16     | GoTo                  | -          | -           | -            | -          | -           | -        | Cleaning | 16385          | Running           | 1              | Base                                               |
-| 36  | 16     | GoTo                  | -          | T           | -            | -          | -           | -        | Cleaning | 16385          | SeekingCharger    | 64             | inReturning                                        |
-| 37  | 16     | GoTo                  | -          | -           | -            | -          | T           | -        | Mapping  | 16386          | Running           | 1              | isExploring                                        |
-| 38  | 17     | ZoneClean             | -          | -           | -            | -          | -           | -        | Cleaning | 16385          | Running           | 1              | Base                                               |
-| 39  | 17     | ZoneClean             | -          | T           | -            | -          | -           | -        | Cleaning | 16385          | SeekingCharger    | 64             | inReturning                                        |
-| 40  | 17     | ZoneClean             | -          | -           | -            | -          | T           | -        | Mapping  | 16386          | Running           | 1              | isExploring                                        |
-| 41  | 18     | RoomClean             | -          | -           | -            | -          | -           | -        | Cleaning | 16385          | Running           | 1              | Base                                               |
-| 42  | 18     | RoomClean             | -          | T           | -            | -          | -           | -        | Cleaning | 16385          | SeekingCharger    | 64             | inReturning                                        |
-| 43  | 18     | RoomClean             | -          | -           | -            | -          | T           | -        | Mapping  | 16386          | Running           | 1              | isExploring                                        |
-| 44  | 22     | EmptyingDustContainer | \*         | \*          | \*           | \*         | \*          | \*       | Cleaning | 16385          | EmptyingDustBin   | 67             | EmptyingDustContainer Override (All flags ignored) |
-| 45  | 23     | WashingTheMop         | \*         | \*          | \*           | \*         | \*          | \*       | Cleaning | 16385          | CleaningMop       | 68             | WashingTheMop Override (All flags ignored)         |
-| 46  | 26     | GoingToWashTheMop     | \*         | \*          | \*           | \*         | \*          | \*       | Cleaning | 16385          | CleaningMop       | 68             | GoingToWashTheMop Override (All flags ignored)     |
-| 47  | 29     | Mapping               | \*         | \*          | \*           | \*         | \*          | \*       | Mapping  | 16386          | Running           | 1              | Mapping Override (All flags ignored)               |
+| 31  | 12     | InError               | T          | -           | -            | -          | -           | -        | Cleaning | 16385          | Error             | 3              | inCleaning                                         |
+| 32  | 12     | InError               | -          | -           | -            | -          | -           | -        | Idle     | 16384          | Error             | 3              | Base                                               |
+| 33  | 12     | InError               | -          | -           | -            | -          | T           | -        | Mapping  | 16386          | Error             | 3              | isExploring                                        |
+| 34  | 15     | ReturnToDock          | -          | -           | -            | -          | -           | -        | Cleaning | 16385          | SeekingCharger    | 64             | Base                                               |
+| 35  | 15     | ReturnToDock          | -          | -           | -            | -          | T           | -        | Mapping  | 16386          | SeekingCharger    | 64             | isExploring                                        |
+| 36  | 16     | GoTo                  | -          | -           | -            | -          | -           | -        | Cleaning | 16385          | Running           | 1              | Base                                               |
+| 37  | 16     | GoTo                  | -          | T           | -            | -          | -           | -        | Cleaning | 16385          | SeekingCharger    | 64             | inReturning                                        |
+| 38  | 16     | GoTo                  | -          | -           | -            | -          | T           | -        | Mapping  | 16386          | Running           | 1              | isExploring                                        |
+| 39  | 17     | ZoneClean             | -          | -           | -            | -          | -           | -        | Cleaning | 16385          | Running           | 1              | Base                                               |
+| 40  | 17     | ZoneClean             | -          | T           | -            | -          | -           | -        | Cleaning | 16385          | SeekingCharger    | 64             | inReturning                                        |
+| 41  | 17     | ZoneClean             | -          | -           | -            | -          | T           | -        | Cleaning | 16385          | UpdatingMaps      | 70             | isExploring                                        |
+| 42  | 18     | RoomClean             | -          | -           | -            | -          | -           | -        | Cleaning | 16385          | Running           | 1              | Base                                               |
+| 43  | 18     | RoomClean             | -          | T           | -            | -          | -           | -        | Cleaning | 16385          | SeekingCharger    | 64             | inReturning                                        |
+| 44  | 18     | RoomClean             | -          | -           | -            | -          | T           | -        | Cleaning | 16385          | UpdatingMaps      | 70             | isExploring                                        |
+| 45  | 22     | EmptyingDustContainer | \*         | \*          | \*           | \*         | \*          | \*       | Cleaning | 16385          | EmptyingDustBin   | 67             | EmptyingDustContainer Override (All flags ignored) |
+| 46  | 23     | WashingTheMop         | \*         | \*          | \*           | \*         | \*          | \*       | Cleaning | 16385          | CleaningMop       | 68             | WashingTheMop Override (All flags ignored)         |
+| 47  | 26     | GoingToWashTheMop     | \*         | \*          | \*           | \*         | \*          | \*       | Cleaning | 16385          | CleaningMop       | 68             | GoingToWashTheMop Override (All flags ignored)     |
+| 48  | 29     | Mapping               | \*         | \*          | \*           | \*         | \*          | \*       | Mapping  | 16386          | Running           | 1              | Mapping Override (All flags ignored)               |
 
 ## Modifier Priority Chain
 
@@ -165,9 +166,9 @@
 
    - **Cleaning Status Modifiers** (Explicit Priority Order)
      - Condition: `status === 5` (Cleaning)
-     - Priority 1: `inWarmup === true` → Returns `runMode = Cleaning`, `operationalState = CleaningMop`
-     - Priority 2: `inReturning === true` → Returns `runMode = Cleaning`, `operationalState = SeekingCharger`
-     - Priority 3: `isLocating === true OR isExploring === true` → Returns `runMode = Cleaning`, `operationalState = UpdatingMaps`
+     - Priority 1: `isLocating === true OR isExploring === true` → Returns `runMode = Cleaning`, `operationalState = UpdatingMaps`
+     - Priority 2: `inWarmup === true` → Returns `runMode = Cleaning`, `operationalState = CleaningMop`
+     - Priority 3: `inReturning === true` → Returns `runMode = Cleaning`, `operationalState = SeekingCharger`
      - Priority 4: `inFreshState` → Not applicable (vacuum does not go to fresh state during cleaning)
 
    - **Charging Status Override**

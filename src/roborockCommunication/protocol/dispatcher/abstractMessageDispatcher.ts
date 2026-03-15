@@ -4,28 +4,29 @@ import { MapRoomResponse } from '../../../types/index.js';
 import { DeviceStatus, NetworkInfo, RawRoomMappingData, RequestMessage } from '../../models/index.js';
 
 export interface AbstractMessageDispatcher {
-  dispatcherName: string;
+	dispatcherName: string;
 
-  getNetworkInfo(duid: string): Promise<NetworkInfo | undefined>;
-  getDeviceStatus(duid: string): Promise<DeviceStatus | undefined>;
-  goHome(duid: string): Promise<void>;
-  startCleaning(duid: string): Promise<void>;
-  startRoomCleaning(duid: string, roomIds: number[], repeat: number): Promise<void>;
-  pauseCleaning(duid: string): Promise<void>;
-  resumeCleaning(duid: string): Promise<void>;
-  resumeRoomCleaning(duid: string): Promise<void>;
-  stopCleaning(duid: string): Promise<void>;
-  findMyRobot(duid: string): Promise<void>;
+	getNetworkInfo(duid: string): Promise<NetworkInfo | undefined>;
+	getDeviceStatus(duid: string): Promise<DeviceStatus | undefined>;
+	goHome(duid: string): Promise<void>;
+	startCleaning(duid: string): Promise<void>;
+	startRoomCleaning(duid: string, roomIds: number[], repeat: number): Promise<void>;
+	pauseCleaning(duid: string): Promise<void>;
+	resumeCleaning(duid: string): Promise<void>;
+	resumeRoomCleaning(duid: string): Promise<void>;
+	stopCleaning(duid: string): Promise<void>;
+	findMyRobot(duid: string): Promise<void>;
 
-  // For custom messages
-  sendCustomMessage(duid: string, def: RequestMessage): Promise<void>;
-  getCustomMessage<T = unknown>(duid: string, def: RequestMessage): Promise<T>;
+	// For custom messages
+	sendCustomMessage(duid: string, def: RequestMessage): Promise<void>;
+	getCustomMessage<T = unknown>(duid: string, def: RequestMessage): Promise<T>;
 
-  getCleanModeData(duid: string): Promise<CleanModeSetting>;
-  changeCleanMode(duid: string, setting: CleanModeSetting): Promise<void>;
+	getCleanModeData(duid: string): Promise<CleanModeSetting>;
+	changeCleanMode(duid: string, setting: CleanModeSetting): Promise<void>;
 
-  // For core data retrieval
-  getHomeMap(duid: string): Promise<MapRoomResponse>;
-  getMapInfo(duid: string): Promise<MapInfo>;
-  getRoomMap(duid: string, activeMap: number): Promise<RawRoomMappingData>;
+	// For core data retrieval
+	getHomeMap(duid: string): Promise<MapRoomResponse>;
+	getMapInfo(duid: string): Promise<MapInfo>;
+	getRoomMap(duid: string, activeMap: number): Promise<RawRoomMappingData>;
+	getSerialNumber(duid: string): Promise<string | undefined>;
 }

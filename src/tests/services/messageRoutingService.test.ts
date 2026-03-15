@@ -1,576 +1,608 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { AnsiLogger } from 'matterbridge/logger';
-import { MessageRoutingService } from '../../services/messageRoutingService.js';
-import { DeviceError } from '../../errors/index.js';
 import { ServiceArea } from 'matterbridge/matter/clusters';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+
+import { CleanModeSetting } from '../../behaviors/roborock.vacuum/core/CleanModeSetting.js';
+import { CleanSequenceType } from '../../behaviors/roborock.vacuum/enums/CleanSequenceType.js';
+import { DeviceError } from '../../errors/index.js';
 import { RoborockIoTApi } from '../../roborockCommunication/api/iotClient.js';
 import { RequestMessage } from '../../roborockCommunication/models/index.js';
 import { V10MessageDispatcher } from '../../roborockCommunication/protocol/dispatcher/V10MessageDispatcher.js';
-import { CleanModeSetting } from '../../behaviors/roborock.vacuum/core/CleanModeSetting.js';
+import { MessageRoutingService } from '../../services/messageRoutingService.js';
 import { asPartial } from '../testUtils.js';
-import { CleanSequenceType } from '../../behaviors/roborock.vacuum/enums/CleanSequenceType.js';
 
 function createIntegrationLogger() {
-  return { debug: vi.fn(), notice: vi.fn(), warn: vi.fn() } as Partial<AnsiLogger> as AnsiLogger;
+	return { debug: vi.fn(), notice: vi.fn(), warn: vi.fn() } as Partial<AnsiLogger> as AnsiLogger;
 }
 
 describe('MessageRoutingService (integration)', () => {
-  let logger: ReturnType<typeof createIntegrationLogger>;
+	let logger: ReturnType<typeof createIntegrationLogger>;
 
-  beforeEach(() => {
-    logger = createIntegrationLogger();
-  });
+	beforeEach(() => {
+		logger = createIntegrationLogger();
+	});
 
-  it('throws when getting an unregistered MessageDispatcher', () => {
-    const service = new MessageRoutingService(logger);
-    expect(() => service.getMessageDispatcher('missing')).toThrow();
-  });
+	it('throws when getting an unregistered MessageDispatcher', () => {
+		const service = new MessageRoutingService(logger);
+		expect(() => service.getMessageDispatcher('missing')).toThrow();
+	});
 
-  it('registers and returns a MessageDispatcher', () => {
-    const service = new MessageRoutingService(logger);
-    const duid = 'dev1';
-    const mp: any = { some: 'processor' };
-    service.registerMessageDispatcher(duid, mp);
-    expect(service.getMessageDispatcher(duid)).toBe(mp);
-  });
+	it('registers and returns a MessageDispatcher', () => {
+		const service = new MessageRoutingService(logger);
+		const duid = 'dev1';
+		const mp: any = { some: 'processor' };
+		service.registerMessageDispatcher(duid, mp);
+		expect(service.getMessageDispatcher(duid)).toBe(mp);
+	});
 
-  it('throws when getCleanModeData returns no data', async () => {
-    const duid = 'dev-nodata';
-    const mp: any = { getCleanModeData: vi.fn(async () => undefined) };
-    const service = new MessageRoutingService(logger);
-    service.registerMessageDispatcher(duid, mp);
-    await expect(service.getCleanModeData(duid)).rejects.toThrow();
-  });
+	it('throws when getCleanModeData returns no data', async () => {
+		const duid = 'dev-nodata';
+		const mp: any = { getCleanModeData: vi.fn(async () => undefined) };
+		const service = new MessageRoutingService(logger);
+		service.registerMessageDispatcher(duid, mp);
+		await expect(service.getCleanModeData(duid)).rejects.toThrow();
+	});
 });
 
 describe('MessageRoutingService', () => {
-  let messageService: MessageRoutingService;
-  let mockLogger: ReturnType<typeof createMockLogger>;
-  let mockIotApi: ReturnType<typeof createMockIotApi>;
-  let mockDispatcher: ReturnType<typeof createMockDispatcher>;
-
-  function createMockLogger() {
-    return asPartial<AnsiLogger>({
-      debug: vi.fn(),
-      info: vi.fn(),
-      warn: vi.fn(),
-      error: vi.fn(),
-      notice: vi.fn(),
-    });
-  }
-
-  function createMockIotApi(): any {
-    return {
-      getMapRoomDetail: vi.fn(),
-      getCleaningSummaryForUpdatingDevice: vi.fn(),
-      startScene: vi.fn(),
-    };
-  }
-
-  function createMockDispatcher(): any {
-    return {
-      getCleanModeData: vi.fn(),
-      changeCleanMode: vi.fn(),
-      getRooms: vi.fn(),
-      startCleaning: vi.fn(),
-      startRoomCleaning: vi.fn(),
-      pauseCleaning: vi.fn(),
-      resumeCleaning: vi.fn(),
-      goHome: vi.fn(),
-      findMyRobot: vi.fn(),
-      getHomeMap: vi.fn(),
-      getCustomMessage: vi.fn(),
-      sendCustomMessage: vi.fn(),
-    };
-  }
-
-  beforeEach(() => {
-    mockLogger = createMockLogger();
-    mockIotApi = createMockIotApi();
-    mockDispatcher = createMockDispatcher();
-    messageService = new MessageRoutingService(mockLogger);
-  });
-
-  afterEach(() => {
-    vi.clearAllMocks();
-  });
-
-  describe('Initialization', () => {
-    it('should initialize with logger only', () => {
-      expect(messageService).toBeDefined();
-      expect(mockLogger.debug).not.toHaveBeenCalled();
-    });
-
-    it('should initialize with logger and iotApi', () => {
-      const service = new MessageRoutingService(mockLogger, mockIotApi as RoborockIoTApi);
-      expect(service).toBeDefined();
-    });
-
-    it('should set iotApi after initialization', () => {
-      messageService.setIotApi(mockIotApi as RoborockIoTApi);
-      expect(() => {
-        messageService.setIotApi(mockIotApi);
-      }).not.toThrow();
-    });
-  });
-
-  describe('Processor Registration and Retrieval', () => {
-    const testDuid = 'test-device-123';
-
-    it('should register a message processor', () => {
-      messageService.registerMessageDispatcher(testDuid, mockDispatcher as V10MessageDispatcher);
-      expect(() => messageService.getMessageDispatcher(testDuid)).not.toThrow();
-    });
-
-    it('should retrieve registered processor', () => {
-      messageService.registerMessageDispatcher(testDuid, mockDispatcher as V10MessageDispatcher);
-      const processor = messageService.getMessageDispatcher(testDuid);
-      expect(processor).toBe(mockDispatcher);
-    });
-
-    it('should throw DeviceError when processor not found', () => {
-      expect(() => messageService.getMessageDispatcher('unknown-device')).toThrow(DeviceError);
-      expect(() => messageService.getMessageDispatcher('unknown-device')).toThrow(
-        'MessageDispatcher not initialized for device unknown-device',
-      );
-    });
-
-    it('should allow multiple processors to be registered', () => {
-      const mockProcessor2 = createMockDispatcher();
-      messageService.registerMessageDispatcher('device-1', mockDispatcher as V10MessageDispatcher);
-      messageService.registerMessageDispatcher('device-2', mockProcessor2 as V10MessageDispatcher);
-
-      expect(messageService.getMessageDispatcher('device-1')).toBe(mockDispatcher);
-      expect(messageService.getMessageDispatcher('device-2')).toBe(mockProcessor2);
-    });
-  });
-
-  describe('getCleanModeData', () => {
-    const testDuid = 'test-device-456';
-    const mockCleanMode = new CleanModeSetting(100, 200, 0, 302, CleanSequenceType.Persist);
+	let messageService: MessageRoutingService;
+	let mockLogger: ReturnType<typeof createMockLogger>;
+	let mockIotApi: ReturnType<typeof createMockIotApi>;
+	let mockDispatcher: ReturnType<typeof createMockDispatcher>;
+
+	function createMockLogger() {
+		return asPartial<AnsiLogger>({
+			debug: vi.fn(),
+			info: vi.fn(),
+			warn: vi.fn(),
+			error: vi.fn(),
+			notice: vi.fn(),
+		});
+	}
+
+	function createMockIotApi(): any {
+		return {
+			getMapRoomDetail: vi.fn(),
+			getCleaningSummaryForUpdatingDevice: vi.fn(),
+			startScene: vi.fn(),
+		};
+	}
+
+	function createMockDispatcher(): any {
+		return {
+			getCleanModeData: vi.fn(),
+			changeCleanMode: vi.fn(),
+			getRooms: vi.fn(),
+			startCleaning: vi.fn(),
+			startRoomCleaning: vi.fn(),
+			pauseCleaning: vi.fn(),
+			resumeCleaning: vi.fn(),
+			goHome: vi.fn(),
+			findMyRobot: vi.fn(),
+			getHomeMap: vi.fn(),
+			getCustomMessage: vi.fn(),
+			sendCustomMessage: vi.fn(),
+			getSerialNumber: vi.fn(),
+			stopCleaning: vi.fn(),
+		};
+	}
+
+	beforeEach(() => {
+		mockLogger = createMockLogger();
+		mockIotApi = createMockIotApi();
+		mockDispatcher = createMockDispatcher();
+		messageService = new MessageRoutingService(mockLogger);
+	});
+
+	afterEach(() => {
+		vi.clearAllMocks();
+	});
+
+	describe('Initialization', () => {
+		it('should initialize with logger only', () => {
+			expect(messageService).toBeDefined();
+			expect(mockLogger.debug).not.toHaveBeenCalled();
+		});
+
+		it('should initialize with logger and iotApi', () => {
+			const service = new MessageRoutingService(mockLogger, mockIotApi as RoborockIoTApi);
+			expect(service).toBeDefined();
+		});
+
+		it('should set iotApi after initialization', () => {
+			messageService.setIotApi(mockIotApi as RoborockIoTApi);
+			expect(() => {
+				messageService.setIotApi(mockIotApi);
+			}).not.toThrow();
+		});
+	});
+
+	describe('Processor Registration and Retrieval', () => {
+		const testDuid = 'test-device-123';
+
+		it('should register a message processor', () => {
+			messageService.registerMessageDispatcher(testDuid, mockDispatcher as V10MessageDispatcher);
+			expect(() => messageService.getMessageDispatcher(testDuid)).not.toThrow();
+		});
+
+		it('should retrieve registered processor', () => {
+			messageService.registerMessageDispatcher(testDuid, mockDispatcher as V10MessageDispatcher);
+			const processor = messageService.getMessageDispatcher(testDuid);
+			expect(processor).toBe(mockDispatcher);
+		});
+
+		it('should throw DeviceError when processor not found', () => {
+			expect(() => messageService.getMessageDispatcher('unknown-device')).toThrow(DeviceError);
+			expect(() => messageService.getMessageDispatcher('unknown-device')).toThrow(
+				'MessageDispatcher not initialized for device unknown-device',
+			);
+		});
+
+		it('should allow multiple processors to be registered', () => {
+			const mockProcessor2 = createMockDispatcher();
+			messageService.registerMessageDispatcher('device-1', mockDispatcher as V10MessageDispatcher);
+			messageService.registerMessageDispatcher('device-2', mockProcessor2 as V10MessageDispatcher);
+
+			expect(messageService.getMessageDispatcher('device-1')).toBe(mockDispatcher);
+			expect(messageService.getMessageDispatcher('device-2')).toBe(mockProcessor2);
+		});
+	});
 
-    beforeEach(() => {
-      messageService.registerMessageDispatcher(testDuid, mockDispatcher as V10MessageDispatcher);
-    });
+	describe('getSerialNumber', () => {
+		const testDuid = 'test-device-sn';
 
-    it('should retrieve clean mode data successfully', async () => {
-      mockDispatcher.getCleanModeData.mockResolvedValue(mockCleanMode);
+		beforeEach(() => {
+			messageService.registerMessageDispatcher(testDuid, mockDispatcher as V10MessageDispatcher);
+		});
 
-      const result = await messageService.getCleanModeData(testDuid);
+		it('should return serial number from dispatcher', async () => {
+			mockDispatcher.getSerialNumber.mockResolvedValue('SN-XYZ');
 
-      expect(result).toEqual(mockCleanMode);
-      expect(mockDispatcher.getCleanModeData).toHaveBeenCalledWith(testDuid);
-      expect(mockLogger.notice).toHaveBeenCalledWith('MessageRoutingService - getCleanModeData');
-    });
+			const result = await messageService.getSerialNumber(testDuid);
 
-    it('should throw DeviceError when processor not found', async () => {
-      await expect(messageService.getCleanModeData('unknown-device')).rejects.toThrow(DeviceError);
-    });
+			expect(result).toBe('SN-XYZ');
+			expect(mockDispatcher.getSerialNumber).toHaveBeenCalledWith(testDuid);
+		});
 
-    it('should propagate processor errors', async () => {
-      mockDispatcher.getCleanModeData.mockRejectedValue(new Error('API failure'));
+		it('should fallback to duid when dispatcher returns undefined', async () => {
+			mockDispatcher.getSerialNumber.mockResolvedValue(undefined);
 
-      await expect(messageService.getCleanModeData(testDuid)).rejects.toThrow('API failure');
-    });
-  });
+			const result = await messageService.getSerialNumber(testDuid);
 
-  describe('getRoomIdFromMap', () => {
-    const testDuid = 'test-device-789';
-    const mockMapData = {
-      vacuumRoom: 16,
-    };
+			expect(result).toBe(testDuid);
+		});
 
-    beforeEach(() => {
-      messageService.registerMessageDispatcher(testDuid, mockDispatcher as V10MessageDispatcher);
-    });
+		it('should throw DeviceError when dispatcher not registered', async () => {
+			await expect(messageService.getSerialNumber('unknown-device')).rejects.toThrow(DeviceError);
+		});
+	});
 
-    it('should retrieve room ID from map successfully', async () => {
-      mockDispatcher.getHomeMap.mockResolvedValue(mockMapData);
+	describe('getCleanModeData', () => {
+		const testDuid = 'test-device-456';
+		const mockCleanMode = new CleanModeSetting(100, 200, 0, 302, CleanSequenceType.Persist);
 
-      const result = await messageService.getRoomIdFromMap(testDuid);
+		beforeEach(() => {
+			messageService.registerMessageDispatcher(testDuid, mockDispatcher as V10MessageDispatcher);
+		});
 
-      expect(result).toEqual(16);
-      expect(mockDispatcher.getHomeMap).toHaveBeenCalled();
-    });
+		it('should retrieve clean mode data successfully', async () => {
+			mockDispatcher.getCleanModeData.mockResolvedValue(mockCleanMode);
 
-    it('should handle missing map data', async () => {
-      mockDispatcher.getHomeMap.mockResolvedValue(undefined);
+			const result = await messageService.getCleanModeData(testDuid);
 
-      const result = await messageService.getRoomIdFromMap(testDuid);
+			expect(result).toEqual(mockCleanMode);
+			expect(mockDispatcher.getCleanModeData).toHaveBeenCalledWith(testDuid);
+			expect(mockLogger.notice).toHaveBeenCalledWith('MessageRoutingService - getCleanModeData');
+		});
 
-      expect(result).toBeUndefined();
-    });
+		it('should throw DeviceError when processor not found', async () => {
+			await expect(messageService.getCleanModeData('unknown-device')).rejects.toThrow(DeviceError);
+		});
 
-    it('should handle map data without vacuumRoom', async () => {
-      mockDispatcher.getHomeMap.mockResolvedValue({});
+		it('should propagate processor errors', async () => {
+			mockDispatcher.getCleanModeData.mockRejectedValue(new Error('API failure'));
 
-      const result = await messageService.getRoomIdFromMap(testDuid);
+			await expect(messageService.getCleanModeData(testDuid)).rejects.toThrow('API failure');
+		});
+	});
 
-      expect(result).toBeUndefined();
-    });
+	describe('getRoomIdFromMap', () => {
+		const testDuid = 'test-device-789';
+		const mockMapData = {
+			vacuumRoom: 16,
+		};
 
-    it('should throw DeviceError when processor not found', async () => {
-      await expect(messageService.getRoomIdFromMap('unknown-device')).rejects.toThrow(DeviceError);
-    });
-  });
+		beforeEach(() => {
+			messageService.registerMessageDispatcher(testDuid, mockDispatcher as V10MessageDispatcher);
+		});
 
-  describe('changeCleanMode', () => {
-    const testDuid = 'test-device-clean-mode';
+		it('should retrieve room ID from map successfully', async () => {
+			mockDispatcher.getHomeMap.mockResolvedValue(mockMapData);
 
-    beforeEach(() => {
-      messageService.registerMessageDispatcher(testDuid, mockDispatcher as V10MessageDispatcher);
-    });
+			const result = await messageService.getRoomIdFromMap(testDuid);
 
-    it('should change clean mode successfully', async () => {
-      const settings = new CleanModeSetting(105, 203, 0, 302, CleanSequenceType.Persist);
-      await messageService.changeCleanMode(testDuid, settings);
+			expect(result).toEqual(16);
+			expect(mockDispatcher.getHomeMap).toHaveBeenCalled();
+		});
 
-      expect(mockDispatcher.changeCleanMode).toHaveBeenCalledWith(testDuid, settings);
-      expect(mockLogger.notice).toHaveBeenCalledWith('MessageRoutingService - changeCleanMode');
-    });
+		it('should handle missing map data', async () => {
+			mockDispatcher.getHomeMap.mockResolvedValue(undefined);
 
-    it('should handle zero values in clean mode', async () => {
-      const settings = new CleanModeSetting(0, 0, 0, 0, CleanSequenceType.Persist);
-      await messageService.changeCleanMode(testDuid, settings);
+			const result = await messageService.getRoomIdFromMap(testDuid);
 
-      expect(mockDispatcher.changeCleanMode).toHaveBeenCalledWith(testDuid, settings);
-    });
+			expect(result).toBeUndefined();
+		});
 
-    it('should throw DeviceError when processor not found', async () => {
-      const settings = new CleanModeSetting(105, 203, 0, 302, CleanSequenceType.Persist);
-      await expect(messageService.changeCleanMode('unknown-device', settings)).rejects.toThrow(DeviceError);
-    });
-  });
+		it('should handle map data without vacuumRoom', async () => {
+			mockDispatcher.getHomeMap.mockResolvedValue({});
 
-  describe('startClean', () => {
-    const testDuid = 'test-device-start-clean';
+			const result = await messageService.getRoomIdFromMap(testDuid);
 
-    beforeEach(() => {
-      messageService.registerMessageDispatcher(testDuid, mockDispatcher as V10MessageDispatcher);
-    });
+			expect(result).toBeUndefined();
+		});
 
-    it('should start global clean when no areas selected', async () => {
-      await messageService.startClean(testDuid, { type: 'global' });
+		it('should throw DeviceError when processor not found', async () => {
+			await expect(messageService.getRoomIdFromMap('unknown-device')).rejects.toThrow(DeviceError);
+		});
+	});
 
-      expect(mockDispatcher.startCleaning).toHaveBeenCalledWith(testDuid);
-      expect(mockDispatcher.startRoomCleaning).not.toHaveBeenCalled();
-      expect(mockLogger.notice).toHaveBeenCalledWith(expect.stringContaining('Start global cleaning'));
-    });
+	describe('changeCleanMode', () => {
+		const testDuid = 'test-device-clean-mode';
 
-    it('should start room-based clean with selected rooms', async () => {
-      const selectedRooms = [16, 17];
+		beforeEach(() => {
+			messageService.registerMessageDispatcher(testDuid, mockDispatcher as V10MessageDispatcher);
+		});
 
-      await messageService.startClean(testDuid, { type: 'room', roomIds: selectedRooms });
+		it('should change clean mode successfully', async () => {
+			const settings = new CleanModeSetting(105, 203, 0, 302, CleanSequenceType.Persist);
+			await messageService.changeCleanMode(testDuid, settings);
 
-      expect(mockDispatcher.startRoomCleaning).toHaveBeenCalledWith(testDuid, selectedRooms, 1);
-      expect(mockDispatcher.startCleaning).not.toHaveBeenCalled();
-    });
+			expect(mockDispatcher.changeCleanMode).toHaveBeenCalledWith(testDuid, settings);
+			expect(mockLogger.notice).toHaveBeenCalledWith('MessageRoutingService - changeCleanMode');
+		});
 
-    it('should start routine clean when routine is selected', async () => {
-      mockIotApi.startScene = vi.fn().mockResolvedValue(undefined);
-      messageService.setIotApi(mockIotApi);
+		it('should handle zero values in clean mode', async () => {
+			const settings = new CleanModeSetting(0, 0, 0, 0, CleanSequenceType.Persist);
+			await messageService.changeCleanMode(testDuid, settings);
 
-      await messageService.startClean(testDuid, { type: 'routine', routineId: 1 });
+			expect(mockDispatcher.changeCleanMode).toHaveBeenCalledWith(testDuid, settings);
+		});
 
-      expect(mockIotApi.startScene).toHaveBeenCalledWith(1);
-    });
+		it('should throw DeviceError when processor not found', async () => {
+			const settings = new CleanModeSetting(105, 203, 0, 302, CleanSequenceType.Persist);
+			await expect(messageService.changeCleanMode('unknown-device', settings)).rejects.toThrow(DeviceError);
+		});
+	});
 
-    it('should fallback to room-based clean when room selected from routines', async () => {
-      // When a routine area ID exists but also matches a room, it treats as room
-      const selectedRooms = [999];
-      await messageService.startClean(testDuid, { type: 'room', roomIds: selectedRooms });
+	describe('startClean', () => {
+		const testDuid = 'test-device-start-clean';
 
-      expect(mockDispatcher.startRoomCleaning).toHaveBeenCalledWith(testDuid, selectedRooms, 1);
-    });
+		beforeEach(() => {
+			messageService.registerMessageDispatcher(testDuid, mockDispatcher as V10MessageDispatcher);
+		});
 
-    it('should handle multiple room selection', async () => {
-      const selectedRooms = [16, 17, 18, 19];
-      const supportedRooms: ServiceArea.Area[] = [
-        { areaId: 16 } as ServiceArea.Area,
-        { areaId: 17 } as ServiceArea.Area,
-        { areaId: 18 } as ServiceArea.Area,
-        { areaId: 19 } as ServiceArea.Area,
-        { areaId: 20 } as ServiceArea.Area,
-      ];
+		it('should start global clean when no areas selected', async () => {
+			await messageService.startClean(testDuid, { type: 'global' });
 
-      await messageService.startClean(testDuid, { type: 'room', roomIds: selectedRooms });
+			expect(mockDispatcher.startCleaning).toHaveBeenCalledWith(testDuid);
+			expect(mockDispatcher.startRoomCleaning).not.toHaveBeenCalled();
+			expect(mockLogger.notice).toHaveBeenCalledWith(expect.stringContaining('Start global cleaning'));
+		});
 
-      expect(mockDispatcher.startRoomCleaning).toHaveBeenCalledWith(testDuid, selectedRooms, 1);
-    });
-  });
+		it('should start room-based clean with selected rooms', async () => {
+			const selectedRooms = [16, 17];
 
-  describe('pauseClean', () => {
-    const testDuid = 'test-device-pause';
+			await messageService.startClean(testDuid, { type: 'room', roomIds: selectedRooms });
 
-    beforeEach(() => {
-      messageService.registerMessageDispatcher(testDuid, mockDispatcher as V10MessageDispatcher);
-    });
+			expect(mockDispatcher.startRoomCleaning).toHaveBeenCalledWith(testDuid, selectedRooms, 1);
+			expect(mockDispatcher.startCleaning).not.toHaveBeenCalled();
+		});
 
-    it('should pause cleaning operation', async () => {
-      await messageService.pauseClean(testDuid);
+		it('should start routine clean when routine is selected', async () => {
+			mockIotApi.startScene = vi.fn().mockResolvedValue(undefined);
+			messageService.setIotApi(mockIotApi);
 
-      expect(mockDispatcher.pauseCleaning).toHaveBeenCalledWith(testDuid);
-      expect(mockLogger.debug).toHaveBeenCalledWith('MessageRoutingService - pauseClean');
-    });
+			await messageService.startClean(testDuid, { type: 'routine', routineId: 1 });
 
-    it('should throw DeviceError when processor not found', async () => {
-      await expect(messageService.pauseClean('unknown-device')).rejects.toThrow(DeviceError);
-    });
-  });
+			expect(mockIotApi.startScene).toHaveBeenCalledWith(1);
+		});
 
-  describe('resumeClean', () => {
-    const testDuid = 'test-device-resume';
+		it('should fallback to room-based clean when room selected from routines', async () => {
+			// When a routine area ID exists but also matches a room, it treats as room
+			const selectedRooms = [999];
+			await messageService.startClean(testDuid, { type: 'room', roomIds: selectedRooms });
 
-    beforeEach(() => {
-      messageService.registerMessageDispatcher(testDuid, mockDispatcher as V10MessageDispatcher);
-    });
+			expect(mockDispatcher.startRoomCleaning).toHaveBeenCalledWith(testDuid, selectedRooms, 1);
+		});
 
-    it('should resume cleaning operation', async () => {
-      await messageService.resumeClean(testDuid);
+		it('should handle multiple room selection', async () => {
+			const selectedRooms = [16, 17, 18, 19];
+			const supportedRooms: ServiceArea.Area[] = [
+				{ areaId: 16 } as ServiceArea.Area,
+				{ areaId: 17 } as ServiceArea.Area,
+				{ areaId: 18 } as ServiceArea.Area,
+				{ areaId: 19 } as ServiceArea.Area,
+				{ areaId: 20 } as ServiceArea.Area,
+			];
 
-      expect(mockDispatcher.resumeCleaning).toHaveBeenCalledWith(testDuid);
-      expect(mockLogger.debug).toHaveBeenCalledWith('MessageRoutingService - resumeClean');
-    });
+			await messageService.startClean(testDuid, { type: 'room', roomIds: selectedRooms });
 
-    it('should throw DeviceError when processor not found', async () => {
-      await expect(messageService.resumeClean('unknown-device')).rejects.toThrow(DeviceError);
-    });
-  });
+			expect(mockDispatcher.startRoomCleaning).toHaveBeenCalledWith(testDuid, selectedRooms, 1);
+		});
+	});
 
-  describe('stopAndGoHome', () => {
-    const testDuid = 'test-device-stop';
+	describe('pauseClean', () => {
+		const testDuid = 'test-device-pause';
 
-    beforeEach(() => {
-      messageService.registerMessageDispatcher(testDuid, mockDispatcher as V10MessageDispatcher);
-    });
+		beforeEach(() => {
+			messageService.registerMessageDispatcher(testDuid, mockDispatcher as V10MessageDispatcher);
+		});
 
-    it('should stop cleaning and return to dock', async () => {
-      await messageService.stopAndGoHome(testDuid);
+		it('should pause cleaning operation', async () => {
+			await messageService.pauseClean(testDuid);
 
-      expect(mockDispatcher.goHome).toHaveBeenCalledWith(testDuid);
-      expect(mockLogger.debug).toHaveBeenCalledWith('MessageRoutingService - stopAndGoHome');
-    });
+			expect(mockDispatcher.pauseCleaning).toHaveBeenCalledWith(testDuid);
+			expect(mockLogger.debug).toHaveBeenCalledWith('MessageRoutingService - pauseClean');
+		});
 
-    it('should throw DeviceError when processor not found', async () => {
-      await expect(messageService.stopAndGoHome('unknown-device')).rejects.toThrow(DeviceError);
-    });
-  });
+		it('should throw DeviceError when processor not found', async () => {
+			await expect(messageService.pauseClean('unknown-device')).rejects.toThrow(DeviceError);
+		});
+	});
 
-  describe('playSoundToLocate', () => {
-    const testDuid = 'test-device-locate';
+	describe('resumeClean', () => {
+		const testDuid = 'test-device-resume';
 
-    beforeEach(() => {
-      messageService.registerMessageDispatcher(testDuid, mockDispatcher as V10MessageDispatcher);
-    });
+		beforeEach(() => {
+			messageService.registerMessageDispatcher(testDuid, mockDispatcher as V10MessageDispatcher);
+		});
 
-    it('should play sound to locate vacuum', async () => {
-      await messageService.playSoundToLocate(testDuid);
+		it('should resume cleaning operation', async () => {
+			await messageService.resumeClean(testDuid);
 
-      expect(mockDispatcher.findMyRobot).toHaveBeenCalledWith(testDuid);
-      expect(mockLogger.debug).toHaveBeenCalledWith('MessageRoutingService - findMe');
-    });
+			expect(mockDispatcher.resumeCleaning).toHaveBeenCalledWith(testDuid);
+			expect(mockLogger.debug).toHaveBeenCalledWith('MessageRoutingService - resumeClean');
+		});
 
-    it('should throw DeviceError when processor not found', async () => {
-      await expect(messageService.playSoundToLocate('unknown-device')).rejects.toThrow(DeviceError);
-    });
-  });
+		it('should throw DeviceError when processor not found', async () => {
+			await expect(messageService.resumeClean('unknown-device')).rejects.toThrow(DeviceError);
+		});
+	});
 
-  describe('customGet', () => {
-    const testDuid = 'test-device-custom-get';
-    const mockRequest = new RequestMessage({ method: 'get_status', params: [] });
-    const mockResponse = { status: 'cleaning' };
+	describe('stopAndGoHome', () => {
+		const testDuid = 'test-device-stop';
 
-    beforeEach(() => {
-      messageService.registerMessageDispatcher(testDuid, mockDispatcher as V10MessageDispatcher);
-    });
+		beforeEach(() => {
+			messageService.registerMessageDispatcher(testDuid, mockDispatcher as V10MessageDispatcher);
+		});
 
-    it('should execute custom GET request with typed response', async () => {
-      mockDispatcher.getCustomMessage.mockResolvedValue(mockResponse);
+		it('should stop cleaning and return to dock', async () => {
+			await messageService.stopAndGoHome(testDuid);
 
-      const result = await messageService.customGet<{ status: string }>(testDuid, mockRequest);
+			expect(mockDispatcher.goHome).toHaveBeenCalledWith(testDuid);
+			expect(mockLogger.debug).toHaveBeenCalledWith('MessageRoutingService - stopAndGoHome');
+		});
 
-      expect(result).toEqual(mockResponse);
-      expect(mockDispatcher.getCustomMessage).toHaveBeenCalledWith(testDuid, mockRequest);
-      expect(mockLogger.debug).toHaveBeenCalledWith(
-        'MessageRoutingService - customSend-message',
-        'get_status',
-        [],
-        false,
-      );
-    });
+		it('should throw DeviceError when processor not found', async () => {
+			await expect(messageService.stopAndGoHome('unknown-device')).rejects.toThrow(DeviceError);
+		});
+	});
 
-    it('should execute custom GET request with unknown response type', async () => {
-      mockDispatcher.getCustomMessage.mockResolvedValue(mockResponse);
+	describe('playSoundToLocate', () => {
+		const testDuid = 'test-device-locate';
 
-      const result = await messageService.customGet(testDuid, mockRequest);
+		beforeEach(() => {
+			messageService.registerMessageDispatcher(testDuid, mockDispatcher as V10MessageDispatcher);
+		});
 
-      expect(result).toEqual(mockResponse);
-    });
+		it('should play sound to locate vacuum', async () => {
+			await messageService.playSoundToLocate(testDuid);
 
-    it('should handle secure request flag', async () => {
-      const secureRequest = new RequestMessage({ method: 'get_status', params: [], secure: true });
-      mockDispatcher.getCustomMessage.mockResolvedValue(mockResponse);
+			expect(mockDispatcher.findMyRobot).toHaveBeenCalledWith(testDuid);
+			expect(mockLogger.debug).toHaveBeenCalledWith('MessageRoutingService - findMe');
+		});
 
-      await messageService.customGet(testDuid, secureRequest);
+		it('should throw DeviceError when processor not found', async () => {
+			await expect(messageService.playSoundToLocate('unknown-device')).rejects.toThrow(DeviceError);
+		});
+	});
 
-      expect(mockLogger.debug).toHaveBeenCalledWith(
-        'MessageRoutingService - customSend-message',
-        'get_status',
-        [],
-        true,
-      );
-    });
+	describe('customGet', () => {
+		const testDuid = 'test-device-custom-get';
+		const mockRequest = new RequestMessage({ method: 'get_status', params: [] });
+		const mockResponse = { status: 'cleaning' };
 
-    it('should throw DeviceError when processor not found', async () => {
-      await expect(messageService.customGet('unknown-device', mockRequest)).rejects.toThrow(DeviceError);
-    });
-  });
+		beforeEach(() => {
+			messageService.registerMessageDispatcher(testDuid, mockDispatcher as V10MessageDispatcher);
+		});
 
-  describe('customSend', () => {
-    const testDuid = 'test-device-custom-send';
-    const mockRequest = new RequestMessage({ method: 'set_mop_mode', params: [302] });
+		it('should execute custom GET request with typed response', async () => {
+			mockDispatcher.getCustomMessage.mockResolvedValue(mockResponse);
 
-    beforeEach(() => {
-      messageService.registerMessageDispatcher(testDuid, mockDispatcher as V10MessageDispatcher);
-    });
+			const result = await messageService.customGet<{ status: string }>(testDuid, mockRequest);
 
-    it('should send custom command successfully', async () => {
-      await messageService.customSend(testDuid, mockRequest);
+			expect(result).toEqual(mockResponse);
+			expect(mockDispatcher.getCustomMessage).toHaveBeenCalledWith(testDuid, mockRequest);
+			expect(mockLogger.debug).toHaveBeenCalledWith(
+				'MessageRoutingService - customSend-message',
+				'get_status',
+				[],
+				false,
+			);
+		});
 
-      expect(mockDispatcher.sendCustomMessage).toHaveBeenCalledWith(testDuid, mockRequest);
-    });
+		it('should execute custom GET request with unknown response type', async () => {
+			mockDispatcher.getCustomMessage.mockResolvedValue(mockResponse);
 
-    it('should throw DeviceError when processor not found', async () => {
-      await expect(messageService.customSend('unknown-device', mockRequest)).rejects.toThrow(DeviceError);
-    });
+			const result = await messageService.customGet(testDuid, mockRequest);
 
-    it('should handle command without params', async () => {
-      const simpleRequest = new RequestMessage({ method: 'app_start' });
+			expect(result).toEqual(mockResponse);
+		});
 
-      await messageService.customSend(testDuid, simpleRequest);
+		it('should handle secure request flag', async () => {
+			const secureRequest = new RequestMessage({ method: 'get_status', params: [], secure: true });
+			mockDispatcher.getCustomMessage.mockResolvedValue(mockResponse);
 
-      expect(mockDispatcher.sendCustomMessage).toHaveBeenCalledWith(testDuid, simpleRequest);
-    });
-  });
+			await messageService.customGet(testDuid, secureRequest);
 
-  describe('clearAll', () => {
-    it('should clear all processors and MQTT devices', () => {
-      const testDuid1 = 'device-1';
-      const testDuid2 = 'device-2';
+			expect(mockLogger.debug).toHaveBeenCalledWith(
+				'MessageRoutingService - customSend-message',
+				'get_status',
+				[],
+				true,
+			);
+		});
 
-      messageService.registerMessageDispatcher(testDuid1, mockDispatcher as V10MessageDispatcher);
-      messageService.registerMessageDispatcher(testDuid2, mockDispatcher as V10MessageDispatcher);
+		it('should throw DeviceError when processor not found', async () => {
+			await expect(messageService.customGet('unknown-device', mockRequest)).rejects.toThrow(DeviceError);
+		});
+	});
 
-      messageService.clearAll();
+	describe('customSend', () => {
+		const testDuid = 'test-device-custom-send';
+		const mockRequest = new RequestMessage({ method: 'set_mop_mode', params: [302] });
 
-      expect(() => messageService.getMessageDispatcher(testDuid1)).toThrow(DeviceError);
-      expect(() => messageService.getMessageDispatcher(testDuid2)).toThrow(DeviceError);
-      expect(mockLogger.debug).toHaveBeenCalledWith('MessageRoutingService - All data cleared');
-    });
+		beforeEach(() => {
+			messageService.registerMessageDispatcher(testDuid, mockDispatcher as V10MessageDispatcher);
+		});
 
-    it('should be safe to call multiple times', () => {
-      messageService.clearAll();
-      messageService.clearAll();
+		it('should send custom command successfully', async () => {
+			await messageService.customSend(testDuid, mockRequest);
 
-      expect(() => {
-        messageService.clearAll();
-      }).not.toThrow();
-    });
-
-    it('should clear empty service without errors', () => {
-      const newService = new MessageRoutingService(mockLogger);
-      expect(() => {
-        newService.clearAll();
-      }).not.toThrow();
-    });
-  });
-
-  describe('Integration Scenarios', () => {
-    const testDuid = 'integration-device';
-
-    beforeEach(() => {
-      messageService.registerMessageDispatcher(testDuid, mockDispatcher);
-      messageService.setIotApi(mockIotApi);
-    });
-
-    it('should complete full cleaning workflow', async () => {
-      const selectedRooms = [16, 17];
-      const supportedRooms: ServiceArea.Area[] = [
-        { areaId: 16 } as ServiceArea.Area,
-        { areaId: 17 } as ServiceArea.Area,
-        { areaId: 18 } as ServiceArea.Area,
-      ];
-
-      // Start room clean
-      await messageService.startClean(testDuid, { type: 'room', roomIds: [16, 17] });
-      expect(mockDispatcher.startRoomCleaning).toHaveBeenCalledWith(testDuid, selectedRooms, 1);
-
-      // Pause
-      await messageService.pauseClean(testDuid);
-      expect(mockDispatcher.pauseCleaning).toHaveBeenCalledWith(testDuid);
-      // Resume
-      await messageService.resumeClean(testDuid);
-      expect(mockDispatcher.resumeCleaning).toHaveBeenCalledWith(testDuid);
-
-      // Stop and go home
-      await messageService.stopAndGoHome(testDuid);
-      expect(mockDispatcher.goHome).toHaveBeenCalledWith(testDuid);
-    });
-
-    it('should handle clean mode adjustment workflow', async () => {
-      const mockCleanMode = new CleanModeSetting(101, 202, 0, 302, CleanSequenceType.Persist);
-
-      mockDispatcher.getCleanModeData.mockResolvedValue(mockCleanMode);
-
-      // Get current clean mode
-      const currentMode = await messageService.getCleanModeData(testDuid);
-      expect(currentMode).toEqual(mockCleanMode);
-
-      // Change clean mode
-      const settings = new CleanModeSetting(105, 203, 0, 302, CleanSequenceType.Persist);
-      await messageService.changeCleanMode(testDuid, settings);
-      expect(mockDispatcher.changeCleanMode).toHaveBeenCalledWith(testDuid, settings);
-    });
-  });
-
-  describe('Error Handling', () => {
-    const testDuid = 'error-device';
-
-    beforeEach(() => {
-      messageService.registerMessageDispatcher(testDuid, mockDispatcher);
-    });
-
-    it('should propagate MessageDispatcher errors', async () => {
-      const error = new Error('Communication timeout');
-      mockDispatcher.startCleaning.mockRejectedValue(error);
-
-      await expect(messageService.startClean(testDuid, { type: 'global' })).rejects.toThrow('Communication timeout');
-    });
-
-    it('should throw DeviceError when routine requires iotApi but not initialized', async () => {
-      const serviceWithoutApi = new MessageRoutingService(mockLogger);
-      serviceWithoutApi.registerMessageDispatcher(testDuid, mockDispatcher);
-
-      await expect(serviceWithoutApi.startClean(testDuid, { type: 'routine', routineId: 123 })).rejects.toThrow(
-        DeviceError,
-      );
-      await expect(serviceWithoutApi.startClean(testDuid, { type: 'routine', routineId: 123 })).rejects.toThrow(
-        'IoT API must be initialized to start scene',
-      );
-    });
-
-    it('should throw meaningful errors for missing processors', async () => {
-      const unknownDuid = 'non-existent-device';
-
-      await expect(messageService.getCleanModeData(unknownDuid)).rejects.toThrow(
-        `MessageDispatcher not initialized for device ${unknownDuid}`,
-      );
-      await expect(messageService.startClean(unknownDuid, { type: 'global' })).rejects.toThrow(
-        `MessageDispatcher not initialized for device ${unknownDuid}`,
-      );
-      await expect(messageService.pauseClean(unknownDuid)).rejects.toThrow(
-        `MessageDispatcher not initialized for device ${unknownDuid}`,
-      );
-    });
-  });
+			expect(mockDispatcher.sendCustomMessage).toHaveBeenCalledWith(testDuid, mockRequest);
+		});
+
+		it('should throw DeviceError when processor not found', async () => {
+			await expect(messageService.customSend('unknown-device', mockRequest)).rejects.toThrow(DeviceError);
+		});
+
+		it('should handle command without params', async () => {
+			const simpleRequest = new RequestMessage({ method: 'app_start' });
+
+			await messageService.customSend(testDuid, simpleRequest);
+
+			expect(mockDispatcher.sendCustomMessage).toHaveBeenCalledWith(testDuid, simpleRequest);
+		});
+	});
+
+	describe('clearAll', () => {
+		it('should clear all processors and MQTT devices', () => {
+			const testDuid1 = 'device-1';
+			const testDuid2 = 'device-2';
+
+			messageService.registerMessageDispatcher(testDuid1, mockDispatcher as V10MessageDispatcher);
+			messageService.registerMessageDispatcher(testDuid2, mockDispatcher as V10MessageDispatcher);
+
+			messageService.clearAll();
+
+			expect(() => messageService.getMessageDispatcher(testDuid1)).toThrow(DeviceError);
+			expect(() => messageService.getMessageDispatcher(testDuid2)).toThrow(DeviceError);
+			expect(mockLogger.debug).toHaveBeenCalledWith('MessageRoutingService - All data cleared');
+		});
+
+		it('should be safe to call multiple times', () => {
+			messageService.clearAll();
+			messageService.clearAll();
+
+			expect(() => {
+				messageService.clearAll();
+			}).not.toThrow();
+		});
+
+		it('should clear empty service without errors', () => {
+			const newService = new MessageRoutingService(mockLogger);
+			expect(() => {
+				newService.clearAll();
+			}).not.toThrow();
+		});
+	});
+
+	describe('Integration Scenarios', () => {
+		const testDuid = 'integration-device';
+
+		beforeEach(() => {
+			messageService.registerMessageDispatcher(testDuid, mockDispatcher);
+			messageService.setIotApi(mockIotApi);
+		});
+
+		it('should complete full cleaning workflow', async () => {
+			const selectedRooms = [16, 17];
+			const supportedRooms: ServiceArea.Area[] = [
+				{ areaId: 16 } as ServiceArea.Area,
+				{ areaId: 17 } as ServiceArea.Area,
+				{ areaId: 18 } as ServiceArea.Area,
+			];
+
+			// Start room clean
+			await messageService.startClean(testDuid, { type: 'room', roomIds: [16, 17] });
+			expect(mockDispatcher.startRoomCleaning).toHaveBeenCalledWith(testDuid, selectedRooms, 1);
+
+			// Pause
+			await messageService.pauseClean(testDuid);
+			expect(mockDispatcher.pauseCleaning).toHaveBeenCalledWith(testDuid);
+			// Resume
+			await messageService.resumeClean(testDuid);
+			expect(mockDispatcher.resumeCleaning).toHaveBeenCalledWith(testDuid);
+
+			// Stop and go home
+			await messageService.stopAndGoHome(testDuid);
+			expect(mockDispatcher.goHome).toHaveBeenCalledWith(testDuid);
+		});
+
+		it('should handle clean mode adjustment workflow', async () => {
+			const mockCleanMode = new CleanModeSetting(101, 202, 0, 302, CleanSequenceType.Persist);
+
+			mockDispatcher.getCleanModeData.mockResolvedValue(mockCleanMode);
+
+			// Get current clean mode
+			const currentMode = await messageService.getCleanModeData(testDuid);
+			expect(currentMode).toEqual(mockCleanMode);
+
+			// Change clean mode
+			const settings = new CleanModeSetting(105, 203, 0, 302, CleanSequenceType.Persist);
+			await messageService.changeCleanMode(testDuid, settings);
+			expect(mockDispatcher.changeCleanMode).toHaveBeenCalledWith(testDuid, settings);
+		});
+	});
+
+	describe('Error Handling', () => {
+		const testDuid = 'error-device';
+
+		beforeEach(() => {
+			messageService.registerMessageDispatcher(testDuid, mockDispatcher);
+		});
+
+		it('should propagate MessageDispatcher errors', async () => {
+			const error = new Error('Communication timeout');
+			mockDispatcher.startCleaning.mockRejectedValue(error);
+
+			await expect(messageService.startClean(testDuid, { type: 'global' })).rejects.toThrow('Communication timeout');
+		});
+
+		it('should throw DeviceError when routine requires iotApi but not initialized', async () => {
+			const serviceWithoutApi = new MessageRoutingService(mockLogger);
+			serviceWithoutApi.registerMessageDispatcher(testDuid, mockDispatcher);
+
+			await expect(serviceWithoutApi.startClean(testDuid, { type: 'routine', routineId: 123 })).rejects.toThrow(
+				DeviceError,
+			);
+			await expect(serviceWithoutApi.startClean(testDuid, { type: 'routine', routineId: 123 })).rejects.toThrow(
+				'IoT API must be initialized to start scene',
+			);
+		});
+
+		it('should throw meaningful errors for missing processors', async () => {
+			const unknownDuid = 'non-existent-device';
+
+			await expect(messageService.getCleanModeData(unknownDuid)).rejects.toThrow(
+				`MessageDispatcher not initialized for device ${unknownDuid}`,
+			);
+			await expect(messageService.startClean(unknownDuid, { type: 'global' })).rejects.toThrow(
+				`MessageDispatcher not initialized for device ${unknownDuid}`,
+			);
+			await expect(messageService.pauseClean(unknownDuid)).rejects.toThrow(
+				`MessageDispatcher not initialized for device ${unknownDuid}`,
+			);
+		});
+	});
 });

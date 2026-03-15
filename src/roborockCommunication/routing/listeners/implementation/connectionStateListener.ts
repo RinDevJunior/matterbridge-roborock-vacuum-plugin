@@ -1,104 +1,104 @@
 import { AnsiLogger } from 'matterbridge/logger';
-import { AbstractConnectionListener } from '../abstractConnectionListener.js';
-import { AbstractClient } from '../../abstractClient.js';
+
 import { MANUAL_RECONNECT_DELAY_MS, MAX_RETRY_COUNT } from '../../../../constants/index.js';
+import { AbstractClient } from '../../abstractClient.js';
+import { AbstractConnectionListener } from '../abstractConnectionListener.js';
 
 export class ConnectionStateListener implements AbstractConnectionListener {
-  protected shouldReconnect = false;
-  private manualReconnectTimer: NodeJS.Timeout | undefined = undefined;
+	protected shouldReconnect = false;
+	private manualReconnectTimer: NodeJS.Timeout | undefined = undefined;
 
-  constructor(
-    private readonly logger: AnsiLogger,
-    private readonly client: AbstractClient,
-    private readonly clientName: string,
-  ) {}
+	constructor(
+		private readonly logger: AnsiLogger,
+		private readonly client: AbstractClient,
+		private readonly clientName: string,
+	) {}
 
-  public start(): void {
-    this.shouldReconnect = true;
-  }
+	public start(): void {
+		this.shouldReconnect = true;
+	}
 
-  public stop(): void {
-    this.shouldReconnect = false;
-  }
+	public stop(): void {
+		this.shouldReconnect = false;
+	}
 
-  public async onConnected(duid: string): Promise<void> {
-    this.logger.info(`Device ${duid} connected to ${this.clientName}`);
-    this.client.retryCount = 0;
-    this.shouldReconnect = true;
-  }
+	public async onConnected(duid: string): Promise<void> {
+		this.logger.info(`Device ${duid} connected to ${this.clientName}`);
+		this.client.retryCount = 0;
+		this.shouldReconnect = true;
+	}
 
-  public async onReconnect(duid: string, message: string): Promise<void> {
-    this.logger.info(`Device ${duid} reconnected to ${this.clientName} with message: ${message}`);
-    this.client.retryCount = 0;
-  }
+	public async onReconnect(duid: string, message: string): Promise<void> {
+		this.logger.info(`Device ${duid} reconnected to ${this.clientName} with message: ${message}`);
+		this.client.retryCount = 0;
+	}
 
-  public async onDisconnected(duid: string, message: string): Promise<void> {
-    this.logger.error(`Device ${duid} disconnected from ${this.clientName} with message: ${message}`);
+	public async onDisconnected(duid: string, message: string): Promise<void> {
+		this.logger.error(`Device ${duid} disconnected from ${this.clientName} with message: ${message}`);
+		await this.scheduleReconnect(duid);
+	}
 
-    if (message.includes('Connection refused: Not authorized')) {
-      this.logger.notice(`Device ${duid} authorization error, stopping reconnection attempts.`);
-      this.shouldReconnect = false;
-      return;
-    }
+	public async onOffline(duid: string): Promise<void> {
+		this.logger.notice(
+			`Device ${duid} went offline on ${this.clientName}, likely due to network issues. Waiting for automatic reconnection.`,
+		);
+		this.shouldReconnect = false;
+	}
 
-    if (message.includes('MQTT connection offline')) {
-      this.logger.notice(
-        `Device ${duid} went offline, likely due to network issues. Waiting for automatic reconnection.`,
-      );
-      this.shouldReconnect = false;
-      return;
-    }
+	public async onClose(duid: string): Promise<void> {
+		this.logger.error(`Device ${duid} connection closed on ${this.clientName}.`);
+		await this.scheduleReconnect(duid);
+	}
 
-    if (!this.shouldReconnect) {
-      this.logger.notice(`Device ${duid} disconnected from ${this.clientName}, but re-registration is disabled.`);
-      return;
-    }
+	public async onError(duid: string, message: string): Promise<void> {
+		this.logger.error(`Error on device with DUID ${duid}: ${message}`);
+		if (message.includes('Connection refused: Not authorized')) {
+			this.logger.notice(`Device with DUID ${duid} authorization error, stopping reconnection attempts.`);
+			this.shouldReconnect = false;
 
-    if (this.client.retryCount > MAX_RETRY_COUNT) {
-      this.logger.error(`Device with DUID ${duid} has exceeded retry limit, not re-registering.`);
-      return;
-    }
+			// Clear any pending manual reconnect timer to stop the reconnection loop
+			if (this.manualReconnectTimer) {
+				clearTimeout(this.manualReconnectTimer);
+				this.manualReconnectTimer = undefined;
+			}
+		}
+	}
 
-    this.client.retryCount++;
+	private async scheduleReconnect(duid: string): Promise<void> {
+		if (!this.shouldReconnect) {
+			this.logger.notice(`Device ${duid} disconnected from ${this.clientName}, but re-registration is disabled.`);
+			return;
+		}
 
-    if (this.client.isInDisconnectingStep) {
-      this.logger.info(`Device with DUID ${duid} is in disconnecting step, skipping re-registration.`);
-      return;
-    }
+		if (this.client.retryCount > MAX_RETRY_COUNT) {
+			this.logger.error(`Device with DUID ${duid} has exceeded retry limit, not re-registering.`);
+			return;
+		}
 
-    // Clear any previous manual reconnect timer
-    if (this.manualReconnectTimer) {
-      clearTimeout(this.manualReconnectTimer);
-      this.manualReconnectTimer = undefined;
-    }
+		this.client.retryCount++;
 
-    // Wait MANUAL_RECONNECT_DELAY_MS for MQTT library to auto-reconnect. If still not connected, trigger manual reconnect.
-    this.manualReconnectTimer = setTimeout(() => {
-      if (typeof this.client.isConnected === 'function' && this.client.isConnected()) {
-        this.logger.info(`Device with DUID ${duid} already reconnected by MQTT library, skipping manual reconnect.`);
-        this.client.retryCount = 0;
-        return;
-      }
-      this.logger.info(
-        `Manual reconnect: Re-registering device with DUID ${duid} to ${this.clientName} after ${MANUAL_RECONNECT_DELAY_MS / 1000}s.`,
-      );
-      this.client.connect();
-    }, MANUAL_RECONNECT_DELAY_MS);
+		if (this.client.isInDisconnectingStep) {
+			this.logger.info(`Device with DUID ${duid} is in disconnecting step, skipping re-registration.`);
+			return;
+		}
 
-    this.client.isInDisconnectingStep = false;
-  }
+		if (this.manualReconnectTimer) {
+			clearTimeout(this.manualReconnectTimer);
+			this.manualReconnectTimer = undefined;
+		}
 
-  public async onError(duid: string, message: string): Promise<void> {
-    this.logger.error(`Error on device with DUID ${duid}: ${message}`);
-    if (message.includes('Connection refused: Not authorized')) {
-      this.logger.notice(`Device with DUID ${duid} authorization error, stopping reconnection attempts.`);
-      this.shouldReconnect = false;
+		this.manualReconnectTimer = setTimeout(() => {
+			if (typeof this.client.isConnected === 'function' && this.client.isConnected()) {
+				this.logger.info(`Device with DUID ${duid} already reconnected by MQTT library, skipping manual reconnect.`);
+				this.client.retryCount = 0;
+				return;
+			}
+			this.logger.info(
+				`Manual reconnect: Re-registering device with DUID ${duid} to ${this.clientName} after ${MANUAL_RECONNECT_DELAY_MS / 1000}s.`,
+			);
+			this.client.connect();
+		}, MANUAL_RECONNECT_DELAY_MS);
 
-      // Clear any pending manual reconnect timer to stop the reconnection loop
-      if (this.manualReconnectTimer) {
-        clearTimeout(this.manualReconnectTimer);
-        this.manualReconnectTimer = undefined;
-      }
-    }
-  }
+		this.client.isInDisconnectingStep = false;
+	}
 }

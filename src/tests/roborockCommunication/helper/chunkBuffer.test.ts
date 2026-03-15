@@ -1,20 +1,21 @@
-import { describe, it, expect } from 'vitest';
+import { describe, expect, it } from 'vitest';
+
 import { ChunkBuffer } from '../../../roborockCommunication/helper/chunkBuffer.js';
 
 describe('ChunkBuffer', () => {
-  it('starts empty and appends/resets correctly', () => {
-    const cb = new ChunkBuffer();
-    expect(cb.get().length).toBe(0);
+	it('starts empty and appends/resets correctly', () => {
+		const cb = new ChunkBuffer();
+		expect(cb.get().length).toBe(0);
 
-    const a = Buffer.from([1, 2]);
-    cb.append(a);
-    expect(cb.get()).toEqual(a);
+		const a = Buffer.from([1, 2]);
+		cb.append(a);
+		expect(cb.get()).toEqual(a);
 
-    const b = Buffer.from([3, 4]);
-    cb.append(b);
-    expect(cb.get()).toEqual(Buffer.from([1, 2, 3, 4]));
+		const b = Buffer.from([3, 4]);
+		cb.append(b);
+		expect(cb.get()).toEqual(Buffer.from([1, 2, 3, 4]));
 
-    cb.reset();
-    expect(cb.get().length).toBe(0);
-  });
+		cb.reset();
+		expect(cb.get().length).toBe(0);
+	});
 });

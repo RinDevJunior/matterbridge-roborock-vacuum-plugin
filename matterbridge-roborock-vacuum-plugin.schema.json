@@ -1,432 +1,528 @@
 {
-  "title": "Matterbridge Roborock Vacuum Plugin",
-  "description": "matterbridge-roborock-vacuum-plugin v. 1.1.4 by https://github.com/RinDevJunior",
-  "type": "object",
-  "properties": {
-    "name": {
-      "description": "Plugin name",
-      "type": "string",
-      "readOnly": true,
-      "ui:widget": "hidden"
-    },
-    "type": {
-      "description": "Plugin type",
-      "type": "string",
-      "readOnly": true,
-      "ui:widget": "hidden"
-    },
-    "authentication": {
-      "title": "Authentication flow",
-      "type": "object",
-      "properties": {
-        "username": {
-          "title": "Roborock account email address/phone number",
-          "type": "string",
-          "minLength": 3
-        },
-        "region": {
-          "title": "Roborock account region",
-          "type": "string",
-          "enum": ["US", "EU", "CN", "RU"],
-          "default": "US"
-        },
-        "forceAuthentication": {
-          "title": "Force Authentication",
-          "description": "Always execute authentication on startup.",
-          "type": "boolean",
-          "default": false
-        },
-        "authenticationMethod": {
-          "title": "Authentication Method",
-          "type": "string",
-          "enum": ["VerificationCode", "Password"],
-          "default": "VerificationCode"
-        }
-      },
-      "required": ["username", "authenticationMethod"],
-      "dependencies": {
-        "authenticationMethod": {
-          "if": {
-            "properties": {
-              "authenticationMethod": {
-                "const": "VerificationCode"
-              }
-            }
-          },
-          "then": {
-            "properties": {
-              "verificationCode": {
-                "title": "Verification Code",
-                "description": "6-digit verification code sent to your email. Leave empty to request a new code, then restart the plugin after entering the code.",
-                "type": "string"
-              }
-            }
-          },
-          "else": {
-            "if": {
-              "properties": {
-                "authenticationMethod": {
-                  "const": "Password"
-                }
-              }
-            },
-            "then": {
-              "properties": {
-                "password": {
-                  "title": "Password",
-                  "description": "Password for your Roborock account.",
-                  "type": "string",
-                  "ui:widget": "password"
-                }
-              },
-              "required": ["password"]
-            }
-          }
-        }
-      }
-    },
-    "pluginConfiguration": {
-      "title": "Plugin Configuration",
-      "type": "object",
-      "properties": {
-        "whiteList": {
-          "title": "White list devices",
-          "description": "(ONLY SET IF YOU HAVE MULTIPLE VACUUMS) Only THE FIRST ONE device with <Name>-<duid> in the list will be exposed. If the list is empty, THE FIRST device will be exposed.",
-          "type": "array",
-          "items": {
-            "type": "string"
-          },
-          "uniqueItems": true,
-          "selectFrom": "name"
-        },
-        "enableServerMode": {
-          "title": "Enable Server Mode",
-          "description": "Enable the Robot Vacuum Cleaner in server mode (Each vacuum will have its own server).",
-          "type": "boolean",
-          "default": false
-        },
-        "enableMultipleMap": {
-          "title": "Enable Multiple Maps",
-          "description": "Enable multiple maps support.",
-          "type": "boolean",
-          "default": false
-        },
-        "sanitizeSensitiveLogs": {
-          "title": "Sanitize Sensitive Logs",
-          "description": "Sanitize sensitive information in logs (e.g., authentication tokens).",
-          "type": "boolean",
-          "default": true
-        },
-        "refreshInterval": {
-          "title": "Refresh Interval",
-          "description": "Refresh interval in seconds (default: 60)",
-          "type": "number",
-          "default": 60,
-          "minimum": 1,
-          "maximum": 3600
-        },
-        "debug": {
-          "title": "Enable Debug Mode",
-          "description": "Enable the debug for the plugin (development only)",
-          "type": "boolean",
-          "default": false
-        },
-        "unregisterOnShutdown": {
-          "title": "Unregister On Shutdown",
-          "description": "Unregister all devices on shutdown (development only)",
-          "type": "boolean",
-          "default": false
-        }
-      }
-    },
-    "advancedFeature": {
-      "title": "Advanced features",
-      "type": "object",
-      "properties": {
-        "enableAdvancedFeature": {
-          "title": "Enable Advanced Features",
-          "type": "boolean",
-          "default": false
-        }
-      },
-      "allOf": [
-        {
-          "if": {
-            "properties": {
-              "enableAdvancedFeature": {
-                "const": true
-              }
-            },
-            "required": ["enableAdvancedFeature"]
-          },
-          "then": {
-            "properties": {
-              "settings": {
-                "title": "Advanced Features Configuration",
-                "type": "object",
-                "properties": {
-                  "showRoutinesAsRoom": {
-                    "title": "Show Routines As Room",
-                    "type": "boolean",
-                    "default": false
-                  },
-                  "includeDockStationStatus": {
-                    "title": "Include Dock Station Status",
-                    "type": "boolean",
-                    "default": false
-                  },
-                  "includeVacuumErrorStatus": {
-                    "title": "Include Vacuum Error Status",
-                    "type": "boolean",
-                    "default": false
-                  },
-                  "forceRunAtDefault": {
-                    "title": "Force Run At Default Implementation",
-                    "type": "boolean",
-                    "default": false
-                  },
-                  "useVacationModeToSendVacuumToDock": {
-                    "title": "Use \"Vacation\" Mode To Send Vacuum To Dock",
-                    "type": "boolean",
-                    "default": false
-                  },
-                  "enableCleanModeMapping": {
-                    "title": "Enable Custom Clean Mode Mapping",
-                    "type": "boolean",
-                    "default": false
-                  },
-                  "overrideMatterConfiguration": {
-                    "title": "Override Matter Configuration",
-                    "type": "boolean",
-                    "default": false
-                  },
-                  "clearStorageOnStartup": {
-                    "title": "Clear Storage On Startup",
-                    "description": "Clear persistence storage and re-initialize the plugin on next startup.",
-                    "type": "boolean",
-                    "default": false
-                  }
-                }
-              }
-            }
-          }
-        },
-        {
-          "if": {
-            "allOf": [
-              {
-                "properties": {
-                  "enableAdvancedFeature": {
-                    "const": true
-                  }
-                },
-                "required": ["enableAdvancedFeature"]
-              },
-              {
-                "properties": {
-                  "settings": {
-                    "type": "object",
-                    "properties": {
-                      "enableCleanModeMapping": {
-                        "const": true
-                      }
-                    },
-                    "required": ["enableCleanModeMapping"]
-                  }
-                },
-                "required": ["settings"]
-              }
-            ]
-          },
-          "then": {
-            "properties": {
-              "settings": {
-                "properties": {
-                  "cleanModeSettings": {
-                    "title": "Custom Clean Mode Settings",
-                    "type": "object",
-                    "properties": {
-                      "vacuuming": {
-                        "title": "Vacuuming Only",
-                        "type": "object",
-                        "properties": {
-                          "fanMode": {
-                            "$ref": "#/$defs/fanMode",
-                            "default": "Balanced"
-                          },
-                          "mopRouteMode": {
-                            "$ref": "#/$defs/mopRouteMode"
-                          }
-                        }
-                      },
-                      "mopping": {
-                        "title": "Mopping Only",
-                        "type": "object",
-                        "properties": {
-                          "waterFlowMode": {
-                            "$ref": "#/$defs/waterFlowMode"
-                          },
-                          "mopRouteMode": {
-                            "$ref": "#/$defs/mopRouteMode"
-                          }
-                        },
-                        "allOf": [
-                          {
-                            "if": {
-                              "properties": {
-                                "waterFlowMode": {
-                                  "const": "CustomizeWithDistanceOff"
-                                }
-                              }
-                            },
-                            "then": {
-                              "properties": {
-                                "distanceOff": {
-                                  "type": "number",
-                                  "description": "Distance Off - Default = 25",
-                                  "default": 25,
-                                  "minimum": 0,
-                                  "maximum": 100
-                                }
-                              },
-                              "required": ["distanceOff"]
-                            }
-                          }
-                        ]
-                      },
-                      "vacmop": {
-                        "title": "Vacuuming and Mopping",
-                        "type": "object",
-                        "properties": {
-                          "fanMode": {
-                            "$ref": "#/$defs/fanMode",
-                            "default": "Balanced"
-                          },
-                          "waterFlowMode": {
-                            "$ref": "#/$defs/waterFlowMode"
-                          },
-                          "mopRouteMode": {
-                            "$ref": "#/$defs/mopRouteMode"
-                          }
-                        },
-                        "allOf": [
-                          {
-                            "if": {
-                              "properties": {
-                                "waterFlowMode": {
-                                  "const": "CustomizeWithDistanceOff"
-                                }
-                              }
-                            },
-                            "then": {
-                              "properties": {
-                                "distanceOff": {
-                                  "type": "number",
-                                  "description": "Distance Off - Default = 25",
-                                  "default": 25,
-                                  "minimum": 0,
-                                  "maximum": 100
-                                }
-                              },
-                              "required": ["distanceOff"]
-                            }
-                          }
-                        ]
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          }
-        },
-        {
-          "if": {
-            "allOf": [
-              {
-                "properties": {
-                  "enableAdvancedFeature": {
-                    "const": true
-                  }
-                },
-                "required": ["enableAdvancedFeature"]
-              },
-              {
-                "properties": {
-                  "settings": {
-                    "type": "object",
-                    "properties": {
-                      "overrideMatterConfiguration": {
-                        "const": true
-                      }
-                    },
-                    "required": ["overrideMatterConfiguration"]
-                  }
-                },
-                "required": ["settings"]
-              }
-            ]
-          },
-          "then": {
-            "properties": {
-              "settings": {
-                "properties": {
-                  "matterOverrideSettings": {
-                    "title": "Matter Configuration Override Settings",
-                    "type": "object",
-                    "properties": {
-                      "matterVendorName": {
-                        "title": "Vendor Name",
-                        "type": "string",
-                        "default": "Matterbridge"
-                      },
-                      "matterVendorId": {
-                        "title": "Vendor Id",
-                        "type": "number",
-                        "default": 65521
-                      },
-                      "matterProductName": {
-                        "title": "Product Name",
-                        "type": "string",
-                        "default": "Robotic Vaccum Cleaner",
-                        "maxLength": 32
-                      },
-                      "matterProductId": {
-                        "title": "Product Id",
-                        "type": "number",
-                        "default": 32768
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          }
-        }
-      ]
-    }
-  },
-  "$defs": {
-    "fanMode": {
-      "type": "string",
-      "title": "Fan Mode",
-      "description": "Suction power mode to use (e.g., 'Quiet', 'Balanced', 'Turbo', 'Max', 'MaxPlus').",
-      "enum": ["Quiet", "Balanced", "Turbo", "Max", "MaxPlus"],
-      "default": "Balanced"
-    },
-    "waterFlowMode": {
-      "type": "string",
-      "title": "Water Flow Mode",
-      "description": "Water flow mode to use (e.g., 'Low', 'Medium', 'High', 'CustomizeWithDistanceOff').",
-      "enum": ["Low", "Medium", "High", "CustomizeWithDistanceOff"],
-      "default": "Medium"
-    },
-    "mopRouteMode": {
-      "type": "string",
-      "title": "Mop Route Mode",
-      "description": "Mop route intensity to use (e.g., 'Standard', 'Deep', 'DeepPlus', 'Fast').",
-      "enum": ["Standard", "Deep", "DeepPlus", "Fast"],
-      "default": "Standard"
-    }
-  }
+	"title": "Matterbridge Roborock Vacuum Plugin",
+	"description": "matterbridge-roborock-vacuum-plugin v. 1.1.5 by https://github.com/RinDevJunior",
+	"type": "object",
+	"properties": {
+		"name": {
+			"description": "Plugin name",
+			"type": "string",
+			"readOnly": true,
+			"ui:widget": "hidden"
+		},
+		"type": {
+			"description": "Plugin type",
+			"type": "string",
+			"readOnly": true,
+			"ui:widget": "hidden"
+		},
+		"authentication": {
+			"title": "Authentication flow",
+			"type": "object",
+			"properties": {
+				"username": {
+					"title": "Roborock account email address/phone number",
+					"type": "string",
+					"minLength": 3
+				},
+				"region": {
+					"title": "Roborock account region",
+					"type": "string",
+					"enum": ["US", "EU", "CN", "RU"],
+					"default": "US"
+				},
+				"forceAuthentication": {
+					"title": "Force Authentication",
+					"description": "Always execute authentication on startup.",
+					"type": "boolean",
+					"default": false
+				},
+				"authenticationMethod": {
+					"title": "Authentication Method",
+					"type": "string",
+					"enum": ["VerificationCode", "Password"],
+					"default": "VerificationCode"
+				}
+			},
+			"required": ["username", "authenticationMethod"],
+			"dependencies": {
+				"authenticationMethod": {
+					"if": {
+						"properties": {
+							"authenticationMethod": {
+								"const": "VerificationCode"
+							}
+						}
+					},
+					"then": {
+						"properties": {
+							"verificationCode": {
+								"title": "Verification Code",
+								"description": "6-digit verification code sent to your email. Leave empty to request a new code, then restart the plugin after entering the code.",
+								"type": "string"
+							}
+						}
+					},
+					"else": {
+						"if": {
+							"properties": {
+								"authenticationMethod": {
+									"const": "Password"
+								}
+							}
+						},
+						"then": {
+							"properties": {
+								"password": {
+									"title": "Password",
+									"description": "Password for your Roborock account.",
+									"type": "string",
+									"ui:widget": "password"
+								}
+							},
+							"required": ["password"]
+						}
+					}
+				}
+			}
+		},
+		"pluginConfiguration": {
+			"title": "Plugin Configuration",
+			"type": "object",
+			"properties": {
+				"whiteList": {
+					"title": "White list devices",
+					"description": "Only expose devices whose DUID is in this list. If empty, all supported devices are exposed (limited to one unless Server Mode is enabled).",
+					"type": "array",
+					"items": {
+						"type": "string"
+					},
+					"uniqueItems": true,
+					"selectFrom": "name"
+				},
+				"enableServerMode": {
+					"title": "Enable Server Mode",
+					"description": "Enable the Robot Vacuum Cleaner in server mode (Each vacuum will have its own server).",
+					"type": "boolean",
+					"default": false
+				},
+				"enableMultipleMap": {
+					"title": "Enable Multiple Maps",
+					"description": "Enable multiple maps support.",
+					"type": "boolean",
+					"default": false
+				},
+				"sanitizeSensitiveLogs": {
+					"title": "Sanitize Sensitive Logs",
+					"description": "Sanitize sensitive information in logs (e.g., authentication tokens).",
+					"type": "boolean",
+					"default": true
+				},
+				"refreshInterval": {
+					"title": "Refresh Interval",
+					"description": "Refresh interval in seconds (default: 60)",
+					"type": "number",
+					"default": 60,
+					"minimum": 1,
+					"maximum": 3600
+				},
+				"debug": {
+					"title": "Enable Debug Mode",
+					"description": "Enable the debug for the plugin (development only)",
+					"type": "boolean",
+					"default": false
+				},
+				"unregisterOnShutdown": {
+					"title": "Unregister On Shutdown",
+					"description": "Unregister all devices on shutdown (development only)",
+					"type": "boolean",
+					"default": false
+				}
+			}
+		},
+		"advancedFeature": {
+			"title": "Advanced features",
+			"type": "object",
+			"properties": {
+				"enableAdvancedFeature": {
+					"title": "Enable Advanced Features",
+					"type": "boolean",
+					"default": false
+				}
+			},
+			"allOf": [
+				{
+					"if": {
+						"properties": {
+							"enableAdvancedFeature": {
+								"const": true
+							}
+						},
+						"required": ["enableAdvancedFeature"]
+					},
+					"then": {
+						"properties": {
+							"settings": {
+								"title": "Advanced Features Configuration",
+								"type": "object",
+								"properties": {
+									"showRoutinesAsRoom": {
+										"title": "Show Routines As Room",
+										"type": "boolean",
+										"default": false
+									},
+									"includeDockStationStatus": {
+										"title": "Include Dock Station Status",
+										"type": "boolean",
+										"default": false
+									},
+									"includeVacuumErrorStatus": {
+										"title": "Include Vacuum Error Status",
+										"type": "boolean",
+										"default": false
+									},
+									"forceRunAtDefault": {
+										"title": "Force Run At Default Implementation",
+										"type": "boolean",
+										"default": false
+									},
+									"useVacationModeToSendVacuumToDock": {
+										"title": "Use \"Vacation\" Mode To Send Vacuum To Dock",
+										"type": "boolean",
+										"default": false
+									},
+									"enableCleanModeMapping": {
+										"title": "Enable Custom Clean Mode Mapping",
+										"type": "boolean",
+										"default": false
+									},
+									"overrideMatterConfiguration": {
+										"title": "Override Matter Configuration",
+										"type": "boolean",
+										"default": false
+									},
+									"enableEmailNotification": {
+										"title": "Enable Email Notification",
+										"type": "boolean",
+										"default": false
+									},
+									"clearStorageOnStartup": {
+										"title": "Clear Storage On Startup",
+										"description": "Clear persistence storage and re-initialize the plugin on next startup.",
+										"type": "boolean",
+										"default": false
+									}
+								}
+							}
+						}
+					}
+				},
+				{
+					"if": {
+						"allOf": [
+							{
+								"properties": {
+									"enableAdvancedFeature": {
+										"const": true
+									}
+								},
+								"required": ["enableAdvancedFeature"]
+							},
+							{
+								"properties": {
+									"settings": {
+										"type": "object",
+										"properties": {
+											"enableCleanModeMapping": {
+												"const": true
+											}
+										},
+										"required": ["enableCleanModeMapping"]
+									}
+								},
+								"required": ["settings"]
+							}
+						]
+					},
+					"then": {
+						"properties": {
+							"settings": {
+								"properties": {
+									"cleanModeSettings": {
+										"title": "Custom Clean Mode Settings",
+										"type": "object",
+										"properties": {
+											"vacuuming": {
+												"title": "Vacuuming Only",
+												"type": "object",
+												"properties": {
+													"fanMode": {
+														"$ref": "#/$defs/fanMode",
+														"default": "Balanced"
+													},
+													"mopRouteMode": {
+														"$ref": "#/$defs/mopRouteMode"
+													}
+												}
+											},
+											"mopping": {
+												"title": "Mopping Only",
+												"type": "object",
+												"properties": {
+													"waterFlowMode": {
+														"$ref": "#/$defs/waterFlowMode"
+													},
+													"mopRouteMode": {
+														"$ref": "#/$defs/mopRouteMode"
+													}
+												},
+												"allOf": [
+													{
+														"if": {
+															"properties": {
+																"waterFlowMode": {
+																	"const": "CustomizeWithDistanceOff"
+																}
+															}
+														},
+														"then": {
+															"properties": {
+																"distanceOff": {
+																	"type": "number",
+																	"description": "Distance Off - Default = 25",
+																	"default": 25,
+																	"minimum": 0,
+																	"maximum": 100
+																}
+															},
+															"required": ["distanceOff"]
+														}
+													}
+												]
+											},
+											"vacmop": {
+												"title": "Vacuuming and Mopping",
+												"type": "object",
+												"properties": {
+													"fanMode": {
+														"$ref": "#/$defs/fanMode",
+														"default": "Balanced"
+													},
+													"waterFlowMode": {
+														"$ref": "#/$defs/waterFlowMode"
+													},
+													"mopRouteMode": {
+														"$ref": "#/$defs/mopRouteMode"
+													}
+												},
+												"allOf": [
+													{
+														"if": {
+															"properties": {
+																"waterFlowMode": {
+																	"const": "CustomizeWithDistanceOff"
+																}
+															}
+														},
+														"then": {
+															"properties": {
+																"distanceOff": {
+																	"type": "number",
+																	"description": "Distance Off - Default = 25",
+																	"default": 25,
+																	"minimum": 0,
+																	"maximum": 100
+																}
+															},
+															"required": ["distanceOff"]
+														}
+													}
+												]
+											}
+										}
+									}
+								}
+							}
+						}
+					}
+				},
+				{
+					"if": {
+						"allOf": [
+							{
+								"properties": {
+									"enableAdvancedFeature": {
+										"const": true
+									}
+								},
+								"required": ["enableAdvancedFeature"]
+							},
+							{
+								"properties": {
+									"settings": {
+										"type": "object",
+										"properties": {
+											"overrideMatterConfiguration": {
+												"const": true
+											}
+										},
+										"required": ["overrideMatterConfiguration"]
+									}
+								},
+								"required": ["settings"]
+							}
+						]
+					},
+					"then": {
+						"properties": {
+							"settings": {
+								"properties": {
+									"matterOverrideSettings": {
+										"title": "Matter Configuration Override Settings",
+										"type": "object",
+										"properties": {
+											"matterVendorName": {
+												"title": "Vendor Name",
+												"type": "string",
+												"default": "Matterbridge"
+											},
+											"matterVendorId": {
+												"title": "Vendor Id",
+												"type": "number",
+												"default": 65521
+											},
+											"matterProductName": {
+												"title": "Default Model Name in Apple Home (all devices)",
+												"type": "string",
+												"default": "Robotic Vaccum Cleaner",
+												"maxLength": 32
+											},
+											"matterProductId": {
+												"title": "Product Id",
+												"type": "number",
+												"default": 32768
+											},
+											"deviceProductNames": {
+												"title": "Per-Device Model Name (Apple Home) - auto-populated on first run",
+												"description": "Shown as 'Model' in Apple Home. Auto-populated with default values on first run. Edit each entry to customise the name per device. Takes priority over the Default Model Name above.",
+												"type": "array",
+												"items": {
+													"type": "object",
+													"properties": {
+														"serialNumber": {
+															"title": "Serial Number",
+															"description": "Device serial number (sn) or duid",
+															"type": "string"
+														},
+														"productName": {
+															"title": "Model Name (shown in Apple Home)",
+															"type": "string",
+															"maxLength": 32
+														}
+													},
+													"required": ["serialNumber", "productName"]
+												}
+											}
+										}
+									}
+								}
+							}
+						}
+					}
+				},
+				{
+					"if": {
+						"allOf": [
+							{
+								"properties": {
+									"enableAdvancedFeature": {
+										"const": true
+									}
+								},
+								"required": ["enableAdvancedFeature"]
+							},
+							{
+								"properties": {
+									"settings": {
+										"type": "object",
+										"properties": {
+											"enableEmailNotification": {
+												"const": true
+											}
+										},
+										"required": ["enableEmailNotification"]
+									}
+								},
+								"required": ["settings"]
+							}
+						]
+					},
+					"then": {
+						"properties": {
+							"settings": {
+								"properties": {
+									"emailNotificationSettings": {
+										"title": "Email Server Settings",
+										"type": "object",
+										"properties": {
+											"smtpHost": {
+												"title": "SMTP Host",
+												"type": "string"
+											},
+											"smtpPort": {
+												"title": "SMTP Port",
+												"type": "number",
+												"default": 587
+											},
+											"smtpSecure": {
+												"title": "Use TLS (port 465)",
+												"type": "boolean",
+												"default": false
+											},
+											"smtpUser": {
+												"title": "SMTP Username",
+												"type": "string"
+											},
+											"smtpPassword": {
+												"title": "SMTP Password",
+												"type": "string",
+												"ui:widget": "password"
+											},
+											"recipient": {
+												"title": "Recipient Email",
+												"type": "string"
+											}
+										},
+										"required": ["smtpHost", "smtpUser", "smtpPassword", "recipient"]
+									}
+								}
+							}
+						}
+					}
+				}
+			]
+		}
+	},
+	"$defs": {
+		"fanMode": {
+			"type": "string",
+			"title": "Fan Mode",
+			"description": "Suction power mode to use (e.g., 'Quiet', 'Balanced', 'Turbo', 'Max', 'MaxPlus').",
+			"enum": ["Quiet", "Balanced", "Turbo", "Max", "MaxPlus"],
+			"default": "Balanced"
+		},
+		"waterFlowMode": {
+			"type": "string",
+			"title": "Water Flow Mode",
+			"description": "Water flow mode to use (e.g., 'Low', 'Medium', 'High', 'CustomizeWithDistanceOff').",
+			"enum": ["Low", "Medium", "High", "CustomizeWithDistanceOff"],
+			"default": "Medium"
+		},
+		"mopRouteMode": {
+			"type": "string",
+			"title": "Mop Route Mode",
+			"description": "Mop route intensity to use (e.g., 'Standard', 'Deep', 'DeepPlus', 'Fast').",
+			"enum": ["Standard", "Deep", "DeepPlus", "Fast"],
+			"default": "Standard"
+		}
+	}
 }
