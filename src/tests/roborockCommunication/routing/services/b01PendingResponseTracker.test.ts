@@ -53,7 +53,7 @@ describe('B01PendingResponseTracker', () => {
 		vi.advanceTimersByTime(500);
 
 		const result = await promise;
-		expect(result.body?.data).toEqual({ rpc_request: { voice_version: 4 } });
+		expect((result as unknown as unknown[])[0]).toEqual({ voice_version: 4 });
 	});
 
 	it('should merge multiple responses into one', async () => {
@@ -67,11 +67,11 @@ describe('B01PendingResponseTracker', () => {
 		vi.advanceTimersByTime(500);
 
 		const result = await promise;
-		const rpcRequest = result.body?.data['rpc_request'] as unknown as Record<string, unknown>;
-		expect(rpcRequest['voice_version']).toBe(4);
-		expect(rpcRequest['voice_language']).toBe(105);
-		expect(rpcRequest['state']).toBe(10);
-		expect(rpcRequest['battery']).toBe(100);
+		const data = (result as unknown as unknown[])[0] as Record<string, unknown>;
+		expect(data['voice_version']).toBe(4);
+		expect(data['voice_language']).toBe(105);
+		expect(data['state']).toBe(10);
+		expect(data['battery']).toBe(100);
 	});
 
 	it('should reset collection window on each new response', async () => {
@@ -88,10 +88,10 @@ describe('B01PendingResponseTracker', () => {
 		vi.advanceTimersByTime(500);
 
 		const result = await promise;
-		const rpcRequest = result.body?.data['rpc_request'] as unknown as Record<string, unknown>;
-		expect(rpcRequest['voice_version']).toBe(4);
-		expect(rpcRequest['voice_language']).toBe(105);
-		expect(rpcRequest['state']).toBe(10);
+		const data = (result as unknown as unknown[])[0] as Record<string, unknown>;
+		expect(data['voice_version']).toBe(4);
+		expect(data['voice_language']).toBe(105);
+		expect(data['state']).toBe(10);
 	});
 
 	it('should reject on overall timeout when no responses arrive', async () => {
@@ -114,17 +114,6 @@ describe('B01PendingResponseTracker', () => {
 		await expect(promise).rejects.toThrow('Timeout');
 	});
 
-	it('should ignore responses with non-matching protocol', async () => {
-		const request = makeRequest(100, 101);
-		const promise = tracker.waitFor(request, duid);
-
-		tracker.tryResolve(makeResponse(101, 5, { '101': { '108': 4 } }));
-
-		vi.advanceTimersByTime(10000);
-
-		await expect(promise).rejects.toThrow('Timeout');
-	});
-
 	it('should respect configurable timestamp tolerance', async () => {
 		const tolerantTracker = new B01PendingResponseTracker(logger, 500, 2);
 		const request = makeRequest(100, 101);
@@ -135,7 +124,7 @@ describe('B01PendingResponseTracker', () => {
 		vi.advanceTimersByTime(500);
 
 		const result = await promise;
-		expect(result.body?.data['rpc_request']).toEqual({ voice_language: 105 });
+		expect((result as unknown as unknown[])[0]).toEqual({ voice_language: 105 });
 
 		tolerantTracker.cancelAll();
 	});
@@ -219,7 +208,7 @@ describe('B01PendingResponseTracker', () => {
 						'109': 'de',
 						'207': 0,
 					},
-					'121': 10,
+					'121': 8,
 					'122': 100,
 					'123': 2,
 					'124': 0,
@@ -238,60 +227,61 @@ describe('B01PendingResponseTracker', () => {
 		vi.advanceTimersByTime(500);
 
 		const result = await promise;
-		const data = result.body?.data;
+		const status = (result as unknown as unknown[])[0] as Record<string, unknown>;
+
+		expect(status['state']).toBe(8);
+		expect(status['battery']).toBe(100);
+		expect(status['fan_power']).toBe(2);
+		expect(status['water_box_mode']).toBe(0);
 
 		// Numeric keys mapped via Q10RequestCode enum; unmapped keys stay as numbers
-		expect(result.duid).toBe(duid);
-		expect(result.header).toEqual(expect.objectContaining({ version: 'B01', timestamp: 1771309420, protocol: 102 }));
-		expect(data).toEqual({
-			rpc_request: {
-				voice_version: 4,
-				voice_language: 105,
-				clean_time: 2,
-				clean_area: 0,
-				not_disturb: 1,
-				volume: 41,
-				total_clean_area: 3838,
-				total_clean_count: 176,
-				total_clean_time: 4057,
-				dust_switch: 1,
-				mop_state: 1,
-				auto_boost: 1,
-				child_lock: 0,
-				dust_setting: 0,
-				map_save_switch: true,
-				recent_clean_record: false,
-				multi_map_switch: 1,
-				sensor_life: 16,
-				carpet_clean_type: 0,
-				clean_line: 0,
-				timezone: { timeZoneCity: 'Europe/Paris', timeZoneSec: 3600 },
-				area_unit: 0,
-				networkinfo: { ipAdress: '192.168.1.1', mac: 'AA:BB:CC:DD:EE:FF', signal: -40, wifiName: 'MyWifi' },
-				robot_type: 1,
-				line_laser_obstacle_avoidance: 1,
-				clean_progress: 0,
-				ground_clean: 0,
-				fault: 0,
-				not_disturb_expand: { disturb_dust_enable: 1, disturb_light: 0, disturb_resume_clean: 1, disturb_voice: 0 },
-				timer_type: 0,
-				add_clean_state: 0,
-				breakpoint_clean: 0,
-				valley_point_charging: false,
-				robot_country_code: 'de',
-				ceip: 0,
-				state: 10,
-				battery: 100,
-				fan_power: 2,
-				water_box_mode: 0,
-				main_brush_life: 69,
-				side_brush_life: 78,
-				filter_life: 78,
-				clean_times: 1,
-				cleaning_reference: 1,
-				clean_task_type: 1,
-				back_type: 5,
-			},
+		expect(status).toEqual({
+			voice_version: 4,
+			voice_language: 105,
+			clean_time: 2,
+			clean_area: 0,
+			not_disturb: 1,
+			volume: 41,
+			total_clean_area: 3838,
+			total_clean_count: 176,
+			total_clean_time: 4057,
+			dust_switch: 1,
+			mop_state: 1,
+			auto_boost: 1,
+			child_lock: 0,
+			dust_setting: 0,
+			map_save_switch: true,
+			recent_clean_record: false,
+			multi_map_switch: 1,
+			sensor_life: 16,
+			carpet_clean_type: 0,
+			clean_line: 0,
+			timezone: { timeZoneCity: 'Europe/Paris', timeZoneSec: 3600 },
+			area_unit: 0,
+			networkinfo: { ipAdress: '192.168.1.1', mac: 'AA:BB:CC:DD:EE:FF', signal: -40, wifiName: 'MyWifi' },
+			robot_type: 1,
+			line_laser_obstacle_avoidance: 1,
+			clean_progress: 0,
+			ground_clean: 0,
+			fault: 0,
+			not_disturb_expand: { disturb_dust_enable: 1, disturb_light: 0, disturb_resume_clean: 1, disturb_voice: 0 },
+			timer_type: 0,
+			add_clean_state: 0,
+			breakpoint_clean: 0,
+			valley_point_charging: false,
+			robot_country_code: 'de',
+			ceip: 0,
+			state: 8,
+			battery: 100,
+			fan_power: 2,
+			water_box_mode: 0,
+			main_brush_life: 69,
+			side_brush_life: 78,
+			filter_life: 78,
+			clean_times: 1,
+			cleaning_reference: 1,
+			clean_task_type: 1,
+			back_type: 5,
 		});
 	});
 
@@ -327,8 +317,8 @@ describe('B01PendingResponseTracker', () => {
 		vi.advanceTimersByTime(500);
 
 		const [result1, result2] = await Promise.all([device1Promise, device2Promise]);
-		expect((result1.body?.data['rpc_request'] as Record<string, unknown>)['voice_version']).toBe(4);
-		expect((result2.body?.data['rpc_request'] as Record<string, unknown>)['voice_language']).toBe(105);
+		expect(((result1 as unknown as unknown[])[0] as Record<string, unknown>)['voice_version']).toBe(4);
+		expect(((result2 as unknown as unknown[])[0] as Record<string, unknown>)['voice_language']).toBe(105);
 	});
 
 	it('should ignore responses with no body', async () => {

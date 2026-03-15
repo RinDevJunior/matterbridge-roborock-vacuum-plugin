@@ -1,4 +1,4 @@
-import { AnsiLogger } from 'matterbridge/logger';
+import { AnsiLogger, debugStringify } from 'matterbridge/logger';
 
 import { CleanModeSetting } from '../../../behaviors/roborock.vacuum/core/CleanModeSetting.js';
 import { CleanSequenceType } from '../../../behaviors/roborock.vacuum/enums/CleanSequenceType.js';
@@ -34,7 +34,9 @@ export class Q10MessageDispatcher implements AbstractMessageDispatcher {
 	}
 
 	public async getNetworkInfo(duid: string): Promise<NetworkInfo | undefined> {
-		// Q10 does not support getting network info, or maybe I just haven't found the right command yet.
+		const request = new RequestMessage({ messageId: this.messageId, dps: { [Q10RequestCode.dps_request]: 1 } });
+		const response = await this.client.get(duid, request);
+		this.logger.notice(`Get network info: ${debugStringify(response)}`);
 		return undefined;
 	}
 
@@ -43,7 +45,7 @@ export class Q10MessageDispatcher implements AbstractMessageDispatcher {
 	}
 
 	public async getDeviceStatus(duid: string): Promise<DeviceStatus | undefined> {
-		const request = new RequestMessage({ messageId: this.messageId, dps: { [Q10RequestCode.rpc_response]: 1 } });
+		const request = new RequestMessage({ messageId: this.messageId, dps: { [Q10RequestCode.dps_request]: 1 } });
 		await this.client.get(duid, request);
 		return undefined;
 	}
@@ -56,11 +58,11 @@ export class Q10MessageDispatcher implements AbstractMessageDispatcher {
 	public async getMapInfo(duid: string): Promise<MapInfo> {
 		const request = new RequestMessage({
 			messageId: this.messageId,
-			dps: { [Q10RequestCode.rpc_request]: { [Q10RequestMethod.multimap]: { 'op': 'list' } } },
+			dps: { [Q10RequestCode.common_request]: { [Q10RequestMethod.multimap]: { 'op': 'list' } } },
 		});
 		const response = await this.client.get<object>(duid, request);
 		this.logger.notice(
-			`Get map info response for Q10 device ${duid}: ${response ? JSON.stringify(response) : 'no response'}`,
+			`Get map info response for Q10 device ${duid}: ${response ? debugStringify(response) : 'no response'}`,
 		);
 		return new MapInfo({ max_multi_map: 0, max_bak_map: 0, multi_map_count: 0, map_info: [] });
 	}

@@ -2,16 +2,8 @@ import { AnsiLogger, debugStringify } from 'matterbridge/logger';
 
 import { MESSAGE_TIMEOUT_MS } from '../../../constants/index.js';
 import { Q10RequestCode } from '../../enums/Q10RequestCode.js';
-import { Dps, HeaderMessage, RequestMessage, ResponseBody, ResponseMessage } from '../../models/index.js';
-import { Protocol } from '../../models/protocol.js';
+import { Dps, RequestMessage, ResponseMessage } from '../../models/index.js';
 import { PendingResponseTracker } from './pendingResponseTracker.js';
-
-const RESPONSE_PROTOCOL_MAP = new Map<Protocol, ReadonlySet<Protocol>>([
-	[Protocol.hello_request, new Set([Protocol.hello_response])],
-	[Protocol.ping_request, new Set([Protocol.ping_response])],
-	[Protocol.general_request, new Set([Protocol.general_response])],
-	[Protocol.rpc_request, new Set([Protocol.rpc_response])],
-]);
 
 // Reverse map: numeric string → enum name (e.g. '121' → 'state')
 const CODE_NAME_MAP: ReadonlyMap<string, string> = new Map(
@@ -26,9 +18,7 @@ const DEFAULT_TIMESTAMP_TOLERANCE = 1;
 interface PendingEntry {
 	duid: string;
 	expectedTimestamp: number;
-	expectedProtocols: ReadonlySet<Protocol>;
 	collectedData: Dps;
-	lastHeader: HeaderMessage;
 	resolve: (response: ResponseMessage) => void;
 	reject: (error: Error) => void;
 	collectionTimer: NodeJS.Timeout;
@@ -47,11 +37,9 @@ export class B01PendingResponseTracker implements PendingResponseTracker {
 	public waitFor(request: RequestMessage, duid: string): Promise<ResponseMessage> {
 		return new Promise<ResponseMessage>((resolve, reject) => {
 			const expectedTimestamp = request.timestamp + 1;
-			const expectedProtocols = RESPONSE_PROTOCOL_MAP.get(request.protocol) ?? new Set([request.protocol + 1]);
 
 			this.logger.debug(
-				`[B01PendingResponseTracker] Waiting for responses with timestamp in [${expectedTimestamp}, ${expectedTimestamp + this.timestampTolerance - 1}], 
-				protocols: ${[...expectedProtocols].join(', ')}`,
+				`[B01PendingResponseTracker] Waiting for responses with timestamp in [${expectedTimestamp}, ${expectedTimestamp + this.timestampTolerance - 1}]`,
 			);
 
 			const overallTimer = setTimeout(() => {
@@ -66,9 +54,7 @@ export class B01PendingResponseTracker implements PendingResponseTracker {
 			const entry: PendingEntry = {
 				duid,
 				expectedTimestamp,
-				expectedProtocols,
 				collectedData: {},
-				lastHeader: new HeaderMessage('', 0, 0, 0, 0),
 				resolve,
 				reject,
 				collectionTimer,
@@ -106,12 +92,10 @@ export class B01PendingResponseTracker implements PendingResponseTracker {
 
 	private matches(response: ResponseMessage, entry: PendingEntry): boolean {
 		const ts = response.header.timestamp;
-		const proto = response.header.protocol;
 
 		return (
 			ts >= entry.expectedTimestamp &&
 			ts < entry.expectedTimestamp + this.timestampTolerance &&
-			entry.expectedProtocols.has(proto) &&
 			entry.duid === response.duid
 		);
 	}
@@ -160,8 +144,6 @@ export class B01PendingResponseTracker implements PendingResponseTracker {
 			}
 		}
 
-		entry.lastHeader = response.header;
-
 		this.logger.debug(
 			`[B01PendingResponseTracker] Collected data chunk, keys: ${Object.keys(entry.collectedData).join(', ')}`,
 		);
@@ -186,9 +168,8 @@ export class B01PendingResponseTracker implements PendingResponseTracker {
 			this.removeEntry(entry);
 
 			const mappedData = this.mapDataKeys(entry.collectedData);
-			const mergedBody = new ResponseBody(mappedData);
-			const mergedResponse = new ResponseMessage(entry.duid, entry.lastHeader, mergedBody);
-			entry.resolve(mergedResponse);
+			const primaryData = Object.values(mappedData)[0] ?? {};
+			entry.resolve([primaryData] as unknown as ResponseMessage);
 		}, this.collectionWindowMs);
 	}
 
