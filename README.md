@@ -145,7 +145,5 @@ This plugin is built on top of the official dynamic platform example:
   <img src="./screenshot/IMG_2.PNG" alt="Screenshot2" width="292" height="633" />
   <img src="./screenshot/IMG_3.PNG" alt="Screenshot3" width="292" height="633" />
   <img src="./screenshot/IMG_4.PNG" alt="Screenshot4" width="292" height="633" />
-</p>
-<p align="center">
   <img src="./screenshot/IMG_5.PNG" alt="Screenshot5" width="292" height="633" />
 </p>
