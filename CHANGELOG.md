@@ -4,6 +4,31 @@ All notable changes to this project will be documented in this file.
 
 ---
 
+## [1.1.6-rc01] - 2026-04-03
+
+### Changed
+
+- **Requires matterbridge@3.7.1** — Minimum required Matterbridge version bumped to `3.7.1`.
+
+### Fixed
+
+- **Scheduled full-home clean runs only previously selected room** — After cleaning a single room, a subsequent automation or scheduled full-home clean would incorrectly clean only that room. Root cause: `selectAreas` with an empty list (signaling "clean all") was silently ignored instead of clearing the selection. The empty list is now forwarded correctly so the next start command executes global cleaning.
+
+### Refactored
+
+- **`Q10RequestCode` enum values renamed** — `rpc_request`/`rpc_response` renamed to `common_request`/`dps_request` for clarity.
+- **`B01PendingResponseTracker` simplified** — Removed protocol-matching; resolves with flattened data array instead.
+- **`getNetworkInfo` implemented** for Q10 dispatcher.
+- **`executeCommandHandler` signature updated** in tests to match current API.
+
+### Updated Dependencies
+
+- `axios`, `mqtt`, `nodemailer`, ESLint toolchain, and `vitest` updated to latest versions.
+
+<a href="https://www.buymeacoffee.com/rinnvspktr" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/default-orange.png" alt="Buy Me A Coffee" height="41" width="174"></a>
+
+---
+
 ## [1.1.5] - 2026-03-15
 
 ### Changed

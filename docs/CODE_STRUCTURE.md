@@ -31,7 +31,7 @@ This plugin integrates Roborock vacuum cleaners into the Matter ecosystem via Ma
 **Key Technologies:**
 
 - TypeScript 5.x targeting ESNext
-- Matterbridge 3.7.1
+- Matterbridge 3.7.2
 - Vitest for unit testing
 - MQTT for real-time device communication
 - REST API for Roborock cloud services
