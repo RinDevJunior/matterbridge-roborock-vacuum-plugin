@@ -93,7 +93,7 @@ describe('RoborockVacuumCleaner', () => {
 		expect(behaviorHandler.executeCommand).toHaveBeenCalledWith('identify', 5);
 	});
 
-	it('should warn if selectAreas called with empty areas', async () => {
+	it('should clear selected areas when selectAreas called with empty areas', async () => {
 		const behaviorHandler = {
 			executeCommand: vi.fn(),
 			setCommandHandler: vi.fn(),
@@ -108,7 +108,7 @@ describe('RoborockVacuumCleaner', () => {
 			vacuum.stateOf(MatterbridgeServiceAreaServer) as any,
 			vacuum,
 		);
-		expect(behaviorHandler.executeCommand).not.toHaveBeenCalled();
+		expect(behaviorHandler.executeCommand).toHaveBeenCalledWith('selectAreas', []);
 	});
 
 	it('should call behaviorHandler for selectAreas command', async () => {
