@@ -6,7 +6,7 @@ import {
 	smartPlanModeConfig,
 	vacAndMopDeepModeConfig,
 	vacFollowedByMopModeConfig,
-} from './cleanModeConfig.js';
+} from './cleanModeConfig/index.js';
 
 /**
  * Registry mapping device models to their extra clean mode capabilities.

@@ -5,7 +5,12 @@ import { DefaultCleanModeHandler } from '../handlers/defaultCleanModeHandler.js'
 import { GoVacationHandler } from '../handlers/goVacationHandler.js';
 import { PresetCleanModeHandler } from '../handlers/presetCleanModeHandler.js';
 import { SmartPlanHandler } from '../handlers/smartPlanHandler.js';
-import { CleanModeDisplayLabel, CleanModeLabelInfo, getModeDisplayMap, getModeSettingsMap } from './cleanModeConfig.js';
+import {
+	CleanModeDisplayLabel,
+	CleanModeLabelInfo,
+	getModeDisplayMap,
+	getModeSettingsMap,
+} from './cleanModeConfig/index.js';
 import { CleanModeSetting } from './CleanModeSetting.js';
 import { getAllModesForDevice, hasSmartPlan } from './deviceCapabilityRegistry.js';
 import { ModeHandlerRegistry } from './modeHandlerRegistry.js';

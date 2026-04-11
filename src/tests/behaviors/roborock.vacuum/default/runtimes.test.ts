@@ -4,7 +4,7 @@ import {
 	baseCleanModeConfigs,
 	CleanModeDisplayLabel,
 	CleanModeLabelInfo,
-} from '../../../../behaviors/roborock.vacuum/core/cleanModeConfig.js';
+} from '../../../../behaviors/roborock.vacuum/core/cleanModeConfig/index.js';
 import { CleanModeSetting } from '../../../../behaviors/roborock.vacuum/core/CleanModeSetting.js';
 import { createDefaultModeResolver } from '../../../../behaviors/roborock.vacuum/core/modeResolver.js';
 import { CleanSequenceType } from '../../../../behaviors/roborock.vacuum/enums/CleanSequenceType.js';

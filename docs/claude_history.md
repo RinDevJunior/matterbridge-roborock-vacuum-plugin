@@ -1,5 +1,46 @@
 # Claude History
 
+## 2026-04-11 (Session 21)
+
+- Executed `docs/plan-cleanModeConfig-split.md`: split `src/behaviors/roborock.vacuum/core/cleanModeConfig.ts` (383 LOC) into a directory module.
+- Created `cleanModeConfig/` with 7 files: `types.ts`, `vacuumAndMop.ts`, `mopOnly.ts`, `vacuumOnly.ts`, `special.ts`, `helpers.ts`, `index.ts`.
+- Fixed import paths: enums are at `../../enums/` (not `../enums/`) from inside the subdirectory.
+- Updated 20 import files (11 production + 9 test): `cleanModeConfig.js` → `cleanModeConfig/index.js`.
+- Deleted original `cleanModeConfig.ts`.
+- `npm run build` exits 0, all 1911 tests pass, lint clean.
+
+## 2026-04-11 (Session 20)
+
+- Ran code-simplifier on `src/runtimes/handlers/` (5 handler files + `platformRunner.ts`).
+- `errorStateHandler.ts`: removed duplicate `debug` log (line 24 was identical to line 17); moved `currentOperationState` getAttribute call to just before its use (skips it on early-return paths); simplified `!== undefined && !== null` → `!= null`.
+- `serviceAreaHandler.ts`: removed redundant `if (!cleaningInfo) return` guard inside `resolveAreaFromCleaningInfo` (caller already narrows); changed function signature to accept `CleanInformation` directly; renamed snake_case segment vars to camelCase (`sourceSegmentId`, `sourceTargetSegmentId`, `segmentId`); inlined `activeArea` find into debug log (removed unused variable).
+- `batteryStateHandler.ts`: fixed falsy-zero bug — `if (batteryLevel)` skipped updates at 0% battery; replaced with `if (batteryLevel != null)` which guards against undefined wire data without skipping 0%.
+- `deviceStateHandler.ts`: parallelized two independent `updateAttribute` calls in `handleDeviceStatusUpdate` using `Promise.all`.
+- `roborockService.coverage.test.ts`: removed test "should throw error when configManager is not provided" — tested dead guard removed in Session 19.
+- All 1911 tests pass.
+
+## 2026-04-11 (Session 19)
+
+- Ran code-simplifier review on `src/services/roborockService.ts`.
+- Removed dead guard `if (!this.configManager)` in `authenticate()` — constructor guarantees it's set.
+- Removed section header comments (`// === ... ===`) in `roborockService.ts` — pure WHAT noise.
+- Fixed bug in `serviceContainer.ts` `destroy()`: `pollingService.shutdown()` was called twice (once without clearing the reference, then again in the normal cleanup block). Removed the redundant early call.
+- Flagged future refactor: move `buildCleanCommand` from `RoborockService` to `AreaManagementService` to reduce 4-call coupling; deferred due to required test redesign.
+
+## 2026-04-04 (Session 18)
+
+- Executed Priority 1 refactoring from `docs/refactoring-recommendations.md`: split `platformRunner.ts` (562 LOC) into 5 pure handler modules under `src/runtimes/handlers/`.
+- Created plan in `docs/plan-platformRunner-split.md`, then executed 5 phases sequentially with build+test after each.
+- Extracted handlers:
+  - `serviceAreaHandler.ts` — `handleServiceAreaUpdate` + 3 helpers + `CLEANING_STATES` const
+  - `errorStateHandler.ts` — `handleErrorOccurred`
+  - `deviceStateHandler.ts` — `handleDeviceStatusUpdate` (returns `boolean` for burst polling signal) + `handleDeviceStatusSimpleUpdate`
+  - `batteryStateHandler.ts` — `handleBatteryUpdate`
+  - `cleanModeHandler.ts` — `handleCleanModeUpdate`
+- `platformRunner.ts` reduced from 562 → 118 LOC (dispatcher + lifecycle only, no handler logic).
+- All 1912 tests pass. Lint and build clean. Changes staged (not committed per user preference).
+- Updated `docs/CODE_STRUCTURE.md` with new `runtimes/handlers/` directory, `docs/to_do.md` marked item complete.
+
 ## 2026-03-14 (Session 17)
 
 - Fixed multi-device polling bug in `PollingService`: second vacuum was stopping first vacuum's polling interval.

@@ -7,7 +7,7 @@ import {
 import {
 	CleanModeDisplayLabel,
 	CleanModeLabelInfo,
-} from '../../../../behaviors/roborock.vacuum/core/cleanModeConfig.js';
+} from '../../../../behaviors/roborock.vacuum/core/cleanModeConfig/index.js';
 
 describe('behaviorConfig', () => {
 	describe('createDefaultBehaviorConfig', () => {

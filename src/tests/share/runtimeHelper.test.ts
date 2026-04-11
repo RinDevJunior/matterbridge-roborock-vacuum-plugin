@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest';
 
-import { baseCleanModeConfigs, smartCleanModeConfigs } from '../../behaviors/roborock.vacuum/core/cleanModeConfig.js';
+import {
+	baseCleanModeConfigs,
+	smartCleanModeConfigs,
+} from '../../behaviors/roborock.vacuum/core/cleanModeConfig/index.js';
 import {
 	createDefaultModeResolver,
 	createSmartModeResolver,

@@ -54,7 +54,7 @@
 
 ### ⚠️ Important Notes
 
-Requires matterbridge@3.7.2
+Requires matterbridge@3.7.3
 
 - **Matterbridge must be run in child bridge mode** for proper operation.
 - **By default, one Matterbridge instance supports one Roborock vacuum.**
@@ -93,7 +93,7 @@ To get the **DUID** for your devices, you have two options:
 ### 🚧 Project Status
 
 - **Under active development**
-- Requires **`matterbridge@3.7.2`**
+- Requires **`matterbridge@3.7.3`**
 
 ---
 

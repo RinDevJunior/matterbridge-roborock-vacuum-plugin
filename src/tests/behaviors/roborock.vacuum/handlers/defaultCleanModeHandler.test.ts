@@ -4,7 +4,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
 	CleanModeDisplayLabel,
 	CleanModeLabelInfo,
-} from '../../../../behaviors/roborock.vacuum/core/cleanModeConfig.js';
+} from '../../../../behaviors/roborock.vacuum/core/cleanModeConfig/index.js';
 import { CleanModeSetting } from '../../../../behaviors/roborock.vacuum/core/CleanModeSetting.js';
 import { HandlerContext } from '../../../../behaviors/roborock.vacuum/core/modeHandler.js';
 import {

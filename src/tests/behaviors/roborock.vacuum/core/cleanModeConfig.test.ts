@@ -8,7 +8,7 @@ import {
 	getModeOptions,
 	getModeSettingsMap,
 	smartCleanModeConfigs,
-} from '../../../../behaviors/roborock.vacuum/core/cleanModeConfig.js';
+} from '../../../../behaviors/roborock.vacuum/core/cleanModeConfig/index.js';
 import { CleanModeSetting } from '../../../../behaviors/roborock.vacuum/core/CleanModeSetting.js';
 
 describe('cleanModeConfig', () => {

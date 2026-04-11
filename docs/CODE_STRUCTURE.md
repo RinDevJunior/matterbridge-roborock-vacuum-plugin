@@ -1,8 +1,8 @@
 # Matterbridge Roborock Vacuum Plugin - Code Structure
 
 **Version:** 1.1.6-rc01
-**Last Updated:** March 28, 2026
-**Test Coverage:** 1912+ tests passed (177 test files)
+**Last Updated:** April 12, 2026
+**Test Coverage:** 1911+ tests passed (177 test files)
 
 ---
 
@@ -31,7 +31,7 @@ This plugin integrates Roborock vacuum cleaners into the Matter ecosystem via Ma
 **Key Technologies:**
 
 - TypeScript 5.x targeting ESNext
-- Matterbridge 3.7.2
+- Matterbridge 3.7.3
 - Vitest for unit testing
 - MQTT for real-time device communication
 - REST API for Roborock cloud services
@@ -97,11 +97,17 @@ src/module.ts (RoborockMatterbridgePlatform)
 │   ├── deviceDiscovery.ts        # Authentication, API calls, device filtering
 │   └── deviceConfigurator.ts     # Device setup, room mapping, Matterbridge registration
 │
-├── platformRunner.ts             # Orchestrates device updates and message routing
+├── platformRunner.ts             # Orchestrates device updates and message routing (~80 LOC, dispatcher only)
 │   └── uses: runtimes/
 │       ├── handleLocalMessage.ts
 │       ├── handleCloudMessage.ts
-│       └── handleHomeDataMessage.ts
+│       ├── handleHomeDataMessage.ts
+│       └── handlers/              # Pure exported handler functions (extracted from PlatformRunner)
+│           ├── serviceAreaHandler.ts   # handleServiceAreaUpdate + area resolution helpers
+│           ├── errorStateHandler.ts    # handleErrorOccurred
+│           ├── deviceStateHandler.ts   # handleDeviceStatusUpdate (returns bool), handleDeviceStatusSimpleUpdate
+│           ├── batteryStateHandler.ts  # handleBatteryUpdate
+│           └── cleanModeHandler.ts     # handleCleanModeUpdate
 │
 ├── services/ (Service Layer)
 │   ├── serviceContainer.ts       # Main DI container for services
@@ -407,7 +413,14 @@ src/
 │       ├── core/                # Core behavior logic
 │       │   ├── CleanModeSetting.ts
 │       │   ├── behaviorConfig.ts
-│       │   ├── cleanModeConfig.ts
+│       │   ├── cleanModeConfig/         # Directory module (split from cleanModeConfig.ts)
+│       │   │   ├── types.ts             # CleanModeConfig, CleanModeDisplayLabel, CleanModeLabel, CleanModeLabelInfo
+│       │   │   ├── vacuumAndMop.ts      # 6 V+M mode entries
+│       │   │   ├── mopOnly.ts           # 5 mop-only entries
+│       │   │   ├── vacuumOnly.ts        # 4 vacuum-only entries
+│       │   │   ├── special.ts           # smartPlanModeConfig, vacFollowedByMopModeConfig, vacAndMopDeepModeConfig
+│       │   │   ├── helpers.ts           # getModeDisplayMap, getModeSettingsMap, getModeOptions
+│       │   │   └── index.ts             # Re-exports + assembles baseCleanModeConfigs, smartCleanModeConfigs
 │       │   ├── cleanModeUtils.ts
 │       │   ├── commonCommands.ts
 │       │   ├── deviceCapabilityRegistry.ts
@@ -561,7 +574,13 @@ src/
 ├── runtimes/                    # Message runtime handlers
 │   ├── handleCloudMessage.ts
 │   ├── handleHomeDataMessage.ts
-│   └── handleLocalMessage.ts
+│   ├── handleLocalMessage.ts
+│   └── handlers/                # Pure exported handler functions (extracted from platformRunner.ts)
+│       ├── serviceAreaHandler.ts    # handleServiceAreaUpdate + area resolution helpers
+│       ├── errorStateHandler.ts     # handleErrorOccurred
+│       ├── deviceStateHandler.ts    # handleDeviceStatusUpdate (returns bool), handleDeviceStatusSimpleUpdate
+│       ├── batteryStateHandler.ts   # handleBatteryUpdate
+│       └── cleanModeHandler.ts      # handleCleanModeUpdate
 │
 ├── initialData/                 # Initial data fetchers
 │   ├── getBatteryStatus.ts
