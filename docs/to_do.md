@@ -20,5 +20,6 @@
 - [x] platformRunner-refactor: extract all handlers into `src/runtimes/handlers/` — serviceAreaHandler, errorStateHandler, deviceStateHandler, batteryStateHandler, cleanModeHandler (Priority 1 from refactoring-recommendations.md)
 - [x] Fix multi-device polling bug — `PollingService` now uses `Map<duid, Timeout>` so each vacuum has its own interval
 - [x] Fix V1PendingResponseTracker messageId collision — composite key `${duid}:${messageId}` prevents cross-device response routing
+- [x] Release `1.1.6` — Add base Q Revo (`roborock.vacuum.a75`) to `DeviceModel` enum
 - [x] Release `1.1.5-rc08` — refactor `handleServiceAreaUpdate` into dedicated helpers
 - [x] Release `1.1.5-rc07` — correct type of `selectedAreas` (`ServiceArea.Area[]` → `number[]`)

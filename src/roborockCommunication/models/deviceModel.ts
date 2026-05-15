@@ -14,6 +14,7 @@ export enum DeviceModel {
 	S7_MAXV_ULTRA = 'roborock.vacuum.a65',
 	S7_PRO_ULTRA = 'roborock.vacuum.a62',
 	Q8_MAX = 'roborock.vacuum.a73',
+	Q_REVO = 'roborock.vacuum.a75',
 	S8 = 'roborock.vacuum.a51',
 	S8_PRO_ULTRA = 'roborock.vacuum.a70',
 	S8_MAXV_ULTRA = 'roborock.vacuum.a97',

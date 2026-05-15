@@ -4,6 +4,16 @@ All notable changes to this project will be documented in this file.
 
 ---
 
+## [1.1.6] - 2026-05-16
+
+### Added
+
+- **Base Q Revo device support** — Added `roborock.vacuum.a75` to `DeviceModel` enum.
+
+<a href="https://www.buymeacoffee.com/rinnvspktr" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/default-orange.png" alt="Buy Me A Coffee" height="41" width="174"></a>
+
+---
+
 ## [1.1.6-rc01] - 2026-04-03
 
 ### Changed
