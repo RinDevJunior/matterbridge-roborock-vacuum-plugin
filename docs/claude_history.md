@@ -1,5 +1,14 @@
 # Claude History
 
+## 2026-05-16 (Session)
+
+- Created release 1.1.6
+  - Updated `version` in `package.json` to `1.1.6`
+  - Updated `build:compress` tgz filename in `package.json` to `1.1.6`
+  - Updated `version` in `matterbridge-roborock-vacuum-plugin.config.json` to `1.1.6`
+  - Updated `description` in `matterbridge-roborock-vacuum-plugin.schema.json` to `v. 1.1.6`
+  - Added CHANGELOG entry for `1.1.6`: Base Q Revo (`roborock.vacuum.a75`) added to `DeviceModel` enum
+
 ## 2026-03-14 (Session 17)
 
 - Fixed multi-device polling bug in `PollingService`: second vacuum was stopping first vacuum's polling interval.
