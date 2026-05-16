@@ -1,6 +1,6 @@
 import { randomInt } from 'node:crypto';
 
-import { AnsiLogger, debugStringify } from 'matterbridge/logger';
+import { AnsiLogger } from 'matterbridge/logger';
 
 import { CleanModeSetting } from '../../../behaviors/roborock.vacuum/core/CleanModeSetting.js';
 import { CleanSequenceType } from '../../../behaviors/roborock.vacuum/enums/CleanSequenceType.js';
@@ -14,7 +14,6 @@ import {
 	Q7RequestMethod,
 } from '../../enums/Q7RequestCode.js';
 import { B01VacuumModeResolver } from '../../helper/B01VacuumModeResolver.js';
-import { DeviceStatus } from '../../models/deviceStatus.js';
 import { NetworkInfo, RawRoomMappingData } from '../../models/index.js';
 import { RequestMessage } from '../../models/requestMessage.js';
 import { Client } from '../../routing/client.js';
@@ -23,7 +22,6 @@ import { AbstractMessageDispatcher } from './abstractMessageDispatcher.js';
 export class Q7MessageDispatcher implements AbstractMessageDispatcher {
 	public dispatcherName = 'Q7MessageDispatcher';
 	private lastB01Id: number;
-	// private readonly b01MapParser = new B01MapParser();
 
 	private get messageId() {
 		let tmpMessageId = Date.now();
@@ -51,7 +49,7 @@ export class Q7MessageDispatcher implements AbstractMessageDispatcher {
 		return duid;
 	}
 
-	public async getDeviceStatus(duid: string): Promise<DeviceStatus | undefined> {
+	public async getDeviceStatus(duid: string): Promise<void> {
 		const request = new RequestMessage({
 			dps: this.createDps(Q7RequestMethod.get_prop, {
 				property: [
@@ -70,8 +68,6 @@ export class Q7MessageDispatcher implements AbstractMessageDispatcher {
 			}),
 		});
 		await this.client.send(duid, request);
-
-		return undefined;
 	}
 
 	// #region Core Data Retrieval
@@ -80,43 +76,24 @@ export class Q7MessageDispatcher implements AbstractMessageDispatcher {
 	}
 
 	public async getMapInfo(duid: string): Promise<MapInfo> {
-		const request = new RequestMessage({
-			messageId: this.messageId,
-			dps: this.createDps(Q7RequestMethod.get_map_list, {}),
-		});
-		const response = await this.client.get<object>(duid, request);
-
-		this.logger.notice(
-			`Get map info response for Q7 device ${duid}: ${response ? debugStringify(response) : 'no response'}`,
+		await this.client.send(
+			duid,
+			new RequestMessage({ messageId: this.messageId, dps: this.createDps(Q7RequestMethod.get_map_list, {}) }),
 		);
 		return new MapInfo({ max_multi_map: 0, max_bak_map: 0, multi_map_count: 0, map_info: [] });
 	}
 
 	public async getRoomMap(duid: string, activeMap: number): Promise<RawRoomMappingData> {
-		const request = new RequestMessage({
-			messageId: this.messageId,
-			dps: this.createDps(Q7RequestMethod.get_room_mapping_backup_1, { map_id: activeMap, prefer_type: 1 }),
-		});
-		const response = (await this.client.get<RawRoomMappingData>(duid, request)) ?? [];
-
-		this.logger.notice(
-			`Get room map response for Q7 device ${duid}: ${response ? debugStringify(response) : 'no response'}`,
+		await this.client.send(
+			duid,
+			new RequestMessage({
+				messageId: this.messageId,
+				dps: this.createDps(Q7RequestMethod.get_room_mapping_backup_1, { map_id: activeMap, prefer_type: 1 }),
+			}),
 		);
-		return response; // TODO: Implement proper room mapping retrieval for Q7
+		return [];
 	}
 
-	// public async getRoomMap(duid: string, activeMap: number): Promise<RawRoomMappingData> {
-	//   const request = new RequestMessage({ messageId: this.messageId, dps: this.createDps(Q7RequestMethod.get_room_mapping, { force: 1, map_type: 0 }) });
-	//   const response = await this.client.get<ResponseBody>(duid, request);
-	//   if (!response) {
-	//     this.logger.error(`Get room map for Q7 device: ${duid}: no response`);
-	//     return [];
-	//   }
-
-	//   const responseData = response.get(Protocol.map_response) as Buffer;
-	//   const parsed = this.b01MapParser.parseRooms(responseData);
-	//   return parsed.rooms.map((x) => [x.roomId, x.roomName, x.roomTypeId ?? 0]);
-	// }
 	// #endregion Core Data Retrieval
 
 	// #region Cleaning Commands
@@ -188,7 +165,14 @@ export class Q7MessageDispatcher implements AbstractMessageDispatcher {
 
 	public async getCustomMessage<T = unknown>(duid: string, def: RequestMessage): Promise<T> {
 		const request = new RequestMessage({ ...def, messageId: this.messageId });
-		return this.client.get(duid, request) as Promise<T>;
+		const result = await this.client.query<T>(duid, request, (msg) => {
+			if (!msg.body) return undefined;
+			const data = msg.body.data;
+			if (!data) return undefined;
+			const values = Object.values(data);
+			return values.length > 0 ? (values[0] as T) : undefined;
+		});
+		return result as T;
 	}
 
 	public async getCleanModeData(duid: string): Promise<CleanModeSetting> {

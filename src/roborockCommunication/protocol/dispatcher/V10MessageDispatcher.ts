@@ -1,13 +1,28 @@
-import { AnsiLogger, debugStringify } from 'matterbridge/logger';
+import { AnsiLogger } from 'matterbridge/logger';
 
 import { CleanModeSetting } from '../../../behaviors/roborock.vacuum/core/CleanModeSetting.js';
-import { MopRoute, MopWaterFlow, VacuumSuctionPower } from '../../../behaviors/roborock.vacuum/enums/index.js';
+import { MopRoute, MopWaterFlow } from '../../../behaviors/roborock.vacuum/enums/index.js';
 import { MapInfo } from '../../../core/application/models/index.js';
 import { MapRoomResponse } from '../../../types/index.js';
 import { MultipleMapDto, RawRoomMappingData } from '../../models/home/index.js';
-import { CloudMessageResult, DeviceStatus, NetworkInfo, RequestMessage } from '../../models/index.js';
+import { DpsPayload, NetworkInfo, Protocol, RequestMessage, ResponseMessage } from '../../models/index.js';
 import { Client } from '../../routing/client.js';
 import { AbstractMessageDispatcher } from './abstractMessageDispatcher.js';
+
+function parseV1Result(msg: ResponseMessage, messageId: number): unknown {
+	if (!msg.body) return undefined;
+
+	let dps = msg.get(Protocol.rpc_response) as DpsPayload;
+	if (!dps) dps = msg.get(Protocol.general_response) as DpsPayload;
+	if (!dps) dps = msg.get(Protocol.general_request) as DpsPayload;
+
+	if (!dps || dps.id !== messageId) return undefined;
+
+	const result = dps.result;
+	if (result === undefined || result === null) return undefined;
+
+	return Array.isArray(result) ? result[0] : result;
+}
 
 export class V10MessageDispatcher implements AbstractMessageDispatcher {
 	public dispatcherName = 'V10MessageDispatcher';
@@ -18,49 +33,62 @@ export class V10MessageDispatcher implements AbstractMessageDispatcher {
 
 	public async getNetworkInfo(duid: string): Promise<NetworkInfo | undefined> {
 		const request = new RequestMessage({ method: 'get_network_info' });
-		return await this.client.get(duid, request);
+		return await this.client.query<NetworkInfo>(
+			duid,
+			request,
+			(msg) => parseV1Result(msg, request.messageId) as NetworkInfo | undefined,
+		);
 	}
 
 	public async getSerialNumber(duid: string): Promise<string | undefined> {
 		const request = new RequestMessage({ method: 'get_serial_number' });
-		const response = await this.client.get<{ serial_number: string }[]>(duid, request);
+		const response = await this.client.query<{ serial_number: string }[]>(duid, request, (msg) => {
+			if (!msg.body) return undefined;
+			let dps = msg.get(Protocol.rpc_response) as DpsPayload;
+			if (!dps) dps = msg.get(Protocol.general_response) as DpsPayload;
+			if (!dps || dps.id !== request.messageId) return undefined;
+			return dps.result as { serial_number: string }[];
+		});
 		return response && response.length > 0 ? response[0].serial_number : duid;
 	}
 
-	public async getDeviceStatus(duid: string): Promise<DeviceStatus | undefined> {
+	public async getDeviceStatus(duid: string): Promise<void> {
 		const request = new RequestMessage({ method: 'get_prop', params: ['get_status'] });
-		const response = await this.client.get<CloudMessageResult[]>(duid, request);
-
-		if (response) {
-			this.logger.debug('Device status: ', debugStringify(response));
-			return new DeviceStatus(duid, response[0]);
-		}
-
-		return undefined;
+		await this.client.send(duid, request);
 	}
 
-	/* --------------- Core Data Retrieval --------------- */
 	public async getHomeMap(duid: string): Promise<MapRoomResponse> {
 		const request = new RequestMessage({ method: 'get_map_v1', secure: true });
-		const response = await this.client.get<MapRoomResponse>(duid, request);
+		const response = await this.client.query<MapRoomResponse>(
+			duid,
+			request,
+			(msg) => parseV1Result(msg, request.messageId) as MapRoomResponse | undefined,
+		);
 		return response ?? {};
 	}
 
 	public async getMapInfo(duid: string): Promise<MapInfo> {
 		const request = new RequestMessage({ method: 'get_multi_maps_list' });
-		const response = (await this.client.get<MultipleMapDto[]>(duid, request)) ?? [];
-		return new MapInfo(
-			response.length > 0 ? response[0] : { max_multi_map: 0, max_bak_map: 0, multi_map_count: 0, map_info: [] },
+		const response = await this.client.query<MultipleMapDto>(
+			duid,
+			request,
+			(msg) => parseV1Result(msg, request.messageId) as MultipleMapDto | undefined,
 		);
+		return new MapInfo(response ?? { max_multi_map: 0, max_bak_map: 0, multi_map_count: 0, map_info: [] });
 	}
 
-	public async getRoomMap(duid: string, activeMap: number): Promise<RawRoomMappingData> {
+	public async getRoomMap(duid: string, _activeMap: number): Promise<RawRoomMappingData> {
 		const request = new RequestMessage({ method: 'get_room_mapping' });
-		const response = (await this.client.get<RawRoomMappingData>(duid, request)) ?? [];
-		return response;
+		const response = await this.client.query<RawRoomMappingData>(duid, request, (msg) => {
+			if (!msg.body) return undefined;
+			let dps = msg.get(Protocol.rpc_response) as DpsPayload;
+			if (!dps) dps = msg.get(Protocol.general_response) as DpsPayload;
+			if (!dps || dps.id !== request.messageId) return undefined;
+			return dps.result as RawRoomMappingData;
+		});
+		return response ?? [];
 	}
 
-	/* ---------------- Cleaning Commands ---------------- */
 	public async goHome(duid: string): Promise<void> {
 		const request = new RequestMessage({ method: 'app_charge' });
 		await this.client.send(duid, request);
@@ -101,7 +129,7 @@ export class V10MessageDispatcher implements AbstractMessageDispatcher {
 
 	public async findMyRobot(duid: string): Promise<void> {
 		const request = new RequestMessage({ method: 'find_me' });
-		await this.client.get(duid, request);
+		await this.client.send(duid, request);
 	}
 
 	public async sendCustomMessage(duid: string, def: RequestMessage): Promise<void> {
@@ -109,8 +137,9 @@ export class V10MessageDispatcher implements AbstractMessageDispatcher {
 		return this.client.send(duid, request);
 	}
 
-	public getCustomMessage<T = unknown>(duid: string, def: RequestMessage): Promise<T> {
-		return this.client.get(duid, def) as Promise<T>;
+	public async getCustomMessage<T = unknown>(duid: string, def: RequestMessage): Promise<T> {
+		const result = await this.client.query<T>(duid, def, (msg) => parseV1Result(msg, def.messageId) as T | undefined);
+		return result as T;
 	}
 
 	public async getCleanModeData(duid: string): Promise<CleanModeSetting> {
@@ -154,17 +183,10 @@ export class V10MessageDispatcher implements AbstractMessageDispatcher {
 			`Change clean mode for ${duid} to suctionPower: ${suctionPower}, waterFlow: ${waterFlow}, mopRoute: ${mopRoute}, distance_off: ${distance_off}`,
 		);
 
-		const currentMopMode = await this.getCustomMessage<number>(duid, new RequestMessage({ method: 'get_custom_mode' }));
-		const smartMopMode = VacuumSuctionPower.Smart;
 		const smartMopRoute = MopRoute.Smart;
-		const customMopMode = VacuumSuctionPower.Custom;
 		const customMopRoute = MopRoute.Custom;
 
-		if (currentMopMode == smartMopMode && mopRoute == smartMopRoute) return;
-		if (currentMopMode == customMopMode && mopRoute == customMopRoute) return;
-
-		// if change mode from smart plan, firstly change to custom
-		if (currentMopMode == smartMopMode) {
+		if (mopRoute && mopRoute !== smartMopRoute) {
 			await this.client.send(duid, new RequestMessage({ method: 'set_mop_mode', params: [customMopRoute] }));
 		}
 

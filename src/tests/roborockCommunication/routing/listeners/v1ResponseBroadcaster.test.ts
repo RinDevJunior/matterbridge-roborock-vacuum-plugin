@@ -4,7 +4,6 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { HeaderMessage, ResponseBody, ResponseMessage } from '../../../../roborockCommunication/models/index.js';
 import { AbstractMessageListener } from '../../../../roborockCommunication/routing/listeners/abstractMessageListener.js';
 import { V1ResponseBroadcaster } from '../../../../roborockCommunication/routing/listeners/v1ResponseBroadcaster.js';
-import { V1PendingResponseTracker } from '../../../../roborockCommunication/routing/services/v1PendingResponseTracker.js';
 import { createMockLogger } from '../../../helpers/testUtils.js';
 import { asPartial } from '../../../helpers/testUtils.js';
 
@@ -36,14 +35,12 @@ function makeResponse(duid = 'test-duid'): ResponseMessage {
 
 describe('V1ResponseBroadcaster', () => {
 	let logger: AnsiLogger;
-	let tracker: V1PendingResponseTracker;
 	let broadcaster: V1ResponseBroadcaster;
 
 	beforeEach(() => {
 		vi.useFakeTimers();
 		logger = createMockLogger();
-		tracker = new V1PendingResponseTracker(logger);
-		broadcaster = new V1ResponseBroadcaster(tracker, logger);
+		broadcaster = new V1ResponseBroadcaster(logger);
 	});
 
 	afterEach(() => {
@@ -114,17 +111,7 @@ describe('V1ResponseBroadcaster', () => {
 		expect(logger.error).toHaveBeenCalledWith(expect.stringContaining('string error'));
 	});
 
-	it('should forward tryResolve to tracker', () => {
-		const spy = vi.spyOn(tracker, 'tryResolve');
-		const response = makeResponse();
-
-		broadcaster.tryResolve(response);
-
-		expect(spy).toHaveBeenCalledWith(response);
-	});
-
-	it('should clear listeners and cancel tracker on unregister', () => {
-		const spy = vi.spyOn(tracker, 'cancelAll');
+	it('should clear listeners on unregister', () => {
 		const listener: AbstractMessageListener = { name: 'L', duid: 'test-duid', onMessage: vi.fn() };
 
 		broadcaster.register(listener);
@@ -134,7 +121,28 @@ describe('V1ResponseBroadcaster', () => {
 		broadcaster.onMessage(response);
 
 		expect(listener.onMessage).not.toHaveBeenCalled();
-		expect(spy).toHaveBeenCalled();
+	});
+
+	it('should remove a single listener on deregister', async () => {
+		const listener1: AbstractMessageListener = {
+			name: 'L1',
+			duid: 'test-duid',
+			onMessage: vi.fn().mockResolvedValue(undefined),
+		};
+		const listener2: AbstractMessageListener = {
+			name: 'L2',
+			duid: 'test-duid',
+			onMessage: vi.fn().mockResolvedValue(undefined),
+		};
+
+		broadcaster.register(listener1);
+		broadcaster.register(listener2);
+		broadcaster.deregister(listener1);
+
+		await broadcaster.onMessage(makeResponse());
+
+		expect(listener1.onMessage).not.toHaveBeenCalled();
+		expect(listener2.onMessage).toHaveBeenCalled();
 	});
 
 	it('should ignore simple ok responses', () => {

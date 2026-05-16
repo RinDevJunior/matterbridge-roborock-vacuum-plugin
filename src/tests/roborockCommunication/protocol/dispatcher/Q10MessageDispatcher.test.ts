@@ -21,6 +21,7 @@ function createMockClient() {
 	return {
 		send: vi.fn().mockResolvedValue(undefined),
 		get: vi.fn().mockResolvedValue(undefined),
+		query: vi.fn().mockResolvedValue(undefined),
 		isConnected: vi.fn().mockReturnValue(true),
 		connect: vi.fn(),
 		disconnect: vi.fn(),
@@ -63,10 +64,9 @@ describe('Q10MessageDispatcher', () => {
 	});
 
 	describe('getDeviceStatus', () => {
-		it('should call client.get and return undefined', async () => {
-			const result = await dispatcher.getDeviceStatus(duid);
-			expect(client.get).toHaveBeenCalled();
-			expect(result).toBeUndefined();
+		it('should call client.send', async () => {
+			await dispatcher.getDeviceStatus(duid);
+			expect(client.send).toHaveBeenCalled();
 		});
 	});
 
@@ -78,26 +78,17 @@ describe('Q10MessageDispatcher', () => {
 	});
 
 	describe('getMapInfo', () => {
-		it('should call client.get and logger.notice, return MapInfo', async () => {
-			client.get.mockResolvedValueOnce({});
+		it('should call client.send and return stub MapInfo', async () => {
 			const result = await dispatcher.getMapInfo(duid);
-			expect(client.get).toHaveBeenCalled();
-			expect(logger.notice).toHaveBeenCalled();
-			expect(result).toBeInstanceOf(Object); // MapInfo, but type is not checked at runtime
+			expect(client.send).toHaveBeenCalled();
+			expect(result).toBeInstanceOf(Object);
 		});
 	});
 
 	describe('getRoomMap', () => {
-		it('should call client.get and return RoomMap', async () => {
-			client.get.mockResolvedValueOnce({ room_mapping: [] });
+		it('should call client.send and return empty array', async () => {
 			const result = await dispatcher.getRoomMap(duid, 1);
-			expect(client.get).toHaveBeenCalled();
-			expect(result).toBeInstanceOf(Object); // RoomMap, but type is not checked at runtime
-		});
-
-		it('should return empty array when response has no room_mapping', async () => {
-			client.get.mockResolvedValueOnce({});
-			const result = await dispatcher.getRoomMap(duid, 1);
+			expect(client.send).toHaveBeenCalled();
 			expect(result).toEqual([]);
 		});
 	});
@@ -177,7 +168,7 @@ describe('Q10MessageDispatcher', () => {
 		it('should get a custom message', async () => {
 			const def = asPartial<RequestMessage>({ dps: { foo: 'bar' } });
 			await dispatcher.getCustomMessage(duid, def);
-			expect(client.get).toHaveBeenCalled();
+			expect(client.query).toHaveBeenCalled();
 		});
 	});
 

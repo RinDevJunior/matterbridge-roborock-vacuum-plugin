@@ -134,31 +134,6 @@ describe('ClientRouter', () => {
 		expect(mockLocalNetworkClient.send).toHaveBeenCalledWith('duid', request);
 	});
 
-	it('get should use mqttClient for secure requests', async () => {
-		const router = new ClientRouter(mockLogger, mockUserData);
-		const request = asPartial<RequestMessage>({ secure: true });
-
-		mockMQTTClient = {
-			isConnected: vi.fn().mockReturnValue(false),
-			connect: vi.fn(),
-			disconnect: vi.fn(),
-			send: vi.fn(),
-			get: vi.fn(),
-		};
-		router['mqttClient'] = mockMQTTClient;
-		await router.get('duid', request);
-		expect(mockMQTTClient.get).toHaveBeenCalledWith('duid', request);
-	});
-
-	it('get should use localClient for non-secure requests', async () => {
-		const router = new ClientRouter(mockLogger, mockUserData);
-		router.registerClient('duid', '127.0.0.1');
-		const request = asPartial<RequestMessage>({ secure: false });
-		router['localClients'].set('duid', mockLocalNetworkClient);
-		await router.get('duid', request);
-		expect(mockLocalNetworkClient.get).toHaveBeenCalledWith('duid', request);
-	});
-
 	it('getLocalClient should return localClient if connected', () => {
 		const router = new ClientRouter(mockLogger, mockUserData);
 		router.registerClient('duid', '127.0.0.1');

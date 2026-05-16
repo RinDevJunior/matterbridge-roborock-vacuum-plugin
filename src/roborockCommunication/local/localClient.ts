@@ -10,7 +10,6 @@ import { MessageContext, Protocol, RequestMessage, ResponseMessage } from '../mo
 import { AbstractClient } from '../routing/abstractClient.js';
 import { HelloResponseListener } from '../routing/listeners/implementation/helloResponseListener.js';
 import { ResponseBroadcaster } from '../routing/listeners/responseBroadcaster.js';
-import { PendingResponseTracker } from '../routing/services/pendingResponseTracker.js';
 import { LocalPingResponseListener } from './localPingResponseListener.js';
 
 export class LocalNetworkClient extends AbstractClient {
@@ -31,9 +30,8 @@ export class LocalNetworkClient extends AbstractClient {
 		private readonly duid: string,
 		private readonly ip: string,
 		responseBroadcaster: ResponseBroadcaster,
-		responseTracker: PendingResponseTracker,
 	) {
-		super(logger, context, responseBroadcaster, responseTracker);
+		super(logger, context, responseBroadcaster);
 		this.messageIdSeq = new Sequence(100000, 999999);
 
 		this.helloResponseListener = new HelloResponseListener(this.duid, logger);
@@ -218,7 +216,6 @@ export class LocalNetworkClient extends AbstractClient {
 				try {
 					const currentBuffer = receivedBuffer.subarray(offset + 4, offset + segmentLength + 4);
 					const response = this.deserializer.deserialize(this.duid, currentBuffer, 'LocalNetworkClient');
-					this.responseBroadcaster.tryResolve(response);
 					await this.responseBroadcaster.onMessage(response);
 				} catch (error) {
 					const errMsg = error instanceof Error ? (error.stack ?? error.message) : String(error);

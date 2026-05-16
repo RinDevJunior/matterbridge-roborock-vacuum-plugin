@@ -160,7 +160,6 @@ describe('ConnectionService', () => {
 
 		it('should successfully initialize MQTT client and connect', async () => {
 			vi.spyOn(mockClientRouter, 'isReady').mockReturnValue(true);
-			mockClientRouter.get = vi.fn().mockResolvedValue(mockClientRouter);
 
 			await service.initializeMessageClient(mockDevice, mockUserData);
 
@@ -384,7 +383,7 @@ describe('ConnectionService additional coverage', () => {
 	});
 
 	it('should return false if getNetworkInfo returns no ip', async () => {
-		mockClientRouter.get = vi.fn().mockResolvedValue({ ip: undefined });
+		mockClientRouter.query = vi.fn().mockResolvedValue({ ip: undefined });
 		service.clientRouter = asPartial<ClientRouter>(mockClientRouter);
 
 		const result = await service.initializeMessageClientForLocal(mockDevice);

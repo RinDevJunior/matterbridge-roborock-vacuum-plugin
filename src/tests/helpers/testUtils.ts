@@ -52,6 +52,7 @@ export function makeMockClientRouter(overrides: Partial<Record<string, unknown>>
 		// Add common Client methods used by dispatchers
 		send: vi.fn().mockResolvedValue(undefined),
 		get: vi.fn().mockResolvedValue(undefined),
+		query: vi.fn().mockResolvedValue(undefined),
 		...overrides,
 	} as Partial<ClientRouter> as ClientRouter;
 }

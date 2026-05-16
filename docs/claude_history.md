@@ -1,5 +1,24 @@
 # Claude History
 
+## 2026-05-17 (Session 23)
+
+- Ran `/simplify` code review on fire-and-forget migration (Phases 1–3 staged changes).
+- Fixed memory leak: `OneShotResponseListener` was never removed from broadcaster arrays after settling. Added `deregister(listener)` to `ResponseBroadcaster` interface + all implementations (`V1ResponseBroadcaster`, `B01ResponseBroadcaster`, `ResponseBroadcasterFactory`). Added `finally { broadcaster.deregister(listener) }` to `AbstractClient.query()` and `ClientRouter.query()`.
+- Removed `timer.unref()` after `clearTimeout()` in `OneShotResponseListener.onMessage()` — no-op after clear.
+- Removed stale JSDoc comment in `AbstractClient.isReady()`.
+- Removed commented-out dead code in `Q7MessageDispatcher` (unused `b01MapParser` field and old `getRoomMap` implementation).
+- Removed WHAT-only section banner comments in `V10MessageDispatcher`.
+- Added `deregister` tests to `v1ResponseBroadcaster.test.ts` and `b01ResponseBroadcaster.test.ts`.
+- All 175 test files, 1865 tests pass. Type-check clean.
+
+## 2026-05-16 (Session 22)
+
+- Executed fire-and-forget migration (all 3 phases) per `docs/plan-fire-and-forget-v2.md`.
+- Phase 1: Converted 9 dispatcher methods from `client.get()` to `client.send()` (findMyRobot, getDeviceStatus for V10/Q10; getNetworkInfo, getMapInfo, getRoomMap for Q10/Q7). Updated `abstractMessageDispatcher.ts` `getDeviceStatus` return type from `Promise<DeviceStatus | undefined>` to `Promise<void>`.
+- Phase 2: Created `OneShotResponseListener` (one-shot listener pattern). Added `query<T>()` to `Client` interface, `AbstractClient`, and `ClientRouter`. Added `parseV1Result<T>()` module helper to `V10MessageDispatcher`. Migrated all remaining `client.get()` callers in V10/Q10/Q7 dispatchers to `client.query()`. Simplified `changeCleanMode()` read-before-write guard (removed `getCustomMessage('get_custom_mode')` call).
+- Phase 3: Deleted entire `PendingResponseTracker` infrastructure (3 source files + 3 test files). Removed `tryResolve()` from `ResponseBroadcaster` interface and all implementations. Simplified broadcaster constructors. Removed tracker from local/MQTT client constructors.
+- Updated 20+ test files to remove tracker mocks. Fixed race condition in `AbstractClient.query()` test (microtask deferral). All 175 test files, 1863 tests pass.
+
 ## 2026-04-11 (Session 21)
 
 - Executed `docs/plan-cleanModeConfig-split.md`: split `src/behaviors/roborock.vacuum/core/cleanModeConfig.ts` (383 LOC) into a directory module.

@@ -1,4 +1,4 @@
-import { RequestMessage } from '../models/index.js';
+import { RequestMessage, ResponseMessage } from '../models/index.js';
 import { AbstractConnectionListener } from './listeners/abstractConnectionListener.js';
 import { AbstractMessageListener } from './listeners/abstractMessageListener.js';
 
@@ -17,5 +17,10 @@ export interface Client {
 
 	send(duid: string, request: RequestMessage): Promise<void>;
 
-	get<T>(duid: string, request: RequestMessage): Promise<T | undefined>;
+	query<T>(
+		duid: string,
+		request: RequestMessage,
+		parseFn: (msg: ResponseMessage) => T | undefined,
+		timeoutMs?: number,
+	): Promise<T | undefined>;
 }
