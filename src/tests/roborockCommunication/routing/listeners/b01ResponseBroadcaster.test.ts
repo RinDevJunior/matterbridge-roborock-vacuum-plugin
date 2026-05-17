@@ -68,6 +68,22 @@ describe('B01ResponseBroadcaster', () => {
 		expect(logger.error).toHaveBeenCalled();
 	});
 
+	it('should handle non-Error thrown values', () => {
+		const failingListener: AbstractMessageListener = {
+			name: 'FailListener',
+			duid: 'test-duid',
+			onMessage: vi.fn(() => {
+				// eslint-disable-next-line @typescript-eslint/only-throw-error
+				throw 'raw string error';
+			}),
+		};
+
+		broadcaster.register(failingListener);
+		broadcaster.onMessage(makeResponse());
+
+		expect(logger.error).toHaveBeenCalledWith(expect.stringContaining('raw string error'));
+	});
+
 	it('should clear listeners on unregister', () => {
 		const listener: AbstractMessageListener = { name: 'L', duid: 'test-duid', onMessage: vi.fn() };
 

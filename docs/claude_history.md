@@ -1,5 +1,22 @@
 # Claude History
 
+## 2026-05-17 (Session 25)
+
+- Improved patch coverage from 83.85% to higher by adding 8 new tests targeting uncovered branches in changed files.
+- `oneShotResponseListener.test.ts`: added test for wrong-duid messages (covers line 34 false branch) and `onMessage-before-waitFor` (covers line 40 false branch when timer is undefined).
+- `responseBroadcasterFactory.test.ts`: added `deregister` test (covers lines 31-32).
+- `clientRouter.test.ts`: added `registerDevice`, `updateNonce`, `isReady`, `unregisterClient`, `query` timeout, and `query` resolve tests; added `error`/`warn` to mockLogger.
+- `abstractClient.test.ts`: added `isReady` delegates to `isConnected` test (covers line 40).
+- `v1ResponseBroadcaster.test.ts` / `b01ResponseBroadcaster.test.ts`: replaced "throw Error" with `throw 'raw string error'` to cover the `String(error)` branch in the non-Error exception handler.
+- All 175 test files, 1876 tests pass (+8). Precommit clean.
+
+## 2026-05-17 (Session 24)
+
+- Fixed CI `npm ci` failure: added `"typescript": "6.0.3"` to existing `"overrides"` block in `package.json` so npm v10 (CI) resolves `tsconfck`'s optional `typescript@^5.0.0` peer dep to `6.0.3` instead of trying to install `5.9.3` which was missing from the lock file.
+- Updated safe patch-level dev dependencies: `@vitest/coverage-v8` 4.1.2→4.1.6, `@vitest/eslint-plugin` 1.6.14→1.6.17, `prettier` 3.8.1→3.8.3, `typescript` 6.0.2→6.0.3, `typescript-eslint` 8.58.0→8.59.3, `vitest` 4.1.2→4.1.6, `node-persist-manager` 2.0.1→2.0.2.
+- Fixed two new lint errors surfaced by `typescript-eslint@8.59.3`: removed redundant `model as string` cast in `getSupportedCleanModes.ts` and `} as AbstractUDPMessageListener` cast in `connectionService.ts`; removed now-unused `AbstractUDPMessageListener` import.
+- All 175 test files, 1865 tests pass. Precommit clean.
+
 ## 2026-05-17 (Session 23)
 
 - Ran `/simplify` code review on fire-and-forget migration (Phases 1–3 staged changes).

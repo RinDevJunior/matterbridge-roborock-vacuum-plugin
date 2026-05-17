@@ -100,4 +100,10 @@ describe('AbstractClient', () => {
 		client.connect();
 		expect(client.isConnected()).toBe(true);
 	});
+
+	it('isReady delegates to isConnected', () => {
+		expect(client.isReady()).toBe(false);
+		client.connect();
+		expect(client.isReady()).toBe(true);
+	});
 });

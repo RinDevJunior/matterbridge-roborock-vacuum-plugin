@@ -54,6 +54,32 @@ describe('OneShotResponseListener', () => {
 		await expect(promise).rejects.toThrow('Timeout after 100ms');
 	});
 
+	it('should ignore messages with a different duid', async () => {
+		const parseFn = vi.fn().mockReturnValue(99);
+		const listener = new OneShotResponseListener<number>('test-duid', parseFn);
+
+		const promise = listener.waitFor();
+		await listener.onMessage(makeResponse('other-duid'));
+
+		expect(parseFn).not.toHaveBeenCalled();
+
+		vi.advanceTimersByTime(15000);
+		await expect(promise).rejects.toThrow();
+	});
+
+	it('should not throw when onMessage is called before waitFor (no timer set)', async () => {
+		const parseFn = vi.fn().mockReturnValue(55);
+		const listener = new OneShotResponseListener<number>('test-duid', parseFn);
+
+		// onMessage before waitFor — timer is undefined, covers the if(this.timer) false branch
+		await expect(listener.onMessage(makeResponse('test-duid'))).resolves.toBeUndefined();
+		expect(parseFn).toHaveBeenCalledTimes(1);
+
+		// Calling onMessage again has no effect (already settled)
+		await listener.onMessage(makeResponse('test-duid'));
+		expect(parseFn).toHaveBeenCalledTimes(1);
+	});
+
 	it('should be a no-op after settling', async () => {
 		const parseFn = vi.fn().mockReturnValue(42);
 		const listener = new OneShotResponseListener<number>('test-duid', parseFn);

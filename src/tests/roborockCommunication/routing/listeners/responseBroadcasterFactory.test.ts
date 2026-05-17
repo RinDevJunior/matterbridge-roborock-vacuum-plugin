@@ -80,6 +80,16 @@ describe('ResponseBroadcasterFactory', () => {
 		expect(b01Listener.onMessage).toHaveBeenCalledWith(b01Response);
 	});
 
+	it('should deregister listener from both broadcasters', async () => {
+		const listener: AbstractMessageListener = { name: 'TestListener', duid: 'v1-duid', onMessage: vi.fn() };
+		factory.register(listener);
+		factory.deregister(listener);
+
+		await factory.onMessage(makeV1Response());
+		await factory.onMessage(makeB01Response('v1-duid'));
+		expect(listener.onMessage).not.toHaveBeenCalled();
+	});
+
 	it('should unregister from both broadcasters', () => {
 		const listener: AbstractMessageListener = { name: 'TestListener', duid: 'test', onMessage: vi.fn() };
 		factory.register(listener);
