@@ -5,7 +5,7 @@ import {
 	CleanModeDisplayLabel,
 	CleanModeLabelInfo,
 	getModeOptions,
-} from '../behaviors/roborock.vacuum/core/cleanModeConfig.js';
+} from '../behaviors/roborock.vacuum/core/cleanModeConfig/index.js';
 import { getAllModesForDevice } from '../behaviors/roborock.vacuum/core/deviceCapabilityRegistry.js';
 import { PlatformConfigManager } from '../platform/platformConfigManager.js';
 import { DeviceModel } from '../roborockCommunication/models/index.js';
@@ -20,7 +20,7 @@ export function getSupportedCleanModes(
 		return getDefaultSupportedCleanModes(configManager, [...defaultModes]);
 	}
 
-	const supportedModes = getModeOptions(getAllModesForDevice(model as string));
+	const supportedModes = getModeOptions(getAllModesForDevice(model));
 	return getDefaultSupportedCleanModes(configManager, supportedModes);
 }
 

@@ -54,7 +54,7 @@
 
 ### ⚠️ Important Notes
 
-Requires matterbridge@3.6.1
+Requires matterbridge@3.7.3
 
 - **Matterbridge must be run in child bridge mode** for proper operation.
 - **By default, one Matterbridge instance supports one Roborock vacuum.**
@@ -93,7 +93,7 @@ To get the **DUID** for your devices, you have two options:
 ### 🚧 Project Status
 
 - **Under active development**
-- Requires **`matterbridge@3.5.5`**
+- Requires **`matterbridge@3.7.3`**
 
 ---
 
@@ -143,11 +143,7 @@ This plugin is built on top of the official dynamic platform example:
 <p align="center">
   <img src="./screenshot/IMG_1.PNG" alt="Screenshot1" width="292" height="633" />
   <img src="./screenshot/IMG_2.PNG" alt="Screenshot2" width="292" height="633" />
-</p>
-<p align="center">
   <img src="./screenshot/IMG_3.PNG" alt="Screenshot3" width="292" height="633" />
   <img src="./screenshot/IMG_4.PNG" alt="Screenshot4" width="292" height="633" />
-</p>
-<p align="center">
   <img src="./screenshot/IMG_5.PNG" alt="Screenshot5" width="292" height="633" />
 </p>

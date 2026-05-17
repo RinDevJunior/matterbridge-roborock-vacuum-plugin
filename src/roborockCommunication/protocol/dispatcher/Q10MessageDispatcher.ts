@@ -6,7 +6,6 @@ import { MapInfo } from '../../../core/application/models/index.js';
 import { MapRoomResponse } from '../../../types/index.js';
 import { Q10RequestCode, Q10RequestMethod } from '../../enums/Q10RequestCode.js';
 import { B01VacuumModeResolver } from '../../helper/B01VacuumModeResolver.js';
-import { DeviceStatus } from '../../models/deviceStatus.js';
 import { NetworkInfo, RawRoomMappingData } from '../../models/index.js';
 import { RequestMessage } from '../../models/requestMessage.js';
 import { Client } from '../../routing/client.js';
@@ -34,7 +33,8 @@ export class Q10MessageDispatcher implements AbstractMessageDispatcher {
 	}
 
 	public async getNetworkInfo(duid: string): Promise<NetworkInfo | undefined> {
-		// Q10 does not support getting network info, or maybe I just haven't found the right command yet.
+		const request = new RequestMessage({ messageId: this.messageId, dps: { [Q10RequestCode.dps_request]: 1 } });
+		await this.client.send(duid, request);
 		return undefined;
 	}
 
@@ -42,10 +42,9 @@ export class Q10MessageDispatcher implements AbstractMessageDispatcher {
 		return duid;
 	}
 
-	public async getDeviceStatus(duid: string): Promise<DeviceStatus | undefined> {
-		const request = new RequestMessage({ messageId: this.messageId, dps: { [Q10RequestCode.rpc_response]: 1 } });
-		await this.client.get(duid, request);
-		return undefined;
+	public async getDeviceStatus(duid: string): Promise<void> {
+		const request = new RequestMessage({ messageId: this.messageId, dps: { [Q10RequestCode.dps_request]: 1 } });
+		await this.client.send(duid, request);
 	}
 
 	// #region Core Data Retrieval
@@ -56,19 +55,18 @@ export class Q10MessageDispatcher implements AbstractMessageDispatcher {
 	public async getMapInfo(duid: string): Promise<MapInfo> {
 		const request = new RequestMessage({
 			messageId: this.messageId,
-			dps: { [Q10RequestCode.rpc_request]: { [Q10RequestMethod.multimap]: { 'op': 'list' } } },
+			dps: { [Q10RequestCode.common_request]: { [Q10RequestMethod.multimap]: { 'op': 'list' } } },
 		});
-		const response = await this.client.get<object>(duid, request);
-		this.logger.notice(
-			`Get map info response for Q10 device ${duid}: ${response ? JSON.stringify(response) : 'no response'}`,
-		);
+		await this.client.send(duid, request);
 		return new MapInfo({ max_multi_map: 0, max_bak_map: 0, multi_map_count: 0, map_info: [] });
 	}
 
-	public async getRoomMap(duid: string, activeMap: number): Promise<RawRoomMappingData> {
-		const request = new RequestMessage({ messageId: this.messageId, dps: { [Q10RequestCode.get_prop]: 1 } });
-		const response = await this.client.get<{ room_mapping: RawRoomMappingData }>(duid, request);
-		return response?.room_mapping ?? []; // TODO: Implement proper room mapping retrieval for Q10
+	public async getRoomMap(duid: string, _activeMap: number): Promise<RawRoomMappingData> {
+		await this.client.send(
+			duid,
+			new RequestMessage({ messageId: this.messageId, dps: { [Q10RequestCode.get_prop]: 1 } }),
+		);
+		return [];
 	}
 	// #endregion Core Data Retrieval
 
@@ -126,7 +124,14 @@ export class Q10MessageDispatcher implements AbstractMessageDispatcher {
 
 	public async getCustomMessage<T = unknown>(duid: string, def: RequestMessage): Promise<T> {
 		const request = new RequestMessage({ ...def, messageId: this.messageId });
-		return this.client.get(duid, request) as Promise<T>;
+		const result = await this.client.query<T>(duid, request, (msg) => {
+			if (!msg.body) return undefined;
+			const data = msg.body.data;
+			if (!data) return undefined;
+			const values = Object.values(data);
+			return values.length > 0 ? (values[0] as T) : undefined;
+		});
+		return result as T;
 	}
 
 	public async getCleanModeData(duid: string): Promise<CleanModeSetting> {

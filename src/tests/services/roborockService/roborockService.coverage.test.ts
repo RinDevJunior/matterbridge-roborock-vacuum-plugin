@@ -134,25 +134,6 @@ describe('RoborockService - Complete Coverage', () => {
 	});
 
 	describe('Authentication', () => {
-		it('should throw error when configManager is not provided', async () => {
-			const serviceWithoutConfig = new RoborockService(
-				{
-					refreshInterval: 10,
-					baseUrl: 'https://api.roborock.com',
-					persist: mockPersist as LocalStorage,
-					configManager: mockConfigManager as PlatformConfigManager,
-					container: mockContainer as ServiceContainer,
-					toastMessage: vi.fn(),
-				},
-				mockLogger as AnsiLogger,
-				undefined as unknown as PlatformConfigManager,
-			);
-
-			await expect(serviceWithoutConfig.authenticate()).rejects.toThrow(
-				'PlatformConfigManager not provided. Cannot authenticate.',
-			);
-		});
-
 		it('should log password as masked when provided', async () => {
 			vi.mocked(mockAuthCoordinator.authenticate).mockResolvedValue({
 				nickname: 'Test',

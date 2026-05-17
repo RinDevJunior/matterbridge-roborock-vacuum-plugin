@@ -1,6 +1,6 @@
 import { debugStringify } from 'matterbridge/logger';
 
-import { CleanModeDisplayLabel } from '../core/cleanModeConfig.js';
+import { CleanModeDisplayLabel } from '../core/cleanModeConfig/index.js';
 import { HandlerContext, ModeHandler } from '../core/modeHandler.js';
 
 export class CustomCleanModeHandler implements ModeHandler {

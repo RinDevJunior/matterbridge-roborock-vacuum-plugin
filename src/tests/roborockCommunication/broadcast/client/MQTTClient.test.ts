@@ -6,7 +6,6 @@ import { MessageContext, RequestMessage } from '../../../../roborockCommunicatio
 import { MQTTClient } from '../../../../roborockCommunication/mqtt/mqttClient.js';
 import { ConnectionBroadcaster } from '../../../../roborockCommunication/routing/listeners/connectionBroadcaster.js';
 import { V1ResponseBroadcaster } from '../../../../roborockCommunication/routing/listeners/v1ResponseBroadcaster.js';
-import { V1PendingResponseTracker } from '../../../../roborockCommunication/routing/services/v1PendingResponseTracker.js';
 import { asPartial, asType, createMockLogger } from '../../../helpers/testUtils.js';
 
 function makeUserdata() {
@@ -22,19 +21,17 @@ describe('MQTTClient (additional)', () => {
 	let context: MessageContext;
 	let logger: any;
 	let responseBroadcaster: V1ResponseBroadcaster;
-	let responseTracker: V1PendingResponseTracker;
 
 	beforeEach(() => {
 		vi.restoreAllMocks();
 		userdata = makeUserdata();
 		context = new MessageContext(userdata);
 		logger = makeLogger();
-		responseTracker = new V1PendingResponseTracker(logger);
-		responseBroadcaster = new V1ResponseBroadcaster(responseTracker, logger);
+		responseBroadcaster = new V1ResponseBroadcaster(logger);
 	});
 
 	it('isReady/isConnected reflect internal state', () => {
-		const client = new MQTTClient(logger, context, userdata, responseBroadcaster, responseTracker);
+		const client = new MQTTClient(logger, context, userdata, responseBroadcaster);
 		expect(client.isConnected()).toBe(false);
 		expect(client.isReady()).toBe(false);
 
@@ -55,7 +52,7 @@ describe('MQTTClient (additional)', () => {
 		// prevent keepAlive timer from running
 		const spyConnect = vi.spyOn(mqtt, 'connect').mockImplementation(() => asType<any>(mockMqttClient));
 
-		const client = new MQTTClient(logger, context, userdata, responseBroadcaster, responseTracker);
+		const client = new MQTTClient(logger, context, userdata, responseBroadcaster);
 
 		client['keepConnectionAlive'] = vi.fn();
 
@@ -75,7 +72,7 @@ describe('MQTTClient (additional)', () => {
 	});
 
 	it('sendInternal logs error when not connected', async () => {
-		const client = new MQTTClient(logger, context, userdata, responseBroadcaster, responseTracker);
+		const client = new MQTTClient(logger, context, userdata, responseBroadcaster);
 		const req = new RequestMessage({ method: 'test' });
 
 		await asType<{ sendInternal(duid: string, req: RequestMessage): Promise<void> }>(client).sendInternal(
@@ -90,7 +87,7 @@ describe('MQTTClient (additional)', () => {
 		const mockMqttClient: any = { on: vi.fn(), end: vi.fn(), reconnect: vi.fn(), publish: vi.fn(), subscribe: vi.fn() };
 		vi.spyOn(mqtt, 'connect').mockImplementation(() => asType<any>(mockMqttClient));
 
-		const client = new MQTTClient(logger, context, userdata, responseBroadcaster, responseTracker);
+		const client = new MQTTClient(logger, context, userdata, responseBroadcaster);
 
 		client['keepConnectionAlive'] = vi.fn();
 		client['mqttClient'] = mockMqttClient;
@@ -139,7 +136,6 @@ describe('MQTTClient', () => {
 	let serializer: any;
 	let deserializer: any;
 	let responseBroadcaster: V1ResponseBroadcaster;
-	let responseTracker: V1PendingResponseTracker;
 	const createdClients: any[] = [];
 
 	beforeEach(() => {
@@ -155,8 +151,7 @@ describe('MQTTClient', () => {
 		};
 		serializer = { serialize: vi.fn(() => ({ buffer: Buffer.from('msg') })) };
 		deserializer = { deserialize: vi.fn(() => 'deserialized') };
-		responseTracker = new V1PendingResponseTracker(logger);
-		responseBroadcaster = new V1ResponseBroadcaster(responseTracker, logger);
+		responseBroadcaster = new V1ResponseBroadcaster(logger);
 
 		// Mock mqtt client instance
 		client = {
@@ -172,7 +167,7 @@ describe('MQTTClient', () => {
 	function createMQTTClient() {
 		class TestMQTTClient extends MQTTClient {
 			constructor() {
-				super(logger, context, userdata, responseBroadcaster, responseTracker);
+				super(logger, context, userdata, responseBroadcaster);
 			}
 		}
 		const mqttClient = new TestMQTTClient();
@@ -190,7 +185,6 @@ describe('MQTTClient', () => {
 		Object.defineProperty(mqttClient, 'responseBroadcaster', {
 			value: asPartial<V1ResponseBroadcaster>({
 				onMessage: vi.fn(),
-				tryResolve: vi.fn(),
 			}),
 			writable: true,
 		});
@@ -724,10 +718,9 @@ describe('MQTTClient', () => {
 		expect(mqttClient['authErrorBackoffTimeout']).toBeUndefined();
 	});
 
-	it('onMessage should call both onResponse and onMessage on responseBroadcaster', async () => {
+	it('onMessage should call onMessage on responseBroadcaster', async () => {
 		const mqttClient = createMQTTClient();
 		await mqttClient['onMessage']('rr/m/o/user/c6d6afb9/duid1', Buffer.from('msg'));
-		expect(mqttClient['responseBroadcaster'].tryResolve).toHaveBeenCalledWith('deserialized');
 		expect(mqttClient['responseBroadcaster'].onMessage).toHaveBeenCalledWith('deserialized');
 	});
 

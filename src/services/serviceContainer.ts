@@ -198,11 +198,6 @@ export class ServiceContainer {
 
 	/** Destroy all services and clear cached instances. */
 	async destroy(): Promise<void> {
-		// Shutdown polling service first
-		if (this.pollingService) {
-			await this.pollingService.shutdown();
-		}
-
 		if (this.connectionService) {
 			await this.connectionService.shutdown();
 			this.connectionService = undefined;

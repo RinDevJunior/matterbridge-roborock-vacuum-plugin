@@ -1,4 +1,4 @@
-import { baseCleanModeConfigs } from '../behaviors/roborock.vacuum/core/cleanModeConfig.js';
+import { baseCleanModeConfigs } from '../behaviors/roborock.vacuum/core/cleanModeConfig/index.js';
 import { getAllModesForDevice, hasSmartPlan } from '../behaviors/roborock.vacuum/core/deviceCapabilityRegistry.js';
 import {
 	createDefaultModeResolver,

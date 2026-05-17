@@ -1,7 +1,7 @@
 import { AnsiLogger } from 'matterbridge/logger';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { CleanModeDisplayLabel } from '../../../../behaviors/roborock.vacuum/core/cleanModeConfig.js';
+import { CleanModeDisplayLabel } from '../../../../behaviors/roborock.vacuum/core/cleanModeConfig/index.js';
 import { CleanModeSetting } from '../../../../behaviors/roborock.vacuum/core/CleanModeSetting.js';
 import { HandlerContext } from '../../../../behaviors/roborock.vacuum/core/modeHandler.js';
 import {

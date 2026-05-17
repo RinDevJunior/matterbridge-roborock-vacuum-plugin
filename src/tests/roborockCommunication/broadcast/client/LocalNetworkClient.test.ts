@@ -13,7 +13,6 @@ import { ChunkBuffer } from '../../../../roborockCommunication/helper/chunkBuffe
 import { LocalNetworkClient } from '../../../../roborockCommunication/local/localClient.js';
 import { Protocol, RequestMessage } from '../../../../roborockCommunication/models/index.js';
 import { V1ResponseBroadcaster } from '../../../../roborockCommunication/routing/listeners/v1ResponseBroadcaster.js';
-import { V1PendingResponseTracker } from '../../../../roborockCommunication/routing/services/v1PendingResponseTracker.js';
 import { asPartial, asType } from '../../../helpers/testUtils.js';
 
 vi.mock('node:net', () => {
@@ -48,7 +47,6 @@ describe('LocalNetworkClient', () => {
 	let mockContext: any;
 	let mockSocket: any;
 	let mockResponseBroadcaster: V1ResponseBroadcaster;
-	let mockResponseTracker: V1PendingResponseTracker;
 	const duid = 'duid1';
 	const ip = '127.0.0.1';
 
@@ -79,10 +77,9 @@ describe('LocalNetworkClient', () => {
 
 		globalThis.mockSocketInstance = mockSocket;
 
-		mockResponseTracker = new V1PendingResponseTracker(mockLogger);
-		mockResponseBroadcaster = new V1ResponseBroadcaster(mockResponseTracker, mockLogger);
+		mockResponseBroadcaster = new V1ResponseBroadcaster(mockLogger);
 
-		client = new LocalNetworkClient(mockLogger, mockContext, duid, ip, mockResponseBroadcaster, mockResponseTracker);
+		client = new LocalNetworkClient(mockLogger, mockContext, duid, ip, mockResponseBroadcaster);
 		Object.defineProperty(client, 'serializer', {
 			value: asPartial({ serialize: vi.fn().mockReturnValue({ buffer: Buffer.from([1, 2, 3]), messageId: 123 }) }),
 			writable: true,
@@ -93,7 +90,7 @@ describe('LocalNetworkClient', () => {
 		});
 
 		Object.defineProperty(client, 'responseBroadcaster', {
-			value: asPartial({ onMessage: vi.fn(), onResponse: vi.fn(), tryResolve: vi.fn() }),
+			value: asPartial({ onMessage: vi.fn(), onResponse: vi.fn() }),
 			writable: true,
 		});
 		Object.defineProperty(client, 'connectionBroadcaster', {
@@ -239,7 +236,6 @@ describe('LocalNetworkClient', () => {
 		});
 		await client['onMessage'](payload);
 		expect(client['deserializer'].deserialize).toHaveBeenCalled();
-		expect(client['responseBroadcaster'].tryResolve).toHaveBeenCalled();
 		expect(client['responseBroadcaster'].onMessage).toHaveBeenCalled(); // toHaveBeenCalledWith('deserialized');
 	});
 

@@ -156,6 +156,7 @@ export default defineConfig([
 			'@typescript-eslint/use-unknown-in-catch-callback-variable': 'off',
 			'@typescript-eslint/no-misused-spread': 'off',
 			'@typescript-eslint/no-unnecessary-type-parameters': 'off',
+			'@typescript-eslint/no-unnecessary-type-arguments': 'off',
 
 			...vitest.configs.recommended.rules,
 		},

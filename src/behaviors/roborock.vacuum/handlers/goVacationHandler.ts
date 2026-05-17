@@ -1,4 +1,4 @@
-import { CleanModeDisplayLabel } from '../core/cleanModeConfig.js';
+import { CleanModeDisplayLabel } from '../core/cleanModeConfig/index.js';
 import { HandlerContext, ModeHandler } from '../core/modeHandler.js';
 
 export class GoVacationHandler implements ModeHandler {
