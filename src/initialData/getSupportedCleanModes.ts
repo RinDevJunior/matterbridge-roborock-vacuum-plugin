@@ -20,7 +20,7 @@ export function getSupportedCleanModes(
 		return getDefaultSupportedCleanModes(configManager, [...defaultModes]);
 	}
 
-	const supportedModes = getModeOptions(getAllModesForDevice(model as string));
+	const supportedModes = getModeOptions(getAllModesForDevice(model));
 	return getDefaultSupportedCleanModes(configManager, supportedModes);
 }
 
