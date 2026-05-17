@@ -2,8 +2,29 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { CleanModeSetting } from '../../../../behaviors/roborock.vacuum/core/CleanModeSetting.js';
 import { CleanSequenceType } from '../../../../behaviors/roborock.vacuum/enums/CleanSequenceType.js';
+import { HeaderMessage, ResponseBody, ResponseMessage } from '../../../../roborockCommunication/models/index.js';
+import { Protocol } from '../../../../roborockCommunication/models/protocol.js';
 import { V10MessageDispatcher } from '../../../../roborockCommunication/protocol/dispatcher/V10MessageDispatcher.js';
 import { asType } from '../../../testUtils.js';
+
+// Build a ResponseMessage with a DPS payload at the given protocol key
+function makeMsg(dpsKey: Protocol | number, id: number, result: unknown): ResponseMessage {
+	const header = new HeaderMessage('1.0', 1, 0, 101, 102);
+	const body = new ResponseBody({ [dpsKey.toString()]: { id, result } });
+	return new ResponseMessage('test-duid', header, body);
+}
+
+function makeEmptyMsg(): ResponseMessage {
+	const header = new HeaderMessage('1.0', 1, 0, 101, 102);
+	return new ResponseMessage('test-duid', header, undefined);
+}
+
+function makeNoMatchMsg(messageId: number): ResponseMessage {
+	const header = new HeaderMessage('1.0', 1, 0, 101, 102);
+	// Body exists but has no matching DPS keys (4, 5, or 102)
+	const body = new ResponseBody({ '99': { id: messageId, result: [42] } });
+	return new ResponseMessage('test-duid', header, body);
+}
 
 // --- Mock Factories ---
 function createMockLogger() {
@@ -277,6 +298,131 @@ describe('V10MessageDispatcher', () => {
 			const calls = client.send.mock.calls.map((c: unknown[]) => c[1] as { method: string; params: unknown[] });
 			const finalMopMode = calls.find((c) => c.method === 'set_mop_mode' && (c.params as unknown[]).includes(8));
 			expect(finalMopMode).toBeDefined();
+		});
+	});
+
+	// --- parseFn branch coverage ---
+	// These tests capture the parseFn passed to client.query and invoke it directly
+	// to cover the branches inside parseV1Result and inline parse lambdas.
+
+	describe('parseV1Result (via getNetworkInfo parseFn)', () => {
+		let parseFn: (msg: ResponseMessage) => unknown;
+		let messageId: number;
+
+		beforeEach(async () => {
+			await dispatcher.getNetworkInfo(duid);
+			parseFn = client.query.mock.calls[0][2];
+			messageId = client.query.mock.calls[0][1].messageId;
+		});
+
+		it('returns undefined when msg.body is undefined', () => {
+			expect(parseFn(makeEmptyMsg())).toBeUndefined();
+		});
+
+		it('returns undefined when no matching DPS key exists', () => {
+			expect(parseFn(makeNoMatchMsg(messageId))).toBeUndefined();
+		});
+
+		it('falls through to general_response when rpc_response is missing', () => {
+			const msg = makeMsg(Protocol.general_response, messageId, 'from-general');
+			expect(parseFn(msg)).toBe('from-general');
+		});
+
+		it('falls through to general_request when rpc_response and general_response are missing', () => {
+			const msg = makeMsg(Protocol.general_request, messageId, 'from-request');
+			expect(parseFn(msg)).toBe('from-request');
+		});
+
+		it('returns undefined when dps.id does not match messageId', () => {
+			const msg = makeMsg(Protocol.rpc_response, messageId + 99, 42);
+			expect(parseFn(msg)).toBeUndefined();
+		});
+
+		it('returns undefined when dps.result is null', () => {
+			const msg = makeMsg(Protocol.rpc_response, messageId, null);
+			expect(parseFn(msg)).toBeUndefined();
+		});
+
+		it('returns result[0] when dps.result is an array', () => {
+			const msg = makeMsg(Protocol.rpc_response, messageId, ['first', 'second']);
+			expect(parseFn(msg)).toBe('first');
+		});
+
+		it('returns result directly when dps.result is not an array', () => {
+			const msg = makeMsg(Protocol.rpc_response, messageId, { key: 'value' });
+			expect(parseFn(msg)).toEqual({ key: 'value' });
+		});
+	});
+
+	describe('getSerialNumber inline parseFn', () => {
+		let parseFn: (msg: ResponseMessage) => unknown;
+		let messageId: number;
+
+		beforeEach(async () => {
+			await dispatcher.getSerialNumber(duid);
+			parseFn = client.query.mock.calls[0][2];
+			messageId = client.query.mock.calls[0][1].messageId;
+		});
+
+		it('returns undefined when msg.body is undefined', () => {
+			expect(parseFn(makeEmptyMsg())).toBeUndefined();
+		});
+
+		it('returns undefined when no dps found', () => {
+			expect(parseFn(makeNoMatchMsg(messageId))).toBeUndefined();
+		});
+
+		it('falls through to general_response when rpc_response is missing', () => {
+			const payload = [{ serial_number: 'SN-999' }];
+			const msg = makeMsg(Protocol.general_response, messageId, payload);
+			expect(parseFn(msg)).toEqual(payload);
+		});
+
+		it('returns undefined when dps.id does not match', () => {
+			const msg = makeMsg(Protocol.rpc_response, messageId + 1, [{ serial_number: 'SN' }]);
+			expect(parseFn(msg)).toBeUndefined();
+		});
+
+		it('returns dps.result when id matches', () => {
+			const payload = [{ serial_number: 'SN-42' }];
+			const msg = makeMsg(Protocol.rpc_response, messageId, payload);
+			expect(parseFn(msg)).toEqual(payload);
+		});
+	});
+
+	describe('getRoomMap inline parseFn', () => {
+		let parseFn: (msg: ResponseMessage) => unknown;
+		let messageId: number;
+
+		beforeEach(async () => {
+			await dispatcher.getRoomMap(duid, 0);
+			parseFn = client.query.mock.calls[0][2];
+			messageId = client.query.mock.calls[0][1].messageId;
+		});
+
+		it('returns undefined when msg.body is undefined', () => {
+			expect(parseFn(makeEmptyMsg())).toBeUndefined();
+		});
+
+		it('returns undefined when no dps found', () => {
+			expect(parseFn(makeNoMatchMsg(messageId))).toBeUndefined();
+		});
+
+		it('falls through to general_response when rpc_response is missing', () => {
+			const roomData = [[1, 'Kitchen', 0]];
+			const msg = makeMsg(Protocol.general_response, messageId, roomData);
+			expect(parseFn(msg)).toEqual(roomData);
+		});
+
+		it('returns undefined when dps.id does not match', () => {
+			const msg = makeMsg(Protocol.rpc_response, messageId + 1, [[1, 'Room', 0]]);
+			expect(parseFn(msg)).toBeUndefined();
+		});
+
+		it('returns dps.result when id matches', () => {
+			const roomData = [[1, 'Living Room', 2]];
+			const msg = makeMsg(Protocol.rpc_response, messageId, roomData);
+			expect(parseFn(msg)).toEqual(roomData);
 		});
 	});
 });
