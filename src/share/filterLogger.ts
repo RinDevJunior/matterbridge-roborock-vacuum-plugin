@@ -42,7 +42,7 @@ export class FilterLogger extends AnsiLogger {
 		this.delegate.log(level, filteredMessage, ...filteredParameters);
 	}
 
-	private filterSensitive<T>(value: T): string | T {
+	protected filterSensitive<T>(value: T): string | T {
 		const str = String(value);
 		const filtered = this.filterString(str);
 		let jsonFiltered = str;

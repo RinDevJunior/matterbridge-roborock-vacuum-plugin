@@ -13,6 +13,7 @@ import {
 	createDefaultCleanModeSettings,
 	EmailNotificationSettings,
 	MatterOverrideSettings,
+	MonoscopeSettings,
 	RoborockPluginPlatformConfig,
 } from '../model/RoborockPluginPlatformConfig.js';
 
@@ -224,6 +225,15 @@ export class PlatformConfigManager {
 	public get emailNotificationSettings(): EmailNotificationSettings | undefined {
 		if (!this.isEmailNotificationEnabled) return undefined;
 		return this.advancedFeatureSettings.emailNotificationSettings;
+	}
+
+	public get isMonoscopeEnabled(): boolean {
+		return this.isAdvancedFeatureEnabled && (this.advancedFeatureSettings.enableMonoscope ?? false);
+	}
+
+	public get monoscopeSettings(): MonoscopeSettings | undefined {
+		if (!this.isMonoscopeEnabled) return undefined;
+		return this.advancedFeatureSettings.monoscopeSettings;
 	}
 
 	// ─── Device Filtering ───────────────────────────────────────────────────────

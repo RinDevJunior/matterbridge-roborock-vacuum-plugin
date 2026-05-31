@@ -21,6 +21,8 @@ import { RoborockService } from './services/roborockService.js';
 import { PLUGIN_NAME } from './settings.js';
 import { checkDependencyVersions } from './share/dependency-check.js';
 import { FilterLogger } from './share/filterLogger.js';
+import { initOtelLogBridge, shutdownOtelLogBridge } from './share/otelLogBridge.js';
+import { OtelLogger } from './share/otelLogger.js';
 import { getWssSendSnackbarMessage, WssSendSnackbarMessage } from './types/WssSendSnackbarMessage.js';
 
 export default function initializePlugin(
@@ -70,7 +72,15 @@ export class RoborockMatterbridgePlatform extends MatterbridgeDynamicPlatform {
 		logger: AnsiLogger,
 		override config: RoborockPluginPlatformConfig,
 	) {
-		super(matterbridge, new FilterLogger(logger, config.pluginConfiguration.sanitizeSensitiveLogs), config);
+		const filteredLogger = new FilterLogger(logger, config.pluginConfiguration.sanitizeSensitiveLogs);
+		const monoscopeSettings =
+			config.advancedFeature?.enableAdvancedFeature && config.advancedFeature?.settings?.enableMonoscope
+				? config.advancedFeature.settings.monoscopeSettings
+				: undefined;
+		const resolvedLogger = monoscopeSettings
+			? new OtelLogger(filteredLogger, initOtelLogBridge(monoscopeSettings), config.pluginConfiguration.sanitizeSensitiveLogs)
+			: filteredLogger;
+		super(matterbridge, resolvedLogger, config);
 		logger.logLevel = this.config.pluginConfiguration.debug ? LogLevel.DEBUG : LogLevel.INFO;
 
 		checkDependencyVersions(this);
@@ -217,6 +227,8 @@ export class RoborockMatterbridgePlatform extends MatterbridgeDynamicPlatform {
 		if (this.configManager.unregisterOnShutdown) {
 			await this.unregisterAllDevices(UNREGISTER_DEVICES_DELAY_MS);
 		}
+
+		await shutdownOtelLogBridge();
 
 		this.state.setStartupCompleted(false);
 	}

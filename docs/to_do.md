@@ -2,6 +2,17 @@
 
 ## In Progress
 
+- [ ] Monoscope OTel logging integration (`dev-log` branch)
+  - [x] Add `MonoscopeSettings` model + `enableMonoscope` to `AdvancedFeatureSetting`
+  - [x] Add `isMonoscopeEnabled` / `monoscopeSettings` getters to `PlatformConfigManager`
+  - [x] Make `FilterLogger.filterSensitive` protected for subclass access
+  - [x] Create `src/share/otelLogBridge.ts` — OTel SDK init/shutdown singleton
+  - [x] Create `src/share/otelLogger.ts` — bridges `AnsiLogger` → OTel log records
+  - [x] Wire `OtelLogger` in `module.ts` constructor + `shutdownOtelLogBridge` on shutdown
+  - [x] Update schema JSON with `enableMonoscope` toggle + `monoscopeSettings` conditional block
+  - [x] Add unit tests: `otelLogger.test.ts`, `platformConfigManager.monoscope.test.ts`
+  - [ ] User: run Monoscope + MinIO via `docker-compose up` in monoscope-tech/monoscope repo
+
 - [ ] Fix `stateResolver.ts` bugs — see `docs/stateResolver-bugs.md`
 
 - [ ] Fix routine selection in `setSelectedAreas` — see `docs/routine-selection-fix-plan.md`

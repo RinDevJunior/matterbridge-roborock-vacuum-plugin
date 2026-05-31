@@ -39,6 +39,11 @@ export interface EmailNotificationSettings {
 	recipient?: string;
 }
 
+export interface MonoscopeSettings {
+	otlpEndpoint: string;
+	serviceName?: string;
+}
+
 export interface AdvancedFeatureSetting {
 	clearStorageOnStartup: boolean;
 	showRoutinesAsRoom: boolean;
@@ -52,6 +57,8 @@ export interface AdvancedFeatureSetting {
 	matterOverrideSettings: MatterOverrideSettings;
 	enableEmailNotification: boolean;
 	emailNotificationSettings: EmailNotificationSettings;
+	enableMonoscope?: boolean;
+	monoscopeSettings?: MonoscopeSettings;
 }
 
 export interface DeviceProductNameOverride {

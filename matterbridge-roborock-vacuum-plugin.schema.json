@@ -27,7 +27,12 @@
 				"region": {
 					"title": "Roborock account region",
 					"type": "string",
-					"enum": ["US", "EU", "CN", "RU"],
+					"enum": [
+						"US",
+						"EU",
+						"CN",
+						"RU"
+					],
 					"default": "US"
 				},
 				"forceAuthentication": {
@@ -39,11 +44,17 @@
 				"authenticationMethod": {
 					"title": "Authentication Method",
 					"type": "string",
-					"enum": ["VerificationCode", "Password"],
+					"enum": [
+						"VerificationCode",
+						"Password"
+					],
 					"default": "VerificationCode"
 				}
 			},
-			"required": ["username", "authenticationMethod"],
+			"required": [
+				"username",
+				"authenticationMethod"
+			],
 			"dependencies": {
 				"authenticationMethod": {
 					"if": {
@@ -79,7 +90,9 @@
 									"ui:widget": "password"
 								}
 							},
-							"required": ["password"]
+							"required": [
+								"password"
+							]
 						}
 					}
 				}
@@ -157,7 +170,9 @@
 								"const": true
 							}
 						},
-						"required": ["enableAdvancedFeature"]
+						"required": [
+							"enableAdvancedFeature"
+						]
 					},
 					"then": {
 						"properties": {
@@ -205,6 +220,12 @@
 										"type": "boolean",
 										"default": false
 									},
+									"enableMonoscope": {
+										"title": "Enable Monoscope Logging",
+										"description": "Send plugin logs to a self-hosted Monoscope instance via OpenTelemetry.",
+										"type": "boolean",
+										"default": false
+									},
 									"clearStorageOnStartup": {
 										"title": "Clear Storage On Startup",
 										"description": "Clear persistence storage and re-initialize the plugin on next startup.",
@@ -225,7 +246,9 @@
 										"const": true
 									}
 								},
-								"required": ["enableAdvancedFeature"]
+								"required": [
+									"enableAdvancedFeature"
+								]
 							},
 							{
 								"properties": {
@@ -236,10 +259,14 @@
 												"const": true
 											}
 										},
-										"required": ["enableCleanModeMapping"]
+										"required": [
+											"enableCleanModeMapping"
+										]
 									}
 								},
-								"required": ["settings"]
+								"required": [
+									"settings"
+								]
 							}
 						]
 					},
@@ -294,7 +321,9 @@
 																	"maximum": 100
 																}
 															},
-															"required": ["distanceOff"]
+															"required": [
+																"distanceOff"
+															]
 														}
 													}
 												]
@@ -333,7 +362,9 @@
 																	"maximum": 100
 																}
 															},
-															"required": ["distanceOff"]
+															"required": [
+																"distanceOff"
+															]
 														}
 													}
 												]
@@ -354,7 +385,9 @@
 										"const": true
 									}
 								},
-								"required": ["enableAdvancedFeature"]
+								"required": [
+									"enableAdvancedFeature"
+								]
 							},
 							{
 								"properties": {
@@ -365,10 +398,14 @@
 												"const": true
 											}
 										},
-										"required": ["overrideMatterConfiguration"]
+										"required": [
+											"overrideMatterConfiguration"
+										]
 									}
 								},
-								"required": ["settings"]
+								"required": [
+									"settings"
+								]
 							}
 						]
 					},
@@ -419,7 +456,10 @@
 															"maxLength": 32
 														}
 													},
-													"required": ["serialNumber", "productName"]
+													"required": [
+														"serialNumber",
+														"productName"
+													]
 												}
 											}
 										}
@@ -438,7 +478,9 @@
 										"const": true
 									}
 								},
-								"required": ["enableAdvancedFeature"]
+								"required": [
+									"enableAdvancedFeature"
+								]
 							},
 							{
 								"properties": {
@@ -449,10 +491,14 @@
 												"const": true
 											}
 										},
-										"required": ["enableEmailNotification"]
+										"required": [
+											"enableEmailNotification"
+										]
 									}
 								},
-								"required": ["settings"]
+								"required": [
+									"settings"
+								]
 							}
 						]
 					},
@@ -492,7 +538,75 @@
 												"type": "string"
 											}
 										},
-										"required": ["smtpHost", "smtpUser", "smtpPassword", "recipient"]
+										"required": [
+											"smtpHost",
+											"smtpUser",
+											"smtpPassword",
+											"recipient"
+										]
+									}
+								}
+							}
+						}
+					}
+				},
+				{
+					"if": {
+						"allOf": [
+							{
+								"properties": {
+									"enableAdvancedFeature": {
+										"const": true
+									}
+								},
+								"required": [
+									"enableAdvancedFeature"
+								]
+							},
+							{
+								"properties": {
+									"settings": {
+										"type": "object",
+										"properties": {
+											"enableMonoscope": {
+												"const": true
+											}
+										},
+										"required": [
+											"enableMonoscope"
+										]
+									}
+								},
+								"required": [
+									"settings"
+								]
+							}
+						]
+					},
+					"then": {
+						"properties": {
+							"settings": {
+								"properties": {
+									"monoscopeSettings": {
+										"title": "Monoscope Settings",
+										"type": "object",
+										"properties": {
+											"otlpEndpoint": {
+												"title": "OTLP HTTP Endpoint",
+												"description": "Monoscope OpenTelemetry collector endpoint (e.g. http://localhost:4318).",
+												"type": "string",
+												"default": "http://localhost:4318"
+											},
+											"serviceName": {
+												"title": "Service Name",
+												"description": "Service name shown in Monoscope (default: plugin name).",
+												"type": "string",
+												"default": "roborock-vacuum-plugin"
+											}
+										},
+										"required": [
+											"otlpEndpoint"
+										]
 									}
 								}
 							}
@@ -507,21 +621,37 @@
 			"type": "string",
 			"title": "Fan Mode",
 			"description": "Suction power mode to use (e.g., 'Quiet', 'Balanced', 'Turbo', 'Max', 'MaxPlus').",
-			"enum": ["Quiet", "Balanced", "Turbo", "Max", "MaxPlus"],
+			"enum": [
+				"Quiet",
+				"Balanced",
+				"Turbo",
+				"Max",
+				"MaxPlus"
+			],
 			"default": "Balanced"
 		},
 		"waterFlowMode": {
 			"type": "string",
 			"title": "Water Flow Mode",
 			"description": "Water flow mode to use (e.g., 'Low', 'Medium', 'High', 'CustomizeWithDistanceOff').",
-			"enum": ["Low", "Medium", "High", "CustomizeWithDistanceOff"],
+			"enum": [
+				"Low",
+				"Medium",
+				"High",
+				"CustomizeWithDistanceOff"
+			],
 			"default": "Medium"
 		},
 		"mopRouteMode": {
 			"type": "string",
 			"title": "Mop Route Mode",
 			"description": "Mop route intensity to use (e.g., 'Standard', 'Deep', 'DeepPlus', 'Fast').",
-			"enum": ["Standard", "Deep", "DeepPlus", "Fast"],
+			"enum": [
+				"Standard",
+				"Deep",
+				"DeepPlus",
+				"Fast"
+			],
 			"default": "Standard"
 		}
 	}

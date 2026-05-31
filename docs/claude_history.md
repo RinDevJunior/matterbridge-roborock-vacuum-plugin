@@ -1,5 +1,21 @@
 # Claude History
 
+## 2026-05-31 (Session — dev-log branch)
+
+- Investigated monoscope-tech/monoscope for time-based log visualization.
+- Decided to integrate plugin logs with Monoscope via OpenTelemetry (OTLP HTTP).
+- Implemented Monoscope OTel logging integration on `dev-log` branch (based on `main`):
+  - Added `MonoscopeSettings` interface and `enableMonoscope?` / `monoscopeSettings?` to `AdvancedFeatureSetting` in `RoborockPluginPlatformConfig.ts`
+  - Added `isMonoscopeEnabled` and `monoscopeSettings` getters to `PlatformConfigManager`
+  - Changed `FilterLogger.filterSensitive` from `private` to `protected` for subclass use
+  - Created `src/share/otelLogBridge.ts` — module-level singleton, initializes OTel `LoggerProvider` with `BatchLogRecordProcessor` + `OTLPLogExporter`, exposes `shutdownOtelLogBridge()`
+  - Created `src/share/otelLogger.ts` — extends `FilterLogger`, overrides `log()` to forward sanitized log records to OTel with severity mapping (`DEBUG→5`, `INFO→9`, `NOTICE→10`, `WARN→13`, `ERROR→17`)
+  - Updated `module.ts` constructor to create `OtelLogger` when `enableMonoscope=true`; calls `shutdownOtelLogBridge()` in `onShutdown`
+  - Updated `matterbridge-roborock-vacuum-plugin.schema.json` with `enableMonoscope` toggle and conditional `monoscopeSettings` block
+  - Added npm dependencies: `@opentelemetry/api-logs`, `@opentelemetry/sdk-logs`, `@opentelemetry/exporter-logs-otlp-http`, `@opentelemetry/resources`, `@opentelemetry/semantic-conventions`
+  - Created `src/tests/share/otelLogger.test.ts` (15 tests — severity mapping, console passthrough, body formatting, sensitive data scrubbing, timestamp)
+  - Created `src/tests/platform/platformConfigManager.monoscope.test.ts` (6 tests)
+
 ## 2026-05-16 (Session)
 
 - Created release 1.1.6

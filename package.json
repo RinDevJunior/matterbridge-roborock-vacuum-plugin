@@ -94,6 +94,11 @@
 		"vitest": "4.0.18"
 	},
 	"dependencies": {
+		"@opentelemetry/api-logs": "^0.218.0",
+		"@opentelemetry/exporter-logs-otlp-http": "^0.218.0",
+		"@opentelemetry/resources": "^2.7.1",
+		"@opentelemetry/sdk-logs": "^0.218.0",
+		"@opentelemetry/semantic-conventions": "^1.41.1",
 		"axios": "1.13.5",
 		"axios-logger": "2.8.1",
 		"axios-retry": "4.5.0",
