@@ -73,12 +73,12 @@ export class RoborockMatterbridgePlatform extends MatterbridgeDynamicPlatform {
 		override config: RoborockPluginPlatformConfig,
 	) {
 		const filteredLogger = new FilterLogger(logger, config.pluginConfiguration.sanitizeSensitiveLogs);
-		const monoscopeSettings =
-			config.advancedFeature?.enableAdvancedFeature && config.advancedFeature?.settings?.enableMonoscope
-				? config.advancedFeature.settings.monoscopeSettings
+		const lokiSettings =
+			config.advancedFeature?.enableAdvancedFeature && config.advancedFeature?.settings?.enableLoki
+				? config.advancedFeature.settings.lokiSettings
 				: undefined;
-		const resolvedLogger = monoscopeSettings
-			? new OtelLogger(filteredLogger, initOtelLogBridge(monoscopeSettings), config.pluginConfiguration.sanitizeSensitiveLogs)
+		const resolvedLogger = lokiSettings
+			? new OtelLogger(filteredLogger, initOtelLogBridge(lokiSettings), config.pluginConfiguration.sanitizeSensitiveLogs)
 			: filteredLogger;
 		super(matterbridge, resolvedLogger, config);
 		logger.logLevel = this.config.pluginConfiguration.debug ? LogLevel.DEBUG : LogLevel.INFO;

@@ -13,7 +13,7 @@ import {
 	createDefaultCleanModeSettings,
 	EmailNotificationSettings,
 	MatterOverrideSettings,
-	MonoscopeSettings,
+	LokiSettings,
 	RoborockPluginPlatformConfig,
 } from '../model/RoborockPluginPlatformConfig.js';
 
@@ -227,13 +227,13 @@ export class PlatformConfigManager {
 		return this.advancedFeatureSettings.emailNotificationSettings;
 	}
 
-	public get isMonoscopeEnabled(): boolean {
-		return this.isAdvancedFeatureEnabled && (this.advancedFeatureSettings.enableMonoscope ?? false);
+	public get isLokiEnabled(): boolean {
+		return this.isAdvancedFeatureEnabled && (this.advancedFeatureSettings.enableLoki ?? false);
 	}
 
-	public get monoscopeSettings(): MonoscopeSettings | undefined {
-		if (!this.isMonoscopeEnabled) return undefined;
-		return this.advancedFeatureSettings.monoscopeSettings;
+	public get lokiSettings(): LokiSettings | undefined {
+		if (!this.isLokiEnabled) return undefined;
+		return this.advancedFeatureSettings.lokiSettings;
 	}
 
 	// ─── Device Filtering ───────────────────────────────────────────────────────

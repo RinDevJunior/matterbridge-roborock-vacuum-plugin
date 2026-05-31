@@ -39,8 +39,8 @@ export interface EmailNotificationSettings {
 	recipient?: string;
 }
 
-export interface MonoscopeSettings {
-	otlpEndpoint: string;
+export interface LokiSettings {
+	lokiEndpoint: string;
 	serviceName?: string;
 }
 
@@ -57,8 +57,8 @@ export interface AdvancedFeatureSetting {
 	matterOverrideSettings: MatterOverrideSettings;
 	enableEmailNotification: boolean;
 	emailNotificationSettings: EmailNotificationSettings;
-	enableMonoscope?: boolean;
-	monoscopeSettings?: MonoscopeSettings;
+	enableLoki?: boolean;
+	lokiSettings?: LokiSettings;
 }
 
 export interface DeviceProductNameOverride {

@@ -220,9 +220,9 @@
 										"type": "boolean",
 										"default": false
 									},
-									"enableMonoscope": {
-										"title": "Enable Monoscope Logging",
-										"description": "Send plugin logs to a self-hosted Monoscope instance via OpenTelemetry.",
+									"enableLoki": {
+										"title": "Enable Grafana Loki Logging",
+										"description": "Send plugin logs to a Grafana Loki instance via OpenTelemetry.",
 										"type": "boolean",
 										"default": false
 									},
@@ -568,12 +568,12 @@
 									"settings": {
 										"type": "object",
 										"properties": {
-											"enableMonoscope": {
+											"enableLoki": {
 												"const": true
 											}
 										},
 										"required": [
-											"enableMonoscope"
+											"enableLoki"
 										]
 									}
 								},
@@ -587,25 +587,25 @@
 						"properties": {
 							"settings": {
 								"properties": {
-									"monoscopeSettings": {
-										"title": "Monoscope Settings",
+									"lokiSettings": {
+										"title": "Grafana Loki Settings",
 										"type": "object",
 										"properties": {
-											"otlpEndpoint": {
-												"title": "OTLP HTTP Endpoint",
-												"description": "Monoscope OpenTelemetry collector endpoint (e.g. http://localhost:4318).",
+											"lokiEndpoint": {
+												"title": "Loki HTTP Endpoint",
+												"description": "Grafana Loki base URL (e.g. http://localhost:3100).",
 												"type": "string",
-												"default": "http://localhost:4318"
+												"default": "http://localhost:3100"
 											},
 											"serviceName": {
 												"title": "Service Name",
-												"description": "Service name shown in Monoscope (default: plugin name).",
+												"description": "Service name label in Grafana Loki (default: plugin name).",
 												"type": "string",
 												"default": "roborock-vacuum-plugin"
 											}
 										},
 										"required": [
-											"otlpEndpoint"
+											"lokiEndpoint"
 										]
 									}
 								}

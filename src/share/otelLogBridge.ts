@@ -3,16 +3,16 @@ import { resourceFromAttributes } from '@opentelemetry/resources';
 import { BatchLogRecordProcessor, LoggerProvider } from '@opentelemetry/sdk-logs';
 import type { Logger } from '@opentelemetry/api-logs';
 
-import type { MonoscopeSettings } from '../model/RoborockPluginPlatformConfig.js';
+import type { LokiSettings } from '../model/RoborockPluginPlatformConfig.js';
 import { PLUGIN_NAME, PLUGIN_VERSION } from '../settings.js';
 
 class OtelLogBridge {
 	readonly logger: Logger;
 	private readonly loggerProvider: LoggerProvider;
 
-	constructor(settings: MonoscopeSettings) {
+	constructor(settings: LokiSettings) {
 		const exporter = new OTLPLogExporter({
-			url: `${settings.otlpEndpoint}/v1/logs`,
+			url: `${settings.lokiEndpoint}/otlp/v1/logs`,
 		});
 
 		this.loggerProvider = new LoggerProvider({
@@ -33,7 +33,7 @@ class OtelLogBridge {
 
 let instance: OtelLogBridge | undefined;
 
-export function initOtelLogBridge(settings: MonoscopeSettings): OtelLogBridge {
+export function initOtelLogBridge(settings: LokiSettings): OtelLogBridge {
 	instance ??= new OtelLogBridge(settings);
 	return instance;
 }

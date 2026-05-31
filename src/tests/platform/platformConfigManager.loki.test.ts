@@ -29,76 +29,76 @@ function makeConfig(overrides: Record<string, unknown> = {}): Parameters<typeof 
 	});
 }
 
-describe('PlatformConfigManager — Monoscope', () => {
-	it('should return false for isMonoscopeEnabled when advanced feature is disabled', () => {
+describe('PlatformConfigManager — Grafana Loki', () => {
+	it('should return false for isLokiEnabled when advanced feature is disabled', () => {
 		const config = makeConfig();
 		const manager = PlatformConfigManager.create(config, createMockLogger());
-		expect(manager.isMonoscopeEnabled).toBe(false);
+		expect(manager.isLokiEnabled).toBe(false);
 	});
 
-	it('should return false for isMonoscopeEnabled when advanced feature enabled but enableMonoscope is false', () => {
+	it('should return false for isLokiEnabled when advanced feature enabled but enableLoki is false', () => {
 		const config = makeConfig({
 			advancedFeature: {
 				enableAdvancedFeature: true,
 				settings: {
 					...createDefaultAdvancedFeature().settings,
-					enableMonoscope: false,
+					enableLoki: false,
 				},
 			},
 		});
 		const manager = PlatformConfigManager.create(config, createMockLogger());
-		expect(manager.isMonoscopeEnabled).toBe(false);
+		expect(manager.isLokiEnabled).toBe(false);
 	});
 
-	it('should return true for isMonoscopeEnabled when both advanced feature and enableMonoscope are true', () => {
+	it('should return true for isLokiEnabled when both advanced feature and enableLoki are true', () => {
 		const config = makeConfig({
 			advancedFeature: {
 				enableAdvancedFeature: true,
 				settings: {
 					...createDefaultAdvancedFeature().settings,
-					enableMonoscope: true,
-					monoscopeSettings: { otlpEndpoint: 'http://localhost:4318' },
+					enableLoki: true,
+					lokiSettings: { lokiEndpoint: 'http://localhost:3100' },
 				},
 			},
 		});
 		const manager = PlatformConfigManager.create(config, createMockLogger());
-		expect(manager.isMonoscopeEnabled).toBe(true);
+		expect(manager.isLokiEnabled).toBe(true);
 	});
 
-	it('should return undefined for monoscopeSettings when monoscope is disabled', () => {
+	it('should return undefined for lokiSettings when loki is disabled', () => {
 		const config = makeConfig();
 		const manager = PlatformConfigManager.create(config, createMockLogger());
-		expect(manager.monoscopeSettings).toBeUndefined();
+		expect(manager.lokiSettings).toBeUndefined();
 	});
 
-	it('should return monoscopeSettings when monoscope is enabled', () => {
-		const settings = { otlpEndpoint: 'http://localhost:4318', serviceName: 'my-plugin' };
+	it('should return lokiSettings when loki is enabled', () => {
+		const settings = { lokiEndpoint: 'http://localhost:3100', serviceName: 'my-plugin' };
 		const config = makeConfig({
 			advancedFeature: {
 				enableAdvancedFeature: true,
 				settings: {
 					...createDefaultAdvancedFeature().settings,
-					enableMonoscope: true,
-					monoscopeSettings: settings,
+					enableLoki: true,
+					lokiSettings: settings,
 				},
 			},
 		});
 		const manager = PlatformConfigManager.create(config, createMockLogger());
-		expect(manager.monoscopeSettings).toEqual(settings);
+		expect(manager.lokiSettings).toEqual(settings);
 	});
 
-	it('should return undefined for monoscopeSettings when advanced feature is disabled even if enableMonoscope is set', () => {
+	it('should return undefined for lokiSettings when advanced feature is disabled even if enableLoki is set', () => {
 		const config = makeConfig({
 			advancedFeature: {
 				enableAdvancedFeature: false,
 				settings: {
 					...createDefaultAdvancedFeature().settings,
-					enableMonoscope: true,
-					monoscopeSettings: { otlpEndpoint: 'http://localhost:4318' },
+					enableLoki: true,
+					lokiSettings: { lokiEndpoint: 'http://localhost:3100' },
 				},
 			},
 		});
 		const manager = PlatformConfigManager.create(config, createMockLogger());
-		expect(manager.monoscopeSettings).toBeUndefined();
+		expect(manager.lokiSettings).toBeUndefined();
 	});
 });
