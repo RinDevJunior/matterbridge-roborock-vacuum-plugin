@@ -1,6 +1,7 @@
 import { AnsiLogger } from 'matterbridge/logger';
 
 import { LOCAL_REFRESH_INTERVAL_MULTIPLIER } from '../constants/index.js';
+import { generateCorrelationId, runWithCorrelation } from '../share/correlationContext.js';
 import { Device } from '../roborockCommunication/models/index.js';
 import { MessageRoutingService } from './messageRoutingService.js';
 
@@ -20,17 +21,23 @@ export class PollingService {
 
 		this.logger.debug('Activating device status polling for:', device.duid);
 
-		const interval = setInterval(async () => {
+		const interval = setInterval(() => {
 			try {
-				const messageDispatcher = this.messageRoutingService.getMessageDispatcher(device.duid);
-				if (!messageDispatcher) {
-					this.logger.error('Local Polling - No message dispatcher for device:', device.duid);
-					return;
-				}
+				void runWithCorrelation(generateCorrelationId('poll'), async () => {
+					try {
+						const messageDispatcher = this.messageRoutingService.getMessageDispatcher(device.duid);
+						if (!messageDispatcher) {
+							this.logger.error('Local Polling - No message dispatcher for device:', device.duid);
+							return;
+						}
 
-				await messageDispatcher.getDeviceStatus(device.duid);
+						await messageDispatcher.getDeviceStatus(device.duid);
+					} catch (error) {
+						this.logger.error('Failed to get device status:', error);
+					}
+				});
 			} catch (error) {
-				this.logger.error('Failed to get device status:', error);
+				this.logger.error('Failed to start polling context:', error);
 			}
 		}, this.refreshInterval * LOCAL_REFRESH_INTERVAL_MULTIPLIER);
 

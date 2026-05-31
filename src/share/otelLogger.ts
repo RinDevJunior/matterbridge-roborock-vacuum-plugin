@@ -3,6 +3,7 @@ import type { AnsiLogger } from 'matterbridge/logger';
 import { LogLevel } from 'matterbridge/logger';
 
 import { PLUGIN_NAME, PLUGIN_VERSION } from '../settings.js';
+import { getCorrelationId } from './correlationContext.js';
 import { FilterLogger } from './filterLogger.js';
 import type { OtelLogBridge } from './otelLogBridge.js';
 
@@ -29,15 +30,22 @@ export class OtelLogger extends FilterLogger {
 		const body =
 			sanitizedParams.length > 0 ? `${sanitizedMessage} ${sanitizedParams.join(' ')}` : sanitizedMessage;
 
+		const attributes: Record<string, string> = {
+			'plugin.name': PLUGIN_NAME,
+			'plugin.version': PLUGIN_VERSION,
+		};
+
+		const correlationId = getCorrelationId();
+		if (correlationId !== undefined) {
+			attributes['correlation_id'] = correlationId;
+		}
+
 		this.bridge.logger.emit({
 			severityNumber: toSeverityNumber(level),
 			severityText: String(level),
 			body,
 			timestamp: new Date(),
-			attributes: {
-				'plugin.name': PLUGIN_NAME,
-				'plugin.version': PLUGIN_VERSION,
-			},
+			attributes,
 		});
 	}
 }

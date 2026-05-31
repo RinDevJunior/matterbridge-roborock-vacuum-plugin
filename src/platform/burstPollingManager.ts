@@ -2,6 +2,7 @@ import { RvcOperationalState } from 'matterbridge/matter/clusters';
 
 import { BURST_POLLING_INTERVAL_MS } from '../constants/index.js';
 import { RoborockMatterbridgePlatform } from '../module.js';
+import { generateCorrelationId, runWithCorrelation } from '../share/correlationContext.js';
 
 /**
  * Manages burst polling for robot vacuum devices.
@@ -16,16 +17,18 @@ export class BurstPollingManager {
 	public startBurstPolling(duid: string): void {
 		if (this.timers.has(duid)) return;
 
-		const timer = setInterval(async () => {
-			try {
-				this.platform.log.notice(`Burst polling for a specific device: ${duid}`);
-				await this.requestLocalDeviceStatus(duid);
-				if (this.isDeviceIdle(duid)) {
-					this.stopBurstPolling(duid);
+		const timer = setInterval(() => {
+			void runWithCorrelation(generateCorrelationId('burst'), async () => {
+				try {
+					this.platform.log.notice(`Burst polling for a specific device: ${duid}`);
+					await this.requestLocalDeviceStatus(duid);
+					if (this.isDeviceIdle(duid)) {
+						this.stopBurstPolling(duid);
+					}
+				} catch (error) {
+					this.platform.log.error(`Burst polling failed: ${error instanceof Error ? error.message : String(error)}`);
 				}
-			} catch (error) {
-				this.platform.log.error(`Burst polling failed: ${error instanceof Error ? error.message : String(error)}`);
-			}
+			});
 		}, BURST_POLLING_INTERVAL_MS);
 
 		this.timers.set(duid, timer);

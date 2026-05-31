@@ -18,6 +18,7 @@ import { PlatformConfigManager } from '../platform/platformConfigManager.js';
 import { Device } from '../roborockCommunication/models/index.js';
 import { RoborockService } from '../services/roborockService.js';
 import { BehaviorFactoryResult } from '../share/behaviorFactory.js';
+import { generateCorrelationId, runWithCorrelation } from '../share/correlationContext.js';
 
 interface IdentifyCommandRequest {
 	identifyTime?: number;
@@ -82,53 +83,64 @@ export class RoborockVacuumCleaner extends RoboticVacuumCleaner {
 	 * Sets up handlers for identify, area selection, mode changes, and cleaning operations.
 	 */
 	public configureHandler(behaviorHandler: BehaviorFactoryResult): void {
-		this.addCommandHandlerWithErrorHandling(
-			CommandNames.IDENTIFY,
-			async ({ request, cluster, attributes, endpoint }) => {
+		this.addCommandHandlerWithErrorHandling(CommandNames.IDENTIFY, ({ request, cluster, attributes, endpoint }) =>
+			runWithCorrelation(generateCorrelationId('cmd'), async () => {
 				this.log.info(
 					`Identify command received for endpoint ${endpoint}, cluster ${cluster}, attributes ${debugStringify(attributes)}, request: ${JSON.stringify(request)}`,
 				);
 				behaviorHandler.executeCommand(CommandNames.IDENTIFY, (request as IdentifyCommandRequest).identifyTime ?? 5);
-			},
+			}),
 		);
 
-		this.addCommandHandlerWithErrorHandling(CommandNames.SELECT_AREAS, async ({ request }) => {
-			const { newAreas } = request as ServiceArea.SelectAreasRequest;
-			if (!newAreas || newAreas.length === 0) {
-				this.log.info(
-					'selectAreas called with empty or undefined areas, it means selecting no areas or all areas, ignoring.',
-				);
-				return;
-			}
-			this.log.info(`Selecting areas: ${newAreas.join(', ')}`);
-			behaviorHandler.executeCommand(CommandNames.SELECT_AREAS, newAreas);
-		});
+		this.addCommandHandlerWithErrorHandling(CommandNames.SELECT_AREAS, ({ request }) =>
+			runWithCorrelation(generateCorrelationId('cmd'), async () => {
+				const { newAreas } = request as ServiceArea.SelectAreasRequest;
+				if (!newAreas || newAreas.length === 0) {
+					this.log.info(
+						'selectAreas called with empty or undefined areas, it means selecting no areas or all areas, ignoring.',
+					);
+					return;
+				}
+				this.log.info(`Selecting areas: ${newAreas.join(', ')}`);
+				behaviorHandler.executeCommand(CommandNames.SELECT_AREAS, newAreas);
+			}),
+		);
 
-		this.addCommandHandlerWithErrorHandling(CommandNames.CHANGE_TO_MODE, async ({ request }) => {
-			const { newMode } = request as ModeBase.ChangeToModeRequest;
-			this.log.info(`Changing to mode: ${newMode}`);
-			behaviorHandler.executeCommand(CommandNames.CHANGE_TO_MODE, newMode);
-		});
+		this.addCommandHandlerWithErrorHandling(CommandNames.CHANGE_TO_MODE, ({ request }) =>
+			runWithCorrelation(generateCorrelationId('cmd'), async () => {
+				const { newMode } = request as ModeBase.ChangeToModeRequest;
+				this.log.info(`Changing to mode: ${newMode}`);
+				behaviorHandler.executeCommand(CommandNames.CHANGE_TO_MODE, newMode);
+			}),
+		);
 
-		this.addCommandHandlerWithErrorHandling(CommandNames.PAUSE, async () => {
-			this.log.info('Pause command received');
-			behaviorHandler.executeCommand(CommandNames.PAUSE);
-		});
+		this.addCommandHandlerWithErrorHandling(CommandNames.PAUSE, () =>
+			runWithCorrelation(generateCorrelationId('cmd'), async () => {
+				this.log.info('Pause command received');
+				behaviorHandler.executeCommand(CommandNames.PAUSE);
+			}),
+		);
 
-		this.addCommandHandlerWithErrorHandling(CommandNames.RESUME, async () => {
-			this.log.info('Resume command received');
-			behaviorHandler.executeCommand(CommandNames.RESUME);
-		});
+		this.addCommandHandlerWithErrorHandling(CommandNames.RESUME, () =>
+			runWithCorrelation(generateCorrelationId('cmd'), async () => {
+				this.log.info('Resume command received');
+				behaviorHandler.executeCommand(CommandNames.RESUME);
+			}),
+		);
 
-		this.addCommandHandlerWithErrorHandling(CommandNames.GO_HOME, async () => {
-			this.log.info('GoHome command received');
-			behaviorHandler.executeCommand(CommandNames.GO_HOME);
-		});
+		this.addCommandHandlerWithErrorHandling(CommandNames.GO_HOME, () =>
+			runWithCorrelation(generateCorrelationId('cmd'), async () => {
+				this.log.info('GoHome command received');
+				behaviorHandler.executeCommand(CommandNames.GO_HOME);
+			}),
+		);
 
-		this.addCommandHandlerWithErrorHandling(CommandNames.STOP, async () => {
-			this.log.info('Stop command received');
-			behaviorHandler.executeCommand(CommandNames.STOP);
-		});
+		this.addCommandHandlerWithErrorHandling(CommandNames.STOP, () =>
+			runWithCorrelation(generateCorrelationId('cmd'), async () => {
+				this.log.info('Stop command received');
+				behaviorHandler.executeCommand(CommandNames.STOP);
+			}),
+		);
 	}
 
 	/**

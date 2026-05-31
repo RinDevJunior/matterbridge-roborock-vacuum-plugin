@@ -13,6 +13,7 @@ import { BurstPollingManager } from './platform/burstPollingManager.js';
 import { DockErrorCode, OperationStatusCode } from './roborockCommunication/enums/index.js';
 import { BatteryMessage, DeviceErrorMessage, StatusChangeMessage } from './roborockCommunication/models/index.js';
 import { updateFromHomeData } from './runtimes/handleHomeDataMessage.js';
+import { generateCorrelationId, getCorrelationId, runWithCorrelation } from './share/correlationContext.js';
 import { triggerDssError } from './runtimes/handleLocalMessage.js';
 import { state_to_matter_operational_status, state_to_matter_state } from './share/function.js';
 import {
@@ -85,32 +86,34 @@ export class PlatformRunner {
 	public async updateRobotWithPayload(payload: MessagePayload): Promise<void> {
 		if (!this.activateHandlers) return;
 
-		const { type } = payload;
-		switch (type) {
-			case NotifyMessageTypes.ErrorOccurred:
-				await this.executeWithRobot(payload.data.duid, payload.data, this.handleErrorOccurred.bind(this));
-				break;
-			case NotifyMessageTypes.BatteryUpdate:
-				await this.executeWithRobot(payload.data.duid, payload.data, this.handleBatteryUpdate.bind(this));
-				break;
-			case NotifyMessageTypes.DeviceStatus:
-				await this.executeWithRobot(payload.data.duid, payload.data, this.handleDeviceStatusUpdate.bind(this));
-				break;
-			case NotifyMessageTypes.DeviceStatusSimple:
-				await this.executeWithRobot(payload.data.duid, payload.data, this.handleDeviceStatusSimpleUpdate.bind(this));
-				break;
-			case NotifyMessageTypes.CleanModeUpdate:
-				await this.executeWithRobot(payload.data.duid, payload.data, this.handleCleanModeUpdate.bind(this));
-				break;
-			case NotifyMessageTypes.ServiceAreaUpdate:
-				await this.executeWithRobot(payload.data.duid, payload.data, this.handleServiceAreaUpdate.bind(this));
-				break;
-			case NotifyMessageTypes.HomeData:
-				await updateFromHomeData(payload.data, this.platform);
-				break;
-			default:
-				this.platform.log.warn(`No handler registered for message type: ${type}`);
-		}
+		await runWithCorrelation(getCorrelationId() ?? generateCorrelationId('upd'), async () => {
+			const { type } = payload;
+			switch (type) {
+				case NotifyMessageTypes.ErrorOccurred:
+					await this.executeWithRobot(payload.data.duid, payload.data, this.handleErrorOccurred.bind(this));
+					break;
+				case NotifyMessageTypes.BatteryUpdate:
+					await this.executeWithRobot(payload.data.duid, payload.data, this.handleBatteryUpdate.bind(this));
+					break;
+				case NotifyMessageTypes.DeviceStatus:
+					await this.executeWithRobot(payload.data.duid, payload.data, this.handleDeviceStatusUpdate.bind(this));
+					break;
+				case NotifyMessageTypes.DeviceStatusSimple:
+					await this.executeWithRobot(payload.data.duid, payload.data, this.handleDeviceStatusSimpleUpdate.bind(this));
+					break;
+				case NotifyMessageTypes.CleanModeUpdate:
+					await this.executeWithRobot(payload.data.duid, payload.data, this.handleCleanModeUpdate.bind(this));
+					break;
+				case NotifyMessageTypes.ServiceAreaUpdate:
+					await this.executeWithRobot(payload.data.duid, payload.data, this.handleServiceAreaUpdate.bind(this));
+					break;
+				case NotifyMessageTypes.HomeData:
+					await updateFromHomeData(payload.data, this.platform);
+					break;
+				default:
+					this.platform.log.warn(`No handler registered for message type: ${type}`);
+			}
+		});
 	}
 
 	/**
