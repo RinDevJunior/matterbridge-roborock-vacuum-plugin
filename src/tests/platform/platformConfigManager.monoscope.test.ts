@@ -2,10 +2,10 @@ import { describe, expect, it } from 'vitest';
 
 import { createDefaultAdvancedFeature } from '../../model/RoborockPluginPlatformConfig.js';
 import { PlatformConfigManager } from '../../platform/platformConfigManager.js';
-import { createMockLogger } from '../helpers/testUtils.js';
+import { asType, createMockLogger } from '../helpers/testUtils.js';
 
 function makeConfig(overrides: Record<string, unknown> = {}): Parameters<typeof PlatformConfigManager.create>[0] {
-	return {
+	return asType({
 		name: 'test',
 		type: 'DynamicPlatform',
 		authentication: {
@@ -26,7 +26,7 @@ function makeConfig(overrides: Record<string, unknown> = {}): Parameters<typeof 
 		},
 		advancedFeature: createDefaultAdvancedFeature(),
 		...overrides,
-	} as Parameters<typeof PlatformConfigManager.create>[0];
+	});
 }
 
 describe('PlatformConfigManager — Monoscope', () => {
