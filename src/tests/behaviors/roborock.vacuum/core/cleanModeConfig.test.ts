@@ -79,8 +79,8 @@ describe('cleanModeConfig', () => {
 
 		it('should not include setting property in options', () => {
 			const options = getModeOptions(baseCleanModeConfigs);
-			const first = options[0] as Record<string, unknown>;
-			expect(first['setting']).toBeUndefined();
+			const first = options[0];
+			expect('setting' in first).toBe(false);
 		});
 	});
 

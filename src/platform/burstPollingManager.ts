@@ -60,7 +60,7 @@ export class BurstPollingManager {
 		const robot = this.platform.registry.robotsMap.get(duid);
 		if (!robot) return true;
 		const state: RvcOperationalState.OperationalState = robot.getAttribute(
-			RvcOperationalState.Cluster.id,
+			RvcOperationalState.id,
 			'operationalState',
 			this.platform.log,
 		);

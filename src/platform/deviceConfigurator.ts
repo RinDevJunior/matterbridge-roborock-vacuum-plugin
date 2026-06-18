@@ -144,7 +144,7 @@ export class DeviceConfigurator {
 				}
 			}
 
-			const options = rvc.getClusterServerOptions(BridgedDeviceBasicInformation.Cluster.id);
+			const options = rvc.getClusterServerOptions(BridgedDeviceBasicInformation.id);
 			if (options) {
 				options.softwareVersion = rvc.softwareVersion ?? 1;
 				options.softwareVersionString = rvc.softwareVersionString ?? '1.0.0';
@@ -157,7 +157,7 @@ export class DeviceConfigurator {
 			// We need to add bridgedNode device type and BridgedDeviceBasicInformation cluster for single class devices that doesn't add it in childbridge mode.
 			if (rvc.mode === undefined && !rvc.deviceTypes.has(bridgedNode.code)) {
 				rvc.deviceTypes.set(bridgedNode.code, bridgedNode);
-				const options = rvc.getClusterServerOptions(Descriptor.Cluster.id);
+				const options = rvc.getClusterServerOptions(Descriptor.id);
 				if (options) {
 					const deviceTypeList = options.deviceTypeList as { deviceType: number; revision: number }[];
 					if (!deviceTypeList.find((dt) => dt.deviceType === bridgedNode.code)) {
