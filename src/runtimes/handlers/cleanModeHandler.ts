@@ -37,7 +37,7 @@ export async function handleCleanModeUpdate(
 
 		if (currentCleanMode) {
 			platform.log.notice(`Calculated current clean mode: ${getCleanModeName(currentCleanMode)}`);
-			await robot.updateAttribute(RvcCleanMode.Cluster.id, 'currentMode', currentCleanMode, platform.log);
+			await robot.updateAttribute(RvcCleanMode.id, 'currentMode', currentCleanMode, platform.log);
 		}
 	}
 }

@@ -26,10 +26,10 @@ export async function handleDeviceStatusUpdate(
 		return false;
 	}
 
-	const currentRunMode: number = robot.getAttribute(RvcRunMode.Cluster.id, 'currentMode');
+	const currentRunMode: number = robot.getAttribute(RvcRunMode.id, 'currentMode');
 
 	const currentOperationState: RvcOperationalState.OperationalState = robot.getAttribute(
-		RvcOperationalState.Cluster.id,
+		RvcOperationalState.id,
 		'operationalState',
 	);
 
@@ -56,13 +56,8 @@ export async function handleDeviceStatusUpdate(
 
 	// Update Matter attributes
 	await Promise.all([
-		robot.updateAttribute(RvcRunMode.Cluster.id, 'currentMode', getRunningMode(resolvedState.runMode), platform.log),
-		robot.updateAttribute(
-			RvcOperationalState.Cluster.id,
-			'operationalState',
-			resolvedState.operationalState,
-			platform.log,
-		),
+		robot.updateAttribute(RvcRunMode.id, 'currentMode', getRunningMode(resolvedState.runMode), platform.log),
+		robot.updateAttribute(RvcOperationalState.id, 'operationalState', resolvedState.operationalState, platform.log),
 	]);
 
 	// Signal burst polling when the device enters an active state
@@ -81,7 +76,7 @@ export async function handleDeviceStatusSimpleUpdate(
 	const state = state_to_matter_state(message.status);
 	platform.log.debug(`Resolved state from simple update: ${state !== undefined ? getRunModeName(state) : 'undefined'}`);
 	if (state !== undefined) {
-		await robot.updateAttribute(RvcRunMode.Cluster.id, 'currentMode', getRunningMode(state), platform.log);
+		await robot.updateAttribute(RvcRunMode.id, 'currentMode', getRunningMode(state), platform.log);
 	}
 
 	const includeDockStationStatus = platform.configManager.includeDockStationStatus;
@@ -93,6 +88,6 @@ export async function handleDeviceStatusSimpleUpdate(
 	}
 	if (operationalStateId !== undefined) {
 		platform.log.debug(`Updating operational state to: ${getOperationalStateName(operationalStateId)}`);
-		await robot.updateAttribute(RvcOperationalState.Cluster.id, 'operationalState', operationalStateId, platform.log);
+		await robot.updateAttribute(RvcOperationalState.id, 'operationalState', operationalStateId, platform.log);
 	}
 }

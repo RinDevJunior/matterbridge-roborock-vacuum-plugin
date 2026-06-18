@@ -18,17 +18,17 @@ export async function handleBatteryUpdate(
 
 	if (batteryLevel != null) {
 		await Promise.all([
-			robot.updateAttribute(PowerSource.Cluster.id, 'batPercentRemaining', batteryLevel * 2, platform.log),
-			robot.updateAttribute(PowerSource.Cluster.id, 'batChargeLevel', batteryChargeLevel, platform.log),
+			robot.updateAttribute(PowerSource.id, 'batPercentRemaining', batteryLevel * 2, platform.log),
+			robot.updateAttribute(PowerSource.id, 'batChargeLevel', batteryChargeLevel, platform.log),
 		]);
 	}
 
 	if (batteryLevel != null && deviceStatus) {
 		const batteryChargeState = getBatteryState(deviceStatus, batteryLevel);
-		await robot.updateAttribute(PowerSource.Cluster.id, 'batChargeState', batteryChargeState, platform.log);
+		await robot.updateAttribute(PowerSource.id, 'batChargeState', batteryChargeState, platform.log);
 
 		const currentOperationState: RvcOperationalState.OperationalState = robot.getAttribute(
-			RvcOperationalState.Cluster.id,
+			RvcOperationalState.id,
 			'operationalState',
 			platform.log,
 		);
@@ -37,7 +37,7 @@ export async function handleBatteryUpdate(
 			currentOperationState === RvcOperationalState.OperationalState.Docked
 		) {
 			await robot.updateAttribute(
-				RvcOperationalState.Cluster.id,
+				RvcOperationalState.id,
 				'operationalState',
 				RvcOperationalState.OperationalState.Charging,
 				platform.log,
@@ -49,7 +49,7 @@ export async function handleBatteryUpdate(
 			currentOperationState === RvcOperationalState.OperationalState.Charging
 		) {
 			await robot.updateAttribute(
-				RvcOperationalState.Cluster.id,
+				RvcOperationalState.id,
 				'operationalState',
 				RvcOperationalState.OperationalState.Docked,
 				platform.log,

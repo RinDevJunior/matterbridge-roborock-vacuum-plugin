@@ -36,7 +36,7 @@ export async function handleServiceAreaUpdate(
 	if (message.state === OperationStatusCode.Idle) {
 		logger.debug('Robot is idle, updating selectedAreas from Roborock service');
 		const selectedAreas = platform.roborockService?.getSelectedAreas(robot.device.duid) ?? [];
-		await robot.updateAttribute(ServiceArea.Cluster.id, 'selectedAreas', selectedAreas, logger);
+		await robot.updateAttribute(ServiceArea.id, 'selectedAreas', selectedAreas, logger);
 		return;
 	}
 
@@ -59,7 +59,7 @@ function getSelectedAreas(
 	platform: RoborockMatterbridgePlatform,
 ): number[] {
 	return (
-		robot.getAttribute(ServiceArea.Cluster.id, 'selectedAreas', platform.log) ??
+		robot.getAttribute(ServiceArea.id, 'selectedAreas', platform.log) ??
 		platform.roborockService?.getSelectedAreas(message.duid) ??
 		[]
 	);
@@ -77,19 +77,19 @@ async function handleCleaningWithoutInfo(
 
 	if (message.cleaningProcess.clean_area === 0 || message.cleaningProcess.clean_time === 0) {
 		// Robot not started cleaning yet → "Traveling to room"
-		await robot.updateAttribute(ServiceArea.Cluster.id, 'selectedAreas', selectedAreas, logger);
-		await robot.updateAttribute(ServiceArea.Cluster.id, 'currentArea', null, logger);
+		await robot.updateAttribute(ServiceArea.id, 'selectedAreas', selectedAreas, logger);
+		await robot.updateAttribute(ServiceArea.id, 'currentArea', null, logger);
 		return;
 	}
 
 	if (selectedAreas.length === 1) {
 		// Single room → "Cleaning (Room)"
-		await robot.updateAttribute(ServiceArea.Cluster.id, 'selectedAreas', selectedAreas, logger);
-		await robot.updateAttribute(ServiceArea.Cluster.id, 'currentArea', selectedAreas[0], logger);
+		await robot.updateAttribute(ServiceArea.id, 'selectedAreas', selectedAreas, logger);
+		await robot.updateAttribute(ServiceArea.id, 'currentArea', selectedAreas[0], logger);
 	} else {
 		// Multiple rooms, no cleaningInfo → "Preparing" (workaround)
-		await robot.updateAttribute(ServiceArea.Cluster.id, 'selectedAreas', [], logger);
-		await robot.updateAttribute(ServiceArea.Cluster.id, 'currentArea', null, logger);
+		await robot.updateAttribute(ServiceArea.id, 'selectedAreas', [], logger);
+		await robot.updateAttribute(ServiceArea.id, 'currentArea', null, logger);
 	}
 }
 
@@ -124,7 +124,7 @@ async function resolveAreaFromCleaningInfo(
         segmentId: ${segmentId},
         currentMappedAreas: ${debugStringify(roomIndexMap)}`,
 		);
-		await robot.updateAttribute(ServiceArea.Cluster.id, 'currentArea', null, logger);
+		await robot.updateAttribute(ServiceArea.id, 'currentArea', null, logger);
 		return;
 	}
 
@@ -138,5 +138,5 @@ async function resolveAreaFromCleaningInfo(
       activeArea: ${debugStringify(supportedAreas.find((x) => x.areaId === mappedArea))}`,
 	);
 
-	await robot.updateAttribute(ServiceArea.Cluster.id, 'currentArea', mappedArea, logger);
+	await robot.updateAttribute(ServiceArea.id, 'currentArea', mappedArea, logger);
 }

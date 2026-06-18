@@ -29,31 +29,26 @@ export async function handleErrorOccurred(
 		platform.log.warn(`Vacuum error detected: ${getOperationalErrorName(errorDetail)}`);
 		await Promise.all([
 			robot.updateAttribute(
-				RvcOperationalState.Cluster.id,
+				RvcOperationalState.id,
 				'operationalState',
 				RvcOperationalState.OperationalState.Error,
 				platform.log,
 			),
-			robot.updateAttribute(
-				RvcOperationalState.Cluster.id,
-				'operationalError',
-				{ errorStateId: errorDetail },
-				platform.log,
-			),
+			robot.updateAttribute(RvcOperationalState.id, 'operationalError', { errorStateId: errorDetail }, platform.log),
 		]);
 		return;
 	}
 
 	// If vacuum is running with no errors, clear any previous errors and skip dock processing
 	const currentOperationState: RvcOperationalState.OperationalState = robot.getAttribute(
-		RvcOperationalState.Cluster.id,
+		RvcOperationalState.id,
 		'operationalState',
 		platform.log,
 	);
 	if (currentOperationState === RvcOperationalState.OperationalState.Running) {
 		platform.log.debug('Vacuum running without errors, clearing error state.');
 		await robot.updateAttribute(
-			RvcOperationalState.Cluster.id,
+			RvcOperationalState.id,
 			'operationalError',
 			{ errorStateId: RvcOperationalState.ErrorState.NoError },
 			platform.log,
@@ -75,22 +70,17 @@ export async function handleErrorOccurred(
 			platform.log.warn(`Docking station error detected: ${getOperationalErrorName(errorDetail)}`);
 			await Promise.all([
 				robot.updateAttribute(
-					RvcOperationalState.Cluster.id,
+					RvcOperationalState.id,
 					'operationalState',
 					RvcOperationalState.OperationalState.Error,
 					platform.log,
 				),
-				robot.updateAttribute(
-					RvcOperationalState.Cluster.id,
-					'operationalError',
-					{ errorStateId: errorDetail },
-					platform.log,
-				),
+				robot.updateAttribute(RvcOperationalState.id, 'operationalError', { errorStateId: errorDetail }, platform.log),
 			]);
 		} else {
 			platform.log.debug('No docking station errors detected.');
 			await robot.updateAttribute(
-				RvcOperationalState.Cluster.id,
+				RvcOperationalState.id,
 				'operationalError',
 				{ errorStateId: RvcOperationalState.ErrorState.NoError },
 				platform.log,
@@ -104,7 +94,7 @@ export async function handleErrorOccurred(
 		if (dockStatus !== RvcOperationalState.ErrorState.NoError) {
 			platform.log.warn(`Docking station error detected: ${getOperationalErrorName(dockStatus)}`);
 			await robot.updateAttribute(
-				RvcOperationalState.Cluster.id,
+				RvcOperationalState.id,
 				'operationalError',
 				{ errorStateId: dockStatus },
 				platform.log,
@@ -112,7 +102,7 @@ export async function handleErrorOccurred(
 		} else {
 			platform.log.debug('No docking station errors detected.');
 			await robot.updateAttribute(
-				RvcOperationalState.Cluster.id,
+				RvcOperationalState.id,
 				'operationalError',
 				{ errorStateId: RvcOperationalState.ErrorState.NoError },
 				platform.log,
@@ -125,7 +115,7 @@ export async function handleErrorOccurred(
 	// No errors detected and no dock station processing
 	platform.log.debug('No errors detected, clearing operational error state.');
 	await robot.updateAttribute(
-		RvcOperationalState.Cluster.id,
+		RvcOperationalState.id,
 		'operationalError',
 		{ errorStateId: RvcOperationalState.ErrorState.NoError },
 		platform.log,
