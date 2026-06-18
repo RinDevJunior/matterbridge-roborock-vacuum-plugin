@@ -2,6 +2,7 @@ import { AnsiLogger } from 'matterbridge/logger';
 
 import { MessageContext } from '../models/messageContext.js';
 import { RequestMessage } from '../models/requestMessage.js';
+import { ResponseMessage } from '../models/responseMessage.js';
 import { MessageDeserializer } from '../protocol/deserializers/messageDeserializer.js';
 import { MessageSerializer } from '../protocol/serializers/messageSerializer.js';
 import { Client } from './client.js';
@@ -9,8 +10,8 @@ import { AbstractConnectionListener } from './listeners/abstractConnectionListen
 import { AbstractMessageListener } from './listeners/abstractMessageListener.js';
 import { ConnectionBroadcaster } from './listeners/connectionBroadcaster.js';
 import { ConnectionStateListener } from './listeners/implementation/connectionStateListener.js';
+import { OneShotResponseListener } from './listeners/oneShotResponseListener.js';
 import { ResponseBroadcaster } from './listeners/responseBroadcaster.js';
-import { PendingResponseTracker } from './services/pendingResponseTracker.js';
 
 export abstract class AbstractClient implements Client {
 	public isInDisconnectingStep = false;
@@ -27,7 +28,6 @@ export abstract class AbstractClient implements Client {
 		protected readonly logger: AnsiLogger,
 		protected readonly context: MessageContext,
 		protected readonly responseBroadcaster: ResponseBroadcaster,
-		private readonly responseTracker: PendingResponseTracker,
 	) {
 		this.serializer = new MessageSerializer(this.context, this.logger);
 		this.deserializer = new MessageDeserializer(this.context, this.logger);
@@ -36,7 +36,6 @@ export abstract class AbstractClient implements Client {
 
 	abstract isConnected(): boolean;
 
-	/** Returns true when client is ready to send requests. Override for custom handshake logic. */
 	public isReady(): boolean {
 		return this.isConnected();
 	}
@@ -50,17 +49,10 @@ export abstract class AbstractClient implements Client {
 		this.responseBroadcaster.register(listener);
 	}
 
-	/**
-	 * Sends a request without waiting for a response (fire-and-forget).
-	 * Use get() if you need to wait for a response.
-	 */
 	public async send(duid: string, request: RequestMessage): Promise<void> {
 		this.sendInternal(duid, request);
 	}
 
-	/**
-	 * Internal send logic to be implemented by subclasses (e.g., actual network send).
-	 */
 	protected abstract sendInternal(duid: string, request: RequestMessage): void;
 
 	public connect(): void {
@@ -78,16 +70,22 @@ export abstract class AbstractClient implements Client {
 		return Promise.resolve();
 	}
 
-	public async get<T>(duid: string, request: RequestMessage): Promise<T | undefined> {
+	public async query<T>(
+		duid: string,
+		request: RequestMessage,
+		parseFn: (msg: ResponseMessage) => T | undefined,
+		timeoutMs?: number,
+	): Promise<T | undefined> {
+		const listener = new OneShotResponseListener<T>(duid, parseFn, timeoutMs);
+		this.responseBroadcaster.register(listener);
 		try {
-			const responsePromise = this.responseTracker.waitFor(request, duid);
 			this.sendInternal(duid, request);
-
-			const response = await responsePromise;
-			return response as unknown as T;
+			return await listener.waitFor();
 		} catch (error) {
 			this.logger.error(error instanceof Error ? error.message : String(error));
 			return undefined;
+		} finally {
+			this.responseBroadcaster.deregister(listener);
 		}
 	}
 

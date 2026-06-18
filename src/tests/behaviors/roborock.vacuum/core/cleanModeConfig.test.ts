@@ -7,11 +7,8 @@ import {
 	getModeDisplayMap,
 	getModeOptions,
 	getModeSettingsMap,
-	smartPlanModeConfig,
-	vacFollowedByMopModeConfig,
-} from '../../../../behaviors/roborock.vacuum/core/cleanModeConfig.js';
-
-const smartCleanModeConfigs = [smartPlanModeConfig, vacFollowedByMopModeConfig, ...baseCleanModeConfigs];
+	smartCleanModeConfigs,
+} from '../../../../behaviors/roborock.vacuum/core/cleanModeConfig/index.js';
 import { CleanModeSetting } from '../../../../behaviors/roborock.vacuum/core/CleanModeSetting.js';
 
 describe('cleanModeConfig', () => {

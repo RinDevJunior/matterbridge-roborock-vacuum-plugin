@@ -1,7 +1,6 @@
 import { AnsiLogger } from 'matterbridge/logger';
 
 import { ResponseMessage } from '../../models/index.js';
-import { V1PendingResponseTracker } from '../services/v1PendingResponseTracker.js';
 import { AbstractMessageListener } from './abstractMessageListener.js';
 import { ResponseBroadcaster } from './responseBroadcaster.js';
 
@@ -10,22 +9,18 @@ export class V1ResponseBroadcaster implements ResponseBroadcaster {
 
 	private listeners: AbstractMessageListener[] = [];
 
-	constructor(
-		private readonly tracker: V1PendingResponseTracker,
-		private readonly logger: AnsiLogger,
-	) {}
+	constructor(private readonly logger: AnsiLogger) {}
 
 	public register(listener: AbstractMessageListener): void {
 		this.listeners.push(listener);
 	}
 
-	public unregister(): void {
-		this.tracker.cancelAll();
-		this.listeners = [];
+	public deregister(listener: AbstractMessageListener): void {
+		this.listeners = this.listeners.filter((l) => l !== listener);
 	}
 
-	public tryResolve(response: ResponseMessage): void {
-		this.tracker.tryResolve(response);
+	public unregister(): void {
+		this.listeners = [];
 	}
 
 	public async onMessage(message: ResponseMessage): Promise<void> {

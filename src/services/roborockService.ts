@@ -87,15 +87,7 @@ export class RoborockService {
 		this.toastMessage = params.toastMessage;
 	}
 
-	// ============================================================================
-	// Authentication Methods (delegate to AuthenticationCoordinator)
-	// ============================================================================
-
 	public async authenticate(): Promise<AuthenticationResponse> {
-		if (!this.configManager) {
-			throw new Error('PlatformConfigManager not provided. Cannot authenticate.');
-		}
-
 		const username = this.configManager.username;
 		const password = this.configManager.password;
 		const verificationCode = this.configManager.verificationCode;
@@ -131,10 +123,6 @@ export class RoborockService {
 		this.container.setUserData(userData);
 		return { userData, shouldContinue: true, isSuccess: true };
 	}
-
-	// ============================================================================
-	// Device Management Methods (delegate to DeviceManagementService)
-	// ============================================================================
 
 	/** List all devices for the user's account. */
 	public async listDevices(): Promise<Device[]> {
@@ -188,10 +176,6 @@ export class RoborockService {
 	public stopService(): void {
 		this.container.destroy();
 	}
-
-	// ============================================================================
-	// Area Management Methods (delegate to AreaManagementService)
-	// ============================================================================
 
 	/** Set selected cleaning areas for a device. */
 	public setSelectedAreas(duid: string, selectedAreas: number[]): void {
@@ -247,10 +231,6 @@ export class RoborockService {
 	public async startScene(sceneId: number): Promise<unknown> {
 		return this.areaService.startScene(sceneId);
 	}
-
-	// ============================================================================
-	// Message Routing Methods (delegate to MessageRoutingService)
-	// ============================================================================
 
 	/** Get current cleaning mode settings. */
 	public async getCleanModeData(duid: string): Promise<CleanModeSetting> {

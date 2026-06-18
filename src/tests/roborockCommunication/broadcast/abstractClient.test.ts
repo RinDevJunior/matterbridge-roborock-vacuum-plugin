@@ -1,18 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import {
-	MessageContext,
-	RequestMessage,
-	ResponseMessage,
-	UserData,
-} from '../../../roborockCommunication/models/index.js';
+import { MessageContext, RequestMessage, ResponseMessage } from '../../../roborockCommunication/models/index.js';
 import { AbstractClient } from '../../../roborockCommunication/routing/abstractClient.js';
 import { AbstractConnectionListener } from '../../../roborockCommunication/routing/listeners/abstractConnectionListener.js';
 import { AbstractMessageListener } from '../../../roborockCommunication/routing/listeners/abstractMessageListener.js';
 import { ResponseBroadcaster } from '../../../roborockCommunication/routing/listeners/responseBroadcaster.js';
 import { V1ResponseBroadcaster } from '../../../roborockCommunication/routing/listeners/v1ResponseBroadcaster.js';
-import { PendingResponseTracker } from '../../../roborockCommunication/routing/services/pendingResponseTracker.js';
-import { V1PendingResponseTracker } from '../../../roborockCommunication/routing/services/v1PendingResponseTracker.js';
 import { asPartial, asType, createMockLogger, mkUser } from '../../helpers/testUtils.js';
 
 class TestClient extends AbstractClient {
@@ -20,13 +13,8 @@ class TestClient extends AbstractClient {
 	protected shouldReconnect = false;
 	private connected = false;
 
-	constructor(
-		logger: any,
-		context: MessageContext,
-		responseBroadcaster: ResponseBroadcaster,
-		responseTracker: PendingResponseTracker,
-	) {
-		super(logger, context, responseBroadcaster, responseTracker);
+	constructor(logger: any, context: MessageContext, responseBroadcaster: ResponseBroadcaster) {
+		super(logger, context, responseBroadcaster);
 		this.initializeConnectionStateListener(asPartial<AbstractClient>({}));
 	}
 
@@ -42,7 +30,7 @@ class TestClient extends AbstractClient {
 		this.connected = false;
 	}
 
-	protected override sendInternal(duid: string, request: RequestMessage): void {
+	protected override sendInternal(_duid: string, _request: RequestMessage): void {
 		// Mock implementation - do nothing
 	}
 }
@@ -51,45 +39,36 @@ describe('AbstractClient', () => {
 	let client: TestClient;
 	let logger: any;
 	let context: MessageContext;
-	let responseTracker: V1PendingResponseTracker;
 	let responseBroadcaster: V1ResponseBroadcaster;
 
 	beforeEach(() => {
 		logger = createMockLogger();
 		const userdata = mkUser();
 		context = new MessageContext(userdata);
-		responseTracker = new V1PendingResponseTracker(logger);
-		responseBroadcaster = new V1ResponseBroadcaster(responseTracker, logger);
-		client = new TestClient(logger, context, responseBroadcaster, responseTracker);
+		responseBroadcaster = new V1ResponseBroadcaster(logger);
+		client = new TestClient(logger, context, responseBroadcaster);
 	});
 
-	it('get resolves when responseTracker receives response', async () => {
+	it('query resolves when broadcaster dispatches a matching message', async () => {
 		const request = asPartial<RequestMessage>({ messageId: 123, method: 'test_method' });
-		const mockResponse = asPartial<ResponseMessage>({
-			duid: 'DUID123',
-			header: asPartial({}),
-			get: () => 'response_data',
-			isForProtocol: () => true,
-			isForProtocols: () => true,
-			isForStatus: () => true,
+		const msg = asPartial<ResponseMessage>({ duid: 'DUID123', isSimpleOkResponse: () => false });
+
+		vi.spyOn(client as any, 'sendInternal').mockImplementation(() => {
+			// Defer so waitFor() has a chance to set this.resolve before onMessage fires
+			void Promise.resolve().then(() => responseBroadcaster.onMessage(msg));
 		});
 
-		vi.spyOn(responseTracker, 'waitFor').mockResolvedValue(mockResponse);
-
-		const result = await client.get<unknown>('DUID123', request);
-		expect(result).toEqual(mockResponse);
+		const parseFn = vi.fn().mockReturnValue('parsed-value');
+		const result = await client.query<string>('DUID123', request, parseFn);
+		expect(result).toBe('parsed-value');
 	});
 
-	it('get returns undefined when error occurs', async () => {
+	it('query returns undefined when timeout occurs', async () => {
 		const request = asPartial<RequestMessage>({ messageId: 456, method: 'failing_method' });
+		vi.spyOn(client as any, 'sendInternal').mockImplementation(() => {});
 
-		vi.spyOn(responseTracker, 'waitFor').mockRejectedValue(new Error('test error'));
-
-		const result = await client.get<unknown>('DUID456', request);
+		const result = await client.query<string>('DUID456', request, () => undefined, 1);
 		expect(result).toBeUndefined();
-		expect(vi.mocked(logger.error).mock.calls.some((args: unknown[]) => String(args[0]).includes('test error'))).toBe(
-			true,
-		);
 	});
 
 	it('registerDevice delegates to context', () => {
@@ -120,5 +99,11 @@ describe('AbstractClient', () => {
 		expect(client.isConnected()).toBe(false);
 		client.connect();
 		expect(client.isConnected()).toBe(true);
+	});
+
+	it('isReady delegates to isConnected', () => {
+		expect(client.isReady()).toBe(false);
+		client.connect();
+		expect(client.isReady()).toBe(true);
 	});
 });

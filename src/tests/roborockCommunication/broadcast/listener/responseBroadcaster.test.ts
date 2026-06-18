@@ -2,7 +2,6 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { HeaderMessage, ResponseMessage } from '../../../../roborockCommunication/models/index.js';
 import { V1ResponseBroadcaster } from '../../../../roborockCommunication/routing/listeners/v1ResponseBroadcaster.js';
-import { V1PendingResponseTracker } from '../../../../roborockCommunication/routing/services/v1PendingResponseTracker.js';
 import { asPartial, makeLogger } from '../../../testUtils.js';
 
 describe('ResponseBroadcaster', () => {
@@ -17,10 +16,9 @@ describe('ResponseBroadcaster', () => {
 	});
 
 	const logger = makeLogger();
-	const responseTracker = new V1PendingResponseTracker(logger);
 
 	beforeEach(() => {
-		chained = new V1ResponseBroadcaster(responseTracker, logger);
+		chained = new V1ResponseBroadcaster(logger);
 		listener1 = {
 			name: 'listener1',
 			duid: 'test-duid',

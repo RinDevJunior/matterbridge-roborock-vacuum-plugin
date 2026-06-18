@@ -1,3 +1,5 @@
+import { MatterbridgeIdentifyServer, MatterbridgeServiceAreaServer } from 'matterbridge';
+import { MatterbridgeRvcOperationalStateServer } from 'matterbridge/devices';
 import { AnsiLogger } from 'matterbridge/logger';
 import { ModeBase } from 'matterbridge/matter/clusters';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -65,6 +67,7 @@ describe('RoborockVacuumCleaner', () => {
 		vi.spyOn(vacuum.log, 'warn').mockImplementation(() => {});
 		vi.spyOn(vacuum.log, 'debug').mockImplementation(() => {});
 		vi.spyOn(vacuum.log, 'error').mockImplementation(() => {});
+		vi.spyOn(vacuum, 'stateOf').mockReturnValue({} as any);
 	});
 
 	it('should construct with correct properties', () => {
@@ -80,11 +83,17 @@ describe('RoborockVacuumCleaner', () => {
 			commands: {},
 		} satisfies BehaviorFactoryResult;
 		vacuum.configureHandler(behaviorHandler);
-		await vacuum.executeCommandHandler('identify', { identifyTime: 5 }, 'identify', asType({}), asType(undefined));
+		await vacuum.executeCommandHandler(
+			'identify',
+			{ identifyTime: 5 },
+			'identify',
+			vacuum.stateOf(MatterbridgeIdentifyServer) as any,
+			vacuum,
+		);
 		expect(behaviorHandler.executeCommand).toHaveBeenCalledWith('identify', 5);
 	});
 
-	it('should warn if selectAreas called with empty areas', async () => {
+	it('should clear selected areas when selectAreas called with empty areas', async () => {
 		const behaviorHandler = {
 			executeCommand: vi.fn(),
 			setCommandHandler: vi.fn(),
@@ -92,8 +101,14 @@ describe('RoborockVacuumCleaner', () => {
 			commands: {},
 		} satisfies BehaviorFactoryResult;
 		vacuum.configureHandler(behaviorHandler);
-		await vacuum.executeCommandHandler('selectAreas', { newAreas: [] }, 'serviceArea', asType({}), asType(undefined));
-		expect(behaviorHandler.executeCommand).not.toHaveBeenCalled();
+		await vacuum.executeCommandHandler(
+			'selectAreas',
+			{ newAreas: [] },
+			'serviceArea',
+			vacuum.stateOf(MatterbridgeServiceAreaServer) as any,
+			vacuum,
+		);
+		expect(behaviorHandler.executeCommand).toHaveBeenCalledWith('selectAreas', []);
 	});
 
 	it('should call behaviorHandler for selectAreas command', async () => {
@@ -108,8 +123,8 @@ describe('RoborockVacuumCleaner', () => {
 			'selectAreas',
 			{ newAreas: [1, 2] },
 			'serviceArea',
-			asType({}),
-			asType(undefined),
+			vacuum.stateOf(MatterbridgeServiceAreaServer) as any,
+			vacuum,
 		);
 		expect(behaviorHandler.executeCommand).toHaveBeenCalledWith('selectAreas', [1, 2]);
 	});
@@ -123,7 +138,13 @@ describe('RoborockVacuumCleaner', () => {
 		} satisfies BehaviorFactoryResult;
 		vacuum.configureHandler(behaviorHandler);
 		const request = { newMode: 42 } satisfies ModeBase.ChangeToModeRequest;
-		await vacuum.executeCommandHandler('changeToMode', request, 'modeSelect', asType({}), asType(undefined));
+		await vacuum.executeCommandHandler(
+			'changeToMode',
+			request,
+			'modeSelect',
+			vacuum.stateOf(MatterbridgeRvcOperationalStateServer) as any,
+			vacuum,
+		);
 		expect(behaviorHandler.executeCommand).toHaveBeenCalledWith('changeToMode', 42);
 	});
 
@@ -135,7 +156,13 @@ describe('RoborockVacuumCleaner', () => {
 			commands: {},
 		} satisfies BehaviorFactoryResult;
 		vacuum.configureHandler(behaviorHandler);
-		await vacuum.executeCommandHandler('pause', {}, 'operationalState', asType({}), asType(undefined));
+		await vacuum.executeCommandHandler(
+			'pause',
+			{},
+			'operationalState',
+			vacuum.stateOf(MatterbridgeRvcOperationalStateServer) as any,
+			vacuum,
+		);
 		expect(behaviorHandler.executeCommand).toHaveBeenCalledWith('pause');
 	});
 
@@ -147,7 +174,13 @@ describe('RoborockVacuumCleaner', () => {
 			commands: {},
 		} satisfies BehaviorFactoryResult;
 		vacuum.configureHandler(behaviorHandler);
-		await vacuum.executeCommandHandler('resume', {}, 'operationalState', asType({}), asType(undefined));
+		await vacuum.executeCommandHandler(
+			'resume',
+			{},
+			'operationalState',
+			vacuum.stateOf(MatterbridgeRvcOperationalStateServer) as any,
+			vacuum,
+		);
 		expect(behaviorHandler.executeCommand).toHaveBeenCalledWith('resume');
 	});
 
@@ -159,7 +192,13 @@ describe('RoborockVacuumCleaner', () => {
 			commands: {},
 		} satisfies BehaviorFactoryResult;
 		vacuum.configureHandler(behaviorHandler);
-		await vacuum.executeCommandHandler('goHome', {}, 'rvcOperationalState', asType({}), asType(undefined));
+		await vacuum.executeCommandHandler(
+			'goHome',
+			{},
+			'rvcOperationalState',
+			vacuum.stateOf(MatterbridgeRvcOperationalStateServer) as any,
+			vacuum,
+		);
 		expect(behaviorHandler.executeCommand).toHaveBeenCalledWith('goHome');
 	});
 

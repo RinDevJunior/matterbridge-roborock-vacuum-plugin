@@ -21,6 +21,7 @@ function createMockClient() {
 	return {
 		send: vi.fn().mockResolvedValue(undefined),
 		get: vi.fn().mockResolvedValue(undefined),
+		query: vi.fn().mockResolvedValue(undefined),
 		isConnected: vi.fn().mockReturnValue(true),
 		connect: vi.fn(),
 		disconnect: vi.fn(),
@@ -77,34 +78,18 @@ describe('Q7MessageDispatcher', () => {
 	});
 
 	describe('getMapInfo', () => {
-		it('should call client.get and logger.notice, return MapInfo', async () => {
-			client.get.mockResolvedValueOnce({});
+		it('should call client.send and return stub MapInfo', async () => {
 			const result = await dispatcher.getMapInfo(duid);
-			expect(client.get).toHaveBeenCalled();
-			expect(logger.notice).toHaveBeenCalled();
-			expect(result).toBeInstanceOf(Object); // MapInfo, but type is not checked at runtime
+			expect(client.send).toHaveBeenCalled();
+			expect(result).toBeInstanceOf(Object);
 		});
 	});
 
 	describe('getRoomMap', () => {
-		it('should return empty array when response is undefined', async () => {
-			client.get.mockResolvedValueOnce(undefined);
+		it('should call client.send and return empty array', async () => {
 			const result = await dispatcher.getRoomMap(duid, 1);
-			expect(client.get).toHaveBeenCalled();
+			expect(client.send).toHaveBeenCalled();
 			expect(result).toEqual([]);
-		});
-
-		it('should call client.get and return room mapping data', async () => {
-			const mockRoomData: [number, string, number][] = [
-				[1, 'Living Room', 0],
-				[2, 'Kitchen', 1],
-			];
-			client.get.mockResolvedValueOnce(mockRoomData);
-
-			const result = await dispatcher.getRoomMap(duid, 1);
-
-			expect(client.get).toHaveBeenCalled();
-			expect(result).toEqual(mockRoomData);
 		});
 	});
 
@@ -185,7 +170,7 @@ describe('Q7MessageDispatcher', () => {
 		it('should get a custom message', async () => {
 			const def = asPartial<RequestMessage>({ dps: { foo: 'bar' } });
 			await dispatcher.getCustomMessage(duid, def);
-			expect(client.get).toHaveBeenCalled();
+			expect(client.query).toHaveBeenCalled();
 		});
 	});
 

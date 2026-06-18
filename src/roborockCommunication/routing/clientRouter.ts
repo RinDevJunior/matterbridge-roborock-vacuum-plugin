@@ -1,13 +1,14 @@
 import { AnsiLogger } from 'matterbridge/logger';
 
 import { LocalNetworkClient } from '../local/localClient.js';
-import { MessageContext, RequestMessage, UserData } from '../models/index.js';
+import { MessageContext, RequestMessage, ResponseMessage, UserData } from '../models/index.js';
 import { MQTTClient } from '../mqtt/mqttClient.js';
 import { AbstractClient } from './abstractClient.js';
 import { Client } from './client.js';
 import { AbstractConnectionListener } from './listeners/abstractConnectionListener.js';
 import { AbstractMessageListener } from './listeners/abstractMessageListener.js';
 import { ConnectionBroadcaster } from './listeners/connectionBroadcaster.js';
+import { OneShotResponseListener } from './listeners/oneShotResponseListener.js';
 import { ResponseBroadcasterFactory } from './listeners/responseBroadcasterFactory.js';
 
 export class ClientRouter implements Client {
@@ -25,7 +26,7 @@ export class ClientRouter implements Client {
 		this.context = new MessageContext(userdata);
 
 		this.broadcasterFactory = new ResponseBroadcasterFactory(this.context, this.logger);
-		this.mqttClient = new MQTTClient(logger, this.context, userdata, this.broadcasterFactory, this.broadcasterFactory);
+		this.mqttClient = new MQTTClient(logger, this.context, userdata, this.broadcasterFactory);
 		this.connectionBroadcaster = new ConnectionBroadcaster(this.logger);
 		this.mqttClient.registerConnectionListener(this.connectionBroadcaster);
 	}
@@ -39,14 +40,7 @@ export class ClientRouter implements Client {
 	}
 
 	public registerClient(duid: string, ip: string): Client {
-		const localClient = new LocalNetworkClient(
-			this.logger,
-			this.context,
-			duid,
-			ip,
-			this.broadcasterFactory,
-			this.broadcasterFactory,
-		);
+		const localClient = new LocalNetworkClient(this.logger, this.context, duid, ip, this.broadcasterFactory);
 		localClient.registerConnectionListener(this.connectionBroadcaster);
 
 		this.localClients.set(duid, localClient);
@@ -100,11 +94,22 @@ export class ClientRouter implements Client {
 		}
 	}
 
-	public async get<T>(duid: string, request: RequestMessage): Promise<T | undefined> {
-		if (request.secure) {
-			return await this.mqttClient.get(duid, request);
-		} else {
-			return await this.getLocalClient(duid).get(duid, request);
+	public async query<T>(
+		duid: string,
+		request: RequestMessage,
+		parseFn: (msg: ResponseMessage) => T | undefined,
+		timeoutMs?: number,
+	): Promise<T | undefined> {
+		const listener = new OneShotResponseListener<T>(duid, parseFn, timeoutMs);
+		this.broadcasterFactory.register(listener);
+		try {
+			await this.send(duid, request);
+			return await listener.waitFor();
+		} catch (error) {
+			this.logger.error(error instanceof Error ? error.message : String(error));
+			return undefined;
+		} finally {
+			this.broadcasterFactory.deregister(listener);
 		}
 	}
 

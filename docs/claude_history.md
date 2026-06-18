@@ -1,13 +1,93 @@
 # Claude History
 
-## 2026-05-16 (Session)
+## 2026-06-12 (Session 26)
 
-- Created release 1.1.6
-  - Updated `version` in `package.json` to `1.1.6`
-  - Updated `build:compress` tgz filename in `package.json` to `1.1.6`
-  - Updated `version` in `matterbridge-roborock-vacuum-plugin.config.json` to `1.1.6`
-  - Updated `description` in `matterbridge-roborock-vacuum-plugin.schema.json` to `v. 1.1.6`
-  - Added CHANGELOG entry for `1.1.6`: Base Q Revo (`roborock.vacuum.a75`) added to `DeviceModel` enum
+- Full codebase read-through (learn-codebase): read every remaining source file in `src/roborockCommunication/routing/`, `src/cli/` (+ `cli.ts`), `src/model/`, `src/errors/`, `src/initialData/`, `src/constants/`, `src/runtimes/` (incl. `handlers/`), `src/share/`, `src/types/`, `src/core/domain/`, `src/core/application/models/`, `module.ts`, `settings.ts`, `platformRunner.ts`, and the `behaviors/roborock.vacuum/core/` mode-handling system.
+- Created `docs/authentication-flow.md` - mermaid flowchart + summary of the `AuthenticationCoordinator` → `PasswordAuthStrategy`/`TwoFactorAuthStrategy` flow (cached-token check, password login, 2FA verification-code flow, error mapping).
+- Updated `docs/CODE_STRUCTURE.md` to fix drift from current source (v1.1.7-rc01):
+  - `routing/listeners/`: removed stale `services/` subtree (`pendingResponseTracker.ts`, `b01/v1PendingResponseTracker.ts`), added `oneShotResponseListener.ts`.
+  - `initialData/`: replaced nonexistent `getSupportedScenes.ts` with `getSupportedRoutines.ts`, added per-file descriptions.
+  - `constants/`: noted `sensitiveDataRegexReplacements.ts` is not re-exported from `index.ts`.
+  - `model/`: documented all 7 files (was missing `AuthenticationResponse.ts`, `CleanCommand.ts`, `RoborockPluginPlatformConfig.ts`, `VacuumStatus.ts`).
+  - `errors/`: documented full `BaseError` hierarchy.
+  - Added new "Error Handling & Plugin Models" and "CLI Tool" sections + ToC entries; bumped version/date header.
+
+## 2026-05-17 (Session 25)
+
+- Improved patch coverage from 83.85% to higher by adding 8 new tests targeting uncovered branches in changed files.
+- `oneShotResponseListener.test.ts`: added test for wrong-duid messages (covers line 34 false branch) and `onMessage-before-waitFor` (covers line 40 false branch when timer is undefined).
+- `responseBroadcasterFactory.test.ts`: added `deregister` test (covers lines 31-32).
+- `clientRouter.test.ts`: added `registerDevice`, `updateNonce`, `isReady`, `unregisterClient`, `query` timeout, and `query` resolve tests; added `error`/`warn` to mockLogger.
+- `abstractClient.test.ts`: added `isReady` delegates to `isConnected` test (covers line 40).
+- `v1ResponseBroadcaster.test.ts` / `b01ResponseBroadcaster.test.ts`: replaced "throw Error" with `throw 'raw string error'` to cover the `String(error)` branch in the non-Error exception handler.
+- All 175 test files, 1876 tests pass (+8). Precommit clean.
+
+## 2026-05-17 (Session 24)
+
+- Fixed CI `npm ci` failure: added `"typescript": "6.0.3"` to existing `"overrides"` block in `package.json` so npm v10 (CI) resolves `tsconfck`'s optional `typescript@^5.0.0` peer dep to `6.0.3` instead of trying to install `5.9.3` which was missing from the lock file.
+- Updated safe patch-level dev dependencies: `@vitest/coverage-v8` 4.1.2→4.1.6, `@vitest/eslint-plugin` 1.6.14→1.6.17, `prettier` 3.8.1→3.8.3, `typescript` 6.0.2→6.0.3, `typescript-eslint` 8.58.0→8.59.3, `vitest` 4.1.2→4.1.6, `node-persist-manager` 2.0.1→2.0.2.
+- Fixed two new lint errors surfaced by `typescript-eslint@8.59.3`: removed redundant `model as string` cast in `getSupportedCleanModes.ts` and `} as AbstractUDPMessageListener` cast in `connectionService.ts`; removed now-unused `AbstractUDPMessageListener` import.
+- All 175 test files, 1865 tests pass. Precommit clean.
+
+## 2026-05-17 (Session 23)
+
+- Ran `/simplify` code review on fire-and-forget migration (Phases 1–3 staged changes).
+- Fixed memory leak: `OneShotResponseListener` was never removed from broadcaster arrays after settling. Added `deregister(listener)` to `ResponseBroadcaster` interface + all implementations (`V1ResponseBroadcaster`, `B01ResponseBroadcaster`, `ResponseBroadcasterFactory`). Added `finally { broadcaster.deregister(listener) }` to `AbstractClient.query()` and `ClientRouter.query()`.
+- Removed `timer.unref()` after `clearTimeout()` in `OneShotResponseListener.onMessage()` — no-op after clear.
+- Removed stale JSDoc comment in `AbstractClient.isReady()`.
+- Removed commented-out dead code in `Q7MessageDispatcher` (unused `b01MapParser` field and old `getRoomMap` implementation).
+- Removed WHAT-only section banner comments in `V10MessageDispatcher`.
+- Added `deregister` tests to `v1ResponseBroadcaster.test.ts` and `b01ResponseBroadcaster.test.ts`.
+- All 175 test files, 1865 tests pass. Type-check clean.
+
+## 2026-05-16 (Session 22)
+
+- Executed fire-and-forget migration (all 3 phases) per `docs/plan-fire-and-forget-v2.md`.
+- Phase 1: Converted 9 dispatcher methods from `client.get()` to `client.send()` (findMyRobot, getDeviceStatus for V10/Q10; getNetworkInfo, getMapInfo, getRoomMap for Q10/Q7). Updated `abstractMessageDispatcher.ts` `getDeviceStatus` return type from `Promise<DeviceStatus | undefined>` to `Promise<void>`.
+- Phase 2: Created `OneShotResponseListener` (one-shot listener pattern). Added `query<T>()` to `Client` interface, `AbstractClient`, and `ClientRouter`. Added `parseV1Result<T>()` module helper to `V10MessageDispatcher`. Migrated all remaining `client.get()` callers in V10/Q10/Q7 dispatchers to `client.query()`. Simplified `changeCleanMode()` read-before-write guard (removed `getCustomMessage('get_custom_mode')` call).
+- Phase 3: Deleted entire `PendingResponseTracker` infrastructure (3 source files + 3 test files). Removed `tryResolve()` from `ResponseBroadcaster` interface and all implementations. Simplified broadcaster constructors. Removed tracker from local/MQTT client constructors.
+- Updated 20+ test files to remove tracker mocks. Fixed race condition in `AbstractClient.query()` test (microtask deferral). All 175 test files, 1863 tests pass.
+
+## 2026-04-11 (Session 21)
+
+- Executed `docs/plan-cleanModeConfig-split.md`: split `src/behaviors/roborock.vacuum/core/cleanModeConfig.ts` (383 LOC) into a directory module.
+- Created `cleanModeConfig/` with 7 files: `types.ts`, `vacuumAndMop.ts`, `mopOnly.ts`, `vacuumOnly.ts`, `special.ts`, `helpers.ts`, `index.ts`.
+- Fixed import paths: enums are at `../../enums/` (not `../enums/`) from inside the subdirectory.
+- Updated 20 import files (11 production + 9 test): `cleanModeConfig.js` → `cleanModeConfig/index.js`.
+- Deleted original `cleanModeConfig.ts`.
+- `npm run build` exits 0, all 1911 tests pass, lint clean.
+
+## 2026-04-11 (Session 20)
+
+- Ran code-simplifier on `src/runtimes/handlers/` (5 handler files + `platformRunner.ts`).
+- `errorStateHandler.ts`: removed duplicate `debug` log (line 24 was identical to line 17); moved `currentOperationState` getAttribute call to just before its use (skips it on early-return paths); simplified `!== undefined && !== null` → `!= null`.
+- `serviceAreaHandler.ts`: removed redundant `if (!cleaningInfo) return` guard inside `resolveAreaFromCleaningInfo` (caller already narrows); changed function signature to accept `CleanInformation` directly; renamed snake_case segment vars to camelCase (`sourceSegmentId`, `sourceTargetSegmentId`, `segmentId`); inlined `activeArea` find into debug log (removed unused variable).
+- `batteryStateHandler.ts`: fixed falsy-zero bug — `if (batteryLevel)` skipped updates at 0% battery; replaced with `if (batteryLevel != null)` which guards against undefined wire data without skipping 0%.
+- `deviceStateHandler.ts`: parallelized two independent `updateAttribute` calls in `handleDeviceStatusUpdate` using `Promise.all`.
+- `roborockService.coverage.test.ts`: removed test "should throw error when configManager is not provided" — tested dead guard removed in Session 19.
+- All 1911 tests pass.
+
+## 2026-04-11 (Session 19)
+
+- Ran code-simplifier review on `src/services/roborockService.ts`.
+- Removed dead guard `if (!this.configManager)` in `authenticate()` — constructor guarantees it's set.
+- Removed section header comments (`// === ... ===`) in `roborockService.ts` — pure WHAT noise.
+- Fixed bug in `serviceContainer.ts` `destroy()`: `pollingService.shutdown()` was called twice (once without clearing the reference, then again in the normal cleanup block). Removed the redundant early call.
+- Flagged future refactor: move `buildCleanCommand` from `RoborockService` to `AreaManagementService` to reduce 4-call coupling; deferred due to required test redesign.
+
+## 2026-04-04 (Session 18)
+
+- Executed Priority 1 refactoring from `docs/refactoring-recommendations.md`: split `platformRunner.ts` (562 LOC) into 5 pure handler modules under `src/runtimes/handlers/`.
+- Created plan in `docs/plan-platformRunner-split.md`, then executed 5 phases sequentially with build+test after each.
+- Extracted handlers:
+  - `serviceAreaHandler.ts` — `handleServiceAreaUpdate` + 3 helpers + `CLEANING_STATES` const
+  - `errorStateHandler.ts` — `handleErrorOccurred`
+  - `deviceStateHandler.ts` — `handleDeviceStatusUpdate` (returns `boolean` for burst polling signal) + `handleDeviceStatusSimpleUpdate`
+  - `batteryStateHandler.ts` — `handleBatteryUpdate`
+  - `cleanModeHandler.ts` — `handleCleanModeUpdate`
+- `platformRunner.ts` reduced from 562 → 118 LOC (dispatcher + lifecycle only, no handler logic).
+- All 1912 tests pass. Lint and build clean. Changes staged (not committed per user preference).
+- Updated `docs/CODE_STRUCTURE.md` with new `runtimes/handlers/` directory, `docs/to_do.md` marked item complete.
 
 ## 2026-03-14 (Session 17)
 

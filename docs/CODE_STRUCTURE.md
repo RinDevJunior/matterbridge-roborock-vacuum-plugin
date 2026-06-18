@@ -1,8 +1,8 @@
 # Matterbridge Roborock Vacuum Plugin - Code Structure
 
-**Version:** 1.1.3-rc03
-**Last Updated:** January 30, 2026
-**Test Coverage:** 95.74% (959+ tests passed)
+**Version:** 1.1.7-rc01
+**Last Updated:** June 12, 2026
+**Test Coverage:** 1911+ tests passed (177 test files)
 
 ---
 
@@ -18,9 +18,12 @@
 8. [Service Layer](#service-layer)
 9. [Communication Layer](#communication-layer)
 10. [Behavior System](#behavior-system)
-11. [Data Flow](#data-flow)
-12. [Key Design Patterns](#key-design-patterns)
-13. [Testing Strategy](#testing-strategy)
+11. [Error Handling & Plugin Models](#error-handling--plugin-models)
+12. [CLI Tool](#cli-tool)
+13. [Shared Utilities](#shared-utilities)
+14. [Data Flow](#data-flow)
+15. [Key Design Patterns](#key-design-patterns)
+16. [Testing Strategy](#testing-strategy)
 
 ---
 
@@ -31,7 +34,7 @@ This plugin integrates Roborock vacuum cleaners into the Matter ecosystem via Ma
 **Key Technologies:**
 
 - TypeScript 5.x targeting ESNext
-- Matterbridge 3.5.5
+- Matterbridge 3.7.3
 - Vitest for unit testing
 - MQTT for real-time device communication
 - REST API for Roborock cloud services
@@ -97,21 +100,29 @@ src/module.ts (RoborockMatterbridgePlatform)
 │   ├── deviceDiscovery.ts        # Authentication, API calls, device filtering
 │   └── deviceConfigurator.ts     # Device setup, room mapping, Matterbridge registration
 │
-├── platformRunner.ts             # Orchestrates device updates and message routing
+├── platformRunner.ts             # Orchestrates device updates and message routing (~80 LOC, dispatcher only)
 │   └── uses: runtimes/
 │       ├── handleLocalMessage.ts
 │       ├── handleCloudMessage.ts
-│       └── handleHomeDataMessage.ts
+│       ├── handleHomeDataMessage.ts
+│       └── handlers/              # Pure exported handler functions (extracted from PlatformRunner)
+│           ├── serviceAreaHandler.ts   # handleServiceAreaUpdate + area resolution helpers
+│           ├── errorStateHandler.ts    # handleErrorOccurred
+│           ├── deviceStateHandler.ts   # handleDeviceStatusUpdate (returns bool), handleDeviceStatusSimpleUpdate
+│           ├── batteryStateHandler.ts  # handleBatteryUpdate
+│           └── cleanModeHandler.ts     # handleCleanModeUpdate
 │
 ├── services/ (Service Layer)
 │   ├── serviceContainer.ts       # Main DI container for services
 │   ├── roborockService.ts        # Service facade
 │   ├── authenticationService.ts
+│   ├── authentication/           # Auth strategies (Coordinator, Password, 2FA, etc.)
 │   ├── deviceManagementService.ts
 │   ├── areaManagementService.ts
 │   ├── messageRoutingService.ts
 │   ├── pollingService.ts
 │   ├── connectionService.ts
+│   ├── emailNotificationService.ts
 │   └── clientManager.ts          # Manages MQTT client instances
 │
 ├── core/ (Core Domain Layer)
@@ -378,11 +389,22 @@ src/
 │   ├── serviceContainer.ts      # Main DI container
 │   ├── roborockService.ts       # Service facade
 │   ├── authenticationService.ts
+│   ├── authentication/          # Authentication strategies
+│   │   ├── AuthContext.ts
+│   │   ├── AuthenticationCoordinator.ts
+│   │   ├── AuthenticationStateRepository.ts
+│   │   ├── BaseAuthStrategy.ts
+│   │   ├── IAuthStrategy.ts
+│   │   ├── PasswordAuthStrategy.ts
+│   │   ├── TwoFactorAuthStrategy.ts
+│   │   ├── UserDataRepository.ts
+│   │   └── VerificationCodeService.ts
 │   ├── deviceManagementService.ts
 │   ├── areaManagementService.ts
 │   ├── messageRoutingService.ts
 │   ├── pollingService.ts
 │   ├── connectionService.ts
+│   ├── emailNotificationService.ts
 │   ├── clientManager.ts
 │   └── index.ts
 │
@@ -394,16 +416,23 @@ src/
 │       ├── core/                # Core behavior logic
 │       │   ├── CleanModeSetting.ts
 │       │   ├── behaviorConfig.ts
-│       │   ├── cleanMode.ts
-│       │   ├── cleanModeConfig.ts
+│       │   ├── cleanModeConfig/         # Directory module (split from cleanModeConfig.ts)
+│       │   │   ├── types.ts             # CleanModeConfig, CleanModeDisplayLabel, CleanModeLabel, CleanModeLabelInfo
+│       │   │   ├── vacuumAndMop.ts      # 6 V+M mode entries
+│       │   │   ├── mopOnly.ts           # 5 mop-only entries
+│       │   │   ├── vacuumOnly.ts        # 4 vacuum-only entries
+│       │   │   ├── special.ts           # smartPlanModeConfig, vacFollowedByMopModeConfig, vacAndMopDeepModeConfig
+│       │   │   ├── helpers.ts           # getModeDisplayMap, getModeSettingsMap, getModeOptions
+│       │   │   └── index.ts             # Re-exports + assembles baseCleanModeConfigs, smartCleanModeConfigs
 │       │   ├── cleanModeUtils.ts
-│       │   ├── cleanSetting.ts
 │       │   ├── commonCommands.ts
+│       │   ├── deviceCapabilityRegistry.ts
 │       │   ├── modeHandler.ts
 │       │   ├── modeHandlerRegistry.ts
 │       │   ├── modeResolver.ts
 │       │   └── runModeConfig.ts
 │       ├── enums/               # Behavior enumerations
+│       │   ├── CleanSequenceType.ts
 │       │   ├── MopRoute.ts
 │       │   ├── MopWaterFlow.ts
 │       │   ├── VacuumSuctionPower.ts
@@ -472,15 +501,19 @@ src/
 │   │       ├── abstractConnectionListener.ts
 │   │       ├── abstractMessageListener.ts
 │   │       ├── abstractUDPMessageListener.ts
+│   │       ├── b01ResponseBroadcaster.ts
+│   │       ├── connectionBroadcaster.ts
+│   │       ├── oneShotResponseListener.ts  # OneShotResponseListener<T>, replaces PendingResponseTracker
+│   │       ├── responseBroadcaster.ts
+│   │       ├── responseBroadcasterFactory.ts
+│   │       ├── v1ResponseBroadcaster.ts
 │   │       └── implementation/
-│   │           ├── simpleMessageListener.ts
-│   │           ├── syncMessageListener.ts
 │   │           ├── connectionStateListener.ts
-│   │           ├── chainedMessageListener.ts
-│   │           ├── connectionBroadcaster.ts
+│   │           ├── deviceStatusListener.ts
+│   │           ├── disconnectNotificationListener.ts
+│   │           ├── helloResponseListener.ts
 │   │           ├── mapResponseListener.ts
-│   │           ├── pingResponseListener.ts
-│   │           └── statusMessageListener.ts
+│   │           └── simpleMessageListener.ts
 │   │
 │   ├── models/                  # Data models
 │   │   ├── home/                # Home/room DTOs
@@ -541,40 +574,50 @@ src/
 ├── runtimes/                    # Message runtime handlers
 │   ├── handleCloudMessage.ts
 │   ├── handleHomeDataMessage.ts
-│   └── handleLocalMessage.ts
+│   ├── handleLocalMessage.ts
+│   └── handlers/                # Pure exported handler functions (extracted from platformRunner.ts)
+│       ├── serviceAreaHandler.ts    # handleServiceAreaUpdate + area resolution helpers
+│       ├── errorStateHandler.ts     # handleErrorOccurred
+│       ├── deviceStateHandler.ts    # handleDeviceStatusUpdate (returns bool), handleDeviceStatusSimpleUpdate
+│       ├── batteryStateHandler.ts   # handleBatteryUpdate
+│       └── cleanModeHandler.ts      # handleCleanModeUpdate
 │
 ├── initialData/                 # Initial data fetchers
-│   ├── getBatteryStatus.ts
-│   ├── getOperationalStates.ts
-│   ├── getSupportedAreas.ts
+│   ├── getBatteryStatus.ts      # getBatteryStatus, getBatteryState
+│   ├── getOperationalStates.ts  # getOperationalStates, getOperationalErrorState, getErrorFromDSS
+│   ├── getSupportedAreas.ts     # getSupportedAreas (rooms → ServiceArea.Area + RoomIndexMap)
 │   ├── getSupportedCleanModes.ts
-│   ├── getSupportedRunModes.ts
-│   ├── getSupportedScenes.ts
-│   ├── regionUrls.ts
+│   ├── getSupportedRoutines.ts  # Roborock scenes → ServiceArea.Area (routines as rooms)
+│   ├── getSupportedRunModes.ts  # getRunningMode
+│   ├── regionUrls.ts            # REGION_URLS map + getBaseUrl()
 │   └── index.ts
 │
 ├── constants/                   # Constant definitions
 │   ├── battery.ts
-│   ├── device.ts
+│   ├── device.ts                # UNREGISTER_DEVICES_DELAY_MS
 │   ├── distance.ts
 │   ├── ids.ts
 │   ├── timeouts.ts
-│   ├── sensitiveDataRegexReplacements.ts
+│   ├── sensitiveDataRegexReplacements.ts  # NOT re-exported via index.ts; import directly (used by FilterLogger)
+│   └── index.ts                 # re-exports battery, device, distance, ids, timeouts only
+│
+├── errors/                      # Custom error classes (BaseError hierarchy)
+│   ├── AuthenticationError.ts   # + VerificationCodeExpiredError, InvalidCredentialsError, InvalidVerificationCodeError, TokenExpiredError, RateLimitExceededError
+│   ├── BaseError.ts             # abstract base: code, statusCode, metadata, toJSON()
+│   ├── CommunicationError.ts    # + TimeoutError, NetworkError, ProtocolError, MQTTConnectionError, LocalNetworkError, APIError, Serialization/DeserializationError
+│   ├── ConfigurationError.ts    # + MissingConfigurationError, InvalidConfigurationError, MissingCredentialsError, InvalidRegionError
+│   ├── DeviceError.ts           # + DeviceNotFoundError, DeviceConnectionError, DeviceOfflineError, DeviceCommandError, UnsupportedDeviceError, DeviceInitializationError
+│   ├── ValidationError.ts       # + InvalidParameterError, OutOfRangeError, MissingParameterError, InvalidFormatError
 │   └── index.ts
 │
-├── errors/                      # Custom error classes
-│   ├── AuthenticationError.ts
-│   ├── BaseError.ts
-│   ├── CommunicationError.ts
-│   ├── ConfigurationError.ts
-│   ├── DeviceError.ts
-│   ├── ValidationError.ts
-│   └── index.ts
-│
-├── model/                       # Application models
-│   ├── CloudMessageModel.ts
-│   ├── DockStationStatus.ts
-│   └── ExperimentalFeatureSetting.ts
+├── model/                       # Plugin data/config models
+│   ├── AuthenticationResponse.ts    # AuthenticationResponse { userData, shouldContinue, isSuccess }
+│   ├── CleanCommand.ts              # CleanCommand / CleanSelection discriminated unions
+│   ├── CloudMessageModel.ts         # CloudMessageModel { duid, dps }
+│   ├── DockStationStatus.ts         # DockStationStatus (bit-field parsing) + DockStationStatusCode
+│   ├── ExperimentalFeatureSetting.ts # empty placeholder (no exports)
+│   ├── RoborockPluginPlatformConfig.ts # RoborockPluginPlatformConfig + Authentication/Plugin/AdvancedFeature config interfaces, createDefault* helpers
+│   └── VacuumStatus.ts              # VacuumStatus.getErrorState() -> RvcOperationalState.ErrorState
 │
 ├── types/                       # TypeScript type definitions
 │   ├── callbacks.ts
@@ -586,18 +629,46 @@ src/
 │   ├── notifyMessageTypes.ts
 │   ├── roborockVacuumCleaner.ts
 │   ├── state.ts
+│   ├── WssSendSnackbarMessage.ts
 │   └── index.ts
 │
 ├── share/                       # Shared utilities
 │   ├── behaviorFactory.ts       # Behavior creation
+│   ├── dependency-check.ts      # Dependency version checks
 │   ├── filterLogger.ts          # Logger with sensitive data filtering
 │   ├── function.ts              # Utility functions
 │   ├── helper.ts                # Helper functions
-│   └── runtimeHelper.ts         # Runtime helper utilities
+│   ├── matterStateNames.ts      # Matter state name mappings
+│   ├── runtimeHelper.ts         # Runtime helper utilities
+│   └── stateResolver.ts         # Device state resolution
 │
-├── handlers/                    # Root-level handlers (reserved)
+├── cli/                         # CLI tool for standalone device interaction
+│   ├── cli.ts                   # CLI entry point
+│   ├── main.ts                  # Main CLI runner
+│   ├── connection.ts            # Connection setup
+│   ├── deviceBuilder.ts         # Device builder for CLI
+│   ├── help.ts                  # Help text
+│   ├── loggingMessageListener.ts
+│   ├── session.ts               # CLI session management
+│   ├── types.ts                 # CLI-specific types
+│   ├── utils.ts                 # CLI utilities
+│   └── commands/                # CLI command implementations
+│       ├── cleanMode.ts
+│       ├── custom.ts
+│       ├── devices.ts
+│       ├── login.ts
+│       ├── mapInfo.ts
+│       ├── networkInfo.ts
+│       ├── pause.ts
+│       ├── ping.ts
+│       ├── resume.ts
+│       ├── rooms.ts
+│       ├── scenes.ts
+│       ├── start.ts
+│       ├── status.ts
+│       └── stop.ts
 │
-└── tests/                       # Unit tests (142+ files)
+└── tests/                       # Unit tests (177+ files)
     ├── behaviors/
     ├── core/
     ├── errors/
@@ -1152,7 +1223,50 @@ BehaviorDeviceGeneric (base class)
 
 Device-specific behavior implementations:
 
-- `q7.ts` - Roborock Q7 (B01 protocol)
+- `q7.ts` - Roborock Q7 (B01 protocol). Defines legacy `Q7VacuumSuctionPower`, `Q7MopWaterFlow`, `Q7MopRoute` enums (subset of the standard enums, no `Smart` variant).
+
+---
+
+## Error Handling & Plugin Models
+
+### **Errors** ([errors/](../src/errors/))
+
+Typed error hierarchy, all extending `BaseError` (`code`, `statusCode`, `metadata`, `toJSON()`):
+
+- `AuthenticationError` → `VerificationCodeExpiredError`, `InvalidCredentialsError`, `InvalidVerificationCodeError`, `TokenExpiredError`, `RateLimitExceededError`
+- `CommunicationError` → `TimeoutError`, `NetworkError`, `ProtocolError`, `MQTTConnectionError`, `LocalNetworkError`, `APIError`, `SerializationError`, `DeserializationError`
+- `ConfigurationError` → `MissingConfigurationError`, `InvalidConfigurationError`, `MissingCredentialsError`, `InvalidRegionError`
+- `DeviceError` → `DeviceNotFoundError`, `DeviceConnectionError`, `DeviceOfflineError`, `DeviceCommandError`, `UnsupportedDeviceError`, `DeviceInitializationError`
+- `ValidationError` → `InvalidParameterError`, `OutOfRangeError`, `MissingParameterError`, `InvalidFormatError`
+
+All exported from [errors/index.ts](../src/errors/index.ts).
+
+### **Plugin Models** ([model/](../src/model/))
+
+- `AuthenticationResponse` - `{ userData, shouldContinue, isSuccess }`, returned by authentication strategies
+- `CleanCommand` / `CleanSelection` - discriminated unions for routine/room/global clean requests
+- `CloudMessageModel` - `{ duid, dps }` shape for cloud MQTT messages
+- `DockStationStatus` - parses the dock status bit-field (clean fluid, water box filter, dust bag, dirty/clear water box, updown water ready) into `DockStationStatusCode`; `hasError()`, `getMatterOperationalError()`, static `parseDockStationStatus()`/`parseDockErrorCode()`
+- `VacuumStatus` - wraps `VacuumErrorCode` and maps it to `RvcOperationalState.ErrorState` via `getErrorState()`
+- `RoborockPluginPlatformConfig` - `PlatformConfig` extension with `authentication`, `pluginConfiguration`, `advancedFeature` sections; includes `CleanModeSettings`, `MatterOverrideSettings`, `EmailNotificationSettings`, and `createDefaultAdvancedFeature()`/`createDefaultCleanModeSettings()` factories
+- `ExperimentalFeatureSetting` - empty placeholder file, no exports
+
+---
+
+## CLI Tool
+
+Located in: [src/cli/](../src/cli/) (entry point: [src/cli.ts](../src/cli.ts))
+
+A standalone command-line tool for interacting with Roborock devices directly, independent of Matterbridge - useful for debugging and exploring device capabilities.
+
+- `main.ts` - command dispatcher for: `login`, `devices`, `status`, `start`, `stop`, `pause`, `resume`, `ping`, `room-info`, `map-info`, `clean-mode`, `network-info`, `scenes`, `custom`
+- `connection.ts` - builds a `ClientRouter` + message dispatcher and connects to a device
+- `session.ts` - loads/saves the CLI session (cached `UserData`, `DEFAULT_BASE_URL`) to disk
+- `deviceBuilder.ts` - builds `Device` instances for CLI use
+- `loggingMessageListener.ts` - logs incoming device messages to the console
+- `utils.ts` - `parseArgs`/`prompt` helpers
+- `help.ts` / `types.ts` - help text and `CliSession`/shared CLI types
+- `commands/` - one file per command (thin wrappers calling into `connection.ts` + `RoborockService`/dispatcher methods): `login`, `devices`, `status`, `start`, `stop`, `pause`, `resume`, `ping`, `rooms`, `mapInfo`, `cleanMode`, `networkInfo`, `scenes`, `custom`
 
 ---
 
@@ -1427,6 +1541,7 @@ npm run test:verbose       # Verbose output
 - [README_DEV.md](../README_DEV.md) - Developer guide
 - [migration.md](migration.md) - Migration plan
 - [to_do.md](to_do.md) - Task tracking
+- [authentication-flow.md](authentication-flow.md) - Authentication strategy flow diagram
 
 ### Links
 

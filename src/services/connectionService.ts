@@ -16,7 +16,6 @@ import { MessageDispatcherFactory } from '../roborockCommunication/protocol/disp
 import { Client } from '../roborockCommunication/routing/client.js';
 import { ClientRouter } from '../roborockCommunication/routing/clientRouter.js';
 import { SimpleMessageHandler } from '../roborockCommunication/routing/handlers/implementation/simpleMessageHandler.js';
-import { AbstractUDPMessageListener } from '../roborockCommunication/routing/listeners/abstractUDPMessageListener.js';
 import { DeviceStatusListener } from '../roborockCommunication/routing/listeners/implementation/deviceStatusListener.js';
 import { DisconnectNotificationListener } from '../roborockCommunication/routing/listeners/implementation/disconnectNotificationListener.js';
 import { MapResponseListener } from '../roborockCommunication/routing/listeners/implementation/mapResponseListener.js';
@@ -195,7 +194,7 @@ export class ConnectionService {
 					this.logger.debug(`Received UDP broadcast from device ${duid} at IP ${ip}`);
 					await this.setupLocalClient(device, ip);
 				},
-			} as AbstractUDPMessageListener);
+			});
 
 			localNetworkUDPClient.connect();
 			return true;

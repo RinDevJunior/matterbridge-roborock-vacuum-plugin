@@ -9,7 +9,6 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { LocalNetworkClient } from '../../../roborockCommunication/local/localClient.js';
 import { MessageContext } from '../../../roborockCommunication/models/messageContext.js';
 import { V1ResponseBroadcaster } from '../../../roborockCommunication/routing/listeners/v1ResponseBroadcaster.js';
-import { V1PendingResponseTracker } from '../../../roborockCommunication/routing/services/v1PendingResponseTracker.js';
 import { asPartial, createMockLogger, mkUser } from '../../helpers/testUtils.js';
 
 vi.mock('node:net', () => {
@@ -42,10 +41,9 @@ function createClient(): LocalNetworkClient {
 	const context = new MessageContext(user);
 	context.registerDevice(DUID, 'local-key', 'L01', undefined);
 
-	const tracker = new V1PendingResponseTracker(logger);
-	const broadcaster = new V1ResponseBroadcaster(tracker, logger);
+	const broadcaster = new V1ResponseBroadcaster(logger);
 
-	const client = new LocalNetworkClient(logger, context, DUID, IP, broadcaster, tracker);
+	const client = new LocalNetworkClient(logger, context, DUID, IP, broadcaster);
 	Object.defineProperty(client, 'serializer', {
 		value: asPartial({ serialize: vi.fn().mockReturnValue({ buffer: Buffer.from([1, 2, 3]), messageId: 1 }) }),
 		writable: true,
