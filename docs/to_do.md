@@ -14,6 +14,7 @@
 
 ## Completed
 
+- [x] Full codebase read-through + `docs/authentication-flow.md` diagram + `docs/CODE_STRUCTURE.md` refresh (fixed routing/initialData/constants/model/errors drift, added "Error Handling & Plugin Models" and "CLI Tool" sections)
 - [x] Improve patch coverage: added 8 targeted tests for uncovered branches in OneShotResponseListener, ResponseBroadcasterFactory, ClientRouter, AbstractClient, V1/B01 broadcasters — 1876 tests pass
 - [x] Fire-and-forget migration (Phases 1–3) — replaced `client.get()` with `client.send()` / `client.query()` via `OneShotResponseListener`; deleted `PendingResponseTracker` infrastructure; 1865 tests pass
 - [x] Split `cleanModeConfig.ts` into directory module (`types`, `vacuumAndMop`, `mopOnly`, `vacuumOnly`, `special`, `helpers`, `index`) — Priority 4 from refactoring-recommendations.md
