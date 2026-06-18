@@ -80,12 +80,7 @@ describe('RoborockVacuumCleaner', () => {
 			commands: {},
 		} satisfies BehaviorFactoryResult;
 		vacuum.configureHandler(behaviorHandler);
-		await vacuum.executeCommandHandler('identify', {
-			request: { identifyTime: 5 },
-			cluster: 1,
-			attributes: {},
-			endpoint: 1,
-		});
+		await vacuum.executeCommandHandler('identify', { identifyTime: 5 }, 'identify', asType({}), asType(undefined));
 		expect(behaviorHandler.executeCommand).toHaveBeenCalledWith('identify', 5);
 	});
 
@@ -97,7 +92,7 @@ describe('RoborockVacuumCleaner', () => {
 			commands: {},
 		} satisfies BehaviorFactoryResult;
 		vacuum.configureHandler(behaviorHandler);
-		await vacuum.executeCommandHandler('selectAreas', { request: { newAreas: [] } });
+		await vacuum.executeCommandHandler('selectAreas', { newAreas: [] }, 'serviceArea', asType({}), asType(undefined));
 		expect(behaviorHandler.executeCommand).not.toHaveBeenCalled();
 	});
 
@@ -109,7 +104,13 @@ describe('RoborockVacuumCleaner', () => {
 			commands: {},
 		} satisfies BehaviorFactoryResult;
 		vacuum.configureHandler(behaviorHandler);
-		await vacuum.executeCommandHandler('selectAreas', { newAreas: [1, 2] });
+		await vacuum.executeCommandHandler(
+			'selectAreas',
+			{ newAreas: [1, 2] },
+			'serviceArea',
+			asType({}),
+			asType(undefined),
+		);
 		expect(behaviorHandler.executeCommand).toHaveBeenCalledWith('selectAreas', [1, 2]);
 	});
 
@@ -122,7 +123,7 @@ describe('RoborockVacuumCleaner', () => {
 		} satisfies BehaviorFactoryResult;
 		vacuum.configureHandler(behaviorHandler);
 		const request = { newMode: 42 } satisfies ModeBase.ChangeToModeRequest;
-		await vacuum.executeCommandHandler('changeToMode', request);
+		await vacuum.executeCommandHandler('changeToMode', request, 'modeSelect', asType({}), asType(undefined));
 		expect(behaviorHandler.executeCommand).toHaveBeenCalledWith('changeToMode', 42);
 	});
 
@@ -134,7 +135,7 @@ describe('RoborockVacuumCleaner', () => {
 			commands: {},
 		} satisfies BehaviorFactoryResult;
 		vacuum.configureHandler(behaviorHandler);
-		await vacuum.executeCommandHandler('pause', { request: {} });
+		await vacuum.executeCommandHandler('pause', {}, 'operationalState', asType({}), asType(undefined));
 		expect(behaviorHandler.executeCommand).toHaveBeenCalledWith('pause');
 	});
 
@@ -146,7 +147,7 @@ describe('RoborockVacuumCleaner', () => {
 			commands: {},
 		} satisfies BehaviorFactoryResult;
 		vacuum.configureHandler(behaviorHandler);
-		await vacuum.executeCommandHandler('resume', { request: {} });
+		await vacuum.executeCommandHandler('resume', {}, 'operationalState', asType({}), asType(undefined));
 		expect(behaviorHandler.executeCommand).toHaveBeenCalledWith('resume');
 	});
 
@@ -158,7 +159,7 @@ describe('RoborockVacuumCleaner', () => {
 			commands: {},
 		} satisfies BehaviorFactoryResult;
 		vacuum.configureHandler(behaviorHandler);
-		await vacuum.executeCommandHandler('goHome', { request: {} });
+		await vacuum.executeCommandHandler('goHome', {}, 'rvcOperationalState', asType({}), asType(undefined));
 		expect(behaviorHandler.executeCommand).toHaveBeenCalledWith('goHome');
 	});
 

@@ -54,7 +54,7 @@
 
 ### ⚠️ Important Notes
 
-Requires matterbridge@3.6.1
+Requires matterbridge@3.9.0
 
 - **Matterbridge must be run in child bridge mode** for proper operation.
 - **By default, one Matterbridge instance supports one Roborock vacuum.**
