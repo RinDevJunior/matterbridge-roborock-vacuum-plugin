@@ -12,7 +12,7 @@ export async function triggerDssError(
 	platform: RoborockMatterbridgePlatform,
 ): Promise<boolean> {
 	const currentOperationState = robot.getAttribute(
-		RvcOperationalState.Cluster.id,
+		RvcOperationalState.id,
 		'operationalState',
 	) as RvcOperationalState.OperationalState;
 	if (currentOperationState === RvcOperationalState.OperationalState.Error) {
@@ -21,7 +21,7 @@ export async function triggerDssError(
 
 	if (currentOperationState === RvcOperationalState.OperationalState.Docked) {
 		await robot.updateAttribute(
-			RvcOperationalState.Cluster.id,
+			RvcOperationalState.id,
 			'operationalState',
 			RvcOperationalState.OperationalState.Error,
 			platform.log,

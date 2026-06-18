@@ -7,8 +7,11 @@ import {
 	getModeDisplayMap,
 	getModeOptions,
 	getModeSettingsMap,
-	smartCleanModeConfigs,
+	smartPlanModeConfig,
+	vacFollowedByMopModeConfig,
 } from '../../../../behaviors/roborock.vacuum/core/cleanModeConfig.js';
+
+const smartCleanModeConfigs = [smartPlanModeConfig, vacFollowedByMopModeConfig, ...baseCleanModeConfigs];
 import { CleanModeSetting } from '../../../../behaviors/roborock.vacuum/core/CleanModeSetting.js';
 
 describe('cleanModeConfig', () => {
@@ -79,8 +82,8 @@ describe('cleanModeConfig', () => {
 
 		it('should not include setting property in options', () => {
 			const options = getModeOptions(baseCleanModeConfigs);
-			const first = options[0] as Record<string, unknown>;
-			expect(first['setting']).toBeUndefined();
+			const first = options[0];
+			expect('setting' in first).toBe(false);
 		});
 	});
 

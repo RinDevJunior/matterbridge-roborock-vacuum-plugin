@@ -149,7 +149,7 @@ export class PlatformRunner {
 		}
 		this.platform.log.debug(`Handling error occurred: ${debugStringify(message)}`);
 		const currentOperationState: RvcOperationalState.OperationalState = robot.getAttribute(
-			RvcOperationalState.Cluster.id,
+			RvcOperationalState.id,
 			'operationalState',
 			this.platform.log,
 		);
@@ -160,13 +160,13 @@ export class PlatformRunner {
 			const errorDetail = vacuumStatus.getErrorState();
 			this.platform.log.warn(`Vacuum error detected: ${getOperationalErrorName(errorDetail)}`);
 			await robot.updateAttribute(
-				RvcOperationalState.Cluster.id,
+				RvcOperationalState.id,
 				'operationalState',
 				RvcOperationalState.OperationalState.Error,
 				this.platform.log,
 			);
 			await robot.updateAttribute(
-				RvcOperationalState.Cluster.id,
+				RvcOperationalState.id,
 				'operationalError',
 				{ errorStateId: errorDetail },
 				this.platform.log,
@@ -178,7 +178,7 @@ export class PlatformRunner {
 		if (currentOperationState === RvcOperationalState.OperationalState.Running) {
 			this.platform.log.debug('Vacuum running without errors, clearing error state.');
 			await robot.updateAttribute(
-				RvcOperationalState.Cluster.id,
+				RvcOperationalState.id,
 				'operationalError',
 				{ errorStateId: RvcOperationalState.ErrorState.NoError },
 				this.platform.log,
@@ -197,7 +197,7 @@ export class PlatformRunner {
 
 			if (dockStatus.hasError()) {
 				await robot.updateAttribute(
-					RvcOperationalState.Cluster.id,
+					RvcOperationalState.id,
 					'operationalState',
 					RvcOperationalState.OperationalState.Error,
 					this.platform.log,
@@ -205,7 +205,7 @@ export class PlatformRunner {
 				const errorDetail = dockStatus.getMatterOperationalError();
 				this.platform.log.warn(`Docking station error detected: ${getOperationalErrorName(errorDetail)}`);
 				await robot.updateAttribute(
-					RvcOperationalState.Cluster.id,
+					RvcOperationalState.id,
 					'operationalError',
 					{ errorStateId: errorDetail },
 					this.platform.log,
@@ -213,7 +213,7 @@ export class PlatformRunner {
 			} else {
 				this.platform.log.debug('No docking station errors detected.');
 				await robot.updateAttribute(
-					RvcOperationalState.Cluster.id,
+					RvcOperationalState.id,
 					'operationalError',
 					{ errorStateId: RvcOperationalState.ErrorState.NoError },
 					this.platform.log,
@@ -227,7 +227,7 @@ export class PlatformRunner {
 			if (dockStatus !== RvcOperationalState.ErrorState.NoError) {
 				this.platform.log.warn(`Docking station error detected: ${getOperationalErrorName(dockStatus)}`);
 				await robot.updateAttribute(
-					RvcOperationalState.Cluster.id,
+					RvcOperationalState.id,
 					'operationalError',
 					{ errorStateId: dockStatus },
 					this.platform.log,
@@ -235,7 +235,7 @@ export class PlatformRunner {
 			} else {
 				this.platform.log.debug('No docking station errors detected.');
 				await robot.updateAttribute(
-					RvcOperationalState.Cluster.id,
+					RvcOperationalState.id,
 					'operationalError',
 					{ errorStateId: RvcOperationalState.ErrorState.NoError },
 					this.platform.log,
@@ -248,7 +248,7 @@ export class PlatformRunner {
 		// No errors detected and no dock station processing
 		this.platform.log.debug('No errors detected, clearing operational error state.');
 		await robot.updateAttribute(
-			RvcOperationalState.Cluster.id,
+			RvcOperationalState.id,
 			'operationalError',
 			{ errorStateId: RvcOperationalState.ErrorState.NoError },
 			this.platform.log,
@@ -265,16 +265,16 @@ export class PlatformRunner {
 		const batteryChargeLevel = getBatteryStatus(batteryLevel);
 
 		if (batteryLevel) {
-			await robot.updateAttribute(PowerSource.Cluster.id, 'batPercentRemaining', batteryLevel * 2, this.platform.log);
-			await robot.updateAttribute(PowerSource.Cluster.id, 'batChargeLevel', batteryChargeLevel, this.platform.log);
+			await robot.updateAttribute(PowerSource.id, 'batPercentRemaining', batteryLevel * 2, this.platform.log);
+			await robot.updateAttribute(PowerSource.id, 'batChargeLevel', batteryChargeLevel, this.platform.log);
 		}
 
 		if (batteryLevel && deviceStatus) {
 			const batteryChargeState = getBatteryState(deviceStatus, batteryLevel);
-			await robot.updateAttribute(PowerSource.Cluster.id, 'batChargeState', batteryChargeState, this.platform.log);
+			await robot.updateAttribute(PowerSource.id, 'batChargeState', batteryChargeState, this.platform.log);
 
 			const currentOperationState: RvcOperationalState.OperationalState = robot.getAttribute(
-				RvcOperationalState.Cluster.id,
+				RvcOperationalState.id,
 				'operationalState',
 				this.platform.log,
 			);
@@ -283,7 +283,7 @@ export class PlatformRunner {
 				currentOperationState === RvcOperationalState.OperationalState.Docked
 			) {
 				await robot.updateAttribute(
-					RvcOperationalState.Cluster.id,
+					RvcOperationalState.id,
 					'operationalState',
 					RvcOperationalState.OperationalState.Charging,
 					this.platform.log,
@@ -295,7 +295,7 @@ export class PlatformRunner {
 				currentOperationState === RvcOperationalState.OperationalState.Charging
 			) {
 				await robot.updateAttribute(
-					RvcOperationalState.Cluster.id,
+					RvcOperationalState.id,
 					'operationalState',
 					RvcOperationalState.OperationalState.Docked,
 					this.platform.log,
@@ -319,10 +319,10 @@ export class PlatformRunner {
 			return;
 		}
 
-		const currentRunMode: number = robot.getAttribute(RvcRunMode.Cluster.id, 'currentMode');
+		const currentRunMode: number = robot.getAttribute(RvcRunMode.id, 'currentMode');
 
 		const currentOperationState: RvcOperationalState.OperationalState = robot.getAttribute(
-			RvcOperationalState.Cluster.id,
+			RvcOperationalState.id,
 			'operationalState',
 		);
 
@@ -348,14 +348,9 @@ export class PlatformRunner {
 		}
 
 		// Update Matter attributes
+		await robot.updateAttribute(RvcRunMode.id, 'currentMode', getRunningMode(resolvedState.runMode), this.platform.log);
 		await robot.updateAttribute(
-			RvcRunMode.Cluster.id,
-			'currentMode',
-			getRunningMode(resolvedState.runMode),
-			this.platform.log,
-		);
-		await robot.updateAttribute(
-			RvcOperationalState.Cluster.id,
+			RvcOperationalState.id,
 			'operationalState',
 			resolvedState.operationalState,
 			this.platform.log,
@@ -385,7 +380,7 @@ export class PlatformRunner {
 			`Resolved state from simple update: ${state !== undefined ? getRunModeName(state) : 'undefined'}`,
 		);
 		if (state !== undefined) {
-			await robot.updateAttribute(RvcRunMode.Cluster.id, 'currentMode', getRunningMode(state), this.platform.log);
+			await robot.updateAttribute(RvcRunMode.id, 'currentMode', getRunningMode(state), this.platform.log);
 		}
 
 		const includeDockStationStatus = this.platform.configManager.includeDockStationStatus;
@@ -397,12 +392,7 @@ export class PlatformRunner {
 		}
 		if (operationalStateId !== undefined) {
 			this.platform.log.debug(`Updating operational state to: ${getOperationalStateName(operationalStateId)}`);
-			await robot.updateAttribute(
-				RvcOperationalState.Cluster.id,
-				'operationalState',
-				operationalStateId,
-				this.platform.log,
-			);
+			await robot.updateAttribute(RvcOperationalState.id, 'operationalState', operationalStateId, this.platform.log);
 		}
 	}
 
@@ -439,7 +429,7 @@ export class PlatformRunner {
 
 			if (currentCleanMode) {
 				this.platform.log.notice(`Calculated current clean mode: ${getCleanModeName(currentCleanMode)}`);
-				await robot.updateAttribute(RvcCleanMode.Cluster.id, 'currentMode', currentCleanMode, this.platform.log);
+				await robot.updateAttribute(RvcCleanMode.id, 'currentMode', currentCleanMode, this.platform.log);
 			}
 		}
 	}
@@ -458,7 +448,7 @@ export class PlatformRunner {
 		if (message.state === OperationStatusCode.Idle) {
 			logger.debug('Robot is idle, updating selectedAreas from Roborock service');
 			const selectedAreas = this.platform.roborockService?.getSelectedAreas(robot.device.duid) ?? [];
-			await robot.updateAttribute(ServiceArea.Cluster.id, 'selectedAreas', selectedAreas, logger);
+			await robot.updateAttribute(ServiceArea.id, 'selectedAreas', selectedAreas, logger);
 			return;
 		}
 
@@ -477,7 +467,7 @@ export class PlatformRunner {
 
 	private getSelectedAreas(robot: RoborockVacuumCleaner, message: ServiceAreaUpdateMessage): number[] {
 		return (
-			robot.getAttribute(ServiceArea.Cluster.id, 'selectedAreas', this.platform.log) ??
+			robot.getAttribute(ServiceArea.id, 'selectedAreas', this.platform.log) ??
 			this.platform.roborockService?.getSelectedAreas(message.duid) ??
 			[]
 		);
@@ -494,19 +484,19 @@ export class PlatformRunner {
 
 		if (message.cleaningProcess.clean_area === 0 || message.cleaningProcess.clean_time === 0) {
 			// Robot not started cleaning yet → "Traveling to room"
-			await robot.updateAttribute(ServiceArea.Cluster.id, 'selectedAreas', selectedAreas, logger);
-			await robot.updateAttribute(ServiceArea.Cluster.id, 'currentArea', null, logger);
+			await robot.updateAttribute(ServiceArea.id, 'selectedAreas', selectedAreas, logger);
+			await robot.updateAttribute(ServiceArea.id, 'currentArea', null, logger);
 			return;
 		}
 
 		if (selectedAreas.length === 1) {
 			// Single room → "Cleaning (Room)"
-			await robot.updateAttribute(ServiceArea.Cluster.id, 'selectedAreas', selectedAreas, logger);
-			await robot.updateAttribute(ServiceArea.Cluster.id, 'currentArea', selectedAreas[0], logger);
+			await robot.updateAttribute(ServiceArea.id, 'selectedAreas', selectedAreas, logger);
+			await robot.updateAttribute(ServiceArea.id, 'currentArea', selectedAreas[0], logger);
 		} else {
 			// Multiple rooms, no cleaningInfo → "Preparing" (workaround)
-			await robot.updateAttribute(ServiceArea.Cluster.id, 'selectedAreas', [], logger);
-			await robot.updateAttribute(ServiceArea.Cluster.id, 'currentArea', null, logger);
+			await robot.updateAttribute(ServiceArea.id, 'selectedAreas', [], logger);
+			await robot.updateAttribute(ServiceArea.id, 'currentArea', null, logger);
 		}
 	}
 
@@ -542,7 +532,7 @@ export class PlatformRunner {
         segment_id: ${segment_id},
         currentMappedAreas: ${debugStringify(roomIndexMap)}`,
 			);
-			await robot.updateAttribute(ServiceArea.Cluster.id, 'currentArea', null, logger);
+			await robot.updateAttribute(ServiceArea.id, 'currentArea', null, logger);
 			return;
 		}
 
@@ -557,6 +547,6 @@ export class PlatformRunner {
       activeArea: ${debugStringify(activeArea)}`,
 		);
 
-		await robot.updateAttribute(ServiceArea.Cluster.id, 'currentArea', mappedArea, logger);
+		await robot.updateAttribute(ServiceArea.id, 'currentArea', mappedArea, logger);
 	}
 }
