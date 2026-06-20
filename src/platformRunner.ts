@@ -1,5 +1,6 @@
 import { RoborockMatterbridgePlatform } from './module.js';
 import { BurstPollingManager } from './platform/burstPollingManager.js';
+import { WATCHDOG_CHECK_INTERVAL_MS, WATCHDOG_THRESHOLD_MS } from './constants/index.js';
 import { updateFromHomeData } from './runtimes/handleHomeDataMessage.js';
 import { handleBatteryUpdate } from './runtimes/handlers/batteryStateHandler.js';
 import { handleCleanModeUpdate } from './runtimes/handlers/cleanModeHandler.js';
@@ -14,11 +15,32 @@ type RobotHandler<T = unknown> = (robot: RoborockVacuumCleaner, data: T) => void
 
 export class PlatformRunner {
 	private activateHandlers = false;
+	private watchdogTimer: NodeJS.Timeout | undefined;
 
 	public readonly burstPolling: BurstPollingManager;
 
 	constructor(private readonly platform: RoborockMatterbridgePlatform) {
 		this.burstPolling = new BurstPollingManager(platform);
+	}
+
+	public startWatchdog(): void {
+		this.watchdogTimer = setInterval(() => {
+			const threshold = Date.now() - WATCHDOG_THRESHOLD_MS;
+			for (const robot of this.platform.registry.robotsMap.values()) {
+				if (robot.lastUpdateAt !== null && robot.lastUpdateAt < threshold) {
+					this.platform.log.error(
+						`[${robot.device.duid}] [${robot.device.name}] No status update received in the last ${WATCHDOG_THRESHOLD_MS / 60_000} minutes`,
+					);
+				}
+			}
+		}, WATCHDOG_CHECK_INTERVAL_MS);
+	}
+
+	public stopWatchdog(): void {
+		if (this.watchdogTimer) {
+			clearInterval(this.watchdogTimer);
+			this.watchdogTimer = undefined;
+		}
 	}
 
 	public activateHandlerFunctions(): void {
@@ -102,6 +124,7 @@ export class PlatformRunner {
 		const robot = this.getRobotOrLogError(duid);
 		if (!robot) return;
 		await handler(robot, data);
+		robot.lastUpdateAt = Date.now();
 	}
 
 	/**

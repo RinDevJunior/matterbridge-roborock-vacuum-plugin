@@ -2,6 +2,14 @@
 
 ## In Progress
 
+- [ ] Fix status update flow bugs — see `docs/status-update-flow-issues.md`
+  - [ ] Issue 1 (High): `handleDeviceStatusSimpleUpdate` passes `ModeTag` to `state_to_matter_operational_status` — fix to pass `message.status`
+  - [ ] Issue 2 (Medium): `getBatteryState` returns `IsAtFullCharge` for Cleaning/Paused/etc — fix default case
+  - [ ] Issue 3 (Low): falsy check drops 0% battery in `updateFromHomeData` — fix to `!= null`
+  - [ ] Issue 4 (Design): DSS check ordering inconsistency in simple vs full path
+  - [ ] Issue 5 (Design): `requestHomeData` global short-circuit on `allDevicesHaveRealTimeConnection`
+  - [ ] Issue 6 (Design): Charging guard depends on broken `getBatteryState` exit condition
+
 - [ ] Fix `stateResolver.ts` bugs — see `docs/stateResolver-bugs.md`
 
 - [ ] Fix routine selection in `setSelectedAreas` — see `docs/routine-selection-fix-plan.md`

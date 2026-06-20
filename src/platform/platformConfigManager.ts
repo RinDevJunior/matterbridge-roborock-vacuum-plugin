@@ -110,6 +110,10 @@ export class PlatformConfigManager {
 		return (this.config.pluginConfiguration.whiteList ?? []).length > 0;
 	}
 
+	public get whiteList(): string[] {
+		return this.config.pluginConfiguration.whiteList ?? [];
+	}
+
 	public get unregisterOnShutdown(): boolean {
 		return this.config.pluginConfiguration.unregisterOnShutdown ?? false;
 	}

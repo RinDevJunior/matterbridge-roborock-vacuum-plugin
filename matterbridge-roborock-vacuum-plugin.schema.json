@@ -96,8 +96,7 @@
 					"items": {
 						"type": "string"
 					},
-					"uniqueItems": true,
-					"selectFrom": "name"
+					"uniqueItems": true
 				},
 				"enableServerMode": {
 					"title": "Enable Server Mode",

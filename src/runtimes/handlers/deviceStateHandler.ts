@@ -73,19 +73,20 @@ export async function handleDeviceStatusSimpleUpdate(
 ): Promise<void> {
 	platform.log.debug(`Handling simple device status update: ${debugStringify(message)}`);
 
+	const includeDockStationStatus = platform.configManager.includeDockStationStatus;
+	const dssHasError = includeDockStationStatus && (robot.dockStationStatus?.hasError() ?? false);
+	if (dssHasError) {
+		await triggerDssError(robot, platform);
+		return;
+	}
+
 	const state = state_to_matter_state(message.status);
 	platform.log.debug(`Resolved state from simple update: ${state !== undefined ? getRunModeName(state) : 'undefined'}`);
 	if (state !== undefined) {
 		await robot.updateAttribute(RvcRunMode.id, 'currentMode', getRunningMode(state), platform.log);
 	}
 
-	const includeDockStationStatus = platform.configManager.includeDockStationStatus;
-	const operationalStateId = state_to_matter_operational_status(state);
-	const dssHasError = includeDockStationStatus && (robot.dockStationStatus?.hasError() ?? false);
-	if (dssHasError) {
-		await triggerDssError(robot, platform);
-		return;
-	}
+	const operationalStateId = state_to_matter_operational_status(message.status);
 	if (operationalStateId !== undefined) {
 		platform.log.debug(`Updating operational state to: ${getOperationalStateName(operationalStateId)}`);
 		await robot.updateAttribute(RvcOperationalState.id, 'operationalState', operationalStateId, platform.log);

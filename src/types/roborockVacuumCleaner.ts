@@ -26,6 +26,7 @@ interface IdentifyCommandRequest {
 export class RoborockVacuumCleaner extends RoboticVacuumCleaner {
 	dockStationStatus: DockStationStatus | undefined;
 	cleanModeSetting: CleanModeSetting | undefined;
+	lastUpdateAt: number | null = null;
 
 	/**
 	 * Create a new Roborock Vacuum Cleaner device.
