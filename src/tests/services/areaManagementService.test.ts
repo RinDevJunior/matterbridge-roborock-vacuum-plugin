@@ -7,7 +7,6 @@ import { DeviceError } from '../../errors/index.js';
 import { AreaInfo, SegmentInfo } from '../../initialData/getSupportedAreas.js';
 import { RoborockIoTApi } from '../../roborockCommunication/api/iotClient.js';
 import { Scene } from '../../roborockCommunication/models/scene.js';
-import { ClientRouter } from '../../roborockCommunication/routing/clientRouter.js';
 import { AreaManagementService } from '../../services/areaManagementService.js';
 import { MessageRoutingService } from '../../services/index.js';
 
@@ -15,7 +14,6 @@ describe('AreaManagementService', () => {
 	let areaService: AreaManagementService;
 	let mockLogger: any;
 	let mockIotApi: any;
-	let mockMessageClient: any;
 	let mockMessageRoutingService: any;
 
 	const mockDeviceId = 'test-device-1';
@@ -33,14 +31,12 @@ describe('AreaManagementService', () => {
 	beforeEach(() => {
 		mockLogger = createMockLogger() as Partial<AnsiLogger> as AnsiLogger;
 		mockIotApi = createMockIotApi() as Partial<RoborockIoTApi> as RoborockIoTApi;
-		mockMessageClient = createMockMessageClient();
 		mockMessageRoutingService = {
 			getRoomMap: vi.fn(),
 			getMapInfo: vi.fn(),
 		} satisfies Partial<MessageRoutingService>;
 		areaService = new AreaManagementService(mockLogger, mockMessageRoutingService);
 		areaService.setIotApi(mockIotApi);
-		areaService.setMessageClient(mockMessageClient);
 	});
 
 	function createMockLogger() {
@@ -57,13 +53,6 @@ describe('AreaManagementService', () => {
 		return {
 			getScenes: vi.fn(),
 			startScene: vi.fn(),
-		};
-	}
-
-	function createMockMessageClient() {
-		return {
-			get: vi.fn(),
-			send: vi.fn(),
 		};
 	}
 
@@ -95,15 +84,6 @@ describe('AreaManagementService', () => {
 
 			expect(() => {
 				service.setIotApi(newIotApi);
-			}).not.toThrow();
-		});
-
-		it('should set message client after initialization', () => {
-			const service = new AreaManagementService(mockLogger as AnsiLogger, undefined);
-			const newMessageClient = {} as ClientRouter;
-
-			expect(() => {
-				service.setMessageClient(newMessageClient);
 			}).not.toThrow();
 		});
 	});
@@ -249,11 +229,10 @@ describe('AreaManagementService', () => {
 		];
 
 		it('should retrieve map information successfully', async () => {
-			mockMessageRoutingService.getMapInfo.mockResolvedValue(mockMultipleMaps);
+			mockMessageRoutingService.getMapInfo.mockResolvedValue(undefined);
 
-			const mapInfo = await areaService.getMapInfo(mockDeviceId);
+			await areaService.getMapInfo(mockDeviceId);
 
-			expect(mapInfo).toBeDefined();
 			expect(mockMessageRoutingService.getMapInfo).toHaveBeenCalled();
 			expect(mockLogger.debug).toHaveBeenCalledWith('AreaManagementService - getMapInfo', mockDeviceId);
 		});
@@ -282,14 +261,10 @@ describe('AreaManagementService', () => {
 		];
 
 		it('should retrieve room mappings with non-secure request', async () => {
-			mockMessageRoutingService.getRoomMap.mockImplementation((duid: string, activeMap: number, rooms: any[]) => {
-				mockMessageClient.get(duid, { method: 'get_room_mapping', secure: false });
-				return Promise.resolve(mockRoomMappings);
-			});
+			mockMessageRoutingService.getRoomMap.mockResolvedValue(undefined);
 
-			const mappings = await areaService.getRoomMap(mockDeviceId, 1);
+			await areaService.getRoomMap(mockDeviceId, 1);
 
-			expect(mappings).toEqual(mockRoomMappings);
 			expect(mockMessageRoutingService.getRoomMap).toHaveBeenCalledWith(mockDeviceId, 1);
 		});
 
@@ -299,12 +274,11 @@ describe('AreaManagementService', () => {
 		});
 
 		it('should handle empty room mappings', async () => {
-			mockMessageRoutingService.getRoomMap.mockResolvedValue([]);
+			mockMessageRoutingService.getRoomMap.mockResolvedValue(undefined);
 
-			const mappings = await areaService.getRoomMap(mockDeviceId, 1);
+			await areaService.getRoomMap(mockDeviceId, 1);
 
-			expect(mappings).toBeInstanceOf(Object);
-			expect(mappings.length).toEqual(0);
+			expect(mockMessageRoutingService.getRoomMap).toHaveBeenCalledWith(mockDeviceId, 1);
 		});
 	});
 

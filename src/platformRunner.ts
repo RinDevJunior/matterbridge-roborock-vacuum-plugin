@@ -1,6 +1,6 @@
+import { WATCHDOG_CHECK_INTERVAL_MS, WATCHDOG_THRESHOLD_MS } from './constants/index.js';
 import { RoborockMatterbridgePlatform } from './module.js';
 import { BurstPollingManager } from './platform/burstPollingManager.js';
-import { WATCHDOG_CHECK_INTERVAL_MS, WATCHDOG_THRESHOLD_MS } from './constants/index.js';
 import { updateFromHomeData } from './runtimes/handleHomeDataMessage.js';
 import { handleBatteryUpdate } from './runtimes/handlers/batteryStateHandler.js';
 import { handleCleanModeUpdate } from './runtimes/handlers/cleanModeHandler.js';

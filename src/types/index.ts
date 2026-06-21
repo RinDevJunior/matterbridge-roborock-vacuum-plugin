@@ -8,7 +8,7 @@
 export type { Factory } from './factories.js';
 
 // Device-specific types
-export type { MapRoomResponse, Security } from './device.js';
+export type { Security } from './device.js';
 
 // Callback types
 export type { LoadUserDataCallback, SaveUserDataCallback } from './callbacks.js';

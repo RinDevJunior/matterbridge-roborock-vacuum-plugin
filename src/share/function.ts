@@ -2,119 +2,83 @@ import { RvcOperationalState, RvcRunMode } from 'matterbridge/matter/clusters';
 
 import { OperationStatusCode } from '../roborockCommunication/enums/index.js';
 
-/**
- * Convert device operational status code to Matter run mode tag.
- * Maps various cleaning, mapping, and idle states to appropriate Matter mode tags.
- * @param state - The device operational status code
- * @returns Matter run mode tag (Cleaning, Mapping, or Idle). Returns undefined for null, defaults to Idle for undefined/unknown states.
- */
+const matterStateMap = new Map<number, RvcRunMode.ModeTag>([
+	[OperationStatusCode.RemoteControl, RvcRunMode.ModeTag.Cleaning],
+	[OperationStatusCode.Cleaning, RvcRunMode.ModeTag.Cleaning],
+	[OperationStatusCode.ReturningDock, RvcRunMode.ModeTag.Cleaning],
+	[OperationStatusCode.ManualMode, RvcRunMode.ModeTag.Cleaning],
+	[OperationStatusCode.SpotCleaning, RvcRunMode.ModeTag.Cleaning],
+	[OperationStatusCode.ReturnToDock, RvcRunMode.ModeTag.Cleaning],
+	[OperationStatusCode.GoTo, RvcRunMode.ModeTag.Cleaning],
+	[OperationStatusCode.ZoneClean, RvcRunMode.ModeTag.Cleaning],
+	[OperationStatusCode.RoomClean, RvcRunMode.ModeTag.Cleaning],
+	[OperationStatusCode.WashingTheMop, RvcRunMode.ModeTag.Cleaning],
+	[OperationStatusCode.GoingToWashTheMop, RvcRunMode.ModeTag.Cleaning],
+	[OperationStatusCode.EmptyingDustContainer, RvcRunMode.ModeTag.Cleaning],
+	[OperationStatusCode.Initiating, RvcRunMode.ModeTag.Cleaning],
+	[OperationStatusCode.Paused, RvcRunMode.ModeTag.Cleaning],
+	[OperationStatusCode.AirDryingStopping, RvcRunMode.ModeTag.Cleaning],
+	[OperationStatusCode.CleanMopCleaning, RvcRunMode.ModeTag.Cleaning],
+	[OperationStatusCode.CleanMopMopping, RvcRunMode.ModeTag.Cleaning],
+	[OperationStatusCode.RoomMopping, RvcRunMode.ModeTag.Cleaning],
+	[OperationStatusCode.RoomCleanMopCleaning, RvcRunMode.ModeTag.Cleaning],
+	[OperationStatusCode.RoomCleanMopMopping, RvcRunMode.ModeTag.Cleaning],
+	[OperationStatusCode.ZoneMopping, RvcRunMode.ModeTag.Cleaning],
+	[OperationStatusCode.ZoneCleanMopCleaning, RvcRunMode.ModeTag.Cleaning],
+	[OperationStatusCode.ZoneCleanMopMopping, RvcRunMode.ModeTag.Cleaning],
+	[OperationStatusCode.BackToDockWashingDuster, RvcRunMode.ModeTag.Cleaning],
+	[OperationStatusCode.Mapping, RvcRunMode.ModeTag.Mapping],
+]);
+
+const matterOperationalStatusMap = new Map<number, RvcOperationalState.OperationalState>([
+	[OperationStatusCode.Initiating, RvcOperationalState.OperationalState.Running],
+	[OperationStatusCode.RemoteControl, RvcOperationalState.OperationalState.Running],
+	[OperationStatusCode.Cleaning, RvcOperationalState.OperationalState.Running],
+	[OperationStatusCode.ManualMode, RvcOperationalState.OperationalState.Running],
+	[OperationStatusCode.SpotCleaning, RvcOperationalState.OperationalState.Running],
+	[OperationStatusCode.GoTo, RvcOperationalState.OperationalState.Running],
+	[OperationStatusCode.ZoneClean, RvcOperationalState.OperationalState.Running],
+	[OperationStatusCode.RoomClean, RvcOperationalState.OperationalState.Running],
+	[OperationStatusCode.InCall, RvcOperationalState.OperationalState.Running],
+	[OperationStatusCode.Mapping, RvcOperationalState.OperationalState.Running],
+	[OperationStatusCode.Patrol, RvcOperationalState.OperationalState.Running],
+	[OperationStatusCode.CleanMopCleaning, RvcOperationalState.OperationalState.Running],
+	[OperationStatusCode.CleanMopMopping, RvcOperationalState.OperationalState.Running],
+	[OperationStatusCode.RoomMopping, RvcOperationalState.OperationalState.Running],
+	[OperationStatusCode.RoomCleanMopCleaning, RvcOperationalState.OperationalState.Running],
+	[OperationStatusCode.RoomCleanMopMopping, RvcOperationalState.OperationalState.Running],
+	[OperationStatusCode.ZoneMopping, RvcOperationalState.OperationalState.Running],
+	[OperationStatusCode.ZoneCleanMopCleaning, RvcOperationalState.OperationalState.Running],
+	[OperationStatusCode.ZoneCleanMopMopping, RvcOperationalState.OperationalState.Running],
+	[OperationStatusCode.RobotStatusMopping, RvcOperationalState.OperationalState.Running],
+	[OperationStatusCode.InError, RvcOperationalState.OperationalState.Error],
+	[OperationStatusCode.ChargingError, RvcOperationalState.OperationalState.Error],
+	[OperationStatusCode.Unknown, RvcOperationalState.OperationalState.Error],
+	[OperationStatusCode.DeviceOffline, RvcOperationalState.OperationalState.Error],
+	[OperationStatusCode.Locked, RvcOperationalState.OperationalState.Error],
+	[OperationStatusCode.AirDryingStopping, RvcOperationalState.OperationalState.Error],
+	[OperationStatusCode.Paused, RvcOperationalState.OperationalState.Paused],
+	[OperationStatusCode.ShuttingDown, RvcOperationalState.OperationalState.Stopped],
+	[OperationStatusCode.ReturnToDock, RvcOperationalState.OperationalState.SeekingCharger],
+	[OperationStatusCode.ReturningDock, RvcOperationalState.OperationalState.SeekingCharger],
+	[OperationStatusCode.WashingTheMop, RvcOperationalState.OperationalState.SeekingCharger],
+	[OperationStatusCode.WashingTheMop2, RvcOperationalState.OperationalState.SeekingCharger],
+	[OperationStatusCode.GoingToWashTheMop, RvcOperationalState.OperationalState.SeekingCharger],
+	[OperationStatusCode.BackToDockWashingDuster, RvcOperationalState.OperationalState.SeekingCharger],
+	[OperationStatusCode.EmptyingDustContainer, RvcOperationalState.OperationalState.SeekingCharger],
+]);
+
 export function state_to_matter_state(state: number): RvcRunMode.ModeTag | undefined {
-	switch (state) {
-		case OperationStatusCode.RemoteControl:
-		case OperationStatusCode.Cleaning:
-		case OperationStatusCode.ReturningDock:
-		case OperationStatusCode.ManualMode:
-		case OperationStatusCode.SpotCleaning:
-		case OperationStatusCode.ReturnToDock:
-		case OperationStatusCode.GoTo:
-		case OperationStatusCode.ZoneClean:
-		case OperationStatusCode.RoomClean:
-		case OperationStatusCode.WashingTheMop:
-		case OperationStatusCode.GoingToWashTheMop:
-		case OperationStatusCode.EmptyingDustContainer:
-		case OperationStatusCode.Initiating:
-		case OperationStatusCode.Paused:
-		case OperationStatusCode.AirDryingStopping:
-		case OperationStatusCode.CleanMopCleaning:
-		case OperationStatusCode.CleanMopMopping:
-		case OperationStatusCode.RoomMopping:
-		case OperationStatusCode.RoomCleanMopCleaning:
-		case OperationStatusCode.RoomCleanMopMopping:
-		case OperationStatusCode.ZoneMopping:
-		case OperationStatusCode.ZoneCleanMopCleaning:
-		case OperationStatusCode.ZoneCleanMopMopping:
-		case OperationStatusCode.BackToDockWashingDuster:
-			return RvcRunMode.ModeTag.Cleaning;
-
-		case OperationStatusCode.Mapping:
-			return RvcRunMode.ModeTag.Mapping;
-
-		case OperationStatusCode.Idle:
-		case OperationStatusCode.Sleeping:
-		case OperationStatusCode.Charging:
-		case OperationStatusCode.FullyCharged:
-		default:
-			return RvcRunMode.ModeTag.Idle;
-	}
+	return matterStateMap.get(state) ?? RvcRunMode.ModeTag.Idle;
 }
 
-/**
- * Convert device operational status code to Matter operational state.
- * Maps device states to Running, Error, Paused, Stopped, SeekingCharger, or Docked states.
- * @param state - The device operational status code
- * @returns Matter operational state, or null for docked/idle states
- */
 export function state_to_matter_operational_status(
 	state: number | undefined,
 ): RvcOperationalState.OperationalState | undefined {
 	if (state === undefined) {
 		return undefined;
 	}
-
-	switch (state) {
-		case OperationStatusCode.Initiating:
-		case OperationStatusCode.RemoteControl:
-		case OperationStatusCode.Cleaning:
-		case OperationStatusCode.ManualMode:
-		case OperationStatusCode.SpotCleaning:
-		case OperationStatusCode.GoTo:
-		case OperationStatusCode.ZoneClean:
-		case OperationStatusCode.RoomClean:
-		case OperationStatusCode.InCall:
-		case OperationStatusCode.Mapping:
-		case OperationStatusCode.Patrol:
-		case OperationStatusCode.CleanMopCleaning:
-		case OperationStatusCode.CleanMopMopping:
-		case OperationStatusCode.RoomMopping:
-		case OperationStatusCode.RoomCleanMopCleaning:
-		case OperationStatusCode.RoomCleanMopMopping:
-		case OperationStatusCode.ZoneMopping:
-		case OperationStatusCode.ZoneCleanMopCleaning:
-		case OperationStatusCode.ZoneCleanMopMopping:
-		case OperationStatusCode.RobotStatusMopping:
-			return RvcOperationalState.OperationalState.Running;
-
-		case OperationStatusCode.InError:
-		case OperationStatusCode.ChargingError:
-		case OperationStatusCode.Unknown:
-		case OperationStatusCode.DeviceOffline:
-		case OperationStatusCode.Locked:
-		case OperationStatusCode.AirDryingStopping:
-			return RvcOperationalState.OperationalState.Error;
-
-		case OperationStatusCode.Paused:
-			return RvcOperationalState.OperationalState.Paused;
-
-		case OperationStatusCode.ShuttingDown:
-			return RvcOperationalState.OperationalState.Stopped;
-
-		case OperationStatusCode.ReturnToDock:
-		case OperationStatusCode.ReturningDock:
-		case OperationStatusCode.WashingTheMop:
-		case OperationStatusCode.WashingTheMop2:
-		case OperationStatusCode.GoingToWashTheMop:
-		case OperationStatusCode.BackToDockWashingDuster:
-		case OperationStatusCode.EmptyingDustContainer:
-			return RvcOperationalState.OperationalState.SeekingCharger;
-
-		case OperationStatusCode.Idle:
-		case OperationStatusCode.Sleeping:
-		case OperationStatusCode.Updating:
-		case OperationStatusCode.FullyCharged:
-		case OperationStatusCode.Charging:
-		default:
-			return RvcOperationalState.OperationalState.Docked;
-	}
+	return matterOperationalStatusMap.get(state) ?? RvcOperationalState.OperationalState.Docked;
 }
 
 // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-parameters

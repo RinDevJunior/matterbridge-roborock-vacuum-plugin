@@ -1013,7 +1013,7 @@ describe('PlatformRunner.updateRobotWithPayload', () => {
 
 		await runner.updateRobotWithPayload(payload);
 
-		expect(mockLogger.error).toHaveBeenCalledWith(expect.stringContaining('No room mapping found.'));
+		expect(mockLogger.debug).toHaveBeenCalledWith(expect.stringContaining('Room map not yet available'));
 		expect(robot.updateAttribute).not.toHaveBeenCalled();
 	});
 

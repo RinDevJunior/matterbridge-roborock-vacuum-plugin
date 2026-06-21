@@ -70,26 +70,19 @@ describe('Q7MessageDispatcher', () => {
 		});
 	});
 
-	describe('getHomeMap', () => {
-		it('should return an empty object', async () => {
-			const result = await dispatcher.getHomeMap(duid);
-			expect(result).toEqual({});
-		});
-	});
-
 	describe('getMapInfo', () => {
-		it('should call client.send and return stub MapInfo', async () => {
+		it('should call client.send and return void', async () => {
 			const result = await dispatcher.getMapInfo(duid);
 			expect(client.send).toHaveBeenCalled();
-			expect(result).toBeInstanceOf(Object);
+			expect(result).toBeUndefined();
 		});
 	});
 
 	describe('getRoomMap', () => {
-		it('should call client.send and return empty array', async () => {
+		it('should call client.send and return void', async () => {
 			const result = await dispatcher.getRoomMap(duid, 1);
 			expect(client.send).toHaveBeenCalled();
-			expect(result).toEqual([]);
+			expect(result).toBeUndefined();
 		});
 	});
 

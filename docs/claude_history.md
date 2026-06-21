@@ -1,5 +1,23 @@
 # Claude History
 
+## 2026-06-21 (Session 29)
+
+- Implemented fire-and-forget v3 Tasks 3 & 4:
+  - **Task 3**: Created `MapInfoListener` at `src/roborockCommunication/routing/listeners/implementation/mapInfoListener.ts`. Handles V1 push responses by shape detection (no messageId correlation): `isRawRoomMappingData` checks for array-of-arrays, `isMultipleMapDto` checks for `map_info` presence. Calls `updateAreas()` which constructs a temporary `HomeEntity` and runs `getSupportedAreas()` → updates `AreaManagementService`. B01-Q10 and B01-Q7 branches are debug-logged stubs pending device log confirmation.
+  - **Task 4**: Injected `AreaManagementService` as optional constructor param in `ConnectionService`. Updated `ServiceContainer.getConnectionService()` to pass it. In `initializeMessageClientForLocal`, registered `MapInfoListener` after `simpleMessageListener` using `device.store.homeData.rooms` for room name mapping.
+  - Added 12 unit tests for `MapInfoListener` covering duid filtering, V1 room map / map info parsing, B01-Q10/Q7 stubs.
+  - All 176 test files, 1892 tests pass. `npm run type-check` exits 0.
+
+## 2026-06-21 (Session 28)
+
+- Implemented fire-and-forget v3 Tasks 1, 2, and 5 (full chain):
+  - **Task 1**: Converted `getMapInfo()`/`getRoomMap()` to `Promise<void>` across all 7 layers: `abstractMessageDispatcher` interface, `V10MessageDispatcher` (dropped `client.query`, removed `MultipleMapDto` import), `Q10MessageDispatcher`, `Q7MessageDispatcher`, `messageRoutingService`, `areaManagementService`, `roborockService`.
+  - **Task 2**: Rewrote `RoomMap.fromMapInfo()` to `Promise<void>` (fires both requests, returns immediately). Removed `MapInfoResult` interface, `HomeModelMapper` and `debugStringify` imports from `RoomMap.ts`. Updated `deviceConfigurator.ts` to construct `HomeEntity` with `RoomMap.empty()` and `MapInfo.empty()`.
+  - **Task 5**: Deleted the blocking `getRoomMap` + `activeMapId` update block from `serviceAreaHandler.ts` lines 109–112. Changed the empty room map guard log from `error` to `debug`.
+  - Updated CLI commands (`mapInfo.ts`, `rooms.ts`) to fire-and-return pattern.
+  - Updated all affected tests across 8 test files (V01/Q10/Q7 dispatchers, RoomMap, platformRunner, platformRunner2, areaManagementService, roborockService.coverage, deviceConfigurator).
+  - `npm run type-check` exits 0. `npm test` — 1880 tests pass (175 files).
+
 ## 2026-06-20 (Session 27)
 
 - Audited the status update flow across `deviceStateHandler.ts`, `getBatteryStatus.ts`, `handleHomeDataMessage.ts`, `platformRunner.ts`, `function.ts`.

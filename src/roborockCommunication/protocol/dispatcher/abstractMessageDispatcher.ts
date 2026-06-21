@@ -1,7 +1,5 @@
 import { CleanModeSetting } from '../../../behaviors/roborock.vacuum/core/CleanModeSetting.js';
-import { MapInfo } from '../../../core/application/models/index.js';
-import { MapRoomResponse } from '../../../types/index.js';
-import { NetworkInfo, RawRoomMappingData, RequestMessage } from '../../models/index.js';
+import { NetworkInfo, RequestMessage } from '../../models/index.js';
 
 export interface AbstractMessageDispatcher {
 	dispatcherName: string;
@@ -25,8 +23,7 @@ export interface AbstractMessageDispatcher {
 	changeCleanMode(duid: string, setting: CleanModeSetting): Promise<void>;
 
 	// For core data retrieval
-	getHomeMap(duid: string): Promise<MapRoomResponse>;
-	getMapInfo(duid: string): Promise<MapInfo>;
-	getRoomMap(duid: string, activeMap: number): Promise<RawRoomMappingData>;
+	getMapInfo(duid: string): Promise<void>;
+	getRoomMap(duid: string, activeMap: number): Promise<void>;
 	getSerialNumber(duid: string): Promise<string | undefined>;
 }

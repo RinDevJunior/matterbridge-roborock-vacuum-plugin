@@ -169,6 +169,7 @@ export class ServiceContainer {
 			this.logger,
 			this.getMessageRoutingService(),
 			this.config.configManager,
+			this.getAreaManagementService(),
 		));
 	}
 
@@ -177,8 +178,6 @@ export class ServiceContainer {
 		if (!clientRouter) {
 			throw new Error('Message client not initialized in ConnectionService');
 		}
-
-		this.areaManagementService?.setMessageClient(clientRouter);
 	}
 
 	/**

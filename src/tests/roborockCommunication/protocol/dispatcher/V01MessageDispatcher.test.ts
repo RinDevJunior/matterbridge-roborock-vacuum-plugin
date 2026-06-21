@@ -104,48 +104,19 @@ describe('V10MessageDispatcher', () => {
 		});
 	});
 
-	describe('getHomeMap', () => {
-		it('should call client.query and return response', async () => {
-			client.query.mockResolvedValueOnce({ map: 1 });
-			const result = await dispatcher.getHomeMap(duid);
-			expect(client.query).toHaveBeenCalled();
-			expect(result).toEqual({ map: 1 });
-		});
-		it('should return {} if no response', async () => {
-			client.query.mockResolvedValueOnce(undefined);
-			const result = await dispatcher.getHomeMap(duid);
-			expect(result).toEqual({});
-		});
-	});
-
 	describe('getMapInfo', () => {
-		it('should call client.query and return MapInfo', async () => {
-			client.query.mockResolvedValueOnce({ max_multi_map: 1, max_bak_map: 2, multi_map_count: 3, map_info: [] });
+		it('should call client.send and return void', async () => {
 			const result = await dispatcher.getMapInfo(duid);
-			expect(client.query).toHaveBeenCalled();
-			expect(result).toBeInstanceOf(Object);
-		});
-		it('should return default MapInfo if no response', async () => {
-			client.query.mockResolvedValueOnce(undefined);
-			const result = await dispatcher.getMapInfo(duid);
-			expect(result).toBeInstanceOf(Object);
+			expect(client.send).toHaveBeenCalled();
+			expect(result).toBeUndefined();
 		});
 	});
 
 	describe('getRoomMap', () => {
-		it('should call client.query and return RoomMap', async () => {
-			client.query.mockResolvedValueOnce([
-				[1, 2],
-				[3, 4],
-			]);
+		it('should call client.send and return void', async () => {
 			const result = await dispatcher.getRoomMap(duid, 1);
-			expect(client.query).toHaveBeenCalled();
-			expect(result).toBeInstanceOf(Array);
-		});
-		it('should return [] if no response', async () => {
-			client.query.mockResolvedValueOnce(undefined);
-			const result = await dispatcher.getRoomMap(duid, 1);
-			expect(result).toEqual([]);
+			expect(client.send).toHaveBeenCalled();
+			expect(result).toBeUndefined();
 		});
 	});
 
@@ -387,42 +358,6 @@ describe('V10MessageDispatcher', () => {
 			const payload = [{ serial_number: 'SN-42' }];
 			const msg = makeMsg(Protocol.rpc_response, messageId, payload);
 			expect(parseFn(msg)).toEqual(payload);
-		});
-	});
-
-	describe('getRoomMap inline parseFn', () => {
-		let parseFn: (msg: ResponseMessage) => unknown;
-		let messageId: number;
-
-		beforeEach(async () => {
-			await dispatcher.getRoomMap(duid, 0);
-			parseFn = client.query.mock.calls[0][2];
-			messageId = client.query.mock.calls[0][1].messageId;
-		});
-
-		it('returns undefined when msg.body is undefined', () => {
-			expect(parseFn(makeEmptyMsg())).toBeUndefined();
-		});
-
-		it('returns undefined when no dps found', () => {
-			expect(parseFn(makeNoMatchMsg(messageId))).toBeUndefined();
-		});
-
-		it('falls through to general_response when rpc_response is missing', () => {
-			const roomData = [[1, 'Kitchen', 0]];
-			const msg = makeMsg(Protocol.general_response, messageId, roomData);
-			expect(parseFn(msg)).toEqual(roomData);
-		});
-
-		it('returns undefined when dps.id does not match', () => {
-			const msg = makeMsg(Protocol.rpc_response, messageId + 1, [[1, 'Room', 0]]);
-			expect(parseFn(msg)).toBeUndefined();
-		});
-
-		it('returns dps.result when id matches', () => {
-			const roomData = [[1, 'Living Room', 2]];
-			const msg = makeMsg(Protocol.rpc_response, messageId, roomData);
-			expect(parseFn(msg)).toEqual(roomData);
 		});
 	});
 });

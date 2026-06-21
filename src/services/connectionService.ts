@@ -18,9 +18,11 @@ import { ClientRouter } from '../roborockCommunication/routing/clientRouter.js';
 import { SimpleMessageHandler } from '../roborockCommunication/routing/handlers/implementation/simpleMessageHandler.js';
 import { DeviceStatusListener } from '../roborockCommunication/routing/listeners/implementation/deviceStatusListener.js';
 import { DisconnectNotificationListener } from '../roborockCommunication/routing/listeners/implementation/disconnectNotificationListener.js';
+import { MapInfoListener } from '../roborockCommunication/routing/listeners/implementation/mapInfoListener.js';
 import { MapResponseListener } from '../roborockCommunication/routing/listeners/implementation/mapResponseListener.js';
 import { SimpleMessageListener } from '../roborockCommunication/routing/listeners/implementation/simpleMessageListener.js';
 import type { DeviceNotifyCallback } from '../types/index.js';
+import { AreaManagementService } from './areaManagementService.js';
 import ClientManager from './clientManager.js';
 import { EmailNotificationService } from './emailNotificationService.js';
 import { MessageRoutingService } from './messageRoutingService.js';
@@ -38,6 +40,7 @@ export class ConnectionService {
 		private readonly logger: AnsiLogger,
 		private readonly messageRoutingService: MessageRoutingService,
 		private readonly configManager?: PlatformConfigManager,
+		private readonly areaManagementService?: AreaManagementService,
 	) {}
 
 	public async sendTestEmailNotification(): Promise<void> {
@@ -154,6 +157,16 @@ export class ConnectionService {
 
 		this.clientRouter.registerMessageListener(deviceStatusListener);
 		this.clientRouter.registerMessageListener(simpleMessageListener);
+
+		if (this.areaManagementService) {
+			const mapInfoListener = new MapInfoListener(
+				device.duid,
+				device.store.homeData.rooms,
+				this.areaManagementService,
+				this.logger,
+			);
+			this.clientRouter.registerMessageListener(mapInfoListener);
+		}
 
 		const deviceSpecs = device.specs;
 		const messageDispatcher = new MessageDispatcherFactory(this.clientRouter, this.logger).getMessageDispatcher(

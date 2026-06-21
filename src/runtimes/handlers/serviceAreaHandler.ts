@@ -102,13 +102,8 @@ async function resolveAreaFromCleaningInfo(
 
 	const roomIndexMap = platform.roborockService?.getSupportedAreasIndexMap(robot.device.duid);
 	if (!roomIndexMap || !platform.roborockService) {
-		logger.error('No room mapping found.');
+		logger.debug('Room map not yet available, skipping room area resolution');
 		return;
-	}
-
-	if (platform.configManager.isMultipleMapEnabled) {
-		const roomData = await platform.roborockService.getRoomMap(robot.device.duid, robot.homeInFo.activeMapId);
-		robot.homeInFo.activeMapId = robot.homeInFo.mapInfo.getActiveMapId(roomData);
 	}
 
 	const sourceSegmentId = cleaningInfo.segment_id ?? INVALID_SEGMENT_ID;

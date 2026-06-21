@@ -4,20 +4,13 @@ import { LocalStorage } from 'node-persist';
 
 import { CleanModeSetting } from '../behaviors/roborock.vacuum/core/CleanModeSetting.js';
 import { SCENE_AREA_ID_MIN } from '../constants/index.js';
-import { MapInfo, RoomIndexMap } from '../core/application/models/index.js';
+import { RoomIndexMap } from '../core/application/models/index.js';
 import { AuthenticationResponse } from '../model/AuthenticationResponse.js';
 import { CleanCommand } from '../model/CleanCommand.js';
 import { PlatformConfigManager } from '../platform/platformConfigManager.js';
 import { RoborockAuthenticateApi } from '../roborockCommunication/api/authClient.js';
 import { RoborockIoTApi } from '../roborockCommunication/api/iotClient.js';
-import {
-	Device,
-	Home,
-	RawRoomMappingData,
-	RequestMessage,
-	Scene,
-	UserData,
-} from '../roborockCommunication/models/index.js';
+import { Device, Home, Scene, UserData } from '../roborockCommunication/models/index.js';
 import {
 	AreaManagementService,
 	ConnectionService,
@@ -213,13 +206,13 @@ export class RoborockService {
 	}
 
 	/** Get map information for a device. */
-	public async getMapInfo(duid: string): Promise<MapInfo> {
-		return this.areaService.getMapInfo(duid);
+	public async getMapInfo(duid: string): Promise<void> {
+		await this.areaService.getMapInfo(duid);
 	}
 
 	/** Get room mapping for a device. */
-	public async getRoomMap(duid: string, activeMap: number): Promise<RawRoomMappingData> {
-		return this.areaService.getRoomMap(duid, activeMap);
+	public async getRoomMap(duid: string, activeMap: number): Promise<void> {
+		await this.areaService.getRoomMap(duid, activeMap);
 	}
 
 	/** Get all scenes for a home. */
@@ -235,11 +228,6 @@ export class RoborockService {
 	/** Get current cleaning mode settings. */
 	public async getCleanModeData(duid: string): Promise<CleanModeSetting> {
 		return this.messageRoutingService.getCleanModeData(duid);
-	}
-
-	/** Get vacuum's current room from map. */
-	public async getRoomIdFromMap(duid: string): Promise<number | undefined> {
-		return this.messageRoutingService.getRoomIdFromMap(duid);
 	}
 
 	/** Change cleaning mode settings. */
@@ -275,25 +263,6 @@ export class RoborockService {
 	/** Play sound to locate vacuum. */
 	public async playSoundToLocate(duid: string): Promise<void> {
 		return this.messageRoutingService.playSoundToLocate(duid);
-	}
-
-	/** Execute custom GET request to device. */
-	public async customGet<T = unknown>(duid: string, request: RequestMessage): Promise<T> {
-		return this.messageRoutingService.customGet<T>(duid, request);
-	}
-
-	/** Send custom command to device (fire-and-forget). */
-	public async customSend(duid: string, request: RequestMessage): Promise<void> {
-		return this.messageRoutingService.customSend(duid, request);
-	}
-
-	/** Execute custom API GET request. */
-	public async getCustomAPI<T = unknown>(url: string): Promise<T> {
-		const iotApi = this.container.getIotApi();
-		if (!iotApi) {
-			throw new Error('IoT API not initialized. Please login first.');
-		}
-		return iotApi.getCustom(url) as Promise<T>;
 	}
 
 	private buildCleanCommand(duid: string): CleanCommand {

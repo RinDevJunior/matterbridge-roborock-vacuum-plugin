@@ -1,8 +1,9 @@
 import { AnsiLogger } from 'matterbridge/logger';
 
-import { HomeModelMapper } from '../../roborockCommunication/models/home/mappers.js';
+import { Protocol } from '../../roborockCommunication/models/index.js';
 import { connectDevice } from '../connection.js';
 import { CliSession } from '../types.js';
+import { waitForPush } from '../waitForPush.js';
 
 export async function cmdRooms(duid: string, session: CliSession, logger: AnsiLogger, local = false): Promise<void> {
 	const device = session.devices.find((d) => d.duid === duid);
@@ -10,18 +11,32 @@ export async function cmdRooms(duid: string, session: CliSession, logger: AnsiLo
 
 	const { clientRouter, dispatcher } = await connectDevice(duid, session, logger, local);
 	try {
-		const rawData = await dispatcher.getRoomMap(duid, -1);
+		const resultPromise = waitForPush(clientRouter, duid, (msg) => {
+			const dps = (msg.get(Protocol.rpc_response) ?? msg.get(Protocol.general_response)) as
+				| { result?: unknown }
+				| undefined;
+			if (!dps?.result) return undefined;
+			const raw = dps.result;
+			if (
+				Array.isArray(raw) &&
+				raw.length > 0 &&
+				Array.isArray(raw[0]) &&
+				typeof raw[0][0] === 'number' &&
+				typeof raw[0][1] === 'string'
+			) {
+				return raw as [number, string, number?][];
+			}
+			return undefined;
+		});
 
-		if (rawData.length === 0) {
-			console.log('No room mapping found.');
-			return;
-		}
+		await dispatcher.getRoomMap(duid, -1);
+		console.log('Waiting for room map response...');
 
-		console.log(`Room mapping for device ${duid}:\n`);
-		for (const raw of rawData) {
-			const dto = HomeModelMapper.rawArrayToMapRoomDto(raw, 0);
-			const mapping = HomeModelMapper.toRoomMapping(dto, device.store.homeData.rooms);
-			console.log(`  id=${mapping.id}  tag=${mapping.tag}  iot_name_id=${mapping.iot_name_id}`);
+		const result = await resultPromise;
+		if (result) {
+			console.log(JSON.stringify(result, null, 2));
+		} else {
+			console.log('No response received within timeout.');
 		}
 	} finally {
 		await clientRouter.disconnect();

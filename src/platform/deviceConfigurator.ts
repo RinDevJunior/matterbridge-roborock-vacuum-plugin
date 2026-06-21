@@ -5,7 +5,7 @@ import { UINT16_MAX, UINT32_MAX, VendorId } from 'matterbridge/matter';
 import { BridgedDeviceBasicInformation, Descriptor, Identify } from 'matterbridge/matter/clusters';
 import { isValidNumber, isValidString } from 'matterbridge/utils';
 
-import { RoomMap } from '../core/application/models/index.js';
+import { MapInfo, RoomMap } from '../core/application/models/index.js';
 import { HomeEntity } from '../core/domain/entities/Home.js';
 import { MatterOverrideSettings } from '../model/RoborockPluginPlatformConfig.js';
 import { PlatformRunner } from '../platformRunner.js';
@@ -92,11 +92,10 @@ export class DeviceConfigurator {
 			vacuum.serialNumber = await roborockService.getSerialNumber(vacuum.duid);
 		}
 
-		const { activeMapId, mapInfo, roomMap } = await RoomMap.fromMapInfo(vacuum, { roborockService, log: this.log });
-		this.log.debug('Initializing - roomMap: ', debugStringify(roomMap));
+		await RoomMap.fromMapInfo(vacuum, { roborockService, log: this.log });
 
 		const homeData = vacuum.store.homeData;
-		const homeInfo = new HomeEntity(homeData.id, homeData.name, roomMap, mapInfo, activeMapId);
+		const homeInfo = new HomeEntity(homeData.id, homeData.name, RoomMap.empty(), MapInfo.empty(), 0);
 
 		const robot = new RoborockVacuumCleaner(vacuum, homeInfo, this.configManager, roborockService, this.log);
 

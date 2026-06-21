@@ -1,11 +1,10 @@
 import { AnsiLogger } from 'matterbridge/logger';
 import { ServiceArea } from 'matterbridge/matter/clusters';
 
-import { MapInfo, RoomIndexMap } from '../core/application/models/index.js';
+import { RoomIndexMap } from '../core/application/models/index.js';
 import { DeviceError } from '../errors/index.js';
 import { RoborockIoTApi } from '../roborockCommunication/api/iotClient.js';
-import { RawRoomMappingData, Scene } from '../roborockCommunication/models/index.js';
-import { ClientRouter } from '../roborockCommunication/routing/clientRouter.js';
+import { Scene } from '../roborockCommunication/models/index.js';
 import { MessageRoutingService } from './index.js';
 
 /** Manages cleaning areas, rooms, maps, and scenes. */
@@ -15,7 +14,6 @@ export class AreaManagementService {
 	private selectedAreas = new Map<string, number[]>();
 	private supportedAreaIndexMaps = new Map<string, RoomIndexMap>();
 	private iotApi: RoborockIoTApi | undefined;
-	private messageClient: ClientRouter | undefined;
 
 	constructor(
 		private readonly logger: AnsiLogger,
@@ -24,10 +22,6 @@ export class AreaManagementService {
 
 	public setIotApi(iotApi: RoborockIoTApi): void {
 		this.iotApi = iotApi;
-	}
-
-	public setMessageClient(messageClient: ClientRouter | undefined): void {
-		this.messageClient ??= messageClient;
 	}
 
 	public setSelectedAreas(duid: string, selectedAreas: number[]): void {
@@ -63,22 +57,22 @@ export class AreaManagementService {
 		return this.supportedRoutines.get(duid);
 	}
 
-	public async getMapInfo(duid: string): Promise<MapInfo> {
+	public async getMapInfo(duid: string): Promise<void> {
 		if (!this.serviceRouting) {
 			throw new DeviceError('Service routing not initialized', duid);
 		}
 
 		this.logger.debug('AreaManagementService - getMapInfo', duid);
-		return this.serviceRouting.getMapInfo(duid);
+		await this.serviceRouting.getMapInfo(duid);
 	}
 
-	public async getRoomMap(duid: string, activeMap: number): Promise<RawRoomMappingData> {
+	public async getRoomMap(duid: string, activeMap: number): Promise<void> {
 		if (!this.serviceRouting) {
 			throw new DeviceError('Service routing not initialized', duid);
 		}
 
 		this.logger.debug('AreaManagementService - getRoomMap', duid);
-		return this.serviceRouting.getRoomMap(duid, activeMap);
+		await this.serviceRouting.getRoomMap(duid, activeMap);
 	}
 
 	public async getScenes(homeId: number): Promise<Scene[] | undefined> {

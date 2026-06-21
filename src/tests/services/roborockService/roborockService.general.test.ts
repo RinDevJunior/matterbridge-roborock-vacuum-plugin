@@ -101,11 +101,6 @@ describe('RoborockService basic behaviors', () => {
 	it('getCleanModeData throws when message processor not available', async () => {
 		await expect(svc.getCleanModeData('nope')).rejects.toThrow('MessageDispatcher not initialized for device nope');
 	});
-
-	it('getCustomAPI returns error when not authenticated', async () => {
-		// Test without authentication - should throw
-		await expect(svc.getCustomAPI('http://x')).rejects.toThrow('IoT API not initialized. Please login first.');
-	});
 });
 
 describe('RoborockService - Facade Pattern Testing', () => {
@@ -221,8 +216,6 @@ describe('RoborockService - Facade Pattern Testing', () => {
 			expect(typeof roborockService.stopAndGoHome).toBe('function');
 			expect(typeof roborockService.resumeClean).toBe('function');
 			expect(typeof roborockService.playSoundToLocate).toBe('function');
-			expect(typeof roborockService.customGet).toBe('function');
-			expect(typeof roborockService.customSend).toBe('function');
 		});
 
 		it('should maintain consistent public interface', () => {

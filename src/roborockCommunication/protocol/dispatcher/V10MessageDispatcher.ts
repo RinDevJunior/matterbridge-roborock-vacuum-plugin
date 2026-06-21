@@ -2,9 +2,6 @@ import { AnsiLogger } from 'matterbridge/logger';
 
 import { CleanModeSetting } from '../../../behaviors/roborock.vacuum/core/CleanModeSetting.js';
 import { MopRoute, MopWaterFlow } from '../../../behaviors/roborock.vacuum/enums/index.js';
-import { MapInfo } from '../../../core/application/models/index.js';
-import { MapRoomResponse } from '../../../types/index.js';
-import { MultipleMapDto, RawRoomMappingData } from '../../models/home/index.js';
 import { DpsPayload, NetworkInfo, Protocol, RequestMessage, ResponseMessage } from '../../models/index.js';
 import { Client } from '../../routing/client.js';
 import { AbstractMessageDispatcher } from './abstractMessageDispatcher.js';
@@ -57,36 +54,12 @@ export class V10MessageDispatcher implements AbstractMessageDispatcher {
 		await this.client.send(duid, request);
 	}
 
-	public async getHomeMap(duid: string): Promise<MapRoomResponse> {
-		const request = new RequestMessage({ method: 'get_map_v1', secure: true });
-		const response = await this.client.query<MapRoomResponse>(
-			duid,
-			request,
-			(msg) => parseV1Result(msg, request.messageId) as MapRoomResponse | undefined,
-		);
-		return response ?? {};
+	public async getMapInfo(duid: string): Promise<void> {
+		await this.client.send(duid, new RequestMessage({ method: 'get_multi_maps_list' }));
 	}
 
-	public async getMapInfo(duid: string): Promise<MapInfo> {
-		const request = new RequestMessage({ method: 'get_multi_maps_list' });
-		const response = await this.client.query<MultipleMapDto>(
-			duid,
-			request,
-			(msg) => parseV1Result(msg, request.messageId) as MultipleMapDto | undefined,
-		);
-		return new MapInfo(response ?? { max_multi_map: 0, max_bak_map: 0, multi_map_count: 0, map_info: [] });
-	}
-
-	public async getRoomMap(duid: string, _activeMap: number): Promise<RawRoomMappingData> {
-		const request = new RequestMessage({ method: 'get_room_mapping' });
-		const response = await this.client.query<RawRoomMappingData>(duid, request, (msg) => {
-			if (!msg.body) return undefined;
-			let dps = msg.get(Protocol.rpc_response) as DpsPayload;
-			if (!dps) dps = msg.get(Protocol.general_response) as DpsPayload;
-			if (!dps || dps.id !== request.messageId) return undefined;
-			return dps.result as RawRoomMappingData;
-		});
-		return response ?? [];
+	public async getRoomMap(duid: string, _activeMap: number): Promise<void> {
+		await this.client.send(duid, new RequestMessage({ method: 'get_room_mapping' }));
 	}
 
 	public async goHome(duid: string): Promise<void> {

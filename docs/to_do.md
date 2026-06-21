@@ -2,6 +2,13 @@
 
 ## In Progress
 
+- [x] Fire-and-forget v3 — all tasks complete (see `docs/tasks-fire-and-forget-v3.md`)
+  - [x] Task 1: Convert `getMapInfo()`/`getRoomMap()` to `Promise<void>` across all 7 layers
+  - [x] Task 2: Rewrite `RoomMap.fromMapInfo()` → `Promise<void>`, update `deviceConfigurator.ts`
+  - [x] Task 3: Create `MapInfoListener` — shape-based V1 detection, `getSupportedAreas` → `AreaManagementService`
+  - [x] Task 4: Wire `MapInfoListener` in `connectionService.ts` via injected `AreaManagementService`
+  - [x] Task 5: Remove blocking `getRoomMap` block from `serviceAreaHandler.ts`, log level → `debug`
+
 - [ ] Fix status update flow bugs — see `docs/status-update-flow-issues.md`
   - [ ] Issue 1 (High): `handleDeviceStatusSimpleUpdate` passes `ModeTag` to `state_to_matter_operational_status` — fix to pass `message.status`
   - [ ] Issue 2 (Medium): `getBatteryState` returns `IsAtFullCharge` for Cleaning/Paused/etc — fix default case

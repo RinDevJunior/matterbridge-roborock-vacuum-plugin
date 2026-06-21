@@ -410,12 +410,6 @@ describe('Device Management Methods', () => {
 		);
 	});
 
-	it('should throw error when getting custom API without IoT API', async () => {
-		(mockContainer.getIotApi as ReturnType<typeof vi.fn>).mockReturnValue(undefined);
-
-		await expect(service.getCustomAPI('/test')).rejects.toThrow('IoT API not initialized. Please login first.');
-	});
-
 	it('should throw if not authenticated', async () => {
 		const result = await service.getHomeDataForUpdating(homeid);
 		expect(result).toBeUndefined();

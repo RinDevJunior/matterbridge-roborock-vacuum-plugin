@@ -22,17 +22,8 @@ import {
 
 vi.mock('../../core/application/models/index.js', async (importOriginal) => {
 	const actual = await importOriginal<typeof import('../../core/application/models/index.js')>();
-	return {
-		...actual,
-		RoomMap: {
-			...actual.RoomMap,
-			fromMapInfo: vi.fn().mockResolvedValue({
-				activeMapId: 0,
-				mapInfo: { maps: [], allRooms: [], hasRooms: false, getActiveMapId: vi.fn().mockReturnValue(0) },
-				roomMap: { rooms: [], hasRooms: false },
-			}),
-		},
-	};
+	vi.spyOn(actual.RoomMap, 'fromMapInfo').mockResolvedValue(undefined);
+	return actual;
 });
 
 vi.mock('../../share/behaviorFactory.js', () => ({

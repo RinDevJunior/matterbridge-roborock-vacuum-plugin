@@ -2,11 +2,9 @@ import { AnsiLogger } from 'matterbridge/logger';
 
 import { CleanModeSetting } from '../../../behaviors/roborock.vacuum/core/CleanModeSetting.js';
 import { CleanSequenceType } from '../../../behaviors/roborock.vacuum/enums/CleanSequenceType.js';
-import { MapInfo } from '../../../core/application/models/index.js';
-import { MapRoomResponse } from '../../../types/index.js';
 import { Q10RequestCode, Q10RequestMethod } from '../../enums/Q10RequestCode.js';
 import { B01VacuumModeResolver } from '../../helper/B01VacuumModeResolver.js';
-import { NetworkInfo, RawRoomMappingData } from '../../models/index.js';
+import { NetworkInfo } from '../../models/index.js';
 import { RequestMessage } from '../../models/requestMessage.js';
 import { Client } from '../../routing/client.js';
 import { AbstractMessageDispatcher } from './abstractMessageDispatcher.js';
@@ -48,25 +46,19 @@ export class Q10MessageDispatcher implements AbstractMessageDispatcher {
 	}
 
 	// #region Core Data Retrieval
-	public async getHomeMap(duid: string): Promise<MapRoomResponse> {
-		return {}; // TODO: Implement home map retrieval for Q10
-	}
-
-	public async getMapInfo(duid: string): Promise<MapInfo> {
+	public async getMapInfo(duid: string): Promise<void> {
 		const request = new RequestMessage({
 			messageId: this.messageId,
 			dps: { [Q10RequestCode.common_request]: { [Q10RequestMethod.multimap]: { 'op': 'list' } } },
 		});
 		await this.client.send(duid, request);
-		return new MapInfo({ max_multi_map: 0, max_bak_map: 0, multi_map_count: 0, map_info: [] });
 	}
 
-	public async getRoomMap(duid: string, _activeMap: number): Promise<RawRoomMappingData> {
+	public async getRoomMap(duid: string, _activeMap: number): Promise<void> {
 		await this.client.send(
 			duid,
 			new RequestMessage({ messageId: this.messageId, dps: { [Q10RequestCode.get_prop]: 1 } }),
 		);
-		return [];
 	}
 	// #endregion Core Data Retrieval
 

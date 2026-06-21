@@ -4,8 +4,6 @@ import { AnsiLogger } from 'matterbridge/logger';
 
 import { CleanModeSetting } from '../../../behaviors/roborock.vacuum/core/CleanModeSetting.js';
 import { CleanSequenceType } from '../../../behaviors/roborock.vacuum/enums/CleanSequenceType.js';
-import { MapInfo } from '../../../core/application/models/index.js';
-import { MapRoomResponse } from '../../../types/device.js';
 import {
 	Q7CleanType,
 	Q7ControlCode,
@@ -14,7 +12,7 @@ import {
 	Q7RequestMethod,
 } from '../../enums/Q7RequestCode.js';
 import { B01VacuumModeResolver } from '../../helper/B01VacuumModeResolver.js';
-import { NetworkInfo, RawRoomMappingData } from '../../models/index.js';
+import { NetworkInfo } from '../../models/index.js';
 import { RequestMessage } from '../../models/requestMessage.js';
 import { Client } from '../../routing/client.js';
 import { AbstractMessageDispatcher } from './abstractMessageDispatcher.js';
@@ -71,19 +69,14 @@ export class Q7MessageDispatcher implements AbstractMessageDispatcher {
 	}
 
 	// #region Core Data Retrieval
-	public async getHomeMap(duid: string): Promise<MapRoomResponse> {
-		return {};
-	}
-
-	public async getMapInfo(duid: string): Promise<MapInfo> {
+	public async getMapInfo(duid: string): Promise<void> {
 		await this.client.send(
 			duid,
 			new RequestMessage({ messageId: this.messageId, dps: this.createDps(Q7RequestMethod.get_map_list, {}) }),
 		);
-		return new MapInfo({ max_multi_map: 0, max_bak_map: 0, multi_map_count: 0, map_info: [] });
 	}
 
-	public async getRoomMap(duid: string, activeMap: number): Promise<RawRoomMappingData> {
+	public async getRoomMap(duid: string, activeMap: number): Promise<void> {
 		await this.client.send(
 			duid,
 			new RequestMessage({
@@ -91,7 +84,6 @@ export class Q7MessageDispatcher implements AbstractMessageDispatcher {
 				dps: this.createDps(Q7RequestMethod.get_room_mapping_backup_1, { map_id: activeMap, prefer_type: 1 }),
 			}),
 		);
-		return [];
 	}
 
 	// #endregion Core Data Retrieval
