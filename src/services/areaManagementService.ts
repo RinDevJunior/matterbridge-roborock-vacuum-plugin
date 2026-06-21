@@ -10,9 +10,12 @@ import { MessageRoutingService } from './index.js';
 /** Manages cleaning areas, rooms, maps, and scenes. */
 export class AreaManagementService {
 	private supportedAreas = new Map<string, ServiceArea.Area[]>();
+	private supportedMaps = new Map<string, ServiceArea.Map[]>();
 	private supportedRoutines = new Map<string, ServiceArea.Area[]>();
 	private selectedAreas = new Map<string, number[]>();
 	private supportedAreaIndexMaps = new Map<string, RoomIndexMap>();
+	private areasListeners = new Map<string, (areas: ServiceArea.Area[], maps: ServiceArea.Map[]) => void>();
+	private refreshIntervals = new Map<string, NodeJS.Timeout>();
 	private iotApi: RoborockIoTApi | undefined;
 
 	constructor(
@@ -33,8 +36,22 @@ export class AreaManagementService {
 		return this.selectedAreas.get(duid) ?? [];
 	}
 
+	public registerAreasListener(duid: string, callback: (areas: ServiceArea.Area[], maps: ServiceArea.Map[]) => void): void {
+		this.areasListeners.set(duid, callback);
+	}
+
+	public setSupportedMaps(duid: string, maps: ServiceArea.Map[]): void {
+		this.supportedMaps.set(duid, maps);
+	}
+
+	public getSupportedMaps(duid: string): ServiceArea.Map[] {
+		return this.supportedMaps.get(duid) ?? [];
+	}
+
 	public setSupportedAreas(duid: string, supportedAreas: ServiceArea.Area[]): void {
 		this.supportedAreas.set(duid, supportedAreas);
+		const maps = this.supportedMaps.get(duid) ?? [];
+		this.areasListeners.get(duid)?.(supportedAreas, maps);
 	}
 
 	public setSupportedAreaIndexMap(duid: string, indexMap: RoomIndexMap): void {
@@ -75,6 +92,25 @@ export class AreaManagementService {
 		await this.serviceRouting.getRoomMap(duid, activeMap);
 	}
 
+	public startPeriodicRefresh(duid: string, intervalMs = 5 * 60 * 1000): void {
+		this.stopPeriodicRefresh(duid);
+		const handle = setInterval(() => {
+			this.logger.debug(`AreaManagementService - periodic area refresh for ${duid}`);
+			this.getMapInfo(duid).catch((err: unknown) => {
+				this.logger.error(`AreaManagementService - getMapInfo refresh failed for ${duid}: ${String(err)}`);
+			});
+		}, intervalMs);
+		this.refreshIntervals.set(duid, handle);
+	}
+
+	public stopPeriodicRefresh(duid: string): void {
+		const handle = this.refreshIntervals.get(duid);
+		if (handle) {
+			clearInterval(handle);
+			this.refreshIntervals.delete(duid);
+		}
+	}
+
 	public async getScenes(homeId: number): Promise<Scene[] | undefined> {
 		if (!this.iotApi) {
 			throw new DeviceError('IoT API not initialized');
@@ -91,12 +127,17 @@ export class AreaManagementService {
 		return this.iotApi.startScene(sceneId);
 	}
 
-	/** Clear all area management data. */
+	/** Clear all area management data and stop all refresh timers. */
 	public clearAll(): void {
+		for (const duid of this.refreshIntervals.keys()) {
+			this.stopPeriodicRefresh(duid);
+		}
 		this.supportedAreas.clear();
+		this.supportedMaps.clear();
 		this.supportedRoutines.clear();
 		this.selectedAreas.clear();
 		this.supportedAreaIndexMaps.clear();
+		this.areasListeners.clear();
 		this.logger.debug('AreaManagementService - All data cleared');
 	}
 }

@@ -9,7 +9,6 @@ import { baseRunModeConfigs, getRunModeOptions } from '../behaviors/roborock.vac
 import { HomeEntity } from '../core/domain/entities/Home.js';
 import {
 	getOperationalStates,
-	getSupportedAreas,
 	getSupportedCleanModes,
 	getSupportedRoutines,
 } from '../initialData/index.js';
@@ -61,7 +60,7 @@ export class RoborockVacuumCleaner extends RoboticVacuumCleaner {
 			deviceConfig.operationalState,
 			deviceConfig.supportedAreaAndRoutines,
 			undefined,
-			deviceConfig.supportedAreas[0].areaId,
+			null,
 			deviceConfig.supportedMaps,
 		);
 
@@ -143,18 +142,11 @@ export class RoborockVacuumCleaner extends RoboticVacuumCleaner {
 	) {
 		const cleanModes = getSupportedCleanModes(device.specs.model, configManager);
 		const operationalState = getOperationalStates();
-		const result = getSupportedAreas(homeInFo, log);
-		const supportedMaps = result.supportedMaps;
-		let supportedAreas = result.supportedAreas;
 		const runModeConfigs = getRunModeOptions(baseRunModeConfigs);
 
 		const bridgeMode: 'server' | 'matter' = configManager.isServerModeEnabled ? 'server' : 'matter';
 
-		const firstSupportedMap = supportedMaps.length > 0 ? supportedMaps[0] : undefined;
-		if (!configManager.isMultipleMapEnabled) {
-			supportedMaps.splice(1); // Keep only the first map
-			supportedAreas = supportedAreas.filter((area) => area.mapId === firstSupportedMap?.mapId);
-		}
+		const supportedMaps: ServiceArea.Map[] = [];
 
 		let routineAsRooms: ServiceArea.Area[] = [];
 		if (configManager.showRoutinesAsRoom) {
@@ -171,10 +163,7 @@ export class RoborockVacuumCleaner extends RoboticVacuumCleaner {
 			});
 		}
 
-		roborockService.setSupportedAreas(device.duid, result.supportedAreas);
-		roborockService.setSupportedAreaIndexMap(device.duid, result.roomIndexMap);
-
-		const supportedAreaAndRoutines = [...supportedAreas, ...routineAsRooms];
+		const supportedAreaAndRoutines = [...routineAsRooms];
 		const deviceName = device.name;
 
 		return {
@@ -182,7 +171,7 @@ export class RoborockVacuumCleaner extends RoboticVacuumCleaner {
 			bridgeMode,
 			cleanModes,
 			runModeConfigs,
-			supportedAreas,
+			supportedAreas: [],
 			supportedMaps,
 			supportedAreaAndRoutines,
 			operationalState,

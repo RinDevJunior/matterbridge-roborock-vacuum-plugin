@@ -180,6 +180,26 @@ export class RoborockService {
 		return this.areaService.getSelectedAreas(duid);
 	}
 
+	/** Register a callback invoked whenever supported areas are updated for a device. */
+	public registerAreasListener(duid: string, callback: (areas: ServiceArea.Area[], maps: ServiceArea.Map[]) => void): void {
+		this.areaService.registerAreasListener(duid, callback);
+	}
+
+	/** Set supported maps for a device. */
+	public setSupportedMaps(duid: string, maps: ServiceArea.Map[]): void {
+		this.areaService.setSupportedMaps(duid, maps);
+	}
+
+	/** Get supported maps for a device. */
+	public getSupportedMaps(duid: string): ServiceArea.Map[] {
+		return this.areaService.getSupportedMaps(duid);
+	}
+
+	/** Start periodic area refresh (getMapInfo) on a timer. */
+	public startPeriodicAreaRefresh(duid: string, intervalMs?: number): void {
+		this.areaService.startPeriodicRefresh(duid, intervalMs);
+	}
+
 	/** Set supported cleaning areas (rooms) for a device. */
 	public setSupportedAreas(duid: string, supportedAreas: ServiceArea.Area[]): void {
 		this.areaService.setSupportedAreas(duid, supportedAreas);
@@ -193,6 +213,10 @@ export class RoborockService {
 	/** Set supported cleaning routines/scenes for a device. */
 	public setSupportedRoutines(duid: string, routineAsRooms: ServiceArea.Area[]): void {
 		this.areaService.setSupportedRoutines(duid, routineAsRooms);
+	}
+
+	public getSupportedRoutines(duid: string): ServiceArea.Area[] | undefined {
+		return this.areaService.getSupportedRoutines(duid);
 	}
 
 	/** Get supported cleaning areas for a device. */

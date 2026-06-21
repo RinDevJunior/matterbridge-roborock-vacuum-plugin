@@ -94,10 +94,11 @@ export class MapInfoListener implements AbstractMessageListener {
 
 	private updateAreas(roomMap: RoomMap, mapInfo: MapInfo): void {
 		const homeEntity = new HomeEntity(0, '', roomMap, mapInfo, 0);
-		const { supportedAreas, roomIndexMap } = getSupportedAreas(homeEntity, this.logger);
+		const { supportedAreas, supportedMaps, roomIndexMap } = getSupportedAreas(homeEntity, this.logger);
 		this.areaService.setSupportedAreaIndexMap(this.duid, roomIndexMap);
+		this.areaService.setSupportedMaps(this.duid, supportedMaps);
 		this.areaService.setSupportedAreas(this.duid, supportedAreas);
-		this.logger.debug(`[${this.duid}] MapInfoListener: areas updated (${roomMap.rooms.length} rooms)`);
+		this.logger.debug(`[${this.duid}] MapInfoListener: areas updated (${roomMap.rooms.length} rooms, ${supportedMaps.length} maps)`);
 	}
 }
 
