@@ -29,9 +29,7 @@ export class V1StatusListener implements AbstractMessageListener {
 
 	public async onMessage(message: ResponseMessage): Promise<void> {
 		if (message.duid !== this.duid) {
-			this.logger.debug(
-				`[V1StatusListener]: Message DUID ${message.duid} does not match listener DUID ${this.duid}`,
-			);
+			this.logger.debug(`[V1StatusListener]: Message DUID ${message.duid} does not match listener DUID ${this.duid}`);
 			return;
 		}
 

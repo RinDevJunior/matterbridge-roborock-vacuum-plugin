@@ -1,6 +1,6 @@
 import { ResponseMessage } from '../roborockCommunication/models/index.js';
-import { AbstractMessageListener } from '../roborockCommunication/routing/listeners/abstractMessageListener.js';
 import { ClientRouter } from '../roborockCommunication/routing/clientRouter.js';
+import { AbstractMessageListener } from '../roborockCommunication/routing/listeners/abstractMessageListener.js';
 
 const DEFAULT_TIMEOUT_MS = 6000;
 

@@ -1,7 +1,7 @@
 import { AnsiLogger } from 'matterbridge/logger';
 
 import { CleanModeSetting } from '../../../../behaviors/roborock.vacuum/core/CleanModeSetting.js';
-import { DockErrorCode, VacuumErrorCode } from '../../../enums/index.js';
+import { DockErrorCode } from '../../../enums/index.js';
 import { OperationStatusCode } from '../../../enums/operationStatusCode.js';
 import { Q7RequestCode, Q7RequestMethod } from '../../../enums/Q7RequestCode.js';
 import { Q10RequestCode } from '../../../enums/Q10RequestCode.js';
@@ -22,12 +22,18 @@ function q10WaterModeToV1(wire: number): number {
 /** Converts Q7 'wind' property (1–5) to V1 suction power range. */
 function q7WindToV1(wire: number): number {
 	switch (wire) {
-		case 1: return 101;
-		case 2: return 102;
-		case 3: return 103;
-		case 4: return 104;
-		case 5: return 108;
-		default: return 105; // Off
+		case 1:
+			return 101;
+		case 2:
+			return 102;
+		case 3:
+			return 103;
+		case 4:
+			return 104;
+		case 5:
+			return 108;
+		default:
+			return 105;
 	}
 }
 
@@ -66,37 +72,46 @@ export class B01StatusListener implements AbstractMessageListener {
 		if (!this.handler) return;
 		if (!message.body) return;
 
-		await this.tryHandleQ10Push(message);
-		await this.tryHandleQ7Response(message);
+		await this.tryHandleQ10Push(message, this.handler);
+		await this.tryHandleQ7Response(message, this.handler);
 	}
 
-	private async tryHandleQ10Push(message: ResponseMessage): Promise<void> {
+	private async tryHandleQ10Push(message: ResponseMessage, handler: AbstractMessageHandler): Promise<void> {
 		if (!message.body) return;
 
 		const errorCode = message.body.get(Q10RequestCode.error_code);
 		if (errorCode !== undefined) {
-			await this.handler!.onError(new VacuumError(this.duid, Number(errorCode) as VacuumErrorCode, DockErrorCode.None, undefined));
+			await handler.onError(new VacuumError(this.duid, Number(errorCode), DockErrorCode.None, undefined));
 		}
 
 		const state = message.body.get(Q10RequestCode.state);
 		if (state !== undefined) {
-			this.lastState = Number(state) as OperationStatusCode;
-			const statusMsg = new StatusChangeMessage(this.duid, this.lastState, undefined, undefined, undefined, undefined, undefined, undefined);
-			await this.handler!.onStatusChanged(statusMsg);
+			this.lastState = Number(state);
+			const statusMsg = new StatusChangeMessage(
+				this.duid,
+				this.lastState,
+				undefined,
+				undefined,
+				undefined,
+				undefined,
+				undefined,
+				undefined,
+			);
+			await handler.onStatusChanged(statusMsg);
 		}
 
 		const battery = message.body.get(Q10RequestCode.battery);
 		if (battery !== undefined) {
 			this.lastBattery = Number(battery);
 			const batteryMsg = new BatteryMessage(this.duid, this.lastBattery, this.lastChargeStatus, this.lastState);
-			await this.handler!.onBatteryUpdate(batteryMsg);
+			await handler.onBatteryUpdate(batteryMsg);
 		}
 
 		const chargeStatus = message.body.get(Q10RequestCode.charge_status);
 		if (chargeStatus !== undefined) {
 			this.lastChargeStatus = Number(chargeStatus);
 			const batteryMsg = new BatteryMessage(this.duid, this.lastBattery, this.lastChargeStatus, this.lastState);
-			await this.handler!.onBatteryUpdate(batteryMsg);
+			await handler.onBatteryUpdate(batteryMsg);
 		}
 
 		const fanPower = message.body.get(Q10RequestCode.fan_power);
@@ -110,7 +125,7 @@ export class B01StatusListener implements AbstractMessageListener {
 		}
 		if (fanPower !== undefined || waterBoxMode !== undefined) {
 			const cleanMode = new CleanModeSetting(this.lastSuctionPower, this.lastWaterFlow, 0, 0, undefined);
-			await this.handler!.onCleanModeUpdate(cleanMode);
+			await handler.onCleanModeUpdate(cleanMode);
 		}
 
 		const cleanArea = message.body.get(Q10RequestCode.clean_area);
@@ -118,7 +133,7 @@ export class B01StatusListener implements AbstractMessageListener {
 		const cleanTaskType = message.body.get(Q10RequestCode.clean_task_type);
 
 		if (cleanArea !== undefined || cleanTime !== undefined || cleanTaskType !== undefined) {
-			await this.handler!.onServiceAreaUpdate({
+			await handler.onServiceAreaUpdate({
 				duid: this.duid,
 				state: this.lastState,
 				cleaningProcess: {
@@ -130,7 +145,7 @@ export class B01StatusListener implements AbstractMessageListener {
 		}
 	}
 
-	private async tryHandleQ7Response(message: ResponseMessage): Promise<void> {
+	private async tryHandleQ7Response(message: ResponseMessage, handler: AbstractMessageHandler): Promise<void> {
 		if (!message.body) return;
 
 		const raw = message.body.get(Q7RequestCode.query_response);
@@ -143,31 +158,36 @@ export class B01StatusListener implements AbstractMessageListener {
 			if (parsed?.method !== Q7RequestMethod.get_prop && parsed?.method !== 'prop.post') return;
 
 			const data = parsed.data ?? {};
-			await this.handleQ7Props(data);
+			await this.handleQ7Props(data, handler);
 		} catch (err: unknown) {
 			this.logger.warn(`[${this.duid}] B01StatusListener: failed to parse Q7 query_response: ${String(err)}`);
 		}
 	}
 
-	private async handleQ7Props(data: Record<string, unknown>): Promise<void> {
+	private async handleQ7Props(data: Record<string, unknown>, handler: AbstractMessageHandler): Promise<void> {
 		if (data['fault'] !== undefined) {
-			await this.handler!.onError(new VacuumError(this.duid, Number(data['fault']) as VacuumErrorCode, DockErrorCode.None, undefined));
+			await handler.onError(new VacuumError(this.duid, Number(data['fault']), DockErrorCode.None, undefined));
 		}
 
 		if (data['status'] !== undefined) {
-			this.lastState = Number(data['status']) as OperationStatusCode;
+			this.lastState = Number(data['status']);
 			const statusMsg = new StatusChangeMessage(
 				this.duid,
 				this.lastState,
-				undefined, undefined, undefined, undefined, undefined, undefined,
+				undefined,
+				undefined,
+				undefined,
+				undefined,
+				undefined,
+				undefined,
 			);
-			await this.handler!.onStatusChanged(statusMsg);
+			await handler.onStatusChanged(statusMsg);
 		}
 
 		if (data['quantity'] !== undefined) {
 			this.lastBattery = Number(data['quantity']);
 			const batteryMsg = new BatteryMessage(this.duid, this.lastBattery, this.lastChargeStatus, this.lastState);
-			await this.handler!.onBatteryUpdate(batteryMsg);
+			await handler.onBatteryUpdate(batteryMsg);
 		}
 
 		const wind = data['wind'];
@@ -184,14 +204,14 @@ export class B01StatusListener implements AbstractMessageListener {
 
 		if (wind !== undefined || water !== undefined || data['mode'] !== undefined) {
 			const cleanMode = new CleanModeSetting(this.lastSuctionPower, this.lastWaterFlow, 0, mopRoute, undefined);
-			await this.handler!.onCleanModeUpdate(cleanMode);
+			await handler.onCleanModeUpdate(cleanMode);
 		}
 
 		const cleanArea = data['cleaning_area'];
 		const cleanTime = data['cleaning_time'];
 
 		if (cleanArea !== undefined || cleanTime !== undefined) {
-			await this.handler!.onServiceAreaUpdate({
+			await handler.onServiceAreaUpdate({
 				duid: this.duid,
 				state: this.lastState,
 				cleaningProcess: {

@@ -16,11 +16,11 @@ import { MessageDispatcherFactory } from '../roborockCommunication/protocol/disp
 import { Client } from '../roborockCommunication/routing/client.js';
 import { ClientRouter } from '../roborockCommunication/routing/clientRouter.js';
 import { SimpleMessageHandler } from '../roborockCommunication/routing/handlers/implementation/simpleMessageHandler.js';
+import { B01StatusListener } from '../roborockCommunication/routing/listeners/implementation/b01StatusListener.js';
 import { DeviceStatusListener } from '../roborockCommunication/routing/listeners/implementation/deviceStatusListener.js';
 import { DisconnectNotificationListener } from '../roborockCommunication/routing/listeners/implementation/disconnectNotificationListener.js';
 import { MapInfoListener } from '../roborockCommunication/routing/listeners/implementation/mapInfoListener.js';
 import { MapResponseListener } from '../roborockCommunication/routing/listeners/implementation/mapResponseListener.js';
-import { B01StatusListener } from '../roborockCommunication/routing/listeners/implementation/b01StatusListener.js';
 import { V1StatusListener } from '../roborockCommunication/routing/listeners/implementation/v1StatusListener.js';
 import type { DeviceNotifyCallback } from '../types/index.js';
 import { AreaManagementService } from './areaManagementService.js';

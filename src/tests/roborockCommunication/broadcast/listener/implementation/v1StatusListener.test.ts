@@ -99,9 +99,7 @@ describe('V1StatusListener', () => {
 		expect(handler.onBatteryUpdate).not.toHaveBeenCalled();
 		expect(handler.onStatusChanged).not.toHaveBeenCalled();
 		expect(handler.onError).not.toHaveBeenCalled();
-		expect(logger.debug).toHaveBeenCalledWith(
-			'[V1StatusListener]: Message DUID 456 does not match listener DUID 123',
-		);
+		expect(logger.debug).toHaveBeenCalledWith('[V1StatusListener]: Message DUID 456 does not match listener DUID 123');
 	});
 
 	it('should handle rpc_response with dock_error_status', async () => {

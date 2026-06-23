@@ -36,7 +36,10 @@ export class AreaManagementService {
 		return this.selectedAreas.get(duid) ?? [];
 	}
 
-	public registerAreasListener(duid: string, callback: (areas: ServiceArea.Area[], maps: ServiceArea.Map[]) => void): void {
+	public registerAreasListener(
+		duid: string,
+		callback: (areas: ServiceArea.Area[], maps: ServiceArea.Map[]) => void,
+	): void {
 		this.areasListeners.set(duid, callback);
 	}
 

@@ -7,11 +7,7 @@ import { CommandNames } from '../behaviors/BehaviorDeviceGeneric.js';
 import { CleanModeSetting } from '../behaviors/roborock.vacuum/core/CleanModeSetting.js';
 import { baseRunModeConfigs, getRunModeOptions } from '../behaviors/roborock.vacuum/core/runModeConfig.js';
 import { HomeEntity } from '../core/domain/entities/Home.js';
-import {
-	getOperationalStates,
-	getSupportedCleanModes,
-	getSupportedRoutines,
-} from '../initialData/index.js';
+import { getOperationalStates, getSupportedCleanModes, getSupportedRoutines } from '../initialData/index.js';
 import { DockStationStatus } from '../model/DockStationStatus.js';
 import { PlatformConfigManager } from '../platform/platformConfigManager.js';
 import { Device } from '../roborockCommunication/models/index.js';

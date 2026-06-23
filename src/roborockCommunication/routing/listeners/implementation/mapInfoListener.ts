@@ -105,7 +105,8 @@ export class MapInfoListener implements AbstractMessageListener {
 		if (raw === undefined) return;
 
 		try {
-			const parsed: { method?: string; data?: unknown } = typeof raw === 'string' ? JSON.parse(raw) : (raw as { method?: string; data?: unknown });
+			const parsed: { method?: string; data?: unknown } =
+				typeof raw === 'string' ? JSON.parse(raw) : (raw as { method?: string; data?: unknown });
 
 			if (parsed?.method !== Q7RequestMethod.get_map_list) return;
 
@@ -143,7 +144,9 @@ export class MapInfoListener implements AbstractMessageListener {
 
 		const modelShortCode = this.deviceModel?.split('.').at(-1);
 		if (!modelShortCode || !this.deviceSerial) {
-			this.logger.warn(`[${this.duid}] MapInfoListener: B01 map binary received but missing model/serial for decryption`);
+			this.logger.warn(
+				`[${this.duid}] MapInfoListener: B01 map binary received but missing model/serial for decryption`,
+			);
 			return;
 		}
 
@@ -176,7 +179,9 @@ export class MapInfoListener implements AbstractMessageListener {
 		this.areaService.setSupportedAreaIndexMap(this.duid, roomIndexMap);
 		this.areaService.setSupportedMaps(this.duid, supportedMaps);
 		this.areaService.setSupportedAreas(this.duid, supportedAreas);
-		this.logger.debug(`[${this.duid}] MapInfoListener: areas updated (${roomMap.rooms.length} rooms, ${supportedMaps.length} maps)`);
+		this.logger.debug(
+			`[${this.duid}] MapInfoListener: areas updated (${roomMap.rooms.length} rooms, ${supportedMaps.length} maps)`,
+		);
 	}
 }
 

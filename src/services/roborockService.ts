@@ -181,7 +181,10 @@ export class RoborockService {
 	}
 
 	/** Register a callback invoked whenever supported areas are updated for a device. */
-	public registerAreasListener(duid: string, callback: (areas: ServiceArea.Area[], maps: ServiceArea.Map[]) => void): void {
+	public registerAreasListener(
+		duid: string,
+		callback: (areas: ServiceArea.Area[], maps: ServiceArea.Map[]) => void,
+	): void {
 		this.areaService.registerAreasListener(duid, callback);
 	}
 
