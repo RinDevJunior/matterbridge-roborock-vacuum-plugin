@@ -60,8 +60,7 @@ export class PlatformRunner {
 		const robots = [...platform.registry.robotsMap.values()];
 		const threshold = Date.now() - WATCHDOG_THRESHOLD_MS;
 		const allDevicesFresh = robots.every(
-			(x) =>
-				x.device.specs.hasRealTimeConnection && x.lastUpdateAt !== null && x.lastUpdateAt > threshold,
+			(x) => x.device.specs.hasRealTimeConnection && x.lastUpdateAt !== null && x.lastUpdateAt > threshold,
 		);
 		if (allDevicesFresh) return;
 

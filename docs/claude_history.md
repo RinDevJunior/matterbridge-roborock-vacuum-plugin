@@ -60,4 +60,3 @@
 - `abstractClient.test.ts`: added `isReady` delegates to `isConnected` test (covers line 40).
 - `v1ResponseBroadcaster.test.ts` / `b01ResponseBroadcaster.test.ts`: replaced "throw Error" with `throw 'raw string error'` to cover the `String(error)` branch in the non-Error exception handler.
 - All 175 test files, 1876 tests pass (+8). Precommit clean.
-
