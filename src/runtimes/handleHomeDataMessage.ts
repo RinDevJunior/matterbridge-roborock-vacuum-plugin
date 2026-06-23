@@ -1,6 +1,7 @@
 import { debugStringify } from 'matterbridge/logger';
 
 import { CleanSequenceType } from '../behaviors/roborock.vacuum/enums/CleanSequenceType.js';
+import { WATCHDOG_THRESHOLD_MS } from '../constants/index.js';
 import { RoborockMatterbridgePlatform } from '../module.js';
 import { DockErrorCode } from '../roborockCommunication/enums/vacuumAndDockErrorCode.js';
 import { Device, Home } from '../roborockCommunication/models/index.js';
@@ -59,7 +60,7 @@ export async function updateFromHomeData(homeData: Home, platform: RoborockMatte
 			});
 		}
 
-		if (batteryLevel) {
+		if (batteryLevel != null) {
 			await platform.platformRunner.updateRobotWithPayload({
 				type: NotifyMessageTypes.BatteryUpdate,
 				data: {
@@ -71,8 +72,14 @@ export async function updateFromHomeData(homeData: Home, platform: RoborockMatte
 			});
 		}
 
-		if (state && !deviceData.hasRealTimeConnection) {
-			platform.log.notice(`hasRealTimeConnection is false, updating device status from home data: ${state}`);
+		const threshold = Date.now() - WATCHDOG_THRESHOLD_MS;
+		const isStale = robot.lastUpdateAt === null || robot.lastUpdateAt <= threshold;
+		const needsStatusUpdate = !deviceData.hasRealTimeConnection || isStale;
+
+		if (state && needsStatusUpdate) {
+			platform.log.notice(
+				`Updating device status from home data: ${state} (hasRealTimeConnection=${deviceData.hasRealTimeConnection}, stale=${isStale})`,
+			);
 			await platform.platformRunner.updateRobotWithPayload({
 				type: NotifyMessageTypes.DeviceStatusSimple,
 				data: {
@@ -82,7 +89,7 @@ export async function updateFromHomeData(homeData: Home, platform: RoborockMatte
 			});
 		}
 
-		if (suctionPower && waterBoxMode) {
+		if (suctionPower != null && waterBoxMode != null) {
 			await platform.platformRunner.updateRobotWithPayload({
 				type: NotifyMessageTypes.CleanModeUpdate,
 				data: {

@@ -58,8 +58,12 @@ export class PlatformRunner {
 		if (platform.roborockService === undefined) return;
 
 		const robots = [...platform.registry.robotsMap.values()];
-		const allDevicesHaveRealTimeConnection = robots.every((x) => x.device.specs.hasRealTimeConnection);
-		if (allDevicesHaveRealTimeConnection) return;
+		const threshold = Date.now() - WATCHDOG_THRESHOLD_MS;
+		const allDevicesFresh = robots.every(
+			(x) =>
+				x.device.specs.hasRealTimeConnection && x.lastUpdateAt !== null && x.lastUpdateAt > threshold,
+		);
+		if (allDevicesFresh) return;
 
 		const homeData = await platform.roborockService.getHomeDataForUpdating(platform.rrHomeId);
 		if (homeData === undefined) return;

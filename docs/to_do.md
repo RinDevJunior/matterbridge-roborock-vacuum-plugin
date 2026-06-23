@@ -10,22 +10,18 @@
   - [x] Task 5: Remove blocking `getRoomMap` block from `serviceAreaHandler.ts`, log level → `debug`
 
 - [ ] Fix status update flow bugs — see `docs/status-update-flow-issues.md`
-  - [ ] Issue 1 (High): `handleDeviceStatusSimpleUpdate` passes `ModeTag` to `state_to_matter_operational_status` — fix to pass `message.status`
-  - [ ] Issue 2 (Medium): `getBatteryState` returns `IsAtFullCharge` for Cleaning/Paused/etc — fix default case
-  - [ ] Issue 3 (Low): falsy check drops 0% battery in `updateFromHomeData` — fix to `!= null`
-  - [ ] Issue 4 (Design): DSS check ordering inconsistency in simple vs full path
-  - [ ] Issue 5 (Design): `requestHomeData` global short-circuit on `allDevicesHaveRealTimeConnection`
-  - [ ] Issue 6 (Design): Charging guard depends on broken `getBatteryState` exit condition
+  - [x] Issue 1 (High): `handleDeviceStatusSimpleUpdate` passes `ModeTag` to `state_to_matter_operational_status` — fixed to pass `message.status`
+  - [x] Issue 2 (Medium): `getBatteryState` returns `IsAtFullCharge` for Cleaning/Paused/etc — fixed default case to `IsNotCharging`
+  - [x] Issue 3 (Low): falsy check drops 0% battery in `updateFromHomeData` — fixed to `!= null` (also fixed `suctionPower && waterBoxMode`)
+  - [x] Issue 4 (Design): DSS check ordering inconsistency in simple vs full path — fixed, DSS check now at top of `handleDeviceStatusSimpleUpdate`
+  - [x] Issue 5 (Design): `requestHomeData` global short-circuit — replaced with per-device staleness check using `lastUpdateAt` + `WATCHDOG_THRESHOLD_MS`
+  - [x] Issue 6 (Design): Charging guard depends on broken `getBatteryState` — resolved by Issue 2 fix
 
-- [ ] Fix `stateResolver.ts` bugs — see `docs/stateResolver-bugs.md`
+- [x] Fix `stateResolver.ts` bugs — verified implementation matches `misc/state_resolution_matrix.md`; doc was lost but no remaining discrepancies found
 
-- [ ] Fix routine selection in `setSelectedAreas` — see `docs/routine-selection-fix-plan.md`
-  - [ ] `areaManagementService.setSelectedAreas`: store raw areaIds (remove RoomIndexMap conversion)
-  - [ ] `roborockService.startClean`: separate routines/rooms, convert room areaIds → roomIds
-  - [ ] `messageRoutingService.tryStartRoutineClean`: fix `rooms` filter + fix `startScene` scene ID
-  - [ ] Add/update tests
-- [ ] Investigate MQTT keepalive behavior change (rc04 stopped periodic reconnection — may cause stale connections)
-- [ ] Integrate `B01ResponseBroadcaster` into dispatcher factory / connection service for B01 devices
+- [x] Fix routine selection in `setSelectedAreas` — already implemented in `roborockService.buildCleanCommand`: separates routines/rooms, uses `indexMap.getRoomId()` for conversion; `setSelectedAreas` stores raw areaIds
+- [x] Investigate MQTT keepalive — unconditional `end()` + `reconnect()` re-enabled deliberately (comment confirms intent); not a bug
+- [x] Integrate `B01ResponseBroadcaster` — already integrated: `connectionService.ts` registers `B01StatusListener`; `ResponseBroadcasterFactory` routes B01 protocol messages internally
 
 ## Completed
 
