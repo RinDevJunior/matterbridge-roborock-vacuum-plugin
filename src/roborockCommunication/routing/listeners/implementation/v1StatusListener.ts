@@ -16,6 +16,7 @@ import { AbstractMessageListener } from '../abstractMessageListener.js';
 
 export class V1StatusListener implements AbstractMessageListener {
 	readonly name = 'V1StatusListener';
+	readonly requiresBody = true;
 
 	private handler: AbstractMessageHandler | undefined;
 	constructor(

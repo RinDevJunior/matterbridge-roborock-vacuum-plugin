@@ -1,5 +1,14 @@
 # Claude History
 
+## 2026-06-24 (Session 31)
+
+- Added `requiresBody: boolean` to `AbstractMessageListener` interface (non-optional).
+- Set `requiresBody = true` on: `V1StatusListener`, `B01StatusListener`, `MapInfoListener`, `DeviceStatusListener`.
+- Set `requiresBody = false` on: `HelloResponseListener`, `MapResponseListener`, `OneShotResponseListener`, `LocalPingResponseListener`, `LoggingMessageListener`, `PushCaptureListener`.
+- Both `V1ResponseBroadcaster` and `B01ResponseBroadcaster` now silently skip listeners with `requiresBody = true` when message body is absent.
+- Added 2 tests per broadcaster (skip when body absent + pass-through when `requiresBody = false`); updated all test mocks.
+- Bumped version `1.1.7-rc02` → `1.1.7-rc03` across `package.json`, `schema.json`, `config.json`.
+
 ## 2026-06-23 (Session 30)
 
 - Verified status update flow issues (Issues 1–6) against current code:

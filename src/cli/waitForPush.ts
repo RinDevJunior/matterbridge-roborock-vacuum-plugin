@@ -6,6 +6,7 @@ const DEFAULT_TIMEOUT_MS = 6000;
 
 class PushCaptureListener<T> implements AbstractMessageListener {
 	readonly name = 'PushCaptureListener';
+	readonly requiresBody = false;
 	private resolve: ((value: T) => void) | undefined;
 	public readonly promise: Promise<T>;
 

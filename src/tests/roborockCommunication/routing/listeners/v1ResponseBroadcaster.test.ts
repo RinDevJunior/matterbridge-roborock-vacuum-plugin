@@ -57,11 +57,13 @@ describe('V1ResponseBroadcaster', () => {
 	it('should dispatch message to all registered listeners', async () => {
 		const listener1: AbstractMessageListener = {
 			name: 'Listener1',
+			requiresBody: false,
 			duid: 'test-duid',
 			onMessage: vi.fn().mockResolvedValue(undefined),
 		};
 		const listener2: AbstractMessageListener = {
 			name: 'Listener2',
+			requiresBody: false,
 			duid: 'test-duid',
 			onMessage: vi.fn().mockResolvedValue(undefined),
 		};
@@ -79,12 +81,18 @@ describe('V1ResponseBroadcaster', () => {
 	it('should catch errors from listeners and continue dispatching', () => {
 		const failingListener: AbstractMessageListener = {
 			name: 'FailListener',
+			requiresBody: false,
 			duid: 'test-duid',
 			onMessage: vi.fn(() => {
 				throw new Error('listener error');
 			}),
 		};
-		const goodListener: AbstractMessageListener = { name: 'GoodListener', duid: 'test-duid', onMessage: vi.fn() };
+		const goodListener: AbstractMessageListener = {
+			name: 'GoodListener',
+			requiresBody: false,
+			duid: 'test-duid',
+			onMessage: vi.fn(),
+		};
 
 		broadcaster.register(failingListener);
 		broadcaster.register(goodListener);
@@ -99,6 +107,7 @@ describe('V1ResponseBroadcaster', () => {
 	it('should handle non-Error thrown values', () => {
 		const failingListener: AbstractMessageListener = {
 			name: 'FailListener',
+			requiresBody: false,
 			duid: 'test-duid',
 			onMessage: vi.fn(() => {
 				// eslint-disable-next-line @typescript-eslint/only-throw-error
@@ -113,7 +122,7 @@ describe('V1ResponseBroadcaster', () => {
 	});
 
 	it('should clear listeners on unregister', () => {
-		const listener: AbstractMessageListener = { name: 'L', duid: 'test-duid', onMessage: vi.fn() };
+		const listener: AbstractMessageListener = { name: 'L', requiresBody: false, duid: 'test-duid', onMessage: vi.fn() };
 
 		broadcaster.register(listener);
 		broadcaster.unregister();
@@ -127,11 +136,13 @@ describe('V1ResponseBroadcaster', () => {
 	it('should remove a single listener on deregister', async () => {
 		const listener1: AbstractMessageListener = {
 			name: 'L1',
+			requiresBody: false,
 			duid: 'test-duid',
 			onMessage: vi.fn().mockResolvedValue(undefined),
 		};
 		const listener2: AbstractMessageListener = {
 			name: 'L2',
+			requiresBody: false,
 			duid: 'test-duid',
 			onMessage: vi.fn().mockResolvedValue(undefined),
 		};
@@ -144,6 +155,38 @@ describe('V1ResponseBroadcaster', () => {
 
 		expect(listener1.onMessage).not.toHaveBeenCalled();
 		expect(listener2.onMessage).toHaveBeenCalled();
+	});
+
+	it('should skip listener requiring body when message has no body', async () => {
+		const listener: AbstractMessageListener = {
+			name: 'BodyListener',
+			requiresBody: true,
+			duid: 'test-duid',
+			onMessage: vi.fn().mockResolvedValue(undefined),
+		};
+		broadcaster.register(listener);
+
+		const header = new HeaderMessage('1.0', 1, 0, 101, 102);
+		const response = new ResponseMessage('test-duid', header, undefined);
+		await broadcaster.onMessage(response);
+
+		expect(listener.onMessage).not.toHaveBeenCalled();
+	});
+
+	it('should dispatch to listener not requiring body when message has no body', async () => {
+		const listener: AbstractMessageListener = {
+			name: 'NoBodyListener',
+			requiresBody: false,
+			duid: 'test-duid',
+			onMessage: vi.fn().mockResolvedValue(undefined),
+		};
+		broadcaster.register(listener);
+
+		const header = new HeaderMessage('1.0', 1, 0, 101, 102);
+		const response = new ResponseMessage('test-duid', header, undefined);
+		await broadcaster.onMessage(response);
+
+		expect(listener.onMessage).toHaveBeenCalledWith(response);
 	});
 
 	it('should ignore simple ok responses', () => {

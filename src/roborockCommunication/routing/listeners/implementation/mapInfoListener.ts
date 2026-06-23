@@ -17,6 +17,7 @@ import { AbstractMessageListener } from '../abstractMessageListener.js';
 
 export class MapInfoListener implements AbstractMessageListener {
 	readonly name = 'MapInfoListener';
+	readonly requiresBody = true;
 
 	private readonly b01MapParser = new B01MapParser();
 	private pendingB01MapInfo: MapInfo | undefined;

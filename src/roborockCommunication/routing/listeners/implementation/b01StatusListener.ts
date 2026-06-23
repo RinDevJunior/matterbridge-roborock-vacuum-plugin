@@ -49,6 +49,7 @@ function q7WaterToV1(wire: number): number {
  */
 export class B01StatusListener implements AbstractMessageListener {
 	readonly name = 'B01StatusListener';
+	readonly requiresBody = true;
 
 	private handler: AbstractMessageHandler | undefined;
 

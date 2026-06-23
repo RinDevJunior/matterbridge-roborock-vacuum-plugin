@@ -4,6 +4,7 @@ import { AbstractMessageListener } from './abstractMessageListener.js';
 
 export class OneShotResponseListener<T> implements AbstractMessageListener {
 	readonly name = 'OneShotResponseListener';
+	readonly requiresBody = false;
 
 	private resolve?: (value: T) => void;
 	private reject?: (error: Error) => void;

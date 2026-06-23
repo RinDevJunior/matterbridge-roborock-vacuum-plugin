@@ -5,6 +5,7 @@ import { AbstractMessageListener } from '../abstractMessageListener.js';
 
 export class MapResponseListener implements AbstractMessageListener {
 	readonly name = 'MapResponseListener';
+	readonly requiresBody = false;
 
 	constructor(
 		public readonly duid: string,
