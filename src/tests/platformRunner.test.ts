@@ -219,6 +219,7 @@ describe('PlatformRunner.requestHomeData', () => {
 			serialNumber: '123',
 			device: asPartial<Device>({ duid: '123', specs: asPartial<DeviceSpecs>({ hasRealTimeConnection: true }) }),
 			updateAttribute: vi.fn(),
+			lastUpdateAt: Date.now(),
 		});
 		platform = asPartial<RoborockMatterbridgePlatform>({
 			registry: createMockDeviceRegistry({}, new Map([['123', placeholderRobot]])),
