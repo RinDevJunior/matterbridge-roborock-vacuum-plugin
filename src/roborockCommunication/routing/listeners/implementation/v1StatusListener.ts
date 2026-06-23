@@ -14,8 +14,8 @@ import {
 import { AbstractMessageHandler } from '../../handlers/abstractMessageHandler.js';
 import { AbstractMessageListener } from '../abstractMessageListener.js';
 
-export class SimpleMessageListener implements AbstractMessageListener {
-	readonly name = 'SimpleMessageListener';
+export class V1StatusListener implements AbstractMessageListener {
+	readonly name = 'V1StatusListener';
 
 	private handler: AbstractMessageHandler | undefined;
 	constructor(
@@ -30,36 +30,36 @@ export class SimpleMessageListener implements AbstractMessageListener {
 	public async onMessage(message: ResponseMessage): Promise<void> {
 		if (message.duid !== this.duid) {
 			this.logger.debug(
-				`[SimpleMessageListener]: Message DUID ${message.duid} does not match listener DUID ${this.duid}`,
+				`[V1StatusListener]: Message DUID ${message.duid} does not match listener DUID ${this.duid}`,
 			);
 			return;
 		}
 
 		if (!this.handler) {
-			this.logger.error(`[SimpleMessageListener]: No handler registered`);
+			this.logger.error(`[V1StatusListener]: No handler registered`);
 			return;
 		}
 
 		if (!message.isForProtocols([Protocol.general_request, Protocol.rpc_response])) {
-			this.logger.debug(`[SimpleMessageListener]: Message not for general_request or rpc_response protocol`);
+			this.logger.debug(`[V1StatusListener]: Message not for general_request or rpc_response protocol`);
 			return;
 		}
 
 		if (message.isSimpleOkResponse()) {
-			this.logger.debug(`[SimpleMessageListener]: Ignoring simple 'ok' response`);
+			this.logger.debug(`[V1StatusListener]: Ignoring simple 'ok' response`);
 			return;
 		}
 
 		const rpcData = message.get(Protocol.rpc_response) as DpsPayload;
 
 		if (!rpcData || !rpcData.result || !Array.isArray(rpcData.result) || rpcData.result.length === 0) {
-			this.logger.debug(`[SimpleMessageListener]: No rpc_response data found in message`);
+			this.logger.debug(`[V1StatusListener]: No rpc_response data found in message`);
 			return;
 		}
 
 		const rawResult = rpcData.result[0];
 		if (typeof rawResult !== 'object' || rawResult === null) {
-			this.logger.debug('[SimpleMessageListener]: result[0] is not an object, skipping');
+			this.logger.debug('[V1StatusListener]: result[0] is not an object, skipping');
 			return;
 		}
 
@@ -75,7 +75,7 @@ export class SimpleMessageListener implements AbstractMessageListener {
 		const clean_time = messageBody.clean_time;
 
 		if (!('state' in messageBody)) {
-			this.logger.debug('[SimpleMessageListener]: Message does not contain state');
+			this.logger.debug('[V1StatusListener]: Message does not contain state');
 			return Promise.resolve();
 		}
 

@@ -20,7 +20,8 @@ import { DeviceStatusListener } from '../roborockCommunication/routing/listeners
 import { DisconnectNotificationListener } from '../roborockCommunication/routing/listeners/implementation/disconnectNotificationListener.js';
 import { MapInfoListener } from '../roborockCommunication/routing/listeners/implementation/mapInfoListener.js';
 import { MapResponseListener } from '../roborockCommunication/routing/listeners/implementation/mapResponseListener.js';
-import { SimpleMessageListener } from '../roborockCommunication/routing/listeners/implementation/simpleMessageListener.js';
+import { B01StatusListener } from '../roborockCommunication/routing/listeners/implementation/b01StatusListener.js';
+import { V1StatusListener } from '../roborockCommunication/routing/listeners/implementation/v1StatusListener.js';
 import type { DeviceNotifyCallback } from '../types/index.js';
 import { AreaManagementService } from './areaManagementService.js';
 import ClientManager from './clientManager.js';
@@ -150,13 +151,17 @@ export class ConnectionService {
 
 		this.clientRouter.registerMessageListener(new MapResponseListener(device.duid, this.logger));
 
-		const simpleMessageListener = new SimpleMessageListener(device.duid, this.logger);
+		const simpleMessageListener = new V1StatusListener(device.duid, this.logger);
 		simpleMessageListener.registerHandler(new SimpleMessageHandler(device.duid, this.logger, this.deviceNotify));
+
+		const b01StatusListener = new B01StatusListener(device.duid, this.logger);
+		b01StatusListener.registerHandler(new SimpleMessageHandler(device.duid, this.logger, this.deviceNotify));
 
 		const deviceStatusListener = new DeviceStatusListener(device.duid, this.logger);
 
 		this.clientRouter.registerMessageListener(deviceStatusListener);
 		this.clientRouter.registerMessageListener(simpleMessageListener);
+		this.clientRouter.registerMessageListener(b01StatusListener);
 
 		if (this.areaManagementService) {
 			const mapInfoListener = new MapInfoListener(
@@ -164,6 +169,8 @@ export class ConnectionService {
 				device.store.homeData.rooms,
 				this.areaManagementService,
 				this.logger,
+				device.specs.model,
+				device.serialNumber,
 			);
 			this.clientRouter.registerMessageListener(mapInfoListener);
 		}

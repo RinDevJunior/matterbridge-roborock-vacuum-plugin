@@ -8,7 +8,7 @@ import {
 } from '../../../../../roborockCommunication/enums/index.js';
 import { ResponseMessage } from '../../../../../roborockCommunication/models/index.js';
 import { AbstractMessageHandler } from '../../../../../roborockCommunication/routing/handlers/abstractMessageHandler.js';
-import { SimpleMessageListener } from '../../../../../roborockCommunication/routing/listeners/implementation/simpleMessageListener.js';
+import { V1StatusListener } from '../../../../../roborockCommunication/routing/listeners/implementation/v1StatusListener.js';
 import { asPartial, createMockLogger } from '../../../../helpers/testUtils.js';
 
 function createMockHandler(): AbstractMessageHandler {
@@ -50,21 +50,21 @@ const baseResultBody: Record<string, unknown> = {
 	seq_type: 0,
 };
 
-describe('SimpleMessageListener', () => {
+describe('V1StatusListener', () => {
 	let logger: AnsiLogger;
-	let listener: SimpleMessageListener;
+	let listener: V1StatusListener;
 	let handler: AbstractMessageHandler;
 	const duid = 'test-duid';
 
 	beforeEach(() => {
 		logger = createMockLogger();
-		listener = new SimpleMessageListener(duid, logger);
+		listener = new V1StatusListener(duid, logger);
 		handler = createMockHandler();
 	});
 
 	describe('constructor', () => {
 		it('should set name and duid correctly', () => {
-			expect(listener.name).toBe('SimpleMessageListener');
+			expect(listener.name).toBe('V1StatusListener');
 			expect(listener.duid).toBe(duid);
 		});
 	});
@@ -95,7 +95,7 @@ describe('SimpleMessageListener', () => {
 		it('should log error and return early when no handler is registered', async () => {
 			const message = makeRpcResponseMessage(duid, baseResultBody);
 			await listener.onMessage(message);
-			expect(logger.error).toHaveBeenCalledWith('[SimpleMessageListener]: No handler registered');
+			expect(logger.error).toHaveBeenCalledWith('[V1StatusListener]: No handler registered');
 			expect(handler.onBatteryUpdate).not.toHaveBeenCalled();
 		});
 
@@ -171,7 +171,7 @@ describe('SimpleMessageListener', () => {
 				get: vi.fn().mockReturnValue({ result: [104] }),
 			});
 			await listener.onMessage(message);
-			expect(logger.debug).toHaveBeenCalledWith('[SimpleMessageListener]: result[0] is not an object, skipping');
+			expect(logger.debug).toHaveBeenCalledWith('[V1StatusListener]: result[0] is not an object, skipping');
 			expect(handler.onBatteryUpdate).not.toHaveBeenCalled();
 		});
 
@@ -184,7 +184,7 @@ describe('SimpleMessageListener', () => {
 				get: vi.fn().mockReturnValue({ result: [null] }),
 			});
 			await listener.onMessage(message);
-			expect(logger.debug).toHaveBeenCalledWith('[SimpleMessageListener]: result[0] is not an object, skipping');
+			expect(logger.debug).toHaveBeenCalledWith('[V1StatusListener]: result[0] is not an object, skipping');
 			expect(handler.onBatteryUpdate).not.toHaveBeenCalled();
 		});
 
@@ -197,7 +197,7 @@ describe('SimpleMessageListener', () => {
 				get: vi.fn().mockReturnValue({ result: [{ battery: 80 }] }),
 			});
 			await listener.onMessage(message);
-			expect(logger.debug).toHaveBeenCalledWith('[SimpleMessageListener]: Message does not contain state');
+			expect(logger.debug).toHaveBeenCalledWith('[V1StatusListener]: Message does not contain state');
 			expect(handler.onBatteryUpdate).not.toHaveBeenCalled();
 		});
 	});

@@ -9,7 +9,7 @@ A standalone CLI to interact with the Roborock API and control vacuum devices di
 Build the project first:
 
 ```bash
-npm run build
+npm run build:local
 ```
 
 ---
@@ -211,7 +211,7 @@ List all cleaning scenes/routines configured for the device's home. Use `--detai
 
 ```bash
 npm run cli -- --command scenes --duid <duid>
-npm run cli -- --command scenes --duid <duid> --detail
+npm run cli -- --command scenes --duid <duid> --detail true
 ```
 
 Output:
@@ -341,6 +341,19 @@ Output:
 Sent: set_clean_motor_mode
 ```
 
+**Debugging Q7/Q10 protocol devices:**
+
+```bash
+# Query raw status (Q7/Q10)
+npm run cli -- --command custom --duid <duid> --method get_prop --params '["get_status"]'
+
+# Query map list (Q7)
+npm run cli -- --command custom --duid <duid> --method service.get_map_list
+
+# Query room mapping backup (Q7)
+npm run cli -- --command custom --duid <duid> --method service.get_room_mapping_backup_1
+```
+
 ---
 
 ### `help`
@@ -357,7 +370,7 @@ npm run cli -- --help
 
 ```bash
 # 1. Build
-npm run build
+npm run build:local
 
 # 2. Login once
 npm run cli -- --command login

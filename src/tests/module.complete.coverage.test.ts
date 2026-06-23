@@ -194,6 +194,8 @@ describe('module.ts - complete coverage', () => {
 				}),
 				activateDeviceNotify: vi.fn(),
 				getRoomMap: vi.fn().mockResolvedValue(roomData),
+				registerAreasListener: vi.fn(),
+				startPeriodicAreaRefresh: vi.fn(),
 			});
 			platform.roborockService = mockRoborockService;
 
@@ -288,6 +290,8 @@ describe('module.ts - complete coverage', () => {
 				setDeviceNotify: vi.fn(),
 				activateDeviceNotify: vi.fn(),
 				getRoomMap: vi.fn().mockResolvedValue(roomData),
+				registerAreasListener: vi.fn(),
+				startPeriodicAreaRefresh: vi.fn(),
 			});
 			platform.roborockService = mockRoborockService;
 
@@ -356,6 +360,8 @@ describe('module.ts - complete coverage', () => {
 				setDeviceNotify: vi.fn(),
 				activateDeviceNotify: vi.fn(),
 				getRoomMap: vi.fn().mockResolvedValue(roomData),
+				registerAreasListener: vi.fn(),
+				startPeriodicAreaRefresh: vi.fn(),
 			});
 			platform.roborockService = mockRoborockService;
 
@@ -417,6 +423,8 @@ describe('module.ts - complete coverage', () => {
 				setDeviceNotify: vi.fn(),
 				activateDeviceNotify: vi.fn(),
 				getRoomMap: vi.fn().mockResolvedValue(roomData),
+				registerAreasListener: vi.fn(),
+				startPeriodicAreaRefresh: vi.fn(),
 			});
 			platform.roborockService = mockRoborockService;
 
@@ -482,6 +490,8 @@ describe('module.ts - complete coverage', () => {
 				getRoomMap: vi.fn().mockResolvedValue([]),
 				setSupportedAreas: vi.fn(),
 				setSupportedAreaIndexMap: vi.fn(),
+				registerAreasListener: vi.fn(),
+				startPeriodicAreaRefresh: vi.fn(),
 			});
 			platform.roborockService = asPartial<RoborockService>(mockRoborockService);
 
@@ -498,7 +508,7 @@ describe('module.ts - complete coverage', () => {
 			const result = await platform.configurator['configureDevice'](mockDevice, platform.roborockService);
 
 			expect(result).toBe(true);
-			expect(mockRoborockService.getMapInfo).toHaveBeenCalledWith('device1');
+			expect(mockRoborockService.registerAreasListener).toHaveBeenCalledWith('device1', expect.any(Function));
 		});
 
 		it('should fetch rooms when array is empty', async () => {
@@ -537,6 +547,8 @@ describe('module.ts - complete coverage', () => {
 				getRoomMap: vi.fn().mockResolvedValue([]),
 				setSupportedAreas: vi.fn(),
 				setSupportedAreaIndexMap: vi.fn(),
+				registerAreasListener: vi.fn(),
+				startPeriodicAreaRefresh: vi.fn(),
 			};
 			platform.roborockService = asPartial<RoborockService>(mockRoborockService);
 

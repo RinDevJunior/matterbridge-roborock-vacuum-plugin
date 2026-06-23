@@ -42,6 +42,7 @@ describe('MapInfoListener', () => {
 		areaService = asPartial<AreaManagementService>({
 			setSupportedAreas: vi.fn(),
 			setSupportedAreaIndexMap: vi.fn(),
+			setSupportedMaps: vi.fn(),
 		});
 		listener = new MapInfoListener(DUID, rooms as never, areaService, createMockLogger());
 	});
@@ -160,59 +161,57 @@ describe('MapInfoListener', () => {
 	});
 
 	describe('tryParseB01MapInfo', () => {
-		it('should log debug when B01 multimap key is present', async () => {
+		it('should call setSupportedMaps and log when B01 multimap data is present', async () => {
 			const logger = createMockLogger();
 			const listenerWithLogger = new MapInfoListener(DUID, [], areaService, logger);
+			const msg = makeB01Message(DUID, (key) => {
+				if (key === Q10RequestCode.multimap) return { data: [{ id: 0, name: 'Home' }] };
+				return undefined;
+			});
+
+			await listenerWithLogger.onMessage(msg);
+
+			expect(areaService.setSupportedMaps).toHaveBeenCalled();
+			expect(logger.debug).toHaveBeenCalledWith(expect.stringContaining('B01 multimap push'));
+		});
+
+		it('should skip when B01 multimap data is not an array', async () => {
 			const msg = makeB01Message(DUID, (key) => {
 				if (key === Q10RequestCode.multimap) return { op: 'list' };
 				return undefined;
 			});
 
-			await listenerWithLogger.onMessage(msg);
+			await listener.onMessage(msg);
 
-			expect(logger.debug).toHaveBeenCalledWith(expect.stringContaining('B01 map info push'));
+			expect(areaService.setSupportedMaps).not.toHaveBeenCalled();
 		});
 	});
 
 	describe('tryParseB01RoomMap', () => {
-		it('should log debug for Q10 get_prop key', async () => {
-			const logger = createMockLogger();
-			const listenerWithLogger = new MapInfoListener(DUID, [], areaService, logger);
-			const msg = makeB01Message(DUID, (key) => {
-				if (key === Q10RequestCode.get_prop) return [1, 2, 3];
-				return undefined;
-			});
-
-			await listenerWithLogger.onMessage(msg);
-
-			expect(logger.debug).toHaveBeenCalledWith(expect.stringContaining('B01-Q10 room map push'));
-		});
-
-		it('should log debug for Q7 query_response with get_room_mapping_backup_1 method', async () => {
+		it('should call setSupportedMaps and log for Q7 query_response with get_map_list method', async () => {
 			const logger = createMockLogger();
 			const listenerWithLogger = new MapInfoListener(DUID, [], areaService, logger);
 			const msg = makeB01Message(DUID, (key) => {
 				if (key === Q7RequestCode.query_response)
-					return { method: Q7RequestMethod.get_room_mapping_backup_1, result: { rooms: [] } };
+					return { method: Q7RequestMethod.get_map_list, data: { map_list: [{ id: 1, name: 'Home' }] } };
 				return undefined;
 			});
 
 			await listenerWithLogger.onMessage(msg);
 
-			expect(logger.debug).toHaveBeenCalledWith(expect.stringContaining('B01-Q7 room map push'));
+			expect(areaService.setSupportedMaps).toHaveBeenCalled();
+			expect(logger.debug).toHaveBeenCalledWith(expect.stringContaining('B01-Q7 map list push'));
 		});
 
-		it('should not log for Q7 query_response with different method', async () => {
-			const logger = createMockLogger();
-			const listenerWithLogger = new MapInfoListener(DUID, [], areaService, logger);
+		it('should not call setSupportedMaps for Q7 query_response with different method', async () => {
 			const msg = makeB01Message(DUID, (key) => {
 				if (key === Q7RequestCode.query_response) return { method: 'service.get_status', result: {} };
 				return undefined;
 			});
 
-			await listenerWithLogger.onMessage(msg);
+			await listener.onMessage(msg);
 
-			expect(logger.debug).not.toHaveBeenCalledWith(expect.stringContaining('B01-Q7 room map push'));
+			expect(areaService.setSupportedMaps).not.toHaveBeenCalled();
 		});
 	});
 });

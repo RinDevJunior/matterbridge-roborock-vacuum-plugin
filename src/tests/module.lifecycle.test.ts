@@ -240,6 +240,8 @@ describe('module.ts coverage tests', () => {
 				setSupportedAreas: vi.fn(),
 				setSupportedAreaIndexMap: vi.fn(),
 				activateDeviceNotify: vi.fn(),
+				registerAreasListener: vi.fn(),
+				startPeriodicAreaRefresh: vi.fn(),
 			});
 			platform.registry.registerDevice(mockDevice as Device);
 

@@ -1,10 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { HeaderMessage, Protocol, ResponseMessage } from '../../../../../roborockCommunication/models/index.js';
-import { SimpleMessageListener } from '../../../../../roborockCommunication/routing/listeners/implementation/simpleMessageListener.js';
+import { V1StatusListener } from '../../../../../roborockCommunication/routing/listeners/implementation/v1StatusListener.js';
 
-describe('SimpleMessageListener', () => {
-	let listener: SimpleMessageListener;
+describe('V1StatusListener', () => {
+	let listener: V1StatusListener;
 	let handler: any;
 	let message: any;
 	const logger: any = {
@@ -13,7 +13,7 @@ describe('SimpleMessageListener', () => {
 	};
 
 	beforeEach(() => {
-		listener = new SimpleMessageListener('123', logger);
+		listener = new V1StatusListener('123', logger);
 		handler = {
 			onStatusChanged: vi.fn().mockResolvedValue(undefined),
 			onError: vi.fn().mockResolvedValue(undefined),
@@ -36,7 +36,7 @@ describe('SimpleMessageListener', () => {
 	});
 
 	it('should do nothing if no handler registered', async () => {
-		const l = new SimpleMessageListener('123', logger);
+		const l = new V1StatusListener('123', logger);
 		await l.onMessage(message as ResponseMessage);
 		expect(logger.error).toHaveBeenCalled();
 	});
@@ -100,7 +100,7 @@ describe('SimpleMessageListener', () => {
 		expect(handler.onStatusChanged).not.toHaveBeenCalled();
 		expect(handler.onError).not.toHaveBeenCalled();
 		expect(logger.debug).toHaveBeenCalledWith(
-			'[SimpleMessageListener]: Message DUID 456 does not match listener DUID 123',
+			'[V1StatusListener]: Message DUID 456 does not match listener DUID 123',
 		);
 	});
 
@@ -135,6 +135,6 @@ describe('SimpleMessageListener', () => {
 		expect(handler.onBatteryUpdate).not.toHaveBeenCalled();
 		expect(handler.onStatusChanged).not.toHaveBeenCalled();
 		expect(handler.onError).not.toHaveBeenCalled();
-		expect(logger.debug).toHaveBeenCalledWith("[SimpleMessageListener]: Ignoring simple 'ok' response");
+		expect(logger.debug).toHaveBeenCalledWith("[V1StatusListener]: Ignoring simple 'ok' response");
 	});
 });

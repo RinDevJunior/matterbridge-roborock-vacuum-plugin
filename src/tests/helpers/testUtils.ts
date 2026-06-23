@@ -210,6 +210,8 @@ export function createMockRoborockService(overrides: Partial<RoborockService> = 
 		getRoomMap: vi.fn().mockResolvedValue(new Map()),
 		getSerialNumber: vi.fn().mockResolvedValue('mock-serial'),
 		requestDeviceStatusOnce: vi.fn().mockResolvedValue(undefined),
+		registerAreasListener: vi.fn(),
+		startPeriodicAreaRefresh: vi.fn(),
 	};
 	return { ...base, ...overrides } as Partial<RoborockService> as RoborockService;
 }
