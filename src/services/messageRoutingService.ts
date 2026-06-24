@@ -4,6 +4,7 @@ import { CleanModeSetting } from '../behaviors/roborock.vacuum/core/CleanModeSet
 import { DeviceError } from '../errors/index.js';
 import { CleanCommand } from '../model/CleanCommand.js';
 import { RoborockIoTApi } from '../roborockCommunication/api/iotClient.js';
+import { RawRoomMappingData } from '../roborockCommunication/models/home/index.js';
 import { AbstractMessageDispatcher } from '../roborockCommunication/protocol/dispatcher/abstractMessageDispatcher.js';
 
 export class MessageRoutingService {
@@ -40,7 +41,7 @@ export class MessageRoutingService {
 		return this.getMessageDispatcher(duid).switchMap(duid, mapId);
 	}
 
-	public getRoomMap(duid: string, activeMap: number): Promise<void> {
+	public getRoomMap(duid: string, activeMap: number): Promise<RawRoomMappingData | undefined> {
 		return this.getMessageDispatcher(duid).getRoomMap(duid, activeMap);
 	}
 

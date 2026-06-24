@@ -101,6 +101,7 @@ function createMockConfig(overrides: Partial<RoborockPluginPlatformConfig> = {})
 			enableAdvancedFeature: true,
 			settings: {
 				clearStorageOnStartup: false,
+				enableLiveMapUpdates: false,
 				showRoutinesAsRoom: false,
 				includeDockStationStatus: false,
 				includeVacuumErrorStatus: false,
@@ -196,6 +197,7 @@ describe('module.ts - complete coverage', () => {
 				getRoomMap: vi.fn().mockResolvedValue(roomData),
 				registerAreasListener: vi.fn(),
 				startPeriodicAreaRefresh: vi.fn(),
+				setDeviceRooms: vi.fn(),
 			});
 			platform.roborockService = mockRoborockService;
 
@@ -292,6 +294,7 @@ describe('module.ts - complete coverage', () => {
 				getRoomMap: vi.fn().mockResolvedValue(roomData),
 				registerAreasListener: vi.fn(),
 				startPeriodicAreaRefresh: vi.fn(),
+				setDeviceRooms: vi.fn(),
 			});
 			platform.roborockService = mockRoborockService;
 
@@ -362,6 +365,7 @@ describe('module.ts - complete coverage', () => {
 				getRoomMap: vi.fn().mockResolvedValue(roomData),
 				registerAreasListener: vi.fn(),
 				startPeriodicAreaRefresh: vi.fn(),
+				setDeviceRooms: vi.fn(),
 			});
 			platform.roborockService = mockRoborockService;
 
@@ -425,6 +429,7 @@ describe('module.ts - complete coverage', () => {
 				getRoomMap: vi.fn().mockResolvedValue(roomData),
 				registerAreasListener: vi.fn(),
 				startPeriodicAreaRefresh: vi.fn(),
+				setDeviceRooms: vi.fn(),
 			});
 			platform.roborockService = mockRoborockService;
 
@@ -492,6 +497,7 @@ describe('module.ts - complete coverage', () => {
 				setSupportedAreaIndexMap: vi.fn(),
 				registerAreasListener: vi.fn(),
 				startPeriodicAreaRefresh: vi.fn(),
+				setDeviceRooms: vi.fn(),
 			});
 			platform.roborockService = asPartial<RoborockService>(mockRoborockService);
 
@@ -549,6 +555,7 @@ describe('module.ts - complete coverage', () => {
 				setSupportedAreaIndexMap: vi.fn(),
 				registerAreasListener: vi.fn(),
 				startPeriodicAreaRefresh: vi.fn(),
+				setDeviceRooms: vi.fn(),
 			};
 			platform.roborockService = asPartial<RoborockService>(mockRoborockService);
 

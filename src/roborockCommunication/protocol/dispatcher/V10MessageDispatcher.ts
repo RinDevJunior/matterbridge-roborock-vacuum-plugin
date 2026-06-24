@@ -2,6 +2,7 @@ import { AnsiLogger } from 'matterbridge/logger';
 
 import { CleanModeSetting } from '../../../behaviors/roborock.vacuum/core/CleanModeSetting.js';
 import { MopRoute, MopWaterFlow } from '../../../behaviors/roborock.vacuum/enums/index.js';
+import { RawRoomMappingData } from '../../models/home/index.js';
 import { DpsPayload, NetworkInfo, Protocol, RequestMessage, ResponseMessage } from '../../models/index.js';
 import { Client } from '../../routing/client.js';
 import { AbstractMessageDispatcher } from './abstractMessageDispatcher.js';
@@ -26,6 +27,7 @@ export class V10MessageDispatcher implements AbstractMessageDispatcher {
 	constructor(
 		private readonly logger: AnsiLogger,
 		private readonly client: Client,
+		private readonly liveMapUpdates = false,
 	) {}
 
 	public async getNetworkInfo(duid: string): Promise<NetworkInfo | undefined> {
@@ -55,11 +57,33 @@ export class V10MessageDispatcher implements AbstractMessageDispatcher {
 	}
 
 	public async getMapInfo(duid: string): Promise<void> {
-		await this.client.send(duid, new RequestMessage({ method: 'get_multi_maps_list' }));
+		const request = new RequestMessage({ method: 'get_multi_maps_list' });
+		if (this.liveMapUpdates) {
+			await this.client.send(duid, request);
+		} else {
+			await this.client.query<true>(duid, request, (msg) => {
+				if (!msg.body) return undefined;
+				let dps = msg.get(Protocol.rpc_response) as DpsPayload | undefined;
+				if (!dps) dps = msg.get(Protocol.general_response) as DpsPayload | undefined;
+				if (!dps || dps.id !== request.messageId) return undefined;
+				return true;
+			});
+		}
 	}
 
-	public async getRoomMap(duid: string, _activeMap: number): Promise<void> {
-		await this.client.send(duid, new RequestMessage({ method: 'get_room_mapping' }));
+	public async getRoomMap(duid: string, _activeMap: number): Promise<RawRoomMappingData | undefined> {
+		const request = new RequestMessage({ method: 'get_room_mapping' });
+		if (this.liveMapUpdates) {
+			await this.client.send(duid, request);
+			return undefined;
+		}
+		return await this.client.query<RawRoomMappingData>(duid, request, (msg) => {
+			if (!msg.body) return undefined;
+			let dps = msg.get(Protocol.rpc_response) as DpsPayload | undefined;
+			if (!dps) dps = msg.get(Protocol.general_response) as DpsPayload | undefined;
+			if (!dps || dps.id !== request.messageId) return undefined;
+			return dps.result as RawRoomMappingData;
+		});
 	}
 
 	public async switchMap(duid: string, mapId: number): Promise<void> {

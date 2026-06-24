@@ -1,5 +1,36 @@
 # Claude History
 
+## 2026-06-25 (Session 33)
+
+- Fully restored original `getRoomMap` data flow (broken by `fcfdfb6` fire-and-forget refactor):
+  - `V10MessageDispatcher.getRoomMap`: `liveMapUpdates=false` uses `client.query<RawRoomMappingData>()` and returns actual room data; `liveMapUpdates=true` uses `client.send()` and returns `undefined`.
+  - `Q7MessageDispatcher.getRoomMap` / `Q10MessageDispatcher.getRoomMap`: return `Promise<RawRoomMappingData | undefined>` (always `undefined`, data handled by MapInfoListener push).
+  - `AbstractMessageDispatcher` interface updated to `getRoomMap(): Promise<RawRoomMappingData | undefined>`.
+  - `messageRoutingService`, `areaManagementService`, `roborockService` propagate the return type.
+  - `areaManagementService.getRoomMap`: explicitly processes returned `RawRoomMappingData` → `RoomMap` → `HomeEntity` → `setSupportedAreas/Maps/IndexMap` (mirrors `MapInfoListener.updateAreas`).
+  - `areaManagementService` stores `deviceRooms` per-duid (via new `setDeviceRooms`) for room-name lookup during explicit processing; cleared in `clearAll()`.
+  - `roborockService.setDeviceRooms` delegates to `areaService.setDeviceRooms`.
+  - `deviceConfigurator.configureDevice`: calls `roborockService.setDeviceRooms(duid, homeData.rooms)` before device init.
+  - `deviceConfigurator.onConfigureDevice`: calls `await roborockService.getRoomMap(duid, -1)` after `getMapInfo` in the startup loop.
+- Updated V10 `getRoomMap` tests: default case asserts `client.query` called and result equals raw data; added "no data" case; live case asserts `client.send`.
+- Added `setDeviceRooms: vi.fn()` and corrected `getRoomMap` mock return to `undefined` in shared test utilities.
+- Fixed `enableLiveMapUpdates` missing from all affected test config fixtures.
+- Lint clean, 175 test files / 1875 tests pass.
+
+## 2026-06-24 (Session 32)
+
+- Wired `onActiveMapChanged` callback from `MapInfoListener` into `connectionService.ts` via `NotifyMessageTypes.ActiveMapChanged`.
+- Added `handleActiveMapChanged` to `serviceAreaHandler.ts`: sets `selectedAreas` to all rooms on the new map, `currentArea` to `null`.
+- Added early return in `resolveAreaFromCleaningInfo` when `segmentId === INVALID_SEGMENT_ID` to prevent overwriting `currentArea` after map switch.
+- Wired `requestStatus` callback into `V1StatusListener`: fires `getDeviceStatus` immediately when `additional_props` (DPS 128) push received.
+- Added `deviceProtocol` guard in `MapInfoListener.tryParseB01MapBinary`: V1 devices skip binary parsing, keeping `warn` log for genuine B01 failures.
+- Implemented `switchMap` on all dispatchers: V1 (`load_multi_map`), Q7 (`service.set_cur_map`), Q10 (DP 60 `multi_map_switch`).
+- Added `trySwitchMap` to `RoborockVacuumCleaner`: detects when selected areas belong to a different map and calls `roborockService.switchMap`.
+- Initialized `activeMapId = -1` in `deviceConfigurator.ts` so first status response always triggers `handleActiveMapChanged` and populates `selectedAreas` on startup.
+- Refactored `connectionService.ts`: moved dispatcher creation before listeners to eliminate lazy `requestStatusFn` pattern; replaced non-null assertion with captured local variable.
+- Fixed lint errors: `prefer-const`, `no-non-null-assertion`, `no-base-to-string` (`JSON.stringify`), import sort.
+- Analysed Q10 active map detection: fires via `tryParseB01MapBinary` → `onActiveMapChanged(b01Info.mapId)` from binary map blob (Protocol 301), not from list response.
+
 ## 2026-06-24 (Session 31)
 
 - Added `requiresBody: boolean` to `AbstractMessageListener` interface (non-optional).

@@ -14,11 +14,12 @@ export class MessageDispatcherFactory {
 	constructor(
 		clientRouter: ClientRouter,
 		private readonly logger: AnsiLogger,
+		liveMapUpdates = false,
 	) {
 		this.builders = {
-			[NewProtocolVersion.V1]: new V10MessageDispatcher(logger, clientRouter),
-			[NewProtocolVersion.B01_Q7]: new Q7MessageDispatcher(logger, clientRouter),
-			[NewProtocolVersion.B01_Q10]: new Q10MessageDispatcher(logger, clientRouter),
+			[NewProtocolVersion.V1]: new V10MessageDispatcher(logger, clientRouter, liveMapUpdates),
+			[NewProtocolVersion.B01_Q7]: new Q7MessageDispatcher(logger, clientRouter, liveMapUpdates),
+			[NewProtocolVersion.B01_Q10]: new Q10MessageDispatcher(logger, clientRouter, liveMapUpdates),
 		};
 	}
 

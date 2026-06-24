@@ -226,6 +226,7 @@ describe('RoborockVacuumCleaner', () => {
 				enableAdvancedFeature: true,
 				settings: {
 					clearStorageOnStartup: false,
+					enableLiveMapUpdates: false,
 					showRoutinesAsRoom: false,
 					includeDockStationStatus: false,
 					includeVacuumErrorStatus: false,
@@ -285,6 +286,7 @@ describe('RoborockVacuumCleaner', () => {
 				enableAdvancedFeature: false,
 				settings: {
 					clearStorageOnStartup: false,
+					enableLiveMapUpdates: false,
 					showRoutinesAsRoom: false,
 					includeDockStationStatus: false,
 					includeVacuumErrorStatus: false,

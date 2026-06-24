@@ -46,6 +46,7 @@ describe('RoborockService basic behaviors', () => {
 				enableAdvancedFeature: false,
 				settings: {
 					clearStorageOnStartup: false,
+					enableLiveMapUpdates: false,
 					showRoutinesAsRoom: false,
 					includeDockStationStatus: false,
 					includeVacuumErrorStatus: false,
@@ -136,6 +137,7 @@ describe('RoborockService - Facade Pattern Testing', () => {
 				enableAdvancedFeature: false,
 				settings: {
 					clearStorageOnStartup: false,
+					enableLiveMapUpdates: false,
 					showRoutinesAsRoom: false,
 					includeDockStationStatus: false,
 					includeVacuumErrorStatus: false,

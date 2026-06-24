@@ -149,10 +149,11 @@ export class ConnectionService {
 		}
 
 		const deviceSpecs = device.specs;
-		const messageDispatcher = new MessageDispatcherFactory(this.clientRouter, this.logger).getMessageDispatcher(
-			deviceSpecs.protocol,
-			deviceSpecs.model,
-		);
+		const messageDispatcher = new MessageDispatcherFactory(
+			this.clientRouter,
+			this.logger,
+			this.configManager?.isLiveMapUpdatesEnabled ?? false,
+		).getMessageDispatcher(deviceSpecs.protocol, deviceSpecs.model);
 
 		this.logger.debug(
 			`[ConnectionService] Resolve ${messageDispatcher.dispatcherName} for device: ${device.duid}, protocol: ${deviceSpecs.protocol}, model: ${deviceSpecs.model}`,

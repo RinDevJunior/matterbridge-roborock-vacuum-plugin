@@ -142,6 +142,7 @@ describe('PlatformConfigManager', () => {
 			config.advancedFeature.enableAdvancedFeature = true;
 			config.advancedFeature.settings = {
 				clearStorageOnStartup: false,
+				enableLiveMapUpdates: false,
 				showRoutinesAsRoom: false,
 				forceRunAtDefault: false,
 				includeDockStationStatus: false,
@@ -168,6 +169,7 @@ describe('PlatformConfigManager', () => {
 				enableAdvancedFeature: true,
 				settings: {
 					clearStorageOnStartup: true,
+					enableLiveMapUpdates: false,
 					showRoutinesAsRoom: true,
 					forceRunAtDefault: true,
 					includeDockStationStatus: true,

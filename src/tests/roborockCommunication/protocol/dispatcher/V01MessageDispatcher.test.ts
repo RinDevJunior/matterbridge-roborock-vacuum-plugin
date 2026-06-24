@@ -105,17 +105,46 @@ describe('V10MessageDispatcher', () => {
 	});
 
 	describe('getMapInfo', () => {
-		it('should call client.send and return void', async () => {
+		it('should call client.query when liveMapUpdates is false (default)', async () => {
 			const result = await dispatcher.getMapInfo(duid);
+			expect(client.query).toHaveBeenCalled();
+			expect(client.send).not.toHaveBeenCalled();
+			expect(result).toBeUndefined();
+		});
+
+		it('should call client.send when liveMapUpdates is true', async () => {
+			const liveDispatcher = new V10MessageDispatcher(asType(logger), client, true);
+			const result = await liveDispatcher.getMapInfo(duid);
 			expect(client.send).toHaveBeenCalled();
+			expect(client.query).not.toHaveBeenCalled();
 			expect(result).toBeUndefined();
 		});
 	});
 
 	describe('getRoomMap', () => {
-		it('should call client.send and return void', async () => {
+		it('should call client.query and return raw room data when liveMapUpdates is false (default)', async () => {
+			const mockRoomData = [
+				[1, 'living_room', 0],
+				[2, 'bedroom', 1],
+			];
+			client.query.mockResolvedValueOnce(mockRoomData);
 			const result = await dispatcher.getRoomMap(duid, 1);
+			expect(client.query).toHaveBeenCalled();
+			expect(client.send).not.toHaveBeenCalled();
+			expect(result).toEqual(mockRoomData);
+		});
+
+		it('should return undefined when query resolves with no data', async () => {
+			const result = await dispatcher.getRoomMap(duid, 1);
+			expect(client.query).toHaveBeenCalled();
+			expect(result).toBeUndefined();
+		});
+
+		it('should call client.send and return undefined when liveMapUpdates is true', async () => {
+			const liveDispatcher = new V10MessageDispatcher(asType(logger), client, true);
+			const result = await liveDispatcher.getRoomMap(duid, 1);
 			expect(client.send).toHaveBeenCalled();
+			expect(client.query).not.toHaveBeenCalled();
 			expect(result).toBeUndefined();
 		});
 	});

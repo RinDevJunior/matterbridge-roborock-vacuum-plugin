@@ -225,6 +225,10 @@ export class PlatformConfigManager {
 		return this.isAdvancedFeatureEnabled && (this.advancedFeatureSettings.enableEmailNotification ?? false);
 	}
 
+	public get isLiveMapUpdatesEnabled(): boolean {
+		return this.isAdvancedFeatureEnabled && (this.advancedFeatureSettings.enableLiveMapUpdates ?? false);
+	}
+
 	public get emailNotificationSettings(): EmailNotificationSettings | undefined {
 		if (!this.isEmailNotificationEnabled) return undefined;
 		return this.advancedFeatureSettings.emailNotificationSettings;

@@ -75,6 +75,7 @@ export class DeviceConfigurator {
 		for (const [duid, _robot] of this.registry.robotsMap) {
 			if (!configureSuccess.get(duid)) continue;
 			await roborockService.getMapInfo(duid);
+			await roborockService.getRoomMap(duid, -1);
 			roborockService.startPeriodicAreaRefresh(duid);
 		}
 
@@ -99,6 +100,7 @@ export class DeviceConfigurator {
 		}
 
 		const homeData = vacuum.store.homeData;
+		roborockService.setDeviceRooms(vacuum.duid, homeData.rooms);
 		const homeInfo = new HomeEntity(homeData.id, homeData.name, RoomMap.empty(), MapInfo.empty(), -1);
 
 		const robot = new RoborockVacuumCleaner(vacuum, homeInfo, this.configManager, roborockService, this.log);

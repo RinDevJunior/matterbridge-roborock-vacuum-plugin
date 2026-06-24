@@ -4,6 +4,7 @@ import { CleanModeSetting } from '../../../behaviors/roborock.vacuum/core/CleanM
 import { CleanSequenceType } from '../../../behaviors/roborock.vacuum/enums/CleanSequenceType.js';
 import { Q10RequestCode, Q10RequestMethod } from '../../enums/Q10RequestCode.js';
 import { B01VacuumModeResolver } from '../../helper/B01VacuumModeResolver.js';
+import { RawRoomMappingData } from '../../models/home/index.js';
 import { NetworkInfo } from '../../models/index.js';
 import { RequestMessage } from '../../models/requestMessage.js';
 import { Client } from '../../routing/client.js';
@@ -26,6 +27,7 @@ export class Q10MessageDispatcher implements AbstractMessageDispatcher {
 	constructor(
 		private readonly logger: AnsiLogger,
 		private readonly client: Client,
+		private readonly liveMapUpdates = false,
 	) {
 		this.lastB01Id = Math.floor(Date.now() / 1000);
 	}
@@ -51,14 +53,23 @@ export class Q10MessageDispatcher implements AbstractMessageDispatcher {
 			messageId: this.messageId,
 			dps: { [Q10RequestCode.common_request]: { [Q10RequestMethod.multimap]: { 'op': 'list' } } },
 		});
-		await this.client.send(duid, request);
+		if (this.liveMapUpdates) {
+			await this.client.send(duid, request);
+		} else {
+			await this.client.query<true>(duid, request, (msg) => {
+				if (!msg.body) return undefined;
+				const raw = msg.body.get(Q10RequestCode.multimap);
+				return raw !== undefined ? true : undefined;
+			});
+		}
 	}
 
-	public async getRoomMap(duid: string, _activeMap: number): Promise<void> {
+	public async getRoomMap(duid: string, _activeMap: number): Promise<RawRoomMappingData | undefined> {
 		await this.client.send(
 			duid,
 			new RequestMessage({ messageId: this.messageId, dps: { [Q10RequestCode.get_prop]: 1 } }),
 		);
+		return undefined;
 	}
 
 	public async switchMap(duid: string, mapId: number): Promise<void> {

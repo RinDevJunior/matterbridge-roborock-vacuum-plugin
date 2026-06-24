@@ -71,9 +71,18 @@ describe('Q10MessageDispatcher', () => {
 	});
 
 	describe('getMapInfo', () => {
-		it('should call client.send and return void', async () => {
+		it('should call client.query when liveMapUpdates is false (default)', async () => {
 			const result = await dispatcher.getMapInfo(duid);
+			expect(client.query).toHaveBeenCalled();
+			expect(client.send).not.toHaveBeenCalled();
+			expect(result).toBeUndefined();
+		});
+
+		it('should call client.send when liveMapUpdates is true', async () => {
+			const liveDispatcher = new Q10MessageDispatcher(asType(logger), asType(client), true);
+			const result = await liveDispatcher.getMapInfo(duid);
 			expect(client.send).toHaveBeenCalled();
+			expect(client.query).not.toHaveBeenCalled();
 			expect(result).toBeUndefined();
 		});
 	});

@@ -324,7 +324,7 @@ describe('RoborockService - Complete Coverage', () => {
 		});
 
 		it('should delegate getRoomMap to areaService', async () => {
-			vi.mocked(mockAreaService.getRoomMap).mockResolvedValue();
+			vi.mocked(mockAreaService.getRoomMap).mockResolvedValue(undefined);
 
 			await service.getRoomMap('duid', 1);
 

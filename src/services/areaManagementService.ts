@@ -1,9 +1,12 @@
 import { AnsiLogger } from 'matterbridge/logger';
 import { ServiceArea } from 'matterbridge/matter/clusters';
 
-import { RoomIndexMap } from '../core/application/models/index.js';
+import { MapInfo, RoomIndexMap, RoomMap } from '../core/application/models/index.js';
+import { HomeEntity } from '../core/domain/entities/Home.js';
 import { DeviceError } from '../errors/index.js';
+import { getSupportedAreas } from '../initialData/getSupportedAreas.js';
 import { RoborockIoTApi } from '../roborockCommunication/api/iotClient.js';
+import { HomeModelMapper, RawRoomMappingData, RoomDto } from '../roborockCommunication/models/home/index.js';
 import { Scene } from '../roborockCommunication/models/index.js';
 import { MessageRoutingService } from './index.js';
 
@@ -16,6 +19,7 @@ export class AreaManagementService {
 	private supportedAreaIndexMaps = new Map<string, RoomIndexMap>();
 	private areasListeners = new Map<string, (areas: ServiceArea.Area[], maps: ServiceArea.Map[]) => void>();
 	private refreshIntervals = new Map<string, NodeJS.Timeout>();
+	private deviceRooms = new Map<string, RoomDto[]>();
 	private iotApi: RoborockIoTApi | undefined;
 
 	constructor(
@@ -25,6 +29,10 @@ export class AreaManagementService {
 
 	public setIotApi(iotApi: RoborockIoTApi): void {
 		this.iotApi = iotApi;
+	}
+
+	public setDeviceRooms(duid: string, rooms: RoomDto[]): void {
+		this.deviceRooms.set(duid, rooms);
 	}
 
 	public setSelectedAreas(duid: string, selectedAreas: number[]): void {
@@ -86,13 +94,25 @@ export class AreaManagementService {
 		await this.serviceRouting.getMapInfo(duid);
 	}
 
-	public async getRoomMap(duid: string, activeMap: number): Promise<void> {
+	public async getRoomMap(duid: string, activeMap: number): Promise<RawRoomMappingData | undefined> {
 		if (!this.serviceRouting) {
 			throw new DeviceError('Service routing not initialized', duid);
 		}
 
 		this.logger.debug('AreaManagementService - getRoomMap', duid);
-		await this.serviceRouting.getRoomMap(duid, activeMap);
+		const rawData = await this.serviceRouting.getRoomMap(duid, activeMap);
+		if (rawData && rawData.length > 0) {
+			const rooms = this.deviceRooms.get(duid) ?? [];
+			const roomMappings = rawData
+				.map((entry) => HomeModelMapper.rawArrayToMapRoomDto(entry, 0))
+				.map((dto) => HomeModelMapper.toRoomMapping(dto, rooms));
+			const homeEntity = new HomeEntity(0, '', new RoomMap(roomMappings), MapInfo.empty(), 0);
+			const { supportedAreas, supportedMaps, roomIndexMap } = getSupportedAreas(homeEntity, this.logger);
+			this.setSupportedAreaIndexMap(duid, roomIndexMap);
+			this.setSupportedMaps(duid, supportedMaps);
+			this.setSupportedAreas(duid, supportedAreas);
+		}
+		return rawData;
 	}
 
 	public startPeriodicRefresh(duid: string, intervalMs = 5 * 60 * 1000): void {
@@ -141,6 +161,7 @@ export class AreaManagementService {
 		this.selectedAreas.clear();
 		this.supportedAreaIndexMaps.clear();
 		this.areasListeners.clear();
+		this.deviceRooms.clear();
 		this.logger.debug('AreaManagementService - All data cleared');
 	}
 }
