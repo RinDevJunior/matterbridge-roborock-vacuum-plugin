@@ -18,6 +18,7 @@ describe('resolveDeviceState - 56-row State Resolution Matrix', () => {
 					true,
 					true,
 					true,
+					undefined,
 				);
 
 				const result = resolveDeviceState(message);
@@ -38,6 +39,7 @@ describe('resolveDeviceState - 56-row State Resolution Matrix', () => {
 					false,
 					false,
 					false,
+					undefined,
 				);
 
 				const result = resolveDeviceState(message);
@@ -58,6 +60,7 @@ describe('resolveDeviceState - 56-row State Resolution Matrix', () => {
 					false,
 					false,
 					false,
+					undefined,
 				);
 
 				const result = resolveDeviceState(message);
@@ -78,6 +81,7 @@ describe('resolveDeviceState - 56-row State Resolution Matrix', () => {
 					false,
 					false,
 					false,
+					undefined,
 				);
 
 				const result = resolveDeviceState(message);
@@ -98,6 +102,7 @@ describe('resolveDeviceState - 56-row State Resolution Matrix', () => {
 					true,
 					true,
 					true,
+					undefined,
 				);
 
 				const result = resolveDeviceState(message);
@@ -120,6 +125,7 @@ describe('resolveDeviceState - 56-row State Resolution Matrix', () => {
 					false,
 					false,
 					true,
+					undefined,
 				);
 
 				const result = resolveDeviceState(message);
@@ -138,6 +144,7 @@ describe('resolveDeviceState - 56-row State Resolution Matrix', () => {
 					undefined,
 					undefined,
 					true,
+					undefined,
 				);
 
 				const result = resolveDeviceState(message);
@@ -158,6 +165,7 @@ describe('resolveDeviceState - 56-row State Resolution Matrix', () => {
 					true,
 					true,
 					false,
+					undefined,
 				);
 
 				const result = resolveDeviceState(message);
@@ -178,6 +186,7 @@ describe('resolveDeviceState - 56-row State Resolution Matrix', () => {
 					false,
 					true,
 					false,
+					undefined,
 				);
 
 				const result = resolveDeviceState(message);
@@ -200,6 +209,7 @@ describe('resolveDeviceState - 56-row State Resolution Matrix', () => {
 					false,
 					false,
 					false,
+					undefined,
 				);
 
 				const result = resolveDeviceState(message);
@@ -212,6 +222,7 @@ describe('resolveDeviceState - 56-row State Resolution Matrix', () => {
 				const message = new StatusChangeMessage(
 					'test-duid',
 					OperationStatusCode.Cleaning,
+					undefined,
 					undefined,
 					undefined,
 					undefined,
@@ -238,6 +249,7 @@ describe('resolveDeviceState - 56-row State Resolution Matrix', () => {
 					false,
 					false,
 					false,
+					undefined,
 				);
 
 				const result = resolveDeviceState(message);
@@ -252,6 +264,7 @@ describe('resolveDeviceState - 56-row State Resolution Matrix', () => {
 					OperationStatusCode.Cleaning,
 					undefined,
 					true,
+					undefined,
 					undefined,
 					undefined,
 					undefined,
@@ -274,6 +287,7 @@ describe('resolveDeviceState - 56-row State Resolution Matrix', () => {
 					undefined, // isLocating
 					true, // isExploring
 					undefined, // inWarmup
+					undefined,
 				);
 
 				const result = resolveDeviceState(message);
@@ -292,6 +306,7 @@ describe('resolveDeviceState - 56-row State Resolution Matrix', () => {
 					undefined, // isLocating
 					undefined, // isExploring
 					undefined, // inWarmup
+					undefined,
 				);
 
 				const result = resolveDeviceState(message);
@@ -309,6 +324,7 @@ describe('resolveDeviceState - 56-row State Resolution Matrix', () => {
 					true,
 					undefined,
 					true,
+					undefined,
 					undefined,
 				);
 
@@ -328,6 +344,7 @@ describe('resolveDeviceState - 56-row State Resolution Matrix', () => {
 					undefined,
 					undefined,
 					undefined,
+					undefined,
 				);
 
 				const result = resolveDeviceState(message);
@@ -342,6 +359,7 @@ describe('resolveDeviceState - 56-row State Resolution Matrix', () => {
 					OperationStatusCode.Charging,
 					undefined,
 					true,
+					undefined,
 					undefined,
 					undefined,
 					undefined,
@@ -366,6 +384,7 @@ describe('resolveDeviceState - 56-row State Resolution Matrix', () => {
 					undefined,
 					true,
 					undefined,
+					undefined,
 				);
 
 				const result = resolveDeviceState(message);
@@ -383,6 +402,7 @@ describe('resolveDeviceState - 56-row State Resolution Matrix', () => {
 					undefined,
 					undefined,
 					true,
+					undefined,
 					undefined,
 				);
 
@@ -402,6 +422,7 @@ describe('resolveDeviceState - 56-row State Resolution Matrix', () => {
 					undefined,
 					true,
 					undefined,
+					undefined,
 				);
 
 				const result = resolveDeviceState(message);
@@ -420,6 +441,7 @@ describe('resolveDeviceState - 56-row State Resolution Matrix', () => {
 					undefined,
 					true,
 					undefined,
+					undefined,
 				);
 
 				const result = resolveDeviceState(message);
@@ -437,6 +459,7 @@ describe('resolveDeviceState - 56-row State Resolution Matrix', () => {
 					false,
 					false,
 					true,
+					undefined,
 					undefined,
 				);
 
@@ -458,6 +481,7 @@ describe('resolveDeviceState - 56-row State Resolution Matrix', () => {
 					false,
 					false,
 					false,
+					undefined,
 				);
 
 				const result = resolveDeviceState(message);
@@ -473,6 +497,7 @@ describe('resolveDeviceState - 56-row State Resolution Matrix', () => {
 					undefined,
 					undefined,
 					true,
+					undefined,
 					undefined,
 					undefined,
 					undefined,
@@ -494,6 +519,7 @@ describe('resolveDeviceState - 56-row State Resolution Matrix', () => {
 					undefined,
 					undefined,
 					undefined,
+					undefined,
 				);
 
 				const result = resolveDeviceState(message);
@@ -512,6 +538,7 @@ describe('resolveDeviceState - 56-row State Resolution Matrix', () => {
 					undefined,
 					true,
 					undefined,
+					undefined,
 				);
 
 				const result = resolveDeviceState(message);
@@ -528,6 +555,7 @@ describe('resolveDeviceState - 56-row State Resolution Matrix', () => {
 				const message = new StatusChangeMessage(
 					'test-duid',
 					OperationStatusCode.Unknown,
+					undefined,
 					undefined,
 					undefined,
 					undefined,
@@ -552,6 +580,7 @@ describe('resolveDeviceState - 56-row State Resolution Matrix', () => {
 					undefined,
 					undefined,
 					undefined,
+					undefined,
 				);
 
 				const result = resolveDeviceState(message);
@@ -570,6 +599,7 @@ describe('resolveDeviceState - 56-row State Resolution Matrix', () => {
 					undefined,
 					true,
 					undefined,
+					undefined,
 				);
 
 				const result = resolveDeviceState(message);
@@ -584,6 +614,7 @@ describe('resolveDeviceState - 56-row State Resolution Matrix', () => {
 				const message = new StatusChangeMessage(
 					'test-duid',
 					OperationStatusCode.Initiating,
+					undefined,
 					undefined,
 					undefined,
 					undefined,
@@ -608,6 +639,7 @@ describe('resolveDeviceState - 56-row State Resolution Matrix', () => {
 					undefined,
 					undefined,
 					undefined,
+					undefined,
 				);
 
 				const result = resolveDeviceState(message);
@@ -620,6 +652,7 @@ describe('resolveDeviceState - 56-row State Resolution Matrix', () => {
 				const message = new StatusChangeMessage(
 					'test-duid',
 					OperationStatusCode.InError,
+					undefined,
 					undefined,
 					undefined,
 					undefined,
@@ -644,6 +677,7 @@ describe('resolveDeviceState - 56-row State Resolution Matrix', () => {
 					undefined,
 					undefined,
 					undefined,
+					undefined,
 				);
 
 				const result = resolveDeviceState(message);
@@ -662,6 +696,7 @@ describe('resolveDeviceState - 56-row State Resolution Matrix', () => {
 					undefined,
 					undefined,
 					undefined,
+					undefined,
 				);
 
 				const result = resolveDeviceState(message);
@@ -674,6 +709,7 @@ describe('resolveDeviceState - 56-row State Resolution Matrix', () => {
 				const message = new StatusChangeMessage(
 					'test-duid',
 					OperationStatusCode.RoomClean,
+					undefined,
 					undefined,
 					undefined,
 					undefined,
@@ -701,6 +737,7 @@ describe('resolveDeviceState - 56-row State Resolution Matrix', () => {
 				false,
 				false,
 				false,
+				undefined,
 			);
 
 			const result = resolveDeviceState(message);
@@ -719,6 +756,7 @@ describe('resolveDeviceState - 56-row State Resolution Matrix', () => {
 				false,
 				false,
 				false,
+				undefined,
 			);
 
 			const result = resolveDeviceState(message);
@@ -737,6 +775,7 @@ describe('resolveDeviceState - 56-row State Resolution Matrix', () => {
 				false,
 				false,
 				false,
+				undefined,
 			);
 
 			const result = resolveDeviceState(message);
@@ -755,6 +794,7 @@ describe('resolveDeviceState - 56-row State Resolution Matrix', () => {
 				false,
 				false,
 				false,
+				undefined,
 			);
 
 			const result = resolveDeviceState(message);
@@ -773,6 +813,7 @@ describe('resolveDeviceState - 56-row State Resolution Matrix', () => {
 				false,
 				false,
 				true,
+				undefined,
 			);
 
 			const result = resolveDeviceState(message);
@@ -791,6 +832,7 @@ describe('resolveDeviceState - 56-row State Resolution Matrix', () => {
 				false,
 				false,
 				false,
+				undefined,
 			);
 
 			const result = resolveDeviceState(message);
@@ -809,6 +851,7 @@ describe('resolveDeviceState - 56-row State Resolution Matrix', () => {
 				false,
 				false,
 				false,
+				undefined,
 			);
 
 			const result = resolveDeviceState(message);
@@ -827,6 +870,7 @@ describe('resolveDeviceState - 56-row State Resolution Matrix', () => {
 				false,
 				false,
 				false,
+				undefined,
 			);
 
 			const result = resolveDeviceState(message);
@@ -845,6 +889,7 @@ describe('resolveDeviceState - 56-row State Resolution Matrix', () => {
 				false,
 				false,
 				false,
+				undefined,
 			);
 
 			const result = resolveDeviceState(message);
@@ -863,6 +908,7 @@ describe('resolveDeviceState - 56-row State Resolution Matrix', () => {
 				false,
 				false,
 				false,
+				undefined,
 			);
 
 			const result = resolveDeviceState(message);
@@ -881,6 +927,7 @@ describe('resolveDeviceState - 56-row State Resolution Matrix', () => {
 				false,
 				false,
 				false,
+				undefined,
 			);
 
 			const result = resolveDeviceState(message);
@@ -899,6 +946,7 @@ describe('resolveDeviceState - 56-row State Resolution Matrix', () => {
 				false,
 				false,
 				false,
+				undefined,
 			);
 
 			const result = resolveDeviceState(message);
@@ -917,6 +965,7 @@ describe('resolveDeviceState - 56-row State Resolution Matrix', () => {
 				false,
 				false,
 				false,
+				undefined,
 			);
 
 			const result = resolveDeviceState(message);
@@ -935,6 +984,7 @@ describe('resolveDeviceState - 56-row State Resolution Matrix', () => {
 				false,
 				false,
 				false,
+				undefined,
 			);
 
 			const result = resolveDeviceState(message);
@@ -953,6 +1003,7 @@ describe('resolveDeviceState - 56-row State Resolution Matrix', () => {
 				false,
 				false,
 				false,
+				undefined,
 			);
 
 			const result = resolveDeviceState(message);
@@ -971,6 +1022,7 @@ describe('resolveDeviceState - 56-row State Resolution Matrix', () => {
 				false,
 				false,
 				false,
+				undefined,
 			);
 
 			const result = resolveDeviceState(message);
@@ -989,6 +1041,7 @@ describe('resolveDeviceState - 56-row State Resolution Matrix', () => {
 				false,
 				false,
 				false,
+				undefined,
 			);
 
 			const result = resolveDeviceState(message);
@@ -1007,6 +1060,7 @@ describe('resolveDeviceState - 56-row State Resolution Matrix', () => {
 				false,
 				false,
 				false,
+				undefined,
 			);
 
 			const result = resolveDeviceState(message);
@@ -1025,6 +1079,7 @@ describe('resolveDeviceState - 56-row State Resolution Matrix', () => {
 				false,
 				false,
 				false,
+				undefined,
 			);
 
 			const result = resolveDeviceState(message);
@@ -1043,6 +1098,7 @@ describe('resolveDeviceState - 56-row State Resolution Matrix', () => {
 				false,
 				false,
 				false,
+				undefined,
 			);
 
 			const result = resolveDeviceState(message);
@@ -1061,6 +1117,7 @@ describe('resolveDeviceState - 56-row State Resolution Matrix', () => {
 				false,
 				false,
 				false,
+				undefined,
 			);
 
 			const result = resolveDeviceState(message);
@@ -1079,6 +1136,7 @@ describe('resolveDeviceState - 56-row State Resolution Matrix', () => {
 				false,
 				false,
 				false,
+				undefined,
 			);
 
 			const result = resolveDeviceState(message);
@@ -1097,6 +1155,7 @@ describe('resolveDeviceState - 56-row State Resolution Matrix', () => {
 				false,
 				false,
 				false,
+				undefined,
 			);
 
 			const result = resolveDeviceState(message);
@@ -1115,6 +1174,7 @@ describe('resolveDeviceState - 56-row State Resolution Matrix', () => {
 				false,
 				false,
 				false,
+				undefined,
 			);
 
 			const result = resolveDeviceState(message);
@@ -1133,6 +1193,7 @@ describe('resolveDeviceState - 56-row State Resolution Matrix', () => {
 				false,
 				false,
 				false,
+				undefined,
 			);
 
 			const result = resolveDeviceState(message);
@@ -1151,6 +1212,7 @@ describe('resolveDeviceState - 56-row State Resolution Matrix', () => {
 				false,
 				false,
 				false,
+				undefined,
 			);
 
 			const result = resolveDeviceState(message);
@@ -1169,6 +1231,7 @@ describe('resolveDeviceState - 56-row State Resolution Matrix', () => {
 				false,
 				false,
 				false,
+				undefined,
 			);
 
 			const result = resolveDeviceState(message);
@@ -1187,6 +1250,7 @@ describe('resolveDeviceState - 56-row State Resolution Matrix', () => {
 				false,
 				false,
 				false,
+				undefined,
 			);
 
 			const result = resolveDeviceState(message);
@@ -1205,6 +1269,7 @@ describe('resolveDeviceState - 56-row State Resolution Matrix', () => {
 				false,
 				false,
 				false,
+				undefined,
 			);
 
 			const result = resolveDeviceState(message);
@@ -1223,6 +1288,7 @@ describe('resolveDeviceState - 56-row State Resolution Matrix', () => {
 				false,
 				false,
 				false,
+				undefined,
 			);
 
 			const result = resolveDeviceState(message);
@@ -1241,6 +1307,7 @@ describe('resolveDeviceState - 56-row State Resolution Matrix', () => {
 				false,
 				false,
 				false,
+				undefined,
 			);
 
 			const result = resolveDeviceState(message);
@@ -1258,6 +1325,7 @@ describe('resolveDeviceState - 56-row State Resolution Matrix', () => {
 				false,
 				false,
 				false,
+				undefined,
 				undefined,
 			);
 

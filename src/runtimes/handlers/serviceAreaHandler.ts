@@ -106,11 +106,6 @@ async function resolveAreaFromCleaningInfo(
 		return;
 	}
 
-	if (platform.configManager.isMultipleMapEnabled) {
-		const roomData = await platform.roborockService.getRoomMap(robot.device.duid, robot.homeInFo.activeMapId);
-		robot.homeInFo.activeMapId = robot.homeInFo.mapInfo.getActiveMapId(roomData);
-	}
-
 	const sourceSegmentId = cleaningInfo.segment_id ?? INVALID_SEGMENT_ID;
 	const sourceTargetSegmentId = cleaningInfo.target_segment_id ?? INVALID_SEGMENT_ID;
 	const segmentId = sourceSegmentId !== INVALID_SEGMENT_ID ? sourceSegmentId : sourceTargetSegmentId;

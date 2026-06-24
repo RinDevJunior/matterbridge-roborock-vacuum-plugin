@@ -7,6 +7,7 @@
 import { DockErrorCode, VacuumErrorCode } from '../roborockCommunication/enums/index.js';
 import { OperationStatusCode } from '../roborockCommunication/enums/operationStatusCode.js';
 import { CleanInformation, CleanProcess, Home } from '../roborockCommunication/models/index.js';
+import { StatusChangeMessage } from '../roborockCommunication/models/deviceStatus.js';
 import { NotifyMessageTypes } from './notifyMessageTypes.js';
 
 export interface ServiceAreaUpdateMessage {
@@ -59,16 +60,7 @@ export interface ErrorOccurredPayload {
  */
 export interface DeviceStatusPayload {
 	type: NotifyMessageTypes.DeviceStatus;
-	data: {
-		duid: string;
-		status: OperationStatusCode;
-		inCleaning: boolean | undefined;
-		inReturning: boolean | undefined;
-		inFreshState: boolean | undefined;
-		isLocating: boolean | undefined;
-		isExploring: boolean | undefined;
-		inWarmup: boolean | undefined;
-	};
+	data: StatusChangeMessage;
 }
 
 /**

@@ -1,5 +1,19 @@
 # Claude History
 
+## 2026-06-24 (Session 27)
+
+- Researched active map detection patterns in external repos (ioBroker.roborock, homebridge-xiaomi-roborock-vacuum, python-roborock).
+- Identified that V1 protocol uses `map_status >> 2` from device status push, and Q7 uses `cur: true` flag in `service.get_map_list` response.
+- Implemented active map detection improvements:
+  - Added `mapStatus?: number` field to `StatusChangeMessage`
+  - Passed `messageBody.map_status` in `simpleMessageListener.ts`
+  - Updated `deviceStateHandler.ts` to update `robot.homeInFo.activeMapId = message.mapStatus >> 2` on status push
+  - Removed broken room-matching block from `serviceAreaHandler.ts` (`isMultipleMapEnabled` → `getRoomMap` → `getActiveMapId`)
+  - Fixed `Q7MessageDispatcher.getMapInfo()` from fire-and-forget stub to `client.query` with `cur: true` parsing
+  - Updated `DeviceStatusPayload.data` type to `StatusChangeMessage`
+  - Updated all test files (`stateResolver.test.ts`, `simpleMessageHandler.test.ts`, `platformRunner.test.ts`, `platformRunner3.test.ts`, `Q7MessageDispatcher.test.ts`) to reflect new constructor signature and behavior
+- All 175 test files, 1896 tests pass.
+
 ## 2026-06-12 (Session 26)
 
 - Full codebase read-through (learn-codebase): read every remaining source file in `src/roborockCommunication/routing/`, `src/cli/` (+ `cli.ts`), `src/model/`, `src/errors/`, `src/initialData/`, `src/constants/`, `src/runtimes/` (incl. `handlers/`), `src/share/`, `src/types/`, `src/core/domain/`, `src/core/application/models/`, `module.ts`, `settings.ts`, `platformRunner.ts`, and the `behaviors/roborock.vacuum/core/` mode-handling system.

@@ -407,6 +407,7 @@ describe('PlatformRunner.updateRobotWithPayload', () => {
 			isLocating: false,
 			isExploring: false,
 			inWarmup: false,
+			mapStatus: undefined,
 		};
 		const payload: MessagePayload = { type: NotifyMessageTypes.DeviceStatus, data: statusMessage };
 
@@ -431,6 +432,7 @@ describe('PlatformRunner.updateRobotWithPayload', () => {
 			isLocating: false,
 			isExploring: false,
 			inWarmup: false,
+			mapStatus: undefined,
 		};
 		const payload: MessagePayload = { type: NotifyMessageTypes.DeviceStatus, data: statusMessage };
 
@@ -481,6 +483,7 @@ describe('PlatformRunner.updateRobotWithPayload', () => {
 			isLocating: false,
 			isExploring: false,
 			inWarmup: false,
+			mapStatus: undefined,
 		};
 		const payload: MessagePayload = { type: NotifyMessageTypes.DeviceStatus, data: statusMessage };
 
@@ -507,6 +510,7 @@ describe('PlatformRunner.updateRobotWithPayload', () => {
 			isLocating: false,
 			isExploring: false,
 			inWarmup: false,
+			mapStatus: undefined,
 		};
 		const payload: MessagePayload = { type: NotifyMessageTypes.DeviceStatus, data: statusMessage };
 
@@ -1181,6 +1185,7 @@ describe('PlatformRunner.updateRobotWithPayload', () => {
 			isLocating: false,
 			isExploring: false,
 			inWarmup: false,
+			mapStatus: undefined,
 		};
 		await runner.updateRobotWithPayload({ type: NotifyMessageTypes.DeviceStatus, data: statusMessage });
 
@@ -1200,6 +1205,7 @@ describe('PlatformRunner.updateRobotWithPayload', () => {
 			isLocating: false,
 			isExploring: true,
 			inWarmup: false,
+			mapStatus: undefined,
 		};
 		await runner.updateRobotWithPayload({ type: NotifyMessageTypes.DeviceStatus, data: statusMessage });
 
@@ -1218,6 +1224,7 @@ describe('PlatformRunner.updateRobotWithPayload', () => {
 			isLocating: false,
 			isExploring: false,
 			inWarmup: false,
+			mapStatus: undefined,
 		};
 		await runner.updateRobotWithPayload({ type: NotifyMessageTypes.DeviceStatus, data: statusMessage });
 
@@ -1239,6 +1246,7 @@ describe('PlatformRunner.updateRobotWithPayload', () => {
 			isLocating: false,
 			isExploring: false,
 			inWarmup: false,
+			mapStatus: undefined,
 		};
 		await runner.updateRobotWithPayload({ type: NotifyMessageTypes.DeviceStatus, data: statusMessage });
 
@@ -1258,6 +1266,7 @@ describe('PlatformRunner.updateRobotWithPayload', () => {
 			isLocating: false,
 			isExploring: false,
 			inWarmup: false,
+			mapStatus: undefined,
 		};
 		await runner.updateRobotWithPayload({ type: NotifyMessageTypes.DeviceStatus, data: statusMessage });
 

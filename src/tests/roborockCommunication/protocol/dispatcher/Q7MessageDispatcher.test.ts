@@ -78,10 +78,25 @@ describe('Q7MessageDispatcher', () => {
 	});
 
 	describe('getMapInfo', () => {
-		it('should call client.send and return stub MapInfo', async () => {
+		it('should call client.query and return empty MapInfo when no response', async () => {
+			client.query.mockResolvedValue(undefined);
 			const result = await dispatcher.getMapInfo(duid);
-			expect(client.send).toHaveBeenCalled();
-			expect(result).toBeInstanceOf(Object);
+			expect(client.query).toHaveBeenCalled();
+			expect(result.maps).toHaveLength(0);
+		});
+
+		it('should return MapInfo with current map when cur flag is set', async () => {
+			client.query.mockResolvedValue({ result: { map_list: [{ id: 1, cur: false }, { id: 2, cur: true }] } });
+			const result = await dispatcher.getMapInfo(duid);
+			expect(client.query).toHaveBeenCalled();
+			expect(result.maps).toHaveLength(1);
+			expect(result.maps[0].id).toBe(2);
+		});
+
+		it('should return MapInfo with first map when no cur flag is set', async () => {
+			client.query.mockResolvedValue({ result: { map_list: [{ id: 5 }, { id: 6 }] } });
+			const result = await dispatcher.getMapInfo(duid);
+			expect(result.maps[0].id).toBe(5);
 		});
 	});
 

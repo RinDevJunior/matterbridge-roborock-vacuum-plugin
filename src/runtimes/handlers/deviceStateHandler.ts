@@ -60,6 +60,14 @@ export async function handleDeviceStatusUpdate(
 		robot.updateAttribute(RvcOperationalState.id, 'operationalState', resolvedState.operationalState, platform.log),
 	]);
 
+	if (message.mapStatus !== undefined) {
+		const newMapId = message.mapStatus >> 2;
+		if (robot.homeInFo.activeMapId !== newMapId) {
+			platform.log.notice(`[${robot.device.duid}] Active map changed: ${robot.homeInFo.activeMapId} -> ${newMapId}`);
+			robot.homeInFo.activeMapId = newMapId;
+		}
+	}
+
 	// Signal burst polling when the device enters an active state
 	const isActive =
 		resolvedState.runMode === RvcRunMode.ModeTag.Cleaning || resolvedState.runMode === RvcRunMode.ModeTag.Mapping;

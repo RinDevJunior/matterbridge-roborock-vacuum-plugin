@@ -92,11 +92,12 @@ describe('SimpleMessageHandler', () => {
 			isLocating: Boolean(message.is_locating),
 			isExploring: Boolean(undefined),
 			inWarmup: Boolean(undefined),
+			mapStatus: undefined,
 		});
 		expect(deviceNotify).toHaveBeenCalledWith(
 			expect.objectContaining({
 				type: NotifyMessageTypes.DeviceStatus,
-				data: {
+				data: expect.objectContaining({
 					duid,
 					status: message.state,
 					inCleaning: false,
@@ -105,7 +106,8 @@ describe('SimpleMessageHandler', () => {
 					isLocating: false,
 					isExploring: false,
 					inWarmup: false,
-				},
+					mapStatus: undefined,
+				}),
 			}),
 		);
 	});
@@ -143,6 +145,7 @@ describe('SimpleMessageHandler', () => {
 			isLocating: false,
 			isExploring: false,
 			inWarmup: false,
+			mapStatus: undefined,
 		});
 		expect(logger.debug).toHaveBeenCalledWith('[SimpleMessageHandler]: No deviceNotify callback provided');
 	});

@@ -13,6 +13,7 @@ export class StatusChangeMessage {
 		public readonly isLocating: boolean | undefined,
 		public readonly isExploring: boolean | undefined,
 		public readonly inWarmup: boolean | undefined,
+		public readonly mapStatus: number | undefined,
 	) {}
 }
 

@@ -86,6 +86,7 @@ describe('PlatformRunner.updateRobotWithPayload - resolved state logging', () =>
 			isLocating: false,
 			isExploring: false,
 			inWarmup: undefined,
+			mapStatus: undefined,
 		};
 		const payload: MessagePayload = { type: NotifyMessageTypes.DeviceStatus, data: statusMessage };
 

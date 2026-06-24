@@ -111,6 +111,7 @@ export class SimpleMessageListener implements AbstractMessageListener {
 			messageBody.is_locating !== undefined ? Boolean(messageBody.is_locating) : undefined,
 			messageBody.is_exploring !== undefined ? Boolean(messageBody.is_exploring) : undefined,
 			messageBody.in_warmup !== undefined ? Boolean(messageBody.in_warmup) : undefined,
+			messageBody.map_status,
 		);
 
 		await this.handler.onBatteryUpdate(batteryMessage);

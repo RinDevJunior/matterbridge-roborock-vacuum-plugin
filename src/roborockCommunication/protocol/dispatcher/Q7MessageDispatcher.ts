@@ -76,11 +76,35 @@ export class Q7MessageDispatcher implements AbstractMessageDispatcher {
 	}
 
 	public async getMapInfo(duid: string): Promise<MapInfo> {
-		await this.client.send(
-			duid,
-			new RequestMessage({ messageId: this.messageId, dps: this.createDps(Q7RequestMethod.get_map_list, {}) }),
-		);
-		return new MapInfo({ max_multi_map: 0, max_bak_map: 0, multi_map_count: 0, map_info: [] });
+		interface Q7MapEntry {
+			id: number;
+			cur?: boolean;
+		}
+		interface Q7MapListResult {
+			result?: { map_list?: Q7MapEntry[] };
+		}
+		const request = new RequestMessage({
+			messageId: this.messageId,
+			dps: this.createDps(Q7RequestMethod.get_map_list, {}),
+		});
+		const result = await this.client.query<Q7MapListResult>(duid, request, (msg) => {
+			if (!msg.body) return undefined;
+			const data = msg.body.data;
+			if (!data) return undefined;
+			const values = Object.values(data);
+			return values.length > 0 ? (values[0] as Q7MapListResult) : undefined;
+		});
+		const mapList = result?.result?.map_list;
+		if (mapList && mapList.length > 0) {
+			const currentEntry = mapList.find((e) => e.cur) ?? mapList[0];
+			return new MapInfo({
+				max_multi_map: mapList.length,
+				max_bak_map: 0,
+				multi_map_count: mapList.length,
+				map_info: [{ mapFlag: currentEntry.id, add_time: 0, length: 0, name: '', bak_maps: [] }],
+			});
+		}
+		return MapInfo.empty();
 	}
 
 	public async getRoomMap(duid: string, activeMap: number): Promise<RawRoomMappingData> {
