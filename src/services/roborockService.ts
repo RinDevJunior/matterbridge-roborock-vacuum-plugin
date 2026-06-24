@@ -242,6 +242,11 @@ export class RoborockService {
 		await this.areaService.getRoomMap(duid, activeMap);
 	}
 
+	/** Switch to a different map on the device. */
+	public async switchMap(duid: string, mapId: number): Promise<void> {
+		await this.messageRoutingService.switchMap(duid, mapId);
+	}
+
 	/** Get all scenes for a home. */
 	public async getScenes(homeId: number): Promise<Scene[] | undefined> {
 		return this.areaService.getScenes(homeId);

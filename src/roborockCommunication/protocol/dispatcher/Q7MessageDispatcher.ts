@@ -86,6 +86,16 @@ export class Q7MessageDispatcher implements AbstractMessageDispatcher {
 		);
 	}
 
+	public async switchMap(duid: string, mapId: number): Promise<void> {
+		await this.client.send(
+			duid,
+			new RequestMessage({
+				messageId: this.messageId,
+				dps: this.createDps(Q7RequestMethod.set_cur_map, { map_id: mapId }),
+			}),
+		);
+	}
+
 	// #endregion Core Data Retrieval
 
 	// #region Cleaning Commands

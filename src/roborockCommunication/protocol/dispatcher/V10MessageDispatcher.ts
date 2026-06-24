@@ -62,6 +62,10 @@ export class V10MessageDispatcher implements AbstractMessageDispatcher {
 		await this.client.send(duid, new RequestMessage({ method: 'get_room_mapping' }));
 	}
 
+	public async switchMap(duid: string, mapId: number): Promise<void> {
+		await this.client.send(duid, new RequestMessage({ method: 'load_multi_map', params: [mapId] }));
+	}
+
 	public async goHome(duid: string): Promise<void> {
 		const request = new RequestMessage({ method: 'app_charge' });
 		await this.client.send(duid, request);

@@ -35,6 +35,11 @@ export class MessageRoutingService {
 		return this.getMessageDispatcher(duid).getMapInfo(duid);
 	}
 
+	public switchMap(duid: string, mapId: number): Promise<void> {
+		this.logger.notice(`[MessageRoutingService] switchMap duid=${duid} mapId=${mapId}`);
+		return this.getMessageDispatcher(duid).switchMap(duid, mapId);
+	}
+
 	public getRoomMap(duid: string, activeMap: number): Promise<void> {
 		return this.getMessageDispatcher(duid).getRoomMap(duid, activeMap);
 	}

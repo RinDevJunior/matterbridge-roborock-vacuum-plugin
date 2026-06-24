@@ -31,7 +31,7 @@ export class RoborockVacuumCleaner extends RoboticVacuumCleaner {
 		public readonly device: Device,
 		public readonly homeInFo: HomeEntity,
 		configManager: PlatformConfigManager,
-		roborockService: RoborockService,
+		private readonly roborockService: RoborockService,
 		log: AnsiLogger,
 	) {
 		const deviceConfig = RoborockVacuumCleaner.initializeDeviceConfiguration(
@@ -96,6 +96,11 @@ export class RoborockVacuumCleaner extends RoboticVacuumCleaner {
 					? 'Clearing selected areas (global cleaning on next start)'
 					: `Selecting areas: ${areas.join(', ')}`,
 			);
+
+			if (areas.length > 0) {
+				await this.trySwitchMap(areas);
+			}
+
 			behaviorHandler.executeCommand(CommandNames.SELECT_AREAS, areas);
 		});
 
@@ -172,6 +177,22 @@ export class RoborockVacuumCleaner extends RoboticVacuumCleaner {
 			supportedAreaAndRoutines,
 			operationalState,
 		};
+	}
+
+	private async trySwitchMap(selectedAreaIds: number[]): Promise<void> {
+		const duid = this.device.duid;
+		const supportedAreas = this.roborockService.getSupportedAreas(duid);
+		const targetMapId = supportedAreas.find((a) => a.areaId === selectedAreaIds[0])?.mapId;
+
+		if (targetMapId === undefined || targetMapId === null) return;
+		if (targetMapId === this.homeInFo.activeMapId) return;
+
+		this.log.info(`[${duid}] Switching map from ${this.homeInFo.activeMapId} to ${targetMapId}`);
+		try {
+			await this.roborockService.switchMap(duid, targetMapId);
+		} catch (err) {
+			this.log.error(`[${duid}] Failed to switch map: ${String(err)}`);
+		}
 	}
 
 	/**

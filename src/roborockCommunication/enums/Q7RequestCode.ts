@@ -14,6 +14,7 @@ export enum Q7RequestMethod {
 	set_prop = 						'prop.set',
 	get_prop = 						'prop.get',
 	get_map_list = 					'service.get_map_list',
+	set_cur_map = 					'service.set_cur_map',
 	find_me = 						'service.find_device',
 }
 

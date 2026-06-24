@@ -61,6 +61,8 @@ describe('RoborockVacuumCleaner', () => {
 			setSupportedRoutines: vi.fn(),
 			setSupportedAreas: vi.fn(),
 			setSupportedAreaIndexMap: vi.fn(),
+			getSupportedAreas: vi.fn().mockReturnValue([]),
+			switchMap: vi.fn().mockResolvedValue(undefined),
 		});
 		vacuum = new RoborockVacuumCleaner(device, homeInfo, configManager, roborockService, logger);
 		vi.spyOn(vacuum.log, 'info').mockImplementation(() => {});

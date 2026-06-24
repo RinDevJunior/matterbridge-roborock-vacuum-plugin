@@ -8,4 +8,5 @@ export interface B01RoomInfo {
 
 export interface B01MapInfo {
 	rooms: B01RoomInfo[];
+	mapId?: number;
 }

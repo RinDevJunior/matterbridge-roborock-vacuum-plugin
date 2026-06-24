@@ -4,6 +4,7 @@ import { MapInfo } from '../../../../core/application/models/MapInfo.js';
 import { RoomMap } from '../../../../core/application/models/RoomMap.js';
 import { HomeEntity } from '../../../../core/domain/entities/Home.js';
 import { getSupportedAreas } from '../../../../initialData/getSupportedAreas.js';
+import { ProtocolVersion } from '../../../../roborockCommunication/enums/protocolVersion.js';
 import { B01MapParser } from '../../../../roborockCommunication/map/b01/b01MapParser.js';
 import { AreaManagementService } from '../../../../services/areaManagementService.js';
 import { Q7RequestCode, Q7RequestMethod } from '../../../enums/Q7RequestCode.js';
@@ -29,6 +30,8 @@ export class MapInfoListener implements AbstractMessageListener {
 		private readonly logger: AnsiLogger,
 		private readonly deviceModel?: string,
 		private readonly deviceSerial?: string,
+		private readonly onActiveMapChanged?: (mapId: number) => void,
+		private readonly deviceProtocol?: string,
 	) {}
 
 	public async onMessage(message: ResponseMessage): Promise<void> {
@@ -133,6 +136,11 @@ export class MapInfoListener implements AbstractMessageListener {
 			this.logger.debug(`[${this.duid}] MapInfoListener: B01-Q7 map list push — ${mapList.length} maps`);
 			const supportedMaps = this.pendingB01MapInfo.maps.map((m) => ({ mapId: m.id, name: m.name ?? `Map ${m.id}` }));
 			this.areaService.setSupportedMaps(this.duid, supportedMaps);
+
+			const activeMap = mapList.find((m) => m.cur === true);
+			if (activeMap) {
+				this.onActiveMapChanged?.(activeMap.id);
+			}
 		} catch (err: unknown) {
 			this.logger.warn(`[${this.duid}] MapInfoListener: failed to parse B01-Q7 query_response: ${String(err)}`);
 		}
@@ -142,6 +150,7 @@ export class MapInfoListener implements AbstractMessageListener {
 		if (!message.body) return;
 		const mapBuffer = message.body.get(Protocol.map_response);
 		if (!mapBuffer || !Buffer.isBuffer(mapBuffer)) return;
+		if (this.deviceProtocol === ProtocolVersion.V1) return;
 
 		const modelShortCode = this.deviceModel?.split('.').at(-1);
 		if (!modelShortCode || !this.deviceSerial) {
@@ -169,6 +178,10 @@ export class MapInfoListener implements AbstractMessageListener {
 			const mapInfo = this.pendingB01MapInfo ?? MapInfo.empty();
 			this.logger.debug(`[${this.duid}] MapInfoListener: B01 map binary parsed — ${b01Info.rooms.length} rooms`);
 			this.updateAreas(new RoomMap(roomMappings), mapInfo);
+
+			if (b01Info.mapId !== undefined) {
+				this.onActiveMapChanged?.(b01Info.mapId);
+			}
 		} catch (err: unknown) {
 			this.logger.warn(`[${this.duid}] MapInfoListener: failed to parse B01 map binary: ${String(err)}`);
 		}

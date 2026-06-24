@@ -60,6 +60,13 @@ export class Q10MessageDispatcher implements AbstractMessageDispatcher {
 			new RequestMessage({ messageId: this.messageId, dps: { [Q10RequestCode.get_prop]: 1 } }),
 		);
 	}
+
+	public async switchMap(duid: string, mapId: number): Promise<void> {
+		await this.client.send(
+			duid,
+			new RequestMessage({ messageId: this.messageId, dps: { [Q10RequestCode.multi_map_switch]: mapId } }),
+		);
+	}
 	// #endregion Core Data Retrieval
 
 	// #region Cleaning Commands

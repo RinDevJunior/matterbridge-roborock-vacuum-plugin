@@ -93,6 +93,29 @@ async function handleCleaningWithoutInfo(
 	}
 }
 
+export async function handleActiveMapChanged(
+	robot: RoborockVacuumCleaner,
+	mapId: number,
+	platform: RoborockMatterbridgePlatform,
+): Promise<void> {
+	const logger = platform.log;
+	const supportedAreas = platform.roborockService?.getSupportedAreas(robot.device.duid) ?? [];
+	const areasOnMap = supportedAreas.filter((area) => area.mapId === mapId);
+
+	if (areasOnMap.length === 0) {
+		logger.debug(`[${robot.device.duid}] ActiveMapChanged: no areas found for mapId ${mapId}`);
+		return;
+	}
+
+	const allAreaIds = areasOnMap.map((area) => area.areaId);
+
+	logger.debug(
+		`[${robot.device.duid}] ActiveMapChanged: setting selectedAreas to [${allAreaIds.join(', ')}] and currentArea to null (mapId ${mapId})`,
+	);
+	await robot.updateAttribute(ServiceArea.id, 'selectedAreas', allAreaIds, logger);
+	await robot.updateAttribute(ServiceArea.id, 'currentArea', null, logger);
+}
+
 async function resolveAreaFromCleaningInfo(
 	robot: RoborockVacuumCleaner,
 	cleaningInfo: CleanInformation,
@@ -109,6 +132,11 @@ async function resolveAreaFromCleaningInfo(
 	const sourceSegmentId = cleaningInfo.segment_id ?? INVALID_SEGMENT_ID;
 	const sourceTargetSegmentId = cleaningInfo.target_segment_id ?? INVALID_SEGMENT_ID;
 	const segmentId = sourceSegmentId !== INVALID_SEGMENT_ID ? sourceSegmentId : sourceTargetSegmentId;
+
+	if (segmentId === INVALID_SEGMENT_ID) {
+		logger.debug('No active segment, skipping currentArea update');
+		return;
+	}
 	const mappedArea = roomIndexMap.getAreaId(segmentId, robot.homeInFo.activeMapId);
 
 	if (!mappedArea) {

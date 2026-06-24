@@ -714,7 +714,7 @@ describe('PlatformRunner.updateRobotWithPayload', () => {
 		expect(robot.updateAttribute).toHaveBeenCalledWith(ServiceArea.Cluster.id, 'currentArea', 1, mockLogger);
 	});
 
-	it('should set currentArea to null when segment_id is INVALID_SEGMENT_ID and mapped area exists', async () => {
+	it('should skip currentArea update when segment_id is INVALID_SEGMENT_ID', async () => {
 		const cleaningInfo = asPartial<CleanInformation>({ segment_id: -1, target_segment_id: -1 });
 		const mappedArea = { areaId: -1, matterAreaId: -1, mapId: 1 };
 
@@ -738,7 +738,7 @@ describe('PlatformRunner.updateRobotWithPayload', () => {
 		runner.updateRobotWithPayload(payload);
 		await Promise.resolve();
 
-		expect(robot.updateAttribute).toHaveBeenCalledWith(ServiceArea.Cluster.id, 'currentArea', null, mockLogger);
+		expect(robot.updateAttribute).not.toHaveBeenCalledWith(ServiceArea.Cluster.id, 'currentArea', null, mockLogger);
 	});
 
 	it('should skip area mapping when no mapped area found', async () => {

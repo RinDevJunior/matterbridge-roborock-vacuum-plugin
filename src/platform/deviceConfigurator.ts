@@ -99,7 +99,7 @@ export class DeviceConfigurator {
 		}
 
 		const homeData = vacuum.store.homeData;
-		const homeInfo = new HomeEntity(homeData.id, homeData.name, RoomMap.empty(), MapInfo.empty(), 0);
+		const homeInfo = new HomeEntity(homeData.id, homeData.name, RoomMap.empty(), MapInfo.empty(), -1);
 
 		const robot = new RoborockVacuumCleaner(vacuum, homeInfo, this.configManager, roborockService, this.log);
 

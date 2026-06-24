@@ -26,4 +26,5 @@ export interface AbstractMessageDispatcher {
 	getMapInfo(duid: string): Promise<void>;
 	getRoomMap(duid: string, activeMap: number): Promise<void>;
 	getSerialNumber(duid: string): Promise<string | undefined>;
+	switchMap(duid: string, mapId: number): Promise<void>;
 }

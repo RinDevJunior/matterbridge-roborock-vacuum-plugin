@@ -1,4 +1,4 @@
-import { AnsiLogger } from 'matterbridge/logger';
+import { AnsiLogger, debugStringify } from 'matterbridge/logger';
 
 import { CleanModeSetting } from '../../../../behaviors/roborock.vacuum/core/CleanModeSetting.js';
 import { DockStationStatus } from '../../../../model/DockStationStatus.js';
@@ -22,6 +22,7 @@ export class V1StatusListener implements AbstractMessageListener {
 	constructor(
 		public readonly duid: string,
 		private readonly logger: AnsiLogger,
+		private readonly requestStatus?: () => void,
 	) {}
 
 	public registerHandler(handler: AbstractMessageHandler): void {
@@ -31,6 +32,15 @@ export class V1StatusListener implements AbstractMessageListener {
 	public async onMessage(message: ResponseMessage): Promise<void> {
 		if (message.duid !== this.duid) {
 			this.logger.debug(`[V1StatusListener]: Message DUID ${message.duid} does not match listener DUID ${this.duid}`);
+			return;
+		}
+
+		const additionalProps = message.body?.get(Protocol.additional_props);
+		if (additionalProps !== undefined) {
+			this.logger.debug(
+				`[V1StatusListener]: additional_props received (${debugStringify(additionalProps)}), requesting status`,
+			);
+			this.requestStatus?.();
 			return;
 		}
 
@@ -111,6 +121,14 @@ export class V1StatusListener implements AbstractMessageListener {
 			messageBody.is_exploring !== undefined ? Boolean(messageBody.is_exploring) : undefined,
 			messageBody.in_warmup !== undefined ? Boolean(messageBody.in_warmup) : undefined,
 		);
+
+		const mapStatus = typeof messageBody.map_status === 'number' ? messageBody.map_status : undefined;
+		if (mapStatus !== undefined) {
+			const mapFlag = mapStatus >> 2;
+			if (mapFlag !== 63) {
+				await this.handler.onActiveMapChanged(mapFlag);
+			}
+		}
 
 		await this.handler.onBatteryUpdate(batteryMessage);
 		await this.handler.onStatusChanged(statusChangeMessage);
