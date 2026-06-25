@@ -1,5 +1,5 @@
 # To Do
 
-## In Progress
+## Completed
 
-_(nothing pending)_
+- [x] Release candidate `1.1.7-rc04` created
