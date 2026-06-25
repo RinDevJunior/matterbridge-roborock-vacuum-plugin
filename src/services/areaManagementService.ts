@@ -18,6 +18,7 @@ import { MessageRoutingService } from './index.js';
 export class AreaManagementService {
 	private supportedAreas = new Map<string, ServiceArea.Area[]>();
 	private supportedMaps = new Map<string, ServiceArea.Map[]>();
+	private mapInfoCache = new Map<string, MapInfo>();
 	private supportedRoutines = new Map<string, ServiceArea.Area[]>();
 	private selectedAreas = new Map<string, number[]>();
 	private supportedAreaIndexMaps = new Map<string, RoomIndexMap>();
@@ -102,6 +103,8 @@ export class AreaManagementService {
 			return undefined;
 		}
 		const mapInfo = await this.serviceRouting.getMapInfo(duid);
+		this.mapInfoCache.set(duid, mapInfo);
+
 		if (mapInfo.maps.length > 0) {
 			const supportedMaps = mapInfo.maps.map((map) => ({
 				mapId: map.id,
@@ -109,6 +112,19 @@ export class AreaManagementService {
 			}));
 			this.setSupportedMaps(duid, supportedMaps);
 		}
+
+		if (mapInfo.hasRooms) {
+			const rooms = this.deviceRooms.get(duid) ?? [];
+			const roomMappings = mapInfo.allRooms.map((dto) => HomeModelMapper.toRoomMapping(dto, rooms));
+			const homeEntity = new HomeEntity(0, '', new RoomMap(roomMappings), mapInfo, 0);
+			const { supportedAreas, roomIndexMap } = getSupportedAreas(homeEntity, this.logger);
+			this.setSupportedAreaIndexMap(duid, roomIndexMap);
+			this.setSupportedAreas(duid, supportedAreas);
+		} else {
+			// Fire the callback so supportedMaps reaches Matter even when room data hasn't arrived yet
+			this.setSupportedAreas(duid, this.supportedAreas.get(duid) ?? []);
+		}
+
 		return mapInfo;
 	}
 
@@ -126,10 +142,12 @@ export class AreaManagementService {
 		const rawData = await this.serviceRouting.getRoomMap(duid, activeMap);
 		if (rawData && rawData.length > 0) {
 			const rooms = this.deviceRooms.get(duid) ?? [];
+			const cachedMapInfo = this.mapInfoCache.get(duid) ?? MapInfo.empty();
+			const resolvedActiveMap = cachedMapInfo.getActiveMapId(rawData);
 			const roomMappings = rawData
-				.map((entry) => HomeModelMapper.rawArrayToMapRoomDto(entry, 0))
+				.map((entry) => HomeModelMapper.rawArrayToMapRoomDto(entry, resolvedActiveMap))
 				.map((dto) => HomeModelMapper.toRoomMapping(dto, rooms));
-			const homeEntity = new HomeEntity(0, '', new RoomMap(roomMappings), MapInfo.empty(), 0);
+			const homeEntity = new HomeEntity(0, '', new RoomMap(roomMappings), cachedMapInfo, resolvedActiveMap);
 			const { supportedAreas, roomIndexMap } = getSupportedAreas(homeEntity, this.logger);
 			this.setSupportedAreaIndexMap(duid, roomIndexMap);
 			this.setSupportedAreas(duid, supportedAreas);
@@ -179,6 +197,7 @@ export class AreaManagementService {
 		}
 		this.supportedAreas.clear();
 		this.supportedMaps.clear();
+		this.mapInfoCache.clear();
 		this.supportedRoutines.clear();
 		this.selectedAreas.clear();
 		this.supportedAreaIndexMaps.clear();
