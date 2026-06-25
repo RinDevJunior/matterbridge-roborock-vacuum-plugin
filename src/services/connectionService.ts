@@ -184,6 +184,8 @@ export class ConnectionService {
 						});
 					}
 				: undefined;
+			const liveMapUpdates = this.configManager?.isLiveMapUpdatesEnabled ?? false;
+			const allowV1AreaUpdate = liveMapUpdates || !messageDispatcher.supportsMapQueryResponse;
 			const mapInfoListener = new MapInfoListener(
 				device.duid,
 				device.store.homeData.rooms,
@@ -193,6 +195,7 @@ export class ConnectionService {
 				device.serialNumber,
 				onActiveMapChanged,
 				device.specs.protocol,
+				allowV1AreaUpdate,
 			);
 			this.clientRouter.registerMessageListener(mapInfoListener);
 		}

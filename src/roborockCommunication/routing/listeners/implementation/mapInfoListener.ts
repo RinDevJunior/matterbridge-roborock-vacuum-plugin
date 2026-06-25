@@ -32,6 +32,7 @@ export class MapInfoListener implements AbstractMessageListener {
 		private readonly deviceSerial?: string,
 		private readonly onActiveMapChanged?: (mapId: number) => void,
 		private readonly deviceProtocol?: string,
+		private readonly allowV1AreaUpdate: boolean = true,
 	) {}
 
 	public async onMessage(message: ResponseMessage): Promise<void> {
@@ -44,6 +45,7 @@ export class MapInfoListener implements AbstractMessageListener {
 	}
 
 	private tryParseV1MapInfo(message: ResponseMessage): void {
+		if (!this.allowV1AreaUpdate) return;
 		if (!message.body) return;
 		let dps = message.get(Protocol.rpc_response) as DpsPayload | undefined;
 		if (!dps) dps = message.get(Protocol.general_response) as DpsPayload | undefined;
@@ -62,6 +64,7 @@ export class MapInfoListener implements AbstractMessageListener {
 	}
 
 	private tryParseV1RoomMap(message: ResponseMessage): void {
+		if (!this.allowV1AreaUpdate) return;
 		if (!message.body) return;
 		let dps = message.get(Protocol.rpc_response) as DpsPayload | undefined;
 		if (!dps) dps = message.get(Protocol.general_response) as DpsPayload | undefined;

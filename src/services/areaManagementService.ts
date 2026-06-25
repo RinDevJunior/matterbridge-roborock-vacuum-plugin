@@ -21,6 +21,7 @@ export class AreaManagementService {
 	private refreshIntervals = new Map<string, NodeJS.Timeout>();
 	private deviceRooms = new Map<string, RoomDto[]>();
 	private iotApi: RoborockIoTApi | undefined;
+	private mapInfoCache = new Map<string, MapInfo>();
 
 	constructor(
 		private readonly logger: AnsiLogger,
@@ -97,12 +98,21 @@ export class AreaManagementService {
 			return undefined;
 		}
 		const mapInfo = await this.serviceRouting.getMapInfo(duid);
+		this.mapInfoCache.set(duid, mapInfo);
 		if (mapInfo.maps.length > 0) {
 			const supportedMaps = mapInfo.maps.map((map) => ({
 				mapId: map.id,
 				name: map.name ?? `Map ${map.id}`,
 			}));
 			this.setSupportedMaps(duid, supportedMaps);
+		}
+		if (mapInfo.hasRooms) {
+			const rooms = this.deviceRooms.get(duid) ?? [];
+			const roomMappings = mapInfo.allRooms.map((dto) => HomeModelMapper.toRoomMapping(dto, rooms));
+			const homeEntity = new HomeEntity(0, '', new RoomMap(roomMappings), mapInfo, 0);
+			const { supportedAreas, roomIndexMap } = getSupportedAreas(homeEntity, this.logger);
+			this.setSupportedAreaIndexMap(duid, roomIndexMap);
+			this.setSupportedAreas(duid, supportedAreas);
 		}
 		return mapInfo;
 	}
@@ -119,9 +129,11 @@ export class AreaManagementService {
 		}
 		const rawData = await this.serviceRouting.getRoomMap(duid, activeMap);
 		if (rawData && rawData.length > 0) {
+			const storedMapInfo = this.mapInfoCache.get(duid) ?? MapInfo.empty();
+			const resolvedMapId = storedMapInfo.getActiveMapId(rawData) || storedMapInfo.maps[0]?.id || 0;
 			const rooms = this.deviceRooms.get(duid) ?? [];
 			const roomMappings = rawData
-				.map((entry) => HomeModelMapper.rawArrayToMapRoomDto(entry, 0))
+				.map((entry) => HomeModelMapper.rawArrayToMapRoomDto(entry, resolvedMapId))
 				.map((dto) => HomeModelMapper.toRoomMapping(dto, rooms));
 			const homeEntity = new HomeEntity(0, '', new RoomMap(roomMappings), MapInfo.empty(), 0);
 			const { supportedAreas, roomIndexMap } = getSupportedAreas(homeEntity, this.logger);
