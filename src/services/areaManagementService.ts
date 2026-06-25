@@ -8,7 +8,6 @@ import { getSupportedAreas } from '../initialData/getSupportedAreas.js';
 import { RoborockIoTApi } from '../roborockCommunication/api/iotClient.js';
 import {
 	HomeModelMapper,
-	MultipleMapDto,
 	RawRoomMappingData,
 	RoomDto,
 } from '../roborockCommunication/models/home/index.js';
@@ -91,26 +90,26 @@ export class AreaManagementService {
 		return this.supportedRoutines.get(duid);
 	}
 
-	public async getMapInfo(duid: string): Promise<MultipleMapDto[] | undefined> {
+	public async getMapInfo(duid: string): Promise<MapInfo | undefined> {
 		if (!this.serviceRouting) {
 			throw new DeviceError('Service routing not initialized', duid);
 		}
 
 		this.logger.debug('AreaManagementService - getMapInfo', duid);
-		if (this.liveMapUpdates) {
+		const useLiveMapInfo = this.liveMapUpdates || !this.serviceRouting.getMessageDispatcher(duid).supportsMapQueryResponse;
+		if (useLiveMapInfo) {
 			await this.serviceRouting.getMapInfoV2(duid);
 			return undefined;
 		}
-		const data = await this.serviceRouting.getMapInfo(duid);
-		if (data && data.length > 0) {
-			const mapInfo = new MapInfo(data[0]);
+		const mapInfo = await this.serviceRouting.getMapInfo(duid);
+		if (mapInfo.maps.length > 0) {
 			const supportedMaps = mapInfo.maps.map((map) => ({
 				mapId: map.id,
 				name: map.name ?? `Map ${map.id}`,
 			}));
 			this.setSupportedMaps(duid, supportedMaps);
 		}
-		return data;
+		return mapInfo;
 	}
 
 	public async getRoomMap(duid: string, activeMap: number): Promise<RawRoomMappingData | undefined> {
@@ -119,7 +118,8 @@ export class AreaManagementService {
 		}
 
 		this.logger.debug('AreaManagementService - getRoomMap', duid);
-		if (this.liveMapUpdates) {
+		const useLiveRoomMap = this.liveMapUpdates || !this.serviceRouting.getMessageDispatcher(duid).supportsMapQueryResponse;
+		if (useLiveRoomMap) {
 			await this.serviceRouting.getRoomMapV2(duid, activeMap);
 			return undefined;
 		}

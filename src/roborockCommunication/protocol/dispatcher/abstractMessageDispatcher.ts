@@ -1,9 +1,11 @@
 import { CleanModeSetting } from '../../../behaviors/roborock.vacuum/core/CleanModeSetting.js';
-import { MultipleMapDto, RawRoomMappingData } from '../../models/home/index.js';
-import { NetworkInfo, RequestMessage } from '../../models/index.js';
+import { MapInfo } from '../../../core/application/models/index.js';
+import { MapRoomResponse } from '../../../types/index.js';
+import { NetworkInfo, RawRoomMappingData, RequestMessage } from '../../models/index.js';
 
 export interface AbstractMessageDispatcher {
 	dispatcherName: string;
+	readonly supportsMapQueryResponse: boolean;
 
 	getNetworkInfo(duid: string): Promise<NetworkInfo | undefined>;
 	getDeviceStatus(duid: string): Promise<void>;
@@ -24,9 +26,10 @@ export interface AbstractMessageDispatcher {
 	changeCleanMode(duid: string, setting: CleanModeSetting): Promise<void>;
 
 	// For core data retrieval
-	getMapInfo(duid: string): Promise<MultipleMapDto[] | undefined>;
+	getHomeMap(duid: string): Promise<MapRoomResponse>;
+	getMapInfo(duid: string): Promise<MapInfo>;
 	getMapInfoV2(duid: string): Promise<void>;
-	getRoomMap(duid: string, activeMap: number): Promise<RawRoomMappingData | undefined>;
+	getRoomMap(duid: string, activeMap: number): Promise<RawRoomMappingData>;
 	getRoomMapV2(duid: string, activeMap: number): Promise<void>;
 	getSerialNumber(duid: string): Promise<string | undefined>;
 	switchMap(duid: string, mapId: number): Promise<void>;
