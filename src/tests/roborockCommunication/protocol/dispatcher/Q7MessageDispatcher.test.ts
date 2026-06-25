@@ -71,24 +71,29 @@ describe('Q7MessageDispatcher', () => {
 	});
 
 	describe('getMapInfo', () => {
-		it('should call client.query when liveMapUpdates is false (default)', async () => {
+		it('should call client.send and return empty MapInfo', async () => {
 			const result = await dispatcher.getMapInfo(duid);
-			expect(client.query).toHaveBeenCalled();
-			expect(client.send).not.toHaveBeenCalled();
-			expect(result).toBeUndefined();
+			expect(client.send).toHaveBeenCalled();
+			expect(client.query).not.toHaveBeenCalled();
+			expect(result).toBeDefined();
 		});
 
-		it('should call client.send when liveMapUpdates is true', async () => {
-			const liveDispatcher = new Q7MessageDispatcher(asType(logger), asType(client));
-			const result = await liveDispatcher.getMapInfo(duid);
-			expect(client.query).toHaveBeenCalled();
+		it('should call client.send and return void when using V2', async () => {
+			const result = await dispatcher.getMapInfoV2(duid);
+			expect(client.send).toHaveBeenCalled();
 			expect(result).toBeUndefined();
 		});
 	});
 
 	describe('getRoomMap', () => {
-		it('should call client.send and return void', async () => {
+		it('should call client.send and return empty array', async () => {
 			const result = await dispatcher.getRoomMap(duid, 1);
+			expect(client.send).toHaveBeenCalled();
+			expect(result).toEqual([]);
+		});
+
+		it('should call client.send and return void when using V2', async () => {
+			const result = await dispatcher.getRoomMapV2(duid, 1);
 			expect(client.send).toHaveBeenCalled();
 			expect(result).toBeUndefined();
 		});

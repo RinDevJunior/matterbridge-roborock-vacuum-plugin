@@ -1,5 +1,14 @@
 # Claude History
 
+## 2026-06-25 (Session 35)
+
+- Fixed 15 failing tests across 4 test files after the V1/V2 dispatcher refactor:
+  - `V01MessageDispatcher.test.ts`: Updated `getMapInfo` tests to expect `MapInfo` (not `undefined`); replaced "liveMapUpdates=true" tests with explicit `getMapInfoV2`/`getRoomMapV2` tests; fixed `getRoomMap` no-data test to expect `[]` instead of `undefined`.
+  - `Q7MessageDispatcher.test.ts` / `Q10MessageDispatcher.test.ts`: Fixed `getMapInfo` tests to verify `client.send` (not `client.query`, as Q7/Q10 are push-based); replaced "liveMapUpdates=true" tests with V2 method tests; fixed `getRoomMap` to expect `[]`.
+  - `areaManagementService.test.ts`: Added `MapInfo` import; updated mocks to return `MapInfo`/`[]` instead of `undefined`; fixed "no maps" assertion to `toBeDefined()` with `maps.length === 0`.
+- Removed `supportsMapQueryResponse` check from `areaManagementService.getMapInfo`/`getRoomMap` — routing now uses only `this.liveMapUpdates` flag (simpler, Q7/Q10 V1 path sends the request and returns empty data which is safe).
+- All 175 test files / 1877 tests pass.
+
 ## 2026-06-25 (Session 34)
 
 - Restored `getMapInfo` to return `MultipleMapDto[] | undefined` propagated through the full call chain:

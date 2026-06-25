@@ -92,9 +92,7 @@ export class AreaManagementService {
 		}
 
 		this.logger.debug('AreaManagementService - getMapInfo', duid);
-		const useLiveMapInfo =
-			this.liveMapUpdates || !this.serviceRouting.getMessageDispatcher(duid).supportsMapQueryResponse;
-		if (useLiveMapInfo) {
+		if (this.liveMapUpdates) {
 			await this.serviceRouting.getMapInfoV2(duid);
 			return undefined;
 		}
@@ -115,9 +113,7 @@ export class AreaManagementService {
 		}
 
 		this.logger.debug('AreaManagementService - getRoomMap', duid);
-		const useLiveRoomMap =
-			this.liveMapUpdates || !this.serviceRouting.getMessageDispatcher(duid).supportsMapQueryResponse;
-		if (useLiveRoomMap) {
+		if (this.liveMapUpdates) {
 			await this.serviceRouting.getRoomMapV2(duid, activeMap);
 			return undefined;
 		}

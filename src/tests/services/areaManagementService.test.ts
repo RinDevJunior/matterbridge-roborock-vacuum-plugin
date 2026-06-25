@@ -2,7 +2,7 @@ import { AnsiLogger } from 'matterbridge/logger';
 import { ServiceArea } from 'matterbridge/matter/clusters';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { RoomIndexMap } from '../../core/application/models/index.js';
+import { MapInfo, RoomIndexMap } from '../../core/application/models/index.js';
 import { DeviceError } from '../../errors/index.js';
 import { AreaInfo, SegmentInfo } from '../../initialData/getSupportedAreas.js';
 import { RoborockIoTApi } from '../../roborockCommunication/api/iotClient.js';
@@ -216,20 +216,10 @@ describe('AreaManagementService', () => {
 	});
 
 	describe('getMapInformation', () => {
-		const mockMultipleMaps = [
-			{
-				max_multi_map: 4,
-				max_bak_map: 1,
-				multi_map_count: 2,
-				map_info: [
-					{ mapFlag: 1, name: 'First Floor', rooms: [] },
-					{ mapFlag: 2, name: 'Second Floor', rooms: [] },
-				],
-			},
-		];
+		const emptyMapInfo = new MapInfo({ max_multi_map: 0, max_bak_map: 0, multi_map_count: 0, map_info: [] });
 
 		it('should retrieve map information successfully', async () => {
-			mockMessageRoutingService.getMapInfo.mockResolvedValue(undefined);
+			mockMessageRoutingService.getMapInfo.mockResolvedValue(emptyMapInfo);
 
 			await areaService.getMapInfo(mockDeviceId);
 
@@ -237,12 +227,13 @@ describe('AreaManagementService', () => {
 			expect(mockLogger.debug).toHaveBeenCalledWith('AreaManagementService - getMapInfo', mockDeviceId);
 		});
 
-		it('should return undefined when no maps available', async () => {
-			mockMessageRoutingService.getMapInfo.mockResolvedValue(undefined);
+		it('should return MapInfo when no maps available', async () => {
+			mockMessageRoutingService.getMapInfo.mockResolvedValue(emptyMapInfo);
 
 			const mapInfo = await areaService.getMapInfo(mockDeviceId);
 
-			expect(mapInfo).toBeUndefined();
+			expect(mapInfo).toBeDefined();
+			expect(mapInfo?.maps.length).toBe(0);
 		});
 
 		it('should throw DeviceError when service routing not initialized', async () => {
@@ -261,7 +252,7 @@ describe('AreaManagementService', () => {
 		];
 
 		it('should retrieve room mappings with non-secure request', async () => {
-			mockMessageRoutingService.getRoomMap.mockResolvedValue(undefined);
+			mockMessageRoutingService.getRoomMap.mockResolvedValue([]);
 
 			await areaService.getRoomMap(mockDeviceId, 1);
 
@@ -274,7 +265,7 @@ describe('AreaManagementService', () => {
 		});
 
 		it('should handle empty room mappings', async () => {
-			mockMessageRoutingService.getRoomMap.mockResolvedValue(undefined);
+			mockMessageRoutingService.getRoomMap.mockResolvedValue([]);
 
 			await areaService.getRoomMap(mockDeviceId, 1);
 

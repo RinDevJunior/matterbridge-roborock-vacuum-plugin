@@ -10,7 +10,7 @@ import { CleanCommand } from '../model/CleanCommand.js';
 import { PlatformConfigManager } from '../platform/platformConfigManager.js';
 import { RoborockAuthenticateApi } from '../roborockCommunication/api/authClient.js';
 import { RoborockIoTApi } from '../roborockCommunication/api/iotClient.js';
-import { MultipleMapDto, RawRoomMappingData, RoomDto } from '../roborockCommunication/models/home/index.js';
+import { RawRoomMappingData, RoomDto } from '../roborockCommunication/models/home/index.js';
 import { Device, Home, Scene, UserData } from '../roborockCommunication/models/index.js';
 import {
 	AreaManagementService,
