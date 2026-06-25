@@ -26,6 +26,7 @@ function parseV1Result(msg: ResponseMessage, messageId: number): unknown {
 
 export class V10MessageDispatcher implements AbstractMessageDispatcher {
 	public dispatcherName = 'V10MessageDispatcher';
+	public readonly supportsMapQueryResponse = true;
 	constructor(
 		private readonly logger: AnsiLogger,
 		private readonly client: Client,

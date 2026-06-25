@@ -5,6 +5,7 @@ import { NetworkInfo, RawRoomMappingData, RequestMessage } from '../../models/in
 
 export interface AbstractMessageDispatcher {
 	dispatcherName: string;
+	readonly supportsMapQueryResponse: boolean;
 
 	getNetworkInfo(duid: string): Promise<NetworkInfo | undefined>;
 	getDeviceStatus(duid: string): Promise<void>;

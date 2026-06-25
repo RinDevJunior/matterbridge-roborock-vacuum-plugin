@@ -22,6 +22,7 @@ import { AbstractMessageDispatcher } from './abstractMessageDispatcher.js';
 
 export class Q7MessageDispatcher implements AbstractMessageDispatcher {
 	public dispatcherName = 'Q7MessageDispatcher';
+	public readonly supportsMapQueryResponse = false;
 	private lastB01Id: number;
 
 	private get messageId() {

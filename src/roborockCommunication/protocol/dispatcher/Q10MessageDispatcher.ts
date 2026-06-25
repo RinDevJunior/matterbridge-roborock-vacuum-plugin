@@ -14,6 +14,7 @@ import { AbstractMessageDispatcher } from './abstractMessageDispatcher.js';
 
 export class Q10MessageDispatcher implements AbstractMessageDispatcher {
 	public dispatcherName = 'Q10MessageDispatcher';
+	public readonly supportsMapQueryResponse = false;
 	private lastB01Id: number;
 
 	private get messageId() {
