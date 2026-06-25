@@ -1,10 +1,11 @@
 import { AnsiLogger } from 'matterbridge/logger';
 
 import { CleanModeSetting } from '../behaviors/roborock.vacuum/core/CleanModeSetting.js';
+import { MapInfo } from '../core/application/models/index.js';
 import { DeviceError } from '../errors/index.js';
 import { CleanCommand } from '../model/CleanCommand.js';
 import { RoborockIoTApi } from '../roborockCommunication/api/iotClient.js';
-import { MultipleMapDto, RawRoomMappingData } from '../roborockCommunication/models/home/index.js';
+import { RawRoomMappingData, RequestMessage } from '../roborockCommunication/models/index.js';
 import { AbstractMessageDispatcher } from '../roborockCommunication/protocol/dispatcher/abstractMessageDispatcher.js';
 
 export class MessageRoutingService {
@@ -32,7 +33,7 @@ export class MessageRoutingService {
 		return messageDispatcher;
 	}
 
-	public getMapInfo(duid: string): Promise<MultipleMapDto[] | undefined> {
+	public getMapInfo(duid: string): Promise<MapInfo> {
 		return this.getMessageDispatcher(duid).getMapInfo(duid);
 	}
 
@@ -45,12 +46,18 @@ export class MessageRoutingService {
 		return this.getMessageDispatcher(duid).switchMap(duid, mapId);
 	}
 
-	public getRoomMap(duid: string, activeMap: number): Promise<RawRoomMappingData | undefined> {
+	public getRoomMap(duid: string, activeMap: number): Promise<RawRoomMappingData> {
 		return this.getMessageDispatcher(duid).getRoomMap(duid, activeMap);
 	}
 
 	public getRoomMapV2(duid: string, activeMap: number): Promise<void> {
 		return this.getMessageDispatcher(duid).getRoomMapV2(duid, activeMap);
+	}
+
+	/** Get vacuum's current room from map. */
+	public async getRoomIdFromMap(duid: string): Promise<number | undefined> {
+		const data = await this.getMessageDispatcher(duid).getHomeMap(duid);
+		return data?.vacuumRoom;
 	}
 
 	public async getSerialNumber(duid: string): Promise<string> {
@@ -119,6 +126,15 @@ export class MessageRoutingService {
 	public async playSoundToLocate(duid: string): Promise<void> {
 		this.logger.debug('MessageRoutingService - findMe');
 		await this.getMessageDispatcher(duid).findMyRobot(duid);
+	}
+
+	public async customGet<T = unknown>(duid: string, request: RequestMessage): Promise<T> {
+		this.logger.debug('MessageRoutingService - customSend-message', request.method, request.params, request.secure);
+		return this.getMessageDispatcher(duid).getCustomMessage(duid, request);
+	}
+
+	public async customSend(duid: string, request: RequestMessage): Promise<void> {
+		return this.getMessageDispatcher(duid).sendCustomMessage(duid, request);
 	}
 
 	public clearAll(): void {

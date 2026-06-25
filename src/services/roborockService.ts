@@ -4,7 +4,7 @@ import { LocalStorage } from 'node-persist';
 
 import { CleanModeSetting } from '../behaviors/roborock.vacuum/core/CleanModeSetting.js';
 import { SCENE_AREA_ID_MIN } from '../constants/index.js';
-import { RoomIndexMap } from '../core/application/models/index.js';
+import { MapInfo, RoomIndexMap } from '../core/application/models/index.js';
 import { AuthenticationResponse } from '../model/AuthenticationResponse.js';
 import { CleanCommand } from '../model/CleanCommand.js';
 import { PlatformConfigManager } from '../platform/platformConfigManager.js';
@@ -234,7 +234,7 @@ export class RoborockService {
 	}
 
 	/** Get map information for a device. */
-	public async getMapInfo(duid: string): Promise<MultipleMapDto[] | undefined> {
+	public async getMapInfo(duid: string): Promise<MapInfo | undefined> {
 		return this.areaService.getMapInfo(duid);
 	}
 

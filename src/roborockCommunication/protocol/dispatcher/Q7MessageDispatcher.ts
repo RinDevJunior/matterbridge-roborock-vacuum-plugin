@@ -4,6 +4,8 @@ import { AnsiLogger } from 'matterbridge/logger';
 
 import { CleanModeSetting } from '../../../behaviors/roborock.vacuum/core/CleanModeSetting.js';
 import { CleanSequenceType } from '../../../behaviors/roborock.vacuum/enums/CleanSequenceType.js';
+import { MapInfo } from '../../../core/application/models/index.js';
+import { MapRoomResponse } from '../../../types/device.js';
 import {
 	Q7CleanType,
 	Q7ControlCode,
@@ -12,7 +14,7 @@ import {
 	Q7RequestMethod,
 } from '../../enums/Q7RequestCode.js';
 import { B01VacuumModeResolver } from '../../helper/B01VacuumModeResolver.js';
-import { MultipleMapDto, RawRoomMappingData } from '../../models/home/index.js';
+import { RawRoomMappingData } from '../../models/home/index.js';
 import { NetworkInfo } from '../../models/index.js';
 import { RequestMessage } from '../../models/requestMessage.js';
 import { Client } from '../../routing/client.js';
@@ -70,24 +72,16 @@ export class Q7MessageDispatcher implements AbstractMessageDispatcher {
 	}
 
 	// #region Core Data Retrieval
-	public async getMapInfo(duid: string): Promise<MultipleMapDto[] | undefined> {
-		const request = new RequestMessage({
-			messageId: this.messageId,
-			dps: this.createDps(Q7RequestMethod.get_map_list, {}),
-		});
-		await this.client.query<true>(duid, request, (msg) => {
-			if (!msg.body) return undefined;
-			const raw = msg.body.get(Q7RequestCode.query_response);
-			if (raw === undefined) return undefined;
-			try {
-				const parsed = typeof raw === 'string' ? JSON.parse(raw) : (raw as { method?: string });
-				if (parsed?.method === Q7RequestMethod.get_map_list) return true;
-			} catch {
-				/* ignore */
-			}
-			return undefined;
-		});
-		return undefined;
+	public async getHomeMap(duid: string): Promise<MapRoomResponse> {
+		return {};
+	}
+
+	public async getMapInfo(duid: string): Promise<MapInfo> {
+		await this.client.send(
+			duid,
+			new RequestMessage({ messageId: this.messageId, dps: this.createDps(Q7RequestMethod.get_map_list, {}) }),
+		);
+		return new MapInfo({ max_multi_map: 0, max_bak_map: 0, multi_map_count: 0, map_info: [] });
 	}
 
 	public async getMapInfoV2(duid: string): Promise<void> {
@@ -97,7 +91,7 @@ export class Q7MessageDispatcher implements AbstractMessageDispatcher {
 		);
 	}
 
-	public async getRoomMap(duid: string, activeMap: number): Promise<RawRoomMappingData | undefined> {
+	public async getRoomMap(duid: string, activeMap: number): Promise<RawRoomMappingData> {
 		await this.client.send(
 			duid,
 			new RequestMessage({
@@ -105,7 +99,7 @@ export class Q7MessageDispatcher implements AbstractMessageDispatcher {
 				dps: this.createDps(Q7RequestMethod.get_room_mapping_backup_1, { map_id: activeMap, prefer_type: 1 }),
 			}),
 		);
-		return undefined;
+		return [];
 	}
 
 	public async getRoomMapV2(duid: string, activeMap: number): Promise<void> {
