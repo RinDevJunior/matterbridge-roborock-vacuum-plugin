@@ -6,11 +6,7 @@ import { HomeEntity } from '../core/domain/entities/Home.js';
 import { DeviceError } from '../errors/index.js';
 import { getSupportedAreas } from '../initialData/getSupportedAreas.js';
 import { RoborockIoTApi } from '../roborockCommunication/api/iotClient.js';
-import {
-	HomeModelMapper,
-	RawRoomMappingData,
-	RoomDto,
-} from '../roborockCommunication/models/home/index.js';
+import { HomeModelMapper, RawRoomMappingData, RoomDto } from '../roborockCommunication/models/home/index.js';
 import { Scene } from '../roborockCommunication/models/index.js';
 import { MessageRoutingService } from './index.js';
 
@@ -96,7 +92,8 @@ export class AreaManagementService {
 		}
 
 		this.logger.debug('AreaManagementService - getMapInfo', duid);
-		const useLiveMapInfo = this.liveMapUpdates || !this.serviceRouting.getMessageDispatcher(duid).supportsMapQueryResponse;
+		const useLiveMapInfo =
+			this.liveMapUpdates || !this.serviceRouting.getMessageDispatcher(duid).supportsMapQueryResponse;
 		if (useLiveMapInfo) {
 			await this.serviceRouting.getMapInfoV2(duid);
 			return undefined;
@@ -118,7 +115,8 @@ export class AreaManagementService {
 		}
 
 		this.logger.debug('AreaManagementService - getRoomMap', duid);
-		const useLiveRoomMap = this.liveMapUpdates || !this.serviceRouting.getMessageDispatcher(duid).supportsMapQueryResponse;
+		const useLiveRoomMap =
+			this.liveMapUpdates || !this.serviceRouting.getMessageDispatcher(duid).supportsMapQueryResponse;
 		if (useLiveRoomMap) {
 			await this.serviceRouting.getRoomMapV2(duid, activeMap);
 			return undefined;
