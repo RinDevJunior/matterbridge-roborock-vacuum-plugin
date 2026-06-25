@@ -6,7 +6,12 @@ import { HomeEntity } from '../core/domain/entities/Home.js';
 import { DeviceError } from '../errors/index.js';
 import { getSupportedAreas } from '../initialData/getSupportedAreas.js';
 import { RoborockIoTApi } from '../roborockCommunication/api/iotClient.js';
-import { HomeModelMapper, RawRoomMappingData, RoomDto } from '../roborockCommunication/models/home/index.js';
+import {
+	HomeModelMapper,
+	MultipleMapDto,
+	RawRoomMappingData,
+	RoomDto,
+} from '../roborockCommunication/models/home/index.js';
 import { Scene } from '../roborockCommunication/models/index.js';
 import { MessageRoutingService } from './index.js';
 
@@ -25,6 +30,7 @@ export class AreaManagementService {
 	constructor(
 		private readonly logger: AnsiLogger,
 		private readonly serviceRouting: MessageRoutingService | undefined,
+		private readonly liveMapUpdates = false,
 	) {}
 
 	public setIotApi(iotApi: RoborockIoTApi): void {
@@ -85,13 +91,26 @@ export class AreaManagementService {
 		return this.supportedRoutines.get(duid);
 	}
 
-	public async getMapInfo(duid: string): Promise<void> {
+	public async getMapInfo(duid: string): Promise<MultipleMapDto[] | undefined> {
 		if (!this.serviceRouting) {
 			throw new DeviceError('Service routing not initialized', duid);
 		}
 
 		this.logger.debug('AreaManagementService - getMapInfo', duid);
-		await this.serviceRouting.getMapInfo(duid);
+		if (this.liveMapUpdates) {
+			await this.serviceRouting.getMapInfoV2(duid);
+			return undefined;
+		}
+		const data = await this.serviceRouting.getMapInfo(duid);
+		if (data && data.length > 0) {
+			const mapInfo = new MapInfo(data[0]);
+			const supportedMaps = mapInfo.maps.map((map) => ({
+				mapId: map.id,
+				name: map.name ?? `Map ${map.id}`,
+			}));
+			this.setSupportedMaps(duid, supportedMaps);
+		}
+		return data;
 	}
 
 	public async getRoomMap(duid: string, activeMap: number): Promise<RawRoomMappingData | undefined> {
@@ -100,6 +119,10 @@ export class AreaManagementService {
 		}
 
 		this.logger.debug('AreaManagementService - getRoomMap', duid);
+		if (this.liveMapUpdates) {
+			await this.serviceRouting.getRoomMapV2(duid, activeMap);
+			return undefined;
+		}
 		const rawData = await this.serviceRouting.getRoomMap(duid, activeMap);
 		if (rawData && rawData.length > 0) {
 			const rooms = this.deviceRooms.get(duid) ?? [];
@@ -107,9 +130,8 @@ export class AreaManagementService {
 				.map((entry) => HomeModelMapper.rawArrayToMapRoomDto(entry, 0))
 				.map((dto) => HomeModelMapper.toRoomMapping(dto, rooms));
 			const homeEntity = new HomeEntity(0, '', new RoomMap(roomMappings), MapInfo.empty(), 0);
-			const { supportedAreas, supportedMaps, roomIndexMap } = getSupportedAreas(homeEntity, this.logger);
+			const { supportedAreas, roomIndexMap } = getSupportedAreas(homeEntity, this.logger);
 			this.setSupportedAreaIndexMap(duid, roomIndexMap);
-			this.setSupportedMaps(duid, supportedMaps);
 			this.setSupportedAreas(duid, supportedAreas);
 		}
 		return rawData;

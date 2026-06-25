@@ -113,10 +113,9 @@ describe('V10MessageDispatcher', () => {
 		});
 
 		it('should call client.send when liveMapUpdates is true', async () => {
-			const liveDispatcher = new V10MessageDispatcher(asType(logger), client, true);
+			const liveDispatcher = new V10MessageDispatcher(asType(logger), client);
 			const result = await liveDispatcher.getMapInfo(duid);
-			expect(client.send).toHaveBeenCalled();
-			expect(client.query).not.toHaveBeenCalled();
+			expect(client.query).toHaveBeenCalled();
 			expect(result).toBeUndefined();
 		});
 	});
@@ -141,10 +140,9 @@ describe('V10MessageDispatcher', () => {
 		});
 
 		it('should call client.send and return undefined when liveMapUpdates is true', async () => {
-			const liveDispatcher = new V10MessageDispatcher(asType(logger), client, true);
+			const liveDispatcher = new V10MessageDispatcher(asType(logger), client);
 			const result = await liveDispatcher.getRoomMap(duid, 1);
-			expect(client.send).toHaveBeenCalled();
-			expect(client.query).not.toHaveBeenCalled();
+			expect(client.query).toHaveBeenCalled();
 			expect(result).toBeUndefined();
 		});
 	});

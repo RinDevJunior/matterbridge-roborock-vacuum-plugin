@@ -10,7 +10,7 @@ import { CleanCommand } from '../model/CleanCommand.js';
 import { PlatformConfigManager } from '../platform/platformConfigManager.js';
 import { RoborockAuthenticateApi } from '../roborockCommunication/api/authClient.js';
 import { RoborockIoTApi } from '../roborockCommunication/api/iotClient.js';
-import { RawRoomMappingData, RoomDto } from '../roborockCommunication/models/home/index.js';
+import { MultipleMapDto, RawRoomMappingData, RoomDto } from '../roborockCommunication/models/home/index.js';
 import { Device, Home, Scene, UserData } from '../roborockCommunication/models/index.js';
 import {
 	AreaManagementService,
@@ -234,8 +234,8 @@ export class RoborockService {
 	}
 
 	/** Get map information for a device. */
-	public async getMapInfo(duid: string): Promise<void> {
-		await this.areaService.getMapInfo(duid);
+	public async getMapInfo(duid: string): Promise<MultipleMapDto[] | undefined> {
+		return this.areaService.getMapInfo(duid);
 	}
 
 	/** Store device room list for explicit room mapping. */

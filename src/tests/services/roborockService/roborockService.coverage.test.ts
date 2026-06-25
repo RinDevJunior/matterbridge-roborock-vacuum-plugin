@@ -316,7 +316,7 @@ describe('RoborockService - Complete Coverage', () => {
 		});
 
 		it('should delegate getMapInfo to areaService', async () => {
-			vi.mocked(mockAreaService.getMapInfo).mockResolvedValue();
+			vi.mocked(mockAreaService.getMapInfo).mockResolvedValue(undefined);
 
 			await service.getMapInfo('duid');
 

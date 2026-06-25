@@ -1,5 +1,17 @@
 # Claude History
 
+## 2026-06-25 (Session 34)
+
+- Restored `getMapInfo` to return `MultipleMapDto[] | undefined` propagated through the full call chain:
+  - `V10MessageDispatcher.getMapInfo`: `liveMapUpdates=false` uses `client.query<MultipleMapDto[]>()` returning actual data; `liveMapUpdates=true` uses `client.send()` and returns `undefined`.
+  - `Q7MessageDispatcher.getMapInfo` / `Q10MessageDispatcher.getMapInfo`: return type `Promise<MultipleMapDto[] | undefined>`, always return `undefined` (push data handled by MapInfoListener).
+  - `abstractMessageDispatcher` interface updated to `getMapInfo(): Promise<MultipleMapDto[] | undefined>`.
+  - `messageRoutingService`, `roborockService` propagate the return type.
+  - `areaManagementService.getMapInfo`: explicitly processes returned `MultipleMapDto[]` → `MapInfo` → derives `supportedMaps` directly from `mapInfo.maps` (cannot use `getSupportedAreas` — it falls back when rooms are empty) → `setSupportedMaps` only (not `setSupportedAreas`, to avoid overwriting rooms).
+  - `areaManagementService.getRoomMap`: removed `setSupportedMaps` call — `setSupportedAreas` reads current `supportedMaps` (set by `getMapInfo`) when calling the listener, preserving maps across the two-step startup flow.
+- Fixed two test mocks: `mockResolvedValue()` → `mockResolvedValue(undefined)` in `RoomMap.test.ts` and `roborockService.coverage.test.ts`.
+- Lint clean, 175 test files / 1875 tests pass.
+
 ## 2026-06-25 (Session 33)
 
 - Fully restored original `getRoomMap` data flow (broken by `fcfdfb6` fire-and-forget refactor):

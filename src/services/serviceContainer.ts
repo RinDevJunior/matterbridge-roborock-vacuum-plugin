@@ -147,7 +147,11 @@ export class ServiceContainer {
 	 * @returns AreaManagementService instance
 	 */
 	getAreaManagementService(): AreaManagementService {
-		this.areaManagementService ??= new AreaManagementService(this.logger, this.getMessageRoutingService());
+		this.areaManagementService ??= new AreaManagementService(
+			this.logger,
+			this.getMessageRoutingService(),
+			this.config.configManager.isLiveMapUpdatesEnabled,
+		);
 		return this.areaManagementService;
 	}
 

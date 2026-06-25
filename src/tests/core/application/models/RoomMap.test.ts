@@ -125,7 +125,7 @@ describe('RoomMap', () => {
 		});
 
 		it('should call getMapInfo and getRoomMap on the service', async () => {
-			vi.mocked(roborockService.getMapInfo).mockResolvedValue();
+			vi.mocked(roborockService.getMapInfo).mockResolvedValue(undefined);
 			vi.mocked(roborockService.getRoomMap).mockResolvedValue(undefined);
 			const device = createMockDevice();
 

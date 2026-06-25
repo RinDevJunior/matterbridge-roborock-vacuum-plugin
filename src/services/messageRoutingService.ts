@@ -4,7 +4,7 @@ import { CleanModeSetting } from '../behaviors/roborock.vacuum/core/CleanModeSet
 import { DeviceError } from '../errors/index.js';
 import { CleanCommand } from '../model/CleanCommand.js';
 import { RoborockIoTApi } from '../roborockCommunication/api/iotClient.js';
-import { RawRoomMappingData } from '../roborockCommunication/models/home/index.js';
+import { MultipleMapDto, RawRoomMappingData } from '../roborockCommunication/models/home/index.js';
 import { AbstractMessageDispatcher } from '../roborockCommunication/protocol/dispatcher/abstractMessageDispatcher.js';
 
 export class MessageRoutingService {
@@ -32,8 +32,12 @@ export class MessageRoutingService {
 		return messageDispatcher;
 	}
 
-	public getMapInfo(duid: string): Promise<void> {
+	public getMapInfo(duid: string): Promise<MultipleMapDto[] | undefined> {
 		return this.getMessageDispatcher(duid).getMapInfo(duid);
+	}
+
+	public getMapInfoV2(duid: string): Promise<void> {
+		return this.getMessageDispatcher(duid).getMapInfoV2(duid);
 	}
 
 	public switchMap(duid: string, mapId: number): Promise<void> {
@@ -43,6 +47,10 @@ export class MessageRoutingService {
 
 	public getRoomMap(duid: string, activeMap: number): Promise<RawRoomMappingData | undefined> {
 		return this.getMessageDispatcher(duid).getRoomMap(duid, activeMap);
+	}
+
+	public getRoomMapV2(duid: string, activeMap: number): Promise<void> {
+		return this.getMessageDispatcher(duid).getRoomMapV2(duid, activeMap);
 	}
 
 	public async getSerialNumber(duid: string): Promise<string> {
