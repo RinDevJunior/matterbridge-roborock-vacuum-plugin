@@ -32,7 +32,7 @@ export class MapInfoListener implements AbstractMessageListener {
 		private readonly deviceSerial?: string,
 		private readonly onActiveMapChanged?: (mapId: number) => void,
 		private readonly deviceProtocol?: string,
-		private readonly allowV1AreaUpdate: boolean = true,
+		private readonly allowV1AreaUpdate = true,
 	) {}
 
 	public async onMessage(message: ResponseMessage): Promise<void> {
