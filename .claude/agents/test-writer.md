@@ -1,9 +1,9 @@
 ---
 name: test-writer
 description: Use this agent to write vitest unit tests for code implemented by the implementer. It reads docs/plan.md for the test strategy and writes tests only — no logic changes. Run AFTER implementer completes and compiler confirms a clean build.
-model: claude-haiku-4-5-20251001
+model: haiku
 color: yellow
-tools:
+tools: 
   - Read
   - Write
   - Edit
@@ -20,15 +20,19 @@ You write vitest unit tests for code that has already been implemented. You do n
 ## Workflow
 
 ### Step 1 — Read the Plan
+
 Read `docs/plan.md` → section "Test Strategy" for the cases to cover.
 
 ### Step 2 — Read the Implementation
+
 Read every file listed in `docs/plan.md` under "Files to Modify" and "Files to Create". Understand exactly what was implemented.
 
 ### Step 3 — Write Tests
+
 Create or update test files in `src/tests/` mirroring the source folder structure. Follow the template and rules below exactly — do not read external guideline files at runtime.
 
 ### Step 4 — Report
+
 List test files written and coverage areas addressed.
 
 ## Shared Memory
@@ -109,6 +113,7 @@ describe('MyClass', () => {
 ## What to Cover
 
 Per `docs/plan.md` Test Strategy, plus:
+
 - Happy path
 - Error / rejection paths
 - Edge cases: null, undefined, empty collections

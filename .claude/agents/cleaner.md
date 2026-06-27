@@ -1,9 +1,9 @@
 ---
 name: cleaner
 description: Cleanup agent. Run at the end of a completed task cycle (after documenter) to remove ephemeral agent working files so the next task starts with a clean slate.
-model: claude-haiku-4-5-20251001
+model: haiku
 color: gray
-tools:
+tools: 
   - Bash
 ---
 

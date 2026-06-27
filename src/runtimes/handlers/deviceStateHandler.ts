@@ -63,7 +63,12 @@ export async function handleDeviceStatusUpdate(
 	// Update operationalError if provided by state resolver
 	if (resolvedState.operationalError !== undefined) {
 		updates.push(
-			robot.updateAttribute(RvcOperationalState.id, 'operationalError', { errorStateId: resolvedState.operationalError }, platform.log),
+			robot.updateAttribute(
+				RvcOperationalState.id,
+				'operationalError',
+				{ errorStateId: resolvedState.operationalError },
+				platform.log,
+			),
 		);
 	}
 

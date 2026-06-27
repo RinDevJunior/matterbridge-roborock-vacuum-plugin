@@ -21,6 +21,7 @@ The **current plugin DOES support multiple maps** with per-map tracking, map swi
 **Answer: NO**
 
 Evidence:
+
 - **`vacuum_device_accessory.ts` line 333, 367:** All `ServiceArea.Area` objects hardcode `mapId: null`
   ```typescript
   return roomMapping.map(
@@ -40,6 +41,7 @@ Evidence:
 **Answer: NO**
 
 Evidence:
+
 - **No `switchMap()` or equivalent** — the device manager does not implement any mechanism to switch between maps or track an "active map"
 - **No `mapId` parameter in API calls** — `getRoomMap()` takes no map selection argument; `cleanRooms()` accepts only room IDs, not a map context
 - **No UI exposure** — the config file (`matterbridge-xiaomi-roborock.config.json`) has no `activeMap` or `mapSelection` option
@@ -50,7 +52,9 @@ Evidence:
 **Answer: Single flat list; maps rooms from all sources (real or hypothetical) into one array**
 
 Evidence:
+
 - **`selectAreas` command handler** (line 163–170):
+
   ```typescript
   this.endpoint.addCommandHandler('selectAreas', async (data) => {
     let selectedAreas = data.request.newAreas;
@@ -60,6 +64,7 @@ Evidence:
     await this.endpoint?.updateAttribute(ServiceArea.Cluster.id, 'selectedAreas', selectedAreas);
   });
   ```
+
   - All areas passed to `cleanRooms()` are room IDs from the **single flat list**
   - No per-map scoping; all selected areas are treated as belonging to the same namespace
 
@@ -102,6 +107,7 @@ No map context anywhere in the flow.
 **Answer: YES**
 
 Evidence:
+
 - **`platformRunner.ts`:** Tracks active map
   ```typescript
   if (robot.homeInFo.activeMapId === data.mapId) return;
@@ -109,11 +115,13 @@ Evidence:
   await handleActiveMapChanged(robot, data.mapId, this.platform);
   ```
 - **`getSupportedAreas.ts`:** Stores per-map room lists
+
   ```typescript
   const mapId = room.iot_map_id;
   areaInfos.set(index, { roomId: room.id, mapId: mapId, roomName: locationName });
   roomInfos.set(`${room.id}-${room.iot_map_id}`, { areaId: index, mapId: room.iot_map_id, roomName: locationName });
   ```
+
   - `mapId` is extracted from the API response (`iot_map_id`)
   - Rooms are keyed by `roomId-mapId` pair, enabling multiple maps with overlapping room IDs
 
@@ -122,6 +130,7 @@ Evidence:
 **Answer: YES**
 
 Evidence:
+
 - **`Q7MessageDispatcher.ts`:** Implements `switchMap()`
   ```typescript
   public async switchMap(duid: string, mapId: number): Promise<void> {
@@ -144,6 +153,7 @@ Evidence:
 **Answer: YES**
 
 Evidence:
+
 - **`getSupportedAreas.ts` line 118–126:**
   ```typescript
   roomInfos.set(`${room.id}-${room.iot_map_id}`, {
@@ -161,12 +171,14 @@ Evidence:
 ### Statement of Gap 1
 
 From `docs/finding/feature-gap.md`:
+
 ```typescript
 // Reference behavior
 if ((data.attributes.supportedAreas as ServiceArea.Area[])?.length === selectedAreas.length) {
   selectedAreas = []; // Force empty if all areas are selected
 }
 ```
+
 When **all supported areas** are selected, normalize to empty array (signals "full clean" vs. "room-specific with all rooms listed").
 
 ### Applicability to Current Plugin
@@ -198,6 +210,7 @@ If NO: The current plugin exposes a flat union of all maps' areas, in which case
 ### 1. For Gap 1 Applicability
 
 Verify in `getSupportedAreas.ts`:
+
 - Does the `supportedAreas` attribute passed to the Matter endpoint include rooms from all maps, or only the active map?
 - Check how `currentArea` changes when the user switches maps — does the UI re-fetch and filter to the active map's rooms?
 
@@ -208,6 +221,7 @@ No action required. Multi-map support is already designed and implemented. The r
 ### 3. For Future Multi-Map Users
 
 When/if Gap 1 is addressed:
+
 - Clarify the semantics: "all selected" means "all on active map" or "all across all maps"
 - Test the normalization logic (if implemented) with multiple maps to ensure it doesn't cause unexpected full-clean triggering
 
@@ -215,10 +229,10 @@ When/if Gap 1 is addressed:
 
 ## Summary Table
 
-| Aspect | Reference (xiaomi-roborock) | Current (roborock-vacuum) |
-|---|---|---|
-| **Stores multiple maps** | NO (mapId: null) | YES (mapId per room, activeMapId tracked) |
-| **Exposes map selection** | NO | YES (switchMap API) |
-| **selectAreas scoping** | Single flat list | Per-map scoping (roomId-mapId keyed) |
-| **Gap 1 applicability** | Direct (single list) | Ambiguous (multi-map semantics unclear) |
-| **Complexity to implement Gap 1** | N/A | Requires clarification of multi-map intent |
+| Aspect                            | Reference (xiaomi-roborock) | Current (roborock-vacuum)                  |
+| --------------------------------- | --------------------------- | ------------------------------------------ |
+| **Stores multiple maps**          | NO (mapId: null)            | YES (mapId per room, activeMapId tracked)  |
+| **Exposes map selection**         | NO                          | YES (switchMap API)                        |
+| **selectAreas scoping**           | Single flat list            | Per-map scoping (roomId-mapId keyed)       |
+| **Gap 1 applicability**           | Direct (single list)        | Ambiguous (multi-map semantics unclear)    |
+| **Complexity to implement Gap 1** | N/A                         | Requires clarification of multi-map intent |

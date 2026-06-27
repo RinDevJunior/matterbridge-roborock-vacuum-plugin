@@ -1,5 +1,25 @@
 # Claude History
 
+## 2026-06-27 — Implemented featureSetDecoder.ts
+
+**Task:** Implemented pure TypeScript decoder that parses `featureSet` (64-bit integer string) and `newFeatureSet` (hex string) from Device DTO into ~172 named boolean `DeviceFeatures` capability flags, mirroring python-roborock's `DeviceFeatures.from_feature_flags()`.
+
+**Changes:**
+
+- `src/share/featureSetDecoder.ts` — created `DeviceFeatures` interface with Groups A–D decoded fields, Groups E–F–G defaulted to false, and 3 raw diagnostic fields; implemented `decodeFeatureSet` function with Group A (lower 32-bit masks), Group B (upper 32-bit bit-index tests), Group C (last 8 hex chars masked), Group D (nibble-index extraction with private `extractNibbleBit` helper); added error handling for invalid `featureSet` (try/catch BigInt) and invalid hex (NaN guard for maskC)
+
+**Outcome:** Pass. File created at `src/share/featureSetDecoder.ts` as a pure utility (no DI, no side effects) with comprehensive guard against invalid inputs. Wiring into capability registry deferred to separate task.
+
+## 2026-06-27 — Investigated Feature Gap 4 (roomNames Config Override)
+
+**Task:** Investigated Gap 4 from feature-gap analysis to understand the deferred roomNames config override issue and confirm Gap 5 was already implemented.
+
+**Changes:**
+
+- `docs/finding/feature-gap.md` — added investigation findings (Gap 4 root cause, name resolution flow, RoomMapping shape, call sites, config type, schema location) and implementation plan (3-step procedure to add config option)
+
+**Outcome:** Pass. Gap 4 is a low-priority deferred issue with complete implementation plan ready to execute when a user reports missing room names. Gap 5 (FullyCharged explicit state) confirmed already implemented. Gaps 1, 2, 5 closed; Gaps 3 and 4 remain open (low priority).
+
 ## 2026-06-27 (Session 36)
 
 - Fixed `ChargingError` (status code 9) to properly set `operationalError` when the robot fails to find or reach the charging dock:

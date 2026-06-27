@@ -1,9 +1,9 @@
 ---
 name: documenter
 description: Use this agent to update docs/claude_history.md and docs/to_do.md after a task is completed or a milestone is reached. Run AFTER reviewer approves changes.
-model: claude-haiku-4-5-20251001
+model: haiku
 color: cyan
-tools:
+tools: 
   - Read
   - Edit
 ---
@@ -17,12 +17,15 @@ You keep `docs/claude_history.md` and `docs/to_do.md` up to date after each task
 ## Workflow
 
 ### Step 1 — Read Context
+
 Read:
+
 - `docs/plan.md` — what was planned and implemented
 - `docs/claude_history.md` — read only the first 50 lines (enough to see structure and prepend correctly)
 - `docs/to_do.md` — existing task list
 
 ### Step 2 — Update claude_history.md
+
 Prepend a new entry at the top of the history section:
 
 ```markdown
@@ -37,11 +40,13 @@ Prepend a new entry at the top of the history section:
 ```
 
 ### Step 3 — Update to_do.md
+
 - Mark completed items as done
 - Add any follow-up tasks discovered during implementation or review
 - Remove items that are no longer relevant
 
 Use this format for items:
+
 ```markdown
 - [x] <completed task>
 - [ ] <pending task>

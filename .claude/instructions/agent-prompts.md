@@ -12,7 +12,7 @@ System prompts are defined in `.claude/agents/`. Only pass task-specific context
 Agent({
   description: "Plan: <task summary>",
   subagent_type: "planner",
-  model: "opus",
+  model: "sonnet",
   prompt: "Task: <task description>"
 })
 ```
@@ -87,7 +87,7 @@ Run only when explicitly requested by the user.
 Agent({
   description: "Review: <task summary>",
   subagent_type: "reviewer",
-  model: "haiku" | "sonnet",
+  model: "sonnet",
   prompt: "Task: <task description>"
 })
 ```

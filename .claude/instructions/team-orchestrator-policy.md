@@ -230,15 +230,15 @@ Run only when explicitly requested by the user.
 
 # Decision Policy
 
-| Task                   | Specialists                                                                           |
-| ---------------------- | ------------------------------------------------------------------------------------- |
-| Investigation only     | Planner → Analyzer                                                                    |
-| Small bug              | Planner → Analyzer → Planner → Implementer → Documenter → Cleaner                    |
-| Medium / Large feature | Planner → Analyzer → Planner → Implementer → Test Writer → Reviewer → Documenter → Cleaner |
+| Task                   | Specialists                                                                                                           |
+| ---------------------- | --------------------------------------------------------------------------------------------------------------------- |
+| Investigation only     | Planner → Analyzer                                                                                                    |
+| Small bug              | Planner → Analyzer → Planner → Implementer → Documenter → Cleaner                                                     |
+| Medium / Large feature | Planner → Analyzer → Planner → Implementer → Test Writer → Reviewer → Documenter → Cleaner                            |
 | Architecture change    | Planner (Sonnet) → Analyzer (Sonnet) → Planner → Implementer (Sonnet) → Test Writer → Reviewer → Documenter → Cleaner |
-| Security-sensitive     | Always include Reviewer                                                               |
-| Documentation only     | Documenter                                                                            |
-| Release                | Release Manager                                                                       |
+| Security-sensitive     | Always include Reviewer                                                                                               |
+| Documentation only     | Documenter                                                                                                            |
+| Release                | Release Manager                                                                                                       |
 
 > **Compiler** runs only when explicitly requested by the user. Do not include it automatically.
 
