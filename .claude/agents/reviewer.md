@@ -2,6 +2,7 @@
 name: reviewer
 description: Use this agent to review the final diff before committing. It checks for correctness, CLAUDE.md compliance, architecture violations, and test coverage gaps. Run LAST after compiler confirms all passing.
 model: claude-sonnet-4-6
+color: red
 tools:
   - Read
   - Glob

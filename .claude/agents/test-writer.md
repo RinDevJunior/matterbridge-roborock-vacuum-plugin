@@ -2,6 +2,7 @@
 name: test-writer
 description: Use this agent to write vitest unit tests for code implemented by the implementer. It reads docs/plan.md for the test strategy and writes tests only — no logic changes. Run AFTER implementer completes and compiler confirms a clean build.
 model: claude-haiku-4-5-20251001
+color: yellow
 tools:
   - Read
   - Write

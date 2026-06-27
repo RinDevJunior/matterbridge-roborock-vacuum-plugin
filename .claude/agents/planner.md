@@ -2,6 +2,7 @@
 name: planner
 description: Use this agent to design implementation plans for new features or bug fixes. It composes technical questions, reviews analyzer answers, and produces a detailed plan.md for the implementer. Run this FIRST before any code changes.
 model: claude-opus-4-8
+color: purple
 tools:
   - Read
   - Write

@@ -2,6 +2,7 @@
 name: compiler
 description: Use this agent to run build, lint, and tests — then return only a clean summary of errors. It acts as a context sink, preventing noisy output from polluting the main conversation. Run after implementer or test-writer completes.
 model: claude-haiku-4-5-20251001
+color: orange
 tools:
   - Bash
 ---

@@ -2,6 +2,7 @@
 name: implementer
 description: Use this agent to write implementation code based on docs/plan.md produced by the planner. It follows the plan exactly and writes logic code only — no tests. Run AFTER planner produces a ready plan.
 model: claude-haiku-4-5-20251001
+color: green
 tools:
   - Read
   - Write

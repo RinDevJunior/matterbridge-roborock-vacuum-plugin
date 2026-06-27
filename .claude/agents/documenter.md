@@ -2,6 +2,7 @@
 name: documenter
 description: Use this agent to update docs/claude_history.md and docs/to_do.md after a task is completed or a milestone is reached. Run AFTER reviewer approves changes.
 model: claude-haiku-4-5-20251001
+color: cyan
 tools:
   - Read
   - Edit

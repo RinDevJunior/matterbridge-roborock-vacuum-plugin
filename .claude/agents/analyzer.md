@@ -2,6 +2,7 @@
 name: analyzer
 description: Use this agent to answer technical questions about the codebase written by the planner. It reads docs/agent-questions.md, searches the codebase, and writes answers to docs/agent-answers.md. Always run AFTER the planner writes questions.
 model: claude-sonnet-4-6
+color: blue
 tools:
   - Read
   - Glob
