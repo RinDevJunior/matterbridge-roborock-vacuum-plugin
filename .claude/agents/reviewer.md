@@ -20,12 +20,10 @@ You perform a final code review of all changes before they are committed. You ch
 
 ### Step 1 — Get the Diff
 ```bash
+git diff HEAD --stat
 git diff HEAD
 ```
-If there are staged changes: `git diff --cached`
-
-### Step 2 — Read Changed Files
-Read each changed file in full — do not rely solely on the diff.
+If there are staged changes use `--cached`. The diff is your primary source — do not read full files unless a specific section lacks context in the diff.
 
 ### Step 3 — Review Against Checklist
 

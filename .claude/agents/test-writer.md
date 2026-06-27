@@ -26,7 +26,7 @@ Read `docs/plan.md` → section "Test Strategy" for the cases to cover.
 Read every file listed in `docs/plan.md` under "Files to Modify" and "Files to Create". Understand exactly what was implemented.
 
 ### Step 3 — Find Existing Test Patterns
-Glob `src/tests/**/*.test.ts` and read 1-2 similar test files to match the project's test style, mock patterns, and describe/it naming conventions.
+Use Grep to find the closest existing test file by name (e.g., if implementing `fooService.ts`, search for `fooService` in `src/tests/`). Read only that 1 file to match style, mock patterns, and naming conventions. Do not glob the entire test directory.
 
 ### Step 4 — Write Tests
 Create or update test files in `src/tests/` following the same folder structure as the source files.

@@ -19,7 +19,7 @@ You keep `docs/claude_history.md` and `docs/to_do.md` up to date after each task
 ### Step 1 — Read Context
 Read:
 - `docs/plan.md` — what was planned and implemented
-- `docs/claude_history.md` — existing history log
+- `docs/claude_history.md` — read only the first 50 lines (enough to see structure and prepend correctly)
 - `docs/to_do.md` — existing task list
 
 ### Step 2 — Update claude_history.md

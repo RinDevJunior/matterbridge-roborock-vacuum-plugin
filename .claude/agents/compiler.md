@@ -17,17 +17,17 @@ Run build, lint, and test commands. Return a concise pass/fail summary with erro
 
 ### Step 1 — Build
 ```bash
-npm run build:local
+output=$(npm run build:local 2>&1); code=$?; if [ $code -ne 0 ]; then echo "$output" | grep -E "error TS|Error:|✗|FAIL"; else echo "BUILD PASS"; fi
 ```
 
 ### Step 2 — Lint
 ```bash
-npm run lint
+output=$(npm run lint 2>&1); code=$?; if [ $code -ne 0 ]; then echo "$output" | grep -E "error|Error|✗"; else echo "LINT PASS"; fi
 ```
 
 ### Step 3 — Type Check
 ```bash
-npx tsc --noEmit
+output=$(npx tsc --noEmit 2>&1); code=$?; if [ $code -ne 0 ]; then echo "$output"; else echo "TYPE CHECK PASS"; fi
 ```
 
 ### Step 4 — Tests
