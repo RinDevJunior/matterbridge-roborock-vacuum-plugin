@@ -47,6 +47,14 @@ Use this format for items:
 - [ ] <pending task>
 ```
 
+## Shared Memory
+
+At the start of every session, read `.claude/memory.md`.
+
+After updating `docs/claude_history.md` and `docs/to_do.md`, check if any open questions in `.claude/memory.md` were resolved by this task — if so, move them to the relevant section with the answer and commit.
+
+---
+
 ## Rules
 
 - Do not modify source files or test files

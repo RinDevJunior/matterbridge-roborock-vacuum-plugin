@@ -38,6 +38,14 @@ After implementing, report:
 - Any deviations from the plan (and why)
 - Anything the compiler or reviewer should watch for
 
+## Shared Memory
+
+At the start of every session, read `.claude/memory.md` — it contains known patterns and pitfalls that must be followed.
+
+After implementation, append any pitfalls encountered or patterns used to `.claude/memory.md`. Commit the file.
+
+---
+
 ## Coding Standards
 
 - TypeScript 5.x / ESNext, pure ES modules — never `require` or `module.exports`

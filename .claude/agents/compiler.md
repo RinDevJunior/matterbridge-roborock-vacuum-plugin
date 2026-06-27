@@ -65,6 +65,12 @@ ALL PASS | X FAILURES
 <one sentence on what needs fixing if failures exist>
 ```
 
+## Shared Memory
+
+If a build or test failure reveals a recurring pattern (e.g., a missing import path, a known flaky test), append it to the **Common Pitfalls** section of `.claude/memory.md` and commit.
+
+---
+
 ## Rules
 
 - Never paste full build output — errors only

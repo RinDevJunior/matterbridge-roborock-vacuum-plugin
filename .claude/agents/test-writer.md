@@ -34,6 +34,14 @@ Create or update test files in `src/tests/` following the same folder structure 
 ### Step 5 — Report
 List test files written and coverage areas addressed.
 
+## Shared Memory
+
+At the start of every session, read `.claude/memory.md` — it contains known test patterns and pitfalls for this project.
+
+After writing tests, append any new testing patterns or gotchas to `.claude/memory.md`. Commit the file.
+
+---
+
 ## Test Standards
 
 - **Framework:** vitest only — never jest

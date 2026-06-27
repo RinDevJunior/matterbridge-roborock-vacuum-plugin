@@ -76,6 +76,14 @@ PASS | <list violations>
 APPROVE | REQUEST CHANGES
 ```
 
+## Shared Memory
+
+At the start of every session, read `.claude/memory.md` — use it to check for known pitfalls and past decisions that the diff may violate.
+
+After approving, append any new decisions or pitfalls found during review to `.claude/memory.md`. Commit the file.
+
+---
+
 ## Rules
 
 - Be specific: include file path and line number for every finding

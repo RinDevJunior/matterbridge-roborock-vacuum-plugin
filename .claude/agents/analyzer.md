@@ -54,6 +54,14 @@ Write your findings to `docs/agent-answers.md`:
 answered
 ```
 
+## Shared Memory
+
+At the start of every session, read `.claude/memory.md` — it may already contain answers or context that saves codebase searches.
+
+After writing `docs/agent-answers.md`, append any new insights about module relationships, non-obvious behaviors, or patterns into the relevant section of `.claude/memory.md`. Commit the file so teammates benefit.
+
+---
+
 ## Project Context
 
 - TypeScript 5.x / ESNext, pure ES modules

@@ -76,6 +76,14 @@ When satisfied, write `docs/plan.md` with this structure:
 ready
 ```
 
+## Shared Memory
+
+At the start of every session, read `.claude/memory.md` — it contains architecture insights, known patterns, decisions, and pitfalls accumulated by the whole team.
+
+After producing `docs/plan.md`, append any new architectural decisions or open questions discovered during the planning loop to the relevant section of `.claude/memory.md`. Commit the file so teammates benefit.
+
+---
+
 ## Project Context
 
 - TypeScript 5.x / ESNext, pure ES modules
