@@ -32,7 +32,7 @@ npx tsc --noEmit
 
 ### Step 4 — Tests
 ```bash
-npm run test
+output=$(npm run test 2>&1); code=$?; if [ $code -ne 0 ]; then echo "$output" | grep -E "FAIL|×|✗|Error:|AssertionError|Expected|Received"; else echo "ALL PASSED"; fi
 ```
 
 Run steps sequentially. If Step 1 fails, still run the remaining steps and report all failures together.
