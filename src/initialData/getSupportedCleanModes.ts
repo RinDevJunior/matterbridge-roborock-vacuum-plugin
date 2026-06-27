@@ -15,12 +15,14 @@ const defaultModes = getModeOptions(baseCleanModeConfigs);
 export function getSupportedCleanModes(
 	model: DeviceModel,
 	configManager: PlatformConfigManager,
+	featureSet?: string,
+	newFeatureSet?: string,
 ): RvcCleanMode.ModeOption[] {
 	if (configManager.forceRunAtDefault) {
 		return getDefaultSupportedCleanModes(configManager, [...defaultModes]);
 	}
 
-	const supportedModes = getModeOptions(getAllModesForDevice(model));
+	const supportedModes = getModeOptions(getAllModesForDevice(model, featureSet, newFeatureSet));
 	return getDefaultSupportedCleanModes(configManager, supportedModes);
 }
 

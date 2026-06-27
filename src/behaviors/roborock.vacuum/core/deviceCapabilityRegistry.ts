@@ -1,4 +1,5 @@
 import { DeviceModel } from '../../../roborockCommunication/models/index.js';
+import { decodeFeatureSet } from '../../../share/featureSetDecoder.js';
 import {
 	baseCleanModeConfigs,
 	CleanModeConfig,
@@ -34,9 +35,24 @@ export const DEVICE_EXTRA_MODES: Partial<Record<string, CleanModeConfig[]>> = {
 /**
  * Get the extra clean modes for a device beyond the base modes.
  * Returns an empty array if the device has no extra modes.
+ * If featureSet and/or newFeatureSet are provided, dynamically filters modes
+ * based on device capabilities (e.g., VacFollowedByMop gated on is_clean_then_mop_mode_supported).
  */
-export function getExtraModes(model: string): CleanModeConfig[] {
-	return DEVICE_EXTRA_MODES[model] ?? [];
+export function getExtraModes(model: string, featureSet?: string, newFeatureSet?: string): CleanModeConfig[] {
+	const staticModes = DEVICE_EXTRA_MODES[model] ?? [];
+	const hasFeatureContext = featureSet !== undefined || newFeatureSet !== undefined;
+
+	if (!hasFeatureContext) {
+		return staticModes;
+	}
+
+	const features = decodeFeatureSet(featureSet, newFeatureSet);
+	return staticModes.filter((config) => {
+		if (config.mode === vacFollowedByMopModeConfig.mode) {
+			return features.is_clean_then_mop_mode_supported;
+		}
+		return true; // Smart Plan, VacAndMopDeep — static only, always pass through
+	});
 }
 
 /**
@@ -48,9 +64,11 @@ export function hasSmartPlan(model: string): boolean {
 
 /**
  * Get all clean modes for a device: extra modes first, then base modes.
+ * If featureSet and/or newFeatureSet are provided, dynamically filters modes
+ * based on device capabilities.
  */
-export function getAllModesForDevice(model: string): CleanModeConfig[] {
-	return [...getExtraModes(model), ...baseCleanModeConfigs];
+export function getAllModesForDevice(model: string, featureSet?: string, newFeatureSet?: string): CleanModeConfig[] {
+	return [...getExtraModes(model, featureSet, newFeatureSet), ...baseCleanModeConfigs];
 }
 
 /**

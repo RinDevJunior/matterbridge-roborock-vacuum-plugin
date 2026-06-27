@@ -14,6 +14,10 @@ It is version-controlled — commit and push changes so teammates can pull the l
 - Room data (supportedAreas, roomIndexMap) is in-memory only inside `AreaManagementService` private Maps keyed by duid — no file/db persistence.
 - `getSupportedAreas` is called from 3 sites: `areaManagementService.getMapInfo`, `areaManagementService.getRoomMap`, `mapInfoListener.updateAreas`.
 - Room name resolution in `processValidData` (getSupportedAreas.ts:109-113): priority is `iot_name` → secondary lookup by `iot_name_id` → `Unknown Room ${randomInt(1000,9999)}`.
+- `deviceCapabilityRegistry.ts` is a clean-mode-only registry (not a feature-flag registry). Functions `getExtraModes(model, featureSet?, newFeatureSet?)` and `getAllModesForDevice(model, featureSet?, newFeatureSet?)` accept optional feature params; if present, they filter VacFollowedByMop (mode 11) by `is_clean_then_mop_mode_supported` (bit 93 of newFeatureSet), else return static modes. `hasSmartPlan` and `getAllKnownModeConfigs` remain static.
+- Feature-gated mode wiring: `deviceConfigurator.ts` passes `vacuum.featureSet, vacuum.newFeatureSet` to `configureBehavior`; `behaviorFactory.ts` threads them to `buildBehaviorConfig`; `buildBehaviorConfig` threads to `getAllModesForDevice`. Similarly, `roborockVacuumCleaner.ts` passes `device.featureSet, device.newFeatureSet` to `getSupportedCleanModes`. Both Device instances reach registry functions with feature context for dynamic filtering.
+- `cleanModeHandler.ts:35` has only `DeviceSpecs` in scope (no Device, no featureSet) — out of scope for this wiring phase. `matterStateNames.ts:6` calls `getAllKnownModeConfigs()` at module level (pure name lookup, not gating) — no change needed.
+- Smart Plan (mode 4) and VacAndMopDeep (mode 12) remain model-string-only (no feature flag equivalent). VacFollowedByMop (mode 11) is now dynamically gated on decoded `is_clean_then_mop_mode_supported`.
 
 ## Known Patterns
 
@@ -37,6 +41,8 @@ It is version-controlled — commit and push changes so teammates can pull the l
 <!-- Things to avoid — bugs found, anti-patterns, footguns -->
 
 - `RoborockPluginPlatformConfig` is set via `config as RoborockPluginPlatformConfig` cast in `module.ts:31` — no runtime schema validation. New fields added to the type must also be added to the schema and given defaults.
+- `buildBehaviorConfig(model, featureSet?, newFeatureSet?)` caches by model key only (not feature params). This is acceptable because the same device model receives the same feature set across its lifetime; but if a future requirement needs per-feature caching, update the cache key to include featureSet/newFeatureSet hash.
+- `decodeFeatureSet` returns all-false on invalid `featureSet` string (try/catch wraps `BigInt()` parse); Group D (nibble extraction) gracefully handles out-of-range or non-hex characters by returning false.
 
 ## Module Notes
 

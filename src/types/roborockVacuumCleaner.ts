@@ -1,4 +1,4 @@
-import { CommandHandlerData, MatterbridgeEndpointCommands } from 'matterbridge';
+import { CommandHandlerData, CommandHandlers } from 'matterbridge';
 import { RoboticVacuumCleaner } from 'matterbridge/devices';
 import { AnsiLogger, debugStringify } from 'matterbridge/logger';
 import { ModeBase, RvcOperationalState, ServiceArea } from 'matterbridge/matter/clusters';
@@ -141,7 +141,12 @@ export class RoborockVacuumCleaner extends RoboticVacuumCleaner {
 		roborockService: RoborockService,
 		log: AnsiLogger,
 	) {
-		const cleanModes = getSupportedCleanModes(device.specs.model, configManager);
+		const cleanModes = getSupportedCleanModes(
+			device.specs.model,
+			configManager,
+			device.featureSet,
+			device.newFeatureSet,
+		);
 		const operationalState = getOperationalStates();
 		const runModeConfigs = getRunModeOptions(baseRunModeConfigs);
 
@@ -200,7 +205,7 @@ export class RoborockVacuumCleaner extends RoboticVacuumCleaner {
 	 * Wraps handler logic in try-catch to avoid code duplication.
 	 */
 	private addCommandHandlerWithErrorHandling(
-		commandName: keyof MatterbridgeEndpointCommands,
+		commandName: CommandHandlers,
 		handler: (context: CommandHandlerData) => Promise<void>,
 	): void {
 		this.addCommandHandler(commandName, async (context: CommandHandlerData) => {

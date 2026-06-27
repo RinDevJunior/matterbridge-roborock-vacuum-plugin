@@ -1,5 +1,20 @@
 # Claude History
 
+## 2026-06-27 — Wired featureSetDecoder into capability registry
+
+**Task:** Wire `featureSetDecoder` into `deviceCapabilityRegistry` to dynamically gate `VacFollowedByMop` (mode 11) on the `is_clean_then_mop_mode_supported` feature flag (bit 93 of `newFeatureSet`), while keeping `SmartPlan` (mode 4) and `VacAndMopDeep` (mode 12) as static model-string lookups.
+
+**Changes:**
+
+- `src/behaviors/roborock.vacuum/core/deviceCapabilityRegistry.ts` — added `decodeFeatureSet` import; updated `getExtraModes` signature with optional `featureSet?` and `newFeatureSet?` parameters; implemented hybrid filter logic that decodes feature flags only when device context is present and gates mode 11 on `is_clean_then_mop_mode_supported`; updated `getAllModesForDevice` signature and body to thread optional params through
+- `src/behaviors/roborock.vacuum/core/behaviorConfig.ts` — extended function signature with `featureSet?` and `newFeatureSet?` parameters; threaded them into `getAllModesForDevice` call
+- `src/initialData/getSupportedCleanModes.ts` — extended function signature with optional feature params; passed them to `getAllModesForDevice`
+- `src/platform/deviceConfigurator.ts` — threaded `vacuum.featureSet` and `vacuum.newFeatureSet` into `configureBehavior` call
+- `src/platform/behaviorFactory.ts` — threaded feature params through to called functions
+- `src/types/roborockVacuumCleaner.ts` — passed `device.featureSet` and `device.newFeatureSet` to `getSupportedCleanModes` call
+
+**Outcome:** Pass with notes. All registry functions accept feature flags as optional parameters for backward compatibility. Existing callers without device context (e.g., `runtimeHelper.ts`, `matterStateNames.ts`) compile unchanged. VacFollowedByMop is now dynamically gated; SmartPlan and VacAndMopDeep remain static as planned.
+
 ## 2026-06-27 — Implemented featureSetDecoder.ts
 
 **Task:** Implemented pure TypeScript decoder that parses `featureSet` (64-bit integer string) and `newFeatureSet` (hex string) from Device DTO into ~172 named boolean `DeviceFeatures` capability flags, mirroring python-roborock's `DeviceFeatures.from_feature_flags()`.

@@ -1,5 +1,348 @@
 ## Answers
 
+---
+
+## Session: deviceCapabilityRegistry + featureSet data flow (2026-06-27)
+
+### Q1: What does `deviceCapabilityRegistry.ts` export?
+
+File: `src/behaviors/roborock.vacuum/core/deviceCapabilityRegistry.ts`
+
+**Exported symbols:**
+
+| Symbol                   | Kind     | Signature                                    |
+| ------------------------ | -------- | -------------------------------------------- |
+| `DEVICE_EXTRA_MODES`     | `const`  | `Partial<Record<string, CleanModeConfig[]>>` |
+| `getExtraModes`          | function | `(model: string) => CleanModeConfig[]`       |
+| `hasSmartPlan`           | function | `(model: string) => boolean`                 |
+| `getAllModesForDevice`   | function | `(model: string) => CleanModeConfig[]`       |
+| `getAllKnownModeConfigs` | function | `() => CleanModeConfig[]`                    |
+
+**`DEVICE_EXTRA_MODES` table structure:**
+
+- Key type: `string` (device model string, sourced from the `DeviceModel` enum)
+- Value type: `CleanModeConfig[]` (an array of clean mode configurations)
+- The record is typed `Partial<Record<string, ...>>` — models not listed return `undefined`
+
+**Example entries (lines 28–32):**
+
+```typescript
+[DeviceModel.QREVO_EDGE_5V1]: [smartPlanModeConfig, vacFollowedByMopModeConfig],
+[DeviceModel.QREVO_PLUS]:     [smartPlanModeConfig, vacFollowedByMopModeConfig],
+[DeviceModel.QREVO_MAXV]:     [smartPlanModeConfig, vacFollowedByMopModeConfig],
+[DeviceModel.Q10_S5_PLUS]:    [vacFollowedByMopModeConfig, vacAndMopDeepModeConfig],
+```
+
+**Function behaviors:**
+
+- `getExtraModes(model)` — returns `DEVICE_EXTRA_MODES[model] ?? []` (empty array for unknown models)
+- `hasSmartPlan(model)` — returns `true` if the model's extra modes include a config with `label === CleanModeDisplayLabel.SmartPlan`
+- `getAllModesForDevice(model)` — returns `[...getExtraModes(model), ...baseCleanModeConfigs]` (extra first, then base modes)
+- `getAllKnownModeConfigs()` — union of all extra modes across all models + base modes, deduplicated by `config.mode` number
+
+**Important clarification:** This registry has **nothing to do with a `DeviceCapabilities` interface** or boolean capability flags. It is purely a clean mode configuration registry — it maps model strings to lists of extra `CleanModeConfig` objects. The word "capability" in the filename refers only to which extra clean modes a device is capable of.
+
+---
+
+### Q2: What interface/type does the registry return to callers?
+
+The registry does **not** return a `DeviceCapabilities` type or any named capability interface. All four functions return either:
+
+- `CleanModeConfig[]` — an array of clean mode descriptors
+- `boolean` — for `hasSmartPlan`
+
+**`CleanModeConfig` interface** (`src/behaviors/roborock.vacuum/core/cleanModeConfig/types.ts`):
+
+```typescript
+interface CleanModeConfig {
+    mode: number;              // integer mode number (e.g. 4, 11, 12)
+    label: string;             // display label (e.g. 'Smart Plan', 'Vacuum & Mop: Default')
+    setting: CleanModeSetting; // what clean settings to apply when this mode is selected
+    modeTags: { value: number }[]; // Matter cluster mode tags
+}
+```
+
+There is **no separate `DeviceCapabilities` type** anywhere in the codebase. The concept of "device capabilities" in this file is exclusively about which extra clean mode numbers are available for a given model.
+
+---
+
+### Q3: Which files import from `deviceCapabilityRegistry.ts`?
+
+Four files import from this registry:
+
+**1. `src/share/matterStateNames.ts` (line 3)**
+
+```typescript
+import { getAllKnownModeConfigs } from '../behaviors/roborock.vacuum/core/deviceCapabilityRegistry.js';
+```
+
+- Call: `const allKnownCleanModeConfigs = getAllKnownModeConfigs()` (module-level, line 6)
+- Stored as: module-level `const allKnownCleanModeConfigs: CleanModeConfig[]`
+- Downstream behavior: used in `getCleanModeName(mode: number)` to resolve a numeric mode to a display label string. No capability gating — purely a name lookup.
+
+**2. `src/share/runtimeHelper.ts` (line 2)**
+
+```typescript
+import { getAllModesForDevice, hasSmartPlan } from '../behaviors/roborock.vacuum/core/deviceCapabilityRegistry.js';
+```
+
+- Calls (lines 24–25):
+  ```typescript
+  const modes = getAllModesForDevice(key);
+  const resolver = hasSmartPlan(key) ? createSmartModeResolver(modes) : createDefaultModeResolver(modes);
+  ```
+- Stored: resolver cached in `resolverCache: Map<string, ModeResolver>` per model
+- Downstream behavior: `getCleanModeResolver(model, forceRunAtDefault)` returns either a smart or default `ModeResolver`. The `ModeResolver` is then used in `cleanModeHandler.ts` (line 35) to map Matter clean mode numbers to Roborock commands.
+
+**3. `src/initialData/getSupportedCleanModes.ts` (line 9)**
+
+```typescript
+import { getAllModesForDevice } from '../behaviors/roborock.vacuum/core/deviceCapabilityRegistry.js';
+```
+
+- Call (line 23): `const supportedModes = getModeOptions(getAllModesForDevice(model))`
+- Downstream behavior: `RoborockVacuumCleaner.initializeDeviceConfiguration` (line 144) calls this to populate the `RvcCleanMode` cluster's `supportedModes` attribute on the Matter endpoint. Controls which clean modes are advertised to Matter controllers.
+
+**4. `src/behaviors/roborock.vacuum/core/behaviorConfig.ts` (line 15)**
+
+```typescript
+import { getAllModesForDevice, hasSmartPlan } from './deviceCapabilityRegistry.js';
+```
+
+- Calls (lines 44–45):
+  ```typescript
+  const withSmartPlan = hasSmartPlan(model);
+  const allModes = getAllModesForDevice(model);
+  ```
+- Downstream behavior gating:
+  - `withSmartPlan === true` → adds `SmartPlanHandler` to the `ModeHandlerRegistry` and names config `'BehaviorSmart'`; otherwise uses `'DefaultBehavior'`
+  - `allModes` → populates `config.cleanModes` (mode-number-to-label map) and `config.cleanSettings` (mode-number-to-settings map), controlling how Matter `changeToMode` commands are dispatched to Roborock
+
+---
+
+### Q4: Full `DeviceFeatures` interface and mapping against registry capability flags
+
+File: `src/share/featureSetDecoder.ts` lines 1–192
+
+`DeviceFeatures` has **162 boolean properties** + **3 raw diagnostic fields** across 7 groups:
+
+- **Group A** (25 flags): lower 32 bits of `featureSet` — decoded via bitmask against `Number(featureInt & 0xffffffffn)`
+- **Group B** (17 flags): upper 32 bits of `featureSet` — decoded via `(upper32 >> bitIndex) & 1`
+- **Group C** (27 flags): last 8 hex chars of `newFeatureSet` — decoded via bitmask against `parseInt(hexStr.slice(-8), 16)`
+- **Group D** (79 flags): nibble-index extraction from full `newFeatureSet` string — decoded via `extractNibbleBit(hexStr, bitIndex)`
+- **Group E** (7 flags): always `false` in this decoder (requires `APP_GET_INIT_STATUS`)
+- **Group F** (10 flags): always `false` in this decoder (requires model whitelist/blacklist data)
+- **Group G** (8 flags): always `false` in this decoder (requires product features data)
+- **Raw fields**: `newFeatureInfo: bigint`, `newFeatureInfoStr: string`, `featureInfo: number[]`
+
+**Mapping `DeviceFeatures` flags to registry "capabilities":**
+
+The registry does not use boolean capability flags at all — it uses static model-string membership. The functional equivalents would be:
+
+| Registry concept                                                              | Closest `DeviceFeatures` flag                                                | Assessment                                                                                                                                                                                     |
+| ----------------------------------------------------------------------------- | ---------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `hasSmartPlan` (mode 4) — models `QREVO_EDGE_5V1`, `QREVO_PLUS`, `QREVO_MAXV` | None                                                                         | **No equivalent.** No flag in any of Groups A–G is named `is_smart_plan_supported`. Model-name-only.                                                                                           |
+| `vacFollowedByMopModeConfig` (mode 11)                                        | `is_clean_then_mop_mode_supported` (Group D, `extractNibbleBit(hexStr, 93)`) | **Best candidate** — "clean then mop" is functionally "vac followed by mop". Needs real device data to confirm.                                                                                |
+| `vacAndMopDeepModeConfig` (mode 12) — model `Q10_S5_PLUS` only                | None definitive                                                              | **No direct equivalent.** `is_carpet_deep_clean_supported` (Group C) and `is_clean_route_deep_slow_plus_supported` (Group C) are thematically adjacent but not mode-specific. Model-name-only. |
+
+---
+
+### Q5: Where is the capability registry called — exact call sites and model string source
+
+The registry functions are called from four places. In every case, the model is passed as a plain `string` (the `DeviceModel` enum is a string enum). The `Device` DTO availability at each call site:
+
+**Call site 1 — `src/platform/deviceConfigurator.ts:117–118`**
+
+```typescript
+const behaviorHandler = configureBehavior(
+    vacuum.specs.model,   // ← DeviceModel from Device.specs.model
+    vacuum.duid,
+    ...
+);
+```
+
+- `vacuum` is typed as `Device` — `vacuum.featureSet` and `vacuum.newFeatureSet` are available directly at this same call site, no threading needed.
+
+**Call site 2 — `src/types/roborockVacuumCleaner.ts:144`**
+
+```typescript
+const cleanModes = getSupportedCleanModes(device.specs.model, configManager);
+```
+
+- `device` is typed as `Device` — `device.featureSet` and `device.newFeatureSet` are available at the same call site, no threading needed.
+- This is inside `RoborockVacuumCleaner.initializeDeviceConfiguration(device, ...)`.
+
+**Call site 3 — `src/runtimes/handlers/cleanModeHandler.ts:35`**
+
+```typescript
+const currentCleanModeResolver = getCleanModeResolver(deviceData.model, forceRunAtDefault);
+```
+
+- `deviceData` is typed as `DeviceSpecs`, not `Device`. `DeviceSpecs` does **not** carry `featureSet`/`newFeatureSet`. To access feature flags here, the full `Device` DTO would need to be threaded in.
+
+**Call site 4 — `src/share/matterStateNames.ts:6` (module-level)**
+
+```typescript
+const allKnownCleanModeConfigs = getAllKnownModeConfigs();
+```
+
+- No model or device passed. Static/model-agnostic. Not applicable.
+
+**Summary:**
+
+- Call sites 1 and 2: `Device` DTO in scope — `featureSet` and `newFeatureSet` accessible without threading.
+- Call site 3: only `DeviceSpecs` in scope — `featureSet`/`newFeatureSet` not accessible without additional threading.
+- Call site 4: no device context.
+
+---
+
+### Q6: Domain entity representing a device in the behavior layer
+
+There is **no separate domain entity class** in `src/behaviors/` or `src/core/` that wraps a device. The behavior layer operates directly on the `Device` interface and its sub-interface `DeviceSpecs`.
+
+**`DeviceSpecs`** (`src/roborockCommunication/models/device.ts:9–18`) — used at the clean-mode handler call site:
+
+```typescript
+interface DeviceSpecs {
+    id: string;
+    firmwareVersion: string;
+    protocol: string;
+    serialNumber: string;
+    model: DeviceModel;
+    category: DeviceCategory;
+    batteryLevel: number;
+    hasRealTimeConnection: boolean;
+}
+```
+
+- Does **not** carry `featureSet` or `newFeatureSet`.
+
+**`Device`** (`src/roborockCommunication/models/device.ts:32–61`) — the full DTO used at configuration call sites:
+
+```typescript
+interface Device {
+    duid: string;
+    name: string;
+    sn: string;
+    serialNumber: string;
+    featureSet?: string;       // present, optional
+    newFeatureSet?: string;    // present, optional
+    silentOtaSwitch?: boolean;
+    activeTime: number;
+    createTime: number;
+    localKey: string;
+    pv: string;
+    online: boolean;
+    productId: string;
+    rrHomeId: number;
+    fv: string;
+    deviceStatus: Record<string, DeviceStatusResponsetype>;
+    schema: DeviceSchema[];
+    specs: DeviceSpecs;
+    store: DeviceInformation;
+    scenes?: Scene[];
+    mapInfos: MapEntry[] | undefined;
+}
+```
+
+The closest to a "behavior-layer entity" is `RoborockVacuumCleaner` (`src/types/roborockVacuumCleaner.ts`), which holds `this.device: Device` internally and wraps it with Matter endpoint logic. It exposes `device.specs.model` at the `getSupportedCleanModes` call site (line 144).
+
+---
+
+### Q7: How the `Device` DTO flows from home-data API response into the behavior layer
+
+**Step 1 — API response → raw Home object**
+
+`RoborockIoTApi.getHomeWithProducts()` (`src/roborockCommunication/api/iotClient.ts`) calls `getHome()` / `getHomev2()` / `getHomev3()` and returns a `Home` object. The API response is parsed by axios and typed directly as `Home` (which contains `devices: Device[]`). The `featureSet` and `newFeatureSet` fields are raw JSON from the Roborock API and map directly to `Device` interface fields (lines 38–39 of `device.ts`). No transformation is applied — they are preserved verbatim via JSON deserialization.
+
+**Step 2 — enrichment in `DeviceManagementService.listDevices()`** (`src/services/deviceManagementService.ts:67–96`)
+
+Each raw device is spread into an enriched `Device` object:
+
+```typescript
+return {
+    ...device,            // ← featureSet and newFeatureSet preserved here
+    rrHomeId: homeInfo.rrHomeId,
+    specs: { id: device.duid, model: ..., ... },   // does NOT include featureSet
+    store: { userData: ..., homeData: ... },
+} satisfies Device;
+```
+
+The `...device` spread preserves `featureSet` and `newFeatureSet` verbatim. The `specs` sub-object is built from separate fields and does not copy them.
+
+**Step 3 — storage in `DeviceRegistry`**
+
+The enriched `Device[]` from `listDevices()` is stored in `DeviceRegistry` and iterated in `DeviceConfigurator.onConfigureDevice()`.
+
+**Step 4 — retrieval at capability registry call sites**
+
+- `deviceConfigurator.ts:117`: `vacuum` is the full `Device` — `vacuum.featureSet` and `vacuum.newFeatureSet` in scope.
+- `roborockVacuumCleaner.ts:144`: `device` is the full `Device` passed to `RoborockVacuumCleaner` — `device.featureSet` and `device.newFeatureSet` in scope.
+
+**`featureSet`/`newFeatureSet` preservation at each step:**
+
+| Step         | Component                                                                | Preserved?                                     |
+| ------------ | ------------------------------------------------------------------------ | ---------------------------------------------- |
+| API response | `RoborockIoTApi` axios JSON parse                                        | Yes — raw JSON mapped directly                 |
+| Enrichment   | `DeviceManagementService.listDevices` spread (`...device`)               | Yes                                            |
+| Storage      | `DeviceRegistry`                                                         | Yes — full `Device` stored                     |
+| Call site 1  | `DeviceConfigurator.configureDevice` (`vacuum: Device`)                  | Yes — in scope                                 |
+| Call site 2  | `RoborockVacuumCleaner.initializeDeviceConfiguration` (`device: Device`) | Yes — in scope                                 |
+| Call site 3  | `cleanModeHandler.ts` (`deviceData: DeviceSpecs`)                        | No — `DeviceSpecs` does not carry these fields |
+
+---
+
+### Q8: Capabilities in the static registry that have no `DeviceFeatures` flag equivalent
+
+The registry returns two categories: `CleanModeConfig[]` lists and the derived `hasSmartPlan` boolean. Mapping each:
+
+**1. Smart Plan mode (mode 4) — `hasSmartPlan` / `smartPlanModeConfig`**
+
+- Models: `QREVO_EDGE_5V1`, `QREVO_PLUS`, `QREVO_MAXV`
+- `DeviceFeatures` equivalent: **None.** No `is_smart_plan_supported` or semantically equivalent flag exists in Groups A–G.
+- Verdict: **Truly model-name-only.**
+
+**2. VacFollowedByMop mode (mode 11) — `vacFollowedByMopModeConfig`**
+
+- Models: `QREVO_EDGE_5V1`, `QREVO_PLUS`, `QREVO_MAXV`, `Q10_S5_PLUS`
+- `DeviceFeatures` closest equivalent: `is_clean_then_mop_mode_supported` (Group D, `extractNibbleBit(hexStr, 93)`)
+- Verdict: **Partial match** — semantically the same concept; whether bit 93 is reliably set for these models needs validation against real device data.
+
+**3. VacAndMopDeep mode (mode 12) — `vacAndMopDeepModeConfig`**
+
+- Models: `Q10_S5_PLUS` only
+- `DeviceFeatures` closest candidates: `is_carpet_deep_clean_supported` (Group C, mask 8) or `is_clean_route_deep_slow_plus_supported` (Group C, mask 16777216) — neither is specifically a "deep vac+mop mode."
+- Verdict: **No direct equivalent. Truly model-name-only.**
+
+**Recommendation for the planner:**
+
+A **hybrid approach** is required:
+
+- Smart Plan support: keep static model-string lookup — no flag exists to replace it.
+- VacAndMopDeep support: keep static model-string lookup — no flag exists.
+- VacFollowedByMop support: could potentially use `is_clean_then_mop_mode_supported` (bit 93) but needs validation; fall back to static if flag is absent.
+
+---
+
+## Confidence
+
+- Q1: High. All exports read directly from source.
+- Q2: High. `CleanModeConfig` interface read directly. Confirmed no `DeviceCapabilities` type exists anywhere.
+- Q3: High. All four import sites found by grep and read in full.
+- Q4: High on interface definition. Flag-to-mode mapping is best-effort semantic matching; VacFollowedByMop / `is_clean_then_mop_mode_supported` mapping needs real device data to confirm.
+- Q5: High. All call sites traced. `DeviceSpecs` limitation at call site 3 is confirmed by reading the `DeviceSpecs` interface.
+- Q6: High. No separate domain entity class exists — confirmed by reading `device.ts` and the behavior-layer files.
+- Q7: High. The `...device` spread in `DeviceManagementService.listDevices()` line 68 is confirmed to preserve `featureSet`/`newFeatureSet`.
+- Q8: High on Smart Plan and VacAndMopDeep being model-name-only. VacFollowedByMop has a plausible flag candidate that is unconfirmed.
+
+## Status
+
+answered
+
+---
+
+## Previous session answers (featureSetDecoder implementation research)
+
 ### Q1: Complete `NewFeatureStrBit` enum entries
 
 All members of `NewFeatureStrBit(IntEnum)` from `/Volumes/ExternalSSD/code/references/python-roborock/roborock/device_features.py:10–88`:
@@ -89,292 +432,3 @@ Notes:
 
 - Integer values 44, 46, 59, 61, 65, 68, 74, 88, 90, 92, 95, 103 have no enum member assigned (gaps in the sequence).
 - `TIDYUP_ZONES` is declared as `TIDYUP_ZONES = MECHANICAL_ARM_MODE` — both resolve to 89 at runtime.
-
----
-
-### Q2: Complete mapping from each `NewFeatureStrBit` member to its `DeviceFeatures` field name
-
-Every field declared with `metadata={"new_feature_str_bit": NewFeatureStrBit.XXX}`, in declaration order. File: `device_features.py:328–475`.
-
-| `NewFeatureStrBit` member            | `DeviceFeatures` field name                         |
-| ------------------------------------ | --------------------------------------------------- |
-| TWO_KEY_REAL_TIME_VIDEO              | `is_two_key_real_time_video_supported`              |
-| TWO_KEY_RTV_IN_CHARGING              | `is_two_key_rtv_in_charging_supported`              |
-| DIRTY_REPLENISH_CLEAN                | `is_dirty_replenish_clean_supported`                |
-| AUTO_DELIVERY_FIELD_IN_GLOBAL_STATUS | `is_auto_delivery_field_in_global_status_supported` |
-| AVOID_COLLISION_MODE                 | `is_avoid_collision_mode_supported`                 |
-| VOICE_CONTROL                        | `is_voice_control_supported`                        |
-| NEW_ENDPOINT                         | `is_new_endpoint_supported`                         |
-| PUMPING_WATER                        | `is_pumping_water_supported`                        |
-| CORNER_MOP_STRETCH                   | `is_corner_mop_stretch_supported`                   |
-| HOT_WASH_TOWEL                       | `is_hot_wash_towel_supported`                       |
-| FLOOR_DIR_CLEAN_ANY_TIME             | `is_floor_dir_clean_any_time_supported`             |
-| PET_SUPPLIES_DEEP_CLEAN              | `is_pet_supplies_deep_clean_supported`              |
-| MOP_SHAKE_WATER_MAX                  | `is_mop_shake_water_max_supported`                  |
-| EXACT_CUSTOM_MODE                    | `is_exact_custom_mode_supported`                    |
-| VIDEO_PATROL                         | `is_video_patrol_supported`                         |
-| CARPET_CUSTOM_CLEAN                  | `is_carpet_custom_clean_supported`                  |
-| PET_SNAPSHOT                         | `is_pet_snapshot_supported`                         |
-| CUSTOM_CLEAN_MODE_COUNT              | `is_custom_clean_mode_count_supported`              |
-| NEW_AI_RECOGNITION                   | `is_new_ai_recognition_supported`                   |
-| AUTO_COLLECTION_2                    | `is_auto_collection_2_supported`                    |
-| RIGHT_BRUSH_STRETCH                  | `is_right_brush_stretch_supported`                  |
-| SMART_CLEAN_MODE_SET                 | `is_smart_clean_mode_set_supported`                 |
-| DIRTY_OBJECT_DETECT                  | `is_dirty_object_detect_supported`                  |
-| NO_NEED_CARPET_PRESS_SET             | `is_no_need_carpet_press_set_supported`             |
-| VOICE_CONTROL_LED                    | `is_voice_control_led_supported`                    |
-| WATER_LEAK_CHECK                     | `is_water_leak_check_supported`                     |
-| MIN_BATTERY_15_TO_CLEAN_TASK         | `is_min_battery_15_to_clean_task_supported`         |
-| GAP_DEEP_CLEAN                       | `is_gap_deep_clean_supported`                       |
-| OBJECT_DETECT_CHECK                  | `is_object_detect_check_supported`                  |
-| IDENTIFY_ROOM                        | `is_identify_room_supported`                        |
-| MATTER                               | `is_matter_supported`                               |
-| WORKDAY_HOLIDAY                      | `is_workday_holiday_supported`                      |
-| CLEAN_DIRECT_STATUS                  | `is_clean_direct_status_supported`                  |
-| MAP_ERASER                           | `is_map_eraser_supported`                           |
-| OPTIMIZE_BATTERY                     | `is_optimize_battery_supported`                     |
-| ACTIVATE_VIDEO_CHARGING_AND_STANDBY  | `is_activate_video_charging_and_standby_supported`  |
-| CARPET_LONG_HAIRED                   | `is_carpet_long_haired_supported`                   |
-| CLEAN_HISTORY_TIME_LINE              | `is_clean_history_time_line_supported`              |
-| MAX_ZONE_OPENED                      | `is_max_zone_opened_supported`                      |
-| EXHIBITION_FUNCTION                  | `is_exhibition_function_supported`                  |
-| LDS_LIFTING                          | `is_lds_lifting_supported`                          |
-| AUTO_TEAR_DOWN_MOP                   | `is_auto_tear_down_mop_supported`                   |
-| SMALL_SIDE_MOP                       | `is_small_side_mop_supported`                       |
-| SUPPORT_SIDE_BRUSH_UP_DOWN           | `is_support_side_brush_up_down_supported`           |
-| DRY_INTERVAL_TIMER                   | `is_dry_interval_timer_supported`                   |
-| UVC_STERILIZE                        | `is_uvc_sterilize_supported`                        |
-| MIDWAY_BACK_TO_DOCK                  | `is_midway_back_to_dock_supported`                  |
-| SUPPORT_MAIN_BRUSH_UP_DOWN           | `is_support_main_brush_up_down_supported`           |
-| EGG_DANCE_MODE                       | `is_egg_dance_mode_supported`                       |
-| MECHANICAL_ARM_MODE                  | `is_mechanical_arm_mode_supported`                  |
-| TIDYUP_ZONES                         | `is_tidyup_zones_supported`                         |
-| CLEAN_TIME_LINE                      | `is_clean_time_line_supported`                      |
-| CLEAN_THEN_MOP_MODE                  | `is_clean_then_mop_mode_supported`                  |
-| TYPE_IDENTIFY                        | `is_type_identify_supported`                        |
-| SUPPORT_GET_PARTICULAR_STATUS        | `is_support_get_particular_status_supported`        |
-| THREE_D_MAPPING_INNER_TEST           | `is_three_d_mapping_inner_test_supported`           |
-| SYNC_SERVER_NAME                     | `is_sync_server_name_supported`                     |
-| SHOULD_SHOW_ARM_OVER_LOAD            | `is_should_show_arm_over_load_supported`            |
-| COLLECT_DUST_COUNT_SHOW              | `is_collect_dust_count_show_supported`              |
-| SUPPORT_API_APP_STOP_GRASP           | `is_support_api_app_stop_grasp_supported`           |
-| CTM_WITH_REPEAT                      | `is_ctm_with_repeat_supported`                      |
-| SIDE_BRUSH_LIFT_CARPET               | `is_side_brush_lift_carpet_supported`               |
-| DETECT_WIRE_CARPET                   | `is_detect_wire_carpet_supported`                   |
-| WATER_SLIDE_MODE                     | `is_water_slide_mode_supported`                     |
-| SOAK_AND_WASH                        | `is_soak_and_wash_supported`                        |
-| CLEAN_EFFICIENCY                     | `is_clean_efficiency_supported`                     |
-| BACK_WASH_NEW_SMART                  | `is_back_wash_new_smart_supported`                  |
-| DUAL_BAND_WI_FI                      | `is_dual_band_wi_fi_supported`                      |
-| PROGRAM_MODE                         | `is_program_mode_supported`                         |
-| CLEAN_FLUID_DELIVERY                 | `is_clean_fluid_delivery_supported`                 |
-| CARPET_LONG_HAIRED_EX                | `is_carpet_long_haired_ex_supported`                |
-| OVER_SEA_CTM                         | `is_over_sea_ctm_supported`                         |
-| FULL_DUPLES_SWITCH                   | `is_full_duples_switch_supported`                   |
-| LOW_AREA_ACCESS                      | `is_low_area_access_supported`                      |
-| FOLLOW_LOW_OBS                       | `is_follow_low_obs_supported`                       |
-| TWO_GEARS_NO_COLLISION               | `is_two_gears_no_collision_supported`               |
-| CARPET_SHAPE_TYPE                    | `is_carpet_shape_type_supported`                    |
-| SR_MAP                               | `is_sr_map_supported`                               |
-
-Total: 79 field declarations (MECHANICAL_ARM_MODE and TIDYUP_ZONES are separate field entries despite sharing integer value 89 — they will always decode to the same bit).
-
----
-
-### Q3: Complete `DeviceFeatures` dataclass field list with Python type annotations
-
-File: `/Volumes/ExternalSSD/code/references/python-roborock/roborock/device_features.py:248–558`
-
-#### Group A — `robot_new_features` (bitmask against lower 32 bits of `new_feature_info`)
-
-| Field name                                 | Type   | Mask       |
-| ------------------------------------------ | ------ | ---------- |
-| `is_show_clean_finish_reason_supported`    | `bool` | 1          |
-| `is_re_segment_supported`                  | `bool` | 4          |
-| `is_video_monitor_supported`               | `bool` | 8          |
-| `is_any_state_transit_goto_supported`      | `bool` | 16         |
-| `is_fw_filter_obstacle_supported`          | `bool` | 32         |
-| `is_video_setting_supported`               | `bool` | 64         |
-| `is_ignore_unknown_map_object_supported`   | `bool` | 128        |
-| `is_set_child_supported`                   | `bool` | 256        |
-| `is_carpet_supported`                      | `bool` | 512        |
-| `is_record_allowed`                        | `bool` | 1024       |
-| `is_mop_path_supported`                    | `bool` | 2048       |
-| `is_multi_map_segment_timer_supported`     | `bool` | 4096       |
-| `is_current_map_restore_enabled`           | `bool` | 8192       |
-| `is_room_name_supported`                   | `bool` | 16384      |
-| `is_shake_mop_set_supported`               | `bool` | 262144     |
-| `is_map_beautify_internal_debug_supported` | `bool` | 2097152    |
-| `is_new_data_for_clean_history`            | `bool` | 4194304    |
-| `is_new_data_for_clean_history_detail`     | `bool` | 8388608    |
-| `is_flow_led_setting_supported`            | `bool` | 16777216   |
-| `is_dust_collection_setting_supported`     | `bool` | 33554432   |
-| `is_rpc_retry_supported`                   | `bool` | 67108864   |
-| `is_avoid_collision_supported`             | `bool` | 134217728  |
-| `is_support_set_switch_map_mode`           | `bool` | 268435456  |
-| `is_map_carpet_add_support`                | `bool` | 1073741824 |
-| `is_custom_water_box_distance_supported`   | `bool` | 2147483648 |
-
-#### Group B — `upper_32_bits` (bit index applied to upper 32 bits of `new_feature_info` after `>> 32`)
-
-| Field name                                       | Type   | Bit index |
-| ------------------------------------------------ | ------ | --------- |
-| `is_support_smart_scene`                         | `bool` | 1         |
-| `is_support_floor_edit`                          | `bool` | 3         |
-| `is_support_furniture`                           | `bool` | 4         |
-| `is_wash_then_charge_cmd_supported`              | `bool` | 5         |
-| `is_support_room_tag`                            | `bool` | 6         |
-| `is_support_quick_map_builder`                   | `bool` | 7         |
-| `is_support_smart_global_clean_with_custom_mode` | `bool` | 8         |
-| `is_careful_slow_mop_supported`                  | `bool` | 9         |
-| `is_egg_mode_supported_from_new_features`        | `bool` | 10        |
-| `is_carpet_show_on_map`                          | `bool` | 12        |
-| `is_supported_valley_electricity`                | `bool` | 13        |
-| `is_unsave_map_reason_supported`                 | `bool` | 14        |
-| `is_supported_drying`                            | `bool` | 15        |
-| `is_supported_download_test_voice`               | `bool` | 16        |
-| `is_support_backup_map`                          | `bool` | 17        |
-| `is_support_custom_mode_in_cleaning`             | `bool` | 18        |
-| `is_support_remote_control_in_call`              | `bool` | 19        |
-
-#### Group C — `new_feature_str_mask` (bitmask against last 8 hex chars of `new_feature_info_str`)
-
-Tuple is `(mask, slice_count)` — always `slice_count=8` for all entries below.
-
-| Field name                                 | Type   | Mask       |
-| ------------------------------------------ | ------ | ---------- |
-| `is_support_set_volume_in_call`            | `bool` | 1          |
-| `is_support_clean_estimate`                | `bool` | 2          |
-| `is_support_custom_dnd`                    | `bool` | 4          |
-| `is_carpet_deep_clean_supported`           | `bool` | 8          |
-| `is_support_stuck_zone`                    | `bool` | 16         |
-| `is_support_custom_door_sill`              | `bool` | 32         |
-| `is_wifi_manage_supported`                 | `bool` | 128        |
-| `is_clean_route_fast_mode_supported`       | `bool` | 256        |
-| `is_support_cliff_zone`                    | `bool` | 512        |
-| `is_support_smart_door_sill`               | `bool` | 1024       |
-| `is_support_floor_direction`               | `bool` | 2048       |
-| `is_back_charge_auto_wash_supported`       | `bool` | 4096       |
-| `is_support_incremental_map`               | `bool` | 4194304    |
-| `is_offline_map_supported`                 | `bool` | 16384      |
-| `is_super_deep_wash_supported`             | `bool` | 32768      |
-| `is_ces_2022_supported`                    | `bool` | 65536      |
-| `is_dss_believable`                        | `bool` | 131072     |
-| `is_main_brush_up_down_supported_from_str` | `bool` | 262144     |
-| `is_goto_pure_clean_path_supported`        | `bool` | 524288     |
-| `is_water_up_down_drain_supported`         | `bool` | 1048576    |
-| `is_setting_carpet_first_supported`        | `bool` | 8388608    |
-| `is_clean_route_deep_slow_plus_supported`  | `bool` | 16777216   |
-| `is_dynamically_skip_clean_zone_supported` | `bool` | 33554432   |
-| `is_dynamically_add_clean_zones_supported` | `bool` | 67108864   |
-| `is_left_water_drain_supported`            | `bool` | 134217728  |
-| `is_clean_count_setting_supported`         | `bool` | 1073741824 |
-| `is_corner_clean_mode_supported`           | `bool` | 2147483648 |
-
-#### Group D — `new_feature_str_bit` (nibble-index into `new_feature_info_str`)
-
-See Q2 answer above — 79 `bool` fields, one per `NewFeatureStrBit` member.
-
-#### Group E — `robot_features` (integer ID present in `feature_info` list from `APP_GET_INIT_STATUS`)
-
-| Field name                       | Type   | Feature ID |
-| -------------------------------- | ------ | ---------- |
-| `is_led_status_switch_supported` | `bool` | 119        |
-| `is_multi_floor_supported`       | `bool` | 120        |
-| `is_support_fetch_timer_summary` | `bool` | 122        |
-| `is_order_clean_supported`       | `bool` | 123        |
-| `is_analysis_supported`          | `bool` | 124        |
-| `is_remote_supported`            | `bool` | 125        |
-| `is_support_voice_control_debug` | `bool` | 130        |
-
-#### Group F — `model_whitelist` / `model_blacklist`
-
-| Field name                                      | Type   | Source            |
-| ----------------------------------------------- | ------ | ----------------- |
-| `is_mop_forbidden_supported`                    | `bool` | `model_whitelist` |
-| `is_soft_clean_mode_supported`                  | `bool` | `model_whitelist` |
-| `is_custom_mode_supported`                      | `bool` | `model_blacklist` |
-| `is_support_custom_carpet`                      | `bool` | `model_whitelist` |
-| `is_show_general_obstacle_supported`            | `bool` | `model_whitelist` |
-| `is_show_obstacle_photo_supported`              | `bool` | `model_whitelist` |
-| `is_rubber_brush_carpet_supported`              | `bool` | `model_whitelist` |
-| `is_carpet_pressure_use_origin_paras_supported` | `bool` | `model_whitelist` |
-| `is_support_mop_back_pwm_set`                   | `bool` | `model_whitelist` |
-| `is_collect_dust_mode_supported`                | `bool` | `model_blacklist` |
-
-#### Group G — `product_features` (lookup in per-product feature list)
-
-| Field name                             | Type   |
-| -------------------------------------- | ------ |
-| `is_support_water_mode`                | `bool` |
-| `is_pure_clean_mop_supported`          | `bool` |
-| `is_new_remote_view_supported`         | `bool` |
-| `is_max_plus_mode_supported`           | `bool` |
-| `is_none_pure_clean_mop_with_max_plus` | `bool` |
-| `is_clean_route_setting_supported`     | `bool` |
-| `is_mop_shake_module_supported`        | `bool` |
-| `is_customized_clean_supported`        | `bool` |
-
-#### Raw diagnostic fields (with defaults — not bool)
-
-| Field name             | Type        | Default                                  |
-| ---------------------- | ----------- | ---------------------------------------- |
-| `new_feature_info`     | `int`       | `0`                                      |
-| `new_feature_info_str` | `str`       | `""`                                     |
-| `feature_info`         | `list[int]` | `[]` (via `field(default_factory=list)`) |
-
----
-
-### Q4: `src/` folder structure and recommended location for `featureSetDecoder.ts`
-
-Top-level directories under `src/` and documented purposes (from `docs/CODE_STRUCTURE.md`):
-
-| Directory                | Purpose                                                                                                                         |
-| ------------------------ | ------------------------------------------------------------------------------------------------------------------------------- |
-| `platform/`              | Platform layer: config validation, device registry, startup state, discovery, configurator                                      |
-| `core/`                  | Core domain layer: domain entities, value objects, port interfaces, application models                                          |
-| `services/`              | Service layer: DI container, authentication, device management, message routing, polling, connection                            |
-| `behaviors/`             | Device behavior implementations (clean mode handlers, enums, protocol-specific logic)                                           |
-| `roborockCommunication/` | Communication layer: MQTT, local network, protocol builders/serializers/dispatchers, REST API, routing, DTOs, enums, helpers    |
-| `runtimes/`              | Message runtime handlers (cloud, local, home data, extracted pure handler functions)                                            |
-| `initialData/`           | Initial data fetchers (battery, operational state, rooms, clean modes, routines, run modes)                                     |
-| `constants/`             | Constant definitions (battery, device, distance, ids, timeouts, sensitive data regex)                                           |
-| `errors/`                | Custom typed error class hierarchy (BaseError and subtypes)                                                                     |
-| `model/`                 | Plugin data/config models (AuthenticationResponse, CleanCommand, DockStationStatus, VacuumStatus, RoborockPluginPlatformConfig) |
-| `types/`                 | TypeScript type definitions                                                                                                     |
-| `share/`                 | Shared utilities: behaviorFactory, filterLogger, helper, function, runtimeHelper, stateResolver, matterStateNames               |
-| `cli/`                   | CLI tool entry point and command implementations                                                                                |
-| `tests/`                 | Unit tests (177+ files)                                                                                                         |
-
-**Recommended location: `src/share/featureSetDecoder.ts`**
-
-Rationale:
-
-- `src/share/` is the established home for pure utility functions used across multiple layers.
-- All existing `share/` files are pure, stateless, no-side-effect modules: `helper.ts`, `function.ts`, `runtimeHelper.ts`, `stateResolver.ts`, `matterStateNames.ts`.
-- `featureSetDecoder.ts` has no DI dependencies, no side effects, operates only on raw string/number inputs, and returns a plain boolean-flag object — this exactly matches the character of every current `share/` file.
-- `src/roborockCommunication/helper/` is a plausible alternative but is scoped to communication-layer internals (crypto, chunk buffer, sequence number, name decoding). Feature-flag decoding is domain-level data transformation that will be consumed by layers above the communication layer, so `share/` is the better fit.
-
----
-
-### Q5: Files using `BigInt(...)` or `parseInt(..., 16)` in `src/`
-
-Search result: **no matches** anywhere in `src/`.
-
-Neither `BigInt(...)` nor `parseInt(..., 16)` appear in any TypeScript file under `src/`. The feature decoder will introduce the first hex-parsing usage in the codebase.
-
----
-
-## Confidence
-
-- Q1: High. Read the Python source directly; all values are literals.
-- Q2: High. Every `new_feature_str_bit` field declaration was read in full from `device_features.py:328–475`.
-- Q3: High. Read the entire `DeviceFeatures` dataclass body. All 7 groups and 3 raw fields are accounted for.
-- Q4: High. Directory structure confirmed from `docs/CODE_STRUCTURE.md` and existing `share/` file inventory.
-- Q5: High. Grep returned no matches with both `BigInt\(` and `parseInt\([^,]+,\s*16\)` patterns over the full `src/` tree.
-
-One nuance: `TIDYUP_ZONES` and `MECHANICAL_ARM_MODE` share integer value 89. The dataclass has two separate field declarations (`is_mechanical_arm_mode_supported` and `is_tidyup_zones_supported`) both pointing to enum members with value 89. Both fields will always decode to the same bit in the hex string.
-
-## Status
-
-answered

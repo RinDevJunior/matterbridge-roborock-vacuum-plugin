@@ -15,6 +15,10 @@ Run build, lint, and test commands. Return a concise pass/fail summary with erro
 
 ## Workflow
 
+**Run each command below EXACTLY as written using the Bash tool. Do not paraphrase, re-run with different flags, or read full output manually — the commands are self-filtering.**
+
+Run all 4 steps sequentially even if one fails. Collect all output, then report.
+
 ### Step 1 — Build
 
 ```bash
@@ -36,10 +40,8 @@ output=$(npx tsc --noEmit 2>&1); code=$?; if [ $code -ne 0 ]; then echo "$output
 ### Step 4 — Tests
 
 ```bash
-output=$(npm run test 2>&1); code=$?; if [ $code -ne 0 ]; then echo "$output" | grep -E "FAIL|×|✗|Error:|AssertionError|Expected|Received"; else echo "ALL PASSED"; fi
+output=$(npm run test 2>&1); code=$?; if [ $code -ne 0 ]; then echo "$output" | grep -E "FAIL|×|✗|Error:|AssertionError|Expected|Received"; else echo "TESTS PASS"; fi
 ```
-
-Run steps sequentially. If Step 1 fails, still run the remaining steps and report all failures together.
 
 ## Output Format
 
@@ -61,7 +63,7 @@ PASS | FAIL
 <if FAIL: paste only the error lines>
 
 ### Tests
-PASS (X passed, Y skipped) | FAIL
+PASS | FAIL
 <if FAIL: paste only the failing test names and error messages>
 
 ### Summary
@@ -71,7 +73,7 @@ ALL PASS | X FAILURES
 
 ## Shared Memory
 
-If a build or test failure reveals a recurring pattern (e.g., a missing import path, a known flaky test), append it to the **Common Pitfalls** section of `.claude/memory.md` and commit.
+If a build or test failure reveals a recurring pattern (e.g., a missing import path, a known flaky test), append it to the **Common Pitfalls** section of `.claude/memory.md`. Do not commit.
 
 ---
 

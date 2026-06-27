@@ -73,7 +73,7 @@ Agent({
   description: "Compiler: lint, build, test",
   subagent_type: "compiler",
   model: "haiku",
-  prompt: ""
+  prompt: "Run lint, build, type-check, and tests. Return the compiler report."
 })
 ```
 

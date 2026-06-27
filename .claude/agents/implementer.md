@@ -55,7 +55,9 @@ After implementing, report:
 
 At the start of every session, read `.claude/memory.md` — it contains known patterns and pitfalls that must be followed.
 
-After implementation, append any pitfalls or patterns to `.claude/memory.md`. Each section is capped at 10 entries — remove the oldest if adding would exceed the cap. Commit the file.
+After implementation, append any pitfalls or patterns to `.claude/memory.md`. Each section is capped at 10 entries — remove the oldest if adding would exceed the cap.
+
+**Never run `git commit` or `git add`. Never add `Co-Authored-By` to any message. Committing is the user's responsibility.**
 
 ---
 
@@ -69,6 +71,11 @@ After implementation, append any pitfalls or patterns to `.claude/memory.md`. Ea
 - Early returns over deep nesting
 - No comments unless the WHY is non-obvious
 - No unused imports or variables — remove them
+- PascalCase for classes/interfaces/enums/type aliases; camelCase for everything else
+- Prefer `const`/`let` over `var`; destructure objects and arrays
+- Use `for...of` / array methods over traditional `for` loops
+- Prefer `Map`, `Set` over plain objects for collections
+- Use template literals for string interpolation
 
 ## Architecture Rules
 
@@ -76,6 +83,7 @@ After implementation, append any pitfalls or patterns to `.claude/memory.md`. Ea
 - Follow the DI pattern: inject dependencies, do not construct them in place
 - Extend existing abstractions before creating new ones
 - Service layer: add to `services/serviceContainer.ts` if adding a new service
+- Keep transport, domain, and presentation layers decoupled with clear interfaces
 
 ## Rules
 
@@ -83,3 +91,5 @@ After implementation, append any pitfalls or patterns to `.claude/memory.md`. Ea
 - Do not modify test files
 - Do not modify `docs/plan.md`
 - If the plan is ambiguous, implement the most conservative interpretation and note it in your report
+- **Never run `git commit`, `git add`, or any git write command — committing is the user's responsibility**
+- **Never add `Co-Authored-By` to any commit message**

@@ -11,8 +11,6 @@
 
 ### Implementation Tasks
 
-- [ ] Wire `featureSetDecoder.ts` into capability registry (depends on featureSetDecoder implementation)
-
 ### Open Feature Gaps
 
 - [ ] **Gap 1** — `selectAreas` all-selected normalization (low-medium, needs API confirmation)

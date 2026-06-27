@@ -123,6 +123,8 @@ export class DeviceConfigurator {
 			this.configManager.forceRunAtDefault,
 			this.log,
 			() => this.getPlatformRunner().burstPolling.startBurstPolling(vacuum.duid),
+			vacuum.featureSet,
+			vacuum.newFeatureSet,
 		);
 
 		robot.configureHandler(behaviorHandler);

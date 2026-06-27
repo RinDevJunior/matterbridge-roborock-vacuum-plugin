@@ -36,13 +36,13 @@ const configCache = new Map<string, BehaviorConfig>();
  * Extra modes are resolved from the device capability registry.
  * Results are cached per model for efficiency.
  */
-export function buildBehaviorConfig(model: string): BehaviorConfig {
+export function buildBehaviorConfig(model: string, featureSet?: string, newFeatureSet?: string): BehaviorConfig {
 	if (configCache.has(model)) {
 		return configCache.get(model) as BehaviorConfig;
 	}
 
 	const withSmartPlan = hasSmartPlan(model);
-	const allModes = getAllModesForDevice(model);
+	const allModes = getAllModesForDevice(model, featureSet, newFeatureSet);
 
 	const registry = new ModeHandlerRegistry().register(new CleaningModeHandler()).register(new GoVacationHandler());
 

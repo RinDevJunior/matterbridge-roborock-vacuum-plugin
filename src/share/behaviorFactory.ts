@@ -24,9 +24,11 @@ export function configureBehavior(
 	forceRunAtDefault: boolean,
 	logger: AnsiLogger,
 	onActionTriggered: () => void,
+	featureSet?: string,
+	newFeatureSet?: string,
 ): BehaviorFactoryResult {
 	const modelKey = forceRunAtDefault ? '' : model;
-	const config = buildBehaviorConfig(modelKey);
+	const config = buildBehaviorConfig(modelKey, featureSet, newFeatureSet);
 	const deviceHandler = new BehaviorDeviceGeneric<DeviceEndpointCommands>(logger);
 	setCommandHandler(
 		duid,
