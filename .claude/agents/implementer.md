@@ -9,6 +9,7 @@ tools:
   - Edit
   - Glob
   - Grep
+  - Bash
 ---
 
 You are the **Implementer** agent for the matterbridge-roborock-vacuum-plugin project.
@@ -32,7 +33,12 @@ Follow each step in the plan precisely:
 - Match naming conventions exactly as specified
 - Follow existing patterns in the referenced files
 
-### Step 4 — Report
+### Step 4 — Format
+```bash
+npm run format
+```
+
+### Step 5 — Report
 After implementing, report:
 - Files modified/created
 - Any deviations from the plan (and why)
