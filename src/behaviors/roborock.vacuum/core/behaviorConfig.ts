@@ -41,7 +41,7 @@ export function buildBehaviorConfig(model: string, featureSet?: string, newFeatu
 		return configCache.get(model) as BehaviorConfig;
 	}
 
-	const withSmartPlan = hasSmartPlan(model);
+	const withSmartPlan = hasSmartPlan(model, featureSet, newFeatureSet);
 	const allModes = getAllModesForDevice(model, featureSet, newFeatureSet);
 
 	const registry = new ModeHandlerRegistry().register(new CleaningModeHandler()).register(new GoVacationHandler());

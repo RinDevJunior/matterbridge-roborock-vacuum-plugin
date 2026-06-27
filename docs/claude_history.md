@@ -1,5 +1,16 @@
 # Claude History
 
+## 2026-06-27 — Wired hasSmartPlan to is_smart_clean_mode_set_supported feature flag
+
+**Task:** Wire `hasSmartPlan` to the `is_smart_clean_mode_set_supported` feature flag instead of always returning `false`.
+
+**Changes:**
+
+- `src/behaviors/roborock.vacuum/core/deviceCapabilityRegistry.ts` — updated `hasSmartPlan` signature from `hasSmartPlan(_model: string): boolean` to `hasSmartPlan(_model: string, featureSet?: string, newFeatureSet?: string): boolean`; changed implementation to decode feature flags and return `features.is_smart_clean_mode_set_supported` instead of hardcoded `false`
+- `src/behaviors/roborock.vacuum/core/behaviorConfig.ts` — updated call to `hasSmartPlan(model)` to pass feature parameters: `hasSmartPlan(model, featureSet, newFeatureSet)`
+
+**Outcome:** Pass. SmartPlan (mode 4) is now dynamically gated by the `is_smart_clean_mode_set_supported` feature flag from the device's feature set. The feature flag is decoded using the existing `decodeFeatureSet` function.
+
 ## 2026-06-27 — Wired featureSetDecoder into capability registry
 
 **Task:** Wire `featureSetDecoder` into `deviceCapabilityRegistry` to dynamically gate `VacFollowedByMop` (mode 11) on the `is_clean_then_mop_mode_supported` feature flag (bit 93 of `newFeatureSet`), while keeping `SmartPlan` (mode 4) and `VacAndMopDeep` (mode 12) as static model-string lookups.

@@ -1,49 +1,49 @@
 ## Task
 
-Wire `decodeFeatureSet` from `src/share/featureSetDecoder.ts` into the capability registry so that device feature support is determined dynamically from `featureSet`/`newFeatureSet` flags instead of (or alongside) the static model-name lookup in `src/behaviors/roborock.vacuum/core/deviceCapabilityRegistry.ts`.
+Remove `DEVICE_EXTRA_MODES` from the plugin and make clean mode selection rely entirely on `featureSet` and `newFeatureSet` capability flags decoded by `decodeFeatureSet`.
 
 ## Questions
 
 ### Q1
 
-What does `deviceCapabilityRegistry.ts` export? List every exported symbol (functions, constants, types/interfaces). For each exported function show its signature and return type. Show what the static lookup table looks like (key type, value type, example entries).
+What is the exact current content of `DEVICE_EXTRA_MODES` in `src/behaviors/roborock.vacuum/core/deviceCapabilityRegistry.ts`? List every model key and the array of mode config names or objects it maps to. Also show the full `getExtraModes` and `getAllModesForDevice` function bodies so we can see exactly how `DEVICE_EXTRA_MODES` is consumed and filtered.
 Relevant area: `src/behaviors/roborock.vacuum/core/deviceCapabilityRegistry.ts`
 
 ### Q2
 
-What interface or type does the registry return to callers — is there a `DeviceCapabilities` type, or is it an inline object shape, or something else? Provide the full type definition including every property and its type.
-Relevant area: `src/behaviors/roborock.vacuum/core/deviceCapabilityRegistry.ts` and any type files it imports
+What are the full exported names of every clean mode config currently defined in the codebase (e.g. `smartPlanModeConfig`, `vacFollowedByMopModeConfig`, `vacAndMopDeepModeConfig`) and in which file are they defined? Also show the numeric mode value for each.
+Relevant area: `src/behaviors/roborock.vacuum/core/` or wherever CleanModeConfig objects are defined
 
 ### Q3
 
-Which files import from `deviceCapabilityRegistry.ts`? For each callsite: show the import statement, the call expression, how the result is stored, and what downstream behavior is gated on each property of the result.
-Relevant area: search all of `src/` for imports of `deviceCapabilityRegistry`
+What fields on the `DeviceFeatures` interface (in `src/share/featureSetDecoder.ts` or wherever it is declared) correspond to:
+
+- Smart Plan (mode 4)
+- VacFollowedByMop (mode 11)
+- VacAndMopDeep (mode 12)
+
+List the exact boolean property names that map to each mode. If a mode has no corresponding flag, state that explicitly.
+Relevant area: `src/share/featureSetDecoder.ts`
 
 ### Q4
 
-What is the full interface/type of `DeviceFeatures` as exported from `src/share/featureSetDecoder.ts`? List every property name and type. Then map each property to the capability flag(s) in the registry return type (Q2) that it could replace or extend — note any gaps where the registry returns a capability that `DeviceFeatures` has no equivalent for, or vice versa.
-Relevant area: `src/share/featureSetDecoder.ts`
+Show the full call chain from device init through to the registry. Specifically:
+
+- Where in `deviceConfigurator.ts` or `behaviorFactory.ts` is `getAllModesForDevice` (or `getExtraModes`) called with `featureSet`/`newFeatureSet`?
+- Where in `roborockVacuumCleaner.ts` or `getSupportedCleanModes.ts` is the registry called with feature args?
+- What is the signature of `decodeFeatureSet` and where is it imported at each call site?
+  Relevant area: `src/platform/deviceConfigurator.ts`, `src/share/behaviorFactory.ts`, `src/types/roborockVacuumCleaner.ts`, `src/initialData/getSupportedCleanModes.ts`
 
 ### Q5
 
-Where is the capability registry called — what is the exact call site? Is the model name string passed in, and where does that string come from? Is the `Device` DTO (with `featureSet` and `newFeatureSet` fields) available at the same call site, or would it need to be threaded in?
-Relevant area: wherever `getDeviceCapabilities` (or whatever the registry function is named) is called
+Show the full `hasSmartPlan` function body and explain whether it reads from `DEVICE_EXTRA_MODES` or a separate data structure. If separate, what is that structure?
+Relevant area: `src/behaviors/roborock.vacuum/core/deviceCapabilityRegistry.ts`
 
 ### Q6
 
-What is the domain entity that represents a device inside the behavior layer? Does it carry `featureSet` and `newFeatureSet` fields, or does it only expose the model name? Show the full type/class definition (properties only — skip method bodies).
-Relevant area: `src/behaviors/roborock.vacuum/core/` or `src/core/` — look for a DeviceEntity, DeviceModel, or similar class
-
-### Q7
-
-How does the `Device` DTO from `src/roborockCommunication/models/device.ts` flow from the home-data API response into the behavior layer? Trace the path: API response → parsing → storage → retrieval at the capability registry call site. Show the relevant function names, class names, and whether `featureSet`/`newFeatureSet` are preserved at each step.
-Relevant area: `src/roborockCommunication/`, `src/services/`, `src/behaviors/roborock.vacuum/core/`
-
-### Q8
-
-Are there any capabilities currently returned by the static registry that have no corresponding `DeviceFeatures` flag (i.e., they are truly model-name-only)? List them explicitly so the plan can decide whether to keep a hybrid (static for those, dynamic for others) or always fall back to static when featureSet is absent.
-Relevant area: `deviceCapabilityRegistry.ts` registry table and `featureSetDecoder.ts` `DeviceFeatures` interface
+Are there any test files that import or reference `DEVICE_EXTRA_MODES`, `getExtraModes`, `getAllModesForDevice`, or `hasSmartPlan`? List all such files and which symbols they use.
+Relevant area: `src/tests/`
 
 ## Status
 
-pending
+answered

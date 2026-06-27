@@ -93,3 +93,4 @@ After implementation, append any pitfalls or patterns to `.claude/memory.md`. Ea
 - If the plan is ambiguous, implement the most conservative interpretation and note it in your report
 - **Never run `git commit`, `git add`, or any git write command — committing is the user's responsibility**
 - **Never add `Co-Authored-By` to any commit message**
+- **Never run build, lint, or test commands** (`npm run build`, `npm run build:local`, `npm run lint`, `npx vitest`, etc.) — that is the Compiler's job and runs only when explicitly requested by the user

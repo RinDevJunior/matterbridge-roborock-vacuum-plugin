@@ -12,32 +12,33 @@ Specialists never communicate with each other directly. Never forward specialist
 
 ### Specialist Selection
 
-| Specialist               | Purpose                                                                                                           | Model                                                                                    |
-| ------------------------ | ----------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
-| Planner                  | Break task into questions for Analyzer, produce `docs/plan.md`                                                    | Sonnet                                                                                   |
-| Analyzer                 | Answer Planner questions by searching the codebase. Never writes code. Saves findings to `docs/finding/<topic>.md` | Sonnet (default) / Haiku (1-2 files, obvious lookup)                                    |
-| Implementer              | Apply approved solution from `docs/plan.md`. If blocked: return `PLAN ISSUE`                                      | Haiku (simple) / Sonnet (complex)                                                        |
-| Reviewer                 | Review architecture, dependency direction, coding standards, test quality, unintended changes                     | Haiku / Sonnet                                                                           |
-| Compiler                 | Run lint + build + tests. Never modifies code                                                                     | Haiku                                                                                    |
-| Test Writer              | Write vitest tests for implemented code. Never modifies production code                                           | Haiku                                                                                    |
-| Documenter               | Update `docs/claude_history.md` and `docs/to_do.md`                                                               | Haiku                                                                                    |
+| Specialist  | Purpose                                                                                                            | Model                                                |
+| ----------- | ------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------- |
+| Planner     | Break task into questions for Analyzer, produce `docs/plan.md`                                                     | Sonnet                                               |
+| Analyzer    | Answer Planner questions by searching the codebase. Never writes code. Saves findings to `docs/finding/<topic>.md` | Sonnet (default) / Haiku (1-2 files, obvious lookup) |
+| Implementer | Apply approved solution from `docs/plan.md`. If blocked: return `PLAN ISSUE`                                       | Haiku (simple) / Sonnet (complex)                    |
+| Reviewer    | Review architecture, dependency direction, coding standards, test quality, unintended changes                      | Haiku / Sonnet                                       |
+| Compiler    | Run lint + build + tests. Never modifies code                                                                      | Haiku                                                |
+| Test Writer | Write vitest tests for implemented code. Never modifies production code                                            | Haiku                                                |
+| Documenter  | Update `docs/claude_history.md` and `docs/to_do.md`                                                                | Haiku                                                |
 
 **Skip Reviewer for:** formatting, comments, docs-only, trivial rename.
+**Never substitute inline file reading for the Reviewer.** After Implementer completes a medium, large, or architecture task, always dispatch the Reviewer — regardless of how the output looks.
 **Documenter** runs after every code task. Skip only for investigation-only tasks.
 **Cleaner** runs only when explicitly requested by the user.
 **Compiler** runs only when explicitly requested by the user.
 
 ### Decision Policy
 
-| Task                   | Specialists                                                                    |
-| ---------------------- | ------------------------------------------------------------------------------ |
-| Investigation only     | Planner → Analyzer                                                             |
-| Small bug              | Planner → Analyzer → Planner → Implementer → Documenter                        |
-| Medium / Large feature | Planner → Analyzer → Planner → Implementer → Reviewer → Documenter             |
-| Architecture change    | Planner → Analyzer → Planner → Implementer (Sonnet) → Reviewer → Documenter   |
-| Security-sensitive     | Always include Reviewer                                                        |
-| Documentation only     | Documenter                                                                     |
-| Release                | Release Manager                                                                |
+| Task                   | Specialists                                                                 |
+| ---------------------- | --------------------------------------------------------------------------- |
+| Investigation only     | Planner → Analyzer                                                          |
+| Small bug              | Planner → Analyzer → Planner → Implementer → Documenter                     |
+| Medium / Large feature | Planner → Analyzer → Planner → Implementer → Reviewer → Documenter          |
+| Architecture change    | Planner → Analyzer → Planner → Implementer (Sonnet) → Reviewer → Documenter |
+| Security-sensitive     | Always include Reviewer                                                     |
+| Documentation only     | Documenter                                                                  |
+| Release                | Release Manager                                                             |
 
 ### Escalation Rules
 

@@ -6,6 +6,7 @@
 - [x] Fix `ChargingError` (status code 9) to properly set `operationalError = FailedToFindChargingDock`
 - [x] Investigate feature gaps (reference vs current plugin) — gaps analysis complete
 - [x] Implement `src/share/featureSetDecoder.ts` — pure decoder for DeviceFeatures capability flags
+- [x] Wire `hasSmartPlan` to `is_smart_clean_mode_set_supported` feature flag — SmartPlan mode 4 now dynamically gated
 
 ## Pending
 
