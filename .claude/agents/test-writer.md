@@ -25,13 +25,10 @@ Read `docs/plan.md` → section "Test Strategy" for the cases to cover.
 ### Step 2 — Read the Implementation
 Read every file listed in `docs/plan.md` under "Files to Modify" and "Files to Create". Understand exactly what was implemented.
 
-### Step 3 — Find Existing Test Patterns
-Use Grep to find the closest existing test file by name (e.g., if implementing `fooService.ts`, search for `fooService` in `src/tests/`). Read only that 1 file to match style, mock patterns, and naming conventions. Do not glob the entire test directory.
+### Step 3 — Write Tests
+Create or update test files in `src/tests/` mirroring the source folder structure. Follow the template and rules below exactly — do not read external guideline files at runtime.
 
-### Step 4 — Write Tests
-Create or update test files in `src/tests/` following the same folder structure as the source files.
-
-### Step 5 — Report
+### Step 4 — Report
 List test files written and coverage areas addressed.
 
 ## Shared Memory
@@ -42,30 +39,84 @@ After writing tests, append any new testing patterns or gotchas to `.claude/memo
 
 ---
 
-## Test Standards
+## Test Template
+
+```ts
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { createMockLogger, asPartial, setReadOnlyProperty } from '../helpers/testUtils.js';
+// import { MyClass } from '../../path/to/MyClass.js';
+
+function createMockDependency(): Dependency {
+  return {
+    method: vi.fn(),
+    asyncMethod: vi.fn().mockResolvedValue('result'),
+  };
+}
+
+describe('MyClass', () => {
+  let mockLogger: ReturnType<typeof createMockLogger>;
+  let mockDep: ReturnType<typeof createMockDependency>;
+  let instance: MyClass;
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockLogger = createMockLogger();
+    mockDep = createMockDependency();
+    instance = new MyClass(mockDep, mockLogger);
+  });
+
+  afterEach(() => {
+    vi.clearAllMocks();
+    // vi.clearAllTimers(); vi.useRealTimers(); — only if timers used
+  });
+
+  describe('someMethod', () => {
+    it('should return expected result when called with valid input', async () => {
+      // Arrange
+      const input = asPartial<InputType>({ id: '123' });
+      mockDep.asyncMethod.mockResolvedValue('success');
+      // Act
+      const result = await instance.someMethod(input);
+      // Assert
+      expect(result).toBe('success');
+      expect(mockDep.asyncMethod).toHaveBeenCalledWith(input);
+    });
+
+    it('should throw error when input is invalid', async () => {
+      await expect(instance.someMethod(asPartial<InputType>({ id: '' }))).rejects.toThrow(/Invalid/);
+    });
+  });
+});
+```
+
+## Rules — Non-Negotiable
 
 - **Framework:** vitest only — never jest
-- **Imports:** always static imports, never dynamic
-- **Pattern:** Arrange-Act-Assert (AAA) within each test
-- **Structure:** `describe` blocks grouping related tests
-- **Naming:** `should <expected outcome> when <precondition>`
-- **Isolation:** mock all external dependencies and side effects
-- **Async:** `async/await` — never callbacks
-- **Timers:** use fake timers (`vi.useFakeTimers`) for any interval/timeout logic; clean up with `vi.useRealTimers()` in `afterEach`
-- **No conditionals:** never put `expect` inside an `if/else`
-- **Type safety:** use `satisfies` for test data types — avoid `as` casting
+- **Imports:** always static, never `import(...)` dynamic; always include `.js` extension
+- **No `any`:** never use `as any` or `as unknown as` — use `asPartial<T>()`, `asType<T>()`, or bracket notation for private members
+- **Mock helpers:** always use `createMockLogger()`, `asPartial<T>()`, `setReadOnlyProperty()`, `makeMockClientRouter()`, `makeLocalClientStub()` from `src/tests/helpers/testUtils.js` — never build ad-hoc inline mocks
+- **Mock factories:** define `createMock...` for every dependency at the top of the test file
+- **Typing:** `vi.mocked(mock.method).mock.calls` to access typed call records
+- **Private members:** `instance['privateMethod']()` bracket notation — never cast to `any`
+- **Readonly props:** `setReadOnlyProperty(instance, 'prop', value)` from testUtils
+- **Timers:** `vi.useFakeTimers()` + `vi.advanceTimersByTimeAsync(ms)`; restore in `afterEach`
+- **Pattern:** Arrange-Act-Assert in every `it` block
+- **Naming:** `should <outcome> when <condition>`
+- **No `expect` in conditionals**
+- **`beforeEach`:** `vi.clearAllMocks()` + fresh instance every test
+- **`afterEach`:** timer cleanup only if timers were used
 
 ## What to Cover
 
-Per the plan's Test Strategy, plus:
-- Happy path (positive scenario)
-- Error/rejection paths
-- Edge cases (null, undefined, empty collections)
+Per `docs/plan.md` Test Strategy, plus:
+- Happy path
+- Error / rejection paths
+- Edge cases: null, undefined, empty collections
 - Boundary conditions
 
-## Rules
+## What NOT to Do
 
-- Write TEST code only — never modify source files
-- Test files go in `src/tests/` mirroring the source path
-- Do not change `docs/plan.md`
-- Do not chase 100% coverage at the expense of meaningful tests — cover what matters
+- Do not modify source files
+- Do not modify `docs/plan.md`
+- Do not glob the entire test directory to find patterns — the template above is the pattern
+- Do not chase 100% coverage at the expense of meaningful tests
