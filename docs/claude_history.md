@@ -1,5 +1,15 @@
 # Claude History
 
+## 2026-06-27 (Session 36)
+
+- Fixed `ChargingError` (status code 9) to properly set `operationalError` when the robot fails to find or reach the charging dock:
+  - Extended `ResolvedState` interface to include optional `operationalError?: RvcOperationalState.ErrorState`.
+  - Added status override for `ChargingError` in `stateResolver.ts` that sets `operationalState = Error` and `operationalError = FailedToFindChargingDock`.
+  - Updated `deviceStateHandler.ts` to apply the `operationalError` from the resolved state when updating Matter attributes.
+  - Updated test in `stateResolver.test.ts` to verify `operationalError` is correctly set for `ChargingError` status.
+- Root cause: `ChargingError` was only setting `operationalState = Error` but not the detail field `operationalError`, leaving the Matter controller unable to distinguish the specific failure reason. Now the Matter controller can properly report the "FailedToFindChargingDock" error state.
+- All 175 test files / 1877 tests pass. Build successful.
+
 ## 2026-06-25 (Session 35)
 
 - Fixed 15 failing tests across 4 test files after the V1/V2 dispatcher refactor:

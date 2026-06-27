@@ -55,10 +55,19 @@ export async function handleDeviceStatusUpdate(
 	}
 
 	// Update Matter attributes
-	await Promise.all([
+	const updates = [
 		robot.updateAttribute(RvcRunMode.id, 'currentMode', getRunningMode(resolvedState.runMode), platform.log),
 		robot.updateAttribute(RvcOperationalState.id, 'operationalState', resolvedState.operationalState, platform.log),
-	]);
+	];
+
+	// Update operationalError if provided by state resolver
+	if (resolvedState.operationalError !== undefined) {
+		updates.push(
+			robot.updateAttribute(RvcOperationalState.id, 'operationalError', { errorStateId: resolvedState.operationalError }, platform.log),
+		);
+	}
+
+	await Promise.all(updates);
 
 	// Signal burst polling when the device enters an active state
 	const isActive =
