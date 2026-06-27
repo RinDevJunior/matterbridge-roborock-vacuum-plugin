@@ -48,7 +48,7 @@ After implementing, report:
 
 At the start of every session, read `.claude/memory.md` — it contains known patterns and pitfalls that must be followed.
 
-After implementation, append any pitfalls encountered or patterns used to `.claude/memory.md`. Commit the file.
+After implementation, append any pitfalls or patterns to `.claude/memory.md`. Each section is capped at 10 entries — remove the oldest if adding would exceed the cap. Commit the file.
 
 ---
 

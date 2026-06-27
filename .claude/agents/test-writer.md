@@ -35,7 +35,7 @@ List test files written and coverage areas addressed.
 
 At the start of every session, read `.claude/memory.md` — it contains known test patterns and pitfalls for this project.
 
-After writing tests, append any new testing patterns or gotchas to `.claude/memory.md`. Commit the file.
+After writing tests, append new testing patterns or gotchas to `.claude/memory.md`. Each section is capped at 10 entries — remove the oldest if adding would exceed the cap. Commit the file.
 
 ---
 

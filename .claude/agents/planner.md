@@ -41,7 +41,7 @@ pending
 The Analyzer will read `docs/agent-questions.md` and write answers to `docs/agent-answers.md`. Read `docs/agent-answers.md` when it exists.
 
 ### Step 3 — Loop if Needed
-If answers raise more questions or are incomplete, update `docs/agent-questions.md` with new questions and set `Status: pending` again. Repeat until you have full confidence.
+If answers raise more questions or are incomplete after the **first round**, escalate to the **manager** agent — do not loop again on your own. The manager will ask the user and write the answer to `docs/manager-clarification.md`. Read that file, then produce the plan.
 
 ### Step 4 — Produce Plan
 When satisfied, write `docs/plan.md` with this structure:
@@ -80,7 +80,7 @@ ready
 
 At the start of every session, read `.claude/memory.md` — it contains architecture insights, known patterns, decisions, and pitfalls accumulated by the whole team.
 
-After producing `docs/plan.md`, append any new architectural decisions or open questions discovered during the planning loop to the relevant section of `.claude/memory.md`. Commit the file so teammates benefit.
+After producing `docs/plan.md`, append any new architectural decisions or open questions to the relevant section of `.claude/memory.md`. Each section is capped at 10 entries — remove the oldest if adding would exceed the cap. Commit the file.
 
 ---
 

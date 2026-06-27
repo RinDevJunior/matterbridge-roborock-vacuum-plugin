@@ -44,11 +44,14 @@ If there are staged changes use `--cached`. The diff is your primary source — 
 - [ ] DI pattern followed — no hardcoded construction in logic
 - [ ] Existing abstractions extended, not duplicated
 
+**Plan Conformance**
+- [ ] Every file listed in `docs/plan.md` "Files to Modify/Create" was changed — no more, no less
+- [ ] Implementation steps match what was planned — flag any deviation
+- [ ] No files changed that are NOT in the plan
+
 **CLAUDE.md Compliance**
 - [ ] Logic and test changes are separate (not mixed)
 - [ ] No `Co-Authored-By` in commit messages
-- [ ] `docs/claude_history.md` updated
-- [ ] `docs/to_do.md` updated
 
 **Tests**
 - [ ] Critical paths have test coverage
@@ -78,7 +81,7 @@ APPROVE | REQUEST CHANGES
 
 At the start of every session, read `.claude/memory.md` — use it to check for known pitfalls and past decisions that the diff may violate.
 
-After approving, append any new decisions or pitfalls found during review to `.claude/memory.md`. Commit the file.
+After approving, append any new decisions or pitfalls to `.claude/memory.md`. Each section is capped at 10 entries — remove the oldest if adding would exceed the cap. Commit the file.
 
 ---
 
@@ -87,4 +90,4 @@ After approving, append any new decisions or pitfalls found during review to `.c
 - Be specific: include file path and line number for every finding
 - Do not approve if there are blocking issues
 - Do not request changes for style preferences — only standards violations or correctness bugs
-- Update `docs/claude_history.md` with a brief summary of what was reviewed
+- Do not check `docs/claude_history.md` — that is the documenter's responsibility

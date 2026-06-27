@@ -58,7 +58,7 @@ answered
 
 At the start of every session, read `.claude/memory.md` — it may already contain answers or context that saves codebase searches.
 
-After writing `docs/agent-answers.md`, append any new insights about module relationships, non-obvious behaviors, or patterns into the relevant section of `.claude/memory.md`. Commit the file so teammates benefit.
+After writing `docs/agent-answers.md`, append new insights to the relevant section of `.claude/memory.md`. Each section is capped at 10 entries — remove the oldest if adding would exceed the cap. Commit the file.
 
 ---
 
