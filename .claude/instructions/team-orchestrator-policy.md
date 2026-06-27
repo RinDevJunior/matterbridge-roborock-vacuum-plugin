@@ -70,6 +70,21 @@ Use Sonnet (default). Use Haiku only for trivially small tasks (1-2 files, obvio
 
 ---
 
+## Briefer 🟡
+
+Purpose:
+
+- Read `docs/plan.md` and summarize **business logic changes and impact** for the user.
+- Never describes code changes (file names, functions, variables) unless the user asks.
+- Wait for explicit user confirmation (`yes` / `proceed`) before workflow continues.
+- If the user requests a plan change, return `PLAN CHANGE REQUESTED: <reason>` and stop.
+
+Always runs after Planner produces `docs/plan.md` (Status: ready) and before Implementer. Skip only for investigation-only and documentation-only tasks.
+
+Use Sonnet.
+
+---
+
 ## Implementer 🟢
 
 Purpose:
@@ -233,9 +248,9 @@ Run only when explicitly requested by the user.
 | Task                   | Specialists                                                                                                           |
 | ---------------------- | --------------------------------------------------------------------------------------------------------------------- |
 | Investigation only     | Planner → Analyzer                                                                                                    |
-| Small bug              | Planner → Analyzer → Planner → Implementer → Documenter → Cleaner                                                     |
-| Medium / Large feature | Planner → Analyzer → Planner → Implementer → Test Writer → Reviewer → Documenter → Cleaner                            |
-| Architecture change    | Planner (Sonnet) → Analyzer (Sonnet) → Planner → Implementer (Sonnet) → Test Writer → Reviewer → Documenter → Cleaner |
+| Small bug              | Planner → Analyzer → Planner → **Briefer** → Implementer → Documenter → Cleaner                                                     |
+| Medium / Large feature | Planner → Analyzer → Planner → **Briefer** → Implementer → Test Writer → Reviewer → Documenter → Cleaner                            |
+| Architecture change    | Planner (Sonnet) → Analyzer (Sonnet) → Planner → **Briefer** → Implementer (Sonnet) → Test Writer → Reviewer → Documenter → Cleaner |
 | Security-sensitive     | Always include Reviewer                                                                                               |
 | Documentation only     | Documenter                                                                                                            |
 | Release                | Release Manager                                                                                                       |
@@ -307,6 +322,7 @@ Prefer Sonnet for:
 - multi-file investigations
 - manager escalations
 - reviewer for complex diffs
+- briefer (business impact summarization)
 
 Prefer Opus for:
 
