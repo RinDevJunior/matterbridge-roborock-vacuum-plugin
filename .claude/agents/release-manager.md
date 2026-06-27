@@ -49,38 +49,42 @@ If the user specifies a new major version (e.g., `1.1.8`), use `1.1.8-rc01`.
 **`src/module.ts`**
 - `requiredMatterbridgeVersion` → match the `precondition` matterbridge version from `package.json`
 
-### Step 4 — Update CHANGELOG.md
-Prepend a new entry above the current top entry:
+### Step 4 — Collect Commits Since Last Release
+```bash
+git log $(git describe --tags --abbrev=0 2>/dev/null || git rev-list --max-parents=0 HEAD)..HEAD --oneline
+```
+If no tags exist, fall back to all commits on the branch.
+
+Read each commit message and classify it into:
+- **Added** — new features, new device support, new commands
+- **Changed** — behaviour changes, dependency bumps, version bumps
+- **Fixed** — bug fixes
+- **Refactored** — code structure changes, renames, extractions
+
+### Step 5 — Update CHANGELOG.md
+Prepend a new entry above the current top entry. Write meaningful bullet points — not raw commit hashes. Summarise the intent, not the git message verbatim. Only include sections that have at least one entry.
 
 ```markdown
 ## [<new-version>] - <today's date YYYY-MM-DD>
 
 ### Added
-- 
-
-### Changed
-- 
+- <meaningful description>
 
 ### Fixed
-- 
-
-### Refactored
-- 
+- <meaningful description>
 
 <a href="https://www.buymeacoffee.com/rinnvspktr" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/default-orange.png" alt="Buy Me A Coffee" height="41" width="174"></a>
 
 ---
 ```
 
-Leave the section bullets empty — the user fills them in. Only include sections the user provides content for.
-
-### Step 5 — Verify Consistency
+### Step 6 — Verify Consistency
 ```bash
 grep -rn "1\.1\." package.json matterbridge-roborock-vacuum-plugin.schema.json matterbridge-roborock-vacuum-plugin.config.json src/module.ts README.md
 ```
 Confirm all version references match. Report any mismatch.
 
-### Step 6 — Report
+### Step 7 — Report
 List every file changed and the old → new value for each version field.
 
 ## Rules
