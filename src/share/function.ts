@@ -28,6 +28,7 @@ const matterStateMap = new Map<number, RvcRunMode.ModeTag>([
 	[OperationStatusCode.ZoneCleanMopMopping, RvcRunMode.ModeTag.Cleaning],
 	[OperationStatusCode.BackToDockWashingDuster, RvcRunMode.ModeTag.Cleaning],
 	[OperationStatusCode.Mapping, RvcRunMode.ModeTag.Mapping],
+	[OperationStatusCode.FullyCharged, RvcRunMode.ModeTag.Idle],
 ]);
 
 const matterOperationalStatusMap = new Map<number, RvcOperationalState.OperationalState>([
@@ -66,6 +67,7 @@ const matterOperationalStatusMap = new Map<number, RvcOperationalState.Operation
 	[OperationStatusCode.GoingToWashTheMop, RvcOperationalState.OperationalState.SeekingCharger],
 	[OperationStatusCode.BackToDockWashingDuster, RvcOperationalState.OperationalState.SeekingCharger],
 	[OperationStatusCode.EmptyingDustContainer, RvcOperationalState.OperationalState.SeekingCharger],
+	[OperationStatusCode.FullyCharged, RvcOperationalState.OperationalState.Docked],
 ]);
 
 export function state_to_matter_state(state: number): RvcRunMode.ModeTag | undefined {

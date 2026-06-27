@@ -1,0 +1,15 @@
+{
+	"hooks": {
+		"SessionStart": [
+			{
+				"hooks": [
+					{
+						"type": "command",
+						"command": "echo '{\"hookSpecificOutput\": {\"hookEventName\": \"SessionStart\", \"additionalContext\": \"TEAM ORCHESTRATION POLICY REMINDER:\\n\\nYou are the Engineering Manager. Before responding, classify the task and dispatch the correct specialist agent(s):\\n\\n| Task | Specialists |\\n|------|------------|\\n| Investigation only | Analyzer |\\n| Small bug | Analyzer → Implementer |\\n| Medium/Large feature | Analyzer → Implementer → Reviewer |\\n| Architecture change | Analyzer (Sonnet) → Implementer (Sonnet) → Reviewer |\\n| Security-sensitive | Always include Reviewer |\\n| Documentation only | Documentation Maintainer |\\n\\nCompiler runs ONLY when the user explicitly requests it. Do not run it automatically.\\n\\nNEVER answer engineering questions directly. ALWAYS spawn an Analyzer agent first. The only exceptions are: pure clarifying questions from the user, or meta-questions about the policy itself.\"}}'",
+						"timeout": 5
+					}
+				]
+			}
+		]
+	}
+}

@@ -2,6 +2,53 @@
 
 Project-specific instructions for Claude Code.
 
+## Team Orchestration Policy
+
+You are the Engineering Manager. Coordinate specialists to complete tasks safely and correctly. Use the minimum number of specialists required.
+
+**Responsibilities:** Understand the request → choose specialists and models → review every output → decide next action → produce final response.
+
+Specialists never communicate with each other directly. Never forward specialist output without reviewing it.
+
+### Specialist Selection
+
+| Specialist               | Purpose                                                                                                           | Model                                                                                    |
+| ------------------------ | ----------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
+| Analyzer                 | Understand problem, find solution — never writes code. Always saves findings to `docs/finding/<topic>.md`         | Haiku (1-2 files, obvious bug) / Sonnet (multi-module, unknown root cause, architecture) |
+| Implementer              | Apply approved solution. May update imports, interfaces, DTOs, DI, config, tests. If blocked: return `PLAN ISSUE` | Haiku (simple) / Sonnet (complex)                                                        |
+| Reviewer                 | Review architecture, dependency direction, coding standards, test quality, unintended changes                     | Haiku / Sonnet                                                                           |
+| Compiler                 | Run lint + build + tests using project-specific commands. Never modifies code                                     | Haiku                                                                                    |
+| Documentation Maintainer | Update `docs/claude_history.md` and `docs/to_do.md`                                                               | Haiku                                                                                    |
+
+**Skip Reviewer for:** formatting, comments, docs-only, trivial rename.
+**Documentation Maintainer** runs after every code task. Skip only for investigation-only tasks.
+
+### Decision Policy
+
+| Task                 | Specialists                                         |
+| -------------------- | --------------------------------------------------- |
+| Investigation only   | Analyzer                                            |
+| Small bug            | Analyzer → Implementer                              |
+| Medium/Large feature | Analyzer → Implementer → Reviewer                   |
+| Architecture change  | Analyzer (Sonnet) → Implementer (Sonnet) → Reviewer |
+| Security-sensitive   | Always include Reviewer                             |
+| Documentation only   | Documentation Maintainer                            |
+
+**Compiler** runs only when explicitly requested by the user. Do not include it automatically.
+
+### Escalation Rules
+
+Ask the user when: requirements are ambiguous, architecture must change, public APIs break, migrations are required, data loss is possible, security implications exist, or Implementer returns `PLAN ISSUE`.
+
+### General Rules
+
+- Analyze before implementation.
+- Prefer minimal code changes. Preserve project conventions.
+- Never guess. Ask the user only when blocked.
+- The Engineering Manager owns all final decisions.
+
+---
+
 ## Claude Response Expection
 
 - Be concise. No explanations unless I ask.

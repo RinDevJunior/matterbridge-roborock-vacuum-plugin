@@ -53,9 +53,9 @@ export class V10MessageDispatcher implements AbstractMessageDispatcher {
 		return response && response.length > 0 ? response[0].serial_number : duid;
 	}
 
-	public async getDeviceStatus(duid: string): Promise<void> {
+	public getDeviceStatus(duid: string): Promise<void> {
 		const request = new RequestMessage({ method: 'get_prop', params: ['get_status'] });
-		await this.client.send(duid, request);
+		return this.client.send(duid, request);
 	}
 
 	public async getHomeMap(duid: string): Promise<MapRoomResponse> {
@@ -78,8 +78,8 @@ export class V10MessageDispatcher implements AbstractMessageDispatcher {
 		return new MapInfo(response ?? { max_multi_map: 0, max_bak_map: 0, multi_map_count: 0, map_info: [] });
 	}
 
-	public async getMapInfoV2(duid: string): Promise<void> {
-		await this.client.send(duid, new RequestMessage({ method: 'get_multi_maps_list' }));
+	public getMapInfoV2(duid: string): Promise<void> {
+		return this.client.send(duid, new RequestMessage({ method: 'get_multi_maps_list' }));
 	}
 
 	public async getRoomMap(duid: string, _activeMap: number): Promise<RawRoomMappingData> {
@@ -94,58 +94,58 @@ export class V10MessageDispatcher implements AbstractMessageDispatcher {
 		return response ?? [];
 	}
 
-	public async getRoomMapV2(duid: string, _activeMap: number): Promise<void> {
-		await this.client.send(duid, new RequestMessage({ method: 'get_room_mapping' }));
+	public getRoomMapV2(duid: string, _activeMap: number): Promise<void> {
+		return this.client.send(duid, new RequestMessage({ method: 'get_room_mapping' }));
 	}
 
-	public async switchMap(duid: string, mapId: number): Promise<void> {
-		await this.client.send(duid, new RequestMessage({ method: 'load_multi_map', params: [mapId] }));
+	public switchMap(duid: string, mapId: number): Promise<void> {
+		return this.client.send(duid, new RequestMessage({ method: 'load_multi_map', params: [mapId] }));
 	}
 
-	public async goHome(duid: string): Promise<void> {
+	public goHome(duid: string): Promise<void> {
 		const request = new RequestMessage({ method: 'app_charge' });
-		await this.client.send(duid, request);
+		return this.client.send(duid, request);
 	}
 
-	public async startCleaning(duid: string): Promise<void> {
+	public startCleaning(duid: string): Promise<void> {
 		const request = new RequestMessage({ method: 'app_start' });
-		await this.client.send(duid, request);
+		return this.client.send(duid, request);
 	}
 
-	public async startRoomCleaning(duid: string, roomIds: number[], repeat: number): Promise<void> {
+	public startRoomCleaning(duid: string, roomIds: number[], repeat: number): Promise<void> {
 		const request = new RequestMessage({
 			method: 'app_segment_clean',
 			params: [{ segments: roomIds, repeat: repeat }],
 		});
-		await this.client.send(duid, request);
+		return this.client.send(duid, request);
 	}
 
-	public async pauseCleaning(duid: string): Promise<void> {
+	public pauseCleaning(duid: string): Promise<void> {
 		const request = new RequestMessage({ method: 'app_pause' });
-		await this.client.send(duid, request);
+		return this.client.send(duid, request);
 	}
 
-	public async resumeCleaning(duid: string): Promise<void> {
+	public resumeCleaning(duid: string): Promise<void> {
 		const request = new RequestMessage({ method: 'app_resume' });
-		await this.client.send(duid, request);
+		return this.client.send(duid, request);
 	}
 
-	public async resumeRoomCleaning(duid: string): Promise<void> {
+	public resumeRoomCleaning(duid: string): Promise<void> {
 		const request = new RequestMessage({ method: 'resume_segment_clean' });
-		await this.client.send(duid, request);
+		return this.client.send(duid, request);
 	}
 
-	public async stopCleaning(duid: string): Promise<void> {
+	public stopCleaning(duid: string): Promise<void> {
 		const request = new RequestMessage({ method: 'app_stop' });
-		await this.client.send(duid, request);
+		return this.client.send(duid, request);
 	}
 
-	public async findMyRobot(duid: string): Promise<void> {
+	public findMyRobot(duid: string): Promise<void> {
 		const request = new RequestMessage({ method: 'find_me' });
-		await this.client.send(duid, request);
+		return this.client.send(duid, request);
 	}
 
-	public async sendCustomMessage(duid: string, def: RequestMessage): Promise<void> {
+	public sendCustomMessage(duid: string, def: RequestMessage): Promise<void> {
 		const request = new RequestMessage(def);
 		return this.client.send(duid, request);
 	}
