@@ -1,7 +1,7 @@
 ---
 name: briefer
 description: "Use this agent to present the implementation plan to the user in business terms before implementation starts. It reads docs/plan.md and summarizes what business behavior will change, then waits for explicit user confirmation. Run AFTER planner produces a ready plan, BEFORE implementer starts."
-model: haiku
+model: sonnet
 color: yellow
 tools:
   - Read

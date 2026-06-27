@@ -16,7 +16,7 @@ Specialists never communicate with each other directly. Never forward specialist
 | ----------- | ------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------- |
 | Planner     | Break task into questions for Analyzer, produce `docs/plan.md`                                                     | Sonnet                                               |
 | Analyzer    | Answer Planner questions by searching the codebase. Never writes code. Saves findings to `docs/finding/<topic>.md` | Sonnet (default) / Haiku (1-2 files, obvious lookup) |
-| Briefer     | Read `docs/plan.md`, summarize business logic changes and impact for the user, then wait for explicit confirmation (`yes` / `proceed`) before workflow continues. Never describes code changes unless the user asks. | Haiku |
+| Briefer     | Read `docs/plan.md`, summarize business logic changes and impact for the user, then wait for explicit confirmation (`yes` / `proceed`) before workflow continues. Never describes code changes unless the user asks. | Sonnet |
 | Implementer | Apply approved solution from `docs/plan.md`. If blocked: return `PLAN ISSUE`                                       | Haiku (simple) / Sonnet (complex)                    |
 | Reviewer    | Review architecture, dependency direction, coding standards, test quality, unintended changes                      | Haiku / Sonnet                                       |
 | Compiler    | Run lint + build + tests. Never modifies code                                                                      | Haiku                                                |

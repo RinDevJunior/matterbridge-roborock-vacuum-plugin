@@ -42,7 +42,7 @@ Run AFTER Planner writes `docs/agent-questions.md`. Reads questions, writes answ
 Agent({
   description: "Brief: <task summary>",
   subagent_type: "briefer",
-  model: "haiku",
+  model: "sonnet",
   prompt: "Task: <task description>"
 })
 ```
