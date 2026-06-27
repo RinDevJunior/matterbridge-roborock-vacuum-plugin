@@ -36,6 +36,21 @@ Run AFTER Planner writes `docs/agent-questions.md`. Reads questions, writes answ
 
 ---
 
+## 🟡 Briefer
+
+```
+Agent({
+  description: "Brief: <task summary>",
+  subagent_type: "briefer",
+  model: "haiku",
+  prompt: "Task: <task description>"
+})
+```
+
+Run AFTER Planner produces `docs/plan.md` (Status: ready), BEFORE Implementer. Waits for user confirmation (`yes` / `proceed`) before workflow continues.
+
+---
+
 ## 🟢 Implementer
 
 ```
@@ -47,7 +62,7 @@ Agent({
 })
 ```
 
-Run AFTER Planner produces `docs/plan.md` (Status: ready).
+Run AFTER Briefer receives user confirmation.
 
 ---
 
