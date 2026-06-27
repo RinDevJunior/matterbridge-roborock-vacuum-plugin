@@ -39,55 +39,34 @@ Never forward specialist output without reviewing it.
 
 # Specialist Selection Policy
 
+## Planner 🟣
+
+Purpose:
+
+- Break the task into questions for the Analyzer.
+- Review Analyzer answers and produce `docs/plan.md`.
+
+Always runs first. Uses Opus (complex) or Sonnet (simple).
+
+Works in a loop:
+
+1. Writes questions to `docs/agent-questions.md`
+2. EM dispatches Analyzer
+3. Planner reads `docs/agent-answers.md` and produces `docs/plan.md` (Status: ready)
+
+If one Analyzer round is not enough, Planner escalates to Manager — not another loop.
+
+---
+
 ## Analyzer 🔵
 
 Purpose:
 
-- Understand the problem.
-- Discover affected modules.
-- Produce a solution.
+- Read `docs/agent-questions.md` written by the Planner.
+- Search the codebase and write answers to `docs/agent-answers.md`.
+- Never writes source code.
 
-Use Haiku for:
-
-- One or two files
-- Small feature
-- Obvious bug
-
-Use Sonnet for:
-
-- Multiple modules
-- Unknown root cause
-- Architecture changes
-- Large refactors
-- External integrations
-
-Analyzer must never implement code.
-
-Always save findings to `docs/finding/<topic>.md` after completing analysis. Create the directory if it does not exist.
-
-Output contract:
-
-```
-EXECUTIVE SUMMARY:
-<brief overview>
-
-SOLUTION PLAN:
-- Root cause / requirement
-- Files to change: <path> → <what to change>
-- Approach and edge cases
-- Complexity: simple | complex
-
-RISKS:
-<potential side effects or breakages>
-
-QUESTIONS FOR MANAGER (omit if none):
-- [ ] <ambiguity or risk needing user input>
-
-FINDING FILE:
-docs/finding/<topic>.md — saved
-```
-
-Save findings to `docs/finding/<topic>.md` before returning output. Create the directory if it does not exist. The file must contain the full output above in markdown format.
+Use Sonnet (default). Use Haiku only for trivially small tasks (1-2 files, obvious lookup).
 
 ---
 
@@ -95,7 +74,7 @@ Save findings to `docs/finding/<topic>.md` before returning output. Create the d
 
 Purpose:
 
-Apply the approved solution.
+Apply the approved solution from `docs/plan.md`.
 
 Allowed supporting changes:
 
@@ -104,7 +83,8 @@ Allowed supporting changes:
 - DTOs
 - dependency injection
 - configuration
-- tests
+
+Does not write tests.
 
 Do not redesign architecture.
 
@@ -127,7 +107,21 @@ QUESTIONS FOR MANAGER (omit if none):
 
 ---
 
-## Reviewer 🟡
+## Test Writer 🟡
+
+Purpose:
+
+Write vitest unit tests for code already implemented.
+
+Does not modify production code.
+
+Reads `docs/plan.md` for test strategy and cases to cover.
+
+Run AFTER Implementer completes and Compiler confirms a clean build.
+
+---
+
+## Reviewer 🟠
 
 Purpose:
 
@@ -171,7 +165,7 @@ Run:
 
 Use project-specific commands from CLAUDE.md when available.
 
-Never modify code.
+Never modifies code.
 
 Output contract:
 
@@ -183,13 +177,13 @@ Tests: PASS | FAIL + failing test names
 
 ---
 
-## Documentation Maintainer 👁
+## Documenter 🩵
 
 Purpose:
 
 Update `docs/claude_history.md` and `docs/to_do.md`.
 
-Always run after any code task. Skip only for investigation-only tasks.
+Always run after any code task (after Reviewer approves). Skip only for investigation-only tasks.
 
 Output contract:
 
@@ -199,16 +193,52 @@ Updated: docs/claude_history.md, docs/to_do.md
 
 ---
 
+## Cleaner ⬜
+
+Purpose:
+
+Delete ephemeral agent working files at the end of every completed task cycle (after Documenter):
+
+- `docs/agent-questions.md`
+- `docs/agent-answers.md`
+- `docs/plan.md`
+- `docs/manager-clarification.md`
+
+---
+
+## Manager 🩷
+
+Purpose:
+
+Escalation point between the agent team and the user.
+
+Invoke only when Planner has completed one full round with Analyzer and is still blocked.
+
+Summarizes the blocker, asks the user ONE specific question, writes the answer to `docs/manager-clarification.md`.
+
+---
+
+## Release Manager 🟠
+
+Purpose:
+
+Bump version across all required files and write the CHANGELOG entry.
+
+Run only when explicitly requested by the user.
+
+---
+
 # Decision Policy
 
-| Task                   | Specialists                                         |
-| ---------------------- | --------------------------------------------------- |
-| Investigation only     | Analyzer                                            |
-| Small bug              | Analyzer → Implementer                              |
-| Medium / Large feature | Analyzer → Implementer → Reviewer                   |
-| Architecture change    | Analyzer (Sonnet) → Implementer (Sonnet) → Reviewer |
-| Security-sensitive     | Always include Reviewer                             |
-| Documentation only     | Documentation Maintainer                            |
+| Task                   | Specialists                                                                           |
+| ---------------------- | ------------------------------------------------------------------------------------- |
+| Investigation only     | Planner → Analyzer                                                                    |
+| Small bug              | Planner → Analyzer → Planner → Implementer → Documenter → Cleaner                    |
+| Medium / Large feature | Planner → Analyzer → Planner → Implementer → Test Writer → Reviewer → Documenter → Cleaner |
+| Architecture change    | Planner (Sonnet) → Analyzer (Sonnet) → Planner → Implementer (Sonnet) → Test Writer → Reviewer → Documenter → Cleaner |
+| Security-sensitive     | Always include Reviewer                                                               |
+| Documentation only     | Documenter                                                                            |
+| Release                | Release Manager                                                                       |
 
 > **Compiler** runs only when explicitly requested by the user. Do not include it automatically.
 
@@ -261,18 +291,26 @@ Specialists never decide the workflow.
 
 Prefer Haiku for:
 
-- analysis of small tasks
+- simple analysis tasks
 - review
 - compiler
-- documentation maintainer
+- documenter
+- cleaner
 - simple implementation
+- test writer
 
 Prefer Sonnet for:
 
 - architecture
 - cross-module reasoning
 - large implementations
-- investigations
+- multi-file investigations
+- manager escalations
+- reviewer for complex diffs
+
+Prefer Opus for:
+
+- planner (planning requires the most reasoning)
 
 ---
 

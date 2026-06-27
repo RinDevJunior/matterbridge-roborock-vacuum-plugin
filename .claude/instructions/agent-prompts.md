@@ -6,16 +6,33 @@ System prompts are defined in `.claude/agents/`. Only pass task-specific context
 
 ---
 
+## 🟣 Planner
+
+```
+Agent({
+  description: "Plan: <task summary>",
+  subagent_type: "planner",
+  model: "opus",
+  prompt: "Task: <task description>"
+})
+```
+
+Run first. Produces `docs/agent-questions.md`. Dispatch Analyzer next, then Planner again to read answers and produce `docs/plan.md`.
+
+---
+
 ## 🔵 Analyzer
 
 ```
 Agent({
   description: "Analyze: <task summary>",
   subagent_type: "analyzer",
-  model: "haiku" | "sonnet",
+  model: "sonnet",
   prompt: "Task: <task description>"
 })
 ```
+
+Run AFTER Planner writes `docs/agent-questions.md`. Reads questions, writes answers to `docs/agent-answers.md`.
 
 ---
 
@@ -26,31 +43,26 @@ Agent({
   description: "Implement: <task summary>",
   subagent_type: "implementer",
   model: "haiku" | "sonnet",
-  prompt: `
-Solution plan:
-<paste SOLUTION PLAN from Analyzer>
-`
+  prompt: "Task: <task description>"
 })
 ```
+
+Run AFTER Planner produces `docs/plan.md` (Status: ready).
 
 ---
 
-## 🟡 Reviewer
+## 🟡 Test Writer
 
 ```
 Agent({
-  description: "Review: <task summary>",
-  subagent_type: "reviewer",
-  model: "haiku" | "sonnet",
-  prompt: `
-Solution plan:
-<paste SOLUTION PLAN from Analyzer>
-
-Files changed:
-<paste files list from IMPLEMENTATION SUMMARY>
-`
+  description: "Tests: <task summary>",
+  subagent_type: "test-writer",
+  model: "haiku",
+  prompt: "Task: <task description>"
 })
 ```
+
+Run AFTER Implementer completes and Compiler confirms a clean build.
 
 ---
 
@@ -65,18 +77,79 @@ Agent({
 })
 ```
 
+Run only when explicitly requested by the user.
+
 ---
 
-## 👁 Documentation Maintainer
+## 🟠 Reviewer
+
+```
+Agent({
+  description: "Review: <task summary>",
+  subagent_type: "reviewer",
+  model: "haiku" | "sonnet",
+  prompt: "Task: <task description>"
+})
+```
+
+Run LAST after Compiler confirms all passing.
+
+---
+
+## 🩵 Documenter
 
 ```
 Agent({
   description: "Docs: update history and todo",
-  subagent_type: "documentation-maintainer",
+  subagent_type: "documenter",
   model: "haiku",
-  prompt: `
-Description: <one short sentence of what was done>
-Verify result: PASS | PASS WITH NOTES | FAIL | skipped
-`
+  prompt: "Description: <one short sentence of what was done>"
 })
 ```
+
+Run after every code task (after Reviewer approves). Skip for investigation-only tasks.
+
+---
+
+## ⬜ Cleaner
+
+```
+Agent({
+  description: "Clean: remove ephemeral agent files",
+  subagent_type: "cleaner",
+  model: "haiku",
+  prompt: ""
+})
+```
+
+Run at the end of every completed task cycle, after Documenter.
+
+---
+
+## 🩷 Manager
+
+```
+Agent({
+  description: "Manager: escalate blocker",
+  subagent_type: "manager",
+  model: "sonnet",
+  prompt: "Task: <original task description>"
+})
+```
+
+Run only when Planner has completed one full loop with Analyzer and is still blocked.
+
+---
+
+## 🟠 Release Manager
+
+```
+Agent({
+  description: "Release: bump version and changelog",
+  subagent_type: "release-manager",
+  model: "sonnet",
+  prompt: "<optional: user-provided changelog notes>"
+})
+```
+
+Run only when the user explicitly requests a release.
