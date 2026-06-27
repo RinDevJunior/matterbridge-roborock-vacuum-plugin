@@ -16,6 +16,7 @@ Specialists never communicate with each other directly. Never forward specialist
 | ----------- | ------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------- |
 | Planner     | Break task into questions for Analyzer, produce `docs/plan.md`                                                     | Sonnet                                               |
 | Analyzer    | Answer Planner questions by searching the codebase. Never writes code. Saves findings to `docs/finding/<topic>.md` | Sonnet (default) / Haiku (1-2 files, obvious lookup) |
+| Briefer     | Read `docs/plan.md`, summarize business logic changes and impact for the user, then wait for explicit confirmation (`yes` / `proceed`) before workflow continues. Never describes code changes unless the user asks. | Haiku |
 | Implementer | Apply approved solution from `docs/plan.md`. If blocked: return `PLAN ISSUE`                                       | Haiku (simple) / Sonnet (complex)                    |
 | Reviewer    | Review architecture, dependency direction, coding standards, test quality, unintended changes                      | Haiku / Sonnet                                       |
 | Compiler    | Run lint + build + tests. Never modifies code                                                                      | Haiku                                                |
@@ -24,21 +25,22 @@ Specialists never communicate with each other directly. Never forward specialist
 
 **Skip Reviewer for:** formatting, comments, docs-only, trivial rename.
 **Never substitute inline file reading for the Reviewer.** After Implementer completes a medium, large, or architecture task, always dispatch the Reviewer — regardless of how the output looks.
+**Briefer** always runs after Planner and before Implementer. Skip only for investigation-only and documentation-only tasks.
 **Documenter** runs after every code task. Skip only for investigation-only tasks.
 **Cleaner** runs only when explicitly requested by the user.
 **Compiler** runs only when explicitly requested by the user.
 
 ### Decision Policy
 
-| Task                   | Specialists                                                                 |
-| ---------------------- | --------------------------------------------------------------------------- |
-| Investigation only     | Planner → Analyzer                                                          |
-| Small bug              | Planner → Analyzer → Planner → Implementer → Documenter                     |
-| Medium / Large feature | Planner → Analyzer → Planner → Implementer → Reviewer → Documenter          |
-| Architecture change    | Planner → Analyzer → Planner → Implementer (Sonnet) → Reviewer → Documenter |
-| Security-sensitive     | Always include Reviewer                                                     |
-| Documentation only     | Documenter                                                                  |
-| Release                | Release Manager                                                             |
+| Task                   | Specialists                                                                          |
+| ---------------------- | ------------------------------------------------------------------------------------ |
+| Investigation only     | Planner → Analyzer                                                                   |
+| Small bug              | Planner → Analyzer → Planner → **Briefer** → Implementer → Documenter               |
+| Medium / Large feature | Planner → Analyzer → Planner → **Briefer** → Implementer → Reviewer → Documenter    |
+| Architecture change    | Planner → Analyzer → Planner → **Briefer** → Implementer (Sonnet) → Reviewer → Documenter |
+| Security-sensitive     | Always include Reviewer                                                              |
+| Documentation only     | Documenter                                                                           |
+| Release                | Release Manager                                                                      |
 
 ### Escalation Rules
 
