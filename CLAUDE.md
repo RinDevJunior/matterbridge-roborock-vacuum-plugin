@@ -35,39 +35,43 @@ Subagents never communicate directly. During planning, `technical-architect` nes
 
 ### Complexity & architect's internal tree
 
-| Complexity | Architect does internally |
-| ---------- | ------------------------- |
-| **low**    | wiki-manager → ≤5 file reads → `plan.md` |
+| Complexity | Architect does internally                                                   |
+| ---------- | --------------------------------------------------------------------------- |
+| **low**    | wiki-manager → ≤5 file reads → `plan.md`                                    |
 | **medium** | wiki-manager → plan directly, or investigator for targeted gaps → `plan.md` |
-| **high**   | wiki-manager → investigator (complex questions) → `plan.md` |
+| **high**   | wiki-manager → investigator (complex questions) → `plan.md`                 |
 
 ### Decision policy
 
-| Task | Flow |
-| ---- | ---- |
-| Investigation only | spawn architect → briefer (optional) |
-| Low complexity | architect → briefer → approval → implementer → reviewer → documenter |
-| Medium feature / bug | architect → briefer → approval → implementer → reviewer → test-writer → documenter |
-| High / architecture | architect → briefer → approval → implementer (Sonnet) → reviewer → test-writer → documenter |
-| Security-sensitive | always include reviewer |
-| Documentation only | documenter |
-| Release | release-manager |
+| Task                                    | Flow                                                                                        |
+| --------------------------------------- | ------------------------------------------------------------------------------------------- |
+| Investigation only                      | spawn architect → briefer (optional)                                                        |
+| Low complexity                          | architect → briefer → approval → implementer → reviewer → documenter                        |
+| Medium feature / bug                    | architect → briefer → approval → implementer → reviewer → test-writer → documenter          |
+| High / architecture                     | architect → briefer → approval → implementer (Sonnet) → reviewer → test-writer → documenter |
+| Security-sensitive                      | always include reviewer                                                                     |
+| Documentation only                      | documenter                                                                                  |
+| Release                                 | release-manager                                                                             |
+| Ad-hoc / custom (user opts out of flow) | direct-executor only — no pipeline                                                          |
 
 ### Spawnable subagents
 
-| Subagent | Spawned by | When |
-| -------- | ---------- | ---- |
-| `technical-architect` | main session | Planning (once per cycle) |
-| `wiki-manager` | architect only | Knowledge gathering (leaf) |
-| `investigator` | architect only | Deep codebase traces (leaf) |
-| `briefer` | main session | After plan ready |
-| `implementer` | main session | After user approves brief |
-| `reviewer` | main session | After implementation |
-| `test-writer` | main session | After review (medium/high) |
-| `documenter` | main session | After review passes |
-| `compiler` | main session | User request only |
-| `cleaner` | main session | User request only |
-| `release-manager` | main session | User request only |
+| Subagent              | Spawned by     | When                               |
+| --------------------- | -------------- | ---------------------------------- |
+| `technical-architect` | main session   | Planning (once per cycle)          |
+| `wiki-manager`        | architect only | Knowledge gathering (leaf)         |
+| `investigator`        | architect only | Deep codebase traces (leaf)        |
+| `briefer`             | main session   | After plan ready                   |
+| `implementer`         | main session   | After user approves brief          |
+| `reviewer`            | main session   | After implementation               |
+| `test-writer`         | main session   | After review (medium/high)         |
+| `documenter`          | main session   | After review passes                |
+| `compiler`            | main session   | User request only                  |
+| `cleaner`             | main session   | User request only                  |
+| `release-manager`     | main session   | User request only                  |
+| `direct-executor`     | main session   | User request only — skip full flow |
+
+Agent definitions: `.claude/agents/<name>.md`. Prompt templates: `.claude/instructions/agent-prompts.md`.
 
 ### Task folder artifacts
 
@@ -116,6 +120,7 @@ Ask the user when: requirements are ambiguous, business brief needs approval, ar
 - Do not spawn `wiki-manager` or `investigator` — architect nests them.
 - One architect spawn per planning cycle.
 - Compiler runs only when the user explicitly requests it.
+- Direct Executor runs only when the user explicitly asks to skip the full flow (no task folder, no architect/briefer/approval).
 
 ---
 

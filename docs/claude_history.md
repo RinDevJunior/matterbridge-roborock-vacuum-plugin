@@ -1,5 +1,40 @@
 # Claude History
 
+## 2026-06-29 — Wiki gap fill: 5 new pages + 6 expanded
+
+**Task:** Created 5 new wiki pages documenting message pipeline, listeners, dispatchers, feature flags, and room/map data; expanded 6 existing pages with missing sections; updated Home.md index.
+
+**Changes:**
+
+- `wiki/Runtime-Handlers-Pipeline.md` — created; documents PlatformRunner dispatch chain, handler signatures, burst polling integration
+- `wiki/Message-Listeners-Architecture.md` — created; documents broadcaster/listener pattern, V1/B01/MapInfo listener implementations
+- `wiki/Message-Dispatchers-Protocol-Routing.md` — created; documents dispatcher factory, V10/Q7/Q10 protocol-specific routing
+- `wiki/Feature-Flags-Device-Capabilities.md` — created; documents featureSetDecoder Groups A–G, clean mode gating, DeviceFeatures registry
+- `wiki/Room-Map-Data-Pipeline.md` — created; documents DTO → Mapper → Model transformation, AreaManagementService endpoint
+- `wiki/Polling-Real-Time-Connection.md` — added cross-link to Runtime-Handlers-Pipeline
+- `wiki/Supporting-Domains.md` — added AreaManagementService lifecycle section with methods table
+- `wiki/Roborock-Protocol-Wire-Format.md` — added Encode Pipeline and Serializer Factory sections
+- `wiki/MQTT-Local-Communication.md` — added AbstractClient section documenting broadcaster/listener host
+- `wiki/Error-Handling-Reporting.md` — added partial-implementation note to EmailNotificationService section
+- `wiki/Home.md` — added "Message & Protocol Flow" index section with links to 5 new pages
+
+**Outcome:** Pass. Implementer created all 5 new pages and expanded all 6 existing pages per plan.md specifications. Wiki coverage now complete with no gaps remaining.
+
+## 2026-06-29 — Wiki documentation fixes
+
+**Task:** Applied accuracy fixes to documentation across wiki and agent-answers. Fixed 6 files based on review against current source code.
+
+**Changes:**
+
+- `wiki/Clean-Mode-Domain.md` — rewrote "Special Modes" section: removed `vacAndMopDeepModeConfig` row, clarified feature-flag conditions for SmartPlan and VacFollowedByMop; rewrote "Device Capability Registry" section to document feature-flag-driven behavior and unused `_model` parameters
+- `wiki/Home.md` — removed broken links table, replaced with archived note; added cross-links to flow documentation (`status-update-flow.md` and `room-map-sync-flow.md`)
+- `wiki/Roborock-Protocol-Wire-Format.md` — corrected file path to include `deserializers/` subdirectory
+- `wiki/Matterbridge-Device-Registration.md` — updated `hasSmartPlan` call signature to include feature set parameters and documented feature-flag gating
+- `wiki/Service-Area-Update.md` — translated 100% from Vietnamese to English while preserving all technical content and structure
+- `docs/agent-answers.md` — added historical banner to DEVICE_EXTRA_MODES session explaining that static model lookup has been replaced by feature-flag-driven implementation
+
+**Outcome:** Pass. Reviewer approved all changes. Wiki now accurately reflects current feature-flag-driven architecture with no static model whitelists.
+
 ## 2026-06-27 — Wired hasSmartPlan to is_smart_clean_mode_set_supported feature flag
 
 **Task:** Wire `hasSmartPlan` to the `is_smart_clean_mode_set_supported` feature flag instead of always returning `false`.

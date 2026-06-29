@@ -7,6 +7,8 @@
 - [x] Investigate feature gaps (reference vs current plugin) — gaps analysis complete
 - [x] Implement `src/share/featureSetDecoder.ts` — pure decoder for DeviceFeatures capability flags
 - [x] Wire `hasSmartPlan` to `is_smart_clean_mode_set_supported` feature flag — SmartPlan mode 4 now dynamically gated
+- [x] Wiki documentation fixes — updated 6 files to reflect feature-flag-driven architecture
+- [x] Wiki gap fill — created 5 new pages (Runtime-Handlers-Pipeline, Message-Listeners-Architecture, Message-Dispatchers-Protocol-Routing, Feature-Flags-Device-Capabilities, Room-Map-Data-Pipeline); expanded 6 existing pages; updated Home.md index
 
 ## Pending
 
