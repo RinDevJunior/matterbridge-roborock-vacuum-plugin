@@ -39,8 +39,10 @@ output=$(npx tsc --noEmit 2>&1); code=$?; if [ $code -ne 0 ]; then echo "$output
 
 ### Step 4 — Tests
 
+Uses `test:ci` (JUnit report + compact failure parser). Output is already filtered — do not grep.
+
 ```bash
-output=$(npm run test 2>&1); code=$?; if [ $code -ne 0 ]; then echo "$output" | grep -E "FAIL|×|✗|Error:|AssertionError|Expected|Received"; else echo "TESTS PASS"; fi
+output=$(npm run test:ci 2>&1); code=$?; echo "$output"
 ```
 
 ## Output Format

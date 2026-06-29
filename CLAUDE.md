@@ -45,6 +45,7 @@ Subagents never communicate directly. During planning, `technical-architect` nes
 
 | Task                                    | Flow                                                                                        |
 | --------------------------------------- | ------------------------------------------------------------------------------------------- |
+| Explain (how/why/can I)                 | architect (explain mode) → `answer.md` — **EM must not read source code**                   |
 | Investigation only                      | spawn architect → briefer (optional)                                                        |
 | Low complexity                          | architect → briefer → approval → implementer → reviewer → documenter                        |
 | Medium feature / bug                    | architect → briefer → approval → implementer → reviewer → test-writer → documenter          |
@@ -52,26 +53,25 @@ Subagents never communicate directly. During planning, `technical-architect` nes
 | Security-sensitive                      | always include reviewer                                                                     |
 | Documentation only                      | documenter                                                                                  |
 | Release                                 | release-manager                                                                             |
-| Commit message suggestion               | commit-message-writer                                                                       |
+| Commit message / finalize               | finalizer                                                                                   |
 | Ad-hoc / custom (user opts out of flow) | direct-executor only — no pipeline                                                          |
 
 ### Spawnable subagents
 
-| Subagent              | Spawned by     | When                               |
-| --------------------- | -------------- | ---------------------------------- |
-| `technical-architect` | main session   | Planning (once per cycle)          |
-| `wiki-manager`        | architect only | Knowledge gathering (leaf)         |
-| `investigator`        | architect only | Deep codebase traces (leaf)        |
-| `briefer`             | main session   | After plan ready                   |
-| `implementer`         | main session   | After user approves brief          |
-| `reviewer`            | main session   | After implementation               |
-| `test-writer`         | main session   | After review (medium/high)         |
-| `documenter`          | main session   | After review passes                |
-| `compiler`            | main session   | User request only                  |
-| `cleaner`             | main session   | User request only                  |
-| `release-manager`     | main session   | User request only                  |
-| `commit-message-writer` | main session | User request only — suggest commit message only |
-| `direct-executor`     | main session   | User request only — skip full flow |
+| Subagent              | Spawned by     | When                                                                    |
+| --------------------- | -------------- | ----------------------------------------------------------------------- |
+| `technical-architect` | main session   | Planning (once per cycle)                                               |
+| `wiki-manager`        | architect only | Knowledge gathering (leaf)                                              |
+| `investigator`        | architect only | Deep codebase traces (leaf)                                             |
+| `briefer`             | main session   | After plan ready                                                        |
+| `implementer`         | main session   | After user approves brief                                               |
+| `reviewer`            | main session   | After implementation                                                    |
+| `test-writer`         | main session   | After review (medium/high)                                              |
+| `documenter`          | main session   | After review passes                                                     |
+| `compiler`            | main session   | User request only                                                       |
+| `finalizer`           | main session   | Wrap-up before commit — clean, stage, format, precommit, commit message |
+| `release-manager`     | main session   | User request only                                                       |
+| `direct-executor`     | main session   | User request only — skip full flow                                      |
 
 Agent definitions: `.claude/agents/<name>.md`. Prompt templates: `.claude/instructions/agent-prompts.md`.
 
@@ -83,6 +83,7 @@ docs/<short-task-description>/
   wiki-brief.md
   questions-<topic>.md
   answers-<topic>.md
+  answer.md          # explain mode only (user-facing Q&A)
   plan.md
   business-brief.md
   manager-clarification.md
@@ -103,7 +104,7 @@ docs/<short-task-description>/
 low | medium | high (<confirmed | auto | pending>)
 
 ### Current Status
-<clarifying | planning | waiting for approval | implementing | reviewing | blocked>
+<clarifying | explaining | planning | waiting for approval | implementing | reviewing | blocked>
 
 ### Needs User Approval
 <question, only when needed>
@@ -123,6 +124,8 @@ Ask the user when: requirements are ambiguous, business brief needs approval, ar
 - One architect spawn per planning cycle.
 - Compiler runs only when the user explicitly requests it.
 - Direct Executor runs only when the user explicitly asks to skip the full flow (no task folder, no architect/briefer/approval).
+- **Explain mode:** EM clarifies → writes `requirement.md` with `type: explain` → spawns architect once → presents `answer.md`. EM **must not** read `src/`, `wiki/`, or search the codebase; only task-folder artifacts.
+- **Task folders** (`docs/<task>/`) are ephemeral — Finalizer passes them to `clean-paths.mjs` at wrap-up; never commit orchestration artifacts.
 
 ---
 

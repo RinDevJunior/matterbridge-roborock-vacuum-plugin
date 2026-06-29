@@ -45,7 +45,7 @@ Purpose:
 
 - Create a task folder under `docs/<short-task-description>/`.
 - Write the clarified requirement to `requirement.md` in that folder.
-- Coordinate Technical Architect (planning), Briefer, Implementer, Reviewer, Test Writer, Documenter, and Cleaner.
+- Coordinate Technical Architect (planning), Briefer, Implementer, Reviewer, Test Writer, Documenter, and Finalizer.
 - Assess task complexity (`low` | `medium` | `high`) and confirm with the user (auto-confirm obvious **low** tasks).
 - **Do not spawn wiki-manager or investigator** — Technical Architect nests them during planning.
 - Present the business brief to the user and get approval before implementation.
@@ -61,12 +61,13 @@ docs/<short-task-description>/
   wiki-brief.md
   questions-<topic>.md
   answers-<topic>.md
+  answer.md          # explain mode only
   plan.md
   business-brief.md
   manager-clarification.md
 ```
 
-The task folder is retained as task history. Cleaner does not delete task folders by default.
+Ephemeral orchestration artifacts live under `docs/<task>/` — Finalizer deletes them when wrapping up (paths passed to `clean-paths.mjs`); do not commit.
 
 Workflow:
 
@@ -87,6 +88,19 @@ Workflow:
 
 No EM round-trips for wiki-manager or investigator during planning.
 
+### Explain mode (user Q&A — no implementation)
+
+When the user asks how something works, whether a capability exists, or how to configure/use a feature:
+
+1. Clarify the question (one focused question at a time).
+2. Create `docs/<short-task-description>/requirement.md` with `type: explain` and the user's question.
+3. Spawn **technical-architect** with `mode: explain` — architect owns all research.
+4. Review `answer.md` when architect returns; present the answer to the user.
+5. **EM must not** read `src/`, `wiki/`, or run codebase search tools for explain tasks — only task-folder artifacts (`requirement.md`, `answer.md`, etc.).
+6. If the user then wants a code change, start a new cycle with `type: implement` (normal pipeline).
+
+Architect in explain mode may: spawn wiki-manager (curated knowledge), read source directly, spawn investigator for deep traces. Output is `answer.md`, not `plan.md`.
+
 ---
 
 ## Wiki Manager ⬜
@@ -105,10 +119,10 @@ Purpose:
 
 Purpose:
 
-- Own the full planning phase in one session.
+- Own the full planning phase in one session **or** explain mode (user Q&A).
 - **Must spawn `wiki-manager` first** (unless trivial docs-only skip).
 - **May spawn `investigator`** for medium/high complex gaps.
-- Write `plan.md` (Status: ready).
+- Write `plan.md` (implement) or `answer.md` (explain).
 
 Requires `Agent` in `tools` to spawn nested subagents. Spawned by **main session** (Engineer Manager role). Uses Sonnet (default) or Opus for **high** complexity.
 
@@ -281,18 +295,18 @@ Updated: docs/claude_history.md, docs/to_do.md
 
 ---
 
-## Cleaner ⬜
+## Finalizer ⬜
 
 Purpose:
 
-Delete legacy root-level ephemeral agent working files only when explicitly requested:
+- End-of-task wrap-up before the user commits.
+- Run `node scripts/clean-paths.mjs <paths…>` — Finalizer supplies ephemeral paths from the session (task folder, legacy root files); script does not hardcode names.
+- Stage changes (`git add`), run `npm run format`, re-stage, then `npm run precommit:ci` (compact output only).
+- Draft a commit message suggestion from staged changes.
 
-- `docs/agent-questions.md`
-- `docs/agent-answers.md`
-- `docs/plan.md`
-- `docs/manager-clarification.md`
+**Never** edits source logic, runs raw `precommit` logs, stages task folders, or runs `git commit` / `git push`.
 
-Preserve `docs/<task-folder>/` directories by default.
+Run when the user wants to prepare a commit, finalize a task, or asks for a commit message.
 
 ---
 
@@ -303,19 +317,6 @@ Purpose:
 Bump version across all required files and write the CHANGELOG entry.
 
 Run only when explicitly requested by the user.
-
----
-
-## Commit Message Writer ⬜
-
-Purpose:
-
-- Draft commit message(s) from staged changes by default; other scopes (`unstaged`, `all`, `branch`) only when requested.
-- Match repository `git log` style and conventional-commit prefixes when appropriate.
-
-**Never** runs `git add`, `git commit`, `git push`, or any other mutating git command.
-
-Run only when the user asks for a commit message suggestion.
 
 ---
 
@@ -341,6 +342,7 @@ Do not auto-chain reviewer, test-writer, or documenter unless the user asks.
 
 | Task                                    | Specialists                                                                                                                   |
 | --------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| **Explain** (how/why/can I)             | EM → **technical-architect** (explain mode) → `answer.md`. EM **must not** read `src/` or `wiki/`. No briefer/implementer.    |
 | Investigation only                      | EM → technical-architect (nests wiki-manager, investigator if needed)                                                         |
 | Low complexity                          | EM → technical-architect → Briefer → User approval → Implementer → Reviewer → Documenter                                      |
 | Medium feature / bug                    | EM → technical-architect → Briefer → User approval → Implementer → Reviewer → Test Writer → Documenter                        |
@@ -348,12 +350,12 @@ Do not auto-chain reviewer, test-writer, or documenter unless the user asks.
 | Security-sensitive                      | Always include Reviewer                                                                                                       |
 | Documentation only                      | Documenter                                                                                                                    |
 | Release                                 | Release Manager                                                                                                               |
-| Commit message suggestion               | Commit Message Writer                                                                                                         |
+| Commit message / finalize               | **Finalizer** — clean, `git add`, format, precommit:ci, commit message                                                        |
 | Ad-hoc / custom (user opts out of flow) | **Direct Executor** — no task folder, no architect/briefer/approval                                                           |
 
 > **Compiler** runs only when explicitly requested by the user. Do not include it automatically.
 
-> **Commit Message Writer** runs only when the user asks for a commit message. It never commits, stages, or pushes.
+> **Finalizer** runs when the user wants commit prep or a commit message. It never commits or pushes.
 
 > **Direct Executor** runs only when the user explicitly asks to skip the full flow.
 
@@ -412,8 +414,7 @@ Prefer Haiku for:
 - review
 - compiler
 - documenter
-- cleaner
-- commit-message-writer
+- finalizer
 - simple implementation
 - test writer
 

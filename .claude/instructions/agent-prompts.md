@@ -6,22 +6,37 @@ System prompts live in `.claude/agents/`. Read the matching file before spawning
 
 **Nested planning:** main session spawns `technical-architect` only. Architect nests `wiki-manager` and `investigator` — never spawn those from the main session.
 
+**Explain mode:** main session spawns `technical-architect` with `type: explain`; architect writes `answer.md`. EM must not read `src/` or `wiki/`.
+
 **Direct execution:** spawn `direct-executor` only when the user explicitly asks to skip the full flow (ad-hoc / custom task). No task folder, no architect, no briefer, no approval cycle.
 
 ---
 
 ## 🟣 Technical Architect
 
+**Implement mode** (default):
+
 ```
 Agent({
   description: "Architecture plan: <task summary>",
   subagent_type: "technical-architect",
   model: "sonnet",
-  prompt: "Task folder: docs/<short-task-description>/\nRequirement file: docs/<short-task-description>/requirement.md\nComplexity: low | medium | high"
+  prompt: "Task folder: docs/<short-task-description>/\nRequirement file: docs/<short-task-description>/requirement.md\ntype: implement\nComplexity: low | medium | high"
 })
 ```
 
-Spawned by **main session** (Engineer Manager role). **Must** nest `wiki-manager` first, then `investigator` if needed, then write `plan.md`.
+**Explain mode** (user Q&A — EM must not read source code):
+
+```
+Agent({
+  description: "Explain: <question summary>",
+  subagent_type: "technical-architect",
+  model: "sonnet",
+  prompt: "Task folder: docs/<short-task-description>/\nRequirement file: docs/<short-task-description>/requirement.md\ntype: explain\n\nWrite answer.md (not plan.md). Spawn wiki-manager for curated knowledge; read src/ directly as needed; spawn investigator for deep traces."
+})
+```
+
+Spawned by **main session** (Engineer Manager role). **Must** nest `wiki-manager` first when useful, then `investigator` if needed. Write `plan.md` (implement) or `answer.md` (explain).
 
 ---
 
@@ -145,18 +160,20 @@ Run after Reviewer approves. Skip for investigation-only tasks.
 
 ---
 
-## ⬜ Cleaner
+## ⬜ Finalizer
 
 ```
 Agent({
-  description: "Clean: remove ephemeral agent files",
-  subagent_type: "cleaner",
+  description: "Finalize: clean, stage, format, precommit, commit message",
+  subagent_type: "finalizer",
   model: "haiku",
-  prompt: ""
+  prompt: "Task folder (optional): docs/<short-task-description>/\nPaths to stage (optional): <paths or omit for session changes>\nUser notes: <optional>"
 })
 ```
 
-Run only when explicitly requested.
+Run when the user wants commit prep or a commit message. Full pipeline: discover ephemeral paths → `clean-paths.mjs` → `git add` (no `docs/<task>/`) → `npm run format` → re-stage → `npm run precommit:ci` → commit message.
+
+In **Cursor**, use `subagent_type: "generalPurpose"` and embed Finalizer rules from `.claude/agents/finalizer.md`.
 
 ---
 
@@ -172,23 +189,6 @@ Agent({
 ```
 
 Run only when the user explicitly requests a release.
-
----
-
-## ⬜ Commit Message Writer
-
-```
-Agent({
-  description: "Commit message: draft from changes",
-  subagent_type: "commit-message-writer",
-  model: "haiku",
-  prompt: "Scope (default: staged): staged | unstaged | all | branch\nBase branch (if branch scope): main | dev\nUser notes: <optional>"
-})
-```
-
-Run when the user asks for a commit message suggestion. Never commits, stages, or pushes.
-
-In **Cursor**, use `subagent_type: "generalPurpose"` and embed the Commit Message Writer rules from `.claude/agents/commit-message-writer.md` in the prompt.
 
 ---
 
