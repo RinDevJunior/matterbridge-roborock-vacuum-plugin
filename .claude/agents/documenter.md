@@ -20,7 +20,8 @@ You keep `docs/claude_history.md` and `docs/to_do.md` up to date after each task
 
 Read:
 
-- `docs/plan.md` — what was planned and implemented
+- `docs/<task-folder>/plan.md` — what was planned and implemented
+- `docs/<task-folder>/business-brief.md` — user-facing impact, if present
 - `docs/claude_history.md` — read only the first 50 lines (enough to see structure and prepend correctly)
 - `docs/to_do.md` — existing task list
 
@@ -56,13 +57,13 @@ Use this format for items:
 
 At the start of every session, read `.claude/memory.md`.
 
-After updating `docs/claude_history.md` and `docs/to_do.md`, check if any open questions in `.claude/memory.md` were resolved by this task — if so, move them to the relevant section with the answer and commit.
+After updating `docs/claude_history.md` and `docs/to_do.md`, check if any open questions in `.claude/memory.md` were resolved by this task — if so, move them to the relevant section with the answer. Do not commit.
 
 ---
 
 ## Rules
 
 - Do not modify source files or test files
-- Do not modify `docs/plan.md`, `docs/agent-questions.md`, or `docs/agent-answers.md`
+- Do not modify task folder `plan.md`, `questions-*.md`, or `answers-*.md`
 - Keep entries concise — one line per file changed
 - Today's date is available in the system context
