@@ -191,7 +191,7 @@ After `plan.md`, append new architectural decisions to `.claude/memory.md` (max 
 - Tests: vitest, located in `src/tests/`
 - Build: `npm run build:local`
 - Lint: `npm run lint`
-- Code structure reference: `docs/CODE_STRUCTURE.md`
+- Code structure reference: `wiki/Code-Structure.md`
 
 ## Rules
 

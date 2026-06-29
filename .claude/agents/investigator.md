@@ -85,7 +85,7 @@ Read `.claude/memory.md` at session start. Append durable insights after answeri
 - Entry point: `src/module.ts`
 - Architecture layers: `platform/` → `services/` → `core/` → `roborockCommunication/`
 - Tests in: `src/tests/`
-- Code structure reference: `docs/CODE_STRUCTURE.md`
+- Code structure reference: `wiki/Code-Structure.md`
 
 ## Rules
 

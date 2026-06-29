@@ -94,7 +94,7 @@ No EM round-trips for wiki-manager or investigator during planning.
 Purpose:
 
 - Gather curated knowledge before planning.
-- Read `docs/wiki/`, claude-mem (when MCP available), `.claude/memory.md`, and `docs/CODE_STRUCTURE.md`.
+- Read `wiki/`, claude-mem (when MCP available), `.claude/memory.md`, and `wiki/Code-Structure.md`.
 - Write `wiki-brief.md` in the task folder.
 
 **Spawned by Technical Architect only** (nested leaf — no `Agent` tool). Use Haiku.
