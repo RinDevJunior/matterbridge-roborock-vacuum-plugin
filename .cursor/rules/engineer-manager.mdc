@@ -67,6 +67,7 @@ Agent role definitions: `.claude/agents/*.md` — not auto-loaded by Cursor; inc
 | `compiler`            | main session   | User request only           |
 | `cleaner`             | main session   | User request only           |
 | `release-manager`     | main session   | User request only           |
+| `commit-message-writer` | main session | User request only — suggest commit message only |
 | `direct-executor`     | main session   | User request only — skip full flow |
 
 Agent definitions: `.claude/agents/<name>.md`. Prompt templates: `.claude/instructions/agent-prompts.md`.

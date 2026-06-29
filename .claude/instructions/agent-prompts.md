@@ -175,6 +175,23 @@ Run only when the user explicitly requests a release.
 
 ---
 
+## ⬜ Commit Message Writer
+
+```
+Agent({
+  description: "Commit message: draft from changes",
+  subagent_type: "commit-message-writer",
+  model: "haiku",
+  prompt: "Scope (default: staged): staged | unstaged | all | branch\nBase branch (if branch scope): main | dev\nUser notes: <optional>"
+})
+```
+
+Run when the user asks for a commit message suggestion. Never commits, stages, or pushes.
+
+In **Cursor**, use `subagent_type: "generalPurpose"` and embed the Commit Message Writer rules from `.claude/agents/commit-message-writer.md` in the prompt.
+
+---
+
 ## 🔷 Direct Executor
 
 **User request only.** Bypasses task folder, architect, briefer, approval, reviewer, and documenter unless the user asks for those separately.

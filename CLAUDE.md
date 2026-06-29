@@ -52,6 +52,7 @@ Subagents never communicate directly. During planning, `technical-architect` nes
 | Security-sensitive                      | always include reviewer                                                                     |
 | Documentation only                      | documenter                                                                                  |
 | Release                                 | release-manager                                                                             |
+| Commit message suggestion               | commit-message-writer                                                                       |
 | Ad-hoc / custom (user opts out of flow) | direct-executor only — no pipeline                                                          |
 
 ### Spawnable subagents
@@ -69,6 +70,7 @@ Subagents never communicate directly. During planning, `technical-architect` nes
 | `compiler`            | main session   | User request only                  |
 | `cleaner`             | main session   | User request only                  |
 | `release-manager`     | main session   | User request only                  |
+| `commit-message-writer` | main session | User request only — suggest commit message only |
 | `direct-executor`     | main session   | User request only — skip full flow |
 
 Agent definitions: `.claude/agents/<name>.md`. Prompt templates: `.claude/instructions/agent-prompts.md`.

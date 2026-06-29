@@ -23,6 +23,7 @@ It is version-controlled — commit and push changes so teammates can pull the l
 
 <!-- Coding patterns established in this project -->
 
+- **Commit messages:** `<type>(<optional scope>): <short summary>` + optional body (blank line, then 1–2 sentences on **why**). Types: `feat`, `fix`, `docs`, `chore`, `refactor`, `test`, `style`, `perf`. Imperative mood; no `Co-Authored-By`.
 - Per-device override pattern: array of objects with a key field (`serialNumber`) + value field (`productName`), gated by a boolean flag in `advancedFeature.settings`. See `DeviceProductNameOverride` in `RoborockPluginPlatformConfig.ts:58`.
 - New config sections in schema use JSON Schema `if/then` blocks under `advancedFeature.allOf` to conditionally expose sub-fields.
 

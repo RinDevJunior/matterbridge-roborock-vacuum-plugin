@@ -306,6 +306,19 @@ Run only when explicitly requested by the user.
 
 ---
 
+## Commit Message Writer ⬜
+
+Purpose:
+
+- Draft commit message(s) from staged changes by default; other scopes (`unstaged`, `all`, `branch`) only when requested.
+- Match repository `git log` style and conventional-commit prefixes when appropriate.
+
+**Never** runs `git add`, `git commit`, `git push`, or any other mutating git command.
+
+Run only when the user asks for a commit message suggestion.
+
+---
+
 ## Direct Executor 🔷
 
 Purpose:
@@ -335,9 +348,12 @@ Do not auto-chain reviewer, test-writer, or documenter unless the user asks.
 | Security-sensitive                      | Always include Reviewer                                                                                                       |
 | Documentation only                      | Documenter                                                                                                                    |
 | Release                                 | Release Manager                                                                                                               |
+| Commit message suggestion               | Commit Message Writer                                                                                                         |
 | Ad-hoc / custom (user opts out of flow) | **Direct Executor** — no task folder, no architect/briefer/approval                                                           |
 
 > **Compiler** runs only when explicitly requested by the user. Do not include it automatically.
+
+> **Commit Message Writer** runs only when the user asks for a commit message. It never commits, stages, or pushes.
 
 > **Direct Executor** runs only when the user explicitly asks to skip the full flow.
 
@@ -397,6 +413,7 @@ Prefer Haiku for:
 - compiler
 - documenter
 - cleaner
+- commit-message-writer
 - simple implementation
 - test writer
 
