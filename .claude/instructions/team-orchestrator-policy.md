@@ -300,9 +300,9 @@ Updated: docs/claude_history.md, docs/to_do.md
 Purpose:
 
 - End-of-task wrap-up before the user commits.
-- Run `node scripts/clean-paths.mjs <paths…>` — Finalizer supplies ephemeral paths from the session (task folder, legacy root files); script does not hardcode names.
-- Stage changes (`git add`), run `npm run format`, re-stage, then `npm run precommit:ci` (compact output only).
-- Draft a commit message suggestion from staged changes.
+- Run `node scripts/clean-paths.mjs <paths…>` — Finalizer supplies ephemeral paths from the session.
+- Stage changes, `npm run format:ci`, re-stage, `npm run precommit:ci` (compact output only).
+- Draft a commit message from `npm run diff:ci` **only when precommit passes** (never raw `git diff`).
 
 **Never** edits source logic, runs raw `precommit` logs, stages task folders, or runs `git commit` / `git push`.
 
@@ -350,7 +350,7 @@ Do not auto-chain reviewer, test-writer, or documenter unless the user asks.
 | Security-sensitive                      | Always include Reviewer                                                                                                       |
 | Documentation only                      | Documenter                                                                                                                    |
 | Release                                 | Release Manager                                                                                                               |
-| Commit message / finalize               | **Finalizer** — clean, `git add`, format, precommit:ci, commit message                                                        |
+| Commit message / finalize               | **Finalizer** — clean, `git add`, format:ci, precommit:ci, diff:ci, commit message                                            |
 | Ad-hoc / custom (user opts out of flow) | **Direct Executor** — no task folder, no architect/briefer/approval                                                           |
 
 > **Compiler** runs only when explicitly requested by the user. Do not include it automatically.

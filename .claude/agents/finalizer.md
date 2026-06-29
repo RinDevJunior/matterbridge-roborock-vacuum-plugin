@@ -19,12 +19,14 @@ You **stage** files (`git add`) but **never** `git commit`, `git push`, or edit 
 
 Two modes — use what the user asked for:
 
-| Mode             | When                                 | Steps                                                  |
-| ---------------- | ------------------------------------ | ------------------------------------------------------ |
-| **Full**         | "finalize", "wrap up", commit prep   | 1 → 6                                                  |
-| **Message only** | "commit message", "suggest a commit" | 5 → 6 (read-only git inspect; no add/format/precommit) |
+| Mode             | When                                 | Steps                                                                       |
+| ---------------- | ------------------------------------ | --------------------------------------------------------------------------- |
+| **Full**         | "finalize", "wrap up", commit prep   | 1 → 6                                                                       |
+| **Message only** | "commit message", "suggest a commit" | Run `npm run precommit:ci` → 5 → 6 if PASS (read-only; no clean/add/format) |
 
 Run steps in order. Stop and report on failure unless the user asked to continue anyway.
+
+**Commit message gate:** Draft a commit message **only** when every check that ran has passed (Format PASS and Precommit PASS). If either fails, skip Step 5 and report that the message was withheld.
 
 ### Step 1 — Clean ephemeral artifacts
 
@@ -82,17 +84,21 @@ Stage session changes **excluding** ephemeral task folders:
 
 ### Step 3 — Format
 
+Run the compact format script only — **do not** run `npm run format` directly or read raw Prettier logs:
+
 ```bash
-npm run format
+npm run format:ci
 ```
 
-Prettier only — do not hand-edit files to fix format or lint.
+Echo **only** the script stdout (`FORMAT PASS` or `FORMAT: N file(s)` + paths). Prettier writes files; do not hand-edit.
 
 Re-stage formatted files:
 
 ```bash
 git add -u
 ```
+
+If format fails, skip Steps 4–5 and report the failure.
 
 ### Step 4 — Pre-commit checks
 
@@ -104,23 +110,26 @@ npm run precommit:ci
 
 Echo **only** the script stdout (already compact). Runs: lint → type-check → dup-check → format:check → test:ci.
 
-If it fails, paste the script output as-is in the report. Do not open log files or re-run steps for more detail.
+If it fails, paste the script output as-is in the report. Do not open log files or re-run steps for more detail. **Do not** proceed to Step 5.
 
 ### Step 5 — Commit message suggestion
 
+**Prerequisite:** Format (Step 3) and Precommit (Step 4) both PASS. Otherwise skip this step entirely — no message, no alternatives.
+
+Use the compact diff script only — **do not** run `git diff`, `git diff --staged`, or read raw patch output:
+
 ```bash
 git status
-git diff --staged
-git diff
 git log --oneline -10
+npm run diff:ci
 ```
 
 **Scope** (honor user request; default **staged**):
 
-- **staged** — base message on `git diff --staged` only
-- **unstaged** — base message on `git diff` only
-- **all** — consider both; note if separate commits are better
-- **branch** — include `git log <base>...HEAD` and `git diff <base>...HEAD` when user asks for branch/PR summary
+- **staged** — `npm run diff:ci` (default)
+- **unstaged** — `npm run diff:ci -- --unstaged`
+- **all** — run staged and unstaged summaries; note if separate commits are better
+- **branch** — `git log <base>...HEAD --oneline` plus `npm run diff:ci -- --branch=<base>`
 
 If default `staged` has no changes, say so and note unstaged changes.
 
@@ -165,26 +174,22 @@ PASS | FAIL + <one line> | Skipped (message-only)
 PASS | FAIL + <paste precommit:ci stdout only> | Skipped (message-only)
 
 ### Recommended commit message
-```
-
-<message>
-```
+<message block, or "Skipped — checks did not pass" when Format or Precommit failed>
 
 ### Alternatives
-
-- ...
+- ... (omit entire section when message skipped)
 
 ### Notes
-
 ...
-
 ```
+
+When checks failed, **Notes** must say fix failures via **Implementer** or **direct-executor**, then re-run Finalizer.
 
 ## Allowed Actions
 
-- `git status`, `git diff`, `git diff --staged`, `git log`, `git show`, `git branch`, `git rev-parse`
+- `git status`, `git log`, `git show`, `git branch`, `git rev-parse`
 - `git add` (staging only)
-- `npm run format`, `npm run precommit:ci`
+- `npm run format:ci`, `npm run precommit:ci`, `npm run diff:ci`
 - `node scripts/clean-paths.mjs <path> [...]` — paths under `docs/` only; **you** supply the list
 
 ## Forbidden Actions
@@ -194,6 +199,7 @@ Never:
 - `git commit`, `git push`, `git pull`, or destructive git commands
 - Edit, write, or patch **any** source file (`src/`, `scripts/` logic, tests, configs) — not even to fix lint/test failures
 - Run `npm run precommit` directly or read full build/test logs
+- Run `git diff` / `git diff --staged` or read raw patch output — use `npm run diff:ci` only
 - Stage `docs/<short-task-description>/` orchestration folders
 - Use Write/Edit tools — **Bash only**
 
@@ -202,6 +208,6 @@ Fix failures are handled by **Implementer** or **direct-executor**, not Finalize
 ## Rules
 
 - Task folders under `docs/<task>/` are ephemeral — deleted in Step 1, never committed
-- Re-stage after `npm run format`
+- Re-stage after `npm run format:ci`
+- **No commit message** until Format and Precommit both pass
 - The user runs `git commit` with the suggested message
-```

@@ -171,7 +171,7 @@ Agent({
 })
 ```
 
-Run when the user wants commit prep or a commit message. Full pipeline: discover ephemeral paths → `clean-paths.mjs` → `git add` (no `docs/<task>/`) → `npm run format` → re-stage → `npm run precommit:ci` → commit message.
+Run when the user wants commit prep or a commit message. Full pipeline: discover ephemeral paths → `clean-paths.mjs` → `git add` → `npm run format:ci` → re-stage → `npm run precommit:ci` → `npm run diff:ci` → commit message **only if precommit passes**.
 
 In **Cursor**, use `subagent_type: "generalPurpose"` and embed Finalizer rules from `.claude/agents/finalizer.md`.
 

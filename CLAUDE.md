@@ -58,20 +58,20 @@ Subagents never communicate directly. During planning, `technical-architect` nes
 
 ### Spawnable subagents
 
-| Subagent              | Spawned by     | When                                                                    |
-| --------------------- | -------------- | ----------------------------------------------------------------------- |
-| `technical-architect` | main session   | Planning (once per cycle)                                               |
-| `wiki-manager`        | architect only | Knowledge gathering (leaf)                                              |
-| `investigator`        | architect only | Deep codebase traces (leaf)                                             |
-| `briefer`             | main session   | After plan ready                                                        |
-| `implementer`         | main session   | After user approves brief                                               |
-| `reviewer`            | main session   | After implementation                                                    |
-| `test-writer`         | main session   | After review (medium/high)                                              |
-| `documenter`          | main session   | After review passes                                                     |
-| `compiler`            | main session   | User request only                                                       |
-| `finalizer`           | main session   | Wrap-up before commit — clean, stage, format, precommit, commit message |
-| `release-manager`     | main session   | User request only                                                       |
-| `direct-executor`     | main session   | User request only — skip full flow                                      |
+| Subagent              | Spawned by     | When                                                                                        |
+| --------------------- | -------------- | ------------------------------------------------------------------------------------------- |
+| `technical-architect` | main session   | Planning (once per cycle)                                                                   |
+| `wiki-manager`        | architect only | Knowledge gathering (leaf)                                                                  |
+| `investigator`        | architect only | Deep codebase traces (leaf)                                                                 |
+| `briefer`             | main session   | After plan ready                                                                            |
+| `implementer`         | main session   | After user approves brief                                                                   |
+| `reviewer`            | main session   | After implementation                                                                        |
+| `test-writer`         | main session   | After review (medium/high)                                                                  |
+| `documenter`          | main session   | After review passes                                                                         |
+| `compiler`            | main session   | User request only                                                                           |
+| `finalizer`           | main session   | Wrap-up before commit — clean, stage, format, precommit; commit message only if checks pass |
+| `release-manager`     | main session   | User request only                                                                           |
+| `direct-executor`     | main session   | User request only — skip full flow                                                          |
 
 Agent definitions: `.claude/agents/<name>.md`. Prompt templates: `.claude/instructions/agent-prompts.md`.
 

@@ -53,6 +53,8 @@
 		"lint": "eslint --max-warnings=0 .",
 		"lint:fix": "eslint --fix --max-warnings=0 .",
 		"format": "prettier --write \"**/*.{js,jsx,ts,tsx,json,css,md}\"",
+		"format:ci": "node scripts/run-format-summary.mjs",
+		"diff:ci": "node scripts/run-diff-summary.mjs",
 		"format:check": "prettier --check \"**/*.{js,jsx,ts,tsx,json,css,md}\"",
 		"deepClean": "npx rimraf tsconfig.tsbuildinfo npm-shrinkwrap.json ./dist ./node_modules",
 		"checkDependencies": "npx npm-check-updates",

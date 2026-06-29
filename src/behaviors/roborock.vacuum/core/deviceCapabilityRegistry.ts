@@ -1,5 +1,10 @@
 import { decodeFeatureSet } from '../../../share/featureSetDecoder.js';
-import { baseCleanModeConfigs, CleanModeConfig, vacFollowedByMopModeConfig } from './cleanModeConfig/index.js';
+import {
+	baseCleanModeConfigs,
+	CleanModeConfig,
+	smartPlanModeConfig,
+	vacFollowedByMopModeConfig,
+} from './cleanModeConfig/index.js';
 
 export function getExtraModes(_model: string, featureSet?: string, newFeatureSet?: string): CleanModeConfig[] {
 	const hasFeatureContext = featureSet !== undefined || newFeatureSet !== undefined;
@@ -9,7 +14,14 @@ export function getExtraModes(_model: string, featureSet?: string, newFeatureSet
 	}
 
 	const features = decodeFeatureSet(featureSet, newFeatureSet);
-	return features.is_clean_then_mop_mode_supported ? [vacFollowedByMopModeConfig] : [];
+	const extras: CleanModeConfig[] = [];
+	if (features.is_smart_clean_mode_set_supported) {
+		extras.push(smartPlanModeConfig);
+	}
+	if (features.is_clean_then_mop_mode_supported) {
+		extras.push(vacFollowedByMopModeConfig);
+	}
+	return extras;
 }
 
 export function hasSmartPlan(_model: string, featureSet?: string, newFeatureSet?: string): boolean {
