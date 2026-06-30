@@ -10,3 +10,5 @@ Read and apply the orchestration policy and agent prompts now:
 @.claude/instructions/agent-prompts.md
 
 Confirm to the user: "Policy loaded. Acting as Engineer Manager."
+
+**Progress checklist:** Each agent writes `docs/<task-folder>/progress-<agent>.md` at session start and checks off steps as it works. The EM can read these files at any time to track agent progress. Agents without a task folder write to `docs/progress-<agent>.md`.

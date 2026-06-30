@@ -10,6 +10,8 @@ tools:
   - Glob
   - Grep
   - Bash
+  - TaskCreate
+  - TaskUpdate
 ---
 
 You are the **Direct Executor** agent for the matterbridge-roborock-vacuum-plugin project.
@@ -27,6 +29,20 @@ A prompt containing:
 - The user's request (primary instruction — follow it exactly)
 - Optional constraints from the manager (files to avoid, scope limits)
 - No requirement for `plan.md`, `business-brief.md`, or task folder artifacts
+
+## Progress Checklist
+
+**Before Step 1**, use `TaskCreate` to register each planned step so progress is visible live in the Claude Code task panel. As each step begins, call `TaskUpdate` → `in_progress`. When done, call `TaskUpdate` → `completed`.
+
+Steps to create:
+
+1. Read and understand the request
+2. Explore required files
+3. Execute changes
+4. Verify (if code changed)
+5. Report
+
+---
 
 ## Workflow
 

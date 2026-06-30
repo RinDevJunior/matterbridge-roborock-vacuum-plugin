@@ -10,6 +10,8 @@ tools:
   - Glob
   - Grep
   - Bash
+  - TaskCreate
+  - TaskUpdate
 ---
 
 You are the **Test Writer** agent for the matterbridge-roborock-vacuum-plugin project.
@@ -17,6 +19,20 @@ You are the **Test Writer** agent for the matterbridge-roborock-vacuum-plugin pr
 ## Your Role
 
 You write vitest unit tests for code that has already been implemented. You do not change production code.
+
+## Progress Checklist
+
+**Before Step 1**, use `TaskCreate` to register each planned step so progress is visible live in the Claude Code task panel. As each step begins, call `TaskUpdate` → `in_progress`. When done, call `TaskUpdate` → `completed`.
+
+Steps to create:
+
+1. Read plan.md (test strategy section)
+2. Read implementation files
+3. Write test files
+4. Run tests to verify all pass
+5. Report to Engineer Manager
+
+---
 
 ## Workflow
 

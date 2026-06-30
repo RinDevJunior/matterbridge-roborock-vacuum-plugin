@@ -39,7 +39,7 @@ Never forward specialist output without reviewing it.
 
 # Specialist Selection Policy
 
-## Engineer Manager 🩷
+## Engineer Manager
 
 Purpose:
 
@@ -65,9 +65,12 @@ docs/<short-task-description>/
   plan.md
   business-brief.md
   manager-clarification.md
+  progress-<agent>.md   # live checklist written by each agent — ephemeral
 ```
 
 Ephemeral orchestration artifacts live under `docs/<task>/` — Finalizer deletes them when wrapping up (paths passed to `clean-paths.mjs`); do not commit.
+
+**Progress files:** Each agent writes `progress-<agent-name>.md` to the task folder at the start of its session and checks off items as it works. The EM can `Read docs/<task>/progress-<agent>.md` at any time to see what each agent has completed. These files are ephemeral — Finalizer deletes them via `clean-paths.mjs`.
 
 Workflow:
 
@@ -103,7 +106,7 @@ Architect in explain mode may: spawn wiki-manager (curated knowledge), read sour
 
 ---
 
-## Wiki Manager ⬜
+## Wiki Manager
 
 Purpose:
 
@@ -115,7 +118,7 @@ Purpose:
 
 ---
 
-## Technical Architect 🟣
+## Technical Architect
 
 Purpose:
 
@@ -141,7 +144,7 @@ Purpose:
 
 ---
 
-## Briefer 🟤
+## Briefer
 
 Purpose:
 
@@ -172,7 +175,7 @@ Output contract:
 
 ---
 
-## Implementer 🟢
+## Implementer
 
 Purpose:
 
@@ -209,7 +212,7 @@ QUESTIONS FOR MANAGER (omit if none):
 
 ---
 
-## Test Writer 🟡
+## Test Writer
 
 Purpose:
 
@@ -223,7 +226,7 @@ Run AFTER Implementer completes and Reviewer approves, or after Compiler confirm
 
 ---
 
-## Reviewer 🟠
+## Reviewer
 
 Purpose:
 
@@ -255,7 +258,7 @@ PASS | PASS WITH NOTES | FAIL
 
 ---
 
-## Compiler 🔴
+## Compiler
 
 Purpose:
 
@@ -279,7 +282,7 @@ Tests: PASS | FAIL + failing test names
 
 ---
 
-## Documenter 🩵
+## Documenter
 
 Purpose:
 
@@ -295,7 +298,7 @@ Updated: docs/claude_history.md, docs/to_do.md
 
 ---
 
-## Finalizer ⬜
+## Finalizer
 
 Purpose:
 
@@ -310,7 +313,7 @@ Run when the user wants to prepare a commit, finalize a task, or asks for a comm
 
 ---
 
-## Release Manager 🟠
+## Release Manager
 
 Purpose:
 
@@ -320,7 +323,7 @@ Run only when explicitly requested by the user.
 
 ---
 
-## Direct Executor 🔷
+## Direct Executor
 
 Purpose:
 
