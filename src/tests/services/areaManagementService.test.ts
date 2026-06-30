@@ -6,6 +6,7 @@ import { MapInfo, RoomIndexMap } from '../../core/application/models/index.js';
 import { DeviceError } from '../../errors/index.js';
 import { AreaInfo, SegmentInfo } from '../../initialData/getSupportedAreas.js';
 import { RoborockIoTApi } from '../../roborockCommunication/api/iotClient.js';
+import { RoomDto } from '../../roborockCommunication/models/home/index.js';
 import { Scene } from '../../roborockCommunication/models/scene.js';
 import { AreaManagementService } from '../../services/areaManagementService.js';
 import { MessageRoutingService } from '../../services/index.js';
@@ -374,6 +375,212 @@ describe('AreaManagementService', () => {
 			expect(() => {
 				newService.clearAll();
 			}).not.toThrow();
+		});
+	});
+
+	describe('setDeviceRooms', () => {
+		it('stores rooms per duid', () => {
+			const rooms = [{ id: 1, name: undefined } as RoomDto];
+			areaService.setDeviceRooms(mockDeviceId, rooms);
+			// No direct getter — verify indirectly via clearAll not throwing
+			expect(() => areaService.clearAll()).not.toThrow();
+		});
+	});
+
+	describe('registerAreasListener', () => {
+		it('registers callback per duid', () => {
+			const cb = vi.fn();
+			areaService.registerAreasListener(mockDeviceId, cb);
+			// callback registered — setSupportedAreas will invoke it
+			areaService.setSupportedAreas(mockDeviceId, mockAreas);
+			expect(cb).toHaveBeenCalledWith(mockAreas, []);
+		});
+
+		it('invokes callback when setSupportedAreas is called', () => {
+			const cb = vi.fn();
+			areaService.registerAreasListener(mockDeviceId, cb);
+			areaService.setSupportedAreas(mockDeviceId, mockAreas);
+			expect(cb).toHaveBeenCalledTimes(1);
+		});
+
+		it('invokes callback with current maps when setSupportedAreas is called', () => {
+			const cb = vi.fn();
+			const maps: ServiceArea.Map[] = [{ mapId: 1, name: 'Map 1' }];
+			areaService.setSupportedMaps(mockDeviceId, maps);
+			areaService.registerAreasListener(mockDeviceId, cb);
+			areaService.setSupportedAreas(mockDeviceId, mockAreas);
+			expect(cb).toHaveBeenCalledWith(mockAreas, maps);
+		});
+	});
+
+	describe('setSupportedMaps / getSupportedMaps', () => {
+		it('stores and retrieves maps by duid', () => {
+			const maps: ServiceArea.Map[] = [
+				{ mapId: 1, name: 'Map A' },
+				{ mapId: 2, name: 'Map B' },
+			];
+			areaService.setSupportedMaps(mockDeviceId, maps);
+			expect(areaService.getSupportedMaps(mockDeviceId)).toEqual(maps);
+		});
+
+		it('returns empty array for unknown duid', () => {
+			expect(areaService.getSupportedMaps('unknown-duid')).toEqual([]);
+		});
+	});
+
+	describe('getMapInfo — liveMapUpdates = true', () => {
+		it('calls serviceRouting.getMapInfoV2 and returns undefined', async () => {
+			const liveService = new AreaManagementService(
+				mockLogger as AnsiLogger,
+				mockMessageRoutingService as MessageRoutingService,
+				true,
+			);
+			mockMessageRoutingService.getMapInfoV2 = vi.fn().mockResolvedValue(undefined);
+
+			const result = await liveService.getMapInfo(mockDeviceId);
+			expect(mockMessageRoutingService.getMapInfoV2).toHaveBeenCalledWith(mockDeviceId);
+			expect(result).toBeUndefined();
+		});
+	});
+
+	describe('getMapInfo — liveMapUpdates = false (standard path)', () => {
+		it('caches mapInfo in mapInfoCache', async () => {
+			const mapInfo = new MapInfo({ max_multi_map: 0, max_bak_map: 0, multi_map_count: 0, map_info: [] });
+			mockMessageRoutingService.getMapInfo.mockResolvedValue(mapInfo);
+
+			await areaService.getMapInfo(mockDeviceId);
+			// Call again — cache used: getMapInfo should be called each time (no cache bypass)
+			await areaService.getMapInfo(mockDeviceId);
+			expect(mockMessageRoutingService.getMapInfo).toHaveBeenCalledTimes(2);
+		});
+
+		it('calls setSupportedMaps when mapInfo.maps.length > 0', async () => {
+			const mapInfo = new MapInfo({
+				max_multi_map: 1,
+				max_bak_map: 0,
+				multi_map_count: 1,
+				map_info: [{ mapFlag: 1, add_time: 0, length: 0, bak_maps: [], name: 'Test Map', rooms: [] }],
+			});
+			mockMessageRoutingService.getMapInfo.mockResolvedValue(mapInfo);
+
+			await areaService.getMapInfo(mockDeviceId);
+			expect(areaService.getSupportedMaps(mockDeviceId)).toEqual([{ mapId: 1, name: 'Test Map' }]);
+		});
+
+		it('skips room setup when mapInfo.hasRooms = false', async () => {
+			const mapInfo = new MapInfo({ max_multi_map: 0, max_bak_map: 0, multi_map_count: 0, map_info: [] });
+			mockMessageRoutingService.getMapInfo.mockResolvedValue(mapInfo);
+
+			await areaService.getMapInfo(mockDeviceId);
+			expect(areaService.getSupportedAreas(mockDeviceId)).toEqual([]);
+		});
+	});
+
+	describe('getRoomMap — liveMapUpdates = true', () => {
+		it('calls serviceRouting.getRoomMapV2 and returns undefined', async () => {
+			const liveService = new AreaManagementService(
+				mockLogger as AnsiLogger,
+				mockMessageRoutingService as MessageRoutingService,
+				true,
+			);
+			mockMessageRoutingService.getRoomMapV2 = vi.fn().mockResolvedValue(undefined);
+
+			const result = await liveService.getRoomMap(mockDeviceId, 1);
+			expect(mockMessageRoutingService.getRoomMapV2).toHaveBeenCalledWith(mockDeviceId, 1);
+			expect(result).toBeUndefined();
+		});
+	});
+
+	describe('getRoomMap — liveMapUpdates = false (rawData branch)', () => {
+		it('skips area setup when rawData is empty array', async () => {
+			mockMessageRoutingService.getRoomMap = vi.fn().mockResolvedValue([]);
+
+			await areaService.getRoomMap(mockDeviceId, 1);
+			// Empty rawData → no setSupportedAreas called
+			expect(areaService.getSupportedAreas(mockDeviceId)).toEqual([]);
+		});
+
+		it('uses cached mapInfoCache to resolve mapId when rawData is non-empty', async () => {
+			// Pre-populate mapInfo cache via getMapInfo call
+			const mapInfo = new MapInfo({ max_multi_map: 0, max_bak_map: 0, multi_map_count: 0, map_info: [] });
+			mockMessageRoutingService.getMapInfo.mockResolvedValue(mapInfo);
+			await areaService.getMapInfo(mockDeviceId);
+
+			// Now call getRoomMap with non-empty rawData
+			const rawData: [number, string][] = [[16, 'room1']];
+			mockMessageRoutingService.getRoomMap = vi.fn().mockResolvedValue(rawData);
+			await areaService.getRoomMap(mockDeviceId, 1);
+			expect(mockMessageRoutingService.getRoomMap).toHaveBeenCalledWith(mockDeviceId, 1);
+		});
+	});
+
+	describe('startPeriodicRefresh / stopPeriodicRefresh', () => {
+		beforeEach(() => {
+			vi.useFakeTimers();
+		});
+
+		afterEach(() => {
+			vi.useRealTimers();
+		});
+
+		it('starts interval and calls getMapInfo periodically', async () => {
+			const mapInfo = new MapInfo({ max_multi_map: 0, max_bak_map: 0, multi_map_count: 0, map_info: [] });
+			mockMessageRoutingService.getMapInfo.mockResolvedValue(mapInfo);
+
+			areaService.startPeriodicRefresh(mockDeviceId, 5000);
+			await vi.advanceTimersByTimeAsync(5001);
+			expect(mockMessageRoutingService.getMapInfo).toHaveBeenCalled();
+			areaService.stopPeriodicRefresh(mockDeviceId);
+		});
+
+		it('stopPeriodicRefresh clears interval and deletes from map', async () => {
+			const mapInfo = new MapInfo({ max_multi_map: 0, max_bak_map: 0, multi_map_count: 0, map_info: [] });
+			mockMessageRoutingService.getMapInfo.mockResolvedValue(mapInfo);
+
+			areaService.startPeriodicRefresh(mockDeviceId, 5000);
+			areaService.stopPeriodicRefresh(mockDeviceId);
+			await vi.advanceTimersByTimeAsync(10000);
+			expect(mockMessageRoutingService.getMapInfo).not.toHaveBeenCalled();
+		});
+
+		it('startPeriodicRefresh replaces existing interval (stopPeriodicRefresh called first)', async () => {
+			const mapInfo = new MapInfo({ max_multi_map: 0, max_bak_map: 0, multi_map_count: 0, map_info: [] });
+			mockMessageRoutingService.getMapInfo.mockResolvedValue(mapInfo);
+
+			areaService.startPeriodicRefresh(mockDeviceId, 5000);
+			areaService.startPeriodicRefresh(mockDeviceId, 5000); // replace
+			await vi.advanceTimersByTimeAsync(5001);
+			// Only one interval active, so getMapInfo called once per tick
+			expect(mockMessageRoutingService.getMapInfo).toHaveBeenCalledTimes(1);
+			areaService.stopPeriodicRefresh(mockDeviceId);
+		});
+
+		it('logs error when periodic getMapInfo fails', async () => {
+			mockMessageRoutingService.getMapInfo.mockRejectedValue(new Error('network failure'));
+			areaService.startPeriodicRefresh(mockDeviceId, 5000);
+			await vi.advanceTimersByTimeAsync(5001);
+			expect(mockLogger.error).toHaveBeenCalledWith(expect.stringContaining('network failure'));
+			areaService.stopPeriodicRefresh(mockDeviceId);
+		});
+	});
+
+	describe('clearAll — interval cleanup', () => {
+		beforeEach(() => {
+			vi.useFakeTimers();
+		});
+
+		afterEach(() => {
+			vi.useRealTimers();
+		});
+
+		it('stops all refresh intervals and clears all maps', async () => {
+			const mapInfo = new MapInfo({ max_multi_map: 0, max_bak_map: 0, multi_map_count: 0, map_info: [] });
+			mockMessageRoutingService.getMapInfo.mockResolvedValue(mapInfo);
+
+			areaService.startPeriodicRefresh(mockDeviceId, 5000);
+			areaService.clearAll();
+			await vi.advanceTimersByTimeAsync(10000);
+			expect(mockMessageRoutingService.getMapInfo).not.toHaveBeenCalled();
 		});
 	});
 

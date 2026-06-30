@@ -37,6 +37,15 @@ It is version-controlled — commit and push changes so teammates can pull the l
 - `extractNibbleBit(hexStr, bitIndex)` helper: nibblePos = Math.floor(bitIndex/4), bitPos = bitIndex%4, char from hexStr[length-1-nibblePos]; module-private (not exported).
 - Group C mask `2147483648` (2^31) and `1073741824` (2^30) use `!== 0` comparison to handle JS signed-32-bit bitwise operator behavior.
 
+## Test Patterns
+
+- **B01 Q10 messages:** Use `new Map(Object.entries(body).map(([k, v]) => [Number(k), v]))` for body construction; keys are `Q10RequestCode` enum values (numbers 120–138).
+- **B01 Q7 messages:** Use `new Map([[Q7RequestCode.query_response, JSON.stringify({ method, data })]])` for body; key is 10001.
+- **B01MapParser private methods:** Access via `(parser as unknown as { methodName: (args) => ReturnType }).methodName(args)` — avoids `as any`.
+- **`decryptIfNeeded` test:** Encrypt with `setAutoPadding(true)` so decrypt with `setAutoPadding(true)` works; result is 32 bytes (16 data + 16 padding block), both multiples of 16.
+- **`parseRoomsFromEncryptedBinary` round-trip:** Ensure compressed buffer length is NOT a multiple of 16 to skip decryption path; pad with a spare byte if needed.
+- **AreaManagementService liveMapUpdates:** Third constructor argument enables live mode; `getMapInfoV2`/`getRoomMapV2` must be added directly to the mock (not in initial mock object).
+
 ## Common Pitfalls
 
 <!-- Things to avoid — bugs found, anti-patterns, footguns -->

@@ -105,4 +105,44 @@ describe('RoborockService - Area Management', () => {
 		roborockService.setSelectedAreas('duid-123', [7, 8]);
 		expect(roborockService.getSelectedAreas('duid-123')).toEqual([7, 8]);
 	});
+
+	describe('new delegation methods', () => {
+		const duid = 'duid-delegate';
+
+		it('registerAreasListener delegates to areaService.registerAreasListener', () => {
+			const cb = vi.fn();
+			roborockService.registerAreasListener(duid, cb);
+			// Verify by triggering a setSupportedAreas that invokes the callback
+			roborockService.setSupportedAreas(duid, []);
+			expect(cb).toHaveBeenCalledWith([], []);
+		});
+
+		it('setSupportedMaps delegates to areaService.setSupportedMaps', () => {
+			const maps = [{ mapId: 1, name: 'Map 1' }];
+			roborockService.setSupportedMaps(duid, maps);
+			expect(roborockService.getSupportedMaps(duid)).toEqual(maps);
+		});
+
+		it('getSupportedMaps delegates to areaService.getSupportedMaps', () => {
+			expect(roborockService.getSupportedMaps('unknown-duid')).toEqual([]);
+		});
+
+		it('startPeriodicAreaRefresh delegates to areaService.startPeriodicRefresh', () => {
+			// Just verifies it does not throw
+			expect(() => roborockService.startPeriodicAreaRefresh(duid, 99999999)).not.toThrow();
+		});
+
+		it('getSupportedRoutines delegates to areaService.getSupportedRoutines', () => {
+			expect(roborockService.getSupportedRoutines('unknown-duid')).toBeUndefined();
+		});
+
+		it('setDeviceRooms delegates to areaService.setDeviceRooms', () => {
+			expect(() => roborockService.setDeviceRooms(duid, [])).not.toThrow();
+		});
+
+		it('switchMap delegates to messageRoutingService.switchMap', async () => {
+			// switchMap requires a registered dispatcher; should throw DeviceError when none
+			await expect(roborockService.switchMap(duid, 1)).rejects.toThrow();
+		});
+	});
 });

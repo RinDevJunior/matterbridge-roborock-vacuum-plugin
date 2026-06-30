@@ -1,0 +1,12 @@
+{
+	"mcpServers": {
+		"codecov": {
+			"command": "npx",
+			"args": ["-y", "@egulatee/mcp-codecov"],
+			"env": {
+				"CODECOV_BASE_URL": "https://codecov.io",
+				"CODECOV_TOKEN": "${env:CODECOV_TOKEN}"
+			}
+		}
+	}
+}

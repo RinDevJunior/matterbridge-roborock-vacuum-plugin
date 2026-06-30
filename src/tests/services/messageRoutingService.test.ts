@@ -82,6 +82,10 @@ describe('MessageRoutingService', () => {
 			sendCustomMessage: vi.fn(),
 			getSerialNumber: vi.fn(),
 			stopCleaning: vi.fn(),
+			getMapInfoV2: vi.fn().mockResolvedValue(undefined),
+			switchMap: vi.fn().mockResolvedValue(undefined),
+			getRoomMapV2: vi.fn().mockResolvedValue(undefined),
+			getHomeMap: vi.fn().mockResolvedValue(undefined),
 		};
 	}
 
@@ -442,6 +446,43 @@ describe('MessageRoutingService', () => {
 			const settings = new CleanModeSetting(105, 203, 0, 302, CleanSequenceType.Persist);
 			await messageService.changeCleanMode(testDuid, settings);
 			expect(mockDispatcher.changeCleanMode).toHaveBeenCalledWith(testDuid, settings);
+		});
+	});
+
+	describe('new PR #125 methods', () => {
+		const testDuid = 'pr125-device';
+
+		beforeEach(() => {
+			messageService.registerMessageDispatcher(testDuid, mockDispatcher as V10MessageDispatcher);
+		});
+
+		it('getMapInfoV2 delegates to dispatcher.getMapInfoV2', async () => {
+			await messageService.getMapInfoV2(testDuid);
+			expect(mockDispatcher.getMapInfoV2).toHaveBeenCalledWith(testDuid);
+		});
+
+		it('switchMap logs and delegates to dispatcher.switchMap', async () => {
+			await messageService.switchMap(testDuid, 3);
+			expect(mockDispatcher.switchMap).toHaveBeenCalledWith(testDuid, 3);
+			expect(mockLogger.notice).toHaveBeenCalledWith(expect.stringContaining('switchMap'));
+		});
+
+		it('getRoomMapV2 delegates to dispatcher.getRoomMapV2', async () => {
+			await messageService.getRoomMapV2(testDuid, 2);
+			expect(mockDispatcher.getRoomMapV2).toHaveBeenCalledWith(testDuid, 2);
+		});
+
+		it('getRoomIdFromMap returns vacuumRoom from dispatcher.getHomeMap', async () => {
+			mockDispatcher.getHomeMap.mockResolvedValue({ vacuumRoom: 42 });
+			const result = await messageService.getRoomIdFromMap(testDuid);
+			expect(result).toBe(42);
+			expect(mockDispatcher.getHomeMap).toHaveBeenCalledWith(testDuid);
+		});
+
+		it('getRoomIdFromMap returns undefined when getHomeMap returns undefined data', async () => {
+			mockDispatcher.getHomeMap.mockResolvedValue(undefined);
+			const result = await messageService.getRoomIdFromMap(testDuid);
+			expect(result).toBeUndefined();
 		});
 	});
 

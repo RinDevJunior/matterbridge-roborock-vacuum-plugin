@@ -62,8 +62,8 @@ describe('FilterLogger', () => {
 			setting: null,
 			sn: 'RCIEBS50900224',
 			cid: '',
-			featureSet: '123456789ABCDEF0123456789ABCDEF',
-			newFeatureSet: '00040040282834C9C2FA8F5C7EDEFFFE',
+			featureSet: '2247397454282751',
+			newFeatureSet: '00000000082834C1C2FA8F5C7EDEFFFE',
 			deviceStatus: {
 				120: 0,
 				121: 8,

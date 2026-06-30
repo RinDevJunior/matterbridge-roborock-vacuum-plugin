@@ -568,6 +568,47 @@ describe('PlatformConfigManager', () => {
 		});
 	});
 
+	describe('new PR getters', () => {
+		it('whiteList returns the config whiteList array', () => {
+			config.pluginConfiguration.whiteList = ['device-1', 'device-2'];
+			manager = PlatformConfigManager.create(config, mockLogger);
+			expect(manager.whiteList).toEqual(['device-1', 'device-2']);
+		});
+
+		it('whiteList returns empty array when not set', () => {
+			config.pluginConfiguration.whiteList = [];
+			manager = PlatformConfigManager.create(config, mockLogger);
+			expect(manager.whiteList).toEqual([]);
+		});
+
+		it('isLiveMapUpdatesEnabled returns true when advanced feature enabled and enableLiveMapUpdates = true', () => {
+			config.advancedFeature = {
+				enableAdvancedFeature: true,
+				settings: { ...createDefaultAdvancedFeature().settings, enableLiveMapUpdates: true },
+			};
+			manager = PlatformConfigManager.create(config, mockLogger);
+			expect(manager.isLiveMapUpdatesEnabled).toBe(true);
+		});
+
+		it('isLiveMapUpdatesEnabled returns false when advanced feature disabled', () => {
+			config.advancedFeature = {
+				enableAdvancedFeature: false,
+				settings: { ...createDefaultAdvancedFeature().settings, enableLiveMapUpdates: true },
+			};
+			manager = PlatformConfigManager.create(config, mockLogger);
+			expect(manager.isLiveMapUpdatesEnabled).toBe(false);
+		});
+
+		it('isLiveMapUpdatesEnabled returns false when enableLiveMapUpdates = false', () => {
+			config.advancedFeature = {
+				enableAdvancedFeature: true,
+				settings: { ...createDefaultAdvancedFeature().settings, enableLiveMapUpdates: false },
+			};
+			manager = PlatformConfigManager.create(config, mockLogger);
+			expect(manager.isLiveMapUpdatesEnabled).toBe(false);
+		});
+	});
+
 	describe('device filtering', () => {
 		it('should allow device if whitelist is empty', () => {
 			expect(manager.isDeviceAllowed({ duid: 'abc' })).toBe(true);
