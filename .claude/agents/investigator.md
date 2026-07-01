@@ -7,6 +7,7 @@ tools:
   - Read
   - Glob
   - Grep
+  - Bash
   - Write
   - Edit
   - TaskCreate
@@ -50,9 +51,8 @@ If a question is already answered in wiki-brief, cite wiki-brief and note "no ad
 For each remaining question:
 
 - Use the `Relevant area` hint and `Why Investigator` note to scope the search
-- Use Glob to find files by pattern
-- Use Grep to find symbols, function names, or patterns
-- Use Read to examine specific files in detail
+- **When `.codegraph/` exists:** run `codegraph explore "<symbols or question>"` first — it returns verbatim source, call paths, and blast radius in one shot. Treat the output as already Read.
+- Use Grep/Glob/Read only for gaps CodeGraph did not cover, non-indexed files (configs, docs), or when `.codegraph/` is missing
 - **Follow import chains** across modules when the question requires it
 - Trace call paths through services, core, and communication layers when needed
 

@@ -161,3 +161,16 @@ Never mix logic and test changes in a single step.
 ## Known Type Gotchas
 
 - `CommandHandlers` from matterbridge is `keyof CommandHandlerDataMap` (a string union). Use it directly as a parameter type — never `keyof CommandHandlers` (resolves to string method names).
+
+<!-- CODEGRAPH_START -->
+## CodeGraph
+
+In repositories indexed by CodeGraph (a `.codegraph/` directory exists at the repo root), reach for it BEFORE Grep/Glob or reading files when you need to understand or locate code:
+
+- **MCP tool** (when available): `codegraph_explore` answers most code questions in one call — the relevant symbols' verbatim source plus the call paths between them, including dynamic-dispatch hops Grep cannot follow. Name a file or symbol in the query to read its current line-numbered source. If it is listed but deferred, load it by name via tool search.
+- **Shell** (always works): `codegraph explore "<symbol names or question>"` prints the same output.
+
+**Subagents** (wiki-manager, investigator, technical-architect, implementer, etc.) receive this file but not MCP initialize instructions — they must use `codegraph explore` via shell when `.codegraph/` exists.
+
+If there is no `.codegraph/` directory, skip CodeGraph entirely — indexing is the user's decision. See [README_CODEGRAPH.md](README_CODEGRAPH.md).
+<!-- CODEGRAPH_END -->
