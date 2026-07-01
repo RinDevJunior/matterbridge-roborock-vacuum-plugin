@@ -55,10 +55,24 @@ export async function handleDeviceStatusUpdate(
 	}
 
 	// Update Matter attributes
-	await Promise.all([
+	const updates = [
 		robot.updateAttribute(RvcRunMode.id, 'currentMode', getRunningMode(resolvedState.runMode), platform.log),
 		robot.updateAttribute(RvcOperationalState.id, 'operationalState', resolvedState.operationalState, platform.log),
-	]);
+	];
+
+	// Update operationalError if provided by state resolver
+	if (resolvedState.operationalError !== undefined) {
+		updates.push(
+			robot.updateAttribute(
+				RvcOperationalState.id,
+				'operationalError',
+				{ errorStateId: resolvedState.operationalError },
+				platform.log,
+			),
+		);
+	}
+
+	await Promise.all(updates);
 
 	// Signal burst polling when the device enters an active state
 	const isActive =
@@ -73,19 +87,20 @@ export async function handleDeviceStatusSimpleUpdate(
 ): Promise<void> {
 	platform.log.debug(`Handling simple device status update: ${debugStringify(message)}`);
 
+	const includeDockStationStatus = platform.configManager.includeDockStationStatus;
+	const dssHasError = includeDockStationStatus && (robot.dockStationStatus?.hasError() ?? false);
+	if (dssHasError) {
+		await triggerDssError(robot, platform);
+		return;
+	}
+
 	const state = state_to_matter_state(message.status);
 	platform.log.debug(`Resolved state from simple update: ${state !== undefined ? getRunModeName(state) : 'undefined'}`);
 	if (state !== undefined) {
 		await robot.updateAttribute(RvcRunMode.id, 'currentMode', getRunningMode(state), platform.log);
 	}
 
-	const includeDockStationStatus = platform.configManager.includeDockStationStatus;
-	const operationalStateId = state_to_matter_operational_status(state);
-	const dssHasError = includeDockStationStatus && (robot.dockStationStatus?.hasError() ?? false);
-	if (dssHasError) {
-		await triggerDssError(robot, platform);
-		return;
-	}
+	const operationalStateId = state_to_matter_operational_status(message.status);
 	if (operationalStateId !== undefined) {
 		platform.log.debug(`Updating operational state to: ${getOperationalStateName(operationalStateId)}`);
 		await robot.updateAttribute(RvcOperationalState.id, 'operationalState', operationalStateId, platform.log);

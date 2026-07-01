@@ -52,6 +52,7 @@ function createMockConfig(overrides: Partial<RoborockPluginPlatformConfig> = {})
 			enableAdvancedFeature: false,
 			settings: {
 				clearStorageOnStartup: false,
+				enableLiveMapUpdates: false,
 				showRoutinesAsRoom: false,
 				includeDockStationStatus: false,
 				includeVacuumErrorStatus: false,
@@ -240,6 +241,9 @@ describe('module.ts coverage tests', () => {
 				setSupportedAreas: vi.fn(),
 				setSupportedAreaIndexMap: vi.fn(),
 				activateDeviceNotify: vi.fn(),
+				registerAreasListener: vi.fn(),
+				startPeriodicAreaRefresh: vi.fn(),
+				setDeviceRooms: vi.fn(),
 			});
 			platform.registry.registerDevice(mockDevice as Device);
 
@@ -396,6 +400,7 @@ describe('module.ts coverage tests', () => {
 					enableAdvancedFeature: true,
 					settings: {
 						clearStorageOnStartup: false,
+						enableLiveMapUpdates: false,
 						enableCleanModeMapping: true,
 						cleanModeSettings: {
 							vacuuming: { fanMode: 'Silent', mopRouteMode: 'Standard' },

@@ -6,6 +6,7 @@ import { AbstractMessageListener } from '../abstractMessageListener.js';
 
 export class DeviceStatusListener implements AbstractMessageListener {
 	readonly name = 'DeviceStatusListener';
+	readonly requiresBody = true;
 
 	constructor(
 		public readonly duid: string,

@@ -14,6 +14,9 @@ import { RoborockService } from '../../../../services/roborockService.js';
 import { configureBehavior } from '../../../../share/behaviorFactory.js';
 import { asPartial, asType, createMockLogger } from '../../../testUtils.js';
 
+const SMART_FEATURE_SET = '2247397454282751';
+const SMART_NEW_FEATURE_SET = '00000000082834C1C2FA8F5C7EDEFFFE';
+
 describe('setCommandHandlerSmart', () => {
 	let handler: BehaviorDeviceGeneric<DeviceCommands>;
 	let logger: AnsiLogger;
@@ -60,6 +63,8 @@ describe('setCommandHandlerSmart', () => {
 			false,
 			logger,
 			vi.fn(),
+			SMART_FEATURE_SET,
+			SMART_NEW_FEATURE_SET,
 		);
 		await handler.executeCommand('changeToMode', 2); // 2 = Cleaning
 		expect(roborockService.startClean).toHaveBeenCalledWith(duid);
@@ -75,6 +80,8 @@ describe('setCommandHandlerSmart', () => {
 			false,
 			logger,
 			vi.fn(),
+			SMART_FEATURE_SET,
+			SMART_NEW_FEATURE_SET,
 		);
 		await handler.executeCommand('changeToMode', 4); // 4 = Smart Plan
 		expect(roborockService.changeCleanMode).toHaveBeenCalledWith(duid, {
@@ -96,6 +103,8 @@ describe('setCommandHandlerSmart', () => {
 			false,
 			logger,
 			vi.fn(),
+			SMART_FEATURE_SET,
+			SMART_NEW_FEATURE_SET,
 		);
 		await handler.executeCommand('changeToMode', 31); // 31 = Mop Default
 		// mopping: { waterFlowMode: 'High', mopRouteMode: 'Fast', distanceOff: 85 },
@@ -127,6 +136,8 @@ describe('setCommandHandlerSmart', () => {
 			false,
 			logger,
 			vi.fn(),
+			SMART_FEATURE_SET,
+			SMART_NEW_FEATURE_SET,
 		);
 		await handler.executeCommand('changeToMode', 31); // 31 = Mop Default
 		// vacuuming: { fanMode: 'Max', mopRouteMode: 'DeepPlus' },
@@ -149,6 +160,8 @@ describe('setCommandHandlerSmart', () => {
 			false,
 			logger,
 			vi.fn(),
+			SMART_FEATURE_SET,
+			SMART_NEW_FEATURE_SET,
 		);
 		await handler.executeCommand('changeToMode', 66); // 66 = Vacuum Default
 		expect(roborockService.changeCleanMode).toHaveBeenCalledWith(duid, {
@@ -170,6 +183,8 @@ describe('setCommandHandlerSmart', () => {
 			false,
 			logger,
 			vi.fn(),
+			SMART_FEATURE_SET,
+			SMART_NEW_FEATURE_SET,
 		);
 		await handler.executeCommand('changeToMode', 66); // 66 = Vacuum Default
 		// vacuuming: { fanMode: 'Max', mopRouteMode: 'DeepPlus' },
@@ -192,6 +207,8 @@ describe('setCommandHandlerSmart', () => {
 			false,
 			logger,
 			vi.fn(),
+			SMART_FEATURE_SET,
+			SMART_NEW_FEATURE_SET,
 		);
 		await handler.executeCommand('changeToMode', 5); // 5 = Vac & Mop Default
 		expect(roborockService.changeCleanMode).toHaveBeenCalledWith(duid, {
@@ -222,6 +239,8 @@ describe('setCommandHandlerSmart', () => {
 			false,
 			logger,
 			vi.fn(),
+			SMART_FEATURE_SET,
+			SMART_NEW_FEATURE_SET,
 		);
 		await handler.executeCommand('changeToMode', 5); // 5 = Vac & Mop Default
 		expect(roborockService.changeCleanMode).toHaveBeenCalledWith(duid, {
@@ -243,6 +262,8 @@ describe('setCommandHandlerSmart', () => {
 			false,
 			logger,
 			vi.fn(),
+			SMART_FEATURE_SET,
+			SMART_NEW_FEATURE_SET,
 		);
 		await handler.executeCommand('selectAreas', [1, 2, 3]);
 		expect(roborockService.setSelectedAreas).toHaveBeenCalledWith(duid, [1, 2, 3]);
@@ -258,6 +279,8 @@ describe('setCommandHandlerSmart', () => {
 			false,
 			logger,
 			vi.fn(),
+			SMART_FEATURE_SET,
+			SMART_NEW_FEATURE_SET,
 		);
 		await handler.executeCommand('pause');
 		expect(roborockService.pauseClean).toHaveBeenCalledWith(duid);
@@ -273,6 +296,8 @@ describe('setCommandHandlerSmart', () => {
 			false,
 			logger,
 			vi.fn(),
+			SMART_FEATURE_SET,
+			SMART_NEW_FEATURE_SET,
 		);
 		await handler.executeCommand('resume');
 		expect(roborockService.resumeClean).toHaveBeenCalledWith(duid);
@@ -288,6 +313,8 @@ describe('setCommandHandlerSmart', () => {
 			false,
 			logger,
 			vi.fn(),
+			SMART_FEATURE_SET,
+			SMART_NEW_FEATURE_SET,
 		);
 		await handler.executeCommand('goHome');
 		expect(roborockService.stopAndGoHome).toHaveBeenCalledWith(duid);
@@ -303,6 +330,8 @@ describe('setCommandHandlerSmart', () => {
 			false,
 			logger,
 			vi.fn(),
+			SMART_FEATURE_SET,
+			SMART_NEW_FEATURE_SET,
 		);
 		await handler.executeCommand('identify', 5);
 		expect(roborockService.playSoundToLocate).toHaveBeenCalledWith(duid);
@@ -318,6 +347,8 @@ describe('setCommandHandlerSmart', () => {
 			false,
 			logger,
 			vi.fn(),
+			SMART_FEATURE_SET,
+			SMART_NEW_FEATURE_SET,
 		);
 		await handler.executeCommand('changeToMode', 99); // 99 = Go Vacation
 		expect(roborockService.stopAndGoHome).toHaveBeenCalledWith(duid);
@@ -333,6 +364,8 @@ describe('setCommandHandlerSmart', () => {
 			false,
 			logger,
 			vi.fn(),
+			SMART_FEATURE_SET,
+			SMART_NEW_FEATURE_SET,
 		);
 		await handler.executeCommand('changeToMode', 6); // 6 = Vacuum & Mop: Quick
 		expect(roborockService.changeCleanMode).toHaveBeenCalled();
@@ -348,6 +381,8 @@ describe('setCommandHandlerSmart', () => {
 			false,
 			logger,
 			vi.fn(),
+			SMART_FEATURE_SET,
+			SMART_NEW_FEATURE_SET,
 		);
 		await handler.executeCommand('changeToMode', 9999);
 		expect(logger.notice).toHaveBeenCalledWith('BehaviorSmart-changeToMode-Unknown: ', 9999);
@@ -363,6 +398,8 @@ describe('setCommandHandlerSmart', () => {
 			false,
 			logger,
 			vi.fn(),
+			SMART_FEATURE_SET,
+			SMART_NEW_FEATURE_SET,
 		);
 		await handler.executeCommand('changeToMode', 10); // 10 = Energy Saving
 		expect(roborockService.changeCleanMode).toHaveBeenCalled();
@@ -378,6 +415,8 @@ describe('setCommandHandlerSmart', () => {
 			false,
 			logger,
 			vi.fn(),
+			SMART_FEATURE_SET,
+			SMART_NEW_FEATURE_SET,
 		);
 		await handler.executeCommand('changeToMode', 11); // 11 = Vacuum & Mop: Vac Follow by Mop
 		expect(logger.notice).toHaveBeenCalledWith('BehaviorSmart-changeToMode-Unknown: ', 11);

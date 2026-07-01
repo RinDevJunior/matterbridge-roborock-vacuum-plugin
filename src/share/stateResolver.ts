@@ -7,6 +7,7 @@ import { state_to_matter_operational_status, state_to_matter_state } from './fun
 export interface ResolvedState {
 	runMode: RvcRunMode.ModeTag;
 	operationalState: RvcOperationalState.OperationalState;
+	operationalError?: RvcOperationalState.ErrorState;
 }
 
 /**
@@ -95,6 +96,15 @@ export function resolveDeviceState(message: StatusChangeMessage): ResolvedState 
 		return {
 			runMode: RvcRunMode.ModeTag.Idle,
 			operationalState: RvcOperationalState.OperationalState.Error,
+		};
+	}
+
+	// ChargingError Status Override - Failed to find or reach charging dock
+	if (status === OperationStatusCode.ChargingError) {
+		return {
+			runMode: RvcRunMode.ModeTag.Idle,
+			operationalState: RvcOperationalState.OperationalState.Error,
+			operationalError: RvcOperationalState.ErrorState.FailedToFindChargingDock,
 		};
 	}
 

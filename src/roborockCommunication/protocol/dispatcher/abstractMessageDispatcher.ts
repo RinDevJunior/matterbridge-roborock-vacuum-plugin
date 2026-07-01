@@ -5,6 +5,7 @@ import { NetworkInfo, RawRoomMappingData, RequestMessage } from '../../models/in
 
 export interface AbstractMessageDispatcher {
 	dispatcherName: string;
+	readonly supportsMapQueryResponse: boolean;
 
 	getNetworkInfo(duid: string): Promise<NetworkInfo | undefined>;
 	getDeviceStatus(duid: string): Promise<void>;
@@ -27,6 +28,9 @@ export interface AbstractMessageDispatcher {
 	// For core data retrieval
 	getHomeMap(duid: string): Promise<MapRoomResponse>;
 	getMapInfo(duid: string): Promise<MapInfo>;
+	getMapInfoV2(duid: string): Promise<void>;
 	getRoomMap(duid: string, activeMap: number): Promise<RawRoomMappingData>;
+	getRoomMapV2(duid: string, activeMap: number): Promise<void>;
 	getSerialNumber(duid: string): Promise<string | undefined>;
+	switchMap(duid: string, mapId: number): Promise<void>;
 }

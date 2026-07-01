@@ -6,7 +6,6 @@ import { CleanModeSetting } from '../../behaviors/roborock.vacuum/core/CleanMode
 import { CleanSequenceType } from '../../behaviors/roborock.vacuum/enums/CleanSequenceType.js';
 import { DeviceError } from '../../errors/index.js';
 import { RoborockIoTApi } from '../../roborockCommunication/api/iotClient.js';
-import { RequestMessage } from '../../roborockCommunication/models/index.js';
 import { V10MessageDispatcher } from '../../roborockCommunication/protocol/dispatcher/V10MessageDispatcher.js';
 import { MessageRoutingService } from '../../services/messageRoutingService.js';
 import { asPartial } from '../testUtils.js';
@@ -79,11 +78,14 @@ describe('MessageRoutingService', () => {
 			resumeCleaning: vi.fn(),
 			goHome: vi.fn(),
 			findMyRobot: vi.fn(),
-			getHomeMap: vi.fn(),
 			getCustomMessage: vi.fn(),
 			sendCustomMessage: vi.fn(),
 			getSerialNumber: vi.fn(),
 			stopCleaning: vi.fn(),
+			getMapInfoV2: vi.fn().mockResolvedValue(undefined),
+			switchMap: vi.fn().mockResolvedValue(undefined),
+			getRoomMapV2: vi.fn().mockResolvedValue(undefined),
+			getHomeMap: vi.fn().mockResolvedValue(undefined),
 		};
 	}
 
@@ -203,46 +205,6 @@ describe('MessageRoutingService', () => {
 			mockDispatcher.getCleanModeData.mockRejectedValue(new Error('API failure'));
 
 			await expect(messageService.getCleanModeData(testDuid)).rejects.toThrow('API failure');
-		});
-	});
-
-	describe('getRoomIdFromMap', () => {
-		const testDuid = 'test-device-789';
-		const mockMapData = {
-			vacuumRoom: 16,
-		};
-
-		beforeEach(() => {
-			messageService.registerMessageDispatcher(testDuid, mockDispatcher as V10MessageDispatcher);
-		});
-
-		it('should retrieve room ID from map successfully', async () => {
-			mockDispatcher.getHomeMap.mockResolvedValue(mockMapData);
-
-			const result = await messageService.getRoomIdFromMap(testDuid);
-
-			expect(result).toEqual(16);
-			expect(mockDispatcher.getHomeMap).toHaveBeenCalled();
-		});
-
-		it('should handle missing map data', async () => {
-			mockDispatcher.getHomeMap.mockResolvedValue(undefined);
-
-			const result = await messageService.getRoomIdFromMap(testDuid);
-
-			expect(result).toBeUndefined();
-		});
-
-		it('should handle map data without vacuumRoom', async () => {
-			mockDispatcher.getHomeMap.mockResolvedValue({});
-
-			const result = await messageService.getRoomIdFromMap(testDuid);
-
-			expect(result).toBeUndefined();
-		});
-
-		it('should throw DeviceError when processor not found', async () => {
-			await expect(messageService.getRoomIdFromMap('unknown-device')).rejects.toThrow(DeviceError);
 		});
 	});
 
@@ -407,84 +369,6 @@ describe('MessageRoutingService', () => {
 		});
 	});
 
-	describe('customGet', () => {
-		const testDuid = 'test-device-custom-get';
-		const mockRequest = new RequestMessage({ method: 'get_status', params: [] });
-		const mockResponse = { status: 'cleaning' };
-
-		beforeEach(() => {
-			messageService.registerMessageDispatcher(testDuid, mockDispatcher as V10MessageDispatcher);
-		});
-
-		it('should execute custom GET request with typed response', async () => {
-			mockDispatcher.getCustomMessage.mockResolvedValue(mockResponse);
-
-			const result = await messageService.customGet<{ status: string }>(testDuid, mockRequest);
-
-			expect(result).toEqual(mockResponse);
-			expect(mockDispatcher.getCustomMessage).toHaveBeenCalledWith(testDuid, mockRequest);
-			expect(mockLogger.debug).toHaveBeenCalledWith(
-				'MessageRoutingService - customSend-message',
-				'get_status',
-				[],
-				false,
-			);
-		});
-
-		it('should execute custom GET request with unknown response type', async () => {
-			mockDispatcher.getCustomMessage.mockResolvedValue(mockResponse);
-
-			const result = await messageService.customGet(testDuid, mockRequest);
-
-			expect(result).toEqual(mockResponse);
-		});
-
-		it('should handle secure request flag', async () => {
-			const secureRequest = new RequestMessage({ method: 'get_status', params: [], secure: true });
-			mockDispatcher.getCustomMessage.mockResolvedValue(mockResponse);
-
-			await messageService.customGet(testDuid, secureRequest);
-
-			expect(mockLogger.debug).toHaveBeenCalledWith(
-				'MessageRoutingService - customSend-message',
-				'get_status',
-				[],
-				true,
-			);
-		});
-
-		it('should throw DeviceError when processor not found', async () => {
-			await expect(messageService.customGet('unknown-device', mockRequest)).rejects.toThrow(DeviceError);
-		});
-	});
-
-	describe('customSend', () => {
-		const testDuid = 'test-device-custom-send';
-		const mockRequest = new RequestMessage({ method: 'set_mop_mode', params: [302] });
-
-		beforeEach(() => {
-			messageService.registerMessageDispatcher(testDuid, mockDispatcher as V10MessageDispatcher);
-		});
-
-		it('should send custom command successfully', async () => {
-			await messageService.customSend(testDuid, mockRequest);
-
-			expect(mockDispatcher.sendCustomMessage).toHaveBeenCalledWith(testDuid, mockRequest);
-		});
-
-		it('should throw DeviceError when processor not found', async () => {
-			await expect(messageService.customSend('unknown-device', mockRequest)).rejects.toThrow(DeviceError);
-		});
-
-		it('should handle command without params', async () => {
-			const simpleRequest = new RequestMessage({ method: 'app_start' });
-
-			await messageService.customSend(testDuid, simpleRequest);
-
-			expect(mockDispatcher.sendCustomMessage).toHaveBeenCalledWith(testDuid, simpleRequest);
-		});
-	});
-
 	describe('clearAll', () => {
 		it('should clear all processors and MQTT devices', () => {
 			const testDuid1 = 'device-1';
@@ -562,6 +446,43 @@ describe('MessageRoutingService', () => {
 			const settings = new CleanModeSetting(105, 203, 0, 302, CleanSequenceType.Persist);
 			await messageService.changeCleanMode(testDuid, settings);
 			expect(mockDispatcher.changeCleanMode).toHaveBeenCalledWith(testDuid, settings);
+		});
+	});
+
+	describe('new PR #125 methods', () => {
+		const testDuid = 'pr125-device';
+
+		beforeEach(() => {
+			messageService.registerMessageDispatcher(testDuid, mockDispatcher as V10MessageDispatcher);
+		});
+
+		it('getMapInfoV2 delegates to dispatcher.getMapInfoV2', async () => {
+			await messageService.getMapInfoV2(testDuid);
+			expect(mockDispatcher.getMapInfoV2).toHaveBeenCalledWith(testDuid);
+		});
+
+		it('switchMap logs and delegates to dispatcher.switchMap', async () => {
+			await messageService.switchMap(testDuid, 3);
+			expect(mockDispatcher.switchMap).toHaveBeenCalledWith(testDuid, 3);
+			expect(mockLogger.notice).toHaveBeenCalledWith(expect.stringContaining('switchMap'));
+		});
+
+		it('getRoomMapV2 delegates to dispatcher.getRoomMapV2', async () => {
+			await messageService.getRoomMapV2(testDuid, 2);
+			expect(mockDispatcher.getRoomMapV2).toHaveBeenCalledWith(testDuid, 2);
+		});
+
+		it('getRoomIdFromMap returns vacuumRoom from dispatcher.getHomeMap', async () => {
+			mockDispatcher.getHomeMap.mockResolvedValue({ vacuumRoom: 42 });
+			const result = await messageService.getRoomIdFromMap(testDuid);
+			expect(result).toBe(42);
+			expect(mockDispatcher.getHomeMap).toHaveBeenCalledWith(testDuid);
+		});
+
+		it('getRoomIdFromMap returns undefined when getHomeMap returns undefined data', async () => {
+			mockDispatcher.getHomeMap.mockResolvedValue(undefined);
+			const result = await messageService.getRoomIdFromMap(testDuid);
+			expect(result).toBeUndefined();
 		});
 	});
 

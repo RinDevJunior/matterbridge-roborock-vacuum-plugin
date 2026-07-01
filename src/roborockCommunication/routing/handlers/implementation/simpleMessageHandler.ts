@@ -85,4 +85,12 @@ export class SimpleMessageHandler implements AbstractMessageHandler {
 		// Implement additional properties handling logic here
 		return Promise.resolve();
 	}
+
+	public async onActiveMapChanged(mapId: number): Promise<void> {
+		if (!this.deviceNotify) return;
+		await this.deviceNotify({
+			type: NotifyMessageTypes.ActiveMapChanged,
+			data: { duid: this.duid, mapId },
+		});
+	}
 }

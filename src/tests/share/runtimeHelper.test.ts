@@ -21,8 +21,18 @@ describe('runtimeHelper.getCurrentCleanModeFunc', () => {
 	});
 
 	it('QREVO models return smart function when not forced', () => {
-		const resolver1 = getCleanModeResolver(DeviceModel.QREVO_EDGE_5V1, false);
-		const resolver2 = getCleanModeResolver(DeviceModel.QREVO_PLUS, false);
+		const resolver1 = getCleanModeResolver(
+			DeviceModel.QREVO_EDGE_5V1,
+			false,
+			'2247397454282751',
+			'00000000082834C1C2FA8F5C7EDEFFFE',
+		);
+		const resolver2 = getCleanModeResolver(
+			DeviceModel.QREVO_PLUS,
+			false,
+			'2247397454282751',
+			'00000000082834C1C2FA8F5C7EDEFFFE',
+		);
 		expect(resolver1.behavior).toBe(smartModeResolver.behavior);
 		expect(resolver2.behavior).toBe(smartModeResolver.behavior);
 	});

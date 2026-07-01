@@ -219,6 +219,7 @@ describe('PlatformRunner.requestHomeData', () => {
 			serialNumber: '123',
 			device: asPartial<Device>({ duid: '123', specs: asPartial<DeviceSpecs>({ hasRealTimeConnection: true }) }),
 			updateAttribute: vi.fn(),
+			lastUpdateAt: Date.now(),
 		});
 		platform = asPartial<RoborockMatterbridgePlatform>({
 			registry: createMockDeviceRegistry({}, new Map([['123', placeholderRobot]])),
@@ -713,7 +714,7 @@ describe('PlatformRunner.updateRobotWithPayload', () => {
 		expect(robot.updateAttribute).toHaveBeenCalledWith(ServiceArea.Cluster.id, 'currentArea', 1, mockLogger);
 	});
 
-	it('should set currentArea to null when segment_id is INVALID_SEGMENT_ID and mapped area exists', async () => {
+	it('should skip currentArea update when segment_id is INVALID_SEGMENT_ID', async () => {
 		const cleaningInfo = asPartial<CleanInformation>({ segment_id: -1, target_segment_id: -1 });
 		const mappedArea = { areaId: -1, matterAreaId: -1, mapId: 1 };
 
@@ -737,7 +738,7 @@ describe('PlatformRunner.updateRobotWithPayload', () => {
 		runner.updateRobotWithPayload(payload);
 		await Promise.resolve();
 
-		expect(robot.updateAttribute).toHaveBeenCalledWith(ServiceArea.Cluster.id, 'currentArea', null, mockLogger);
+		expect(robot.updateAttribute).not.toHaveBeenCalledWith(ServiceArea.Cluster.id, 'currentArea', null, mockLogger);
 	});
 
 	it('should skip area mapping when no mapped area found', async () => {
@@ -1013,7 +1014,7 @@ describe('PlatformRunner.updateRobotWithPayload', () => {
 
 		await runner.updateRobotWithPayload(payload);
 
-		expect(mockLogger.error).toHaveBeenCalledWith(expect.stringContaining('No room mapping found.'));
+		expect(mockLogger.debug).toHaveBeenCalledWith(expect.stringContaining('Room map not yet available'));
 		expect(robot.updateAttribute).not.toHaveBeenCalled();
 	});
 
@@ -1438,5 +1439,278 @@ describe('PlatformRunner.startBurstPolling / stopBurstPolling', () => {
 		// unknown-duid not in registry → isDeviceIdle returns true → stopBurstPolling called after first tick
 		await vi.advanceTimersByTimeAsync(10000);
 		expect(mockService.requestDeviceStatusOnce).toHaveBeenCalledTimes(1);
+	});
+});
+
+describe('PlatformRunner.startWatchdog / stopWatchdog', () => {
+	let platform: RoborockMatterbridgePlatform;
+	let runner: PlatformRunner;
+	let mockLog: ReturnType<typeof createMockLogger>;
+	const WATCHDOG_CHECK_INTERVAL_MS = 60 * 1000;
+	const WATCHDOG_THRESHOLD_MS = 5 * 60 * 1000;
+
+	beforeEach(() => {
+		vi.useFakeTimers();
+		mockLog = createMockLogger();
+	});
+
+	afterEach(() => {
+		runner.stopWatchdog();
+		vi.useRealTimers();
+		vi.clearAllMocks();
+	});
+
+	function makeRobotWithUpdateAt(duid: string, lastUpdateAt: number | null): RoborockVacuumCleaner {
+		return asPartial<RoborockVacuumCleaner>({
+			device: asPartial<Device>({ duid, name: `Robot-${duid}`, specs: asPartial<DeviceSpecs>({}) }),
+			lastUpdateAt,
+		});
+	}
+
+	it('startWatchdog starts setInterval at WATCHDOG_CHECK_INTERVAL_MS', async () => {
+		const staleRobot = makeRobotWithUpdateAt('duid1', 0);
+		platform = asPartial<RoborockMatterbridgePlatform>({
+			registry: createMockDeviceRegistry({}, new Map([['duid1', staleRobot]])),
+			log: mockLog,
+		});
+		runner = new PlatformRunner(platform);
+		runner.startWatchdog();
+
+		await vi.advanceTimersByTimeAsync(WATCHDOG_CHECK_INTERVAL_MS + 1);
+		expect(mockLog.error).toHaveBeenCalledWith(expect.stringContaining('No status update received'));
+	});
+
+	it('watchdog fires and logs error for stale robot (lastUpdateAt < threshold)', async () => {
+		const now = Date.now();
+		vi.spyOn(Date, 'now').mockReturnValue(now);
+		const staleRobot = makeRobotWithUpdateAt('duid1', now - WATCHDOG_THRESHOLD_MS - 1000);
+		platform = asPartial<RoborockMatterbridgePlatform>({
+			registry: createMockDeviceRegistry({}, new Map([['duid1', staleRobot]])),
+			log: mockLog,
+		});
+		runner = new PlatformRunner(platform);
+		runner.startWatchdog();
+
+		await vi.advanceTimersByTimeAsync(WATCHDOG_CHECK_INTERVAL_MS + 1);
+		expect(mockLog.error).toHaveBeenCalledWith(expect.stringContaining('No status update received'));
+	});
+
+	it('watchdog does not log error for fresh robot (lastUpdateAt > threshold)', async () => {
+		const now = Date.now();
+		vi.spyOn(Date, 'now').mockReturnValue(now);
+		const freshRobot = makeRobotWithUpdateAt('duid1', now - 1000);
+		platform = asPartial<RoborockMatterbridgePlatform>({
+			registry: createMockDeviceRegistry({}, new Map([['duid1', freshRobot]])),
+			log: mockLog,
+		});
+		runner = new PlatformRunner(platform);
+		runner.startWatchdog();
+
+		await vi.advanceTimersByTimeAsync(WATCHDOG_CHECK_INTERVAL_MS + 1);
+		expect(mockLog.error).not.toHaveBeenCalled();
+	});
+
+	it('watchdog skips robot with lastUpdateAt === null', async () => {
+		const robot = makeRobotWithUpdateAt('duid1', null);
+		platform = asPartial<RoborockMatterbridgePlatform>({
+			registry: createMockDeviceRegistry({}, new Map([['duid1', robot]])),
+			log: mockLog,
+		});
+		runner = new PlatformRunner(platform);
+		runner.startWatchdog();
+
+		await vi.advanceTimersByTimeAsync(WATCHDOG_CHECK_INTERVAL_MS + 1);
+		expect(mockLog.error).not.toHaveBeenCalled();
+	});
+
+	it('stopWatchdog clears the interval', async () => {
+		const staleRobot = makeRobotWithUpdateAt('duid1', 0);
+		platform = asPartial<RoborockMatterbridgePlatform>({
+			registry: createMockDeviceRegistry({}, new Map([['duid1', staleRobot]])),
+			log: mockLog,
+		});
+		runner = new PlatformRunner(platform);
+		runner.startWatchdog();
+		runner.stopWatchdog();
+
+		await vi.advanceTimersByTimeAsync(WATCHDOG_CHECK_INTERVAL_MS + 1);
+		expect(mockLog.error).not.toHaveBeenCalled();
+	});
+
+	it('stopWatchdog is a no-op when watchdog not started', () => {
+		platform = asPartial<RoborockMatterbridgePlatform>({
+			registry: createMockDeviceRegistry({}, new Map()),
+			log: mockLog,
+		});
+		runner = new PlatformRunner(platform);
+		expect(() => runner.stopWatchdog()).not.toThrow();
+	});
+});
+
+describe('PlatformRunner.updateRobotWithPayload — ActiveMapChanged', () => {
+	let platform: RoborockMatterbridgePlatform;
+	let runner: PlatformRunner;
+	let robot: RoborockVacuumCleaner;
+	let mockLog: ReturnType<typeof createMockLogger>;
+
+	beforeEach(() => {
+		vi.clearAllMocks();
+		mockLog = createMockLogger();
+		robot = asPartial<RoborockVacuumCleaner>({
+			serialNumber: 'test-duid',
+			device: asPartial<Device>({ duid: 'test-duid', specs: asPartial<DeviceSpecs>({}) }),
+			updateAttribute: vi.fn().mockResolvedValue(undefined),
+			getAttribute: vi.fn().mockReturnValue(undefined),
+			homeInFo: asPartial<HomeEntity>({ activeMapId: 0 }),
+			lastUpdateAt: null,
+		});
+		platform = asPartial<RoborockMatterbridgePlatform>({
+			registry: createMockDeviceRegistry({}, new Map([['test-duid', robot]])),
+			log: mockLog,
+			roborockService: createMockRoborockService(),
+			configManager: createMockConfigManager(),
+		});
+		runner = new PlatformRunner(platform);
+		runner.activateHandlerFunctions();
+	});
+
+	it('dispatches ActiveMapChanged when mapId differs from robot.homeInFo.activeMapId', async () => {
+		robot.homeInFo.activeMapId = 1;
+		const payload: MessagePayload = {
+			type: NotifyMessageTypes.ActiveMapChanged,
+			data: { duid: 'test-duid', mapId: 2 },
+		};
+		await runner.updateRobotWithPayload(payload);
+		// activeMapId should be updated
+		expect(robot.homeInFo.activeMapId).toBe(2);
+	});
+
+	it('skips handleActiveMapChanged when mapId equals robot.homeInFo.activeMapId', async () => {
+		robot.homeInFo.activeMapId = 5;
+		const payload: MessagePayload = {
+			type: NotifyMessageTypes.ActiveMapChanged,
+			data: { duid: 'test-duid', mapId: 5 },
+		};
+		await runner.updateRobotWithPayload(payload);
+		// activeMapId stays the same, no updateAttribute for selectedAreas
+		expect(robot.updateAttribute).not.toHaveBeenCalled();
+	});
+
+	it('updates robot.homeInFo.activeMapId before calling handleActiveMapChanged', async () => {
+		robot.homeInFo.activeMapId = 10;
+		const payload: MessagePayload = {
+			type: NotifyMessageTypes.ActiveMapChanged,
+			data: { duid: 'test-duid', mapId: 20 },
+		};
+		await runner.updateRobotWithPayload(payload);
+		expect(robot.homeInFo.activeMapId).toBe(20);
+	});
+});
+
+describe('PlatformRunner.executeWithRobot — lastUpdateAt tracking', () => {
+	let platform: RoborockMatterbridgePlatform;
+	let runner: PlatformRunner;
+	let robot: RoborockVacuumCleaner;
+	let mockLog: ReturnType<typeof createMockLogger>;
+
+	beforeEach(() => {
+		vi.clearAllMocks();
+		mockLog = createMockLogger();
+		robot = asPartial<RoborockVacuumCleaner>({
+			serialNumber: 'test-duid',
+			device: asPartial<Device>({ duid: 'test-duid', specs: asPartial<DeviceSpecs>({}) }),
+			updateAttribute: vi.fn().mockResolvedValue(undefined),
+			getAttribute: vi.fn().mockReturnValue(undefined),
+			homeInFo: asPartial<HomeEntity>({ activeMapId: 0 }),
+			lastUpdateAt: null,
+		});
+		platform = asPartial<RoborockMatterbridgePlatform>({
+			registry: createMockDeviceRegistry({}, new Map([['test-duid', robot]])),
+			log: mockLog,
+			roborockService: createMockRoborockService(),
+			configManager: createMockConfigManager(),
+		});
+		runner = new PlatformRunner(platform);
+		runner.activateHandlerFunctions();
+	});
+
+	it('sets robot.lastUpdateAt to Date.now() after handler execution', async () => {
+		const before = Date.now();
+		robot.homeInFo.activeMapId = 1;
+		const payload: MessagePayload = {
+			type: NotifyMessageTypes.ActiveMapChanged,
+			data: { duid: 'test-duid', mapId: 2 },
+		};
+		await runner.updateRobotWithPayload(payload);
+		expect(robot.lastUpdateAt).toBeGreaterThanOrEqual(before);
+	});
+});
+
+describe('PlatformRunner.requestHomeData — updated freshness check', () => {
+	let platform: RoborockMatterbridgePlatform;
+	let runner: PlatformRunner;
+	const WATCHDOG_THRESHOLD_MS = 5 * 60 * 1000;
+
+	it('skips fetch when all devices are fresh (hasRealTimeConnection + lastUpdateAt > threshold)', async () => {
+		const now = Date.now();
+		vi.spyOn(Date, 'now').mockReturnValue(now);
+		const getHomeDataMock = vi.fn().mockResolvedValue({ devices: [] });
+		const robot = asPartial<RoborockVacuumCleaner>({
+			serialNumber: '123',
+			device: asPartial<Device>({ duid: '123', specs: asPartial<DeviceSpecs>({ hasRealTimeConnection: true }) }),
+			updateAttribute: vi.fn(),
+			lastUpdateAt: now - 1000,
+		});
+		platform = asPartial<RoborockMatterbridgePlatform>({
+			registry: createMockDeviceRegistry({}, new Map([['123', robot]])),
+			rrHomeId: 12345,
+			roborockService: createMockRoborockService({ getHomeDataForUpdating: getHomeDataMock }),
+			log: createMockLogger(),
+		});
+		runner = new PlatformRunner(platform);
+		await runner.requestHomeData();
+		expect(getHomeDataMock).not.toHaveBeenCalled();
+		vi.restoreAllMocks();
+	});
+
+	it('fetches when device has real-time connection but lastUpdateAt is stale', async () => {
+		const now = Date.now();
+		vi.spyOn(Date, 'now').mockReturnValue(now);
+		const getHomeDataMock = vi.fn().mockResolvedValue(undefined);
+		const robot = asPartial<RoborockVacuumCleaner>({
+			serialNumber: '123',
+			device: asPartial<Device>({ duid: '123', specs: asPartial<DeviceSpecs>({ hasRealTimeConnection: true }) }),
+			updateAttribute: vi.fn(),
+			lastUpdateAt: now - WATCHDOG_THRESHOLD_MS - 5000,
+		});
+		platform = asPartial<RoborockMatterbridgePlatform>({
+			registry: createMockDeviceRegistry({}, new Map([['123', robot]])),
+			rrHomeId: 12345,
+			roborockService: createMockRoborockService({ getHomeDataForUpdating: getHomeDataMock }),
+			log: createMockLogger(),
+		});
+		runner = new PlatformRunner(platform);
+		await runner.requestHomeData();
+		expect(getHomeDataMock).toHaveBeenCalledWith(12345);
+		vi.restoreAllMocks();
+	});
+
+	it('fetches when device lacks real-time connection regardless of lastUpdateAt', async () => {
+		const getHomeDataMock = vi.fn().mockResolvedValue(undefined);
+		const robot = asPartial<RoborockVacuumCleaner>({
+			serialNumber: '123',
+			device: asPartial<Device>({ duid: '123', specs: asPartial<DeviceSpecs>({ hasRealTimeConnection: false }) }),
+			updateAttribute: vi.fn(),
+			lastUpdateAt: Date.now(),
+		});
+		platform = asPartial<RoborockMatterbridgePlatform>({
+			registry: createMockDeviceRegistry({}, new Map([['123', robot]])),
+			rrHomeId: 12345,
+			roborockService: createMockRoborockService({ getHomeDataForUpdating: getHomeDataMock }),
+			log: createMockLogger(),
+		});
+		runner = new PlatformRunner(platform);
+		await runner.requestHomeData();
+		expect(getHomeDataMock).toHaveBeenCalledWith(12345);
 	});
 });

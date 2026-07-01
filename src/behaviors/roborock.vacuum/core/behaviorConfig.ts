@@ -36,13 +36,14 @@ const configCache = new Map<string, BehaviorConfig>();
  * Extra modes are resolved from the device capability registry.
  * Results are cached per model for efficiency.
  */
-export function buildBehaviorConfig(model: string): BehaviorConfig {
-	if (configCache.has(model)) {
-		return configCache.get(model) as BehaviorConfig;
+export function buildBehaviorConfig(model: string, featureSet?: string, newFeatureSet?: string): BehaviorConfig {
+	const cacheKey = `${model}|${featureSet ?? ''}|${newFeatureSet ?? ''}`;
+	if (configCache.has(cacheKey)) {
+		return configCache.get(cacheKey) as BehaviorConfig;
 	}
 
-	const withSmartPlan = hasSmartPlan(model);
-	const allModes = getAllModesForDevice(model);
+	const withSmartPlan = hasSmartPlan(model, featureSet, newFeatureSet);
+	const allModes = getAllModesForDevice(model, featureSet, newFeatureSet);
 
 	const registry = new ModeHandlerRegistry().register(new CleaningModeHandler()).register(new GoVacationHandler());
 
@@ -63,7 +64,7 @@ export function buildBehaviorConfig(model: string): BehaviorConfig {
 		registry,
 	};
 
-	configCache.set(model, config);
+	configCache.set(cacheKey, config);
 	return config;
 }
 
@@ -75,8 +76,8 @@ export function createDefaultBehaviorConfig(): BehaviorConfig {
 }
 
 /**
- * @deprecated Use buildBehaviorConfig(model) instead.
+ * @deprecated Use buildBehaviorConfig(model, featureSet, newFeatureSet) instead.
  */
 export function createSmartBehaviorConfig(): BehaviorConfig {
-	return buildBehaviorConfig(DeviceModel.QREVO_EDGE_5V1);
+	return buildBehaviorConfig(DeviceModel.QREVO_EDGE_5V1, '2247397454282751', '00040040282834C9C2FA8F5C7EDEFFFE');
 }

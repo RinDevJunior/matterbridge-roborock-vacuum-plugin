@@ -34,5 +34,5 @@ export function getBatteryState(deviceState: number, batRemaining: number): Powe
 		return PowerSource.BatChargeState.IsNotCharging;
 	}
 
-	return PowerSource.BatChargeState.IsAtFullCharge;
+	return PowerSource.BatChargeState.IsNotCharging;
 }

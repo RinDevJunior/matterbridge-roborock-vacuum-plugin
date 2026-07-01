@@ -6,13 +6,15 @@ import { MapInfo } from '../../../core/application/models/index.js';
 import { MapRoomResponse } from '../../../types/index.js';
 import { Q10RequestCode, Q10RequestMethod } from '../../enums/Q10RequestCode.js';
 import { B01VacuumModeResolver } from '../../helper/B01VacuumModeResolver.js';
-import { NetworkInfo, RawRoomMappingData } from '../../models/index.js';
+import { RawRoomMappingData } from '../../models/home/index.js';
+import { NetworkInfo } from '../../models/index.js';
 import { RequestMessage } from '../../models/requestMessage.js';
 import { Client } from '../../routing/client.js';
 import { AbstractMessageDispatcher } from './abstractMessageDispatcher.js';
 
 export class Q10MessageDispatcher implements AbstractMessageDispatcher {
 	public dispatcherName = 'Q10MessageDispatcher';
+	public readonly supportsMapQueryResponse = false;
 	private lastB01Id: number;
 
 	private get messageId() {
@@ -42,9 +44,9 @@ export class Q10MessageDispatcher implements AbstractMessageDispatcher {
 		return duid;
 	}
 
-	public async getDeviceStatus(duid: string): Promise<void> {
+	public getDeviceStatus(duid: string): Promise<void> {
 		const request = new RequestMessage({ messageId: this.messageId, dps: { [Q10RequestCode.dps_request]: 1 } });
-		await this.client.send(duid, request);
+		return this.client.send(duid, request);
 	}
 
 	// #region Core Data Retrieval
@@ -61,6 +63,16 @@ export class Q10MessageDispatcher implements AbstractMessageDispatcher {
 		return new MapInfo({ max_multi_map: 0, max_bak_map: 0, multi_map_count: 0, map_info: [] });
 	}
 
+	public getMapInfoV2(duid: string): Promise<void> {
+		return this.client.send(
+			duid,
+			new RequestMessage({
+				messageId: this.messageId,
+				dps: { [Q10RequestCode.common_request]: { [Q10RequestMethod.multimap]: { 'op': 'list' } } },
+			}),
+		);
+	}
+
 	public async getRoomMap(duid: string, _activeMap: number): Promise<RawRoomMappingData> {
 		await this.client.send(
 			duid,
@@ -68,56 +80,70 @@ export class Q10MessageDispatcher implements AbstractMessageDispatcher {
 		);
 		return [];
 	}
+
+	public getRoomMapV2(duid: string, _activeMap: number): Promise<void> {
+		return this.client.send(
+			duid,
+			new RequestMessage({ messageId: this.messageId, dps: { [Q10RequestCode.get_prop]: 1 } }),
+		);
+	}
+
+	public switchMap(duid: string, mapId: number): Promise<void> {
+		return this.client.send(
+			duid,
+			new RequestMessage({ messageId: this.messageId, dps: { [Q10RequestCode.multi_map_switch]: mapId } }),
+		);
+	}
 	// #endregion Core Data Retrieval
 
 	// #region Cleaning Commands
-	public async goHome(duid: string): Promise<void> {
+	public goHome(duid: string): Promise<void> {
 		const request = new RequestMessage({ messageId: this.messageId, dps: { [Q10RequestCode.app_charge]: 0 } });
-		await this.client.send(duid, request);
+		return this.client.send(duid, request);
 	}
 
-	public async startCleaning(duid: string): Promise<void> {
+	public startCleaning(duid: string): Promise<void> {
 		const request = new RequestMessage({
 			messageId: this.messageId,
 			dps: { [Q10RequestCode.app_start]: { 'cmd': 1 } },
 		});
-		await this.client.send(duid, request);
+		return this.client.send(duid, request);
 	}
 
-	public async startRoomCleaning(duid: string, roomIds: number[], repeat: number): Promise<void> {
+	public startRoomCleaning(duid: string, roomIds: number[], repeat: number): Promise<void> {
 		const request = new RequestMessage({
 			messageId: this.messageId,
 			dps: { [Q10RequestCode.app_start]: { 'cmd': 2, 'clean_paramters': roomIds } },
 		});
-		await this.client.send(duid, request);
+		return this.client.send(duid, request);
 	}
 
-	public async pauseCleaning(duid: string): Promise<void> {
+	public pauseCleaning(duid: string): Promise<void> {
 		const request = new RequestMessage({ messageId: this.messageId, dps: { [Q10RequestCode.app_pause]: 0 } });
-		await this.client.send(duid, request);
+		return this.client.send(duid, request);
 	}
 
-	public async resumeCleaning(duid: string): Promise<void> {
+	public resumeCleaning(duid: string): Promise<void> {
 		const request = new RequestMessage({ messageId: this.messageId, dps: { [Q10RequestCode.app_resume]: 0 } });
-		await this.client.send(duid, request);
+		return this.client.send(duid, request);
 	}
 
-	public async resumeRoomCleaning(duid: string): Promise<void> {
-		await this.resumeCleaning(duid);
+	public resumeRoomCleaning(duid: string): Promise<void> {
+		return this.resumeCleaning(duid);
 	}
 
-	public async stopCleaning(duid: string): Promise<void> {
+	public stopCleaning(duid: string): Promise<void> {
 		const request = new RequestMessage({ messageId: this.messageId, dps: { [Q10RequestCode.app_stop]: 0 } });
-		await this.client.send(duid, request);
+		return this.client.send(duid, request);
 	}
 
-	public async findMyRobot(duid: string): Promise<void> {
+	public findMyRobot(duid: string): Promise<void> {
 		// TODO: Verify the command for Q10
 		const request = new RequestMessage({ messageId: this.messageId, method: 'find_me' });
-		await this.client.send(duid, request);
+		return this.client.send(duid, request);
 	}
 
-	public async sendCustomMessage(duid: string, def: RequestMessage): Promise<void> {
+	public sendCustomMessage(duid: string, def: RequestMessage): Promise<void> {
 		const request = new RequestMessage({ ...def, messageId: this.messageId });
 		return this.client.send(duid, request);
 	}
@@ -154,7 +180,7 @@ export class Q10MessageDispatcher implements AbstractMessageDispatcher {
 	// #endregion Cleaning Commands
 
 	// #region Private Helpers
-	private async setCleanMode(duid: string, suctionPower: number, waterFlow: number): Promise<void> {
+	private setCleanMode(duid: string, suctionPower: number, waterFlow: number): Promise<void> {
 		const request = new RequestMessage({
 			messageId: this.messageId,
 			dps: {
@@ -164,7 +190,7 @@ export class Q10MessageDispatcher implements AbstractMessageDispatcher {
 		return this.client.send(duid, request);
 	}
 
-	private async setVacuumMode(duid: string, mode: number) {
+	private setVacuumMode(duid: string, mode: number) {
 		const request = new RequestMessage({
 			messageId: this.messageId,
 			dps: {
@@ -174,7 +200,7 @@ export class Q10MessageDispatcher implements AbstractMessageDispatcher {
 		return this.client.send(duid, request);
 	}
 
-	private async setWaterMode(duid: string, mode: number) {
+	private setWaterMode(duid: string, mode: number) {
 		const request = new RequestMessage({
 			messageId: this.messageId,
 			dps: {

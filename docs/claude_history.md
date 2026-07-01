@@ -1,5 +1,196 @@
 # Claude History
 
+## 2026-06-29 — Wiki gap fill: 5 new pages + 6 expanded
+
+**Task:** Created 5 new wiki pages documenting message pipeline, listeners, dispatchers, feature flags, and room/map data; expanded 6 existing pages with missing sections; updated Home.md index.
+
+**Changes:**
+
+- `wiki/Runtime-Handlers-Pipeline.md` — created; documents PlatformRunner dispatch chain, handler signatures, burst polling integration
+- `wiki/Message-Listeners-Architecture.md` — created; documents broadcaster/listener pattern, V1/B01/MapInfo listener implementations
+- `wiki/Message-Dispatchers-Protocol-Routing.md` — created; documents dispatcher factory, V10/Q7/Q10 protocol-specific routing
+- `wiki/Feature-Flags-Device-Capabilities.md` — created; documents featureSetDecoder Groups A–G, clean mode gating, DeviceFeatures registry
+- `wiki/Room-Map-Data-Pipeline.md` — created; documents DTO → Mapper → Model transformation, AreaManagementService endpoint
+- `wiki/Polling-Real-Time-Connection.md` — added cross-link to Runtime-Handlers-Pipeline
+- `wiki/Supporting-Domains.md` — added AreaManagementService lifecycle section with methods table
+- `wiki/Roborock-Protocol-Wire-Format.md` — added Encode Pipeline and Serializer Factory sections
+- `wiki/MQTT-Local-Communication.md` — added AbstractClient section documenting broadcaster/listener host
+- `wiki/Error-Handling-Reporting.md` — added partial-implementation note to EmailNotificationService section
+- `wiki/Home.md` — added "Message & Protocol Flow" index section with links to 5 new pages
+
+**Outcome:** Pass. Implementer created all 5 new pages and expanded all 6 existing pages per plan.md specifications. Wiki coverage now complete with no gaps remaining.
+
+## 2026-06-29 — Wiki documentation fixes
+
+**Task:** Applied accuracy fixes to documentation across wiki and agent-answers. Fixed 6 files based on review against current source code.
+
+**Changes:**
+
+- `wiki/Clean-Mode-Domain.md` — rewrote "Special Modes" section: removed `vacAndMopDeepModeConfig` row, clarified feature-flag conditions for SmartPlan and VacFollowedByMop; rewrote "Device Capability Registry" section to document feature-flag-driven behavior and unused `_model` parameters
+- `wiki/Home.md` — removed broken links table, replaced with archived note; added cross-links to flow documentation (`status-update-flow.md` and `room-map-sync-flow.md`)
+- `wiki/Roborock-Protocol-Wire-Format.md` — corrected file path to include `deserializers/` subdirectory
+- `wiki/Matterbridge-Device-Registration.md` — updated `hasSmartPlan` call signature to include feature set parameters and documented feature-flag gating
+- `wiki/Service-Area-Update.md` — translated 100% from Vietnamese to English while preserving all technical content and structure
+- `docs/agent-answers.md` — added historical banner to DEVICE_EXTRA_MODES session explaining that static model lookup has been replaced by feature-flag-driven implementation
+
+**Outcome:** Pass. Reviewer approved all changes. Wiki now accurately reflects current feature-flag-driven architecture with no static model whitelists.
+
+## 2026-06-27 — Wired hasSmartPlan to is_smart_clean_mode_set_supported feature flag
+
+**Task:** Wire `hasSmartPlan` to the `is_smart_clean_mode_set_supported` feature flag instead of always returning `false`.
+
+**Changes:**
+
+- `src/behaviors/roborock.vacuum/core/deviceCapabilityRegistry.ts` — updated `hasSmartPlan` signature from `hasSmartPlan(_model: string): boolean` to `hasSmartPlan(_model: string, featureSet?: string, newFeatureSet?: string): boolean`; changed implementation to decode feature flags and return `features.is_smart_clean_mode_set_supported` instead of hardcoded `false`
+- `src/behaviors/roborock.vacuum/core/behaviorConfig.ts` — updated call to `hasSmartPlan(model)` to pass feature parameters: `hasSmartPlan(model, featureSet, newFeatureSet)`
+
+**Outcome:** Pass. SmartPlan (mode 4) is now dynamically gated by the `is_smart_clean_mode_set_supported` feature flag from the device's feature set. The feature flag is decoded using the existing `decodeFeatureSet` function.
+
+## 2026-06-27 — Wired featureSetDecoder into capability registry
+
+**Task:** Wire `featureSetDecoder` into `deviceCapabilityRegistry` to dynamically gate `VacFollowedByMop` (mode 11) on the `is_clean_then_mop_mode_supported` feature flag (bit 93 of `newFeatureSet`), while keeping `SmartPlan` (mode 4) and `VacAndMopDeep` (mode 12) as static model-string lookups.
+
+**Changes:**
+
+- `src/behaviors/roborock.vacuum/core/deviceCapabilityRegistry.ts` — added `decodeFeatureSet` import; updated `getExtraModes` signature with optional `featureSet?` and `newFeatureSet?` parameters; implemented hybrid filter logic that decodes feature flags only when device context is present and gates mode 11 on `is_clean_then_mop_mode_supported`; updated `getAllModesForDevice` signature and body to thread optional params through
+- `src/behaviors/roborock.vacuum/core/behaviorConfig.ts` — extended function signature with `featureSet?` and `newFeatureSet?` parameters; threaded them into `getAllModesForDevice` call
+- `src/initialData/getSupportedCleanModes.ts` — extended function signature with optional feature params; passed them to `getAllModesForDevice`
+- `src/platform/deviceConfigurator.ts` — threaded `vacuum.featureSet` and `vacuum.newFeatureSet` into `configureBehavior` call
+- `src/platform/behaviorFactory.ts` — threaded feature params through to called functions
+- `src/types/roborockVacuumCleaner.ts` — passed `device.featureSet` and `device.newFeatureSet` to `getSupportedCleanModes` call
+
+**Outcome:** Pass with notes. All registry functions accept feature flags as optional parameters for backward compatibility. Existing callers without device context (e.g., `runtimeHelper.ts`, `matterStateNames.ts`) compile unchanged. VacFollowedByMop is now dynamically gated; SmartPlan and VacAndMopDeep remain static as planned.
+
+## 2026-06-27 — Implemented featureSetDecoder.ts
+
+**Task:** Implemented pure TypeScript decoder that parses `featureSet` (64-bit integer string) and `newFeatureSet` (hex string) from Device DTO into ~172 named boolean `DeviceFeatures` capability flags, mirroring python-roborock's `DeviceFeatures.from_feature_flags()`.
+
+**Changes:**
+
+- `src/share/featureSetDecoder.ts` — created `DeviceFeatures` interface with Groups A–D decoded fields, Groups E–F–G defaulted to false, and 3 raw diagnostic fields; implemented `decodeFeatureSet` function with Group A (lower 32-bit masks), Group B (upper 32-bit bit-index tests), Group C (last 8 hex chars masked), Group D (nibble-index extraction with private `extractNibbleBit` helper); added error handling for invalid `featureSet` (try/catch BigInt) and invalid hex (NaN guard for maskC)
+
+**Outcome:** Pass. File created at `src/share/featureSetDecoder.ts` as a pure utility (no DI, no side effects) with comprehensive guard against invalid inputs. Wiring into capability registry deferred to separate task.
+
+## 2026-06-27 — Investigated Feature Gap 4 (roomNames Config Override)
+
+**Task:** Investigated Gap 4 from feature-gap analysis to understand the deferred roomNames config override issue and confirm Gap 5 was already implemented.
+
+**Changes:**
+
+- `docs/finding/feature-gap.md` — added investigation findings (Gap 4 root cause, name resolution flow, RoomMapping shape, call sites, config type, schema location) and implementation plan (3-step procedure to add config option)
+
+**Outcome:** Pass. Gap 4 is a low-priority deferred issue with complete implementation plan ready to execute when a user reports missing room names. Gap 5 (FullyCharged explicit state) confirmed already implemented. Gaps 1, 2, 5 closed; Gaps 3 and 4 remain open (low priority).
+
+## 2026-06-27 (Session 36)
+
+- Fixed `ChargingError` (status code 9) to properly set `operationalError` when the robot fails to find or reach the charging dock:
+  - Extended `ResolvedState` interface to include optional `operationalError?: RvcOperationalState.ErrorState`.
+  - Added status override for `ChargingError` in `stateResolver.ts` that sets `operationalState = Error` and `operationalError = FailedToFindChargingDock`.
+  - Updated `deviceStateHandler.ts` to apply the `operationalError` from the resolved state when updating Matter attributes.
+  - Updated test in `stateResolver.test.ts` to verify `operationalError` is correctly set for `ChargingError` status.
+- Root cause: `ChargingError` was only setting `operationalState = Error` but not the detail field `operationalError`, leaving the Matter controller unable to distinguish the specific failure reason. Now the Matter controller can properly report the "FailedToFindChargingDock" error state.
+- All 175 test files / 1877 tests pass. Build successful.
+
+## 2026-06-25 (Session 35)
+
+- Fixed 15 failing tests across 4 test files after the V1/V2 dispatcher refactor:
+  - `V01MessageDispatcher.test.ts`: Updated `getMapInfo` tests to expect `MapInfo` (not `undefined`); replaced "liveMapUpdates=true" tests with explicit `getMapInfoV2`/`getRoomMapV2` tests; fixed `getRoomMap` no-data test to expect `[]` instead of `undefined`.
+  - `Q7MessageDispatcher.test.ts` / `Q10MessageDispatcher.test.ts`: Fixed `getMapInfo` tests to verify `client.send` (not `client.query`, as Q7/Q10 are push-based); replaced "liveMapUpdates=true" tests with V2 method tests; fixed `getRoomMap` to expect `[]`.
+  - `areaManagementService.test.ts`: Added `MapInfo` import; updated mocks to return `MapInfo`/`[]` instead of `undefined`; fixed "no maps" assertion to `toBeDefined()` with `maps.length === 0`.
+- Removed `supportsMapQueryResponse` check from `areaManagementService.getMapInfo`/`getRoomMap` — routing now uses only `this.liveMapUpdates` flag (simpler, Q7/Q10 V1 path sends the request and returns empty data which is safe).
+- All 175 test files / 1877 tests pass.
+
+## 2026-06-25 (Session 34)
+
+- Restored `getMapInfo` to return `MultipleMapDto[] | undefined` propagated through the full call chain:
+  - `V10MessageDispatcher.getMapInfo`: `liveMapUpdates=false` uses `client.query<MultipleMapDto[]>()` returning actual data; `liveMapUpdates=true` uses `client.send()` and returns `undefined`.
+  - `Q7MessageDispatcher.getMapInfo` / `Q10MessageDispatcher.getMapInfo`: return type `Promise<MultipleMapDto[] | undefined>`, always return `undefined` (push data handled by MapInfoListener).
+  - `abstractMessageDispatcher` interface updated to `getMapInfo(): Promise<MultipleMapDto[] | undefined>`.
+  - `messageRoutingService`, `roborockService` propagate the return type.
+  - `areaManagementService.getMapInfo`: explicitly processes returned `MultipleMapDto[]` → `MapInfo` → derives `supportedMaps` directly from `mapInfo.maps` (cannot use `getSupportedAreas` — it falls back when rooms are empty) → `setSupportedMaps` only (not `setSupportedAreas`, to avoid overwriting rooms).
+  - `areaManagementService.getRoomMap`: removed `setSupportedMaps` call — `setSupportedAreas` reads current `supportedMaps` (set by `getMapInfo`) when calling the listener, preserving maps across the two-step startup flow.
+- Fixed two test mocks: `mockResolvedValue()` → `mockResolvedValue(undefined)` in `RoomMap.test.ts` and `roborockService.coverage.test.ts`.
+- Lint clean, 175 test files / 1875 tests pass.
+
+## 2026-06-25 (Session 33)
+
+- Fully restored original `getRoomMap` data flow (broken by `fcfdfb6` fire-and-forget refactor):
+  - `V10MessageDispatcher.getRoomMap`: `liveMapUpdates=false` uses `client.query<RawRoomMappingData>()` and returns actual room data; `liveMapUpdates=true` uses `client.send()` and returns `undefined`.
+  - `Q7MessageDispatcher.getRoomMap` / `Q10MessageDispatcher.getRoomMap`: return `Promise<RawRoomMappingData | undefined>` (always `undefined`, data handled by MapInfoListener push).
+  - `AbstractMessageDispatcher` interface updated to `getRoomMap(): Promise<RawRoomMappingData | undefined>`.
+  - `messageRoutingService`, `areaManagementService`, `roborockService` propagate the return type.
+  - `areaManagementService.getRoomMap`: explicitly processes returned `RawRoomMappingData` → `RoomMap` → `HomeEntity` → `setSupportedAreas/Maps/IndexMap` (mirrors `MapInfoListener.updateAreas`).
+  - `areaManagementService` stores `deviceRooms` per-duid (via new `setDeviceRooms`) for room-name lookup during explicit processing; cleared in `clearAll()`.
+  - `roborockService.setDeviceRooms` delegates to `areaService.setDeviceRooms`.
+  - `deviceConfigurator.configureDevice`: calls `roborockService.setDeviceRooms(duid, homeData.rooms)` before device init.
+  - `deviceConfigurator.onConfigureDevice`: calls `await roborockService.getRoomMap(duid, -1)` after `getMapInfo` in the startup loop.
+- Updated V10 `getRoomMap` tests: default case asserts `client.query` called and result equals raw data; added "no data" case; live case asserts `client.send`.
+- Added `setDeviceRooms: vi.fn()` and corrected `getRoomMap` mock return to `undefined` in shared test utilities.
+- Fixed `enableLiveMapUpdates` missing from all affected test config fixtures.
+- Lint clean, 175 test files / 1875 tests pass.
+
+## 2026-06-24 (Session 32)
+
+- Wired `onActiveMapChanged` callback from `MapInfoListener` into `connectionService.ts` via `NotifyMessageTypes.ActiveMapChanged`.
+- Added `handleActiveMapChanged` to `serviceAreaHandler.ts`: sets `selectedAreas` to all rooms on the new map, `currentArea` to `null`.
+- Added early return in `resolveAreaFromCleaningInfo` when `segmentId === INVALID_SEGMENT_ID` to prevent overwriting `currentArea` after map switch.
+- Wired `requestStatus` callback into `V1StatusListener`: fires `getDeviceStatus` immediately when `additional_props` (DPS 128) push received.
+- Added `deviceProtocol` guard in `MapInfoListener.tryParseB01MapBinary`: V1 devices skip binary parsing, keeping `warn` log for genuine B01 failures.
+- Implemented `switchMap` on all dispatchers: V1 (`load_multi_map`), Q7 (`service.set_cur_map`), Q10 (DP 60 `multi_map_switch`).
+- Added `trySwitchMap` to `RoborockVacuumCleaner`: detects when selected areas belong to a different map and calls `roborockService.switchMap`.
+- Initialized `activeMapId = -1` in `deviceConfigurator.ts` so first status response always triggers `handleActiveMapChanged` and populates `selectedAreas` on startup.
+- Refactored `connectionService.ts`: moved dispatcher creation before listeners to eliminate lazy `requestStatusFn` pattern; replaced non-null assertion with captured local variable.
+- Fixed lint errors: `prefer-const`, `no-non-null-assertion`, `no-base-to-string` (`JSON.stringify`), import sort.
+- Analysed Q10 active map detection: fires via `tryParseB01MapBinary` → `onActiveMapChanged(b01Info.mapId)` from binary map blob (Protocol 301), not from list response.
+
+## 2026-06-24 (Session 31)
+
+- Added `requiresBody: boolean` to `AbstractMessageListener` interface (non-optional).
+- Set `requiresBody = true` on: `V1StatusListener`, `B01StatusListener`, `MapInfoListener`, `DeviceStatusListener`.
+- Set `requiresBody = false` on: `HelloResponseListener`, `MapResponseListener`, `OneShotResponseListener`, `LocalPingResponseListener`, `LoggingMessageListener`, `PushCaptureListener`.
+- Both `V1ResponseBroadcaster` and `B01ResponseBroadcaster` now silently skip listeners with `requiresBody = true` when message body is absent.
+- Added 2 tests per broadcaster (skip when body absent + pass-through when `requiresBody = false`); updated all test mocks.
+- Bumped version `1.1.7-rc02` → `1.1.7-rc03` across `package.json`, `schema.json`, `config.json`.
+
+## 2026-06-23 (Session 30)
+
+- Verified status update flow issues (Issues 1–6) against current code:
+  - Issues 1, 2, 4, 6 already fixed in prior sessions; updated `docs/to_do.md` to reflect.
+  - Issue 5: replaced global `allDevicesHaveRealTimeConnection` short-circuit in `requestHomeData` with per-device staleness check using `robot.lastUpdateAt` + `WATCHDOG_THRESHOLD_MS`; updated `updateFromHomeData` to send status updates to stale real-time devices.
+  - Issue 3: fixed falsy checks in `handleHomeDataMessage.ts` — `if (batteryLevel)` → `if (batteryLevel != null)`, `if (suctionPower && waterBoxMode)` → `if (suctionPower != null && waterBoxMode != null)`.
+- Verified remaining todos against current code — all resolved:
+  - `stateResolver.ts` bugs: implementation matches `misc/state_resolution_matrix.md`; doc was lost but no remaining discrepancies.
+  - Routine selection: `buildCleanCommand` already separates routines/rooms and uses `indexMap.getRoomId()`.
+  - MQTT keepalive: unconditional reconnect re-enabled deliberately.
+  - `B01ResponseBroadcaster`: already integrated in `connectionService.ts` + `ResponseBroadcasterFactory`.
+- Cleaned `docs/claude_history.md` — kept entries from May 2026 onward (1 month).
+
+## 2026-06-21 (Session 29)
+
+- Implemented fire-and-forget v3 Tasks 3 & 4:
+  - **Task 3**: Created `MapInfoListener` at `src/roborockCommunication/routing/listeners/implementation/mapInfoListener.ts`. Handles V1 push responses by shape detection (no messageId correlation): `isRawRoomMappingData` checks for array-of-arrays, `isMultipleMapDto` checks for `map_info` presence. Calls `updateAreas()` which constructs a temporary `HomeEntity` and runs `getSupportedAreas()` → updates `AreaManagementService`. B01-Q10 and B01-Q7 branches are debug-logged stubs pending device log confirmation.
+  - **Task 4**: Injected `AreaManagementService` as optional constructor param in `ConnectionService`. Updated `ServiceContainer.getConnectionService()` to pass it. In `initializeMessageClientForLocal`, registered `MapInfoListener` after `simpleMessageListener` using `device.store.homeData.rooms` for room name mapping.
+  - Added 12 unit tests for `MapInfoListener` covering duid filtering, V1 room map / map info parsing, B01-Q10/Q7 stubs.
+  - All 176 test files, 1892 tests pass. `npm run type-check` exits 0.
+
+## 2026-06-21 (Session 28)
+
+- Implemented fire-and-forget v3 Tasks 1, 2, and 5 (full chain):
+  - **Task 1**: Converted `getMapInfo()`/`getRoomMap()` to `Promise<void>` across all 7 layers: `abstractMessageDispatcher` interface, `V10MessageDispatcher` (dropped `client.query`, removed `MultipleMapDto` import), `Q10MessageDispatcher`, `Q7MessageDispatcher`, `messageRoutingService`, `areaManagementService`, `roborockService`.
+  - **Task 2**: Rewrote `RoomMap.fromMapInfo()` to `Promise<void>` (fires both requests, returns immediately). Removed `MapInfoResult` interface, `HomeModelMapper` and `debugStringify` imports from `RoomMap.ts`. Updated `deviceConfigurator.ts` to construct `HomeEntity` with `RoomMap.empty()` and `MapInfo.empty()`.
+  - **Task 5**: Deleted the blocking `getRoomMap` + `activeMapId` update block from `serviceAreaHandler.ts` lines 109–112. Changed the empty room map guard log from `error` to `debug`.
+  - Updated CLI commands (`mapInfo.ts`, `rooms.ts`) to fire-and-return pattern.
+  - Updated all affected tests across 8 test files (V01/Q10/Q7 dispatchers, RoomMap, platformRunner, platformRunner2, areaManagementService, roborockService.coverage, deviceConfigurator).
+  - `npm run type-check` exits 0. `npm test` — 1880 tests pass (175 files).
+
+## 2026-06-20 (Session 27)
+
+- Audited the status update flow across `deviceStateHandler.ts`, `getBatteryStatus.ts`, `handleHomeDataMessage.ts`, `platformRunner.ts`, `function.ts`.
+- Found 3 bugs and 3 design issues; documented in `docs/status-update-flow-issues.md`.
+- High: `handleDeviceStatusSimpleUpdate` passes `RvcRunMode.ModeTag` (converted) to `state_to_matter_operational_status` instead of the original `OperationStatusCode` — operational state always `Docked` on the simple path.
+- Medium: `getBatteryState` returns `IsAtFullCharge` as default for non-dock states (Cleaning, Paused, etc.), which can incorrectly trigger `Charging → Docked` transition during battery updates.
+- Low: `batteryLevel` falsy check in `updateFromHomeData` silently drops 0% battery.
+
 ## 2026-06-12 (Session 26)
 
 - Full codebase read-through (learn-codebase): read every remaining source file in `src/roborockCommunication/routing/`, `src/cli/` (+ `cli.ts`), `src/model/`, `src/errors/`, `src/initialData/`, `src/constants/`, `src/runtimes/` (incl. `handlers/`), `src/share/`, `src/types/`, `src/core/domain/`, `src/core/application/models/`, `module.ts`, `settings.ts`, `platformRunner.ts`, and the `behaviors/roborock.vacuum/core/` mode-handling system.
@@ -21,212 +212,3 @@
 - `abstractClient.test.ts`: added `isReady` delegates to `isConnected` test (covers line 40).
 - `v1ResponseBroadcaster.test.ts` / `b01ResponseBroadcaster.test.ts`: replaced "throw Error" with `throw 'raw string error'` to cover the `String(error)` branch in the non-Error exception handler.
 - All 175 test files, 1876 tests pass (+8). Precommit clean.
-
-## 2026-05-17 (Session 24)
-
-- Fixed CI `npm ci` failure: added `"typescript": "6.0.3"` to existing `"overrides"` block in `package.json` so npm v10 (CI) resolves `tsconfck`'s optional `typescript@^5.0.0` peer dep to `6.0.3` instead of trying to install `5.9.3` which was missing from the lock file.
-- Updated safe patch-level dev dependencies: `@vitest/coverage-v8` 4.1.2→4.1.6, `@vitest/eslint-plugin` 1.6.14→1.6.17, `prettier` 3.8.1→3.8.3, `typescript` 6.0.2→6.0.3, `typescript-eslint` 8.58.0→8.59.3, `vitest` 4.1.2→4.1.6, `node-persist-manager` 2.0.1→2.0.2.
-- Fixed two new lint errors surfaced by `typescript-eslint@8.59.3`: removed redundant `model as string` cast in `getSupportedCleanModes.ts` and `} as AbstractUDPMessageListener` cast in `connectionService.ts`; removed now-unused `AbstractUDPMessageListener` import.
-- All 175 test files, 1865 tests pass. Precommit clean.
-
-## 2026-05-17 (Session 23)
-
-- Ran `/simplify` code review on fire-and-forget migration (Phases 1–3 staged changes).
-- Fixed memory leak: `OneShotResponseListener` was never removed from broadcaster arrays after settling. Added `deregister(listener)` to `ResponseBroadcaster` interface + all implementations (`V1ResponseBroadcaster`, `B01ResponseBroadcaster`, `ResponseBroadcasterFactory`). Added `finally { broadcaster.deregister(listener) }` to `AbstractClient.query()` and `ClientRouter.query()`.
-- Removed `timer.unref()` after `clearTimeout()` in `OneShotResponseListener.onMessage()` — no-op after clear.
-- Removed stale JSDoc comment in `AbstractClient.isReady()`.
-- Removed commented-out dead code in `Q7MessageDispatcher` (unused `b01MapParser` field and old `getRoomMap` implementation).
-- Removed WHAT-only section banner comments in `V10MessageDispatcher`.
-- Added `deregister` tests to `v1ResponseBroadcaster.test.ts` and `b01ResponseBroadcaster.test.ts`.
-- All 175 test files, 1865 tests pass. Type-check clean.
-
-## 2026-05-16 (Session 22)
-
-- Executed fire-and-forget migration (all 3 phases) per `docs/plan-fire-and-forget-v2.md`.
-- Phase 1: Converted 9 dispatcher methods from `client.get()` to `client.send()` (findMyRobot, getDeviceStatus for V10/Q10; getNetworkInfo, getMapInfo, getRoomMap for Q10/Q7). Updated `abstractMessageDispatcher.ts` `getDeviceStatus` return type from `Promise<DeviceStatus | undefined>` to `Promise<void>`.
-- Phase 2: Created `OneShotResponseListener` (one-shot listener pattern). Added `query<T>()` to `Client` interface, `AbstractClient`, and `ClientRouter`. Added `parseV1Result<T>()` module helper to `V10MessageDispatcher`. Migrated all remaining `client.get()` callers in V10/Q10/Q7 dispatchers to `client.query()`. Simplified `changeCleanMode()` read-before-write guard (removed `getCustomMessage('get_custom_mode')` call).
-- Phase 3: Deleted entire `PendingResponseTracker` infrastructure (3 source files + 3 test files). Removed `tryResolve()` from `ResponseBroadcaster` interface and all implementations. Simplified broadcaster constructors. Removed tracker from local/MQTT client constructors.
-- Updated 20+ test files to remove tracker mocks. Fixed race condition in `AbstractClient.query()` test (microtask deferral). All 175 test files, 1863 tests pass.
-
-## 2026-04-11 (Session 21)
-
-- Executed `docs/plan-cleanModeConfig-split.md`: split `src/behaviors/roborock.vacuum/core/cleanModeConfig.ts` (383 LOC) into a directory module.
-- Created `cleanModeConfig/` with 7 files: `types.ts`, `vacuumAndMop.ts`, `mopOnly.ts`, `vacuumOnly.ts`, `special.ts`, `helpers.ts`, `index.ts`.
-- Fixed import paths: enums are at `../../enums/` (not `../enums/`) from inside the subdirectory.
-- Updated 20 import files (11 production + 9 test): `cleanModeConfig.js` → `cleanModeConfig/index.js`.
-- Deleted original `cleanModeConfig.ts`.
-- `npm run build` exits 0, all 1911 tests pass, lint clean.
-
-## 2026-04-11 (Session 20)
-
-- Ran code-simplifier on `src/runtimes/handlers/` (5 handler files + `platformRunner.ts`).
-- `errorStateHandler.ts`: removed duplicate `debug` log (line 24 was identical to line 17); moved `currentOperationState` getAttribute call to just before its use (skips it on early-return paths); simplified `!== undefined && !== null` → `!= null`.
-- `serviceAreaHandler.ts`: removed redundant `if (!cleaningInfo) return` guard inside `resolveAreaFromCleaningInfo` (caller already narrows); changed function signature to accept `CleanInformation` directly; renamed snake_case segment vars to camelCase (`sourceSegmentId`, `sourceTargetSegmentId`, `segmentId`); inlined `activeArea` find into debug log (removed unused variable).
-- `batteryStateHandler.ts`: fixed falsy-zero bug — `if (batteryLevel)` skipped updates at 0% battery; replaced with `if (batteryLevel != null)` which guards against undefined wire data without skipping 0%.
-- `deviceStateHandler.ts`: parallelized two independent `updateAttribute` calls in `handleDeviceStatusUpdate` using `Promise.all`.
-- `roborockService.coverage.test.ts`: removed test "should throw error when configManager is not provided" — tested dead guard removed in Session 19.
-- All 1911 tests pass.
-
-## 2026-04-11 (Session 19)
-
-- Ran code-simplifier review on `src/services/roborockService.ts`.
-- Removed dead guard `if (!this.configManager)` in `authenticate()` — constructor guarantees it's set.
-- Removed section header comments (`// === ... ===`) in `roborockService.ts` — pure WHAT noise.
-- Fixed bug in `serviceContainer.ts` `destroy()`: `pollingService.shutdown()` was called twice (once without clearing the reference, then again in the normal cleanup block). Removed the redundant early call.
-- Flagged future refactor: move `buildCleanCommand` from `RoborockService` to `AreaManagementService` to reduce 4-call coupling; deferred due to required test redesign.
-
-## 2026-04-04 (Session 18)
-
-- Executed Priority 1 refactoring from `docs/refactoring-recommendations.md`: split `platformRunner.ts` (562 LOC) into 5 pure handler modules under `src/runtimes/handlers/`.
-- Created plan in `docs/plan-platformRunner-split.md`, then executed 5 phases sequentially with build+test after each.
-- Extracted handlers:
-  - `serviceAreaHandler.ts` — `handleServiceAreaUpdate` + 3 helpers + `CLEANING_STATES` const
-  - `errorStateHandler.ts` — `handleErrorOccurred`
-  - `deviceStateHandler.ts` — `handleDeviceStatusUpdate` (returns `boolean` for burst polling signal) + `handleDeviceStatusSimpleUpdate`
-  - `batteryStateHandler.ts` — `handleBatteryUpdate`
-  - `cleanModeHandler.ts` — `handleCleanModeUpdate`
-- `platformRunner.ts` reduced from 562 → 118 LOC (dispatcher + lifecycle only, no handler logic).
-- All 1912 tests pass. Lint and build clean. Changes staged (not committed per user preference).
-- Updated `docs/CODE_STRUCTURE.md` with new `runtimes/handlers/` directory, `docs/to_do.md` marked item complete.
-
-## 2026-03-14 (Session 17)
-
-- Fixed multi-device polling bug in `PollingService`: second vacuum was stopping first vacuum's polling interval.
-  - Replaced single `localRequestDeviceStatusInterval` with `Map<string, NodeJS.Timeout>` keyed by `duid`.
-- Audited all services for multi-device bugs. Found and fixed 1 real bug:
-  - **V1PendingResponseTracker**: messageId collision between devices — changed key from `messageId` (number) to `${duid}:${messageId}` (string).
-  - B01PendingResponseTracker was already correctly handling duid isolation via `entry.duid === response.duid` in `matches()`.
-- Added new test file `v1PendingResponseTracker.test.ts` (6 tests) + 2 multi-device tests in B01 tracker.
-- Updated existing tests in `pendingResponseTracker.test.ts` to use new string key format.
-
-## 2026-03-07 (Session 16)
-
-- Bumped version to `1.1.5-rc08`.
-- Updated `package.json` (version + buildpackage filename), `schema.json`, `config.json`, and `CHANGELOG.md`.
-- Changelog entry: refactored `handleServiceAreaUpdate` into dedicated helpers with clear 3-branch dispatch.
-
-## 2026-03-02 (Session 15)
-
-- Bumped version to `1.1.5-rc07`.
-- Updated `package.json` (version + buildpackage filename), `schema.json`, `config.json`, and `CHANGELOG.md`.
-- Changelog entry: fixed `selectedAreas` type (`ServiceArea.Area[]` → `number[]`) correcting `.areaId` access in single-room cleaning.
-
-## 2026-03-01 (Session 14)
-
-- Debugged `stateResolver.ts`: Sleeping (2) + `inCleaning=true` was resolving to Idle+Docked instead of Cleaning+Paused.
-  - Root cause: no Sleeping handler in Priority 0 — fell through to `getBaseState` → `state_to_matter_state(2)` = Idle, `state_to_matter_operational_status(2)` = Docked.
-  - Fix: added Sleeping override (Rows 8–10) in Priority 0 block of `resolveDeviceState`.
-  - Also fixed stale test "should handle Sleeping status - Row 8" (wrong label → "Row 10", wrong expectation Docked → Paused).
-- Audited `stateResolver.ts` vs `misc/state_resolution_matrix.md` — found 4 discrepancies, documented in `docs/stateResolver-bugs.md`.
-
-## 2026-02-28 (Session 13)
-
-- Added `src/tests/platform/burstPollingManager.test.ts` (16 tests) to improve PR 116 patch coverage for `BurstPollingManager` — covers startBurstPolling (happy/early-return/error paths), stopBurstPolling, stopAllBurstPolling, has, requestLocalDeviceStatus (undefined service), isDeviceIdle (robot not found, Docked, Charging, Running). Used `vi.useFakeTimers()` with `advanceTimersByTimeAsync(15000)` to trigger the 10s interval callback.
-
-## 2026-02-28 (Session 12)
-
-- Refactored `platformRunner.ts` per `docs/platformRunner-refactor-plan.md`:
-  - **Item 1**: Extracted burst polling into `src/platform/burstPollingManager.ts` (`BurstPollingManager` class).
-  - **Item 2**: Extracted name resolver pure functions into `src/share/matterStateNames.ts` (`getRunModeName`, `getOperationalStateName`, `getCleanModeName`, `getOperationalErrorName`).
-  - **Item 4**: Replaced `payloadHandlers` Map + inline type-guard lambdas with a clean `switch` in `updateRobotWithPayload`.
-  - Removed 3 wrapper methods (`startBurstPolling`, `stopBurstPolling`, `stopAllBurstPolling`) from `PlatformRunner` — callers now use `runner.burstPolling.xxx()` directly.
-  - Updated `module.ts`, `deviceConfigurator.ts`, `platformRunner.test.ts`, and `module.orchestration.test.ts` accordingly.
-
-## 2026-02-26 (Session 11)
-
-- Fixed `LocalNetworkClient` stale socket race condition on ping-timeout reconnect: replaced `intentionalDisconnect` flag (time-based, shared mutable state) with closure-captured socket reference in `close`/`error`/`end` event handlers. Old socket events are now identity-checked (`this.socket !== socket`) and ignored, preventing the new socket from being destroyed mid-handshake.
-- See detailed write-up: `docs/bugfix-local-reconnect-stale-socket.md`
-
-## 2026-02-24 (Session 10)
-
-- Added `Protocol.device_status_ota` (500) with `deserializeDeviceStatusOta` in `MessageDeserializer` and new `DeviceStatusListener` to log firmware update status/progress and device online/offline events.
-- Fixed `LocalNetworkClient` reconnect: added `intentionalDisconnect` flag so stale `close`/`error` events from the old socket are suppressed after a ping-timeout reconnect, preventing the new socket from being torn down mid-handshake.
-- Added `isReconnecting()` to `LocalNetworkClient`; `ClientRouter.getLocalClient` now falls back to MQTT with a notice log while the local client is reconnecting.
-- Removed dead-code `SyncMessageListener`.
-- Added unit tests: `localNetworkClient.reconnect.test.ts` (4 tests) and 3 new cases in `deviceConfigurator.test.ts` for missing coverage (`addDevice` early return, null cluster options, duplicate bridgedNode guard).
-- Created release candidate `1.1.5-rc02`: bumped version in `package.json`, `package-lock.json`, `schema.json`, `config.json`. Added CHANGELOG entry.
-
-## 2026-02-18 (Session 9)
-
-- Added `includeVacuumErrorStatus` configuration option under Advanced features. When disabled (default), `handleErrorOccurred` in `platformRunner.ts` is skipped. Updated schema, config type, config manager, platformRunner, and all test files.
-- Created release candidate 1.1.4-rc07: bumped version in `package.json`, `schema.json`, `config.json`. Added CHANGELOG entry for vacuum error status control feature.
-
-## 2026-02-17 (Session 8)
-
-- Created `B01PendingResponseTracker` — collects multiple B01 response messages matching by timestamp and protocol, merges body data, resolves after configurable collection window (default 500ms). Supports configurable timestamp tolerance.
-- Created `B01ResponseBroadcaster` — B01-specific broadcaster that delegates to `B01PendingResponseTracker` for multi-response collection, with same listener dispatch pattern as `ResponseBroadcaster`.
-- Added 10 unit tests for `B01PendingResponseTracker` and 4 for `B01ResponseBroadcaster` (all passing).
-- Added real-data integration test to `B01PendingResponseTracker` using sample data from `exampleData/tmp.log`.
-- Added key mapping in `B01PendingResponseTracker.mapDataKeys` — converts numeric DPS keys to named keys using `Q10RequestCode` enum reverse lookup (e.g. `'121'` → `'state'`, `'122'` → `'battery'`). Unmapped keys stay as numbers.
-
-## 2026-02-17 (Session 7)
-
-- Created release candidate 1.1.4-rc06: bumped version in `package.json`, `schema.json`, `config.json`. Added CHANGELOG entry for Buy Me a Coffee badge asset.
-- Updated CHANGELOG for 1.1.4-rc06: added improvements for 2FA toast notifications, snackbar severity levels, and WebSocket restart prompt after persistence clear.
-
-## 2026-02-17 (Session 6)
-
-- Fixed `mqttClient.ts`: resolve `version` on request object in `sendInternal` via `getMQTTProtocolVersion(duid)` before serialization, matching `LocalNetworkClient` pattern. Previously `version` was `undefined` on the request (only resolved inside serializer).
-
-## 2026-02-16 (Session 5)
-
-- Fixed `platformRunner.ts` Node.js 20 compatibility: spread `Map.values()` into array before calling `.every()` (Iterator Helpers not available in Node.js 20).
-
-## 2026-02-16 (Session 4)
-
-- Added unit tests to improve Codecov patch coverage for 7 files with missing lines.
-- Updated test files:
-  - `module.orchestration.test.ts` — added 5 tests: clearStorageOnStartup early return, alwaysExecuteAuthentication persist clear, roborockService undefined after discovery, onConfigure clearStorage flow, clearStorage error handling
-  - `messageDeserializer.test.ts` — added 3 tests: CRC32 mismatch throw, localKey not found returns undefined body, map_response protocol handling
-  - `LocalNetworkClient.test.ts` — added 3 tests: version fallback to context protocol, processHelloResponse clearing existing interval, safeHandler with non-Error objects
-  - `Q10MessageDispatcher.test.ts` — added 2 tests: real private helpers via client.send, both suctionPower and waterFlow zero
-  - `Q7MessageDispatcher.test.ts` — added 2 tests: real private helpers via client.send, both suctionPower and waterFlow zero
-  - `platformRunner.test.ts` — added 2 tests: skip requestHomeData when all devices have real-time connection, proceed when mixed connections
-
-## 2026-02-16 (Session 3)
-
-- Created CHANGELOG entry for `1.1.4-rc05`.
-- Staged changes include:
-  - Skip `requestHomeData` when all devices have real-time connections (`platformRunner.ts`).
-  - Move `VacFollowedByMop` from base to smart clean mode configs (`cleanModeConfig.ts`).
-  - Tighten `PlatformRunner` type contract, remove optional chaining (`deviceConfigurator.ts`, `module.ts`).
-
-## 2026-02-16 (Session 2)
-
-- Added unit tests to increase Codecov patch coverage across 8 files with missing lines.
-- New test files:
-  - `src/tests/roborockCommunication/broadcast/listener/localPingResponseListener.test.ts` (8 tests) — covers ping response handling, timer cleanup
-  - `src/tests/behaviors/roborock.vacuum/core/cleanModeUtils.test.ts` (11 tests) — covers getSettingFromCleanMode with all modes and CustomizeWithDistanceOff
-- Updated test files:
-  - `LocalNetworkClient.test.ts` — added 17 tests: isReady, isConnected branches, sendInternal hello_request bypass, trySendHelloRequest V1/L01 fallback, processHelloResponse, checkConnection reconnect/ping/skip, safeHandler error handling, multi-segment onMessage
-  - `messageContext.test.ts` — added 3 tests: updateMQTTProtocolVersion, getMQTTProtocolVersion, unregisterAllDevices
-  - `messageDeserializer.unit.test.ts` — added 4 tests: unsupported version, ping_response, hello_response, general_response
-  - `Q10MessageDispatcher.test.ts` — added 3 tests: messageId monotonic, Date.now collision, getRoomMap empty
-  - `Q7MessageDispatcher.test.ts` — added 2 tests: messageId monotonic, Date.now collision
-- All 1552 tests pass across 154 test files.
-
-## 2026-02-16
-
-- Fixed keepConnectionAlive in MQTTClient and LocalNetworkClient to only reconnect when connection is down.
-  - **MQTTClient**: Removed `end()` + `reconnect()` cycle when already connected (caused empty subscription list on reconnect, leading to message timeouts).
-  - **LocalNetworkClient**: Removed `disconnect().then(() => connect())` when already connected (caused socket destruction and failed hello handshake race condition).
-  - **LocalNetworkClient**: Fixed interval leak — `disconnect()` now clears `keepConnectionAliveInterval`. Fixed `clearTimeout` → `clearInterval` mismatch.
-- Added unit tests to increase patch coverage for dev branch changes.
-- New test files:
-  - `src/tests/behaviors/roborock.vacuum/core/modeResolver.test.ts` (21 tests)
-  - `src/tests/behaviors/roborock.vacuum/core/cleanModeConfig.test.ts` (16 tests)
-  - `src/tests/behaviors/roborock.vacuum/core/behaviorConfig.test.ts` (12 tests)
-  - `src/tests/behaviors/roborock.vacuum/handlers/defaultCleanModeHandler.test.ts` (8 tests)
-  - `src/tests/behaviors/roborock.vacuum/handlers/customCleanModeHandler.test.ts` (3 tests)
-  - `src/tests/roborockCommunication/map/b01MapParser.test.ts` (6 tests)
-- Updated test files:
-  - `src/tests/behaviors/roborock.vacuum/default/default.test.ts` - added VacFollowedByMop and EnergySaving mode tests
-  - `src/tests/behaviors/roborock.vacuum/smart/smart.test.ts` - added VacFollowedByMop and EnergySaving mode tests
-- Coverage improvements: modeResolver 0%→97.56%, b01MapParser 20%→100%, handlers to 100%.
-
-## 2026-02-15
-
-- Created B01 map parser for extracting rooms from protobuf-encoded map data.
-- Added `protobufjs` dependency.
-- Created files: `src/roborockCommunication/map/b01/b01MapParser.ts`, `types.ts`, `roborockProto.ts`.
-- Proto schema minimized to only room-related messages (`RobotMap`, `RoomDataInfo`, `DevicePointInfo`, `MapHeadInfo`).

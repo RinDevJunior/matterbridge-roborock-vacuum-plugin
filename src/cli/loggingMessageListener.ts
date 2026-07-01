@@ -5,6 +5,7 @@ import { AbstractMessageListener } from '../roborockCommunication/routing/listen
 
 export class LoggingMessageListener implements AbstractMessageListener {
 	readonly name = 'LoggingMessageListener';
+	readonly requiresBody = false;
 
 	constructor(
 		public readonly duid: string,

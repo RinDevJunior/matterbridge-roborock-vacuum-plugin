@@ -4,6 +4,12 @@
 
 - Matterbridge must run in **childbridge** mode.
 - Node.js and npm installed.
+- **CodeGraph** (optional but recommended for AI-assisted development):
+  ```sh
+  npm i -g @colbymchenry/codegraph
+  npm run codegraph:init
+  ```
+  See [README_CODEGRAPH.md](README_CODEGRAPH.md) for full setup.
 
 ---
 
@@ -12,7 +18,7 @@
 | File                                                                                                                               | Purpose                                                                  |
 | ---------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------ |
 | [`src/roborockCommunication/models/deviceModel.ts`](src/roborockCommunication/models/deviceModel.ts)                               | Enum of all known device models                                          |
-| [`src/behaviors/roborock.vacuum/core/cleanModeConfig.ts`](src/behaviors/roborock.vacuum/core/cleanModeConfig.ts)                   | All clean mode definitions (labels, mode numbers, settings, Matter tags) |
+| [`src/behaviors/roborock.vacuum/core/cleanModeConfig/`](src/behaviors/roborock.vacuum/core/cleanModeConfig/)                       | All clean mode definitions (labels, mode numbers, settings, Matter tags) |
 | [`src/behaviors/roborock.vacuum/core/deviceCapabilityRegistry.ts`](src/behaviors/roborock.vacuum/core/deviceCapabilityRegistry.ts) | Maps each device model → its extra clean modes                           |
 | [`src/behaviors/roborock.vacuum/core/behaviorConfig.ts`](src/behaviors/roborock.vacuum/core/behaviorConfig.ts)                     | Builds `BehaviorConfig` per device (handler chain, mode maps)            |
 | [`src/behaviors/roborock.vacuum/handlers/`](src/behaviors/roborock.vacuum/handlers/)                                               | Clean mode handler implementations                                       |
@@ -122,3 +128,9 @@ npm run build
 ```sh
 npm test
 ```
+
+---
+
+## CodeGraph (Code Intelligence)
+
+See [README_CODEGRAPH.md](README_CODEGRAPH.md) for setup and usage with Claude Code and Cursor.

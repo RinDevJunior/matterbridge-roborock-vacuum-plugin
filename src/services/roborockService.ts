@@ -10,14 +10,8 @@ import { CleanCommand } from '../model/CleanCommand.js';
 import { PlatformConfigManager } from '../platform/platformConfigManager.js';
 import { RoborockAuthenticateApi } from '../roborockCommunication/api/authClient.js';
 import { RoborockIoTApi } from '../roborockCommunication/api/iotClient.js';
-import {
-	Device,
-	Home,
-	RawRoomMappingData,
-	RequestMessage,
-	Scene,
-	UserData,
-} from '../roborockCommunication/models/index.js';
+import { RawRoomMappingData, RoomDto } from '../roborockCommunication/models/home/index.js';
+import { Device, Home, Scene, UserData } from '../roborockCommunication/models/index.js';
 import {
 	AreaManagementService,
 	ConnectionService,
@@ -187,6 +181,29 @@ export class RoborockService {
 		return this.areaService.getSelectedAreas(duid);
 	}
 
+	/** Register a callback invoked whenever supported areas are updated for a device. */
+	public registerAreasListener(
+		duid: string,
+		callback: (areas: ServiceArea.Area[], maps: ServiceArea.Map[]) => void,
+	): void {
+		this.areaService.registerAreasListener(duid, callback);
+	}
+
+	/** Set supported maps for a device. */
+	public setSupportedMaps(duid: string, maps: ServiceArea.Map[]): void {
+		this.areaService.setSupportedMaps(duid, maps);
+	}
+
+	/** Get supported maps for a device. */
+	public getSupportedMaps(duid: string): ServiceArea.Map[] {
+		return this.areaService.getSupportedMaps(duid);
+	}
+
+	/** Start periodic area refresh (getMapInfo) on a timer. */
+	public startPeriodicAreaRefresh(duid: string, intervalMs?: number): void {
+		this.areaService.startPeriodicRefresh(duid, intervalMs);
+	}
+
 	/** Set supported cleaning areas (rooms) for a device. */
 	public setSupportedAreas(duid: string, supportedAreas: ServiceArea.Area[]): void {
 		this.areaService.setSupportedAreas(duid, supportedAreas);
@@ -202,6 +219,10 @@ export class RoborockService {
 		this.areaService.setSupportedRoutines(duid, routineAsRooms);
 	}
 
+	public getSupportedRoutines(duid: string): ServiceArea.Area[] | undefined {
+		return this.areaService.getSupportedRoutines(duid);
+	}
+
 	/** Get supported cleaning areas for a device. */
 	public getSupportedAreas(duid: string): ServiceArea.Area[] {
 		return this.areaService.getSupportedAreas(duid);
@@ -213,13 +234,23 @@ export class RoborockService {
 	}
 
 	/** Get map information for a device. */
-	public async getMapInfo(duid: string): Promise<MapInfo> {
+	public async getMapInfo(duid: string): Promise<MapInfo | undefined> {
 		return this.areaService.getMapInfo(duid);
 	}
 
+	/** Store device room list for explicit room mapping. */
+	public setDeviceRooms(duid: string, rooms: RoomDto[]): void {
+		this.areaService.setDeviceRooms(duid, rooms);
+	}
+
 	/** Get room mapping for a device. */
-	public async getRoomMap(duid: string, activeMap: number): Promise<RawRoomMappingData> {
+	public async getRoomMap(duid: string, activeMap: number): Promise<RawRoomMappingData | undefined> {
 		return this.areaService.getRoomMap(duid, activeMap);
+	}
+
+	/** Switch to a different map on the device. */
+	public async switchMap(duid: string, mapId: number): Promise<void> {
+		await this.messageRoutingService.switchMap(duid, mapId);
 	}
 
 	/** Get all scenes for a home. */
@@ -235,11 +266,6 @@ export class RoborockService {
 	/** Get current cleaning mode settings. */
 	public async getCleanModeData(duid: string): Promise<CleanModeSetting> {
 		return this.messageRoutingService.getCleanModeData(duid);
-	}
-
-	/** Get vacuum's current room from map. */
-	public async getRoomIdFromMap(duid: string): Promise<number | undefined> {
-		return this.messageRoutingService.getRoomIdFromMap(duid);
 	}
 
 	/** Change cleaning mode settings. */
@@ -275,25 +301,6 @@ export class RoborockService {
 	/** Play sound to locate vacuum. */
 	public async playSoundToLocate(duid: string): Promise<void> {
 		return this.messageRoutingService.playSoundToLocate(duid);
-	}
-
-	/** Execute custom GET request to device. */
-	public async customGet<T = unknown>(duid: string, request: RequestMessage): Promise<T> {
-		return this.messageRoutingService.customGet<T>(duid, request);
-	}
-
-	/** Send custom command to device (fire-and-forget). */
-	public async customSend(duid: string, request: RequestMessage): Promise<void> {
-		return this.messageRoutingService.customSend(duid, request);
-	}
-
-	/** Execute custom API GET request. */
-	public async getCustomAPI<T = unknown>(url: string): Promise<T> {
-		const iotApi = this.container.getIotApi();
-		if (!iotApi) {
-			throw new Error('IoT API not initialized. Please login first.');
-		}
-		return iotApi.getCustom(url) as Promise<T>;
 	}
 
 	private buildCleanCommand(duid: string): CleanCommand {

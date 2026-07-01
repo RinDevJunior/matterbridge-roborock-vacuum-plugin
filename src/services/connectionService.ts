@@ -16,11 +16,13 @@ import { MessageDispatcherFactory } from '../roborockCommunication/protocol/disp
 import { Client } from '../roborockCommunication/routing/client.js';
 import { ClientRouter } from '../roborockCommunication/routing/clientRouter.js';
 import { SimpleMessageHandler } from '../roborockCommunication/routing/handlers/implementation/simpleMessageHandler.js';
+import { B01StatusListener } from '../roborockCommunication/routing/listeners/implementation/b01StatusListener.js';
 import { DeviceStatusListener } from '../roborockCommunication/routing/listeners/implementation/deviceStatusListener.js';
 import { DisconnectNotificationListener } from '../roborockCommunication/routing/listeners/implementation/disconnectNotificationListener.js';
-import { MapResponseListener } from '../roborockCommunication/routing/listeners/implementation/mapResponseListener.js';
-import { SimpleMessageListener } from '../roborockCommunication/routing/listeners/implementation/simpleMessageListener.js';
-import type { DeviceNotifyCallback } from '../types/index.js';
+import { MapInfoListener } from '../roborockCommunication/routing/listeners/implementation/mapInfoListener.js';
+import { V1StatusListener } from '../roborockCommunication/routing/listeners/implementation/v1StatusListener.js';
+import { type DeviceNotifyCallback, NotifyMessageTypes } from '../types/index.js';
+import { AreaManagementService } from './areaManagementService.js';
 import ClientManager from './clientManager.js';
 import { EmailNotificationService } from './emailNotificationService.js';
 import { MessageRoutingService } from './messageRoutingService.js';
@@ -38,6 +40,7 @@ export class ConnectionService {
 		private readonly logger: AnsiLogger,
 		private readonly messageRoutingService: MessageRoutingService,
 		private readonly configManager?: PlatformConfigManager,
+		private readonly areaManagementService?: AreaManagementService,
 	) {}
 
 	public async sendTestEmailNotification(): Promise<void> {
@@ -145,16 +148,6 @@ export class ConnectionService {
 			return false;
 		}
 
-		this.clientRouter.registerMessageListener(new MapResponseListener(device.duid, this.logger));
-
-		const simpleMessageListener = new SimpleMessageListener(device.duid, this.logger);
-		simpleMessageListener.registerHandler(new SimpleMessageHandler(device.duid, this.logger, this.deviceNotify));
-
-		const deviceStatusListener = new DeviceStatusListener(device.duid, this.logger);
-
-		this.clientRouter.registerMessageListener(deviceStatusListener);
-		this.clientRouter.registerMessageListener(simpleMessageListener);
-
 		const deviceSpecs = device.specs;
 		const messageDispatcher = new MessageDispatcherFactory(this.clientRouter, this.logger).getMessageDispatcher(
 			deviceSpecs.protocol,
@@ -164,6 +157,48 @@ export class ConnectionService {
 		this.logger.debug(
 			`[ConnectionService] Resolve ${messageDispatcher.dispatcherName} for device: ${device.duid}, protocol: ${deviceSpecs.protocol}, model: ${deviceSpecs.model}`,
 		);
+
+		const simpleMessageListener = new V1StatusListener(
+			device.duid,
+			this.logger,
+			() => void messageDispatcher.getDeviceStatus(device.duid),
+		);
+		simpleMessageListener.registerHandler(new SimpleMessageHandler(device.duid, this.logger, this.deviceNotify));
+
+		const b01StatusListener = new B01StatusListener(device.duid, this.logger);
+		b01StatusListener.registerHandler(new SimpleMessageHandler(device.duid, this.logger, this.deviceNotify));
+
+		const deviceStatusListener = new DeviceStatusListener(device.duid, this.logger);
+
+		this.clientRouter.registerMessageListener(deviceStatusListener);
+		this.clientRouter.registerMessageListener(simpleMessageListener);
+		this.clientRouter.registerMessageListener(b01StatusListener);
+
+		if (this.areaManagementService) {
+			const deviceNotify = this.deviceNotify;
+			const onActiveMapChanged = deviceNotify
+				? (mapId: number) => {
+						void deviceNotify({
+							type: NotifyMessageTypes.ActiveMapChanged,
+							data: { duid: device.duid, mapId },
+						});
+					}
+				: undefined;
+			const liveMapUpdates = this.configManager?.isLiveMapUpdatesEnabled ?? false;
+			const allowV1AreaUpdate = liveMapUpdates || !messageDispatcher.supportsMapQueryResponse;
+			const mapInfoListener = new MapInfoListener(
+				device.duid,
+				device.store.homeData.rooms,
+				this.areaManagementService,
+				this.logger,
+				device.specs.model,
+				device.serialNumber,
+				onActiveMapChanged,
+				device.specs.protocol,
+				allowV1AreaUpdate,
+			);
+			this.clientRouter.registerMessageListener(mapInfoListener);
+		}
 
 		// Register message listeners
 		this.messageRoutingService.registerMessageDispatcher(device.duid, messageDispatcher);

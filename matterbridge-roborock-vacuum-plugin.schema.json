@@ -1,6 +1,6 @@
 {
 	"title": "Matterbridge Roborock Vacuum Plugin",
-	"description": "matterbridge-roborock-vacuum-plugin v. 1.1.7-rc01 by https://github.com/RinDevJunior",
+	"description": "matterbridge-roborock-vacuum-plugin v. 1.1.7-rc05 by https://github.com/RinDevJunior",
 	"type": "object",
 	"properties": {
 		"name": {
@@ -96,8 +96,7 @@
 					"items": {
 						"type": "string"
 					},
-					"uniqueItems": true,
-					"selectFrom": "name"
+					"uniqueItems": true
 				},
 				"enableServerMode": {
 					"title": "Enable Server Mode",
@@ -202,6 +201,12 @@
 									},
 									"enableEmailNotification": {
 										"title": "Enable Email Notification",
+										"type": "boolean",
+										"default": false
+									},
+									"enableLiveMapUpdates": {
+										"title": "Enable Live Map Updates",
+										"description": "Use push-based map updates (fire-and-forget). Disable for older vacuums that do not push map data automatically.",
 										"type": "boolean",
 										"default": false
 									},

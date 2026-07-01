@@ -1,4 +1,4 @@
-import { CommandHandlerData, MatterbridgeEndpointCommands } from 'matterbridge';
+import { CommandHandlerData, CommandHandlers } from 'matterbridge';
 import { RoboticVacuumCleaner } from 'matterbridge/devices';
 import { AnsiLogger, debugStringify } from 'matterbridge/logger';
 import { ModeBase, RvcOperationalState, ServiceArea } from 'matterbridge/matter/clusters';
@@ -7,12 +7,7 @@ import { CommandNames } from '../behaviors/BehaviorDeviceGeneric.js';
 import { CleanModeSetting } from '../behaviors/roborock.vacuum/core/CleanModeSetting.js';
 import { baseRunModeConfigs, getRunModeOptions } from '../behaviors/roborock.vacuum/core/runModeConfig.js';
 import { HomeEntity } from '../core/domain/entities/Home.js';
-import {
-	getOperationalStates,
-	getSupportedAreas,
-	getSupportedCleanModes,
-	getSupportedRoutines,
-} from '../initialData/index.js';
+import { getOperationalStates, getSupportedCleanModes, getSupportedRoutines } from '../initialData/index.js';
 import { DockStationStatus } from '../model/DockStationStatus.js';
 import { PlatformConfigManager } from '../platform/platformConfigManager.js';
 import { Device } from '../roborockCommunication/models/index.js';
@@ -26,6 +21,7 @@ interface IdentifyCommandRequest {
 export class RoborockVacuumCleaner extends RoboticVacuumCleaner {
 	dockStationStatus: DockStationStatus | undefined;
 	cleanModeSetting: CleanModeSetting | undefined;
+	lastUpdateAt: number | null = null;
 
 	/**
 	 * Create a new Roborock Vacuum Cleaner device.
@@ -35,7 +31,7 @@ export class RoborockVacuumCleaner extends RoboticVacuumCleaner {
 		public readonly device: Device,
 		public readonly homeInFo: HomeEntity,
 		configManager: PlatformConfigManager,
-		roborockService: RoborockService,
+		private readonly roborockService: RoborockService,
 		log: AnsiLogger,
 	) {
 		const deviceConfig = RoborockVacuumCleaner.initializeDeviceConfiguration(
@@ -60,7 +56,7 @@ export class RoborockVacuumCleaner extends RoboticVacuumCleaner {
 			deviceConfig.operationalState,
 			deviceConfig.supportedAreaAndRoutines,
 			undefined,
-			deviceConfig.supportedAreas[0].areaId,
+			null,
 			deviceConfig.supportedMaps,
 		);
 
@@ -100,6 +96,11 @@ export class RoborockVacuumCleaner extends RoboticVacuumCleaner {
 					? 'Clearing selected areas (global cleaning on next start)'
 					: `Selecting areas: ${areas.join(', ')}`,
 			);
+
+			if (areas.length > 0) {
+				await this.trySwitchMap(areas);
+			}
+
 			behaviorHandler.executeCommand(CommandNames.SELECT_AREAS, areas);
 		});
 
@@ -140,20 +141,18 @@ export class RoborockVacuumCleaner extends RoboticVacuumCleaner {
 		roborockService: RoborockService,
 		log: AnsiLogger,
 	) {
-		const cleanModes = getSupportedCleanModes(device.specs.model, configManager);
+		const cleanModes = getSupportedCleanModes(
+			device.specs.model,
+			configManager,
+			device.featureSet,
+			device.newFeatureSet,
+		);
 		const operationalState = getOperationalStates();
-		const result = getSupportedAreas(homeInFo, log);
-		const supportedMaps = result.supportedMaps;
-		let supportedAreas = result.supportedAreas;
 		const runModeConfigs = getRunModeOptions(baseRunModeConfigs);
 
 		const bridgeMode: 'server' | 'matter' = configManager.isServerModeEnabled ? 'server' : 'matter';
 
-		const firstSupportedMap = supportedMaps.length > 0 ? supportedMaps[0] : undefined;
-		if (!configManager.isMultipleMapEnabled) {
-			supportedMaps.splice(1); // Keep only the first map
-			supportedAreas = supportedAreas.filter((area) => area.mapId === firstSupportedMap?.mapId);
-		}
+		const supportedMaps: ServiceArea.Map[] = [];
 
 		let routineAsRooms: ServiceArea.Area[] = [];
 		if (configManager.showRoutinesAsRoom) {
@@ -170,10 +169,7 @@ export class RoborockVacuumCleaner extends RoboticVacuumCleaner {
 			});
 		}
 
-		roborockService.setSupportedAreas(device.duid, result.supportedAreas);
-		roborockService.setSupportedAreaIndexMap(device.duid, result.roomIndexMap);
-
-		const supportedAreaAndRoutines = [...supportedAreas, ...routineAsRooms];
+		const supportedAreaAndRoutines = [...routineAsRooms];
 		const deviceName = device.name;
 
 		return {
@@ -181,11 +177,27 @@ export class RoborockVacuumCleaner extends RoboticVacuumCleaner {
 			bridgeMode,
 			cleanModes,
 			runModeConfigs,
-			supportedAreas,
+			supportedAreas: [],
 			supportedMaps,
 			supportedAreaAndRoutines,
 			operationalState,
 		};
+	}
+
+	private async trySwitchMap(selectedAreaIds: number[]): Promise<void> {
+		const duid = this.device.duid;
+		const supportedAreas = this.roborockService.getSupportedAreas(duid);
+		const targetMapId = supportedAreas.find((a) => a.areaId === selectedAreaIds[0])?.mapId;
+
+		if (targetMapId === undefined || targetMapId === null) return;
+		if (targetMapId === this.homeInFo.activeMapId) return;
+
+		this.log.info(`[${duid}] Switching map from ${this.homeInFo.activeMapId} to ${targetMapId}`);
+		try {
+			await this.roborockService.switchMap(duid, targetMapId);
+		} catch (err) {
+			this.log.error(`[${duid}] Failed to switch map: ${String(err)}`);
+		}
 	}
 
 	/**
@@ -193,7 +205,7 @@ export class RoborockVacuumCleaner extends RoboticVacuumCleaner {
 	 * Wraps handler logic in try-catch to avoid code duplication.
 	 */
 	private addCommandHandlerWithErrorHandling(
-		commandName: keyof MatterbridgeEndpointCommands,
+		commandName: CommandHandlers,
 		handler: (context: CommandHandlerData) => Promise<void>,
 	): void {
 		this.addCommandHandler(commandName, async (context: CommandHandlerData) => {

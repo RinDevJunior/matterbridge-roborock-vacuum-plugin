@@ -61,6 +61,8 @@ describe('RoborockVacuumCleaner', () => {
 			setSupportedRoutines: vi.fn(),
 			setSupportedAreas: vi.fn(),
 			setSupportedAreaIndexMap: vi.fn(),
+			getSupportedAreas: vi.fn().mockReturnValue([]),
+			switchMap: vi.fn().mockResolvedValue(undefined),
 		});
 		vacuum = new RoborockVacuumCleaner(device, homeInfo, configManager, roborockService, logger);
 		vi.spyOn(vacuum.log, 'info').mockImplementation(() => {});
@@ -224,6 +226,7 @@ describe('RoborockVacuumCleaner', () => {
 				enableAdvancedFeature: true,
 				settings: {
 					clearStorageOnStartup: false,
+					enableLiveMapUpdates: false,
 					showRoutinesAsRoom: false,
 					includeDockStationStatus: false,
 					includeVacuumErrorStatus: false,
@@ -283,6 +286,7 @@ describe('RoborockVacuumCleaner', () => {
 				enableAdvancedFeature: false,
 				settings: {
 					clearStorageOnStartup: false,
+					enableLiveMapUpdates: false,
 					showRoutinesAsRoom: false,
 					includeDockStationStatus: false,
 					includeVacuumErrorStatus: false,

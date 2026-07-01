@@ -1,28 +1,21 @@
 # To Do
 
-## In Progress
-
-- [ ] Fix `stateResolver.ts` bugs — see `docs/stateResolver-bugs.md`
-
-- [ ] Fix routine selection in `setSelectedAreas` — see `docs/routine-selection-fix-plan.md`
-  - [ ] `areaManagementService.setSelectedAreas`: store raw areaIds (remove RoomIndexMap conversion)
-  - [ ] `roborockService.startClean`: separate routines/rooms, convert room areaIds → roomIds
-  - [ ] `messageRoutingService.tryStartRoutineClean`: fix `rooms` filter + fix `startScene` scene ID
-  - [ ] Add/update tests
-- [ ] Investigate MQTT keepalive behavior change (rc04 stopped periodic reconnection — may cause stale connections)
-- [ ] Integrate `B01ResponseBroadcaster` into dispatcher factory / connection service for B01 devices
-
 ## Completed
 
-- [x] Full codebase read-through + `docs/authentication-flow.md` diagram + `docs/CODE_STRUCTURE.md` refresh (fixed routing/initialData/constants/model/errors drift, added "Error Handling & Plugin Models" and "CLI Tool" sections)
-- [x] Improve patch coverage: added 8 targeted tests for uncovered branches in OneShotResponseListener, ResponseBroadcasterFactory, ClientRouter, AbstractClient, V1/B01 broadcasters — 1876 tests pass
-- [x] Fire-and-forget migration (Phases 1–3) — replaced `client.get()` with `client.send()` / `client.query()` via `OneShotResponseListener`; deleted `PendingResponseTracker` infrastructure; 1865 tests pass
-- [x] Split `cleanModeConfig.ts` into directory module (`types`, `vacuumAndMop`, `mopOnly`, `vacuumOnly`, `special`, `helpers`, `index`) — Priority 4 from refactoring-recommendations.md
-- [x] code-simplifier on `roborockService.ts`: removed dead guard, section headers, fixed double pollingService.shutdown() bug in serviceContainer.ts
+- [x] Release candidate `1.1.7-rc04` created
+- [x] Fix `ChargingError` (status code 9) to properly set `operationalError = FailedToFindChargingDock`
+- [x] Investigate feature gaps (reference vs current plugin) — gaps analysis complete
+- [x] Implement `src/share/featureSetDecoder.ts` — pure decoder for DeviceFeatures capability flags
+- [x] Wire `hasSmartPlan` to `is_smart_clean_mode_set_supported` feature flag — SmartPlan mode 4 now dynamically gated
+- [x] Wiki documentation fixes — updated 6 files to reflect feature-flag-driven architecture
+- [x] Wiki gap fill — created 5 new pages (Runtime-Handlers-Pipeline, Message-Listeners-Architecture, Message-Dispatchers-Protocol-Routing, Feature-Flags-Device-Capabilities, Room-Map-Data-Pipeline); expanded 6 existing pages; updated Home.md index
 
-- [x] platformRunner-refactor: extract all handlers into `src/runtimes/handlers/` — serviceAreaHandler, errorStateHandler, deviceStateHandler, batteryStateHandler, cleanModeHandler (Priority 1 from refactoring-recommendations.md)
-- [x] Fix multi-device polling bug — `PollingService` now uses `Map<duid, Timeout>` so each vacuum has its own interval
-- [x] Fix V1PendingResponseTracker messageId collision — composite key `${duid}:${messageId}` prevents cross-device response routing
-- [x] Release `1.1.6` — Add base Q Revo (`roborock.vacuum.a75`) to `DeviceModel` enum
-- [x] Release `1.1.5-rc08` — refactor `handleServiceAreaUpdate` into dedicated helpers
-- [x] Release `1.1.5-rc07` — correct type of `selectedAreas` (`ServiceArea.Area[]` → `number[]`)
+## Pending
+
+### Implementation Tasks
+
+### Open Feature Gaps
+
+- [ ] **Gap 1** — `selectAreas` all-selected normalization (low-medium, needs API confirmation)
+- [ ] **Gap 3** — Firmware-version-aware device capability selection (low, complex; could leverage featureSetDecoder)
+- [ ] **Gap 4** — `roomNames` config override for manual room name assignment (low, ready to implement when user reports)

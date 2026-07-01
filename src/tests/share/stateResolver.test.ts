@@ -650,6 +650,7 @@ describe('resolveDeviceState - 56-row State Resolution Matrix', () => {
 
 				expect(result.runMode).toBe(RvcRunMode.ModeTag.Idle);
 				expect(result.operationalState).toBe(RvcOperationalState.OperationalState.Error);
+				expect(result.operationalError).toBe(RvcOperationalState.ErrorState.FailedToFindChargingDock);
 			});
 
 			it('should handle ZoneClean status - Row 41', () => {

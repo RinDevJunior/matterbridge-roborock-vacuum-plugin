@@ -147,7 +147,11 @@ export class ServiceContainer {
 	 * @returns AreaManagementService instance
 	 */
 	getAreaManagementService(): AreaManagementService {
-		this.areaManagementService ??= new AreaManagementService(this.logger, this.getMessageRoutingService());
+		this.areaManagementService ??= new AreaManagementService(
+			this.logger,
+			this.getMessageRoutingService(),
+			this.config.configManager.isLiveMapUpdatesEnabled,
+		);
 		return this.areaManagementService;
 	}
 
@@ -169,6 +173,7 @@ export class ServiceContainer {
 			this.logger,
 			this.getMessageRoutingService(),
 			this.config.configManager,
+			this.getAreaManagementService(),
 		));
 	}
 
@@ -177,8 +182,6 @@ export class ServiceContainer {
 		if (!clientRouter) {
 			throw new Error('Message client not initialized in ConnectionService');
 		}
-
-		this.areaManagementService?.setMessageClient(clientRouter);
 	}
 
 	/**

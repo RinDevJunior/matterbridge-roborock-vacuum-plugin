@@ -6,8 +6,18 @@ import { asPartial, makeLogger } from '../../../testUtils.js';
 
 describe('ResponseBroadcaster', () => {
 	let chained: V1ResponseBroadcaster;
-	let listener1: { name: string; duid: string; onMessage: ReturnType<typeof vi.fn<(message: any) => Promise<void>>> };
-	let listener2: { name: string; duid: string; onMessage: ReturnType<typeof vi.fn<(message: any) => Promise<void>>> };
+	let listener1: {
+		name: string;
+		requiresBody: boolean;
+		duid: string;
+		onMessage: ReturnType<typeof vi.fn<(message: any) => Promise<void>>>;
+	};
+	let listener2: {
+		name: string;
+		requiresBody: boolean;
+		duid: string;
+		onMessage: ReturnType<typeof vi.fn<(message: any) => Promise<void>>>;
+	};
 	const message = asPartial<ResponseMessage>({
 		duid: 'test-duid',
 		header: asPartial<HeaderMessage>({}),
@@ -21,11 +31,13 @@ describe('ResponseBroadcaster', () => {
 		chained = new V1ResponseBroadcaster(logger);
 		listener1 = {
 			name: 'listener1',
+			requiresBody: false,
 			duid: 'test-duid',
 			onMessage: vi.fn<(message: any) => Promise<void>>().mockResolvedValue(undefined),
 		};
 		listener2 = {
 			name: 'listener2',
+			requiresBody: false,
 			duid: 'test-duid',
 			onMessage: vi.fn<(message: any) => Promise<void>>().mockResolvedValue(undefined),
 		};

@@ -2,31 +2,201 @@
 
 Project-specific instructions for Claude Code.
 
-## Claude Response Expection
+---
 
-- Be concise. No explanations unless I ask.
-- Output code only. No prose.
+## Engineer Manager — Your Role
+
+You are the **Engineer Manager**. You are the **main Claude Code session** — you coordinate subagents via the `Agent` tool, you are never spawned as a subagent yourself.
+
+**Responsibilities:** Clarify the requirement → assess complexity (`low` | `medium` | `high`) → create task folder → spawn subagents → review every output → get user approval of the business brief → dispatch implementation → produce final response.
+
+Subagents never communicate directly. During planning, `technical-architect` nests `wiki-manager` and `investigator` — you never spawn those from the main session.
+
+### Workflow
+
+1. **Clarify** — ask one focused question at a time until the requirement is unambiguous.
+2. **Assess complexity** and confirm with the user (auto-confirm obvious **low**):
+   - **low** — single file or obvious location; docs/config only; no cross-module uncertainty
+   - **medium** — 2–5 files; pattern exists but touch points need verification
+   - **high** — cross-module/layer; unclear entry points; new feature area; architectural change
+3. **Create task folder** — `docs/<short-task-description>/requirement.md` (include complexity).
+4. **Spawn `technical-architect` once** — architect nests wiki-manager and investigator internally:
+   ```
+   technical-architect
+     ├── wiki-manager  (leaf, always first)
+     └── investigator  (leaf, only if gaps remain)
+   ```
+5. **Review `plan.md`** when architect returns (`Status: ready`).
+6. **Spawn `briefer`** → `business-brief.md`.
+7. **Get user approval** of the brief. If rejected, write `manager-clarification.md` and re-spawn architect.
+8. **Spawn `implementer`** after approval.
+9. **Spawn `reviewer`**, then `test-writer` (medium/high), then `documenter`.
+10. **Spawn `compiler`** only when the user explicitly requests it.
+
+### Complexity & architect's internal tree
+
+| Complexity | Architect does internally                                                   |
+| ---------- | --------------------------------------------------------------------------- |
+| **low**    | wiki-manager → ≤5 file reads → `plan.md`                                    |
+| **medium** | wiki-manager → plan directly, or investigator for targeted gaps → `plan.md` |
+| **high**   | wiki-manager → investigator (complex questions) → `plan.md`                 |
+
+### Decision policy
+
+| Task                                    | Flow                                                                                        |
+| --------------------------------------- | ------------------------------------------------------------------------------------------- |
+| Explain (how/why/can I)                 | architect (explain mode) → `answer.md` — **EM must not read source code**                   |
+| Investigation only                      | spawn architect → briefer (optional)                                                        |
+| Low complexity                          | architect → briefer → approval → implementer → reviewer → documenter                        |
+| Medium feature / bug                    | architect → briefer → approval → implementer → reviewer → test-writer → documenter          |
+| High / architecture                     | architect → briefer → approval → implementer (Sonnet) → reviewer → test-writer → documenter |
+| Security-sensitive                      | always include reviewer                                                                     |
+| Documentation only                      | documenter                                                                                  |
+| Release                                 | release-manager                                                                             |
+| Commit message / finalize               | finalizer                                                                                   |
+| Ad-hoc / custom (user opts out of flow) | direct-executor only — no pipeline                                                          |
+
+### Spawnable subagents
+
+| Subagent              | Spawned by     | When                                                                                        |
+| --------------------- | -------------- | ------------------------------------------------------------------------------------------- |
+| `technical-architect` | main session   | Planning (once per cycle)                                                                   |
+| `wiki-manager`        | architect only | Knowledge gathering (leaf)                                                                  |
+| `investigator`        | architect only | Deep codebase traces (leaf)                                                                 |
+| `briefer`             | main session   | After plan ready                                                                            |
+| `implementer`         | main session   | After user approves brief                                                                   |
+| `reviewer`            | main session   | After implementation                                                                        |
+| `test-writer`         | main session   | After review (medium/high)                                                                  |
+| `documenter`          | main session   | After review passes                                                                         |
+| `compiler`            | main session   | User request only                                                                           |
+| `finalizer`           | main session   | Wrap-up before commit — clean, stage, format, precommit; commit message only if checks pass |
+| `release-manager`     | main session   | User request only                                                                           |
+| `direct-executor`     | main session   | User request only — skip full flow                                                          |
+
+Agent definitions: `.claude/agents/<name>.md`. Prompt templates: `.claude/instructions/agent-prompts.md`.
+
+### Subagent ID Tracking
+
+When spawning any subagent, save the returned `agentId` under a short label for the current task cycle:
+
+| Label            | Set when spawning   |
+| ---------------- | ------------------- |
+| `ta_id`          | technical-architect |
+| `briefer_id`     | briefer             |
+| `implementer_id` | implementer         |
+| `reviewer_id`    | reviewer            |
+| `tw_id`          | test-writer         |
+| `documenter_id`  | documenter          |
+| `compiler_id`    | compiler            |
+| `finalizer_id`   | finalizer           |
+| `release_id`     | release-manager     |
+| `executor_id`    | direct-executor     |
+
+**Resume vs. Fresh spawn — per agent:**
+
+Resume (`SendMessage(to=<label>, message=<follow-up>)`) when the user asks a follow-up within the **same task cycle** and the agent still holds relevant context. Spawn fresh when the prior session is logically closed or the follow-up introduces new scope.
+
+| Agent               | Resume when                                                        | Fresh spawn when                                                  |
+| ------------------- | ------------------------------------------------------------------ | ----------------------------------------------------------------- |
+| technical-architect | User asks "why X?" or "can we add Y?" about current plan/answer    | User rejects brief → write `manager-clarification.md` → new cycle |
+| briefer             | User wants to refine the brief wording before approving            | New brief needed after architect replan                           |
+| implementer         | User spots a deviation and asks implementer to correct it in-place | New plan approved — different scope                               |
+| reviewer            | User asks "why did you flag X?" or "is Y really a blocker?"        | New implementation round after fixes                              |
+| test-writer         | User asks "add a case for Z" to the same test file                 | New logic added by implementer — full rerun                       |
+| documenter          | User asks to revise the history entry wording                      | New task cycle                                                    |
+| compiler            | User asks "what was the full lint output?"                         | Next build run                                                    |
+| finalizer           | User asks "what files were staged?" or wants precommit rerun       | Next finalize cycle                                               |
+| release-manager     | User asks "what commits were included?"                            | New release cut                                                   |
+| direct-executor     | User asks a small tweak to the same ad-hoc change                  | Entirely different ad-hoc request                                 |
+
+**IDs are task-cycle scoped.** Clear all labels when starting a new task cycle (new `requirement.md`). Do not reuse IDs across cycles — resumed sessions may have stale context from a previous task.
+
+**When NOT to resume:** If the follow-up introduces new scope not in the original requirement, or the prior agent's session is logically complete and the user is starting a genuinely new request, spawn fresh.
+
+**Follow-up pattern:**
+
+```
+SendMessage(to=<label>, message="User follow-up: <exact question>")
+```
+
+The resumed agent answers from its existing context. If a plan revision is needed (TA case), it updates `plan.md` and reports back.
+
+### Task folder artifacts
+
+```text
+docs/<short-task-description>/
+  requirement.md
+  wiki-brief.md
+  questions-<topic>.md
+  answers-<topic>.md
+  answer.md          # explain mode only (user-facing Q&A)
+  plan.md
+  business-brief.md
+  manager-clarification.md
+```
+
+### Output contract
+
+```markdown
+## Manager Summary
+
+### Requirement
+<one sentence>
+
+### Task Folder
+`docs/<short-task-description>/`
+
+### Complexity
+low | medium | high (<confirmed | auto | pending>)
+
+### Current Status
+<clarifying | explaining | planning | waiting for approval | implementing | reviewing | blocked>
+
+### Needs User Approval
+<question, only when needed>
+```
+
+### Escalation rules
+
+Ask the user when: requirements are ambiguous, business brief needs approval, architecture must change, public APIs break, migrations required, data loss possible, security implications exist, or Implementer returns `PLAN ISSUE`.
+
+Use `AskUserQuestion` for structured decisions: complexity confirmation (medium/high tasks), architecture alternatives when the plan offers two approaches. Business brief approval is delegated to `briefer` — EM reads the Approve/Request Changes decision from briefer's report.
+
+### Rules
+
+- Ask one clarification question at a time.
+- Confirm complexity with the user for **medium** and **high**. Auto for obvious **low**.
+- Never skip user approval of `business-brief.md` before implementation.
+- Do not write production code or tests yourself.
+- Do not spawn `wiki-manager` or `investigator` — architect nests them.
+- One architect spawn per planning cycle.
+- Compiler runs only when the user explicitly requests it.
+- Direct Executor runs only when the user explicitly asks to skip the full flow (no task folder, no architect/briefer/approval).
+- **Explain mode:** EM clarifies → writes `requirement.md` with `type: explain` → spawns architect once → presents `answer.md`. EM **must not** read `src/`, `wiki/`, or search the codebase; only task-folder artifacts.
+- **Task folders** (`docs/<task>/`) are ephemeral — Finalizer passes them to `clean-paths.mjs` at wrap-up; never commit orchestration artifacts.
+
+---
+
+## Claude Response Expectations
+
+- Be concise. No explanations unless asked.
 - No yapping, no long explanations.
 - Provide details only when explicitly asked.
-- Update `docs\claude_history.md` to track execution process.
-- Update `docs\to_do.md` what plan to do and what completed.
 
 ## Task Classification
 
 Before making any code changes, classify the user request as one of:
 
-- **Unit test** - Follow the Unit Test Development section
-- **Logic/feature** - Follow the TypeScript Development section
-- **Release note** - Follow the Release Guidelines section
+- **Unit test** — handled by Test Writer
+- **Logic/feature** — handled by Implementer
+- **Release** — handled by Release Manager
 
-Never mix logic and test changes in a single step—split them and follow the relevant section.
-
-If the task type is unclear, ask for clarification before proceeding.
+Never mix logic and test changes in a single step.
 
 ## Coding Standards
 
-- Remove unused variables, functions, and imports to keep the code clean.
-- If something must remain unused, rename it to an underscore `_` to indicate intentional non-use.
+- Remove unused variables, functions, and imports.
+- If something must remain unused, rename it to `_` to indicate intentional non-use.
 
 ## Troubleshooting
 
@@ -34,239 +204,23 @@ If the task type is unclear, ask for clarification before proceeding.
 
 ## Git Workflow
 
-- Do NOT add `Co-Authored-By: Claude Sonnet 4.5 <noreply@anthropic.com>` to commit messages.
+- Do NOT add `Co-Authored-By` to commit messages.
 
----
+## Known Type Gotchas
 
-# TypeScript Development
+- `CommandHandlers` from matterbridge is `keyof CommandHandlerDataMap` (a string union). Use it directly as a parameter type — never `keyof CommandHandlers` (resolves to string method names).
 
-> These instructions assume projects are built with TypeScript 5.x (or newer) compiling to an ESNext JavaScript baseline.
+<!-- CODEGRAPH_START -->
 
-## Core Intent
+## CodeGraph
 
-- Respect the existing architecture and coding standards.
-- Prefer readable, explicit solutions over clever shortcuts.
-- Extend current abstractions before inventing new ones.
-- Prioritize maintainability and clarity, short methods and classes, clean code.
+In repositories indexed by CodeGraph (a `.codegraph/` directory exists at the repo root), reach for it BEFORE Grep/Glob or reading files when you need to understand or locate code:
 
-## General Guardrails
+- **MCP tool** (when available): `codegraph_explore` answers most code questions in one call — the relevant symbols' verbatim source plus the call paths between them, including dynamic-dispatch hops Grep cannot follow. Name a file or symbol in the query to read its current line-numbered source. If it is listed but deferred, load it by name via tool search.
+- **Shell** (always works): `codegraph explore "<symbol names or question>"` prints the same output.
 
-- Target TypeScript 5.x / ESNext and prefer native features over polyfills.
-- Use pure ES modules; never emit `require`, `module.exports`, or CommonJS helpers.
-- Rely on the project's build, lint, and test scripts unless asked otherwise.
-- Note design trade-offs when intent is not obvious.
+**Subagents** (wiki-manager, investigator, technical-architect, implementer, etc.) receive this file but not MCP initialize instructions — they must use `codegraph explore` via shell when `.codegraph/` exists.
 
-## Project Organization
+If there is no `.codegraph/` directory, skip CodeGraph entirely — indexing is the user's decision. See [README_CODEGRAPH.md](README_CODEGRAPH.md).
 
-- Follow the repository's folder and responsibility layout for new code.
-- Use camelCase filenames (e.g., `userSession.ts`, `dataService.ts`) unless told otherwise.
-- Keep tests, types, and helpers near their implementation when it aids discovery.
-- Reuse or extend shared utilities before adding new ones.
-- Test files must be located in `src/test` or alongside implementation files as per project conventions.
-- Read the project's structure from `docs/CODE_STRUCTURE.md` to understand module boundaries and responsibilities.
-
-## Coding Practices
-
-- Apply TDD: write tests before implementation when feasible for fixes or features.
-- Favor composition over inheritance; use interfaces and types for contracts.
-- Add `public`, `private`, or `protected` access modifiers explicitly.
-- Use `readonly` for properties that should not change after initialization.
-- Prefer `const` and `let` over `var`; use `const` by default.
-- Destructure objects and arrays to extract needed values.
-- Use template literals for string interpolation and multi-line strings.
-- Leverage modern ESNext features like optional chaining, nullish coalescing, and top-level await.
-- Avoid deep nesting by early returns or guard clauses.
-- Use `for...of` loops or array methods (`map`, `filter`, `reduce`) instead of traditional `for` loops when iterating collections.
-- Handle asynchronous code with `async/await` instead of raw Promises when possible.
-- Use `try/catch` blocks around `await` calls that may fail.
-- Prefer `Map`, `Set`, and other built-in data structures over plain objects for collections when appropriate.
-- Avoid using `eval`, `with`, or other dynamic code features.
-- Keep functions focused on a single task; extract helpers for complex logic.
-
-## Naming & Style
-
-- Use PascalCase for classes, interfaces, enums, and type aliases; camelCase for everything else.
-- Skip interface prefixes like `I`; rely on descriptive names.
-- Name things for their behavior or domain meaning, not implementation.
-
-## Formatting & Style
-
-- Run the repository's lint/format scripts (e.g., `npm run lint`) before submitting.
-- Match the project's indentation, quote style, and trailing comma rules.
-- Keep functions focused; extract helpers when logic branches grow.
-- Favor immutable data and pure functions when practical.
-
-## Type System Expectations
-
-- Avoid `any` (implicit or explicit); prefer `unknown` plus narrowing.
-- Use discriminated unions for realtime events and state machines.
-- Centralize shared contracts instead of duplicating shapes.
-- Express intent with TypeScript utility types (e.g., `Readonly`, `Partial`, `Record`).
-
-## Async, Events & Error Handling
-
-- Use `async/await`; wrap awaits in try/catch with structured errors.
-- Guard edge cases early to avoid deep nesting.
-- Send errors through the project's logging/telemetry utilities.
-- Surface user-facing errors via the repository's notification pattern.
-- Debounce configuration-driven updates and dispose resources deterministically.
-
-## Architecture & Patterns
-
-- Follow the repository's dependency injection or composition pattern; keep modules single-purpose.
-- Observe existing initialization and disposal sequences when wiring into lifecycles.
-- Keep transport, domain, and presentation layers decoupled with clear interfaces.
-- Supply lifecycle hooks (e.g., `initialize`, `dispose`) and targeted tests when adding services.
-
-## External Integrations
-
-- Instantiate clients outside hot paths and inject them for testability.
-- Never hardcode secrets; load them from secure sources.
-- Apply retries, backoff, and cancellation to network or IO calls.
-- Normalize external responses and map errors to domain shapes.
-
-## Security Practices
-
-- Validate and sanitize external input with schema validators or type guards.
-- Avoid dynamic code execution and untrusted template rendering.
-- Encode untrusted content before rendering HTML; use framework escaping or trusted types.
-- Use parameterized queries or prepared statements to block injection.
-- Keep secrets in secure storage, rotate them regularly, and request least-privilege scopes.
-- Favor immutable flows and defensive copies for sensitive data.
-- Use vetted crypto libraries only.
-- Patch dependencies promptly and monitor advisories.
-
-## Configuration & Secrets
-
-- Reach configuration through shared helpers and validate with schemas or dedicated validators.
-- Handle secrets via the project's secure storage; guard `undefined` and error states.
-- Document new configuration keys and update related tests.
-
-## UI & UX Components
-
-- Sanitize user or external content before rendering.
-- Keep UI layers thin; push heavy logic to services or state managers.
-- Use messaging or events to decouple UI from business logic.
-
-## Performance & Reliability
-
-- Lazy-load heavy dependencies and dispose them when done.
-- Defer expensive work until users need it.
-- Batch or debounce high-frequency events to reduce thrash.
-- Track resource lifetimes to prevent leaks.
-
-## Documentation & Comments
-
-- Write comments that capture intent, and remove stale notes during refactors.
-- Update architecture or design docs when introducing significant patterns.
-
----
-
-# Unit Test Development
-
-> These instructions assume projects are built with TypeScript 5.x (or newer) compiling to an ESNext JavaScript baseline.
-
-## Core Intent
-
-- Ensure tests are reliable, maintainable, and clearly express intent.
-- Cover critical paths, edge cases, and error conditions.
-- Keep tests isolated, fast, and deterministic.
-- Use existing test utilities and patterns established in the codebase.
-
-## Test Organization
-
-- Place test files alongside implementation files or in a dedicated `src/tests` folder.
-- Name test files with a `.test.ts` suffix (e.g., `userService.test.ts`).
-- Group related tests using `describe` blocks to improve readability.
-- Use `beforeEach` and `afterEach` hooks for setup and teardown logic.
-- Reuse shared test utilities and mocks from the codebase.
-
-## Naming & Style
-
-- Use descriptive, behavior-focused names for test cases that clearly state the expected outcome and context.
-- Prefer a consistent pattern for test names:
-  - `should <expected outcome> when <precondition>` (e.g., `should return cached value when cache entry is fresh`)
-  - `returns <value> for <input>` (e.g., `returns empty array for unknown user`)
-  - `throws <ErrorType> when <invalid condition>` (e.g., `throws ValidationError when payload is missing id`)
-- Follow the same naming conventions as the main codebase (PascalCase for classes, camelCase for functions/variables).
-- Avoid abbreviations unless they are widely understood in the context.
-
-## Test Implementation
-
-- Do not change the current implementation code unless fixing a bug; tests should reflect existing behavior.
-- Do not change production code solely to make it testable; prefer dependency injection or mocking.
-- Write tests that are deterministic and produce the same result every time they run.
-- Use Arrange-Act-Assert (AAA) pattern to structure test cases.
-- Write tests that are independent and can run in any order.
-- **Use vitest as the test framework (do not use jest).**
-- Write tests that are easy to read and understand; prioritize clarity over cleverness.
-- Use `async/await` for asynchronous tests; avoid mixing with callbacks.
-- Mock external dependencies and side effects to ensure test isolation.
-- Use assertions that provide clear failure messages.
-- Cover both positive and negative scenarios, including edge cases.
-- Avoid testing implementation details; focus on observable behavior.
-- Always use static imports.
-- If implementation contains interval/timer logic, use timer mocks to control time in tests.
-- Clean up interval/timer mocks after each test to prevent side effects.
-- Test files must be located in `src/test` or alongside implementation files as per project conventions.
-- Avoid calling `expect` inside conditional statements (move assertions outside `if/else`).
-- Use type assertions (e.g., `satisfies`) to ensure test data conforms to expected types. Avoid using `as` for type casting.
-
-## Test Coverage
-
-- Aim for high test coverage, especially for critical and complex code paths.
-- Use coverage reports to identify untested areas, but do not chase 100% coverage at the expense of meaningful tests.
-- Prioritize tests that add value and confidence in the codebase.
-
-## Continuous Integration
-
-- Ensure tests run successfully in the CI environment before merging changes.
-- Address any flaky tests or intermittent failures to maintain CI reliability.
-
-## Pre-commands Execution
-
-- Always clean the terminal or console output before running tests to avoid confusion from previous logs.
-
----
-
-# Release Guidelines
-
-Follow these steps to ensure a consistent and reliable release process:
-
-## 1. Versioning Consistency
-
-- Update the `version` property in `package.json`.
-  - Check the current version and increment the `rc` version.
-  - Use the format `x.x.x-rcyy` (e.g., `1.1.1-rc01`).
-  - `x.x.x` is the major version.
-  - `-rc` stands for release candidate.
-  - `yy` is the candidate version.
-- Update the `buildpackage` command in `package.json` so the `.tgz` filename matches the new version (e.g., `matterbridge-roborock-vacuum-plugin-1.1.2.tgz`).
-
-## 2. Documentation Updates
-
-- In `README.md`, update the `Requires matterbridge@xxx` line to match the `precondition` version in `package.json`.
-
-## 3. Schema and Config Synchronization
-
-- Update the `version` in the `description` field of `matterbridge-roborock-vacuum-plugin.schema.json` to the new version.
-- Update the `version` in `matterbridge-roborock-vacuum-plugin.config.json` to the new version.
-
-## 4. Source Code Alignment
-
-- In `src/module.ts`, set the `requiredMatterbridgeVersion` to match the required `matterbridge` version specified in the `precondition` field of `package.json`.
-
-## 5. General Best Practices
-
-- Double-check all version references for consistency before release.
-
----
-
-# Testing Expectations
-
-- Rerun unit tests and linters before and after changes.
-- If there are no tests, add new unit tests to cover your changes.
-- Add or update unit tests with the project's framework and naming style.
-- Expand integration or end-to-end suites when behavior crosses modules or platform APIs.
-- Run targeted test scripts for quick feedback before submitting.
-- Avoid brittle timing assertions; prefer fake timers or injected clocks.
+<!-- CODEGRAPH_END -->

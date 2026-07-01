@@ -1,0 +1,17 @@
+{
+	"mcpServers": {
+		"codegraph": {
+			"type": "stdio",
+			"command": "codegraph",
+			"args": ["serve", "--mcp", "--path", "/Volumes/ExternalSSD/code/matterbridge-roborock-vacuum-plugin"]
+		},
+		"codecov": {
+			"command": "npx",
+			"args": ["-y", "@egulatee/mcp-codecov"],
+			"env": {
+				"CODECOV_BASE_URL": "https://codecov.io",
+				"CODECOV_TOKEN": "${env:CODECOV_TOKEN}"
+			}
+		}
+	}
+}

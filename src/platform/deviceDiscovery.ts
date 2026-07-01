@@ -88,6 +88,8 @@ export class DeviceDiscovery {
 		const devices = await this.roborockService.listDevices();
 		this.log.notice('Initializing - devices: ', debugStringify(devices));
 
+		this.log.notice('Whitelist entries: ', debugStringify(this.configManager.whiteList));
+
 		let vacuums: Device[] = [];
 
 		for (const device of devices) {

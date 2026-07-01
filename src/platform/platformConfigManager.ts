@@ -110,6 +110,10 @@ export class PlatformConfigManager {
 		return (this.config.pluginConfiguration.whiteList ?? []).length > 0;
 	}
 
+	public get whiteList(): string[] {
+		return this.config.pluginConfiguration.whiteList ?? [];
+	}
+
 	public get unregisterOnShutdown(): boolean {
 		return this.config.pluginConfiguration.unregisterOnShutdown ?? false;
 	}
@@ -219,6 +223,10 @@ export class PlatformConfigManager {
 
 	public get isEmailNotificationEnabled(): boolean {
 		return this.isAdvancedFeatureEnabled && (this.advancedFeatureSettings.enableEmailNotification ?? false);
+	}
+
+	public get isLiveMapUpdatesEnabled(): boolean {
+		return this.isAdvancedFeatureEnabled && (this.advancedFeatureSettings.enableLiveMapUpdates ?? false);
 	}
 
 	public get emailNotificationSettings(): EmailNotificationSettings | undefined {

@@ -85,3 +85,13 @@ export const BACKOFF_DELAY_MS = 30 * 60 * 1000;
  * Polling interval during burst mode after a vacuum command is triggered (10 seconds).
  */
 export const BURST_POLLING_INTERVAL_MS = 10000;
+
+/**
+ * Threshold for watchdog to log an error if no update received (5 minutes).
+ */
+export const WATCHDOG_THRESHOLD_MS = 5 * 60 * 1000;
+
+/**
+ * Interval for watchdog checks (1 minute).
+ */
+export const WATCHDOG_CHECK_INTERVAL_MS = 60 * 1000;
