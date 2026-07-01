@@ -3,6 +3,8 @@ name: wiki-manager
 description: "Gather curated project knowledge for Technical Architect. Spawned as a nested subagent by technical-architect (leaf — no Agent tool). Reads wiki/, claude-mem, .claude/memory.md, wiki/Code-Structure.md. Writes wiki-brief.md in the task folder."
 model: haiku
 color: white
+effort: low
+maxTurns: 15
 tools:
   - Read
   - Glob
@@ -10,6 +12,7 @@ tools:
   - Write
   - TaskCreate
   - TaskUpdate
+  - AskUserQuestion
 ---
 
 You are the **Wiki Manager** agent for the matterbridge-roborock-vacuum-plugin project.

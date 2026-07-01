@@ -75,6 +75,50 @@ Subagents never communicate directly. During planning, `technical-architect` nes
 
 Agent definitions: `.claude/agents/<name>.md`. Prompt templates: `.claude/instructions/agent-prompts.md`.
 
+### Subagent ID Tracking
+
+When spawning any subagent, save the returned `agentId` under a short label for the current task cycle:
+
+| Label            | Set when spawning   |
+|------------------|---------------------|
+| `ta_id`          | technical-architect |
+| `briefer_id`     | briefer             |
+| `implementer_id` | implementer         |
+| `reviewer_id`    | reviewer            |
+| `tw_id`          | test-writer         |
+| `documenter_id`  | documenter          |
+| `compiler_id`    | compiler            |
+| `finalizer_id`   | finalizer           |
+| `release_id`     | release-manager     |
+| `executor_id`    | direct-executor     |
+
+**Resume vs. Fresh spawn — per agent:**
+
+Resume (`SendMessage(to=<label>, message=<follow-up>)`) when the user asks a follow-up within the **same task cycle** and the agent still holds relevant context. Spawn fresh when the prior session is logically closed or the follow-up introduces new scope.
+
+| Agent               | Resume when | Fresh spawn when |
+|---------------------|-------------|------------------|
+| technical-architect | User asks "why X?" or "can we add Y?" about current plan/answer | User rejects brief → write `manager-clarification.md` → new cycle |
+| briefer             | User wants to refine the brief wording before approving | New brief needed after architect replan |
+| implementer         | User spots a deviation and asks implementer to correct it in-place | New plan approved — different scope |
+| reviewer            | User asks "why did you flag X?" or "is Y really a blocker?" | New implementation round after fixes |
+| test-writer         | User asks "add a case for Z" to the same test file | New logic added by implementer — full rerun |
+| documenter          | User asks to revise the history entry wording | New task cycle |
+| compiler            | User asks "what was the full lint output?" | Next build run |
+| finalizer           | User asks "what files were staged?" or wants precommit rerun | Next finalize cycle |
+| release-manager     | User asks "what commits were included?" | New release cut |
+| direct-executor     | User asks a small tweak to the same ad-hoc change | Entirely different ad-hoc request |
+
+**IDs are task-cycle scoped.** Clear all labels when starting a new task cycle (new `requirement.md`). Do not reuse IDs across cycles — resumed sessions may have stale context from a previous task.
+
+**When NOT to resume:** If the follow-up introduces new scope not in the original requirement, or the prior agent's session is logically complete and the user is starting a genuinely new request, spawn fresh.
+
+**Follow-up pattern:**
+```
+SendMessage(to=<label>, message="User follow-up: <exact question>")
+```
+The resumed agent answers from its existing context. If a plan revision is needed (TA case), it updates `plan.md` and reports back.
+
 ### Task folder artifacts
 
 ```text
@@ -113,6 +157,8 @@ low | medium | high (<confirmed | auto | pending>)
 ### Escalation rules
 
 Ask the user when: requirements are ambiguous, business brief needs approval, architecture must change, public APIs break, migrations required, data loss possible, security implications exist, or Implementer returns `PLAN ISSUE`.
+
+Use `AskUserQuestion` for structured decisions: complexity confirmation (medium/high tasks), architecture alternatives when the plan offers two approaches. Business brief approval is delegated to `briefer` — EM reads the Approve/Request Changes decision from briefer's report.
 
 ### Rules
 

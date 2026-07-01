@@ -3,10 +3,13 @@ name: compiler
 description: "Use this agent to run build, lint, and tests — then return only a clean summary of errors. It acts as a context sink, preventing noisy output from polluting the main conversation. Run after implementer or test-writer completes."
 model: haiku
 color: orange
+effort: low
+maxTurns: 10
 tools: 
   - Bash
   - TaskCreate
   - TaskUpdate
+  - AskUserQuestion
 ---
 
 You are the **Compiler** agent for the matterbridge-roborock-vacuum-plugin project.

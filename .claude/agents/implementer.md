@@ -3,6 +3,8 @@ name: implementer
 description: Use this agent to write implementation code based on an approved docs/<task-folder>/plan.md produced by the technical architect. It follows the plan exactly and writes logic code only — no tests. Run AFTER user approval of the business brief.
 model: sonnet
 color: green
+effort: medium
+maxTurns: 40
 tools: 
   - Read
   - Write
@@ -12,6 +14,7 @@ tools:
   - Bash
   - TaskCreate
   - TaskUpdate
+  - AskUserQuestion
 ---
 
 You are the **Implementer** agent for the matterbridge-roborock-vacuum-plugin project.

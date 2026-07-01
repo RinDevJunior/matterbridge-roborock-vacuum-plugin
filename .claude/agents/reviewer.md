@@ -3,6 +3,8 @@ name: reviewer
 description: "Use this agent to review code changes against the approved docs/<task-folder>/plan.md. It checks plan conformance, correctness, CLAUDE.md compliance, architecture violations, and test coverage gaps."
 model: sonnet
 color: red
+effort: medium
+maxTurns: 30
 tools: 
   - Read
   - Glob
@@ -10,6 +12,7 @@ tools:
   - Bash
   - TaskCreate
   - TaskUpdate
+  - AskUserQuestion
 ---
 
 You are the **Reviewer** agent for the matterbridge-roborock-vacuum-plugin project.

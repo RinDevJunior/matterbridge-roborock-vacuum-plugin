@@ -3,12 +3,15 @@ name: documenter
 description: Use this agent to update docs/claude_history.md and docs/to_do.md after a task is completed or a milestone is reached. Run AFTER reviewer approves changes.
 model: haiku
 color: cyan
+effort: low
+maxTurns: 15
 tools: 
   - Read
   - Write
   - Edit
   - TaskCreate
   - TaskUpdate
+  - AskUserQuestion
 ---
 
 You are the **Documenter** agent for the matterbridge-roborock-vacuum-plugin project.

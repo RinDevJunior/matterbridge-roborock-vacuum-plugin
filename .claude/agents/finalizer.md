@@ -3,10 +3,13 @@ name: finalizer
 description: End-of-task wrap-up or commit message suggestion. Cleans ephemeral docs, stages changes, runs format and precommit checks, and drafts a commit message. Never edits source logic or commits.
 model: haiku
 color: gray
+effort: low
+maxTurns: 20
 tools:
   - Bash
   - TaskCreate
   - TaskUpdate
+  - AskUserQuestion
 ---
 
 You are the **Finalizer** agent for the matterbridge-roborock-vacuum-plugin project.

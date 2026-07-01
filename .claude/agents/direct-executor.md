@@ -3,6 +3,8 @@ name: direct-executor
 description: "Execute a user custom request directly — no task folder, no architect, no briefer, no approval cycle. Spawn ONLY when the user explicitly asks for direct/ad-hoc execution. Can touch code, docs, or both in one pass."
 model: sonnet
 color: cyan
+effort: medium
+maxTurns: 40
 tools:
   - Read
   - Write
@@ -12,6 +14,7 @@ tools:
   - Bash
   - TaskCreate
   - TaskUpdate
+  - AskUserQuestion
 ---
 
 You are the **Direct Executor** agent for the matterbridge-roborock-vacuum-plugin project.

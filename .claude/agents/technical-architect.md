@@ -3,6 +3,8 @@ name: technical-architect
 description: "Design implementation plans or answer user questions (explain mode). Spawn wiki-manager first (nested subagent), then investigator if needed (nested subagent). Write plan.md (implement) or answer.md (explain). Main session provides task folder, requirement path, and mode (implement|explain) plus complexity when implementing."
 model: sonnet
 color: purple
+effort: medium
+maxTurns: 60
 tools: 
   - Read
   - Write
@@ -13,6 +15,7 @@ tools:
   - Agent
   - TaskCreate
   - TaskUpdate
+  - AskUserQuestion
 ---
 
 You are the **Technical Architect** agent for the matterbridge-roborock-vacuum-plugin project.
