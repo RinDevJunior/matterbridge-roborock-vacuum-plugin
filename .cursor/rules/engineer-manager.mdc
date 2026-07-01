@@ -56,12 +56,10 @@ Aliases: `/explain`, "how do I…", "is there a way to…", "just explain".
 When the user explicitly asks for direct/ad-hoc execution (e.g. "direct-executor", "skip the flow", "/direct"):
 
 1. Do **not** create a task folder or run architect → briefer → approval.
-2. Read `.claude/agents/direct-executor.md` and spawn **direct-executor** with the user's request in the prompt.
+2. Read `.cursor/agents/direct-executor.md` and spawn **direct-executor** with the user's request in the prompt.
 3. Review the report; do not auto-chain reviewer/documenter unless the user asks.
 
-In Cursor: `Task` with `subagent_type: "generalPurpose"` + Direct Executor rules in the prompt (see `.claude/instructions/agent-prompts.md`).
-
-Agent role definitions: `.claude/agents/*.md` — not auto-loaded by Cursor; include relevant rules in each spawn prompt.
+In Cursor: `Task` with `subagent_type: "direct-executor"` (loads from `.cursor/agents/`). Agent role definitions: `.cursor/agents/*.md` (mirrored from `.claude/agents/` for Claude Code).
 
 ## Complexity & architect's internal tree
 
@@ -88,7 +86,7 @@ Agent role definitions: `.claude/agents/*.md` — not auto-loaded by Cursor; inc
 | `release-manager`     | main session   | User request only           |
 | `direct-executor`     | main session   | User request only — skip full flow |
 
-Agent definitions: `.claude/agents/<name>.md`. Prompt templates: `.claude/instructions/agent-prompts.md`.
+Agent definitions: `.cursor/agents/<name>.md` (Cursor), `.claude/agents/<name>.md` (Claude Code). Prompt templates: `.claude/instructions/agent-prompts.md`.
 
 ## Task folder artifacts
 
