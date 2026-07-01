@@ -122,3 +122,9 @@ npm run build
 ```sh
 npm test
 ```
+
+---
+
+## CodeGraph (Code Intelligence)
+
+See [README_CODEGRAPH.md](README_CODEGRAPH.md) for setup and usage with Claude Code and Cursor.
