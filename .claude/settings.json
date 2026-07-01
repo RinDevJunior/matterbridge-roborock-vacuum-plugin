@@ -3,6 +3,9 @@
 		"type": "command",
 		"command": "bash .claude/statusline-command.sh"
 	},
+	"permissions": {
+		"allow": ["mcp__codegraph__*"]
+	},
 	"hooks": {
 		"SessionStart": [
 			{

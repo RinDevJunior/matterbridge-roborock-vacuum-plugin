@@ -21,11 +21,20 @@ curl -fsSL https://raw.githubusercontent.com/colbymchenry/codegraph/main/install
 
 ### Wire up your agent(s)
 
+This repo ships project-local agent config:
+
+| Agent | Config |
+|-------|--------|
+| **Claude Code** | `.mcp.json` + CodeGraph section in `CLAUDE.md` + permissions in `.claude/settings.json` |
+| **Cursor** | `.cursor/mcp.json` + `.cursor/rules/codegraph.mdc` |
+
+You still need the CodeGraph CLI on your PATH and a restart of your agent after first clone. If you prefer global install instead:
+
 ```sh
 codegraph install
 ```
 
-Auto-detects and configures Claude Code, Cursor, Codex CLI, and others. Writes config to your global agent settings — no project files are changed. Restart your agent after this step.
+That writes to `~/.claude.json` / `~/.cursor/mcp.json` — the committed project config above is sufficient for this repo.
 
 ## Per-clone project setup
 

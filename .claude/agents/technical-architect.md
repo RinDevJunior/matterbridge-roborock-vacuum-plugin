@@ -34,6 +34,7 @@ Read `type` from `requirement.md`. Default is `implement` if omitted.
 ```text
 you (technical-architect)
   ├── wiki-manager      ← spawn first for curated context (leaf)
+  ├── codegraph explore   ← prefer when .codegraph/ exists (you + investigator)
   ├── source reads      ← you read src/ directly when needed (explain + implement)
   └── investigator      ← spawn when wiki + limited reads are insufficient (leaf)
 ```
@@ -104,6 +105,10 @@ Skip briefer, plan.md, and complexity tiers unless scope suggests an implement f
 ### Implement mode workflow
 
 When `type: implement` (or omitted), continue with Steps 2–7 below.
+
+### CodeGraph (when `.codegraph/` exists)
+
+Before Grep/Read sweeps across `src/`, run `codegraph explore "<symbols or question>"` (shell) or `codegraph_explore` (MCP). One call usually returns the relevant source, call paths, and blast radius. Instruct investigator to do the same. Skip when no `.codegraph/` directory.
 
 ### Step 2 — Spawn Wiki Manager (first, always unless skip)
 

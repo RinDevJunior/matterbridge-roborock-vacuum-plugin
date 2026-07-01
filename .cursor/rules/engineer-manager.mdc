@@ -140,3 +140,7 @@ docs/<short-task-description>/
 ## Known Type Gotchas
 
 - `CommandHandlers` from matterbridge is `keyof CommandHandlerDataMap` (a string union). Use directly — never `keyof CommandHandlers`.
+
+## CodeGraph
+
+When `.codegraph/` exists, prefer `codegraph_explore` (MCP) over Grep/Read for structural code questions. Subagents use `codegraph explore "<query>"` via shell — see `.cursor/rules/codegraph.mdc` and `CLAUDE.md`.
