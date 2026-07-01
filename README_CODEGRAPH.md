@@ -23,10 +23,10 @@ curl -fsSL https://raw.githubusercontent.com/colbymchenry/codegraph/main/install
 
 This repo ships project-local agent config:
 
-| Agent | Config |
-|-------|--------|
+| Agent           | Config                                                                                  |
+| --------------- | --------------------------------------------------------------------------------------- |
 | **Claude Code** | `.mcp.json` + CodeGraph section in `CLAUDE.md` + permissions in `.claude/settings.json` |
-| **Cursor** | `.cursor/mcp.json` + `.cursor/rules/codegraph.mdc` |
+| **Cursor**      | `.cursor/mcp.json` + `.cursor/rules/codegraph.mdc`                                      |
 
 You still need the CodeGraph CLI on your PATH and a restart of your agent after first clone. If you prefer global install instead:
 
@@ -53,12 +53,12 @@ Creates `.codegraph/` and builds the full index in one step. Check health anytim
 
 ## Key areas to explore in this repo
 
-| Area | Path | What to query |
-|------|------|---------------|
-| Clean mode pipeline | `src/behaviors/roborock.vacuum/` | handler chain, mode config |
-| Device model registry | `src/roborockCommunication/models/` | DeviceModel enum entries |
-| Capability registry | `src/behaviors/roborock.vacuum/core/deviceCapabilityRegistry.ts` | device→modes map |
-| Shared utilities | `src/share/` | cross-cutting helpers |
+| Area                  | Path                                                             | What to query              |
+| --------------------- | ---------------------------------------------------------------- | -------------------------- |
+| Clean mode pipeline   | `src/behaviors/roborock.vacuum/`                                 | handler chain, mode config |
+| Device model registry | `src/roborockCommunication/models/`                              | DeviceModel enum entries   |
+| Capability registry   | `src/behaviors/roborock.vacuum/core/deviceCapabilityRegistry.ts` | device→modes map           |
+| Shared utilities      | `src/share/`                                                     | cross-cutting helpers      |
 
 ## Impact analysis before changes
 
@@ -95,11 +95,11 @@ Full suite: `npm test`
 
 ## npm scripts
 
-| Script | Command |
-|--------|---------|
-| `npm run codegraph:init` | Build `.codegraph/` index (`codegraph init`) |
-| `npm run codegraph:status` | Show index health and pending sync |
-| `npm run test:affected` | Run vitest on tests affected by `git diff` |
+| Script                     | Command                                      |
+| -------------------------- | -------------------------------------------- |
+| `npm run codegraph:init`   | Build `.codegraph/` index (`codegraph init`) |
+| `npm run codegraph:status` | Show index health and pending sync           |
+| `npm run test:affected`    | Run vitest on tests affected by `git diff`   |
 
 ## Git hygiene — do not commit `.codegraph/`
 

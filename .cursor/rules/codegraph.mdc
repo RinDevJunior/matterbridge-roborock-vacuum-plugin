@@ -2,27 +2,3 @@
 description: CodeGraph MCP usage guide — use codegraph_explore instead of grep/Read for indexed code
 alwaysApply: true
 ---
-<!-- CODEGRAPH_START -->
-## CodeGraph
-
-This project is indexed by CodeGraph when `.codegraph/` exists at the repo root (run `codegraph init` once per clone). The MCP server exposes `codegraph_explore` — a pre-built knowledge graph of every symbol, call edge, and file.
-
-### Use codegraph_explore instead of reading files
-
-Reach for `codegraph_explore` before Grep/Glob or Read for **structural** questions — how does X work, how does X reach Y, what calls what, where is X defined, or surveying an area. One call returns relevant symbols' **verbatim, line-numbered source** grouped by file (safe to Edit from), call paths between them (including dynamic-dispatch hops Grep cannot follow), and a blast-radius summary.
-
-### Rules of thumb
-
-- **Answer directly — don't delegate exploration.** ONE `codegraph_explore` usually answers the whole question. CodeGraph is the pre-built index — spawning a file-reading subagent or running a Grep + Read loop repeats work it already did.
-- **Trust CodeGraph results.** They come from a full AST parse. Do not re-verify with Grep unless a staleness banner says otherwise.
-- **Subagents (Task tool):** nested agents do not receive MCP initialize instructions. Use the shell equivalent: `codegraph explore "<symbol names or question>"` when `.codegraph/` exists.
-- **After edits, check the staleness banner.** If a response starts with "⚠️ Some files referenced below were edited since the last index sync…", Read those listed files directly. Files not in the banner are fresh.
-
-### Project hotspots
-
-Prefer CodeGraph for traces across `src/behaviors/roborock.vacuum/`, `src/roborockCommunication/`, and `src/share/` — see [README_CODEGRAPH.md](../../README_CODEGRAPH.md).
-
-### If `.codegraph/` doesn't exist
-
-Skip CodeGraph for this project and use built-in tools. Ask the user whether to run `codegraph init` — do not run it without approval.
-<!-- CODEGRAPH_END -->

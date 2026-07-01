@@ -1,8 +1,9 @@
 {
 	"mcpServers": {
 		"codegraph": {
+			"type": "stdio",
 			"command": "codegraph",
-			"args": ["serve", "--mcp", "--path", "${workspaceFolder}"]
+			"args": ["serve", "--mcp", "--path", "/Volumes/ExternalSSD/code/matterbridge-roborock-vacuum-plugin"]
 		},
 		"codecov": {
 			"command": "npx",

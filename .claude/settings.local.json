@@ -25,5 +25,6 @@
 		]
 	},
 	"outputStyle": "default",
-	"spinnerTipsEnabled": true
+	"spinnerTipsEnabled": true,
+	"enabledMcpjsonServers": ["codegraph"]
 }

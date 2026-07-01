@@ -163,6 +163,7 @@ Never mix logic and test changes in a single step.
 - `CommandHandlers` from matterbridge is `keyof CommandHandlerDataMap` (a string union). Use it directly as a parameter type — never `keyof CommandHandlers` (resolves to string method names).
 
 <!-- CODEGRAPH_START -->
+
 ## CodeGraph
 
 In repositories indexed by CodeGraph (a `.codegraph/` directory exists at the repo root), reach for it BEFORE Grep/Glob or reading files when you need to understand or locate code:
@@ -173,4 +174,5 @@ In repositories indexed by CodeGraph (a `.codegraph/` directory exists at the re
 **Subagents** (wiki-manager, investigator, technical-architect, implementer, etc.) receive this file but not MCP initialize instructions — they must use `codegraph explore` via shell when `.codegraph/` exists.
 
 If there is no `.codegraph/` directory, skip CodeGraph entirely — indexing is the user's decision. See [README_CODEGRAPH.md](README_CODEGRAPH.md).
+
 <!-- CODEGRAPH_END -->

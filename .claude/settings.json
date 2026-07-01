@@ -17,6 +17,16 @@
 					}
 				]
 			}
+		],
+		"UserPromptSubmit": [
+			{
+				"hooks": [
+					{
+						"type": "command",
+						"command": "codegraph prompt-hook"
+					}
+				]
+			}
 		]
 	}
 }
