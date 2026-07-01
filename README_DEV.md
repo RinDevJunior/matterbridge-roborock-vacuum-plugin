@@ -4,6 +4,12 @@
 
 - Matterbridge must run in **childbridge** mode.
 - Node.js and npm installed.
+- **CodeGraph** (optional but recommended for AI-assisted development):
+  ```sh
+  npm i -g @colbymchenry/codegraph
+  npm run codegraph:init
+  ```
+  See [README_CODEGRAPH.md](README_CODEGRAPH.md) for full setup.
 
 ---
 

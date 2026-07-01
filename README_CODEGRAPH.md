@@ -36,15 +36,20 @@ codegraph install
 
 That writes to `~/.claude.json` / `~/.cursor/mcp.json` — the committed project config above is sufficient for this repo.
 
+### Avoid duplicate MCP servers
+
+If you already ran `codegraph install` globally **and** use this repo's committed `.mcp.json` / `.cursor/mcp.json`, you may see CodeGraph listed twice in your agent's MCP panel. That is harmless but noisy — remove the duplicate entry from your global config (`~/.cursor/mcp.json` or `~/.claude.json`) and rely on the project-local files instead.
+
 ## Per-clone project setup
 
 From the repo root:
 
 ```sh
-codegraph init
+npm run codegraph:init
+# or: codegraph init
 ```
 
-Creates `.codegraph/` and builds the full index in one step. Re-run after large refactors or when the agent reports stale symbol data.
+Creates `.codegraph/` and builds the full index in one step. Check health anytime with `npm run codegraph:status`. Re-run init after large refactors or when the agent reports stale symbol data.
 
 ## Key areas to explore in this repo
 
@@ -67,10 +72,15 @@ This traces callers, callees, and the full impact radius — useful before touch
 
 ## Vitest workflow with `codegraph affected`
 
-To run only the tests affected by your changes:
+Run only tests impacted by your current diff:
 
 ```sh
-# Find affected test files from your diff, then run vitest
+npm run test:affected
+```
+
+Manual equivalent:
+
+```sh
 AFFECTED=$(git diff --name-only HEAD | codegraph affected --stdin --quiet)
 if [ -n "$AFFECTED" ]; then npm test -- $AFFECTED; fi
 ```
@@ -82,6 +92,14 @@ codegraph affected src/behaviors/roborock.vacuum/core/behaviorConfig.ts
 ```
 
 Full suite: `npm test`
+
+## npm scripts
+
+| Script | Command |
+|--------|---------|
+| `npm run codegraph:init` | Build `.codegraph/` index (`codegraph init`) |
+| `npm run codegraph:status` | Show index health and pending sync |
+| `npm run test:affected` | Run vitest on tests affected by `git diff` |
 
 ## Git hygiene — do not commit `.codegraph/`
 

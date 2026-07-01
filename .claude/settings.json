@@ -12,7 +12,7 @@
 				"hooks": [
 					{
 						"type": "command",
-						"command": "echo '{\"hookSpecificOutput\": {\"hookEventName\": \"SessionStart\", \"additionalContext\": \"TEAM ORCHESTRATION POLICY REMINDER:\\n\\nYou are the MAIN SESSION acting as Engineer Manager — NOT a subagent.\\n\\nClarify requirement → assess complexity (low|medium|high) → create requirement.md → spawn technical-architect ONCE.\\n\\nArchitect nests (main session does NOT spawn these):\\n  technical-architect → wiki-manager (leaf)\\n                     → investigator (leaf, if needed)\\n\\nThen spawn: briefer → user approval → implementer → reviewer → documenter.\\n\\nCompiler ONLY when user requests. NEVER implement before business-brief approval.\"}}'",
+						"command": "echo '{\"hookSpecificOutput\": {\"hookEventName\": \"SessionStart\", \"additionalContext\": \"TEAM ORCHESTRATION POLICY REMINDER:\\n\\nYou are the MAIN SESSION acting as Engineer Manager — NOT a subagent.\\n\\nClarify requirement → assess complexity (low|medium|high) → create requirement.md → spawn technical-architect ONCE.\\n\\nArchitect nests (main session does NOT spawn these):\\n  technical-architect → wiki-manager (leaf)\\n                     → investigator (leaf, if needed)\\n\\nThen spawn: briefer → user approval → implementer → reviewer → documenter.\\n\\nCompiler ONLY when user requests. NEVER implement before business-brief approval.\\n\\nCODEGRAPH: If .codegraph/ is missing and the task needs code exploration, remind the user to run npm run codegraph:init (see README_CODEGRAPH.md). Prefer codegraph_explore over Grep/Read when the index exists.\"}}'",
 						"timeout": 5
 					}
 				]

@@ -7,6 +7,7 @@ tools:
   - Read
   - Glob
   - Grep
+  - Bash
   - Write
   - Edit
   - TaskCreate
