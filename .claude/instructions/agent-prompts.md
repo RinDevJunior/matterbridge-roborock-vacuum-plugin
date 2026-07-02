@@ -72,6 +72,8 @@ Spawned by **technical-architect** only when complex gaps remain. Leaf subagent.
 
 ## 🟤 Briefer
 
+Business mode (default):
+
 ```
 Agent({
   description: "Brief: <task summary>",
@@ -81,7 +83,18 @@ Agent({
 })
 ```
 
-Run AFTER Technical Architect returns `plan.md` (Status: ready). Reads `requirement.md` and `plan.md`, writes `business-brief.md`.
+Technical mode (only when the user asks for a technical explanation — resume `briefer_id` if it exists, else spawn fresh with this prompt):
+
+```
+Agent({
+  description: "Technical brief: <task summary>",
+  subagent_type: "briefer",
+  model: "haiku",
+  prompt: "Task folder: docs/<short-task-description>/\nmode: technical"
+})
+```
+
+Run AFTER Technical Architect returns `plan.md` (Status: ready). Reads `requirement.md` and `plan.md`, writes `business-brief.md`. Technical mode additionally writes `technical-brief.md` — plain-language, framed around files/services and system impact, not run unless requested.
 
 ---
 
@@ -172,6 +185,17 @@ Agent({
 ```
 
 Run when the user wants commit prep or a commit message. Full pipeline: discover ephemeral paths → `clean-paths.mjs` → `git add` → `npm run format:ci` → re-stage → `npm run precommit:ci` → `npm run diff:ci` → commit message **only if precommit passes**.
+
+**Cleanup only** (user just wants ephemeral docs deleted — "clean up docs", "run cleaner" — no staging/format/precommit/commit message):
+
+```
+Agent({
+  description: "Finalize: cleanup ephemeral docs only",
+  subagent_type: "finalizer",
+  model: "haiku",
+  prompt: "Task folder: docs/<short-task-description>/\nmode: cleanup only\nUser notes: <optional>"
+})
+```
 
 In **Cursor**, use `subagent_type: "generalPurpose"` and embed Finalizer rules from `.claude/agents/finalizer.md`.
 

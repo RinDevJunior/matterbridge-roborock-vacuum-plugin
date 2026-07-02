@@ -1,30 +1,19 @@
 {
-	"permissions": {
-		"allow": [
-			"Bash(npm run test:*)",
-			"Bash(npm run test:coverage:*)",
-			"Bash(npm run lint:fix:*)",
-			"Bash(npm run build:local:*)",
-			"Bash(clear:*)",
-			"Bash(npm test:*)",
-			"Bash(npx vitest:*)",
-			"Bash(npm run coverage:*)",
-			"Bash(npm run type-check:*)",
-			"Bash(tree:*)",
-			"Bash(cut:*)",
-			"Bash(grep:*)",
-			"Bash(npm install:*)",
-			"WebFetch(domain:api.codecov.io)",
-			"Bash(curl:*)",
-			"Bash(npm run precommit:*)",
-			"mcp__codecov__get_pull_request_coverage",
-			"Bash(npx tsc --noEmit)",
-			"Bash(npm run:*)",
-			"mcp__plugin_claude-mem_mcp-search__smart_search",
-			"mcp__plugin_claude-mem_mcp-search__smart_unfold"
-		]
-	},
-	"outputStyle": "default",
-	"spinnerTipsEnabled": true,
-	"enabledMcpjsonServers": ["codegraph"]
+  "permissions": {
+    "allow": [
+      "Bash(npm run test:*)",
+      "Bash(npm run build:local:*)",
+      "Bash(npm run coverage:*)",
+      "Bash(npm run type-check:*)",
+      "Bash(npm run precommit:*)",
+      "mcp__codecov__get_pull_request_coverage",
+      "mcp__plugin_claude-mem_mcp-search__smart_search",
+      "mcp__plugin_claude-mem_mcp-search__smart_unfold"
+    ]
+  },
+  "enabledMcpjsonServers": [
+    "codegraph"
+  ],
+  "outputStyle": "default",
+  "spinnerTipsEnabled": true
 }

@@ -150,27 +150,45 @@ Purpose:
 - Read task folder `requirement.md` and `plan.md`.
 - Produce a plain-language business summary of what will change.
 - Write the summary to task folder `business-brief.md`.
-- Never writes source code or tests.
+- **Optional technical mode**: when the user explicitly asks for a technical explanation, EM re-invokes briefer with `mode: technical` to additionally write `technical-brief.md` — still plain language, but framed around which files/services change and how that affects the rest of the system. Not run by default.
+- Never writes source code or tests. Does not investigate the codebase — technical mode only translates what `plan.md` already says.
 
 Use Haiku.
 
-Output contract:
+Business mode output contract:
 
 ```
 ## Business Brief
 
-### What Will Change
+### 🟢 What Will Change
 <plain-language description from a business perspective>
 
-### User/Operational Impact
+### 🔵 User/Operational Impact
 <who is affected and how>
 
-### What Will Not Change
+### ⚪ What Will Not Change
 <important boundaries or exclusions>
 
-### Risks or Questions
+### 🟡 Risks or Questions
 <business-facing risks/questions, or "None">
 ```
+
+Technical mode output contract (on request only):
+
+```
+## Technical Brief
+
+### 🟣 What Is Changing (by file/service)
+<one bullet per file/service, plain language: what it does today → what it does after>
+
+### 🔴 Impact On The Rest Of The System
+<what depends on the changed parts, what could break, from plan.md's impact notes>
+
+### ⚫ Nothing Else Touched
+<parts of the system plan.md says are untouched, if listed>
+```
+
+Writing style (both modes): short sentences, plain everyday words (no jargon), bullet points over paragraphs, concrete "before → after" examples where useful. Target a non-native English reader (~IELTS 5.5-6).
 
 ---
 
