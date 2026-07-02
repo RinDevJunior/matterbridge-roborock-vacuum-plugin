@@ -11,6 +11,7 @@ tools:
   - Edit
   - Glob
   - Grep
+  - LSP
   - Bash
   - TaskCreate
   - TaskUpdate
@@ -46,6 +47,8 @@ Read the task folder path provided by Engineer Manager. Read `plan.md` in that f
 ### Step 2 — Read Relevant Files
 
 When `.codegraph/` exists, run `codegraph explore "<symbols from plan>"` first to load relevant source and blast radius before opening files individually.
+
+Before touching a symbol named in the plan, use `LSP` `findReferences`/`goToDefinition` to confirm every call site instead of Grep — Grep can miss re-exports and match unrelated text.
 
 Before editing any file, read it in full to understand existing patterns, imports, and style.
 

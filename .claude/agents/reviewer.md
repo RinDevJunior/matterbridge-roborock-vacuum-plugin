@@ -9,6 +9,7 @@ tools:
   - Read
   - Glob
   - Grep
+  - LSP
   - Bash
   - TaskCreate
   - TaskUpdate
@@ -49,6 +50,8 @@ git diff HEAD
 If there are staged changes use `--cached`. The diff is your primary source — do not read full files unless a specific section lacks context in the diff.
 
 When `.codegraph/` exists and the change touches shared types, handlers, or registry code, run `codegraph impact <symbol>` on the main symbols in the diff to verify blast radius is covered by tests and plan scope.
+
+For a symbol renamed, removed, or added in the diff, use `LSP` `findReferences` to verify every call site was updated — do not rely on Grep alone, it can miss re-exports.
 
 ### Step 3 — Review Against Checklist
 

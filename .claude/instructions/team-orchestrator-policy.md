@@ -65,12 +65,11 @@ docs/<short-task-description>/
   plan.md
   business-brief.md
   manager-clarification.md
-  progress-<agent>.md   # live checklist written by each agent — ephemeral
 ```
 
 Ephemeral orchestration artifacts live under `docs/<task>/` — Finalizer deletes them when wrapping up (paths passed to `clean-paths.mjs`); do not commit.
 
-**Progress files:** Each agent writes `progress-<agent-name>.md` to the task folder at the start of its session and checks off items as it works. The EM can `Read docs/<task>/progress-<agent>.md` at any time to see what each agent has completed. These files are ephemeral — Finalizer deletes them via `clean-paths.mjs`.
+**Progress tracking:** Every agent (including the EM itself) uses `TaskCreate`/`TaskUpdate` — not files — to track its steps live in the Claude Code task panel. Before starting work, register each planned step with `TaskCreate`; call `TaskUpdate` → `in_progress` as each begins and → `completed` when done. The EM can call `TaskList`/`TaskGet` at any time to see live progress across the session — no file to read or clean up.
 
 Workflow:
 

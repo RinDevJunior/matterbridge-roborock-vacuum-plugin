@@ -9,6 +9,7 @@ tools:
   - Read
   - Glob
   - Grep
+  - LSP
   - Bash
   - Write
   - Edit
@@ -55,7 +56,8 @@ For each remaining question:
 
 - Use the `Relevant area` hint and `Why Investigator` note to scope the search
 - **When `.codegraph/` exists:** run `codegraph explore "<symbols or question>"` first — it returns verbatim source, call paths, and blast radius in one shot. Treat the output as already Read.
-- Use Grep/Glob/Read only for gaps CodeGraph did not cover, non-indexed files (configs, docs), or when `.codegraph/` is missing
+- **For a specific named symbol:** use `LSP` (`findReferences`, `goToDefinition`, `incomingCalls`/`outgoingCalls`, `workspaceSymbol`) before Grep — exact results in one call instead of a text sweep.
+- Use Grep/Glob/Read only for gaps CodeGraph/LSP did not cover, non-indexed files (configs, docs), or when `.codegraph/` is missing
 - **Follow import chains** across modules when the question requires it
 - Trace call paths through services, core, and communication layers when needed
 

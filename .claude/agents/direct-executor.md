@@ -11,6 +11,7 @@ tools:
   - Edit
   - Glob
   - Grep
+  - LSP
   - Bash
   - TaskCreate
   - TaskUpdate
@@ -50,7 +51,7 @@ Steps to create:
 ## Workflow
 
 1. **Read the request** — understand scope and success criteria from the prompt.
-2. **Explore only as needed** — read files required to do the work correctly; do not over-investigate.
+2. **Explore only as needed** — read files required to do the work correctly; do not over-investigate. For a specific symbol, prefer `LSP` (`findReferences`, `goToDefinition`) over Grep.
 3. **Execute** — make the changes or produce the deliverable the user asked for.
 4. **Verify when reasonable** — run relevant commands (build, lint, tests) if you changed code and the request implies correctness; skip if docs-only or user said not to.
 5. **Report** — concise summary of what was done, files touched, and any blockers.

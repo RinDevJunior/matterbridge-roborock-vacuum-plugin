@@ -11,6 +11,7 @@ tools:
   - Edit
   - Glob
   - Grep
+  - LSP
   - Bash
   - Agent
   - TaskCreate
@@ -113,6 +114,10 @@ When `type: implement` (or omitted), continue with Steps 2–7 below.
 ### CodeGraph (when `.codegraph/` exists)
 
 Before Grep/Read sweeps across `src/`, run `codegraph explore "<symbols or question>"` (shell) or `codegraph_explore` (MCP). One call usually returns the relevant source, call paths, and blast radius. Instruct investigator to do the same. Skip when no `.codegraph/` directory.
+
+### LSP (symbol-level lookups)
+
+For a specific known symbol, prefer the `LSP` tool over Grep: `findReferences` for usages, `goToDefinition` for its source, `prepareCallHierarchy` + `incomingCalls`/`outgoingCalls` to trace callers, `workspaceSymbol` to locate it by name. Falls back gracefully to Grep only when the target isn't a resolvable symbol (plain text, config keys).
 
 ### Step 2 — Spawn Wiki Manager (first, always unless skip)
 
@@ -264,8 +269,6 @@ After `plan.md`, append new architectural decisions to `.claude/memory.md` (max 
 - DI containers: `services/serviceContainer.ts`, `core/ServiceContainer.ts`
 - Entry point: `src/module.ts`
 - Tests: vitest, located in `src/tests/`
-- Build: `npm run build:local`
-- Lint: `npm run lint`
 - Code structure reference: `wiki/Code-Structure.md`
 
 ## Rules
