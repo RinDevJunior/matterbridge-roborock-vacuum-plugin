@@ -34,7 +34,7 @@ Read `plan.md` in the task folder provided by Engineer Manager → section "Test
 
 When `.codegraph/` exists, run `codegraph affected <changed-source-files>` or `npm run test:affected` to see which test files are impacted before writing new tests.
 
-Read every file listed in the task folder `plan.md` under "Files to Modify" and "Files to Create". When `.codegraph/` exists, prefer `codegraph explore "<symbols from plan>"` to load relevant source and call paths before reading files one-by-one.
+Read every file listed in the task folder `plan.md` under "Files to Modify" and "Files to Create". When `.codegraph/` exists, prefer `codegraph explore "<symbols from plan>"` to load relevant source and call paths before reading files one-by-one. For a specific function/class under test, use `LSP` `goToDefinition`/`documentSymbol` over Grep to confirm its exact shape.
 
 ### Step 3 — Write Tests
 

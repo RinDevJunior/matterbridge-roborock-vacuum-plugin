@@ -1,6 +1,6 @@
 ---
 name: finalizer
-description: "End-of-task wrap-up or commit message suggestion. Cleans ephemeral docs, stages changes, runs format and precommit checks, and drafts a commit message. Never edits source logic or commits."
+description: "End-of-task wrap-up, commit message suggestion, or standalone ephemeral-docs cleanup. Cleans ephemeral docs, stages changes, runs format and precommit checks, and drafts a commit message. Never edits source logic or commits."
 model: composer-2.5-fast
 ---
 
@@ -14,30 +14,29 @@ You **stage** files (`git add`) but **never** `git commit`, `git push`, or edit 
 
 ## Progress Checklist
 
-**Before Step 1**, use `TaskCreate` to register each planned step so progress is visible live in the Cursor task panel. As each step begins, call `TaskUpdate` → `in_progress`. When done, call `TaskUpdate` → `completed`.
+**Before Step 1**, use `TaskCreate` to register **only the steps your mode actually runs** — do not register the full list for a mode that skips most of them. As each step begins, call `TaskUpdate` → `in_progress`. When done, call `TaskUpdate` → `completed`.
 
-Steps to create:
-
-1. Inspect git status and build cleanup list
-2. Clean ephemeral artifacts
-3. Stage changes
-4. Run format:ci
-5. Run precommit:ci
-6. Draft commit message (if checks pass)
-7. Report
+| Mode             | Steps to register with TaskCreate                                                                                                                                                              |
+| ---------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Full**         | 1. Inspect git status and build cleanup list · 2. Clean ephemeral artifacts · 3. Stage changes · 4. Run format:ci · 5. Run precommit:ci · 6. Draft commit message (if checks pass) · 7. Report |
+| **Message only** | 1. Run precommit:ci · 2. Draft commit message (if checks pass) · 3. Report                                                                                                                     |
+| **Cleanup only** | 1. Inspect and clean ephemeral artifacts · 2. Report                                                                                                                                           |
 
 ---
 
 ## Workflow
 
-Two modes — use what the user asked for:
+Three modes — use what the user asked for:
 
-| Mode             | When                                 | Steps                                                                       |
-| ---------------- | ------------------------------------ | --------------------------------------------------------------------------- |
-| **Full**         | "finalize", "wrap up", commit prep   | 1 → 6                                                                       |
-| **Message only** | "commit message", "suggest a commit" | Run `npm run precommit:ci` → 5 → 6 if PASS (read-only; no clean/add/format) |
+| Mode             | When                                                     | Steps                                                                               |
+| ---------------- | -------------------------------------------------------- | ----------------------------------------------------------------------------------- |
+| **Full**         | "finalize", "wrap up", commit prep                       | 1 → 6                                                                               |
+| **Message only** | "commit message", "suggest a commit"                     | Run `npm run precommit:ci` → 5 → 6 if PASS (read-only; no clean/add/format)         |
+| **Cleanup only** | "clean up docs", "run cleaner", "delete ephemeral files" | Step 1 only, then report — no `git add`, no format, no precommit, no commit message |
 
 Run steps in order. Stop and report on failure unless the user asked to continue anyway.
+
+**Cleanup-only mode:** run exactly two commands — `git status` (to see what exists) then `node scripts/clean-paths.mjs <paths>`. Do not run `find`, extra `git status` calls, or any other inspection. Report using the trimmed **Cleanup Report** contract (see Step 6), not the full report.
 
 **Commit message gate:** Draft a commit message **only** when every check that ran has passed (Format PASS and Precommit PASS). If either fails, skip Step 5 and report that the message was withheld.
 
@@ -170,6 +169,20 @@ Draft message(s) using repository conventional style:
 Provide: **Recommended**, up to 2 **Alternatives**, and **Notes**.
 
 ### Step 6 — Report
+
+**Cleanup-only mode** uses this trimmed contract instead of the full one below:
+
+```markdown
+## Finalizer Report (Cleanup Only)
+
+### Cleanup
+<clean-paths.mjs script output, or "CLEANUP: none">
+
+### Notes
+<anything the user should know, or omit>
+```
+
+**Full / Message-only modes** use:
 
 ```markdown
 ## Finalizer Report

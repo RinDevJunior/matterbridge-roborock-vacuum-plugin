@@ -42,7 +42,9 @@ For each remaining question:
 
 - Use the `Relevant area` hint and `Why Investigator` note to scope the search
 - **When `.codegraph/` exists:** run `codegraph explore "<symbols or question>"` first — it returns verbatim source, call paths, and blast radius in one shot. Treat the output as already Read.
-- Use Grep/Glob/Read only for gaps CodeGraph did not cover, non-indexed files (configs, docs), or when `.codegraph/` is missing
+- **For a specific named symbol:** use `LSP` (`findReferences`, `goToDefinition`, `incomingCalls`/`outgoingCalls`, `workspaceSymbol`) before Grep — exact results in one call instead of a text sweep.
+- Use Grep/Glob/Read only for gaps CodeGraph/LSP did not cover, non-indexed files (configs, docs), or when `.codegraph/` is missing
+- When TA scopes **reference workspaces** in the questions file, investigate only those allowlisted paths (`wiki/reference-workspaces.md`); use Grep/Glob/Read — LSP/CodeGraph apply to this repo only
 - **Follow import chains** across modules when the question requires it
 - Trace call paths through services, core, and communication layers when needed
 
@@ -59,7 +61,7 @@ questions-clean-mode-routing.md -> answers-clean-mode-routing.md
 
 ### Q1: <repeat the question>
 <detailed answer with file paths and line references>
-- File: `src/path/to/file.ts:42`
+- File: `src/path/to/file.ts:42` or `<reference-workspace>/path/to/file.ts:42`
 - Pattern used: <describe the existing pattern>
 - Trace: <module A → B → C if cross-module>
 - Relevant code: <short snippet if helpful>
@@ -98,5 +100,6 @@ Read `.claude/memory.md` at session start. Append durable insights after answeri
 - Answer only what is asked — do not propose solutions
 - Always include file paths and line numbers
 - Do not modify source files — read only
+- Read paths outside this repo only when TA scopes them in the questions file and the path is listed in `wiki/reference-workspaces.md`
 - If a question is trivial, flag it: `Note: this could have been resolved without Investigator`
 - Return results to Technical Architect — not the main session

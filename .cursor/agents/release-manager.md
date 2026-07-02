@@ -39,8 +39,6 @@ Extract:
 - Current version (e.g., `1.1.7-rc01`)
 - Current `precondition` matterbridge version (e.g., `3.9.0`)
 
-Read the top of `CHANGELOG.md` to understand the current entry format.
-
 ### Step 2 — Determine New Version
 
 Increment the `rc` counter: `1.1.7-rc01` → `1.1.7-rc02`. Zero-pad to 2 digits.
@@ -86,21 +84,43 @@ Read each commit message and classify it into:
 
 ### Step 5 — Update CHANGELOG.md
 
-Prepend a new entry above the current top entry. Write meaningful bullet points — not raw commit hashes. Summarise the intent, not the git message verbatim. Only include sections that have at least one entry.
+Prepend a new entry above the current top entry, using the fixed format below exactly. Write meaningful bullet points — not raw commit hashes. Summarise the intent, not the git message verbatim. Only include sections that have at least one entry, and only in this order: `Added` → `Changed` → `Fixed` → `Refactored` → `Updated Dependencies`.
+
+**Entry format (fixed — do not deviate):**
 
 ```markdown
 ## [<new-version>] - <today's date YYYY-MM-DD>
 
 ### Added
-- <meaningful description>
+
+- **<short bold title>** — <one-sentence description>
+
+### Changed
+
+- **<short bold title>** — <one-sentence description>
 
 ### Fixed
-- <meaningful description>
+
+- **<short bold title>** — <one-sentence description>
+
+### Refactored
+
+- **<short bold title>** — <one-sentence description>
+
+### Updated Dependencies
+
+- <package names> updated to latest versions.
 
 <a href="https://www.buymeacoffee.com/rinnvspktr" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/default-orange.png" alt="Buy Me A Coffee" height="41" width="174"></a>
 
 ---
 ```
+
+**Bullet rules:**
+
+- Bold a short title first, then an em dash (`—`), then a one-sentence description
+- One blank line between the `###` heading and its first bullet
+- Omit any section with zero entries — never emit an empty `###` heading
 
 ### Step 6 — Verify Consistency
 
@@ -119,4 +139,4 @@ List every file changed and the old → new value for each version field.
 - Never change source logic, tests, or anything outside the files listed above
 - Never push or commit — leave that to the user
 - If the user provides changelog content, write it into the CHANGELOG entry before reporting
-- Match the existing CHANGELOG entry format exactly (spacing, emoji link, `---` separator)
+- Follow the fixed CHANGELOG entry format in Step 5 exactly (section order, spacing, coffee link, `---` separator) — do not infer format from prior entries

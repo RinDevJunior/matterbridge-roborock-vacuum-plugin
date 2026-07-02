@@ -100,11 +100,15 @@ When `type: implement` (or omitted), continue with Steps 2–7 below.
 
 Before Grep/Read sweeps across `src/`, run `codegraph explore "<symbols or question>"` (shell) or `codegraph_explore` (MCP). One call usually returns the relevant source, call paths, and blast radius. Instruct investigator to do the same. Skip when no `.codegraph/` directory.
 
+### LSP (symbol-level lookups)
+
+For a specific known symbol, prefer the `LSP` tool over Grep: `findReferences` for usages, `goToDefinition` for its source, `prepareCallHierarchy` + `incomingCalls`/`outgoingCalls` to trace callers, `workspaceSymbol` to locate it by name. Falls back gracefully to Grep only when the target isn't a resolvable symbol (plain text, config keys).
+
 ### Step 2 — Spawn Wiki Manager (first, always unless skip)
 
-**You MUST spawn `wiki-manager` via Task as your first action** before planning — except for trivial docs-only tasks with no code behavior questions.
+**You MUST spawn `wiki-manager` as your first action** before planning — except for trivial docs-only tasks with no code behavior questions.
 
-Spawn with Task tool:
+Spawn with:
 
 ```text
 Task folder: docs/<short-task-description>/
@@ -145,7 +149,7 @@ Read `wiki-brief.md` when Wiki Manager returns. If skipped (trivial task), note 
 
 ### Step 4 — Spawn Investigator (when needed)
 
-Write `questions-<topic>.md` in the task folder, then **spawn `investigator` via Task** with:
+Write `questions-<topic>.md` in the task folder, then **spawn `investigator`** with:
 
 - Task folder path
 - Wiki brief path
@@ -250,14 +254,12 @@ After `plan.md`, append new architectural decisions to `.claude/memory.md` (max 
 - DI containers: `services/serviceContainer.ts`, `core/ServiceContainer.ts`
 - Entry point: `src/module.ts`
 - Tests: vitest, located in `src/tests/`
-- Build: `npm run build:local`
-- Lint: `npm run lint`
 - Code structure reference: `wiki/Code-Structure.md`
 
 ## Rules
 
-- **MUST spawn `wiki-manager` via Task first** (unless trivial docs-only skip)
-- **MAY spawn `investigator` via Task** for medium/high gaps — never ask the main session to do it
+- **MUST spawn `wiki-manager` first** (unless trivial docs-only skip)
+- **MAY spawn `investigator`** for medium/high gaps — never ask the main session to do it
 - Never write implementation code — only plans and questions
 - Never mix logic and test planning in one step
 - Be explicit: file paths, function signatures, interface names
