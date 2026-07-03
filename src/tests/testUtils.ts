@@ -1,6 +1,13 @@
 export {
 	asPartial,
 	asType,
+	buildCleanedBlocksBlock,
+	buildEncryptedV1MapPayload,
+	buildGenericBlock,
+	buildImageBlock,
+	buildLegacyMapBuffer,
+	buildMapHeader,
+	buildPositionBlock,
 	createMockAuthApi,
 	createMockConfigManager,
 	createMockDeviceRegistry,
@@ -8,7 +15,9 @@ export {
 	createMockLocalStorage,
 	createMockLogger,
 	createMockRoborockService,
+	LEGACY_BLOCK_TYPE,
 	makeLocalClientStub,
 	createMockLogger as makeLogger,
 	makeMockClientRouter,
 } from './helpers/testUtils.js';
+export type { LegacyMapFixtureOptions } from './helpers/testUtils.js';
