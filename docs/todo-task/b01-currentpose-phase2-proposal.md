@@ -20,12 +20,12 @@ This is purely a Q10 (B01-family) problem. V1 devices have a different fallback 
 
 ### References Consulted During Original Investigation
 
-| Reference | Finding |
-|-----------|---------|
-| **roborock-gitlab** (`@functor/roborock`, `b01.proto`) | Richest B01 proto schema found; declares `currentPose = 8` and `roomMatrix = 13`; `MapContainerB01.getRobotPosition()` is a live accessor; neither field is joined to a room ID anywhere in that repo |
-| **python-roborock** (`b01_q10_map_parser.py`) | `Q10TracePacket.robot_position` is a real live Q10 position signal sourced from **trace packets** (protocol marker `02 01`) — a separate transport not currently consumed by this project; the signal is never joined to a room despite room `pixel_value` + grid data being available |
-| **ioBroker.roborock** (`Q10MapCreator.ts:70-79`) | **Strongest real-world evidence of unreliability**: explicitly notes live Q10 pose is often absent from device pushes; builds a dock-anchoring workaround to prevent the robot icon from disappearing; independently corroborates that `currentPose` may be empty mid-clean on real hardware |
-| **This project (prior B01 status)** | `roborockProto.ts` only declared `mapType`, `mapHead`, and `roomDataInfo`; `currentPose` and `roomMatrix` were present on the wire but undecoded |
+| Reference                                              | Finding                                                                                                                                                                                                                                                                                      |
+| ------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **roborock-gitlab** (`@functor/roborock`, `b01.proto`) | Richest B01 proto schema found; declares `currentPose = 8` and `roomMatrix = 13`; `MapContainerB01.getRobotPosition()` is a live accessor; neither field is joined to a room ID anywhere in that repo                                                                                        |
+| **python-roborock** (`b01_q10_map_parser.py`)          | `Q10TracePacket.robot_position` is a real live Q10 position signal sourced from **trace packets** (protocol marker `02 01`) — a separate transport not currently consumed by this project; the signal is never joined to a room despite room `pixel_value` + grid data being available       |
+| **ioBroker.roborock** (`Q10MapCreator.ts:70-79`)       | **Strongest real-world evidence of unreliability**: explicitly notes live Q10 pose is often absent from device pushes; builds a dock-anchoring workaround to prevent the robot icon from disappearing; independently corroborates that `currentPose` may be empty mid-clean on real hardware |
+| **This project (prior B01 status)**                    | `roborockProto.ts` only declared `mapType`, `mapHead`, and `roomDataInfo`; `currentPose` and `roomMatrix` were present on the wire but undecoded                                                                                                                                             |
 
 ### The `roomMatrix` Problem
 
@@ -44,6 +44,7 @@ These documents may be deleted when their ephemeral task folder is cleaned:
 - `docs/room-update-fallback-investigation/answer.md` — original fallback behavior investigation
 
 **Surviving references:**
+
 - `wiki/B01-Map-Parsing.md` — authoritative wiki page; kept current by documenter
 - `wiki/Room-Map-Sync-Flow.md` — production listener architecture; §6 notes Phase 2 as deferred
 - `docs/to_do.md` — "B01 currentPose Phase 2 (deferred)" in Pending list
@@ -56,20 +57,20 @@ Phase 1 was implemented and reviewed on 2026-07-03. All changes are in the curre
 
 ### Shared Decode Core
 
-| File | Change |
-|------|--------|
-| `src/roborockCommunication/map/b01/roborockProto.ts` | Added `DeviceCurrentPoseInfo currentPose = 8` and `DeviceRoomMatrix roomMatrix = 13` to `SCMap.RobotMap`; added `DeviceCurrentPoseInfo` and `DeviceRoomMatrix` message types |
-| `src/roborockCommunication/map/b01/types.ts` | Added `B01Pose { x, y, phi? }` and `B01RoomMatrix { data: Buffer }` interfaces; extended `B01MapInfo` with optional `currentPose?` and `roomMatrix?` fields |
-| `src/roborockCommunication/map/b01/b01MapParser.ts` | `parseRooms()` now defensively extracts `currentPose` and `roomMatrix` after the existing `mapId` extraction, using `typeof`/`Buffer.isBuffer()` guards; both fields are included in all return branches (empty-rooms early-return and normal return) |
-| `src/roborockCommunication/map/b01/roomMatrixResolver.ts` | **New.** `resolveRoomFromPose(pose, roomMatrix): number | undefined` — pure, dependency-free; always returns `undefined` (intentional safe no-op with explanation comment); never throws |
+| File                                                      | Change                                                                                                                                                                                                                                                |
+| --------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| `src/roborockCommunication/map/b01/roborockProto.ts`      | Added `DeviceCurrentPoseInfo currentPose = 8` and `DeviceRoomMatrix roomMatrix = 13` to `SCMap.RobotMap`; added `DeviceCurrentPoseInfo` and `DeviceRoomMatrix` message types                                                                          |
+| `src/roborockCommunication/map/b01/types.ts`              | Added `B01Pose { x, y, phi? }` and `B01RoomMatrix { data: Buffer }` interfaces; extended `B01MapInfo` with optional `currentPose?` and `roomMatrix?` fields                                                                                           |
+| `src/roborockCommunication/map/b01/b01MapParser.ts`       | `parseRooms()` now defensively extracts `currentPose` and `roomMatrix` after the existing `mapId` extraction, using `typeof`/`Buffer.isBuffer()` guards; both fields are included in all return branches (empty-rooms early-return and normal return) |
+| `src/roborockCommunication/map/b01/roomMatrixResolver.ts` | **New.** `resolveRoomFromPose(pose, roomMatrix): number                                                                                                                                                                                               | undefined`— pure, dependency-free; always returns`undefined` (intentional safe no-op with explanation comment); never throws |
 
 ### CLI Tool
 
-| File | Change |
-|------|--------|
+| File                              | Change                                                                                                                                                                                                                                                                                                                                                                                                                       |
+| --------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `src/cli/commands/b01PoseInfo.ts` | **New.** `cmdB01PoseInfo(duid, session, logger, local)` — `connectDevice` → `waitForPush(Protocol.map_response)` → `dispatcher.getMapInfo(duid)` → `B01MapParser.parseRoomsFromEncryptedBinary()` → `resolveRoomFromPose()` → print pose / resolved room / room list / roomMatrix byte length. Device model/serial looked up directly from `session.devices` (not via `connectDevice` return, which doesn't expose `device`) |
-| `src/cli/main.ts` | `case 'b01-pose-info'` wired after `legacy-map-info` |
-| `src/cli/help.ts` | `b01-pose-info` row + example added after `legacy-map-info` |
+| `src/cli/main.ts`                 | `case 'b01-pose-info'` wired after `legacy-map-info`                                                                                                                                                                                                                                                                                                                                                                         |
+| `src/cli/help.ts`                 | `b01-pose-info` row + example added after `legacy-map-info`                                                                                                                                                                                                                                                                                                                                                                  |
 
 ### Tests Added
 
@@ -84,6 +85,7 @@ npm run cli -- --command b01-pose-info --duid <Q10_DUID>
 ```
 
 Expected output on a real Q10 mid-clean:
+
 - `Robot pose: { x: ..., y: ..., phi: ... }` — if device populates the field
 - `Robot pose: not found` — if device does NOT populate (see ioBroker finding; this is common)
 - `Resolved room: could not determine — roomMatrix decoding not yet implemented, pending real-device capture`
@@ -352,15 +354,15 @@ The output message for "could not determine" can be updated once Phase 2 is live
 
 ### Fallback Rules
 
-| Condition | Behavior |
-|-----------|----------|
-| `currentPose` not present in map binary | `resolveRoomFromPose()` returns `undefined`; existing fallback runs unchanged |
-| `roomMatrix` not present or zero-length | `resolveRoomFromPose()` returns `undefined`; existing fallback runs unchanged |
-| Pose outside map bounds | `resolveRoomFromPose()` returns `undefined`; existing fallback runs unchanged |
-| Room ID from matrix not in `rooms` list | `resolveRoomFromPose()` returns `undefined`; do not return unknown IDs |
-| Cache is empty (no resolved room yet) | `getLastKnownB01Room()` returns `undefined`; existing fallback runs unchanged |
-| Robot goes Idle | Cache cleared via `clearLastKnownB01Room()` — prevents stale room from leaking |
-| Any non-Q10 device | `MapInfoListener.tryParseB01MapBinary()` is never called for V1 devices; Q7 is out of scope |
+| Condition                               | Behavior                                                                                    |
+| --------------------------------------- | ------------------------------------------------------------------------------------------- |
+| `currentPose` not present in map binary | `resolveRoomFromPose()` returns `undefined`; existing fallback runs unchanged               |
+| `roomMatrix` not present or zero-length | `resolveRoomFromPose()` returns `undefined`; existing fallback runs unchanged               |
+| Pose outside map bounds                 | `resolveRoomFromPose()` returns `undefined`; existing fallback runs unchanged               |
+| Room ID from matrix not in `rooms` list | `resolveRoomFromPose()` returns `undefined`; do not return unknown IDs                      |
+| Cache is empty (no resolved room yet)   | `getLastKnownB01Room()` returns `undefined`; existing fallback runs unchanged               |
+| Robot goes Idle                         | Cache cleared via `clearLastKnownB01Room()` — prevents stale room from leaking              |
+| Any non-Q10 device                      | `MapInfoListener.tryParseB01MapBinary()` is never called for V1 devices; Q7 is out of scope |
 
 ### Safety Constraints
 
@@ -384,14 +386,14 @@ The output message for "could not determine" can be updated once Phase 2 is live
 
 ### Unit Tests
 
-| File | Cases |
-|------|-------|
-| `src/tests/roborockCommunication/map/b01/roomMatrixResolver.test.ts` | Missing pose → undefined; missing roomMatrix → undefined; missing mapHead → undefined; pose out of bounds → undefined; pixel value not in rooms list → undefined; correct pixel → correct roomId; never throws |
-| `src/tests/roborockCommunication/map/b01/b01MapParser.test.ts` | mapHead fields extracted; mapHead fields included in early-return branch |
-| `src/tests/services/areaManagementService.test.ts` | set/get/clear round-trip; clearAll() clears the map; undefined on miss |
-| `src/tests/services/roborockService.test.ts` | Delegate calls through to areaService |
-| `src/tests/roborockCommunication/routing/listeners/mapInfoListener.test.ts` | resolvedRoom written to cache when non-undefined; cache NOT written when undefined; debug log emitted |
-| `src/tests/runtimes/handlers/serviceAreaHandler.test.ts` | livePoseRoom short-circuit fires when cache has value; sets selectedAreas + currentArea; returns early; cache-clear fires on Idle |
+| File                                                                        | Cases                                                                                                                                                                                                          |
+| --------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `src/tests/roborockCommunication/map/b01/roomMatrixResolver.test.ts`        | Missing pose → undefined; missing roomMatrix → undefined; missing mapHead → undefined; pose out of bounds → undefined; pixel value not in rooms list → undefined; correct pixel → correct roomId; never throws |
+| `src/tests/roborockCommunication/map/b01/b01MapParser.test.ts`              | mapHead fields extracted; mapHead fields included in early-return branch                                                                                                                                       |
+| `src/tests/services/areaManagementService.test.ts`                          | set/get/clear round-trip; clearAll() clears the map; undefined on miss                                                                                                                                         |
+| `src/tests/services/roborockService.test.ts`                                | Delegate calls through to areaService                                                                                                                                                                          |
+| `src/tests/roborockCommunication/routing/listeners/mapInfoListener.test.ts` | resolvedRoom written to cache when non-undefined; cache NOT written when undefined; debug log emitted                                                                                                          |
+| `src/tests/runtimes/handlers/serviceAreaHandler.test.ts`                    | livePoseRoom short-circuit fires when cache has value; sets selectedAreas + currentArea; returns early; cache-clear fires on Idle                                                                              |
 
 ### Integration Notes
 
@@ -402,14 +404,14 @@ The output message for "could not determine" can be updated once Phase 2 is live
 
 ## 8. Risks
 
-| Risk | Likelihood | Impact | Mitigation |
-|------|-----------|--------|-----------|
-| Real Q10 firmware does NOT populate `currentPose` (ioBroker finding) | Medium | Blocks Phase 2 entirely | CLI diagnostic (`b01-pose-info`) exists precisely to test this; if absent, fallback is safe |
-| `roomMatrix` byte layout is different from any candidate algorithm | Medium | Blocks algorithm implementation | Capture-first strategy; multiple candidates tested with known ground-truth |
-| Room ID from matrix is a transient index, not stable between cleans | Low | Phase 2 could produce wrong rooms after map rebuilds | Validate room ID against `rooms` list on every resolution; cross-reference with live room names |
-| Cache leaks across cleaning sessions (robot goes back to base between rooms) | Low | `currentArea` stuck at last seen room in next clean | `clearLastKnownB01Room()` on Idle handles this; also consider clearing on active-map-change |
-| Q10 firmware update changes `roomMatrix` encoding | Low | Silent wrong rooms | `roomMatrixResolver()` guard against unknown IDs provides safety net |
-| `currentPose` is only populated mid-clean (python-roborock CLI warning) | High | Room detection only works when robot is actively moving | By design — the cache-write only fires during a live map binary push mid-clean; this is expected behavior, not a bug |
+| Risk                                                                         | Likelihood | Impact                                                  | Mitigation                                                                                                           |
+| ---------------------------------------------------------------------------- | ---------- | ------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
+| Real Q10 firmware does NOT populate `currentPose` (ioBroker finding)         | Medium     | Blocks Phase 2 entirely                                 | CLI diagnostic (`b01-pose-info`) exists precisely to test this; if absent, fallback is safe                          |
+| `roomMatrix` byte layout is different from any candidate algorithm           | Medium     | Blocks algorithm implementation                         | Capture-first strategy; multiple candidates tested with known ground-truth                                           |
+| Room ID from matrix is a transient index, not stable between cleans          | Low        | Phase 2 could produce wrong rooms after map rebuilds    | Validate room ID against `rooms` list on every resolution; cross-reference with live room names                      |
+| Cache leaks across cleaning sessions (robot goes back to base between rooms) | Low        | `currentArea` stuck at last seen room in next clean     | `clearLastKnownB01Room()` on Idle handles this; also consider clearing on active-map-change                          |
+| Q10 firmware update changes `roomMatrix` encoding                            | Low        | Silent wrong rooms                                      | `roomMatrixResolver()` guard against unknown IDs provides safety net                                                 |
+| `currentPose` is only populated mid-clean (python-roborock CLI warning)      | High       | Room detection only works when robot is actively moving | By design — the cache-write only fires during a live map binary push mid-clean; this is expected behavior, not a bug |
 
 ---
 

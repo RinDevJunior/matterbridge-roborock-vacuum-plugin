@@ -97,7 +97,7 @@ export class Q7MessageDispatcher implements AbstractMessageDispatcher {
 			duid,
 			new RequestMessage({
 				messageId: this.messageId,
-				dps: this.createDps(Q7RequestMethod.get_room_mapping_backup_1, { map_id: activeMap, prefer_type: 1 }),
+				dps: this.createDps(Q7RequestMethod.get_room_mapping, { force: 1, map_type: 0 }),
 			}),
 		);
 		return [];
@@ -108,7 +108,7 @@ export class Q7MessageDispatcher implements AbstractMessageDispatcher {
 			duid,
 			new RequestMessage({
 				messageId: this.messageId,
-				dps: this.createDps(Q7RequestMethod.get_room_mapping_backup_1, { map_id: activeMap, prefer_type: 1 }),
+				dps: this.createDps(Q7RequestMethod.get_room_mapping, { force: 1, map_type: 0 }),
 			}),
 		);
 	}

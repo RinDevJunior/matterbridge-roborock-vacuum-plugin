@@ -6,6 +6,7 @@ import { HomeEntity } from '../../../../core/domain/entities/Home.js';
 import { getSupportedAreas } from '../../../../initialData/getSupportedAreas.js';
 import { ProtocolVersion } from '../../../../roborockCommunication/enums/protocolVersion.js';
 import { B01MapParser } from '../../../../roborockCommunication/map/b01/b01MapParser.js';
+import { normalizeB01RoomName } from '../../../map/b01/roomNameNormalizer.js';
 import { AreaManagementService } from '../../../../services/areaManagementService.js';
 import { Q7RequestCode, Q7RequestMethod } from '../../../enums/Q7RequestCode.js';
 import { Q10RequestCode } from '../../../enums/Q10RequestCode.js';
@@ -175,7 +176,10 @@ export class MapInfoListener implements AbstractMessageListener {
 				iot_name_id: String(r.roomId),
 				tag: r.colorId ?? 0,
 				iot_map_id: 0,
-				iot_name: r.roomName || this.rooms.find((rd) => rd.id === r.roomId)?.name || `Room ${r.roomId}`,
+				iot_name:
+					normalizeB01RoomName(r.roomName, r.roomTypeId, r.roomId) ||
+					this.rooms.find((rd) => rd.id === r.roomId)?.name ||
+					`Room ${r.roomId}`,
 			}));
 
 			const mapInfo = this.pendingB01MapInfo ?? MapInfo.empty();

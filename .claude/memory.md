@@ -13,7 +13,8 @@ It is version-controlled — commit and push changes so teammates can pull the l
 
 - Room data (supportedAreas, roomIndexMap) is in-memory only inside `AreaManagementService` private Maps keyed by duid — no file/db persistence.
 - `getSupportedAreas` is called from 3 sites: `areaManagementService.getMapInfo`, `areaManagementService.getRoomMap`, `mapInfoListener.updateAreas`.
-- Room name resolution in `processValidData` (getSupportedAreas.ts:109-113): priority is `iot_name` → secondary lookup by `iot_name_id` → `Unknown Room ${randomInt(1000,9999)}`.
+- Room name resolution in `processValidData` (getSupportedAreas.ts:109-113): priority is `iot_name` → secondary lookup by `iot_name_id` → `Unknown Room ${randomInt(1000,9999)}`. B01 map path now normalizes firmware tokens in `MapInfoListener.tryParseB01MapBinary()` via `normalizeB01RoomName()` before `iot_name` is set; R2 deterministic fallback still deferred.
+- Q7 map fetch: `Q7MessageDispatcher.getRoomMap`/`getRoomMapV2` fire `service.upload_by_maptype` (`Q7RequestMethod.get_room_mapping`) with `{ force: 1, map_type: 0 }` — primary-only, no fallback retry; `activeMap` param retained but not sent.
 - `deviceCapabilityRegistry.ts` is a clean-mode-only registry. After DEVICE_EXTRA_MODES removal: `getExtraModes(_model, featureSet?, newFeatureSet?)` returns `[]` when no feature context, else `[vacFollowedByMopModeConfig]` only if `is_clean_then_mop_mode_supported`. `hasSmartPlan(_model, featureSet?, newFeatureSet?)` now decodes feature flags and returns `features.is_smart_clean_mode_set_supported`. `getAllKnownModeConfigs` hardcodes `[vacFollowedByMopModeConfig, ...baseCleanModeConfigs]`. SmartPlan (mode 4) is now gated by feature flag; VacAndMopDeep (mode 12) remains dropped until feature flags are identified.
 - Feature-gated mode wiring: `deviceConfigurator.ts` passes `vacuum.featureSet, vacuum.newFeatureSet` to `configureBehavior`; `behaviorFactory.ts` threads them to `buildBehaviorConfig`; `buildBehaviorConfig` threads to `getAllModesForDevice`. Similarly, `roborockVacuumCleaner.ts` passes `device.featureSet, device.newFeatureSet` to `getSupportedCleanModes`. Both Device instances reach registry functions with feature context for dynamic filtering.
 - `cleanModeHandler.ts:35` has only `DeviceSpecs` in scope (no Device, no featureSet) — out of scope for this wiring phase. `matterStateNames.ts:6` calls `getAllKnownModeConfigs()` at module level (pure name lookup, not gating) — no change needed.
@@ -58,6 +59,7 @@ It is version-controlled — commit and push changes so teammates can pull the l
 - **proto3 float fields decode to `0`, not `undefined`, when omitted from encode input** — proto3 has no wire-level presence tracking for non-message scalar fields, so `encodeRobotMap({ currentPose: { x, y } })` (no `phi`) decodes `phi` as `0` (a number), not `undefined`. Verified empirically via a standalone `protobuf.parse(...)` + `.decode()` round-trip. Don't assume "field omitted from input" ⇒ "field absent/undefined on decode" for proto3 scalars — only message-typed fields (e.g. the whole `currentPose` object) can be genuinely absent.
 - **CLI command tests (`src/tests/cli/`):** No `commands/` subdirectory convention exists yet, and no other `src/cli/commands/*.ts` file (e.g. `legacyMapInfo.ts`) has a dedicated test — `mapListHelpers.test.ts` (pure-function helpers only) was the sole pre-existing CLI test. When a command test IS requested, mock module boundaries (`../../cli/connection.js`'s `connectDevice`, `../../cli/waitForPush.js`'s `waitForPush`, and any parser/resolver classes) via `vi.mock` with relative `.js` paths from the test file location, then static-import the command under test after the `vi.mock` calls.
 - **Mocking a class constructor via `vi.mock`:** `vi.fn().mockImplementation(() => ({...}))` produces a plain arrow function, which throws `TypeError: ... is not a constructor` when the source does `new B01MapParser()`. Use `vi.fn().mockImplementation(function ClassName(this: T) { this.method = ...; })` (a real `function`, not an arrow) so `new` works.
+- **`MapInfoListener` has no `configure` method** — pass `deviceModel`, `deviceSerial`, `onActiveMapChanged`, `deviceProtocol` in constructor (params 5–8). To test `tryParseB01MapBinary` with a V1 device, create a new listener with `ProtocolVersion.V1` as the 8th arg. To spy on the private `b01MapParser` field, use `vi.spyOn((listener as unknown as { b01MapParser: { parseRoomsFromEncryptedBinary: ... } }).b01MapParser, 'parseRoomsFromEncryptedBinary')`.
 
 ## Common Pitfalls
 
@@ -75,6 +77,8 @@ It is version-controlled — commit and push changes so teammates can pull the l
 ## Module Notes
 
 <!-- Notes about specific modules, non-obvious behaviors -->
+
+- `roomNameNormalizer.ts` (b01): pure module, no imports. `RR_ROOM_TYPE_TOKENS` and `ROOM_TYPE_ID_TO_TOKEN` are private/exported for tests; `normalizeB01RoomName(roomName, roomTypeId?, roomId?)` returns a non-empty string — callers may still chain `|| fallback` for safety. `rr_other` (typeId 0) always resolves to `Room ${roomId}` (treated as "uncategorized").
 
 ## B01/Q7/Q10 current-room detection — reference research (external)
 

@@ -177,7 +177,7 @@ Engineer Manager (main session — Auto)
   ├── technical-architect
   │     ├── wiki-manager   (gather — leaf)
   │     └── investigator   (leaf — only if gaps remain)
-  ├── briefer → AskQuestion approval → implementer → reviewer → test-writer → documenter
+  ├── briefer → EM presents business-brief → user approval → implementer → reviewer → test-writer → documenter
   │     └── wiki-manager   (update — nested by documenter only)
   ├── compiler / finalizer / release-manager / direct-executor (leaf)
   └── …
@@ -199,7 +199,7 @@ Engineer Manager (main session — Auto)
 ### This project (Engineer Manager)
 
 - Spawn templates: `.cursor/instructions/agent-prompts.md`
-- EM workflow & user input: `.cursor/CURSOR.md` (`AskQuestion` for EM; briefer runs approval gate — see `.cursor/agents/briefer.md`)
+- EM workflow & user input: `.cursor/CURSOR.md` (EM presents `business-brief.md` then `AskQuestion` for approval)
 - **Compiler:** `npm run test:ci` — never paste full test output into the main session
 - One **technical-architect** spawn per planning cycle unless the user rejects the brief
 - Use `subagent_type: "<name>"` — custom agents load from `.cursor/agents/` automatically

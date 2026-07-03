@@ -1,5 +1,18 @@
 # Claude History
 
+## 2026-07-03 — External room list sources (R1 + R3)
+
+**Task:** Align Q7 map fetch to `service.upload_by_maptype` (R1) and add B01 firmware-style room name normalizer at the listener layer (R3). R2 (deterministic `"Room {id}"` fallback in `getSupportedAreas.ts`) skipped per user preference.
+
+**Changes:**
+
+- `src/roborockCommunication/protocol/dispatcher/Q7MessageDispatcher.ts` — R1: `getRoomMap`/`getRoomMapV2` switch from `get_room_mapping_backup_1` to `get_room_mapping` with `{ force: 1, map_type: 0 }`
+- `src/roborockCommunication/map/b01/roomNameNormalizer.ts` — R3: new pure normalizer for `rr_*` tokens, `roomTypeId` lookup, and `roomN` pattern
+- `src/roborockCommunication/routing/listeners/implementation/mapInfoListener.ts` — R3: apply `normalizeB01RoomName` in `tryParseB01MapBinary()` `iot_name` assignment
+- `src/tests/roborockCommunication/map/b01/roomNameNormalizer.test.ts` — unit tests for normalizer
+
+**Outcome:** Pass (reviewed). R2 intentionally not implemented — random `Unknown Room ####` fallback retained in `getSupportedAreas.ts`. Q7 hardware validation for R1 still recommended on real device.
+
 ## 2026-07-03 — B01 currentPose/roomMatrix decode (Phase 1 CLI)
 
 **Task:** Phase 1 only — decode Q10 `currentPose`/`roomMatrix` from B01 RobotMap protobuf and expose via `b01-pose-info` CLI; shared core with safe no-op `resolveRoomFromPose()`. Phase 2 production wiring explicitly deferred.

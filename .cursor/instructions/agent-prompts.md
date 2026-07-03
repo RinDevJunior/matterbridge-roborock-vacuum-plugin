@@ -116,7 +116,7 @@ Task({
 });
 ```
 
-Run AFTER Technical Architect returns `plan.md` (Status: ready). Reads `requirement.md` and `plan.md`, writes `business-brief.md`, then **`AskQuestion`** for Approve / Request Changes before reporting. Technical mode additionally writes `technical-brief.md` — plain-language, framed around files/services and system impact, not run unless requested.
+Run AFTER Technical Architect returns `plan.md` (Status: ready). Reads `requirement.md` and `plan.md`, writes `business-brief.md` only — EM presents the brief and runs approval. Technical mode additionally writes `technical-brief.md` — plain-language, framed around files/services and system impact, not run unless requested.
 
 ---
 

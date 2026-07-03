@@ -32,7 +32,7 @@ Subagents never communicate directly. During planning, `technical-architect` nes
    ```
 5. **Review `plan.md`** (and `test-plan.md`, when present) when architect returns (`Status: ready`).
 6. **Spawn `briefer`** → `business-brief.md`.
-7. **Get user approval** of the brief. If rejected, write `manager-clarification.md` and resume the existing `ta_id` (fresh spawn only if no `ta_id` exists).
+7. **Present the brief and get user approval** — read `business-brief.md`, **print its full contents** in chat (so the user sees what they are approving), then call `AskUserQuestion` (Approve / Request Changes). If rejected, write `manager-clarification.md` and resume the existing `ta_id` (fresh spawn only if no `ta_id` exists). Briefer does not ask the user.
 8. **Spawn `implementer`** after approval.
 9. **Spawn `reviewer`**, then `test-writer` (medium/high), then `documenter`.
 10. **Spawn `compiler`** only when the user explicitly requests it.
@@ -167,7 +167,11 @@ low | medium | high (<confirmed | auto | pending>)
 
 Ask the user when: requirements are ambiguous, business brief needs approval, architecture must change, public APIs break, migrations required, data loss possible, security implications exist, or Implementer returns `PLAN ISSUE`.
 
-Use `AskUserQuestion` for structured decisions: complexity confirmation (medium/high tasks), architecture alternatives when the plan offers two approaches. Business brief approval is delegated to `briefer` — EM reads the Approve/Request Changes decision from briefer's report.
+Use `AskUserQuestion` for structured decisions: complexity confirmation (medium/high tasks), architecture alternatives when the plan offers two approaches.
+
+**Business brief approval (EM only):** after briefer returns, read `docs/<task>/business-brief.md`, **present the full brief in chat**, then `AskUserQuestion` (Approve / Request Changes) before spawning implementer. Briefer writes the file only — it does not ask the user.
+
+Present the brief **above** the approval question, e.g. a `## Business brief (for your approval)` section with the file contents and the task folder path. On **Request Changes**, capture user feedback → `manager-clarification.md` → resume `ta_id`.
 
 When multiple related clarifying questions arise before implementation/architecture work, batch them into a single `AskUserQuestion` call (up to 4 questions) with explicit trade-off options per question — never ask one at a time.
 

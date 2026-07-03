@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { Q7RequestCode, Q7RequestMethod } from '../../../../../roborockCommunication/enums/Q7RequestCode.js';
 import { Q10RequestCode } from '../../../../../roborockCommunication/enums/Q10RequestCode.js';
+import { ProtocolVersion } from '../../../../../roborockCommunication/enums/protocolVersion.js';
 import { Protocol, ResponseMessage } from '../../../../../roborockCommunication/models/index.js';
 import { MapInfoListener } from '../../../../../roborockCommunication/routing/listeners/implementation/mapInfoListener.js';
 import { AreaManagementService } from '../../../../../services/areaManagementService.js';
@@ -212,6 +213,106 @@ describe('MapInfoListener', () => {
 			await listener.onMessage(msg);
 
 			expect(areaService.setSupportedMaps).not.toHaveBeenCalled();
+		});
+	});
+
+	describe('tryParseB01MapBinary', () => {
+		it('should update areas when B01 map binary contains rooms', async () => {
+			const logger = createMockLogger();
+			const listenerWithDevice = new MapInfoListener(DUID, [], areaService, logger, 'roborock.vacuum.a27', 'ABC123');
+			const parseRoomsSpy = vi
+				.spyOn(
+					(
+						listenerWithDevice as unknown as {
+							b01MapParser: { parseRoomsFromEncryptedBinary: ReturnType<typeof vi.fn> };
+						}
+					).b01MapParser,
+					'parseRoomsFromEncryptedBinary',
+				)
+				.mockReturnValue({
+					rooms: [{ roomId: 5, roomName: 'rr_bedroom', roomTypeId: 3, colorId: 0 }],
+					mapId: undefined,
+				});
+
+			const msg = makeB01Message(DUID, (key) => {
+				if (key === Protocol.map_response) return Buffer.from('mock');
+				return undefined;
+			});
+			await listenerWithDevice.onMessage(msg);
+
+			expect(parseRoomsSpy).toHaveBeenCalled();
+			expect(areaService.setSupportedAreas).toHaveBeenCalled();
+		});
+
+		it('should skip B01 binary parse when device is V1', async () => {
+			const listenerV1 = new MapInfoListener(
+				DUID,
+				[],
+				areaService,
+				createMockLogger(),
+				'some.model',
+				'SER',
+				undefined,
+				ProtocolVersion.V1,
+			);
+			const msg = makeB01Message(DUID, (key) => {
+				if (key === Protocol.map_response) return Buffer.from('mock');
+				return undefined;
+			});
+			await listenerV1.onMessage(msg);
+			expect(areaService.setSupportedAreas).not.toHaveBeenCalled();
+		});
+
+		it('should warn and skip when model or serial is missing', async () => {
+			const logger = createMockLogger();
+			const listenerNoModel = new MapInfoListener(DUID, [], areaService, logger);
+			const msg = makeB01Message(DUID, (key) => {
+				if (key === Protocol.map_response) return Buffer.from('mock');
+				return undefined;
+			});
+			await listenerNoModel.onMessage(msg);
+			expect(areaService.setSupportedAreas).not.toHaveBeenCalled();
+			expect(logger.warn).toHaveBeenCalledWith(expect.stringContaining('missing model/serial'));
+		});
+
+		it('should skip and log when B01 map binary has no rooms', async () => {
+			const logger = createMockLogger();
+			const listenerWithDevice = new MapInfoListener(DUID, [], areaService, logger, 'roborock.vacuum.a27', 'ABC123');
+			vi.spyOn(
+				(listenerWithDevice as unknown as { b01MapParser: { parseRoomsFromEncryptedBinary: ReturnType<typeof vi.fn> } })
+					.b01MapParser,
+				'parseRoomsFromEncryptedBinary',
+			).mockReturnValue({ rooms: [], mapId: undefined });
+
+			const msg = makeB01Message(DUID, (key) => {
+				if (key === Protocol.map_response) return Buffer.from('mock');
+				return undefined;
+			});
+			await listenerWithDevice.onMessage(msg);
+
+			expect(areaService.setSupportedAreas).not.toHaveBeenCalled();
+			expect(logger.debug).toHaveBeenCalledWith(expect.stringContaining('B01 map binary has no rooms'));
+		});
+
+		it('should warn and skip when B01 map binary parse throws', async () => {
+			const logger = createMockLogger();
+			const listenerWithDevice = new MapInfoListener(DUID, [], areaService, logger, 'roborock.vacuum.a27', 'ABC123');
+			vi.spyOn(
+				(listenerWithDevice as unknown as { b01MapParser: { parseRoomsFromEncryptedBinary: ReturnType<typeof vi.fn> } })
+					.b01MapParser,
+				'parseRoomsFromEncryptedBinary',
+			).mockImplementation(() => {
+				throw new Error('parse error');
+			});
+
+			const msg = makeB01Message(DUID, (key) => {
+				if (key === Protocol.map_response) return Buffer.from('mock');
+				return undefined;
+			});
+			await listenerWithDevice.onMessage(msg);
+
+			expect(areaService.setSupportedAreas).not.toHaveBeenCalled();
+			expect(logger.warn).toHaveBeenCalledWith(expect.stringContaining('failed to parse B01 map binary'));
 		});
 	});
 });
