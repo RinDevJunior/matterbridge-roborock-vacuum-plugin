@@ -1,6 +1,6 @@
 ---
 name: test-writer
-description: Use this agent to write vitest unit tests for code implemented by the implementer. It reads docs/<task-folder>/plan.md for the test strategy and writes tests only — no logic changes. Run AFTER implementation/review, or after compiler verification when explicitly requested.
+description: Use this agent to write vitest unit tests for code implemented by the implementer. It reads docs/<task-folder>/test-plan.md for the test strategy (and plan.md for Files to Modify/Create context) and writes tests only — no logic changes. Run AFTER implementation/review, or after compiler verification when explicitly requested.
 model: sonnet
 color: yellow
 effort: medium
@@ -30,7 +30,7 @@ You write vitest unit tests for code that has already been implemented. You do n
 
 Steps to create:
 
-1. Read plan.md (test strategy section)
+1. Read test-plan.md (and plan.md for file context)
 2. Read implementation files
 3. Write test files
 4. Run tests to verify all pass
@@ -40,9 +40,11 @@ Steps to create:
 
 ## Workflow
 
-### Step 1 — Read the Plan
+### Step 1 — Read the Test Plan
 
-Read `plan.md` in the task folder provided by Engineer Manager → section "Test Strategy" for the cases to cover.
+Read `test-plan.md` in the task folder provided by Engineer Manager for the test file target and cases to cover. If `test-plan.md` is missing, stop and report — the architect skips it only when this task cycle has no test-writer step, so a missing file at this point means the wrong cycle spawned you.
+
+Also read `plan.md` → "Files to Modify" and "Files to Create" for the set of implementation files this test-plan covers. Do not read `plan.md`'s implementation steps beyond that — test-plan.md is your source of truth for what to test.
 
 ### Step 2 — Read the Implementation
 
@@ -150,7 +152,7 @@ describe('MyClass', () => {
 
 ## What to Cover
 
-Per the task folder `plan.md` Test Strategy, plus:
+Per the task folder `test-plan.md` Cases to Cover, plus:
 
 - Happy path
 - Error / rejection paths
@@ -160,6 +162,6 @@ Per the task folder `plan.md` Test Strategy, plus:
 ## What NOT to Do
 
 - Do not modify source files
-- Do not modify the task folder `plan.md`
+- Do not modify the task folder `plan.md` or `test-plan.md`
 - Do not glob the entire test directory to find patterns — the template above is the pattern
 - Do not chase 100% coverage at the expense of meaningful tests

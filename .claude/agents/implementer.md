@@ -114,6 +114,7 @@ After implementation, append any pitfalls or patterns to `.claude/memory.md`. Ea
 - Write LOGIC code only — no test files
 - Do not modify test files
 - Do not modify the task folder `plan.md`
+- Do not read `test-plan.md` if present in the task folder — test-case content is out of scope and must not influence implementation
 - If the plan is ambiguous, implement the most conservative interpretation and note it in your report
 - **Never run `git commit`, `git add`, or any git write command — committing is the user's responsibility**
 - **Never add `Co-Authored-By` to any commit message**

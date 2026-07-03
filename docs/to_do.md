@@ -9,10 +9,17 @@
 - [x] Wire `hasSmartPlan` to `is_smart_clean_mode_set_supported` feature flag — SmartPlan mode 4 now dynamically gated
 - [x] Wiki documentation fixes — updated 6 files to reflect feature-flag-driven architecture
 - [x] Wiki gap fill — created 5 new pages (Runtime-Handlers-Pipeline, Message-Listeners-Architecture, Message-Dispatchers-Protocol-Routing, Feature-Flags-Device-Capabilities, Room-Map-Data-Pipeline); expanded 6 existing pages; updated Home.md index
+- [x] Legacy V1 map parser + `legacy-map-info` CLI probe — parse Protocol 301 binary, resolve current room from robot position
+- [x] V1 map inner decryption — `decryptAndUnzipV1Map` + CLI decrypt step before parse; `ClientRouter.getSerializeNonce()`
+- [x] A187 legacy map parse fix — Int32LE field widths in `LegacyMapParser`; CLI fire-and-forget `getHomeMap`; live-validated on A187
+- [x] Legacy map room names (CLI) — `mapListHelpers` + parallel `getMapInfo`/`getDeviceStatus` in `legacy-map-info`; shared with `map-info`
 
 ## Pending
 
 ### Implementation Tasks
+
+- [ ] **Legacy map → plugin** — wire `LegacyMapParser.resolveCurrentRoom` into runtime for V1 devices lacking `vacuumRoom` in status (replace or supplement `getRoomIdFromMap`); reuse `decryptAndUnzipV1Map` for Protocol 301 push; resolve segment names from `device.mapInfos` (not nonexistent `device.rooms`)
+- [ ] **Legacy map hex fixture** — optional: capture A187 `"rr"` binary from live run for regression fixture
 
 ### Open Feature Gaps
 

@@ -89,6 +89,7 @@ For a symbol renamed, removed, or added in the diff, use `LSP` `findReferences` 
 **Tests**
 
 - [ ] Critical paths have test coverage
+- [ ] Test cases match `test-plan.md` "Cases to Cover" when that file exists in the task folder
 - [ ] No `expect` inside conditionals
 - [ ] No `as` type casting in tests — `satisfies` used instead
 - [ ] Fake timers cleaned up in `afterEach`

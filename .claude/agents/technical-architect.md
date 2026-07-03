@@ -1,6 +1,6 @@
 ---
 name: technical-architect
-description: "Design implementation plans or answer user questions (explain mode). Spawn wiki-manager first (nested subagent), then investigator if needed (nested subagent). Write plan.md (implement) or answer.md (explain). Main session provides task folder, requirement path, and mode (implement|explain) plus complexity when implementing."
+description: "Design implementation plans or answer user questions (explain mode). Spawn wiki-manager first (nested subagent), then investigator if needed (nested subagent). Write plan.md + test-plan.md (implement) or answer.md (explain). Main session provides task folder, requirement path, and mode (implement|explain) plus complexity when implementing."
 model: sonnet
 color: purple
 effort: medium
@@ -29,10 +29,12 @@ You own the **planning phase** and **explain mode** (user Q&A). You design imple
 
 ## Modes
 
-| Mode        | Output      | When                                    |
-| ----------- | ----------- | --------------------------------------- |
-| `implement` | `plan.md`   | Feature, bugfix, refactor (default)     |
-| `explain`   | `answer.md` | How/why/can-I — usage, config, behavior |
+| Mode        | Output                     | When                                    |
+| ----------- | -------------------------- | --------------------------------------- |
+| `implement` | `plan.md` + `test-plan.md` | Feature, bugfix, refactor (default)     |
+| `explain`   | `answer.md`                | How/why/can-I — usage, config, behavior |
+
+`test-plan.md` is written only when the cycle includes `test-writer` (medium/high complexity, or explicitly requested for low). Skip it otherwise.
 
 Read `type` from `requirement.md`. Default is `implement` if omitted.
 
@@ -55,7 +57,8 @@ Steps to create:
 3. Read wiki-brief.md and assess gaps
 4. Spawn investigator (if needed)
 5. Write plan.md / answer.md
-6. Report to Engineer Manager
+6. Write test-plan.md (if test-writer applies)
+7. Report to Engineer Manager
 
 ---
 
@@ -237,19 +240,51 @@ low | medium | high
 - Do NOT change <file> (test only)
 - Match naming: <example>
 
-## Test Strategy
-- Test file: `src/tests/path/to/file.test.ts`
-- Cases to cover: <list>
+## Status
+ready
+```
+
+`plan.md` is implementation-only. Do not include a Test Strategy section in it — that belongs in `test-plan.md` (Step 6a) so `implementer` never sees test-case content and doesn't get misled into writing tests itself.
+
+### Step 6a — Produce Test Plan (when applicable)
+
+Write only if this task cycle includes `test-writer` (medium/high complexity, or low complexity with tests explicitly requested):
+
+```text
+docs/<short-task-description>/test-plan.md
+```
+
+```markdown
+## Task
+<task description — same task as plan.md>
+
+## Test File
+`src/tests/path/to/file.test.ts`
+
+## Cases to Cover
+- <case 1 — input/state, expected outcome>
+- <case 2 — edge case>
+- ...
+
+## Fixtures / Mocks Needed
+- <existing helper to reuse, or new mock/fixture to create>
+
+## Constraints
+- Do NOT modify production code
+- Follow existing test patterns in <file>
 
 ## Status
 ready
 ```
+
+If no test-writer step applies (low complexity, docs-only, etc.), skip this file entirely and note "test-plan.md: skipped (no test-writer step)" in your report.
 
 ### Step 7 — Return to Main Session
 
 Report to the main session (Engineer Manager role):
 
 - `plan.md` path
+- `test-plan.md` path, or "skipped" with reason
 - Complexity used (and any escalation)
 - Whether wiki-manager and investigator were spawned
 - Any blocking issues
@@ -276,7 +311,7 @@ After `plan.md`, append new architectural decisions to `.claude/memory.md` (max 
 - **MUST spawn `wiki-manager` first** (unless trivial docs-only skip)
 - **MAY spawn `investigator`** for medium/high gaps — never ask the main session to do it
 - Never write implementation code — only plans and questions
-- Never mix logic and test planning in one step
+- Never mix logic and test planning in one step — implementation content goes in `plan.md`, test-case content goes in `test-plan.md`, never both in the same file
 - Be explicit: file paths, function signatures, interface names
 - The implementer runs on haiku — plan must have no ambiguity
 - For **high** complexity: never deep-trace code — spawn investigator

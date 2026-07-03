@@ -1,5 +1,60 @@
 # Claude History
 
+## 2026-07-03 — Legacy map room names in legacy-map-info CLI
+
+**Task:** Wire human-readable room names into `legacy-map-info` by fetching `get_multi_maps_list` + active map status in parallel with the V1 binary push, mapping `rooms[].iot_name` to segment IDs on the active map.
+
+**Changes:**
+
+- `src/cli/mapListHelpers.ts` — shared CLI helpers: `resolveActiveMapId`, push parsers, `extractNamedRooms`, `roomDisplayName`
+- `src/cli/commands/legacyMapInfo.ts` — triple parallel push listeners; pass `LegacyNamedRoom[]` to `resolveCurrentRoom`; enrich segment list output
+- `src/cli/commands/mapInfo.ts` — import shared helpers instead of private duplicates (no behavior change)
+- `src/tests/cli/mapListHelpers.test.ts` — unit tests for helper functions
+
+**Outcome:** Pass (reviewed). CLI-only; names from `get_multi_maps_list` filtered by active `mapFlag`; `(unnamed)` fallback when status unknown or device returns no map list.
+
+## 2026-07-03 — A187 legacy map parse fix (Int32LE + CLI)
+
+**Task:** Fix V1 map parser field widths (UInt16LE → Int32LE for position x/y and image dimensions) and stop awaiting `getHomeMap` RPC so the CLI no longer hangs 10s waiting for an RPC that only returns `vacuumRoom`.
+
+**Changes:**
+
+- `src/roborockCommunication/map/legacy/mapParser.ts` — Int32LE position x/y; Int32LE image top/left/height/width; UInt32LE segmentCount
+- `src/cli/commands/legacyMapInfo.ts` — fire-and-forget `getHomeMap`; rely on Protocol 301 push listener only
+- `src/tests/exampleData/legacyMapFixture.ts` — fixture builders aligned to Int32LE layout
+- `src/tests/roborockCommunication/map/legacy/legacyMapParser.test.ts` — updated assertions for corrected field widths
+
+**Outcome:** Pass (reviewed). Validated on live A187 — robot position, image dimensions, and segment centers now parse correctly.
+
+## 2026-07-03 — V1 map inner decryption fix
+
+**Task:** Fix `legacy-map-info` CLI to decrypt the Protocol 301 inner layer before parsing — the push buffer is outer-decrypted only (24-byte envelope + AES-128-CBC + gzip), not a ready-to-parse `"rr"` binary.
+
+**Changes:**
+
+- `src/roborockCommunication/map/legacy/v1MapDecryptor.ts` — `decryptAndUnzipV1Map`: strip envelope, AES-128-CBC(sessionNonce), gunzip
+- `src/roborockCommunication/routing/clientRouter.ts` — `getSerializeNonce()` exposes `MessageContext.serializeNonce` for map decryption
+- `src/cli/commands/legacyMapInfo.ts` — decrypt raw Protocol 301 push before `LegacyMapParser.parse()`
+- `src/tests/exampleData/legacyMapFixture.ts` — `buildEncryptedV1MapPayload` round-trip fixture helper
+- `src/tests/roborockCommunication/map/legacy/v1MapDecryptor.test.ts` — round-trip, wrong-nonce, and too-small buffer tests
+
+**Outcome:** Pass (reviewed). `LegacyMapParser` unchanged (`"rr"`-only); CLI now matches ioBroker/roborock-gitlab wire format.
+
+## 2026-07-02 — Legacy V1 map parser + legacy-map-info CLI
+
+**Task:** Prototype position-to-room containment for legacy V1 vacuums by parsing `get_map_v1` binary (Protocol 301); validated via new `legacy-map-info` CLI command. No plugin runtime changes.
+
+**Changes:**
+
+- `src/roborockCommunication/map/legacy/types.ts` — LegacyMapData, image/segment/robot types
+- `src/roborockCommunication/map/legacy/mapParser.ts` — LegacyMapParser: parse binary blocks, resolveCurrentRoom
+- `src/cli/commands/legacyMapInfo.ts` — cmdLegacyMapInfo: waitForPush + getHomeMap, print room/segments
+- `src/cli/main.ts`, `src/cli/help.ts` — register `legacy-map-info` command
+- `src/tests/exampleData/legacyMapFixture.ts` — programmatic V1 map binary builders
+- `src/tests/roborockCommunication/map/legacy/legacyMapParser.test.ts` — parse + resolveCurrentRoom tests
+
+**Outcome:** Pass (reviewed). CLI probe only; runtime still uses `vacuumRoom` from getHomeMap RPC.
+
 ## 2026-06-29 — Wiki gap fill: 5 new pages + 6 expanded
 
 **Task:** Created 5 new wiki pages documenting message pipeline, listeners, dispatchers, feature flags, and room/map data; expanded 6 existing pages with missing sections; updated Home.md index.
