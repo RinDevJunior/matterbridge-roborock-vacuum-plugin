@@ -1,8 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { ProtocolVersion } from '../../../../../roborockCommunication/enums/protocolVersion.js';
 import { Q7RequestCode, Q7RequestMethod } from '../../../../../roborockCommunication/enums/Q7RequestCode.js';
 import { Q10RequestCode } from '../../../../../roborockCommunication/enums/Q10RequestCode.js';
-import { ProtocolVersion } from '../../../../../roborockCommunication/enums/protocolVersion.js';
 import { Protocol, ResponseMessage } from '../../../../../roborockCommunication/models/index.js';
 import { MapInfoListener } from '../../../../../roborockCommunication/routing/listeners/implementation/mapInfoListener.js';
 import { AreaManagementService } from '../../../../../services/areaManagementService.js';

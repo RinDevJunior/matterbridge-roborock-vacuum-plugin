@@ -53,7 +53,7 @@ describe('resolveRoomFromPose', () => {
 	it('should never throw for any combination of missing/malformed/empty/well-formed inputs', () => {
 		const pose: B01Pose = { x: 1, y: 2 };
 		const roomMatrix: B01RoomMatrix = { data: Buffer.from([1]) };
-		const cases: Array<[B01Pose | undefined, B01RoomMatrix | undefined]> = [
+		const cases: [B01Pose | undefined, B01RoomMatrix | undefined][] = [
 			[undefined, undefined],
 			[pose, undefined],
 			[undefined, roomMatrix],
