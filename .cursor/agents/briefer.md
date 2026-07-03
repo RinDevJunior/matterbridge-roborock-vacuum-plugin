@@ -117,9 +117,9 @@ AskQuestion({
 });
 ```
 
-| User choice       | Engineer Manager action                                                                 |
-| ----------------- | --------------------------------------------------------------------------------------- |
-| **Approve**       | Spawn implementer (after user approval is confirmed in your report)                     |
+| User choice         | Engineer Manager action                                                               |
+| ------------------- | ------------------------------------------------------------------------------------- |
+| **Approve**         | Spawn implementer (after user approval is confirmed in your report)                   |
 | **Request Changes** | Write `manager-clarification.md` in the task folder, re-spawn **technical-architect** |
 
 If the user picks **Other** or adds free text with **Request Changes**, include that feedback verbatim in your report so EM can write `manager-clarification.md`.

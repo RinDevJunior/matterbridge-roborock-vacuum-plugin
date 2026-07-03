@@ -71,20 +71,20 @@ Spawn templates for this repo: `.cursor/instructions/agent-prompts.md`. Role pro
 
 Cursor includes built-in subagents for context-heavy operations — Agent may use them automatically when appropriate:
 
-| Subagent  | Purpose                                                                        |
-| --------- | ------------------------------------------------------------------------------ |
-| `explore` | Codebase search and analysis (faster model; supports parallel searches)        |
-| `bash`    | Series of shell commands (isolates verbose command output)                     |
-| `browser` | Browser automation via MCP (filters noisy DOM/screenshot output)               |
+| Subagent  | Purpose                                                                 |
+| --------- | ----------------------------------------------------------------------- |
+| `explore` | Codebase search and analysis (faster model; supports parallel searches) |
+| `bash`    | Series of shell commands (isolates verbose command output)              |
+| `browser` | Browser automation via MCP (filters noisy DOM/screenshot output)        |
 
 You do not configure these. Prefer **project custom agents** in `.cursor/agents/` for the EM workflow.
 
 ### Custom subagent file locations
 
-| Type             | Location            | Scope                     |
-| ---------------- | ------------------- | ------------------------- |
-| Project          | `.cursor/agents/`   | This repo (canonical)     |
-| User             | `~/.cursor/agents/` | All projects for the user |
+| Type    | Location            | Scope                     |
+| ------- | ------------------- | ------------------------- |
+| Project | `.cursor/agents/`   | This repo (canonical)     |
+| User    | `~/.cursor/agents/` | All projects for the user |
 
 **Do not** edit `.claude/agents/` when working in Cursor — maintain `.cursor/agents/` for Cursor-specific syntax (`Task`, `TodoWrite`, Serena). Mirror to `.claude/` only when a change applies to both tools.
 
@@ -140,23 +140,23 @@ Review the code changes for bugs, style issues, and plan conformance.
 
 ### Task tool parameters (runtime overrides)
 
-| Parameter           | Description                                         |
-| ------------------- | --------------------------------------------------- |
-| `description`       | Short title shown in the UI                         |
-| `subagent_type`     | Built-in type or `.cursor/agents/` name             |
-| `prompt`            | Task-specific context and instructions            |
-| `model`             | Model override for this invocation                  |
-| `readonly`          | Restrict to read-only operations                    |
-| `run_in_background` | Non-blocking background execution                   |
-| `resume`            | Agent ID to continue a prior session                |
+| Parameter           | Description                             |
+| ------------------- | --------------------------------------- |
+| `description`       | Short title shown in the UI             |
+| `subagent_type`     | Built-in type or `.cursor/agents/` name |
+| `prompt`            | Task-specific context and instructions  |
+| `model`             | Model override for this invocation      |
+| `readonly`          | Restrict to read-only operations        |
+| `run_in_background` | Non-blocking background execution       |
+| `resume`            | Agent ID to continue a prior session    |
 
 ### Model configuration
 
-| Slug / value              | This project — when to use                                                                 |
-| ------------------------- | ------------------------------------------------------------------------------------------ |
-| *(omit `model`)*          | **Auto** — use when preferred slug hits a **usage limit** (retry spawn without `model`)      |
-| `composer-2.5-fast`       | Fast / leaf: `compiler`, `briefer`, `wiki-manager` (gather), `documenter`, `finalizer`     |
-| `claude-4.6-sonnet-medium`| Reasoning: `technical-architect`, `implementer`, `reviewer`, `test-writer`, `investigator`, `direct-executor`, `release-manager`; `wiki-manager` (update) |
+| Slug / value               | This project — when to use                                                                                                                                |
+| -------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| _(omit `model`)_           | **Auto** — use when preferred slug hits a **usage limit** (retry spawn without `model`)                                                                   |
+| `composer-2.5-fast`        | Fast / leaf: `compiler`, `briefer`, `wiki-manager` (gather), `documenter`, `finalizer`                                                                    |
+| `claude-4.6-sonnet-medium` | Reasoning: `technical-architect`, `implementer`, `reviewer`, `test-writer`, `investigator`, `direct-executor`, `release-manager`; `wiki-manager` (update) |
 
 **Main session (EM):** always **Auto**. Do not upgrade subagent models unless the user asks or a subagent reports it is blocked on reasoning.
 

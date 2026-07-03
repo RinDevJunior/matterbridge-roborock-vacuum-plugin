@@ -132,9 +132,9 @@ describe('B01MapParser', () => {
 				mapType: 1,
 				roomDataInfo: [{ roomId: 1, roomName: 'R' }],
 			});
-			const decodeSpy = (
-				parser as unknown as { robotMapType: { decode: (b: Buffer) => unknown } }
-			).robotMapType.decode(buffer) as Record<string, unknown>;
+			const decodeSpy = (parser as unknown as { robotMapType: { decode: (b: Buffer) => unknown } }).robotMapType.decode(
+				buffer,
+			) as Record<string, unknown>;
 			decodeSpy.currentPose = { x: 'not-a-number', y: 20 };
 			// Directly verify the guard logic mirrors parseRooms' defensive typeof checks.
 			expect(typeof decodeSpy.currentPose).toBe('object');

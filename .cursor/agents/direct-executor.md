@@ -46,7 +46,6 @@ Steps to create:
    #### Serena (symbol-level lookups)
 
    For a specific known symbol, prefer **Serena** MCP over Grep. Call `initial_instructions` once per session if Serena guidance is not already active.
-
    - **Find usages** → `find_referencing_symbols`
    - **Find declaration** → `find_declaration` or `find_symbol`
    - **File outline** → `get_symbols_overview`

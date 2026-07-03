@@ -57,18 +57,18 @@ Subagents never communicate directly. During planning, `technical-architect` nes
 
 ### Decision policy
 
-| Task                                    | Flow                                                                                        |
-| --------------------------------------- | ------------------------------------------------------------------------------------------- |
-| Explain (how/why/can I)                 | architect (explain mode) → `answer.md` — **EM must not read source code**                   |
-| Investigation only                      | spawn architect → briefer (optional)                                                        |
-| Low complexity                          | architect → briefer → approval → implementer → reviewer → documenter                        |
-| Medium feature / bug                    | architect → briefer → approval → implementer → reviewer → test-writer → documenter          |
+| Task                                    | Flow                                                                                                            |
+| --------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
+| Explain (how/why/can I)                 | architect (explain mode) → `answer.md` — **EM must not read source code**                                       |
+| Investigation only                      | spawn architect → briefer (optional)                                                                            |
+| Low complexity                          | architect → briefer → approval → implementer → reviewer → documenter                                            |
+| Medium feature / bug                    | architect → briefer → approval → implementer → reviewer → test-writer → documenter                              |
 | High / architecture                     | architect → briefer → approval → implementer (`claude-4.6-sonnet-medium`) → reviewer → test-writer → documenter |
-| Security-sensitive                      | always include reviewer                                                                     |
-| Documentation only                      | documenter                                                                                  |
-| Release                                 | release-manager                                                                             |
-| Commit message / finalize               | finalizer                                                                                   |
-| Ad-hoc / custom (user opts out of flow) | direct-executor only — no pipeline                                                          |
+| Security-sensitive                      | always include reviewer                                                                                         |
+| Documentation only                      | documenter                                                                                                      |
+| Release                                 | release-manager                                                                                                 |
+| Commit message / finalize               | finalizer                                                                                                       |
+| Ad-hoc / custom (user opts out of flow) | direct-executor only — no pipeline                                                                              |
 
 ### Explain path (user Q&A — no implementation)
 
