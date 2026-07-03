@@ -30,7 +30,7 @@ Subagents never communicate directly. During planning, `technical-architect` nes
      ├── wiki-manager  (leaf, always first)
      └── investigator  (leaf, only if gaps remain)
    ```
-5. **Review `plan.md`** when architect returns (`Status: ready`).
+5. **Review `plan.md`** (and `test-plan.md`, when present) when architect returns (`Status: ready`).
 6. **Spawn `briefer`** → `business-brief.md`.
 7. **Get user approval** of the brief. If rejected, write `manager-clarification.md` and resume the existing `ta_id` (fresh spawn only if no `ta_id` exists).
 8. **Spawn `implementer`** after approval.
@@ -89,6 +89,8 @@ Agent definitions: `.claude/agents/<name>.md`. Prompt templates: `.claude/instru
 
 **When NOT to resume:** If the follow-up introduces new scope not in the original requirement, or the prior agent's session is logically complete and the user is starting a genuinely new request, spawn fresh.
 
+**Approval required before a fresh spawn.** When a new task cycle begins and an existing labeled subagent from the prior cycle _could_ still hold useful context (e.g. same feature area, adjacent requirement, likely shared touch points), EM must not silently spawn fresh — ask the user first via `AskUserQuestion`: resume the existing agent (carries prior context forward, cheaper) or spawn fresh (clean slate, no cross-task bleed). Skip the question only when there is no existing labeled agent to resume, or the new cycle is obviously unrelated to any prior one.
+
 **Follow-up pattern:**
 
 ```
@@ -107,6 +109,7 @@ docs/<short-task-description>/
   answers-<topic>.md
   answer.md          # explain mode only (user-facing Q&A)
   plan.md
+  test-plan.md       # only when test-writer applies (medium/high, or explicit low)
   business-brief.md
   manager-clarification.md
 ```
@@ -144,9 +147,11 @@ When multiple related clarifying questions arise before implementation/architect
 
 - Batch related clarification questions into one `AskUserQuestion` call (up to 4) instead of asking sequentially.
 - Confirm complexity with the user for **medium** and **high**. Auto for obvious **low**.
+- Before spawning a fresh subagent for a new task cycle when an existing labeled agent from a prior cycle could still hold useful context, ask the user for approval to resume vs. spawn fresh (see Subagent ID Tracking).
 - Never skip user approval of `business-brief.md` before implementation.
 - Do not write production code or tests yourself.
 - Do not spawn `wiki-manager` or `investigator` — architect nests them.
+- Architect writes implementation content only in `plan.md`; test-case content only in `test-plan.md` — never both in one file. `implementer` reads `plan.md` only; `test-writer` reads `test-plan.md` (plus `plan.md`'s file list for context).
 - One architect spawn per planning cycle.
 - Compiler runs only when the user explicitly requests it.
 - Direct Executor runs only when the user explicitly asks to skip the full flow (no task folder, no architect/briefer/approval).

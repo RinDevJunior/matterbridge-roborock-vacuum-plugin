@@ -1,19 +1,17 @@
 {
-  "permissions": {
-    "allow": [
-      "Bash(npm run test:*)",
-      "Bash(npm run build:local:*)",
-      "Bash(npm run coverage:*)",
-      "Bash(npm run type-check:*)",
-      "Bash(npm run precommit:*)",
-      "mcp__codecov__get_pull_request_coverage",
-      "mcp__plugin_claude-mem_mcp-search__smart_search",
-      "mcp__plugin_claude-mem_mcp-search__smart_unfold"
-    ]
-  },
-  "enabledMcpjsonServers": [
-    "codegraph"
-  ],
-  "outputStyle": "default",
-  "spinnerTipsEnabled": true
+	"permissions": {
+		"allow": [
+			"Bash(npm run test:*)",
+			"Bash(npm run build:local:*)",
+			"Bash(npm run coverage:*)",
+			"Bash(npm run type-check:*)",
+			"Bash(npm run precommit:*)",
+			"mcp__codecov__get_pull_request_coverage",
+			"mcp__plugin_claude-mem_mcp-search__smart_search",
+			"mcp__plugin_claude-mem_mcp-search__smart_unfold"
+		]
+	},
+	"enabledMcpjsonServers": ["codegraph"],
+	"outputStyle": "default",
+	"spinnerTipsEnabled": true
 }

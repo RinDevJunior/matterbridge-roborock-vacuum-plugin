@@ -39,6 +39,10 @@ export class ClientRouter implements Client {
 		this.context.updateNonce(duid, nonce);
 	}
 
+	public getSerializeNonce(): Buffer {
+		return this.context.serializeNonce;
+	}
+
 	public registerClient(duid: string, ip: string): Client {
 		const localClient = new LocalNetworkClient(this.logger, this.context, duid, ip, this.broadcasterFactory);
 		localClient.registerConnectionListener(this.connectionBroadcaster);
