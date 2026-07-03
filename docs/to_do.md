@@ -13,11 +13,13 @@
 - [x] V1 map inner decryption — `decryptAndUnzipV1Map` + CLI decrypt step before parse; `ClientRouter.getSerializeNonce()`
 - [x] A187 legacy map parse fix — Int32LE field widths in `LegacyMapParser`; CLI fire-and-forget `getHomeMap`; live-validated on A187
 - [x] Legacy map room names (CLI) — `mapListHelpers` + parallel `getMapInfo`/`getDeviceStatus` in `legacy-map-info`; shared with `map-info`
+- [x] B01 currentPose/roomMatrix Phase 1 — shared decode core (`roborockProto`, `b01MapParser`, `types`), safe no-op `resolveRoomFromPose()`, `b01-pose-info` CLI for real Q10 capture
 
 ## Pending
 
 ### Implementation Tasks
 
+- [ ] **B01 currentPose Phase 2 (deferred)** — implement `roomMatrix` pixel-to-room decode once real Q10 data confirms wire layout (via `b01-pose-info`); wire into `areaManagementService`, `roborockService`, `mapInfoListener`, `serviceAreaHandler` for live multi-room `currentArea`
 - [ ] **Legacy map → plugin** — wire `LegacyMapParser.resolveCurrentRoom` into runtime for V1 devices lacking `vacuumRoom` in status (replace or supplement `getRoomIdFromMap`); reuse `decryptAndUnzipV1Map` for Protocol 301 push; resolve segment names from `device.mapInfos` (not nonexistent `device.rooms`)
 - [ ] **Legacy map hex fixture** — optional: capture A187 `"rr"` binary from live run for regression fixture
 

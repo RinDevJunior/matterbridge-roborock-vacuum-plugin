@@ -4,7 +4,7 @@ import zlib from 'node:zlib';
 import protobuf from 'protobufjs';
 
 import { ROBOROCK_PROTO_STR } from './roborockProto.js';
-import { B01MapInfo, B01RoomInfo } from './types.js';
+import { B01MapInfo, B01Pose, B01RoomInfo, B01RoomMatrix } from './types.js';
 
 export class B01MapParser {
 	private readonly robotMapType: protobuf.Type;
@@ -64,8 +64,23 @@ export class B01MapParser {
 		const mapHead = decoded.mapHead as Record<string, unknown> | undefined;
 		const mapId = typeof mapHead?.mapHeadId === 'number' && mapHead.mapHeadId > 0 ? mapHead.mapHeadId : undefined;
 
+		const currentPoseRaw = decoded.currentPose as Record<string, unknown> | undefined;
+		const currentPose: B01Pose | undefined =
+			currentPoseRaw && typeof currentPoseRaw.x === 'number' && typeof currentPoseRaw.y === 'number'
+				? {
+						x: currentPoseRaw.x,
+						y: currentPoseRaw.y,
+						phi: typeof currentPoseRaw.phi === 'number' ? currentPoseRaw.phi : undefined,
+					}
+				: undefined;
+
+		const roomMatrixRaw = decoded.roomMatrix as Record<string, unknown> | undefined;
+		const matrixBytes = roomMatrixRaw?.matrix;
+		const roomMatrix: B01RoomMatrix | undefined =
+			Buffer.isBuffer(matrixBytes) && matrixBytes.length > 0 ? { data: matrixBytes } : undefined;
+
 		if (!roomDataInfo || roomDataInfo.length === 0) {
-			return { rooms: [], mapId };
+			return { rooms: [], mapId, currentPose, roomMatrix };
 		}
 
 		const rooms: B01RoomInfo[] = roomDataInfo.map((r) => {
@@ -79,6 +94,6 @@ export class B01MapParser {
 			};
 		});
 
-		return { rooms, mapId };
+		return { rooms, mapId, currentPose, roomMatrix };
 	}
 }

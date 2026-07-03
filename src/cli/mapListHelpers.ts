@@ -1,4 +1,4 @@
-import type { LegacyNamedRoom } from '../roborockCommunication/map/legacy/mapParser.js';
+import type { LegacyNamedRoom } from '../roborockCommunication/map/v1/mapParser.js';
 import { Protocol, ResponseMessage } from '../roborockCommunication/models/index.js';
 
 function unwrapRpcResult(msg: ResponseMessage): unknown {

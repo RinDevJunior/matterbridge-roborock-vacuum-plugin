@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { LegacyMapParser } from '../../../../roborockCommunication/map/legacy/mapParser.js';
+import { LegacyMapParser } from '../../../../roborockCommunication/map/v1/mapParser.js';
 import { buildGenericBlock, buildLegacyMapBuffer } from '../../../testUtils.js';
 
 describe('LegacyMapParser', () => {

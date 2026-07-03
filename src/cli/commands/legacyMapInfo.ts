@@ -1,7 +1,7 @@
 import { AnsiLogger } from 'matterbridge/logger';
 
-import { LegacyMapParser } from '../../roborockCommunication/map/legacy/mapParser.js';
-import { decryptAndUnzipV1Map } from '../../roborockCommunication/map/legacy/v1MapDecryptor.js';
+import { LegacyMapParser } from '../../roborockCommunication/map/v1/mapParser.js';
+import { decryptAndUnzipV1Map } from '../../roborockCommunication/map/v1/v1MapDecryptor.js';
 import { Protocol } from '../../roborockCommunication/models/index.js';
 import { connectDevice } from '../connection.js';
 import {

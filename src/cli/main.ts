@@ -1,6 +1,7 @@
 import { LogLevel } from 'matterbridge/logger';
 import { AnsiLogger } from 'matterbridge/logger';
 
+import { cmdB01PoseInfo } from './commands/b01PoseInfo.js';
 import { cmdCleanMode } from './commands/cleanMode.js';
 import { cmdCustom } from './commands/custom.js';
 import { cmdDevices } from './commands/devices.js';
@@ -85,6 +86,9 @@ export async function main(): Promise<void> {
 				break;
 			case 'legacy-map-info':
 				await cmdLegacyMapInfo(duid, session, logger, local);
+				break;
+			case 'b01-pose-info':
+				await cmdB01PoseInfo(duid, session, logger, local);
 				break;
 			case 'clean-mode':
 				await cmdCleanMode(duid, session, logger, local);

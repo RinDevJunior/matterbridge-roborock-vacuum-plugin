@@ -1,5 +1,25 @@
 # Claude History
 
+## 2026-07-03 — B01 currentPose/roomMatrix decode (Phase 1 CLI)
+
+**Task:** Phase 1 only — decode Q10 `currentPose`/`roomMatrix` from B01 RobotMap protobuf and expose via `b01-pose-info` CLI; shared core with safe no-op `resolveRoomFromPose()`. Phase 2 production wiring explicitly deferred.
+
+**Changes:**
+
+- `src/roborockCommunication/map/b01/roborockProto.ts` — `currentPose` (field 8) and `roomMatrix` (field 13) on RobotMap
+- `src/roborockCommunication/map/b01/types.ts` — `B01Pose`, `B01RoomMatrix`; extended `B01MapInfo`
+- `src/roborockCommunication/map/b01/b01MapParser.ts` — defensive extraction of currentPose/roomMatrix
+- `src/roborockCommunication/map/b01/roomMatrixResolver.ts` — new; `resolveRoomFromPose()` safe no-op (always undefined)
+- `src/cli/commands/b01PoseInfo.ts` — new `b01-pose-info` command (connectDevice → waitForPush → parse → resolve → print)
+- `src/cli/main.ts`, `src/cli/help.ts` — wire `b01-pose-info` command and help row
+- Incidental: legacy map path renamed `legacy` → `v1` (`mapParser`, `types`, `v1MapDecryptor` + tests)
+- `src/tests/cli/b01PoseInfo.test.ts` — CLI command tests
+- `src/tests/roborockCommunication/map/b01/roomMatrixResolver.test.ts` — resolver guard tests
+- `src/tests/roborockCommunication/map/b01/b01MapParser.test.ts` — currentPose/roomMatrix extraction tests
+- `src/tests/cli/mapListHelpers.test.ts` — updated for v1 path rename
+
+**Outcome:** Pass (Phase 1 only, reviewed). CLI ready for real Q10 device capture; room-matrix pixel decode intentionally unimplemented; Phase 2 (areaManagementService/roborockService/mapInfoListener/serviceAreaHandler wiring) deferred.
+
 ## 2026-07-03 — Legacy map room names in legacy-map-info CLI
 
 **Task:** Wire human-readable room names into `legacy-map-info` by fetching `get_multi_maps_list` + active map status in parallel with the V1 binary push, mapping `rooms[].iot_name` to segment IDs on the active map.

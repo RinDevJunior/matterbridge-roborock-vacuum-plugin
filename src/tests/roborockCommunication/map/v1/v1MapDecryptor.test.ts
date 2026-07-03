@@ -2,7 +2,7 @@ import crypto from 'node:crypto';
 
 import { describe, expect, it } from 'vitest';
 
-import { decryptAndUnzipV1Map } from '../../../../roborockCommunication/map/legacy/v1MapDecryptor.js';
+import { decryptAndUnzipV1Map } from '../../../../roborockCommunication/map/v1/v1MapDecryptor.js';
 import { buildEncryptedV1MapPayload, buildLegacyMapBuffer } from '../../../testUtils.js';
 
 describe('decryptAndUnzipV1Map', () => {

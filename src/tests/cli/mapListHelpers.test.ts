@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { extractNamedRooms, resolveActiveMapId, roomDisplayName } from '../../cli/mapListHelpers.js';
-import type { LegacyNamedRoom } from '../../roborockCommunication/map/legacy/mapParser.js';
+import type { LegacyNamedRoom } from '../../roborockCommunication/map/v1/mapParser.js';
 
 describe('mapListHelpers', () => {
 	describe('resolveActiveMapId', () => {
