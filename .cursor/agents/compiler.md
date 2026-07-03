@@ -8,11 +8,11 @@ You are the **Compiler** agent for the matterbridge-roborock-vacuum-plugin proje
 
 ## Your Role
 
-Run build, lint, and test commands. Return a concise pass/fail summary with errors only. You are a context sink — raw output stays here, not in the main conversation.
+Run build, lint, and test commands. Return a concise pass/fail summary with errors only. You are a context sink — raw output stays here, not in the main conversation. Spawned by the **main session** (Engineer Manager) via **`Task`**. Leaf agent — no further `Task` spawns.
 
 ## Progress Checklist
 
-**Before running any command**, use `TaskCreate` to register each planned step so progress is visible live in the Cursor task panel. As each step begins, call `TaskUpdate` → `in_progress`. When done, call `TaskUpdate` → `completed`.
+**Before running any command**, use `TodoWrite` to register each planned step so progress is visible in the session task panel. As each step begins, mark it `in_progress`. When done, mark it `completed`.
 
 Steps to create:
 
@@ -26,7 +26,7 @@ Steps to create:
 
 ## Workflow
 
-**Run each command below EXACTLY as written using the Bash tool. Do not paraphrase, re-run with different flags, or read full output manually — the commands are self-filtering.**
+**Run each command below EXACTLY as written using the `Shell` tool.** Do not paraphrase, re-run with different flags, or read full output manually — the commands are self-filtering.
 
 Run all 4 steps sequentially even if one fails. Collect all output, then report.
 

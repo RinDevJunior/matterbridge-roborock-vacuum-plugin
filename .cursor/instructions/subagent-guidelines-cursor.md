@@ -4,7 +4,7 @@ Cursor-specific subagent patterns for this repository.
 
 **Official reference:** [Cursor Subagents docs](https://cursor.com/docs/subagents)
 
-**Agent SDK equivalent:** `.claude/instructions/subagent-guidelines.md` (`Agent` tool, `AgentDefinition`, `subagentId`).
+**Claude Code equivalent:** `.claude/agents/` + `.claude/instructions/agent-prompts.md` (`Agent` tool). Do not mix paths when editing policy.
 
 ---
 
@@ -13,7 +13,7 @@ Cursor-specific subagent patterns for this repository.
 - Subagents are specialized assistants that the parent agent delegates to via the **`Task`** tool
 - Each subagent runs in its **own context window** with a clean slate — it does not see the parent's message history
 - The parent includes necessary context in the spawn prompt; only the subagent's **final summary** returns to the parent
-- Subagents inherit workspace rules (`CLAUDE.md`, `.cursor/rules/`), skills, and MCP tools from the parent session
+- Subagents inherit workspace rules (`AGENTS.md` → `.cursor/CURSOR.md`), `.cursor/agents/`, skills, and MCP tools from the parent session — **not** `.claude/CLAUDE.md` or `.claude/` (disable third-party imports in Cursor settings)
 - Use subagents to isolate long research, run work in parallel, and preserve main-session context
 
 ### Foreground vs background
@@ -25,6 +25,8 @@ Cursor-specific subagent patterns for this repository.
 
 Background subagents write progress to `~/.cursor/subagents/`; the parent can read those files to check status.
 
+**This project:** Default to **foreground** for the EM pipeline (architect → briefer → approval → implementer → …). Use background only when the user asks or work is independent (e.g. parallel investigations).
+
 ---
 
 ## Spawning Subagents
@@ -33,7 +35,7 @@ Background subagents write progress to `~/.cursor/subagents/`; the parent can re
 - Pass a focused **`prompt`** with all context the subagent needs (task folder paths, mode, constraints)
 - Subagents do **not** see parent message history — only the task description you pass
 - Parent context grows by subagent summary, not full transcript
-- Launch **multiple `Task` calls in one message** to run subagents in parallel
+- Launch **multiple `Task` calls in one message** to run subagents in parallel when they do not depend on each other
 
 ### Automatic delegation
 
@@ -44,8 +46,8 @@ Cursor Agent may delegate proactively based on task complexity, custom subagent 
 Request a custom subagent by name:
 
 ```text
-/verifier confirm the auth flow is complete
-/technical-architect plan the subagent config upgrade
+/technical-architect plan the room-detection change
+/briefer summarize the approved plan
 ```
 
 Or mention naturally: "Use the briefer subagent to summarize the plan."
@@ -54,36 +56,37 @@ Or mention naturally: "Use the briefer subagent to summarize the plan."
 
 ```typescript
 Task({
-  description: "Brief: subagent config upgrade",  // short UI title
-  subagent_type: "briefer",                       // built-in type or custom agent name
-  model: "claude-4.6-sonnet-medium",              // optional override
-  prompt: "Task folder: docs/subagent-config-upgrade/\n...",
-  readonly: false,                                // true = no file edits or state-changing shell
-  run_in_background: false,                        // true = background mode
-})
+  description: "Brief: room detection", // short UI title
+  subagent_type: "briefer", // built-in type or `.cursor/agents/` name
+  model: "composer-2.5-fast", // optional — see Model configuration below
+  prompt: "Task folder: docs/room-detection/\n...",
+  readonly: false, // true = no file edits or state-changing shell
+  run_in_background: false, // true = background mode
+});
 ```
+
+Spawn templates for this repo: `.cursor/instructions/agent-prompts.md`. Role prompts: `.cursor/agents/<name>.md` (Cursor does not auto-load them — the spawn `prompt` must carry task context).
 
 ### Built-in subagents (Cursor-provided)
 
-Cursor includes three built-in subagents for context-heavy operations — Agent uses them automatically when appropriate:
+Cursor includes built-in subagents for context-heavy operations — Agent may use them automatically when appropriate:
 
 | Subagent  | Purpose                                                                        |
 | --------- | ------------------------------------------------------------------------------ |
-| `explore` | Codebase search and analysis (uses a faster model; supports parallel searches) |
+| `explore` | Codebase search and analysis (faster model; supports parallel searches)        |
 | `bash`    | Series of shell commands (isolates verbose command output)                     |
 | `browser` | Browser automation via MCP (filters noisy DOM/screenshot output)               |
 
-You do not configure these. Agent delegates to them when the task fits.
+You do not configure these. Prefer **project custom agents** in `.cursor/agents/` for the EM workflow.
 
 ### Custom subagent file locations
 
-| Type             | Location            | Scope                                       |
-| ---------------- | ------------------- | ------------------------------------------- |
-| Project          | `.cursor/agents/`   | Current project (preferred)                 |
-| Project (compat) | `.claude/agents/`   | Current project — Claude Code compatibility |
-| User             | `~/.cursor/agents/` | All projects for current user               |
+| Type             | Location            | Scope                     |
+| ---------------- | ------------------- | ------------------------- |
+| Project          | `.cursor/agents/`   | This repo (canonical)     |
+| User             | `~/.cursor/agents/` | All projects for the user |
 
-When names conflict, `.cursor/` takes precedence over `.claude/` or `.codex/`. This repo maintains both trees; edit `.claude/agents/` then re-mirror to `.cursor/agents/` when agent roles change.
+**Do not** edit `.claude/agents/` when working in Cursor — maintain `.cursor/agents/` for Cursor-specific syntax (`Task`, `TodoWrite`, Serena). Mirror to `.claude/` only when a change applies to both tools.
 
 ---
 
@@ -100,13 +103,11 @@ Task({
   description: "TA follow-up: plan question",
   subagent_type: "technical-architect",
   resume: "<agent-id-from-prior-spawn>",
-  prompt: "User follow-up: why did you choose approach A over B?"
-})
+  prompt: "User follow-up: why did you choose approach A over B?",
+});
 ```
 
-Or in chat: `Resume agent abc123 and analyze the remaining test failures`.
-
-**This project:** Engineer Manager saves agent IDs per task cycle (`ta_id`, `briefer_id`, etc.). See `CLAUDE.md` → **Subagent ID Tracking** for resume-vs-fresh-spawn rules. Clear all IDs when starting a new task cycle.
+**This project:** Engineer Manager saves agent IDs per task cycle (`ta_id`, `briefer_id`, etc.). See `.cursor/CURSOR.md` → **Subagent ID Tracking** for resume-vs-fresh-spawn rules. Clear all IDs when starting a new task cycle.
 
 ---
 
@@ -120,7 +121,7 @@ Custom subagents are markdown files with YAML frontmatter followed by the role p
 | --------------- | -------- | --------------------- | -------------------------------------------------------- |
 | `name`          | No       | Derived from filename | Display name and identifier (lowercase, hyphens)         |
 | `description`   | No       | —                     | When Agent should delegate; shown in Task tool hints     |
-| `model`         | No       | `inherit`             | `inherit` (parent model) or a specific model ID          |
+| `model`         | No       | `inherit`             | `inherit` (parent model) or a specific model slug        |
 | `readonly`      | No       | `false`               | Restrict writes — no file edits, no state-changing shell |
 | `is_background` | No       | `false`               | Run in background without blocking parent                |
 
@@ -128,88 +129,84 @@ Example:
 
 ```markdown
 ---
-name: code-reviewer
-description: Reviews code for correctness and style. Use after implementation.
-model: inherit
+name: reviewer
+description: Reviews code against plan.md. Use after implementation.
+model: claude-4.6-sonnet-medium
 readonly: true
 ---
 
-Review the code changes for bugs, style issues, and edge cases.
+Review the code changes for bugs, style issues, and plan conformance.
 ```
 
 ### Task tool parameters (runtime overrides)
 
-| Parameter           | Description                                                    |
-| ------------------- | -------------------------------------------------------------- |
-| `description`       | Short title shown in the UI                                    |
-| `subagent_type`     | Built-in type, custom agent name, or `generalPurpose` fallback |
-| `prompt`            | Task-specific context and instructions                         |
-| `model`             | Model override for this invocation                             |
-| `readonly`          | Restrict to read-only operations                               |
-| `run_in_background` | Non-blocking background execution                              |
-| `resume`            | Agent ID to continue a prior session                           |
+| Parameter           | Description                                         |
+| ------------------- | --------------------------------------------------- |
+| `description`       | Short title shown in the UI                         |
+| `subagent_type`     | Built-in type or `.cursor/agents/` name             |
+| `prompt`            | Task-specific context and instructions            |
+| `model`             | Model override for this invocation                  |
+| `readonly`          | Restrict to read-only operations                    |
+| `run_in_background` | Non-blocking background execution                   |
+| `resume`            | Agent ID to continue a prior session                |
 
 ### Model configuration
 
-| Value             | Behavior                                                                   |
-| ----------------- | -------------------------------------------------------------------------- |
-| `inherit`         | Same model as parent (default)                                             |
-| Specific model ID | Exact model for this subagent (e.g. `composer-2.5-fast`, `gpt-5.5-medium`) |
+| Slug / value              | This project — when to use                                                                 |
+| ------------------------- | ------------------------------------------------------------------------------------------ |
+| *(omit `model`)*          | **Auto** — use when preferred slug hits a **usage limit** (retry spawn without `model`)      |
+| `composer-2.5-fast`       | Fast / leaf: `compiler`, `briefer`, `wiki-manager` (gather), `documenter`, `finalizer`     |
+| `claude-4.6-sonnet-medium`| Reasoning: `technical-architect`, `implementer`, `reviewer`, `test-writer`, `investigator`, `direct-executor`, `release-manager`; `wiki-manager` (update) |
 
-Cursor may fall back if the model is blocked by team admin, requires Max Mode, or is unavailable on your plan.
+**Main session (EM):** always **Auto**. Do not upgrade subagent models unless the user asks or a subagent reports it is blocked on reasoning.
 
-**This project:** EM (main session) uses **Auto**. Subagent models follow `.claude/instructions/agent-prompts.md`. Do not upgrade unless the user asks or a subagent reports it is blocked.
-
-### Agent SDK frontmatter (this repo)
-
-Our `.claude/agents/*.md` files include Agent SDK metadata (`effort`, `maxTurns`, `tools`) for Claude Code. Cursor reads `.cursor/agents/*.md` with `name`, `description`, `model`, and optional `readonly`.
+Details: `.cursor/CURSOR.md` → **Model policy** and `.cursor/instructions/agent-prompts.md`.
 
 ---
 
 ## Nested Subagents
 
-- Subagents can spawn their own subagents (Cursor 2.5+), forming a tree of coordinated work
-- A subagent launched by another subagent **cannot** launch further subagents (one level of nesting from children)
-- Nested launches require Task tool access in the current mode; hooks or tool policies can block spawning
-- Prevent nesting in a custom agent by constraining its prompt (no delegation instructions) or using `readonly: true`
+- Subagents spawned by **technical-architect** or **documenter** are **leaf** nodes in this repo — they do not spawn further subagents
+- TA nests `wiki-manager` (gather) and optionally `investigator`; documenter nests `wiki-manager` (update) only
+- EM **must not** spawn `wiki-manager` or `investigator` directly
 
 **This project orchestration tree:**
 
+```text
+Engineer Manager (main session — Auto)
+  ├── technical-architect
+  │     ├── wiki-manager   (gather — leaf)
+  │     └── investigator   (leaf — only if gaps remain)
+  ├── briefer → AskQuestion approval → implementer → reviewer → test-writer → documenter
+  │     └── wiki-manager   (update — nested by documenter only)
+  ├── compiler / finalizer / release-manager / direct-executor (leaf)
+  └── …
 ```
-Engineer Manager (main session)
-  └── technical-architect
-        ├── wiki-manager   (leaf — never spawn from EM)
-        └── investigator   (leaf — only if gaps remain)
-```
-
-EM **must not** spawn `wiki-manager` or `investigator` directly — technical-architect nests them during planning.
 
 ---
 
 ## Best Practices
 
-- Use subagents for **isolated, well-defined subtasks** — not simple one-shot actions (use skills instead)
+- Use subagents for **isolated, well-defined subtasks** — not simple one-shot actions
 - Keep subagent **prompts focused and specific**; long prompts dilute focus
 - **Invest in `description`** — it determines when Agent delegates automatically
-- Use **`readonly: true`** for review, audit, and verification agents
+- Use **`readonly: true`** for review and audit agents (`reviewer`)
 - Use **background mode** for long-running or parallel work; use **foreground** for sequential gates
 - **Resume** subagents for multi-turn follow-ups within the same task cycle
-- Add `.cursor/agents/` (or `.claude/agents/`) to version control so the team shares definitions
+- Commit `.cursor/agents/` so the team shares definitions
 - Prefer the **minimum** subagents required; parallel subagents multiply token usage
 
 ### This project (Engineer Manager)
 
-- Spawn templates: `.claude/instructions/agent-prompts.md`
-- User input from subagents: `.cursor/instructions/user-input-guidelines-cursor.md` (`AskQuestion`)
-- EM workflow: `CLAUDE.md`, `.cursor/rules/engineer-manager.mdc`
-- **Compiler:** use `npm run test:ci` — never paste full test output into the main session
+- Spawn templates: `.cursor/instructions/agent-prompts.md`
+- EM workflow & user input: `.cursor/CURSOR.md` (`AskQuestion` for EM; briefer runs approval gate — see `.cursor/agents/briefer.md`)
+- **Compiler:** `npm run test:ci` — never paste full test output into the main session
 - One **technical-architect** spawn per planning cycle unless the user rejects the brief
-- Use `/name` or `subagent_type: "<name>"` — custom agents load from `.cursor/agents/` automatically
-- Use `generalPurpose` + embed rules only when a built-in type is unavailable in your Cursor version
+- Use `subagent_type: "<name>"` — custom agents load from `.cursor/agents/` automatically
 
 ### Anti-patterns
 
 - Vague descriptions ("helps with coding") — Agent won't know when to delegate
 - Spawning dozens of generic subagents — start with 2–3 focused roles
-- Duplicating skills as subagents — single-purpose tasks don't need a separate context window
+- Loading `.claude/` policy in Cursor — disable third-party imports; use `AGENTS.md` + `.cursor/CURSOR.md`
 - Pasting full subagent transcripts into the main session — summaries only

@@ -109,6 +109,8 @@ For a detailed table of how Apple Home clean modes map to Roborock settings, see
 - A working installation of [Matterbridge](https://github.com/Luligu/matterbridge)
 - Compatible Roborock vacuum model (not all models supported yet)
 
+**Developers:** see [README_DEV.md](./README_DEV.md) (build, tests, AI tooling for Claude Code & Cursor).
+
 ---
 
 ### ⚙️ Matterbridge setting

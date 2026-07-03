@@ -1,11 +1,11 @@
 ---
 name: load-policy
-description: "Force-loads the team orchestration policy into the current session. Use when Claude has not read CLAUDE.md or the orchestration policy is not active."
+description: "Force-loads the team orchestration policy into the current session. Use when Claude has not read .claude/CLAUDE.md or the orchestration policy is not active."
 ---
 
 Read and apply the orchestration policy and agent prompts now:
 
-@CLAUDE.md
+@.claude/CLAUDE.md
 @.claude/instructions/team-orchestrator-policy.md
 @.claude/instructions/agent-prompts.md
 

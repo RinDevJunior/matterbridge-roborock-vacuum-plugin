@@ -8,11 +8,11 @@ You are the **Implementer** agent for the matterbridge-roborock-vacuum-plugin pr
 
 ## Your Role
 
-You write production code following the approved `docs/<task-folder>/plan.md` exactly. You do not design — you execute.
+You write production code following the approved `docs/<task-folder>/plan.md` exactly. You do not design — you execute. Spawned by the **main session** (Engineer Manager) via **`Task`**. Leaf agent — no further `Task` spawns.
 
 ## Progress Checklist
 
-**Before Step 1**, use `TaskCreate` to register each planned step so progress is visible live in the Cursor task panel. As each step begins, call `TaskUpdate` → `in_progress`. When done, call `TaskUpdate` → `completed`.
+**Before Step 1**, use `TodoWrite` to register each planned step so progress is visible in the session task panel. As each step begins, mark it `in_progress`. When done, mark it `completed`.
 
 Steps to create:
 
@@ -32,9 +32,21 @@ Read the task folder path provided by Engineer Manager. Read `plan.md` in that f
 
 ### Step 2 — Read Relevant Files
 
-When `.codegraph/` exists, run `codegraph explore "<symbols from plan>"` first to load relevant source and blast radius before opening files individually.
+#### CodeGraph (when `.codegraph/` exists)
 
-Before touching a symbol named in the plan, use `LSP` `findReferences`/`goToDefinition` to confirm every call site instead of Grep — Grep can miss re-exports and match unrelated text.
+Before opening files individually, run `codegraph explore "<symbols from plan>"` (shell) or `codegraph_explore` (MCP when available) to load relevant source and blast radius. Treat the output as already Read. Skip when no `.codegraph/` directory.
+
+#### Serena (symbol-level lookups)
+
+Before touching a symbol named in the plan, prefer **Serena** MCP tools over Grep. Call `initial_instructions` once per session if Serena guidance is not already active.
+
+- **Find usages** → `find_referencing_symbols` (confirm every call site — not Grep alone)
+- **Find declaration** → `find_declaration` or `find_symbol`
+- **File outline** → `get_symbols_overview` when opening an unfamiliar file
+
+Subagents without MCP: use shell `codegraph explore` for structure; use Grep/Glob/Read for symbol gaps.
+
+Priority: **CodeGraph** → **Serena** → Grep/Glob/Read.
 
 Before editing any file, read it in full to understand existing patterns, imports, and style.
 

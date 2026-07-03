@@ -13,6 +13,68 @@
 
 ---
 
+## AI tooling (Claude Code & Cursor)
+
+This repo supports **both** [Claude Code](https://code.claude.com/) and [Cursor](https://cursor.com/) with **separate, parallel config**. Each tool reads only its own tree — do not mix paths when editing policy or agents.
+
+### Layout
+
+```text
+CLAUDE.md                 # Router (tiny) → read .claude/CLAUDE.md if you are Claude Code
+AGENTS.md                 # Router + @.cursor/CURSOR.md (Cursor auto-load) if you are Cursor
+
+.claude/
+  CLAUDE.md               # Full orchestration policy (Claude Code)
+  agents/                 # Subagent role definitions
+  instructions/           # Spawn prompt templates (Agent tool)
+
+.cursor/
+  CURSOR.md               # Full orchestration policy (Cursor) — same structure as .claude/CLAUDE.md
+  agents/                 # Subagent role definitions (mirrored)
+  instructions/           # Spawn prompt templates (Task tool)
+  mcp.json                # CodeGraph + Serena MCP servers
+```
+
+Root `CLAUDE.md` is loaded by **both** tools (Cursor compatibility). It only tells Claude Code to open `.claude/CLAUDE.md` and tells other tools to ignore `.claude/`.
+
+### Which file to edit
+
+| You use         | Edit policy here    | Edit agents here  |
+| --------------- | ------------------- | ----------------- |
+| **Claude Code** | `.claude/CLAUDE.md` | `.claude/agents/` |
+| **Cursor**      | `.cursor/CURSOR.md` | `.cursor/agents/` |
+
+**Shared template:** `.claude/CLAUDE.md` and `.cursor/CURSOR.md` use the **same section order and headings**. Tool-specific differences (e.g. `Agent` vs `Task`, LSP vs Serena) live in the matching slots only.
+
+When you change orchestration policy or an agent role, update **both** trees if the change applies to both tools — or only your tool’s folder if the change is tool-specific.
+
+### Cursor — recommended settings
+
+1. **Disable third-party imports** (stops Cursor from loading `.claude/` skills, agents, and plugins):
+   - **Cursor Settings → Rules, Skills, Subagents**
+   - Turn **off** “Include third-party Plugins, Skills, and other configs”
+2. Rely on committed config: `AGENTS.md` (includes `@.cursor/CURSOR.md`), `.cursor/agents/`, `.cursor/mcp.json`.
+
+After changing settings, open a **new Agent chat** and confirm the session follows `.cursor/CURSOR.md`, not `.claude/CLAUDE.md`.
+
+### Code navigation by tool
+
+| Tool            | Symbol / structure lookup                                 | Call paths & blast radius              |
+| --------------- | --------------------------------------------------------- | -------------------------------------- |
+| **Claude Code** | LSP (`findReferences`, `goToDefinition`, …)               | CodeGraph (`codegraph_explore` or CLI) |
+| **Cursor**      | Serena MCP (`find_symbol`, `find_referencing_symbols`, …) | CodeGraph (`codegraph_explore` or CLI) |
+
+See [README_CODEGRAPH.md](README_CODEGRAPH.md) for CodeGraph setup. Serena is configured in `.cursor/mcp.json`.
+
+### MCP servers (this repo)
+
+| Server    | Claude Code | Cursor             |
+| --------- | ----------- | ------------------ |
+| CodeGraph | `.mcp.json` | `.cursor/mcp.json` |
+| Serena    | —           | `.cursor/mcp.json` |
+
+---
+
 ## Project Structure (Key Files)
 
 | File                                                                                                                               | Purpose                                                                  |
