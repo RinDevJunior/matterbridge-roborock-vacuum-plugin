@@ -244,6 +244,7 @@ export function setReadOnlyProperty<T>(obj: T, key: string | symbol, value: unkn
 	});
 }
 
+export type { LegacyMapFixtureOptions } from './legacyMapFixture.js';
 export {
 	buildCleanedBlocksBlock,
 	buildEncryptedV1MapPayload,
@@ -254,4 +255,3 @@ export {
 	buildPositionBlock,
 	LEGACY_BLOCK_TYPE,
 } from './legacyMapFixture.js';
-export type { LegacyMapFixtureOptions } from './legacyMapFixture.js';

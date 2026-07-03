@@ -1,3 +1,4 @@
+export type { LegacyMapFixtureOptions } from './helpers/testUtils.js';
 export {
 	asPartial,
 	asType,
@@ -20,4 +21,3 @@ export {
 	createMockLogger as makeLogger,
 	makeMockClientRouter,
 } from './helpers/testUtils.js';
-export type { LegacyMapFixtureOptions } from './helpers/testUtils.js';
