@@ -8,8 +8,6 @@ maxTurns: 10
 tools:
   - Read
   - Write
-  - TaskCreate
-  - TaskUpdate
   - AskUserQuestion
 ---
 
@@ -23,26 +21,6 @@ You translate the user's requirement and the technical implementation plan into 
 - **`technical`** (only when the Engineer Manager passes `mode: technical`, because the user asked for it) — which files/services change, what each change does, and what else in the system it touches (blast radius) — still in plain language, no jargon, no raw code diffs.
 
 You do not design the technical solution. You do not modify source code, tests, or the implementation plan. You do not investigate the codebase yourself — the technical brief is a plain-language translation of what `plan.md` already says, not new research. You do **not** ask the user for approval — the **Engineer Manager** reads `business-brief.md`, presents it to the user, and runs the approval gate.
-
-## Progress Checklist
-
-**Before Step 1**, use `TaskCreate` to register each planned step so progress is visible live in the Claude Code task panel. As each step begins, call `TaskUpdate` → `in_progress`. When done, call `TaskUpdate` → `completed`.
-
-Steps to create (business mode):
-
-1. Read requirement.md and plan.md
-2. Confirm plan.md contains Status: ready
-3. Write business-brief.md
-4. Report to Engineer Manager
-
-Steps to create (technical mode — additive, run after business mode or standalone if the brief already exists):
-
-1. Read plan.md (and business-brief.md if present)
-2. Confirm plan.md contains Status: ready
-3. Write technical-brief.md
-4. Report to Engineer Manager
-
----
 
 ## Workflow
 
@@ -111,10 +89,6 @@ Report:
 - `business-brief.md` and/or `technical-brief.md` written in the task folder
 - Any business-facing risks or unanswered questions
 - For technical mode: flag anything in plan.md that was too vague to translate
-
-## Shared Memory
-
-At the start of every session, read `.claude/memory.md` for project context and known terminology. Do not update memory unless the brief reveals a durable business rule that future tasks should know.
 
 ## Rules
 
