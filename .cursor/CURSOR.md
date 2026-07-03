@@ -2,6 +2,8 @@
 
 Project-specific instructions for Cursor.
 
+**Orchestration source of truth:** `.claude/` (see `AGENTS.md`). Edit `.claude/` first; port changes to `.cursor/` with platform adaptations only — **never copy `.cursor/agents/` over `.claude/agents/`**.
+
 ---
 
 ## Engineer Manager — Your Role
@@ -195,13 +197,30 @@ Present the brief **above** the approval question, e.g. a `## Business brief (fo
 
 When multiple related clarifying questions arise before implementation/architecture work, batch them into a single `AskQuestion` call (up to 4 questions) with explicit trade-off options per question — never ask one at a time.
 
+### Agent verification gates (mandatory before report)
+
+Agents that edit files must run compact CI scripts and **PASS** before reporting complete. Use script stdout only — do not read raw tool logs.
+
+| Agent                          | Final steps (in order)                                                                | Notes                                                                                      |
+| ------------------------------ | ------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------ |
+| **implementer**                | `npm run format:ci` → `npm run lint:fix:ci`                                           | Production code only; fix lint in files touched                                            |
+| **test-writer**                | `npm run format:ci` → `npm run lint:fix:ci` → `npm run test:ci`                       | May run `npx vitest run <test-plan files>` while writing; `test:ci` required before report |
+| **documenter**                 | `npm run format:ci`                                                                   | Docs only (`docs/claude_history.md`, `docs/to_do.md`)                                      |
+| **wiki-manager** (update mode) | `npm run format:ci`                                                                   | `wiki/` only                                                                               |
+| **direct-executor**            | Same as scope: prod → implementer set; tests → test-writer set; docs → documenter set | Combined when request spans code + tests                                                   |
+| **release-manager**            | `npm run format:ci`                                                                   | Version/CHANGELOG files only                                                               |
+| **finalizer**                  | `npm run format:ci` → `npm run precommit:ci`                                          | Commit gate — unchanged                                                                    |
+| **compiler**                   | Optional deep verify when user requests                                               | Full build/lint/type/test                                                                  |
+
+**EM on lint/format/test failure:** do **not** edit `src/` or `src/tests/` — re-spawn **implementer** or **test-writer** (or resume their agent ID) with the compact script output.
+
 ### Rules
 
 - Batch related clarification questions into one `AskQuestion` call (up to 4) instead of asking sequentially.
 - Confirm complexity with the user for **medium** and **high**. Auto for obvious **low**.
 - Before spawning a fresh subagent for a new task cycle when an existing labeled agent from a prior cycle could still hold useful context, ask the user for approval to resume vs. spawn fresh (see Subagent ID Tracking).
 - Never skip user approval of `business-brief.md` before implementation.
-- Do not write production code or tests yourself.
+- Do not write production code or tests yourself — including format/lint/test fixes in `src/` or `src/tests/` (re-spawn implementer or test-writer per verification gates above).
 - Do not spawn `wiki-manager` or `investigator` — architect nests them.
 - Architect writes implementation content only in `plan.md`; test-case content only in `test-plan.md` — never both in one file. `implementer` reads `plan.md` only; `test-writer` reads `test-plan.md` (plus `plan.md`'s file list for context).
 - One architect spawn per planning cycle.

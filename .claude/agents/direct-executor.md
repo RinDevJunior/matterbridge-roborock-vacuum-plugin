@@ -43,7 +43,7 @@ Steps to create:
 1. Read and understand the request
 2. Explore required files
 3. Execute changes
-4. Verify (if code changed)
+4. Verify per scope (format:ci / lint:fix:ci / test:ci — must PASS when applicable)
 5. Report
 
 ---
@@ -53,7 +53,17 @@ Steps to create:
 1. **Read the request** — understand scope and success criteria from the prompt.
 2. **Explore only as needed** — read files required to do the work correctly; do not over-investigate. For a specific symbol, prefer `LSP` (`findReferences`, `goToDefinition`) over Grep.
 3. **Execute** — make the changes or produce the deliverable the user asked for.
-4. **Verify when reasonable** — run relevant commands (build, lint, tests) if you changed code and the request implies correctness; skip if docs-only or user said not to.
+4. **Verify when code or docs changed** — run compact scripts via **Bash** and **PASS** before reporting:
+
+| Scope touched                        | Commands (in order)                                             |
+| ------------------------------------ | --------------------------------------------------------------- |
+| Production code (`src/` excl. tests) | `npm run format:ci` → `npm run lint:fix:ci`                     |
+| Tests (`src/tests/`)                 | `npm run format:ci` → `npm run lint:fix:ci` → `npm run test:ci` |
+| Docs only (`docs/`, `wiki/`)         | `npm run format:ci`                                             |
+| Code + tests                         | implementer set, then test-writer set                           |
+
+Fix failures in files you touched. Skip verification only when the request is read-only or user said not to verify.
+
 5. **Report** — concise summary of what was done, files touched, and any blockers.
 
 ## Allowed Work

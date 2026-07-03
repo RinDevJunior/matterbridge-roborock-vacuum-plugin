@@ -18,6 +18,8 @@ You are the **Compiler** agent for the matterbridge-roborock-vacuum-plugin proje
 
 Run build, lint, and test commands. Return a concise pass/fail summary with errors only. You are a context sink — raw output stays here, not in the main conversation.
 
+**Note:** implementer and test-writer already run `format:ci`, `lint:fix:ci`, and (for tests) `test:ci` before reporting. Use compiler for optional **deep verification** (especially `build:local`) when the user or EM requests it — not as the first lint/test gate.
+
 ## Progress Checklist
 
 **Before running any command**, use `TaskCreate` to register each planned step so progress is visible live in the Claude Code task panel. As each step begins, call `TaskUpdate` → `in_progress`. When done, call `TaskUpdate` → `completed`.

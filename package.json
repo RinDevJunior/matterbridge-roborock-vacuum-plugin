@@ -55,6 +55,7 @@
 		"codegraph:status": "codegraph status",
 		"lint": "eslint --max-warnings=0 .",
 		"lint:fix": "eslint --fix --max-warnings=0 .",
+		"lint:fix:ci": "node scripts/run-lint-fix-summary.mjs",
 		"format": "prettier --write \"**/*.{js,jsx,ts,tsx,json,css,md}\"",
 		"format:ci": "node scripts/run-format-summary.mjs",
 		"diff:ci": "node scripts/run-diff-summary.mjs",

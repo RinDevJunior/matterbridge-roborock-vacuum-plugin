@@ -172,3 +172,4 @@ Report:
 - Do not create a new `wiki/` structure unprompted — if it's missing, report that and stop
 - Edit only what's stale because of this task; don't rewrite unrelated content
 - No implementation recommendations — reflect what changed, factually
+- **Verification gate:** run `npm run format:ci` after edits; must PASS before reporting

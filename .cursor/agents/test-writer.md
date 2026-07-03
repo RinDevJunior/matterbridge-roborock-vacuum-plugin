@@ -20,7 +20,8 @@ Steps to create:
 2. Read implementation files
 3. Write test files
 4. Run tests to verify all pass
-5. Report to Engineer Manager
+5. Run format:ci, lint:fix:ci, and test:ci (must PASS)
+6. Report to Engineer Manager
 
 ---
 
@@ -56,7 +57,7 @@ Read every file listed in `plan.md` under "Files to Modify" and "Files to Create
 
 Create or update test files in `src/tests/` mirroring the source folder structure. Follow the template and rules below exactly — do not read external guideline files at runtime.
 
-### Step 4 — Verify Tests Pass
+### Step 4 — Verify Tests Pass (while writing)
 
 Run only the test files you wrote:
 
@@ -69,7 +70,19 @@ If any test fails:
 - Fix the test (not the source code) and re-run until all pass.
 - If a failure reveals a genuine bug in the source, stop and report it — do not patch the test to hide it.
 
-### Step 5 — Report
+### Step 5 — Verify (format + lint + full test gate)
+
+Run compact scripts **in order**. Do not report complete until all PASS:
+
+```bash
+npm run format:ci
+npm run lint:fix:ci
+npm run test:ci
+```
+
+Echo only script stdout. If `lint:fix:ci` fails, fix the test files you wrote and re-run until PASS.
+
+### Step 6 — Report
 
 List test files written, coverage areas addressed, and confirm all tests passed.
 
@@ -165,3 +178,4 @@ Per the task folder `test-plan.md` "Cases to Cover", plus:
 - Do not modify the task folder `plan.md` or `test-plan.md`
 - Do not glob the entire test directory to find patterns — the template above is the pattern
 - Do not chase 100% coverage at the expense of meaningful tests
+- **Verification gate:** `format:ci`, `lint:fix:ci`, and `test:ci` must PASS before reporting — fix lint/test failures in test files you touched

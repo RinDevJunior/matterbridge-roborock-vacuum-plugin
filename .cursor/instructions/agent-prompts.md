@@ -131,7 +131,7 @@ Task({
 });
 ```
 
-Run AFTER user approves `business-brief.md`. Follow `plan.md` only (not `test-plan.md`).
+Run AFTER user approves `business-brief.md`. Follow `plan.md` only (not `test-plan.md`). Before reporting: run `npm run format:ci` → `npm run lint:fix:ci` (both must PASS).
 
 ---
 
@@ -146,7 +146,7 @@ Task({
 });
 ```
 
-Run AFTER Implementer and Reviewer, or after Compiler when explicitly requested. Follow `test-plan.md` for cases; use `plan.md` for file list only.
+Run AFTER Implementer and Reviewer, or after Compiler when explicitly requested. Follow `test-plan.md` for cases; use `plan.md` for file list only. Before reporting: run `npm run format:ci` → `npm run lint:fix:ci` → `npm run test:ci` (all must PASS).
 
 ---
 

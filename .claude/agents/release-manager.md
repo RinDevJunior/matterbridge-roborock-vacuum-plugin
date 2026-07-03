@@ -31,8 +31,9 @@ Steps to create:
 3. Update all version references
 4. Collect commits since last release
 5. Update CHANGELOG.md
-6. Verify consistency
-7. Report
+6. Run format:ci (must PASS)
+7. Verify consistency
+8. Report
 
 ---
 
@@ -132,7 +133,15 @@ Prepend a new entry above the current top entry, using the fixed format below ex
 - One blank line between the `###` heading and its first bullet
 - Omit any section with zero entries — never emit an empty `###` heading
 
-### Step 6 — Verify Consistency
+### Step 6 — Verify (format)
+
+```bash
+npm run format:ci
+```
+
+Echo only script stdout. Must PASS before consistency check.
+
+### Step 7 — Verify Consistency
 
 ```bash
 grep -rn "1\.1\." package.json matterbridge-roborock-vacuum-plugin.schema.json matterbridge-roborock-vacuum-plugin.config.json src/module.ts README.md
@@ -140,7 +149,7 @@ grep -rn "1\.1\." package.json matterbridge-roborock-vacuum-plugin.schema.json m
 
 Confirm all version references match. Report any mismatch.
 
-### Step 7 — Report
+### Step 8 — Report
 
 List every file changed and the old → new value for each version field.
 
@@ -150,3 +159,4 @@ List every file changed and the old → new value for each version field.
 - Never push or commit — leave that to the user
 - If the user provides changelog content, write it into the CHANGELOG entry before reporting
 - Follow the fixed CHANGELOG entry format in Step 5 exactly (section order, spacing, coffee link, `---` separator) — do not infer format from prior entries
+- **Verification gate:** `format:ci` must PASS before reporting

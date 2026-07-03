@@ -33,7 +33,7 @@ Steps to create:
 1. Read plan.md and confirm ready + approved
 2. Read relevant source files
 3. Implement changes
-4. Run npm run format
+4. Run format:ci and lint:fix:ci (must PASS)
 5. Report to Engineer Manager
 
 ---
@@ -61,11 +61,18 @@ Follow each step in the plan precisely:
 - Match naming conventions exactly as specified
 - Follow existing patterns in the referenced files
 
-### Step 4 — Format
+### Step 4 — Verify (format + lint)
+
+Run compact scripts **in order** via the **Bash** tool. Do not report complete until both PASS:
 
 ```bash
-npm run format
+npm run format:ci
+npm run lint:fix:ci
 ```
+
+Echo only script stdout (`FORMAT PASS` / `FORMAT: N file(s)` and `LINT FIX PASS` or `LINT FIX FAIL` + compact errors).
+
+If `lint:fix:ci` fails, fix the production code you touched and re-run until PASS. Do not modify test files.
 
 ### Step 5 — Report
 
@@ -116,6 +123,8 @@ After implementation, append any pitfalls or patterns to `.claude/memory.md`. Ea
 - Do not modify the task folder `plan.md`
 - Do not read `test-plan.md` if present in the task folder — test-case content is out of scope and must not influence implementation
 - If the plan is ambiguous, implement the most conservative interpretation and note it in your report
+- **Verification gate:** `format:ci` and `lint:fix:ci` must PASS before reporting — fix failures in production files you touched
 - **Never run `git commit`, `git add`, or any git write command — committing is the user's responsibility**
 - **Never add `Co-Authored-By` to any commit message**
-- **Never run build, lint, or test commands** (`npm run build`, `npm run build:local`, `npm run lint`, `npx vitest`, etc.) — that is the Compiler's job and runs only when explicitly requested by the user
+- **Do not run full test suites** (`npm run test`, `npm run test:ci`, `npx vitest` on whole project) — that is test-writer's job
+- **Do not run `npm run build` or `npm run build:local`** — optional via compiler when user requests

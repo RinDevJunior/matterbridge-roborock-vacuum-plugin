@@ -21,8 +21,9 @@ Steps to create:
 1. Read plan.md, business-brief.md, history, to_do
 2. Update claude_history.md
 3. Update to_do.md
-4. Spawn wiki-manager (update mode)
-5. Report to Engineer Manager
+4. Run format:ci (must PASS)
+5. Spawn wiki-manager (update mode)
+6. Report to Engineer Manager
 
 ---
 
@@ -65,7 +66,15 @@ Use this format for items:
 - [ ] <pending task>
 ```
 
-### Step 4 — Spawn wiki-manager (update mode)
+### Step 4 — Verify (format)
+
+```bash
+npm run format:ci
+```
+
+Echo only script stdout. Must PASS before spawning wiki-manager.
+
+### Step 5 — Spawn wiki-manager (update mode)
 
 After both files are updated, spawn **wiki-manager** via the **`Task`** tool:
 
@@ -97,4 +106,5 @@ After updating `docs/claude_history.md` and `docs/to_do.md`, check if any open q
 - Do not spawn any subagent other than **wiki-manager** (update mode)
 - Keep entries concise — one line per file changed
 - Always spawn wiki-manager after updating claude_history.md/to_do.md, once per task cycle
+- **Verification gate:** `format:ci` must PASS before reporting
 - Today's date is available in the system context
