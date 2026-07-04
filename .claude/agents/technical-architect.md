@@ -3,7 +3,7 @@ name: technical-architect
 description: "Design implementation plans or answer user questions (explain mode). Reads memory/wiki directly for medium complexity; nests wiki-manager (gather) and investigator for high. Write plan.md + test-plan.md (implement) or answer.md (explain). Main session provides task folder, requirement path, and mode (implement|explain) plus complexity when implementing."
 model: sonnet
 color: purple
-effort: medium
+effort: high
 maxTurns: 60
 tools: 
   - Read
