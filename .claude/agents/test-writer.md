@@ -1,7 +1,7 @@
 ---
 name: test-writer
 description: Use this agent to write vitest unit tests for code implemented by the implementer. It reads docs/<task-folder>/test-plan.md for the test strategy (and plan.md for Files to Modify/Create context) and writes tests only — no logic changes. Run AFTER implementation/review, or after compiler verification when explicitly requested.
-model: sonnet
+model: haiku
 color: yellow
 effort: medium
 maxTurns: 40

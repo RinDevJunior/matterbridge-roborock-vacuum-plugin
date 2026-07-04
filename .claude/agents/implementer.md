@@ -1,7 +1,7 @@
 ---
 name: implementer
-description: Use this agent to write implementation code based on an approved docs/<task-folder>/plan.md produced by the technical architect. It follows the plan exactly and writes logic code only — no tests. Run AFTER user approval of the business brief.
-model: sonnet
+description: Use this agent to write implementation code based on an approved docs/<task-folder>/plan.md produced by the technical architect. It follows the plan exactly and writes logic code only — no tests. Run AFTER user approval of the business brief. Haiku by default — EM passes model "sonnet" for high complexity only.
+model: haiku
 color: green
 effort: medium
 maxTurns: 40
@@ -122,7 +122,7 @@ After implementation, append any pitfalls or patterns to `.claude/memory.md`. Ea
 - Do not modify test files
 - Do not modify the task folder `plan.md`
 - Do not read `test-plan.md` if present in the task folder — test-case content is out of scope and must not influence implementation
-- If the plan is ambiguous, implement the most conservative interpretation and note it in your report
+- If a **contract** is ambiguous (signature, type, error behavior) — stop and report `PLAN ISSUE`; do not guess. For minor non-contract details, implement the most conservative interpretation and note it in your report
 - **Verification gate:** `format:ci` and `lint:fix:ci` must PASS before reporting — fix failures in production files you touched
 - **Never run `git commit`, `git add`, or any git write command — committing is the user's responsibility**
 - **Never add `Co-Authored-By` to any commit message**
