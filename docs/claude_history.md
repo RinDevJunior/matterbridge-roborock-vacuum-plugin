@@ -1,5 +1,30 @@
 # Claude History
 
+## 2026-07-05 — B01 extended roomTypeIds (2001–2011)
+
+**Task:** Extend `roomTypeIdToAreaTag` to map B01 extended room type IDs 2001–2011 (per ioBroker `ROOM_TYPE_MAP`) to Apple Home `AreaNamespaceTag` categories.
+
+**Changes:**
+
+- `src/initialData/getSupportedAreas.ts` — add switch cases 2001–2011 in `roomTypeIdToAreaTag`
+- `src/tests/initialData/getSupportedAreas.test.ts` — unit tests for extended IDs, boundary null cases (2000/2012), and integration via `getSupportedAreas`
+
+**Outcome:** Pass (reviewed). B01 devices sending extended `roomTypeId` values now get correct Apple Home category icons; real-device validation on physical B01 still deferred.
+
+## 2026-07-05 — Fix B01/Q10 Apple Home area icons
+
+**Task:** Fix Apple Home room category icons for B01/Q10 by mapping `roomTypeId` (not `colorId`) to Matter `AreaNamespaceTag`, with separate B01 and V10 lookup paths so V10 mappings stay unchanged.
+
+**Changes:**
+
+- `src/core/application/models/RoomMapping.ts` — add optional `areaType?: number | null` for B01 pre-computed tags
+- `src/initialData/getSupportedAreas.ts` — add `roomTypeIdToAreaTag`, short-circuit `populateAreaNamespaceTag` on `areaType`, expand V10 switch; migrate to `CommonAreaNamespaceTag`
+- `src/roborockCommunication/routing/listeners/implementation/mapInfoListener.ts` — B01 path: `tag` from `roomTypeId`, pre-compute `areaType` via `roomTypeIdToAreaTag`
+- `src/tests/initialData/getSupportedAreas.test.ts` — tests for `roomTypeIdToAreaTag`, B01 pre-computed `areaType`, and V10 tag switch regression
+- `src/tests/roborockCommunication/routing/listeners/implementation/mapInfoListener.test.ts` — B01 binary parse `roomTypeId` → `areaType` integration tests
+
+**Outcome:** Pass (reviewed). B01/Q10 rooms now get correct Apple Home category icons; V10 tag switch preserved. Extended B01 room IDs (2001–2011) and real-device icon validation remain deferred.
+
 ## 2026-07-03 — External room list sources (R1 + R3)
 
 **Task:** Align Q7 map fetch to `service.upload_by_maptype` (R1) and add B01 firmware-style room name normalizer at the listener layer (R3). R2 (deterministic `"Room {id}"` fallback in `getSupportedAreas.ts`) skipped per user preference.

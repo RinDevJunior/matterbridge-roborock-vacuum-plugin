@@ -16,11 +16,14 @@
 - [x] B01 currentPose/roomMatrix Phase 1 — shared decode core (`roborockProto`, `b01MapParser`, `types`), safe no-op `resolveRoomFromPose()`, `b01-pose-info` CLI for real Q10 capture
 - [x] External room list R1 — Q7 `getRoomMap`/`getRoomMapV2` use `service.upload_by_maptype` (`get_room_mapping`) with `{ force: 1, map_type: 0 }`
 - [x] External room list R3 — B01 `roomNameNormalizer.ts` + wired in `MapInfoListener.tryParseB01MapBinary()` for firmware-style Q10 names
+- [x] Fix B01/Q10 Apple Home area icons — `roomTypeId` (not `colorId`) + dual-scheme `populateAreaNamespaceTag` (`areaType` pre-compute for B01, V10 tag switch unchanged)
+- [x] B01 extended room IDs (2001–2011) — `roomTypeIdToAreaTag` switch extended per ioBroker `ROOM_TYPE_MAP`; unit + integration tests
 
 ## Pending
 
 ### Implementation Tasks
 
+- [ ] **B01/Q10 Apple Home icon validation** — confirm room category icons on real B01 or Q10 device after areaType fix (includes extended IDs 2001–2011)
 - [ ] **External room list R2 (deferred per user)** — replace random `Unknown Room ####` fallback in `getSupportedAreas.ts` with deterministic `"Room {id}"` (safe, no device dependency)
 - [ ] **Q7 upload_by_maptype hardware validation** — confirm R1 map fetch works on real Q7 device(s) after command switch
 - [ ] **B01 currentPose Phase 2 (deferred)** — implement `roomMatrix` pixel-to-room decode once real Q10 data confirms wire layout (via `b01-pose-info`); wire into `areaManagementService`, `roborockService`, `mapInfoListener`, `serviceAreaHandler` for live multi-room `currentArea`

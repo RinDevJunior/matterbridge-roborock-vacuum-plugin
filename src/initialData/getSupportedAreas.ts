@@ -1,7 +1,7 @@
 import { randomInt } from 'node:crypto';
 
 import { AnsiLogger, debugStringify } from 'matterbridge/logger';
-import { AreaNamespaceTag } from 'matterbridge/matter';
+import { CommonAreaNamespaceTag } from 'matterbridge/matter';
 import { ServiceArea } from 'matterbridge/matter/clusters';
 
 import { DEFAULT_AREA_ID_UNKNOWN, RANDOM_ROOM_MAX, RANDOM_ROOM_MIN } from '../constants/index.js';
@@ -138,22 +138,85 @@ function processValidData(homeInFo: HomeEntity): ProcessedData {
 	};
 }
 
+/**
+ * Maps a B01 roomTypeId (0–11, per ioBroker ROOM_TYPE_ID_TO_TOKEN) to a CommonAreaNamespaceTag numeric value.
+ * Returns null for unknown / fallback (roomTypeId 0).
+ */
+export function roomTypeIdToAreaTag(roomTypeId: number): number | null {
+	switch (roomTypeId) {
+		case 0:
+			return null;
+		case 1:
+			return CommonAreaNamespaceTag.PrimaryBedroom.tag;
+		case 2:
+			return CommonAreaNamespaceTag.GuestBedroom.tag;
+		case 3:
+			return CommonAreaNamespaceTag.Bedroom.tag;
+		case 4:
+			return CommonAreaNamespaceTag.LivingRoom.tag;
+		case 5:
+			return CommonAreaNamespaceTag.Dining.tag;
+		case 6:
+			return CommonAreaNamespaceTag.Kitchen.tag;
+		case 7:
+			return CommonAreaNamespaceTag.Balcony.tag;
+		case 8:
+			return CommonAreaNamespaceTag.Bathroom.tag;
+		case 9:
+			return CommonAreaNamespaceTag.Hallway.tag;
+		case 10:
+			return CommonAreaNamespaceTag.Study.tag;
+		case 11:
+			return CommonAreaNamespaceTag.Corridor.tag;
+		// B01 extended room type IDs (2001–2011) — ioBroker ROOM_TYPE_MAP b01/constants.ts
+		case 2001:
+			return CommonAreaNamespaceTag.Bedroom.tag; // "bedroom"
+		case 2002:
+			return CommonAreaNamespaceTag.Dining.tag; // "dinnerroom"
+		case 2003:
+			return CommonAreaNamespaceTag.Bathroom.tag; // "restroom"
+		case 2004:
+			return CommonAreaNamespaceTag.Corridor.tag; // "corridor"
+		case 2005:
+			return CommonAreaNamespaceTag.Kitchen.tag; // "kitchen"
+		case 2006:
+			return CommonAreaNamespaceTag.LivingRoom.tag; // "livingroom"
+		case 2007:
+			return CommonAreaNamespaceTag.Balcony.tag; // "balcony"
+		case 2008:
+			return CommonAreaNamespaceTag.Study.tag; // "study"
+		case 2009:
+			return CommonAreaNamespaceTag.Hallway.tag; // "entryway"
+		case 2010:
+			return CommonAreaNamespaceTag.PrimaryBedroom.tag; // "masterbedrroom"
+		case 2011:
+			return CommonAreaNamespaceTag.GuestBedroom.tag; // "guestbedrroom"
+		default:
+			return null;
+	}
+}
+
 function populateAreaNamespaceTag(room: RoomMapping): number | null {
+	if (room.areaType !== undefined) {
+		return room.areaType;
+	}
+
 	if (room.tag && room.tag > 0) {
 		switch (room.tag) {
 			case 1:
+				return CommonAreaNamespaceTag.Bedroom.tag;
 			case 2:
-				return AreaNamespaceTag.Bedroom.tag;
+				return CommonAreaNamespaceTag.PrimaryBedroom.tag;
 			case 3:
-				return AreaNamespaceTag.GuestBedroom.tag;
+				return CommonAreaNamespaceTag.GuestBedroom.tag;
 			case 6:
-				return AreaNamespaceTag.LivingRoom.tag;
+				return CommonAreaNamespaceTag.LivingRoom.tag;
 			case 7:
-				return AreaNamespaceTag.Balcony.tag;
+				return CommonAreaNamespaceTag.Balcony.tag;
 			case 9:
-				return AreaNamespaceTag.Study.tag;
+				return CommonAreaNamespaceTag.Study.tag;
 			case 14:
-				return AreaNamespaceTag.Kitchen.tag;
+				return CommonAreaNamespaceTag.Kitchen.tag;
 			default:
 				return null;
 		}

@@ -3,7 +3,7 @@ import { AnsiLogger } from 'matterbridge/logger';
 import { MapInfo } from '../../../../core/application/models/MapInfo.js';
 import { RoomMap } from '../../../../core/application/models/RoomMap.js';
 import { HomeEntity } from '../../../../core/domain/entities/Home.js';
-import { getSupportedAreas } from '../../../../initialData/getSupportedAreas.js';
+import { getSupportedAreas, roomTypeIdToAreaTag } from '../../../../initialData/getSupportedAreas.js';
 import { ProtocolVersion } from '../../../../roborockCommunication/enums/protocolVersion.js';
 import { B01MapParser } from '../../../../roborockCommunication/map/b01/b01MapParser.js';
 import { AreaManagementService } from '../../../../services/areaManagementService.js';
@@ -174,12 +174,13 @@ export class MapInfoListener implements AbstractMessageListener {
 			const roomMappings = b01Info.rooms.map((r) => ({
 				id: r.roomId,
 				iot_name_id: String(r.roomId),
-				tag: r.colorId ?? 0,
+				tag: r.roomTypeId ?? 0,
 				iot_map_id: 0,
 				iot_name:
 					normalizeB01RoomName(r.roomName, r.roomTypeId, r.roomId) ||
 					this.rooms.find((rd) => rd.id === r.roomId)?.name ||
 					`Room ${r.roomId}`,
+				areaType: roomTypeIdToAreaTag(r.roomTypeId ?? 0),
 			}));
 
 			const mapInfo = this.pendingB01MapInfo ?? MapInfo.empty();

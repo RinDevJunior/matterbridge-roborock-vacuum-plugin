@@ -1,3 +1,5 @@
+import { CommonAreaNamespaceTag } from 'matterbridge/matter';
+import { ServiceArea } from 'matterbridge/matter/clusters';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { ProtocolVersion } from '../../../../../roborockCommunication/enums/protocolVersion.js';
@@ -313,6 +315,92 @@ describe('MapInfoListener', () => {
 
 			expect(areaService.setSupportedAreas).not.toHaveBeenCalled();
 			expect(logger.warn).toHaveBeenCalledWith(expect.stringContaining('failed to parse B01 map binary'));
+		});
+	});
+
+	describe('B01 binary parse — roomTypeId → areaType', () => {
+		function makeB01ListenerWithSpy(
+			roomData: { roomId: number; roomName: string; roomTypeId: number; colorId: number }[],
+		) {
+			const logger = createMockLogger();
+			const listener = new MapInfoListener(DUID, [], areaService, logger, 'roborock.vacuum.a27', 'ABC123');
+			vi.spyOn(
+				(listener as unknown as { b01MapParser: { parseRoomsFromEncryptedBinary: ReturnType<typeof vi.fn> } })
+					.b01MapParser,
+				'parseRoomsFromEncryptedBinary',
+			).mockReturnValue({ rooms: roomData, mapId: undefined });
+			return listener;
+		}
+
+		function getAreasPassedToService(): ServiceArea.Area[] {
+			const calls = vi.mocked(areaService.setSupportedAreas).mock.calls;
+			const lastCall = calls[calls.length - 1];
+			return lastCall ? (lastCall[1] as ServiceArea.Area[]) : [];
+		}
+
+		it('should set areaType to Kitchen.tag when roomTypeId is 6 (B01 kitchen)', async () => {
+			// Arrange
+			const listener = makeB01ListenerWithSpy([{ roomId: 1, roomName: 'rr_kitchen', roomTypeId: 6, colorId: 3 }]);
+			const msg = makeB01Message(DUID, (key) => {
+				if (key === Protocol.map_response) return Buffer.from('mock');
+				return undefined;
+			});
+
+			// Act
+			await listener.onMessage(msg);
+
+			// Assert — roomTypeId 6 = Kitchen in B01 scheme (not colorId-based)
+			const areas = getAreasPassedToService();
+			expect(areas.length).toBeGreaterThan(0);
+			expect(areas[0]?.areaInfo.locationInfo.areaType).toBe(CommonAreaNamespaceTag.Kitchen.tag);
+		});
+
+		it('should set areaType to null when roomTypeId is 0 (unknown type)', async () => {
+			// Arrange
+			const listener = makeB01ListenerWithSpy([{ roomId: 2, roomName: '', roomTypeId: 0, colorId: 0 }]);
+			const msg = makeB01Message(DUID, (key) => {
+				if (key === Protocol.map_response) return Buffer.from('mock');
+				return undefined;
+			});
+
+			// Act
+			await listener.onMessage(msg);
+
+			// Assert
+			const areas = getAreasPassedToService();
+			expect(areas.length).toBeGreaterThan(0);
+			expect(areas[0]?.areaInfo.locationInfo.areaType).toBeNull();
+		});
+
+		it('should set areaType to LivingRoom.tag when roomTypeId is 4', async () => {
+			// Arrange
+			const listener = makeB01ListenerWithSpy([{ roomId: 3, roomName: 'rr_living_room', roomTypeId: 4, colorId: 7 }]);
+			const msg = makeB01Message(DUID, (key) => {
+				if (key === Protocol.map_response) return Buffer.from('mock');
+				return undefined;
+			});
+
+			// Act
+			await listener.onMessage(msg);
+
+			// Assert — roomTypeId 4 = LivingRoom in B01 scheme (colorId 7 would give null in V10)
+			const areas = getAreasPassedToService();
+			expect(areas.length).toBeGreaterThan(0);
+			expect(areas[0]?.areaInfo.locationInfo.areaType).toBe(CommonAreaNamespaceTag.LivingRoom.tag);
+		});
+
+		it('should use V10 tag switch for V1 path (tag 14 → Kitchen)', async () => {
+			// Arrange — V1 path: no areaType override, tag comes from raw map data
+			const rawData = [[1, '11100845', 14]];
+			const msg = makeV1Message(DUID, rawData);
+
+			// Act
+			await listener.onMessage(msg);
+
+			// Assert — V1 area uses tag switch: tag 14 = Kitchen
+			const areas = getAreasPassedToService();
+			expect(areas.length).toBeGreaterThan(0);
+			expect(areas[0]?.areaInfo.locationInfo.areaType).toBe(CommonAreaNamespaceTag.Kitchen.tag);
 		});
 	});
 });
