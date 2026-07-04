@@ -36,6 +36,7 @@ On-demand only (never automatic): `compiler` (build/test verify), `finalizer` (c
 | Prepare a commit                  | "finalize" / "suggest a commit message"          | finalizer                       |
 | Cut a release                     | "cut a release" (+ optional notes)               | release-manager                 |
 | Refresh the wiki                  | "update the wiki"                                | wiki-manager (update mode)      |
+| Feature status (exists/gaps/plan) | `/status-of <feature>`                           | Explain mode, status contract   |
 | Research reference repos for idea | `/ref-idea <question>` — then "apply idea N"     | Research pipeline, pre-filled   |
 | Continue previous work            | "follow-up: …" (same session)                    | Resumes the same agent, cheaper |
 
