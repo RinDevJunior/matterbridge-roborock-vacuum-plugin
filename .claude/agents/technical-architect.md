@@ -42,8 +42,9 @@ Read `type` from `requirement.md`. Default is `implement` if omitted.
 you (technical-architect)
   ├── direct reads        ← .claude/memory.md + wiki/Code-Structure.md + src/ (default for medium/explain)
   ├── codegraph explore   ← prefer when .codegraph/ exists (you + investigator)
+  ├── Explore (built-in)  ← LOCATE-only questions: "where is X / which files handle Y" (leaf, cheap)
   ├── wiki-manager        ← spawn for HIGH complexity only — curated context (leaf)
-  └── investigator        ← spawn for HIGH complexity gaps only (leaf)
+  └── investigator        ← spawn for HIGH complexity gaps only — deep traces with answers file (leaf)
 ```
 
 ## Progress Checklist
@@ -120,6 +121,18 @@ Before Grep/Read sweeps across `src/`, run `codegraph explore "<symbols or quest
 ### LSP (symbol-level lookups)
 
 For a specific known symbol, prefer the `LSP` tool over Grep: `findReferences` for usages, `goToDefinition` for its source, `prepareCallHierarchy` + `incomingCalls`/`outgoingCalls` to trace callers, `workspaceSymbol` to locate it by name. Falls back gracefully to Grep only when the target isn't a resolvable symbol (plain text, config keys).
+
+### Explore (built-in agent — locate only)
+
+For a pure locating question — "where does X live", "which files touch Y" — spawn the built-in `Explore` agent instead of investigator. Specify search breadth ("medium" is usually enough). It returns locations in its report; there is no answers file.
+
+Boundaries:
+
+- Locate only — it finds code, it does not analyze behavior or trace call paths.
+- This repo only — reference-workspace research stays with investigator (allowlist rules).
+- One or two locate questions, answered inline. The moment you need file:line evidence for multiple questions, or a cross-layer trace — that is investigator territory.
+
+Order of preference for research: codegraph explore (if indexed) → Explore (locate, no index) → LSP (exact symbol) → investigator (deep multi-question trace).
 
 ### Step 2 — Gather Context
 
@@ -302,5 +315,6 @@ After `plan.md`, append new architectural decisions to `.claude/memory.md` (max 
 - Be explicit: file paths, function signatures, interface names
 - The implementer runs on **haiku by default** — the plan must have no ambiguity
 - For **high** complexity: never deep-trace code — spawn investigator
+- Never spawn investigator for a locate-only question — use Explore (or CodeGraph); investigator is reserved for multi-question, cross-module traces that need an answers file
 - Complete the full planning tree in one session — no partial handoff to the main session
 - Report a ≤10-line summary — never paste plan contents back to the main session
