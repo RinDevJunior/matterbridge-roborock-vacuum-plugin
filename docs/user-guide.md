@@ -82,7 +82,27 @@ Rough cost intuition: a lite-path task ≈ 1 agent spawn; a medium task ≈ 6 sp
 
 ---
 
-## 5. A typical day
+## 5. When English is hard — avoiding wasted work
+
+You do not need perfect English to drive this system. The safeguards, in order:
+
+1. **Write in Vietnamese when unsure.** Claude reads Vietnamese natively. The EM restates your request in simple English before doing anything — that restatement is your translation check.
+2. **The requirement echo (medium/high).** Before the architect is spawned, the EM shows you "what will change / what will NOT change" in 2–4 short bullets and asks you to confirm. Correcting a wrong echo costs one message; a wrong plan costs two sonnet spawns — so read the echo carefully, it is the cheapest place to say "no".
+3. **Before → after beats description.** The most language-proof way to specify anything: "now: X happens. I want: Y to happen." One concrete example outruns a paragraph.
+4. **The brief approval gate.** The business brief is written for a non-native reader (short sentences, no jargon). If it does not match what you wanted, choose Request Changes — the architect replans from your feedback without restarting.
+5. **Lite path restate.** For small tasks the EM restates your request in one line as it starts — if the line is wrong, interrupt immediately.
+
+Where a misunderstanding gets caught and what it costs:
+
+| Caught at            | Cost                                                |
+| -------------------- | --------------------------------------------------- |
+| Requirement echo     | ~free (one chat message)                            |
+| Business brief       | 2 spawns (architect + briefer) — replan via resume  |
+| After implementation | the expensive case — the two gates above prevent it |
+
+---
+
+## 6. A typical day
 
 ```text
 "Low: bump the log level in mapInfoListener to debug"     → lite path, done in one pass
@@ -97,7 +117,7 @@ git commit -m "<suggested message>"                        → you commit; agent
 
 ---
 
-## 6. Where things live
+## 7. Where things live
 
 | Path                                               | What it is                                                        |
 | -------------------------------------------------- | ----------------------------------------------------------------- |
@@ -112,7 +132,7 @@ git commit -m "<suggested message>"                        → you commit; agent
 
 ---
 
-## 7. Troubleshooting
+## 8. Troubleshooting
 
 - **EM starts coding by itself / ignores the flow** → run `/load-policy` to force-load the playbook.
 - **Brief isn't what you meant** → choose "Request Changes" and say what's wrong in one or two sentences; the architect replans from your feedback.
