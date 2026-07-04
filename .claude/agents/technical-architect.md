@@ -223,6 +223,11 @@ low | medium | high
 ## Approach
 <high-level strategy, pattern to follow>
 
+## Contracts
+<exact signatures for every function/interface created or changed — copy-paste ready:>
+- `src/services/x.ts` — `public async getRoomStatus(duid: string): Promise<RoomStatus | undefined>`
+- error paths: throw `<XError from src/errors/>` when <condition>; return undefined when <condition>
+
 ## Files to Modify
 - `src/path/to/file.ts` — what to change and why
 
