@@ -44,6 +44,7 @@
 		"dup-check": "npx jscpd",
 		"build": "tsc",
 		"type-check": "tsc --noEmit",
+		"type-check:ci": "tsc --noEmit >type-check.log 2>&1; node scripts/parse-tsc-failures.mjs",
 		"watch": "tsc --watch",
 		"test": "vitest run",
 		"test:file": "vitest run",

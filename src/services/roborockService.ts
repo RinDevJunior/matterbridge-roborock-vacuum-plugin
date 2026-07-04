@@ -181,6 +181,16 @@ export class RoborockService {
 		return this.areaService.getSelectedAreas(duid);
 	}
 
+	/** Set progress for cleaning areas for a device. */
+	public setProgress(duid: string, progress: ServiceArea.Progress[]): void {
+		this.areaService.setProgress(duid, progress);
+	}
+
+	/** Get progress for cleaning areas for a device. */
+	public getProgress(duid: string): ServiceArea.Progress[] {
+		return this.areaService.getProgress(duid);
+	}
+
 	/** Register a callback invoked whenever supported areas are updated for a device. */
 	public registerAreasListener(
 		duid: string,

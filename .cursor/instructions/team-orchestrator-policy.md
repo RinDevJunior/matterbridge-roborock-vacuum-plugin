@@ -58,6 +58,7 @@ If direct-executor reports the task is bigger than it looked (cross-module, uncl
    ```
 
    Review the ≤10-line summary it returns — do not read `plan.md`, `test-plan.md`, `wiki-brief.md`, or `answers-*.md` in full.
+
 4. **Spawn `briefer`** → `business-brief.md`.
 5. **Approval gate** — read `business-brief.md`, print its full contents in chat under `## Business brief (for your approval)`, then `AskQuestion` (Approve / Request Changes). On Request Changes: capture feedback in `manager-clarification.md` → resume `ta_id` (fresh spawn only if no `ta_id`). Never skip this gate for medium/high. Briefer does not ask the user.
 6. **Spawn `implementer`** after approval — `composer-2.5-fast` by default (frontmatter); pass `model: "claude-4.6-sonnet-medium"` for **high** complexity only.
@@ -202,16 +203,16 @@ When multiple related clarifying questions arise before implementation/architect
 
 ## Verification gates (agents that edit files must PASS before reporting)
 
-| Agent                 | Final steps (in order)                                                                |
-| --------------------- | ------------------------------------------------------------------------------------- |
-| implementer           | `format:ci` → `lint:fix:ci`                                                           |
-| test-writer           | `format:ci` → `lint:fix:ci` → `test:ci`                                              |
-| documenter            | `format:ci`                                                                           |
-| wiki-manager (update) | `format:ci`                                                                           |
-| direct-executor       | per scope: prod → implementer set; tests → test-writer set; docs → documenter set     |
-| release-manager       | `format:ci`                                                                           |
-| finalizer             | `format:ci` → `precommit:ci`                                                          |
-| compiler              | optional deep verify when user requests                                               |
+| Agent                 | Final steps (in order)                                                            |
+| --------------------- | --------------------------------------------------------------------------------- |
+| implementer           | `format:ci` → `lint:fix:ci`                                                       |
+| test-writer           | `format:ci` → `lint:fix:ci` → `test:ci`                                           |
+| documenter            | `format:ci`                                                                       |
+| wiki-manager (update) | `format:ci`                                                                       |
+| direct-executor       | per scope: prod → implementer set; tests → test-writer set; docs → documenter set |
+| release-manager       | `format:ci`                                                                       |
+| finalizer             | `format:ci` → `precommit:ci`                                                      |
+| compiler              | optional deep verify when user requests                                           |
 
 **On failure:** EM does **not** edit `src/` or `src/tests/` — resume or re-spawn implementer / test-writer / direct-executor with the compact script output.
 

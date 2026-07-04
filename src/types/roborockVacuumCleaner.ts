@@ -1,6 +1,7 @@
-import { CommandHandlerData, CommandHandlers } from 'matterbridge';
+import { CommandHandlerData, CommandHandlers, MatterbridgeServiceAreaServer } from 'matterbridge';
 import { RoboticVacuumCleaner } from 'matterbridge/devices';
 import { AnsiLogger, debugStringify } from 'matterbridge/logger';
+import { CommonAreaNamespaceTag } from 'matterbridge/matter';
 import { ModeBase, RvcOperationalState, ServiceArea } from 'matterbridge/matter/clusters';
 
 import { CommandNames } from '../behaviors/BehaviorDeviceGeneric.js';
@@ -71,6 +72,63 @@ export class RoborockVacuumCleaner extends RoboticVacuumCleaner {
       Supported Areas and Routines: ${debugStringify(deviceConfig.supportedAreaAndRoutines)},
       Supported Operational States: ${debugStringify(deviceConfig.operationalState)}`,
 		);
+	}
+
+	/**
+	 * Override to enable ServiceArea.Feature.ProgressReporting for per-room cleaning status.
+	 * Adds progress attribute to track area cleaning completion (Pending/Operating/Completed/Skipped).
+	 */
+	override createDefaultServiceAreaClusterServer(
+		supportedAreas?: ServiceArea.Area[],
+		selectedAreas?: number[],
+		currentArea?: number | null,
+		supportedMaps?: ServiceArea.Map[],
+	): this {
+		this.behaviors.require(
+			MatterbridgeServiceAreaServer.with(ServiceArea.Feature.Maps, ServiceArea.Feature.ProgressReporting),
+			{
+				supportedAreas: supportedAreas ?? [
+					{
+						areaId: 1,
+						mapId: null,
+						areaInfo: {
+							locationInfo: { locationName: 'Living', floorNumber: 0, areaType: CommonAreaNamespaceTag.LivingRoom.tag },
+							landmarkInfo: null,
+						},
+					},
+					{
+						areaId: 2,
+						mapId: null,
+						areaInfo: {
+							locationInfo: { locationName: 'Kitchen', floorNumber: 0, areaType: CommonAreaNamespaceTag.Kitchen.tag },
+							landmarkInfo: null,
+						},
+					},
+					{
+						areaId: 3,
+						mapId: null,
+						areaInfo: {
+							locationInfo: { locationName: 'Bedroom', floorNumber: 1, areaType: CommonAreaNamespaceTag.Bedroom.tag },
+							landmarkInfo: null,
+						},
+					},
+					{
+						areaId: 4,
+						mapId: null,
+						areaInfo: {
+							locationInfo: { locationName: 'Bathroom', floorNumber: 1, areaType: CommonAreaNamespaceTag.Bathroom.tag },
+							landmarkInfo: null,
+						},
+					},
+				],
+				selectedAreas: selectedAreas ?? [],
+				currentArea: currentArea !== undefined ? currentArea : 1,
+				supportedMaps: supportedMaps ?? [],
+				estimatedEndTime: null,
+				progress: [],
+			},
+		);
+		return this;
 	}
 
 	/**

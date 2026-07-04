@@ -348,6 +348,7 @@ describe('AreaManagementService', () => {
 			const roomInfo = new Map<string, SegmentInfo>([]);
 			areaService.setSupportedAreaIndexMap(mockDeviceId, new RoomIndexMap(roomMapData, roomInfo));
 			areaService.setSelectedAreas(mockDeviceId, [0]);
+			areaService.setProgress(mockDeviceId, [{ areaId: 0, status: ServiceArea.OperationalStatus.Operating }]);
 
 			// Clear all
 			areaService.clearAll();
@@ -357,6 +358,7 @@ describe('AreaManagementService', () => {
 			expect(areaService.getSupportedRoutines(mockDeviceId)).toBeUndefined();
 			expect(areaService.getSupportedAreasIndexMap(mockDeviceId)).toBeUndefined();
 			expect(areaService.getSelectedAreas(mockDeviceId)).toEqual([]);
+			expect(areaService.getProgress(mockDeviceId)).toEqual([]);
 			expect(mockLogger.debug).toHaveBeenCalledWith('AreaManagementService - All data cleared');
 		});
 
@@ -384,6 +386,98 @@ describe('AreaManagementService', () => {
 			areaService.setDeviceRooms(mockDeviceId, rooms);
 			// No direct getter — verify indirectly via clearAll not throwing
 			expect(() => areaService.clearAll()).not.toThrow();
+		});
+	});
+
+	describe('Progress Management', () => {
+		it('should set and get progress array', () => {
+			const progress: ServiceArea.Progress[] = [
+				{ areaId: 1, status: ServiceArea.OperationalStatus.Pending },
+				{ areaId: 2, status: ServiceArea.OperationalStatus.Operating },
+			];
+			areaService.setProgress(mockDeviceId, progress);
+
+			const retrieved = areaService.getProgress(mockDeviceId);
+
+			expect(retrieved).toEqual(progress);
+			expect(mockLogger.debug).toHaveBeenCalledWith('AreaManagementService - setProgress', progress);
+		});
+
+		it('should return empty array when no progress set for duid', () => {
+			const progress = areaService.getProgress('unknown-device');
+
+			expect(progress).toEqual([]);
+		});
+
+		it('should return empty array as default for new duid', () => {
+			const newDuid = 'new-device-456';
+			const progress = areaService.getProgress(newDuid);
+
+			expect(progress).toEqual([]);
+		});
+
+		it('should handle empty progress array', () => {
+			areaService.setProgress(mockDeviceId, []);
+
+			const progress = areaService.getProgress(mockDeviceId);
+
+			expect(progress).toEqual([]);
+		});
+
+		it('should update existing progress', () => {
+			const initialProgress: ServiceArea.Progress[] = [{ areaId: 1, status: ServiceArea.OperationalStatus.Pending }];
+			areaService.setProgress(mockDeviceId, initialProgress);
+
+			const updatedProgress: ServiceArea.Progress[] = [
+				{ areaId: 1, status: ServiceArea.OperationalStatus.Operating },
+				{ areaId: 2, status: ServiceArea.OperationalStatus.Completed },
+			];
+			areaService.setProgress(mockDeviceId, updatedProgress);
+
+			expect(areaService.getProgress(mockDeviceId)).toEqual(updatedProgress);
+		});
+
+		it('should support multiple devices independently', () => {
+			const device1 = 'device-1';
+			const device2 = 'device-2';
+
+			const progress1: ServiceArea.Progress[] = [{ areaId: 1, status: ServiceArea.OperationalStatus.Pending }];
+			const progress2: ServiceArea.Progress[] = [{ areaId: 10, status: ServiceArea.OperationalStatus.Operating }];
+
+			areaService.setProgress(device1, progress1);
+			areaService.setProgress(device2, progress2);
+
+			expect(areaService.getProgress(device1)).toEqual(progress1);
+			expect(areaService.getProgress(device2)).toEqual(progress2);
+		});
+
+		it('should clear progress in clearAll', () => {
+			const progress: ServiceArea.Progress[] = [{ areaId: 1, status: ServiceArea.OperationalStatus.Operating }];
+			areaService.setProgress(mockDeviceId, progress);
+
+			expect(areaService.getProgress(mockDeviceId)).toEqual(progress);
+
+			areaService.clearAll();
+
+			expect(areaService.getProgress(mockDeviceId)).toEqual([]);
+		});
+
+		it('should handle all progress statuses', () => {
+			const progress: ServiceArea.Progress[] = [
+				{ areaId: 1, status: ServiceArea.OperationalStatus.Pending },
+				{ areaId: 2, status: ServiceArea.OperationalStatus.Operating },
+				{ areaId: 3, status: ServiceArea.OperationalStatus.Completed },
+				{ areaId: 4, status: ServiceArea.OperationalStatus.Skipped },
+			];
+			areaService.setProgress(mockDeviceId, progress);
+
+			const retrieved = areaService.getProgress(mockDeviceId);
+
+			expect(retrieved).toHaveLength(4);
+			expect(retrieved[0].status).toBe(ServiceArea.OperationalStatus.Pending);
+			expect(retrieved[1].status).toBe(ServiceArea.OperationalStatus.Operating);
+			expect(retrieved[2].status).toBe(ServiceArea.OperationalStatus.Completed);
+			expect(retrieved[3].status).toBe(ServiceArea.OperationalStatus.Skipped);
 		});
 	});
 

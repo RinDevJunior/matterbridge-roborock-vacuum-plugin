@@ -38,6 +38,26 @@ import {
 	createMockRoborockService,
 } from './testUtils.js';
 
+function createRobotGetAttributeMock(
+	options: {
+		operationalState?: RvcOperationalState.OperationalState;
+		selectedAreas?: number[] | undefined;
+	} = {},
+) {
+	const operationalState = options.operationalState ?? RvcOperationalState.OperationalState.Docked;
+	const hasSelectedAreas = 'selectedAreas' in options;
+	const selectedAreas = hasSelectedAreas ? options.selectedAreas : [];
+	return (_clusterId: number, attribute: string): unknown => {
+		if (attribute === 'operationalState') return operationalState;
+		if (attribute === 'selectedAreas') return hasSelectedAreas ? selectedAreas : [];
+		return undefined;
+	};
+}
+
+function mockRobotGetAttribute(options: Parameters<typeof createRobotGetAttributeMock>[0] = {}) {
+	return vi.fn().mockImplementation(createRobotGetAttributeMock(options));
+}
+
 vi.mock('../initialData/index.js', () => ({
 	getOperationalErrorState: vi.fn().mockReturnValue(2),
 	getBatteryStatus: vi.fn((level: number) => (level > 80 ? 0 : level > 20 ? 1 : 2)),
@@ -286,7 +306,7 @@ describe('PlatformRunner.updateRobotWithPayload', () => {
 				specs: asPartial<DeviceSpecs>({ model: DeviceModel.S7 }),
 			}),
 			updateAttribute: vi.fn().mockResolvedValue(true),
-			getAttribute: vi.fn().mockReturnValue(RvcOperationalState.OperationalState.Docked),
+			getAttribute: mockRobotGetAttribute(),
 			setAttribute: vi.fn(),
 			cleanModeSetting: new CleanModeSetting(1, 1, 1, 1, CleanSequenceType.Persist),
 			dockStationStatus: asPartial<DockStationStatus>({}),
@@ -603,7 +623,7 @@ describe('PlatformRunner.updateRobotWithPayload', () => {
 	it('should handle ServiceAreaUpdate when state is Cleaning without cleaningInfo and clean_area is 0 (Traveling to room)', async () => {
 		const selectedAreas = [1, 2];
 		platform.roborockService = createMockRoborockService({ getSelectedAreas: vi.fn().mockReturnValue(selectedAreas) });
-		vi.mocked(robot.getAttribute).mockReturnValue(undefined);
+		robot.getAttribute = mockRobotGetAttribute({ selectedAreas: undefined });
 		const serviceAreaMessage = {
 			duid: 'test-duid',
 			state: OperationStatusCode.Cleaning,
@@ -626,7 +646,7 @@ describe('PlatformRunner.updateRobotWithPayload', () => {
 
 	it('should handle ServiceAreaUpdate when state is Cleaning without cleaningInfo and multiple rooms (Preparing)', async () => {
 		platform.roborockService = createMockRoborockService({ getSelectedAreas: vi.fn().mockReturnValue([1, 2]) });
-		vi.mocked(robot.getAttribute).mockReturnValue(undefined);
+		robot.getAttribute = mockRobotGetAttribute({ selectedAreas: undefined });
 		const serviceAreaMessage = {
 			duid: 'test-duid',
 			state: OperationStatusCode.Cleaning,
@@ -679,7 +699,7 @@ describe('PlatformRunner.updateRobotWithPayload', () => {
 		};
 		const payload: MessagePayload = { type: NotifyMessageTypes.ServiceAreaUpdate, data: serviceAreaMessage };
 
-		runner.updateRobotWithPayload(payload);
+		await runner.updateRobotWithPayload(payload);
 		await Promise.resolve();
 
 		expect(robot.updateAttribute).toHaveBeenCalledWith(ServiceArea.Cluster.id, 'currentArea', 1, mockLogger);
@@ -708,7 +728,7 @@ describe('PlatformRunner.updateRobotWithPayload', () => {
 		};
 		const payload: MessagePayload = { type: NotifyMessageTypes.ServiceAreaUpdate, data: serviceAreaMessage };
 
-		runner.updateRobotWithPayload(payload);
+		await runner.updateRobotWithPayload(payload);
 		await Promise.resolve();
 
 		expect(robot.updateAttribute).toHaveBeenCalledWith(ServiceArea.Cluster.id, 'currentArea', 1, mockLogger);
@@ -735,7 +755,7 @@ describe('PlatformRunner.updateRobotWithPayload', () => {
 		};
 		const payload: MessagePayload = { type: NotifyMessageTypes.ServiceAreaUpdate, data: serviceAreaMessage };
 
-		runner.updateRobotWithPayload(payload);
+		await runner.updateRobotWithPayload(payload);
 		await Promise.resolve();
 
 		expect(robot.updateAttribute).not.toHaveBeenCalledWith(ServiceArea.Cluster.id, 'currentArea', null, mockLogger);
@@ -760,7 +780,7 @@ describe('PlatformRunner.updateRobotWithPayload', () => {
 		};
 		const payload: MessagePayload = { type: NotifyMessageTypes.ServiceAreaUpdate, data: serviceAreaMessage };
 
-		runner.updateRobotWithPayload(payload);
+		await runner.updateRobotWithPayload(payload);
 		await Promise.resolve();
 
 		expect(mockLogger.debug).toHaveBeenCalledWith(expect.stringContaining('No mapped area found'));
@@ -809,7 +829,7 @@ describe('PlatformRunner.updateRobotWithPayload', () => {
 	});
 
 	it('should clear error when vacuum is running without errors', async () => {
-		vi.mocked(robot.getAttribute).mockReturnValue(RvcOperationalState.OperationalState.Running);
+		robot.getAttribute = mockRobotGetAttribute({ operationalState: RvcOperationalState.OperationalState.Running });
 		const errorMessage: DeviceErrorMessage = {
 			duid: 'test-duid',
 			vacuumErrorCode: VacuumErrorCode.None,
@@ -1074,7 +1094,7 @@ describe('PlatformRunner.updateRobotWithPayload', () => {
 	});
 
 	it('should clear errors when dockErrorCode is None', async () => {
-		vi.mocked(robot.getAttribute).mockReturnValue(RvcOperationalState.OperationalState.Docked);
+		robot.getAttribute = mockRobotGetAttribute({ operationalState: RvcOperationalState.OperationalState.Docked });
 		const platformWithDockStatus = asPartial<RoborockMatterbridgePlatform>({
 			registry: createMockDeviceRegistry({}, new Map([['test-duid', robot]])),
 			log: mockLogger,
@@ -1103,7 +1123,7 @@ describe('PlatformRunner.updateRobotWithPayload', () => {
 	});
 
 	it('should transition operational state to Charging when battery is charging and robot is Docked', async () => {
-		vi.mocked(robot.getAttribute).mockReturnValue(RvcOperationalState.OperationalState.Docked);
+		robot.getAttribute = mockRobotGetAttribute({ operationalState: RvcOperationalState.OperationalState.Docked });
 		vi.mocked(initialDataIndex.getBatteryState).mockReturnValue(PowerSource.BatChargeState.IsCharging);
 
 		const batteryMessage = new BatteryMessage('test-duid', 50, 1, OperationStatusCode.Charging);
@@ -1120,7 +1140,7 @@ describe('PlatformRunner.updateRobotWithPayload', () => {
 	});
 
 	it('should transition operational state to Docked when battery is fully charged and robot is Charging', async () => {
-		vi.mocked(robot.getAttribute).mockReturnValue(RvcOperationalState.OperationalState.Charging);
+		robot.getAttribute = mockRobotGetAttribute({ operationalState: RvcOperationalState.OperationalState.Charging });
 		vi.mocked(initialDataIndex.getBatteryState).mockReturnValue(PowerSource.BatChargeState.IsAtFullCharge);
 
 		const batteryMessage = new BatteryMessage('test-duid', 100, 1, OperationStatusCode.Charging);
@@ -1137,7 +1157,7 @@ describe('PlatformRunner.updateRobotWithPayload', () => {
 	});
 
 	it('should not transition to Charging when battery is charging but robot is not Docked', async () => {
-		vi.mocked(robot.getAttribute).mockReturnValue(RvcOperationalState.OperationalState.Running);
+		robot.getAttribute = mockRobotGetAttribute({ operationalState: RvcOperationalState.OperationalState.Running });
 		vi.mocked(initialDataIndex.getBatteryState).mockReturnValue(PowerSource.BatChargeState.IsCharging);
 
 		const batteryMessage = new BatteryMessage('test-duid', 50, 1, OperationStatusCode.Charging);
@@ -1154,7 +1174,7 @@ describe('PlatformRunner.updateRobotWithPayload', () => {
 	});
 
 	it('should not transition to Docked when fully charged but robot is not Charging', async () => {
-		vi.mocked(robot.getAttribute).mockReturnValue(RvcOperationalState.OperationalState.Docked);
+		robot.getAttribute = mockRobotGetAttribute({ operationalState: RvcOperationalState.OperationalState.Docked });
 		vi.mocked(initialDataIndex.getBatteryState).mockReturnValue(PowerSource.BatChargeState.IsAtFullCharge);
 
 		const batteryMessage = new BatteryMessage('test-duid', 100, 1, OperationStatusCode.Charging);
@@ -1248,7 +1268,7 @@ describe('PlatformRunner.updateRobotWithPayload', () => {
 	});
 
 	it('should skip Docked state update when device is still charging', async () => {
-		vi.mocked(robot.getAttribute).mockReturnValue(RvcOperationalState.OperationalState.Charging);
+		robot.getAttribute = mockRobotGetAttribute({ operationalState: RvcOperationalState.OperationalState.Charging });
 
 		const statusMessage = {
 			duid: 'test-duid',
@@ -1283,7 +1303,7 @@ describe('PlatformRunner.startBurstPolling / stopBurstPolling', () => {
 
 		robot = asPartial<RoborockVacuumCleaner>({
 			device: asPartial<Device>({ duid: 'duid', specs: asPartial<DeviceSpecs>({ hasRealTimeConnection: false }) }),
-			getAttribute: vi.fn().mockReturnValue(RvcOperationalState.OperationalState.Running),
+			getAttribute: mockRobotGetAttribute({ operationalState: RvcOperationalState.OperationalState.Running }),
 		});
 		mockService = createMockRoborockService({
 			getHomeDataForUpdating: vi.fn().mockResolvedValue({ devices: [] }),
@@ -1322,7 +1342,7 @@ describe('PlatformRunner.startBurstPolling / stopBurstPolling', () => {
 	it('should run independent timers for different duids', async () => {
 		const robot2 = asPartial<RoborockVacuumCleaner>({
 			device: asPartial<Device>({ duid: 'duid2', specs: asPartial<DeviceSpecs>({ hasRealTimeConnection: false }) }),
-			getAttribute: vi.fn().mockReturnValue(RvcOperationalState.OperationalState.Running),
+			getAttribute: mockRobotGetAttribute({ operationalState: RvcOperationalState.OperationalState.Running }),
 		});
 		platform.registry.robotsMap.set('duid2', robot2);
 
@@ -1349,7 +1369,7 @@ describe('PlatformRunner.startBurstPolling / stopBurstPolling', () => {
 	});
 
 	it('should stop polling when device reaches idle/docked state', async () => {
-		vi.mocked(robot.getAttribute).mockReturnValue(RvcOperationalState.OperationalState.Docked);
+		robot.getAttribute = mockRobotGetAttribute({ operationalState: RvcOperationalState.OperationalState.Docked });
 
 		runner.burstPolling.startBurstPolling('duid');
 		await vi.advanceTimersByTimeAsync(10000); // first tick: poll + detect idle → stop
@@ -1360,7 +1380,7 @@ describe('PlatformRunner.startBurstPolling / stopBurstPolling', () => {
 	});
 
 	it('should continue polling when device is not yet idle', async () => {
-		vi.mocked(robot.getAttribute).mockReturnValue(RvcOperationalState.OperationalState.Running);
+		robot.getAttribute = mockRobotGetAttribute({ operationalState: RvcOperationalState.OperationalState.Running });
 
 		runner.burstPolling.startBurstPolling('duid');
 		await vi.advanceTimersByTimeAsync(10000);
@@ -1373,7 +1393,7 @@ describe('PlatformRunner.startBurstPolling / stopBurstPolling', () => {
 	it('should only poll the specific device that triggered burst polling', async () => {
 		const robot2 = asPartial<RoborockVacuumCleaner>({
 			device: asPartial<Device>({ duid: 'duid2', specs: asPartial<DeviceSpecs>({ hasRealTimeConnection: false }) }),
-			getAttribute: vi.fn().mockReturnValue(RvcOperationalState.OperationalState.Running),
+			getAttribute: mockRobotGetAttribute({ operationalState: RvcOperationalState.OperationalState.Running }),
 		});
 		platform.registry.robotsMap.set('duid2', robot2);
 
@@ -1387,7 +1407,7 @@ describe('PlatformRunner.startBurstPolling / stopBurstPolling', () => {
 	it('stopAllBurstPolling should cancel all active timers', async () => {
 		const robot2 = asPartial<RoborockVacuumCleaner>({
 			device: asPartial<Device>({ duid: 'duid2', specs: asPartial<DeviceSpecs>({ hasRealTimeConnection: false }) }),
-			getAttribute: vi.fn().mockReturnValue(RvcOperationalState.OperationalState.Running),
+			getAttribute: mockRobotGetAttribute({ operationalState: RvcOperationalState.OperationalState.Running }),
 		});
 		platform.registry.robotsMap.set('duid2', robot2);
 

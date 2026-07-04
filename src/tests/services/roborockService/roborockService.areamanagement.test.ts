@@ -144,5 +144,22 @@ describe('RoborockService - Area Management', () => {
 			// switchMap requires a registered dispatcher; should throw DeviceError when none
 			await expect(roborockService.switchMap(duid, 1)).rejects.toThrow();
 		});
+
+		it('setProgress delegates to areaService.setProgress', () => {
+			const progress = [{ areaId: 1, status: 0 }];
+			roborockService.setProgress(duid, progress as any);
+			expect(roborockService.getProgress(duid)).toEqual(progress);
+		});
+
+		it('getProgress delegates to areaService.getProgress', () => {
+			expect(roborockService.getProgress('unknown-duid')).toEqual([]);
+		});
+
+		it('getProgress returns progress array previously set via setProgress', () => {
+			const duid2 = 'duid-progress-test';
+			const progress = [{ areaId: 5, status: 1 }];
+			roborockService.setProgress(duid2, progress as any);
+			expect(roborockService.getProgress(duid2)).toEqual(progress);
+		});
 	});
 });

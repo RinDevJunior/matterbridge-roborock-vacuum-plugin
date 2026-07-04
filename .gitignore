@@ -33,6 +33,7 @@ yarn-error.log*
 npm-shrinkwrap.json
 web-for-testing/src/accountStore.ts
 test-report.junit.xml
+type-check.log
 .cli-session.json
 
 # CodeGraph local index

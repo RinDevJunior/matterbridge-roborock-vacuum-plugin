@@ -322,4 +322,12 @@ describe('RoborockVacuumCleaner', () => {
 		expect(result.deviceName).toContain(device.name);
 		expect(result.bridgeMode).toBe('matter');
 	});
+
+	describe('ServiceArea Feature Configuration', () => {
+		it('should have ServiceArea cluster server configured', () => {
+			// Verify the cluster server exists
+			const serviceAreaServer = vacuum.stateOf(MatterbridgeServiceAreaServer) as any;
+			expect(serviceAreaServer).toBeDefined();
+		});
+	});
 });

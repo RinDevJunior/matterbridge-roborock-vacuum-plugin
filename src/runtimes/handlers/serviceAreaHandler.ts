@@ -25,6 +25,45 @@ const CLEANING_STATES = new Set([
 	OperationStatusCode.CleanMopMopping,
 ]);
 
+function buildProgressUpdate(
+	existing: ServiceArea.Progress[],
+	selectedAreas: number[],
+	activeAreaId: number | null,
+): ServiceArea.Progress[] {
+	// Initialize progress entries for all selected areas if not already present
+	const progressMap = new Map<number, ServiceArea.Progress>(existing.map((p) => [p.areaId, p]));
+
+	// Ensure all selected areas have a progress entry
+	for (const areaId of selectedAreas) {
+		if (!progressMap.has(areaId)) {
+			progressMap.set(areaId, {
+				areaId,
+				status: ServiceArea.OperationalStatus.Pending,
+			});
+		}
+	}
+
+	// Remove progress entries for areas no longer selected
+	for (const areaId of progressMap.keys()) {
+		if (!selectedAreas.includes(areaId)) {
+			progressMap.delete(areaId);
+		}
+	}
+
+	// Update operational status: mark new active area as Operating, previous as Completed
+	if (activeAreaId !== null) {
+		for (const [areaId, progress] of progressMap.entries()) {
+			if (areaId === activeAreaId) {
+				progress.status = ServiceArea.OperationalStatus.Operating;
+			} else if (progress.status === ServiceArea.OperationalStatus.Operating) {
+				progress.status = ServiceArea.OperationalStatus.Completed;
+			}
+		}
+	}
+
+	return Array.from(progressMap.values());
+}
+
 export async function handleServiceAreaUpdate(
 	robot: RoborockVacuumCleaner,
 	message: ServiceAreaUpdateMessage,
@@ -37,6 +76,16 @@ export async function handleServiceAreaUpdate(
 		logger.debug('Robot is idle, updating selectedAreas from Roborock service');
 		const selectedAreas = platform.roborockService?.getSelectedAreas(robot.device.duid) ?? [];
 		await robot.updateAttribute(ServiceArea.id, 'selectedAreas', selectedAreas, logger);
+
+		// Finalize progress: mark any Operating area as Completed
+		const existingProgress = platform.roborockService?.getProgress(robot.device.duid) ?? [];
+		const finalProgress = existingProgress.map((p) =>
+			p.status === ServiceArea.OperationalStatus.Operating
+				? { ...p, status: ServiceArea.OperationalStatus.Completed }
+				: p,
+		);
+		platform.roborockService?.setProgress(robot.device.duid, finalProgress);
+		await robot.updateAttribute(ServiceArea.id, 'progress', finalProgress, logger);
 		return;
 	}
 
@@ -86,6 +135,12 @@ async function handleCleaningWithoutInfo(
 		// Single room → "Cleaning (Room)"
 		await robot.updateAttribute(ServiceArea.id, 'selectedAreas', selectedAreas, logger);
 		await robot.updateAttribute(ServiceArea.id, 'currentArea', selectedAreas[0], logger);
+
+		// Update progress: initialize Pending if not present, mark selected area as Operating
+		const existingProgress = platform.roborockService?.getProgress(robot.device.duid) ?? [];
+		const updatedProgress = buildProgressUpdate(existingProgress, selectedAreas, selectedAreas[0]);
+		platform.roborockService?.setProgress(robot.device.duid, updatedProgress);
+		await robot.updateAttribute(ServiceArea.id, 'progress', updatedProgress, logger);
 	} else {
 		// Multiple rooms, no cleaningInfo → "Preparing" (workaround)
 		await robot.updateAttribute(ServiceArea.id, 'selectedAreas', [], logger);
@@ -114,6 +169,10 @@ export async function handleActiveMapChanged(
 	);
 	await robot.updateAttribute(ServiceArea.id, 'selectedAreas', allAreaIds, logger);
 	await robot.updateAttribute(ServiceArea.id, 'currentArea', null, logger);
+
+	// Reset progress for new map
+	platform.roborockService?.setProgress(robot.device.duid, []);
+	await robot.updateAttribute(ServiceArea.id, 'progress', [], logger);
 }
 
 async function resolveAreaFromCleaningInfo(
@@ -162,4 +221,11 @@ async function resolveAreaFromCleaningInfo(
 	);
 
 	await robot.updateAttribute(ServiceArea.id, 'currentArea', mappedArea, logger);
+
+	// Update progress: mark mapped area as Operating, previous Operating as Completed
+	const selectedAreas = robot.getAttribute(ServiceArea.id, 'selectedAreas', logger) ?? [];
+	const existingProgress = platform.roborockService.getProgress(robot.device.duid);
+	const updatedProgress = buildProgressUpdate(existingProgress, selectedAreas, mappedArea);
+	platform.roborockService.setProgress(robot.device.duid, updatedProgress);
+	await robot.updateAttribute(ServiceArea.id, 'progress', updatedProgress, logger);
 }

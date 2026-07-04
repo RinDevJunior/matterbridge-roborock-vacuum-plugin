@@ -5,7 +5,7 @@ const MAX_LINES = 25;
 
 const STEPS = [
 	{ name: 'lint', command: 'npm run lint' },
-	{ name: 'type-check', command: 'npm run type-check' },
+	{ name: 'type-check', command: 'npm run type-check:ci' },
 	{ name: 'dup-check', command: 'npm run dup-check' },
 	{ name: 'format:check', command: 'npm run format:check' },
 	{ name: 'test', command: 'npm run test:ci' },
@@ -43,7 +43,9 @@ function summarize(name, stdout, stderr, code) {
 		case 'type-check':
 			return {
 				pass: false,
-				detail: compactLines(output, [/error TS\d+/, /Found \d+ error/]).join('\n') || 'type-check failed',
+				detail:
+					compactLines(output, [/TYPE-CHECK FAIL/, /FAILED \d+:/, /error TS\d+/, /Found \d+ error/]).join('\n') ||
+					'type-check failed',
 			};
 		case 'dup-check':
 			return {
