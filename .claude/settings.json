@@ -3,8 +3,22 @@
 		"type": "command",
 		"command": "bash .claude/statusline-command.sh"
 	},
+	"includeCoAuthoredBy": false,
 	"permissions": {
-		"allow": ["mcp__codegraph__*"]
+		"allow": [
+			"mcp__codegraph__*",
+			"Bash(npm run format:ci*)",
+			"Bash(npm run lint:fix:ci*)",
+			"Bash(npm run test:ci*)",
+			"Bash(npm run precommit:ci*)",
+			"Bash(npm run diff:ci*)",
+			"Bash(npx vitest run*)",
+			"Bash(codegraph *)",
+			"Bash(git status*)",
+			"Bash(git log*)",
+			"Bash(git add*)",
+			"Bash(node scripts/clean-paths.mjs*)"
+		]
 	},
 	"hooks": {
 		"SessionStart": [
