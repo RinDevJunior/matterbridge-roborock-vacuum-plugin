@@ -21,17 +21,27 @@ This repo supports **both** [Claude Code](https://code.claude.com/) and [Cursor]
 
 ```text
 CLAUDE.md                 # Router (tiny) → read .claude/CLAUDE.md if you are Claude Code
-AGENTS.md                 # Router + @.cursor/CURSOR.md (Cursor auto-load) if you are Cursor
+AGENTS.md                 # Router: @.cursor/CURSOR.md + @.claude/memory.md (Cursor auto-load)
 
 .claude/
-  CLAUDE.md               # Full orchestration policy (Claude Code)
+  CLAUDE.md               # Index: roles, coding standards, memory, CodeGraph/LSP
+  memory.md               # Durable project knowledge (canonical)
   agents/                 # Subagent role definitions
-  instructions/           # Spawn prompt templates (Agent tool)
+  instructions/
+    team-orchestrator-policy.md   # EM playbook (main session only)
+    agent-prompts.md              # Spawn prompt templates (Agent tool)
+  skills/                 # load-policy, ref-idea, status-of
+  templates/              # reference-workspaces allowlist template
 
 .cursor/
-  CURSOR.md               # Full orchestration policy (Cursor) — same structure as .claude/CLAUDE.md
+  CURSOR.md               # Index: roles, coding standards, memory, CodeGraph/Serena
+  memory.md               # Stub only — Cursor loads `.claude/memory.md` via AGENTS.md
   agents/                 # Subagent role definitions (mirrored)
-  instructions/           # Spawn prompt templates (Task tool)
+  instructions/
+    team-orchestrator-policy.md   # EM playbook (main session only)
+    agent-prompts.md              # Spawn prompt templates (Task tool)
+  skills/                 # load-policy, ref-idea, status-of (Cursor paths)
+  templates/              # reference-workspaces allowlist template
   mcp.json                # CodeGraph + Serena MCP servers
 ```
 
@@ -39,12 +49,12 @@ Root `CLAUDE.md` is loaded by **both** tools (Cursor compatibility). It only tel
 
 ### Which file to edit
 
-| You use         | Edit policy here    | Edit agents here  |
-| --------------- | ------------------- | ----------------- |
-| **Claude Code** | `.claude/CLAUDE.md` | `.claude/agents/` |
-| **Cursor**      | `.cursor/CURSOR.md` | `.cursor/agents/` |
+| You use         | Edit index here     | Edit EM playbook here                              | Edit agents here  |
+| --------------- | ------------------- | -------------------------------------------------- | ----------------- |
+| **Claude Code** | `.claude/CLAUDE.md` | `.claude/instructions/team-orchestrator-policy.md` | `.claude/agents/` |
+| **Cursor**      | `.cursor/CURSOR.md` | `.cursor/instructions/team-orchestrator-policy.md` | `.cursor/agents/` |
 
-**Shared template:** `.claude/CLAUDE.md` and `.cursor/CURSOR.md` use the **same section order and headings**. Tool-specific differences (e.g. `Agent` vs `Task`, LSP vs Serena) live in the matching slots only.
+**Shared template:** `.claude/CLAUDE.md` and `.cursor/CURSOR.md` use the **same section order and headings**. The EM playbook lives in matching `instructions/team-orchestrator-policy.md` files. Tool-specific differences (e.g. `Agent` vs `Task`, LSP vs Serena) live in the matching slots only.
 
 When you change orchestration policy or an agent role, update **both** trees if the change applies to both tools — or only your tool’s folder if the change is tool-specific.
 
@@ -53,9 +63,9 @@ When you change orchestration policy or an agent role, update **both** trees if 
 1. **Disable third-party imports** (stops Cursor from loading `.claude/` skills, agents, and plugins):
    - **Cursor Settings → Rules, Skills, Subagents**
    - Turn **off** “Include third-party Plugins, Skills, and other configs”
-2. Rely on committed config: `AGENTS.md` (includes `@.cursor/CURSOR.md`), `.cursor/agents/`, `.cursor/mcp.json`.
+2. Rely on committed config: `AGENTS.md` (includes `@.cursor/CURSOR.md` and `@.claude/memory.md`), `.cursor/agents/`, `.cursor/mcp.json`.
 
-After changing settings, open a **new Agent chat** and confirm the session follows `.cursor/CURSOR.md`, not `.claude/CLAUDE.md`.
+After changing settings, open a **new Agent chat** and confirm the session follows `.cursor/CURSOR.md` (and loads `.cursor/instructions/team-orchestrator-policy.md` when orchestrating), not `.claude/CLAUDE.md`.
 
 ### Code navigation by tool
 

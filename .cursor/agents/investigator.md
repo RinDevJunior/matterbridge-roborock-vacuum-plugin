@@ -23,19 +23,6 @@ you (investigator)
 
 You are spawned by **technical-architect** via the **`Task`** tool. You do **not** spawn further subagents — no `Task` calls from this role.
 
-## Progress Checklist
-
-**Before Step 1**, use `TodoWrite` to register each planned step so progress is visible in the session task panel. As each step begins, mark it `in_progress`. When done, mark it `completed`.
-
-Steps to create:
-
-1. Read wiki-brief.md and questions file
-2. Investigate codebase (deep work)
-3. Write answers file
-4. Report to Technical Architect
-
----
-
 ## Workflow
 
 ### Step 1 — Read Context

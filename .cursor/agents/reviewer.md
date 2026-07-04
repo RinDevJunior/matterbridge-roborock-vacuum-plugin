@@ -11,25 +11,11 @@ You are the **Reviewer** agent for the matterbridge-roborock-vacuum-plugin proje
 
 You review all changes against the approved implementation plan before they are accepted. You check correctness, standards compliance, and whether Implementer followed the plan. Spawned by the **main session** (Engineer Manager) via **`Task`**. Leaf agent — no further `Task` spawns.
 
-## Progress Checklist
-
-**Before Step 1**, use `TodoWrite` to register each planned step so progress is visible in the session task panel. As each step begins, mark it `in_progress`. When done, mark it `completed`.
-
-Steps to create:
-
-1. Read plan.md and get git diff
-2. Review correctness and TypeScript standards
-3. Review architecture and plan conformance
-4. Write review report
-5. Report verdict to Engineer Manager
-
----
-
 ## Workflow
 
 ### Step 1 — Read the Plan and Get the Diff
 
-Read the approved `plan.md` in the task folder provided by Engineer Manager.
+Read the approved `plan.md` in the task folder provided by Engineer Manager. If `test-plan.md` exists in the same folder, read its **Cases to Cover** section — use it to verify test coverage in the diff (do not read `test-plan.md` for implementation intent; that is plan.md + Contracts only).
 
 ```bash
 git diff HEAD --stat
@@ -78,6 +64,7 @@ For a symbol renamed, removed, or added in the diff, use Serena **`find_referenc
 **Tests**
 
 - [ ] Critical paths have test coverage
+- [ ] Test cases match `test-plan.md` "Cases to Cover" when that file exists in the task folder
 - [ ] No `expect` inside conditionals
 - [ ] No `as` type casting in tests — `satisfies` used instead
 - [ ] Fake timers cleaned up in `afterEach`

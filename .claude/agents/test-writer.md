@@ -15,6 +15,8 @@ tools:
   - Bash
   - TaskCreate
   - TaskUpdate
+  - TaskGet
+  - TaskList
   - AskUserQuestion
 ---
 

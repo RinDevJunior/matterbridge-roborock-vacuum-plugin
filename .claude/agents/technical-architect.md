@@ -16,6 +16,8 @@ tools:
   - Agent
   - TaskCreate
   - TaskUpdate
+  - TaskGet
+  - TaskList
   - AskUserQuestion
 ---
 

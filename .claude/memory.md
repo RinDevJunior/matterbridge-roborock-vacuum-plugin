@@ -35,16 +35,16 @@ It is version-controlled — commit and push changes so teammates can pull the l
 
 <!-- Architectural and design decisions with rationale -->
 
-- `featureSetDecoder.ts` placed in `src/share/` (pure utility, no DI, no side effects) — not `roborockCommunication/helper/`.
-- `DeviceFeatures` interface: 7 source groups (A–G) + 3 raw fields; Groups E/F/G always decode `false` (require data sources unavailable in its signature).
-- `newFeatureInfo` raw diagnostic field typed `bigint` (64-bit value exceeds Number.MAX_SAFE_INTEGER).
-- `extractNibbleBit(hexStr, bitIndex)`: nibblePos = floor(bitIndex/4), bitPos = bitIndex%4, char at `hexStr[length-1-nibblePos]`; module-private.
 - Group C masks `2147483648` (2^31) and `1073741824` (2^30) use `!== 0` comparison (JS signed-32-bit bitwise behavior).
 - Legacy V1 map room names: not in `"rr"` binary — from `get_multi_maps_list` (`rooms[].iot_name`) filtered by active `mapFlag` (`map_status >> 2`); helpers in `src/cli/mapListHelpers.ts`. Active map unknown (sentinel 63) → `(unnamed)`, never flatten all maps (room ID collision).
 - B01 `currentPose`/`roomMatrix` (Q10): Protocol 301 carries the whole payload as one opaque buffer (`messageDeserializer.ts:120-128`) — no new Protocol enum/listener; fields are siblings of `roomDataInfo` in `SCMap.RobotMap` already reaching `tryParseB01MapBinary()`. Extend `roborockProto.ts`/`b01MapParser.ts`/`types.ts` only.
 - `roomMatrix` pixel decode deliberately unimplemented (`resolveRoomFromPose()` → `undefined`): no OSS reference decodes it, and a wrong guess would silently corrupt `currentArea`. Skeleton shipped; algorithm deferred until real Q10 capture.
 - Two-phase pattern for unverifiable device-protocol features: Phase 1 = standalone CLI command (`connectDevice()` + `waitForPush()` skeleton) for real-hardware verification; Phase 2 wires the shared dependency-free pure module into production.
 - Pose (`MapInfoListener`) and status (`B01StatusListener`) are decoupled — join via cache-write/read pair on `AreaManagementService` (per-duid `Map` + `setX`/`getX`, like `supportedAreaIndexMaps`), NOT a new `ServiceAreaUpdateMessage` field.
+- Matterbridge SDK's `RoboticVacuumCleaner.createDefaultServiceAreaClusterServer` hardcodes `ServiceArea.Feature.Maps` only, no feature-flag param — enabling `ProgressReporting` requires overriding the method in `RoborockVacuumCleaner`, not a constructor arg. Override must copy base class's default literal arrays verbatim (line 154-175 `roboticVacuumCleaner.ts` in SDK).
+- `ServiceAreaBaseServer.selectAreas()` (`@matter/node` SDK) has zero operational-state guard — SDK never enforces `SelectWhileRunning`; safety must come from our own command handler.
+- `commonCommands.ts` `SELECT_AREAS` handler only calls `setSelectedAreas` (queued for next clean, no live redirect); `trySwitchMap`/`switchMap` fires an unguarded map-switch regardless of operational state — do not enable `ServiceArea.Feature.SelectWhileRunning` until an idle/running guard exists.
+- ServiceArea.Progress state management: initialize all selected areas to `Pending` on session start; transition actively-cleaning area to `Operating` (others → `Completed`); on idle, mark remaining `Operating` → `Completed`. Helper `buildProgressUpdate` in `serviceAreaHandler.ts:28-67` centralizes transition logic; use same function across all call sites to avoid duplication.
 
 ## Test Patterns
 

@@ -1,6 +1,6 @@
 ---
 name: wiki-manager
-description: "Two modes. Gather (default): curated project knowledge for Technical Architect, spawned as a nested subagent (leaf — no Task tool), writes wiki-brief.md. Update: refresh wiki/ docs with recent changes, spawned by documenter after a task cycle, writes/edits files under wiki/."
+description: "Two modes. Gather (default): curated project knowledge for Technical Architect on HIGH-complexity tasks, spawned as a nested subagent (leaf — no Task tool), writes wiki-brief.md. Update: refresh wiki/ docs with recent changes, spawned by the main session only on user request or before a release (batched — not every cycle), writes/edits files under wiki/."
 model: composer-2.5-fast
 ---
 
@@ -10,14 +10,14 @@ You are the **Wiki Manager** agent for the matterbridge-roborock-vacuum-plugin p
 
 You have two modes, selected by whoever spawns you — check the spawn prompt for which one applies.
 
-- **Gather mode** (default) — assemble known knowledge so Technical Architect does not repeat expensive discovery. Spawned by **Technical Architect** as a nested subagent (leaf — you do not spawn further subagents). You do not design solutions or modify source code.
-- **Update mode** — refresh `wiki/` documentation to reflect a completed task cycle. Spawned by **documenter** after `docs/claude_history.md` / `docs/to_do.md` are updated. You may edit files under `wiki/` only.
+- **Gather mode** (default) — assemble known knowledge so Technical Architect does not repeat expensive discovery on **high-complexity** tasks. Spawned by **Technical Architect** as a nested subagent (leaf — you do not spawn further subagents). You do not design solutions or modify source code.
+- **Update mode** — refresh `wiki/` documentation to reflect recent completed work (possibly several task cycles — wiki refreshes are batched). Spawned by the **main session** on user request or before a release. You may edit files under `wiki/` only.
 
 If the spawn prompt doesn't say which mode, assume **gather mode**.
 
 ## Leaf subagent
 
-You are spawned by a parent via the **`Task`** tool (**technical-architect** in gather mode, **documenter** in update mode). You do **not** spawn further subagents — no `Task` calls from this role.
+You are spawned by a parent via the **`Task`** tool (**technical-architect** in gather mode, **main session** in update mode). You do **not** spawn further subagents — no `Task` calls from this role.
 
 ## Knowledge Sources (priority order)
 
@@ -38,33 +38,13 @@ Do not explore `src/` broadly. Only when the spawn prompt or requirement explici
 
 Never run repo-wide Grep sweeps across `src/`.
 
-## Progress Checklist
-
-**Before Step 1**, use `TodoWrite` to register each planned step so progress is visible in the session task panel. As each step begins, mark it `in_progress`. When done, mark it `completed`.
-
-Steps to create (gather mode):
-
-1. Read requirement.md
-2. Gather curated knowledge (wiki, mem, memory.md)
-3. Write wiki-brief.md
-4. Report to Technical Architect
-
-Steps to create (update mode):
-
-1. Read claude_history.md entry and business-brief.md
-2. Identify affected wiki/ pages
-3. Update wiki/ pages
-4. Report to Documenter
-
----
-
 ## Update Mode Workflow
 
-Used when spawned by **documenter** after a task cycle completes.
+Used when spawned by the **main session** (user request or pre-release wiki refresh).
 
 ### Step 1 — Read What Changed
 
-Read the newest entry in `docs/claude_history.md` (the one documenter just added) and `docs/<task-folder>/business-brief.md` if present. Do not re-read the whole history file.
+Read the `docs/claude_history.md` entries named in the spawn prompt (or the entries since the last wiki refresh) and any `business-brief.md` the prompt points to. Do not re-read the whole history file.
 
 ### Step 2 — Identify Affected Pages
 
@@ -72,11 +52,11 @@ Check `wiki/Code-Structure.md` and any other `wiki/` page whose described area o
 
 ### Step 3 — Update wiki/ Pages
 
-Edit only the specific sections that are now stale or incomplete because of this task. Keep edits factual and minimal — reflect what changed, don't rewrite unrelated content.
+Edit only the specific sections that are now stale or incomplete because of the covered changes. Keep edits factual and minimal — reflect what changed, don't rewrite unrelated content.
 
 ### Step 4 — Report
 
-Report to documenter:
+Report to the main session:
 
 - Which `wiki/` pages were updated (or "none — no wiki/ found" / "none — no relevant page")
 - What was changed in each

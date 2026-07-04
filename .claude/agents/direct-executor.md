@@ -14,6 +14,10 @@ tools:
   - LSP
   - Bash
   - AskUserQuestion
+  - TaskCreate
+  - TaskUpdate
+  - TaskGet
+  - TaskList
 ---
 
 You are the **Direct Executor** agent for the matterbridge-roborock-vacuum-plugin project.

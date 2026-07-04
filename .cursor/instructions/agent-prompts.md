@@ -2,31 +2,41 @@
 
 Use these prompt templates when the **main session (Engineer Manager)** spawns subagents via the **`Task`** tool in Cursor.
 
-**Models:** Use the `model` slug on each template. Fast/leaf agents → `composer-2.5-fast`. Reasoning agents → `claude-4.6-sonnet-medium`. Match `.cursor/agents/<name>.md` frontmatter when in doubt.
+**Model policy:** do **not** pass `model:` when spawning — each agent's `model` in `.cursor/agents/<name>.md` frontmatter is the source of truth. **Single exception:** `implementer` on **high** complexity gets `model: "claude-4.6-sonnet-medium"`.
 
-**Usage limit:** If a spawn fails or is blocked because the preferred model hit a usage limit, **retry without `model`** (Cursor routes to **Auto**) or omit `model` on the next spawn. Do not upgrade to a heavier slug unless the user asks or the subagent reports it is blocked on reasoning.
+**Frontmatter reference:**
 
-System prompts live in `.cursor/agents/`. Read the matching file before spawning — Cursor does not auto-load them; the prompt must carry the agent's role and the user's request. Spawn syntax, foreground/background, resume: `.cursor/instructions/subagent-guidelines-cursor.md`. Workflow: `.cursor/CURSOR.md`.
+| Slug                       | Agents                                                                                                 |
+| -------------------------- | ------------------------------------------------------------------------------------------------------ |
+| `composer-2.5-fast`        | `briefer`, `compiler`, `documenter`, `finalizer`, `implementer` (default), `wiki-manager`              |
+| `claude-4.6-sonnet-medium` | `technical-architect`, `investigator`, `reviewer`, `test-writer`, `direct-executor`, `release-manager` |
 
-**Nested planning:** main session spawns `technical-architect` only. Architect nests `wiki-manager` and `investigator` — never spawn those from the main session.
+**Usage limit:** If a spawn fails because the preferred model hit a usage limit, **retry without `model`** (Cursor **Auto**). Do not upgrade to a heavier slug unless the user asks or the subagent reports it is blocked on reasoning.
 
-**Explain mode:** main session spawns `technical-architect` with `type: explain`; architect writes `answer.md`. EM must not read `src/` or `wiki/`.
+System prompts live in `.cursor/agents/`. Read the matching file before spawning — Cursor does not auto-load them; the prompt must carry the agent's role and the user's request. Spawn syntax, foreground/background, resume: `.cursor/instructions/team-orchestrator-policy.md` → **Subagent IDs and resume** / **Task tool (Cursor)**. Workflow: `.cursor/instructions/team-orchestrator-policy.md`.
 
-**Direct execution:** spawn `direct-executor` only when the user explicitly asks to skip the full flow (ad-hoc / custom task). No task folder, no architect, no briefer, no approval cycle.
+**Nested planning:** main session spawns `technical-architect` only. Architect nests `wiki-manager` (gather, **high complexity only**), `explore` (locate-only), and `investigator` — never spawn those from the main session during planning.
+
+**Lite path:** low-complexity tasks go straight to `direct-executor` — no task folder, no architect, no briefer, no approval cycle. Optional `reviewer` when security-sensitive or user asks.
+
+**Full pipeline (medium/high):** `technical-architect` → `briefer` → user approval → `implementer` → `reviewer` → `test-writer` → `documenter`. `compiler` and `finalizer` on user request only.
+
+**Explain mode:** main session spawns `technical-architect` with `type: explain`; architect writes `answer.md`. EM reads and presents `answer.md` only — must not read `src/`, `wiki/`, or `plan.md`.
+
+**Wiki refresh (batched):** EM spawns `wiki-manager` (update mode) on user request or before a release — not after every documenter cycle.
 
 ---
 
 ## 🟣 Technical Architect
 
-**Implement mode** (default):
+**Implement mode** (medium/high complexity):
 
 ```typescript
 Task({
   description: "Architecture plan: <task summary>",
   subagent_type: "technical-architect",
-  model: "claude-4.6-sonnet-medium",
   prompt:
-    "Task folder: docs/<short-task-description>/\nRequirement file: docs/<short-task-description>/requirement.md\ntype: implement\nComplexity: low | medium | high",
+    "Task folder: docs/<short-task-description>/\nRequirement file: docs/<short-task-description>/requirement.md\ntype: implement\nComplexity: medium | high",
 });
 ```
 
@@ -36,43 +46,40 @@ Task({
 Task({
   description: "Explain: <question summary>",
   subagent_type: "technical-architect",
-  model: "claude-4.6-sonnet-medium",
   prompt:
-    "Task folder: docs/<short-task-description>/\nRequirement file: docs/<short-task-description>/requirement.md\ntype: explain\n\nWrite answer.md (not plan.md). Spawn wiki-manager for curated knowledge; read src/ directly as needed; spawn investigator for deep traces.",
+    "Task folder: docs/<short-task-description>/\nRequirement file: docs/<short-task-description>/requirement.md\ntype: explain\n\nWrite answer.md (not plan.md). Read memory/wiki directly; use explore or investigator for deep traces.",
 });
 ```
 
-Spawned by **main session** (Engineer Manager role). **Must** nest `wiki-manager` first when useful, then `investigator` if needed. Write `plan.md` + `test-plan.md` when test-writer applies (implement) or `answer.md` (explain).
+Spawned by **main session** (Engineer Manager role). Researches internally (direct reads for medium/explain; nests `wiki-manager` + `investigator` for high). Writes `plan.md` (+ `test-plan.md`) or `answer.md`, and returns a **≤10-line summary** — EM reviews the summary, not the plan files.
 
 ---
 
-## ⬜ Wiki Manager (nested only — do not spawn from EM)
+## ⬜ Wiki Manager
 
-**Gather mode** (technical-architect):
+**Gather mode** (nested — spawned by **technical-architect**, high complexity only; EM must not spawn):
 
 ```typescript
 Task({
   description: "Wiki gather: <task summary>",
   subagent_type: "wiki-manager",
-  model: "composer-2.5-fast",
   prompt:
     "Task folder: docs/<short-task-description>/\nRequirement file: docs/<short-task-description>/requirement.md",
 });
 ```
 
-**Update mode** (documenter):
+**Update mode** (spawned by **main session** — only on user request or before a release, never automatically per cycle):
 
 ```typescript
 Task({
   description: "Wiki update: <task summary>",
   subagent_type: "wiki-manager",
-  model: "claude-4.6-sonnet-medium",
   prompt:
-    "Mode: update\nTask folder: docs/<short-task-description>/\nHistory entry: <paste the claude_history.md entry you just wrote>\nBusiness brief: docs/<short-task-description>/business-brief.md",
+    "Mode: update\nRecent changes: <latest docs/claude_history.md entries or summary>\nTask folder (optional): docs/<short-task-description>/",
 });
 ```
 
-Spawned by **technical-architect** (gather) or **documenter** (update) via `Task`. Leaf subagent — no further `Task` spawns. Gather writes `wiki-brief.md`; update edits `wiki/` only.
+Spawned by **technical-architect** (gather) or **main session** (update) via `Task`. Leaf subagent — no further `Task` spawns. Gather writes `wiki-brief.md`; update edits `wiki/` only.
 
 ---
 
@@ -82,13 +89,12 @@ Spawned by **technical-architect** (gather) or **documenter** (update) via `Task
 Task({
   description: "Investigate: <topic>",
   subagent_type: "investigator",
-  model: "claude-4.6-sonnet-medium",
   prompt:
-    "Task folder: docs/<short-task-description>/\nWiki brief: docs/<short-task-description>/wiki-brief.md\nQuestion files: docs/<short-task-description>/questions-<topic>.md",
+    "Task folder: docs/<short-task-description>/\nWiki brief (if present): docs/<short-task-description>/wiki-brief.md\nQuestion files: docs/<short-task-description>/questions-<topic>.md",
 });
 ```
 
-Spawned by **technical-architect** only via `Task` when complex gaps remain. Leaf subagent — no further `Task` spawns. Deep investigation — not trivial lookups.
+Spawned by **technical-architect** only when complex gaps remain (not locate-only — architect uses `explore` or CodeGraph for that). Leaf subagent. Deep investigation — writes `answers-*.md`.
 
 ---
 
@@ -100,7 +106,6 @@ Business mode (default):
 Task({
   description: "Brief: <task summary>",
   subagent_type: "briefer",
-  model: "composer-2.5-fast",
   prompt: "Task folder: docs/<short-task-description>/",
 });
 ```
@@ -111,16 +116,27 @@ Technical mode (only when the user asks for a technical explanation — resume `
 Task({
   description: "Technical brief: <task summary>",
   subagent_type: "briefer",
-  model: "composer-2.5-fast",
   prompt: "Task folder: docs/<short-task-description>/\nmode: technical",
 });
 ```
 
-Run AFTER Technical Architect returns `plan.md` (Status: ready). Reads `requirement.md` and `plan.md`, writes `business-brief.md` only — EM presents the brief and runs approval. Technical mode additionally writes `technical-brief.md` — plain-language, framed around files/services and system impact, not run unless requested.
+Run AFTER Technical Architect returns (`Status: ready` in summary). Briefer reads `requirement.md` and `plan.md`; EM does not. Writes `business-brief.md` — EM presents the brief and runs approval. Technical mode additionally writes `technical-brief.md` — not run unless requested.
 
 ---
 
 ## 🟢 Implementer
+
+**Medium complexity (default — frontmatter `composer-2.5-fast`):**
+
+```typescript
+Task({
+  description: "Implement: <task summary>",
+  subagent_type: "implementer",
+  prompt: "Task folder: docs/<short-task-description>/",
+});
+```
+
+**High complexity only** — pass `model: "claude-4.6-sonnet-medium"`:
 
 ```typescript
 Task({
@@ -131,7 +147,7 @@ Task({
 });
 ```
 
-Run AFTER user approves `business-brief.md`. Follow `plan.md` only (not `test-plan.md`). Before reporting: run `npm run format:ci` → `npm run lint:fix:ci` (both must PASS).
+Run AFTER user approves `business-brief.md`. Follows `plan.md` only (not `test-plan.md`). Before reporting: `npm run format:ci` → `npm run lint:fix:ci` (both must PASS).
 
 ---
 
@@ -141,12 +157,11 @@ Run AFTER user approves `business-brief.md`. Follow `plan.md` only (not `test-pl
 Task({
   description: "Tests: <task summary>",
   subagent_type: "test-writer",
-  model: "claude-4.6-sonnet-medium",
   prompt: "Task folder: docs/<short-task-description>/",
 });
 ```
 
-Run AFTER Implementer and Reviewer, or after Compiler when explicitly requested. Follow `test-plan.md` for cases; use `plan.md` for file list only. Before reporting: run `npm run format:ci` → `npm run lint:fix:ci` → `npm run test:ci` (all must PASS).
+Run AFTER Implementer and Reviewer (medium/high full pipeline). Before reporting: `npm run format:ci` → `npm run lint:fix:ci` → `npm run test:ci` (all must PASS). Reads `test-plan.md` for cases; `plan.md` file list only.
 
 ---
 
@@ -156,7 +171,6 @@ Run AFTER Implementer and Reviewer, or after Compiler when explicitly requested.
 Task({
   description: "Compiler: lint, build, test",
   subagent_type: "compiler",
-  model: "composer-2.5-fast",
   prompt: "Run lint, build, type-check, and tests. Return the compiler report.",
 });
 ```
@@ -171,12 +185,11 @@ Run only when explicitly requested by the user.
 Task({
   description: "Review: <task summary>",
   subagent_type: "reviewer",
-  model: "claude-4.6-sonnet-medium",
   prompt: "Task folder: docs/<short-task-description>/",
 });
 ```
 
-Run AFTER Implementer completes. Compare diff against `plan.md`.
+Run AFTER Implementer completes (**medium/high** full pipeline; **lite path** only when security-sensitive or user asks). Compares diff against `plan.md`. When `test-plan.md` exists, verify tests cover its Cases to Cover.
 
 ---
 
@@ -186,12 +199,11 @@ Run AFTER Implementer completes. Compare diff against `plan.md`.
 Task({
   description: "Docs: update history and todo",
   subagent_type: "documenter",
-  model: "composer-2.5-fast",
   prompt: "Task folder: docs/<short-task-description>/",
 });
 ```
 
-Run after Reviewer approves. Nests **wiki-manager** (update mode) via `Task`. Skip for investigation-only tasks.
+Run after Reviewer approves (full pipeline only — skip on lite path unless user asks). Skip for investigation-only tasks. Does **not** trigger a wiki refresh — batched (see Wiki Manager update mode).
 
 ---
 
@@ -201,7 +213,6 @@ Run after Reviewer approves. Nests **wiki-manager** (update mode) via `Task`. Sk
 Task({
   description: "Finalize: clean, stage, format, precommit, commit message",
   subagent_type: "finalizer",
-  model: "composer-2.5-fast",
   prompt:
     "Task folder (optional): docs/<short-task-description>/\nPaths to stage (optional): <paths or omit for session changes>\nUser notes: <optional>",
 });
@@ -215,7 +226,6 @@ Run when the user wants commit prep or a commit message. Full pipeline: discover
 Task({
   description: "Finalize: cleanup ephemeral docs only",
   subagent_type: "finalizer",
-  model: "composer-2.5-fast",
   prompt:
     "Task folder: docs/<short-task-description>/\nmode: cleanup only\nUser notes: <optional>",
 });
@@ -229,29 +239,29 @@ Task({
 Task({
   description: "Release: bump version and changelog",
   subagent_type: "release-manager",
-  model: "claude-4.6-sonnet-medium",
   prompt: "<optional: user-provided changelog notes>",
 });
 ```
 
-Run only when the user explicitly requests a release.
+Run only when the user explicitly requests a release. Good moment to also run wiki-manager (update mode) if wiki refreshes have been batched up.
 
 ---
 
 ## 🔷 Direct Executor
 
-**User request only.** Bypasses task folder, architect, briefer, approval, reviewer, and documenter unless the user asks for those separately.
+**Default for low-complexity tasks (lite path)**, and for any ad-hoc request where the user opts out of the full flow. Bypasses task folder, architect, briefer, and approval unless the user asks for those separately.
 
 ```typescript
 Task({
   description: "Direct: <short summary>",
   subagent_type: "direct-executor",
-  model: "claude-4.6-sonnet-medium",
   prompt:
     "USER REQUEST:\n<verbatim user request>\n\nCONSTRAINTS (if any):\n<optional scope limits from manager>",
 });
 ```
 
-Spawn when the user says e.g. "direct-executor", "run this directly", "skip the flow", or "/direct". Leaf agent — no further `Task` spawns.
+Cursor provides built-in `subagent_type: "direct-executor"` — read `.cursor/agents/direct-executor.md` and embed role rules in the prompt if needed.
 
-Do **not** create `docs/<task>/requirement.md` for this path.
+Spawn when: task is **low complexity**, user opts out of full flow for medium/high, or user says e.g. "direct-executor", "run this directly", "skip the flow", "/direct". Leaf agent — no further `Task` spawns.
+
+Do **not** create `docs/<task>/requirement.md` for the lite path. If direct-executor reports scope exceeds low complexity, EM restarts via full pipeline.

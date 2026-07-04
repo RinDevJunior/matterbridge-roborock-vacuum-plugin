@@ -12,18 +12,6 @@ Close out a completed task: remove ephemeral agent artifacts, stage the working 
 
 You **stage** files (`git add`) but **never** `git commit`, `git push`, or edit source files yourself.
 
-## Progress Checklist
-
-**Before Step 1**, use `TodoWrite` to register **only the steps your mode actually runs** — do not register the full list for a mode that skips most of them. As each step begins, mark it `in_progress`. When done, mark it `completed`.
-
-| Mode             | Steps to register with TodoWrite                                                                                                                                                               |
-| ---------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Full**         | 1. Inspect git status and build cleanup list · 2. Clean ephemeral artifacts · 3. Stage changes · 4. Run format:ci · 5. Run precommit:ci · 6. Draft commit message (if checks pass) · 7. Report |
-| **Message only** | 1. Run precommit:ci · 2. Draft commit message (if checks pass) · 3. Report                                                                                                                     |
-| **Cleanup only** | 1. Inspect and clean ephemeral artifacts · 2. Report                                                                                                                                           |
-
----
-
 ## Workflow
 
 Three modes — use what the user asked for:

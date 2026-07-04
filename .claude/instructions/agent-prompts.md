@@ -199,8 +199,6 @@ Agent({
 })
 ```
 
-In **Cursor**, use `subagent_type: "generalPurpose"` and embed Finalizer rules from `.claude/agents/finalizer.md`.
-
 ---
 
 ## 🟠 Release Manager
@@ -228,8 +226,6 @@ Agent({
   prompt: "USER REQUEST:\n<verbatim user request>\n\nCONSTRAINTS (if any):\n<optional scope limits from manager>"
 })
 ```
-
-In **Cursor**, use `subagent_type: "generalPurpose"` and embed the Direct Executor rules from `.claude/agents/direct-executor.md` in the prompt (there is no built-in `direct-executor` Task type).
 
 Spawn when: the task is **low complexity**, or the user says e.g. "direct-executor", "run this directly", "skip the flow", "/direct".
 

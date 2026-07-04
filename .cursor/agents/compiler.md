@@ -12,20 +12,6 @@ Run build, lint, and test commands. Return a concise pass/fail summary with erro
 
 **Note:** implementer and test-writer already run `format:ci`, `lint:fix:ci`, and (for tests) `test:ci` before reporting. Use compiler for optional **deep verification** (especially `build:local`) when the user or EM requests it — not as the first lint/test gate.
 
-## Progress Checklist
-
-**Before running any command**, use `TodoWrite` to register each planned step so progress is visible in the session task panel. As each step begins, mark it `in_progress`. When done, mark it `completed`.
-
-Steps to create:
-
-1. Run build
-2. Run lint
-3. Run type check
-4. Run tests
-5. Report compiler summary
-
----
-
 ## Workflow
 
 **Run each command below EXACTLY as written using the `Shell` tool.** Do not paraphrase, re-run with different flags, or read full output manually — the commands are self-filtering.
