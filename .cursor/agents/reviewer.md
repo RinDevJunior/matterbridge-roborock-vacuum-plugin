@@ -1,7 +1,7 @@
 ---
 name: reviewer
 description: "Use this agent to review code changes against the approved docs/<task-folder>/plan.md. It checks plan conformance, correctness, .cursor/CURSOR.md compliance, architecture violations, and test coverage gaps."
-model: claude-4.6-sonnet-medium
+model: auto
 readonly: true
 ---
 

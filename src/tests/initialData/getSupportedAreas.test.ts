@@ -522,7 +522,7 @@ describe('populateAreaNamespaceTag — B01 pre-computed areaType', () => {
 		const { supportedAreas } = getSupportedAreas(homeEntity, makeLogger());
 
 		// Assert — pre-computed areaType wins over tag=0 (which would give null)
-		expect(supportedAreas[0]?.areaInfo.locationInfo.areaType).toBe(CommonAreaNamespaceTag.Kitchen.tag);
+		expect(supportedAreas[0]?.areaInfo?.locationInfo?.areaType).toBe(CommonAreaNamespaceTag.Kitchen.tag);
 	});
 
 	it('should use pre-computed areaType even when it overrides V10 tag=6 (LivingRoom)', () => {

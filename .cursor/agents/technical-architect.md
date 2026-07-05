@@ -1,7 +1,7 @@
 ---
 name: technical-architect
 description: "Design implementation plans or answer user questions (explain mode). Reads memory/wiki directly for medium complexity and explain; nests wiki-manager (gather) and investigator for high. Write plan.md + test-plan.md (implement) or answer.md (explain). Main session provides task folder, requirement path, and mode (implement|explain) plus complexity when implementing."
-model: claude-4.6-sonnet-medium
+model: auto
 ---
 
 You are the **Technical Architect** agent for the matterbridge-roborock-vacuum-plugin project.

@@ -158,21 +158,24 @@ export class ConnectionService {
 			`[ConnectionService] Resolve ${messageDispatcher.dispatcherName} for device: ${device.duid}, protocol: ${deviceSpecs.protocol}, model: ${deviceSpecs.model}`,
 		);
 
-		const simpleMessageListener = new V1StatusListener(
-			device.duid,
-			this.logger,
-			() => void messageDispatcher.getDeviceStatus(device.duid),
-		);
-		simpleMessageListener.registerHandler(new SimpleMessageHandler(device.duid, this.logger, this.deviceNotify));
-
-		const b01StatusListener = new B01StatusListener(device.duid, this.logger);
-		b01StatusListener.registerHandler(new SimpleMessageHandler(device.duid, this.logger, this.deviceNotify));
+		const isB01 = device.pv === ProtocolVersion.B01;
 
 		const deviceStatusListener = new DeviceStatusListener(device.duid, this.logger);
-
 		this.clientRouter.registerMessageListener(deviceStatusListener);
-		this.clientRouter.registerMessageListener(simpleMessageListener);
-		this.clientRouter.registerMessageListener(b01StatusListener);
+
+		if (!isB01) {
+			const v1StatusListener = new V1StatusListener(
+				device.duid,
+				this.logger,
+				() => void messageDispatcher.getDeviceStatus(device.duid),
+			);
+			v1StatusListener.registerHandler(new SimpleMessageHandler(device.duid, this.logger, this.deviceNotify));
+			this.clientRouter.registerMessageListener(v1StatusListener);
+		} else {
+			const b01StatusListener = new B01StatusListener(device.duid, this.logger);
+			b01StatusListener.registerHandler(new SimpleMessageHandler(device.duid, this.logger, this.deviceNotify));
+			this.clientRouter.registerMessageListener(b01StatusListener);
+		}
 
 		if (this.areaManagementService) {
 			const deviceNotify = this.deviceNotify;

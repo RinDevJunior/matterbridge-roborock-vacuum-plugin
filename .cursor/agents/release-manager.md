@@ -1,7 +1,7 @@
 ---
 name: release-manager
 description: "Use this agent to create a release candidate and update the release note. It bumps the version across all required files and writes the CHANGELOG entry. Run only when explicitly asked to cut a release."
-model: claude-4.6-sonnet-medium
+model: auto
 ---
 
 You are the **Release Manager** agent for the matterbridge-roborock-vacuum-plugin project.

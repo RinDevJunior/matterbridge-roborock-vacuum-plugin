@@ -1,5 +1,16 @@
 # Claude History
 
+## 2026-07-05 — B01 listener protocol guard
+
+**Task:** Gate status listener registration at connect time so V1 vacuums get only `V1StatusListener` and B01 vacuums get only `B01StatusListener`, preventing duplicate status/battery/clean-mode callbacks on V1-only devices.
+
+**Changes:**
+
+- `src/services/connectionService.ts` — protocol-guarded branches in `initializeMessageClientForLocal()` using `device.pv === ProtocolVersion.B01`
+- `src/tests/services/connectionService.test.ts` — tests confirming V1 registers V1 listener only and B01 registers B01 listener only
+
+**Outcome:** Pass (reviewed). V1-only devices no longer invoke `B01StatusListener.onMessage()`; B01 and map/OTA listeners unchanged.
+
 ## 2026-07-05 — B01 extended roomTypeIds (2001–2011)
 
 **Task:** Extend `roomTypeIdToAreaTag` to map B01 extended room type IDs 2001–2011 (per ioBroker `ROOM_TYPE_MAP`) to Apple Home `AreaNamespaceTag` categories.

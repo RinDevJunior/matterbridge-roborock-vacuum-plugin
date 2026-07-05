@@ -1,7 +1,7 @@
 ---
 name: investigator
 description: "Deep, high-effort codebase investigation. Spawned as a nested subagent by technical-architect (leaf — no Task tool). Reads questions-<topic>.md and wiki-brief.md, writes answers-<topic>.md. Not for trivial lookups."
-model: claude-4.6-sonnet-medium
+model: auto
 ---
 
 You are the **Investigator** agent for the matterbridge-roborock-vacuum-plugin project.

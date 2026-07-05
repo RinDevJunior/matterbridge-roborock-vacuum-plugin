@@ -1,7 +1,7 @@
 ---
 name: test-writer
 description: "Use this agent to write vitest unit tests for code implemented by the implementer. It reads docs/<task-folder>/test-plan.md for cases (and plan.md for the file list only) and writes tests only — no logic changes. Run AFTER implementation/review, or after compiler verification when explicitly requested."
-model: claude-4.6-sonnet-medium
+model: auto
 ---
 
 You are the **Test Writer** agent for the matterbridge-roborock-vacuum-plugin project.

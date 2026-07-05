@@ -18,6 +18,7 @@
 - [x] External room list R3 — B01 `roomNameNormalizer.ts` + wired in `MapInfoListener.tryParseB01MapBinary()` for firmware-style Q10 names
 - [x] Fix B01/Q10 Apple Home area icons — `roomTypeId` (not `colorId`) + dual-scheme `populateAreaNamespaceTag` (`areaType` pre-compute for B01, V10 tag switch unchanged)
 - [x] B01 extended room IDs (2001–2011) — `roomTypeIdToAreaTag` switch extended per ioBroker `ROOM_TYPE_MAP`; unit + integration tests
+- [x] B01 listener protocol guard — register `V1StatusListener` or `B01StatusListener` at connect time based on `device.pv`, not both; unit tests in `connectionService.test.ts`
 
 ## Pending
 

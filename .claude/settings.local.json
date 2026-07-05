@@ -8,7 +8,15 @@
 			"Bash(npm run precommit:*)",
 			"mcp__codecov__get_pull_request_coverage",
 			"mcp__plugin_claude-mem_mcp-search__smart_search",
-			"mcp__plugin_claude-mem_mcp-search__smart_unfold"
+			"mcp__plugin_claude-mem_mcp-search__smart_unfold",
+			"Glob",
+			"Grep",
+			"mcp__codegraph__*",
+			"Bash(node scripts/clean-paths.mjs*)",
+			"Bash(codegraph *)",
+			"Bash(git log*)",
+			"Bash(git add*)",
+			"Bash(git status*)"
 		]
 	},
 	"enabledMcpjsonServers": ["codegraph"],
