@@ -3,7 +3,7 @@
 		"type": "command",
 		"command": "bash .claude/statusline-command.sh"
 	},
-	"enabledMcpjsonServers": ["glob-grep"],
+	"enabledMcpjsonServers": ["glob-grep", "serena"],
 	"includeCoAuthoredBy": false,
 	"permissions": {
 		"allow": []

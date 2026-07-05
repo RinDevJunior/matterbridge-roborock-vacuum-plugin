@@ -31,7 +31,7 @@ It is version-controlled — commit and push changes so teammates can pull the l
 - Per-device override pattern: array of objects with key (`serialNumber`) + value (`productName`), gated by a boolean in `advancedFeature.settings`. See `DeviceProductNameOverride` (`RoborockPluginPlatformConfig.ts:58`).
 - New config sections in schema use JSON Schema `if/then` blocks under `advancedFeature.allOf`.
 - **Agent frontmatter:** `effort`/`maxTurns` go after `color`, before `tools`. `tools` MUST be a comma-separated string (`tools: Read, Grep, Bash`) — YAML block lists silently fail to parse on some CLI versions and the subagent falls back to Read/Write/Edit/Bash only (Glob/Grep "tool not available").
-- **LSP tool availability:** exists on the local machine (typescript-language-server) but NOT in remote/web sessions — instructions must say "when in your toolset, else skip silently"; never write unconditional "use LSP".
+- **LSP tool availability:** works in main session, absent in Task subagents — confirmed structurally absent (Jul 5 2026, CLI 2.1.201): forced-call test showed `LSP` has no function schema entry in subagent's toolset at all (unlike Glob/Grep which existed as named-but-erroring before the glob-grep fix). Frontmatter `tools:` edits and prompt-level forced attempts both had zero effect — no settings.json/.mcp.json knob exists for this (unlike `enabledMcpjsonServers` for glob-grep). Contradicts github.com/anthropics/claude-agent-sdk-typescript#123 where Task subagents from interactive mode reportedly DO inherit LSP — root cause here is unresolved but confirmed unfixable from within this repo. Instructions must say "when in your toolset, else skip silently"; never write unconditional "use LSP".
 
 ## Decisions Made
 

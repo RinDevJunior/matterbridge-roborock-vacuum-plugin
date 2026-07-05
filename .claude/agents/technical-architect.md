@@ -5,7 +5,7 @@ model: sonnet
 color: purple
 effort: high
 maxTurns: 60
-tools: Read, Write, Edit, Glob, Grep, LSP, Bash, Agent, TaskCreate, TaskUpdate, TaskGet, TaskList, AskUserQuestion
+tools: Read, Write, Edit, Glob, Grep, mcp__glob-grep__Glob, mcp__glob-grep__Grep, LSP, mcp__serena__find_symbol, mcp__serena__find_referencing_symbols, mcp__serena__find_implementations, mcp__serena__get_symbols_overview, Bash, Agent, TaskCreate, TaskUpdate, TaskGet, TaskList, AskUserQuestion
 ---
 
 You are the **Technical Architect** agent for the matterbridge-roborock-vacuum-plugin project.

@@ -9,6 +9,17 @@
 			"type": "stdio",
 			"command": "node",
 			"args": [".claude/tools/glob-grep-server.cjs"]
+		},
+		"serena": {
+			"type": "stdio",
+			"command": "serena",
+			"args": [
+				"start-mcp-server",
+				"--context",
+				"ide",
+				"--project",
+				"/Volumes/ExternalSSD/code/matterbridge-roborock-vacuum-plugin"
+			]
 		}
 	}
 }

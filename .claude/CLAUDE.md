@@ -1,51 +1,33 @@
 # Matterbridge Roborock Vacuum Plugin
 
-Project instructions for Claude Code. Orchestration source of truth: `.claude/`.
+Orchestration source of truth: `.claude/`.
 
 ## Roles
 
-- **Main session** — you are the **Engineer Manager**. Before orchestrating any task, read `.claude/instructions/team-orchestrator-policy.md` (or run `/load-policy`) — it is the full playbook: paths (lite vs. full pipeline), model policy, approval gates, ID tracking. Do not write production code or tests yourself — dispatch subagents.
-- **Subagents** — follow your own definition in `.claude/agents/<name>.md` only. Do **not** read the orchestration policy file, and do not spawn other agents unless your definition says so.
+- **Main session (Engineer Manager):** read `.claude/instructions/team-orchestrator-policy.md` (or `/load-policy`) before orchestrating. Dispatch subagents — never write production code/tests yourself.
+- **Subagents:** follow only `.claude/agents/<name>.md`. Don't read the orchestrator policy; don't spawn other agents unless your definition says so.
 
-## Response Expectations
+## Rules
 
-- Be concise. No yapping, no long explanations. Details only when explicitly asked.
-
-## Coding Standards
-
-- Remove unused variables, functions, and imports; rename to `_` only when something must stay unused.
-- Never mix logic and test changes in a single step.
+- Be concise — no yapping, details only when asked.
+- Remove unused vars/functions/imports; `_` only when something must stay unused.
+- Never mix logic and test changes in one step.
+- No `Co-Authored-By` in commits. Subagents never run `git commit`/`git push`.
+- After `npm install`, run `npm run build:local:ci` to catch build issues.
 
 ## Verification
 
-- Use compact scripts only: `npm run format:ci`, `lint:fix:ci`, `test:ci`, `precommit:ci`, `diff:ci`, `type-check:ci`, `build:local:ci`. Never run raw `npm run test`/`build:local`/`tsc` or paste full build/test output.
-- `*:ci` output is already compact by design — don't `tail`/`head`/pipe it further; print it as-is.
-- If a `*:ci` script reports `path/to/file.ts(line,col): error ...`, jump straight to `Read(file, offset: line, limit: ~15-20)` at that location. Don't grep or re-read the whole file first — the error output already is the search result.
-- Each agent's verification gate is listed in its own definition — it must PASS before reporting complete.
+Compact scripts only: `format:ci`, `lint:fix:ci`, `test:ci`, `precommit:ci`, `diff:ci`, `type-check:ci`, `build:local:ci`. Never raw `npm run test`/`build:local`/`tsc`, never paste full output — `*:ci` output is already compact, print as-is.
 
-## Git Workflow
-
-- Do NOT add `Co-Authored-By` to commit messages.
-- Subagents never run `git commit` / `git push` — committing is the user's responsibility.
-
-## Troubleshooting
-
-- After running `npm install`, run `npm run build:local:ci` to resolve potential build issues.
+On `path/to/file.ts(line,col): error ...`, jump straight to `Read(file, offset: line, limit: ~15-20)` — don't grep/re-read the whole file first. Each agent's own verification gate must PASS before it reports complete.
 
 ## Shared Memory
 
-`.claude/memory.md` holds durable patterns and pitfalls. Read at session start only by: `technical-architect`, `investigator`, `implementer`, `reviewer`, `test-writer` (and `wiki-manager` as a gather source). Other agents skip it. Entries: max 2 lines per bullet, max 10 bullets per section.
+`.claude/memory.md`: durable patterns/pitfalls. Read at session start by `technical-architect`, `investigator`, `implementer`, `reviewer`, `test-writer` (+ `wiki-manager` gather mode). Max 2 lines/bullet, 10 bullets/section.
 
-## CodeGraph
+## Code Exploration Priority
 
-If `.codegraph/` exists at the repo root, use it before Grep/Glob/Read to locate or understand code: MCP `codegraph_explore` when available, else shell `codegraph explore "<query>"` (required for subagents, which lack MCP access). No `.codegraph/` → skip it.
-
-## Glob / Grep (file search — platform-aware)
-
-On **Windows and remote/web** sessions, `Glob` and `Grep` are first-party tools — use them directly. On **macOS/Linux native** builds, use `mcp__glob-grep__Glob` / `mcp__glob-grep__Grep` instead (registered in `.mcp.json`). Fall back to `Bash` with `rg`/`find` only if neither is in your toolset. Both first-party and MCP variants respect `.gitignore`; the Bash fallback does not.
-
-## LSP (code navigation — when available)
-
-The `LSP` tool exists on the local machine (`typescript-language-server`) but NOT in remote/web sessions. **Check your toolset first: if `LSP` is not listed, skip it silently — do not attempt the call.** When available, prefer it over Grep for symbol lookups: `findReferences` for usages, `goToDefinition` for definitions, `prepareCallHierarchy` + `incomingCalls`/`outgoingCalls` for call traces, `documentSymbol` / `workspaceSymbol` to locate symbols. When absent, Grep the symbol with a word-boundary pattern (e.g. `\bgetRoomMap\b`) and check `index.ts` barrel files for re-exports.
-
-Exploration priority: **CodeGraph** (best single-call context when indexed) → **LSP** (exact symbol lookups, when available) → **Grep/Glob** (fallback symbol search; string literals, TODOs, config keys).
+1. **CodeGraph** — `.codegraph/` exists → `codegraph_explore` (MCP) or `codegraph explore "<query>"` (shell, subagents). One-call source + call graph + blast radius. Skip if no `.codegraph/`.
+2. **Serena** (`mcp__serena__*`, in `.mcp.json`) — exact symbol lookups (`find_symbol`, `find_referencing_symbols`, `find_implementations`, `get_symbols_overview`), live diagnostics (`get_diagnostics_for_file`), symbol-safe edits (`replace_symbol_body`, `rename_symbol`, `insert_before/after_symbol` — prefer over raw `Edit` for whole-symbol changes).
+3. **`LSP`** — main session only, never reaches Task subagents (confirmed: absent from schema regardless of frontmatter/reload). Skip silently if not in your toolset.
+4. **Grep/Glob** — word-boundary pattern (e.g. `\bgetRoomMap\b`) + check `index.ts` barrels for re-exports. macOS/Linux native: use `mcp__glob-grep__Glob/Grep`. Windows/remote: native `Glob`/`Grep`. Last resort: `Bash` `rg`/`find` (ignores `.gitignore`, unlike the others).

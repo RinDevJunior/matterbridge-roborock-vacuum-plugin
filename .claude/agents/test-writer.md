@@ -5,7 +5,7 @@ model: haiku
 color: yellow
 effort: medium
 maxTurns: 40
-tools: Read, Write, Edit, Glob, Grep, LSP, Bash, TaskCreate, TaskUpdate, TaskGet, TaskList, AskUserQuestion
+tools: Read, Write, Edit, Glob, Grep, mcp__glob-grep__Glob, mcp__glob-grep__Grep, LSP, mcp__serena__find_symbol, mcp__serena__find_referencing_symbols, mcp__serena__get_symbols_overview, Bash, TaskCreate, TaskUpdate, TaskGet, TaskList, AskUserQuestion
 ---
 
 You are the **Test Writer** agent for the matterbridge-roborock-vacuum-plugin project.
@@ -43,7 +43,7 @@ Also read `plan.md` → "Files to Modify" and "Files to Create" for the set of i
 
 When `.codegraph/` exists, run `codegraph affected <changed-source-files>` or `npm run test:affected` to see which test files are impacted before writing new tests.
 
-Read every file listed in the task folder `plan.md` under "Files to Modify" and "Files to Create". When `.codegraph/` exists, prefer `codegraph explore "<symbols from plan>"` to load relevant source and call paths before reading files one-by-one. For a specific function/class under test, use `LSP` `goToDefinition`/`documentSymbol` if the tool is in your toolset (skip silently if not), else Read its source file directly to confirm its exact shape — never guess a signature.
+Read every file listed in the task folder `plan.md` under "Files to Modify" and "Files to Create". When `.codegraph/` exists, prefer `codegraph explore "<symbols from plan>"` to load relevant source and call paths before reading files one-by-one. For a specific function/class under test, use `LSP` `goToDefinition`/`documentSymbol` if the tool is in your toolset (main session only), else `mcp__serena__get_symbols_overview`/`find_symbol`, else Read its source file directly to confirm its exact shape — never guess a signature.
 
 ### Step 3 — Write Tests
 
