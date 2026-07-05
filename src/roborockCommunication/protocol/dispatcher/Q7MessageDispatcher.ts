@@ -170,6 +170,10 @@ export class Q7MessageDispatcher implements AbstractMessageDispatcher {
 		await this.startRoomCleaning(duid, [], 1);
 	}
 
+	public skipRoomCleaning(duid: string): Promise<void> {
+		throw new Error(`skipRoomCleaning is not supported on ${this.dispatcherName}`);
+	}
+
 	public stopCleaning(duid: string): Promise<void> {
 		const request = new RequestMessage({
 			messageId: this.messageId,

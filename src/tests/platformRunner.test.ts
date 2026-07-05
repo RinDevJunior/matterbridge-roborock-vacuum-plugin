@@ -658,8 +658,8 @@ describe('PlatformRunner.updateRobotWithPayload', () => {
 		await runner.updateRobotWithPayload(payload);
 
 		expect(mockLogger.notice).toHaveBeenCalledWith('Vacuum is cleaning with no cleaning_info');
-		expect(robot.updateAttribute).toHaveBeenCalledWith(ServiceArea.Cluster.id, 'selectedAreas', [], mockLogger);
-		expect(robot.updateAttribute).toHaveBeenCalledWith(ServiceArea.Cluster.id, 'currentArea', null, mockLogger);
+		expect(robot.updateAttribute).toHaveBeenCalledWith(ServiceArea.Cluster.id, 'selectedAreas', [1, 2], mockLogger);
+		expect(robot.updateAttribute).toHaveBeenCalledWith(ServiceArea.Cluster.id, 'currentArea', 1, mockLogger);
 	});
 
 	it('should handle ServiceAreaUpdate when cleaningInfo is missing for non-cleaning state', async () => {

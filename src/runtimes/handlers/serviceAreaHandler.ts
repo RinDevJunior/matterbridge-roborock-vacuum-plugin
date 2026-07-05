@@ -30,10 +30,8 @@ function buildProgressUpdate(
 	selectedAreas: number[],
 	activeAreaId: number | null,
 ): ServiceArea.Progress[] {
-	// Initialize progress entries for all selected areas if not already present
 	const progressMap = new Map<number, ServiceArea.Progress>(existing.map((p) => [p.areaId, p]));
 
-	// Ensure all selected areas have a progress entry
 	for (const areaId of selectedAreas) {
 		if (!progressMap.has(areaId)) {
 			progressMap.set(areaId, {
@@ -43,14 +41,12 @@ function buildProgressUpdate(
 		}
 	}
 
-	// Remove progress entries for areas no longer selected
 	for (const areaId of progressMap.keys()) {
 		if (!selectedAreas.includes(areaId)) {
 			progressMap.delete(areaId);
 		}
 	}
 
-	// Update operational status: mark new active area as Operating, previous as Completed
 	if (activeAreaId !== null) {
 		for (const [areaId, progress] of progressMap.entries()) {
 			if (areaId === activeAreaId) {
@@ -62,6 +58,83 @@ function buildProgressUpdate(
 	}
 
 	return Array.from(progressMap.values());
+}
+
+export function computeEstimatedEndTime(
+	extraTimeSeconds: number | undefined,
+	currentArea: number | null,
+): number | null {
+	if (currentArea === null || extraTimeSeconds === undefined || extraTimeSeconds <= 0) {
+		return null;
+	}
+	return Math.floor(Date.now() / 1000) + extraTimeSeconds;
+}
+
+export function getNextPendingArea(
+	selectedAreas: number[],
+	progress: ServiceArea.Progress[],
+	afterSkippedId: number,
+): number | null {
+	const skippedIndex = selectedAreas.indexOf(afterSkippedId);
+	if (skippedIndex === -1) {
+		return null;
+	}
+
+	const progressMap = new Map(progress.map((entry) => [entry.areaId, entry.status]));
+
+	for (let index = skippedIndex + 1; index < selectedAreas.length; index++) {
+		const areaId = selectedAreas[index];
+		const status = progressMap.get(areaId);
+		if (status === undefined || status === ServiceArea.OperationalStatus.Pending) {
+			return areaId;
+		}
+	}
+
+	return null;
+}
+
+export function markAreaSkipped(
+	progress: ServiceArea.Progress[],
+	selectedAreas: number[],
+	skippedAreaId: number,
+	nextAreaId: number | null,
+): ServiceArea.Progress[] {
+	const progressMap = new Map<number, ServiceArea.Progress>(progress.map((entry) => [entry.areaId, { ...entry }]));
+
+	for (const areaId of selectedAreas) {
+		if (!progressMap.has(areaId)) {
+			progressMap.set(areaId, {
+				areaId,
+				status: ServiceArea.OperationalStatus.Pending,
+			});
+		}
+	}
+
+	const skippedEntry = progressMap.get(skippedAreaId);
+	if (skippedEntry) {
+		skippedEntry.status = ServiceArea.OperationalStatus.Skipped;
+	}
+
+	if (nextAreaId !== null) {
+		const nextEntry = progressMap.get(nextAreaId);
+		if (nextEntry) {
+			nextEntry.status = ServiceArea.OperationalStatus.Operating;
+		}
+	}
+
+	return Array.from(progressMap.values());
+}
+
+async function updateCurrentAreaAndEstimate(
+	robot: RoborockVacuumCleaner,
+	currentArea: number | null,
+	extraTimeSeconds: number | undefined,
+	platform: RoborockMatterbridgePlatform,
+): Promise<void> {
+	const logger = platform.log;
+	const estimatedEndTime = computeEstimatedEndTime(extraTimeSeconds, currentArea);
+	await robot.updateAttribute(ServiceArea.id, 'currentArea', currentArea, logger);
+	await robot.updateAttribute(ServiceArea.id, 'estimatedEndTime', estimatedEndTime, logger);
 }
 
 export async function handleServiceAreaUpdate(
@@ -77,7 +150,6 @@ export async function handleServiceAreaUpdate(
 		const selectedAreas = platform.roborockService?.getSelectedAreas(robot.device.duid) ?? [];
 		await robot.updateAttribute(ServiceArea.id, 'selectedAreas', selectedAreas, logger);
 
-		// Finalize progress: mark any Operating area as Completed
 		const existingProgress = platform.roborockService?.getProgress(robot.device.duid) ?? [];
 		const finalProgress = existingProgress.map((p) =>
 			p.status === ServiceArea.OperationalStatus.Operating
@@ -86,6 +158,8 @@ export async function handleServiceAreaUpdate(
 		);
 		platform.roborockService?.setProgress(robot.device.duid, finalProgress);
 		await robot.updateAttribute(ServiceArea.id, 'progress', finalProgress, logger);
+		await robot.updateAttribute(ServiceArea.id, 'currentArea', null, logger);
+		await robot.updateAttribute(ServiceArea.id, 'estimatedEndTime', null, logger);
 		return;
 	}
 
@@ -99,7 +173,7 @@ export async function handleServiceAreaUpdate(
 		return;
 	}
 
-	await resolveAreaFromCleaningInfo(robot, message.cleaningInfo, platform);
+	await resolveAreaFromCleaningInfo(robot, message.cleaningInfo, message.extraTimeSeconds, platform);
 }
 
 function getSelectedAreas(
@@ -125,26 +199,30 @@ async function handleCleaningWithoutInfo(
 	const selectedAreas = getSelectedAreas(robot, message, platform);
 
 	if (message.cleaningProcess.clean_area === 0 || message.cleaningProcess.clean_time === 0) {
-		// Robot not started cleaning yet → "Traveling to room"
 		await robot.updateAttribute(ServiceArea.id, 'selectedAreas', selectedAreas, logger);
-		await robot.updateAttribute(ServiceArea.id, 'currentArea', null, logger);
+		await updateCurrentAreaAndEstimate(robot, null, message.extraTimeSeconds, platform);
 		return;
 	}
 
 	if (selectedAreas.length === 1) {
-		// Single room → "Cleaning (Room)"
 		await robot.updateAttribute(ServiceArea.id, 'selectedAreas', selectedAreas, logger);
-		await robot.updateAttribute(ServiceArea.id, 'currentArea', selectedAreas[0], logger);
+		await updateCurrentAreaAndEstimate(robot, selectedAreas[0], message.extraTimeSeconds, platform);
 
-		// Update progress: initialize Pending if not present, mark selected area as Operating
+		const existingProgress = platform.roborockService?.getProgress(robot.device.duid) ?? [];
+		const updatedProgress = buildProgressUpdate(existingProgress, selectedAreas, selectedAreas[0]);
+		platform.roborockService?.setProgress(robot.device.duid, updatedProgress);
+		await robot.updateAttribute(ServiceArea.id, 'progress', updatedProgress, logger);
+	} else if (selectedAreas.length > 1 && message.cleaningProcess.clean_time > 0) {
+		await robot.updateAttribute(ServiceArea.id, 'selectedAreas', selectedAreas, logger);
+		await updateCurrentAreaAndEstimate(robot, selectedAreas[0], message.extraTimeSeconds, platform);
+
 		const existingProgress = platform.roborockService?.getProgress(robot.device.duid) ?? [];
 		const updatedProgress = buildProgressUpdate(existingProgress, selectedAreas, selectedAreas[0]);
 		platform.roborockService?.setProgress(robot.device.duid, updatedProgress);
 		await robot.updateAttribute(ServiceArea.id, 'progress', updatedProgress, logger);
 	} else {
-		// Multiple rooms, no cleaningInfo → "Preparing" (workaround)
 		await robot.updateAttribute(ServiceArea.id, 'selectedAreas', [], logger);
-		await robot.updateAttribute(ServiceArea.id, 'currentArea', null, logger);
+		await updateCurrentAreaAndEstimate(robot, null, message.extraTimeSeconds, platform);
 	}
 }
 
@@ -169,8 +247,8 @@ export async function handleActiveMapChanged(
 	);
 	await robot.updateAttribute(ServiceArea.id, 'selectedAreas', allAreaIds, logger);
 	await robot.updateAttribute(ServiceArea.id, 'currentArea', null, logger);
+	await robot.updateAttribute(ServiceArea.id, 'estimatedEndTime', null, logger);
 
-	// Reset progress for new map
 	platform.roborockService?.setProgress(robot.device.duid, []);
 	await robot.updateAttribute(ServiceArea.id, 'progress', [], logger);
 }
@@ -178,6 +256,7 @@ export async function handleActiveMapChanged(
 async function resolveAreaFromCleaningInfo(
 	robot: RoborockVacuumCleaner,
 	cleaningInfo: CleanInformation,
+	extraTimeSeconds: number | undefined,
 	platform: RoborockMatterbridgePlatform,
 ): Promise<void> {
 	const logger = platform.log;
@@ -206,7 +285,7 @@ async function resolveAreaFromCleaningInfo(
         segmentId: ${segmentId},
         currentMappedAreas: ${debugStringify(roomIndexMap)}`,
 		);
-		await robot.updateAttribute(ServiceArea.id, 'currentArea', null, logger);
+		await updateCurrentAreaAndEstimate(robot, null, extraTimeSeconds, platform);
 		return;
 	}
 
@@ -220,9 +299,8 @@ async function resolveAreaFromCleaningInfo(
       activeArea: ${debugStringify(supportedAreas.find((x) => x.areaId === mappedArea))}`,
 	);
 
-	await robot.updateAttribute(ServiceArea.id, 'currentArea', mappedArea, logger);
+	await updateCurrentAreaAndEstimate(robot, mappedArea, extraTimeSeconds, platform);
 
-	// Update progress: mark mapped area as Operating, previous Operating as Completed
 	const selectedAreas = robot.getAttribute(ServiceArea.id, 'selectedAreas', logger) ?? [];
 	const existingProgress = platform.roborockService.getProgress(robot.device.duid);
 	const updatedProgress = buildProgressUpdate(existingProgress, selectedAreas, mappedArea);

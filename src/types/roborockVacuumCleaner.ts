@@ -1,4 +1,4 @@
-import { CommandHandlerData, CommandHandlers, MatterbridgeServiceAreaServer } from 'matterbridge';
+import { CommandHandlerData, CommandHandlers } from 'matterbridge';
 import { RoboticVacuumCleaner } from 'matterbridge/devices';
 import { AnsiLogger, debugStringify } from 'matterbridge/logger';
 import { CommonAreaNamespaceTag } from 'matterbridge/matter';
@@ -7,11 +7,13 @@ import { ModeBase, RvcOperationalState, ServiceArea } from 'matterbridge/matter/
 import { CommandNames } from '../behaviors/BehaviorDeviceGeneric.js';
 import { CleanModeSetting } from '../behaviors/roborock.vacuum/core/CleanModeSetting.js';
 import { baseRunModeConfigs, getRunModeOptions } from '../behaviors/roborock.vacuum/core/runModeConfig.js';
+import { RoborockServiceAreaServer } from '../behaviors/roborockServiceAreaServer.js';
 import { HomeEntity } from '../core/domain/entities/Home.js';
 import { getOperationalStates, getSupportedCleanModes, getSupportedRoutines } from '../initialData/index.js';
 import { DockStationStatus } from '../model/DockStationStatus.js';
 import { PlatformConfigManager } from '../platform/platformConfigManager.js';
 import { Device } from '../roborockCommunication/models/index.js';
+import { getNextPendingArea, markAreaSkipped } from '../runtimes/handlers/serviceAreaHandler.js';
 import { RoborockService } from '../services/roborockService.js';
 import { BehaviorFactoryResult } from '../share/behaviorFactory.js';
 
@@ -23,6 +25,10 @@ export class RoborockVacuumCleaner extends RoboticVacuumCleaner {
 	dockStationStatus: DockStationStatus | undefined;
 	cleanModeSetting: CleanModeSetting | undefined;
 	lastUpdateAt: number | null = null;
+	operationSessionStartMs: number | null = null;
+	operationPausedSinceMs: number | null = null;
+	operationPausedAccumMs = 0;
+	skipAreaHandler?: (skippedArea: number) => Promise<void>;
 
 	/**
 	 * Create a new Roborock Vacuum Cleaner device.
@@ -85,7 +91,7 @@ export class RoborockVacuumCleaner extends RoboticVacuumCleaner {
 		supportedMaps?: ServiceArea.Map[],
 	): this {
 		this.behaviors.require(
-			MatterbridgeServiceAreaServer.with(ServiceArea.Feature.Maps, ServiceArea.Feature.ProgressReporting),
+			RoborockServiceAreaServer.with(ServiceArea.Feature.Maps, ServiceArea.Feature.ProgressReporting),
 			{
 				supportedAreas: supportedAreas ?? [
 					{
@@ -161,6 +167,10 @@ export class RoborockVacuumCleaner extends RoboticVacuumCleaner {
 
 			behaviorHandler.executeCommand(CommandNames.SELECT_AREAS, areas);
 		});
+
+		this.skipAreaHandler = async (skippedArea: number) => {
+			await behaviorHandler.executeCommand(CommandNames.SKIP_AREA, skippedArea);
+		};
 
 		this.addCommandHandlerWithErrorHandling(CommandNames.CHANGE_TO_MODE, async ({ request }) => {
 			const { newMode } = request as ModeBase.ChangeToModeRequest;
@@ -240,6 +250,20 @@ export class RoborockVacuumCleaner extends RoboticVacuumCleaner {
 			supportedAreaAndRoutines,
 			operationalState,
 		};
+	}
+
+	public async finalizeSkipArea(skippedArea: number): Promise<{
+		updatedProgress: ServiceArea.Progress[];
+		nextAreaId: number | null;
+	}> {
+		const selectedAreas = this.getAttribute(ServiceArea.id, 'selectedAreas', this.log) ?? [];
+		const existingProgress = this.roborockService.getProgress(this.device.duid);
+		const nextAreaId = getNextPendingArea(selectedAreas, existingProgress, skippedArea);
+		const updatedProgress = markAreaSkipped(existingProgress, selectedAreas, skippedArea, nextAreaId);
+		this.roborockService.setProgress(this.device.duid, updatedProgress);
+		await this.updateAttribute(ServiceArea.id, 'progress', updatedProgress, this.log);
+		await this.updateAttribute(ServiceArea.id, 'currentArea', nextAreaId, this.log);
+		return { updatedProgress, nextAreaId };
 	}
 
 	private async trySwitchMap(selectedAreaIds: number[]): Promise<void> {

@@ -118,6 +118,11 @@ export class MessageRoutingService {
 		await this.getMessageDispatcher(duid).resumeCleaning(duid);
 	}
 
+	public async skipRoomCleaning(duid: string): Promise<void> {
+		this.logger.debug('MessageRoutingService - skipRoomCleaning');
+		await this.getMessageDispatcher(duid).skipRoomCleaning(duid);
+	}
+
 	public async stopClean(duid: string): Promise<void> {
 		this.logger.debug('MessageRoutingService - stopClean');
 		await this.getMessageDispatcher(duid).stopCleaning(duid);

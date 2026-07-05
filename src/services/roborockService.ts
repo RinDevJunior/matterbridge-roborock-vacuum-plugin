@@ -304,6 +304,11 @@ export class RoborockService {
 		return this.messageRoutingService.resumeClean(duid);
 	}
 
+	/** Skip the current room/segment during cleaning. */
+	public async skipRoomCleaning(duid: string): Promise<void> {
+		return this.messageRoutingService.skipRoomCleaning(duid);
+	}
+
 	public async stopClean(duid: string): Promise<void> {
 		return this.messageRoutingService.stopClean(duid);
 	}

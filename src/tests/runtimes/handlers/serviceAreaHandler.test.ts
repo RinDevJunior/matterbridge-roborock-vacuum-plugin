@@ -1,5 +1,5 @@
 import { ServiceArea } from 'matterbridge/matter/clusters';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { INVALID_SEGMENT_ID } from '../../../constants/index.js';
 import { RoomIndexMap } from '../../../core/application/models/index.js';
@@ -8,7 +8,13 @@ import { AreaInfo, SegmentInfo } from '../../../initialData/getSupportedAreas.js
 import { RoborockMatterbridgePlatform } from '../../../module.js';
 import { OperationStatusCode } from '../../../roborockCommunication/enums/index.js';
 import { CleanInformation, Device } from '../../../roborockCommunication/models/index.js';
-import { handleActiveMapChanged, handleServiceAreaUpdate } from '../../../runtimes/handlers/serviceAreaHandler.js';
+import {
+	computeEstimatedEndTime,
+	getNextPendingArea,
+	handleActiveMapChanged,
+	handleServiceAreaUpdate,
+	markAreaSkipped,
+} from '../../../runtimes/handlers/serviceAreaHandler.js';
 import { RoborockService } from '../../../services/roborockService.js';
 import type { ServiceAreaUpdateMessage } from '../../../types/MessagePayloads.js';
 import { RoborockVacuumCleaner } from '../../../types/roborockVacuumCleaner.js';
@@ -299,6 +305,190 @@ describe('handleServiceAreaUpdate with progress', () => {
 
 		// Progress should not be set when clean hasn't started (clean_area === 0)
 		expect(mockRoborockService?.setProgress).not.toHaveBeenCalled();
+	});
+});
+
+describe('computeEstimatedEndTime', () => {
+	afterEach(() => {
+		vi.useRealTimers();
+	});
+
+	it('should return null when extraTimeSeconds is undefined', () => {
+		expect(computeEstimatedEndTime(undefined, 1)).toBeNull();
+	});
+
+	it('should return null when currentArea is null', () => {
+		expect(computeEstimatedEndTime(600, null)).toBeNull();
+	});
+
+	it('should return floor(now/1000)+extraTimeSeconds when inputs are valid', () => {
+		vi.useFakeTimers();
+		vi.setSystemTime(new Date('2026-07-05T12:00:00.000Z'));
+
+		expect(computeEstimatedEndTime(600, 5)).toBe(Math.floor(Date.now() / 1000) + 600);
+	});
+});
+
+describe('handleServiceAreaUpdate idle clears currentArea and estimatedEndTime', () => {
+	let robot: RoborockVacuumCleaner;
+
+	beforeEach(() => {
+		vi.clearAllMocks();
+		robot = createMockRobot('test-duid-idle-clear', 100);
+	});
+
+	it('should clear currentArea and estimatedEndTime when state is Idle', async () => {
+		const platform = asPartial<RoborockMatterbridgePlatform>({
+			log: createMockLogger(),
+			roborockService: asPartial<RoborockService>({
+				getSelectedAreas: vi.fn().mockReturnValue([1]),
+				getProgress: vi.fn().mockReturnValue([]),
+				setProgress: vi.fn(),
+			}),
+		});
+
+		const message: ServiceAreaUpdateMessage = {
+			duid: 'test-duid-idle-clear',
+			state: OperationStatusCode.Idle,
+			cleaningInfo: undefined,
+			cleaningProcess: { clean_area: 0, clean_time: 0 },
+		};
+
+		await handleServiceAreaUpdate(robot, message, platform);
+
+		expect(robot.updateAttribute).toHaveBeenCalledWith(ServiceArea.id, 'currentArea', null, expect.anything());
+		expect(robot.updateAttribute).toHaveBeenCalledWith(ServiceArea.id, 'estimatedEndTime', null, expect.anything());
+	});
+});
+
+describe('handleServiceAreaUpdate multi-room without cleaning_info', () => {
+	let robot: RoborockVacuumCleaner;
+
+	beforeEach(() => {
+		vi.clearAllMocks();
+		robot = createMockRobot('test-duid-multi', 100);
+	});
+
+	it('should keep selectedAreas and set currentArea to first selected when clean_time > 0', async () => {
+		const selectedAreas = [10, 20];
+		const mockRoborockService = asPartial<RoborockService>({
+			getSelectedAreas: vi.fn().mockReturnValue(selectedAreas),
+			getProgress: vi.fn().mockReturnValue([]),
+			setProgress: vi.fn(),
+		});
+		const platform = asPartial<RoborockMatterbridgePlatform>({
+			log: createMockLogger(),
+			roborockService: mockRoborockService,
+		});
+
+		vi.mocked(robot.getAttribute).mockReturnValue(selectedAreas);
+
+		const message: ServiceAreaUpdateMessage = {
+			duid: 'test-duid-multi',
+			state: OperationStatusCode.Cleaning,
+			cleaningInfo: undefined,
+			cleaningProcess: { clean_area: 100, clean_time: 50 },
+			extraTimeSeconds: 860,
+		};
+
+		await handleServiceAreaUpdate(robot, message, platform);
+
+		expect(robot.updateAttribute).toHaveBeenCalledWith(
+			ServiceArea.id,
+			'selectedAreas',
+			selectedAreas,
+			expect.anything(),
+		);
+		expect(robot.updateAttribute).toHaveBeenCalledWith(ServiceArea.id, 'currentArea', 10, expect.anything());
+		expect(robot.updateAttribute).toHaveBeenCalledWith(
+			ServiceArea.id,
+			'estimatedEndTime',
+			expect.any(Number),
+			expect.anything(),
+		);
+	});
+});
+
+describe('resolveAreaFromCleaningInfo estimatedEndTime', () => {
+	let robot: RoborockVacuumCleaner;
+
+	beforeEach(() => {
+		vi.clearAllMocks();
+		vi.useFakeTimers();
+		vi.setSystemTime(new Date('2026-07-05T12:00:00.000Z'));
+		robot = createMockRobot('test-duid-estimate', 100);
+	});
+
+	afterEach(() => {
+		vi.useRealTimers();
+	});
+
+	it('should set currentArea and estimatedEndTime when segment_id maps to an area', async () => {
+		const selectedAreas = [1];
+		const roomMapData = new Map<number, AreaInfo>([[1, { roomId: 10, mapId: 100, roomName: 'Room 1' }]]);
+		const roomInfo = new Map<string, SegmentInfo>([['10-100', { areaId: 1, mapId: 100, roomName: 'Room 1' }]]);
+		const indexMap = new RoomIndexMap(roomMapData, roomInfo);
+
+		const mockRoborockService = asPartial<RoborockService>({
+			getSupportedAreas: vi.fn().mockReturnValue([]),
+			getSupportedAreasIndexMap: vi.fn().mockReturnValue(indexMap),
+			getSelectedAreas: vi.fn().mockReturnValue(selectedAreas),
+			getProgress: vi.fn().mockReturnValue([]),
+			setProgress: vi.fn(),
+		});
+
+		const platform = asPartial<RoborockMatterbridgePlatform>({
+			log: createMockLogger(),
+			roborockService: mockRoborockService,
+		});
+
+		vi.mocked(robot.getAttribute).mockReturnValue(selectedAreas);
+
+		const message: ServiceAreaUpdateMessage = {
+			duid: 'test-duid-estimate',
+			state: OperationStatusCode.RoomClean,
+			cleaningInfo: {
+				segment_id: 10,
+				target_segment_id: INVALID_SEGMENT_ID,
+				fan_power: 0,
+				water_box_status: 0,
+				mop_mode: 0,
+			},
+			cleaningProcess: { clean_area: 100, clean_time: 60 },
+			extraTimeSeconds: 600,
+		};
+
+		await handleServiceAreaUpdate(robot, message, platform);
+
+		expect(robot.updateAttribute).toHaveBeenCalledWith(ServiceArea.id, 'currentArea', 1, expect.anything());
+		expect(robot.updateAttribute).toHaveBeenCalledWith(
+			ServiceArea.id,
+			'estimatedEndTime',
+			Math.floor(Date.now() / 1000) + 600,
+			expect.anything(),
+		);
+	});
+});
+
+describe('markAreaSkipped and getNextPendingArea', () => {
+	it('should mark skipped area Skipped and advance next pending area to Operating', () => {
+		const selectedAreas = [1, 2, 3];
+		const progress: ServiceArea.Progress[] = [
+			{ areaId: 1, status: ServiceArea.OperationalStatus.Completed },
+			{ areaId: 2, status: ServiceArea.OperationalStatus.Operating },
+			{ areaId: 3, status: ServiceArea.OperationalStatus.Pending },
+		];
+
+		const nextAreaId = getNextPendingArea(selectedAreas, progress, 2);
+		const updated = markAreaSkipped(progress, selectedAreas, 2, nextAreaId);
+
+		expect(nextAreaId).toBe(3);
+		expect(updated).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({ areaId: 2, status: ServiceArea.OperationalStatus.Skipped }),
+				expect.objectContaining({ areaId: 3, status: ServiceArea.OperationalStatus.Operating }),
+			]),
+		);
 	});
 });
 

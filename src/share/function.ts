@@ -62,11 +62,11 @@ const matterOperationalStatusMap = new Map<number, RvcOperationalState.Operation
 	[OperationStatusCode.ShuttingDown, RvcOperationalState.OperationalState.Stopped],
 	[OperationStatusCode.ReturnToDock, RvcOperationalState.OperationalState.SeekingCharger],
 	[OperationStatusCode.ReturningDock, RvcOperationalState.OperationalState.SeekingCharger],
-	[OperationStatusCode.WashingTheMop, RvcOperationalState.OperationalState.SeekingCharger],
-	[OperationStatusCode.WashingTheMop2, RvcOperationalState.OperationalState.SeekingCharger],
-	[OperationStatusCode.GoingToWashTheMop, RvcOperationalState.OperationalState.SeekingCharger],
-	[OperationStatusCode.BackToDockWashingDuster, RvcOperationalState.OperationalState.SeekingCharger],
-	[OperationStatusCode.EmptyingDustContainer, RvcOperationalState.OperationalState.SeekingCharger],
+	[OperationStatusCode.WashingTheMop, RvcOperationalState.OperationalState.CleaningMop],
+	[OperationStatusCode.WashingTheMop2, RvcOperationalState.OperationalState.CleaningMop],
+	[OperationStatusCode.GoingToWashTheMop, RvcOperationalState.OperationalState.CleaningMop],
+	[OperationStatusCode.BackToDockWashingDuster, RvcOperationalState.OperationalState.FillingWaterTank],
+	[OperationStatusCode.EmptyingDustContainer, RvcOperationalState.OperationalState.EmptyingDustBin],
 	[OperationStatusCode.FullyCharged, RvcOperationalState.OperationalState.Docked],
 ]);
 

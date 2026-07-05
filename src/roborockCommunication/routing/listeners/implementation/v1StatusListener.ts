@@ -120,6 +120,8 @@ export class V1StatusListener implements AbstractMessageListener {
 			messageBody.is_locating !== undefined ? Boolean(messageBody.is_locating) : undefined,
 			messageBody.is_exploring !== undefined ? Boolean(messageBody.is_exploring) : undefined,
 			messageBody.in_warmup !== undefined ? Boolean(messageBody.in_warmup) : undefined,
+			messageBody.wash_status,
+			messageBody.replenish_mode,
 		);
 
 		const mapStatus = typeof messageBody.map_status === 'number' ? messageBody.map_status : undefined;
@@ -141,6 +143,7 @@ export class V1StatusListener implements AbstractMessageListener {
 				clean_time: clean_time,
 			},
 			cleaningInfo: cleaningInfo,
+			extraTimeSeconds: messageBody.extra_time,
 		});
 	}
 }

@@ -15,6 +15,7 @@ export interface AbstractMessageDispatcher {
 	pauseCleaning(duid: string): Promise<void>;
 	resumeCleaning(duid: string): Promise<void>;
 	resumeRoomCleaning(duid: string): Promise<void>;
+	skipRoomCleaning(duid: string): Promise<void>;
 	stopCleaning(duid: string): Promise<void>;
 	findMyRobot(duid: string): Promise<void>;
 

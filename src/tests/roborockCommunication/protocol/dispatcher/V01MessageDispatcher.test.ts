@@ -187,6 +187,13 @@ describe('V10MessageDispatcher', () => {
 		});
 	});
 
+	describe('skipRoomCleaning', () => {
+		it('should send a stop_segment_clean command', async () => {
+			await dispatcher.skipRoomCleaning(duid);
+			expect(client.send).toHaveBeenCalledWith(duid, expect.objectContaining({ method: 'stop_segment_clean' }));
+		});
+	});
+
 	describe('stopCleaning', () => {
 		it('should send a stop command', async () => {
 			await dispatcher.stopCleaning(duid);

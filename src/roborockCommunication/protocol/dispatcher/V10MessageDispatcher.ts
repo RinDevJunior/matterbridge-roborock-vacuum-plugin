@@ -135,6 +135,11 @@ export class V10MessageDispatcher implements AbstractMessageDispatcher {
 		return this.client.send(duid, request);
 	}
 
+	public skipRoomCleaning(duid: string): Promise<void> {
+		const request = new RequestMessage({ method: 'stop_segment_clean' });
+		return this.client.send(duid, request);
+	}
+
 	public stopCleaning(duid: string): Promise<void> {
 		const request = new RequestMessage({ method: 'app_stop' });
 		return this.client.send(duid, request);

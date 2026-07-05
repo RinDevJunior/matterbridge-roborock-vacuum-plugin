@@ -17,6 +17,7 @@ function createMockHandler(): BehaviorDeviceGeneric<DeviceEndpointCommands> {
 function createMockService(): RoborockService {
 	return asPartial<RoborockService>({
 		setSelectedAreas: vi.fn(),
+		skipRoomCleaning: vi.fn().mockResolvedValue(undefined),
 		pauseClean: vi.fn().mockResolvedValue(undefined),
 		resumeClean: vi.fn().mockResolvedValue(undefined),
 		stopAndGoHome: vi.fn().mockResolvedValue(undefined),
@@ -51,6 +52,14 @@ describe('registerCommonCommands', () => {
 
 	afterEach(() => {
 		vi.clearAllMocks();
+	});
+
+	describe('SKIP_AREA command', () => {
+		it('should call skipRoomCleaning with device duid', async () => {
+			await handler.executeCommand(CommandNames.SKIP_AREA, 5);
+			expect(service.skipRoomCleaning).toHaveBeenCalledWith(duid);
+			expect(logger.notice).toHaveBeenCalledWith(`${behaviorName}-skipArea: 5`);
+		});
 	});
 
 	describe('SELECT_AREAS command', () => {

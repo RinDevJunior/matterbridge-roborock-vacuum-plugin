@@ -132,6 +132,10 @@ export class Q10MessageDispatcher implements AbstractMessageDispatcher {
 		return this.resumeCleaning(duid);
 	}
 
+	public skipRoomCleaning(duid: string): Promise<void> {
+		throw new Error(`skipRoomCleaning is not supported on ${this.dispatcherName}`);
+	}
+
 	public stopCleaning(duid: string): Promise<void> {
 		const request = new RequestMessage({ messageId: this.messageId, dps: { [Q10RequestCode.app_stop]: 0 } });
 		return this.client.send(duid, request);

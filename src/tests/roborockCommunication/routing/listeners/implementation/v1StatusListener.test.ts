@@ -252,6 +252,22 @@ describe('V1StatusListener', () => {
 			);
 		});
 
+		it('should forward extra_time into ServiceAreaUpdateMessage', async () => {
+			listener.registerHandler(handler);
+			const message = makeRpcResponseMessage(duid, {
+				...baseResultBody,
+				state: OperationStatusCode.Cleaning,
+				extra_time: 860,
+			});
+			await listener.onMessage(message);
+			expect(handler.onServiceAreaUpdate).toHaveBeenCalledWith(
+				expect.objectContaining({
+					duid,
+					extraTimeSeconds: 860,
+				}),
+			);
+		});
+
 		it('should process boolean flags from in_cleaning, in_returning, etc.', async () => {
 			listener.registerHandler(handler);
 			const message = makeRpcResponseMessage(duid, {
