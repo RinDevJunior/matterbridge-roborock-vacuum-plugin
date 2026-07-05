@@ -40,6 +40,16 @@ Project instructions for Claude Code. Orchestration source of truth: `.claude/`.
 
 If `.codegraph/` exists at the repo root, use it before Grep/Glob/Read to locate or understand code: MCP `codegraph_explore` when available, else shell `codegraph explore "<query>"` (required for subagents, which lack MCP access). No `.codegraph/` → skip it.
 
+## Glob / Grep (file search — platform-aware)
+
+`Glob` and `Grep` are first-party tools on **Windows and remote/web** sessions. On **macOS/Linux native** builds they are replaced by MCP equivalents registered in `.mcp.json`. Always resolve at runtime:
+
+1. If `Glob` / `Grep` appear in your toolset → use them directly (Windows / remote).
+2. If not, check for `mcp__glob-grep__Glob` / `mcp__glob-grep__Grep` → use those (macOS / Linux native).
+3. If neither is available → fall back to `Bash` with `rg` / `find`.
+
+Both the first-party tools and the MCP equivalents respect `.gitignore`. The Bash fallback does not — avoid it for searches where gitignored paths (e.g. `node_modules`) would pollute results.
+
 ## LSP (code navigation — when available)
 
 The `LSP` tool exists on the local machine (`typescript-language-server`) but NOT in remote/web sessions. **Check your toolset first: if `LSP` is not listed, skip it silently — do not attempt the call.** When available, prefer it over Grep for symbol lookups: `findReferences` for usages, `goToDefinition` for definitions, `prepareCallHierarchy` + `incomingCalls`/`outgoingCalls` for call traces, `documentSymbol` / `workspaceSymbol` to locate symbols. When absent, Grep the symbol with a word-boundary pattern (e.g. `\bgetRoomMap\b`) and check `index.ts` barrel files for re-exports.
