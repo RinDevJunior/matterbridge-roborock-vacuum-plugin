@@ -42,13 +42,7 @@ If `.codegraph/` exists at the repo root, use it before Grep/Glob/Read to locate
 
 ## Glob / Grep (file search — platform-aware)
 
-`Glob` and `Grep` are first-party tools on **Windows and remote/web** sessions. On **macOS/Linux native** builds they are replaced by MCP equivalents registered in `.mcp.json`. Always resolve at runtime:
-
-1. If `Glob` / `Grep` appear in your toolset → use them directly (Windows / remote).
-2. If not, check for `mcp__glob-grep__Glob` / `mcp__glob-grep__Grep` → use those (macOS / Linux native).
-3. If neither is available → fall back to `Bash` with `rg` / `find`.
-
-Both the first-party tools and the MCP equivalents respect `.gitignore`. The Bash fallback does not — avoid it for searches where gitignored paths (e.g. `node_modules`) would pollute results.
+On **Windows and remote/web** sessions, `Glob` and `Grep` are first-party tools — use them directly. On **macOS/Linux native** builds, use `mcp__glob-grep__Glob` / `mcp__glob-grep__Grep` instead (registered in `.mcp.json`). Fall back to `Bash` with `rg`/`find` only if neither is in your toolset. Both first-party and MCP variants respect `.gitignore`; the Bash fallback does not.
 
 ## LSP (code navigation — when available)
 
