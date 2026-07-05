@@ -40,10 +40,8 @@ Project instructions for Claude Code. Orchestration source of truth: `.claude/`.
 
 If `.codegraph/` exists at the repo root, use it before Grep/Glob/Read to locate or understand code: MCP `codegraph_explore` when available, else shell `codegraph explore "<query>"` (required for subagents, which lack MCP access). No `.codegraph/` → skip it.
 
-## LSP (code navigation)
+## LSP (code navigation — when available)
 
-For symbol-level lookups, use the `LSP` tool instead of Grep (`typescript-language-server` must be on `$PATH`): `findReferences` for usages, `goToDefinition` for definitions, `prepareCallHierarchy` + `incomingCalls`/`outgoingCalls` for call traces, `hover` for types, `documentSymbol` / `workspaceSymbol` to list or locate symbols.
+The `LSP` tool exists on the local machine (`typescript-language-server`) but NOT in remote/web sessions. **Check your toolset first: if `LSP` is not listed, skip it silently — do not attempt the call.** When available, prefer it over Grep for symbol lookups: `findReferences` for usages, `goToDefinition` for definitions, `prepareCallHierarchy` + `incomingCalls`/`outgoingCalls` for call traces, `documentSymbol` / `workspaceSymbol` to locate symbols. When absent, Grep the symbol with a word-boundary pattern (e.g. `\bgetRoomMap\b`) and check `index.ts` barrel files for re-exports.
 
-Exploration priority: **CodeGraph** (best single-call context when indexed) → **LSP** (exact symbol lookups) → **Grep/Glob** (plain-text only — string literals, TODOs, config keys).
-
-Use the `Grep`/`Glob` tools for that last tier, not `Bash grep`/`find` — reserve Bash for running commands (npm, git) or genuinely cross-repo searches outside the project the tools can't reach.
+Exploration priority: **CodeGraph** (best single-call context when indexed) → **LSP** (exact symbol lookups, when available) → **Grep/Glob** (fallback symbol search; string literals, TODOs, config keys).

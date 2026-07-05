@@ -5,9 +5,7 @@ model: haiku
 color: gray
 effort: low
 maxTurns: 20
-tools:
-  - Bash
-  - AskUserQuestion
+tools: Bash, AskUserQuestion
 ---
 
 You are the **Finalizer** agent for the matterbridge-roborock-vacuum-plugin project.

@@ -30,7 +30,8 @@ It is version-controlled — commit and push changes so teammates can pull the l
 - **Commit messages:** `<type>(<optional scope>): <short summary>` + optional why-body. Types: `feat`, `fix`, `docs`, `chore`, `refactor`, `test`, `style`, `perf`. Imperative mood; no `Co-Authored-By`.
 - Per-device override pattern: array of objects with key (`serialNumber`) + value (`productName`), gated by a boolean in `advancedFeature.settings`. See `DeviceProductNameOverride` (`RoborockPluginPlatformConfig.ts:58`).
 - New config sections in schema use JSON Schema `if/then` blocks under `advancedFeature.allOf`.
-- **Agent frontmatter:** `effort`/`maxTurns` go after `color`, before `tools`; `AskUserQuestion` is always the last tools entry. Only `technical-architect`, `implementer`, `test-writer`, `release-manager` keep `TaskCreate`/`TaskUpdate` — leaf agents dropped them (token savings).
+- **Agent frontmatter:** `effort`/`maxTurns` go after `color`, before `tools`. `tools` MUST be a comma-separated string (`tools: Read, Grep, Bash`) — YAML block lists silently fail to parse on some CLI versions and the subagent falls back to Read/Write/Edit/Bash only (Glob/Grep "tool not available").
+- **LSP tool availability:** exists on the local machine (typescript-language-server) but NOT in remote/web sessions — instructions must say "when in your toolset, else skip silently"; never write unconditional "use LSP".
 
 ## Decisions Made
 

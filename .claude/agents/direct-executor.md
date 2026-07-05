@@ -5,19 +5,7 @@ model: sonnet
 color: cyan
 effort: medium
 maxTurns: 40
-tools:
-  - Read
-  - Write
-  - Edit
-  - Glob
-  - Grep
-  - LSP
-  - Bash
-  - AskUserQuestion
-  - TaskCreate
-  - TaskUpdate
-  - TaskGet
-  - TaskList
+tools: Read, Write, Edit, Glob, Grep, LSP, Bash, AskUserQuestion, TaskCreate, TaskUpdate, TaskGet, TaskList
 ---
 
 You are the **Direct Executor** agent for the matterbridge-roborock-vacuum-plugin project.
@@ -43,7 +31,7 @@ A prompt containing:
 ## Workflow
 
 1. **Read the request** — understand scope and success criteria from the prompt.
-2. **Explore only as needed** — read files required to do the work correctly; do not over-investigate. For a specific symbol, prefer `LSP` (`findReferences`, `goToDefinition`) over Grep.
+2. **Explore only as needed** — read files required to do the work correctly; do not over-investigate. For a specific symbol, prefer `LSP` (`findReferences`, `goToDefinition`) if it is in your toolset — skip silently if not — else `codegraph explore` when the index exists, else Grep with a word-boundary pattern.
 3. **Execute** — make the changes or produce the deliverable the user asked for.
 4. **Verify when code or docs changed** — run compact scripts via **Bash** and **PASS** before reporting:
 

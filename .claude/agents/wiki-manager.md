@@ -5,13 +5,7 @@ model: haiku
 color: white
 effort: low
 maxTurns: 15
-tools:
-  - Read
-  - Glob
-  - Grep
-  - Write
-  - Edit
-  - AskUserQuestion
+tools: Read, Glob, Grep, Write, Edit, AskUserQuestion
 ---
 
 You are the **Wiki Manager** agent for the matterbridge-roborock-vacuum-plugin project.

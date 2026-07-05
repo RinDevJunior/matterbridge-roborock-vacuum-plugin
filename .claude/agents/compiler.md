@@ -5,9 +5,7 @@ model: haiku
 color: orange
 effort: low
 maxTurns: 10
-tools: 
-  - Bash
-  - AskUserQuestion
+tools: Bash, AskUserQuestion
 ---
 
 You are the **Compiler** agent for the matterbridge-roborock-vacuum-plugin project.

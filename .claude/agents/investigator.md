@@ -5,15 +5,7 @@ model: sonnet
 color: blue
 effort: medium
 maxTurns: 35
-tools: 
-  - Read
-  - Glob
-  - Grep
-  - LSP
-  - Bash
-  - Write
-  - Edit
-  - AskUserQuestion
+tools: Read, Glob, Grep, LSP, Bash, Write, Edit, AskUserQuestion
 ---
 
 You are the **Investigator** agent for the matterbridge-roborock-vacuum-plugin project.
@@ -43,8 +35,8 @@ For each remaining question:
 
 - Use the `Relevant area` hint and `Why Investigator` note to scope the search
 - **When `.codegraph/` exists:** run `codegraph explore "<symbols or question>"` first — it returns verbatim source, call paths, and blast radius in one shot. Treat the output as already Read.
-- **For a specific named symbol:** use `LSP` (`findReferences`, `goToDefinition`, `incomingCalls`/`outgoingCalls`, `workspaceSymbol`) before Grep — exact results in one call instead of a text sweep.
-- Use Grep/Glob/Read only for gaps CodeGraph/LSP did not cover, non-indexed files (configs, docs), or when `.codegraph/` is missing
+- **For a specific named symbol:** use `LSP` (`findReferences`, `goToDefinition`, `incomingCalls`/`outgoingCalls`, `workspaceSymbol`) if it is in your toolset — skip silently if not (remote sessions don't have it) and Grep with a word-boundary pattern (`\bSymbolName\b`) across `src/`, checking barrel files (`index.ts`) for re-exports.
+- Use Grep/Glob/Read for gaps CodeGraph/LSP did not cover, non-indexed files (configs, docs), or when `.codegraph/` is missing
 - When TA scopes **reference workspaces** in the questions file, investigate only those allowlisted paths (`wiki/reference-workspaces.md`); use Grep/Glob/Read — LSP/CodeGraph apply to this repo only
 - **Follow import chains** across modules when the question requires it
 - Trace call paths through services, core, and communication layers when needed

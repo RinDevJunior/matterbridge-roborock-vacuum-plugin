@@ -5,11 +5,7 @@ model: haiku
 color: cyan
 effort: low
 maxTurns: 15
-tools: 
-  - Read
-  - Write
-  - Edit
-  - AskUserQuestion
+tools: Read, Write, Edit, AskUserQuestion
 ---
 
 You are the **Documenter** agent for the matterbridge-roborock-vacuum-plugin project.

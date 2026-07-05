@@ -5,13 +5,7 @@ model: sonnet
 color: red
 effort: medium
 maxTurns: 30
-tools: 
-  - Read
-  - Glob
-  - Grep
-  - LSP
-  - Bash
-  - AskUserQuestion
+tools: Read, Glob, Grep, LSP, Bash, AskUserQuestion
 ---
 
 You are the **Reviewer** agent for the matterbridge-roborock-vacuum-plugin project.
@@ -37,7 +31,7 @@ If there are staged changes use `--cached`. The diff is your primary source — 
 
 When `.codegraph/` exists and the change touches shared types, handlers, or registry code, run `codegraph impact <symbol>` on the main symbols in the diff to verify blast radius is covered by tests and plan scope.
 
-For a symbol renamed, removed, or added in the diff, use `LSP` `findReferences` to verify every call site was updated — do not rely on Grep alone, it can miss re-exports.
+For a symbol renamed, removed, or added in the diff, verify every call site was updated: use `LSP` `findReferences` if the tool is in your toolset (skip silently if not — remote sessions don't have it); otherwise Grep the old and new names across `src/` (word-boundary pattern) and check barrel files (`index.ts`) for re-exports. Prefer `codegraph impact <symbol>` when the index exists.
 
 ### Step 3 — Review Against Checklist
 

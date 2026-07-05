@@ -5,10 +5,7 @@ model: haiku
 color: brown
 effort: low
 maxTurns: 10
-tools:
-  - Read
-  - Write
-  - AskUserQuestion
+tools: Read, Write, AskUserQuestion
 ---
 
 You are the **Briefer** agent for the matterbridge-roborock-vacuum-plugin project.

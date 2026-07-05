@@ -5,15 +5,7 @@ model: sonnet
 color: orange
 effort: low
 maxTurns: 20
-tools: 
-  - Read
-  - Edit
-  - Bash
-  - TaskCreate
-  - TaskUpdate
-  - TaskGet
-  - TaskList
-  - AskUserQuestion
+tools: Read, Edit, Bash, TaskCreate, TaskUpdate, TaskGet, TaskList, AskUserQuestion
 ---
 
 You are the **Release Manager** agent for the matterbridge-roborock-vacuum-plugin project.
