@@ -352,7 +352,7 @@ describe('MapInfoListener', () => {
 			// Assert — roomTypeId 6 = Kitchen in B01 scheme (not colorId-based)
 			const areas = getAreasPassedToService();
 			expect(areas.length).toBeGreaterThan(0);
-			expect(areas[0]?.areaInfo.locationInfo.areaType).toBe(CommonAreaNamespaceTag.Kitchen.tag);
+			expect(areas[0]?.areaInfo.locationInfo?.areaType).toBe(CommonAreaNamespaceTag.Kitchen.tag);
 		});
 
 		it('should set areaType to null when roomTypeId is 0 (unknown type)', async () => {
@@ -369,7 +369,7 @@ describe('MapInfoListener', () => {
 			// Assert
 			const areas = getAreasPassedToService();
 			expect(areas.length).toBeGreaterThan(0);
-			expect(areas[0]?.areaInfo.locationInfo.areaType).toBeNull();
+			expect(areas[0]?.areaInfo.locationInfo?.areaType).toBeNull();
 		});
 
 		it('should set areaType to LivingRoom.tag when roomTypeId is 4', async () => {
@@ -386,7 +386,7 @@ describe('MapInfoListener', () => {
 			// Assert — roomTypeId 4 = LivingRoom in B01 scheme (colorId 7 would give null in V10)
 			const areas = getAreasPassedToService();
 			expect(areas.length).toBeGreaterThan(0);
-			expect(areas[0]?.areaInfo.locationInfo.areaType).toBe(CommonAreaNamespaceTag.LivingRoom.tag);
+			expect(areas[0]?.areaInfo.locationInfo?.areaType).toBe(CommonAreaNamespaceTag.LivingRoom.tag);
 		});
 
 		it('should use V10 tag switch for V1 path (tag 14 → Kitchen)', async () => {
@@ -400,7 +400,7 @@ describe('MapInfoListener', () => {
 			// Assert — V1 area uses tag switch: tag 14 = Kitchen
 			const areas = getAreasPassedToService();
 			expect(areas.length).toBeGreaterThan(0);
-			expect(areas[0]?.areaInfo.locationInfo.areaType).toBe(CommonAreaNamespaceTag.Kitchen.tag);
+			expect(areas[0]?.areaInfo.locationInfo?.areaType).toBe(CommonAreaNamespaceTag.Kitchen.tag);
 		});
 	});
 });

@@ -28,6 +28,7 @@ export default defineConfig([
 			'report/',
 			'.claude/',
 			'misc/',
+			'docs/**/*',
 		],
 	},
 	{ ...js.configs.recommended, files: sourceFiles },

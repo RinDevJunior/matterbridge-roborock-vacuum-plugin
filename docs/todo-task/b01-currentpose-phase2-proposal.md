@@ -58,19 +58,30 @@ Phase 1 was implemented and reviewed on 2026-07-03. All changes are in the curre
 ### Shared Decode Core
 
 | File                                                      | Change                                                                                                                                                                                                                                                |
-| --------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| --------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `src/roborockCommunication/map/b01/roborockProto.ts`      | Added `DeviceCurrentPoseInfo currentPose = 8` and `DeviceRoomMatrix roomMatrix = 13` to `SCMap.RobotMap`; added `DeviceCurrentPoseInfo` and `DeviceRoomMatrix` message types                                                                          |
 | `src/roborockCommunication/map/b01/types.ts`              | Added `B01Pose { x, y, phi? }` and `B01RoomMatrix { data: Buffer }` interfaces; extended `B01MapInfo` with optional `currentPose?` and `roomMatrix?` fields                                                                                           |
 | `src/roborockCommunication/map/b01/b01MapParser.ts`       | `parseRooms()` now defensively extracts `currentPose` and `roomMatrix` after the existing `mapId` extraction, using `typeof`/`Buffer.isBuffer()` guards; both fields are included in all return branches (empty-rooms early-return and normal return) |
-| `src/roborockCommunication/map/b01/roomMatrixResolver.ts` | **New.** `resolveRoomFromPose(pose, roomMatrix): number                                                                                                                                                                                               | undefined`— pure, dependency-free; always returns`undefined` (intentional safe no-op with explanation comment); never throws |
+| `src/roborockCommunication/map/b01/roomMatrixResolver.ts` | **New.** `resolveRoomFromPose(pose, roomMatrix): number \| undefined` — pure, dependency-free; always returns `undefined` (intentional safe no-op with explanation comment); never throws                                                             |
 
 ### CLI Tool
 
-| File                              | Change                                                                                                                                                                                                                                                                                                                                                                                                                       |
-| --------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `src/cli/commands/b01PoseInfo.ts` | **New.** `cmdB01PoseInfo(duid, session, logger, local)` — `connectDevice` → `waitForPush(Protocol.map_response)` → `dispatcher.getMapInfo(duid)` → `B01MapParser.parseRoomsFromEncryptedBinary()` → `resolveRoomFromPose()` → print pose / resolved room / room list / roomMatrix byte length. Device model/serial looked up directly from `session.devices` (not via `connectDevice` return, which doesn't expose `device`) |
-| `src/cli/main.ts`                 | `case 'b01-pose-info'` wired after `legacy-map-info`                                                                                                                                                                                                                                                                                                                                                                         |
-| `src/cli/help.ts`                 | `b01-pose-info` row + example added after `legacy-map-info`                                                                                                                                                                                                                                                                                                                                                                  |
+| File                              | Change                                                      |
+| --------------------------------- | ----------------------------------------------------------- |
+| `src/cli/commands/b01PoseInfo.ts` | **New.** See call flow and notes below.                     |
+| `src/cli/main.ts`                 | `case 'b01-pose-info'` wired after `legacy-map-info`        |
+| `src/cli/help.ts`                 | `b01-pose-info` row + example added after `legacy-map-info` |
+
+**`b01PoseInfo.ts` call flow** — `cmdB01PoseInfo(duid, session, logger, local)`:
+
+1. `connectDevice`
+2. `waitForPush(Protocol.map_response)`
+3. `dispatcher.getMapInfo(duid)`
+4. `B01MapParser.parseRoomsFromEncryptedBinary()`
+5. `resolveRoomFromPose()`
+6. Print pose / resolved room / room list / roomMatrix byte length
+
+Note: device model/serial is looked up directly from `session.devices` (not via the `connectDevice` return value, which doesn't expose `device`).
 
 ### Tests Added
 

@@ -543,7 +543,7 @@ describe('populateAreaNamespaceTag — B01 pre-computed areaType', () => {
 		const { supportedAreas } = getSupportedAreas(homeEntity, makeLogger());
 
 		// Assert — pre-computed Bedroom wins over tag=6 (LivingRoom)
-		expect(supportedAreas[0]?.areaInfo.locationInfo.areaType).toBe(CommonAreaNamespaceTag.Bedroom.tag);
+		expect(supportedAreas[0]?.areaInfo.locationInfo?.areaType).toBe(CommonAreaNamespaceTag.Bedroom.tag);
 	});
 
 	it('should return null when pre-computed areaType is explicitly null', () => {
@@ -555,7 +555,7 @@ describe('populateAreaNamespaceTag — B01 pre-computed areaType', () => {
 		const { supportedAreas } = getSupportedAreas(homeEntity, makeLogger());
 
 		// Assert
-		expect(supportedAreas[0]?.areaInfo.locationInfo.areaType).toBeNull();
+		expect(supportedAreas[0]?.areaInfo.locationInfo?.areaType).toBeNull();
 	});
 
 	it('should fall through to V10 switch when areaType is undefined (tag 14 → Kitchen)', () => {
@@ -567,7 +567,7 @@ describe('populateAreaNamespaceTag — B01 pre-computed areaType', () => {
 		const { supportedAreas } = getSupportedAreas(homeEntity, makeLogger());
 
 		// Assert — V10 path intact
-		expect(supportedAreas[0]?.areaInfo.locationInfo.areaType).toBe(CommonAreaNamespaceTag.Kitchen.tag);
+		expect(supportedAreas[0]?.areaInfo.locationInfo?.areaType).toBe(CommonAreaNamespaceTag.Kitchen.tag);
 	});
 
 	it('should use B01 extended ID 2005 pre-computed areaType (Kitchen) via getSupportedAreas', () => {
@@ -588,7 +588,7 @@ describe('populateAreaNamespaceTag — B01 pre-computed areaType', () => {
 		const { supportedAreas } = getSupportedAreas(homeEntity, makeLogger());
 
 		// Assert — pre-computed Kitchen.tag from B01 extended ID 2005 wins over tag=0 (null)
-		expect(supportedAreas[0]?.areaInfo.locationInfo.areaType).toBe(CommonAreaNamespaceTag.Kitchen.tag);
+		expect(supportedAreas[0]?.areaInfo.locationInfo?.areaType).toBe(CommonAreaNamespaceTag.Kitchen.tag);
 	});
 });
 
@@ -597,7 +597,7 @@ describe('populateAreaNamespaceTag — V10 tag switch', () => {
 		const roomMap = new RoomMap([{ id: 1, iot_name_id: '1', tag, iot_map_id: 0, iot_name: 'Room' }]);
 		const homeEntity = createHomeEntity([], roomMap);
 		const { supportedAreas } = getSupportedAreas(homeEntity, makeLogger());
-		return supportedAreas[0]?.areaInfo.locationInfo.areaType;
+		return supportedAreas[0]?.areaInfo.locationInfo?.areaType;
 	}
 
 	it('should return Bedroom.tag for tag 1', () => {
