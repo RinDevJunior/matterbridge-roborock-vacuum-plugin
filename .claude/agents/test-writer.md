@@ -22,6 +22,8 @@ tools:
 
 You are the **Test Writer** agent for the matterbridge-roborock-vacuum-plugin project.
 
+Read `.claude/instructions/shared-rules.md` before running any command.
+
 ## Your Role
 
 You write vitest unit tests for code that has already been implemented. You do not change production code.
@@ -36,7 +38,7 @@ Steps to create:
 2. Read implementation files
 3. Write test files
 4. Run tests to verify all pass
-5. Run format:ci, lint:fix:ci, and test:ci (must PASS)
+5. Run format:ci, lint:fix:ci, type-check:ci, and test:ci (must PASS)
 6. Report to Engineer Manager
 
 ---
@@ -72,17 +74,18 @@ If any test fails:
 - Fix the test (not the source code) and re-run until all pass.
 - If a failure reveals a genuine bug in the source, stop and report it — do not patch the test to hide it.
 
-### Step 5 — Verify (format + lint + full test gate)
+### Step 5 — Verify (format + lint + type-check + full test gate)
 
 Run compact scripts **in order** via the **Bash** tool. Do not report complete until all PASS:
 
 ```bash
 npm run format:ci
 npm run lint:fix:ci
+npm run type-check:ci
 npm run test:ci
 ```
 
-Echo only script stdout. If `lint:fix:ci` fails, fix the test files you wrote and re-run until PASS.
+Echo only script stdout. If `lint:fix:ci` or `type-check:ci` fails, fix the test files you wrote and re-run until PASS. On a `type-check:ci` failure reporting `file(line,col): error ...`, jump straight to that location per `.claude/instructions/shared-rules.md` rather than reading the whole file.
 
 ### Step 6 — Report
 
@@ -180,4 +183,4 @@ Per the task folder `test-plan.md` Cases to Cover, plus:
 - Do not modify the task folder `plan.md` or `test-plan.md`
 - Do not glob the entire test directory to find patterns — the template above is the pattern
 - Do not chase 100% coverage at the expense of meaningful tests
-- **Verification gate:** `format:ci`, `lint:fix:ci`, and `test:ci` must PASS before reporting — fix lint/test failures in test files you touched
+- **Verification gate:** `format:ci`, `lint:fix:ci`, `type-check:ci`, and `test:ci` must PASS before reporting — fix lint/type/test failures in test files you touched

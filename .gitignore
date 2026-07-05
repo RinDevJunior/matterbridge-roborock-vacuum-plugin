@@ -38,3 +38,9 @@ type-check.log
 
 # CodeGraph local index
 .codegraph/
+
+# Task documents
+docs/*
+!docs/todo-task/
+!docs/to_do.md
+!docs/claude_history.md

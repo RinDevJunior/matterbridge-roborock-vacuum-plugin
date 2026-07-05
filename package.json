@@ -36,6 +36,7 @@
 		"precommit:ci": "node scripts/run-precommit-summary.mjs",
 		"precondition": "npm install -g matterbridge@3.9.0",
 		"build:local": "npm run deepClean && npm install && npm link matterbridge && npm run build && npm run matterbridge:add",
+		"build:local:ci": "node scripts/run-build-local-summary.mjs",
 		"build:production": "tsc --project tsconfig.production.json",
 		"start": "tsc && matterbridge -childbridge",
 		"cli": "node dist/cli.js",

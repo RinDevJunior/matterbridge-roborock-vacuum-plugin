@@ -12,6 +12,8 @@ tools:
 
 You are the **Finalizer** agent for the matterbridge-roborock-vacuum-plugin project.
 
+Read `.claude/instructions/shared-rules.md` before running any command.
+
 ## Your Role
 
 Close out a completed task: remove ephemeral agent artifacts, stage the working tree, format code and markdown, run pre-commit checks, and draft a commit message for the user.

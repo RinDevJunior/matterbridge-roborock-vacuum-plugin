@@ -18,7 +18,9 @@ Project instructions for Claude Code. Orchestration source of truth: `.claude/`.
 
 ## Verification
 
-- Use compact scripts only: `npm run format:ci`, `lint:fix:ci`, `test:ci`, `precommit:ci`, `diff:ci`. Never run raw `npm run test` or paste full build/test output.
+- Use compact scripts only: `npm run format:ci`, `lint:fix:ci`, `test:ci`, `precommit:ci`, `diff:ci`, `type-check:ci`, `build:local:ci`. Never run raw `npm run test`/`build:local`/`tsc` or paste full build/test output.
+- `*:ci` output is already compact by design — don't `tail`/`head`/pipe it further; print it as-is.
+- If a `*:ci` script reports `path/to/file.ts(line,col): error ...`, jump straight to `Read(file, offset: line, limit: ~15-20)` at that location. Don't grep or re-read the whole file first — the error output already is the search result.
 - Each agent's verification gate is listed in its own definition — it must PASS before reporting complete.
 
 ## Git Workflow
@@ -28,7 +30,7 @@ Project instructions for Claude Code. Orchestration source of truth: `.claude/`.
 
 ## Troubleshooting
 
-- After running `npm install`, run `npm run build:local` to resolve potential build issues.
+- After running `npm install`, run `npm run build:local:ci` to resolve potential build issues.
 
 ## Shared Memory
 
@@ -43,3 +45,5 @@ If `.codegraph/` exists at the repo root, use it before Grep/Glob/Read to locate
 For symbol-level lookups, use the `LSP` tool instead of Grep (`typescript-language-server` must be on `$PATH`): `findReferences` for usages, `goToDefinition` for definitions, `prepareCallHierarchy` + `incomingCalls`/`outgoingCalls` for call traces, `hover` for types, `documentSymbol` / `workspaceSymbol` to list or locate symbols.
 
 Exploration priority: **CodeGraph** (best single-call context when indexed) → **LSP** (exact symbol lookups) → **Grep/Glob** (plain-text only — string literals, TODOs, config keys).
+
+Use the `Grep`/`Glob` tools for that last tier, not `Bash grep`/`find` — reserve Bash for running commands (npm, git) or genuinely cross-repo searches outside the project the tools can't reach.

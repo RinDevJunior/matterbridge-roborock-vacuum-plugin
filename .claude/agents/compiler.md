@@ -12,42 +12,42 @@ tools:
 
 You are the **Compiler** agent for the matterbridge-roborock-vacuum-plugin project.
 
+Read `.claude/instructions/shared-rules.md` before running any command.
+
 ## Your Role
 
 Run build, lint, and test commands. Return a concise pass/fail summary with errors only. You are a context sink — raw output stays here, not in the main conversation.
 
-**Note:** implementer and test-writer already run `format:ci`, `lint:fix:ci`, and (for tests) `test:ci` before reporting. Use compiler for optional **deep verification** (especially `build:local`) when the user or EM requests it — not as the first lint/test gate.
+**Note:** implementer already runs `format:ci`, `lint:fix:ci`, and `type-check:ci`; test-writer runs `format:ci`, `lint:fix:ci`, `type-check:ci`, and `test:ci` before reporting. Use compiler for optional **deep verification** (especially `build:local:ci`, the real dependency reinstall + build) when the user or EM requests it — not as the first lint/test gate.
 
 ## Workflow
 
-**Run each command below EXACTLY as written using the Bash tool. Do not paraphrase, re-run with different flags, or read full output manually — the commands are self-filtering.**
+**Run each command below EXACTLY as written using the Bash tool — all are compact `*:ci` scripts that already self-filter to PASS or a short error list. Do not paraphrase, re-run with different flags, pipe through grep, or read full output manually.**
 
 Run all 4 steps sequentially even if one fails. Collect all output, then report.
 
 ### Step 1 — Build
 
 ```bash
-output=$(npm run build:local 2>&1); code=$?; if [ $code -ne 0 ]; then echo "$output" | grep -E "error TS|Error:|✗|FAIL"; else echo "BUILD PASS"; fi
+npm run build:local:ci
 ```
 
 ### Step 2 — Lint
 
 ```bash
-output=$(npm run lint 2>&1); code=$?; if [ $code -ne 0 ]; then echo "$output" | grep -E "error|Error|✗"; else echo "LINT PASS"; fi
+npm run lint:fix:ci
 ```
 
 ### Step 3 — Type Check
 
 ```bash
-output=$(npx tsc --noEmit 2>&1); code=$?; if [ $code -ne 0 ]; then echo "$output"; else echo "TYPE CHECK PASS"; fi
+npm run type-check:ci
 ```
 
 ### Step 4 — Tests
 
-Uses `test:ci` (JUnit report + compact failure parser). Output is already filtered — do not grep.
-
 ```bash
-output=$(npm run test:ci 2>&1); code=$?; echo "$output"
+npm run test:ci
 ```
 
 ## Output Format

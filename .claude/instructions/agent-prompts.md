@@ -117,7 +117,7 @@ Agent({
 })
 ```
 
-Run AFTER user approves `business-brief.md`. Follows `plan.md`. Before reporting: `npm run format:ci` → `npm run lint:fix:ci` (both must PASS).
+Run AFTER user approves `business-brief.md`. Follows `plan.md`. Before reporting: `npm run format:ci` → `npm run lint:fix:ci` → `npm run type-check:ci` (all must PASS).
 
 ---
 
@@ -131,7 +131,7 @@ Agent({
 })
 ```
 
-Run AFTER Implementer and Reviewer. Before reporting: `npm run format:ci` → `npm run lint:fix:ci` → `npm run test:ci` (all must PASS).
+Run AFTER Implementer and Reviewer. Before reporting: `npm run format:ci` → `npm run lint:fix:ci` → `npm run type-check:ci` → `npm run test:ci` (all must PASS).
 
 ---
 
