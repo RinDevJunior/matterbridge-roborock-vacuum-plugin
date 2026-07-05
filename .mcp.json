@@ -4,6 +4,11 @@
 			"type": "stdio",
 			"command": "codegraph",
 			"args": ["serve", "--mcp"]
+		},
+		"glob-grep": {
+			"type": "stdio",
+			"command": "node",
+			"args": [".claude/tools/glob-grep-server.cjs"]
 		}
 	}
 }
