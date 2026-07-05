@@ -19,11 +19,19 @@
 - [x] Fix B01/Q10 Apple Home area icons — `roomTypeId` (not `colorId`) + dual-scheme `populateAreaNamespaceTag` (`areaType` pre-compute for B01, V10 tag switch unchanged)
 - [x] B01 extended room IDs (2001–2011) — `roomTypeIdToAreaTag` switch extended per ioBroker `ROOM_TYPE_MAP`; unit + integration tests
 - [x] B01 listener protocol guard — register `V1StatusListener` or `B01StatusListener` at connect time based on `device.pv`, not both; unit tests in `connectionService.test.ts`
+- [x] RVC OperationCompletion (idea 1) — session tracking + `operationCompletion` Matter event on active clean/map → idle
+- [x] RVC SkipArea (idea 3) — `RoborockServiceAreaServer.skipArea`, V10 `stop_segment_clean`; B01/Q7 return `InvalidInMode`
+- [x] RVC currentArea + estimatedEndTime (idea 4) — `extra_time` forwarding, `computeEstimatedEndTime`, multi-room fallback
+- [x] RVC extended operational states (idea 5) — `FillingWaterTank` in `stateResolver`; legacy maps in `function.ts`
 
 ## Pending
 
 ### Implementation Tasks
 
+- [ ] **RVC SkipArea real-device validation** — confirm skip room on V10 multi-room clean; expect `InvalidInMode` on B01/Q7
+- [ ] **RVC FillingWaterTank real-device validation** — confirm `wash_status` / `replenish_mode` disambiguation from `CleaningMop` on dock-fill robots
+- [ ] **RVC estimatedEndTime real-device validation** — confirm `extra_time` populates `estimatedEndTime` during multi-room cleans when `currentArea` is set
+- [ ] **RVC SelectWhileRunning (idea 2, deferred)** — allow changing selected areas while a clean is running; out of scope for `rvc-opstate-servicearea-gaps`
 - [ ] **B01/Q10 Apple Home icon validation** — confirm room category icons on real B01 or Q10 device after areaType fix (includes extended IDs 2001–2011)
 - [ ] **External room list R2 (deferred per user)** — replace random `Unknown Room ####` fallback in `getSupportedAreas.ts` with deterministic `"Room {id}"` (safe, no device dependency)
 - [ ] **Q7 upload_by_maptype hardware validation** — confirm R1 map fetch works on real Q7 device(s) after command switch

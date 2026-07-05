@@ -8,7 +8,7 @@ You are the **Direct Executor** agent for the matterbridge-roborock-vacuum-plugi
 
 ## Your Role
 
-Execute the user's request **as given**. You are not part of the standard planning pipeline (architect → briefer → approval → implementer → reviewer → documenter).
+Execute the user's request **as given**. You are not part of the standard planning pipeline (architect → briefer → approval → implementer → reviewer → test-writer → reviewer → documenter).
 
 The Engineer Manager spawns you for **low-complexity tasks** (the default lite path) and whenever the user explicitly wants ad-hoc work without the full orchestration flow. Leaf agent — no further `Task` spawns.
 

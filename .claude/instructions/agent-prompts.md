@@ -1,232 +1,100 @@
 # Agent Prompts
 
-Use these prompt templates when the **main session (Engineer Manager)** spawns subagents via the `Agent` tool.
+Spawn templates for the **main session (EM)** via `Agent`. System prompts live in `.claude/agents/` — read the matching file before spawning (Cursor doesn't auto-load them; the prompt must carry role + request).
 
-System prompts live in `.claude/agents/`. Read the matching file before spawning — Cursor does not auto-load them; the prompt must carry the agent's role and the user's request.
-
-**Model policy:** do **not** pass `model:` — each agent's frontmatter is the source of truth. Single exception: `implementer` on **high** complexity gets `model: "sonnet"`.
-
-**Nested planning:** main session spawns `technical-architect` only. Architect nests `wiki-manager` (gather, high complexity) and `investigator` — never spawn those from the main session during planning.
-
-**Lite path:** low-complexity tasks go straight to `direct-executor` — no task folder, no architect, no briefer, no approval cycle.
-
-**Explain mode:** main session spawns `technical-architect` with `type: explain`; architect writes `answer.md`. EM must not read `src/` or `wiki/`.
+**Model:** never pass `model:` — frontmatter is truth. Exception: `implementer` on high → `model: "sonnet"`.
+**Nesting:** EM spawns `technical-architect` only; it nests `wiki-manager`(gather, high)/`investigator` itself — never spawn those directly.
+**Lite path:** low complexity → `direct-executor` directly, no task folder/architect/briefer/approval.
+**Explain mode:** EM spawns `technical-architect` with `type: explain`; it writes `answer.md`. EM must not read `src/`/`wiki/`.
 
 ---
 
-## 🟣 Technical Architect
+**Technical Architect** — implement:
+`Agent({description:"Architecture plan: <task>", subagent_type:"technical-architect", prompt:"Task folder: docs/<task>/\nRequirement file: docs/<task>/requirement.md\ntype: implement\nComplexity: medium|high"})`
 
-**Implement mode** (medium/high complexity):
+— explain:
+`Agent({description:"Explain: <question>", subagent_type:"technical-architect", prompt:"Task folder: docs/<task>/\nRequirement file: docs/<task>/requirement.md\ntype: explain\n\nWrite answer.md (not plan.md). Read memory/wiki directly; spawn investigator for deep traces."})`
 
-```
-Agent({
-  description: "Architecture plan: <task summary>",
-  subagent_type: "technical-architect",
-  prompt: "Task folder: docs/<short-task-description>/\nRequirement file: docs/<short-task-description>/requirement.md\ntype: implement\nComplexity: medium | high"
-})
-```
-
-**Explain mode** (user Q&A — EM must not read source code):
-
-```
-Agent({
-  description: "Explain: <question summary>",
-  subagent_type: "technical-architect",
-  prompt: "Task folder: docs/<short-task-description>/\nRequirement file: docs/<short-task-description>/requirement.md\ntype: explain\n\nWrite answer.md (not plan.md). Read memory/wiki directly; spawn investigator for deep traces."
-})
-```
-
-Spawned by **main session**. Researches internally (direct reads for medium; nests `wiki-manager` + `investigator` for high). Writes `plan.md` (+ `test-plan.md`) or `answer.md`, and returns a **≤10-line summary** — EM reviews the summary, not the files.
+Researches internally (direct reads medium; nests wiki-manager+investigator high). Writes `plan.md`+`test-plan.md` or `answer.md`; returns ≤10-line summary — EM reviews summary, not files.
 
 ---
 
-## ⬜ Wiki Manager
+**Wiki Manager** — gather (nested by architect only):
+`Agent({description:"Wiki: <task>", subagent_type:"wiki-manager", prompt:"Task folder: docs/<task>/\nRequirement file: docs/<task>/requirement.md"})`
 
-**Gather mode** (nested — spawned by technical-architect, high complexity only):
+— update (EM, user request/pre-release only):
+`Agent({description:"Wiki update: <task>", subagent_type:"wiki-manager", prompt:"Mode: update\nRecent changes: <history summary>\nTask folder (optional): docs/<task>/"})`
 
-```
-Agent({
-  description: "Wiki: <task summary>",
-  subagent_type: "wiki-manager",
-  prompt: "Task folder: docs/<short-task-description>/\nRequirement file: docs/<short-task-description>/requirement.md"
-})
-```
-
-**Update mode** (spawned by main session — only on user request or before a release, never automatically per cycle):
-
-```
-Agent({
-  description: "Wiki update: <task summary>",
-  subagent_type: "wiki-manager",
-  prompt: "Mode: update\nRecent changes: <latest docs/claude_history.md entries or summary>\nTask folder (optional): docs/<short-task-description>/"
-})
-```
-
-Leaf subagent (no `Agent` tool). Writes `wiki-brief.md` (gather) or edits `wiki/` (update).
+Leaf agent. Writes `wiki-brief.md` (gather) or edits `wiki/` (update).
 
 ---
 
-## 🔵 Investigator (nested only — do not spawn from EM)
+**Investigator** (nested only, never spawn from EM):
+`Agent({description:"Investigate: <task>", subagent_type:"investigator", prompt:"Task folder: docs/<task>/\nWiki brief (if present): docs/<task>/wiki-brief.md\nQuestion files: docs/<task>/questions-<topic>.md"})`
 
-```
-Agent({
-  description: "Investigate: <task summary>",
-  subagent_type: "investigator",
-  prompt: "Task folder: docs/<short-task-description>/\nWiki brief (if present): docs/<short-task-description>/wiki-brief.md\nQuestion files: docs/<short-task-description>/questions-<topic>.md"
-})
-```
-
-Spawned by **technical-architect** only when complex gaps remain. Leaf subagent. Deep investigation — not trivial lookups.
+Spawned by technical-architect only for complex gaps. Leaf agent.
 
 ---
 
-## 🟤 Briefer
+**Briefer** — business (default):
+`Agent({description:"Brief: <task>", subagent_type:"briefer", prompt:"Task folder: docs/<task>/"})`
 
-Business mode (default):
+— technical (only if user asks; resume `briefer_id` if it exists):
+`Agent({description:"Technical brief: <task>", subagent_type:"briefer", prompt:"Task folder: docs/<task>/\nmode: technical"})`
 
-```
-Agent({
-  description: "Brief: <task summary>",
-  subagent_type: "briefer",
-  prompt: "Task folder: docs/<short-task-description>/"
-})
-```
-
-Technical mode (only when the user asks for a technical explanation — resume `briefer_id` if it exists, else spawn fresh with this prompt):
-
-```
-Agent({
-  description: "Technical brief: <task summary>",
-  subagent_type: "briefer",
-  prompt: "Task folder: docs/<short-task-description>/\nmode: technical"
-})
-```
-
-Run AFTER Technical Architect returns (`Status: ready`). Reads `requirement.md` and `plan.md`, writes `business-brief.md` only — EM presents the brief and runs approval. Technical mode additionally writes `technical-brief.md` — not run unless requested.
+Run after architect returns `Status: ready`. Reads `requirement.md`+`plan.md`, writes `business-brief.md` (EM runs approval). Technical mode also writes `technical-brief.md`.
 
 ---
 
-## 🟢 Implementer
+**Implementer:**
+`Agent({description:"Implement: <task>", subagent_type:"implementer", prompt:"Task folder: docs/<task>/"})` — add `model:"sonnet"` for high only.
 
-```
-Agent({
-  description: "Implement: <task summary>",
-  subagent_type: "implementer",
-  // model: "sonnet" — ONLY for high complexity; omit otherwise (haiku frontmatter)
-  prompt: "Task folder: docs/<short-task-description>/"
-})
-```
-
-Run AFTER user approves `business-brief.md`. Follows `plan.md`. Before reporting: `npm run format:ci` → `npm run lint:fix:ci` → `npm run type-check:ci` (all must PASS).
+Run after brief approval. Follows `plan.md`. Gate: `format:ci`→`lint:fix:ci`→`type-check:ci`, all PASS.
 
 ---
 
-## 🟡 Test Writer
+**Test Writer:**
+`Agent({description:"Tests: <task>", subagent_type:"test-writer", prompt:"Task folder: docs/<task>/"})`
 
-```
-Agent({
-  description: "Tests: <task summary>",
-  subagent_type: "test-writer",
-  prompt: "Task folder: docs/<short-task-description>/"
-})
-```
-
-Run AFTER Implementer and Reviewer. Before reporting: `npm run format:ci` → `npm run lint:fix:ci` → `npm run type-check:ci` → `npm run test:ci` (all must PASS).
+Run after implementer+reviewer. Gate: `format:ci`→`lint:fix:ci`→`type-check:ci`→`test:ci`, all PASS.
 
 ---
 
-## 🔴 Compiler
-
-```
-Agent({
-  description: "Compiler: lint, build, test",
-  subagent_type: "compiler",
-  prompt: "Run lint, build, type-check, and tests. Return the compiler report."
-})
-```
-
-Run only when explicitly requested by the user.
+**Compiler** (user-request only):
+`Agent({description:"Compiler: lint, build, test", subagent_type:"compiler", prompt:"Run lint, build, type-check, and tests. Return the compiler report."})`
 
 ---
 
-## 🟠 Reviewer
+**Reviewer:**
+`Agent({description:"Review: <task>", subagent_type:"reviewer", prompt:"Task folder: docs/<task>/"})`
 
-```
-Agent({
-  description: "Review: <task summary>",
-  subagent_type: "reviewer",
-  prompt: "Task folder: docs/<short-task-description>/"
-})
-```
-
-Run AFTER Implementer completes (medium/high; for lite-path tasks only when security-sensitive or user asks). Compares diff against `plan.md`.
+Run after implementer (medium/high; lite-path only if security-sensitive or user asks). Diffs against `plan.md`.
 
 ---
 
-## 🩵 Documenter
+**Documenter:**
+`Agent({description:"Docs: update history and todo", subagent_type:"documenter", prompt:"Task folder: docs/<task>/"})`
 
-```
-Agent({
-  description: "Docs: update history and todo",
-  subagent_type: "documenter",
-  prompt: "Task folder: docs/<short-task-description>/"
-})
-```
-
-Run after Reviewer approves. Skip for investigation-only tasks. Does **not** trigger a wiki refresh — that is batched (see Wiki Manager update mode).
+Run after reviewer approves. Skip for investigation-only. Never triggers wiki refresh (batched separately).
 
 ---
 
-## ⬜ Finalizer
+**Finalizer** — full (commit prep):
+`Agent({description:"Finalize: clean, stage, format, precommit, commit message", subagent_type:"finalizer", prompt:"Task folder (optional): docs/<task>/\nPaths to stage (optional): <paths, or omit for session changes>\nUser notes: <optional>"})`
+Pipeline: discover ephemeral paths → `clean-paths.mjs` → `git add` → `format:ci` → re-stage → `precommit:ci` → `diff:ci` → commit message only if precommit passes.
 
-```
-Agent({
-  description: "Finalize: clean, stage, format, precommit, commit message",
-  subagent_type: "finalizer",
-  prompt: "Task folder (optional): docs/<short-task-description>/\nPaths to stage (optional): <paths or omit for session changes>\nUser notes: <optional>"
-})
-```
-
-Run when the user wants commit prep or a commit message. Full pipeline: discover ephemeral paths → `clean-paths.mjs` → `git add` → `npm run format:ci` → re-stage → `npm run precommit:ci` → `npm run diff:ci` → commit message **only if precommit passes**.
-
-**Cleanup only** (user just wants ephemeral docs deleted — "clean up docs", "run cleaner"):
-
-```
-Agent({
-  description: "Finalize: cleanup ephemeral docs only",
-  subagent_type: "finalizer",
-  prompt: "Task folder: docs/<short-task-description>/\nmode: cleanup only\nUser notes: <optional>"
-})
-```
+— cleanup only:
+`Agent({description:"Finalize: cleanup ephemeral docs only", subagent_type:"finalizer", prompt:"Task folder: docs/<task>/\nmode: cleanup only\nUser notes: <optional>"})`
 
 ---
 
-## 🟠 Release Manager
-
-```
-Agent({
-  description: "Release: bump version and changelog",
-  subagent_type: "release-manager",
-  prompt: "<optional: user-provided changelog notes>"
-})
-```
-
-Run only when the user explicitly requests a release. Good moment to also run wiki-manager (update mode) if wiki refreshes have been batched up.
+**Release Manager** (user request only):
+`Agent({description:"Release: bump version and changelog", subagent_type:"release-manager", prompt:"<optional: user changelog notes>"})`
+Good moment to also run wiki-manager (update mode) if refreshes are batched up.
 
 ---
 
-## 🔷 Direct Executor
+**Direct Executor** — default for low complexity / ad-hoc opt-out. Bypasses task folder/architect/briefer/approval/reviewer/documenter unless user asks separately.
+`Agent({description:"Direct: <summary>", subagent_type:"direct-executor", prompt:"USER REQUEST:\n<verbatim request>\n\nCONSTRAINTS (if any):\n<scope limits from manager>"})`
 
-**Default for low-complexity tasks**, and for any ad-hoc request where the user opts out of the flow. Bypasses task folder, architect, briefer, approval, reviewer, and documenter unless the user asks for those separately.
-
-```
-Agent({
-  description: "Direct: <short summary>",
-  subagent_type: "direct-executor",
-  prompt: "USER REQUEST:\n<verbatim user request>\n\nCONSTRAINTS (if any):\n<optional scope limits from manager>"
-})
-```
-
-Spawn when: the task is **low complexity**, or the user says e.g. "direct-executor", "run this directly", "skip the flow", "/direct".
-
-Do **not** create `docs/<task>/requirement.md` for this path.
+Spawn when: low complexity, or user says "direct-executor"/"run this directly"/"skip the flow"/"/direct". No `requirement.md` for this path.

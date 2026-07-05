@@ -1,5 +1,39 @@
 # Claude History
 
+## 2026-07-05 — RVC OpState + Service Area gaps (ideas 1, 3, 4, 5)
+
+**Task:** Close RVC Operational State and Service Area conformance gaps: OperationCompletion events, SkipArea command, estimatedEndTime/currentArea hardening, and extended operational states (FillingWaterTank). SelectWhileRunning (idea 2) skipped.
+
+**Changes:**
+
+- `src/runtimes/handlers/operationCompletionTracker.ts` — session snapshot, pause accounting, `operationCompletion` event via `triggerEvent`
+- `src/runtimes/handlers/deviceStateHandler.ts` — before/after session capture and completion emit on active→idle transitions
+- `src/behaviors/roborockServiceAreaServer.ts` — `skipArea` cluster override with guards and progress updates
+- `src/runtimes/handlers/serviceAreaHandler.ts` — `estimatedEndTime`, skip progress helpers, multi-room `currentArea` fallback
+- `src/types/roborockVacuumCleaner.ts` — operation session fields; wire `RoborockServiceAreaServer` and skip callback
+- `src/types/MessagePayloads.ts` — optional `extraTimeSeconds` on service-area updates
+- `src/roborockCommunication/routing/listeners/implementation/v1StatusListener.ts` — forward `extra_time` from status push
+- `src/behaviors/BehaviorDeviceGeneric.ts` — `SKIP_AREA` command name
+- `src/behaviors/roborock.vacuum/core/commonCommands.ts` — register SkipArea handler
+- `src/roborockCommunication/protocol/dispatcher/abstractMessageDispatcher.ts` — `skipRoomCleaning` contract
+- `src/roborockCommunication/protocol/dispatcher/V10MessageDispatcher.ts` — `stop_segment_clean` for skip room
+- `src/roborockCommunication/protocol/dispatcher/Q7MessageDispatcher.ts` — `skipRoomCleaning` stub (InvalidInMode path)
+- `src/roborockCommunication/protocol/dispatcher/Q10MessageDispatcher.ts` — `skipRoomCleaning` stub (InvalidInMode path)
+- `src/services/messageRoutingService.ts` / `src/services/roborockService.ts` — delegate `skipRoomCleaning`
+- `src/share/stateResolver.ts` — `FillingWaterTank` mapping from wash/replenish signals
+- `src/share/function.ts` — legacy simple-status maps aligned to extended operational states
+- `src/roborockCommunication/models/deviceStatus.ts` — wash/replenish accessors for resolver
+- `src/tests/runtimes/handlers/operationCompletionTracker.test.ts` — OperationCompletion unit tests
+- `src/tests/runtimes/handlers/deviceStateHandler.test.ts` — session tracking integration tests
+- `src/tests/behaviors/roborockServiceAreaServer.test.ts` — SkipArea guard and success-path tests
+- `src/tests/runtimes/handlers/serviceAreaHandler.test.ts` — estimatedEndTime, skip helpers, multi-room currentArea
+- `src/tests/share/stateResolver.test.ts` / `src/tests/share/function.test.ts` — extended state mapping tests
+- `src/tests/behaviors/roborock.vacuum/core/commonCommands.test.ts` — SkipArea command registration
+- `src/tests/roborockCommunication/protocol/dispatcher/V01MessageDispatcher.test.ts` — skipRoomCleaning stub
+- `src/tests/roborockCommunication/routing/listeners/implementation/v1StatusListener.test.ts` — `extra_time` forwarding
+
+**Outcome:** Pass (reviewed). OperationCompletion, SkipArea (V10 protocol), estimatedEndTime, and extended op states implemented; B01/Q7 skip and FillingWaterTank mapping remain best-effort pending real-device validation.
+
 ## 2026-07-05 — B01 listener protocol guard
 
 **Task:** Gate status listener registration at connect time so V1 vacuums get only `V1StatusListener` and B01 vacuums get only `B01StatusListener`, preventing duplicate status/battery/clean-mode callbacks on V1-only devices.

@@ -48,6 +48,7 @@ It is version-controlled — commit and push changes so teammates can pull the l
 - `commonCommands.ts` `SELECT_AREAS` handler only calls `setSelectedAreas` (queued for next clean, no live redirect); `trySwitchMap`/`switchMap` fires an unguarded map-switch regardless of operational state — do not enable `ServiceArea.Feature.SelectWhileRunning` until an idle/running guard exists.
 - ServiceArea.Progress state management: initialize all selected areas to `Pending` on session start; transition actively-cleaning area to `Operating` (others → `Completed`); on idle, mark remaining `Operating` → `Completed`. Helper `buildProgressUpdate` in `serviceAreaHandler.ts:28-67` centralizes transition logic; use same function across all call sites to avoid duplication.
 - B01/V1 status listener isolation: register `B01StatusListener` only when `device.pv === ProtocolVersion.B01`, `V1StatusListener` otherwise — in `connectionService.ts` `initializeMessageClientForLocal`. `MapInfoListener` stays dual-protocol (internal guards); do not split `ResponseBroadcasterFactory.register()`.
+- SkipArea: `RoborockServiceAreaServer` extends `MatterbridgeServiceAreaServer`; V10 `stop_segment_clean` via `skipRoomCleaning`; Q10/Q7 throw → `InvalidInMode`. Progress/currentArea via `finalizeSkipArea()` + `markAreaSkipped`/`getNextPendingArea`.
 
 ## Test Patterns
 
@@ -60,6 +61,9 @@ It is version-controlled — commit and push changes so teammates can pull the l
 - **Byte-offset/width regressions:** assert `image.dimensions`/`image.position` directly with distinct non-square values and x/y beyond 16-bit range (e.g. 70000/80000) — derived-count assertions stay green while header fields are silently wrong.
 - **V1 inner decryption:** protocol 301 push = 24-byte envelope + AES-128-CBC(`serializeNonce`, IV=zeros) + gzip(`"rr"`). `decryptAndUnzipV1Map` in `v1MapDecryptor.ts`; `buildEncryptedV1MapPayload` for round-trips; `LegacyMapParser` tests use plain `"rr"` binary.
 - **`mapListHelpers` (CLI):** pure functions, no mocks. `resolveActiveMapId` sentinel is `63` (`map_status: 252`); `extractNamedRooms` returns `[]` when `activeMapId` is undefined. Tests: `src/tests/cli/mapListHelpers.test.ts`.
+- **OperationCompletion tests:** mock `robot.triggerEvent`, set `operationSessionStartMs` + `vi.useFakeTimers()` for elapsed seconds; `deviceStateHandler` integration uses `RunModeLabelInfo.Cleaning.mode` (2) in `getAttribute` before Idle transition.
+- **RoborockServiceAreaServer:** `Object.create(RoborockServiceAreaServer.prototype)` + `setReadOnlyProperty` for `state`/`endpoint` — no full Matter server ctor needed.
+- **SkipArea progress helpers:** unit-test exported `markAreaSkipped`/`getNextPendingArea`/`computeEstimatedEndTime` in `serviceAreaHandler.test.ts`; multi-room no-info path keeps `selectedAreas`, sets `currentArea` to first — update `platformRunner.test.ts` if stale.
 - **connectionService listener gating:** after `initializeMessageClientForLocal`, collect `registerMessageListener.mock.calls.map(([l]) => l.name)`; V1 → `V1StatusListener` not `B01StatusListener`; B01 → reverse; `DeviceStatusListener` always index 0.
 - **CLI command tests (`src/tests/cli/`):** mock module boundaries (`connectDevice`, `waitForPush`, parser classes) via `vi.mock` with relative `.js` paths, static-import after the mocks. Class constructor mocks need a real `function` (not arrow) in `mockImplementation` or `new` throws.
 

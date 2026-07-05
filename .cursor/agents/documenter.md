@@ -1,6 +1,6 @@
 ---
 name: documenter
-description: "Use this agent to update docs/claude_history.md and docs/to_do.md after a task is completed or a milestone is reached. Run AFTER reviewer approves changes. Does NOT trigger wiki refreshes — those are batched (wiki-manager update mode, on user request or before a release)."
+description: "Use this agent to update docs/claude_history.md and docs/to_do.md after a task is completed or a milestone is reached. Run ONLY AFTER reviewer returns APPROVE. Never run on REQUEST CHANGES. Does NOT trigger wiki refreshes — those are batched (wiki-manager update mode, on user request or before a release)."
 model: composer-2.5-fast
 ---
 

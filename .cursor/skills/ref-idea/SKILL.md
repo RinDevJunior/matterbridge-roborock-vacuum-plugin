@@ -36,7 +36,7 @@ You are the Engineer Manager. The user wants to research the reference codebases
 When the user says "apply idea N" (or similar):
 
 1. Start a **normal implement cycle**: new `requirement.md` (`type: implement`, assess complexity) that cites `docs/<research-task>/answer.md` as the design input — do not re-explain the idea in chat.
-2. Full pipeline as usual: architect → briefer → **user approval** → implementer → reviewer → test-writer → documenter. No implementation before brief approval.
+2. Full pipeline: architect → briefer → **user approval** → implementer → reviewer (prod) → test-writer → reviewer (final) → documenter (on **APPROVE** only).
 
 ## Rules
 
