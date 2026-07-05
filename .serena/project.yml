@@ -1,6 +1,5 @@
 # the name by which the project can be referenced within Serena
-project_name: "matterbridge-roborock-vacuum-plugin"
-
+project_name: 'matterbridge-roborock-vacuum-plugin'
 
 # list of languages for which language servers are started; choose from:
 #   al                  angular             ansible             bash                clojure
@@ -32,11 +31,11 @@ project_name: "matterbridge-roborock-vacuum-plugin"
 # The first language is the default language and the respective language server will be used as a fallback.
 # Note that when using the JetBrains backend, language servers are not used and this list is correspondingly ignored.
 languages:
-- typescript
+  - typescript
 
 # the encoding used by text files in the project
 # For a list of possible encodings, see https://docs.python.org/3.11/library/codecs.html#standard-encodings
-encoding: "utf-8"
+encoding: 'utf-8'
 
 # line ending convention to use when writing source files.
 # Possible values: unset (use global setting), "lf", "crlf", or "native" (platform default)
@@ -59,7 +58,7 @@ ignore_all_files_in_gitignore: true
 # No documentation on options means no options are available.
 ls_specific_settings:
   typescript:
-    ls_path: "/Volumes/ExternalSSD/cache/npm-global/bin/typescript-language-server"
+    ls_path: '/Volumes/ExternalSSD/cache/npm-global/bin/typescript-language-server'
 
 # list of additional workspace folder paths for cross-package reference support (e.g. in monorepos).
 # Paths can be absolute or relative to the project root.
@@ -72,10 +71,6 @@ ls_specific_settings:
 #     - ../shared-lib
 additional_workspace_folders:
   - /Volumes/ExternalSSD/code/references/matterbridge
-  - /Volumes/ExternalSSD/code/references/matterbridge-xiaomi-roborock
-  - /Volumes/ExternalSSD/code/references/matterbridge-example-dynamic-platform
-  - /Volumes/ExternalSSD/code/references/homebridge-xiaomi-roborock-vacuum
-  - /Volumes/ExternalSSD/code/references/ioBroker.roborock
 
 # list of additional paths to ignore in this project.
 # Same syntax as gitignore, so you can use * and **.
@@ -116,7 +111,7 @@ default_modes:
 # The full set of modes to be activated is base_modes (from global config) + default_modes + added_modes.
 # See https://oraios.github.io/serena/02-usage/050_configuration.html#modes
 added_modes:
-- query-projects
+  - query-projects
 
 # initial prompt for the project. It will always be given to the LLM upon activating the project
 # (contrary to the memories, which are loaded on demand).
