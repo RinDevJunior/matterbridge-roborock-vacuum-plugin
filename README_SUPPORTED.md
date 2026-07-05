@@ -9,6 +9,7 @@
 | Roborock S7 MaxV        | `S7_MAXV`        | `roborock.vacuum.a27`  |       |
 | Roborock Qrevo Plus     | `QREVO_PLUS`     | `roborock.vacuum.a123` |       |
 | Reborock Qrevo MaxV     | `QREVO_MAXV`     | `roborock.vacuum.a87`  |       |
+| Roborock Q5 Pro         | `Q5_PRO`         | `roborock.vacuum.a72`  | pmanaktala |
 
 These devices have been fully tested and are confirmed to work as expected.
 
@@ -41,7 +42,6 @@ If you have one of these models, please try it out and let me know your results!
 ### List of Other Models that I know the mode string
 
 - Q5 (`roborock.vacuum.a34`)
-- Q5_PRO (`roborock.vacuum.a72`)
 - S5 (`roborock.vacuum.s5`)
 - S5_MAX (`roborock.vacuum.s5e`)
 - S6 (`roborock.vacuum.s6`)
