@@ -40,13 +40,20 @@ function sendError(id, code, message) {
  * Convert a glob pattern (with optional base path override) to a `find` command
  * and execute it. Returns newline-joined paths or '(no results)'.
  */
+function detectRg() {
+  try {
+    execSync('which rg', { stdio: 'ignore' });
+    return true;
+  } catch (_) {
+    return false;
+  }
+}
+
 function runGlob({ pattern, path: basePath }) {
   const searchPath = basePath || '.';
 
-  // Split pattern into segments
   const segments = pattern.split('/');
 
-  // Find the first segment that contains a wildcard
   let staticSegments = [];
   let wildcardStart = -1;
   for (let i = 0; i < segments.length; i++) {
@@ -57,34 +64,31 @@ function runGlob({ pattern, path: basePath }) {
     staticSegments.push(segments[i]);
   }
 
-  // Remaining segments after static prefix
   const dynamicSegments = wildcardStart >= 0 ? segments.slice(wildcardStart) : segments;
-
-  // The filename pattern is the last segment
   const filePattern = dynamicSegments[dynamicSegments.length - 1];
-
-  // Directory segments between static prefix and filename
   const dirSegments = dynamicSegments.slice(0, dynamicSegments.length - 1);
 
-  // Build the find base dir: searchPath + static prefix
   let findBase = searchPath;
   if (staticSegments.length > 0) {
-    // Avoid double-slash
     findBase = searchPath.replace(/\/+$/, '') + '/' + staticSegments.join('/');
   }
 
-  // Determine maxdepth
   const hasRecursiveGlob = dirSegments.some((s) => s === '**');
-  let maxDepthFlag = '';
-  if (!hasRecursiveGlob) {
-    const depth = dirSegments.length + 1;
-    maxDepthFlag = `-maxdepth ${depth}`;
-  }
+  const maxDepth = hasRecursiveGlob ? null : dirSegments.length + 1;
 
-  // Escape single quotes in filePattern for shell
   const safeFilePattern = filePattern.replace(/'/g, "'\\''");
+  const safeFindBase = findBase.replace(/'/g, "'\\''");
 
-  const cmd = `find ${findBase} ${maxDepthFlag} -name '${safeFilePattern}' -not -path '*/.git/*' 2>/dev/null | sort`;
+  let cmd;
+  if (detectRg()) {
+    // rg --files respects .gitignore by default
+    const depthFlag = maxDepth != null ? `--max-depth ${maxDepth}` : '';
+    cmd = `rg --files ${depthFlag} --glob '${safeFilePattern}' -- '${safeFindBase}' 2>/dev/null | sort`;
+  } else {
+    // find fallback: excludes .git/node_modules but does not parse .gitignore
+    const depthFlag = maxDepth != null ? `-maxdepth ${maxDepth}` : '';
+    cmd = `find '${safeFindBase}' ${depthFlag} -name '${safeFilePattern}' -not -path '*/.git/*' -not -path '*/node_modules/*' 2>/dev/null | sort`;
+  }
 
   try {
     const output = execSync(cmd, { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] });
@@ -104,18 +108,9 @@ function runGrep({ pattern, path: searchPath, glob, type, '-i': caseInsensitive,
   const base = searchPath || '.';
   const mode = output_mode || 'files_with_matches';
 
-  // Detect rg
-  let hasRg = false;
-  try {
-    execSync('which rg', { stdio: 'ignore' });
-    hasRg = true;
-  } catch (_) {
-    hasRg = false;
-  }
-
   let cmd;
 
-  if (hasRg) {
+  if (detectRg()) {
     const flags = ['--no-heading'];
     if (caseInsensitive) flags.push('-i');
     if (glob) flags.push(`--glob '${glob.replace(/'/g, "'\\''")}'`);
@@ -127,8 +122,8 @@ function runGrep({ pattern, path: searchPath, glob, type, '-i': caseInsensitive,
     flags.push(`'${base.replace(/'/g, "'\\''")}'`);
     cmd = `rg ${flags.join(' ')} 2>/dev/null`;
   } else {
-    // grep fallback
-    const flags = ['-r', '-E'];
+    // grep fallback: excludes .git/node_modules but does not parse .gitignore
+    const flags = ['-r', '-E', '--exclude-dir=.git', '--exclude-dir=node_modules'];
     if (caseInsensitive) flags.push('-i');
     if (glob) flags.push(`--include='${glob.replace(/'/g, "'\\''")}'`);
     if (mode === 'files_with_matches') flags.push('-l');
