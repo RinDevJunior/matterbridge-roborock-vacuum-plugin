@@ -86,4 +86,5 @@ export enum InCleaningStatus {
 export interface CleanProcess {
 	clean_area: number;
 	clean_time: number;
+	clean_percent?: number;
 }

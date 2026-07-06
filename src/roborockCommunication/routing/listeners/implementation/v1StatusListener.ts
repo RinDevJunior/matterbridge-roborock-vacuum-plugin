@@ -135,15 +135,19 @@ export class V1StatusListener implements AbstractMessageListener {
 		await this.handler.onBatteryUpdate(batteryMessage);
 		await this.handler.onStatusChanged(statusChangeMessage);
 		await this.handler.onCleanModeUpdate(cleanMode);
+		const cleaningProcess: { clean_area: number; clean_time: number; clean_percent?: number } = {
+			clean_area: clean_area,
+			clean_time: clean_time,
+		};
+		if (typeof messageBody.clean_percent === 'number') {
+			cleaningProcess.clean_percent = messageBody.clean_percent;
+		}
+
 		await this.handler.onServiceAreaUpdate({
 			duid: message.duid,
 			state: state,
-			cleaningProcess: {
-				clean_area: clean_area,
-				clean_time: clean_time,
-			},
+			cleaningProcess,
 			cleaningInfo: cleaningInfo,
-			extraTimeSeconds: messageBody.extra_time,
 		});
 	}
 }

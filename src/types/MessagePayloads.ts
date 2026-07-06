@@ -14,7 +14,6 @@ export interface ServiceAreaUpdateMessage {
 	state: OperationStatusCode;
 	cleaningProcess: CleanProcess;
 	cleaningInfo: CleanInformation | undefined;
-	extraTimeSeconds?: number;
 }
 
 /**

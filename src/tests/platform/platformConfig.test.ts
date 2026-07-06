@@ -607,6 +607,37 @@ describe('PlatformConfigManager', () => {
 			manager = PlatformConfigManager.create(config, mockLogger);
 			expect(manager.isLiveMapUpdatesEnabled).toBe(false);
 		});
+
+		it('isEstimatedEndTimeEnabled returns true when advanced feature enabled and enableEstimatedEndTime = true', () => {
+			config.advancedFeature = {
+				enableAdvancedFeature: true,
+				settings: { ...createDefaultAdvancedFeature().settings, enableEstimatedEndTime: true },
+			};
+			manager = PlatformConfigManager.create(config, mockLogger);
+			expect(manager.isEstimatedEndTimeEnabled).toBe(true);
+		});
+
+		it('isEstimatedEndTimeEnabled returns false when advanced feature disabled', () => {
+			config.advancedFeature = {
+				enableAdvancedFeature: false,
+				settings: { ...createDefaultAdvancedFeature().settings, enableEstimatedEndTime: true },
+			};
+			manager = PlatformConfigManager.create(config, mockLogger);
+			expect(manager.isEstimatedEndTimeEnabled).toBe(false);
+		});
+
+		it('isEstimatedEndTimeEnabled returns false when enableEstimatedEndTime = false', () => {
+			config.advancedFeature = {
+				enableAdvancedFeature: true,
+				settings: { ...createDefaultAdvancedFeature().settings, enableEstimatedEndTime: false },
+			};
+			manager = PlatformConfigManager.create(config, mockLogger);
+			expect(manager.isEstimatedEndTimeEnabled).toBe(false);
+		});
+
+		it('createDefaultAdvancedFeature defaults enableEstimatedEndTime to false', () => {
+			expect(createDefaultAdvancedFeature().settings.enableEstimatedEndTime).toBe(false);
+		});
 	});
 
 	describe('device filtering', () => {

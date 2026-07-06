@@ -252,22 +252,6 @@ describe('V1StatusListener', () => {
 			);
 		});
 
-		it('should forward extra_time into ServiceAreaUpdateMessage', async () => {
-			listener.registerHandler(handler);
-			const message = makeRpcResponseMessage(duid, {
-				...baseResultBody,
-				state: OperationStatusCode.Cleaning,
-				extra_time: 860,
-			});
-			await listener.onMessage(message);
-			expect(handler.onServiceAreaUpdate).toHaveBeenCalledWith(
-				expect.objectContaining({
-					duid,
-					extraTimeSeconds: 860,
-				}),
-			);
-		});
-
 		it('should process boolean flags from in_cleaning, in_returning, etc.', async () => {
 			listener.registerHandler(handler);
 			const message = makeRpcResponseMessage(duid, {
@@ -304,6 +288,38 @@ describe('V1StatusListener', () => {
 			expect(handler.onCleanModeUpdate).toHaveBeenCalledWith(
 				expect.objectContaining({ suctionPower: 200, waterFlow: 250 }),
 			);
+		});
+
+		it('should forward clean_percent in cleaningProcess when present on status body', async () => {
+			listener.registerHandler(handler);
+			const message = makeRpcResponseMessage(duid, {
+				...baseResultBody,
+				state: OperationStatusCode.Cleaning,
+				clean_area: 100,
+				clean_time: 60,
+				clean_percent: 30,
+			});
+			await listener.onMessage(message);
+			expect(handler.onServiceAreaUpdate).toHaveBeenCalledWith(
+				expect.objectContaining({
+					cleaningProcess: { clean_area: 100, clean_time: 60, clean_percent: 30 },
+				}),
+			);
+		});
+
+		it('should omit clean_percent from cleaningProcess when absent on status body', async () => {
+			listener.registerHandler(handler);
+			const message = makeRpcResponseMessage(duid, {
+				...baseResultBody,
+				state: OperationStatusCode.Cleaning,
+				clean_area: 50,
+				clean_time: 30,
+			});
+			await listener.onMessage(message);
+
+			const serviceAreaCall = vi.mocked(handler.onServiceAreaUpdate).mock.calls[0]?.[0];
+			expect(serviceAreaCall?.cleaningProcess).toEqual({ clean_area: 50, clean_time: 30 });
+			expect(serviceAreaCall?.cleaningProcess).not.toHaveProperty('clean_percent');
 		});
 	});
 });

@@ -1,4 +1,4 @@
-import { AnsiLogger } from 'matterbridge/logger';
+import { AnsiLogger, debugStringify } from 'matterbridge/logger';
 import { ServiceArea } from 'matterbridge/matter/clusters';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -400,7 +400,7 @@ describe('AreaManagementService', () => {
 			const retrieved = areaService.getProgress(mockDeviceId);
 
 			expect(retrieved).toEqual(progress);
-			expect(mockLogger.debug).toHaveBeenCalledWith('AreaManagementService - setProgress', progress);
+			expect(mockLogger.debug).toHaveBeenCalledWith('AreaManagementService - setProgress', debugStringify(progress));
 		});
 
 		it('should return empty array when no progress set for duid', () => {

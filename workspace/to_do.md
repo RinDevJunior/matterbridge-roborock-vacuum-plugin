@@ -23,14 +23,16 @@
 - [x] RVC SkipArea (idea 3) — `RoborockServiceAreaServer.skipArea`, V10 `stop_segment_clean`; B01/Q7 return `InvalidInMode`
 - [x] RVC currentArea + estimatedEndTime (idea 4) — `extra_time` forwarding, `computeEstimatedEndTime`, multi-room fallback
 - [x] RVC extended operational states (idea 5) — `FillingWaterTank` in `stateResolver`; legacy maps in `function.ts`
+- [x] Remove extra_time → estimatedEndTime wiring — deleted `computeEstimatedEndTime`, `extraTimeSeconds` message field, and v1 listener forwarding; kept idle/map-change `estimatedEndTime: null` clears
+- [x] Wire estimatedEndTime from clean_time + clean_percent — V1-only opt-in ETA (`enableEstimatedEndTime`, default off); pure helper, v1 listener `clean_percent` forward, `updateCurrentAreaAndEstimate`; B01/Q7/Q10 remain `null`
 
 ## Pending
 
 ### Implementation Tasks
 
+- [ ] **RVC estimatedEndTime real-device validation** — confirm V1 `clean_percent` tracks job progress reliably when `enableEstimatedEndTime` is on; document accuracy limits (pauses, low percent, Home display lag)
 - [ ] **RVC SkipArea real-device validation** — confirm skip room on V10 multi-room clean; expect `InvalidInMode` on B01/Q7
 - [ ] **RVC FillingWaterTank real-device validation** — confirm `wash_status` / `replenish_mode` disambiguation from `CleaningMop` on dock-fill robots
-- [ ] **RVC estimatedEndTime real-device validation** — confirm `extra_time` populates `estimatedEndTime` during multi-room cleans when `currentArea` is set
 - [ ] **RVC SelectWhileRunning (idea 2, deferred)** — allow changing selected areas while a clean is running; out of scope for `rvc-opstate-servicearea-gaps`
 - [ ] **B01/Q10 Apple Home icon validation** — confirm room category icons on real B01 or Q10 device after areaType fix (includes extended IDs 2001–2011)
 - [ ] **External room list R2 (deferred per user)** — replace random `Unknown Room ####` fallback in `getSupportedAreas.ts` with deterministic `"Room {id}"` (safe, no device dependency)

@@ -1,5 +1,39 @@
 # Claude History
 
+## 2026-07-06 — Wire estimatedEndTime from clean_time + clean_percent
+
+**Task:** Opt-in V1 ETA for Matter `ServiceArea.estimatedEndTime` via linear extrapolation from `clean_time` and `clean_percent` (epoch seconds); gated by `enableEstimatedEndTime` (default off). No `extra_time` re-enable; B01/Q7/Q10 stay `null`.
+
+**Changes:**
+
+- `src/share/estimatedEndTime.ts` — new `computeEstimatedEndTimeFromCleanProgress` helper + `MIN_CLEAN_PERCENT`
+- `src/roborockCommunication/models/messageResult.ts` — optional `clean_percent` on `CleanProcess`
+- `src/roborockCommunication/routing/listeners/implementation/v1StatusListener.ts` — forward `clean_percent` in `cleaningProcess`
+- `src/runtimes/handlers/serviceAreaHandler.ts` — restored `updateCurrentAreaAndEstimate` with config/state guards; widened `resolveAreaFromCleaningInfo`
+- `src/model/RoborockPluginPlatformConfig.ts` — `enableEstimatedEndTime` in advanced settings (default `false`)
+- `src/platform/platformConfigManager.ts` — `isEstimatedEndTimeEnabled` getter
+- `matterbridge-roborock-vacuum-plugin.schema.json` — schema property for `enableEstimatedEndTime`
+- `src/tests/share/estimatedEndTime.test.ts` — pure helper unit tests
+- `src/tests/runtimes/handlers/serviceAreaHandler.test.ts` — config on/off, guards, and regression clears
+- `src/tests/roborockCommunication/routing/listeners/implementation/v1StatusListener.test.ts` — `clean_percent` forwarding tests
+- `src/tests/platform/platformConfig.test.ts` — `isEstimatedEndTimeEnabled` accessor tests
+
+**Outcome:** Pass (reviewed). V1 users who enable Advanced Features + `enableEstimatedEndTime` may see experimental finish time in Apple Home; default off; B01/Q7/Q10 unchanged.
+
+## 2026-07-06 — Remove extra_time → estimatedEndTime wiring
+
+**Task:** Stop forwarding Roborock `extra_time` and publishing `ServiceArea.estimatedEndTime` from it; research showed `extra_time` is not a reliable countdown.
+
+**Changes:**
+
+- `src/runtimes/handlers/serviceAreaHandler.ts` — removed `computeEstimatedEndTime`; refactored `updateCurrentAreaAndEstimate` → `updateCurrentArea`; kept idle/map-change `estimatedEndTime: null` clears
+- `src/types/MessagePayloads.ts` — removed `extraTimeSeconds` from `ServiceAreaUpdateMessage`
+- `src/roborockCommunication/routing/listeners/implementation/v1StatusListener.ts` — stopped forwarding `extra_time` in service-area payload
+- `src/tests/runtimes/handlers/serviceAreaHandler.test.ts` — removed/updated ETA-related tests
+- `src/tests/roborockCommunication/routing/listeners/implementation/v1StatusListener.test.ts` — removed `extra_time` forwarding test
+
+**Outcome:** Pass (reviewed). Apple Home no longer shows estimated cleaning end time during runs; `currentArea`, progress, SkipArea, and OperationCompletion unchanged.
+
 ## 2026-07-05 — RVC OpState + Service Area gaps (ideas 1, 3, 4, 5)
 
 **Task:** Close RVC Operational State and Service Area conformance gaps: OperationCompletion events, SkipArea command, estimatedEndTime/currentArea hardening, and extended operational states (FillingWaterTank). SelectWhileRunning (idea 2) skipped.

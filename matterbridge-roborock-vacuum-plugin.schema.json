@@ -210,6 +210,12 @@
 										"type": "boolean",
 										"default": false
 									},
+									"enableEstimatedEndTime": {
+										"title": "Enable Estimated End Time",
+										"description": "Experimental V1 estimated finish time derived from clean progress (clean_time and clean_percent). Requires advanced features.",
+										"type": "boolean",
+										"default": false
+									},
 									"clearStorageOnStartup": {
 										"title": "Clear Storage On Startup",
 										"description": "Clear persistence storage and re-initialize the plugin on next startup.",
