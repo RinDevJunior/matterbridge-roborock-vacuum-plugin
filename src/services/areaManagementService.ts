@@ -1,4 +1,4 @@
-import { AnsiLogger } from 'matterbridge/logger';
+import { AnsiLogger, debugStringify } from 'matterbridge/logger';
 import { ServiceArea } from 'matterbridge/matter/clusters';
 
 import { MapInfo, RoomIndexMap, RoomMap } from '../core/application/models/index.js';
@@ -39,7 +39,7 @@ export class AreaManagementService {
 	}
 
 	public setSelectedAreas(duid: string, selectedAreas: number[]): void {
-		this.logger.debug('AreaManagementService - setSelectedAreas', selectedAreas);
+		this.logger.debug('AreaManagementService - setSelectedAreas', debugStringify(selectedAreas));
 		this.selectedAreas.set(duid, selectedAreas);
 	}
 
@@ -48,7 +48,7 @@ export class AreaManagementService {
 	}
 
 	public setProgress(duid: string, progress: ServiceArea.Progress[]): void {
-		this.logger.debug('AreaManagementService - setProgress', progress);
+		this.logger.debug('AreaManagementService - setProgress', debugStringify(progress));
 		this.progress.set(duid, progress);
 	}
 

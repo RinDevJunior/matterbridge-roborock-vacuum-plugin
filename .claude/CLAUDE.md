@@ -10,10 +10,8 @@ Orchestration source of truth: `.claude/`.
 ## Rules
 
 - Be concise — no yapping, details only when asked.
-- Remove unused vars/functions/imports; `_` only when something must stay unused.
 - Never mix logic and test changes in one step.
 - No `Co-Authored-By` in commits. Subagents never run `git commit`/`git push`.
-- After `npm install`, run `npm run build:local:ci` to catch build issues.
 
 ## Verification
 
