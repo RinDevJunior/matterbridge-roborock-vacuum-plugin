@@ -36,7 +36,7 @@ export interface ResolvedState {
  * @param message StatusChangeMessage containing status code and modifier flags
  * @returns ResolvedState with runMode and operationalState
  *
- * @see misc/state_resolution_matrix.md - Complete 47-row matrix documentation
+ * @see docs/state_resolution_matrix.md - Complete 47-row matrix documentation
  */
 export function resolveDeviceState(message: StatusChangeMessage): ResolvedState {
 	const status = message.status;
