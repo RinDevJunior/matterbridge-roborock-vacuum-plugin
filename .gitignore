@@ -44,3 +44,6 @@ docs/*
 !docs/todo-task/
 !docs/to_do.md
 !docs/claude_history.md
+!docs/user-guide.md
+!docs/pro-tips.md
+!docs/onboarding.md

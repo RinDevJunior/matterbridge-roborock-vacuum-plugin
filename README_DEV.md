@@ -1,5 +1,7 @@
 # Developer Guide
 
+> New to this project? Start with [`docs/onboarding.md`](docs/onboarding.md) — setup, AI workflow, and a two-phase CLI-first pattern for device-protocol work.
+
 ## Prerequisites
 
 - Matterbridge must run in **childbridge** mode.
