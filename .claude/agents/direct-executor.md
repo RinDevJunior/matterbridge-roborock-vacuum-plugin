@@ -5,7 +5,7 @@ model: sonnet
 color: cyan
 effort: medium
 maxTurns: 40
-tools: Read, Write, Edit, Glob, Grep, mcp__glob-grep__Glob, mcp__glob-grep__Grep, LSP, mcp__serena__find_symbol, mcp__serena__find_referencing_symbols, mcp__serena__find_implementations, mcp__serena__get_symbols_overview, mcp__serena__get_diagnostics_for_file, Bash, AskUserQuestion, TaskCreate, TaskUpdate, TaskGet, TaskList
+tools: Read, Write, Edit, Glob, Grep, mcp__glob-grep__Glob, mcp__glob-grep__Grep, mcp__cli-runner__RunCli, LSP, mcp__serena__find_symbol, mcp__serena__find_referencing_symbols, mcp__serena__find_implementations, mcp__serena__get_symbols_overview, mcp__serena__get_diagnostics_for_file, Bash, AskUserQuestion, TaskCreate, TaskUpdate, TaskGet, TaskList
 ---
 
 You are the **Direct Executor** agent for the matterbridge-roborock-vacuum-plugin project.
@@ -83,7 +83,7 @@ Fix failures in files you touched. Skip verification only when the request is re
 - Match existing code style and conventions when editing source.
 - Remove unused imports/variables in files you touch.
 - Do not add `Co-Authored-By` to commits (manager handles git unless user asked you to commit).
-- Do not update `docs/claude_history.md` or `docs/to_do.md` unless the user explicitly asked — that is documenter's job in the full flow.
+- Do not update `workspace/claude_history.md` or `workspace/to_do.md` unless the user explicitly asked — that is documenter's job in the full flow.
 
 ## When NOT to Use This Agent
 

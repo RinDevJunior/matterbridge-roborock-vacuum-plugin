@@ -1,5 +1,7 @@
 # Developer Guide
 
+> New to this project? Start with [`onboarding.md`](onboarding.md) — setup, AI workflow, and a two-phase CLI-first pattern for device-protocol work.
+
 ## Prerequisites
 
 - Matterbridge must run in **childbridge** mode.
@@ -87,13 +89,13 @@ See [README_CODEGRAPH.md](README_CODEGRAPH.md) for CodeGraph setup. Serena is co
 
 ## Project Structure (Key Files)
 
-| File                                                                                                                               | Purpose                                                                  |
-| ---------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------ |
-| [`src/roborockCommunication/models/deviceModel.ts`](src/roborockCommunication/models/deviceModel.ts)                               | Enum of all known device models                                          |
-| [`src/behaviors/roborock.vacuum/core/cleanModeConfig/`](src/behaviors/roborock.vacuum/core/cleanModeConfig/)                       | All clean mode definitions (labels, mode numbers, settings, Matter tags) |
-| [`src/behaviors/roborock.vacuum/core/deviceCapabilityRegistry.ts`](src/behaviors/roborock.vacuum/core/deviceCapabilityRegistry.ts) | Maps each device model → its extra clean modes                           |
-| [`src/behaviors/roborock.vacuum/core/behaviorConfig.ts`](src/behaviors/roborock.vacuum/core/behaviorConfig.ts)                     | Builds `BehaviorConfig` per device (handler chain, mode maps)            |
-| [`src/behaviors/roborock.vacuum/handlers/`](src/behaviors/roborock.vacuum/handlers/)                                               | Clean mode handler implementations                                       |
+| File                                                                                                                                  | Purpose                                                                  |
+| ------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------ |
+| [`src/roborockCommunication/models/deviceModel.ts`](../src/roborockCommunication/models/deviceModel.ts)                               | Enum of all known device models                                          |
+| [`src/behaviors/roborock.vacuum/core/cleanModeConfig/`](../src/behaviors/roborock.vacuum/core/cleanModeConfig/)                       | All clean mode definitions (labels, mode numbers, settings, Matter tags) |
+| [`src/behaviors/roborock.vacuum/core/deviceCapabilityRegistry.ts`](../src/behaviors/roborock.vacuum/core/deviceCapabilityRegistry.ts) | Maps each device model → its extra clean modes                           |
+| [`src/behaviors/roborock.vacuum/core/behaviorConfig.ts`](../src/behaviors/roborock.vacuum/core/behaviorConfig.ts)                     | Builds `BehaviorConfig` per device (handler chain, mode maps)            |
+| [`src/behaviors/roborock.vacuum/handlers/`](../src/behaviors/roborock.vacuum/handlers/)                                               | Clean mode handler implementations                                       |
 
 ---
 
@@ -101,7 +103,7 @@ See [README_CODEGRAPH.md](README_CODEGRAPH.md) for CodeGraph setup. Serena is co
 
 ### Step 1 — Register the device model
 
-Open [`src/roborockCommunication/models/deviceModel.ts`](src/roborockCommunication/models/deviceModel.ts) and add a new entry:
+Open [`src/roborockCommunication/models/deviceModel.ts`](../src/roborockCommunication/models/deviceModel.ts) and add a new entry:
 
 ```ts
 MY_NEW_DEVICE = 'roborock.vacuum.xxxx',  // replace with actual model ID
@@ -109,7 +111,7 @@ MY_NEW_DEVICE = 'roborock.vacuum.xxxx',  // replace with actual model ID
 
 ### Step 2 — Register its extra clean modes
 
-Open [`src/behaviors/roborock.vacuum/core/deviceCapabilityRegistry.ts`](src/behaviors/roborock.vacuum/core/deviceCapabilityRegistry.ts) and add an entry to `DEVICE_EXTRA_MODES`:
+Open [`src/behaviors/roborock.vacuum/core/deviceCapabilityRegistry.ts`](../src/behaviors/roborock.vacuum/core/deviceCapabilityRegistry.ts) and add an entry to `DEVICE_EXTRA_MODES`:
 
 ```ts
 // Device that only has Vac Followed by Mop:
@@ -129,7 +131,7 @@ If your device only uses base clean modes (no extra modes), you don't need to ad
 
 ### Step 1 — Add the label
 
-In [`src/behaviors/roborock.vacuum/core/cleanModeConfig.ts`](src/behaviors/roborock.vacuum/core/cleanModeConfig.ts), add to `CleanModeDisplayLabel`:
+In [`src/behaviors/roborock.vacuum/core/cleanModeConfig.ts`](../src/behaviors/roborock.vacuum/core/cleanModeConfig.ts), add to `CleanModeDisplayLabel`:
 
 ```ts
 MyNewMode = 'Vacuum & Mop: My New Mode',
@@ -158,7 +160,7 @@ export const myNewModeConfig: CleanModeConfig = {
 
 ### Step 4 — (Optional) Add a custom handler
 
-If the mode needs special command logic (like Smart Plan), create a handler in [`src/behaviors/roborock.vacuum/handlers/`](src/behaviors/roborock.vacuum/handlers/):
+If the mode needs special command logic (like Smart Plan), create a handler in [`src/behaviors/roborock.vacuum/handlers/`](../src/behaviors/roborock.vacuum/handlers/):
 
 ```ts
 export class MyNewModeHandler implements ModeHandler {
@@ -172,13 +174,13 @@ export class MyNewModeHandler implements ModeHandler {
 }
 ```
 
-Then register it in [`src/behaviors/roborock.vacuum/core/behaviorConfig.ts`](src/behaviors/roborock.vacuum/core/behaviorConfig.ts) inside `buildBehaviorConfig()`.
+Then register it in [`src/behaviors/roborock.vacuum/core/behaviorConfig.ts`](../src/behaviors/roborock.vacuum/core/behaviorConfig.ts) inside `buildBehaviorConfig()`.
 
-If the mode uses standard preset settings (just `changeCleanMode` with the setting), add it to the `presetModes` list in [`src/behaviors/roborock.vacuum/handlers/presetCleanModeHandler.ts`](src/behaviors/roborock.vacuum/handlers/presetCleanModeHandler.ts) instead.
+If the mode uses standard preset settings (just `changeCleanMode` with the setting), add it to the `presetModes` list in [`src/behaviors/roborock.vacuum/handlers/presetCleanModeHandler.ts`](../src/behaviors/roborock.vacuum/handlers/presetCleanModeHandler.ts) instead.
 
 ### Step 5 — Register the mode for relevant devices
 
-In [`src/behaviors/roborock.vacuum/core/deviceCapabilityRegistry.ts`](src/behaviors/roborock.vacuum/core/deviceCapabilityRegistry.ts):
+In [`src/behaviors/roborock.vacuum/core/deviceCapabilityRegistry.ts`](../src/behaviors/roborock.vacuum/core/deviceCapabilityRegistry.ts):
 
 ```ts
 [DeviceModel.MY_DEVICE]: [myNewModeConfig, ...existingModes],

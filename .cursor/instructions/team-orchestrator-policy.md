@@ -33,13 +33,13 @@ Confirm medium/high via `AskQuestion`. Auto low when obvious.
 
 ## Paths (pick one)
 
-| Path                   | Flow                                                                                                                                                                                      |
-| ---------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Lite (default low)** | echo → `direct-executor` → optional `reviewer` if security/user asks. No task folder / architect / briefer / approval. Escalate to full if scope grows.                                   |
-| **Full (medium/high)** | echo+confirm → `docs/<task>/requirement.md` → TA → briefer → **brief approval** → implementer → **reviewer (prod)** → test-writer → **reviewer (final)** → documenter **on APPROVE only** |
-| **Explain**            | `requirement.md` `type: explain` → TA → present `answer.md`. EM must not read `src/`, `wiki/`, `plan.md`.                                                                                 |
-| **Ad-hoc**             | user skips flow → `direct-executor`; no auto reviewer/documenter unless asked                                                                                                             |
-| **On request**         | `compiler`, `finalizer`, `release-manager`, `wiki-manager` update                                                                                                                         |
+| Path                   | Flow                                                                                                                                                                                           |
+| ---------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Lite (default low)** | echo → `direct-executor` → optional `reviewer` if security/user asks. No task folder / architect / briefer / approval. Escalate to full if scope grows.                                        |
+| **Full (medium/high)** | echo+confirm → `workspace/<task>/requirement.md` → TA → briefer → **brief approval** → implementer → **reviewer (prod)** → test-writer → **reviewer (final)** → documenter **on APPROVE only** |
+| **Explain**            | `requirement.md` `type: explain` → TA → present `answer.md`. EM must not read `src/`, `wiki/`, `plan.md`.                                                                                      |
+| **Ad-hoc**             | user skips flow → `direct-executor`; no auto reviewer/documenter unless asked                                                                                                                  |
+| **On request**         | `compiler`, `finalizer`, `release-manager`, `wiki-manager` update                                                                                                                              |
 
 **Full pipeline detail:**
 
@@ -71,7 +71,7 @@ test-writer → reviewer (pass 2: final)
 
 - Security-sensitive low → add reviewer after direct-executor.
 - Docs only → documenter.
-- Task folders ephemeral — finalizer `clean-paths.mjs`; never commit `docs/<task>/`.
+- Task folders ephemeral — finalizer `clean-paths.mjs`; never commit `workspace/<task>/`.
 
 ## Model policy
 
@@ -89,7 +89,7 @@ test-writer → reviewer (pass 2: final)
 
 Labels per cycle: `ta_id`, `briefer_id`, `implementer_id`, `reviewer_id`, `tw_id`, `documenter_id`, … Clear on new `requirement.md`. Resume same cycle; fresh on new scope.
 
-## Task folder (`docs/<task>/`)
+## Task folder (`workspace/<task>/`)
 
 `requirement.md` · `plan.md` · `test-plan.md` · `business-brief.md` · `manager-clarification.md` · `answer.md` (explain) · wiki/investigator artifacts (high). TA nests wiki/investigator — EM doesn't.
 

@@ -9,7 +9,7 @@ You are the Engineer Manager. The user wants to research the reference codebases
 
 1. **Echo** the question in 1–3 bullets of simple English and confirm (the user may write in Vietnamese). If the arguments are empty or unclear, ask for the question first.
 2. **Check the allowlist** — `wiki/reference-workspaces.md` must exist and list the reference repo paths. If it is missing or has unfilled `<path>` placeholders, ask the user for the paths and update the file before spawning anything (investigator may only read paths listed there).
-3. **Create the task folder** — `docs/<short-task-description>/requirement.md` with `type: explain` and this boilerplate baked in:
+3. **Create the task folder** — `workspace/<short-task-description>/requirement.md` with `type: explain` and this boilerplate baked in:
 
    ```markdown
    ## Question
@@ -35,7 +35,7 @@ You are the Engineer Manager. The user wants to research the reference codebases
 
 When the user says "apply idea N" (or similar):
 
-1. Start a **normal implement cycle**: new `requirement.md` (`type: implement`, assess complexity) that cites `docs/<research-task>/answer.md` as the design input — do not re-explain the idea in chat.
+1. Start a **normal implement cycle**: new `requirement.md` (`type: implement`, assess complexity) that cites `workspace/<research-task>/answer.md` as the design input — do not re-explain the idea in chat.
 2. Full pipeline: architect → briefer → **user approval** → implementer → reviewer (prod) → test-writer → reviewer (final) → documenter (on **APPROVE** only).
 
 ## Rules

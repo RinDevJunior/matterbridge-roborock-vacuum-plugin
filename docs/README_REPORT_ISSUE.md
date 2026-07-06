@@ -1,7 +1,7 @@
 ### ⚙️ Matterbridge Setup
 
 <div align="center">
-  <img src="./screenshot/IMG_6.PNG" alt="Matterbridge Configuration Screenshot" style="border-radius: 8px; max-width: 100%; box-shadow: 0 4px 12px rgba(0,0,0,0.1);" />
+  <img src="../screenshot/IMG_6.PNG" alt="Matterbridge Configuration Screenshot" style="border-radius: 8px; max-width: 100%; box-shadow: 0 4px 12px rgba(0,0,0,0.1);" />
 </div>
 
 > 🛠️ Follow the configuration shown above to set up Matterbridge correctly for your Roborock vacuum.
@@ -21,7 +21,7 @@
 After reproducing the issue, download the **MATTERBRIDGE LOG** file:
 
 <div align="center">
-  <img src="./screenshot/IMG_7.PNG" alt="Download Matterbridge Log Screenshot" style="border-radius: 8px; max-width: 100%; box-shadow: 0 4px 12px rgba(0,0,0,0.1);" />
+  <img src="../screenshot/IMG_7.PNG" alt="Download Matterbridge Log Screenshot" style="border-radius: 8px; max-width: 100%; box-shadow: 0 4px 12px rgba(0,0,0,0.1);" />
 </div>
 
 ---

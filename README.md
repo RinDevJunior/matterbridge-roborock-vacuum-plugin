@@ -97,10 +97,10 @@ To get the **DUID** for your devices, you have two options:
 
 ---
 
-### ➡️ [See Supported & Tested Roborock Devices](./README_SUPPORTED.md)
+### ➡️ [See Supported & Tested Roborock Devices](./docs/README_SUPPORTED.md)
 
 📋 **Apple Home ↔️ Roborock Clean Mode Mapping:**  
-For a detailed table of how Apple Home clean modes map to Roborock settings, see 👉 [Apple Home ↔️ Roborock Clean Mode Mapping](./README_CLEANMODE.md)
+For a detailed table of how Apple Home clean modes map to Roborock settings, see 👉 [Apple Home ↔️ Roborock Clean Mode Mapping](./docs/README_CLEANMODE.md)
 
 ---
 
@@ -109,7 +109,7 @@ For a detailed table of how Apple Home clean modes map to Roborock settings, see
 - A working installation of [Matterbridge](https://github.com/Luligu/matterbridge)
 - Compatible Roborock vacuum model (not all models supported yet)
 
-**Developers:** see [README_DEV.md](./README_DEV.md) (build, tests, AI tooling for Claude Code & Cursor).
+**Developers:** see [README_DEV.md](./docs/README_DEV.md) (build, tests, AI tooling for Claude Code & Cursor).
 
 ---
 
@@ -125,7 +125,7 @@ For a detailed table of how Apple Home clean modes map to Roborock settings, see
 
 🛠️ **Reporting an Issue**  
 Before opening an issue, please make sure to read the instructions here:  
-[📄 How to Report an Issue](./README_REPORT_ISSUE.md)
+[📄 How to Report an Issue](./docs/README_REPORT_ISSUE.md)
 
 💬 **Community Support**  
 Join our Discord for support, updates, and community discussions:  

@@ -10,6 +10,11 @@
 			"command": "node",
 			"args": [".claude/tools/glob-grep-server.cjs"]
 		},
+		"cli-runner": {
+			"type": "stdio",
+			"command": "node",
+			"args": [".claude/tools/cli-runner-server.cjs"]
+		},
 		"serena": {
 			"type": "stdio",
 			"command": "serena",

@@ -1,6 +1,6 @@
 ---
 name: implementer
-description: Use this agent to write implementation code based on an approved docs/<task-folder>/plan.md produced by the technical architect. It follows the plan exactly and writes logic code only — no tests. Run AFTER user approval of the business brief. Haiku by default — EM passes model "sonnet" for high complexity only.
+description: Use this agent to write implementation code based on an approved workspace/<task-folder>/plan.md produced by the technical architect. It follows the plan exactly and writes logic code only — no tests. Run AFTER user approval of the business brief. Haiku by default — EM passes model "sonnet" for high complexity only.
 model: haiku
 color: green
 effort: medium
@@ -14,7 +14,7 @@ Read `.claude/instructions/shared-rules.md` before running any command.
 
 ## Your Role
 
-You write production code following the approved `docs/<task-folder>/plan.md` exactly. You do not design — you execute.
+You write production code following the approved `workspace/<task-folder>/plan.md` exactly. You do not design — you execute.
 
 ## Progress Checklist
 

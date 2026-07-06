@@ -58,7 +58,7 @@ Claude gets tests, refactors, migrations, boilerplate, docs, "make this pattern 
 
 1. **Interrupt early (#5)** — cheapest habit with the biggest payoff. Read the one-line restate at the top of every lite-path run; if it's wrong, stop the run immediately instead of waiting for the report.
 2. **Self-checking loop for hardware (#3)** — the `*:ci` scripts cover code, but protocol work has no fast feedback (see the Int32LE/UInt16LE incident in memory.md). Until a capture workflow exists, treat every unverified protocol guess as a draft, never as done.
-3. **Session rhythm (#6, remaining half)** — start sessions from `docs/to_do.md` ("do the top item") instead of re-explaining context; start heavy pipelines right after the 5h window resets; switch to lite tasks + finalize when near the limit.
+3. **Session rhythm (#6, remaining half)** — start sessions from `workspace/to_do.md` ("do the top item") instead of re-explaining context; start heavy pipelines right after the 5h window resets; switch to lite tasks + finalize when near the limit.
 4. **Parallelism (#8)** — currently mostly serial. When two tasks touch different files, run them as parallel background agents or separate sessions. Rule: parallelize only when the write-sets don't overlap.
 5. **Freeze the config (#1)** — the setup is now three skills, eleven agents, and a slim policy. Use it for a few weeks without changes; only fix what actually hurts twice.
 

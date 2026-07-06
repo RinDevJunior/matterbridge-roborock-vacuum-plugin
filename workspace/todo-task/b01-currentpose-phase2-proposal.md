@@ -47,7 +47,7 @@ These documents may be deleted when their ephemeral task folder is cleaned:
 
 - `wiki/B01-Map-Parsing.md` — authoritative wiki page; kept current by documenter
 - `wiki/Room-Map-Sync-Flow.md` — production listener architecture; §6 notes Phase 2 as deferred
-- `docs/to_do.md` — "B01 currentPose Phase 2 (deferred)" in Pending list
+- `workspace/to_do.md` — "B01 currentPose Phase 2 (deferred)" in Pending list
 
 ---
 
