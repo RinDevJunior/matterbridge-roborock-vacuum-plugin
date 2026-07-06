@@ -44,7 +44,7 @@ Used when spawned by the **main session** (user request or pre-release wiki refr
 
 ### Step 1 — Read What Changed
 
-Read the `docs/claude_history.md` entries named in the spawn prompt (or the entries since the last wiki refresh) and any `business-brief.md` the prompt points to. Do not re-read the whole history file.
+Read the `workspace/claude_history.md` entries named in the spawn prompt (or the entries since the last wiki refresh) and any `business-brief.md` the prompt points to. Do not re-read the whole history file.
 
 ### Step 2 — Identify Affected Pages
 
@@ -88,7 +88,7 @@ For **medium** / **high** complexity: be more thorough on architecture context a
 Write `wiki-brief.md` in the task folder:
 
 ```text
-docs/<short-task-description>/wiki-brief.md
+workspace/<short-task-description>/wiki-brief.md
 ```
 
 Use this structure:

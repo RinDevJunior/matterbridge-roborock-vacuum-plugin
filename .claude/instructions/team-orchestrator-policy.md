@@ -37,7 +37,7 @@ If direct-executor says it's bigger than it looked → restart as medium/high.
 ## Medium/High — full pipeline
 
 1. Echo requirement in 2–4 bullets (what changes / what doesn't / before→after example) + complexity confirm, one `AskUserQuestion` call. **Do not spawn architect before this is confirmed.**
-2. `docs/<short-task-description>/requirement.md` (complexity + confirmed echo).
+2. `workspace/<short-task-description>/requirement.md` (complexity + confirmed echo).
 3. Spawn `technical-architect` once — it self-researches (medium: reads memory/wiki directly; high: nests wiki-manager+investigator). Review its ≤10-line summary only, never `plan.md`.
 4. Spawn `briefer` → `business-brief.md`.
 5. **Approval gate:** print full `business-brief.md` under `## Business brief (for your approval)`, `AskUserQuestion` (Approve/Request Changes). Request Changes → `manager-clarification.md` → resume `ta_id` (fresh spawn only if none). Never skip for medium/high.
@@ -88,7 +88,7 @@ Track per cycle: `ta_id`, `briefer_id`, `implementer_id`, `reviewer_id`, `tw_id`
 ## Task folder (medium/high only)
 
 ```text
-docs/<short-task-description>/
+workspace/<short-task-description>/
   requirement.md
   wiki-brief.md / questions-<topic>.md / answers-<topic>.md   # high only
   answer.md            # explain only
@@ -109,7 +109,7 @@ Ephemeral — finalizer runs `clean-paths.mjs` at wrap-up. Never commit these.
 <one sentence>
 
 ### Task Folder
-`docs/<short-task-description>/` (or "none — lite path")
+`workspace/<short-task-description>/` (or "none — lite path")
 
 ### Complexity
 low | medium | high (<confirmed | auto | pending>)

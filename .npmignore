@@ -1,6 +1,8 @@
 .github/
 .vscode/
-docs/
+docs/*
+!docs/README_*.md
+workspace/
 web-for-testing/
 src/
 .tarignore

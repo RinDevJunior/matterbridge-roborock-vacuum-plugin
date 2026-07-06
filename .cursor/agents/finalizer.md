@@ -42,32 +42,32 @@ git status
 
 2. Build the cleanup list from session context:
 
-| Artifact                        | When to include                                         |
-| ------------------------------- | ------------------------------------------------------- |
-| `docs/<task-folder>/`           | Task folder from this session (explain/implement cycle) |
-| `docs/agent-questions.md`       | If present (legacy root ephemeral)                      |
-| `docs/agent-answers.md`         | If present                                              |
-| `docs/plan.md`                  | If present                                              |
-| `docs/business-brief.md`        | If present                                              |
-| `docs/manager-clarification.md` | If present                                              |
+| Artifact                             | When to include                                         |
+| ------------------------------------ | ------------------------------------------------------- |
+| `workspace/<task-folder>/`           | Task folder from this session (explain/implement cycle) |
+| `workspace/agent-questions.md`       | If present (legacy root ephemeral)                      |
+| `workspace/agent-answers.md`         | If present                                              |
+| `workspace/plan.md`                  | If present                                              |
+| `workspace/business-brief.md`        | If present                                              |
+| `workspace/manager-clarification.md` | If present                                              |
 
-**Do not** delete permanent docs (`docs/archive/`, `docs/claude_history.md`, `docs/to_do.md`) unless the user explicitly requests it.
+**Do not** delete permanent docs (`docs/archive/`, `workspace/claude_history.md`, `workspace/to_do.md`) unless the user explicitly requests it.
 
 3. Run the cleanup script with **only** paths that exist:
 
 ```bash
-node scripts/clean-paths.mjs docs/<task-folder> [other-path ...]
+node scripts/clean-paths.mjs workspace/<task-folder> [other-path ...]
 ```
 
 Example:
 
 ```bash
-node scripts/clean-paths.mjs docs/return-to-dock-automation docs/plan.md
+node scripts/clean-paths.mjs workspace/return-to-dock-automation workspace/plan.md
 ```
 
 Omit paths that do not exist. If nothing to clean, skip the command or run with no args (prints `CLEANUP: none`).
 
-Report script output. **Never** stage or commit paths you deleted or any `docs/<task>/` orchestration folder.
+Report script output. **Never** stage or commit paths you deleted or any `workspace/<task>/` orchestration folder.
 
 ### Step 2 — Stage changes
 
@@ -77,10 +77,10 @@ git status
 
 Stage session changes **excluding** ephemeral task folders:
 
-- If the user named paths → `git add <those paths>` (reject `docs/<task>/` unless user explicitly overrides)
+- If the user named paths → `git add <those paths>` (reject `workspace/<task>/` unless user explicitly overrides)
 - Otherwise → `git add -u` for tracked modifications plus intentional new files (e.g. `.claude/`, `scripts/`, `src/`)
 
-**Never** `git add docs/<short-task-description>/`.
+**Never** `git add workspace/<short-task-description>/`.
 
 **Do not** stage likely secret files (`.env`, credentials, tokens). Warn if they appear.
 
@@ -181,7 +181,7 @@ Provide: **Recommended**, up to 2 **Alternatives**, and **Notes**.
 <script output or "Skipped (message-only)">
 
 ### Staged
-<paths staged — must not include docs/<task>/>
+<paths staged — must not include workspace/<task>/>
 
 ### Format
 PASS | FAIL + <one line> | Skipped (message-only)
@@ -206,7 +206,7 @@ When checks failed, **Notes** must say fix failures via **Implementer** or **dir
 - `git status`, `git log`, `git show`, `git branch`, `git rev-parse`
 - `git add` (staging only)
 - `npm run format:ci`, `npm run precommit:ci`, `npm run diff:ci`
-- `node scripts/clean-paths.mjs <path> [...]` — paths under `docs/` only; **you** supply the list
+- `node scripts/clean-paths.mjs <path> [...]` — paths under `workspace/` only; **you** supply the list
 
 ## Forbidden Actions
 
@@ -216,14 +216,14 @@ Never:
 - Edit, write, or patch **any** source file (`src/`, `scripts/` logic, tests, configs) — not even to fix lint/test failures
 - Run `npm run precommit` directly or read full build/test logs
 - Run `git diff` / `git diff --staged` or read raw patch output — use `npm run diff:ci` only
-- Stage `docs/<short-task-description>/` orchestration folders
+- Stage `workspace/<short-task-description>/` orchestration folders
 - Use Write/Edit tools — **Shell only**
 
 Fix failures are handled by **Implementer** or **direct-executor**, not Finalizer.
 
 ## Rules
 
-- Task folders under `docs/<task>/` are ephemeral — deleted in Step 1, never committed
+- Task folders under `workspace/<task>/` are ephemeral — deleted in Step 1, never committed
 - Re-stage after `npm run format:ci`
 - **No commit message** until Format and Precommit both pass
 - The user runs `git commit` with the suggested message

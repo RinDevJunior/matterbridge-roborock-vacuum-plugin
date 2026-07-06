@@ -33,7 +33,7 @@ npm i -g @colbymchenry/codegraph
 npm run codegraph:init
 ```
 
-Full details: [`README_CODEGRAPH.md`](../README_CODEGRAPH.md). Without this, agents fall back to slower Grep/Glob sweeps.
+Full details: [`README_CODEGRAPH.md`](README_CODEGRAPH.md). Without this, agents fall back to slower Grep/Glob sweeps.
 
 ### 1.4 Serena / LSP
 
@@ -65,7 +65,7 @@ npm run build:local:ci   # if not already built
 npm run cli -- --command login
 ```
 
-This saves a session file (gitignored) that `npm run cli` and the `cli-runner` MCP tool both reuse. See [`README_CLI.md`](../README_CLI.md) for the full command list.
+This saves a session file (gitignored) that `npm run cli` and the `cli-runner` MCP tool both reuse. See [`README_CLI.md`](README_CLI.md) for the full command list.
 
 ---
 
@@ -74,8 +74,8 @@ This saves a session file (gitignored) that `npm run cli` and the `cli-runner` M
 Open Claude Code (or Cursor) in the repo root. `CLAUDE.md` routes automatically to `.claude/CLAUDE.md` (Claude Code) or `.cursor/CURSOR.md` (Cursor) — you don't need to point it there yourself.
 
 - If the session doesn't seem to be following the orchestration flow (e.g. it starts writing code directly for a non-trivial request), run **`/load-policy`** to force-load the Engineer Manager playbook.
-- Read [`docs/user-guide.md`](user-guide.md) once — it's the cheat sheet for *how to phrase requests* (low/medium/high complexity, "follow-up", "direct", etc.) and the token-saving habits section is worth the five minutes.
-- Check [`docs/to_do.md`](to_do.md) for a backlog if you don't have a specific task in mind — "do the top item in to_do.md" is a valid way to start a session.
+- Read [`docs/user-guide.md`](user-guide.md) once — it's the cheat sheet for _how to phrase requests_ (low/medium/high complexity, "follow-up", "direct", etc.) and the token-saving habits section is worth the five minutes.
+- Check [`workspace/to_do.md`](../workspace/to_do.md) for a backlog if you don't have a specific task in mind — "do the top item in to_do.md" is a valid way to start a session.
 
 ---
 
@@ -83,7 +83,7 @@ Open Claude Code (or Cursor) in the repo root. `CLAUDE.md` routes automatically 
 
 Before writing any code, use these two skills to build context cheaply (they run research only — no implementation, no approval gate needed):
 
-- **`/status-of <feature>`** — "what do we currently do for X, what's missing, what's already been decided?" Reads `.claude/memory.md`, `docs/to_do.md`, `docs/claude_history.md`, and the actual source, and gives you a plain-language status report. Use this **first** when picking up unfamiliar territory.
+- **`/status-of <feature>`** — "what do we currently do for X, what's missing, what's already been decided?" Reads `.claude/memory.md`, `workspace/to_do.md`, `workspace/claude_history.md`, and the actual source, and gives you a plain-language status report. Use this **first** when picking up unfamiliar territory.
 - **`/ref-idea <question>`** — researches the allowlisted reference codebases (§1.5) for how the Roborock protocol / Matter integration / a similar feature has been handled elsewhere, then reports candidate approaches. Follow up with "apply idea N" to turn a finding into a real implementation cycle.
 
 Typical sequence: `/status-of per-room water flow` → read the report → `/ref-idea how does python-roborock read per-room water flow?` → `apply idea 1`.
@@ -99,7 +99,7 @@ State the request with a complexity hint if you can ("low: …", "this is medium
 A lot of bugs in this codebase come from guessing at undocumented Roborock protocol behavior (byte widths, field offsets, feature flags) without ever touching a real device. Don't let an agent write production code against an unverified guess — split the work:
 
 **Phase 1 — verify on the CLI**
-Confirm the exact request/response shape against a real device *before* any production code changes:
+Confirm the exact request/response shape against a real device _before_ any production code changes:
 
 ```sh
 npm run cli -- --command <status|map-info|legacy-map-info|custom|...> --duid <duid> [--local]
@@ -124,13 +124,13 @@ This two-phase pattern is already recorded in `.claude/memory.md` under "Decisio
 
 ## 5. Where to go next
 
-| Question | Doc |
-| --- | --- |
-| How do I phrase requests / what's the cheat sheet? | [`docs/user-guide.md`](user-guide.md) |
-| How do I add a new device model or clean mode? | [`README_DEV.md`](../README_DEV.md) |
-| CodeGraph setup/usage details | [`README_CODEGRAPH.md`](../README_CODEGRAPH.md) |
-| Full CLI command reference | [`README_CLI.md`](../README_CLI.md) |
-| What's already been decided / known pitfalls | [`.claude/memory.md`](../.claude/memory.md) |
-| Backlog | [`docs/to_do.md`](to_do.md) |
-| Habits experienced Claude users follow | [`docs/pro-tips.md`](pro-tips.md) |
-| Something feels off / EM not behaving | `docs/user-guide.md` §8 Troubleshooting |
+| Question                                           | Doc                                           |
+| -------------------------------------------------- | --------------------------------------------- |
+| How do I phrase requests / what's the cheat sheet? | [`docs/user-guide.md`](user-guide.md)         |
+| How do I add a new device model or clean mode?     | [`README_DEV.md`](README_DEV.md)              |
+| CodeGraph setup/usage details                      | [`README_CODEGRAPH.md`](README_CODEGRAPH.md)  |
+| Full CLI command reference                         | [`README_CLI.md`](README_CLI.md)              |
+| What's already been decided / known pitfalls       | [`.claude/memory.md`](../.claude/memory.md)   |
+| Backlog                                            | [`workspace/to_do.md`](../workspace/to_do.md) |
+| Habits experienced Claude users follow             | [`docs/pro-tips.md`](pro-tips.md)             |
+| Something feels off / EM not behaving              | `docs/user-guide.md` §8 Troubleshooting       |

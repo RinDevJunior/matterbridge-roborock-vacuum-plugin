@@ -22,17 +22,17 @@ Parallel Task only for independent work — never reviewer + test-writer + docum
 
 ## Spawn table
 
-| Agent                                                                        | When                   | `prompt` (minimum)                                                                                            |
-| ---------------------------------------------------------------------------- | ---------------------- | ------------------------------------------------------------------------------------------------------------- |
-| **technical-architect**                                                      | Planning; once/cycle   | `Task folder: docs/<task>/\nRequirement: …\ntype: implement\|explain` → plan+test-plan or answer.md           |
-| **briefer**                                                                  | After TA ready         | `Task folder: docs/<task>/`                                                                                   |
-| **implementer**                                                              | After brief Approve    | `Task folder: docs/<task>/` — plan.md, logic only                                                             |
-| **reviewer** pass 1                                                          | After implementer      | `Task folder: docs/<task>/\npass: production` — prod diff vs plan; tag issues **implementation** \| **tests** |
-| **test-writer**                                                              | After pass 1 OK        | `Task folder: docs/<task>/` + reviewer test notes if any                                                      |
-| **reviewer** pass 2                                                          | After test-writer      | `Task folder: docs/<task>/\npass: final` — full diff; **APPROVE** \| **REQUEST CHANGES** (tagged)             |
-| **documenter**                                                               | Final **APPROVE** only | `Task folder: docs/<task>/`                                                                                   |
-| **direct-executor**                                                          | Lite / ad-hoc          | `USER REQUEST:\n<verbatim>\n\nCONSTRAINTS:\n…`                                                                |
-| **finalizer** / **compiler** / **release-manager** / **wiki-manager** update | User request           | See `.cursor/agents/`                                                                                         |
+| Agent                                                                        | When                   | `prompt` (minimum)                                                                                                 |
+| ---------------------------------------------------------------------------- | ---------------------- | ------------------------------------------------------------------------------------------------------------------ |
+| **technical-architect**                                                      | Planning; once/cycle   | `Task folder: workspace/<task>/\nRequirement: …\ntype: implement\|explain` → plan+test-plan or answer.md           |
+| **briefer**                                                                  | After TA ready         | `Task folder: workspace/<task>/`                                                                                   |
+| **implementer**                                                              | After brief Approve    | `Task folder: workspace/<task>/` — plan.md, logic only                                                             |
+| **reviewer** pass 1                                                          | After implementer      | `Task folder: workspace/<task>/\npass: production` — prod diff vs plan; tag issues **implementation** \| **tests** |
+| **test-writer**                                                              | After pass 1 OK        | `Task folder: workspace/<task>/` + reviewer test notes if any                                                      |
+| **reviewer** pass 2                                                          | After test-writer      | `Task folder: workspace/<task>/\npass: final` — full diff; **APPROVE** \| **REQUEST CHANGES** (tagged)             |
+| **documenter**                                                               | Final **APPROVE** only | `Task folder: workspace/<task>/`                                                                                   |
+| **direct-executor**                                                          | Lite / ad-hoc          | `USER REQUEST:\n<verbatim>\n\nCONSTRAINTS:\n…`                                                                     |
+| **finalizer** / **compiler** / **release-manager** / **wiki-manager** update | User request           | See `.cursor/agents/`                                                                                              |
 
 **EM must NOT spawn:** wiki gather, investigator, explore (TA nests).
 

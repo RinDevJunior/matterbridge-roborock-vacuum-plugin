@@ -9,12 +9,12 @@ if (args.length === 0) {
 	process.exit(0);
 }
 
-function isSafeDocsPath(path) {
+function isSafeWorkspacePath(path) {
 	const normalized = path.replace(/\\/g, '/');
 	if (normalized.includes('..')) {
 		return false;
 	}
-	return normalized === 'docs' || normalized.startsWith('docs/');
+	return normalized === 'workspace' || normalized.startsWith('workspace/');
 }
 
 const removed = [];
@@ -23,8 +23,8 @@ const skipped = [];
 for (const raw of args) {
 	const path = raw.replace(/\/$/, '');
 
-	if (!isSafeDocsPath(path)) {
-		skipped.push(`${path} (rejected: must be under docs/)`);
+	if (!isSafeWorkspacePath(path)) {
+		skipped.push(`${path} (rejected: must be under workspace/)`);
 		continue;
 	}
 

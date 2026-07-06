@@ -53,7 +53,7 @@ Best results when you state the target precisely: file name, function name, expe
 ### Full pipeline (medium / high)
 
 1. EM clarifies and confirms complexity with you.
-2. `technical-architect` writes `plan.md` in an ephemeral `docs/<task>/` folder.
+2. `technical-architect` writes `plan.md` in an ephemeral `workspace/<task>/` folder.
 3. `briefer` writes a plain-language business brief; the EM prints it in chat.
 4. **You approve or request changes.** Nothing is implemented before approval.
 5. implementer → reviewer → test-writer (medium/high) → documenter run in sequence.
@@ -121,16 +121,16 @@ git commit -m "<suggested message>"                        → you commit; agent
 
 ## 7. Where things live
 
-| Path                                               | What it is                                                        |
-| -------------------------------------------------- | ----------------------------------------------------------------- |
-| `.claude/CLAUDE.md`                                | Slim shared rules — loaded by every session and subagent          |
-| `.claude/instructions/team-orchestrator-policy.md` | Full EM playbook — main session only                              |
-| `.claude/instructions/agent-prompts.md`            | Spawn templates the EM uses                                       |
-| `.claude/agents/*.md`                              | Each specialist's definition (model, tools, workflow, gates)      |
-| `.claude/memory.md`                                | Durable project knowledge — committed, shared across sessions     |
-| `docs/<task>/`                                     | Ephemeral per-task artifacts (plan, brief) — deleted by finalizer |
-| `docs/claude_history.md`, `docs/to_do.md`          | Permanent history and task list — updated by documenter           |
-| `wiki/`                                            | Curated architecture docs — refreshed in batches by wiki-manager  |
+| Path                                                | What it is                                                        |
+| --------------------------------------------------- | ----------------------------------------------------------------- |
+| `.claude/CLAUDE.md`                                 | Slim shared rules — loaded by every session and subagent          |
+| `.claude/instructions/team-orchestrator-policy.md`  | Full EM playbook — main session only                              |
+| `.claude/instructions/agent-prompts.md`             | Spawn templates the EM uses                                       |
+| `.claude/agents/*.md`                               | Each specialist's definition (model, tools, workflow, gates)      |
+| `.claude/memory.md`                                 | Durable project knowledge — committed, shared across sessions     |
+| `workspace/<task>/`                                 | Ephemeral per-task artifacts (plan, brief) — deleted by finalizer |
+| `workspace/claude_history.md`, `workspace/to_do.md` | Permanent history and task list — updated by documenter           |
+| `wiki/`                                             | Curated architecture docs — refreshed in batches by wiki-manager  |
 
 ---
 
@@ -140,5 +140,5 @@ git commit -m "<suggested message>"                        → you commit; agent
 - **Brief isn't what you meant** → choose "Request Changes" and say what's wrong in one or two sentences; the architect replans from your feedback.
 - **Lint/format/test failures after a task** → don't fix by hand and don't let the EM edit source; say "resume the implementer (or test-writer) with the failure output".
 - **Agent seems to over-explore** → check `.codegraph/` exists; without the index every agent falls back to token-heavy Grep/Read sweeps.
-- **You hit the usage limit mid-task** → state is on disk (`docs/<task>/plan.md`, the diff). In the next session: "continue the task in docs/<task>/ — plan is approved, implementation was in progress."
+- **You hit the usage limit mid-task** → state is on disk (`workspace/<task>/plan.md`, the diff). In the next session: "continue the task in workspace/<task>/ — plan is approved, implementation was in progress."
 - **A subagent asks you something odd** → answer briefly or tell the EM to make the conservative choice; long answers to subagents are cheap (their context is disposable), long EM chats are not.

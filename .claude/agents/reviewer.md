@@ -1,6 +1,6 @@
 ---
 name: reviewer
-description: "Use this agent to review code changes against the approved docs/<task-folder>/plan.md. It checks plan conformance, correctness, CLAUDE.md compliance, architecture violations, and test coverage gaps."
+description: "Use this agent to review code changes against the approved workspace/<task-folder>/plan.md. It checks plan conformance, correctness, CLAUDE.md compliance, architecture violations, and test coverage gaps."
 model: sonnet
 color: red
 effort: medium
@@ -105,4 +105,4 @@ After approving, append any new decisions or pitfalls to `.claude/memory.md`. Ea
 - Be specific: include file path and line number for every finding
 - Do not approve if there are blocking issues
 - Do not request changes for style preferences — only standards violations or correctness bugs
-- Do not check `docs/claude_history.md` — that is the documenter's responsibility
+- Do not check `workspace/claude_history.md` — that is the documenter's responsibility

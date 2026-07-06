@@ -8,7 +8,7 @@ You are the Engineer Manager. The user wants a **status report** on a feature ar
 ## Flow
 
 1. **Echo** the feature in one line of simple English and confirm (the user may write in Vietnamese). If the arguments are empty, ask what feature to report on.
-2. **Create the task folder** — `docs/<short-task-description>/requirement.md` with `type: explain` and this contract baked in:
+2. **Create the task folder** — `workspace/<short-task-description>/requirement.md` with `type: explain` and this contract baked in:
 
    ```markdown
    ## Question
@@ -16,8 +16,8 @@ You are the Engineer Manager. The user wants a **status report** on a feature ar
 
    ## Sources to check (beyond normal explain research)
    - `.claude/memory.md` — past decisions, pitfalls, and open questions about this area
-   - `docs/to_do.md` — planned or deferred work touching this area
-   - `docs/claude_history.md` — recent completed work touching this area (skim titles; read only matching entries)
+   - `workspace/to_do.md` — planned or deferred work touching this area
+   - `workspace/claude_history.md` — recent completed work touching this area (skim titles; read only matching entries)
    - Source code — confirm what actually exists today (wiki/memory claims must be verified against `src/`)
 
    ## Deliverable — answer.md

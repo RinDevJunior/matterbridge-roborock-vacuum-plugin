@@ -55,8 +55,8 @@ Steps to register (only the ones your complexity tier runs):
 
 The **main session** provides:
 
-- Task folder: `docs/<short-task-description>/`
-- Requirement file: `docs/<short-task-description>/requirement.md`
+- Task folder: `workspace/<short-task-description>/`
+- Requirement file: `workspace/<short-task-description>/requirement.md`
 - Mode: `implement` | `explain` (from requirement `type` field)
 - Complexity: `low` | `medium` | `high` (implement mode only)
 - Optional: `manager-clarification.md` if replanning after user rejection
@@ -150,7 +150,7 @@ Task({
   description: "Wiki gather: <task summary>",
   subagent_type: "wiki-manager",
   prompt:
-    "Task folder: docs/<short-task-description>/\nRequirement file: docs/<short-task-description>/requirement.md",
+    "Task folder: workspace/<short-task-description>/\nRequirement file: workspace/<short-task-description>/requirement.md",
 });
 ```
 
@@ -161,7 +161,7 @@ Task({
   description: "Investigate: <topic>",
   subagent_type: "investigator",
   prompt:
-    "Task folder: docs/<short-task-description>/\nWiki brief (if present): docs/<short-task-description>/wiki-brief.md\nQuestion files: docs/<short-task-description>/questions-<topic>.md",
+    "Task folder: workspace/<short-task-description>/\nWiki brief (if present): workspace/<short-task-description>/wiki-brief.md\nQuestion files: workspace/<short-task-description>/questions-<topic>.md",
 });
 ```
 
@@ -169,7 +169,7 @@ Task({
 
 **Medium complexity:** do **not** spawn wiki-manager. Read curated sources directly — `.claude/memory.md`, `wiki/Code-Structure.md`, and any `wiki/` page named in the requirement. Two or three direct reads are cheaper than an agent spawn.
 
-**High complexity only:** spawn `wiki-manager` (gather mode) using the **wiki-manager** `Task` template below. It writes `docs/<short-task-description>/wiki-brief.md` — read it when it returns.
+**High complexity only:** spawn `wiki-manager` (gather mode) using the **wiki-manager** `Task` template below. It writes `workspace/<short-task-description>/wiki-brief.md` — read it when it returns.
 
 ### Step 3 — Plan by Complexity
 
@@ -236,7 +236,7 @@ Handle the higher tier within this session (spawn investigator if you had not al
 Write `plan.md`:
 
 ```text
-docs/<short-task-description>/plan.md
+workspace/<short-task-description>/plan.md
 ```
 
 ```markdown
@@ -280,7 +280,7 @@ ready
 Write only if this task cycle includes `test-writer` (medium/high complexity, or low complexity with tests explicitly requested):
 
 ```text
-docs/<short-task-description>/test-plan.md
+workspace/<short-task-description>/test-plan.md
 ```
 
 ```markdown

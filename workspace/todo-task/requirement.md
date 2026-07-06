@@ -12,9 +12,9 @@ Write a **persistent proposal plan** for a future technical-architect (or implem
 
 Save the primary document to:
 
-`docs/todo-task/b01-currentpose-phase2-proposal.md`
+`workspace/todo-task/b01-currentpose-phase2-proposal.md`
 
-This folder is **not** ephemeral — it must survive `clean-paths.mjs` cleanup of `docs/<task>/` orchestration folders.
+This folder is **not** ephemeral — it must survive `clean-paths.mjs` cleanup of `workspace/<task>/` orchestration folders.
 
 ## Audience
 
@@ -41,8 +41,8 @@ A future TA who has **no** context from `docs/b01-currentpose-room-detection/` (
 - `docs/b01-currentpose-room-detection/plan.md` — authoritative Phase 2 design (Phase 1 completed; Phase 2 not implemented)
 - `docs/b01-currentpose-room-detection/business-brief.md`
 - `docs/b01-currentpose-room-detection/requirement.md`
-- `docs/to_do.md` — deferred Phase 2 item
-- `docs/claude_history.md` — 2026-07-03 Phase 1 entry
+- `workspace/to_do.md` — deferred Phase 2 item
+- `workspace/claude_history.md` — 2026-07-03 Phase 1 entry
 - `wiki/B01-Map-Parsing.md` and related wiki updates from documenter
 - Actual landed code under `src/roborockCommunication/map/b01/`, `src/cli/commands/b01PoseInfo.ts`
 
