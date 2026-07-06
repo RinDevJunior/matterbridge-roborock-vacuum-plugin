@@ -212,6 +212,7 @@ export function createMockRoborockService(overrides: Partial<RoborockService> = 
 		getRoomMap: vi.fn().mockResolvedValue(undefined),
 		setDeviceRooms: vi.fn(),
 		resolveInitialAreas: vi.fn().mockResolvedValue({ supportedAreas: [], supportedMaps: [] }),
+		ensureAreasForMap: vi.fn().mockResolvedValue(false),
 		getSerialNumber: vi.fn().mockResolvedValue('mock-serial'),
 		requestDeviceStatusOnce: vi.fn().mockResolvedValue(undefined),
 		registerAreasListener: vi.fn(),

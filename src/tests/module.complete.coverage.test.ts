@@ -198,6 +198,7 @@ describe('module.ts - complete coverage', () => {
 				registerAreasListener: vi.fn(),
 				startPeriodicAreaRefresh: vi.fn(),
 				setDeviceRooms: vi.fn(),
+				resolveInitialAreas: vi.fn().mockResolvedValue({ supportedAreas: [], supportedMaps: [] }),
 			});
 			platform.roborockService = mockRoborockService;
 
@@ -295,6 +296,7 @@ describe('module.ts - complete coverage', () => {
 				registerAreasListener: vi.fn(),
 				startPeriodicAreaRefresh: vi.fn(),
 				setDeviceRooms: vi.fn(),
+				resolveInitialAreas: vi.fn().mockResolvedValue({ supportedAreas: [], supportedMaps: [] }),
 			});
 			platform.roborockService = mockRoborockService;
 
@@ -366,6 +368,7 @@ describe('module.ts - complete coverage', () => {
 				registerAreasListener: vi.fn(),
 				startPeriodicAreaRefresh: vi.fn(),
 				setDeviceRooms: vi.fn(),
+				resolveInitialAreas: vi.fn().mockResolvedValue({ supportedAreas: [], supportedMaps: [] }),
 			});
 			platform.roborockService = mockRoborockService;
 
@@ -430,6 +433,7 @@ describe('module.ts - complete coverage', () => {
 				registerAreasListener: vi.fn(),
 				startPeriodicAreaRefresh: vi.fn(),
 				setDeviceRooms: vi.fn(),
+				resolveInitialAreas: vi.fn().mockResolvedValue({ supportedAreas: [], supportedMaps: [] }),
 			});
 			platform.roborockService = mockRoborockService;
 
@@ -498,6 +502,7 @@ describe('module.ts - complete coverage', () => {
 				registerAreasListener: vi.fn(),
 				startPeriodicAreaRefresh: vi.fn(),
 				setDeviceRooms: vi.fn(),
+				resolveInitialAreas: vi.fn().mockResolvedValue({ supportedAreas: [], supportedMaps: [] }),
 			});
 			platform.roborockService = asPartial<RoborockService>(mockRoborockService);
 
@@ -556,6 +561,7 @@ describe('module.ts - complete coverage', () => {
 				registerAreasListener: vi.fn(),
 				startPeriodicAreaRefresh: vi.fn(),
 				setDeviceRooms: vi.fn(),
+				resolveInitialAreas: vi.fn().mockResolvedValue({ supportedAreas: [], supportedMaps: [] }),
 			};
 			platform.roborockService = asPartial<RoborockService>(mockRoborockService);
 

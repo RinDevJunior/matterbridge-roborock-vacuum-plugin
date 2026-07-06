@@ -244,6 +244,7 @@ describe('module.ts coverage tests', () => {
 				registerAreasListener: vi.fn(),
 				startPeriodicAreaRefresh: vi.fn(),
 				setDeviceRooms: vi.fn(),
+				resolveInitialAreas: vi.fn().mockResolvedValue({ supportedAreas: [], supportedMaps: [] }),
 			});
 			platform.registry.registerDevice(mockDevice as Device);
 
