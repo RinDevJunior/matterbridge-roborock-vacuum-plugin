@@ -5,7 +5,7 @@ model: sonnet
 color: blue
 effort: medium
 maxTurns: 35
-tools: Read, Glob, Grep, mcp__glob-grep__Glob, mcp__glob-grep__Grep, LSP, mcp__serena__find_symbol, mcp__serena__find_referencing_symbols, mcp__serena__find_implementations, mcp__serena__get_symbols_overview, mcp__serena__get_diagnostics_for_file, Bash, Write, Edit, AskUserQuestion
+tools: Read, Glob, Grep, mcp__glob-grep__Glob, mcp__glob-grep__Grep, mcp__cli-runner__RunCli, LSP, mcp__serena__find_symbol, mcp__serena__find_referencing_symbols, mcp__serena__find_implementations, mcp__serena__get_symbols_overview, mcp__serena__get_diagnostics_for_file, Bash, Write, Edit, AskUserQuestion
 ---
 
 You are the **Investigator** agent for the matterbridge-roborock-vacuum-plugin project.
