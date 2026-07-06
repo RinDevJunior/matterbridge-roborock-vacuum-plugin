@@ -237,20 +237,36 @@ export async function handleActiveMapChanged(
 	platform: RoborockMatterbridgePlatform,
 ): Promise<void> {
 	const logger = platform.log;
-	const supportedAreas = platform.roborockService?.getSupportedAreas(robot.device.duid) ?? [];
-	const areasOnMap = supportedAreas.filter((area) => area.mapId === mapId);
+	let supportedAreas = platform.roborockService?.getSupportedAreas(robot.device.duid) ?? [];
+	let areasOnMap = supportedAreas.filter((area) => area.mapId === mapId);
 
+	if (areasOnMap.length === 0) {
+		const loaded = await platform.roborockService?.ensureAreasForMap(robot.device.duid, mapId);
+		if (loaded) {
+			supportedAreas = platform.roborockService?.getSupportedAreas(robot.device.duid) ?? [];
+			areasOnMap = supportedAreas.filter((area) => area.mapId === mapId);
+		}
+	}
 	if (areasOnMap.length === 0) {
 		logger.debug(`[${robot.device.duid}] ActiveMapChanged: no areas found for mapId ${mapId}`);
 		return;
 	}
 
 	const allAreaIds = areasOnMap.map((area) => area.areaId);
+	const matterAreas: ServiceArea.Area[] = robot.getAttribute(ServiceArea.id, 'supportedAreas', logger) ?? [];
+	const validAreaIds = allAreaIds.filter((id) => matterAreas.some((a) => a.areaId === id));
+
+	if (validAreaIds.length === 0) {
+		logger.debug(
+			`[${robot.device.duid}] ActiveMapChanged: no Matter-supported areas match mapId ${mapId} — skipping selectedAreas update`,
+		);
+		return;
+	}
 
 	logger.debug(
-		`[${robot.device.duid}] ActiveMapChanged: setting selectedAreas to [${allAreaIds.join(', ')}] and currentArea to null (mapId ${mapId})`,
+		`[${robot.device.duid}] ActiveMapChanged: setting selectedAreas to [${validAreaIds.join(', ')}] and currentArea to null (mapId ${mapId})`,
 	);
-	await robot.updateAttribute(ServiceArea.id, 'selectedAreas', allAreaIds, logger);
+	await robot.updateAttribute(ServiceArea.id, 'selectedAreas', validAreaIds, logger);
 	await robot.updateAttribute(ServiceArea.id, 'currentArea', null, logger);
 	await robot.updateAttribute(ServiceArea.id, 'estimatedEndTime', null, logger);
 

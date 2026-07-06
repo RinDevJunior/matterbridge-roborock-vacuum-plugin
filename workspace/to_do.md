@@ -25,6 +25,7 @@
 - [x] RVC extended operational states (idea 5) — `FillingWaterTank` in `stateResolver`; legacy maps in `function.ts`
 - [x] Remove extra_time → estimatedEndTime wiring — deleted `computeEstimatedEndTime`, `extraTimeSeconds` message field, and v1 listener forwarding; kept idle/map-change `estimatedEndTime: null` clears
 - [x] Wire estimatedEndTime from clean_time + clean_percent — V1-only opt-in ETA (`enableEstimatedEndTime`, default off); pure helper, v1 listener `clean_percent` forward, `updateCurrentAreaAndEstimate`; B01/Q7/Q10 remain `null`
+- [x] Fix startup room names getRoomMap overwrite — `enrichMapRoomDtoFromMapInfo` preserves `map_info` names when `get_room_mapping` raw tuples lack `iot_name`; `HomeEntity` uses `storedMapInfo`
 
 ## Pending
 
@@ -40,6 +41,8 @@
 - [ ] **B01 currentPose Phase 2 (deferred)** — implement `roomMatrix` pixel-to-room decode once real Q10 data confirms wire layout (via `b01-pose-info`); wire into `areaManagementService`, `roborockService`, `mapInfoListener`, `serviceAreaHandler` for live multi-room `currentArea`
 - [ ] **Legacy map → plugin** — wire `LegacyMapParser.resolveCurrentRoom` into runtime for V1 devices lacking `vacuumRoom` in status (replace or supplement `getRoomIdFromMap`); reuse `decryptAndUnzipV1Map` for Protocol 301 push; resolve segment names from `device.mapInfos` (not nonexistent `device.rooms`)
 - [ ] **Legacy map hex fixture** — optional: capture A187 `"rr"` binary from live run for regression fixture
+- [ ] **Startup room name real-device validation** — confirm all rooms show real names (not "Room 1"–"Room 4") on V10 after plugin/Matterbridge restart
+- [ ] **MapInfoListener room name enrichment (deferred)** — apply same `enrichMapRoomDtoFromMapInfo` on push/listener path if generic placeholders appear after live map updates
 
 ### Open Feature Gaps
 

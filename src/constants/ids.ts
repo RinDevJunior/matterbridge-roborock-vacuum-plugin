@@ -50,3 +50,6 @@ export const RANDOM_ROOM_MAX = 9999;
  * Area ID for "whole house" cleaning (no specific room selected).
  */
 export const AREA_ID_WHOLE_HOUSE = 0;
+
+/** Matter pseudo-map for routines/scenes — not a physical device map. */
+export const ROUTINE_MAP_ID = 999;

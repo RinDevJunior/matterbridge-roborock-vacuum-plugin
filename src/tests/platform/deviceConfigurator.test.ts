@@ -763,5 +763,213 @@ describe('DeviceConfigurator', () => {
 
 			expect(platform.registerDevice).toHaveBeenCalled();
 		});
+
+		it('should call resolveInitialAreas before constructing RoborockVacuumCleaner', async () => {
+			const device = makeMockDevice('duid-1');
+			const mockAreas = [
+				{ areaId: 1, mapId: 1, name: 'Living Room' },
+				{ areaId: 2, mapId: 1, name: 'Kitchen' },
+			];
+			const mockMaps = [{ mapId: 1, name: 'Map 1' }];
+
+			registry = createMockDeviceRegistry({
+				hasDevices: vi.fn().mockReturnValue(true),
+				getAllDevices: vi.fn().mockReturnValue([device]),
+				robotsMap: new Map(),
+			});
+
+			roborockService = createMockRoborockService({
+				resolveInitialAreas: vi.fn().mockResolvedValue({ supportedAreas: mockAreas, supportedMaps: mockMaps }),
+				initializeMessageClientForLocal: vi.fn().mockResolvedValue(true),
+				registerAreasListener: vi.fn(),
+				startPeriodicAreaRefresh: vi.fn(),
+				setDeviceNotify: vi.fn(),
+			});
+
+			configurator = new DeviceConfigurator(
+				platform,
+				configManager,
+				registry,
+				() => platformRunner,
+				snackbarMessage,
+				log,
+			);
+
+			await configurator.onConfigureDevice(roborockService);
+
+			expect(roborockService.resolveInitialAreas).toHaveBeenCalledWith(device.duid);
+		});
+
+		it('should pass resolved areas to RoborockVacuumCleaner constructor', async () => {
+			const device = makeMockDevice('duid-1');
+			const mockAreas = [{ areaId: 1, mapId: 1, name: 'Living Room' }];
+			const mockMaps = [{ mapId: 1, name: 'Map 1' }];
+
+			registry = createMockDeviceRegistry({
+				hasDevices: vi.fn().mockReturnValue(true),
+				getAllDevices: vi.fn().mockReturnValue([device]),
+				robotsMap: new Map(),
+			});
+
+			roborockService = createMockRoborockService({
+				resolveInitialAreas: vi.fn().mockResolvedValue({ supportedAreas: mockAreas, supportedMaps: mockMaps }),
+				initializeMessageClientForLocal: vi.fn().mockResolvedValue(true),
+				registerAreasListener: vi.fn(),
+				startPeriodicAreaRefresh: vi.fn(),
+				setDeviceNotify: vi.fn(),
+			});
+
+			configurator = new DeviceConfigurator(
+				platform,
+				configManager,
+				registry,
+				() => platformRunner,
+				snackbarMessage,
+				log,
+			);
+
+			await configurator.onConfigureDevice(roborockService);
+
+			// Verify that RoborockVacuumCleaner constructor was called
+			// This is verified through the mock registration, so we check registerDevice was called
+			expect(platform.registerDevice).toHaveBeenCalled();
+		});
+
+		it('should handle resolveInitialAreas rejection without blocking device registration', async () => {
+			const device = makeMockDevice('duid-1');
+
+			registry = createMockDeviceRegistry({
+				hasDevices: vi.fn().mockReturnValue(true),
+				getAllDevices: vi.fn().mockReturnValue([device]),
+				robotsMap: new Map(),
+			});
+
+			roborockService = createMockRoborockService({
+				resolveInitialAreas: vi.fn().mockRejectedValue(new Error('Network failure')),
+				initializeMessageClientForLocal: vi.fn().mockResolvedValue(true),
+				registerAreasListener: vi.fn(),
+				startPeriodicAreaRefresh: vi.fn(),
+				setDeviceNotify: vi.fn(),
+			});
+
+			configurator = new DeviceConfigurator(
+				platform,
+				configManager,
+				registry,
+				() => platformRunner,
+				snackbarMessage,
+				log,
+			);
+
+			await configurator.onConfigureDevice(roborockService);
+
+			// Device registration should still proceed despite resolveInitialAreas failure
+			expect(platform.registerDevice).toHaveBeenCalled();
+			expect(log.error).toHaveBeenCalledWith(expect.stringContaining('Failed to resolve initial areas'));
+		});
+
+		it('should register areas listener after device configuration', async () => {
+			const device = makeMockDevice('duid-1');
+
+			registry = createMockDeviceRegistry({
+				hasDevices: vi.fn().mockReturnValue(true),
+				getAllDevices: vi.fn().mockReturnValue([device]),
+				robotsMap: new Map(),
+			});
+
+			roborockService = createMockRoborockService({
+				resolveInitialAreas: vi.fn().mockResolvedValue({ supportedAreas: [], supportedMaps: [] }),
+				initializeMessageClientForLocal: vi.fn().mockResolvedValue(true),
+				registerAreasListener: vi.fn(),
+				startPeriodicAreaRefresh: vi.fn(),
+				setDeviceNotify: vi.fn(),
+			});
+
+			configurator = new DeviceConfigurator(
+				platform,
+				configManager,
+				registry,
+				() => platformRunner,
+				snackbarMessage,
+				log,
+			);
+
+			await configurator.onConfigureDevice(roborockService);
+
+			// Verify registerAreasListener is called for the device
+			expect(roborockService.registerAreasListener).toHaveBeenCalledWith(device.duid, expect.any(Function));
+		});
+
+		it('should call startPeriodicAreaRefresh for successfully configured devices', async () => {
+			const device = makeMockDevice('duid-1');
+			const mockRobot = asPartial<RoborockVacuumCleaner>({ device });
+			const robotsMap = new Map<string, RoborockVacuumCleaner>([['duid-1', mockRobot]]);
+
+			registry = createMockDeviceRegistry({
+				hasDevices: vi.fn().mockReturnValue(true),
+				getAllDevices: vi.fn().mockReturnValue([device]),
+				robotsMap,
+			});
+
+			roborockService = createMockRoborockService({
+				resolveInitialAreas: vi.fn().mockResolvedValue({ supportedAreas: [], supportedMaps: [] }),
+				initializeMessageClientForLocal: vi.fn().mockResolvedValue(true),
+				registerAreasListener: vi.fn(),
+				startPeriodicAreaRefresh: vi.fn(),
+				setDeviceNotify: vi.fn(),
+				activateDeviceNotify: vi.fn(),
+			});
+
+			configurator = new DeviceConfigurator(
+				platform,
+				configManager,
+				registry,
+				() => platformRunner,
+				snackbarMessage,
+				log,
+			);
+
+			await configurator.onConfigureDevice(roborockService);
+
+			// Verify periodic refresh is started for the device
+			expect(roborockService.startPeriodicAreaRefresh).toHaveBeenCalledWith(device.duid);
+		});
+
+		it('should handle multiple devices independently when resolveInitialAreas fails for one', async () => {
+			const device1 = makeMockDevice('duid-1');
+			const device2 = makeMockDevice('duid-2');
+
+			registry = createMockDeviceRegistry({
+				hasDevices: vi.fn().mockReturnValue(true),
+				getAllDevices: vi.fn().mockReturnValue([device1, device2]),
+				robotsMap: new Map(),
+			});
+
+			roborockService = createMockRoborockService({
+				resolveInitialAreas: vi
+					.fn()
+					.mockRejectedValueOnce(new Error('Device 1 failed'))
+					.mockResolvedValueOnce({ supportedAreas: [], supportedMaps: [] }),
+				initializeMessageClientForLocal: vi.fn().mockResolvedValue(true),
+				registerAreasListener: vi.fn(),
+				startPeriodicAreaRefresh: vi.fn(),
+				setDeviceNotify: vi.fn(),
+			});
+
+			configurator = new DeviceConfigurator(
+				platform,
+				configManager,
+				registry,
+				() => platformRunner,
+				snackbarMessage,
+				log,
+			);
+
+			await configurator.onConfigureDevice(roborockService);
+
+			// Both devices should attempt registration even if one resolveInitialAreas fails
+			expect(roborockService.resolveInitialAreas).toHaveBeenCalledTimes(2);
+			expect(platform.registerDevice).toHaveBeenCalled();
+		});
 	});
 });

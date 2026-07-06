@@ -258,6 +258,18 @@ export class RoborockService {
 		return this.areaService.getRoomMap(duid, activeMap);
 	}
 
+	/** Resolve initial areas (rooms and maps) before device registration. */
+	public async resolveInitialAreas(
+		duid: string,
+	): Promise<{ supportedAreas: ServiceArea.Area[]; supportedMaps: ServiceArea.Map[] }> {
+		return this.areaService.resolveInitialAreas(duid);
+	}
+
+	/** Lazy-fetch room areas for a map when missing from cache. */
+	public async ensureAreasForMap(duid: string, mapId: number, options?: { switchFirst?: boolean }): Promise<boolean> {
+		return this.areaService.ensureAreasForMap(duid, mapId, options);
+	}
+
 	/** Switch to a different map on the device. */
 	public async switchMap(duid: string, mapId: number): Promise<void> {
 		await this.messageRoutingService.switchMap(duid, mapId);

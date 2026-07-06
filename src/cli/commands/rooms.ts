@@ -13,8 +13,7 @@ export async function cmdRooms(duid: string, session: CliSession, logger: AnsiLo
 	try {
 		const resultPromise = waitForPush(clientRouter, duid, (msg) => {
 			const dps = (msg.get(Protocol.rpc_response) ?? msg.get(Protocol.general_response)) as
-				| { result?: unknown }
-				| undefined;
+				{ result?: unknown } | undefined;
 			if (!dps?.result) return undefined;
 			const raw = dps.result;
 			if (

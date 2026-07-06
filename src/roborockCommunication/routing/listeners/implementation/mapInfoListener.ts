@@ -23,6 +23,7 @@ export class MapInfoListener implements AbstractMessageListener {
 
 	private readonly b01MapParser = new B01MapParser();
 	private pendingB01MapInfo: MapInfo | undefined;
+	private pendingV1MapInfo: MapInfo | undefined;
 
 	constructor(
 		public readonly duid: string,
@@ -34,6 +35,7 @@ export class MapInfoListener implements AbstractMessageListener {
 		private readonly onActiveMapChanged?: (mapId: number) => void,
 		private readonly deviceProtocol?: string,
 		private readonly allowV1AreaUpdate = true,
+		private readonly enableMultipleMap = true,
 	) {}
 
 	public async onMessage(message: ResponseMessage): Promise<void> {
@@ -56,6 +58,7 @@ export class MapInfoListener implements AbstractMessageListener {
 		if (!isMultipleMapDto(raw)) return;
 
 		const mapInfo = new MapInfo(raw);
+		this.pendingV1MapInfo = mapInfo;
 		this.logger.debug(`[${this.duid}] MapInfoListener: V1 map info push received (${mapInfo.maps.length} maps)`);
 
 		if (mapInfo.hasRooms) {
@@ -72,10 +75,13 @@ export class MapInfoListener implements AbstractMessageListener {
 		if (!dps?.result || !isRawRoomMappingData(dps.result)) return;
 
 		this.logger.debug(`[${this.duid}] MapInfoListener: V1 room map push received (${dps.result.length} rooms)`);
+		const storedMapInfo = this.pendingV1MapInfo ?? MapInfo.empty();
+		const resolvedMapId = storedMapInfo.getActiveMapId(dps.result) || storedMapInfo.maps[0]?.id || 0;
 		const roomMappings = dps.result
-			.map((entry: RawRoomMappingData[number]) => HomeModelMapper.rawArrayToMapRoomDto(entry, 0))
+			.map((entry: RawRoomMappingData[number]) => HomeModelMapper.rawArrayToMapRoomDto(entry, resolvedMapId))
+			.map((dto) => HomeModelMapper.enrichMapRoomDtoFromMapInfo(dto, storedMapInfo))
 			.map((dto) => HomeModelMapper.toRoomMapping(dto, this.rooms));
-		this.updateAreas(new RoomMap(roomMappings), MapInfo.empty());
+		this.updateAreas(new RoomMap(roomMappings), storedMapInfo, resolvedMapId);
 	}
 
 	private tryParseB01MapInfo(message: ResponseMessage): void {
@@ -185,7 +191,7 @@ export class MapInfoListener implements AbstractMessageListener {
 
 			const mapInfo = this.pendingB01MapInfo ?? MapInfo.empty();
 			this.logger.debug(`[${this.duid}] MapInfoListener: B01 map binary parsed — ${b01Info.rooms.length} rooms`);
-			this.updateAreas(new RoomMap(roomMappings), mapInfo);
+			this.updateAreas(new RoomMap(roomMappings), mapInfo, b01Info.mapId ?? 0);
 
 			if (b01Info.mapId !== undefined) {
 				this.onActiveMapChanged?.(b01Info.mapId);
@@ -195,12 +201,20 @@ export class MapInfoListener implements AbstractMessageListener {
 		}
 	}
 
-	private updateAreas(roomMap: RoomMap, mapInfo: MapInfo): void {
+	private updateAreas(roomMap: RoomMap, mapInfo: MapInfo, mergeMapId?: number): void {
 		const homeEntity = new HomeEntity(0, '', roomMap, mapInfo, 0);
-		const { supportedAreas, supportedMaps, roomIndexMap } = getSupportedAreas(homeEntity, this.logger);
-		this.areaService.setSupportedAreaIndexMap(this.duid, roomIndexMap);
+		const { supportedAreas, supportedMaps, roomIndexMap } = getSupportedAreas(
+			homeEntity,
+			this.logger,
+			this.enableMultipleMap,
+		);
 		this.areaService.setSupportedMaps(this.duid, supportedMaps);
-		this.areaService.setSupportedAreas(this.duid, supportedAreas);
+		if (this.enableMultipleMap && mergeMapId !== undefined) {
+			this.areaService.mergeSupportedAreasForMap(this.duid, mergeMapId, supportedAreas, roomIndexMap);
+		} else {
+			this.areaService.setSupportedAreaIndexMap(this.duid, roomIndexMap);
+			this.areaService.setSupportedAreas(this.duid, supportedAreas);
+		}
 		this.logger.debug(
 			`[${this.duid}] MapInfoListener: areas updated (${roomMap.rooms.length} rooms, ${supportedMaps.length} maps)`,
 		);

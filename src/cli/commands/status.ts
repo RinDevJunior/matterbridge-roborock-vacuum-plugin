@@ -10,8 +10,7 @@ export async function cmdStatus(duid: string, session: CliSession, logger: AnsiL
 	try {
 		const resultPromise = waitForPush(clientRouter, duid, (msg) => {
 			const dps = (msg.get(Protocol.rpc_response) ?? msg.get(Protocol.general_response)) as
-				| { result?: unknown }
-				| undefined;
+				{ result?: unknown } | undefined;
 			if (!dps?.result) return undefined;
 			const raw = Array.isArray(dps.result) ? dps.result[0] : dps.result;
 			if (raw && typeof raw === 'object' && 'state' in raw) return raw;

@@ -26,8 +26,7 @@ function modeNumberToTag(mode: number | null): RvcRunMode.ModeTag {
 export function captureSessionSnapshot(robot: RoborockVacuumCleaner, log?: AnsiLogger): OperationSessionSnapshot {
 	const currentMode = robot.getAttribute(RvcRunMode.id, 'currentMode', log) as number | null;
 	const operationalError = robot.getAttribute(RvcOperationalState.id, 'operationalError', log) as
-		| { errorStateId?: RvcOperationalState.ErrorState }
-		| undefined;
+		{ errorStateId?: RvcOperationalState.ErrorState } | undefined;
 
 	return {
 		runMode: modeNumberToTag(currentMode),

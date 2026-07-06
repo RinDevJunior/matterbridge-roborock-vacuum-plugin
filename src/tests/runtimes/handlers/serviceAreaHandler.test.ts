@@ -52,12 +52,21 @@ function createRoomIndexMapForSegment(segmentId: number, areaId: number, mapId =
 	return new RoomIndexMap(roomMapData, roomInfo);
 }
 
-function createMockRobot(duid: string, activeMapId = 0): RoborockVacuumCleaner {
+function createMockRobot(
+	duid: string,
+	activeMapId = 0,
+	matterSupportedAreas?: ServiceArea.Area[],
+): RoborockVacuumCleaner {
 	return asPartial<RoborockVacuumCleaner>({
 		device: asPartial<Device>({ duid }),
 		homeInFo: asPartial<HomeEntity>({ activeMapId }),
 		updateAttribute: vi.fn().mockResolvedValue(undefined),
-		getAttribute: vi.fn().mockReturnValue(undefined),
+		getAttribute: vi.fn().mockImplementation((_clusterId, attrName) => {
+			if (attrName === 'supportedAreas') {
+				return matterSupportedAreas;
+			}
+			return undefined;
+		}),
 	});
 }
 
@@ -81,6 +90,10 @@ describe('handleActiveMapChanged', () => {
 			{ areaId: 2, mapId: 100 } as ServiceArea.Area,
 			{ areaId: 3, mapId: 999 } as ServiceArea.Area, // different map
 		];
+		robot = createMockRobot('test-duid', 100, [
+			{ areaId: 1, mapId: 100 } as ServiceArea.Area,
+			{ areaId: 2, mapId: 100 } as ServiceArea.Area,
+		]);
 		const platform = createMockPlatform(areas);
 		await handleActiveMapChanged(robot, 100, platform);
 
@@ -89,6 +102,7 @@ describe('handleActiveMapChanged', () => {
 
 	it('sets currentArea to null', async () => {
 		const areas: ServiceArea.Area[] = [{ areaId: 5, mapId: 100 } as ServiceArea.Area];
+		robot = createMockRobot('test-duid', 100, [{ areaId: 5, mapId: 100 } as ServiceArea.Area]);
 		const platform = createMockPlatform(areas);
 		await handleActiveMapChanged(robot, 100, platform);
 
@@ -97,6 +111,7 @@ describe('handleActiveMapChanged', () => {
 
 	it('should clear estimatedEndTime to null on map change', async () => {
 		const areas: ServiceArea.Area[] = [{ areaId: 5, mapId: 100 } as ServiceArea.Area];
+		robot = createMockRobot('test-duid', 100, [{ areaId: 5, mapId: 100 } as ServiceArea.Area]);
 		const platform = createMockPlatform(areas);
 		await handleActiveMapChanged(robot, 100, platform);
 
@@ -108,11 +123,53 @@ describe('handleActiveMapChanged', () => {
 			{ areaId: 1, mapId: 100 } as ServiceArea.Area,
 			{ areaId: 2, mapId: 100 } as ServiceArea.Area,
 		];
+		robot = createMockRobot('test-duid', 100, [
+			{ areaId: 1, mapId: 100 } as ServiceArea.Area,
+			{ areaId: 2, mapId: 100 } as ServiceArea.Area,
+		]);
 		const platform = createMockPlatform(areas);
 		await handleActiveMapChanged(robot, 100, platform);
 
 		expect(platform.roborockService?.setProgress).toHaveBeenCalledWith(robot.device.duid, []);
 		expect(robot.updateAttribute).toHaveBeenCalledWith(ServiceArea.id, 'progress', [], expect.anything());
+	});
+
+	it('should skip selectedAreas when Matter supportedAreas is routines-only', async () => {
+		const areas: ServiceArea.Area[] = [
+			{ areaId: 0, mapId: 0 } as ServiceArea.Area,
+			{ areaId: 1, mapId: 0 } as ServiceArea.Area,
+			{ areaId: 2, mapId: 0 } as ServiceArea.Area,
+			{ areaId: 3, mapId: 0 } as ServiceArea.Area,
+		];
+		robot = createMockRobot('test-duid', 0, [{ areaId: 100, mapId: 999 } as ServiceArea.Area]);
+		const platform = createMockPlatform(areas);
+		await handleActiveMapChanged(robot, 0, platform);
+
+		expect(robot.updateAttribute).not.toHaveBeenCalledWith(
+			ServiceArea.id,
+			'selectedAreas',
+			expect.anything(),
+			expect.anything(),
+		);
+	});
+
+	it('should set selectedAreas when Matter supportedAreas contains matching IDs', async () => {
+		const areas: ServiceArea.Area[] = [
+			{ areaId: 0, mapId: 0 } as ServiceArea.Area,
+			{ areaId: 1, mapId: 0 } as ServiceArea.Area,
+			{ areaId: 2, mapId: 0 } as ServiceArea.Area,
+			{ areaId: 3, mapId: 0 } as ServiceArea.Area,
+		];
+		robot = createMockRobot('test-duid', 0, areas);
+		const platform = createMockPlatform(areas);
+		await handleActiveMapChanged(robot, 0, platform);
+
+		expect(robot.updateAttribute).toHaveBeenCalledWith(
+			ServiceArea.id,
+			'selectedAreas',
+			[0, 1, 2, 3],
+			expect.anything(),
+		);
 	});
 
 	it('handles empty roborockService (no supportedAreas)', async () => {

@@ -59,6 +59,12 @@ describe('MapInfoListener', () => {
 	});
 
 	describe('tryParseV1RoomMap', () => {
+		function getAreasPassedToService(): ServiceArea.Area[] {
+			const calls = vi.mocked(areaService.setSupportedAreas).mock.calls;
+			const lastCall = calls[calls.length - 1];
+			return lastCall ? (lastCall[1] as ServiceArea.Area[]) : [];
+		}
+
 		it('should update areas when rpc_response contains RawRoomMappingData', async () => {
 			const rawData = [
 				[1, '11100845', 14],
@@ -94,6 +100,80 @@ describe('MapInfoListener', () => {
 			await listener.onMessage(msg);
 
 			expect(areaService.setSupportedAreas).toHaveBeenCalled();
+		});
+
+		it('should preserve map_info room names when map info is received before room map', async () => {
+			const partialRooms = [{ id: 12231095, name: 'Hallway from cloud' }];
+			listener = new MapInfoListener(DUID, partialRooms as never, areaService, createMockLogger());
+
+			const multipleMapDto = {
+				max_multi_map: 1,
+				max_bak_map: 0,
+				multi_map_count: 1,
+				map_info: [
+					{
+						mapFlag: 0,
+						add_time: 0,
+						length: 5,
+						name: 'Home',
+						bak_maps: [],
+						rooms: [
+							{ id: 1, tag: 14, iot_name_id: '11100845', iot_name: 'Living' },
+							{ id: 2, tag: 9, iot_name_id: '11100849', iot_name: 'Bathroom' },
+							{ id: 3, tag: 6, iot_name_id: '11100842', iot_name: 'Kitchen' },
+							{ id: 4, tag: 1, iot_name_id: '11100847', iot_name: 'Bedroom' },
+							{ id: 5, tag: 10, iot_name_id: '12231095', iot_name: 'Hallway' },
+						],
+					},
+				],
+			};
+			const mapInfoMsg = makeV1Message(DUID, multipleMapDto);
+			const rawRoomMap = [
+				[1, '11100845', 14],
+				[2, '11100849', 9],
+				[3, '11100842', 6],
+				[4, '11100847', 1],
+				[5, '12231095', 10],
+			];
+			const roomMapMsg = makeV1Message(DUID, rawRoomMap);
+
+			await listener.onMessage(mapInfoMsg);
+			await listener.onMessage(roomMapMsg);
+
+			const areas = getAreasPassedToService();
+			const expectedNames = ['Living', 'Bathroom', 'Kitchen', 'Bedroom', 'Hallway from cloud'];
+			expect(areas).toHaveLength(5);
+			for (let i = 0; i < 5; i++) {
+				expect(areas[i]?.areaInfo?.locationInfo?.locationName).toBe(expectedNames[i]);
+			}
+		});
+
+		it('should use resolved mapId from cached V1 map info', async () => {
+			const multipleMapDto = {
+				max_multi_map: 1,
+				max_bak_map: 0,
+				multi_map_count: 1,
+				map_info: [
+					{
+						mapFlag: 1,
+						add_time: 0,
+						length: 1,
+						name: 'Floor 2',
+						bak_maps: [],
+						rooms: [{ id: 1, tag: 14, iot_name_id: '11100845', iot_name: 'Kitchen' }],
+					},
+				],
+			};
+			const mapInfoMsg = makeV1Message(DUID, multipleMapDto);
+			const rawRoomMap = [[1, '11100845', 14]];
+			const roomMapMsg = makeV1Message(DUID, rawRoomMap);
+
+			await listener.onMessage(mapInfoMsg);
+			await listener.onMessage(roomMapMsg);
+
+			const areas = getAreasPassedToService();
+			expect(areas).toHaveLength(1);
+			expect(areas[0]?.mapId).toBe(1);
 		});
 	});
 

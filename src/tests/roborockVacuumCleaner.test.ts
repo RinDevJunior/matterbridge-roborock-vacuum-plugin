@@ -7,7 +7,12 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { MapInfo } from '../core/application/models/MapInfo.js';
 import { RoomMap } from '../core/application/models/RoomMap.js';
 import { HomeEntity } from '../core/domain/entities/Home.js';
-import { PluginConfiguration, RoborockPluginPlatformConfig } from '../model/RoborockPluginPlatformConfig.js';
+import {
+	AdvancedFeatureConfiguration,
+	AdvancedFeatureSetting,
+	PluginConfiguration,
+	RoborockPluginPlatformConfig,
+} from '../model/RoborockPluginPlatformConfig.js';
 import { PlatformConfigManager } from '../platform/platformConfigManager.js';
 import { RoborockService } from '../services/roborockService.js';
 import { BehaviorFactoryResult } from '../share/behaviorFactory.js';
@@ -28,7 +33,6 @@ function createMockLogger(): AnsiLogger {
 describe('RoborockVacuumCleaner', () => {
 	let device: any;
 	let homeInfo: HomeEntity;
-	let routineAsRoom: any[];
 	let logger: AnsiLogger;
 	let vacuum: RoborockVacuumCleaner;
 	let configManager: PlatformConfigManager;
@@ -46,7 +50,6 @@ describe('RoborockVacuumCleaner', () => {
 		const roomMap = new RoomMap([]);
 		const mapInfo = MapInfo.empty();
 		homeInfo = new HomeEntity(1, 'Test Home', roomMap, mapInfo, 0);
-		routineAsRoom = [];
 		configManager = PlatformConfigManager.create(
 			asPartial<RoborockPluginPlatformConfig>({
 				pluginConfiguration: asPartial<PluginConfiguration>({
@@ -328,6 +331,239 @@ describe('RoborockVacuumCleaner', () => {
 			// Verify the cluster server exists
 			const serviceAreaServer = vacuum.stateOf(MatterbridgeServiceAreaServer) as any;
 			expect(serviceAreaServer).toBeDefined();
+		});
+	});
+
+	describe('initializeDeviceConfiguration with resolved areas and maps', () => {
+		it('should use resolved areas instead of empty array when passed', () => {
+			const mockDevice = {
+				duid: 'test-duid',
+				specs: { model: 'roborock.s5', firmwareVersion: '1.0.0' },
+				serialNumber: 'test-serial',
+				name: 'TestVac',
+				scenes: [],
+			};
+			const mockHomeInfo = new HomeEntity(1, 'Test Home', RoomMap.empty(), MapInfo.empty(), 0);
+			const resolvedAreas = [
+				{ areaId: 1, mapId: 1, name: 'Living Room' } as any,
+				{ areaId: 2, mapId: 1, name: 'Kitchen' } as any,
+			];
+
+			const mockConfigManager = PlatformConfigManager.create(
+				asPartial<RoborockPluginPlatformConfig>({
+					pluginConfiguration: asPartial<PluginConfiguration>({
+						enableMultipleMap: false,
+						enableServerMode: false,
+					}),
+					advancedFeature: asPartial<AdvancedFeatureConfiguration>({
+						enableAdvancedFeature: false,
+						settings: asPartial<AdvancedFeatureSetting>({ showRoutinesAsRoom: false }),
+					}),
+				}),
+				logger,
+			);
+
+			const config = (RoborockVacuumCleaner as any).initializeDeviceConfiguration(
+				mockDevice,
+				mockHomeInfo,
+				mockConfigManager,
+				roborockService,
+				logger,
+				resolvedAreas,
+				[],
+			);
+
+			expect(config.supportedAreas).toEqual(resolvedAreas);
+			expect(config.supportedAreaAndRoutines).toEqual(resolvedAreas);
+		});
+
+		it('should include resolved maps when passed', () => {
+			const mockDevice = {
+				duid: 'test-duid',
+				specs: { model: 'roborock.s5', firmwareVersion: '1.0.0' },
+				serialNumber: 'test-serial',
+				name: 'TestVac',
+				scenes: [],
+			};
+			const mockHomeInfo = new HomeEntity(1, 'Test Home', RoomMap.empty(), MapInfo.empty(), 0);
+			const resolvedMaps = [{ mapId: 1, name: 'Map 1' } as any];
+
+			const mockConfigManager = PlatformConfigManager.create(
+				asPartial<RoborockPluginPlatformConfig>({
+					pluginConfiguration: asPartial<PluginConfiguration>({
+						enableMultipleMap: false,
+						enableServerMode: false,
+					}),
+					advancedFeature: asPartial<AdvancedFeatureConfiguration>({
+						enableAdvancedFeature: false,
+						settings: asPartial<AdvancedFeatureSetting>({ showRoutinesAsRoom: false }),
+					}),
+				}),
+				logger,
+			);
+
+			const config = (RoborockVacuumCleaner as any).initializeDeviceConfiguration(
+				mockDevice,
+				mockHomeInfo,
+				mockConfigManager,
+				roborockService,
+				logger,
+				[],
+				resolvedMaps,
+			);
+
+			// Should include the resolved map
+			expect(config.supportedMaps).toHaveLength(1);
+			expect(config.supportedMaps[0]).toEqual(resolvedMaps[0]);
+		});
+
+		it('should support routine maps when showRoutinesAsRoom is enabled', () => {
+			const mockDevice = {
+				duid: 'test-duid',
+				specs: { model: 'roborock.s5', firmwareVersion: '1.0.0' },
+				serialNumber: 'test-serial',
+				name: 'TestVac',
+				scenes: [],
+			};
+			const mockHomeInfo = new HomeEntity(1, 'Test Home', RoomMap.empty(), MapInfo.empty(), 0);
+			const resolvedMaps = [{ mapId: 1, name: 'Map 1' } as any];
+
+			const mockConfigManager = PlatformConfigManager.create(
+				asPartial<RoborockPluginPlatformConfig>({
+					pluginConfiguration: asPartial<PluginConfiguration>({
+						enableMultipleMap: false,
+						enableServerMode: false,
+					}),
+					advancedFeature: asPartial<AdvancedFeatureConfiguration>({
+						enableAdvancedFeature: false,
+						settings: asPartial<AdvancedFeatureSetting>({ showRoutinesAsRoom: true }),
+					}),
+				}),
+				logger,
+			);
+
+			const config = (RoborockVacuumCleaner as any).initializeDeviceConfiguration(
+				mockDevice,
+				mockHomeInfo,
+				mockConfigManager,
+				roborockService,
+				logger,
+				[],
+				resolvedMaps,
+			);
+
+			// Should include the resolved map
+			expect(config.supportedMaps).toContainEqual(resolvedMaps[0]);
+		});
+
+		it('should place resolved areas before any routine areas when both exist', () => {
+			const mockDevice = {
+				duid: 'test-duid',
+				specs: { model: 'roborock.s5', firmwareVersion: '1.0.0' },
+				serialNumber: 'test-serial',
+				name: 'TestVac',
+				scenes: [],
+			};
+			const mockHomeInfo = new HomeEntity(1, 'Test Home', RoomMap.empty(), MapInfo.empty(), 0);
+			const resolvedAreas = [{ areaId: 1, mapId: 1 } as any, { areaId: 2, mapId: 1 } as any];
+
+			const mockConfigManager = PlatformConfigManager.create(
+				asPartial<RoborockPluginPlatformConfig>({
+					pluginConfiguration: asPartial<PluginConfiguration>({
+						enableMultipleMap: false,
+						enableServerMode: false,
+					}),
+					advancedFeature: asPartial<AdvancedFeatureConfiguration>({
+						enableAdvancedFeature: false,
+						settings: asPartial<AdvancedFeatureSetting>({ showRoutinesAsRoom: false }),
+					}),
+				}),
+				logger,
+			);
+
+			const config = (RoborockVacuumCleaner as any).initializeDeviceConfiguration(
+				mockDevice,
+				mockHomeInfo,
+				mockConfigManager,
+				roborockService,
+				logger,
+				resolvedAreas,
+				[],
+			);
+
+			// Resolved areas should come before routine areas in the combined list
+			expect(config.supportedAreaAndRoutines.slice(0, resolvedAreas.length)).toEqual(resolvedAreas);
+		});
+
+		it('should use empty arrays when resolved areas and maps are empty', () => {
+			const mockDevice = {
+				duid: 'test-duid',
+				specs: { model: 'roborock.s5', firmwareVersion: '1.0.0' },
+				serialNumber: 'test-serial',
+				name: 'TestVac',
+				scenes: [],
+			};
+			const mockHomeInfo = new HomeEntity(1, 'Test Home', RoomMap.empty(), MapInfo.empty(), 0);
+
+			const mockConfigManager = PlatformConfigManager.create(
+				asPartial<RoborockPluginPlatformConfig>({
+					pluginConfiguration: asPartial<PluginConfiguration>({
+						enableMultipleMap: false,
+						enableServerMode: false,
+					}),
+					advancedFeature: asPartial<AdvancedFeatureConfiguration>({
+						enableAdvancedFeature: false,
+						settings: asPartial<AdvancedFeatureSetting>({ showRoutinesAsRoom: false }),
+					}),
+				}),
+				logger,
+			);
+
+			const config = (RoborockVacuumCleaner as any).initializeDeviceConfiguration(
+				mockDevice,
+				mockHomeInfo,
+				mockConfigManager,
+				roborockService,
+				logger,
+				[],
+				[],
+			);
+
+			expect(config.supportedAreas).toEqual([]);
+			expect(config.supportedMaps).toEqual([]);
+			expect(config.supportedAreaAndRoutines).toEqual([]);
+		});
+	});
+
+	describe('RoborockVacuumCleaner constructor with resolved areas', () => {
+		it('should construct successfully with resolved areas', () => {
+			const resolvedAreas = [{ areaId: 1, mapId: 1 } as any];
+			const resolvedMaps = [{ mapId: 1, name: 'Map 1' } as any];
+
+			const vac = new RoborockVacuumCleaner(
+				device,
+				homeInfo,
+				configManager,
+				roborockService,
+				logger,
+				resolvedAreas,
+				resolvedMaps,
+			);
+
+			expect(vac).toBeInstanceOf(RoborockVacuumCleaner);
+			expect(vac.device).toBe(device);
+		});
+
+		it('should construct successfully with empty resolved areas', () => {
+			const vac = new RoborockVacuumCleaner(device, homeInfo, configManager, roborockService, logger, [], []);
+
+			expect(vac).toBeInstanceOf(RoborockVacuumCleaner);
+		});
+
+		it('should construct with default empty arrays when parameters not provided', () => {
+			const vac = new RoborockVacuumCleaner(device, homeInfo, configManager, roborockService, logger);
+
+			expect(vac).toBeInstanceOf(RoborockVacuumCleaner);
 		});
 	});
 });

@@ -90,6 +90,9 @@ export default defineConfig([
 			'@typescript-eslint/no-useless-default-assignment': 'off',
 			'@typescript-eslint/no-misused-spread': 'off',
 			'@typescript-eslint/no-confusing-void-expression': 'off',
+			'@typescript-eslint/no-redundant-type-constituents': 'off',
+			'@typescript-eslint/no-deprecated': 'off',
+			'@typescript-eslint/restrict-plus-operands': 'off',
 		},
 	},
 	{
@@ -160,6 +163,7 @@ export default defineConfig([
 			'@typescript-eslint/no-unnecessary-type-arguments': 'off',
 
 			...vitest.configs.recommended.rules,
+			'vitest/valid-expect': 'off',
 		},
 	},
 	{

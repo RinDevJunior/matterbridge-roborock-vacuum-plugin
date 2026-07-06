@@ -1,10 +1,12 @@
 import { AnsiLogger, debugStringify } from 'matterbridge/logger';
 import { ServiceArea } from 'matterbridge/matter/clusters';
 
+import { ROUTINE_MAP_ID } from '../constants/ids.js';
 import { MapInfo, RoomIndexMap, RoomMap } from '../core/application/models/index.js';
 import { HomeEntity } from '../core/domain/entities/Home.js';
 import { DeviceError } from '../errors/index.js';
 import { getSupportedAreas } from '../initialData/getSupportedAreas.js';
+import { mergeSupportedAreasByMap } from '../initialData/mergeSupportedAreasByMap.js';
 import { RoborockIoTApi } from '../roborockCommunication/api/iotClient.js';
 import { HomeModelMapper, RawRoomMappingData, RoomDto } from '../roborockCommunication/models/home/index.js';
 import { Scene } from '../roborockCommunication/models/index.js';
@@ -28,7 +30,12 @@ export class AreaManagementService {
 		private readonly logger: AnsiLogger,
 		private readonly serviceRouting: MessageRoutingService | undefined,
 		private readonly liveMapUpdates = false,
+		private readonly enableMultipleMap = true,
 	) {}
+
+	private getPrimaryMapId(duid: string): number | undefined {
+		return this.mapInfoCache.get(duid)?.maps[0]?.id;
+	}
 
 	public setIotApi(iotApi: RoborockIoTApi): void {
 		this.iotApi = iotApi;
@@ -93,64 +100,222 @@ export class AreaManagementService {
 		return this.supportedAreaIndexMaps.get(duid);
 	}
 
+	public mergeSupportedAreasForMap(
+		duid: string,
+		mapId: number,
+		incomingAreas: ServiceArea.Area[],
+		incomingIndexMap: RoomIndexMap,
+	): void {
+		const existingAreas = this.getSupportedAreas(duid);
+		const existingIndexMap = this.getSupportedAreasIndexMap(duid);
+		const { supportedAreas, roomIndexMap } = mergeSupportedAreasByMap(
+			existingAreas,
+			incomingAreas,
+			mapId,
+			existingIndexMap,
+			incomingIndexMap,
+		);
+		this.setSupportedAreaIndexMap(duid, roomIndexMap);
+		this.setSupportedAreas(duid, supportedAreas);
+	}
+
 	public getSupportedRoutines(duid: string): ServiceArea.Area[] | undefined {
 		return this.supportedRoutines.get(duid);
 	}
 
-	public async getMapInfo(duid: string): Promise<MapInfo | undefined> {
+	private async fetchAndApplyMapInfo(duid: string): Promise<MapInfo | undefined> {
 		if (!this.serviceRouting) {
 			throw new DeviceError('Service routing not initialized', duid);
 		}
 
-		this.logger.debug('AreaManagementService - getMapInfo', duid);
-		if (this.liveMapUpdates) {
-			await this.serviceRouting.getMapInfoV2(duid);
-			return undefined;
-		}
 		const mapInfo = await this.serviceRouting.getMapInfo(duid);
 		this.mapInfoCache.set(duid, mapInfo);
 		if (mapInfo.maps.length > 0) {
-			const supportedMaps = mapInfo.maps.map((map) => ({
-				mapId: map.id,
-				name: map.name ?? `Map ${map.id}`,
-			}));
+			const supportedMaps = this.enableMultipleMap
+				? mapInfo.maps.map((map) => ({
+						mapId: map.id,
+						name: map.name ?? `Map ${map.id}`,
+					}))
+				: mapInfo.maps.slice(0, 1).map((map) => ({
+						mapId: map.id,
+						name: map.name ?? `Map ${map.id}`,
+					}));
 			this.setSupportedMaps(duid, supportedMaps);
 		}
 		if (mapInfo.hasRooms) {
 			const rooms = this.deviceRooms.get(duid) ?? [];
 			const roomMappings = mapInfo.allRooms.map((dto) => HomeModelMapper.toRoomMapping(dto, rooms));
 			const homeEntity = new HomeEntity(0, '', new RoomMap(roomMappings), mapInfo, 0);
-			const { supportedAreas, roomIndexMap } = getSupportedAreas(homeEntity, this.logger);
+			const { supportedAreas, supportedMaps, roomIndexMap } = getSupportedAreas(
+				homeEntity,
+				this.logger,
+				this.enableMultipleMap,
+			);
 			this.setSupportedAreaIndexMap(duid, roomIndexMap);
 			this.setSupportedAreas(duid, supportedAreas);
+			this.setSupportedMaps(duid, supportedMaps);
 		}
 		return mapInfo;
 	}
 
-	public async getRoomMap(duid: string, activeMap: number): Promise<RawRoomMappingData | undefined> {
+	private isPhysicalMapId(mapId: number): boolean {
+		return mapId >= 0 && mapId !== ROUTINE_MAP_ID;
+	}
+
+	private hasAreasForMap(duid: string, mapId: number): boolean {
+		return this.getSupportedAreas(duid).some((a) => a.mapId === mapId);
+	}
+
+	private applyRoomMapData(duid: string, rawData: RawRoomMappingData, expectedMapId?: number): number | undefined {
+		if (!rawData || rawData.length === 0) {
+			return undefined;
+		}
+
+		const storedMapInfo = this.mapInfoCache.get(duid) ?? MapInfo.empty();
+		const resolvedMapId = expectedMapId ?? (storedMapInfo.getActiveMapId(rawData) || storedMapInfo.maps[0]?.id) ?? 0;
+
+		if (!this.enableMultipleMap) {
+			const primaryMapId = this.getPrimaryMapId(duid);
+			if (primaryMapId !== undefined && resolvedMapId !== primaryMapId) {
+				return undefined;
+			}
+		}
+
+		const rooms = this.deviceRooms.get(duid) ?? [];
+		const roomMappings = rawData
+			.map((entry) => HomeModelMapper.rawArrayToMapRoomDto(entry, resolvedMapId))
+			.map((dto) => HomeModelMapper.enrichMapRoomDtoFromMapInfo(dto, storedMapInfo))
+			.map((dto) => HomeModelMapper.toRoomMapping(dto, rooms));
+		const homeEntity = new HomeEntity(0, '', new RoomMap(roomMappings), storedMapInfo, 0);
+		const { supportedAreas, supportedMaps, roomIndexMap } = getSupportedAreas(
+			homeEntity,
+			this.logger,
+			this.enableMultipleMap,
+		);
+
+		if (this.enableMultipleMap) {
+			this.mergeSupportedAreasForMap(duid, resolvedMapId, supportedAreas, roomIndexMap);
+		} else {
+			this.setSupportedAreaIndexMap(duid, roomIndexMap);
+			this.setSupportedAreas(duid, supportedAreas);
+			this.setSupportedMaps(duid, supportedMaps);
+		}
+		return resolvedMapId;
+	}
+
+	private async fetchAndApplyRoomMap(
+		duid: string,
+		activeMap: number,
+		expectedMapId?: number,
+	): Promise<number | undefined> {
 		if (!this.serviceRouting) {
 			throw new DeviceError('Service routing not initialized', duid);
 		}
 
+		const rawData = await this.serviceRouting.getRoomMap(duid, activeMap);
+		return this.applyRoomMapData(duid, rawData, expectedMapId);
+	}
+
+	public async ensureAreasForMap(duid: string, mapId: number, options?: { switchFirst?: boolean }): Promise<boolean> {
+		if (!this.isPhysicalMapId(mapId)) {
+			return true;
+		}
+		if (!this.enableMultipleMap) {
+			const primaryMapId = this.getPrimaryMapId(duid);
+			if (primaryMapId !== undefined && mapId !== primaryMapId) {
+				return this.hasAreasForMap(duid, mapId);
+			}
+		}
+		if (this.hasAreasForMap(duid, mapId)) {
+			return true;
+		}
+
+		try {
+			if (options?.switchFirst === true && this.serviceRouting) {
+				await this.serviceRouting.switchMap(duid, mapId);
+			}
+			await this.fetchAndApplyRoomMap(duid, mapId, mapId);
+		} catch (err) {
+			this.logger.error(`AreaManagementService - ensureAreasForMap failed for ${duid} map ${mapId}: ${String(err)}`);
+			return false;
+		}
+
+		return this.hasAreasForMap(duid, mapId);
+	}
+
+	public async getMapInfo(duid: string): Promise<MapInfo | undefined> {
+		this.logger.debug('AreaManagementService - getMapInfo', duid);
+		if (this.liveMapUpdates) {
+			if (!this.serviceRouting) {
+				throw new DeviceError('Service routing not initialized', duid);
+			}
+			await this.serviceRouting.getMapInfoV2(duid);
+			return undefined;
+		}
+		return this.fetchAndApplyMapInfo(duid);
+	}
+
+	public async getRoomMap(duid: string, activeMap: number): Promise<RawRoomMappingData | undefined> {
 		this.logger.debug('AreaManagementService - getRoomMap', duid);
 		if (this.liveMapUpdates) {
+			if (!this.serviceRouting) {
+				throw new DeviceError('Service routing not initialized', duid);
+			}
 			await this.serviceRouting.getRoomMapV2(duid, activeMap);
 			return undefined;
 		}
-		const rawData = await this.serviceRouting.getRoomMap(duid, activeMap);
-		if (rawData && rawData.length > 0) {
-			const storedMapInfo = this.mapInfoCache.get(duid) ?? MapInfo.empty();
-			const resolvedMapId = storedMapInfo.getActiveMapId(rawData) || storedMapInfo.maps[0]?.id || 0;
-			const rooms = this.deviceRooms.get(duid) ?? [];
-			const roomMappings = rawData
-				.map((entry) => HomeModelMapper.rawArrayToMapRoomDto(entry, resolvedMapId))
-				.map((dto) => HomeModelMapper.toRoomMapping(dto, rooms));
-			const homeEntity = new HomeEntity(0, '', new RoomMap(roomMappings), MapInfo.empty(), 0);
-			const { supportedAreas, roomIndexMap } = getSupportedAreas(homeEntity, this.logger);
-			this.setSupportedAreaIndexMap(duid, roomIndexMap);
-			this.setSupportedAreas(duid, supportedAreas);
+		if (!this.serviceRouting) {
+			throw new DeviceError('Service routing not initialized', duid);
 		}
+		const rawData = await this.serviceRouting.getRoomMap(duid, activeMap);
+		this.applyRoomMapData(duid, rawData);
 		return rawData;
+	}
+
+	public async resolveInitialAreas(
+		duid: string,
+	): Promise<{ supportedAreas: ServiceArea.Area[]; supportedMaps: ServiceArea.Map[] }> {
+		this.logger.debug('AreaManagementService - resolveInitialAreas', duid);
+
+		try {
+			const mapInfo = await this.fetchAndApplyMapInfo(duid);
+			const originalActiveMapId = await this.fetchAndApplyRoomMap(duid, -1);
+
+			if (this.enableMultipleMap && mapInfo && this.serviceRouting) {
+				for (const map of mapInfo.maps) {
+					if (!this.isPhysicalMapId(map.id)) {
+						continue;
+					}
+					if (this.hasAreasForMap(duid, map.id)) {
+						continue;
+					}
+					try {
+						await this.ensureAreasForMap(duid, map.id, { switchFirst: true });
+					} catch (err) {
+						this.logger.error(
+							`AreaManagementService - resolveInitialAreas bootstrap failed for ${duid} map ${map.id}: ${String(err)}`,
+						);
+					}
+				}
+
+				if (originalActiveMapId !== undefined && this.isPhysicalMapId(originalActiveMapId)) {
+					try {
+						await this.serviceRouting.switchMap(duid, originalActiveMapId);
+					} catch (err) {
+						this.logger.warn(
+							`AreaManagementService - resolveInitialAreas failed to restore active map ${originalActiveMapId} for ${duid}: ${String(err)}`,
+						);
+					}
+				}
+			}
+		} catch (err) {
+			this.logger.error(`AreaManagementService - resolveInitialAreas failed for ${duid}: ${String(err)}`);
+		}
+
+		const supportedAreas = this.getSupportedAreas(duid);
+		const supportedMaps = this.getSupportedMaps(duid);
+
+		return { supportedAreas, supportedMaps };
 	}
 
 	public startPeriodicRefresh(duid: string, intervalMs = 5 * 60 * 1000): void {

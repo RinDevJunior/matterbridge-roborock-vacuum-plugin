@@ -22,6 +22,10 @@ It is version-controlled — commit and push changes so teammates can pull the l
 - SmartPlan (mode 4) gated by feature flag; VacAndMopDeep (mode 12) dropped — no feature flags found in DeviceFeatures. Decision: drop rather than gate by model string.
 - `RoomMapping` stable key candidates: `id` (number), composite `${id}-${iot_map_id}` (string, matches `roomInfos` Map key), `iot_name_id` (string).
 - `AreaManagementService.clearAll()` wipes all in-memory area data including room names. Fallback room name suffix (`RANDOM_ROOM_MIN=1000`, `MAX=9999`) is non-deterministic — changes every startup.
+- Startup room names: `getRoomMap` enriches raw tuples via `HomeModelMapper.enrichMapRoomDtoFromMapInfo(dto, mapInfoCache)` before `toRoomMapping`; `HomeEntity` uses `storedMapInfo` not `MapInfo.empty()`.
+- Live map updates: `resolveInitialAreas` must sync-bootstrap via `fetchAndApplyMapInfo`/`fetchAndApplyRoomMap` (ignore V2); public `getMapInfo`/`getRoomMap` stay V2-only when `liveMapUpdates`. `handleActiveMapChanged` must intersect with Matter `supportedAreas` attribute before writing `selectedAreas`.
+- Multi-map areas: partial room-map fetch/push merges by `mapId` via `mergeSupportedAreasByMap` (keeps other maps, re-indexes areaIds); full `mapInfo.allRooms` / V1 map-info push stays full replace.
+- Multi-map + `enableMultipleMap` (cycles 4–5): when ON, bootstrap all physical maps via `switchMap`+sync fetch, merge by mapId; when OFF, primary only (`maps[0]`) via `RoomMap.getRooms(..., false)` in `getSupportedAreas(..., false)` — wired via `AreaManagementService.enableMultipleMap` + `MapInfoListener.enableMultipleMap` from `configManager.isMultipleMapEnabled`.
 
 ## Known Patterns
 
@@ -53,15 +57,16 @@ It is version-controlled — commit and push changes so teammates can pull the l
 
 ## Test Patterns
 
-- **V1 inner decryption:** protocol 301 push = 24-byte envelope + AES-128-CBC(`serializeNonce`, IV=zeros) + gzip(`"rr"`). `decryptAndUnzipV1Map` in `v1MapDecryptor.ts`; `buildEncryptedV1MapPayload` for round-trips; `LegacyMapParser` tests use plain `"rr"` binary.
-- **`mapListHelpers` (CLI):** pure functions, no mocks. `resolveActiveMapId` sentinel is `63` (`map_status: 252`); `extractNamedRooms` returns `[]` when `activeMapId` is undefined. Tests: `src/tests/cli/mapListHelpers.test.ts`.
-- **OperationCompletion tests:** mock `robot.triggerEvent`, set `operationSessionStartMs` + `vi.useFakeTimers()` for elapsed seconds; `deviceStateHandler` integration uses `RunModeLabelInfo.Cleaning.mode` (2) in `getAttribute` before Idle transition.
-- **RoborockServiceAreaServer:** `Object.create(RoborockServiceAreaServer.prototype)` + `setReadOnlyProperty` for `state`/`endpoint` — no full Matter server ctor needed.
+- **handleActiveMapChanged Matter guard:** pass `matterSupportedAreas` as 3rd arg to `createMockRobot` — `getAttribute(ServiceArea.id,'supportedAreas')` must intersect service-cache areas or `updateAttribute(selectedAreas)` is skipped.
+- **mapInfoListener V1 enrichment:** call `onMessage` twice (map-info msg then room-map msg) on same listener; `getAreasPassedToService()` asserts `locationName`/`mapId` from `pendingV1MapInfo`.
+- **AreaManagementService live bootstrap:** `resolveInitialAreas` with `liveMapUpdates=true` still calls sync `getMapInfo`/`getRoomMap` (not V2); public `getMapInfo`/`getRoomMap` on live service use V2 only — assert sync mocks not called on public methods.
 - **SkipArea progress helpers:** unit-test exported `markAreaSkipped`/`getNextPendingArea` in `serviceAreaHandler.test.ts`; multi-room no-info path keeps `selectedAreas`, sets `currentArea` to first — update `platformRunner.test.ts` if stale.
 - **connectionService listener gating:** after `initializeMessageClientForLocal`, collect `registerMessageListener.mock.calls.map(([l]) => l.name)`; V1 → `V1StatusListener` not `B01StatusListener`; B01 → reverse; `DeviceStatusListener` always index 0.
 - **estimatedEndTime handler tests:** all `RoborockMatterbridgePlatform` mocks need `configManager: createMockConfigManager(enabled)` — `shouldPublishEstimatedEndTime` reads `isEstimatedEndTimeEnabled` unconditionally; use `vi.useFakeTimers()` + `vi.setSystemTime` for handler ETA assertions (not the pure helper).
 - **estimatedEndTime pure helper:** test `computeEstimatedEndTimeFromCleanProgress` with injected `nowEpochSeconds` — no fake timers; `cleanPercent=25,cleanTime=60` → `now+180`; `cleanPercent=100` → `now`.
 - **CLI command tests (`src/tests/cli/`):** mock module boundaries (`connectDevice`, `waitForPush`, parser classes) via `vi.mock` with relative `.js` paths, static-import after the mocks. Class constructor mocks need a real `function` (not arrow) in `mockImplementation` or `new` throws.
+- **AreaManagementService.resolveInitialAreas tests:** async method that calls `getMapInfo` then `getRoomMap` in sequence, catches errors without throwing, returns `{ supportedAreas, supportedMaps }` via `getSupportedAreas`/`getSupportedMaps`. Verify call order with `vi.mocked(mock).mock.invocationCallOrder`, error logging with `logger.error`.
+- **RoborockVacuumCleaner constructor with resolved areas:** pass `resolvedAreas: ServiceArea.Area[]` and `resolvedMaps: ServiceArea.Map[]` to constructor (7th/8th params); `initializeDeviceConfiguration` static method merges them: resolved areas first, then routines appended; resolved maps first, routine map (mapId 999) appended if `showRoutinesAsRoom` enabled. Use `asPartial<AdvancedFeatureConfiguration>` + `asPartial<AdvancedFeatureSetting>` for config mocks (both required by type).
 
 ## Common Pitfalls
 

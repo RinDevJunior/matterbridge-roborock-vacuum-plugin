@@ -40,6 +40,8 @@ export class RoborockVacuumCleaner extends RoboticVacuumCleaner {
 		configManager: PlatformConfigManager,
 		private readonly roborockService: RoborockService,
 		log: AnsiLogger,
+		resolvedAreas: ServiceArea.Area[] = [],
+		resolvedMaps: ServiceArea.Map[] = [],
 	) {
 		const deviceConfig = RoborockVacuumCleaner.initializeDeviceConfiguration(
 			device,
@@ -47,6 +49,8 @@ export class RoborockVacuumCleaner extends RoboticVacuumCleaner {
 			configManager,
 			roborockService,
 			log,
+			resolvedAreas,
+			resolvedMaps,
 		);
 
 		super(
@@ -208,6 +212,8 @@ export class RoborockVacuumCleaner extends RoboticVacuumCleaner {
 		configManager: PlatformConfigManager,
 		roborockService: RoborockService,
 		log: AnsiLogger,
+		resolvedAreas: ServiceArea.Area[] = [],
+		resolvedMaps: ServiceArea.Map[] = [],
 	) {
 		const cleanModes = getSupportedCleanModes(
 			device.specs.model,
@@ -220,7 +226,7 @@ export class RoborockVacuumCleaner extends RoboticVacuumCleaner {
 
 		const bridgeMode: 'server' | 'matter' = configManager.isServerModeEnabled ? 'server' : 'matter';
 
-		const supportedMaps: ServiceArea.Map[] = [];
+		const supportedMaps: ServiceArea.Map[] = [...resolvedMaps];
 
 		let routineAsRooms: ServiceArea.Area[] = [];
 		if (configManager.showRoutinesAsRoom) {
@@ -237,7 +243,7 @@ export class RoborockVacuumCleaner extends RoboticVacuumCleaner {
 			});
 		}
 
-		const supportedAreaAndRoutines = [...routineAsRooms];
+		const supportedAreaAndRoutines = [...resolvedAreas, ...routineAsRooms];
 		const deviceName = device.name;
 
 		return {
@@ -245,7 +251,7 @@ export class RoborockVacuumCleaner extends RoboticVacuumCleaner {
 			bridgeMode,
 			cleanModes,
 			runModeConfigs,
-			supportedAreas: [],
+			supportedAreas: resolvedAreas,
 			supportedMaps,
 			supportedAreaAndRoutines,
 			operationalState,

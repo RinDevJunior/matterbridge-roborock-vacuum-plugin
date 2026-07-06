@@ -141,7 +141,7 @@ Retry: trivial reviewer/compiler failure → auto-retry implementer once with fa
 | release-manager       | format:ci                                                              |
 | finalizer             | format:ci → precommit:ci                                               |
 
-On failure: EM never edits `src/`/`src/tests/` — resume/re-spawn the responsible agent with the compact output.
+On failure: EM never edits `src/` or `src/tests/` — resume/re-spawn the responsible agent with the compact output.
 
 ## Rules
 

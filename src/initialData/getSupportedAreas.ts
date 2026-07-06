@@ -5,7 +5,7 @@ import { CommonAreaNamespaceTag } from 'matterbridge/matter';
 import { ServiceArea } from 'matterbridge/matter/clusters';
 
 import { DEFAULT_AREA_ID_UNKNOWN, RANDOM_ROOM_MAX, RANDOM_ROOM_MIN } from '../constants/index.js';
-import { RoomIndexMap, RoomMapping } from '../core/application/models/index.js';
+import { RoomIndexMap, RoomMap, RoomMapping } from '../core/application/models/index.js';
 import { HomeEntity } from '../core/domain/entities/Home.js';
 
 export interface AreaInfo {
@@ -58,9 +58,14 @@ export interface SupportedAreasResult {
  * Handles single and multiple map configurations.
  * @param homeInFo - Home entity containing room and map information
  * @param logger - Logger for debugging and error reporting
+ * @param enableMultipleMap - When false, expose only the primary map and its rooms
  * @returns Supported areas, maps, and room index mapping
  */
-export function getSupportedAreas(homeInFo: HomeEntity, logger: AnsiLogger): SupportedAreasResult {
+export function getSupportedAreas(
+	homeInFo: HomeEntity,
+	logger: AnsiLogger,
+	enableMultipleMap = true,
+): SupportedAreasResult {
 	logger.debug('getSupportedAreas-vacuum room', debugStringify(homeInFo.rawRooms));
 	logger.debug('getSupportedAreas-roomMap', homeInFo.roomMap ? debugStringify(homeInFo.roomMap) : 'undefined');
 
@@ -85,12 +90,31 @@ export function getSupportedAreas(homeInFo: HomeEntity, logger: AnsiLogger): Sup
 		};
 	}
 
-	const { supportedAreas, areaInfos, roomInfos } = processValidData(homeInFo);
+	const entityForProcessing = enableMultipleMap
+		? homeInFo
+		: new HomeEntity(
+				homeInFo.id,
+				homeInFo.name,
+				new RoomMap(homeInFo.roomMap.getRooms(homeInFo.mapInfo.maps, false)),
+				homeInFo.mapInfo,
+				homeInFo.activeMapId,
+			);
 
-	const supportedMaps = homeInFo.mapInfo.maps.map((map) => ({
-		mapId: map.id,
-		name: map.name ?? `Map ${map.id}`,
-	}));
+	const { supportedAreas, areaInfos, roomInfos } = processValidData(entityForProcessing);
+
+	const supportedMaps = enableMultipleMap
+		? homeInFo.mapInfo.maps.map((map) => ({
+				mapId: map.id,
+				name: map.name ?? `Map ${map.id}`,
+			}))
+		: homeInFo.mapInfo.maps.length > 0
+			? [
+					{
+						mapId: homeInFo.mapInfo.maps[0].id,
+						name: homeInFo.mapInfo.maps[0].name ?? `Map ${homeInFo.mapInfo.maps[0].id}`,
+					},
+				]
+			: [];
 
 	logger.debug('getSupportedAreas - supportedAreas', debugStringify(supportedAreas));
 	logger.debug('getSupportedAreas - supportedMaps', debugStringify(supportedMaps));

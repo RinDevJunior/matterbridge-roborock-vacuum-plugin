@@ -3,8 +3,7 @@ import { Protocol, ResponseMessage } from '../roborockCommunication/models/index
 
 function unwrapRpcResult(msg: ResponseMessage): unknown {
 	const dps = (msg.get(Protocol.rpc_response) ?? msg.get(Protocol.general_response)) as
-		| { result?: unknown }
-		| undefined;
+		{ result?: unknown } | undefined;
 	if (!dps?.result) return undefined;
 	return Array.isArray(dps.result) ? dps.result[0] : dps.result;
 }

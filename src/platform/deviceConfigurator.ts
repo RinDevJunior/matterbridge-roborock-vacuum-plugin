@@ -72,10 +72,10 @@ export class DeviceConfigurator {
 		this.log.notice('Activating device notify handlers');
 		this.getPlatformRunner().activateHandlerFunctions();
 
+		// Start periodic area refresh for all configured devices
+		// (initial area resolution is now done in configureDevice, before registration)
 		for (const [duid, _robot] of this.registry.robotsMap) {
 			if (!configureSuccess.get(duid)) continue;
-			await roborockService.getMapInfo(duid);
-			await roborockService.getRoomMap(duid, -1);
 			roborockService.startPeriodicAreaRefresh(duid);
 		}
 
@@ -103,7 +103,26 @@ export class DeviceConfigurator {
 		roborockService.setDeviceRooms(vacuum.duid, homeData.rooms);
 		const homeInfo = new HomeEntity(homeData.id, homeData.name, RoomMap.empty(), MapInfo.empty(), -1);
 
-		const robot = new RoborockVacuumCleaner(vacuum, homeInfo, this.configManager, roborockService, this.log);
+		// Resolve initial areas before constructing the device to avoid placeholder room names in Apple Home
+		let supportedAreas: ServiceArea.Area[] = [];
+		let supportedMaps: ServiceArea.Map[] = [];
+		try {
+			const resolved = await roborockService.resolveInitialAreas(vacuum.duid);
+			supportedAreas = resolved.supportedAreas;
+			supportedMaps = resolved.supportedMaps;
+		} catch (err) {
+			this.log.error(`Failed to resolve initial areas for ${vacuum.name} (${vacuum.duid}): ${String(err)}`);
+		}
+
+		const robot = new RoborockVacuumCleaner(
+			vacuum,
+			homeInfo,
+			this.configManager,
+			roborockService,
+			this.log,
+			supportedAreas,
+			supportedMaps,
+		);
 
 		roborockService.registerAreasListener(vacuum.duid, (areas, maps) => {
 			const routines = roborockService.getSupportedRoutines(vacuum.duid) ?? [];

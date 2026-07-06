@@ -6,7 +6,8 @@ import { MapInfo, RoomIndexMap } from '../../core/application/models/index.js';
 import { DeviceError } from '../../errors/index.js';
 import { AreaInfo, SegmentInfo } from '../../initialData/getSupportedAreas.js';
 import { RoborockIoTApi } from '../../roborockCommunication/api/iotClient.js';
-import { RoomDto } from '../../roborockCommunication/models/home/index.js';
+import { MultipleMapDto, RoomDto } from '../../roborockCommunication/models/home/index.js';
+import { RawRoomMappingData } from '../../roborockCommunication/models/index.js';
 import { Scene } from '../../roborockCommunication/models/scene.js';
 import { AreaManagementService } from '../../services/areaManagementService.js';
 import { MessageRoutingService } from '../../services/index.js';
@@ -56,6 +57,42 @@ describe('AreaManagementService', () => {
 			startScene: vi.fn(),
 		};
 	}
+
+	function createStartupMapInfo(): MapInfo {
+		const multimap = {
+			max_multi_map: 1,
+			max_bak_map: 0,
+			multi_map_count: 1,
+			map_info: [
+				{
+					mapFlag: 0,
+					add_time: 1771060270,
+					length: 5,
+					name: 'Home',
+					bak_maps: [],
+					rooms: [
+						{ id: 1, tag: 14, iot_name_id: '11100845', iot_name: 'Living' },
+						{ id: 2, tag: 9, iot_name_id: '11100849', iot_name: 'Bathroom' },
+						{ id: 3, tag: 6, iot_name_id: '11100842', iot_name: 'Kitchen' },
+						{ id: 4, tag: 1, iot_name_id: '11100847', iot_name: 'Bedroom' },
+						{ id: 5, tag: 10, iot_name_id: '12231095', iot_name: 'Hallway' },
+					],
+				},
+			],
+		} satisfies MultipleMapDto;
+
+		return new MapInfo(multimap);
+	}
+
+	const startupRawRoomMapping = [
+		[1, '11100845', 14],
+		[2, '11100849', 9],
+		[3, '11100842', 6],
+		[4, '11100847', 1],
+		[5, '12231095', 10],
+	] as Partial<RawRoomMappingData> as RawRoomMappingData;
+
+	const partialDeviceRooms: RoomDto[] = [{ id: 12231095, name: 'Hallway from cloud' }];
 
 	afterEach(() => {
 		vi.clearAllMocks();
@@ -246,12 +283,6 @@ describe('AreaManagementService', () => {
 	});
 
 	describe('getRoomMappings', () => {
-		const mockRoomMappings = [
-			[16, 1],
-			[17, 2],
-			[18, 3],
-		];
-
 		it('should retrieve room mappings with non-secure request', async () => {
 			mockMessageRoutingService.getRoomMap.mockResolvedValue([]);
 
@@ -533,6 +564,7 @@ describe('AreaManagementService', () => {
 
 			const result = await liveService.getMapInfo(mockDeviceId);
 			expect(mockMessageRoutingService.getMapInfoV2).toHaveBeenCalledWith(mockDeviceId);
+			expect(mockMessageRoutingService.getMapInfo).not.toHaveBeenCalled();
 			expect(result).toBeUndefined();
 		});
 	});
@@ -581,6 +613,7 @@ describe('AreaManagementService', () => {
 
 			const result = await liveService.getRoomMap(mockDeviceId, 1);
 			expect(mockMessageRoutingService.getRoomMapV2).toHaveBeenCalledWith(mockDeviceId, 1);
+			expect(mockMessageRoutingService.getRoomMap).not.toHaveBeenCalled();
 			expect(result).toBeUndefined();
 		});
 	});
@@ -605,6 +638,41 @@ describe('AreaManagementService', () => {
 			mockMessageRoutingService.getRoomMap = vi.fn().mockResolvedValue(rawData);
 			await areaService.getRoomMap(mockDeviceId, 1);
 			expect(mockMessageRoutingService.getRoomMap).toHaveBeenCalledWith(mockDeviceId, 1);
+		});
+
+		it('should preserve map_info room names after getMapInfo then getRoomMap when deviceRooms mismatch segments 1-4', async () => {
+			areaService.setDeviceRooms(mockDeviceId, partialDeviceRooms);
+			const mapInfo = createStartupMapInfo();
+			mockMessageRoutingService.getMapInfo.mockResolvedValue(mapInfo);
+			mockMessageRoutingService.getRoomMap.mockResolvedValue(startupRawRoomMapping);
+
+			await areaService.getMapInfo(mockDeviceId);
+			await areaService.getRoomMap(mockDeviceId, -1);
+
+			const areas = areaService.getSupportedAreas(mockDeviceId);
+			const expectedNames = ['Living', 'Bathroom', 'Kitchen', 'Bedroom', 'Hallway'];
+
+			expect(areas).toHaveLength(5);
+			for (let i = 0; i < 4; i++) {
+				expect(areas[i]?.areaInfo?.locationInfo?.locationName).toBe(expectedNames[i]);
+			}
+			expect(areas[4]?.areaInfo?.locationInfo?.locationName).toBe('Hallway from cloud');
+		});
+
+		it('should keep getMapInfo areas unchanged when getRoomMap returns empty rawData', async () => {
+			areaService.setDeviceRooms(mockDeviceId, partialDeviceRooms);
+			const mapInfo = createStartupMapInfo();
+			mockMessageRoutingService.getMapInfo.mockResolvedValue(mapInfo);
+			mockMessageRoutingService.getRoomMap.mockResolvedValue([]);
+
+			await areaService.getMapInfo(mockDeviceId);
+			const areasAfterMapInfo = areaService.getSupportedAreas(mockDeviceId);
+
+			await areaService.getRoomMap(mockDeviceId, -1);
+			const areasAfterRoomMap = areaService.getSupportedAreas(mockDeviceId);
+
+			expect(areasAfterRoomMap).toEqual(areasAfterMapInfo);
+			expect(areasAfterRoomMap[0]?.areaInfo?.locationInfo?.locationName).toBe('Living');
 		});
 	});
 
@@ -763,6 +831,153 @@ describe('AreaManagementService', () => {
 			mockIotApi.getScenes.mockRejectedValue(error);
 
 			await expect(areaService.getScenes(123)).rejects.toThrow('API error');
+		});
+	});
+
+	describe('resolveInitialAreas', () => {
+		it('should call getMapInfo then getRoomMap in sequence', async () => {
+			const mapInfo = new MapInfo({ max_multi_map: 0, max_bak_map: 0, multi_map_count: 0, map_info: [] });
+			mockMessageRoutingService.getMapInfo.mockResolvedValue(mapInfo);
+			mockMessageRoutingService.getRoomMap.mockResolvedValue([]);
+
+			await areaService.resolveInitialAreas(mockDeviceId);
+
+			expect(mockMessageRoutingService.getMapInfo).toHaveBeenCalledWith(mockDeviceId);
+			expect(mockMessageRoutingService.getRoomMap).toHaveBeenCalledWith(mockDeviceId, -1);
+
+			// Verify call order: getMapInfo should be called before getRoomMap
+			const getMapInfoCallOrder = vi.mocked(mockMessageRoutingService.getMapInfo).mock.invocationCallOrder[0];
+			const getRoomMapCallOrder = vi.mocked(mockMessageRoutingService.getRoomMap).mock.invocationCallOrder[0];
+			expect(getMapInfoCallOrder).toBeLessThan(getRoomMapCallOrder);
+		});
+
+		it('should return resolved supportedAreas when getMapInfo and getRoomMap succeed', async () => {
+			const mapInfo = new MapInfo({ max_multi_map: 0, max_bak_map: 0, multi_map_count: 0, map_info: [] });
+			mockMessageRoutingService.getMapInfo.mockResolvedValue(mapInfo);
+			mockMessageRoutingService.getRoomMap.mockResolvedValue([]);
+			areaService.setSupportedAreas(mockDeviceId, mockAreas);
+
+			const result = await areaService.resolveInitialAreas(mockDeviceId);
+
+			expect(result.supportedAreas).toEqual(mockAreas);
+		});
+
+		it('should return resolved supportedMaps when getMapInfo and getRoomMap succeed', async () => {
+			const mapInfo = new MapInfo({ max_multi_map: 0, max_bak_map: 0, multi_map_count: 0, map_info: [] });
+			mockMessageRoutingService.getMapInfo.mockResolvedValue(mapInfo);
+			mockMessageRoutingService.getRoomMap.mockResolvedValue([]);
+			const maps: ServiceArea.Map[] = [{ mapId: 1, name: 'Map A' }];
+			areaService.setSupportedMaps(mockDeviceId, maps);
+
+			const result = await areaService.resolveInitialAreas(mockDeviceId);
+
+			expect(result.supportedMaps).toEqual(maps);
+		});
+
+		it('should not throw when getMapInfo rejects', async () => {
+			mockMessageRoutingService.getMapInfo.mockRejectedValue(new Error('Network failure'));
+
+			await expect(areaService.resolveInitialAreas(mockDeviceId)).resolves.toBeDefined();
+		});
+
+		it('should not throw when getRoomMap rejects', async () => {
+			const mapInfo = new MapInfo({ max_multi_map: 0, max_bak_map: 0, multi_map_count: 0, map_info: [] });
+			mockMessageRoutingService.getMapInfo.mockResolvedValue(mapInfo);
+			mockMessageRoutingService.getRoomMap.mockRejectedValue(new Error('Network failure'));
+
+			await expect(areaService.resolveInitialAreas(mockDeviceId)).resolves.toBeDefined();
+		});
+
+		it('should return empty areas when both calls fail', async () => {
+			mockMessageRoutingService.getMapInfo.mockRejectedValue(new Error('Network failure'));
+
+			const result = await areaService.resolveInitialAreas(mockDeviceId);
+
+			expect(result.supportedAreas).toEqual([]);
+			expect(result.supportedMaps).toEqual([]);
+		});
+
+		it('should return fallback empty areas and maps for unknown device', async () => {
+			const mapInfo = new MapInfo({ max_multi_map: 0, max_bak_map: 0, multi_map_count: 0, map_info: [] });
+			mockMessageRoutingService.getMapInfo.mockResolvedValue(mapInfo);
+			mockMessageRoutingService.getRoomMap.mockResolvedValue([]);
+
+			const result = await areaService.resolveInitialAreas('unknown-device');
+
+			expect(result.supportedAreas).toEqual([]);
+			expect(result.supportedMaps).toEqual([]);
+		});
+
+		it('should log error when getMapInfo fails', async () => {
+			mockMessageRoutingService.getMapInfo.mockRejectedValue(new Error('Network error'));
+
+			await areaService.resolveInitialAreas(mockDeviceId);
+
+			expect(mockLogger.error).toHaveBeenCalledWith(expect.stringContaining('resolveInitialAreas failed'));
+		});
+
+		it('should handle undefined serviceRouting gracefully', async () => {
+			const serviceWithoutClient = new AreaManagementService(mockLogger, undefined);
+
+			const result = await serviceWithoutClient.resolveInitialAreas(mockDeviceId);
+
+			expect(result.supportedAreas).toEqual([]);
+			expect(result.supportedMaps).toEqual([]);
+		});
+
+		it('should preserve map_info room names end-to-end via resolveInitialAreas', async () => {
+			areaService.setDeviceRooms(mockDeviceId, partialDeviceRooms);
+			const mapInfo = createStartupMapInfo();
+			mockMessageRoutingService.getMapInfo.mockResolvedValue(mapInfo);
+			mockMessageRoutingService.getRoomMap.mockResolvedValue(startupRawRoomMapping);
+
+			const result = await areaService.resolveInitialAreas(mockDeviceId);
+
+			const expectedNames = ['Living', 'Bathroom', 'Kitchen', 'Bedroom', 'Hallway from cloud'];
+			expect(result.supportedAreas).toHaveLength(5);
+			result.supportedAreas.forEach((area, index) => {
+				expect(area.areaInfo?.locationInfo?.locationName).toBe(expectedNames[index]);
+			});
+		});
+
+		it('should use sync getMapInfo and getRoomMap when liveMapUpdates is true', async () => {
+			const liveService = new AreaManagementService(
+				mockLogger as AnsiLogger,
+				mockMessageRoutingService as MessageRoutingService,
+				true,
+			);
+			liveService.setDeviceRooms(mockDeviceId, partialDeviceRooms);
+			mockMessageRoutingService.getMapInfoV2 = vi.fn();
+			mockMessageRoutingService.getRoomMapV2 = vi.fn();
+			mockMessageRoutingService.getMapInfo.mockResolvedValue(createStartupMapInfo());
+			mockMessageRoutingService.getRoomMap.mockResolvedValue(startupRawRoomMapping);
+
+			const result = await liveService.resolveInitialAreas(mockDeviceId);
+
+			expect(mockMessageRoutingService.getMapInfo).toHaveBeenCalledWith(mockDeviceId);
+			expect(mockMessageRoutingService.getRoomMap).toHaveBeenCalledWith(mockDeviceId, -1);
+			expect(mockMessageRoutingService.getMapInfoV2).not.toHaveBeenCalled();
+			expect(mockMessageRoutingService.getRoomMapV2).not.toHaveBeenCalled();
+
+			const expectedNames = ['Living', 'Bathroom', 'Kitchen', 'Bedroom', 'Hallway from cloud'];
+			expect(result.supportedAreas).toHaveLength(5);
+			result.supportedAreas.forEach((area, index) => {
+				expect(area.areaInfo?.locationInfo?.locationName).toBe(expectedNames[index]);
+			});
+		});
+
+		it('should populate supportedMaps from sync getMapInfo when liveMapUpdates is true', async () => {
+			const liveService = new AreaManagementService(
+				mockLogger as AnsiLogger,
+				mockMessageRoutingService as MessageRoutingService,
+				true,
+			);
+			mockMessageRoutingService.getMapInfo.mockResolvedValue(createStartupMapInfo());
+			mockMessageRoutingService.getRoomMap.mockResolvedValue(startupRawRoomMapping);
+
+			const result = await liveService.resolveInitialAreas(mockDeviceId);
+
+			expect(result.supportedMaps).toEqual([{ mapId: 0, name: 'Home' }]);
 		});
 	});
 });

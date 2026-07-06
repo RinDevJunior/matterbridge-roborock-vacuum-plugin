@@ -1,5 +1,31 @@
 # Claude History
 
+## 2026-07-06 — Preserve map_info room names in getRoomMap
+
+**Task:** Fix startup room labels showing generic "Room 1"–"Room 4" in Apple Home while later rooms display correct names — `getRoomMap` was overwriting `getMapInfo` names because raw `get_room_mapping` tuples lack `iot_name`.
+
+**Changes:**
+
+- `src/roborockCommunication/models/home/mappers.ts` — added `enrichMapRoomDtoFromMapInfo` to copy `iot_name` from cached `MapInfo` before `toRoomMapping`
+- `src/services/areaManagementService.ts` — wired enrichment in `getRoomMap` pipeline; pass `storedMapInfo` (not `MapInfo.empty()`) into `HomeEntity`
+- `src/tests/roborockCommunication/models/home/mappers.test.ts` — unit tests for enrichment helper (exact match, no-op, cache miss, id-only fallback)
+- `src/tests/services/areaManagementService.test.ts` — regression tests for name preservation after getMapInfo→getRoomMap and via `resolveInitialAreas`
+
+**Outcome:** Pass (reviewed). All rooms show real names from plugin startup when `map_info` has `iot_name` but `deviceRooms` lookup fails for early segments; empty rawData and error paths unchanged.
+
+## 2026-07-06 — Fix startup room name placeholder bug
+
+**Task:** Move real room name resolution (getMapInfo + getRoomMap) before device registration so Apple Home sees correct room names from startup, not generic placeholders ("Room 1"-"Room 4").
+
+**Changes:**
+
+- `src/services/areaManagementService.ts` — added `resolveInitialAreas(duid)` method to fetch and return resolved areas + maps synchronously before registration
+- `src/services/roborockService.ts` — added facade passthrough `resolveInitialAreas(duid)` delegating to areaManagementService
+- `src/types/roborockVacuumCleaner.ts` — constructor now accepts `resolvedAreas` and `resolvedMaps` parameters; `initializeDeviceConfiguration()` threads them through and merges with routines (real rooms first, routines appended with mapId 999)
+- `src/platform/deviceConfigurator.ts` — in `configureDevice()`, await `resolveInitialAreas()` before constructing RoborockVacuumCleaner, pass resolved areas/maps to constructor; in `onConfigureDevice()`, removed redundant initial getMapInfo/getRoomMap calls (only startPeriodicAreaRefresh remains in post-config loop)
+
+**Outcome:** Pass. Apple Home no longer shows generic room placeholders on startup; real room names available from moment plugin initializes. Periodic refresh and listener callbacks intact; routine-as-room ordering unchanged; fallback behavior preserved.
+
 ## 2026-07-06 — Wire estimatedEndTime from clean_time + clean_percent
 
 **Task:** Opt-in V1 ETA for Matter `ServiceArea.estimatedEndTime` via linear extrapolation from `clean_time` and `clean_percent` (epoch seconds); gated by `enableEstimatedEndTime` (default off). No `extra_time` re-enable; B01/Q7/Q10 stay `null`.

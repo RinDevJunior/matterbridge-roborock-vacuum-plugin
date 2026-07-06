@@ -151,6 +151,7 @@ export class ServiceContainer {
 			this.logger,
 			this.getMessageRoutingService(),
 			this.config.configManager.isLiveMapUpdatesEnabled,
+			this.config.configManager.isMultipleMapEnabled,
 		);
 		return this.areaManagementService;
 	}
