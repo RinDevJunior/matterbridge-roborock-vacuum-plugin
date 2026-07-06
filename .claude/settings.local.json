@@ -19,7 +19,7 @@
 			"Bash(git status*)"
 		]
 	},
-	"enabledMcpjsonServers": ["codegraph", "glob-grep", "serena"],
+	"enabledMcpjsonServers": ["codegraph", "glob-grep", "cli-runner", "serena"],
 	"outputStyle": "default",
 	"spinnerTipsEnabled": true
 }
