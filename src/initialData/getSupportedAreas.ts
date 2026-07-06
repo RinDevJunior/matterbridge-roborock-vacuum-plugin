@@ -5,7 +5,7 @@ import { CommonAreaNamespaceTag } from 'matterbridge/matter';
 import { ServiceArea } from 'matterbridge/matter/clusters';
 
 import { DEFAULT_AREA_ID_UNKNOWN, RANDOM_ROOM_MAX, RANDOM_ROOM_MIN } from '../constants/index.js';
-import { RoomIndexMap, RoomMap, RoomMapping } from '../core/application/models/index.js';
+import { MapInfo, RoomIndexMap, RoomMap, RoomMapping } from '../core/application/models/index.js';
 import { HomeEntity } from '../core/domain/entities/Home.js';
 
 export interface AreaInfo {
@@ -51,6 +51,14 @@ export interface SupportedAreasResult {
 	supportedAreas: ServiceArea.Area[];
 	supportedMaps: ServiceArea.Map[];
 	roomIndexMap: RoomIndexMap;
+}
+
+export function toSupportedMaps(mapInfo: MapInfo, enableMultipleMap = true): ServiceArea.Map[] {
+	const maps = enableMultipleMap ? mapInfo.maps : mapInfo.maps.slice(0, 1);
+	return maps.map((map) => ({
+		mapId: map.id,
+		name: map.name ?? `Map ${map.id}`,
+	}));
 }
 
 /**
@@ -102,19 +110,7 @@ export function getSupportedAreas(
 
 	const { supportedAreas, areaInfos, roomInfos } = processValidData(entityForProcessing);
 
-	const supportedMaps = enableMultipleMap
-		? homeInFo.mapInfo.maps.map((map) => ({
-				mapId: map.id,
-				name: map.name ?? `Map ${map.id}`,
-			}))
-		: homeInFo.mapInfo.maps.length > 0
-			? [
-					{
-						mapId: homeInFo.mapInfo.maps[0].id,
-						name: homeInFo.mapInfo.maps[0].name ?? `Map ${homeInFo.mapInfo.maps[0].id}`,
-					},
-				]
-			: [];
+	const supportedMaps = toSupportedMaps(homeInFo.mapInfo, enableMultipleMap);
 
 	logger.debug('getSupportedAreas - supportedAreas', debugStringify(supportedAreas));
 	logger.debug('getSupportedAreas - supportedMaps', debugStringify(supportedMaps));

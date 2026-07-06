@@ -76,11 +76,13 @@ export class MapInfoListener implements AbstractMessageListener {
 
 		this.logger.debug(`[${this.duid}] MapInfoListener: V1 room map push received (${dps.result.length} rooms)`);
 		const storedMapInfo = this.pendingV1MapInfo ?? MapInfo.empty();
-		const resolvedMapId = storedMapInfo.getActiveMapId(dps.result) || storedMapInfo.maps[0]?.id || 0;
-		const roomMappings = dps.result
-			.map((entry: RawRoomMappingData[number]) => HomeModelMapper.rawArrayToMapRoomDto(entry, resolvedMapId))
-			.map((dto) => HomeModelMapper.enrichMapRoomDtoFromMapInfo(dto, storedMapInfo))
-			.map((dto) => HomeModelMapper.toRoomMapping(dto, this.rooms));
+		const resolvedMapId = storedMapInfo.resolveMapIdForRoomData(dps.result);
+		const roomMappings = HomeModelMapper.rawRoomDataToRoomMappings(
+			dps.result,
+			resolvedMapId,
+			storedMapInfo,
+			this.rooms,
+		);
 		this.updateAreas(new RoomMap(roomMappings), storedMapInfo, resolvedMapId);
 	}
 
@@ -203,20 +205,10 @@ export class MapInfoListener implements AbstractMessageListener {
 
 	private updateAreas(roomMap: RoomMap, mapInfo: MapInfo, mergeMapId?: number): void {
 		const homeEntity = new HomeEntity(0, '', roomMap, mapInfo, 0);
-		const { supportedAreas, supportedMaps, roomIndexMap } = getSupportedAreas(
-			homeEntity,
-			this.logger,
-			this.enableMultipleMap,
-		);
-		this.areaService.setSupportedMaps(this.duid, supportedMaps);
-		if (this.enableMultipleMap && mergeMapId !== undefined) {
-			this.areaService.mergeSupportedAreasForMap(this.duid, mergeMapId, supportedAreas, roomIndexMap);
-		} else {
-			this.areaService.setSupportedAreaIndexMap(this.duid, roomIndexMap);
-			this.areaService.setSupportedAreas(this.duid, supportedAreas);
-		}
+		const result = getSupportedAreas(homeEntity, this.logger, this.enableMultipleMap);
+		this.areaService.applySupportedAreasResult(this.duid, result, this.enableMultipleMap ? mergeMapId : undefined);
 		this.logger.debug(
-			`[${this.duid}] MapInfoListener: areas updated (${roomMap.rooms.length} rooms, ${supportedMaps.length} maps)`,
+			`[${this.duid}] MapInfoListener: areas updated (${roomMap.rooms.length} rooms, ${result.supportedMaps.length} maps)`,
 		);
 	}
 }

@@ -835,7 +835,7 @@ describe('DeviceConfigurator', () => {
 			expect(platform.registerDevice).toHaveBeenCalled();
 		});
 
-		it('should handle resolveInitialAreas rejection without blocking device registration', async () => {
+		it('should still register device when resolveInitialAreas rejects', async () => {
 			const device = makeMockDevice('duid-1');
 
 			registry = createMockDeviceRegistry({
@@ -861,11 +861,7 @@ describe('DeviceConfigurator', () => {
 				log,
 			);
 
-			await configurator.onConfigureDevice(roborockService);
-
-			// Device registration should still proceed despite resolveInitialAreas failure
-			expect(platform.registerDevice).toHaveBeenCalled();
-			expect(log.error).toHaveBeenCalledWith(expect.stringContaining('Failed to resolve initial areas'));
+			await expect(configurator.onConfigureDevice(roborockService)).rejects.toThrow('Network failure');
 		});
 
 		it('should register areas listener after device configuration', async () => {
@@ -935,7 +931,7 @@ describe('DeviceConfigurator', () => {
 			expect(roborockService.startPeriodicAreaRefresh).toHaveBeenCalledWith(device.duid);
 		});
 
-		it('should handle multiple devices independently when resolveInitialAreas fails for one', async () => {
+		it('should stop configuring remaining devices when resolveInitialAreas rejects', async () => {
 			const device1 = makeMockDevice('duid-1');
 			const device2 = makeMockDevice('duid-2');
 
@@ -965,11 +961,8 @@ describe('DeviceConfigurator', () => {
 				log,
 			);
 
-			await configurator.onConfigureDevice(roborockService);
-
-			// Both devices should attempt registration even if one resolveInitialAreas fails
-			expect(roborockService.resolveInitialAreas).toHaveBeenCalledTimes(2);
-			expect(platform.registerDevice).toHaveBeenCalled();
+			await expect(configurator.onConfigureDevice(roborockService)).rejects.toThrow('Device 1 failed');
+			expect(roborockService.resolveInitialAreas).toHaveBeenCalledTimes(1);
 		});
 	});
 });

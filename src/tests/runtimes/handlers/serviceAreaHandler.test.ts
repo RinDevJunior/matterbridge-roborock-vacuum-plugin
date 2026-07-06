@@ -40,6 +40,7 @@ function createMockPlatform(
 			getSelectedAreas: vi.fn().mockReturnValue([]),
 			getProgress: vi.fn().mockReturnValue([]),
 			setProgress: vi.fn(),
+			ensureAreasForMap: vi.fn().mockResolvedValue(false),
 		}),
 	});
 }

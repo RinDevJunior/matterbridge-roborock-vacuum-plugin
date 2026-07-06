@@ -55,11 +55,19 @@ export class MapInfo {
 		});
 	}
 
-	public getActiveMapId(roomData: RawRoomMappingData): number {
-		const match = this.maps.find((map) => {
+	private findMapForRoomData(roomData: RawRoomMappingData): MapEntry | undefined {
+		return this.maps.find((map) => {
 			if (roomData.length !== map.rooms.length) return false;
 			return roomData.every((entry) => map.rooms.some((r) => r.id === entry[0] && r.iot_name_id === entry[1]));
 		});
-		return match?.id ?? 0;
+	}
+
+	public getActiveMapId(roomData: RawRoomMappingData): number {
+		return this.findMapForRoomData(roomData)?.id ?? 0;
+	}
+
+	/** Resolve map id from raw room tuples; avoids `||` treating map id 0 as missing. */
+	public resolveMapIdForRoomData(roomData: RawRoomMappingData, expectedMapId?: number): number {
+		return expectedMapId ?? this.findMapForRoomData(roomData)?.id ?? this.maps[0]?.id ?? 0;
 	}
 }

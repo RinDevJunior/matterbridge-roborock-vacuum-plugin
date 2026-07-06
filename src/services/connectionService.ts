@@ -199,7 +199,7 @@ export class ConnectionService {
 				onActiveMapChanged,
 				device.specs.protocol,
 				allowV1AreaUpdate,
-				this.configManager?.isMultipleMapEnabled ?? false,
+				this.areaManagementService.isMultipleMapEnabled(),
 			);
 			this.clientRouter.registerMessageListener(mapInfoListener);
 		}

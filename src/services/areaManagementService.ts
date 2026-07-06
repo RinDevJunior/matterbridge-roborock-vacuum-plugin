@@ -5,7 +5,7 @@ import { ROUTINE_MAP_ID } from '../constants/ids.js';
 import { MapInfo, RoomIndexMap, RoomMap } from '../core/application/models/index.js';
 import { HomeEntity } from '../core/domain/entities/Home.js';
 import { DeviceError } from '../errors/index.js';
-import { getSupportedAreas } from '../initialData/getSupportedAreas.js';
+import { getSupportedAreas, type SupportedAreasResult, toSupportedMaps } from '../initialData/getSupportedAreas.js';
 import { mergeSupportedAreasByMap } from '../initialData/mergeSupportedAreasByMap.js';
 import { RoborockIoTApi } from '../roborockCommunication/api/iotClient.js';
 import { HomeModelMapper, RawRoomMappingData, RoomDto } from '../roborockCommunication/models/home/index.js';
@@ -35,6 +35,10 @@ export class AreaManagementService {
 
 	private getPrimaryMapId(duid: string): number | undefined {
 		return this.mapInfoCache.get(duid)?.maps[0]?.id;
+	}
+
+	public isMultipleMapEnabled(): boolean {
+		return this.enableMultipleMap;
 	}
 
 	public setIotApi(iotApi: RoborockIoTApi): void {
@@ -130,32 +134,30 @@ export class AreaManagementService {
 
 		const mapInfo = await this.serviceRouting.getMapInfo(duid);
 		this.mapInfoCache.set(duid, mapInfo);
-		if (mapInfo.maps.length > 0) {
-			const supportedMaps = this.enableMultipleMap
-				? mapInfo.maps.map((map) => ({
-						mapId: map.id,
-						name: map.name ?? `Map ${map.id}`,
-					}))
-				: mapInfo.maps.slice(0, 1).map((map) => ({
-						mapId: map.id,
-						name: map.name ?? `Map ${map.id}`,
-					}));
-			this.setSupportedMaps(duid, supportedMaps);
-		}
 		if (mapInfo.hasRooms) {
 			const rooms = this.deviceRooms.get(duid) ?? [];
 			const roomMappings = mapInfo.allRooms.map((dto) => HomeModelMapper.toRoomMapping(dto, rooms));
 			const homeEntity = new HomeEntity(0, '', new RoomMap(roomMappings), mapInfo, 0);
-			const { supportedAreas, supportedMaps, roomIndexMap } = getSupportedAreas(
-				homeEntity,
-				this.logger,
-				this.enableMultipleMap,
-			);
-			this.setSupportedAreaIndexMap(duid, roomIndexMap);
-			this.setSupportedAreas(duid, supportedAreas);
-			this.setSupportedMaps(duid, supportedMaps);
+			this.applyAreasResult(duid, getSupportedAreas(homeEntity, this.logger, this.enableMultipleMap));
+		} else if (mapInfo.maps.length > 0) {
+			this.setSupportedMaps(duid, toSupportedMaps(mapInfo, this.enableMultipleMap));
 		}
 		return mapInfo;
+	}
+
+	private applyAreasResult(duid: string, result: SupportedAreasResult, mergeMapId?: number): void {
+		this.setSupportedMaps(duid, result.supportedMaps);
+		if (this.enableMultipleMap && mergeMapId !== undefined) {
+			this.mergeSupportedAreasForMap(duid, mergeMapId, result.supportedAreas, result.roomIndexMap);
+			return;
+		}
+		this.setSupportedAreaIndexMap(duid, result.roomIndexMap);
+		this.setSupportedAreas(duid, result.supportedAreas);
+	}
+
+	/** Publish areas/maps from a computed {@link SupportedAreasResult} (live push path). */
+	public applySupportedAreasResult(duid: string, result: SupportedAreasResult, mergeMapId?: number): void {
+		this.applyAreasResult(duid, result, mergeMapId);
 	}
 
 	private isPhysicalMapId(mapId: number): boolean {
@@ -172,7 +174,7 @@ export class AreaManagementService {
 		}
 
 		const storedMapInfo = this.mapInfoCache.get(duid) ?? MapInfo.empty();
-		const resolvedMapId = expectedMapId ?? (storedMapInfo.getActiveMapId(rawData) || storedMapInfo.maps[0]?.id) ?? 0;
+		const resolvedMapId = storedMapInfo.resolveMapIdForRoomData(rawData, expectedMapId);
 
 		if (!this.enableMultipleMap) {
 			const primaryMapId = this.getPrimaryMapId(duid);
@@ -182,24 +184,13 @@ export class AreaManagementService {
 		}
 
 		const rooms = this.deviceRooms.get(duid) ?? [];
-		const roomMappings = rawData
-			.map((entry) => HomeModelMapper.rawArrayToMapRoomDto(entry, resolvedMapId))
-			.map((dto) => HomeModelMapper.enrichMapRoomDtoFromMapInfo(dto, storedMapInfo))
-			.map((dto) => HomeModelMapper.toRoomMapping(dto, rooms));
+		const roomMappings = HomeModelMapper.rawRoomDataToRoomMappings(rawData, resolvedMapId, storedMapInfo, rooms);
 		const homeEntity = new HomeEntity(0, '', new RoomMap(roomMappings), storedMapInfo, 0);
-		const { supportedAreas, supportedMaps, roomIndexMap } = getSupportedAreas(
-			homeEntity,
-			this.logger,
-			this.enableMultipleMap,
+		this.applyAreasResult(
+			duid,
+			getSupportedAreas(homeEntity, this.logger, this.enableMultipleMap),
+			this.enableMultipleMap ? resolvedMapId : undefined,
 		);
-
-		if (this.enableMultipleMap) {
-			this.mergeSupportedAreasForMap(duid, resolvedMapId, supportedAreas, roomIndexMap);
-		} else {
-			this.setSupportedAreaIndexMap(duid, roomIndexMap);
-			this.setSupportedAreas(duid, supportedAreas);
-			this.setSupportedMaps(duid, supportedMaps);
-		}
 		return resolvedMapId;
 	}
 
@@ -289,13 +280,7 @@ export class AreaManagementService {
 					if (this.hasAreasForMap(duid, map.id)) {
 						continue;
 					}
-					try {
-						await this.ensureAreasForMap(duid, map.id, { switchFirst: true });
-					} catch (err) {
-						this.logger.error(
-							`AreaManagementService - resolveInitialAreas bootstrap failed for ${duid} map ${map.id}: ${String(err)}`,
-						);
-					}
+					await this.ensureAreasForMap(duid, map.id, { switchFirst: true });
 				}
 
 				if (originalActiveMapId !== undefined && this.isPhysicalMapId(originalActiveMapId)) {
@@ -366,6 +351,7 @@ export class AreaManagementService {
 		this.supportedAreaIndexMaps.clear();
 		this.areasListeners.clear();
 		this.deviceRooms.clear();
+		this.mapInfoCache.clear();
 		this.logger.debug('AreaManagementService - All data cleared');
 	}
 }

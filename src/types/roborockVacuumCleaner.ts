@@ -8,6 +8,7 @@ import { CommandNames } from '../behaviors/BehaviorDeviceGeneric.js';
 import { CleanModeSetting } from '../behaviors/roborock.vacuum/core/CleanModeSetting.js';
 import { baseRunModeConfigs, getRunModeOptions } from '../behaviors/roborock.vacuum/core/runModeConfig.js';
 import { RoborockServiceAreaServer } from '../behaviors/roborockServiceAreaServer.js';
+import { ROUTINE_MAP_ID } from '../constants/ids.js';
 import { HomeEntity } from '../core/domain/entities/Home.js';
 import { getOperationalStates, getSupportedCleanModes, getSupportedRoutines } from '../initialData/index.js';
 import { DockStationStatus } from '../model/DockStationStatus.js';
@@ -234,12 +235,11 @@ export class RoborockVacuumCleaner extends RoboticVacuumCleaner {
 			roborockService.setSupportedRoutines(device.duid, routineAsRooms);
 		}
 
-		// temporary use map id 999 for routine
 		if (routineAsRooms.length > 0) {
-			const mapForRoutine: ServiceArea.Map = { mapId: 999, name: 'Routine' };
+			const mapForRoutine: ServiceArea.Map = { mapId: ROUTINE_MAP_ID, name: 'Routine' };
 			supportedMaps.push(mapForRoutine);
 			routineAsRooms.forEach((rt) => {
-				rt.mapId = 999;
+				rt.mapId = ROUTINE_MAP_ID;
 			});
 		}
 

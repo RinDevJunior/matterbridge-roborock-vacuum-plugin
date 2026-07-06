@@ -42,10 +42,26 @@ describe('MapInfoListener', () => {
 	const rooms = [asPartial({ id: 11100845, name: 'Kitchen' }), asPartial({ id: 11100849, name: 'Study' })];
 
 	beforeEach(() => {
+		const setSupportedAreas = vi.fn();
+		const setSupportedAreaIndexMap = vi.fn();
+		const setSupportedMaps = vi.fn();
+		const mergeSupportedAreasForMap = vi.fn();
 		areaService = asPartial<AreaManagementService>({
-			setSupportedAreas: vi.fn(),
-			setSupportedAreaIndexMap: vi.fn(),
-			setSupportedMaps: vi.fn(),
+			setSupportedAreas,
+			setSupportedAreaIndexMap,
+			setSupportedMaps,
+			mergeSupportedAreasForMap,
+			applySupportedAreasResult: vi.fn((_duid, result, mergeMapId) => {
+				setSupportedMaps(result.supportedMaps);
+				if (mergeMapId !== undefined) {
+					mergeSupportedAreasForMap(_duid, mergeMapId, result.supportedAreas, result.roomIndexMap);
+					setSupportedAreaIndexMap(_duid, result.roomIndexMap);
+					setSupportedAreas(_duid, result.supportedAreas);
+				} else {
+					setSupportedAreaIndexMap(_duid, result.roomIndexMap);
+					setSupportedAreas(_duid, result.supportedAreas);
+				}
+			}),
 		});
 		listener = new MapInfoListener(DUID, rooms as never, areaService, createMockLogger());
 	});

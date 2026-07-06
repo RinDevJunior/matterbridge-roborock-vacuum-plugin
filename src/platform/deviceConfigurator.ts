@@ -5,6 +5,7 @@ import { UINT16_MAX, UINT32_MAX, VendorId } from 'matterbridge/matter';
 import { BridgedDeviceBasicInformation, Descriptor, Identify, ServiceArea } from 'matterbridge/matter/clusters';
 import { isValidNumber, isValidString } from 'matterbridge/utils';
 
+import { ROUTINE_MAP_ID } from '../constants/ids.js';
 import { MapInfo, RoomMap } from '../core/application/models/index.js';
 import { HomeEntity } from '../core/domain/entities/Home.js';
 import { MatterOverrideSettings } from '../model/RoborockPluginPlatformConfig.js';
@@ -103,16 +104,9 @@ export class DeviceConfigurator {
 		roborockService.setDeviceRooms(vacuum.duid, homeData.rooms);
 		const homeInfo = new HomeEntity(homeData.id, homeData.name, RoomMap.empty(), MapInfo.empty(), -1);
 
-		// Resolve initial areas before constructing the device to avoid placeholder room names in Apple Home
-		let supportedAreas: ServiceArea.Area[] = [];
-		let supportedMaps: ServiceArea.Map[] = [];
-		try {
-			const resolved = await roborockService.resolveInitialAreas(vacuum.duid);
-			supportedAreas = resolved.supportedAreas;
-			supportedMaps = resolved.supportedMaps;
-		} catch (err) {
-			this.log.error(`Failed to resolve initial areas for ${vacuum.name} (${vacuum.duid}): ${String(err)}`);
-		}
+		const resolved = await roborockService.resolveInitialAreas(vacuum.duid);
+		const supportedAreas = resolved.supportedAreas;
+		const supportedMaps = resolved.supportedMaps;
 
 		const robot = new RoborockVacuumCleaner(
 			vacuum,
@@ -126,7 +120,7 @@ export class DeviceConfigurator {
 
 		roborockService.registerAreasListener(vacuum.duid, (areas, maps) => {
 			const routines = roborockService.getSupportedRoutines(vacuum.duid) ?? [];
-			const routineMap: ServiceArea.Map = { mapId: 999, name: 'Routine' };
+			const routineMap: ServiceArea.Map = { mapId: ROUTINE_MAP_ID, name: 'Routine' };
 			const allMaps = routines.length > 0 ? [...maps, routineMap] : maps;
 			robot.updateAttribute(ServiceArea.id, 'currentArea', null, this.log);
 			robot.updateAttribute(ServiceArea.id, 'supportedMaps', allMaps, this.log);

@@ -25,6 +25,18 @@ export const HomeModelMapper = {
 		} satisfies MapRoomDto;
 	},
 
+	rawRoomDataToRoomMappings(
+		rawData: RawRoomMappingData,
+		mapId: number,
+		mapInfo: MapInfo,
+		rooms: RoomDto[],
+	): RoomMapping[] {
+		return rawData
+			.map((entry) => this.rawArrayToMapRoomDto(entry, mapId))
+			.map((dto) => this.enrichMapRoomDtoFromMapInfo(dto, mapInfo))
+			.map((dto) => this.toRoomMapping(dto, rooms));
+	},
+
 	enrichMapRoomDtoFromMapInfo(dto: MapRoomDto, mapInfo: MapInfo): MapRoomDto {
 		if (dto.iot_name) {
 			return dto;
