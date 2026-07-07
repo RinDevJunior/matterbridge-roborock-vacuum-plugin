@@ -5,6 +5,7 @@
 **Task:** Second cleanup iteration — delete dead file (handleCloudMessage.ts), dead duplicate function (asType), dead line (commented throw), refactor two duplicated blocks into shared helpers, add test coverage for previously-untested handleDeviceStatusSimpleUpdate.
 
 **Changes:**
+
 - `src/runtimes/handleCloudMessage.ts` — deleted (129 lines, 100% dead commented-out code)
 - `src/share/function.ts` — deleted `asType<T>()` duplicate function (lines 86-89)
 - `src/roborockCommunication/protocol/dispatcher/dispatcherFactory.ts` — deleted commented-out line 56
@@ -19,6 +20,7 @@
 **Task:** Remove 22 unused error subclasses, delete empty ExperimentalFeatureSetting.ts, remove orphaned node-persist-manager dependency, trim error barrel exports to only actively-thrown classes.
 
 **Changes:**
+
 - `src/model/ExperimentalFeatureSetting.ts` — deleted (0 bytes, zero references)
 - `package.json` — removed `node-persist-manager` dependency line 114 (regenerated package-lock.json)
 - `src/errors/AuthenticationError.ts` — deleted `InvalidVerificationCodeError`, `RateLimitExceededError` dead subclasses

@@ -4,6 +4,22 @@ All notable changes to this project will be documented in this file.
 
 ---
 
+## [1.1.7-rc07] - 2026-07-07
+
+### Fixed
+
+- **Multi-map cleaning progress stuck on Preparing/Traveling** — Guarded active-map updates so progress state advances correctly during multi-map cleaning runs.
+- **Wrong default map selected at startup and after cleaning** — Multi-map areas are now sorted by `mapId`, ensuring the correct default map is chosen at plugin startup and after a clean completes.
+
+### Refactored
+
+- **Removed dead code and unused dependency** — Deleted 22 unused error subclasses and their tests, an empty `ExperimentalFeatureSetting.ts` file, the orphaned `node-persist-manager` dependency, and the unused `handleCloudMessage.ts` runtime.
+- **Consolidated device state and service-area handling** — Extracted a shared `applyResolvedStateUpdates` helper in `deviceStateHandler` and merged duplicate branches in `serviceAreaHandler`, with added test coverage for `handleDeviceStatusSimpleUpdate`.
+
+<a href="https://www.buymeacoffee.com/rinnvspktr" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/default-orange.png" alt="Buy Me A Coffee" height="41" width="174"></a>
+
+---
+
 ## [1.1.7-rc06] - 2026-07-07
 
 ### Added
