@@ -1,5 +1,40 @@
 # Claude History
 
+## 2026-07-07 — Ponytail audit cleanup cycle 2: refactor duplicates, delete dead code, add test coverage
+
+**Task:** Second cleanup iteration — delete dead file (handleCloudMessage.ts), dead duplicate function (asType), dead line (commented throw), refactor two duplicated blocks into shared helpers, add test coverage for previously-untested handleDeviceStatusSimpleUpdate.
+
+**Changes:**
+- `src/runtimes/handleCloudMessage.ts` — deleted (129 lines, 100% dead commented-out code)
+- `src/share/function.ts` — deleted `asType<T>()` duplicate function (lines 86-89)
+- `src/roborockCommunication/protocol/dispatcher/dispatcherFactory.ts` — deleted commented-out line 56
+- `src/runtimes/handlers/deviceStateHandler.ts` — extracted shared `applyResolvedStateUpdates()` helper, behavior-preserving refactor (both call sites now use the same logic)
+- `src/runtimes/handlers/serviceAreaHandler.ts` — merged two identical-body branches in `handleCleaningWithoutInfo` into single if/else (lines 212–227 deduplicated)
+- `src/tests/runtimes/handlers/deviceStateHandler.test.ts` — new test coverage for `handleDeviceStatusSimpleUpdate` (basic flow, operationalError, dock-station error short-circuit, operation-completion tracking)
+
+**Outcome:** Pass (reviewed, tested). Excluded: `deviceBuilder.ts` vs `deviceManagementService.ts` (genuine behavioral divergence in scenes-sourcing logic, no safety net test coverage exists for either).
+
+## 2026-07-07 — Ponytail audit cleanup cycle 1: delete empty file, remove orphaned dependency, prune dead error classes
+
+**Task:** Remove 22 unused error subclasses, delete empty ExperimentalFeatureSetting.ts, remove orphaned node-persist-manager dependency, trim error barrel exports to only actively-thrown classes.
+
+**Changes:**
+- `src/model/ExperimentalFeatureSetting.ts` — deleted (0 bytes, zero references)
+- `package.json` — removed `node-persist-manager` dependency line 114 (regenerated package-lock.json)
+- `src/errors/AuthenticationError.ts` — deleted `InvalidVerificationCodeError`, `RateLimitExceededError` dead subclasses
+- `src/errors/DeviceError.ts` — deleted `DeviceOfflineError`, `DeviceCommandError`, `UnsupportedDeviceError` dead subclasses
+- `src/errors/CommunicationError.ts` — deleted entire file (all 9 classes unused in production)
+- `src/errors/ConfigurationError.ts` — deleted entire file (all 5 classes unused in production)
+- `src/errors/ValidationError.ts` — deleted entire file (all 5 classes unused in production)
+- `src/errors/index.ts` — removed Communication/Configuration/Validation export blocks; trimmed Authentication and Device blocks to 8 actively-thrown classes
+- `src/tests/errors/CommunicationError.test.ts` — deleted (257 lines, test-only file for dead classes)
+- `src/tests/errors/ConfigurationError.test.ts` — deleted (test-only file for dead classes)
+- `src/tests/errors/ValidationError.test.ts` — deleted (test-only file for dead classes)
+- `src/tests/errors/AuthenticationError.test.ts` — trimmed to only test kept classes
+- `src/tests/errors/DeviceError.test.ts` — trimmed to only test kept classes
+
+**Outcome:** Pass (reviewed, tested). Excluded: AbstractMessageHandler interface kept (14 callers across handlers/listeners, user explicitly requested retention for future use).
+
 ## 2026-07-06 — Preserve map_info room names in getRoomMap
 
 **Task:** Fix startup room labels showing generic "Room 1"–"Room 4" in Apple Home while later rooms display correct names — `getRoomMap` was overwriting `getMapInfo` names because raw `get_room_mapping` tuples lack `iot_name`.

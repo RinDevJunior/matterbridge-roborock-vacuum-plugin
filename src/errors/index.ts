@@ -20,50 +20,9 @@ export { BaseError } from './BaseError.js';
 export {
 	AuthenticationError,
 	InvalidCredentialsError,
-	InvalidVerificationCodeError,
-	RateLimitExceededError,
 	TokenExpiredError,
 	VerificationCodeExpiredError,
 } from './AuthenticationError.js';
 
 // Device errors
-export {
-	DeviceCommandError,
-	DeviceConnectionError,
-	DeviceError,
-	DeviceInitializationError,
-	DeviceNotFoundError,
-	DeviceOfflineError,
-	UnsupportedDeviceError,
-} from './DeviceError.js';
-
-// Communication errors
-export {
-	APIError,
-	CommunicationError,
-	DeserializationError,
-	LocalNetworkError,
-	MQTTConnectionError,
-	NetworkError,
-	ProtocolError,
-	SerializationError,
-	TimeoutError,
-} from './CommunicationError.js';
-
-// Configuration errors
-export {
-	ConfigurationError,
-	InvalidConfigurationError,
-	InvalidRegionError,
-	MissingConfigurationError,
-	MissingCredentialsError,
-} from './ConfigurationError.js';
-
-// Validation errors
-export {
-	InvalidFormatError,
-	InvalidParameterError,
-	MissingParameterError,
-	OutOfRangeError,
-	ValidationError,
-} from './ValidationError.js';
+export { DeviceConnectionError, DeviceError, DeviceInitializationError, DeviceNotFoundError } from './DeviceError.js';

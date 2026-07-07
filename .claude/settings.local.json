@@ -19,7 +19,12 @@
 			"Bash(git status*)"
 		]
 	},
-	"enabledMcpjsonServers": ["codegraph", "glob-grep", "cli-runner", "serena"],
+	"enabledMcpjsonServers": ["codegraph", "glob-grep", "cli-runner", "serena", "read-log"],
 	"outputStyle": "default",
-	"spinnerTipsEnabled": true
+	"spinnerTipsEnabled": true,
+	"statusLine": {
+		"type": "command",
+		"command": "bash .claude/statusline-command.sh",
+		"refreshInterval": 30000
+	}
 }

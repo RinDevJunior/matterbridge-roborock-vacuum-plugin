@@ -209,15 +209,7 @@ async function handleCleaningWithoutInfo(
 		return;
 	}
 
-	if (selectedAreas.length === 1) {
-		await robot.updateAttribute(ServiceArea.id, 'selectedAreas', selectedAreas, logger);
-		await updateCurrentAreaAndEstimate(robot, selectedAreas[0], message, platform);
-
-		const existingProgress = platform.roborockService?.getProgress(robot.device.duid) ?? [];
-		const updatedProgress = buildProgressUpdate(existingProgress, selectedAreas, selectedAreas[0]);
-		platform.roborockService?.setProgress(robot.device.duid, updatedProgress);
-		await robot.updateAttribute(ServiceArea.id, 'progress', updatedProgress, logger);
-	} else if (selectedAreas.length > 1 && message.cleaningProcess.clean_time > 0) {
+	if (selectedAreas.length === 1 || (selectedAreas.length > 1 && message.cleaningProcess.clean_time > 0)) {
 		await robot.updateAttribute(ServiceArea.id, 'selectedAreas', selectedAreas, logger);
 		await updateCurrentAreaAndEstimate(robot, selectedAreas[0], message, platform);
 

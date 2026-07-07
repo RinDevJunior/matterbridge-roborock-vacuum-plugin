@@ -3,8 +3,6 @@ import { describe, expect, it } from 'vitest';
 import {
 	AuthenticationError,
 	InvalidCredentialsError,
-	InvalidVerificationCodeError,
-	RateLimitExceededError,
 	TokenExpiredError,
 	VerificationCodeExpiredError,
 } from '../../errors/AuthenticationError.js';
@@ -83,35 +81,6 @@ describe('AuthenticationError', () => {
 		});
 	});
 
-	describe('InvalidVerificationCodeError', () => {
-		it('should create error without code', () => {
-			const error = new InvalidVerificationCodeError();
-
-			expect(error).toBeInstanceOf(AuthenticationError);
-			expect(error.message).toBe('Invalid verification code format. Expected 6 digits.');
-			expect(error.metadata).toEqual({
-				reason: 'INVALID_CODE_FORMAT',
-				providedCode: undefined,
-			});
-		});
-
-		it('should create error with provided code', () => {
-			const error = new InvalidVerificationCodeError('abc123');
-
-			expect(error.message).toBe('Invalid verification code format. Expected 6 digits.');
-			expect(error.metadata).toEqual({
-				reason: 'INVALID_CODE_FORMAT',
-				providedCode: 'abc123',
-			});
-		});
-
-		it('should handle empty string code', () => {
-			const error = new InvalidVerificationCodeError('');
-
-			expect(error.metadata?.providedCode).toBe('');
-		});
-	});
-
 	describe('TokenExpiredError', () => {
 		it('should create token expired error', () => {
 			const error = new TokenExpiredError();
@@ -131,44 +100,9 @@ describe('AuthenticationError', () => {
 		});
 	});
 
-	describe('RateLimitExceededError', () => {
-		it('should create error without retry time', () => {
-			const error = new RateLimitExceededError();
-
-			expect(error).toBeInstanceOf(AuthenticationError);
-			expect(error.message).toBe('Too many authentication attempts. Please try again later.');
-			expect(error.metadata).toEqual({
-				reason: 'RATE_LIMIT_EXCEEDED',
-				retryAfter: undefined,
-			});
-		});
-
-		it('should create error with retry time', () => {
-			const error = new RateLimitExceededError(300);
-
-			expect(error.message).toBe('Too many authentication attempts. Please try again later.');
-			expect(error.metadata).toEqual({
-				reason: 'RATE_LIMIT_EXCEEDED',
-				retryAfter: 300,
-			});
-		});
-
-		it('should handle different retry times', () => {
-			const error = new RateLimitExceededError(60);
-
-			expect(error.metadata?.retryAfter).toBe(60);
-		});
-	});
-
 	describe('error hierarchy', () => {
 		it('should maintain proper inheritance chain', () => {
-			const errors = [
-				new VerificationCodeExpiredError(),
-				new InvalidCredentialsError(),
-				new InvalidVerificationCodeError(),
-				new TokenExpiredError(),
-				new RateLimitExceededError(),
-			];
+			const errors = [new VerificationCodeExpiredError(), new InvalidCredentialsError(), new TokenExpiredError()];
 
 			errors.forEach((error) => {
 				expect(error).toBeInstanceOf(Error);
@@ -177,13 +111,7 @@ describe('AuthenticationError', () => {
 		});
 
 		it('should all have AUTH_ERROR code', () => {
-			const errors = [
-				new VerificationCodeExpiredError(),
-				new InvalidCredentialsError(),
-				new InvalidVerificationCodeError(),
-				new TokenExpiredError(),
-				new RateLimitExceededError(),
-			];
+			const errors = [new VerificationCodeExpiredError(), new InvalidCredentialsError(), new TokenExpiredError()];
 
 			errors.forEach((error) => {
 				expect(error.code).toBe('AUTH_ERROR');

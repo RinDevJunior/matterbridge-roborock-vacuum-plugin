@@ -1,3 +1,4 @@
+import type { AnsiLogger } from 'matterbridge/logger';
 import { debugStringify } from 'matterbridge/logger';
 import { RvcOperationalState, RvcRunMode } from 'matterbridge/matter/clusters';
 
@@ -6,15 +7,46 @@ import type { RoborockMatterbridgePlatform } from '../../module.js';
 import { OperationStatusCode } from '../../roborockCommunication/enums/index.js';
 import { StatusChangeMessage } from '../../roborockCommunication/models/index.js';
 import { getOperationalStateName, getRunModeName, getRunModeNameV2 } from '../../share/matterStateNames.js';
+import type { ResolvedState } from '../../share/stateResolver.js';
 import { resolveDeviceState } from '../../share/stateResolver.js';
 import type { RoborockVacuumCleaner } from '../../types/roborockVacuumCleaner.js';
 import { triggerDssError } from '../handleLocalMessage.js';
+import type { OperationSessionSnapshot } from './operationCompletionTracker.js';
 import {
 	captureSessionSnapshot,
 	captureSessionSnapshotFromResolved,
 	maybeEmitOperationCompletion,
 	trackOperationSessionTiming,
 } from './operationCompletionTracker.js';
+
+async function applyResolvedStateUpdates(
+	robot: RoborockVacuumCleaner,
+	resolvedState: ResolvedState,
+	beforeSnapshot: OperationSessionSnapshot,
+	log: AnsiLogger,
+): Promise<void> {
+	const updates = [
+		robot.updateAttribute(RvcRunMode.id, 'currentMode', getRunningMode(resolvedState.runMode), log),
+		robot.updateAttribute(RvcOperationalState.id, 'operationalState', resolvedState.operationalState, log),
+	];
+
+	if (resolvedState.operationalError !== undefined) {
+		updates.push(
+			robot.updateAttribute(
+				RvcOperationalState.id,
+				'operationalError',
+				{ errorStateId: resolvedState.operationalError },
+				log,
+			),
+		);
+	}
+
+	await Promise.all(updates);
+
+	const afterSnapshot = captureSessionSnapshotFromResolved(resolvedState);
+	trackOperationSessionTiming(robot, beforeSnapshot, afterSnapshot);
+	await maybeEmitOperationCompletion(robot, beforeSnapshot, afterSnapshot, log);
+}
 
 export async function handleDeviceStatusUpdate(
 	robot: RoborockVacuumCleaner,
@@ -58,27 +90,7 @@ export async function handleDeviceStatusUpdate(
 		return false;
 	}
 
-	const updates = [
-		robot.updateAttribute(RvcRunMode.id, 'currentMode', getRunningMode(resolvedState.runMode), platform.log),
-		robot.updateAttribute(RvcOperationalState.id, 'operationalState', resolvedState.operationalState, platform.log),
-	];
-
-	if (resolvedState.operationalError !== undefined) {
-		updates.push(
-			robot.updateAttribute(
-				RvcOperationalState.id,
-				'operationalError',
-				{ errorStateId: resolvedState.operationalError },
-				platform.log,
-			),
-		);
-	}
-
-	await Promise.all(updates);
-
-	const afterSnapshot = captureSessionSnapshotFromResolved(resolvedState);
-	trackOperationSessionTiming(robot, beforeSnapshot, afterSnapshot);
-	await maybeEmitOperationCompletion(robot, beforeSnapshot, afterSnapshot, platform.log);
+	await applyResolvedStateUpdates(robot, resolvedState, beforeSnapshot, platform.log);
 
 	const isActive =
 		resolvedState.runMode === RvcRunMode.ModeTag.Cleaning || resolvedState.runMode === RvcRunMode.ModeTag.Mapping;
@@ -117,25 +129,5 @@ export async function handleDeviceStatusSimpleUpdate(
 		`Resolved state from simple update: runMode=${getRunModeName(resolvedState.runMode)}, operationalState=${getOperationalStateName(resolvedState.operationalState)}`,
 	);
 
-	const updates = [
-		robot.updateAttribute(RvcRunMode.id, 'currentMode', getRunningMode(resolvedState.runMode), platform.log),
-		robot.updateAttribute(RvcOperationalState.id, 'operationalState', resolvedState.operationalState, platform.log),
-	];
-
-	if (resolvedState.operationalError !== undefined) {
-		updates.push(
-			robot.updateAttribute(
-				RvcOperationalState.id,
-				'operationalError',
-				{ errorStateId: resolvedState.operationalError },
-				platform.log,
-			),
-		);
-	}
-
-	await Promise.all(updates);
-
-	const afterSnapshot = captureSessionSnapshotFromResolved(resolvedState);
-	trackOperationSessionTiming(robot, beforeSnapshot, afterSnapshot);
-	await maybeEmitOperationCompletion(robot, beforeSnapshot, afterSnapshot, platform.log);
+	await applyResolvedStateUpdates(robot, resolvedState, beforeSnapshot, platform.log);
 }

@@ -31,6 +31,7 @@
 
 ### Implementation Tasks
 
+- [ ] **Ponytail audit cleanup cycles 1–2 (completed)** — consolidated into history; see claude_history.md entries for 2026-07-07
 - [ ] **RVC estimatedEndTime real-device validation** — confirm V1 `clean_percent` tracks job progress reliably when `enableEstimatedEndTime` is on; document accuracy limits (pauses, low percent, Home display lag)
 - [ ] **RVC SkipArea real-device validation** — confirm skip room on V10 multi-room clean; expect `InvalidInMode` on B01/Q7
 - [ ] **RVC FillingWaterTank real-device validation** — confirm `wash_status` / `replenish_mode` disambiguation from `CleaningMop` on dock-fill robots
