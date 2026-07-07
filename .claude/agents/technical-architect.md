@@ -181,6 +181,8 @@ pending
 
 **Do not spawn investigator for trivial lookups.**
 
+Investigator may run live plugin logs when needed — see `shared-rules.md` for the approval gate.
+
 After Investigator returns, read `answers-<topic>.md`. If gaps remain, write additional question files and spawn investigator again — still within this session, no EM round-trip.
 
 ### Step 5 — Escalate Complexity if Needed

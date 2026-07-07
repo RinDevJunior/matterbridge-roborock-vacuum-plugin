@@ -30,3 +30,4 @@ On `path/to/file.ts(line,col): error ...`, jump straight to `Read(file, offset: 
 3. **`LSP`** — main session only, never reaches Task subagents (confirmed: absent from schema regardless of frontmatter/reload). Skip silently if not in your toolset.
 4. **Grep/Glob** — word-boundary pattern (e.g. `\bgetRoomMap\b`) + check `index.ts` barrels for re-exports. macOS/Linux native: use `mcp__glob-grep__Glob/Grep`. Windows/remote: native `Glob`/`Grep`. Last resort: `Bash` `rg`/`find` (ignores `.gitignore`, unlike the others).
 5. **Live device behavior** — need real CLI output (device status, map data, etc.) rather than static source? Use `mcp__cli-runner__RunCli` (requires a built `dist/cli.js` and an existing login session) instead of shelling out via `Bash`.
+6. **Log files** — see `.claude/instructions/shared-rules.md` (`ReadLog` MCP tool).

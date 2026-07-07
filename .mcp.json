@@ -15,6 +15,11 @@
 			"command": "node",
 			"args": [".claude/tools/cli-runner-server.cjs"]
 		},
+		"read-log": {
+			"type": "stdio",
+			"command": "node",
+			"args": [".claude/tools/read-log-server.cjs"]
+		},
 		"serena": {
 			"type": "stdio",
 			"command": "serena",

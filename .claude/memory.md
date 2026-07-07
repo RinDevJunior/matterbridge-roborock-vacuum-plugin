@@ -54,6 +54,10 @@ It is version-controlled — commit and push changes so teammates can pull the l
 - B01/V1 status listener isolation: register `B01StatusListener` only when `device.pv === ProtocolVersion.B01`, `V1StatusListener` otherwise — in `connectionService.ts` `initializeMessageClientForLocal`. `MapInfoListener` stays dual-protocol (internal guards); do not split `ResponseBroadcasterFactory.register()`.
 - SkipArea: `RoborockServiceAreaServer` extends `MatterbridgeServiceAreaServer`; V10 `stop_segment_clean` via `skipRoomCleaning`; Q10/Q7 throw → `InvalidInMode`. Progress/currentArea via `finalizeSkipArea()` + `markAreaSkipped`/`getNextPendingArea`.
 - `extra_time` → `estimatedEndTime` removed (Jul 2026); replacement: V1-only opt-in `enableEstimatedEndTime` (default off) + `clean_time`/`clean_percent` linear ETA in `src/share/estimatedEndTime.ts`; B01/Q7/Q10 stay `null`.
+- `robot.homeInFo.activeMapId` inits to `-1` (`deviceConfigurator.ts:105`), only written by `platformRunner.ts:119-120` via B01/Q7 `onActiveMapChanged` (`mapInfoListener.ts` `tryParseB01RoomMap`/`tryParseB01MapBinary`) — V10/V1 NEVER updates it, stays `-1` forever. `RoomIndexMap.getAreaId(roomId,mapId)` exact-key lookup then always misses for V10/V1 multi-map; `getAreaIdV2(roomId)` (mapId-agnostic, already unit-tested) is the unused correct fallback.
+- No explicit "currently selected map" Matter attribute exists anywhere — Apple Home infers active map from which map's rooms appear first in `supportedAreas`/`selectedAreas` (mirrors `roborockService.ts:350` `buildCleanCommand`'s own inference).
+- `resolveInitialAreas` (`areaManagementService.ts:273`) fetches the device's CURRENTLY-ACTIVE map's rooms first (`fetchAndApplyRoomMap(duid,-1)`) before the per-map loop (line 276) — that map's rooms always land as areaId 0..N-1 regardless of its `mapInfo.maps` index, so `supportedAreas` order silently depends on which map was active at restart, not map index. Fix: sort by mapId once after bootstrap, not inside `mergeSupportedAreasByMap` (reused by live-update runtime paths where insertion-order stability matters).
+- `handleActiveMapChanged` (`serviceAreaHandler.ts:234-275`) has no idle/cleaning-state guard — unconditionally overwrites `selectedAreas`/`currentArea`/`progress` on any `onActiveMapChanged` fire. `startPeriodicRefresh`/`getMapInfoV2` never calls `switchMap` and the `platformRunner.ts:119` same-map guard already prevents self-triggered false positives — the gap only matters if the device itself reports a genuinely different active map mid-clean.
 
 ## Test Patterns
 
@@ -80,6 +84,8 @@ It is version-controlled — commit and push changes so teammates can pull the l
 - `LegacyMapParser` V1 widths: position x/y are `Int32LE` 4 bytes apart (`+0`, `+4`); image `segmentCount` `UInt32LE` at `+0x08`, top/left/height/width `Int32LE` at `+0x0c/+0x10/+0x14/+0x18`. Wrong widths read silently — cross-check binary layouts against a second OSS parser.
 - `src/roborockCommunication/map/v1/` (not `map/legacy/`) is the live import path for `mapParser.js`/`v1MapDecryptor.js` — pre-existing uncommitted rename (Jul 3, 2026); don't revert if dirty.
 - Implementer must NOT run build/lint/test commands even if a task prompt asks — only compiler runs builds, and only on explicit user request.
+
+- `platformRunner.ts:120` writes `robot.homeInFo.activeMapId = data.mapId` BEFORE calling `handleActiveMapChanged` — any guard added inside that handler (e.g. operational-state check) can't prevent `activeMapId` from desyncing from `selectedAreas`/`progress` when it trips; the same-map guard (`:119`) then swallows a later identical-mapId retry too.
 
 ## Module Notes
 
