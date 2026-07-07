@@ -979,5 +979,279 @@ describe('AreaManagementService', () => {
 
 			expect(result.supportedMaps).toEqual([{ mapId: 0, name: 'Home' }]);
 		});
+
+		describe('Multi-map bootstrap with mapId sort (Bug 2)', () => {
+			it('should sort supportedAreas by mapId ascending when multi-map bootstrap fetches out-of-order', async () => {
+				const multiMapService = new AreaManagementService(
+					mockLogger as AnsiLogger,
+					mockMessageRoutingService as MessageRoutingService,
+					false,
+					true, // enableMultipleMap = true
+				);
+				multiMapService.setDeviceRooms(mockDeviceId, partialDeviceRooms);
+
+				// Create a multi-map MapInfo with mapId 0 and mapId 1
+				const multiMapInfo = {
+					max_multi_map: 2,
+					max_bak_map: 0,
+					multi_map_count: 2,
+					map_info: [
+						{
+							mapFlag: 0, // mapId 0
+							add_time: 1771060270,
+							length: 2,
+							name: 'First Map',
+							bak_maps: [],
+							rooms: [
+								{ id: 10, tag: 14, iot_name_id: '11100845', iot_name: 'Living' },
+								{ id: 11, tag: 9, iot_name_id: '11100849', iot_name: 'Bathroom' },
+							],
+						},
+						{
+							mapFlag: 1, // mapId 1
+							add_time: 1771060271,
+							length: 2,
+							name: 'Second Map',
+							bak_maps: [],
+							rooms: [
+								{ id: 20, tag: 14, iot_name_id: '21100845', iot_name: 'Office' },
+								{ id: 21, tag: 9, iot_name_id: '21100849', iot_name: 'Garage' },
+							],
+						},
+					],
+				} satisfies MultipleMapDto;
+
+				const mapInfo = new MapInfo(multiMapInfo);
+
+				// Mock: first fetch returns mapId 1 rooms (the "currently active" map), then loop fetches mapId 0
+				const mapId1RoomData = [
+					[20, '21100845', 14],
+					[21, '21100849', 9],
+				] as Partial<RawRoomMappingData> as RawRoomMappingData;
+
+				const mapId0RoomData = [
+					[10, '11100845', 14],
+					[11, '11100849', 9],
+				] as Partial<RawRoomMappingData> as RawRoomMappingData;
+
+				// Setup: first getRoomMap (via fetchAndApplyRoomMap(duid, -1)) returns mapId 1 data
+				// second getRoomMap (via ensureAreasForMap) returns mapId 0 data
+				mockMessageRoutingService.getMapInfo.mockResolvedValue(mapInfo);
+				mockMessageRoutingService.switchMap = vi.fn().mockResolvedValue(undefined);
+
+				let callCount = 0;
+				mockMessageRoutingService.getRoomMap.mockImplementation(() => {
+					callCount++;
+					if (callCount === 1) {
+						return Promise.resolve(mapId1RoomData); // First call: mapId 1
+					} else {
+						return Promise.resolve(mapId0RoomData); // Second call: mapId 0
+					}
+				});
+
+				const result = await multiMapService.resolveInitialAreas(mockDeviceId);
+
+				// Assert: supportedAreas should be sorted by mapId 0 first, then mapId 1
+				expect(result.supportedAreas).toHaveLength(4);
+
+				// mapId 0 areas should come first (areaId 0, 1)
+				expect(result.supportedAreas[0]).toMatchObject({ areaId: 0 });
+				expect(result.supportedAreas[1]).toMatchObject({ areaId: 1 });
+
+				// mapId 1 areas should come second (areaId 2, 3)
+				expect(result.supportedAreas[2]).toMatchObject({ areaId: 2 });
+				expect(result.supportedAreas[3]).toMatchObject({ areaId: 3 });
+
+				// Verify all areas have correct mapIds
+				const area0MapId = result.supportedAreas[0].mapId;
+				const area1MapId = result.supportedAreas[1].mapId;
+				const area2MapId = result.supportedAreas[2].mapId;
+				const area3MapId = result.supportedAreas[3].mapId;
+
+				expect(area0MapId).toBe(0);
+				expect(area1MapId).toBe(0);
+				expect(area2MapId).toBe(1);
+				expect(area3MapId).toBe(1);
+			});
+
+			it('should rebuild roomIndexMap to reflect new areaIds after sort', async () => {
+				const multiMapService = new AreaManagementService(
+					mockLogger as AnsiLogger,
+					mockMessageRoutingService as MessageRoutingService,
+					false,
+					true, // enableMultipleMap = true
+				);
+				multiMapService.setDeviceRooms(mockDeviceId, partialDeviceRooms);
+
+				const multiMapInfo = {
+					max_multi_map: 2,
+					max_bak_map: 0,
+					multi_map_count: 2,
+					map_info: [
+						{
+							mapFlag: 0, // mapId 0
+							add_time: 1771060270,
+							length: 2,
+							name: 'First Map',
+							bak_maps: [],
+							rooms: [
+								{ id: 10, tag: 14, iot_name_id: '11100845', iot_name: 'Living' },
+								{ id: 11, tag: 9, iot_name_id: '11100849', iot_name: 'Bathroom' },
+							],
+						},
+						{
+							mapFlag: 1, // mapId 1
+							add_time: 1771060271,
+							length: 2,
+							name: 'Second Map',
+							bak_maps: [],
+							rooms: [
+								{ id: 20, tag: 14, iot_name_id: '21100845', iot_name: 'Office' },
+								{ id: 21, tag: 9, iot_name_id: '21100849', iot_name: 'Garage' },
+							],
+						},
+					],
+				} satisfies MultipleMapDto;
+
+				const mapInfo = new MapInfo(multiMapInfo);
+
+				const mapId1RoomData = [
+					[20, '21100845', 14],
+					[21, '21100849', 9],
+				] as Partial<RawRoomMappingData> as RawRoomMappingData;
+
+				const mapId0RoomData = [
+					[10, '11100845', 14],
+					[11, '11100849', 9],
+				] as Partial<RawRoomMappingData> as RawRoomMappingData;
+
+				mockMessageRoutingService.getMapInfo.mockResolvedValue(mapInfo);
+				mockMessageRoutingService.switchMap = vi.fn().mockResolvedValue(undefined);
+
+				let callCount = 0;
+				mockMessageRoutingService.getRoomMap.mockImplementation(() => {
+					callCount++;
+					return Promise.resolve(callCount === 1 ? mapId1RoomData : mapId0RoomData);
+				});
+
+				await multiMapService.resolveInitialAreas(mockDeviceId);
+
+				// Verify roomIndexMap was rebuilt with new areaIds
+				const indexMap = multiMapService.getSupportedAreasIndexMap(mockDeviceId);
+				expect(indexMap).toBeDefined();
+
+				// The areas at new indices should map correctly:
+				// newAreaId 0 -> original roomId 10 (mapId 0)
+				// newAreaId 1 -> original roomId 11 (mapId 0)
+				// newAreaId 2 -> original roomId 20 (mapId 1)
+				// newAreaId 3 -> original roomId 21 (mapId 1)
+
+				// Verify by checking the areaInfo entries
+				const areas = multiMapService.getSupportedAreas(mockDeviceId);
+				expect(areas[0].areaId).toBe(0);
+				expect(areas[1].areaId).toBe(1);
+				expect(areas[2].areaId).toBe(2);
+				expect(areas[3].areaId).toBe(3);
+			});
+
+			it('should not sort or reindex when enableMultipleMap is false', async () => {
+				const singleMapService = new AreaManagementService(
+					mockLogger as AnsiLogger,
+					mockMessageRoutingService as MessageRoutingService,
+					false,
+					false, // enableMultipleMap = false
+				);
+				singleMapService.setDeviceRooms(mockDeviceId, partialDeviceRooms);
+
+				mockMessageRoutingService.getMapInfo.mockResolvedValue(createStartupMapInfo());
+				mockMessageRoutingService.getRoomMap.mockResolvedValue(startupRawRoomMapping);
+
+				const result = await singleMapService.resolveInitialAreas(mockDeviceId);
+
+				// Single-map case: no sort, areas should be in their original order
+				expect(result.supportedAreas).toHaveLength(5);
+				// Verify areaIds are sequential (0-4)
+				for (let i = 0; i < 5; i++) {
+					expect(result.supportedAreas[i].areaId).toBe(i);
+				}
+			});
+
+			it('should not reorder areas when multi-map input is already sorted by mapId', async () => {
+				const multiMapService = new AreaManagementService(
+					mockLogger as AnsiLogger,
+					mockMessageRoutingService as MessageRoutingService,
+					false,
+					true, // enableMultipleMap = true
+				);
+				multiMapService.setDeviceRooms(mockDeviceId, partialDeviceRooms);
+
+				// Create multi-map with already-sorted mapIds: 0 first, then 1
+				const multiMapInfo = {
+					max_multi_map: 2,
+					max_bak_map: 0,
+					multi_map_count: 2,
+					map_info: [
+						{
+							mapFlag: 0, // mapId 0
+							add_time: 1771060270,
+							length: 2,
+							name: 'First Map',
+							bak_maps: [],
+							rooms: [
+								{ id: 10, tag: 14, iot_name_id: '11100845', iot_name: 'Living' },
+								{ id: 11, tag: 9, iot_name_id: '11100849', iot_name: 'Bathroom' },
+							],
+						},
+						{
+							mapFlag: 1, // mapId 1
+							add_time: 1771060271,
+							length: 2,
+							name: 'Second Map',
+							bak_maps: [],
+							rooms: [
+								{ id: 20, tag: 14, iot_name_id: '21100845', iot_name: 'Office' },
+								{ id: 21, tag: 9, iot_name_id: '21100849', iot_name: 'Garage' },
+							],
+						},
+					],
+				} satisfies MultipleMapDto;
+
+				const mapInfo = new MapInfo(multiMapInfo);
+
+				const mapId0RoomData = [
+					[10, '11100845', 14],
+					[11, '11100849', 9],
+				] as Partial<RawRoomMappingData> as RawRoomMappingData;
+
+				const mapId1RoomData = [
+					[20, '21100845', 14],
+					[21, '21100849', 9],
+				] as Partial<RawRoomMappingData> as RawRoomMappingData;
+
+				mockMessageRoutingService.getMapInfo.mockResolvedValue(mapInfo);
+				mockMessageRoutingService.switchMap = vi.fn().mockResolvedValue(undefined);
+
+				let callCount = 0;
+				mockMessageRoutingService.getRoomMap.mockImplementation(() => {
+					callCount++;
+					return Promise.resolve(callCount === 1 ? mapId0RoomData : mapId1RoomData);
+				});
+
+				const result = await multiMapService.resolveInitialAreas(mockDeviceId);
+
+				// Already sorted input should produce the same order (stable sort no-op)
+				expect(result.supportedAreas).toHaveLength(4);
+				expect(result.supportedAreas[0].areaId).toBe(0);
+				expect(result.supportedAreas[1].areaId).toBe(1);
+				expect(result.supportedAreas[2].areaId).toBe(2);
+				expect(result.supportedAreas[3].areaId).toBe(3);
+
+				// Verify order is stable: within each mapId, order should be preserved
+				expect(result.supportedAreas[0].mapId).toBe(0);
+				expect(result.supportedAreas[1].mapId).toBe(0);
+				expect(result.supportedAreas[2].mapId).toBe(1);
+				expect(result.supportedAreas[3].mapId).toBe(1);
+			});
+		});
 	});
 });

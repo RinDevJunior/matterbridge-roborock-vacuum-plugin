@@ -5,7 +5,13 @@ import { ROUTINE_MAP_ID } from '../constants/ids.js';
 import { MapInfo, RoomIndexMap, RoomMap } from '../core/application/models/index.js';
 import { HomeEntity } from '../core/domain/entities/Home.js';
 import { DeviceError } from '../errors/index.js';
-import { getSupportedAreas, type SupportedAreasResult, toSupportedMaps } from '../initialData/getSupportedAreas.js';
+import {
+	type AreaInfo,
+	getSupportedAreas,
+	type SegmentInfo,
+	type SupportedAreasResult,
+	toSupportedMaps,
+} from '../initialData/getSupportedAreas.js';
 import { mergeSupportedAreasByMap } from '../initialData/mergeSupportedAreasByMap.js';
 import { RoborockIoTApi } from '../roborockCommunication/api/iotClient.js';
 import { HomeModelMapper, RawRoomMappingData, RoomDto } from '../roborockCommunication/models/home/index.js';
@@ -292,6 +298,8 @@ export class AreaManagementService {
 						);
 					}
 				}
+
+				this.sortSupportedAreasByMap(duid);
 			}
 		} catch (err) {
 			this.logger.error(`AreaManagementService - resolveInitialAreas failed for ${duid}: ${String(err)}`);
@@ -301,6 +309,37 @@ export class AreaManagementService {
 		const supportedMaps = this.getSupportedMaps(duid);
 
 		return { supportedAreas, supportedMaps };
+	}
+
+	private sortSupportedAreasByMap(duid: string): void {
+		const existingAreas = this.getSupportedAreas(duid);
+		const existingIndexMap = this.getSupportedAreasIndexMap(duid);
+
+		const indexedAreas = existingAreas.map((area, oldAreaId) => ({ area, oldAreaId }));
+		const sortedIndexedAreas = [...indexedAreas].sort((a, b) => (a.area.mapId ?? 0) - (b.area.mapId ?? 0));
+
+		const sortedAreas = sortedIndexedAreas.map(({ area }, newAreaId) => ({ ...area, areaId: newAreaId }));
+
+		const areaInfos = new Map<number, AreaInfo>();
+		const roomInfos = new Map<string, SegmentInfo>();
+
+		sortedIndexedAreas.forEach(({ oldAreaId }, newAreaId) => {
+			const info = existingIndexMap?.areaInfo.get(oldAreaId);
+			if (!info) {
+				return;
+			}
+			areaInfos.set(newAreaId, info);
+			const mapId = info.mapId ?? 0;
+			roomInfos.set(`${info.roomId}-${mapId}`, {
+				areaId: newAreaId,
+				mapId,
+				roomName: info.roomName,
+			});
+		});
+
+		const sortedIndexMap = new RoomIndexMap(areaInfos, roomInfos);
+		this.setSupportedAreaIndexMap(duid, sortedIndexMap);
+		this.setSupportedAreas(duid, sortedAreas);
 	}
 
 	public startPeriodicRefresh(duid: string, intervalMs = 5 * 60 * 1000): void {

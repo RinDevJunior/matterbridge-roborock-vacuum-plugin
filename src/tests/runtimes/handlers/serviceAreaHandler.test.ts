@@ -1,4 +1,4 @@
-import { ServiceArea } from 'matterbridge/matter/clusters';
+import { RvcOperationalState, ServiceArea } from 'matterbridge/matter/clusters';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { INVALID_SEGMENT_ID } from '../../../constants/index.js';
@@ -57,6 +57,7 @@ function createMockRobot(
 	duid: string,
 	activeMapId = 0,
 	matterSupportedAreas?: ServiceArea.Area[],
+	operationalState?: RvcOperationalState.OperationalState,
 ): RoborockVacuumCleaner {
 	return asPartial<RoborockVacuumCleaner>({
 		device: asPartial<Device>({ duid }),
@@ -65,6 +66,9 @@ function createMockRobot(
 		getAttribute: vi.fn().mockImplementation((_clusterId, attrName) => {
 			if (attrName === 'supportedAreas') {
 				return matterSupportedAreas;
+			}
+			if (attrName === 'operationalState') {
+				return operationalState;
 			}
 			return undefined;
 		}),
@@ -893,5 +897,345 @@ describe('handleServiceAreaUpdate estimatedEndTime', () => {
 
 		expect(robot.updateAttribute).toHaveBeenCalledWith(ServiceArea.id, 'currentArea', 1, expect.anything());
 		expect(robot.updateAttribute).toHaveBeenCalledWith(ServiceArea.id, 'estimatedEndTime', null, expect.anything());
+	});
+});
+
+describe('handleActiveMapChanged — operational state guard (Bug 3)', () => {
+	let robot: RoborockVacuumCleaner;
+
+	beforeEach(() => {
+		vi.clearAllMocks();
+	});
+
+	it('should skip updateAttribute when robot is actively running', async () => {
+		robot = createMockRobot(
+			'test-duid-guard',
+			100,
+			[{ areaId: 5, mapId: 100 } as ServiceArea.Area],
+			RvcOperationalState.OperationalState.Running,
+		);
+		const areas: ServiceArea.Area[] = [{ areaId: 5, mapId: 100 } as ServiceArea.Area];
+		const platform = createMockPlatform(areas, undefined, false);
+
+		await handleActiveMapChanged(robot, 100, platform);
+
+		expect(robot.updateAttribute).not.toHaveBeenCalled();
+		expect(platform.roborockService?.setProgress).not.toHaveBeenCalled();
+	});
+
+	it('should skip updateAttribute when robot is paused', async () => {
+		robot = createMockRobot(
+			'test-duid-guard-paused',
+			100,
+			[{ areaId: 5, mapId: 100 } as ServiceArea.Area],
+			RvcOperationalState.OperationalState.Paused,
+		);
+		const areas: ServiceArea.Area[] = [{ areaId: 5, mapId: 100 } as ServiceArea.Area];
+		const platform = createMockPlatform(areas, undefined, false);
+
+		await handleActiveMapChanged(robot, 100, platform);
+
+		expect(robot.updateAttribute).not.toHaveBeenCalled();
+		expect(platform.roborockService?.setProgress).not.toHaveBeenCalled();
+	});
+
+	it('should skip updateAttribute when robot is seeking charger', async () => {
+		robot = createMockRobot(
+			'test-duid-guard-seeking',
+			100,
+			[{ areaId: 5, mapId: 100 } as ServiceArea.Area],
+			RvcOperationalState.OperationalState.SeekingCharger,
+		);
+		const areas: ServiceArea.Area[] = [{ areaId: 5, mapId: 100 } as ServiceArea.Area];
+		const platform = createMockPlatform(areas, undefined, false);
+
+		await handleActiveMapChanged(robot, 100, platform);
+
+		expect(robot.updateAttribute).not.toHaveBeenCalled();
+		expect(platform.roborockService?.setProgress).not.toHaveBeenCalled();
+	});
+
+	it('should allow updateAttribute when robot is docked', async () => {
+		robot = createMockRobot(
+			'test-duid-guard-docked',
+			100,
+			[{ areaId: 5, mapId: 100 } as ServiceArea.Area],
+			RvcOperationalState.OperationalState.Docked,
+		);
+		const areas: ServiceArea.Area[] = [{ areaId: 5, mapId: 100 } as ServiceArea.Area];
+		const platform = createMockPlatform(areas, undefined, false);
+
+		await handleActiveMapChanged(robot, 100, platform);
+
+		expect(robot.updateAttribute).toHaveBeenCalledWith(ServiceArea.id, 'selectedAreas', [5], expect.anything());
+		expect(robot.updateAttribute).toHaveBeenCalledWith(ServiceArea.id, 'currentArea', null, expect.anything());
+	});
+
+	it('should allow updateAttribute when robot is stopped', async () => {
+		robot = createMockRobot(
+			'test-duid-guard-stopped',
+			100,
+			[{ areaId: 5, mapId: 100 } as ServiceArea.Area],
+			RvcOperationalState.OperationalState.Stopped,
+		);
+		const areas: ServiceArea.Area[] = [{ areaId: 5, mapId: 100 } as ServiceArea.Area];
+		const platform = createMockPlatform(areas, undefined, false);
+
+		await handleActiveMapChanged(robot, 100, platform);
+
+		expect(robot.updateAttribute).toHaveBeenCalledWith(ServiceArea.id, 'selectedAreas', [5], expect.anything());
+		expect(robot.updateAttribute).toHaveBeenCalledWith(ServiceArea.id, 'currentArea', null, expect.anything());
+	});
+
+	it('should allow updateAttribute when robot is in error state', async () => {
+		robot = createMockRobot(
+			'test-duid-guard-error',
+			100,
+			[{ areaId: 5, mapId: 100 } as ServiceArea.Area],
+			RvcOperationalState.OperationalState.Error,
+		);
+		const areas: ServiceArea.Area[] = [{ areaId: 5, mapId: 100 } as ServiceArea.Area];
+		const platform = createMockPlatform(areas, undefined, false);
+
+		await handleActiveMapChanged(robot, 100, platform);
+
+		expect(robot.updateAttribute).toHaveBeenCalledWith(ServiceArea.id, 'selectedAreas', [5], expect.anything());
+		expect(robot.updateAttribute).toHaveBeenCalledWith(ServiceArea.id, 'currentArea', null, expect.anything());
+	});
+
+	it('should allow updateAttribute when operationalState is undefined', async () => {
+		robot = createMockRobot(
+			'test-duid-guard-undefined',
+			100,
+			[{ areaId: 5, mapId: 100 } as ServiceArea.Area],
+			undefined,
+		);
+		const areas: ServiceArea.Area[] = [{ areaId: 5, mapId: 100 } as ServiceArea.Area];
+		const platform = createMockPlatform(areas, undefined, false);
+
+		await handleActiveMapChanged(robot, 100, platform);
+
+		expect(robot.updateAttribute).toHaveBeenCalledWith(ServiceArea.id, 'selectedAreas', [5], expect.anything());
+		expect(robot.updateAttribute).toHaveBeenCalledWith(ServiceArea.id, 'currentArea', null, expect.anything());
+	});
+
+	it('should still respect Matter supportedAreas filter when guard does not trip (idle case)', async () => {
+		robot = createMockRobot(
+			'test-duid-guard-matter-filter',
+			100,
+			[{ areaId: 5, mapId: 100 } as ServiceArea.Area],
+			RvcOperationalState.OperationalState.Docked,
+		);
+		const roborockServiceAreas: ServiceArea.Area[] = [
+			{ areaId: 5, mapId: 100 } as ServiceArea.Area,
+			{ areaId: 6, mapId: 100 } as ServiceArea.Area,
+		];
+		const platform = createMockPlatform(roborockServiceAreas, undefined, false);
+
+		await handleActiveMapChanged(robot, 100, platform);
+
+		// Should only set area 5 (which is in Matter supportedAreas), not area 6
+		expect(robot.updateAttribute).toHaveBeenCalledWith(ServiceArea.id, 'selectedAreas', [5], expect.anything());
+	});
+});
+
+describe('resolveAreaFromCleaningInfo — fallback to getAreaIdV2 (Bug 1)', () => {
+	let robot: RoborockVacuumCleaner;
+
+	beforeEach(() => {
+		vi.clearAllMocks();
+		robot = createMockRobot('test-duid-fallback', 0);
+	});
+
+	it('should use composite-key lookup when activeMapId matches existing entry (no regression)', async () => {
+		// Composite key "10-100" exists in roomInfo
+		const roomMapData = new Map<number, AreaInfo>([[1, { roomId: 10, mapId: 100, roomName: 'Room 1' }]]);
+		const roomInfo = new Map<string, SegmentInfo>([['10-100', { areaId: 1, mapId: 100, roomName: 'Room 1' }]]);
+		const indexMap = new RoomIndexMap(roomMapData, roomInfo);
+
+		robot = createMockRobot('test-duid-composite', 100); // activeMapId = 100 matches
+		const mockRoborockService = asPartial<RoborockService>({
+			getSupportedAreas: vi.fn().mockReturnValue([{ areaId: 1, mapId: 100 } as ServiceArea.Area]),
+			getSupportedAreasIndexMap: vi.fn().mockReturnValue(indexMap),
+			getSelectedAreas: vi.fn().mockReturnValue([1]),
+			getProgress: vi.fn().mockReturnValue([]),
+			setProgress: vi.fn(),
+		});
+
+		const platform = asPartial<RoborockMatterbridgePlatform>({
+			log: createMockLogger(),
+			configManager: createMockConfigManager(),
+			roborockService: mockRoborockService,
+		});
+
+		vi.mocked(robot.getAttribute).mockReturnValue([1]);
+
+		const message: ServiceAreaUpdateMessage = {
+			duid: 'test-duid-composite',
+			state: OperationStatusCode.RoomClean,
+			cleaningInfo: {
+				segment_id: 10,
+				target_segment_id: INVALID_SEGMENT_ID,
+				fan_power: 0,
+				water_box_status: 0,
+				mop_mode: 0,
+			},
+			cleaningProcess: { clean_area: 100, clean_time: 60 },
+		};
+
+		await handleServiceAreaUpdate(robot, message, platform);
+
+		expect(robot.updateAttribute).toHaveBeenCalledWith(ServiceArea.id, 'currentArea', 1, expect.anything());
+	});
+
+	it('should fall back to getAreaIdV2 when composite-key lookup misses (Bug 1 fix)', async () => {
+		// Composite key "10--1" does not exist (activeMapId = -1)
+		// But "10-0" exists under a different mapId, which getAreaIdV2 should find
+		const roomMapData = new Map<number, AreaInfo>([[1, { roomId: 10, mapId: 0, roomName: 'Room 1' }]]);
+		const roomInfo = new Map<string, SegmentInfo>([['10-0', { areaId: 1, mapId: 0, roomName: 'Room 1' }]]);
+		const indexMap = new RoomIndexMap(roomMapData, roomInfo);
+
+		robot = createMockRobot('test-duid-fallback', -1); // activeMapId = -1 (V10/V1 case)
+		const mockRoborockService = asPartial<RoborockService>({
+			getSupportedAreas: vi.fn().mockReturnValue([{ areaId: 1, mapId: 0 } as ServiceArea.Area]),
+			getSupportedAreasIndexMap: vi.fn().mockReturnValue(indexMap),
+			getSelectedAreas: vi.fn().mockReturnValue([1]),
+			getProgress: vi.fn().mockReturnValue([]),
+			setProgress: vi.fn(),
+		});
+
+		const platform = asPartial<RoborockMatterbridgePlatform>({
+			log: createMockLogger(),
+			configManager: createMockConfigManager(),
+			roborockService: mockRoborockService,
+		});
+
+		vi.mocked(robot.getAttribute).mockReturnValue([1]);
+
+		const message: ServiceAreaUpdateMessage = {
+			duid: 'test-duid-fallback',
+			state: OperationStatusCode.RoomClean,
+			cleaningInfo: {
+				segment_id: 10,
+				target_segment_id: INVALID_SEGMENT_ID,
+				fan_power: 0,
+				water_box_status: 0,
+				mop_mode: 0,
+			},
+			cleaningProcess: { clean_area: 100, clean_time: 60 },
+		};
+
+		await handleServiceAreaUpdate(robot, message, platform);
+
+		// Despite activeMapId=-1 mismatch, fallback should resolve area 1 via getAreaIdV2
+		expect(robot.updateAttribute).toHaveBeenCalledWith(ServiceArea.id, 'currentArea', 1, expect.anything());
+	});
+
+	it('should set currentArea to null when both composite and fallback lookups miss', async () => {
+		// No entry for roomId 99 under any mapId
+		const roomMapData = new Map<number, AreaInfo>([[1, { roomId: 10, mapId: 0, roomName: 'Room 1' }]]);
+		const roomInfo = new Map<string, SegmentInfo>([['10-0', { areaId: 1, mapId: 0, roomName: 'Room 1' }]]);
+		const indexMap = new RoomIndexMap(roomMapData, roomInfo);
+
+		robot = createMockRobot('test-duid-both-miss', -1);
+		const mockRoborockService = asPartial<RoborockService>({
+			getSupportedAreas: vi.fn().mockReturnValue([{ areaId: 1, mapId: 0 } as ServiceArea.Area]),
+			getSupportedAreasIndexMap: vi.fn().mockReturnValue(indexMap),
+			getSelectedAreas: vi.fn().mockReturnValue([1]),
+			getProgress: vi.fn().mockReturnValue([]),
+			setProgress: vi.fn(),
+		});
+
+		const platform = asPartial<RoborockMatterbridgePlatform>({
+			log: createMockLogger(),
+			configManager: createMockConfigManager(),
+			roborockService: mockRoborockService,
+		});
+
+		vi.mocked(robot.getAttribute).mockReturnValue([1]);
+
+		const message: ServiceAreaUpdateMessage = {
+			duid: 'test-duid-both-miss',
+			state: OperationStatusCode.RoomClean,
+			cleaningInfo: {
+				segment_id: 99, // This segment does not exist in the map
+				target_segment_id: INVALID_SEGMENT_ID,
+				fan_power: 0,
+				water_box_status: 0,
+				mop_mode: 0,
+			},
+			cleaningProcess: { clean_area: 100, clean_time: 60 },
+		};
+
+		await handleServiceAreaUpdate(robot, message, platform);
+
+		expect(robot.updateAttribute).toHaveBeenCalledWith(ServiceArea.id, 'currentArea', null, expect.anything());
+	});
+
+	it('should preserve existing Pending/Completed progress when using fallback', async () => {
+		const selectedAreas = [1, 2];
+		const initialProgress: ServiceArea.Progress[] = [
+			{ areaId: 1, status: ServiceArea.OperationalStatus.Pending },
+			{ areaId: 2, status: ServiceArea.OperationalStatus.Pending },
+		];
+
+		const roomMapData = new Map<number, AreaInfo>([
+			[1, { roomId: 10, mapId: 0, roomName: 'Room 1' }],
+			[2, { roomId: 20, mapId: 0, roomName: 'Room 2' }],
+		]);
+		const roomInfo = new Map<string, SegmentInfo>([
+			['10-0', { areaId: 1, mapId: 0, roomName: 'Room 1' }],
+			['20-0', { areaId: 2, mapId: 0, roomName: 'Room 2' }],
+		]);
+		const indexMap = new RoomIndexMap(roomMapData, roomInfo);
+
+		robot = createMockRobot('test-duid-progress-fallback', -1);
+		const mockRoborockService = asPartial<RoborockService>({
+			getSupportedAreas: vi
+				.fn()
+				.mockReturnValue([{ areaId: 1, mapId: 0 } as ServiceArea.Area, { areaId: 2, mapId: 0 } as ServiceArea.Area]),
+			getSupportedAreasIndexMap: vi.fn().mockReturnValue(indexMap),
+			getSelectedAreas: vi.fn().mockReturnValue(selectedAreas),
+			getProgress: vi.fn().mockReturnValue(initialProgress),
+			setProgress: vi.fn(),
+		});
+
+		const platform = asPartial<RoborockMatterbridgePlatform>({
+			log: createMockLogger(),
+			configManager: createMockConfigManager(),
+			roborockService: mockRoborockService,
+		});
+
+		vi.mocked(robot.getAttribute).mockReturnValue(selectedAreas);
+
+		const message: ServiceAreaUpdateMessage = {
+			duid: 'test-duid-progress-fallback',
+			state: OperationStatusCode.RoomClean,
+			cleaningInfo: {
+				segment_id: 10,
+				target_segment_id: INVALID_SEGMENT_ID,
+				fan_power: 0,
+				water_box_status: 0,
+				mop_mode: 0,
+			},
+			cleaningProcess: { clean_area: 100, clean_time: 60 },
+		};
+
+		await handleServiceAreaUpdate(robot, message, platform);
+
+		// Verify area 1 transitioned to Operating, area 2 remained Pending
+		expect(mockRoborockService?.setProgress).toHaveBeenCalledWith(
+			robot.device.duid,
+			expect.arrayContaining([
+				expect.objectContaining({
+					areaId: 1,
+					status: ServiceArea.OperationalStatus.Operating,
+				}),
+				expect.objectContaining({
+					areaId: 2,
+					status: ServiceArea.OperationalStatus.Pending,
+				}),
+			]),
+		);
 	});
 });

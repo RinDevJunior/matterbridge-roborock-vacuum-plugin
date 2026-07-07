@@ -1,5 +1,5 @@
 import { debugStringify } from 'matterbridge/logger';
-import { ServiceArea } from 'matterbridge/matter/clusters';
+import { RvcOperationalState, ServiceArea } from 'matterbridge/matter/clusters';
 
 import { INVALID_SEGMENT_ID } from '../../constants/index.js';
 import type { RoborockMatterbridgePlatform } from '../../module.js';
@@ -237,6 +237,24 @@ export async function handleActiveMapChanged(
 	platform: RoborockMatterbridgePlatform,
 ): Promise<void> {
 	const logger = platform.log;
+
+	const operationalState: RvcOperationalState.OperationalState | undefined = robot.getAttribute(
+		RvcOperationalState.id,
+		'operationalState',
+		logger,
+	);
+	const isActivelyCleaning =
+		operationalState !== undefined &&
+		operationalState !== RvcOperationalState.OperationalState.Docked &&
+		operationalState !== RvcOperationalState.OperationalState.Stopped &&
+		operationalState !== RvcOperationalState.OperationalState.Error;
+	if (isActivelyCleaning) {
+		logger.debug(
+			`[${robot.device.duid}] ActiveMapChanged: ignoring map change to ${mapId} while actively cleaning (operationalState=${operationalState})`,
+		);
+		return;
+	}
+
 	let supportedAreas = platform.roborockService?.getSupportedAreas(robot.device.duid) ?? [];
 	let areasOnMap = supportedAreas.filter((area) => area.mapId === mapId);
 
@@ -299,7 +317,8 @@ async function resolveAreaFromCleaningInfo(
 		logger.debug('No active segment, skipping currentArea update');
 		return;
 	}
-	const mappedArea = roomIndexMap.getAreaId(segmentId, robot.homeInFo.activeMapId);
+	const mappedArea =
+		roomIndexMap.getAreaId(segmentId, robot.homeInFo.activeMapId) ?? roomIndexMap.getAreaIdV2(segmentId);
 
 	if (!mappedArea) {
 		logger.debug(
