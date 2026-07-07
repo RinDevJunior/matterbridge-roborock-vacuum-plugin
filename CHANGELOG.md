@@ -4,6 +4,31 @@ All notable changes to this project will be documented in this file.
 
 ---
 
+## [1.1.7-rc06] - 2026-07-07
+
+### Added
+
+- **Roborock Q5 Pro support** — Added Q5 Pro to the list of supported devices.
+- **Service-area cleaning ETA and completion signaling** — Wired `OperationCompletion`, `SkipArea`, and per-room estimated end time from live clean progress into the Matter service-area cluster.
+
+### Changed
+
+- **B01 room icons mapped to Apple Home categories** — `roomTypeId` values from B01 devices now map to the appropriate Apple Home room category icons.
+- **B01 Q7 map upload normalized** — Q7 maps now use `upload_by_maptype`, with B01 room names normalized to match.
+
+### Fixed
+
+- **Rooms not showing after plugin startup** — Fixed a two-part issue where service-area rooms failed to appear after the plugin started.
+- **Device status listeners gated by protocol** — Status listeners are now correctly gated by device connection protocol, preventing cross-protocol event leakage.
+
+### Refactored
+
+- **Unit tests updated** — Test coverage adjusted to match the room-visibility fixes and service-area ETA wiring.
+
+<a href="https://www.buymeacoffee.com/rinnvspktr" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/default-orange.png" alt="Buy Me A Coffee" height="41" width="174"></a>
+
+---
+
 ## [1.1.6] - 2026-05-16
 
 ### Added
