@@ -32,7 +32,8 @@
 ### Implementation Tasks
 
 - [x] **Clean all rooms from Apple Home (SelectAreas([]))** — populate selectedAreas with all rooms of active map on empty input; trySwitchMap reachability fix to prevent V10/V1 unguarded switchMap RPC exposure
-- [ ] **Ponytail audit cleanup cycles 1–2 (completed)** — consolidated into history; see claude_history.md entries for 2026-07-07
+- [x] **Ponytail audit cleanup cycles 1–2 (completed)** — consolidated into history; see claude_history.md entries for 2026-07-07
+- [x] **RVC per-area estimatedTime + DirectModeChange** — computeAreaEstimatedTime helper, buildProgressUpdate export & extension, RVC Clean Mode Cluster override; 45 tests across 3 files all passing
 - [ ] **RVC estimatedEndTime real-device validation** — confirm V1 `clean_percent` tracks job progress reliably when `enableEstimatedEndTime` is on; document accuracy limits (pauses, low percent, Home display lag)
 - [ ] **RVC SkipArea real-device validation** — confirm skip room on V10 multi-room clean; expect `InvalidInMode` on B01/Q7
 - [ ] **RVC FillingWaterTank real-device validation** — confirm `wash_status` / `replenish_mode` disambiguation from `CleaningMop` on dock-fill robots

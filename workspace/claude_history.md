@@ -1,5 +1,20 @@
 # Claude History
 
+## 2026-07-09 — RVC per-area estimatedTime + DirectModeChange feature declaration
+
+**Task:** Add per-area estimated time for Service Area Progress entries and declare DirectModeChange capability on RVC Clean Mode Cluster.
+
+**Changes:**
+
+- `src/share/estimatedEndTime.ts` — added `computeAreaEstimatedTime()` helper (adapts full-clean ETA logic to single area scope)
+- `src/runtimes/handlers/serviceAreaHandler.ts` — exported `buildProgressUpdate()` for testability; extended to compute per-area estimatedTime using new helper, gated by existing `shouldPublishEstimatedEndTime` flag
+- `src/types/roborockVacuumCleaner.ts` — added `createDefaultRvcCleanModeClusterServer()` override to declare DirectModeChange feature
+- `src/tests/share/estimatedEndTime.test.ts` — 15 new tests (area vs full-clean ETA logic, edge cases, null handling)
+- `src/tests/runtimes/handlers/serviceAreaHandler.test.ts` — 20 new tests (progress update with/without estimated time, flag gating, fallback scenarios)
+- `src/tests/types/roborockVacuumCleaner.test.ts` — 10 new tests (DirectModeChange capability advertised correctly)
+
+**Outcome:** Pass (verified: format:ci, lint:fix:ci, type-check:ci, test:ci all green). Preceded by verification cycle confirming Matter RVC reference (workspace/todo-task/matter_rvc_findings.md) against local Matter repos — caught and corrected 3 fabricated attribute names before planning. One review round: removed unused nowEpochSeconds param from estimatedTime computation. No config changes needed (uses existing shouldPublishEstimatedEndTime). Mid-clean mode changes already worked pre-implementation (DirectModeChange pure capability advertisement).
+
 ## 2026-07-08 — Clean all rooms from Apple Home via empty SelectAreas
 
 **Task:** Populate Matter `selectedAreas` attribute with all rooms of the active map when Apple Home sends empty SelectAreas([]), enabling "clean all" via global clean with populated UI feedback.

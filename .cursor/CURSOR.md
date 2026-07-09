@@ -38,6 +38,8 @@ Project instructions for Cursor. Orchestration source of truth: `.claude/` (edit
 
 If `.codegraph/` exists at the repo root, use it before Grep/Glob/Read to locate or understand code: MCP `codegraph_explore` when available, else shell `codegraph explore "<query>"` (required for subagents, which lack MCP access). No `.codegraph/` → skip it.
 
+**Claude ↔ Cursor tool mapping:** `.cursor/instructions/tool-parity.md` (use when porting agent logic from `.claude/agents/`).
+
 ## Serena (code navigation)
 
 For symbol-level lookups, use **Serena** MCP tools instead of Grep — configured in `.cursor/mcp.json`. Call `initial_instructions` once per session if Serena guidance is not already active: `get_symbols_overview` (file outline), `find_symbol`, `find_referencing_symbols` (usages), `find_declaration`, `find_implementations`, `search_for_pattern` (unknown symbol names).

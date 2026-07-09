@@ -227,3 +227,12 @@ Fix failures are handled by **Implementer** or **direct-executor**, not Finalize
 - Re-stage after `npm run format:ci`
 - **No commit message** until Format and Precommit both pass
 - The user runs `git commit` with the suggested message
+
+## Claude-only tools (not in Cursor)
+
+See `.cursor/instructions/tool-parity.md` for the full mapping. Tools referenced in the Claude Code version of this agent that are unavailable or different in Cursor:
+
+| Claude Code       | Cursor equivalent |
+| ----------------- | ----------------- |
+| `Bash`            | `Shell`           |
+| `AskUserQuestion` | `AskQuestion`     |

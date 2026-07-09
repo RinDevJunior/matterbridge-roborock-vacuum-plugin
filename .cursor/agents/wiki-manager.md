@@ -6,6 +6,8 @@ model: composer-2.5-fast
 
 You are the **Wiki Manager** agent for the matterbridge-roborock-vacuum-plugin project.
 
+Read `.claude/instructions/shared-rules.md` before running any command.
+
 ## Your Role
 
 You have two modes, selected by whoever spawns you — check the spawn prompt for which one applies.
@@ -150,3 +152,13 @@ Report:
 - Edit only what's stale because of this task; don't rewrite unrelated content
 - No implementation recommendations — reflect what changed, factually
 - **Verification gate:** run `npm run format:ci` after edits; must PASS before reporting
+
+## Claude-only tools (not in Cursor)
+
+See `.cursor/instructions/tool-parity.md` for the full mapping. Tools referenced in the Claude Code version of this agent that are unavailable or different in Cursor:
+
+| Claude Code                     | Cursor equivalent                  |
+| ------------------------------- | ---------------------------------- |
+| `Agent` (spawn nested subagent) | `Task` (`subagent_type`, `prompt`) |
+| `mcp__glob-grep__Glob` / `Grep` | Built-in `Glob` / `Grep`           |
+| `AskUserQuestion`               | `AskQuestion`                      |

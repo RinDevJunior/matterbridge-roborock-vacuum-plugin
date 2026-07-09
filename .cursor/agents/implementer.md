@@ -48,6 +48,8 @@ Before touching a symbol named in the plan, prefer **Serena** MCP tools over Gre
 
 Subagents without MCP: use shell `codegraph explore` for structure; use Grep/Glob/Read for symbol gaps.
 
+If Serena is unavailable, fall back to `codegraph impact <symbol>` when the index exists, else Grep the symbol with a word-boundary pattern across `src/` and check barrel files (`index.ts`) for re-exports.
+
 Priority: **CodeGraph** → **Serena** → Grep/Glob/Read.
 
 Before editing any file, read it in full to understand existing patterns, imports, and style.
@@ -63,7 +65,7 @@ Follow each step in the plan precisely. Match every signature and error path in 
 
 ### Step 4 — Verify (format + lint + type-check)
 
-Run compact scripts **in order**. Do not report complete until all three PASS:
+Run compact scripts **in order** via the **`Shell`** tool. Do not report complete until all three PASS:
 
 ```bash
 npm run format:ci
@@ -71,9 +73,9 @@ npm run lint:fix:ci
 npm run type-check:ci
 ```
 
-Echo only script stdout (`FORMAT PASS` / `FORMAT: N file(s)`, `LINT FIX PASS` or `LINT FIX FAIL` + compact errors, `type-check:ci` compact output).
+Echo only script stdout (`FORMAT PASS` / `FORMAT: N file(s)`, `LINT FIX PASS` or `LINT FIX FAIL` + compact errors, `TESTS PASS`/failure-list style output from `type-check:ci`).
 
-If `lint:fix:ci` or `type-check:ci` fails, fix the production code you touched and re-run until PASS. Do not modify test files. On `file(line,col): error` from `type-check:ci`, jump to that location per `.claude/instructions/shared-rules.md` — do not read the whole file.
+If `lint:fix:ci` or `type-check:ci` fails, fix the production code you touched and re-run until PASS. Do not modify test files. On a `type-check:ci` failure reporting `file(line,col): error ...`, jump straight to that location per `.claude/instructions/shared-rules.md` rather than reading the whole file.
 
 `type-check:ci` is fast `tsc --noEmit` — catches compile errors without a full build. Full `build:local:ci` stays with **compiler** when user requests deep verification.
 
@@ -131,3 +133,18 @@ After implementation, append any pitfalls or patterns to `.claude/memory.md`. Ea
 - **Never add `Co-Authored-By` to any commit message**
 - **Do not run full test suites** (`npm run test`, `npm run test:ci`, `npx vitest` on whole project) — that is test-writer's job
 - **Do not run `npm run build`, `npm run build:local`, or `npm run build:local:ci`** — full build is compiler's job when user requests deep verification
+
+## Claude-only tools (not in Cursor)
+
+Per `.cursor/instructions/tool-parity.md` — Claude frontmatter lists tools Cursor subagents do not have directly:
+
+| Claude                                                                                             | Cursor                                                                                   |
+| -------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
+| `TaskCreate` / `TaskUpdate` / `TaskGet` / `TaskList`                                               | `TodoWrite` (skip silently if unavailable)                                               |
+| `LSP` (`findReferences`, …)                                                                        | Serena MCP → `codegraph explore` / `codegraph_explore` → Grep                            |
+| `Bash`                                                                                             | `Shell`                                                                                  |
+| `AskUserQuestion`                                                                                  | `AskQuestion`                                                                            |
+| `mcp__glob-grep__Glob` / `Grep`                                                                    | Built-in `Glob` / `Grep`                                                                 |
+| `Edit`                                                                                             | `StrReplace` / `Write`                                                                   |
+| `mcp__serena__*`                                                                                   | Serena MCP (`mcp_serena_*`) — same tools, different prefix                               |
+| `mcp__serena__replace_symbol_body`, `rename_symbol`, `insert_before_symbol`, `insert_after_symbol` | Serena MCP edit tools (`mcp_serena_*`) — optional; prefer `StrReplace`/`Write` in Cursor |

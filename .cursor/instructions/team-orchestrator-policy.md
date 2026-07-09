@@ -113,4 +113,4 @@ Ambiguous reqs · brief approval · arch change · public API break · migration
 - **Reviewer before test-writer** (pass 1). **Final reviewer after test-writer** (pass 2). Never documenter without final **APPROVE**.
 - Never spawn wiki gather/investigator from EM. Never auto wiki update after documenter.
 - Use `.cursor/` only — not `.claude/CLAUDE.md` for EM workflow.
-- `TodoWrite` pipeline steps for current cycle (skip N/A steps).
+- `TodoWrite` pipeline steps for current cycle (skip N/A steps). If `TodoWrite` is unavailable in a subagent context, skip silently — see `.cursor/instructions/tool-parity.md`.

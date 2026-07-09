@@ -31,7 +31,7 @@ Steps to create:
 
 ### Step 1 — Read the Test Plan
 
-Read `test-plan.md` in the task folder provided by Engineer Manager for the test file target and cases to cover. If `test-plan.md` is missing, stop and report — the architect skips it only when this task cycle has no test-writer step.
+Read `test-plan.md` in the task folder provided by Engineer Manager for the test file target and cases to cover. If `test-plan.md` is missing, stop and report — the architect skips it only when this task cycle has no test-writer step, so a missing file at this point means the wrong cycle spawned you.
 
 Also read `plan.md` → "Files to Modify" and "Files to Create" for implementation context only. Do not read `plan.md` implementation steps beyond that — `test-plan.md` is the source of truth for what to test.
 
@@ -53,7 +53,7 @@ Subagents without MCP: use shell `codegraph explore` for structure; use Grep/Glo
 
 Priority: **CodeGraph** → **Serena** → Grep/Glob/Read.
 
-Read every file listed in `plan.md` under "Files to Modify" and "Files to Create".
+Read every file listed in `plan.md` under "Files to Modify" and "Files to Create". For a specific function/class under test, confirm its exact shape via Serena or Read its source file directly — never guess a signature.
 
 ### Step 3 — Write Tests
 
@@ -74,7 +74,7 @@ If any test fails:
 
 ### Step 5 — Verify (format + lint + type-check + full test gate)
 
-Run compact scripts **in order**. Do not report complete until all PASS:
+Run compact scripts **in order** via the **`Shell`** tool. Do not report complete until all PASS:
 
 ```bash
 npm run format:ci
@@ -83,7 +83,7 @@ npm run type-check:ci
 npm run test:ci
 ```
 
-Echo only script stdout. If `lint:fix:ci` or `type-check:ci` fails, fix the test files you wrote and re-run until PASS. On `file(line,col): error` from `type-check:ci`, jump to that location per `.claude/instructions/shared-rules.md` — do not read the whole file.
+Echo only script stdout. If `lint:fix:ci` or `type-check:ci` fails, fix the test files you wrote and re-run until PASS. On a `type-check:ci` failure reporting `file(line,col): error ...`, jump straight to that location per `.claude/instructions/shared-rules.md` rather than reading the whole file.
 
 ### Step 6 — Report
 
@@ -182,3 +182,17 @@ Per the task folder `test-plan.md` "Cases to Cover", plus:
 - Do not glob the entire test directory to find patterns — the template above is the pattern
 - Do not chase 100% coverage at the expense of meaningful tests
 - **Verification gate:** `format:ci`, `lint:fix:ci`, `type-check:ci`, and `test:ci` must PASS before reporting — fix lint/type/test failures in test files you touched
+
+## Claude-only tools (not in Cursor)
+
+Per `.cursor/instructions/tool-parity.md` — Claude frontmatter lists tools Cursor subagents do not have directly:
+
+| Claude                                               | Cursor                                                        |
+| ---------------------------------------------------- | ------------------------------------------------------------- |
+| `TaskCreate` / `TaskUpdate` / `TaskGet` / `TaskList` | `TodoWrite` (skip silently if unavailable)                    |
+| `LSP` (`goToDefinition`, `documentSymbol`, …)        | Serena MCP → `codegraph explore` / `codegraph_explore` → Read |
+| `Bash`                                               | `Shell`                                                       |
+| `AskUserQuestion`                                    | `AskQuestion`                                                 |
+| `mcp__glob-grep__Glob` / `Grep`                      | Built-in `Glob` / `Grep`                                      |
+| `Edit`                                               | `StrReplace` / `Write`                                        |
+| `mcp__serena__*`                                     | Serena MCP (`mcp_serena_*`) — same tools, different prefix    |
