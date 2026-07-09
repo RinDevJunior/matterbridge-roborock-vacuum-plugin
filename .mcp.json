@@ -20,6 +20,16 @@
 			"command": "node",
 			"args": [".claude/tools/read-log-server.cjs"]
 		},
+		"discord-send": {
+			"type": "stdio",
+			"command": "node",
+			"args": [".claude/tools/discord-send-server.cjs"]
+		},
+		"github-release": {
+			"type": "stdio",
+			"command": "node",
+			"args": [".claude/tools/github-release-server.cjs"]
+		},
 		"serena": {
 			"type": "stdio",
 			"command": "serena",

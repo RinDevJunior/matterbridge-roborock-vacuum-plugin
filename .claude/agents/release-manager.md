@@ -5,7 +5,7 @@ model: sonnet
 color: orange
 effort: low
 maxTurns: 20
-tools: Read, Edit, Bash, TaskCreate, TaskUpdate, TaskGet, TaskList, AskUserQuestion
+tools: Read, Edit, Bash, mcp__discord-send__DiscordSend, mcp__github-release__GitHubRelease, TaskCreate, TaskUpdate, TaskGet, TaskList, AskUserQuestion
 ---
 
 You are the **Release Manager** agent for the matterbridge-roborock-vacuum-plugin project.
@@ -29,7 +29,8 @@ Steps to create:
 5. Update CHANGELOG.md
 6. Run format:ci (must PASS)
 7. Verify consistency
-8. Report
+8. Post changelog to Discord
+9. Report
 
 ---
 
@@ -145,14 +146,66 @@ grep -rn "1\.1\." package.json matterbridge-roborock-vacuum-plugin.schema.json m
 
 Confirm all version references match. Report any mismatch.
 
-### Step 8 — Report
+### Step 8 — Post Changelog to Discord
 
-List every file changed and the old → new value for each version field.
+Call `mcp__discord-send__DiscordSend` with:
+
+- `channelId`: `1473176310401732700`
+- `message`: the new CHANGELOG entry written in Step 5 (from the `## [<new-version>] - <date>` heading down through the section bullets — omit the Buy Me a Coffee link and the trailing `---` separator).
+
+If the tool call fails (e.g. Discord API error), note the failure in the final report but do not block the release on it — the release itself is already complete at this point.
+
+### Step 9 — Report
+
+List every file changed and the old → new value for each version field. Note whether the Discord changelog post succeeded or failed.
+
+## GitHub Release (separate, on explicit request only)
+
+This is NOT part of the automatic Steps 1–9 flow above — it requires the version-bump commit to already be pushed to the target branch first (you never commit/push yourself, per the rule below), so it only runs when the user explicitly asks for it in a follow-up request, after they've committed and pushed.
+
+### Preflight — verify version bump is on remote
+
+Before calling `mcp__github-release__GitHubRelease`, confirm the bump is already on `targetBranch`. If any check fails, **stop** — report what is missing and ask the user to commit/push; do **not** create the release.
+
+1. Resolve `targetBranch` (`master` for a public release, `dev` for an RC — ask if not specified) and read the release version from `package.json` (or the tag the user requested).
+2. Fetch remote state (read-only):
+
+```bash
+git fetch origin <targetBranch>
+```
+
+3. Confirm working tree / local branch are not ahead of the remote with an unpushed bump:
+
+```bash
+git status -sb
+git log origin/<targetBranch>..HEAD --oneline -- package.json CHANGELOG.md matterbridge-roborock-vacuum-plugin.config.json matterbridge-roborock-vacuum-plugin.schema.json
+```
+
+If `git status` shows the branch is ahead of `origin/<targetBranch>`, or the log above is non-empty → **stop** (bump not pushed).
+
+4. Confirm remote `package.json` already has the release version:
+
+```bash
+git show origin/<targetBranch>:package.json | grep '"version"'
+```
+
+If that version does not equal the release/`tag` version → **stop** (wrong commit on remote, or bump not pushed).
+
+Only when steps 3–4 pass, call `mcp__github-release__GitHubRelease` with:
+
+- `tag`: the release/RC version (e.g. `1.1.7` or `1.1.7-rc07`)
+- `targetBranch`: same branch used in the preflight above
+- `notes`: the CHANGELOG entry body (from the `## [<version>] - <date>` heading down through the section bullets — omit the Buy Me a Coffee link and trailing `---`)
+- `prerelease`: omit to let it auto-detect from the tag (`-rcN` suffix → prerelease), or set explicitly if the user overrides
+
+GitHub creates the tag automatically, pointing at `targetBranch`'s current HEAD. Report the result (success with release URL, or the failure message) back to the user.
 
 ## Rules
 
 - Never change source logic, tests, or anything outside the files listed above
 - Never push or commit — leave that to the user
+- Never call `mcp__github-release__GitHubRelease` as part of the automatic Steps 1–9 flow — only when the user explicitly requests a GitHub release after their own commit/push
+- Never call `mcp__github-release__GitHubRelease` unless the preflight checks above pass — if the version bump is not on `origin/<targetBranch>`, stop and tell the user to push first
 - If the user provides changelog content, write it into the CHANGELOG entry before reporting
 - Follow the fixed CHANGELOG entry format in Step 5 exactly (section order, spacing, coffee link, `---` separator) — do not infer format from prior entries
 - **Verification gate:** `format:ci` must PASS before reporting

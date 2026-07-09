@@ -63,6 +63,8 @@ It is version-controlled — commit and push changes so teammates can pull the l
 - `deviceBuilder.ts:buildDevices()` (CLI-only) vs `deviceManagementService.ts:listDevices()` (plugin runtime) build similar `Device` shapes but scenes-source differs: CLI reads embedded `device.scenes`, service calls live `getScenes()` API — not safe to unify without dropping the live call or changing `buildDevices()`'s signature.
 - `handleDeviceStatusSimpleUpdate` (`deviceStateHandler.ts`) had zero direct test coverage as of Jul 2026 audit — only `handleDeviceStatusUpdate` was tested; check before assuming refactors there are test-guarded.
 - Shared state-update helper pattern (`applyResolvedStateUpdates`, `deviceStateHandler.ts:22-49`): extract identical Promise.all/snapshot/completion blocks into a private async helper taking `(robot, resolvedState, beforeSnapshot, log)` — both callers remain responsible for their own state resolution and return values (e.g., `handleDeviceStatusUpdate` computes `isActive` post-call).
+- `AreaManagementService.supportedRoutines` (routine-as-room, `mapId=ROUTINE_MAP_ID=999`) is a structurally separate Map from `supportedAreas` — `getSupportedAreas(duid)` never contains routine entries. Any "all rooms of active map" logic sourced from `getSupportedAreas` excludes routines automatically, no filter needed.
+- `homeInFo.activeMapId` alone is unreliable for "current active map" inference (stays -1 for V10/V1 per earlier entry). Robust fallback order used in `SELECT_AREAS` empty-list handling: current Matter `selectedAreas` attribute's mapId → `homeInFo.activeMapId` (if not -1) → first `supportedAreas` entry's mapId.
 
 ## Test Patterns
 
@@ -92,6 +94,7 @@ It is version-controlled — commit and push changes so teammates can pull the l
 - Implementer must NOT run build/lint/test commands even if a task prompt asks — only compiler runs builds, and only on explicit user request.
 
 - `platformRunner.ts:120` writes `robot.homeInFo.activeMapId = data.mapId` BEFORE calling `handleActiveMapChanged` — any guard added inside that handler (e.g. operational-state check) can't prevent `activeMapId` from desyncing from `selectedAreas`/`progress` when it trips; the same-map guard (`:119`) then swallows a later identical-mapId retry too.
+- `SELECT_AREAS` empty-input path (`roborockVacuumCleaner.ts:164-176`) must NOT call `trySwitchMap`; rooms from `resolveAllRoomsForActiveMap()` are by definition already on the active map, no switch needed. Two branches (empty vs explicit) must be structurally separate with early `return` — merging into shared `if (areas.length > 0) trySwitchMap` causes V10/V1 exposure where `activeMapId=-1` never triggers the guard, firing unguarded `switchMap` RPC on every global-clean.
 
 ## Module Notes
 

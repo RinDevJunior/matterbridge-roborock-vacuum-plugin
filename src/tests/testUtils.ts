@@ -20,4 +20,5 @@ export {
 	makeLocalClientStub,
 	createMockLogger as makeLogger,
 	makeMockClientRouter,
+	setReadOnlyProperty,
 } from './helpers/testUtils.js';

@@ -14,6 +14,8 @@ Every `Agent` spawn defaults to background mode (never `run_in_background: false
 
 User may write Vietnamese/imperfect English — treat as first-class. Always echo the requirement back in short plain English and get confirmation before spawning (except obvious low-complexity). Ask when ambiguous, don't silently pick an interpretation.
 
+Every `AskUserQuestion` option (EM's own calls, same rule subagents follow via `shared-rules.md`) must set `preview` with concrete context for that choice — never leave the user picking from `label`/`description` alone.
+
 ## Context budget
 
 - Never read `plan.md`/`test-plan.md`/`wiki-brief.md`/`answers-*.md` in full — review only the architect's ≤10-line summary. Exceptions: `business-brief.md` (print once for approval), `answer.md` (explain mode, present to user).

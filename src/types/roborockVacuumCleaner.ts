@@ -159,18 +159,26 @@ export class RoborockVacuumCleaner extends RoboticVacuumCleaner {
 
 		this.addCommandHandlerWithErrorHandling(CommandNames.SELECT_AREAS, async ({ request }) => {
 			const { newAreas } = request as ServiceArea.SelectAreasRequest;
-			const areas = newAreas ?? [];
-			this.log.info(
-				areas.length === 0
-					? 'Clearing selected areas (global cleaning on next start)'
-					: `Selecting areas: ${areas.join(', ')}`,
-			);
+			const requestedAreas = newAreas ?? [];
 
-			if (areas.length > 0) {
-				await this.trySwitchMap(areas);
+			if (requestedAreas.length === 0) {
+				const allRoomsForActiveMap = this.resolveAllRoomsForActiveMap();
+				if (allRoomsForActiveMap.length > 0) {
+					this.log.info(
+						`Populating selected areas with all rooms of active map for global cleaning: ${allRoomsForActiveMap.join(', ')}`,
+					);
+				} else {
+					this.log.info('Clearing selected areas (global cleaning on next start)');
+				}
+				// No trySwitchMap here: these rooms were resolved FROM the active map, so there is
+				// never a map to switch to — see "trySwitchMap reachability fix" in Approach.
+				behaviorHandler.executeCommand(CommandNames.SELECT_AREAS, allRoomsForActiveMap);
+				return;
 			}
 
-			behaviorHandler.executeCommand(CommandNames.SELECT_AREAS, areas);
+			this.log.info(`Selecting areas: ${requestedAreas.join(', ')}`);
+			await this.trySwitchMap(requestedAreas);
+			behaviorHandler.executeCommand(CommandNames.SELECT_AREAS, requestedAreas);
 		});
 
 		this.skipAreaHandler = async (skippedArea: number) => {
@@ -286,6 +294,24 @@ export class RoborockVacuumCleaner extends RoboticVacuumCleaner {
 		} catch (err) {
 			this.log.error(`[${duid}] Failed to switch map: ${String(err)}`);
 		}
+	}
+
+	private resolveAllRoomsForActiveMap(): number[] {
+		const duid = this.device.duid;
+		const supportedAreas = this.roborockService.getSupportedAreas(duid);
+		if (supportedAreas.length === 0) return [];
+
+		const currentSelectedAreas: number[] = this.getAttribute(ServiceArea.id, 'selectedAreas', this.log) ?? [];
+		let activeMapId = supportedAreas.find((a) => currentSelectedAreas.includes(a.areaId))?.mapId;
+
+		if (activeMapId === undefined && this.homeInFo.activeMapId !== -1) {
+			activeMapId = this.homeInFo.activeMapId;
+		}
+		if (activeMapId === undefined || !supportedAreas.some((a) => a.mapId === activeMapId)) {
+			activeMapId = supportedAreas[0].mapId;
+		}
+
+		return supportedAreas.filter((a) => a.mapId === activeMapId).map((a) => a.areaId);
 	}
 
 	/**

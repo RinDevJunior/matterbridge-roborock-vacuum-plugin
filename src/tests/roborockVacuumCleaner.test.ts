@@ -1,7 +1,7 @@
 import { MatterbridgeIdentifyServer, MatterbridgeServiceAreaServer } from 'matterbridge';
 import { MatterbridgeRvcOperationalStateServer } from 'matterbridge/devices';
 import { AnsiLogger } from 'matterbridge/logger';
-import { ModeBase } from 'matterbridge/matter/clusters';
+import { ModeBase, ServiceArea } from 'matterbridge/matter/clusters';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { MapInfo } from '../core/application/models/MapInfo.js';
@@ -17,7 +17,7 @@ import { PlatformConfigManager } from '../platform/platformConfigManager.js';
 import { RoborockService } from '../services/roborockService.js';
 import { BehaviorFactoryResult } from '../share/behaviorFactory.js';
 import { RoborockVacuumCleaner } from '../types/roborockVacuumCleaner.js';
-import { asPartial, asType } from './testUtils.js';
+import { asPartial, asType, setReadOnlyProperty } from './testUtils.js';
 
 function createMockLogger(): AnsiLogger {
 	return asType<AnsiLogger>({
@@ -98,22 +98,242 @@ describe('RoborockVacuumCleaner', () => {
 		expect(behaviorHandler.executeCommand).toHaveBeenCalledWith('identify', 5);
 	});
 
-	it('should clear selected areas when selectAreas called with empty areas', async () => {
-		const behaviorHandler = {
-			executeCommand: vi.fn(),
-			setCommandHandler: vi.fn(),
-			log: logger,
-			commands: {},
-		} satisfies BehaviorFactoryResult;
-		vacuum.configureHandler(behaviorHandler);
-		await vacuum.executeCommandHandler(
-			'selectAreas',
-			{ newAreas: [] },
-			'serviceArea',
-			vacuum.stateOf(MatterbridgeServiceAreaServer) as any,
-			vacuum,
-		);
-		expect(behaviorHandler.executeCommand).toHaveBeenCalledWith('selectAreas', []);
+	describe('SELECT_AREAS command with empty input (resolveAllRoomsForActiveMap)', () => {
+		it('should populate selected areas with all rooms of active map when empty areas provided (happy path, single map)', async () => {
+			const mockSupportedAreas: ServiceArea.Area[] = [
+				{ areaId: 1, mapId: 0, areaInfo: { locationInfo: null, landmarkInfo: null } },
+				{ areaId: 2, mapId: 0, areaInfo: { locationInfo: null, landmarkInfo: null } },
+			];
+			roborockService.getSupportedAreas = vi.fn().mockReturnValue(mockSupportedAreas);
+			vi.spyOn(vacuum, 'getAttribute').mockReturnValue([]);
+
+			const behaviorHandler = {
+				executeCommand: vi.fn(),
+				setCommandHandler: vi.fn(),
+				log: logger,
+				commands: {},
+			} satisfies BehaviorFactoryResult;
+			vacuum.configureHandler(behaviorHandler);
+			await vacuum.executeCommandHandler(
+				'selectAreas',
+				{ newAreas: [] },
+				'serviceArea',
+				vacuum.stateOf(MatterbridgeServiceAreaServer) as any,
+				vacuum,
+			);
+			expect(behaviorHandler.executeCommand).toHaveBeenCalledWith('selectAreas', [1, 2]);
+			expect(roborockService.switchMap).not.toHaveBeenCalled();
+		});
+
+		it('should infer active map from current selectedAreas attribute when empty input provided', async () => {
+			const mockSupportedAreas: ServiceArea.Area[] = [
+				{ areaId: 1, mapId: 0, areaInfo: { locationInfo: null, landmarkInfo: null } },
+				{ areaId: 2, mapId: 0, areaInfo: { locationInfo: null, landmarkInfo: null } },
+				{ areaId: 3, mapId: 1, areaInfo: { locationInfo: null, landmarkInfo: null } },
+				{ areaId: 4, mapId: 1, areaInfo: { locationInfo: null, landmarkInfo: null } },
+			];
+			roborockService.getSupportedAreas = vi.fn().mockReturnValue(mockSupportedAreas);
+			// Mock getAttribute to return areas on mapId 1, indicating active map is 1
+			vi.spyOn(vacuum, 'getAttribute').mockReturnValue([3]);
+
+			const behaviorHandler = {
+				executeCommand: vi.fn(),
+				setCommandHandler: vi.fn(),
+				log: logger,
+				commands: {},
+			} satisfies BehaviorFactoryResult;
+			vacuum.configureHandler(behaviorHandler);
+			await vacuum.executeCommandHandler(
+				'selectAreas',
+				{ newAreas: [] },
+				'serviceArea',
+				vacuum.stateOf(MatterbridgeServiceAreaServer) as any,
+				vacuum,
+			);
+			// Should populate with mapId 1 rooms only: [3, 4]
+			expect(behaviorHandler.executeCommand).toHaveBeenCalledWith('selectAreas', [3, 4]);
+			expect(roborockService.switchMap).not.toHaveBeenCalled();
+		});
+
+		it('should infer active map from homeInFo.activeMapId when no selectedAreas hint exists', async () => {
+			const mockSupportedAreas: ServiceArea.Area[] = [
+				{ areaId: 1, mapId: 0, areaInfo: { locationInfo: null, landmarkInfo: null } },
+				{ areaId: 2, mapId: 0, areaInfo: { locationInfo: null, landmarkInfo: null } },
+				{ areaId: 3, mapId: 1, areaInfo: { locationInfo: null, landmarkInfo: null } },
+				{ areaId: 4, mapId: 1, areaInfo: { locationInfo: null, landmarkInfo: null } },
+			];
+			roborockService.getSupportedAreas = vi.fn().mockReturnValue(mockSupportedAreas);
+			// Mock getAttribute to return empty (no prior selection hint)
+			vi.spyOn(vacuum, 'getAttribute').mockReturnValue([]);
+			// Set homeInFo.activeMapId to 1
+			homeInfo = new HomeEntity(1, 'Test Home', new RoomMap([]), MapInfo.empty(), 0);
+			setReadOnlyProperty(homeInfo, 'activeMapId', 1);
+			const newVacuum = new RoborockVacuumCleaner(device, homeInfo, configManager, roborockService, logger);
+			vi.spyOn(newVacuum, 'getAttribute').mockReturnValue([]);
+			vi.spyOn(newVacuum.log, 'info').mockImplementation(() => {});
+			vi.spyOn(newVacuum.log, 'warn').mockImplementation(() => {});
+			vi.spyOn(newVacuum.log, 'debug').mockImplementation(() => {});
+			vi.spyOn(newVacuum.log, 'error').mockImplementation(() => {});
+			vi.spyOn(newVacuum, 'stateOf').mockReturnValue({} as any);
+
+			const behaviorHandler = {
+				executeCommand: vi.fn(),
+				setCommandHandler: vi.fn(),
+				log: logger,
+				commands: {},
+			} satisfies BehaviorFactoryResult;
+			newVacuum.configureHandler(behaviorHandler);
+			await newVacuum.executeCommandHandler(
+				'selectAreas',
+				{ newAreas: [] },
+				'serviceArea',
+				newVacuum.stateOf(MatterbridgeServiceAreaServer) as any,
+				newVacuum,
+			);
+			// Should populate with mapId 1 rooms: [3, 4]
+			expect(behaviorHandler.executeCommand).toHaveBeenCalledWith('selectAreas', [3, 4]);
+			expect(roborockService.switchMap).not.toHaveBeenCalled();
+		});
+
+		it('should fall back to empty list when no rooms exist (no regression)', async () => {
+			roborockService.getSupportedAreas = vi.fn().mockReturnValue([]);
+			vi.spyOn(vacuum, 'getAttribute').mockReturnValue([]);
+
+			const behaviorHandler = {
+				executeCommand: vi.fn(),
+				setCommandHandler: vi.fn(),
+				log: logger,
+				commands: {},
+			} satisfies BehaviorFactoryResult;
+			vacuum.configureHandler(behaviorHandler);
+			await vacuum.executeCommandHandler(
+				'selectAreas',
+				{ newAreas: [] },
+				'serviceArea',
+				vacuum.stateOf(MatterbridgeServiceAreaServer) as any,
+				vacuum,
+			);
+			expect(behaviorHandler.executeCommand).toHaveBeenCalledWith('selectAreas', []);
+			expect(roborockService.switchMap).not.toHaveBeenCalled();
+		});
+
+		it('should never call switchMap on empty-input path when homeInFo.activeMapId is -1 (V10/V1 regression guard)', async () => {
+			const mockSupportedAreas: ServiceArea.Area[] = [
+				{ areaId: 1, mapId: 0, areaInfo: { locationInfo: null, landmarkInfo: null } },
+				{ areaId: 2, mapId: 0, areaInfo: { locationInfo: null, landmarkInfo: null } },
+			];
+			roborockService.getSupportedAreas = vi.fn().mockReturnValue(mockSupportedAreas);
+			vi.spyOn(vacuum, 'getAttribute').mockReturnValue([]);
+			// homeInfo.activeMapId defaults to -1, simulating V10/V1 device
+
+			const behaviorHandler = {
+				executeCommand: vi.fn(),
+				setCommandHandler: vi.fn(),
+				log: logger,
+				commands: {},
+			} satisfies BehaviorFactoryResult;
+			vacuum.configureHandler(behaviorHandler);
+			await vacuum.executeCommandHandler(
+				'selectAreas',
+				{ newAreas: [] },
+				'serviceArea',
+				vacuum.stateOf(MatterbridgeServiceAreaServer) as any,
+				vacuum,
+			);
+			expect(behaviorHandler.executeCommand).toHaveBeenCalledWith('selectAreas', [1, 2]);
+			// Critical: switchMap must NOT be called on empty-input path
+			expect(roborockService.switchMap).not.toHaveBeenCalled();
+		});
+	});
+
+	describe('SELECT_AREAS command with non-empty input (regression tests)', () => {
+		it('should execute non-empty selectAreas without regressing to empty behavior', async () => {
+			const mockSupportedAreas: ServiceArea.Area[] = [
+				{ areaId: 1, mapId: 0, areaInfo: { locationInfo: null, landmarkInfo: null } },
+				{ areaId: 2, mapId: 0, areaInfo: { locationInfo: null, landmarkInfo: null } },
+			];
+			vi.mocked(roborockService.getSupportedAreas).mockReturnValue(mockSupportedAreas);
+			vi.spyOn(vacuum, 'getAttribute').mockReturnValue([]);
+
+			const behaviorHandler = {
+				executeCommand: vi.fn(),
+				setCommandHandler: vi.fn(),
+				log: logger,
+				commands: {},
+			} satisfies BehaviorFactoryResult;
+			vacuum.configureHandler(behaviorHandler);
+			await vacuum.executeCommandHandler(
+				'selectAreas',
+				{ newAreas: [1, 2] },
+				'serviceArea',
+				vacuum.stateOf(MatterbridgeServiceAreaServer) as any,
+				vacuum,
+			);
+			// Most importantly: non-empty input should NOT be populated; should pass through unchanged
+			expect(behaviorHandler.executeCommand).toHaveBeenCalledWith('selectAreas', [1, 2]);
+		});
+
+		it('should not populate all rooms when non-empty areas explicitly provided (regression guard)', async () => {
+			const mockSupportedAreas: ServiceArea.Area[] = [
+				{ areaId: 1, mapId: 0, areaInfo: { locationInfo: null, landmarkInfo: null } },
+				{ areaId: 2, mapId: 0, areaInfo: { locationInfo: null, landmarkInfo: null } },
+				{ areaId: 3, mapId: 1, areaInfo: { locationInfo: null, landmarkInfo: null } },
+				{ areaId: 4, mapId: 1, areaInfo: { locationInfo: null, landmarkInfo: null } },
+			];
+			vi.mocked(roborockService.getSupportedAreas).mockReturnValue(mockSupportedAreas);
+			vi.spyOn(vacuum, 'getAttribute').mockReturnValue([]);
+
+			const behaviorHandler = {
+				executeCommand: vi.fn(),
+				setCommandHandler: vi.fn(),
+				log: logger,
+				commands: {},
+			} satisfies BehaviorFactoryResult;
+			vacuum.configureHandler(behaviorHandler);
+			// Explicitly select only areas [1, 2] (not all areas, not all of any specific map)
+			await vacuum.executeCommandHandler(
+				'selectAreas',
+				{ newAreas: [1, 2] },
+				'serviceArea',
+				vacuum.stateOf(MatterbridgeServiceAreaServer) as any,
+				vacuum,
+			);
+			// Should pass through exactly as provided, not populate with all map rooms
+			expect(behaviorHandler.executeCommand).toHaveBeenCalledWith('selectAreas', [1, 2]);
+			// Verify it wasn't expanded to other areas
+			expect(behaviorHandler.executeCommand).not.toHaveBeenCalledWith('selectAreas', [1, 2, 3, 4]);
+		});
+
+		it('should call trySwitchMap for explicit selection with areas on different map than active', async () => {
+			const mockSupportedAreas: ServiceArea.Area[] = [
+				{ areaId: 1, mapId: 0, areaInfo: { locationInfo: null, landmarkInfo: null } },
+				{ areaId: 2, mapId: 0, areaInfo: { locationInfo: null, landmarkInfo: null } },
+				{ areaId: 3, mapId: 1, areaInfo: { locationInfo: null, landmarkInfo: null } },
+				{ areaId: 4, mapId: 1, areaInfo: { locationInfo: null, landmarkInfo: null } },
+			];
+			vi.mocked(roborockService.getSupportedAreas).mockReturnValue(mockSupportedAreas);
+			vi.mocked(roborockService.switchMap).mockResolvedValue(undefined);
+			vi.spyOn(vacuum, 'getAttribute').mockReturnValue([]);
+			// homeInFo.activeMapId is -1 by default; selecting area 3 has mapId 1, so switchMap should be called
+
+			const behaviorHandler = {
+				executeCommand: vi.fn(),
+				setCommandHandler: vi.fn(),
+				log: logger,
+				commands: {},
+			} satisfies BehaviorFactoryResult;
+			vacuum.configureHandler(behaviorHandler);
+			await vacuum.executeCommandHandler(
+				'selectAreas',
+				{ newAreas: [3] },
+				'serviceArea',
+				vacuum.stateOf(MatterbridgeServiceAreaServer) as any,
+				vacuum,
+			);
+			expect(behaviorHandler.executeCommand).toHaveBeenCalledWith('selectAreas', [3]);
+			// trySwitchMap should be called (and switchMap should fire because targetMapId 1 !== activeMapId -1)
+			expect(roborockService.switchMap).toHaveBeenCalledWith(device.duid, 1);
+		});
 	});
 
 	it('should call behaviorHandler for selectAreas command', async () => {

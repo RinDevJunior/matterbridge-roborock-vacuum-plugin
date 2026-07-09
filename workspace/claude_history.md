@@ -1,5 +1,17 @@
 # Claude History
 
+## 2026-07-08 — Clean all rooms from Apple Home via empty SelectAreas
+
+**Task:** Populate Matter `selectedAreas` attribute with all rooms of the active map when Apple Home sends empty SelectAreas([]), enabling "clean all" via global clean with populated UI feedback.
+
+**Changes:**
+
+- `src/types/roborockVacuumCleaner.ts` — added `resolveAllRoomsForActiveMap()` private method (active-map inference via Matter selectedAreas hint → homeInFo.activeMapId → first supportedAreas → empty fallback); restructured SELECT_AREAS handler to populate empty input before executeCommand, skip trySwitchMap on populated-all-rooms path to avoid V10/V1 unguarded switchMap RPC exposure
+- `src/tests/roborockVacuumCleaner.test.ts` — 8 new test cases (happy path, both active-map fallbacks, no-rooms fallback, trySwitchMap regression guard for V10/V1 activeMapId=-1, non-empty-input regression checks); updated testUtils.ts setReadOnlyProperty helper export
+- `src/tests/roborockVacuumCleaner.test.ts` — updated pre-existing test that asserted old "empty list stays empty" behavior to match new populated-all-rooms contract
+
+**Outcome:** Pass (reviewed APPROVED after trySwitchMap reachability fix, tested, verified format:ci lint:fix:ci type-check:ci test:ci). Routines excluded by construction (separate supportedRoutines store, mapId=999). buildCleanCommand resolves to {type:'global'} by construction when all active-map rooms selected.
+
 ## 2026-07-07 — Ponytail audit cleanup cycle 2: refactor duplicates, delete dead code, add test coverage
 
 **Task:** Second cleanup iteration — delete dead file (handleCloudMessage.ts), dead duplicate function (asType), dead line (commented throw), refactor two duplicated blocks into shared helpers, add test coverage for previously-untested handleDeviceStatusSimpleUpdate.

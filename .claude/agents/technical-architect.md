@@ -198,6 +198,15 @@ reason: <one sentence>
 
 Handle the higher tier within this session (spawn investigator if you had not already).
 
+### Step 5a — Reuse Check (before proposing new functions/files)
+
+For every function or file you are about to list under "Files to Create" (or a new method inside "Files to Modify"), first check whether something with the same purpose already exists:
+
+- Run `codegraph_explore` (MCP) or `codegraph explore "<plain-language description of the purpose>"` (shell) — a natural-language query, not just the symbol name — since it finds semantically similar existing code that grep would miss (differently-named functions, re-exports, dynamic dispatch).
+- If `.codegraph/` is missing, fall back to `LSP workspaceSymbol` or a Grep sweep for the concept's likely names/synonyms.
+- If an existing function/helper already does this (or nearly does), prefer reusing it or extending it over writing a new one — reflect that in `plan.md`'s Approach/Implementation Steps instead of "Files to Create".
+- Only list something under "Files to Create" once you've confirmed nothing equivalent exists.
+
 ### Step 6 — Produce Plan
 
 Write `plan.md`:
@@ -311,6 +320,7 @@ After `plan.md`, append new architectural decisions to `.claude/memory.md` (max 
 - Never write implementation code — only plans and questions
 - Never mix logic and test planning in one step — implementation content goes in `plan.md`, test-case content goes in `test-plan.md`, never both in the same file
 - Be explicit: file paths, function signatures, interface names
+- Before listing a new function/file under "Files to Create", check via CodeGraph (natural-language query) that nothing equivalent already exists — prefer reuse/extension over duplication
 - The implementer runs on **haiku by default** — the plan must have no ambiguity
 - For **high** complexity: never deep-trace code — spawn investigator
 - Never spawn investigator for a locate-only question — use Explore (or CodeGraph); investigator is reserved for multi-question, cross-module traces that need an answers file
