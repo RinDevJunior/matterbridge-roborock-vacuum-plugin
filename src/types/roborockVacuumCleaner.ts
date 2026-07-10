@@ -1,8 +1,8 @@
 import { CommandHandlerData, CommandHandlers } from 'matterbridge';
-import { RoboticVacuumCleaner } from 'matterbridge/devices';
+import { MatterbridgeRvcCleanModeServer, RoboticVacuumCleaner } from 'matterbridge/devices';
 import { AnsiLogger, debugStringify } from 'matterbridge/logger';
 import { CommonAreaNamespaceTag } from 'matterbridge/matter';
-import { ModeBase, RvcOperationalState, ServiceArea } from 'matterbridge/matter/clusters';
+import { ModeBase, RvcCleanMode, RvcOperationalState, ServiceArea } from 'matterbridge/matter/clusters';
 
 import { CommandNames } from '../behaviors/BehaviorDeviceGeneric.js';
 import { CleanModeSetting } from '../behaviors/roborock.vacuum/core/CleanModeSetting.js';
@@ -139,6 +139,25 @@ export class RoborockVacuumCleaner extends RoboticVacuumCleaner {
 				progress: [],
 			},
 		);
+		return this;
+	}
+
+	/**
+	 * Override to enable RvcCleanMode.Feature.DirectModeChange for mode changes during active cleaning.
+	 * Allows controllers to change clean mode (e.g., suction power/water flow) without requiring idle state.
+	 */
+	override createDefaultRvcCleanModeClusterServer(
+		currentMode?: number,
+		supportedModes?: RvcCleanMode.ModeOption[],
+	): this {
+		this.behaviors.require(MatterbridgeRvcCleanModeServer.with(RvcCleanMode.Feature.DirectModeChange), {
+			supportedModes: supportedModes ?? [
+				{ label: 'Vacuum', mode: 1, modeTags: [{ value: RvcCleanMode.ModeTag.Vacuum }] },
+				{ label: 'Mop', mode: 2, modeTags: [{ value: RvcCleanMode.ModeTag.Mop }] },
+				{ label: 'Clean', mode: 3, modeTags: [{ value: RvcCleanMode.ModeTag.DeepClean }] },
+			],
+			currentMode: currentMode ?? 1,
+		});
 		return this;
 	}
 

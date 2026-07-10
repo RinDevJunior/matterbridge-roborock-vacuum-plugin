@@ -10,6 +10,7 @@ import { PlatformConfigManager } from '../../../platform/platformConfigManager.j
 import { OperationStatusCode } from '../../../roborockCommunication/enums/index.js';
 import { CleanInformation, Device } from '../../../roborockCommunication/models/index.js';
 import {
+	buildProgressUpdate,
 	getNextPendingArea,
 	handleActiveMapChanged,
 	handleServiceAreaUpdate,
@@ -326,7 +327,10 @@ describe('handleServiceAreaUpdate with progress', () => {
 		// With empty prior progress, should initialize with Pending and set to Operating
 		const setProgressCall = vi.mocked(mockRoborockService?.setProgress).mock.calls[0];
 		expect(setProgressCall).toBeDefined();
-		expect(setProgressCall[1]).toEqual([{ areaId: 10, status: ServiceArea.OperationalStatus.Operating }]);
+		// estimatedTime is null because estimatedEndTimeEnabled is false in createMockConfigManager()
+		expect(setProgressCall[1]).toEqual([
+			{ areaId: 10, status: ServiceArea.OperationalStatus.Operating, estimatedTime: null },
+		]);
 	});
 
 	it('should leave progress untouched when state is Idle without Operating areas', async () => {
@@ -1237,5 +1241,253 @@ describe('resolveAreaFromCleaningInfo — fallback to getAreaIdV2 (Bug 1)', () =
 				}),
 			]),
 		);
+	});
+});
+
+describe('buildProgressUpdate', () => {
+	describe('with estimatedTimeForActiveArea', () => {
+		it('should create new Pending entry for activeAreaId with estimatedTime=180 when estimatedTimeForActiveArea=180 passed', () => {
+			const existing: ServiceArea.Progress[] = [];
+			const selectedAreas = [1];
+			const activeAreaId = 1;
+			const estimatedTimeForActiveArea = 180;
+
+			const result = buildProgressUpdate(existing, selectedAreas, activeAreaId, estimatedTimeForActiveArea);
+
+			expect(result).toHaveLength(1);
+			expect(result[0]).toMatchObject({
+				areaId: 1,
+				status: ServiceArea.OperationalStatus.Operating,
+				estimatedTime: 180,
+			});
+		});
+
+		it('should set estimatedTime=null on new active area entry when estimatedTimeForActiveArea=null', () => {
+			const existing: ServiceArea.Progress[] = [];
+			const selectedAreas = [1];
+			const activeAreaId = 1;
+			const estimatedTimeForActiveArea = null;
+
+			const result = buildProgressUpdate(existing, selectedAreas, activeAreaId, estimatedTimeForActiveArea);
+
+			expect(result).toHaveLength(1);
+			expect(result[0]).toMatchObject({
+				areaId: 1,
+				status: ServiceArea.OperationalStatus.Operating,
+				estimatedTime: null,
+			});
+		});
+
+		it('should not set estimatedTime key on new entry for activeAreaId when estimatedTimeForActiveArea is undefined', () => {
+			const existing: ServiceArea.Progress[] = [];
+			const selectedAreas = [1];
+			const activeAreaId = 1;
+
+			const result = buildProgressUpdate(existing, selectedAreas, activeAreaId, undefined);
+
+			expect(result).toHaveLength(1);
+			expect(result[0]).toMatchObject({
+				areaId: 1,
+				status: ServiceArea.OperationalStatus.Operating,
+			});
+			expect(result[0]).not.toHaveProperty('estimatedTime');
+		});
+	});
+
+	describe('without estimatedTimeForActiveArea on non-active areas', () => {
+		it('should NOT set estimatedTime on new Pending entries for non-active areas', () => {
+			const existing: ServiceArea.Progress[] = [];
+			const selectedAreas = [1, 2, 3];
+			const activeAreaId = 1;
+			const estimatedTimeForActiveArea = 180;
+
+			const result = buildProgressUpdate(existing, selectedAreas, activeAreaId, estimatedTimeForActiveArea);
+
+			// Active area (areaId=1) gets estimatedTime
+			const activeEntry = result.find((p) => p.areaId === 1);
+			expect(activeEntry).toMatchObject({
+				areaId: 1,
+				status: ServiceArea.OperationalStatus.Operating,
+				estimatedTime: 180,
+			});
+
+			// Non-active areas (areaId=2,3) should NOT have estimatedTime property
+			const nonActiveEntry2 = result.find((p) => p.areaId === 2);
+			const nonActiveEntry3 = result.find((p) => p.areaId === 3);
+			expect(nonActiveEntry2).toMatchObject({
+				areaId: 2,
+				status: ServiceArea.OperationalStatus.Pending,
+			});
+			expect(nonActiveEntry2).not.toHaveProperty('estimatedTime');
+			expect(nonActiveEntry3).toMatchObject({
+				areaId: 3,
+				status: ServiceArea.OperationalStatus.Pending,
+			});
+			expect(nonActiveEntry3).not.toHaveProperty('estimatedTime');
+		});
+	});
+
+	describe('existing entry preservation', () => {
+		it('should NOT overwrite estimatedTime on existing Progress entry when called again', () => {
+			// First call creates entry with estimatedTime: 180
+			const existing: ServiceArea.Progress[] = [
+				{
+					areaId: 1,
+					status: ServiceArea.OperationalStatus.Pending,
+					estimatedTime: 180,
+				},
+			];
+			const selectedAreas = [1];
+			const activeAreaId = 1;
+			// Second call with different value
+			const newEstimatedTime = 200;
+
+			const result = buildProgressUpdate(existing, selectedAreas, activeAreaId, newEstimatedTime);
+
+			// Should preserve original estimatedTime (180), not update to 200
+			expect(result).toHaveLength(1);
+			expect(result[0]).toMatchObject({
+				areaId: 1,
+				estimatedTime: 180,
+			});
+		});
+
+		it('should preserve estimatedTime when existing entry transitions from Pending to Operating', () => {
+			const existing: ServiceArea.Progress[] = [
+				{
+					areaId: 1,
+					status: ServiceArea.OperationalStatus.Pending,
+					estimatedTime: 120,
+				},
+			];
+			const selectedAreas = [1];
+			const activeAreaId = 1; // Transitioning to Operating
+			const newEstimatedTime = 150; // Different value passed
+
+			const result = buildProgressUpdate(existing, selectedAreas, activeAreaId, newEstimatedTime);
+
+			// Status should change to Operating, but estimatedTime should remain unchanged
+			expect(result).toHaveLength(1);
+			expect(result[0]).toMatchObject({
+				areaId: 1,
+				status: ServiceArea.OperationalStatus.Operating,
+				estimatedTime: 120,
+			});
+		});
+	});
+
+	describe('status transitions', () => {
+		it('should set new entry status to Pending and activeAreaId to Operating', () => {
+			const existing: ServiceArea.Progress[] = [];
+			const selectedAreas = [1, 2];
+			const activeAreaId = 1;
+
+			const result = buildProgressUpdate(existing, selectedAreas, activeAreaId, null);
+
+			expect(result.find((p) => p.areaId === 1)).toMatchObject({
+				status: ServiceArea.OperationalStatus.Operating,
+			});
+			expect(result.find((p) => p.areaId === 2)).toMatchObject({
+				status: ServiceArea.OperationalStatus.Pending,
+			});
+		});
+
+		it('should transition previously Operating area to Completed when activeAreaId changes', () => {
+			const existing: ServiceArea.Progress[] = [
+				{ areaId: 1, status: ServiceArea.OperationalStatus.Operating },
+				{ areaId: 2, status: ServiceArea.OperationalStatus.Pending },
+			];
+			const selectedAreas = [1, 2];
+			const newActiveAreaId = 2; // Switching active area
+
+			const result = buildProgressUpdate(existing, selectedAreas, newActiveAreaId, null);
+
+			expect(result.find((p) => p.areaId === 1)).toMatchObject({
+				status: ServiceArea.OperationalStatus.Completed,
+			});
+			expect(result.find((p) => p.areaId === 2)).toMatchObject({
+				status: ServiceArea.OperationalStatus.Operating,
+			});
+		});
+
+		it('should handle activeAreaId=null by leaving all entries unchanged in status', () => {
+			const existing: ServiceArea.Progress[] = [
+				{ areaId: 1, status: ServiceArea.OperationalStatus.Pending },
+				{ areaId: 2, status: ServiceArea.OperationalStatus.Operating },
+			];
+			const selectedAreas = [1, 2];
+
+			const result = buildProgressUpdate(existing, selectedAreas, null, null);
+
+			// Status should remain unchanged when activeAreaId is null
+			expect(result.find((p) => p.areaId === 1)).toMatchObject({
+				status: ServiceArea.OperationalStatus.Pending,
+			});
+			expect(result.find((p) => p.areaId === 2)).toMatchObject({
+				status: ServiceArea.OperationalStatus.Operating,
+			});
+		});
+	});
+
+	describe('selectedAreas filtering', () => {
+		it('should remove entries not in selectedAreas', () => {
+			const existing: ServiceArea.Progress[] = [
+				{ areaId: 1, status: ServiceArea.OperationalStatus.Operating },
+				{ areaId: 2, status: ServiceArea.OperationalStatus.Pending },
+			];
+			const selectedAreas = [1]; // Only area 1 is selected
+
+			const result = buildProgressUpdate(existing, selectedAreas, 1, null);
+
+			expect(result).toHaveLength(1);
+			expect(result[0]).toMatchObject({ areaId: 1 });
+		});
+
+		it('should add new entries for selectedAreas not in existing', () => {
+			const existing: ServiceArea.Progress[] = [{ areaId: 1, status: ServiceArea.OperationalStatus.Operating }];
+			const selectedAreas = [1, 2, 3]; // Adding 2 and 3
+
+			const result = buildProgressUpdate(existing, selectedAreas, 1, null);
+
+			expect(result).toHaveLength(3);
+			expect(result.map((p) => p.areaId).sort()).toEqual([1, 2, 3]);
+		});
+	});
+
+	describe('call-site integration with shouldPublishEstimatedEndTime gate', () => {
+		it('should be called with estimatedTimeForActiveArea=null when estimatedEndTimeDisabled', () => {
+			// This test documents the expected behavior at the call site
+			// When configManager.isEstimatedEndTimeEnabled = false,
+			// the caller should pass estimatedTimeForActiveArea = null
+			const existing: ServiceArea.Progress[] = [];
+			const selectedAreas = [1];
+			const activeAreaId = 1;
+
+			// Simulating disabled config: caller passes null
+			const result = buildProgressUpdate(existing, selectedAreas, activeAreaId, null);
+
+			// Entry should have estimatedTime: null
+			expect(result[0]).toMatchObject({
+				estimatedTime: null,
+			});
+		});
+
+		it('should be called with estimatedTimeForActiveArea=computed value when estimatedEndTimeEnabled', () => {
+			// This test documents the expected behavior at the call site
+			// When configManager.isEstimatedEndTimeEnabled = true,
+			// the caller should pass the value from computeAreaEstimatedTime()
+			const existing: ServiceArea.Progress[] = [];
+			const selectedAreas = [1];
+			const activeAreaId = 1;
+			const computedEstimatedTime = 180; // From computeAreaEstimatedTime(60, 25)
+
+			// Simulating enabled config: caller passes computed value
+			const result = buildProgressUpdate(existing, selectedAreas, activeAreaId, computedEstimatedTime);
+
+			// Entry should have estimatedTime: 180
+			expect(result[0]).toMatchObject({
+				estimatedTime: 180,
+			});
+		});
 	});
 });
