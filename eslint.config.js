@@ -29,6 +29,7 @@ export default defineConfig([
 			'.claude/',
 			'misc/',
 			'docs/**/*',
+			'workspace/*',
 		],
 	},
 	{ ...js.configs.recommended, files: sourceFiles },

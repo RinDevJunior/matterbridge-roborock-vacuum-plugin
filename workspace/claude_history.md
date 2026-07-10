@@ -1,5 +1,20 @@
 # Claude History
 
+## 2026-07-09 — Claude setup audit: token/cost slimming across agents, policy, plugins, memory
+
+**Task:** Full review of `.claude/` orchestration setup (agents, policy, skills, MCP, plugins, shared memory) to cut token usage while keeping quality; all findings approved and applied.
+
+**Changes:**
+
+- `.claude/memory.md` — pruned from 24KB to caps (10 bullets/section); overflow moved to new `wiki/memory-archive.md`; reviewer now enforces caps
+- `.claude/agents/briefer.md` — deleted; technical-architect now writes `business-brief.md` (+ optional `technical-brief.md`) itself
+- `.claude/agents/*` — removed `LSP` + `mcp__serena__*` from all subagent tools/prose (probe re-confirmed LSP and native Glob/Grep are absent in subagents; only `mcp__glob-grep__*` works); removed Progress Checklist from implementer/test-writer; documenter + wiki-manager got Bash (their `format:ci` gate was impossible); direct-executor lost `Task`/`TodoWrite` (leaf agent); documenter now receives EM summary instead of reading plan/brief
+- `.claude/instructions/team-orchestrator-policy.md` — pipeline without briefer; low complexity widened to ≤3 files with existing pattern; gate table fixed (implementer/test-writer include `type-check:ci`); checklists limited to architect/release-manager
+- `.claude/instructions/agent-prompts.md`, `.claude/skills/load-policy|ref-idea/SKILL.md`, `.claude/templates/reference-workspaces.md` — aligned with the above
+- `.claude/settings.json` — SessionStart hook trimmed to 3 lines; project-disabled plugins: ponytail, pyright-lsp, github, code-simplifier; serena removed from `.mcp.json` + both settings files
+
+**Outcome:** Pass (`format:ci` green). Estimated ~25k tokens saved per full pipeline cycle (memory prune) + ~2k/session (plugins/hook) + one fewer spawn per medium/high cycle.
+
 ## 2026-07-09 — RVC per-area estimatedTime + DirectModeChange feature declaration
 
 **Task:** Add per-area estimated time for Service Area Progress entries and declare DirectModeChange capability on RVC Clean Mode Cluster.

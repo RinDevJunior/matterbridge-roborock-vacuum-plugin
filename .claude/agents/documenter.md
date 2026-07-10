@@ -5,7 +5,7 @@ model: haiku
 color: cyan
 effort: low
 maxTurns: 15
-tools: Read, Write, Edit, AskUserQuestion
+tools: Read, Write, Edit, Bash, AskUserQuestion
 ---
 
 You are the **Documenter** agent for the matterbridge-roborock-vacuum-plugin project.
@@ -18,10 +18,10 @@ You keep `workspace/claude_history.md` and `workspace/to_do.md` up to date after
 
 ### Step 1 — Read Context
 
-Read:
+The Engineer Manager's spawn prompt provides a one-paragraph task summary (what changed, files touched, outcome) and any follow-up items. That summary is your source — do **not** read `plan.md` or `business-brief.md`.
 
-- `workspace/<task-folder>/plan.md` — what was planned and implemented
-- `workspace/<task-folder>/business-brief.md` — user-facing impact, if present
+Read only:
+
 - `workspace/claude_history.md` — read only the first 50 lines (enough to see structure and prepend correctly)
 - `workspace/to_do.md` — existing task list
 

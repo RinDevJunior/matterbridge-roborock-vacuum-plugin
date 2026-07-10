@@ -34,6 +34,8 @@
 - [x] **Clean all rooms from Apple Home (SelectAreas([]))** — populate selectedAreas with all rooms of active map on empty input; trySwitchMap reachability fix to prevent V10/V1 unguarded switchMap RPC exposure
 - [x] **Ponytail audit cleanup cycles 1–2 (completed)** — consolidated into history; see claude_history.md entries for 2026-07-07
 - [x] **RVC per-area estimatedTime + DirectModeChange** — computeAreaEstimatedTime helper, buildProgressUpdate export & extension, RVC Clean Mode Cluster override; 45 tests across 3 files all passing
+- [x] **Claude setup token/cost audit (2026-07-09)** — memory.md pruned to caps (+ wiki/memory-archive.md), briefer merged into architect, LSP/serena removed from subagents, plugin trims (ponytail/pyright/github/code-simplifier off per-project), documenter/wiki-manager Bash fix, complexity boundary widened
+- [x] **DirectModeChange featureSet gating investigation (2026-07-10)** — no real featureSet/newFeatureSet bit maps to "mid-clean mode change"; `is_support_custom_mode_in_cleaning`/`is_clean_direct_status_supported` are decode-only, unreferenced anywhere in this repo or python-roborock; kept unconditional declaration, no code change
 - [ ] **RVC estimatedEndTime real-device validation** — confirm V1 `clean_percent` tracks job progress reliably when `enableEstimatedEndTime` is on; document accuracy limits (pauses, low percent, Home display lag)
 - [ ] **RVC SkipArea real-device validation** — confirm skip room on V10 multi-room clean; expect `InvalidInMode` on B01/Q7
 - [ ] **RVC FillingWaterTank real-device validation** — confirm `wash_status` / `replenish_mode` disambiguation from `CleaningMop` on dock-fill robots

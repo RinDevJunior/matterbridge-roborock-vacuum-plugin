@@ -26,8 +26,7 @@ On `path/to/file.ts(line,col): error ...`, jump straight to `Read(file, offset: 
 ## Code Exploration Priority
 
 1. **CodeGraph** — `.codegraph/` exists → `codegraph_explore` (MCP) or `codegraph explore "<query>"` (shell, subagents). One-call source + call graph + blast radius. Skip if no `.codegraph/`.
-2. **Serena** (`mcp__serena__*`, in `.mcp.json`) — exact symbol lookups (`find_symbol`, `find_referencing_symbols`, `find_implementations`, `get_symbols_overview`), live diagnostics (`get_diagnostics_for_file`), symbol-safe edits (`replace_symbol_body`, `rename_symbol`, `insert_before/after_symbol` — prefer over raw `Edit` for whole-symbol changes).
-3. **`LSP`** — main session only, never reaches Task subagents (confirmed: absent from schema regardless of frontmatter/reload). Skip silently if not in your toolset.
-4. **Grep/Glob** — word-boundary pattern (e.g. `\bgetRoomMap\b`) + check `index.ts` barrels for re-exports. macOS/Linux native: use `mcp__glob-grep__Glob/Grep`. Windows/remote: native `Glob`/`Grep`. Last resort: `Bash` `rg`/`find` (ignores `.gitignore`, unlike the others).
-5. **Live device behavior** — need real CLI output (device status, map data, etc.) rather than static source? Use `mcp__cli-runner__RunCli` (requires a built `dist/cli.js` and an existing login session) instead of shelling out via `Bash`.
-6. **Log files** — see `.claude/instructions/shared-rules.md` (`ReadLog` MCP tool).
+2. **`LSP`** — main session only, never reaches Task subagents (confirmed: absent from schema regardless of frontmatter/reload). Subagent definitions must not reference it.
+3. **Grep/Glob** — word-boundary pattern (e.g. `\bgetRoomMap\b`) + check `index.ts` barrels for re-exports. macOS/Linux native: use `mcp__glob-grep__Glob/Grep`. Windows/remote: native `Glob`/`Grep`. Last resort: `Bash` `rg`/`find` (ignores `.gitignore`, unlike the others).
+4. **Live device behavior** — need real CLI output (device status, map data, etc.) rather than static source? Use `mcp__cli-runner__RunCli` (requires a built `dist/cli.js` and an existing login session) instead of shelling out via `Bash`.
+5. **Log files** — see `.claude/instructions/shared-rules.md` (`ReadLog` MCP tool).

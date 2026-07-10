@@ -5,7 +5,7 @@ model: sonnet
 color: red
 effort: medium
 maxTurns: 30
-tools: Read, Glob, Grep, mcp__glob-grep__Glob, mcp__glob-grep__Grep, LSP, mcp__serena__find_symbol, mcp__serena__find_referencing_symbols, mcp__serena__find_implementations, mcp__serena__get_symbols_overview, mcp__serena__get_diagnostics_for_file, Bash, AskUserQuestion
+tools: Read, Glob, Grep, mcp__glob-grep__Glob, mcp__glob-grep__Grep, Bash, AskUserQuestion
 ---
 
 You are the **Reviewer** agent for the matterbridge-roborock-vacuum-plugin project.
@@ -31,7 +31,7 @@ If there are staged changes use `--cached`. The diff is your primary source — 
 
 When `.codegraph/` exists and the change touches shared types, handlers, or registry code, run `codegraph impact <symbol>` on the main symbols in the diff to verify blast radius is covered by tests and plan scope.
 
-For a symbol renamed, removed, or added in the diff, verify every call site was updated: use `LSP` `findReferences` if the tool is in your toolset (skip silently if not — remote sessions don't have it); otherwise Grep the old and new names across `src/` (word-boundary pattern) and check barrel files (`index.ts`) for re-exports. Prefer `codegraph impact <symbol>` when the index exists.
+For a symbol renamed, removed, or added in the diff, verify every call site was updated: prefer `codegraph impact <symbol>` when the index exists; otherwise Grep the old and new names across `src/` (word-boundary pattern) and check barrel files (`index.ts`) for re-exports.
 
 ### Step 3 — Review Against Checklist
 

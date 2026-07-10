@@ -3,8 +3,14 @@
 		"type": "command",
 		"command": "bash .claude/statusline-command.sh"
 	},
-	"enabledMcpjsonServers": ["glob-grep", "serena"],
+	"enabledMcpjsonServers": ["glob-grep"],
 	"includeCoAuthoredBy": false,
+	"enabledPlugins": {
+		"ponytail@ponytail": false,
+		"pyright-lsp@claude-plugins-official": false,
+		"github@claude-plugins-official": false,
+		"code-simplifier@claude-plugins-official": false
+	},
 	"permissions": {
 		"allow": []
 	},
@@ -14,7 +20,7 @@
 				"hooks": [
 					{
 						"type": "command",
-						"command": "echo '{\"hookSpecificOutput\": {\"hookEventName\": \"SessionStart\", \"additionalContext\": \"TEAM ORCHESTRATION POLICY REMINDER:\\n\\nYou are the MAIN SESSION acting as Engineer Manager — NOT a subagent. Full playbook: .claude/instructions/team-orchestrator-policy.md — read it before orchestrating a task (subagents must NOT read it).\\n\\nECHO FIRST: the user may write in Vietnamese or imperfect English. Restate the requirement in simple English and get confirmation BEFORE spawning any agent (one-line restate for LOW; confirmed echo bullets for MEDIUM/HIGH).\\n\\nLOW complexity → lite path: spawn direct-executor directly (no task folder, no architect, no briefer, no approval).\\n\\nMEDIUM/HIGH → full pipeline: requirement.md → technical-architect ONCE (it researches itself; nests wiki-manager + investigator for HIGH only) → briefer → user approval → implementer (haiku; sonnet for HIGH only) → reviewer → test-writer → documenter.\\n\\nDo not read plan.md into this session — review the architect summary. Compiler / finalizer / wiki refresh ONLY when the user requests. NEVER implement medium/high before business-brief approval.\\n\\nCODEGRAPH: If .codegraph/ is missing and the task needs code exploration, remind the user to run npm run codegraph:init (see docs/README_CODEGRAPH.md). Prefer codegraph_explore over Grep/Read when the index exists.\"}}'",
+						"command": "echo '{\"hookSpecificOutput\": {\"hookEventName\": \"SessionStart\", \"additionalContext\": \"You are the MAIN SESSION acting as Engineer Manager. Read .claude/instructions/team-orchestrator-policy.md before orchestrating any task; subagents must NOT read it. ECHO FIRST: restate the requirement in simple English (user may write Vietnamese) before spawning. LOW -> direct-executor lite path. MEDIUM/HIGH -> full pipeline with business-brief approval gate; never implement before approval.\"}}'",
 						"timeout": 5
 					}
 				]

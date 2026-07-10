@@ -10,4 +10,4 @@ Read and apply the orchestration policy and agent prompts now:
 
 Confirm to the user: "Policy loaded. Acting as Engineer Manager."
 
-**Progress tracking:** the EM registers pipeline steps with `TaskCreate`/`TaskUpdate`. Only `technical-architect`, `implementer`, `test-writer`, and `release-manager` keep their own internal checklists — other subagents report results only.
+**Progress tracking:** the EM registers pipeline steps with `TaskCreate`/`TaskUpdate`. Only `technical-architect` and `release-manager` keep their own internal checklists — other subagents report results only.

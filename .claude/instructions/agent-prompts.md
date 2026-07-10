@@ -4,7 +4,7 @@ Spawn templates for the **main session (EM)** via `Agent`. System prompts live i
 
 **Model:** never pass `model:` — frontmatter is truth. Exception: `implementer` on high → `model: "sonnet"`.
 **Nesting:** EM spawns `technical-architect` only; it nests `wiki-manager`(gather, high)/`investigator` itself — never spawn those directly.
-**Lite path:** low complexity → `direct-executor` directly, no task folder/architect/briefer/approval.
+**Lite path:** low complexity → `direct-executor` directly, no task folder/architect/approval.
 **Explain mode:** EM spawns `technical-architect` with `type: explain`; it writes `answer.md`. EM must not read `src/`/`wiki/`.
 
 ---
@@ -15,7 +15,7 @@ Spawn templates for the **main session (EM)** via `Agent`. System prompts live i
 — explain:
 `Agent({description:"Explain: <question>", subagent_type:"technical-architect", prompt:"Task folder: workspace/<task>/\nRequirement file: workspace/<task>/requirement.md\ntype: explain\n\nWrite answer.md (not plan.md). Read memory/wiki directly; spawn investigator for deep traces."})`
 
-Researches internally (direct reads medium; nests wiki-manager+investigator high). Writes `plan.md`+`test-plan.md` or `answer.md`; returns ≤10-line summary — EM reviews summary, not files.
+Researches internally (direct reads medium; nests wiki-manager+investigator high). Writes `plan.md`+`test-plan.md`+`business-brief.md` (implement) or `answer.md` (explain); returns ≤10-line summary — EM reviews summary, then prints `business-brief.md` for the approval gate.
 
 ---
 
@@ -33,16 +33,6 @@ Leaf agent. Writes `wiki-brief.md` (gather) or edits `wiki/` (update).
 `Agent({description:"Investigate: <task>", subagent_type:"investigator", prompt:"Task folder: workspace/<task>/\nWiki brief (if present): workspace/<task>/wiki-brief.md\nQuestion files: workspace/<task>/questions-<topic>.md"})`
 
 Spawned by technical-architect only for complex gaps. Leaf agent.
-
----
-
-**Briefer** — business (default):
-`Agent({description:"Brief: <task>", subagent_type:"briefer", prompt:"Task folder: workspace/<task>/"})`
-
-— technical (only if user asks; resume `briefer_id` if it exists):
-`Agent({description:"Technical brief: <task>", subagent_type:"briefer", prompt:"Task folder: workspace/<task>/\nmode: technical"})`
-
-Run after architect returns `Status: ready`. Reads `requirement.md`+`plan.md`, writes `business-brief.md` (EM runs approval). Technical mode also writes `technical-brief.md`.
 
 ---
 
@@ -73,9 +63,9 @@ Run after implementer (medium/high; lite-path only if security-sensitive or user
 ---
 
 **Documenter:**
-`Agent({description:"Docs: update history and todo", subagent_type:"documenter", prompt:"Task folder: workspace/<task>/"})`
+`Agent({description:"Docs: update history and todo", subagent_type:"documenter", prompt:"Task summary: <one paragraph — what changed, files touched, outcome>\nFollow-ups (if any): <items for to_do.md>"})`
 
-Run after reviewer approves. Skip for investigation-only. Never triggers wiki refresh (batched separately).
+Run after reviewer approves. EM supplies the summary — documenter does not read `plan.md`/`business-brief.md`. Skip for investigation-only. Never triggers wiki refresh (batched separately).
 
 ---
 
@@ -94,7 +84,7 @@ Good moment to also run wiki-manager (update mode) if refreshes are batched up.
 
 ---
 
-**Direct Executor** — default for low complexity / ad-hoc opt-out. Bypasses task folder/architect/briefer/approval/reviewer/documenter unless user asks separately.
+**Direct Executor** — default for low complexity / ad-hoc opt-out. Bypasses task folder/architect/approval/reviewer/documenter unless user asks separately.
 `Agent({description:"Direct: <summary>", subagent_type:"direct-executor", prompt:"USER REQUEST:\n<verbatim request>\n\nCONSTRAINTS (if any):\n<scope limits from manager>"})`
 
 Spawn when: low complexity, or user says "direct-executor"/"run this directly"/"skip the flow"/"/direct". No `requirement.md` for this path.

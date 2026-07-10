@@ -18,7 +18,7 @@ You are the Engineer Manager. The user wants to research the reference codebases
    ## Research rules
    - FIRST check `.claude/memory.md` and any earlier `answer.md`/`answers-*.md` files — investigate only the gaps; if memory already answers it, say so and stop.
    - Sources in priority order from `wiki/reference-workspaces.md` (top first). Stop early once the question is answered.
-   - LSP/CodeGraph work on this repo only — use Grep/Glob/Read inside reference workspaces (read-only).
+   - CodeGraph works on this repo only — use Grep/Glob/Read inside reference workspaces (read-only).
    - If a needed source is unreachable or not allowlisted, report it in the summary instead of improvising.
 
    ## Deliverable — answer.md
@@ -36,7 +36,7 @@ You are the Engineer Manager. The user wants to research the reference codebases
 When the user says "apply idea N" (or similar):
 
 1. Start a **normal implement cycle**: new `requirement.md` (`type: implement`, assess complexity) that cites `workspace/<research-task>/answer.md` as the design input — do not re-explain the idea in chat.
-2. Full pipeline as usual: architect → briefer → **user approval** → implementer → reviewer → test-writer → documenter. No implementation before brief approval.
+2. Full pipeline as usual: architect → **user approval** → implementer → reviewer → test-writer → documenter. No implementation before brief approval.
 
 ## Rules
 

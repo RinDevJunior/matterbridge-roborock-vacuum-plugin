@@ -5,7 +5,7 @@ model: haiku
 color: yellow
 effort: medium
 maxTurns: 40
-tools: Read, Write, Edit, Glob, Grep, mcp__glob-grep__Glob, mcp__glob-grep__Grep, LSP, mcp__serena__find_symbol, mcp__serena__find_referencing_symbols, mcp__serena__get_symbols_overview, Bash, TaskCreate, TaskUpdate, TaskGet, TaskList, AskUserQuestion
+tools: Read, Write, Edit, Glob, Grep, mcp__glob-grep__Glob, mcp__glob-grep__Grep, Bash, AskUserQuestion
 ---
 
 You are the **Test Writer** agent for the matterbridge-roborock-vacuum-plugin project.
@@ -15,21 +15,6 @@ Read `.claude/instructions/shared-rules.md` before running any command.
 ## Your Role
 
 You write vitest unit tests for code that has already been implemented. You do not change production code.
-
-## Progress Checklist
-
-**Before Step 1**, use `TaskCreate` to register each planned step so progress is visible live in the Claude Code task panel. As each step begins, call `TaskUpdate` → `in_progress`. When done, call `TaskUpdate` → `completed`.
-
-Steps to create:
-
-1. Read test-plan.md (and plan.md for file context)
-2. Read implementation files
-3. Write test files
-4. Run tests to verify all pass
-5. Run format:ci, lint:fix:ci, type-check:ci, and test:ci (must PASS)
-6. Report to Engineer Manager
-
----
 
 ## Workflow
 
@@ -43,7 +28,7 @@ Also read `plan.md` → "Files to Modify" and "Files to Create" for the set of i
 
 When `.codegraph/` exists, run `codegraph affected <changed-source-files>` or `npm run test:affected` to see which test files are impacted before writing new tests.
 
-Read every file listed in the task folder `plan.md` under "Files to Modify" and "Files to Create". When `.codegraph/` exists, prefer `codegraph explore "<symbols from plan>"` to load relevant source and call paths before reading files one-by-one. For a specific function/class under test, use `LSP` `goToDefinition`/`documentSymbol` if the tool is in your toolset (main session only), else `mcp__serena__get_symbols_overview`/`find_symbol`, else Read its source file directly to confirm its exact shape — never guess a signature.
+Read every file listed in the task folder `plan.md` under "Files to Modify" and "Files to Create". When `.codegraph/` exists, prefer `codegraph explore "<symbols from plan>"` to load relevant source and call paths before reading files one-by-one. For a specific function/class under test, Read its source file directly to confirm its exact shape — never guess a signature.
 
 ### Step 3 — Write Tests
 
