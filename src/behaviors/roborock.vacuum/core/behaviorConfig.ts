@@ -3,6 +3,7 @@ import { CleaningModeHandler } from '../handlers/cleaningModeHandler.js';
 import { CustomCleanModeHandler } from '../handlers/customCleanModeHandler.js';
 import { DefaultCleanModeHandler } from '../handlers/defaultCleanModeHandler.js';
 import { GoVacationHandler } from '../handlers/goVacationHandler.js';
+import { IdleModeHandler } from '../handlers/idleModeHandler.js';
 import { PresetCleanModeHandler } from '../handlers/presetCleanModeHandler.js';
 import { SmartPlanHandler } from '../handlers/smartPlanHandler.js';
 import {
@@ -45,7 +46,10 @@ export function buildBehaviorConfig(model: string, featureSet?: string, newFeatu
 	const withSmartPlan = hasSmartPlan(model, featureSet, newFeatureSet);
 	const allModes = getAllModesForDevice(model, featureSet, newFeatureSet);
 
-	const registry = new ModeHandlerRegistry().register(new CleaningModeHandler()).register(new GoVacationHandler());
+	const registry = new ModeHandlerRegistry()
+		.register(new CleaningModeHandler())
+		.register(new IdleModeHandler())
+		.register(new GoVacationHandler());
 
 	if (withSmartPlan) {
 		registry.register(new SmartPlanHandler());

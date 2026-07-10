@@ -80,7 +80,7 @@ Frontmatter is source of truth — never pass `model:` except `implementer` on h
 
 ## Progress checklist
 
-EM tracks pipeline steps via `TaskCreate`/`TaskUpdate` (skip N/A steps). Only technical-architect/release-manager keep internal checklists — other subagents report results only.
+EM tracks pipeline steps via `TaskCreate`/`TaskUpdate` (skip N/A steps). Subagents have no working task-tracking tool (`TaskCreate`/`TodoWrite` confirmed unavailable at runtime) — they report results in plain text only.
 
 ## Subagent IDs
 

@@ -1,5 +1,18 @@
 # Claude History
 
+## 2026-07-10 — Fix Matter ChangeToMode(Idle) no-effect bug via IdleModeHandler
+
+**Task:** Fix a bug where Matter clients (Apple Home, Gladys, etc.) sending ChangeToMode(Idle) via the RvcRunMode cluster had no effect on the real Roborock device due to missing handler in ModeHandlerRegistry.
+
+**Changes:**
+
+- `src/runtimes/handlers/modeHandler.ts` — added `IdleModeHandler` class (mirrors CleaningModeHandler pattern) to handle Idle mode transitions
+- `src/behaviors/behaviorConfig.ts` — registered `IdleModeHandler` in `ModeHandlerRegistry` chain for both `DefaultBehavior` and `BehaviorSmart` configs; calls existing `RoborockService.pauseClean()`
+- `src/tests/runtimes/handlers/modeHandler.test.ts` — 25 new tests covering IdleModeHandler lifecycle, pauseClean calls, state validation, edge cases
+- Task folder: `workspace/fix-runmode-idle-mapping/` (plan.md, test-plan.md, business-brief.md present); research folders: `workspace/verify-runmode-idle-bug/`, `workspace/ref-mapping-command/`
+
+**Outcome:** Pass (full pipeline: technical-architect → user approval → implementer → reviewer → test-writer; all 25 tests passing; format:ci, lint:fix:ci, type-check:ci, test:ci green). ChangeToMode(Mapping) remains explicitly deferred — confirmed via reference research (python-roborock, ioBroker.roborock) that no dispatcher command exists to trigger a mapping run across V1-protocol devices; only OperationStatusCode.Mapping=29 status exists (reported, not sendable). roborock-gitlab reference repo gap noted for future investigation if needed.
+
 ## 2026-07-09 — Claude setup audit: token/cost slimming across agents, policy, plugins, memory
 
 **Task:** Full review of `.claude/` orchestration setup (agents, policy, skills, MCP, plugins, shared memory) to cut token usage while keeping quality; all findings approved and applied.

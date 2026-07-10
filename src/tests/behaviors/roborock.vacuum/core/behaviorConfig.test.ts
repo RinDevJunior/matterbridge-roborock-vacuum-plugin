@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import {
 	createDefaultBehaviorConfig,
@@ -8,8 +8,23 @@ import {
 	CleanModeDisplayLabel,
 	CleanModeLabelInfo,
 } from '../../../../behaviors/roborock.vacuum/core/cleanModeConfig/index.js';
+import { HandlerContext } from '../../../../behaviors/roborock.vacuum/core/modeHandler.js';
+import { RunModeDisplayLabel } from '../../../../behaviors/roborock.vacuum/core/runModeConfig.js';
+import { RoborockService } from '../../../../services/roborockService.js';
+import { asPartial, createMockLogger } from '../../../helpers/testUtils.js';
 
 describe('behaviorConfig', () => {
+	let mockRoborockService: Partial<RoborockService>;
+	let mockLogger: ReturnType<typeof createMockLogger>;
+
+	beforeEach(() => {
+		vi.clearAllMocks();
+		mockRoborockService = {
+			pauseClean: vi.fn().mockResolvedValue(undefined),
+		};
+		mockLogger = createMockLogger();
+	});
+
 	describe('createDefaultBehaviorConfig', () => {
 		it('should have name DefaultBehavior', () => {
 			const config = createDefaultBehaviorConfig();
@@ -45,6 +60,36 @@ describe('behaviorConfig', () => {
 			const smartPlanMode = CleanModeLabelInfo[CleanModeDisplayLabel.SmartPlan].mode;
 			expect(config.cleanModes[smartPlanMode]).toBeUndefined();
 		});
+
+		it('should route Idle activity to IdleModeHandler', async () => {
+			const config = createDefaultBehaviorConfig();
+			const context: HandlerContext = {
+				roborockService: asPartial<RoborockService>(mockRoborockService),
+				logger: mockLogger,
+				enableCleanModeMapping: false,
+				cleanSettings: {},
+				behaviorName: 'DefaultBehavior',
+			};
+
+			await config.registry.handle('test-duid', 1, RunModeDisplayLabel.Idle, context);
+
+			expect(mockRoborockService.pauseClean).toHaveBeenCalledWith('test-duid');
+		});
+
+		it('should call logger when handling Idle activity', async () => {
+			const config = createDefaultBehaviorConfig();
+			const context: HandlerContext = {
+				roborockService: asPartial<RoborockService>(mockRoborockService),
+				logger: mockLogger,
+				enableCleanModeMapping: false,
+				cleanSettings: {},
+				behaviorName: 'DefaultBehavior',
+			};
+
+			await config.registry.handle('test-duid', 1, RunModeDisplayLabel.Idle, context);
+
+			expect(mockLogger.notice).toHaveBeenCalledWith('DefaultBehavior-ChangeRunMode to:', RunModeDisplayLabel.Idle);
+		});
 	});
 
 	describe('createSmartBehaviorConfig', () => {
@@ -75,6 +120,36 @@ describe('behaviorConfig', () => {
 			const config = createSmartBehaviorConfig();
 			const smartPlanMode = CleanModeLabelInfo[CleanModeDisplayLabel.SmartPlan].mode;
 			expect(config.cleanSettings[smartPlanMode]).toBeDefined();
+		});
+
+		it('should route Idle activity to IdleModeHandler', async () => {
+			const config = createSmartBehaviorConfig();
+			const context: HandlerContext = {
+				roborockService: asPartial<RoborockService>(mockRoborockService),
+				logger: mockLogger,
+				enableCleanModeMapping: false,
+				cleanSettings: {},
+				behaviorName: 'BehaviorSmart',
+			};
+
+			await config.registry.handle('test-duid', 1, RunModeDisplayLabel.Idle, context);
+
+			expect(mockRoborockService.pauseClean).toHaveBeenCalledWith('test-duid');
+		});
+
+		it('should call logger when handling Idle activity', async () => {
+			const config = createSmartBehaviorConfig();
+			const context: HandlerContext = {
+				roborockService: asPartial<RoborockService>(mockRoborockService),
+				logger: mockLogger,
+				enableCleanModeMapping: false,
+				cleanSettings: {},
+				behaviorName: 'BehaviorSmart',
+			};
+
+			await config.registry.handle('test-duid', 1, RunModeDisplayLabel.Idle, context);
+
+			expect(mockLogger.notice).toHaveBeenCalledWith('BehaviorSmart-ChangeRunMode to:', RunModeDisplayLabel.Idle);
 		});
 	});
 });

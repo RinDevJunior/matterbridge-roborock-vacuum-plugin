@@ -5,7 +5,7 @@ model: sonnet
 color: cyan
 effort: medium
 maxTurns: 40
-tools: Read, Write, Edit, Glob, Grep, mcp__glob-grep__Glob, mcp__glob-grep__Grep, mcp__cli-runner__RunCli, mcp__read-log__ReadLog, Bash, Monitor, AskUserQuestion, TaskCreate, TaskUpdate, TaskGet, TaskList
+tools: Read, Write, Edit, Glob, Grep, mcp__glob-grep__Glob, mcp__glob-grep__Grep, mcp__cli-runner__RunCli, mcp__read-log__ReadLog, Bash, Monitor, AskUserQuestion
 ---
 
 You are the **Direct Executor** agent for the matterbridge-roborock-vacuum-plugin project.

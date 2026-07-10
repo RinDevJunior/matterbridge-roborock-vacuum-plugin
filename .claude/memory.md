@@ -31,6 +31,7 @@ It is version-controlled — commit and push changes so teammates can pull the l
 - New config sections in schema use JSON Schema `if/then` blocks under `advancedFeature.allOf`.
 - **Agent frontmatter:** `effort`/`maxTurns` after `color`, before `tools`; `tools` MUST be a comma-separated string — YAML block lists silently fail and the subagent falls back to Read/Write/Edit/Bash only.
 - **Subagent toolsets (macOS, re-verified Jul 10 2026):** native `Glob`/`Grep` absent from Task subagents — `mcp__glob-grep__*` is the only working search. `LSP` newly reachable in wildcard-tools subagents via deferred ToolSearch (one probe; explicit `tools:` lists historically never got it) — don't rely on it in agent definitions.
+- **Subagent task tracking:** `TaskCreate`/`TaskUpdate`/`TodoWrite` never reach Task subagents (verified Jul 10 2026, direct-executor probe) — never list them in agent frontmatter; EM tracks pipeline steps in the main session, subagents report plain text (use a `progress.md` file in the task folder if live status is ever needed).
 
 ## Decisions Made
 
@@ -46,6 +47,7 @@ It is version-controlled — commit and push changes so teammates can pull the l
 - Shared state-update helper pattern (`applyResolvedStateUpdates`, `deviceStateHandler.ts:22-49`): extract identical Promise.all/snapshot/completion blocks into a private async helper; callers keep their own state resolution and return values.
 - `AreaManagementService.supportedRoutines` (routine-as-room, `mapId=999`) is structurally separate from `supportedAreas` — "all rooms of active map" logic from `getSupportedAreas` excludes routines automatically.
 - `homeInFo.activeMapId` alone is unreliable for active-map inference (stays -1 for V10/V1). Fallback order used in `SELECT_AREAS` empty-list handling: Matter `selectedAreas` mapId → `activeMapId` (if not -1) → first `supportedAreas` mapId.
+- `RvcRunMode.ChangeToMode(Idle)` is now handled via `IdleModeHandler` (new, Jul 10 2026) → `roborockService.pauseClean`. `Mapping` deferred: `AbstractMessageDispatcher` (V10/Q7/Q10) has zero mapping/explore-start command.
 
 ## Test Patterns
 
@@ -59,6 +61,7 @@ It is version-controlled — commit and push changes so teammates can pull the l
 - **buildProgressUpdate tests:** `estimatedTime` set only on newly-created active-area entry; existing entries never overwritten; status transitions preserve `estimatedTime`. Call with `(existing, selectedAreas, activeAreaId, estimatedTimeForActiveArea)`.
 - **computeAreaEstimatedTime tests:** pure helper returning raw remaining seconds (no `now +`); `25%/60` → `180`; `100%` → `0`; bounds 5–100%; `cleanPercent=undefined` → `null`. Import from `src/share/estimatedEndTime.js`.
 - **createDefaultRvcCleanModeClusterServer tests:** override declares `RvcCleanMode.Feature.DirectModeChange` via `.with(...)`; defaults `currentMode=1`, three modes (Vacuum/1, Mop/2, DeepClean/3); returns `this` for chaining.
+- **ModeHandler tests (IdleModeHandler):** test `canHandle(mode, activity)` returns true only for target activity (Idle), false for others (Cleaning/Mapping/unknown). Integration: add tests to `behaviorConfig.test.ts` that call `registry.handle(duid, mode, activity, context)` and verify `roborockService` method + logger call; run on both DefaultBehavior and BehaviorSmart configs.
 
 ## Common Pitfalls
 
@@ -86,6 +89,8 @@ It is version-controlled — commit and push changes so teammates can pull the l
 <!-- Unresolved questions for the team -->
 
 - Does our TypeScript plugin call `APP_GET_INIT_STATUS`? If so, are `newFeatureInfo`/`newFeatureInfoStr`/`featureInfo` captured and stored?
+- `roomMatrix` (RobotMap field 13) confirmed undecoded in python-roborock/ioBroker.roborock/roborock-gitlab too — all define it, none decode it (room-pixel data comes from `roomChain`/occupancy grid instead). Still needs real Q10 packet capture.
+- `OperationStatusCode` 104: confirmed absent from canonical status enum in all 3 reference repos (identical `103→202` gap everywhere). The only "104" found is an unrelated DP-id (`BREAKPOINT_CLEAN`), not a status value — coincidence, not the answer.
 
 ## Archive
 
