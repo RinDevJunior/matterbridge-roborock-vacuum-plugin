@@ -4,6 +4,18 @@ All notable changes to this project will be documented in this file.
 
 ---
 
+## [1.1.7-rc08] - 2026-07-10
+
+### Added
+
+- **Clean-all-rooms via SELECT_AREAS** — Selecting all rooms through the RVC service-area cluster now triggers a whole-home clean instead of being ignored.
+- **Per-area estimated end time** — Each service area now reports its own estimated cleaning completion time, sourced from live clean progress.
+- **DirectModeChange support for service areas** — RVC service areas now support direct mode changes, letting Apple Home switch cleaning modes without going through the intermediate states.
+
+<a href="https://www.buymeacoffee.com/rinnvspktr" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/default-orange.png" alt="Buy Me A Coffee" height="41" width="174"></a>
+
+---
+
 ## [1.1.7-rc07] - 2026-07-07
 
 ### Fixed
