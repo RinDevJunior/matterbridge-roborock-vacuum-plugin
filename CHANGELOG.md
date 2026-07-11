@@ -4,6 +4,16 @@ All notable changes to this project will be documented in this file.
 
 ---
 
+## [1.1.7-rc10] - 2026-07-11
+
+### Changed
+
+- **Minimum matterbridge version bumped to 3.9.4** — Updated the required peer `matterbridge` version from 3.9.0 to 3.9.4 in `package.json` (`precondition`, `engines.matterbridge`), `README.md`, and `docs/onboarding.md`.
+
+<a href="https://www.buymeacoffee.com/rinnvspktr" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/default-orange.png" alt="Buy Me A Coffee" height="41" width="174"></a>
+
+---
+
 ## [1.1.7-rc09] - 2026-07-11
 
 ### Fixed

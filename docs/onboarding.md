@@ -20,7 +20,7 @@ git submodule update --init --recursive   # pulls wiki/ (separate git repo, cura
 
 ```sh
 npm install
-sudo npm run precondition      # installs matterbridge@3.9.0 globally (required peer)
+sudo npm run precondition      # installs matterbridge@3.9.4 globally (required peer)
 npm run build:local:ci         # build + link matterbridge, compact CI-style output
 ```
 
