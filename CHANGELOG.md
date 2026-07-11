@@ -4,6 +4,17 @@ All notable changes to this project will be documented in this file.
 
 ---
 
+## [1.1.7-rc09] - 2026-07-11
+
+### Fixed
+
+- **ChangeToMode(Idle) had no effect on the real device** — Added an `IdleModeHandler` mapping the Matter `RvcRunMode` Idle mode to the device's `pauseClean` command.
+- **selectedAreas not reflecting global cleans** — Apple Home showed no rooms selected when triggering a "clean everything" automation (empty room list); the `ServiceArea.selectedAreas` Matter attribute is now correctly published for that case.
+
+<a href="https://www.buymeacoffee.com/rinnvspktr" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/default-orange.png" alt="Buy Me A Coffee" height="41" width="174"></a>
+
+---
+
 ## [1.1.7-rc08] - 2026-07-10
 
 ### Added
