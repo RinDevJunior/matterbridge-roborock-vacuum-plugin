@@ -244,6 +244,93 @@ describe('RoborockVacuumCleaner', () => {
 			// Critical: switchMap must NOT be called on empty-input path
 			expect(roborockService.switchMap).not.toHaveBeenCalled();
 		});
+
+		it('should call updateAttribute with resolved rooms when empty input resolves to non-empty list', async () => {
+			const mockSupportedAreas: ServiceArea.Area[] = [
+				{ areaId: 1, mapId: 0, areaInfo: { locationInfo: null, landmarkInfo: null } },
+				{ areaId: 2, mapId: 0, areaInfo: { locationInfo: null, landmarkInfo: null } },
+			];
+			roborockService.getSupportedAreas = vi.fn().mockReturnValue(mockSupportedAreas);
+			vi.spyOn(vacuum, 'getAttribute').mockReturnValue([]);
+			vi.spyOn(vacuum, 'updateAttribute').mockImplementation(() => Promise.resolve(true));
+
+			const behaviorHandler = {
+				executeCommand: vi.fn(),
+				setCommandHandler: vi.fn(),
+				log: logger,
+				commands: {},
+			} satisfies BehaviorFactoryResult;
+			vacuum.configureHandler(behaviorHandler);
+			await vacuum.executeCommandHandler(
+				'selectAreas',
+				{ newAreas: [] },
+				'serviceArea',
+				vacuum.stateOf(MatterbridgeServiceAreaServer) as any,
+				vacuum,
+			);
+			expect(vi.mocked(vacuum.updateAttribute)).toHaveBeenCalledWith(
+				ServiceArea.id,
+				'selectedAreas',
+				[1, 2],
+				vacuum.log,
+			);
+			expect(behaviorHandler.executeCommand).toHaveBeenCalledWith('selectAreas', [1, 2]);
+		});
+
+		it('should call updateAttribute even when empty input resolves to empty list', async () => {
+			roborockService.getSupportedAreas = vi.fn().mockReturnValue([]);
+			vi.spyOn(vacuum, 'getAttribute').mockReturnValue([]);
+			vi.spyOn(vacuum, 'updateAttribute').mockImplementation(() => Promise.resolve(true));
+
+			const behaviorHandler = {
+				executeCommand: vi.fn(),
+				setCommandHandler: vi.fn(),
+				log: logger,
+				commands: {},
+			} satisfies BehaviorFactoryResult;
+			vacuum.configureHandler(behaviorHandler);
+			await vacuum.executeCommandHandler(
+				'selectAreas',
+				{ newAreas: [] },
+				'serviceArea',
+				vacuum.stateOf(MatterbridgeServiceAreaServer) as any,
+				vacuum,
+			);
+			expect(vi.mocked(vacuum.updateAttribute)).toHaveBeenCalledWith(ServiceArea.id, 'selectedAreas', [], vacuum.log);
+			expect(behaviorHandler.executeCommand).toHaveBeenCalledWith('selectAreas', []);
+		});
+
+		it('should call getAttribute before updateAttribute to respect read-before-write ordering', async () => {
+			const mockSupportedAreas: ServiceArea.Area[] = [
+				{ areaId: 1, mapId: 0, areaInfo: { locationInfo: null, landmarkInfo: null } },
+				{ areaId: 2, mapId: 0, areaInfo: { locationInfo: null, landmarkInfo: null } },
+			];
+			roborockService.getSupportedAreas = vi.fn().mockReturnValue(mockSupportedAreas);
+			const getAttributeSpy = vi.spyOn(vacuum, 'getAttribute').mockReturnValue([]);
+			const updateAttributeSpy = vi.spyOn(vacuum, 'updateAttribute').mockImplementation(() => Promise.resolve(true));
+
+			const behaviorHandler = {
+				executeCommand: vi.fn(),
+				setCommandHandler: vi.fn(),
+				log: logger,
+				commands: {},
+			} satisfies BehaviorFactoryResult;
+			vacuum.configureHandler(behaviorHandler);
+			await vacuum.executeCommandHandler(
+				'selectAreas',
+				{ newAreas: [] },
+				'serviceArea',
+				vacuum.stateOf(MatterbridgeServiceAreaServer) as any,
+				vacuum,
+			);
+			// Verify getAttribute was called (for map inference) before updateAttribute (for write)
+			expect(getAttributeSpy).toHaveBeenCalled();
+			expect(updateAttributeSpy).toHaveBeenCalled();
+			// Use mock.invocationCallOrder to verify read-before-write
+			const getAttributeCallOrder = vi.mocked(getAttributeSpy).mock.invocationCallOrder[0];
+			const updateAttributeCallOrder = vi.mocked(updateAttributeSpy).mock.invocationCallOrder[0];
+			expect(getAttributeCallOrder).toBeLessThan(updateAttributeCallOrder);
+		});
 	});
 
 	describe('SELECT_AREAS command with non-empty input (regression tests)', () => {
@@ -333,6 +420,39 @@ describe('RoborockVacuumCleaner', () => {
 			expect(behaviorHandler.executeCommand).toHaveBeenCalledWith('selectAreas', [3]);
 			// trySwitchMap should be called (and switchMap should fire because targetMapId 1 !== activeMapId -1)
 			expect(roborockService.switchMap).toHaveBeenCalledWith(device.duid, 1);
+		});
+
+		it('should NOT call updateAttribute for selectedAreas when explicit rooms are provided (regression guard)', async () => {
+			const mockSupportedAreas: ServiceArea.Area[] = [
+				{ areaId: 1, mapId: 0, areaInfo: { locationInfo: null, landmarkInfo: null } },
+				{ areaId: 2, mapId: 0, areaInfo: { locationInfo: null, landmarkInfo: null } },
+			];
+			vi.mocked(roborockService.getSupportedAreas).mockReturnValue(mockSupportedAreas);
+			vi.spyOn(vacuum, 'getAttribute').mockReturnValue([]);
+			const updateAttributeSpy = vi.spyOn(vacuum, 'updateAttribute').mockImplementation(() => Promise.resolve(true));
+
+			const behaviorHandler = {
+				executeCommand: vi.fn(),
+				setCommandHandler: vi.fn(),
+				log: logger,
+				commands: {},
+			} satisfies BehaviorFactoryResult;
+			vacuum.configureHandler(behaviorHandler);
+			await vacuum.executeCommandHandler(
+				'selectAreas',
+				{ newAreas: [1, 2] },
+				'serviceArea',
+				vacuum.stateOf(MatterbridgeServiceAreaServer) as any,
+				vacuum,
+			);
+			expect(behaviorHandler.executeCommand).toHaveBeenCalledWith('selectAreas', [1, 2]);
+			// Explicit-rooms branch must NOT call updateAttribute for selectedAreas (user-approved scope restriction)
+			expect(updateAttributeSpy).not.toHaveBeenCalledWith(
+				ServiceArea.id,
+				'selectedAreas',
+				expect.anything(),
+				expect.anything(),
+			);
 		});
 	});
 

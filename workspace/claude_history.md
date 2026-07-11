@@ -1,5 +1,17 @@
 # Claude History
 
+## 2026-07-11 — Fix global clean selectedAreas empty-input bug (Bug A)
+
+**Task:** Fix a bug where Apple Home showed a blank room selection during global "clean everything" automations even though the vacuum cleaned correctly; root cause was empty SelectAreas([]) from Apple Home not being echoed back to Matter after internal resolution to all rooms.
+
+**Changes:**
+
+- `src/types/roborockVacuumCleaner.ts` — added `await this.updateAttribute(ServiceArea.id, 'selectedAreas', allRoomsForActiveMap, this.log)` call in SELECT_AREAS handler's empty-input branch only; explicit-rooms branch left untouched (Apple Home already has that data)
+- `src/tests/types/roborockVacuumCleaner.test.ts` — added test coverage for empty SelectAreas input triggering attribute update with resolved all-rooms list
+- Task folder: `workspace/fix-selectedareas-not-updated/` (plan.md, test-plan.md, business-brief.md); investigation folder: `workspace/investigate-global-clean-one-room/` (diagnosis documented)
+
+**Outcome:** Pass (full pipeline: technical-architect → user approval → implementer → reviewer → test-writer; tests passing). Bug B (buildCleanCommand collapsing "all rooms" to global app_start, potentially causing currentArea freeze symptom) remains open and untouched, tracked separately per investigation answer.md.
+
 ## 2026-07-10 — Fix Matter ChangeToMode(Idle) no-effect bug via IdleModeHandler
 
 **Task:** Fix a bug where Matter clients (Apple Home, Gladys, etc.) sending ChangeToMode(Idle) via the RvcRunMode cluster had no effect on the real Roborock device due to missing handler in ModeHandlerRegistry.

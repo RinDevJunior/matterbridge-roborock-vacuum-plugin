@@ -191,6 +191,7 @@ export class RoborockVacuumCleaner extends RoboticVacuumCleaner {
 				}
 				// No trySwitchMap here: these rooms were resolved FROM the active map, so there is
 				// never a map to switch to — see "trySwitchMap reachability fix" in Approach.
+				await this.updateAttribute(ServiceArea.id, 'selectedAreas', allRoomsForActiveMap, this.log);
 				behaviorHandler.executeCommand(CommandNames.SELECT_AREAS, allRoomsForActiveMap);
 				return;
 			}
