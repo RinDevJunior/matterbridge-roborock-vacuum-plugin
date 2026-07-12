@@ -1,5 +1,22 @@
 # Claude History
 
+## 2026-07-12 — Fix B01/Q10 map parser for Roborock Q10 S5+ (protocol 301, LZ4)
+
+**Task:** Fix "MapInfoListener: failed to parse B01 map binary: Error: incorrect header check" — 100% reproducible crash on every map push (protocol 301) for Roborock Q10 S5+. Root cause: parseRoomsFromEncryptedBinary was hardcoded for Q7's AES+zlib SCMap-protobuf container; Q10 sends unencrypted LZ4-compressed payload.
+
+**Changes:**
+
+- `src/roborockCommunication/map/b01/b01MapParser.ts` — added marker-byte classifier (0x01 0x01) to route Q10 payloads to new handler; Q7 AES+zlib path untouched (fallthrough default); two private methods extracted for internal Q10 flow (decompressAndParseQ10Packet, parseQ10MapPacket)
+- `src/roborockCommunication/map/b01/lz4BlockDecompressor.ts` — new; self-contained hand-rolled LZ4 block decompressor (no npm dependency; node-lz4/lz4js stale/wrong-shaped/nonexistent)
+- `src/roborockCommunication/map/b01/b01Q10MapParser.ts` — new; Q10-specific field parser (mapId u32be@2, width/height u16be@7/@9, compressedLength u16be@27, room records with roomId u16be@0/nameLength@26/name@27) using python-roborock's best-effort layout
+- `src/tests/roborockCommunication/map/b01/b01MapParser.test.ts` — updated with Q10 marker-byte test
+- `src/tests/roborockCommunication/map/b01/lz4BlockDecompressor.test.ts` — new; comprehensive LZ4 decompression tests
+- `src/tests/roborockCommunication/map/b01/b01Q10MapParser.test.ts` — new; Q10 parser field-extraction tests
+
+**Outcome:** Pass (full pipeline: implementer → reviewer → test-writer; all verification gates passed: format:ci, lint:fix:ci, type-check:ci, test:ci). Two-tier confidence: (1) high — crash stops, Q10 payloads now decompressed correctly instead of zlib failure; (2) best-effort — room-name extraction unconfirmed against real Q10 hardware; parse failure surfaces new distinguishable error ("Q10 map binary parse failed (best-effort Q10 layout, unconfirmed against real device capture): ...") for future log capture diagnosis.
+
+**Follow-ups:** (1) Q10 S5+ real-device validation (affected user log capture to confirm room-name extraction or flag layout-guess corrections needed); (2) Q10 "trace/path" secondary payload variant explicitly deferred.
+
 ## 2026-07-12 — Fix global clean selectedAreas regression (rc09/rc10 updateAttribute race)
 
 **Task:** Fix ServiceArea.selectedAreas showing [] in Apple Home during Apple-automation-triggered global clean, despite rc09/rc10 fix. Root cause: MatterbridgeServiceAreaServer.selectAreas() calls super.selectAreas(request) with the ORIGINAL empty request, overwriting the resolved rooms immediately after (deterministic, 100% reproducible).

@@ -3,6 +3,7 @@ import zlib from 'node:zlib';
 
 import protobuf from 'protobufjs';
 
+import { parseQ10MapPacket } from './b01Q10MapParser.js';
 import { ROBOROCK_PROTO_STR } from './roborockProto.js';
 import { B01MapInfo, B01Pose, B01RoomInfo, B01RoomMatrix } from './types.js';
 
@@ -15,11 +16,29 @@ export class B01MapParser {
 	}
 
 	public parseRoomsFromEncryptedBinary(rawBuffer: Buffer, modelShortCode: string, serial: string): B01MapInfo {
+		if (this.isQ10ShapedPayload(rawBuffer)) {
+			return this.parseQ10Binary(rawBuffer);
+		}
 		const decoded = this.decodeBase64IfNeeded(rawBuffer);
 		const decrypted = this.decryptIfNeeded(decoded, modelShortCode, serial);
 		const hexed = this.asciiHexToBinaryIfNeeded(decrypted);
 		const decompressed = zlib.inflateSync(hexed);
 		return this.parseRooms(decompressed);
+	}
+
+	private isQ10ShapedPayload(rawBuffer: Buffer): boolean {
+		return rawBuffer.length >= 2 && rawBuffer[0] === 0x01 && rawBuffer[1] === 0x01;
+	}
+
+	private parseQ10Binary(rawBuffer: Buffer): B01MapInfo {
+		try {
+			return parseQ10MapPacket(rawBuffer);
+		} catch (err) {
+			throw new Error(
+				`Q10 map binary parse failed (best-effort Q10 layout, unconfirmed against real device capture): ${String(err instanceof Error ? err.message : err)}`,
+				{ cause: err },
+			);
+		}
 	}
 
 	private decodeBase64IfNeeded(data: Buffer): Buffer {
