@@ -412,6 +412,49 @@ describe('MapInfoListener', () => {
 			expect(areaService.setSupportedAreas).not.toHaveBeenCalled();
 			expect(logger.warn).toHaveBeenCalledWith(expect.stringContaining('failed to parse B01 map binary'));
 		});
+
+		it('should not produce invalid Areas/supportedMaps when B01 binary arrives before multimap push', async () => {
+			// Arrange — B01 map binary arriving before any multimap/query_response push (reproduces real race)
+			const logger = createMockLogger();
+			const listenerWithDevice = new MapInfoListener(DUID, [], areaService, logger, 'roborock.vacuum.a27', 'ABC123');
+			vi.spyOn(
+				(listenerWithDevice as unknown as { b01MapParser: { parseRoomsFromEncryptedBinary: ReturnType<typeof vi.fn> } })
+					.b01MapParser,
+				'parseRoomsFromEncryptedBinary',
+			).mockReturnValue({
+				rooms: [
+					{ roomId: 5, roomName: 'Kitchen', roomTypeId: 6, colorId: 3 },
+					{ roomId: 6, roomName: 'Study', roomTypeId: 10, colorId: 7 },
+				],
+				mapId: undefined,
+			});
+
+			const msg = makeB01Message(DUID, (key) => {
+				if (key === Protocol.map_response) return Buffer.from('mock');
+				return undefined;
+			});
+
+			// Act — send binary WITHOUT sending multimap/query_response first (pendingB01MapInfo stays undefined)
+			await listenerWithDevice.onMessage(msg);
+
+			// Assert — capture the real SupportedAreasResult passed to applySupportedAreasResult
+			const applySupportedAreasResultCalls = vi.mocked(areaService.applySupportedAreasResult).mock.calls;
+			expect(applySupportedAreasResultCalls.length).toBeGreaterThan(0);
+			const lastCall = applySupportedAreasResultCalls[applySupportedAreasResultCalls.length - 1];
+
+			const result = lastCall[1] as unknown as {
+				supportedAreas: ServiceArea.Area[];
+				supportedMaps: ServiceArea.Map[];
+			};
+			expect(result.supportedMaps.length).toBeGreaterThan(0);
+
+			// Verify the invariant: all non-null area mapIds must appear in supportedMaps
+			const supportedMapIds = new Set(result.supportedMaps.map((m) => m.mapId));
+			const areasWithInvalidMapIds = result.supportedAreas.filter(
+				(area) => area.mapId !== null && !supportedMapIds.has(area.mapId),
+			);
+			expect(areasWithInvalidMapIds).toHaveLength(0);
+		});
 	});
 
 	describe('B01 binary parse — roomTypeId → areaType', () => {

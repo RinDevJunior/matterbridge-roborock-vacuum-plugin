@@ -17,6 +17,18 @@
 
 **Follow-ups:** (1) Q10 S5+ real-device validation (affected user log capture to confirm room-name extraction or flag layout-guess corrections needed); (2) Q10 "trace/path" secondary payload variant explicitly deferred.
 
+## 2026-07-12 — Fix ServiceArea validation crash on B01 map parse
+
+**Task:** Fix a Matter ValidationError/135 crash (`Areas must have a null mapId when supportedMaps is empty`) that occurred on every B01 map update right after plugin startup/reconnect against real Roborock Q10 S5+.
+
+**Changes:**
+
+- `src/initialData/getSupportedAreas.ts` — Added `buildPlaceholderSupportedMaps()` private helper to backfill `supportedMaps` from computed areas' distinct mapIds when `toSupportedMaps()` returns empty, preventing timing race condition
+- `src/tests/initialData/getSupportedAreas.test.ts` — Added 3 new regression tests covering edge cases
+- `src/tests/roborockCommunication/routing/listeners/implementation/mapInfoListener.test.ts` — Added 1 new regression test
+
+**Outcome:** PASS. Root cause identified: `tryParseB01MapBinary` could run before the first multimap/query_response push populated `supportedMaps`, causing `getSupportedAreas()` to compute areas with non-null mapIds while `toSupportedMaps()` returned empty (violation). Solution applies the existing "pair, don't null" convention in that file. Verified live against real Roborock Q10 S5+ (8 map-parse cycles post-restart, 0 validation errors, 10 real rooms correctly populated). All verification gates PASS: format:ci, lint:fix:ci, type-check:ci, test:ci. Follow-up: GitHub #136 (intermittent zlib header error) fixed upstream via LZ4 decoder, validated live against the same device.
+
 ## 2026-07-12 — Fix global clean selectedAreas regression (rc09/rc10 updateAttribute race)
 
 **Task:** Fix ServiceArea.selectedAreas showing [] in Apple Home during Apple-automation-triggered global clean, despite rc09/rc10 fix. Root cause: MatterbridgeServiceAreaServer.selectAreas() calls super.selectAreas(request) with the ORIGINAL empty request, overwriting the resolved rooms immediately after (deterministic, 100% reproducible).

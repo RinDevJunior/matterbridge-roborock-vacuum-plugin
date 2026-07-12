@@ -37,17 +37,16 @@ It is version-controlled — commit and push changes so teammates can pull the l
 
 <!-- Architectural and design decisions with rationale -->
 
-- ServiceArea.Progress: init selected areas to `Pending` on session start; active area → `Operating` (others → `Completed`); on idle, remaining `Operating` → `Completed`. Central helper `buildProgressUpdate` (`serviceAreaHandler.ts:28-67`) — use it at every call site.
 - `MatterbridgeServiceAreaServer.selectAreas` (`@matterbridge/core`) unconditionally calls `super.selectAreas(request)` with the ORIGINAL request AFTER our command handler runs, writing `this.state.selectedAreas` directly (bypasses `updateAttribute`). Any empty-input resolution must intercept in `RoborockServiceAreaServer.selectAreas` and forward a RESOLVED request to `super.selectAreas`, not `updateAttribute` from `roborockVacuumCleaner.ts`'s command handler — that write always loses the race.
 - `extra_time` → `estimatedEndTime` removed (Jul 2026); replacement: V1-only opt-in `enableEstimatedEndTime` (default off) + `clean_time`/`clean_percent` linear ETA in `src/share/estimatedEndTime.ts`; B01/Q7/Q10 stay `null`.
 - `robot.homeInFo.activeMapId` inits to `-1` (`deviceConfigurator.ts:105`), only written via B01/Q7 `onActiveMapChanged` — V10/V1 NEVER updates it. `RoomIndexMap.getAreaId(roomId,mapId)` then always misses for V10/V1 multi-map; `getAreaIdV2(roomId)` is the correct fallback.
 - No "currently selected map" Matter attribute exists — Apple Home infers active map from which map's rooms appear first in `supportedAreas`/`selectedAreas` (mirrors `roborockService.ts:350` `buildCleanCommand`).
 - `handleActiveMapChanged` (`serviceAreaHandler.ts:234-275`) has no idle/cleaning guard — unconditionally overwrites `selectedAreas`/`currentArea`/`progress`; only matters if the device reports a genuinely different active map mid-clean.
-- `AbstractMessageHandler` has one implementer (`SimpleMessageHandler`, skeleton) but user rejected removal — kept for future use; do not re-propose removal without new instruction.
 - Shared state-update helper pattern (`applyResolvedStateUpdates`, `deviceStateHandler.ts:22-49`): extract identical Promise.all/snapshot/completion blocks into a private async helper; callers keep their own state resolution and return values.
 - `AreaManagementService.supportedRoutines` (routine-as-room, `mapId=999`) is structurally separate from `supportedAreas` — "all rooms of active map" logic from `getSupportedAreas` excludes routines automatically.
 - `homeInFo.activeMapId` alone is unreliable for active-map inference (stays -1 for V10/V1). Fallback order used in `SELECT_AREAS` empty-list handling: Matter `selectedAreas` mapId → `activeMapId` (if not -1) → first `supportedAreas` mapId.
 - `RvcRunMode.ChangeToMode(Idle)` is now handled via `IdleModeHandler` (new, Jul 10 2026) → `roborockService.pauseClean`. `Mapping` deferred: `AbstractMessageDispatcher` (V10/Q7/Q10) has zero mapping/explore-start command.
+- `getSupportedAreas()` (`initialData/getSupportedAreas.ts`) is the single point enforcing "Areas non-null mapId ⇒ supportedMaps non-empty" (Matter `#assertSupportedAreas`). `processValidData` branch always assigns numeric `mapId`; empty `mapInfo.maps` (e.g. `MapInfo.empty()` fallback) previously left `supportedMaps=[]` — fixed via `buildPlaceholderSupportedMaps` (pair, don't null — matches existing `createFallbackArea` convention).
 
 ## Test Patterns
 
