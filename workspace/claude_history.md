@@ -1,6 +1,29 @@
 # Claude History
 
-## 2026-07-11 — Fix global clean selectedAreas empty-input bug (Bug A)
+## 2026-07-12 — Fix global clean selectedAreas regression (rc09/rc10 updateAttribute race)
+
+**Task:** Fix ServiceArea.selectedAreas showing [] in Apple Home during Apple-automation-triggered global clean, despite rc09/rc10 fix. Root cause: MatterbridgeServiceAreaServer.selectAreas() calls super.selectAreas(request) with the ORIGINAL empty request, overwriting the resolved rooms immediately after (deterministic, 100% reproducible).
+
+**Changes:**
+
+- `src/behaviors/roborockServiceAreaServer.ts` — added selectAreas override to resolve empty input to all-rooms list via device.resolveAllRoomsForActiveMap(), forward resolved list to super.selectAreas() so base class's internal write lands correctly; on explicit input, forward unchanged and call trySwitchMap (preserving V10/V1 activeMapId=-1 guard)
+- `src/types/roborockVacuumCleaner.ts` — simplified SELECT_AREAS command handler to unconditional forward (dropped now-redundant updateAttribute call and branching/trySwitchMap logic, moved to override); widened resolveAllRoomsForActiveMap and trySwitchMap to public visibility
+- `src/tests/behaviors/roborockServiceAreaServer.test.ts` — new test coverage for selectAreas override empty-input resolution and explicit-input forwarding
+- `src/tests/roborockVacuumCleaner.test.ts` — updated stale assertions to match simplified command handler
+
+**Outcome:** Pass (full pipeline: implementer → reviewer → test-writer; all verification gates passed: format:ci, lint:fix:ci, type-check:ci, test:ci).
+
+## 2026-07-12 — Beautify Claude Code status line (tooling, no product code)
+
+**Task:** Restyle `.claude/statusline-command.sh` and tune its refresh behavior.
+
+**Changes:**
+
+- `.claude/statusline-command.sh` — new look: 256-color palette, `▰▱` bars with dim track, glyph labels (`✦` model, `⛁ ctx`, `◔ 5h`, `◷ 7d`, `↻` reset, `📁` cwd with `~` shortening), `✻ thinking` indicator; context bar now uses the same green/yellow/red thresholds as usage.
+- `.claude/settings.local.json` — `statusLine.refreshInterval` 30 → 1 (per-second re-render; data is re-read from the payload on every render).
+- A "countdown to next refresh" timer was added on request, then removed as pointless once the interval became 1s (it counted down to a non-event). State files under `$TMPDIR/claude-statusline-next-*` cleaned up.
+- Row 1: thinking-mode indicator made explicit both ways (`✻ think:on` magenta / `✻ think:off` dim) from payload `thinking.enabled`.
+- Row 2: raw token counts after the context percentage (e.g. `10% 97.9k/1M`) via payload `context_window.total_input_tokens + total_output_tokens` over `context_window_size`; verified against a live captured payload.
 
 **Task:** Fix a bug where Apple Home showed a blank room selection during global "clean everything" automations even though the vacuum cleaned correctly; root cause was empty SelectAreas([]) from Apple Home not being echoed back to Matter after internal resolution to all rooms.
 

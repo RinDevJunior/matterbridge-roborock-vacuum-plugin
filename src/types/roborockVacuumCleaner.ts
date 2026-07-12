@@ -179,25 +179,7 @@ export class RoborockVacuumCleaner extends RoboticVacuumCleaner {
 		this.addCommandHandlerWithErrorHandling(CommandNames.SELECT_AREAS, async ({ request }) => {
 			const { newAreas } = request as ServiceArea.SelectAreasRequest;
 			const requestedAreas = newAreas ?? [];
-
-			if (requestedAreas.length === 0) {
-				const allRoomsForActiveMap = this.resolveAllRoomsForActiveMap();
-				if (allRoomsForActiveMap.length > 0) {
-					this.log.info(
-						`Populating selected areas with all rooms of active map for global cleaning: ${allRoomsForActiveMap.join(', ')}`,
-					);
-				} else {
-					this.log.info('Clearing selected areas (global cleaning on next start)');
-				}
-				// No trySwitchMap here: these rooms were resolved FROM the active map, so there is
-				// never a map to switch to — see "trySwitchMap reachability fix" in Approach.
-				await this.updateAttribute(ServiceArea.id, 'selectedAreas', allRoomsForActiveMap, this.log);
-				behaviorHandler.executeCommand(CommandNames.SELECT_AREAS, allRoomsForActiveMap);
-				return;
-			}
-
 			this.log.info(`Selecting areas: ${requestedAreas.join(', ')}`);
-			await this.trySwitchMap(requestedAreas);
 			behaviorHandler.executeCommand(CommandNames.SELECT_AREAS, requestedAreas);
 		});
 
@@ -300,7 +282,7 @@ export class RoborockVacuumCleaner extends RoboticVacuumCleaner {
 		return { updatedProgress, nextAreaId };
 	}
 
-	private async trySwitchMap(selectedAreaIds: number[]): Promise<void> {
+	public async trySwitchMap(selectedAreaIds: number[]): Promise<void> {
 		const duid = this.device.duid;
 		const supportedAreas = this.roborockService.getSupportedAreas(duid);
 		const targetMapId = supportedAreas.find((a) => a.areaId === selectedAreaIds[0])?.mapId;
@@ -316,7 +298,7 @@ export class RoborockVacuumCleaner extends RoboticVacuumCleaner {
 		}
 	}
 
-	private resolveAllRoomsForActiveMap(): number[] {
+	public resolveAllRoomsForActiveMap(): number[] {
 		const duid = this.device.duid;
 		const supportedAreas = this.roborockService.getSupportedAreas(duid);
 		if (supportedAreas.length === 0) return [];

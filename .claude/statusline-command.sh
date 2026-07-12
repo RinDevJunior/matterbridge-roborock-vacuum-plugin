@@ -6,83 +6,109 @@ cwd=$(echo "$input" | jq -r '.cwd // empty')
 effort=$(echo "$input" | jq -r '.effort.level // empty')
 thinking=$(echo "$input" | jq -r '.thinking.enabled // false')
 used=$(echo "$input" | jq -r '.context_window.used_percentage // empty')
+ctx_used_tokens=$(echo "$input" | jq -r '(.context_window.total_input_tokens // 0) + (.context_window.total_output_tokens // 0)')
+ctx_size_tokens=$(echo "$input" | jq -r '.context_window.context_window_size // empty')
 five_hour_pct=$(echo "$input" | jq -r '.rate_limits.five_hour.used_percentage // empty')
 five_hour_reset=$(echo "$input" | jq -r '.rate_limits.five_hour.resets_at // empty')
 seven_day_pct=$(echo "$input" | jq -r '.rate_limits.seven_day.used_percentage // empty')
 seven_day_reset=$(echo "$input" | jq -r '.rate_limits.seven_day.resets_at // empty')
 
+RESET="\033[0m"
+DIM="\033[38;5;240m"
+FAINT="\033[38;5;244m"
+GREEN="\033[38;5;114m"
+YELLOW="\033[38;5;221m"
+RED="\033[38;5;203m"
+CYAN="\033[38;5;80m"
+MAGENTA="\033[38;5;176m"
+BLUE="\033[38;5;110m"
+
+# pct → green/yellow/red color
+pct_color() {
+  local pct=$1
+  if   [ "$pct" -ge 75 ]; then printf '%b' "$RED"
+  elif [ "$pct" -ge 50 ]; then printf '%b' "$YELLOW"
+  else                         printf '%b' "$GREEN"; fi
+}
+
+# 97923 → 97.9k, 1000000 → 1M
+fmt_tokens() {
+  local n=$1
+  if   [ "$n" -ge 1000000 ]; then awk -v n="$n" 'BEGIN { v = n / 1000000; printf (v == int(v)) ? "%.0fM" : "%.1fM", v }'
+  elif [ "$n" -ge 1000 ];    then awk -v n="$n" 'BEGIN { printf "%.1fk", n / 1000 }'
+  else printf '%d' "$n"; fi
+}
+
 render_bar() {
-  local pct=$1 bar_len=$2 label=$3 color=$4
+  local pct=$1 bar_len=$2 color=$3
   local filled=$(( (pct * bar_len + 50) / 100 ))
   local empty=$(( bar_len - filled ))
   local bar=""
-  [ "$filled" -gt 0 ] && for i in $(seq 1 $filled); do bar="${bar}${color}█\033[0m"; done
-  [ "$empty"  -gt 0 ] && for i in $(seq 1 $empty);  do bar="${bar}\033[90m█\033[0m"; done
-  if [ -n "$label" ]; then
-    printf "${color}%s:%d%%\033[0m %b" "$label" "$pct" "$bar"
-  else
-    printf "${color}%-6s\033[0m %b" "${pct}%" "$bar"
-  fi
+  [ "$filled" -gt 0 ] && for i in $(seq 1 $filled); do bar="${bar}▰"; done
+  bar="${color}${bar}${RESET}${DIM}"
+  [ "$empty" -gt 0 ] && for i in $(seq 1 $empty); do bar="${bar}▱"; done
+  printf '%b%b' "$bar" "$RESET"
 }
 
-# Row 1: Model + effort indicator + context bar
-printf "\033[1m%-9s\033[0m " "Overall:"
-printf "\033[36m%s\033[0m" "$model"
+# Row 1: model + effort + thinking
+printf "${MAGENTA}✦${RESET} ${CYAN}\033[1m%s${RESET}" "$model"
 if [ -n "$effort" ]; then
   case "$effort" in
-    low) color="\033[33m" ;;
-    medium) color="\033[36m" ;;
-    high|xhigh|max) color="\033[31m" ;;
-    *) color="\033[35m" ;;
+    low)            ecolor="$GREEN"  ;;
+    medium)         ecolor="$CYAN"   ;;
+    high|xhigh|max) ecolor="$RED"    ;;
+    *)              ecolor="$MAGENTA";;
   esac
-  printf " ${color}~%s\033[0m" "$effort"
+  printf " ${DIM}·${RESET} ${ecolor}⚡%s${RESET}" "$effort"
 fi
-
+if [ "$thinking" = "true" ]; then
+  printf " ${DIM}·${RESET} ${MAGENTA}✻ think:on${RESET}"
+else
+  printf " ${DIM}·${RESET} ${DIM}✻ think:off${RESET}"
+fi
 printf "\n"
 
 # Row 2: context bar
-printf "\033[1m%-9s\033[0m " "Context:"
 if [ -n "$used" ]; then
   used_int=$(printf "%.0f" "$used")
-  [ "$used_int" -ge 70 ] && color="\033[31m" || color="\033[32m"
-  render_bar "$used_int" 20 "" "$color"
+  color=$(pct_color "$used_int")
+  printf "${FAINT}◍ ctx${RESET}  "
+  render_bar "$used_int" 18 "$color"
+  printf " ${color}%3d%%${RESET}" "$used_int"
+  if [ "$ctx_used_tokens" -gt 0 ] && [ -n "$ctx_size_tokens" ]; then
+    printf " ${DIM}⛁ %s/%s${RESET}" "$(fmt_tokens "$ctx_used_tokens")" "$(fmt_tokens "$ctx_size_tokens")"
+  fi
 fi
-
 printf "\n"
 
-# Row 3: 5h/7d usage rate limit bars
-printf "\033[1m%-9s\033[0m " "Usage:"
-# 5h bar (20 chars) — green <50%, yellow 50-74%, red 75%+
+# Row 3: 5h / 7d rate-limit bars
 if [ -n "$five_hour_pct" ]; then
   pct_int=$(printf "%.0f" "$five_hour_pct")
-  if [ "$pct_int" -ge 75 ]; then color="\033[31m"
-  elif [ "$pct_int" -ge 50 ]; then color="\033[33m"
-  else color="\033[32m"; fi
-  render_bar "$pct_int" 20 "5h" "$color"
+  color=$(pct_color "$pct_int")
+  printf "${FAINT}◔ 5h${RESET}   "
+  render_bar "$pct_int" 18 "$color"
+  printf " ${color}%3d%%${RESET}" "$pct_int"
   if [ -n "$five_hour_reset" ]; then
     reset_time=$(date -r "$five_hour_reset" +"%-I:%M%p" 2>/dev/null | tr '[:upper:]' '[:lower:]')
-    [ -n "$reset_time" ] && printf " \033[90mreset: %s\033[0m" "$reset_time"
+    [ -n "$reset_time" ] && printf " ${DIM}↻ %s${RESET}" "$reset_time"
   fi
 fi
-
-# 7d bar (20 chars) — green <50%, yellow 50-74%, red 75%+
 if [ -n "$seven_day_pct" ]; then
   pct_int=$(printf "%.0f" "$seven_day_pct")
-  if [ "$pct_int" -ge 75 ]; then color="\033[31m"
-  elif [ "$pct_int" -ge 50 ]; then color="\033[33m"
-  else color="\033[32m"; fi
-  [ -n "$five_hour_pct" ] && printf " \033[90m|\033[0m "
-  render_bar "$pct_int" 20 "7d" "$color"
+  color=$(pct_color "$pct_int")
+  [ -n "$five_hour_pct" ] && printf "  ${DIM}│${RESET}  "
+  printf "${FAINT}◷ 7d${RESET} "
+  render_bar "$pct_int" 18 "$color"
+  printf " ${color}%d%%${RESET}" "$pct_int"
   if [ -n "$seven_day_reset" ]; then
-    reset_time=$(date -r "$seven_day_reset" +"%d/%m/%Y %-I:%M%p" 2>/dev/null | tr '[:upper:]' '[:lower:]')
-    [ -n "$reset_time" ] && printf " \033[90mreset: %s\033[0m" "$reset_time"
+    reset_time=$(date -r "$seven_day_reset" +"%d/%m %-I:%M%p" 2>/dev/null | tr '[:upper:]' '[:lower:]')
+    [ -n "$reset_time" ] && printf " ${DIM}↻ %s${RESET}" "$reset_time"
   fi
 fi
-
 printf "\n"
 
-# Row 4: Current Claude activated directory
-printf "\033[1m%-9s\033[0m " "CWD:"
+# Row 4: cwd with ~ for $HOME
 if [ -n "$cwd" ]; then
-  printf "\033[35m%s\033[0m" "$cwd"
+  printf "${BLUE}📁 %s${RESET}" "${cwd/#$HOME/~}"
 fi
+printf "\n"

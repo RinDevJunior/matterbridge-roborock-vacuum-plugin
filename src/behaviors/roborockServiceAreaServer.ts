@@ -9,6 +9,29 @@ const SKIP_ALLOWED_OPERATIONAL_STATES = new Set<RvcOperationalState.OperationalS
 ]);
 
 export class RoborockServiceAreaServer extends MatterbridgeServiceAreaServer {
+	override async selectAreas(request: ServiceArea.SelectAreasRequest): Promise<ServiceArea.SelectAreasResponse> {
+		const device = this.endpoint as unknown as RoborockVacuumCleaner;
+		const requestedAreas = request.newAreas ?? [];
+
+		if (requestedAreas.length === 0) {
+			const allRoomsForActiveMap = device.resolveAllRoomsForActiveMap();
+			if (allRoomsForActiveMap.length > 0) {
+				device.log.info(
+					`Populating selected areas with all rooms of active map for global cleaning: ${allRoomsForActiveMap.join(', ')}`,
+				);
+			} else {
+				device.log.info('Clearing selected areas (global cleaning on next start)');
+			}
+			// No trySwitchMap here: these rooms were resolved FROM the active map, so there is
+			// never a map to switch to (see roborockVacuumCleaner.ts trySwitchMap doc / memory.md
+			// V10/V1 activeMapId=-1 pitfall).
+			return super.selectAreas({ newAreas: allRoomsForActiveMap });
+		}
+
+		await device.trySwitchMap(requestedAreas);
+		return super.selectAreas(request);
+	}
+
 	override async skipArea(request: ServiceArea.SkipAreaRequest): Promise<ServiceArea.SkipAreaResponse> {
 		const device = this.endpoint as unknown as RoborockVacuumCleaner;
 		const { skippedArea } = request;

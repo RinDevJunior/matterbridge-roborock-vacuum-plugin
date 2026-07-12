@@ -37,8 +37,8 @@ It is version-controlled — commit and push changes so teammates can pull the l
 
 <!-- Architectural and design decisions with rationale -->
 
-- `commonCommands.ts` `SELECT_AREAS` handler only calls `setSelectedAreas` (queued, no live redirect); `trySwitchMap` fires an unguarded map-switch — do not enable `ServiceArea.Feature.SelectWhileRunning` until an idle/running guard exists.
 - ServiceArea.Progress: init selected areas to `Pending` on session start; active area → `Operating` (others → `Completed`); on idle, remaining `Operating` → `Completed`. Central helper `buildProgressUpdate` (`serviceAreaHandler.ts:28-67`) — use it at every call site.
+- `MatterbridgeServiceAreaServer.selectAreas` (`@matterbridge/core`) unconditionally calls `super.selectAreas(request)` with the ORIGINAL request AFTER our command handler runs, writing `this.state.selectedAreas` directly (bypasses `updateAttribute`). Any empty-input resolution must intercept in `RoborockServiceAreaServer.selectAreas` and forward a RESOLVED request to `super.selectAreas`, not `updateAttribute` from `roborockVacuumCleaner.ts`'s command handler — that write always loses the race.
 - `extra_time` → `estimatedEndTime` removed (Jul 2026); replacement: V1-only opt-in `enableEstimatedEndTime` (default off) + `clean_time`/`clean_percent` linear ETA in `src/share/estimatedEndTime.ts`; B01/Q7/Q10 stay `null`.
 - `robot.homeInFo.activeMapId` inits to `-1` (`deviceConfigurator.ts:105`), only written via B01/Q7 `onActiveMapChanged` — V10/V1 NEVER updates it. `RoomIndexMap.getAreaId(roomId,mapId)` then always misses for V10/V1 multi-map; `getAreaIdV2(roomId)` is the correct fallback.
 - No "currently selected map" Matter attribute exists — Apple Home infers active map from which map's rooms appear first in `supportedAreas`/`selectedAreas` (mirrors `roborockService.ts:350` `buildCleanCommand`).
@@ -62,6 +62,7 @@ It is version-controlled — commit and push changes so teammates can pull the l
 - **computeAreaEstimatedTime tests:** pure helper returning raw remaining seconds (no `now +`); `25%/60` → `180`; `100%` → `0`; bounds 5–100%; `cleanPercent=undefined` → `null`. Import from `src/share/estimatedEndTime.js`.
 - **createDefaultRvcCleanModeClusterServer tests:** override declares `RvcCleanMode.Feature.DirectModeChange` via `.with(...)`; defaults `currentMode=1`, three modes (Vacuum/1, Mop/2, DeepClean/3); returns `this` for chaining.
 - **ModeHandler tests (IdleModeHandler):** test `canHandle(mode, activity)` returns true only for target activity (Idle), false for others (Cleaning/Mapping/unknown). Integration: add tests to `behaviorConfig.test.ts` that call `registry.handle(duid, mode, activity, context)` and verify `roborockService` method + logger call; run on both DefaultBehavior and BehaviorSmart configs.
+- **RoborockServiceAreaServer.selectAreas override tests:** spy on parent prototype's selectAreas via `vi.spyOn(Object.getPrototypeOf(Object.getPrototypeOf(server)), 'selectAreas')` and mock its response to avoid deep matterbridge machinery; verify override calls `device.resolveAllRoomsForActiveMap()` for empty input, `device.trySwitchMap(areas)` for non-empty input, forwards resolved/original request to super with correct arguments.
 
 ## Common Pitfalls
 

@@ -9,6 +9,7 @@ function createMockDevice(overrides: Partial<RoborockVacuumCleaner> = {}): Robor
 	return asPartial<RoborockVacuumCleaner>({
 		log: createMockLogger(),
 		getAttribute: vi.fn().mockReturnValue(RvcOperationalState.OperationalState.Running),
+		updateAttribute: vi.fn().mockResolvedValue(true),
 		skipAreaHandler: vi.fn().mockResolvedValue(undefined),
 		finalizeSkipArea: vi.fn().mockResolvedValue({
 			updatedProgress: [
@@ -18,6 +19,9 @@ function createMockDevice(overrides: Partial<RoborockVacuumCleaner> = {}): Robor
 			],
 			nextAreaId: 3,
 		}),
+		resolveAllRoomsForActiveMap: vi.fn().mockReturnValue([]),
+		trySwitchMap: vi.fn().mockResolvedValue(undefined),
+		stateOf: vi.fn().mockReturnValue({} as any),
 		...overrides,
 	});
 }
@@ -27,6 +31,7 @@ function createServer(
 		selectedAreas: number[];
 		currentArea?: number | null;
 		progress?: ServiceArea.Progress[];
+		supportedAreas?: ServiceArea.Area[];
 	},
 	device: RoborockVacuumCleaner,
 ): RoborockServiceAreaServer {
@@ -35,8 +40,10 @@ function createServer(
 		selectedAreas: state.selectedAreas,
 		currentArea: state.currentArea ?? null,
 		progress: state.progress ?? [],
+		supportedAreas: state.supportedAreas ?? [],
 	});
 	setReadOnlyProperty(server, 'endpoint', device);
+	setReadOnlyProperty(server, 'log', device.log);
 	return server;
 }
 
@@ -46,6 +53,90 @@ describe('RoborockServiceAreaServer', () => {
 	beforeEach(() => {
 		vi.clearAllMocks();
 		device = createMockDevice();
+	});
+
+	describe('selectAreas', () => {
+		it('should call resolveAllRoomsForActiveMap when empty input provided', async () => {
+			vi.mocked(device.resolveAllRoomsForActiveMap).mockReturnValue([1, 2]);
+			const server = createServer({ selectedAreas: [] }, device);
+
+			// Spy on super.selectAreas to verify it's called with resolved areas
+			const superSelectAreasSpy = vi.spyOn(Object.getPrototypeOf(Object.getPrototypeOf(server)), 'selectAreas');
+			superSelectAreasSpy.mockResolvedValue({ status: ServiceArea.SelectAreasStatus.Success, statusText: '' });
+
+			await server.selectAreas({ newAreas: [] });
+
+			expect(vi.mocked(device.resolveAllRoomsForActiveMap)).toHaveBeenCalled();
+			expect(superSelectAreasSpy).toHaveBeenCalledWith({ newAreas: [1, 2] });
+		});
+
+		it('should clear selectedAreas when empty input resolves to empty list', async () => {
+			vi.mocked(device.resolveAllRoomsForActiveMap).mockReturnValue([]);
+			const server = createServer({ selectedAreas: [1, 2] }, device);
+
+			const superSelectAreasSpy = vi.spyOn(Object.getPrototypeOf(Object.getPrototypeOf(server)), 'selectAreas');
+			superSelectAreasSpy.mockResolvedValue({ status: ServiceArea.SelectAreasStatus.Success, statusText: '' });
+
+			await server.selectAreas({ newAreas: [] });
+
+			expect(vi.mocked(device.log.info)).toHaveBeenCalledWith(
+				'Clearing selected areas (global cleaning on next start)',
+			);
+			expect(superSelectAreasSpy).toHaveBeenCalledWith({ newAreas: [] });
+		});
+
+		it('should not call trySwitchMap on empty input path regardless of activeMapId', async () => {
+			vi.mocked(device.resolveAllRoomsForActiveMap).mockReturnValue([1, 2]);
+			const server = createServer({ selectedAreas: [] }, device);
+
+			const superSelectAreasSpy = vi.spyOn(Object.getPrototypeOf(Object.getPrototypeOf(server)), 'selectAreas');
+			superSelectAreasSpy.mockResolvedValue({ status: ServiceArea.SelectAreasStatus.Success, statusText: '' });
+
+			await server.selectAreas({ newAreas: [] });
+
+			expect(vi.mocked(device.trySwitchMap)).not.toHaveBeenCalled();
+		});
+
+		it('should log populate message when empty input resolves to non-empty list', async () => {
+			vi.mocked(device.resolveAllRoomsForActiveMap).mockReturnValue([1, 2]);
+			const server = createServer({ selectedAreas: [] }, device);
+
+			const superSelectAreasSpy = vi.spyOn(Object.getPrototypeOf(Object.getPrototypeOf(server)), 'selectAreas');
+			superSelectAreasSpy.mockResolvedValue({ status: ServiceArea.SelectAreasStatus.Success, statusText: '' });
+
+			await server.selectAreas({ newAreas: [] });
+
+			expect(vi.mocked(device.log.info)).toHaveBeenCalledWith(
+				'Populating selected areas with all rooms of active map for global cleaning: 1, 2',
+			);
+		});
+
+		it('should call trySwitchMap for non-empty input', async () => {
+			const server = createServer({ selectedAreas: [] }, device);
+
+			const superSelectAreasSpy = vi.spyOn(Object.getPrototypeOf(Object.getPrototypeOf(server)), 'selectAreas');
+			superSelectAreasSpy.mockResolvedValue({ status: ServiceArea.SelectAreasStatus.Success, statusText: '' });
+
+			await server.selectAreas({ newAreas: [3] });
+
+			expect(vi.mocked(device.trySwitchMap)).toHaveBeenCalledWith([3]);
+			expect(vi.mocked(device.resolveAllRoomsForActiveMap)).not.toHaveBeenCalled();
+			expect(superSelectAreasSpy).toHaveBeenCalledWith({ newAreas: [3] });
+		});
+
+		it('should forward original request to super for non-empty input', async () => {
+			const originalRequest = { newAreas: [1, 2] };
+			const server = createServer({ selectedAreas: [] }, device);
+
+			const superSelectAreasSpy = vi.spyOn(Object.getPrototypeOf(Object.getPrototypeOf(server)), 'selectAreas');
+			superSelectAreasSpy.mockResolvedValue({ status: ServiceArea.SelectAreasStatus.Success, statusText: '' });
+
+			await server.selectAreas(originalRequest);
+
+			// Verify the original request object is passed unchanged
+			expect(superSelectAreasSpy).toHaveBeenCalledWith(originalRequest);
+			expect(vi.mocked(device.resolveAllRoomsForActiveMap)).not.toHaveBeenCalled();
+		});
 	});
 
 	describe('skipArea', () => {

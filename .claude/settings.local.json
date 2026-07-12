@@ -24,7 +24,6 @@
 	"spinnerTipsEnabled": true,
 	"statusLine": {
 		"type": "command",
-		"command": "bash .claude/statusline-command.sh",
-		"refreshInterval": 30
+		"command": "bash .claude/statusline-command.sh"
 	}
 }
