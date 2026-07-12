@@ -21,6 +21,8 @@ It is version-controlled — commit and push changes so teammates can pull the l
 - Live map updates: `resolveInitialAreas` must sync-bootstrap via `fetchAndApplyMapInfo`/`fetchAndApplyRoomMap` (ignore V2); public `getMapInfo`/`getRoomMap` stay V2-only when `liveMapUpdates`. `handleActiveMapChanged` must intersect with Matter `supportedAreas` before writing `selectedAreas`.
 - Multi-map areas: partial room-map fetch/push merges by `mapId` via `mergeSupportedAreasByMap` (keeps other maps, re-indexes areaIds); full `mapInfo.allRooms` / V1 map-info push stays full replace.
 - Multi-map + `enableMultipleMap`: ON → bootstrap all physical maps via `switchMap`+sync fetch, merge by mapId; OFF → primary only (`maps[0]`) via `getSupportedAreas(..., false)` — wired from `configManager.isMultipleMapEnabled`.
+- Q10 (`ss07`) map_response (DPS 301) carries two binary formats sharing one slot: `01 01` map packet (rooms+grid+header calibration: origin/resolution) and `02 01` trace packet (accumulated path, last point = live position). SCMap protobuf path fails on it (`incorrect header check`) — needs its own decoder. NOTE: `upstream/dev` independently landed a Q10 decoder inside `b01MapParser.ts`/`b01Q10MapParser.ts`/`b01Q10TraceParser.ts` (PRs #138/#139) — reconcile with the separate `map/b01/q10/` module built in this branch before merging.
+- `B01StatusListener.tryHandleQ10Push` calls `onServiceAreaUpdate` with `cleaningInfo: undefined` on every clean_area/clean_time/clean_task_type tick → `handleCleaningWithoutInfo`'s coarse `selectedAreas[0]`/`null` currentArea fallback fires constantly for Q10, racing any precise room-resolution write; must guard by model short-code to disable it for Q10.
 
 ## Known Patterns
 
@@ -46,7 +48,7 @@ It is version-controlled — commit and push changes so teammates can pull the l
 - `AreaManagementService.supportedRoutines` (routine-as-room, `mapId=999`) is structurally separate from `supportedAreas` — "all rooms of active map" logic from `getSupportedAreas` excludes routines automatically.
 - `homeInFo.activeMapId` alone is unreliable for active-map inference (stays -1 for V10/V1). Fallback order used in `SELECT_AREAS` empty-list handling: Matter `selectedAreas` mapId → `activeMapId` (if not -1) → first `supportedAreas` mapId.
 - `RvcRunMode.ChangeToMode(Idle)` is now handled via `IdleModeHandler` (new, Jul 10 2026) → `roborockService.pauseClean`. `Mapping` deferred: `AbstractMessageDispatcher` (V10/Q7/Q10) has zero mapping/explore-start command.
-- `getSupportedAreas()` (`initialData/getSupportedAreas.ts`) is the single point enforcing "Areas non-null mapId ⇒ supportedMaps non-empty" (Matter `#assertSupportedAreas`). `processValidData` branch always assigns numeric `mapId`; empty `mapInfo.maps` (e.g. `MapInfo.empty()` fallback) previously left `supportedMaps=[]` — fixed via `buildPlaceholderSupportedMaps` (pair, don't null — matches existing `createFallbackArea` convention).
+- `getSupportedAreas()` (`initialData/getSupportedAreas.ts`) is the single point enforcing "Areas non-null mapId ⇒ supportedMaps non-empty" (Matter `#assertSupportedAreas`). Two complementary fixes now both live here: `buildPlaceholderSupportedMaps` backfills `supportedMaps` from areas' distinct mapIds when still empty (safety net, `upstream/dev`); the Q10 path also pre-populates `pendingB01MapInfo` before `updateAreas(mergeMapId)` so it's rarely needed there (this branch).
 
 ## Test Patterns
 
@@ -77,6 +79,7 @@ It is version-controlled — commit and push changes so teammates can pull the l
 - `platformRunner.ts:120` writes `activeMapId` BEFORE `handleActiveMapChanged` — a guard inside the handler can't prevent `activeMapId` desync, and the same-map guard (`:119`) then swallows an identical-mapId retry.
 - `SELECT_AREAS` empty-input path (`roborockVacuumCleaner.ts:164-176`) must NOT call `trySwitchMap` — keep empty vs explicit branches structurally separate with early `return`, else V10/V1 (`activeMapId=-1`) fires unguarded `switchMap` on every global-clean.
 - ESLint `preserve-caught-error` requires re-thrown errors to carry `{ cause: err }` — omitting it fails `lint:fix:ci` even when the message embeds the original error text.
+- Q10 map/trace calibration: two unit systems, don't conflate. Header `origin_x`/`origin_y` are 5mm units (÷10→px); trace point x/y are raw mm (÷50→px, NOT the raw header `resolution` field=5). x sign inverted, y not. Empirically verified 54/54 real points, not the Python reference's formula.
 
 ## Module Notes
 
@@ -86,8 +89,8 @@ It is version-controlled — commit and push changes so teammates can pull the l
 
 - Q10 map format: python-roborock's `lz4_block_decompress` (`b01_q10_map_parser.py:190-237`) is a hand-rolled zero-dep LZ4 _block_-format decoder, NOT a call into the Python `lz4` package — no size param, decodes until input exhausted.
 - ioBroker's Q10 parser lives at `ioBroker.roborock/src/lib/map/q10/Q10YxMapParser.ts` (not `b01/`) — a structurally different "YxMap" format (28-byte header, version/pixLen/pixLzLen fields) vs python-roborock's `01 01`+offset-27/29 layout; only LZ4-block-format + big-endian u16 width/height are cross-corroborated.
-- Q10 fix landed: `b01MapParser.ts.parseRoomsFromEncryptedBinary` routes `0x01 0x01`-prefixed payloads to new `b01Q10MapParser.ts`/`lz4BlockDecompressor.ts` (hand-rolled, zero-dep); Q7 AES+zlib pipeline untouched. `0x02 0x01` trace packets now route to `b01Q10TraceParser.ts` (`parseQ10TracePacket` → `B01MapInfo.currentPose` = last point; rooms/mapId/roomMatrix always empty/undefined) instead of falling through to the Q7 path — superseded a same-day minimal "recognize+skip, no parse" fallback that had landed on `dev` first.
-- `0x02 0x01` confirmed = python-roborock `Q10TracePacket` (10-byte header + repeating i16be x/y pairs, robot_position=last point); NOT corroborated by ioBroker (different wire format, no `02 01` marker at all). Real-hardware repro: 598B during active cleaning vs 7076B full map. Live-validated on real Q10 S5+: real changing (x,y) coordinates, zero crashes across 8 invocations. `mapInfoListener.ts`/`roomMatrixResolver.ts` needed zero changes (already consume `currentPose` generically); area/room wiring stays out of scope.
+- Q10 fix landed: `b01MapParser.ts.parseRoomsFromEncryptedBinary` routes `0x01 0x01`-prefixed payloads to `b01Q10MapParser.ts`/`lz4BlockDecompressor.ts` (hand-rolled, zero-dep); Q7 AES+zlib pipeline untouched. `0x02 0x01` trace packets route to `b01Q10TraceParser.ts` (`parseQ10TracePacket` → `B01MapInfo.currentPose` = last point; rooms/mapId/roomMatrix always empty/undefined). NOTE: that parser used a 10-byte trace header (per python-roborock, live-validated zero crashes on real Q10 S5+ across 8 invocations); this branch separately validated the real header is **14 bytes** (heading field at offset 10-11) against a live capture — recheck which is authoritative if trace parsing regresses.
+- `0x02 0x01` trace packets parse into `B01MapInfo.currentPose` but nothing consumed it into `ServiceArea.currentArea` before this branch (`roomMatrixResolver.ts` stayed a no-op) — this branch adds the missing piece: `q10PositionToGridPixel`/`resolveRoomIdAtPoint` (`map/b01/q10/q10MapParser.ts`) + `handleQ10CurrentAreaChanged` wiring, live-validated end-to-end (currentArea updates with zero Matter validation errors during a real clean).
 
 ## Open Questions
 
@@ -96,6 +99,7 @@ It is version-controlled — commit and push changes so teammates can pull the l
 - Does our TypeScript plugin call `APP_GET_INIT_STATUS`? If so, are `newFeatureInfo`/`newFeatureInfoStr`/`featureInfo` captured and stored?
 - `roomMatrix` (RobotMap field 13) confirmed undecoded in python-roborock/ioBroker.roborock/roborock-gitlab too — all define it, none decode it (room-pixel data comes from `roomChain`/occupancy grid instead). Still needs real Q10 packet capture.
 - `OperationStatusCode` 104: confirmed absent from canonical status enum in all 3 reference repos (identical `103→202` gap everywhere). The only "104" found is an unrelated DP-id (`BREAKPOINT_CLEAN`), not a status value — coincidence, not the answer.
+- **This branch (`feat/q10-current-area`) vs `upstream/dev` (PRs #138/#139) both independently built Q10 `01 01`/`02 01` binary parsing with different architectures and a differing trace-header length (14 vs 10 bytes) — needs reconciliation before/at merge. This branch's `ServiceArea.currentArea` wiring is the piece missing upstream.**
 
 ## Archive
 

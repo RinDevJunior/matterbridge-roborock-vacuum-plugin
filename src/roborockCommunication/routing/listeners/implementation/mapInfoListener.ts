@@ -1,11 +1,14 @@
 import { AnsiLogger } from 'matterbridge/logger';
 
+import { Q10_MODEL_SHORT_CODE } from '../../../../constants/index.js';
 import { MapInfo } from '../../../../core/application/models/MapInfo.js';
 import { RoomMap } from '../../../../core/application/models/RoomMap.js';
 import { HomeEntity } from '../../../../core/domain/entities/Home.js';
 import { getSupportedAreas, roomTypeIdToAreaTag } from '../../../../initialData/getSupportedAreas.js';
 import { ProtocolVersion } from '../../../../roborockCommunication/enums/protocolVersion.js';
 import { B01MapParser } from '../../../../roborockCommunication/map/b01/b01MapParser.js';
+import { Q10MapParser } from '../../../../roborockCommunication/map/b01/q10/q10MapParser.js';
+import { Q10MapPacket } from '../../../../roborockCommunication/map/b01/q10/types.js';
 import { AreaManagementService } from '../../../../services/areaManagementService.js';
 import { Q7RequestCode, Q7RequestMethod } from '../../../enums/Q7RequestCode.js';
 import { Q10RequestCode } from '../../../enums/Q10RequestCode.js';
@@ -22,8 +25,10 @@ export class MapInfoListener implements AbstractMessageListener {
 	readonly requiresBody = true;
 
 	private readonly b01MapParser = new B01MapParser();
+	private readonly q10MapParser = new Q10MapParser();
 	private pendingB01MapInfo: MapInfo | undefined;
 	private pendingV1MapInfo: MapInfo | undefined;
+	private pendingQ10MapPacket: Q10MapPacket | undefined;
 
 	constructor(
 		public readonly duid: string,
@@ -36,6 +41,7 @@ export class MapInfoListener implements AbstractMessageListener {
 		private readonly deviceProtocol?: string,
 		private readonly allowV1AreaUpdate = true,
 		private readonly enableMultipleMap = true,
+		private readonly onCurrentAreaChanged?: (roomId: number | null) => void,
 	) {}
 
 	public async onMessage(message: ResponseMessage): Promise<void> {
@@ -164,11 +170,20 @@ export class MapInfoListener implements AbstractMessageListener {
 		if (!mapBuffer || !Buffer.isBuffer(mapBuffer)) return;
 		if (this.deviceProtocol === ProtocolVersion.V1) return;
 
+		this.logger.debug(
+			`[${this.duid}] MapInfoListener: raw B01 map_response — length=${mapBuffer.length}, header=${mapBuffer.subarray(0, 2).toString('hex')}, hex=${mapBuffer.toString('hex')}`,
+		);
+
 		const modelShortCode = this.deviceModel?.split('.').at(-1);
 		if (!modelShortCode || !this.deviceSerial) {
 			this.logger.warn(
 				`[${this.duid}] MapInfoListener: B01 map binary received but missing model/serial for decryption`,
 			);
+			return;
+		}
+
+		if (modelShortCode === Q10_MODEL_SHORT_CODE) {
+			this.tryParseQ10MapBinary(mapBuffer);
 			return;
 		}
 
@@ -200,6 +215,71 @@ export class MapInfoListener implements AbstractMessageListener {
 			}
 		} catch (err: unknown) {
 			this.logger.warn(`[${this.duid}] MapInfoListener: failed to parse B01 map binary: ${String(err)}`);
+		}
+	}
+
+	private tryParseQ10MapBinary(buffer: Buffer): void {
+		try {
+			if (Q10MapParser.isMapPacket(buffer)) {
+				const packet = this.q10MapParser.parseMapPacket(buffer);
+				this.pendingQ10MapPacket = packet;
+				if (packet.rooms.length === 0) {
+					this.logger.debug(`[${this.duid}] MapInfoListener: Q10 map binary has no rooms`);
+					return;
+				}
+				const roomMappings = packet.rooms.map((r) => ({
+					id: r.roomId,
+					iot_name_id: String(r.roomId),
+					tag: 0,
+					iot_map_id: packet.mapId,
+					iot_name:
+						normalizeB01RoomName(r.roomName, undefined, r.roomId) ||
+						this.rooms.find((rd) => rd.id === r.roomId)?.name ||
+						`Room ${r.roomId}`,
+					areaType: null,
+				}));
+				const mapDataDto: MapDataDto = {
+					mapFlag: packet.mapId,
+					add_time: 0,
+					length: 0,
+					name: `Map ${packet.mapId}`,
+					bak_maps: [],
+					rooms: [],
+				};
+				const multimap: MultipleMapDto = {
+					max_multi_map: 1,
+					max_bak_map: 0,
+					multi_map_count: 1,
+					map_info: [mapDataDto],
+				};
+				this.pendingB01MapInfo = new MapInfo(multimap);
+				this.logger.debug(`[${this.duid}] MapInfoListener: Q10 map binary parsed — ${packet.rooms.length} rooms`);
+				this.updateAreas(new RoomMap(roomMappings), this.pendingB01MapInfo, packet.mapId);
+				this.onActiveMapChanged?.(packet.mapId);
+				return;
+			}
+
+			if (Q10MapParser.isTracePacket(buffer)) {
+				if (!this.pendingQ10MapPacket) {
+					this.logger.debug(`[${this.duid}] MapInfoListener: Q10 trace packet received before map packet, skipping`);
+					return;
+				}
+				const position = this.q10MapParser.parseTracePacket(buffer);
+				const roomId = this.q10MapParser.resolveRoomIdAtPoint(this.pendingQ10MapPacket, position);
+				if (roomId === undefined) {
+					this.onCurrentAreaChanged?.(null);
+					return;
+				}
+				const roomIndexMap = this.areaService.getSupportedAreasIndexMap(this.duid);
+				const areaId =
+					roomIndexMap?.getAreaId(roomId, this.pendingQ10MapPacket.mapId) ?? roomIndexMap?.getAreaIdV2(roomId);
+				this.onCurrentAreaChanged?.(areaId ?? null);
+				return;
+			}
+
+			this.logger.debug(`[${this.duid}] MapInfoListener: unrecognized Q10 map_response marker`);
+		} catch (err: unknown) {
+			this.logger.warn(`[${this.duid}] MapInfoListener: failed to parse Q10 map binary: ${String(err)}`);
 		}
 	}
 

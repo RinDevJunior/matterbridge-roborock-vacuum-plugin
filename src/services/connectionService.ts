@@ -187,6 +187,14 @@ export class ConnectionService {
 						});
 					}
 				: undefined;
+			const onCurrentAreaChanged = deviceNotify
+				? (areaId: number | null) => {
+						void deviceNotify({
+							type: NotifyMessageTypes.Q10CurrentAreaChanged,
+							data: { duid: device.duid, areaId },
+						});
+					}
+				: undefined;
 			const liveMapUpdates = this.configManager?.isLiveMapUpdatesEnabled ?? false;
 			const allowV1AreaUpdate = liveMapUpdates || !messageDispatcher.supportsMapQueryResponse;
 			const mapInfoListener = new MapInfoListener(
@@ -200,6 +208,7 @@ export class ConnectionService {
 				device.specs.protocol,
 				allowV1AreaUpdate,
 				this.areaManagementService.isMultipleMapEnabled(),
+				onCurrentAreaChanged,
 			);
 			this.clientRouter.registerMessageListener(mapInfoListener);
 		}

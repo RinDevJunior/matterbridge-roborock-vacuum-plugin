@@ -7,4 +7,5 @@ export enum NotifyMessageTypes {
 	CleanModeUpdate = 'CleanModeUpdate',
 	ServiceAreaUpdate = 'ServiceAreaUpdate',
 	ActiveMapChanged = 'ActiveMapChanged',
+	Q10CurrentAreaChanged = 'Q10CurrentAreaChanged',
 }

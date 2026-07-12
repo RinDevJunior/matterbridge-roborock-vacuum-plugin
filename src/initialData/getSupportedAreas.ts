@@ -156,7 +156,7 @@ function processValidData(homeInFo: HomeEntity): ProcessedData {
 			areaInfo: {
 				locationInfo: {
 					locationName: locationName,
-					floorNumber: mapId,
+					floorNumber: mapId >= -32768 && mapId <= 32767 ? mapId : null,
 					areaType: populateAreaNamespaceTag(room),
 				},
 				landmarkInfo: null,
