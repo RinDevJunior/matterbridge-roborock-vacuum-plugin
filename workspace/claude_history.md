@@ -1,5 +1,17 @@
 # Claude History
 
+## 2026-07-12 — Fix B01/Q10 trace packet crash (protocol 301, secondary payload)
+
+**Task:** Fix crash when Roborock Q10 S5+ sends trace packet (marker 0x02 0x01) containing accumulated path of current cleaning session. Previously misclassified as legacy Q7 AES+zlib payload and threw "incorrect header check". Root cause and wire format identified via python-roborock reference project comparison (GitHub issue #136).
+
+**Changes:**
+
+- `src/roborockCommunication/map/b01/b01Q10TraceParser.ts` — new; parses 10-byte header, session counter, big-endian int16 (x,y) point pairs; filters stray-leading-point to match python-roborock logic; wires last point to B01MapInfo.currentPose
+- `src/roborockCommunication/map/b01/b01MapParser.ts` — added isTracePacket/parseQ10TracePacket routing before Q7 fallthrough
+- `src/roborockCommunication/map/b01/b01MapParserTest.ts` — extended CLI diagnostic classifier to report "Trace-shaped" packet type
+
+**Outcome:** Pass (live-validated on Roborock Q10 S5+ (RCFMKY51101783) during active cleaning: 8 total invocations, real changing (x,y) coordinates, zero crashes, zero "incorrect header check" errors; reviewer approved on branch fix/b01-q10-trace-packet; deferred: roomMatrix pixel-to-room decode mapping, GitHub issue #136 investigation history).
+
 ## 2026-07-12 — Fix B01/Q10 map parser for Roborock Q10 S5+ (protocol 301, LZ4)
 
 **Task:** Fix "MapInfoListener: failed to parse B01 map binary: Error: incorrect header check" — 100% reproducible crash on every map push (protocol 301) for Roborock Q10 S5+. Root cause: parseRoomsFromEncryptedBinary was hardcoded for Q7's AES+zlib SCMap-protobuf container; Q10 sends unencrypted LZ4-compressed payload.

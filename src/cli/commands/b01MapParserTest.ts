@@ -11,10 +11,17 @@ const MAP_BINARY_WAIT_TIMEOUT_MS = 90000;
 
 /**
  * Diagnostic-only inference of which payload shape the raw buffer looks like, mirroring
- * B01MapParser's private isQ10ShapedPayload() check without touching production logic.
+ * B01MapParser's private isQ10ShapedPayload() and isTracePacket() checks without touching
+ * production logic.
  */
-function classifyPayloadShape(rawBuffer: Buffer): 'Q10-shaped' | 'Q7-shaped' {
-	return rawBuffer.length >= 2 && rawBuffer[0] === 0x01 && rawBuffer[1] === 0x01 ? 'Q10-shaped' : 'Q7-shaped';
+function classifyPayloadShape(rawBuffer: Buffer): 'Q10-shaped' | 'Trace-shaped' | 'Q7-shaped' {
+	if (rawBuffer.length >= 2 && rawBuffer[0] === 0x01 && rawBuffer[1] === 0x01) {
+		return 'Q10-shaped';
+	}
+	if (rawBuffer.length >= 2 && rawBuffer[0] === 0x02 && rawBuffer[1] === 0x01) {
+		return 'Trace-shaped';
+	}
+	return 'Q7-shaped';
 }
 
 export async function cmdB01MapParserTest(
