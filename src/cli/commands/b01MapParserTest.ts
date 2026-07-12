@@ -1,17 +1,27 @@
 import { AnsiLogger } from 'matterbridge/logger';
 
 import { B01MapParser } from '../../roborockCommunication/map/b01/b01MapParser.js';
+import { normalizeB01RoomName } from '../../roborockCommunication/map/b01/roomNameNormalizer.js';
 import { Protocol } from '../../roborockCommunication/models/index.js';
 import { connectDevice } from '../connection.js';
 import { CliSession } from '../types.js';
 import { waitForPush } from '../waitForPush.js';
 
+const MAP_BINARY_WAIT_TIMEOUT_MS = 90000;
+
 /**
  * Diagnostic-only inference of which payload shape the raw buffer looks like, mirroring
- * B01MapParser's private isQ10ShapedPayload() check without touching production logic.
+ * B01MapParser's private isQ10ShapedPayload() and isTracePacket() checks without touching
+ * production logic.
  */
-function classifyPayloadShape(rawBuffer: Buffer): 'Q10-shaped' | 'Q7-shaped' {
-	return rawBuffer.length >= 2 && rawBuffer[0] === 0x01 && rawBuffer[1] === 0x01 ? 'Q10-shaped' : 'Q7-shaped';
+function classifyPayloadShape(rawBuffer: Buffer): 'Q10-shaped' | 'Trace-shaped' | 'Q7-shaped' {
+	if (rawBuffer.length >= 2 && rawBuffer[0] === 0x01 && rawBuffer[1] === 0x01) {
+		return 'Q10-shaped';
+	}
+	if (rawBuffer.length >= 2 && rawBuffer[0] === 0x02 && rawBuffer[1] === 0x01) {
+		return 'Trace-shaped';
+	}
+	return 'Q7-shaped';
 }
 
 export async function cmdB01MapParserTest(
@@ -32,10 +42,15 @@ export async function cmdB01MapParserTest(
 
 	const { clientRouter, dispatcher } = await connectDevice(duid, session, logger, local);
 	try {
-		const mapBinaryPromise = waitForPush(clientRouter, duid, (msg) => {
-			const buf = msg.body?.get(Protocol.map_response);
-			return Buffer.isBuffer(buf) ? buf : undefined;
-		});
+		const mapBinaryPromise = waitForPush(
+			clientRouter,
+			duid,
+			(msg) => {
+				const buf = msg.body?.get(Protocol.map_response);
+				return Buffer.isBuffer(buf) ? buf : undefined;
+			},
+			MAP_BINARY_WAIT_TIMEOUT_MS,
+		);
 
 		void dispatcher.getMapInfo(duid);
 		console.log('Waiting for B01 map binary...');
@@ -67,7 +82,8 @@ export async function cmdB01MapParserTest(
 			console.log(`Decoded room count: ${b01Info.rooms.length}`);
 			console.log('\nRooms:');
 			for (const room of b01Info.rooms) {
-				console.log(`  [${room.roomId}] ${room.roomName || '(unnamed)'}`);
+				const displayName = normalizeB01RoomName(room.roomName, room.roomTypeId, room.roomId);
+				console.log(`  [${room.roomId}] ${displayName || '(unnamed)'}`);
 			}
 		} catch (err) {
 			console.log('\nParse result: FAILURE');

@@ -4,6 +4,7 @@ import zlib from 'node:zlib';
 import protobuf from 'protobufjs';
 
 import { parseQ10MapPacket } from './b01Q10MapParser.js';
+import { parseQ10TracePacket } from './b01Q10TraceParser.js';
 import { ROBOROCK_PROTO_STR } from './roborockProto.js';
 import { B01MapInfo, B01Pose, B01RoomInfo, B01RoomMatrix } from './types.js';
 
@@ -19,6 +20,9 @@ export class B01MapParser {
 		if (this.isQ10ShapedPayload(rawBuffer)) {
 			return this.parseQ10Binary(rawBuffer);
 		}
+		if (this.isTracePacket(rawBuffer)) {
+			return this.parseTraceBinary(rawBuffer);
+		}
 		const decoded = this.decodeBase64IfNeeded(rawBuffer);
 		const decrypted = this.decryptIfNeeded(decoded, modelShortCode, serial);
 		const hexed = this.asciiHexToBinaryIfNeeded(decrypted);
@@ -30,12 +34,27 @@ export class B01MapParser {
 		return rawBuffer.length >= 2 && rawBuffer[0] === 0x01 && rawBuffer[1] === 0x01;
 	}
 
+	private isTracePacket(rawBuffer: Buffer): boolean {
+		return rawBuffer.length >= 2 && rawBuffer[0] === 0x02 && rawBuffer[1] === 0x01;
+	}
+
 	private parseQ10Binary(rawBuffer: Buffer): B01MapInfo {
 		try {
 			return parseQ10MapPacket(rawBuffer);
 		} catch (err) {
 			throw new Error(
 				`Q10 map binary parse failed (best-effort Q10 layout, unconfirmed against real device capture): ${String(err instanceof Error ? err.message : err)}`,
+				{ cause: err },
+			);
+		}
+	}
+
+	private parseTraceBinary(rawBuffer: Buffer): B01MapInfo {
+		try {
+			return parseQ10TracePacket(rawBuffer);
+		} catch (err) {
+			throw new Error(
+				`Q10 trace packet parse failed (marker 0x02 0x01, confirmed against python-roborock reference): ${String(err instanceof Error ? err.message : err)}`,
 				{ cause: err },
 			);
 		}
