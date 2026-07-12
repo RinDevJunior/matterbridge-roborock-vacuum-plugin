@@ -24,7 +24,7 @@ function classifyPayloadShape(rawBuffer: Buffer): 'Q10-shaped' | 'Trace-shaped' 
 	return 'Q7-shaped';
 }
 
-export async function cmdB01MapParserTest(
+export async function cmdB01MapInfo(
 	duid: string,
 	session: CliSession,
 	logger: AnsiLogger,
