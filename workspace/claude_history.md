@@ -1,5 +1,46 @@
 # Claude History
 
+## 2026-07-12 — Fix B01/Q10 trace packet crash (protocol 301, secondary payload)
+
+**Task:** Fix crash when Roborock Q10 S5+ sends trace packet (marker 0x02 0x01) containing accumulated path of current cleaning session. Previously misclassified as legacy Q7 AES+zlib payload and threw "incorrect header check". Root cause and wire format identified via python-roborock reference project comparison (GitHub issue #136).
+
+**Changes:**
+
+- `src/roborockCommunication/map/b01/b01Q10TraceParser.ts` — new; parses 10-byte header, session counter, big-endian int16 (x,y) point pairs; filters stray-leading-point to match python-roborock logic; wires last point to B01MapInfo.currentPose
+- `src/roborockCommunication/map/b01/b01MapParser.ts` — added isTracePacket/parseQ10TracePacket routing before Q7 fallthrough
+- `src/roborockCommunication/map/b01/b01MapParserTest.ts` — extended CLI diagnostic classifier to report "Trace-shaped" packet type
+
+**Outcome:** Pass (live-validated on Roborock Q10 S5+ (RCFMKY51101783) during active cleaning: 8 total invocations, real changing (x,y) coordinates, zero crashes, zero "incorrect header check" errors; reviewer approved on branch fix/b01-q10-trace-packet; deferred: roomMatrix pixel-to-room decode mapping, GitHub issue #136 investigation history).
+
+## 2026-07-12 — Fix B01/Q10 map parser for Roborock Q10 S5+ (protocol 301, LZ4)
+
+**Task:** Fix "MapInfoListener: failed to parse B01 map binary: Error: incorrect header check" — 100% reproducible crash on every map push (protocol 301) for Roborock Q10 S5+. Root cause: parseRoomsFromEncryptedBinary was hardcoded for Q7's AES+zlib SCMap-protobuf container; Q10 sends unencrypted LZ4-compressed payload.
+
+**Changes:**
+
+- `src/roborockCommunication/map/b01/b01MapParser.ts` — added marker-byte classifier (0x01 0x01) to route Q10 payloads to new handler; Q7 AES+zlib path untouched (fallthrough default); two private methods extracted for internal Q10 flow (decompressAndParseQ10Packet, parseQ10MapPacket)
+- `src/roborockCommunication/map/b01/lz4BlockDecompressor.ts` — new; self-contained hand-rolled LZ4 block decompressor (no npm dependency; node-lz4/lz4js stale/wrong-shaped/nonexistent)
+- `src/roborockCommunication/map/b01/b01Q10MapParser.ts` — new; Q10-specific field parser (mapId u32be@2, width/height u16be@7/@9, compressedLength u16be@27, room records with roomId u16be@0/nameLength@26/name@27) using python-roborock's best-effort layout
+- `src/tests/roborockCommunication/map/b01/b01MapParser.test.ts` — updated with Q10 marker-byte test
+- `src/tests/roborockCommunication/map/b01/lz4BlockDecompressor.test.ts` — new; comprehensive LZ4 decompression tests
+- `src/tests/roborockCommunication/map/b01/b01Q10MapParser.test.ts` — new; Q10 parser field-extraction tests
+
+**Outcome:** Pass (full pipeline: implementer → reviewer → test-writer; all verification gates passed: format:ci, lint:fix:ci, type-check:ci, test:ci). Two-tier confidence: (1) high — crash stops, Q10 payloads now decompressed correctly instead of zlib failure; (2) best-effort — room-name extraction unconfirmed against real Q10 hardware; parse failure surfaces new distinguishable error ("Q10 map binary parse failed (best-effort Q10 layout, unconfirmed against real device capture): ...") for future log capture diagnosis.
+
+**Follow-ups:** (1) Q10 S5+ real-device validation (affected user log capture to confirm room-name extraction or flag layout-guess corrections needed); (2) Q10 "trace/path" secondary payload variant explicitly deferred.
+
+## 2026-07-12 — Fix ServiceArea validation crash on B01 map parse
+
+**Task:** Fix a Matter ValidationError/135 crash (`Areas must have a null mapId when supportedMaps is empty`) that occurred on every B01 map update right after plugin startup/reconnect against real Roborock Q10 S5+.
+
+**Changes:**
+
+- `src/initialData/getSupportedAreas.ts` — Added `buildPlaceholderSupportedMaps()` private helper to backfill `supportedMaps` from computed areas' distinct mapIds when `toSupportedMaps()` returns empty, preventing timing race condition
+- `src/tests/initialData/getSupportedAreas.test.ts` — Added 3 new regression tests covering edge cases
+- `src/tests/roborockCommunication/routing/listeners/implementation/mapInfoListener.test.ts` — Added 1 new regression test
+
+**Outcome:** PASS. Root cause identified: `tryParseB01MapBinary` could run before the first multimap/query_response push populated `supportedMaps`, causing `getSupportedAreas()` to compute areas with non-null mapIds while `toSupportedMaps()` returned empty (violation). Solution applies the existing "pair, don't null" convention in that file. Verified live against real Roborock Q10 S5+ (8 map-parse cycles post-restart, 0 validation errors, 10 real rooms correctly populated). All verification gates PASS: format:ci, lint:fix:ci, type-check:ci, test:ci. Follow-up: GitHub #136 (intermittent zlib header error) fixed upstream via LZ4 decoder, validated live against the same device.
+
 ## 2026-07-12 — Fix global clean selectedAreas regression (rc09/rc10 updateAttribute race)
 
 **Task:** Fix ServiceArea.selectedAreas showing [] in Apple Home during Apple-automation-triggered global clean, despite rc09/rc10 fix. Root cause: MatterbridgeServiceAreaServer.selectAreas() calls super.selectAreas(request) with the ORIGINAL empty request, overwriting the resolved rooms immediately after (deterministic, 100% reproducible).

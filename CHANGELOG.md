@@ -4,6 +4,32 @@ All notable changes to this project will be documented in this file.
 
 ---
 
+## [1.1.7-rc13] - 2026-07-13
+
+### Fixed
+
+- **Roborock Q10 MaxPlus suction power wire value** — Q10 devices set to MaxPlus suction power were sending the wrong wire value (Q7's value instead of Q10's) because `B01VacuumModeResolver.resolveVacuumMode` always sent wire value `5`; MaxPlus now correctly maps to the Q10-specific wire value `8`, matching the split `resolveQ7VacuumMode`/`resolveQ10VacuumMode` pattern already used for clean mode resolution.
+
+<a href="https://www.buymeacoffee.com/rinnvspktr" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/default-orange.png" alt="Buy Me A Coffee" height="41" width="174"></a>
+
+---
+
+## [1.1.7-rc12] - 2026-07-12
+
+### Added
+
+- **`b01-map-info` CLI command** — new diagnostic command for testing the B01 map parser against a live device, works for both Q7 and Q10 B01 devices (renamed from `b01-map-parser-test` for clarity).
+
+### Fixed
+
+- **Roborock Q10 S5+ (B01 protocol) map parsing** — Q10 map pushes (protocol 301) were incorrectly routed through the Q7-only AES+zlib SCMap-protobuf path and failed with "incorrect header check" on every push. Added a marker-byte classifier in `B01MapParser` that routes Q10-shaped payloads to a new hand-rolled LZ4 block decompressor and Q10-specific field parser, so room list and map ID now parse correctly; the Q7 pipeline is unaffected.
+- **Q10 live position/trace packets during cleaning** — the Q10 also sends a second, smaller payload type (marker `0x02 0x01`, live position/trace packets) on the same protocol 301 channel, distinct from the full map packet (marker `0x01 0x01`). This was falling through to the Q7 path and crashing on every clean; added trace-packet classification and parsing (`b01Q10TraceParser.ts`).
+- **ServiceArea startup crash on map update before multimap query** — the Matter ServiceArea cluster's `#assertSupportedAreas` reactor rejected Areas written with a non-null `mapId` while `supportedMaps` was still empty, which happened on every map update right after plugin startup/reconnect, before the first multimap query populated `supportedMaps`. Fixed by backfilling `supportedMaps` from the computed areas' distinct `mapId`s in `getSupportedAreas.ts`.
+
+<a href="https://www.buymeacoffee.com/rinnvspktr" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/default-orange.png" alt="Buy Me A Coffee" height="41" width="174"></a>
+
+---
+
 ## [1.1.7-rc11] - 2026-07-12
 
 ### Fixed

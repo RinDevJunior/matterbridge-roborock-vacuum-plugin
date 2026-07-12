@@ -453,6 +453,71 @@ describe('getSupportedAreas', () => {
 			expect(supportedAreas[0]?.areaInfo.locationInfo?.floorNumber).toBeNull();
 		});
 	});
+
+	describe('Regression: Areas must have a null mapId when supportedMaps is empty', () => {
+		it('should return non-empty supportedMaps when mapInfo.maps is empty but real rooms exist', () => {
+			// Arrange — B01 map binary before multimap push: mapInfos = [], rooms with iot_map_id: 0
+			const vacuumRooms: RoomDto[] = [
+				{ id: 11100845, name: 'Kitchen' },
+				{ id: 11100849, name: 'Study' },
+			];
+			const roomMap = new RoomMap([
+				{ id: 1, iot_name_id: '11100845', tag: 14, iot_map_id: 0, iot_name: 'Kitchen' },
+				{ id: 2, iot_name_id: '11100849', tag: 9, iot_map_id: 0, iot_name: 'Study' },
+			]);
+			const homeEntity = createHomeEntity(vacuumRooms, roomMap, true, []);
+
+			// Act
+			const res = getSupportedAreas(homeEntity, makeLogger());
+
+			// Assert — no empty supportedMaps with non-null area mapIds
+			expect(res.supportedAreas[0]?.mapId).toBeGreaterThanOrEqual(0);
+			expect(res.supportedMaps.length).toBeGreaterThanOrEqual(1);
+			expect(res.supportedMaps.some((m) => m.mapId === res.supportedAreas[0]?.mapId)).toBe(true);
+		});
+
+		it('should create distinct placeholder maps for multiple mapIds with empty mapInfo.maps', () => {
+			// Arrange — two rooms with different iot_map_ids, no mapInfos
+			const vacuumRooms: RoomDto[] = [
+				{ id: 11100845, name: 'Kitchen' },
+				{ id: 11100849, name: 'Study' },
+			];
+			const roomMap = new RoomMap([
+				{ id: 1, iot_name_id: '11100845', tag: 14, iot_map_id: 0, iot_name: 'Kitchen' },
+				{ id: 2, iot_name_id: '11100849', tag: 9, iot_map_id: 1, iot_name: 'Study' },
+			]);
+			const homeEntity = createHomeEntity(vacuumRooms, roomMap, true, []);
+
+			// Act
+			const res = getSupportedAreas(homeEntity, makeLogger());
+
+			// Assert — exactly 2 distinct maps (0 and 1), no duplicates
+			expect(res.supportedMaps).toHaveLength(2);
+			const mapIds = res.supportedMaps.map((m) => m.mapId);
+			expect(new Set(mapIds).size).toBe(2);
+			expect(mapIds).toContain(0);
+			expect(mapIds).toContain(1);
+			// Verify all area mapIds appear in supportedMaps
+			const supportedMapIds = new Set(mapIds);
+			const areasWithMissingMapIds = res.supportedAreas.filter(
+				(area) => area.mapId !== null && !supportedMapIds.has(area.mapId),
+			);
+			expect(areasWithMissingMapIds).toHaveLength(0);
+		});
+
+		it('should not regress on fallback branch when no rooms or roomMap', () => {
+			// Arrange — empty vacuum rooms and empty roomMap
+			const homeEntity = createHomeEntity([], undefined, true, []);
+
+			// Act
+			const res = getSupportedAreas(homeEntity, makeLogger());
+
+			// Assert — fallback should still produce non-empty supportedMaps with matching area mapId
+			expect(res.supportedAreas).toHaveLength(1);
+			expect(res.supportedMaps).toHaveLength(1);
+			expect(res.supportedAreas[0]?.mapId).toBe(res.supportedMaps[0]?.mapId);
+		});
+	});
 });
 
 describe('roomTypeIdToAreaTag', () => {
