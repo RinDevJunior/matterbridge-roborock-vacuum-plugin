@@ -19,6 +19,9 @@ export class B01MapParser {
 		if (this.isQ10ShapedPayload(rawBuffer)) {
 			return this.parseQ10Binary(rawBuffer);
 		}
+		if (this.isQ10TracePayload(rawBuffer)) {
+			return { rooms: [], mapId: undefined, currentPose: undefined, roomMatrix: undefined };
+		}
 		const decoded = this.decodeBase64IfNeeded(rawBuffer);
 		const decrypted = this.decryptIfNeeded(decoded, modelShortCode, serial);
 		const hexed = this.asciiHexToBinaryIfNeeded(decrypted);
@@ -28,6 +31,10 @@ export class B01MapParser {
 
 	private isQ10ShapedPayload(rawBuffer: Buffer): boolean {
 		return rawBuffer.length >= 2 && rawBuffer[0] === 0x01 && rawBuffer[1] === 0x01;
+	}
+
+	private isQ10TracePayload(rawBuffer: Buffer): boolean {
+		return rawBuffer.length >= 2 && rawBuffer[0] === 0x02 && rawBuffer[1] === 0x01;
 	}
 
 	private parseQ10Binary(rawBuffer: Buffer): B01MapInfo {

@@ -87,6 +87,7 @@ It is version-controlled — commit and push changes so teammates can pull the l
 - Q10 map format: python-roborock's `lz4_block_decompress` (`b01_q10_map_parser.py:190-237`) is a hand-rolled zero-dep LZ4 _block_-format decoder, NOT a call into the Python `lz4` package — no size param, decodes until input exhausted.
 - ioBroker's Q10 parser lives at `ioBroker.roborock/src/lib/map/q10/Q10YxMapParser.ts` (not `b01/`) — a structurally different "YxMap" format (28-byte header, version/pixLen/pixLzLen fields) vs python-roborock's `01 01`+offset-27/29 layout; only LZ4-block-format + big-endian u16 width/height are cross-corroborated.
 - Q10 fix landed: `b01MapParser.ts.parseRoomsFromEncryptedBinary` routes `0x01 0x01`-prefixed payloads to new `b01Q10MapParser.ts`/`lz4BlockDecompressor.ts` (hand-rolled, zero-dep); Q7 AES+zlib pipeline untouched. `0x02 0x01` trace packets still fall through to Q7 path (out of scope).
+- `0x02 0x01` confirmed = python-roborock `Q10TracePacket` (10-byte header + repeating i16be x/y pairs, robot_position=last point); NOT corroborated by ioBroker (different wire format, no `02 01` marker at all). Real-hardware repro: 598B during active cleaning vs 7076B full map; still crashes `zlib.inflateSync` via Q7 fallback in `isQ10ShapedPayload()` (b01MapParser.ts:29-31) — non-fatal (caught+warn-logged in mapInfoListener.ts:201-203) but spams warnings. Minimal fix: recognize+skip (debug-log), not full parse — no real capture exists yet.
 
 ## Open Questions
 
