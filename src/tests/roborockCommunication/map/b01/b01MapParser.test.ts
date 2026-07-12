@@ -404,4 +404,158 @@ describe('B01MapParser', () => {
 			expect(isQ10Short).toBe(false);
 		});
 	});
+
+	describe('parseRoomsFromEncryptedBinary — Trace packet routing', () => {
+		it('routes buffer starting with 0x02 0x01 marker to trace path', () => {
+			// Build a synthetic trace packet
+			// Marker: 0x02 0x01
+			// Header (10 bytes total) with session counter at offset 3
+			// Body: single point pair (x=100, y=200) at offsets 10-13
+			const tracePacket = Buffer.alloc(14);
+			tracePacket[0] = 0x02;
+			tracePacket[1] = 0x01;
+			tracePacket[3] = 5; // session counter
+			tracePacket.writeInt16BE(100, 10);
+			tracePacket.writeInt16BE(200, 12);
+
+			const result = parser.parseRoomsFromEncryptedBinary(tracePacket, 'MODEL', 'SERIAL');
+
+			// Verify trace packet routing: empty rooms, no mapId, currentPose set from last point
+			expect(result.rooms).toEqual([]);
+			expect(result.mapId).toBeUndefined();
+			expect(result.currentPose).toEqual({ x: 100, y: 200 });
+			expect(result.roomMatrix).toBeUndefined();
+		});
+
+		it('classifier correctly identifies trace packet shape (0x02 0x01 marker)', () => {
+			// Directly test the private isTracePacket method via cast pattern
+			const traceBuffer = Buffer.from([0x02, 0x01, 0x00, 0x00]);
+			const isTrace = (parser as unknown as { isTracePacket: (b: Buffer) => boolean }).isTracePacket(traceBuffer);
+			expect(isTrace).toBe(true);
+
+			// Test non-trace shape (Q10-shaped)
+			const q10Buffer = Buffer.from([0x01, 0x01, 0x00, 0x00]);
+			const isTraceQ10 = (parser as unknown as { isTracePacket: (b: Buffer) => boolean }).isTracePacket(q10Buffer);
+			expect(isTraceQ10).toBe(false);
+
+			// Test non-trace shape (zlib-like)
+			const zlibBuffer = Buffer.from([0x78, 0x9c, 0x00, 0x00]);
+			const isTraceZLib = (parser as unknown as { isTracePacket: (b: Buffer) => boolean }).isTracePacket(zlibBuffer);
+			expect(isTraceZLib).toBe(false);
+
+			// Test buffer too short
+			const shortBuffer = Buffer.from([0x02]);
+			const isTraceShort = (parser as unknown as { isTracePacket: (b: Buffer) => boolean }).isTracePacket(shortBuffer);
+			expect(isTraceShort).toBe(false);
+		});
+
+		it('returns undefined currentPose when trace packet has no body (header only)', () => {
+			// Minimal trace packet: header only (10 bytes), no point body
+			const tracePacket = Buffer.alloc(10);
+			tracePacket[0] = 0x02;
+			tracePacket[1] = 0x01;
+
+			const result = parser.parseRoomsFromEncryptedBinary(tracePacket, 'MODEL', 'SERIAL');
+			expect(result.currentPose).toBeUndefined();
+		});
+
+		it('handles multiple points in trace packet, returning last as currentPose', () => {
+			// Build trace packet with 3 points
+			const tracePacket = Buffer.alloc(22);
+			tracePacket[0] = 0x02;
+			tracePacket[1] = 0x01;
+			tracePacket.writeInt16BE(10, 10);
+			tracePacket.writeInt16BE(20, 12);
+			tracePacket.writeInt16BE(30, 14);
+			tracePacket.writeInt16BE(40, 16);
+			tracePacket.writeInt16BE(50, 18);
+			tracePacket.writeInt16BE(60, 20);
+
+			const result = parser.parseRoomsFromEncryptedBinary(tracePacket, 'MODEL', 'SERIAL');
+			// Last point should be (50, 60)
+			expect(result.currentPose).toEqual({ x: 50, y: 60 });
+		});
+
+		it('throws distinguishable error for malformed trace packet (invalid marker)', () => {
+			// Buffer starts with 0x02 0x01 (trace marker) but is too short
+			const malformedPacket = Buffer.alloc(5);
+			malformedPacket[0] = 0x02;
+			malformedPacket[1] = 0x01;
+
+			expect(() => {
+				parser.parseRoomsFromEncryptedBinary(malformedPacket, 'MODEL', 'SERIAL');
+			}).toThrow(/Q10 trace packet parse failed.*marker 0x02 0x01/);
+		});
+
+		it('throws distinguishable error for trace packet with non-4-byte-aligned body', () => {
+			// Buffer starts with 0x02 0x01 (trace marker) but has 5 bytes in body (not divisible by 4)
+			const malformedPacket = Buffer.alloc(15);
+			malformedPacket[0] = 0x02;
+			malformedPacket[1] = 0x01;
+
+			expect(() => {
+				parser.parseRoomsFromEncryptedBinary(malformedPacket, 'MODEL', 'SERIAL');
+			}).toThrow(/Q10 trace packet parse failed/);
+		});
+
+		it('wraps trace packet parse errors with distinguishable message', () => {
+			const malformedPacket = Buffer.alloc(15);
+			malformedPacket[0] = 0x02;
+			malformedPacket[1] = 0x01;
+
+			expect(() => {
+				parser.parseRoomsFromEncryptedBinary(malformedPacket, 'MODEL', 'SERIAL');
+			}).toThrow(/Q10 trace packet parse failed.*marker 0x02 0x01/);
+		});
+
+		it('prioritizes Q10 shape over trace shape (Q10 check runs first)', () => {
+			// This is a priority-order test: if somehow a packet matched both Q10 and trace patterns
+			// (which shouldn't happen with their distinct markers), Q10 should be checked first.
+			// Since Q10 uses 0x01 0x01 and trace uses 0x02 0x01, they can't both match.
+			// However, we can verify that the routing order calls isQ10ShapedPayload before isTracePacket
+			// by observing that a Q10-shaped packet returns Q10-result, not trace-result.
+
+			// Build minimal valid Q10 packet with LZ4 block
+			const lz4Block = Buffer.from([
+				0x10, // token: 1 literal, 0 match
+				0x01, // grid byte
+				0x01, // room section marker
+				0x00, // room count
+			]);
+			const q10Packet = Buffer.alloc(29 + lz4Block.length);
+			q10Packet[0] = 0x01;
+			q10Packet[1] = 0x01;
+			q10Packet.writeUInt32BE(99, 2); // mapId = 99 to distinguish from trace path
+			q10Packet.writeUInt16BE(1, 7); // width = 1
+			q10Packet.writeUInt16BE(1, 9); // height = 1
+			q10Packet.writeUInt16BE(lz4Block.length, 27); // compressed length
+			lz4Block.copy(q10Packet, 29);
+
+			const result = parser.parseRoomsFromEncryptedBinary(q10Packet, 'MODEL', 'SERIAL');
+			// Q10 path should set mapId
+			expect(result.mapId).toBe(99);
+		});
+
+		it('trace packet routing does not interfere with Q7 path (zlib-shaped payloads still work)', () => {
+			// Build a valid Q7 zlib-compressed protobuf payload
+			const protoBuffer = encodeRobotMap({
+				mapType: 1,
+				mapHead: { mapHeadId: 88 },
+				roomDataInfo: [{ roomId: 77, roomName: 'TestQRoom' }],
+			});
+			const compressed = zlib.deflateSync(protoBuffer);
+			// Ensure it doesn't start with 0x02 0x01 (trace) or 0x01 0x01 (Q10)
+			expect(compressed[0]).toBe(0x78); // zlib magic byte
+			expect(compressed[0]).not.toBe(0x02);
+			expect(compressed[0]).not.toBe(0x01);
+
+			// Make sure it's not 16-byte-aligned so decryption is skipped
+			const nonMultiple = compressed.length % 16 === 0 ? Buffer.concat([compressed, Buffer.from([0x01])]) : compressed;
+			const result = parser.parseRoomsFromEncryptedBinary(nonMultiple, 'MODEL', 'SERIAL');
+
+			// Q7 path should still work: verify the decoded protobuf result
+			expect(result.rooms.some((r) => r.roomId === 77 && r.roomName === 'TestQRoom')).toBe(true);
+			expect(result.mapId).toBe(88);
+		});
+	});
 });
