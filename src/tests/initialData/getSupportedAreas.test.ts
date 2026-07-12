@@ -393,6 +393,66 @@ describe('getSupportedAreas', () => {
 		expect(supportedAreas.length).toEqual(8);
 		expect(supportedMaps.length).toEqual(2);
 	});
+
+	describe('floorNumber bounds check for mapId', () => {
+		it('should pass through in-range iot_map_id (e.g. 100) unchanged', () => {
+			const roomMap = new RoomMap([{ id: 1, iot_name_id: '1', tag: 14, iot_map_id: 100, iot_name: 'Room' }]);
+			const homeEntity = createHomeEntity([], roomMap);
+			const { supportedAreas } = getSupportedAreas(homeEntity, makeLogger());
+
+			expect(supportedAreas[0]?.areaInfo.locationInfo?.floorNumber).toBe(100);
+		});
+
+		it('should pass through boundary value iot_map_id = 32767 (int16 max)', () => {
+			const roomMap = new RoomMap([{ id: 1, iot_name_id: '1', tag: 14, iot_map_id: 32767, iot_name: 'Room' }]);
+			const homeEntity = createHomeEntity([], roomMap);
+			const { supportedAreas } = getSupportedAreas(homeEntity, makeLogger());
+
+			expect(supportedAreas[0]?.areaInfo.locationInfo?.floorNumber).toBe(32767);
+		});
+
+		it('should pass through boundary value iot_map_id = -32768 (int16 min)', () => {
+			const roomMap = new RoomMap([{ id: 1, iot_name_id: '1', tag: 14, iot_map_id: -32768, iot_name: 'Room' }]);
+			const homeEntity = createHomeEntity([], roomMap);
+			const { supportedAreas } = getSupportedAreas(homeEntity, makeLogger());
+
+			expect(supportedAreas[0]?.areaInfo.locationInfo?.floorNumber).toBe(-32768);
+		});
+
+		it('should set floorNumber to null when iot_map_id exceeds int16 max (e.g. 1780832529)', () => {
+			const roomMap = new RoomMap([
+				{ id: 1, iot_name_id: '1', tag: 14, iot_map_id: 1780832529, iot_name: 'Room' }, // 0x6a302711 from Q10
+			]);
+			const homeEntity = createHomeEntity([], roomMap);
+			const { supportedAreas } = getSupportedAreas(homeEntity, makeLogger());
+
+			expect(supportedAreas[0]?.areaInfo.locationInfo?.floorNumber).toBeNull();
+		});
+
+		it('should set floorNumber to null when iot_map_id is below int16 min', () => {
+			const roomMap = new RoomMap([{ id: 1, iot_name_id: '1', tag: 14, iot_map_id: -100000, iot_name: 'Room' }]);
+			const homeEntity = createHomeEntity([], roomMap);
+			const { supportedAreas } = getSupportedAreas(homeEntity, makeLogger());
+
+			expect(supportedAreas[0]?.areaInfo.locationInfo?.floorNumber).toBeNull();
+		});
+
+		it('should set floorNumber to null when iot_map_id is 32768 (just above int16 max)', () => {
+			const roomMap = new RoomMap([{ id: 1, iot_name_id: '1', tag: 14, iot_map_id: 32768, iot_name: 'Room' }]);
+			const homeEntity = createHomeEntity([], roomMap);
+			const { supportedAreas } = getSupportedAreas(homeEntity, makeLogger());
+
+			expect(supportedAreas[0]?.areaInfo.locationInfo?.floorNumber).toBeNull();
+		});
+
+		it('should set floorNumber to null when iot_map_id is -32769 (just below int16 min)', () => {
+			const roomMap = new RoomMap([{ id: 1, iot_name_id: '1', tag: 14, iot_map_id: -32769, iot_name: 'Room' }]);
+			const homeEntity = createHomeEntity([], roomMap);
+			const { supportedAreas } = getSupportedAreas(homeEntity, makeLogger());
+
+			expect(supportedAreas[0]?.areaInfo.locationInfo?.floorNumber).toBeNull();
+		});
+	});
 });
 
 describe('roomTypeIdToAreaTag', () => {
