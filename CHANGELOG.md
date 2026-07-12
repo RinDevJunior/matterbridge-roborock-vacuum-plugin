@@ -4,6 +4,16 @@ All notable changes to this project will be documented in this file.
 
 ---
 
+## [1.1.7-rc11] - 2026-07-12
+
+### Fixed
+
+- **selectedAreas still resetting to `[]` after a global clean** — Corrects the rc09 fix, which did not fully work: `MatterbridgeServiceAreaServer.selectAreas()` was forwarding the original empty request to the base `matter.js` class after our command handler ran, silently overwriting our `updateAttribute`-based fix within the same command invocation. `RoborockServiceAreaServer` now overrides `selectAreas()` to forward the resolved room list into `super.selectAreas(...)` instead, so the base class's own write is correct.
+
+<a href="https://www.buymeacoffee.com/rinnvspktr" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/default-orange.png" alt="Buy Me A Coffee" height="41" width="174"></a>
+
+---
+
 ## [1.1.7-rc10] - 2026-07-11
 
 ### Changed
