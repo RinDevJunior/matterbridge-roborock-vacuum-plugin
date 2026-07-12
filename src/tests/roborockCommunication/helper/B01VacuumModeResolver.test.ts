@@ -3,7 +3,8 @@ import { describe, expect, it } from 'vitest';
 import { B01VacuumModeResolver } from '../../../roborockCommunication/helper/B01VacuumModeResolver.js';
 
 const {
-	resolveVacuumMode,
+	resolveQ7VacuumMode,
+	resolveQ10VacuumMode,
 	resolveMopMode,
 	resolveCleanRoute,
 	resolveQ7CleanMode,
@@ -38,15 +39,27 @@ const Q7MopRoute = {
 };
 
 describe('B01VacuumModeResolver', () => {
-	describe('resolveVacuumMode', () => {
+	describe('resolveQ7VacuumMode', () => {
 		it('returns correct mode for each suctionPower', () => {
-			expect(resolveVacuumMode(Q7VacuumSuctionPower.Quiet)).toBe(1);
-			expect(resolveVacuumMode(Q7VacuumSuctionPower.Balanced)).toBe(2);
-			expect(resolveVacuumMode(Q7VacuumSuctionPower.Turbo)).toBe(3);
-			expect(resolveVacuumMode(Q7VacuumSuctionPower.Max)).toBe(4);
-			expect(resolveVacuumMode(Q7VacuumSuctionPower.MaxPlus)).toBe(5);
-			expect(resolveVacuumMode(Q7VacuumSuctionPower.Off)).toBe(0);
-			expect(resolveVacuumMode(99)).toBe(0);
+			expect(resolveQ7VacuumMode(Q7VacuumSuctionPower.Quiet)).toBe(1);
+			expect(resolveQ7VacuumMode(Q7VacuumSuctionPower.Balanced)).toBe(2);
+			expect(resolveQ7VacuumMode(Q7VacuumSuctionPower.Turbo)).toBe(3);
+			expect(resolveQ7VacuumMode(Q7VacuumSuctionPower.Max)).toBe(4);
+			expect(resolveQ7VacuumMode(Q7VacuumSuctionPower.MaxPlus)).toBe(5);
+			expect(resolveQ7VacuumMode(Q7VacuumSuctionPower.Off)).toBe(0);
+			expect(resolveQ7VacuumMode(99)).toBe(0);
+		});
+	});
+
+	describe('resolveQ10VacuumMode', () => {
+		it('returns correct mode for each suctionPower', () => {
+			expect(resolveQ10VacuumMode(Q7VacuumSuctionPower.Quiet)).toBe(1);
+			expect(resolveQ10VacuumMode(Q7VacuumSuctionPower.Balanced)).toBe(2);
+			expect(resolveQ10VacuumMode(Q7VacuumSuctionPower.Turbo)).toBe(3);
+			expect(resolveQ10VacuumMode(Q7VacuumSuctionPower.Max)).toBe(4);
+			expect(resolveQ10VacuumMode(Q7VacuumSuctionPower.MaxPlus)).toBe(8);
+			expect(resolveQ10VacuumMode(Q7VacuumSuctionPower.Off)).toBe(0);
+			expect(resolveQ10VacuumMode(99)).toBe(0);
 		});
 	});
 

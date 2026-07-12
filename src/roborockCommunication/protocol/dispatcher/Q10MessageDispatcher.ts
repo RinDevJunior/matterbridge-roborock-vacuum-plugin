@@ -198,7 +198,7 @@ export class Q10MessageDispatcher implements AbstractMessageDispatcher {
 		const request = new RequestMessage({
 			messageId: this.messageId,
 			dps: {
-				[Q10RequestMethod.change_vacuum_mode]: B01VacuumModeResolver.resolveVacuumMode(mode),
+				[Q10RequestMethod.change_vacuum_mode]: B01VacuumModeResolver.resolveQ10VacuumMode(mode),
 			},
 		});
 		return this.client.send(duid, request);
