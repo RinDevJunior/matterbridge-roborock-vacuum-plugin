@@ -4,6 +4,16 @@ All notable changes to this project will be documented in this file.
 
 ---
 
+## [1.1.7-rc13] - 2026-07-13
+
+### Fixed
+
+- **Roborock Q10 MaxPlus suction power wire value** — Q10 devices set to MaxPlus suction power were sending the wrong wire value (Q7's value instead of Q10's) because `B01VacuumModeResolver.resolveVacuumMode` always sent wire value `5`; MaxPlus now correctly maps to the Q10-specific wire value `8`, matching the split `resolveQ7VacuumMode`/`resolveQ10VacuumMode` pattern already used for clean mode resolution.
+
+<a href="https://www.buymeacoffee.com/rinnvspktr" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/default-orange.png" alt="Buy Me A Coffee" height="41" width="174"></a>
+
+---
+
 ## [1.1.7-rc12] - 2026-07-12
 
 ### Added
