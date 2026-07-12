@@ -246,7 +246,9 @@ export class Q7MessageDispatcher implements AbstractMessageDispatcher {
 	private setVacuumMode(duid: string, suctionPower: number): Promise<void> {
 		const request = new RequestMessage({
 			messageId: this.messageId,
-			dps: this.createDps(Q7RequestMethod.set_prop, { 'wind': B01VacuumModeResolver.resolveVacuumMode(suctionPower) }),
+			dps: this.createDps(Q7RequestMethod.set_prop, {
+				'wind': B01VacuumModeResolver.resolveQ7VacuumMode(suctionPower),
+			}),
 		});
 		return this.client.send(duid, request);
 	}
