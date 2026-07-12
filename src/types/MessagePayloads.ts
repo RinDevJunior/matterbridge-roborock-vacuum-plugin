@@ -136,6 +136,18 @@ export interface ActiveMapChangedPayload {
 	};
 }
 
+/**
+ * Q10 current-area change message payload.
+ * Contains the resolved room area from the Q10-specific trace-packet parser.
+ */
+export interface Q10CurrentAreaChangedPayload {
+	type: NotifyMessageTypes.Q10CurrentAreaChanged;
+	data: {
+		duid: string;
+		areaId: number | null;
+	};
+}
+
 export type MessagePayload =
 	| HomeDataPayload
 	| BatteryUpdatePayload
@@ -144,4 +156,5 @@ export type MessagePayload =
 	| DeviceStatusSimplePayload
 	| CleanModeUpdatePayload
 	| ServiceAreaUpdatePayload
-	| ActiveMapChangedPayload;
+	| ActiveMapChangedPayload
+	| Q10CurrentAreaChangedPayload;

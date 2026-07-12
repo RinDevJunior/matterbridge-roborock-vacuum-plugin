@@ -1,7 +1,7 @@
 import { debugStringify } from 'matterbridge/logger';
 import { RvcOperationalState, ServiceArea } from 'matterbridge/matter/clusters';
 
-import { INVALID_SEGMENT_ID } from '../../constants/index.js';
+import { INVALID_SEGMENT_ID, Q10_MODEL_SHORT_CODE } from '../../constants/index.js';
 import type { RoborockMatterbridgePlatform } from '../../module.js';
 import { OperationStatusCode } from '../../roborockCommunication/enums/index.js';
 import { computeAreaEstimatedTime, computeEstimatedEndTimeFromCleanProgress } from '../../share/estimatedEndTime.js';
@@ -186,6 +186,10 @@ export async function handleServiceAreaUpdate(
 	await resolveAreaFromCleaningInfo(robot, message, platform);
 }
 
+function isQ10Device(robot: RoborockVacuumCleaner): boolean {
+	return robot.device.specs?.model?.split('.').at(-1) === Q10_MODEL_SHORT_CODE;
+}
+
 function getSelectedAreas(
 	robot: RoborockVacuumCleaner,
 	message: ServiceAreaUpdateMessage,
@@ -210,13 +214,17 @@ async function handleCleaningWithoutInfo(
 
 	if (message.cleaningProcess.clean_area === 0 || message.cleaningProcess.clean_time === 0) {
 		await robot.updateAttribute(ServiceArea.id, 'selectedAreas', selectedAreas, logger);
-		await updateCurrentAreaAndEstimate(robot, null, message, platform);
+		if (!isQ10Device(robot)) {
+			await updateCurrentAreaAndEstimate(robot, null, message, platform);
+		}
 		return;
 	}
 
 	if (selectedAreas.length === 1 || (selectedAreas.length > 1 && message.cleaningProcess.clean_time > 0)) {
 		await robot.updateAttribute(ServiceArea.id, 'selectedAreas', selectedAreas, logger);
-		await updateCurrentAreaAndEstimate(robot, selectedAreas[0], message, platform);
+		if (!isQ10Device(robot)) {
+			await updateCurrentAreaAndEstimate(robot, selectedAreas[0], message, platform);
+		}
 
 		const estimatedTimeForActiveArea = shouldPublishEstimatedEndTime(platform, message.state)
 			? computeAreaEstimatedTime(message.cleaningProcess.clean_time, message.cleaningProcess.clean_percent)
@@ -232,8 +240,20 @@ async function handleCleaningWithoutInfo(
 		await robot.updateAttribute(ServiceArea.id, 'progress', updatedProgress, logger);
 	} else {
 		await robot.updateAttribute(ServiceArea.id, 'selectedAreas', [], logger);
-		await updateCurrentAreaAndEstimate(robot, null, message, platform);
+		if (!isQ10Device(robot)) {
+			await updateCurrentAreaAndEstimate(robot, null, message, platform);
+		}
 	}
+}
+
+export async function handleQ10CurrentAreaChanged(
+	robot: RoborockVacuumCleaner,
+	areaId: number | null,
+	platform: RoborockMatterbridgePlatform,
+): Promise<void> {
+	const logger = platform.log;
+	await robot.updateAttribute(ServiceArea.id, 'currentArea', areaId, logger);
+	await robot.updateAttribute(ServiceArea.id, 'estimatedEndTime', null, logger);
 }
 
 export async function handleActiveMapChanged(

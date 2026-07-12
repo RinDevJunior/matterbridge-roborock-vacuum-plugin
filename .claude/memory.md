@@ -11,7 +11,6 @@ It is version-controlled — commit and push changes so teammates can pull the l
 
 <!-- Patterns and relationships discovered during analysis -->
 
-- Room data (supportedAreas, roomIndexMap) is in-memory only inside `AreaManagementService` private Maps keyed by duid — no file/db persistence.
 - Room name resolution (`getSupportedAreas.ts:109-113`): `iot_name` → lookup by `iot_name_id` → `Unknown Room ${randomInt(1000,9999)}`. B01 path normalizes firmware tokens via `normalizeB01RoomName()`; R2 deterministic fallback deferred.
 - Q7 map fetch: `Q7MessageDispatcher.getRoomMap`/`getRoomMapV2` fire `service.upload_by_maptype` (`get_room_mapping`) with `{ force: 1, map_type: 0 }` — primary-only, no fallback retry; `activeMap` param retained but not sent.
 - `AreaManagementService.clearAll()` wipes all in-memory area data including room names. Fallback room name suffix (`RANDOM_ROOM_MIN=1000`, `MAX=9999`) is non-deterministic — changes every startup.
@@ -21,6 +20,8 @@ It is version-controlled — commit and push changes so teammates can pull the l
 - Live map updates: `resolveInitialAreas` must sync-bootstrap via `fetchAndApplyMapInfo`/`fetchAndApplyRoomMap` (ignore V2); public `getMapInfo`/`getRoomMap` stay V2-only when `liveMapUpdates`. `handleActiveMapChanged` must intersect with Matter `supportedAreas` before writing `selectedAreas`.
 - Multi-map areas: partial room-map fetch/push merges by `mapId` via `mergeSupportedAreasByMap` (keeps other maps, re-indexes areaIds); full `mapInfo.allRooms` / V1 map-info push stays full replace.
 - Multi-map + `enableMultipleMap`: ON → bootstrap all physical maps via `switchMap`+sync fetch, merge by mapId; OFF → primary only (`maps[0]`) via `getSupportedAreas(..., false)` — wired from `configManager.isMultipleMapEnabled`.
+- Q10 (`ss07`) map_response (DPS 301) carries two binary formats sharing one slot: `01 01` map packet (rooms+grid+header calibration: origin/resolution) and `02 01` trace packet (accumulated path, last point = live position). SCMap protobuf path fails on it (`incorrect header check`) — needs its own decoder (`map/b01/q10/`).
+- `B01StatusListener.tryHandleQ10Push` calls `onServiceAreaUpdate` with `cleaningInfo: undefined` on every clean_area/clean_time/clean_task_type tick → `handleCleaningWithoutInfo`'s coarse `selectedAreas[0]`/`null` currentArea fallback fires constantly for Q10, racing any precise room-resolution write; must guard by model short-code to disable it for Q10.
 
 ## Known Patterns
 
@@ -78,6 +79,9 @@ It is version-controlled — commit and push changes so teammates can pull the l
 - Implementer must NOT run full builds or the whole test suite — its gate is `format:ci` → `lint:fix:ci` → `type-check:ci` only; `build:local:ci`/`test:ci` belong to compiler/test-writer.
 - `platformRunner.ts:120` writes `activeMapId` BEFORE `handleActiveMapChanged` — a guard inside the handler can't prevent `activeMapId` desync, and the same-map guard (`:119`) then swallows an identical-mapId retry.
 - `SELECT_AREAS` empty-input path (`roborockVacuumCleaner.ts:164-176`) must NOT call `trySwitchMap` — keep empty vs explicit branches structurally separate with early `return`, else V10/V1 (`activeMapId=-1`) fires unguarded `switchMap` on every global-clean.
+- Q10 map/trace calibration: two unit systems, don't conflate. Header `origin_x`/`origin_y` are 5mm units (÷10→px); trace point x/y are raw mm (÷50→px, NOT the raw header `resolution` field=5). x sign inverted, y not. Empirically verified 54/54 real points, not the Python reference's formula.
+- Matter ServiceArea spec: (a) currentArea must exist in supportedAreas (if non-null); (b) areas with non-null mapId require supportedMaps to be non-empty. Map parser coordination: (1) populate `pendingB01MapInfo` (via MultipleMapDto/MapInfo) BEFORE `updateAreas(mergeMapId)` so getSupportedAreas sees it; (2) each room in roomMappings must have `iot_map_id: mergeMapId` (not hardcoded) so Area.mapId matches for merge filtering; (3) pass correct mapId to RoomIndexMap.getAreaId().
+- Defensive property access on robot device specs: use `robot.device.specs?.model` (with optional chaining on `specs`) — test mocks may not populate the full `specs` object, and production builds are more robust when specs is incompletely initialized.
 
 ## Module Notes
 
