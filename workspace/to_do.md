@@ -26,11 +26,14 @@
 - [x] Remove extra_time → estimatedEndTime wiring — deleted `computeEstimatedEndTime`, `extraTimeSeconds` message field, and v1 listener forwarding; kept idle/map-change `estimatedEndTime: null` clears
 - [x] Wire estimatedEndTime from clean_time + clean_percent — V1-only opt-in ETA (`enableEstimatedEndTime`, default off); pure helper, v1 listener `clean_percent` forward, `updateCurrentAreaAndEstimate`; B01/Q7/Q10 remain `null`
 - [x] Fix startup room names getRoomMap overwrite — `enrichMapRoomDtoFromMapInfo` preserves `map_info` names when `get_room_mapping` raw tuples lack `iot_name`; `HomeEntity` uses `storedMapInfo`
+- [x] **Dock error → RVC operationalError mapping (default bundle Items 1+2+3+4)** — baseline verification, codes 32/33/35, full dss refinement, table-driven refactor in `DockStationStatus.ts`; wiki synced; final reviewer APPROVE
+- [x] **Vacuum error → RVC operationalError mapping (ideas 2–6)** — unknown non-zero fallback, `AutoEmptyDockFanError` (33), semantic refinements for 8 codes, `VACUUM_ERROR_TO_MATTER` table refactor in `VacuumStatus.ts`; parametrized tests; wiki synced; final reviewer APPROVE
 
 ## Pending
 
 ### Implementation Tasks
 
+- [x] **Dock error → RVC operationalError mapping (default bundle Items 1+2+3+4)** — `DOCK_ERROR_TO_MATTER` + `DSS_FIELD_PRIORITY` in `DockStationStatus.ts`; enum codes 32/33/35; dss priority and field semantics per answer.md; parametrized regression tests; wiki synced
 - [x] **Wire V1 LegacyMapParser into runtime as currentArea fallback** — integrated LegacyMapParser.resolveCurrentRoom into handleCleaningWithoutInfo's else branch via MapInfoListener.tryParseV1MapBinary (mirrors tryParseB01MapBinary pattern); added v1RoomResolutionCache with 30s staleness window and throttled fire-and-forget requestV1MapRefresh; all four verification gates passed (format:ci, lint:fix:ci, type-check:ci, test:ci); two review-cycle bugs caught and fixed (1. requestV1MapRefresh firing unconditionally on every call instead of only on cache-miss, 2. entire V1 fallback branch unreachable in resolveAreaFromCleaningInfo — moved to correct function handleCleaningWithoutInfo after test-writer traced actual code path)
 - [x] **Fix B01/Q10 map parser for Roborock Q10 S5+ (protocol 301, LZ4)** — added marker-byte classifier to route Q10 unencrypted LZ4 payloads to new decompressor/parser; Q7 AES+zlib path untouched; best-effort room-name extraction based on python-roborock reference; live-validated via `b01-map-parser-test` CLI on real Q10 S5+ (10 rooms decoded successfully, see issue #136)
 - [x] **Fix ServiceArea validation crash on B01 map parse** — added buildPlaceholderSupportedMaps() helper to backfill supportedMaps from computed areas' distinct mapIds when toSupportedMaps() returns empty; 4 new regression tests; live-validated on Q10 S5+ (0 validation errors, 10 real rooms correctly populated)

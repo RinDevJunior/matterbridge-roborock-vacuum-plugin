@@ -1,5 +1,32 @@
 # Claude History
 
+## 2026-07-14 — Vacuum error → RVC operationalError mapping (ideas 2–6)
+
+**Task:** Vacuum `error_code` → Matter RVC `operationalError` enhancements: unknown-code fallback, enum 33, semantic refinements for 8 codes, and table-driven Map refactor in `VacuumStatus.ts`.
+
+**Changes:**
+
+- `src/roborockCommunication/enums/vacuumAndDockErrorCode.ts` — added `VacuumErrorCode.AutoEmptyDockFanError = 33`
+- `src/model/VacuumStatus.ts` — exported `VACUUM_ERROR_TO_MATTER` table; semantic updates (10/34→DustBinFull, 37→BrushJammed, 40→WaterTankMissing, 54→MopCleaningPadMissing, 39→DirtyWaterTankMissing, 44→WaterTankLidOpen); unknown non-zero fallback → `UnableToCompleteOperation`
+- `src/tests/model/VacuumStatus.test.ts` — created parametrized full-map + unknown-code tests
+- `src/tests/initialData/getOperationalStates.test.ts` — updated vacuum mapping assertions
+- `wiki/Error-Handling-Reporting.md` — vacuum error table synced (code 33, semantic changes, unknown fallback)
+
+**Outcome:** Pass (final reviewer APPROVE; ideas 2–6 bundled in single PR).
+
+## 2026-07-14 — Dock error → RVC operationalError mapping (default bundle)
+
+**Task:** Default bundle Items 1+2+3+4 — lock baseline dock_error_status mappings, add auto-empty dock codes 32/33/35, refine dss field semantics and priority, refactor to table-driven lookups in `DockStationStatus.ts`.
+
+**Changes:**
+
+- `src/roborockCommunication/enums/vacuumAndDockErrorCode.ts` — added `NoDustbinOrFilter` (32), `AutoEmptyDockFanError` (33), `AutoEmptyDockVoltageError` (35)
+- `src/model/DockStationStatus.ts` — `DOCK_ERROR_TO_MATTER` Map + `DSS_FIELD_PRIORITY` array; dss mappings (dustBag→DustBinMissing, filter→WaterTankMissing, isUpdownWaterReady→UnableToCompleteOperation); priority clearWater→dirty→dustBag→cleanFluid→filter→updown
+- `src/tests/model/DockingStationStatus.test.ts` — `createDockStatus` helper; parametrized baseline + new-code tests; dss single-field, priority, and dss=149/dss=2729 fixtures
+- `wiki/Error-Handling-Reporting.md` — dock + dss tables synced (already updated)
+
+**Outcome:** Pass (final reviewer APPROVE; default bundle complete; Item 5 deferred as mutually exclusive alternative to Item 3).
+
 ## 2026-07-13 — Wire V1 LegacyMapParser into runtime as currentArea fallback
 
 **Task:** Integrate LegacyMapParser.resolveCurrentRoom into the live plugin runtime as a fallback for currentArea/room resolution when V1 devices lack cleaning_info in status updates while actively cleaning. Previously resolveAreaFromCleaningInfo's !cleaningInfo branch was unreachable dead code — handleServiceAreaUpdate intercepts all such cases earlier and routes to handleCleaningWithoutInfo instead.
