@@ -7,7 +7,7 @@ import { HomeEntity } from '../../../core/domain/entities/Home.js';
 import { AreaInfo, SegmentInfo } from '../../../initialData/getSupportedAreas.js';
 import { RoborockMatterbridgePlatform } from '../../../module.js';
 import { PlatformConfigManager } from '../../../platform/platformConfigManager.js';
-import { OperationStatusCode } from '../../../roborockCommunication/enums/index.js';
+import { OperationStatusCode, ProtocolVersion } from '../../../roborockCommunication/enums/index.js';
 import { CleanInformation, Device } from '../../../roborockCommunication/models/index.js';
 import {
 	buildProgressUpdate,
@@ -1489,5 +1489,234 @@ describe('buildProgressUpdate', () => {
 				estimatedTime: 180,
 			});
 		});
+	});
+});
+
+describe('resolveAreaFromCleaningInfo — V1 fallback when cleaningInfo is absent', () => {
+	let robot: RoborockVacuumCleaner;
+
+	beforeEach(() => {
+		vi.clearAllMocks();
+		robot = createMockRobot('test-duid-v1', 0);
+	});
+
+	it('should resolve currentArea from cached segment when V1 device has no cleaningInfo and cache is fresh', async () => {
+		// Arrange
+		const indexMap = createRoomIndexMapForSegment(42, 5, 0);
+		const mockRoborockService = asPartial<RoborockService>({
+			getSupportedAreas: vi.fn().mockReturnValue([{ areaId: 5, mapId: 0 } as ServiceArea.Area]),
+			getSupportedAreasIndexMap: vi.fn().mockReturnValue(indexMap),
+			getSelectedAreas: vi.fn().mockReturnValue([]), // Empty to enter else branch at line 233
+			getProgress: vi.fn().mockReturnValue([]),
+			setProgress: vi.fn(),
+			getV1ResolvedSegment: vi.fn().mockReturnValue(42), // Cache hit with segmentId 42
+			requestV1MapRefresh: vi.fn(),
+		});
+
+		const platform = asPartial<RoborockMatterbridgePlatform>({
+			log: createMockLogger(),
+			configManager: createMockConfigManager(),
+			roborockService: mockRoborockService,
+		});
+
+		// Create robot with V1 protocol
+		const robotV1 = asPartial<RoborockVacuumCleaner>({
+			device: asPartial<Device>({ duid: 'test-duid-v1', pv: ProtocolVersion.V1 }),
+			homeInFo: asPartial<HomeEntity>({ activeMapId: 0 }),
+			updateAttribute: vi.fn().mockResolvedValue(undefined),
+			getAttribute: vi.fn().mockReturnValue(undefined),
+		});
+
+		const message: ServiceAreaUpdateMessage = {
+			duid: 'test-duid-v1',
+			state: OperationStatusCode.Cleaning, // A CLEANING_STATE
+			cleaningInfo: undefined, // Absent
+			cleaningProcess: { clean_area: 100, clean_time: 60 }, // Non-zero required by line 211
+		};
+
+		// Act
+		await handleServiceAreaUpdate(robotV1, message, platform);
+
+		// Assert — getSupportedAreasIndexMap should be called first
+		expect(mockRoborockService.getSupportedAreasIndexMap).toHaveBeenCalledWith('test-duid-v1');
+		// getV1ResolvedSegment should be called to check cache
+		expect(mockRoborockService.getV1ResolvedSegment).toHaveBeenCalledWith('test-duid-v1');
+		// Refresh should NOT be called because cache is fresh
+		expect(mockRoborockService.requestV1MapRefresh).not.toHaveBeenCalled();
+		// updateAttribute should have been called with the mapped area (5)
+		expect(vi.mocked(robotV1.updateAttribute).mock.calls.some((call) => call[2] === 5)).toBe(true);
+	});
+
+	it('should call requestV1MapRefresh when V1 device has no cleaningInfo and cache is empty', async () => {
+		// Arrange
+		const indexMap = createRoomIndexMapForSegment(42, 5, 0);
+		const mockRoborockService = asPartial<RoborockService>({
+			getSupportedAreas: vi.fn().mockReturnValue([{ areaId: 5, mapId: 0 } as ServiceArea.Area]),
+			getSupportedAreasIndexMap: vi.fn().mockReturnValue(indexMap),
+			getSelectedAreas: vi.fn().mockReturnValue([]), // Empty to enter else branch at line 233
+			getProgress: vi.fn().mockReturnValue([]),
+			setProgress: vi.fn(),
+			getV1ResolvedSegment: vi.fn().mockReturnValue(undefined), // Cache miss
+			requestV1MapRefresh: vi.fn(),
+		});
+
+		const platform = asPartial<RoborockMatterbridgePlatform>({
+			log: createMockLogger(),
+			configManager: createMockConfigManager(),
+			roborockService: mockRoborockService,
+		});
+
+		// Create robot with V1 protocol
+		const robotV1 = asPartial<RoborockVacuumCleaner>({
+			device: asPartial<Device>({ duid: 'test-duid-v1-empty', pv: ProtocolVersion.V1 }),
+			homeInFo: asPartial<HomeEntity>({ activeMapId: 0 }),
+			updateAttribute: vi.fn().mockResolvedValue(undefined),
+			getAttribute: vi.fn().mockReturnValue(undefined),
+		});
+
+		const message: ServiceAreaUpdateMessage = {
+			duid: 'test-duid-v1-empty',
+			state: OperationStatusCode.Cleaning, // A CLEANING_STATE
+			cleaningInfo: undefined, // Absent
+			cleaningProcess: { clean_area: 100, clean_time: 60 }, // Non-zero required by line 211
+		};
+
+		// Act
+		await handleServiceAreaUpdate(robotV1, message, platform);
+
+		// Assert — getV1ResolvedSegment should be called and return undefined (cache miss)
+		expect(mockRoborockService.getV1ResolvedSegment).toHaveBeenCalledWith('test-duid-v1-empty');
+		// Refresh should be called to populate the cache for next tick
+		expect(mockRoborockService.requestV1MapRefresh).toHaveBeenCalledWith('test-duid-v1-empty');
+	});
+
+	it('should NOT call requestV1MapRefresh when V1 device has valid cleaningInfo (regression guard)', async () => {
+		// Arrange
+		const indexMap = createRoomIndexMapForSegment(42, 5, 0);
+		const mockRoborockService = asPartial<RoborockService>({
+			getSupportedAreas: vi.fn().mockReturnValue([{ areaId: 5, mapId: 0 } as ServiceArea.Area]),
+			getSupportedAreasIndexMap: vi.fn().mockReturnValue(indexMap),
+			getSelectedAreas: vi.fn().mockReturnValue([5]),
+			getProgress: vi.fn().mockReturnValue([]),
+			setProgress: vi.fn(),
+			getV1ResolvedSegment: vi.fn(), // Should not be called
+			requestV1MapRefresh: vi.fn(),
+		});
+
+		const platform = asPartial<RoborockMatterbridgePlatform>({
+			log: createMockLogger(),
+			configManager: createMockConfigManager(),
+			roborockService: mockRoborockService,
+		});
+
+		robot.device.pv = ProtocolVersion.V1;
+		const message: ServiceAreaUpdateMessage = {
+			duid: 'test-duid-v1',
+			state: OperationStatusCode.RoomClean,
+			cleaningInfo: {
+				segment_id: 42,
+				target_segment_id: INVALID_SEGMENT_ID,
+				fan_power: 0,
+				water_box_status: 0,
+				mop_mode: 0,
+			},
+			cleaningProcess: { clean_area: 100, clean_time: 60 },
+		};
+
+		// Act
+		await handleServiceAreaUpdate(robot, message, platform);
+
+		// Assert — V1 fallback should be completely skipped when cleaningInfo is present
+		expect(mockRoborockService.getV1ResolvedSegment).not.toHaveBeenCalled();
+		expect(mockRoborockService.requestV1MapRefresh).not.toHaveBeenCalled();
+		// Normal path should execute (area resolved from cleaningInfo)
+		expect(robot.updateAttribute).toHaveBeenCalledWith(ServiceArea.id, 'currentArea', 5, expect.anything());
+	});
+
+	it('should NOT call V1 fallback when device is not V1 (protocol gate)', async () => {
+		// Arrange
+		const indexMap = createRoomIndexMapForSegment(42, 5, 0);
+		const mockRoborockService = asPartial<RoborockService>({
+			getSupportedAreas: vi.fn().mockReturnValue([{ areaId: 5, mapId: 0 } as ServiceArea.Area]),
+			getSupportedAreasIndexMap: vi.fn().mockReturnValue(indexMap),
+			getSelectedAreas: vi.fn().mockReturnValue([5]),
+			getProgress: vi.fn().mockReturnValue([]),
+			setProgress: vi.fn(),
+			getV1ResolvedSegment: vi.fn(),
+			requestV1MapRefresh: vi.fn(),
+		});
+
+		const platform = asPartial<RoborockMatterbridgePlatform>({
+			log: createMockLogger(),
+			configManager: createMockConfigManager(),
+			roborockService: mockRoborockService,
+		});
+
+		// Create robot with B01 protocol (not V1)
+		const robotB01 = asPartial<RoborockVacuumCleaner>({
+			device: asPartial<Device>({ duid: 'test-duid-b01', pv: ProtocolVersion.B01 }),
+			homeInFo: asPartial<HomeEntity>({ activeMapId: 0 }),
+			updateAttribute: vi.fn().mockResolvedValue(undefined),
+			getAttribute: vi.fn().mockReturnValue(undefined),
+		});
+
+		const message: ServiceAreaUpdateMessage = {
+			duid: 'test-duid-b01',
+			state: OperationStatusCode.Cleaning, // A CLEANING_STATE
+			cleaningInfo: undefined, // Absent
+			cleaningProcess: { clean_area: 100, clean_time: 60 }, // Non-zero values required
+		};
+
+		// Act
+		await handleServiceAreaUpdate(robotB01, message, platform);
+
+		// Assert — V1 fallback should not be called for non-V1 devices
+		expect(mockRoborockService.getV1ResolvedSegment).not.toHaveBeenCalled();
+		expect(mockRoborockService.requestV1MapRefresh).not.toHaveBeenCalled();
+	});
+
+	it('should set currentArea to null when segment maps to no area (unmapped segment)', async () => {
+		// Arrange
+		const indexMap = createRoomIndexMapForSegment(42, 5, 0);
+		const mockRoborockService = asPartial<RoborockService>({
+			getSupportedAreas: vi.fn().mockReturnValue([{ areaId: 5, mapId: 0 } as ServiceArea.Area]),
+			getSupportedAreasIndexMap: vi.fn().mockReturnValue(indexMap),
+			getSelectedAreas: vi.fn().mockReturnValue([]), // Empty to enter else branch at line 233
+			getProgress: vi.fn().mockReturnValue([]),
+			setProgress: vi.fn(),
+			getV1ResolvedSegment: vi.fn().mockReturnValue(999), // Unmapped segment ID
+			requestV1MapRefresh: vi.fn(),
+		});
+
+		const platform = asPartial<RoborockMatterbridgePlatform>({
+			log: createMockLogger(),
+			configManager: createMockConfigManager(),
+			roborockService: mockRoborockService,
+		});
+
+		// Create robot with V1 protocol
+		const robotV1 = asPartial<RoborockVacuumCleaner>({
+			device: asPartial<Device>({ duid: 'test-duid-v1-unmapped', pv: ProtocolVersion.V1 }),
+			homeInFo: asPartial<HomeEntity>({ activeMapId: 0 }),
+			updateAttribute: vi.fn().mockResolvedValue(undefined),
+			getAttribute: vi.fn().mockReturnValue(undefined),
+		});
+
+		const message: ServiceAreaUpdateMessage = {
+			duid: 'test-duid-v1-unmapped',
+			state: OperationStatusCode.Cleaning, // A CLEANING_STATE
+			cleaningInfo: undefined,
+			cleaningProcess: { clean_area: 100, clean_time: 60 }, // Non-zero required by line 211
+		};
+
+		// Act
+		await handleServiceAreaUpdate(robotV1, message, platform);
+
+		// Assert — currentArea should be set to null for unmapped segment
+		expect(
+			vi.mocked(robotV1.updateAttribute).mock.calls.some((call) => call[1] === 'currentArea' && call[2] === null),
+		).toBe(true);
+		// Refresh should NOT be called because we got a valid (but unmapped) segment from cache
+		expect(mockRoborockService.requestV1MapRefresh).not.toHaveBeenCalled();
 	});
 });

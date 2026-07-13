@@ -6,6 +6,8 @@ import { HomeEntity } from '../../../../core/domain/entities/Home.js';
 import { getSupportedAreas, roomTypeIdToAreaTag } from '../../../../initialData/getSupportedAreas.js';
 import { ProtocolVersion } from '../../../../roborockCommunication/enums/protocolVersion.js';
 import { B01MapParser } from '../../../../roborockCommunication/map/b01/b01MapParser.js';
+import { LegacyMapParser } from '../../../../roborockCommunication/map/v1/mapParser.js';
+import { decryptAndUnzipV1Map } from '../../../../roborockCommunication/map/v1/v1MapDecryptor.js';
 import { AreaManagementService } from '../../../../services/areaManagementService.js';
 import { Q7RequestCode, Q7RequestMethod } from '../../../enums/Q7RequestCode.js';
 import { Q10RequestCode } from '../../../enums/Q10RequestCode.js';
@@ -36,6 +38,8 @@ export class MapInfoListener implements AbstractMessageListener {
 		private readonly deviceProtocol?: string,
 		private readonly allowV1AreaUpdate = true,
 		private readonly enableMultipleMap = true,
+		private readonly sessionNonce?: () => Buffer | undefined,
+		private readonly onV1RoomResolved?: (segmentId: number) => void,
 	) {}
 
 	public async onMessage(message: ResponseMessage): Promise<void> {
@@ -45,6 +49,7 @@ export class MapInfoListener implements AbstractMessageListener {
 		this.tryParseB01MapInfo(message);
 		this.tryParseB01RoomMap(message);
 		this.tryParseB01MapBinary(message);
+		this.tryParseV1MapBinary(message);
 	}
 
 	private tryParseV1MapInfo(message: ResponseMessage): void {
@@ -200,6 +205,35 @@ export class MapInfoListener implements AbstractMessageListener {
 			}
 		} catch (err: unknown) {
 			this.logger.warn(`[${this.duid}] MapInfoListener: failed to parse B01 map binary: ${String(err)}`);
+		}
+	}
+
+	private tryParseV1MapBinary(message: ResponseMessage): void {
+		if (this.deviceProtocol !== ProtocolVersion.V1) return;
+		if (!message.body) return;
+		const mapBuffer = message.body.get(Protocol.map_response);
+		if (!Buffer.isBuffer(mapBuffer)) return;
+
+		const nonce = this.sessionNonce?.();
+		if (!nonce) return;
+
+		try {
+			const decrypted = decryptAndUnzipV1Map(mapBuffer, nonce);
+			const parser = new LegacyMapParser();
+			const mapData = parser.parse(decrypted);
+			const result = parser.resolveCurrentRoom(mapData);
+			if (result) {
+				this.onV1RoomResolved?.(result.segmentId);
+			}
+		} catch (err: unknown) {
+			const errorMsg = err instanceof Error ? err.message : String(err);
+			let causeMsg = '';
+			if (err instanceof Error && err.cause instanceof Error) {
+				causeMsg = `cause: ${err.cause.message}`;
+			}
+			this.logger.warn(
+				`[${this.duid}] MapInfoListener: failed to parse V1 map binary: ${errorMsg}${causeMsg ? ` | ${causeMsg}` : ''}`,
+			);
 		}
 	}
 

@@ -1254,4 +1254,122 @@ describe('AreaManagementService', () => {
 			});
 		});
 	});
+
+	describe('V1 room resolution cache', () => {
+		beforeEach(() => {
+			vi.useFakeTimers();
+			vi.setSystemTime(new Date('2026-07-13T12:00:00Z'));
+		});
+
+		afterEach(() => {
+			vi.useRealTimers();
+		});
+
+		it('should set and retrieve V1 resolved segment', () => {
+			// Arrange
+			const duid = 'v1-device';
+			const segmentId = 42;
+
+			// Act
+			areaService.setV1ResolvedSegment(duid, segmentId);
+			const result = areaService.getV1ResolvedSegment(duid);
+
+			// Assert
+			expect(result).toBe(segmentId);
+		});
+
+		it('should return undefined for duid that was never set', () => {
+			// Act
+			const result = areaService.getV1ResolvedSegment('unknown-duid');
+
+			// Assert
+			expect(result).toBeUndefined();
+		});
+
+		it('should return undefined when cached entry exceeds maxAgeMs', () => {
+			// Arrange
+			const duid = 'v1-device';
+			areaService.setV1ResolvedSegment(duid, 42);
+
+			// Act — advance time beyond maxAgeMs (default 30_000)
+			vi.advanceTimersByTime(31_000);
+			const result = areaService.getV1ResolvedSegment(duid);
+
+			// Assert
+			expect(result).toBeUndefined();
+		});
+
+		it('should return cached segmentId just under the staleness threshold', () => {
+			// Arrange
+			const duid = 'v1-device';
+			areaService.setV1ResolvedSegment(duid, 42);
+
+			// Act — advance time just under maxAgeMs (default 30_000)
+			vi.advanceTimersByTime(29_999);
+			const result = areaService.getV1ResolvedSegment(duid);
+
+			// Assert
+			expect(result).toBe(42);
+		});
+
+		it('should respect custom maxAgeMs parameter', () => {
+			// Arrange
+			const duid = 'v1-device';
+			const customMaxAge = 5_000;
+			areaService.setV1ResolvedSegment(duid, 42);
+
+			// Act — advance time beyond custom maxAgeMs
+			vi.advanceTimersByTime(6_000);
+			const result = areaService.getV1ResolvedSegment(duid, customMaxAge);
+
+			// Assert
+			expect(result).toBeUndefined();
+		});
+
+		it('should call serviceRouting.requestHomeMapPush when requestV1MapRefresh is called', async () => {
+			// Arrange
+			const duid = 'v1-device';
+			mockMessageRoutingService.requestHomeMapPush = vi.fn().mockResolvedValue(undefined);
+
+			// Act
+			await areaService.requestV1MapRefresh(duid);
+
+			// Assert
+			expect(mockMessageRoutingService.requestHomeMapPush).toHaveBeenCalledWith(duid);
+		});
+
+		it('should catch and log error when requestHomeMapPush rejects', async () => {
+			// Arrange
+			const duid = 'v1-device';
+			const error = new Error('RPC failed');
+			mockMessageRoutingService.requestHomeMapPush = vi.fn().mockRejectedValue(error);
+
+			// Act & Assert — should not throw
+			await expect(areaService.requestV1MapRefresh(duid)).resolves.toBeUndefined();
+
+			// Verify error was logged at debug level
+			expect(mockLogger.debug).toHaveBeenCalledWith(expect.stringContaining('requestV1MapRefresh failed'));
+		});
+
+		it('should return early when serviceRouting is not provided', async () => {
+			// Arrange — service without messageRouting
+			const serviceNoRouting = new AreaManagementService(mockLogger as AnsiLogger, undefined);
+
+			// Act & Assert — should not throw
+			await expect(serviceNoRouting.requestV1MapRefresh('any-duid')).resolves.toBeUndefined();
+		});
+
+		it('should clear V1 cache in clearAll()', () => {
+			// Arrange
+			const duid = 'v1-device';
+			areaService.setV1ResolvedSegment(duid, 42);
+			expect(areaService.getV1ResolvedSegment(duid)).toBe(42);
+
+			// Act
+			areaService.clearAll();
+
+			// Assert
+			expect(areaService.getV1ResolvedSegment(duid)).toBeUndefined();
+		});
+	});
 });

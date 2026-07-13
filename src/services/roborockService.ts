@@ -275,6 +275,16 @@ export class RoborockService {
 		await this.messageRoutingService.switchMap(duid, mapId);
 	}
 
+	/** Get V1 resolved segment ID from cache if available and not stale. */
+	public getV1ResolvedSegment(duid: string): number | undefined {
+		return this.areaService.getV1ResolvedSegment(duid);
+	}
+
+	/** Request V1 map push (fire-and-forget). */
+	public async requestV1MapRefresh(duid: string): Promise<void> {
+		return this.areaService.requestV1MapRefresh(duid);
+	}
+
 	/** Get all scenes for a home. */
 	public async getScenes(homeId: number): Promise<Scene[] | undefined> {
 		return this.areaService.getScenes(homeId);

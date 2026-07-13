@@ -1,5 +1,26 @@
 # Claude History
 
+## 2026-07-13 — Wire V1 LegacyMapParser into runtime as currentArea fallback
+
+**Task:** Integrate LegacyMapParser.resolveCurrentRoom into the live plugin runtime as a fallback for currentArea/room resolution when V1 devices lack cleaning_info in status updates while actively cleaning. Previously resolveAreaFromCleaningInfo's !cleaningInfo branch was unreachable dead code — handleServiceAreaUpdate intercepts all such cases earlier and routes to handleCleaningWithoutInfo instead.
+
+**Changes:**
+
+- `src/services/messageRoutingService.ts` — added requestHomeMapPush() method to trigger fire-and-forget getHomeMap RPC for fresh map binary
+- `src/services/areaManagementService.ts` — added v1RoomResolutionCache { segmentId, resolvedAtMs }, setV1ResolvedSegment(), getV1ResolvedSegment(), requestV1MapRefresh() with 30s staleness window, clearAll() cache purge
+- `src/services/roborockService.ts` — added 2 passthrough methods (requestHomeMapPush, getV1ResolvedSegment)
+- `src/roborockCommunication/routing/listeners/implementation/mapInfoListener.ts` — added tryParseV1MapBinary() to decrypt/parse V1 map binary pushes, resolve current segment via LegacyMapParser.resolveCurrentRoom, cache { segmentId, resolvedAtMs }, cache miss triggers throttled requestV1MapRefresh; 2 new constructor params (messageRoutingService, areaManagementService)
+- `src/services/connectionService.ts` — updated MapInfoListener construction with new params
+- `src/runtimes/handlers/serviceAreaHandler.ts` — added V1 fallback logic in handleCleaningWithoutInfo's else branch (not resolveAreaFromCleaningInfo — function reverted to original cleaningInfo-present-only behavior after initial reachability bug); reads v1RoomResolutionCache, resolves via same roomIndexMap lookup as dominant path
+- `src/tests/roborockCommunication/routing/listeners/implementation/mapInfoListener.test.ts` — new test coverage for tryParseV1MapBinary
+- `src/tests/services/areaManagementService.test.ts` — new tests for v1RoomResolutionCache lifecycle
+- `src/tests/services/messageRoutingService.test.ts` — new tests for requestHomeMapPush
+- `src/tests/runtimes/handlers/serviceAreaHandler.test.ts` — new tests for handleCleaningWithoutInfo V1 fallback branch
+
+**Outcome:** Pass (second reviewer cycle; initial implementation bug: requestV1MapRefresh fired unconditionally on every call, fixed to fire only on cache-miss; second critical bug caught by test-writer: entire V1 fallback branch was unreachable due to placement in resolveAreaFromCleaningInfo instead of handleCleaningWithoutInfo, discovered via real-code-path test failure, traced by EM, fixed by implementer, re-verified by fresh reviewer pass with hand-traced call chain; all four verification gates passed: format:ci, lint:fix:ci, type-check:ci, test:ci).
+
+**Follow-up:** V1 legacy room fallback real-device validation needed — confirm on a real V1 device (e.g. Roborock Qrevo Edge 5V1 used to validate legacy-map-info CLI) that currentArea correctly updates via this fallback during actual clean where cleaning_info is absent from status pushes; underlying CLI/parser validated on real hardware, but live runtime wiring (throttled getHomeMap trigger + cache + serviceAreaHandler branch) not yet exercised end-to-end on real device.
+
 ## 2026-07-12 — Fix B01/Q10 trace packet crash (protocol 301, secondary payload)
 
 **Task:** Fix crash when Roborock Q10 S5+ sends trace packet (marker 0x02 0x01) containing accumulated path of current cleaning session. Previously misclassified as legacy Q7 AES+zlib payload and threw "incorrect header check". Root cause and wire format identified via python-roborock reference project comparison (GitHub issue #136).

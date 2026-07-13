@@ -60,6 +60,10 @@ export class MessageRoutingService {
 		return data?.vacuumRoom;
 	}
 
+	public async requestHomeMapPush(duid: string): Promise<void> {
+		await this.getMessageDispatcher(duid).getHomeMap(duid);
+	}
+
 	public async getSerialNumber(duid: string): Promise<string> {
 		const sn = await this.getMessageDispatcher(duid).getSerialNumber(duid);
 		return sn ?? duid;

@@ -39,7 +39,7 @@ export class RoborockVacuumCleaner extends RoboticVacuumCleaner {
 		public readonly device: Device,
 		public readonly homeInFo: HomeEntity,
 		configManager: PlatformConfigManager,
-		private readonly roborockService: RoborockService,
+		public readonly roborockService: RoborockService,
 		log: AnsiLogger,
 		resolvedAreas: ServiceArea.Area[] = [],
 		resolvedMaps: ServiceArea.Map[] = [],

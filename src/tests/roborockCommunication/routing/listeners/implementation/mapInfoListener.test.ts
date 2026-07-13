@@ -542,4 +542,156 @@ describe('MapInfoListener', () => {
 			expect(areas[0]?.areaInfo.locationInfo?.areaType).toBe(CommonAreaNamespaceTag.Kitchen.tag);
 		});
 	});
+
+	describe('tryParseV1MapBinary', () => {
+		it('should skip when device protocol is not V1 (protocol gate)', async () => {
+			// Arrange
+			const onV1RoomResolved = vi.fn();
+			const sessionNonce = vi.fn().mockReturnValue(Buffer.from('nonce'));
+			const listenerB01 = new MapInfoListener(
+				DUID,
+				[],
+				areaService,
+				createMockLogger(),
+				'roborock.vacuum.b01',
+				'SER',
+				undefined,
+				ProtocolVersion.B01, // Not V1
+				true,
+				true,
+				sessionNonce,
+				onV1RoomResolved,
+			);
+
+			const msg = makeB01Message(DUID, (key) => {
+				if (key === Protocol.map_response) return Buffer.from('binary');
+				return undefined;
+			});
+
+			// Act
+			await listenerB01.onMessage(msg);
+
+			// Assert
+			expect(onV1RoomResolved).not.toHaveBeenCalled();
+			expect(sessionNonce).not.toHaveBeenCalled(); // Protocol gate prevents nonce call
+		});
+
+		it('should return early without error when sessionNonce is undefined (nonce not ready yet)', async () => {
+			// Arrange
+			const onV1RoomResolved = vi.fn();
+			const sessionNonce = vi.fn().mockReturnValue(undefined); // Nonce not ready
+			const listenerV1 = new MapInfoListener(
+				DUID,
+				[],
+				areaService,
+				createMockLogger(),
+				undefined,
+				undefined,
+				undefined,
+				ProtocolVersion.V1,
+				true,
+				true,
+				sessionNonce,
+				onV1RoomResolved,
+			);
+
+			const msg = makeB01Message(DUID, (key) => {
+				if (key === Protocol.map_response) return Buffer.from('data');
+				return undefined;
+			});
+
+			// Act & Assert — should not throw and not call callback
+			await expect(listenerV1.onMessage(msg)).resolves.toBeUndefined();
+			expect(onV1RoomResolved).not.toHaveBeenCalled();
+		});
+
+		it('should return early when message body has no map_response', async () => {
+			// Arrange
+			const onV1RoomResolved = vi.fn();
+			const sessionNonce = vi.fn().mockReturnValue(Buffer.from('nonce'));
+			const listenerV1 = new MapInfoListener(
+				DUID,
+				[],
+				areaService,
+				createMockLogger(),
+				undefined,
+				undefined,
+				undefined,
+				ProtocolVersion.V1,
+				true,
+				true,
+				sessionNonce,
+				onV1RoomResolved,
+			);
+
+			const msg = makeB01Message(DUID, () => undefined); // No map_response key
+
+			// Act
+			await listenerV1.onMessage(msg);
+
+			// Assert
+			expect(onV1RoomResolved).not.toHaveBeenCalled();
+			expect(sessionNonce).not.toHaveBeenCalled(); // Early return before nonce is needed
+		});
+
+		it('should not throw when onV1RoomResolved callback is not provided (backward compatibility)', async () => {
+			// Arrange — existing test call sites that don't pass the new params
+			const sessionNonce = vi.fn().mockReturnValue(Buffer.from('nonce'));
+			const listenerV1 = new MapInfoListener(
+				DUID,
+				[],
+				areaService,
+				createMockLogger(),
+				undefined,
+				undefined,
+				undefined,
+				ProtocolVersion.V1,
+				true,
+				true,
+				sessionNonce,
+				// onV1RoomResolved not provided — callback is optional
+			);
+
+			const msg = makeB01Message(DUID, (key) => {
+				if (key === Protocol.map_response) return Buffer.from('data');
+				return undefined;
+			});
+
+			// Act & Assert — should not throw
+			await expect(listenerV1.onMessage(msg)).resolves.toBeUndefined();
+		});
+
+		it('should return early when message body is missing', async () => {
+			// Arrange
+			const onV1RoomResolved = vi.fn();
+			const sessionNonce = vi.fn().mockReturnValue(Buffer.from('nonce'));
+			const listenerV1 = new MapInfoListener(
+				DUID,
+				[],
+				areaService,
+				createMockLogger(),
+				undefined,
+				undefined,
+				undefined,
+				ProtocolVersion.V1,
+				true,
+				true,
+				sessionNonce,
+				onV1RoomResolved,
+			);
+
+			// Message with no body
+			const msg = asPartial<ResponseMessage>({
+				duid: DUID,
+				body: undefined,
+				get: vi.fn(),
+			});
+
+			// Act
+			await listenerV1.onMessage(msg);
+
+			// Assert
+			expect(onV1RoomResolved).not.toHaveBeenCalled();
+		});
+	});
 });

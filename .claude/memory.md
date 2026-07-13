@@ -21,6 +21,9 @@ It is version-controlled — commit and push changes so teammates can pull the l
 - Live map updates: `resolveInitialAreas` must sync-bootstrap via `fetchAndApplyMapInfo`/`fetchAndApplyRoomMap` (ignore V2); public `getMapInfo`/`getRoomMap` stay V2-only when `liveMapUpdates`. `handleActiveMapChanged` must intersect with Matter `supportedAreas` before writing `selectedAreas`.
 - Multi-map areas: partial room-map fetch/push merges by `mapId` via `mergeSupportedAreasByMap` (keeps other maps, re-indexes areaIds); full `mapInfo.allRooms` / V1 map-info push stays full replace.
 - Multi-map + `enableMultipleMap`: ON → bootstrap all physical maps via `switchMap`+sync fetch, merge by mapId; OFF → primary only (`maps[0]`) via `getSupportedAreas(..., false)` — wired from `configManager.isMultipleMapEnabled`.
+- No code path calls V1 `dispatcher.getHomeMap` (`get_map_v1`) on a recurring basis — `PollingService` only calls `getDeviceStatus`; `AreaManagementService.startPeriodicRefresh` only calls `getMapInfo` (`get_multi_maps_list`). A V1 position-based fallback needs its own explicit trigger.
+- `MapInfoListener.tryParseB01MapBinary` explicitly skips `Protocol.map_response` when `deviceProtocol === ProtocolVersion.V1` (`mapInfoListener.ts:165`) — V1 map binaries are currently dropped entirely by the runtime listener, not just unreachable from a resolver.
+- `OperationStatusCode.WashingTheMop`(23) override (`stateResolver.ts:128-139`) writes `operationalState=FillingWaterTank` for ~2-3min at clean-start (real mop-pad wash phase) before `Running` — Apple Home master tile likely shows this as "Preparing" (unconfirmed, HomeKit-side); `RvcRunMode.currentMode`/`RvcCleanMode.currentMode` update correctly/promptly throughout, independent clusters.
 
 ## Known Patterns
 
@@ -47,6 +50,9 @@ It is version-controlled — commit and push changes so teammates can pull the l
 - `homeInFo.activeMapId` alone is unreliable for active-map inference (stays -1 for V10/V1). Fallback order used in `SELECT_AREAS` empty-list handling: Matter `selectedAreas` mapId → `activeMapId` (if not -1) → first `supportedAreas` mapId.
 - `RvcRunMode.ChangeToMode(Idle)` is now handled via `IdleModeHandler` (new, Jul 10 2026) → `roborockService.pauseClean`. `Mapping` deferred: `AbstractMessageDispatcher` (V10/Q7/Q10) has zero mapping/explore-start command.
 - `getSupportedAreas()` (`initialData/getSupportedAreas.ts`) is the single point enforcing "Areas non-null mapId ⇒ supportedMaps non-empty" (Matter `#assertSupportedAreas`). `processValidData` branch always assigns numeric `mapId`; empty `mapInfo.maps` (e.g. `MapInfo.empty()` fallback) previously left `supportedMaps=[]` — fixed via `buildPlaceholderSupportedMaps` (pair, don't null — matches existing `createFallbackArea` convention).
+- V1 currentArea fallback (planned): CLI's `extractNamedRooms`/`roomDisplayName` (`cli/mapListHelpers.ts`) stay CLI-only — runtime resolves `segmentId → areaId` via existing `roomIndexMap.getAreaId`/`getAreaIdV2`, doesn't need room names, so no move/share needed.
+- `progress` reset-on-new-clean (Jul 13, 2026, revised): TWO reset triggers — `selectAreas` AND `handleServiceAreaUpdate`'s Idle branch (replaces old Operating→Completed flip with direct `[]` clear, since both writes happen in one sync call with no observable gap). NOT `RoborockService.startClean` — its `HandlerContext` chain never carries `robot`/`device`.
+- `RoborockVacuumCleaner.roborockService` exposed as `public readonly` (not private) to enable behaviors/servers (e.g., `RoborockServiceAreaServer`) to call `setProgress()`/`getProgress()` directly without routing through platform. Companion to existing public readonly `device` and `homeInFo` fields.
 
 ## Test Patterns
 
@@ -77,6 +83,7 @@ It is version-controlled — commit and push changes so teammates can pull the l
 - `platformRunner.ts:120` writes `activeMapId` BEFORE `handleActiveMapChanged` — a guard inside the handler can't prevent `activeMapId` desync, and the same-map guard (`:119`) then swallows an identical-mapId retry.
 - `SELECT_AREAS` empty-input path (`roborockVacuumCleaner.ts:164-176`) must NOT call `trySwitchMap` — keep empty vs explicit branches structurally separate with early `return`, else V10/V1 (`activeMapId=-1`) fires unguarded `switchMap` on every global-clean.
 - ESLint `preserve-caught-error` requires re-thrown errors to carry `{ cause: err }` — omitting it fails `lint:fix:ci` even when the message embeds the original error text.
+- ESLint `no-base-to-string` prohibits stringifying `err.cause` directly in templates (`String(err.cause)`) — check `if (cause instanceof Error)` first, then safely access `.message`; this prevents accidental `[object Object]` in logs.
 
 ## Module Notes
 

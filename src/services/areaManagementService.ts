@@ -31,6 +31,7 @@ export class AreaManagementService {
 	private deviceRooms = new Map<string, RoomDto[]>();
 	private iotApi: RoborockIoTApi | undefined;
 	private mapInfoCache = new Map<string, MapInfo>();
+	private v1RoomResolutionCache = new Map<string, { segmentId: number; resolvedAtMs: number }>();
 
 	constructor(
 		private readonly logger: AnsiLogger,
@@ -377,6 +378,26 @@ export class AreaManagementService {
 		return this.iotApi.startScene(sceneId);
 	}
 
+	public setV1ResolvedSegment(duid: string, segmentId: number): void {
+		this.v1RoomResolutionCache.set(duid, { segmentId, resolvedAtMs: Date.now() });
+	}
+
+	public getV1ResolvedSegment(duid: string, maxAgeMs = 30_000): number | undefined {
+		const cached = this.v1RoomResolutionCache.get(duid);
+		if (!cached) return undefined;
+		if (Date.now() - cached.resolvedAtMs > maxAgeMs) return undefined;
+		return cached.segmentId;
+	}
+
+	public async requestV1MapRefresh(duid: string): Promise<void> {
+		if (!this.serviceRouting) return;
+		try {
+			await this.serviceRouting.requestHomeMapPush(duid);
+		} catch (err: unknown) {
+			this.logger.debug(`[${duid}] requestV1MapRefresh failed: ${err instanceof Error ? err.message : String(err)}`);
+		}
+	}
+
 	/** Clear all area management data and stop all refresh timers. */
 	public clearAll(): void {
 		for (const duid of this.refreshIntervals.keys()) {
@@ -391,6 +412,7 @@ export class AreaManagementService {
 		this.areasListeners.clear();
 		this.deviceRooms.clear();
 		this.mapInfoCache.clear();
+		this.v1RoomResolutionCache.clear();
 		this.logger.debug('AreaManagementService - All data cleared');
 	}
 }

@@ -13,6 +13,10 @@ export class RoborockServiceAreaServer extends MatterbridgeServiceAreaServer {
 		const device = this.endpoint as unknown as RoborockVacuumCleaner;
 		const requestedAreas = request.newAreas ?? [];
 
+		const duid = device.device.duid;
+		device.roborockService.setProgress(duid, []);
+		await device.updateAttribute(ServiceArea.id, 'progress', [], device.log);
+
 		if (requestedAreas.length === 0) {
 			const allRoomsForActiveMap = device.resolveAllRoomsForActiveMap();
 			if (allRoomsForActiveMap.length > 0) {
