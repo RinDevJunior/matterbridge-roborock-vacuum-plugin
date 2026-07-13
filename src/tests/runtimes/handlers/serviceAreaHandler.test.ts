@@ -197,7 +197,7 @@ describe('handleServiceAreaUpdate with progress', () => {
 		robot = createMockRobot('test-duid-progress', 100);
 	});
 
-	it('should finalize progress when state is Idle with Operating area', async () => {
+	it('should clear progress when state is Idle with Operating area', async () => {
 		const selectedAreas = [1, 2];
 		const initialProgress: ServiceArea.Progress[] = [
 			{ areaId: 1, status: ServiceArea.OperationalStatus.Pending },
@@ -225,29 +225,8 @@ describe('handleServiceAreaUpdate with progress', () => {
 
 		await handleServiceAreaUpdate(robot, message, platform);
 
-		// Verify Operating area was marked Completed
-		expect(mockRoborockService?.setProgress).toHaveBeenCalledWith(
-			robot.device.duid,
-			expect.arrayContaining([
-				expect.objectContaining({
-					areaId: 2,
-					status: ServiceArea.OperationalStatus.Completed,
-				}),
-			]),
-		);
-
-		// Verify updateAttribute was called with finalized progress
-		expect(robot.updateAttribute).toHaveBeenCalledWith(
-			ServiceArea.id,
-			'progress',
-			expect.arrayContaining([
-				expect.objectContaining({
-					areaId: 2,
-					status: ServiceArea.OperationalStatus.Completed,
-				}),
-			]),
-			expect.anything(),
-		);
+		expect(mockRoborockService?.setProgress).toHaveBeenCalledWith(robot.device.duid, []);
+		expect(robot.updateAttribute).toHaveBeenCalledWith(ServiceArea.id, 'progress', [], expect.anything());
 	});
 
 	it('should initialize progress when cleaning starts with single selected area', async () => {
@@ -333,7 +312,7 @@ describe('handleServiceAreaUpdate with progress', () => {
 		]);
 	});
 
-	it('should leave progress untouched when state is Idle without Operating areas', async () => {
+	it('should clear progress when state is Idle without Operating areas', async () => {
 		const selectedAreas = [1, 2];
 		const initialProgress: ServiceArea.Progress[] = [
 			{ areaId: 1, status: ServiceArea.OperationalStatus.Pending },
@@ -361,20 +340,8 @@ describe('handleServiceAreaUpdate with progress', () => {
 
 		await handleServiceAreaUpdate(robot, message, platform);
 
-		// Pending areas should remain Pending
-		expect(mockRoborockService?.setProgress).toHaveBeenCalledWith(
-			robot.device.duid,
-			expect.arrayContaining([
-				expect.objectContaining({
-					areaId: 1,
-					status: ServiceArea.OperationalStatus.Pending,
-				}),
-				expect.objectContaining({
-					areaId: 2,
-					status: ServiceArea.OperationalStatus.Pending,
-				}),
-			]),
-		);
+		expect(mockRoborockService?.setProgress).toHaveBeenCalledWith(robot.device.duid, []);
+		expect(robot.updateAttribute).toHaveBeenCalledWith(ServiceArea.id, 'progress', [], expect.anything());
 	});
 
 	it('should not update progress when cleaning_info is undefined and clean_area is 0', async () => {
