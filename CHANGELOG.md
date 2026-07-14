@@ -4,6 +4,17 @@ All notable changes to this project will be documented in this file.
 
 ---
 
+## [1.1.7-rc14] - 2026-07-14
+
+### Fixed
+
+- **Previously-cleaned rooms staying marked "Cleaned" at the start of a new clean** — `ServiceArea.progress` is now reset to `[]` both when the vacuum transitions to `Idle` and when `RvcServiceArea.selectAreas` is called, so Apple Home no longer shows rooms from a prior cleaning session as already cleaned when a brand-new clean starts.
+- **Vacuum/dock error-code to Matter `ErrorState` mappings** — corrected several mis-mapped `VacuumErrorCode`/`DockErrorCode` entries (dust bin, water tank, and mop-related error states) that were resolving to the wrong `RvcOperationalState.ErrorState`, and added the missing `AutoEmptyDockFanError` code.
+
+<a href="https://www.buymeacoffee.com/rinnvspktr" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/default-orange.png" alt="Buy Me A Coffee" height="41" width="174"></a>
+
+---
+
 ## [1.1.7-rc13] - 2026-07-13
 
 ### Fixed
