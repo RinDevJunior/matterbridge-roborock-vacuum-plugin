@@ -4,6 +4,44 @@ All notable changes to this project will be documented in this file.
 
 ---
 
+## [1.1.7] - 2026-07-14
+
+### Changed
+
+- **Requires matterbridge@3.9.4** — Minimum required Matterbridge version bumped from `3.7.1` to `3.9.4` across the `1.1.7` pre-release cycle.
+
+### Added
+
+- **Roborock Q5 Pro support** — Added Q5 Pro to the list of supported devices.
+- **Multi-map switching** — Switching between multiple maps is now supported, with detection of active-map changes and correct default-map selection at startup and after cleaning.
+- **Service-area cleaning ETA and completion signaling** — Wired `OperationCompletion`, `SkipArea`, and per-room estimated end time from live clean progress into the Matter service-area cluster.
+- **Clean-all-rooms via SELECT_AREAS** — Selecting all rooms through the RVC service-area cluster now triggers a whole-home clean instead of being ignored, including via HomeKit automations that request an empty/global room selection.
+- **DirectModeChange support for RVC Clean Mode** — Clean mode (e.g. Vacuum/Mop/Clean) can now be changed by Apple Home while a clean is actively running, without requiring the device to return to idle first.
+- **`b01-map-info` CLI command** — New diagnostic command for testing the B01 map parser against a live device, for both Q7 and Q10 B01 devices.
+
+### Fixed
+
+- **Scheduled/automation full-home clean only cleaning the last-selected room** — An empty room selection (signaling "clean all") was silently ignored instead of clearing the previous selection, and `ServiceArea.selectedAreas` wasn't being correctly published for that case either. Both the request-handling and Matter-attribute paths now correctly propagate a global clean.
+- **`ChangeToMode(Idle)` had no effect on the real device** — Added an `IdleModeHandler` mapping the Matter `RvcRunMode` Idle mode to the device's `pauseClean` command.
+- **Real-time status updates stalling per-device** — Replaced a global "all devices have a real-time connection" short-circuit with a per-device staleness check, so a stale device still receives status updates even while other devices are on a live connection. Also fixed falsy-value checks that dropped legitimate `0` values for battery level, suction power, and water box mode.
+- **Rooms not showing after plugin startup** — Fixed a two-part issue where service-area rooms failed to appear after the plugin started, including a startup crash where the Matter ServiceArea cluster rejected areas with a `mapId` before the first multimap query had populated `supportedMaps`.
+- **Multi-map cleaning progress stuck on "Preparing"/"Traveling"** — Guarded active-map updates so progress state advances correctly during multi-map cleaning runs.
+- **Device status listeners not gated by protocol** — Status listeners are now correctly gated by device connection protocol, preventing cross-protocol event leakage.
+- **B01 room icons and names** — `roomTypeId` values from B01 devices now map to the correct Apple Home room category icons; Q7 map upload switched to `upload_by_maptype` with normalized B01 room names.
+- **Roborock Q10 S5+ (B01 protocol) map parsing** — Q10 map pushes were incorrectly routed through the Q7-only AES+zlib SCMap-protobuf path and failed with "incorrect header check" on every push. Added a marker-byte classifier that routes Q10-shaped payloads to a dedicated LZ4 block decompressor and Q10-specific field parser; the Q7 pipeline is unaffected. Also fixed handling of Q10's live position/trace packets sent on the same channel during cleaning, which were previously falling through to the Q7 path and crashing.
+- **Roborock Q10 MaxPlus suction power wire value** — Q10 devices set to MaxPlus suction power were sending Q7's wire value instead of Q10's; MaxPlus now correctly maps to the Q10-specific wire value.
+- **Previously-cleaned rooms staying marked "Cleaned" at the start of a new clean** — `ServiceArea.progress` is now reset both when the vacuum transitions to `Idle` and when `RvcServiceArea.selectAreas` is called, so Apple Home no longer shows rooms from a prior cleaning session as already cleaned when a brand-new clean starts.
+- **Vacuum/dock error-code to Matter `ErrorState` mappings** — corrected several mis-mapped `VacuumErrorCode`/`DockErrorCode` entries (dust bin, water tank, and mop-related error states) that were resolving to the wrong `RvcOperationalState.ErrorState`, and added the missing `AutoEmptyDockFanError` code.
+
+### Refactored
+
+- **Dead code and unused dependency removal** — Deleted 22 unused error subclasses and their tests, an empty settings file, an orphaned dependency, and an unused runtime path.
+- **Consolidated device state and service-area handling** — Extracted a shared state-update helper and merged duplicate branches in service-area handling, with expanded test coverage.
+
+<a href="https://www.buymeacoffee.com/rinnvspktr" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/default-orange.png" alt="Buy Me A Coffee" height="41" width="174"></a>
+
+---
+
 ## [1.1.7-rc14] - 2026-07-14
 
 ### Fixed
@@ -120,6 +158,57 @@ All notable changes to this project will be documented in this file.
 ### Refactored
 
 - **Unit tests updated** — Test coverage adjusted to match the room-visibility fixes and service-area ETA wiring.
+
+<a href="https://www.buymeacoffee.com/rinnvspktr" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/default-orange.png" alt="Buy Me A Coffee" height="41" width="174"></a>
+
+---
+
+## [1.1.7-rc05] - 2026-06-26
+
+### Added
+
+- **Map info caching for area resolution** — `AreaManagementService` now caches `MapInfo` per device, avoiding a fresh fetch to resolve the map ID for `getRoomMap`.
+- **`allowV1AreaUpdate` flag** — Lets `MapInfoListener` skip V1 map parsing when live map updates are disabled and V2 responses are already available.
+
+### Fixed
+
+- **Supported areas not populated from map info** — Supported areas are now populated from `MapInfo.allRooms` when `hasRooms` is true; `rawArrayToMapRoomDto` now uses the resolved map ID instead of always defaulting to `0`.
+
+<a href="https://www.buymeacoffee.com/rinnvspktr" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/default-orange.png" alt="Buy Me A Coffee" height="41" width="174"></a>
+
+---
+
+## [1.1.7-rc04] - 2026-06-25
+
+### Added
+
+- **Multi-map switching** — Added support for switching between multiple maps, with detection of active-map changes.
+
+### Fixed
+
+- **Map routing simplified** — Simplified map routing logic and aligned the V1/V2 dispatcher split with updated test coverage.
+- **`getRoomMap` return value restored** — Fixed a regression where `getRoomMap` stopped returning data; added the `liveMapUpdates` config option.
+
+<a href="https://www.buymeacoffee.com/rinnvspktr" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/default-orange.png" alt="Buy Me A Coffee" height="41" width="174"></a>
+
+---
+
+## [1.1.7-rc03] - 2026-06-24
+
+### Added
+
+- **`requiresBody` broadcaster guard** — Broadcasters now skip bodyless messages instead of processing them as empty payloads.
+
+<a href="https://www.buymeacoffee.com/rinnvspktr" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/default-orange.png" alt="Buy Me A Coffee" height="41" width="174"></a>
+
+---
+
+## [1.1.7-rc02] - 2026-06-23
+
+### Fixed
+
+- **Real-time status updates stalling per-device** — Replaced the global "all devices have a real-time connection" short-circuit in `requestHomeData` with a per-device staleness check (`lastUpdateAt + WATCHDOG_THRESHOLD_MS`), so a stale device now still receives status updates even while other devices are on a live connection.
+- **Zero-value fields dropped in home data updates** — `handleHomeDataMessage` used falsy checks for `batteryLevel`, `suctionPower`, and `waterBoxMode`, incorrectly treating a legitimate `0` value as missing; now uses explicit `!= null` checks.
 
 <a href="https://www.buymeacoffee.com/rinnvspktr" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/default-orange.png" alt="Buy Me A Coffee" height="41" width="174"></a>
 
