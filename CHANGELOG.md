@@ -4,6 +4,16 @@ All notable changes to this project will be documented in this file.
 
 ---
 
+## [1.1.7-rc15] - 2026-07-14
+
+### Fixed
+
+- **Stale service-area "Cleaned" progress no longer bleeds into a new clean** — Room progress from a previous clean is now reset whenever a genuinely new clean starts, whether triggered externally (Roborock app, robot schedule, physical button) or via Matter/Apple Home's "start cleaning" command, so newly cleaned rooms no longer inherit stale completion state.
+
+<a href="https://www.buymeacoffee.com/rinnvspktr" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/default-orange.png" alt="Buy Me A Coffee" height="41" width="174"></a>
+
+---
+
 ## [1.1.7] - 2026-07-14
 
 ### Changed
