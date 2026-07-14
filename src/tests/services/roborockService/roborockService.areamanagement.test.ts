@@ -161,5 +161,36 @@ describe('RoborockService - Area Management', () => {
 			roborockService.setProgress(duid2, progress as any);
 			expect(roborockService.getProgress(duid2)).toEqual(progress);
 		});
+
+		it('setLastActivelyCleaningState delegates to areaService.setLastActivelyCleaningState', () => {
+			roborockService.setLastActivelyCleaningState(duid, true);
+			expect(roborockService.getLastActivelyCleaningState(duid)).toBe(true);
+		});
+
+		it('getLastActivelyCleaningState delegates to areaService.getLastActivelyCleaningState', () => {
+			expect(roborockService.getLastActivelyCleaningState('unknown-duid')).toBe(false);
+		});
+
+		it('getLastActivelyCleaningState returns state previously set via setLastActivelyCleaningState', () => {
+			const duid2 = 'duid-state-test';
+			roborockService.setLastActivelyCleaningState(duid2, true);
+			expect(roborockService.getLastActivelyCleaningState(duid2)).toBe(true);
+		});
+
+		it('getLastActivelyCleaningState defaults to false for unset duid', () => {
+			expect(roborockService.getLastActivelyCleaningState('new-duid-123')).toBe(false);
+		});
+
+		it('setLastActivelyCleaningState can toggle state between true and false', () => {
+			const duid2 = 'duid-toggle-test';
+			roborockService.setLastActivelyCleaningState(duid2, true);
+			expect(roborockService.getLastActivelyCleaningState(duid2)).toBe(true);
+
+			roborockService.setLastActivelyCleaningState(duid2, false);
+			expect(roborockService.getLastActivelyCleaningState(duid2)).toBe(false);
+
+			roborockService.setLastActivelyCleaningState(duid2, true);
+			expect(roborockService.getLastActivelyCleaningState(duid2)).toBe(true);
+		});
 	});
 });

@@ -25,6 +25,17 @@ const CLEANING_STATES = new Set([
 	OperationStatusCode.CleanMopMopping,
 ]);
 
+function isActivelyCleaningOperationalState(
+	operationalState: RvcOperationalState.OperationalState | undefined,
+): boolean {
+	return (
+		operationalState !== undefined &&
+		operationalState !== RvcOperationalState.OperationalState.Docked &&
+		operationalState !== RvcOperationalState.OperationalState.Stopped &&
+		operationalState !== RvcOperationalState.OperationalState.Error
+	);
+}
+
 export function buildProgressUpdate(
 	existing: ServiceArea.Progress[],
 	selectedAreas: number[],
@@ -155,6 +166,24 @@ export async function handleServiceAreaUpdate(
 	const logger = platform.log;
 	logger.debug(`Handling service area update: ${debugStringify(message)}`);
 
+	// Detect transition from not-actively-cleaning to actively-cleaning and reset progress.
+	const operationalState: RvcOperationalState.OperationalState | undefined = robot.getAttribute(
+		RvcOperationalState.id,
+		'operationalState',
+		logger,
+	);
+	const isActivelyCleaningNow = isActivelyCleaningOperationalState(operationalState);
+	const wasActivelyCleaning = platform.roborockService?.getLastActivelyCleaningState(robot.device.duid) ?? false;
+	platform.roborockService?.setLastActivelyCleaningState(robot.device.duid, isActivelyCleaningNow);
+
+	if (!wasActivelyCleaning && isActivelyCleaningNow) {
+		logger.debug(
+			`[${robot.device.duid}] Detected transition to actively cleaning (operationalState=${operationalState}), resetting progress`,
+		);
+		platform.roborockService?.setProgress(robot.device.duid, []);
+		await robot.updateAttribute(ServiceArea.id, 'progress', [], logger);
+	}
+
 	if (message.state === OperationStatusCode.Idle) {
 		logger.debug('Robot is idle, updating selectedAreas from Roborock service');
 		const selectedAreas = platform.roborockService?.getSelectedAreas(robot.device.duid) ?? [];
@@ -259,12 +288,7 @@ export async function handleActiveMapChanged(
 		'operationalState',
 		logger,
 	);
-	const isActivelyCleaning =
-		operationalState !== undefined &&
-		operationalState !== RvcOperationalState.OperationalState.Docked &&
-		operationalState !== RvcOperationalState.OperationalState.Stopped &&
-		operationalState !== RvcOperationalState.OperationalState.Error;
-	if (isActivelyCleaning) {
+	if (isActivelyCleaningOperationalState(operationalState)) {
 		logger.debug(
 			`[${robot.device.duid}] ActiveMapChanged: ignoring map change to ${mapId} while actively cleaning (operationalState=${operationalState})`,
 		);

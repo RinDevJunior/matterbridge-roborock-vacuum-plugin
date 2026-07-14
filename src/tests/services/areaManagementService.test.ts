@@ -512,6 +512,101 @@ describe('AreaManagementService', () => {
 		});
 	});
 
+	describe('Last Actively Cleaning State Management', () => {
+		it('should return false when no entry exists (default)', () => {
+			const state = areaService.getLastActivelyCleaningState('unknown-device');
+
+			expect(state).toBe(false);
+		});
+
+		it('should set and get last actively cleaning state', () => {
+			const duid = 'test-device-cleaning-state';
+
+			areaService.setLastActivelyCleaningState(duid, true);
+			const state = areaService.getLastActivelyCleaningState(duid);
+
+			expect(state).toBe(true);
+		});
+
+		it('should return true after setting to true', () => {
+			const duid = 'test-device-state-true';
+
+			areaService.setLastActivelyCleaningState(duid, true);
+
+			expect(areaService.getLastActivelyCleaningState(duid)).toBe(true);
+		});
+
+		it('should return false after setting to false', () => {
+			const duid = 'test-device-state-false';
+
+			areaService.setLastActivelyCleaningState(duid, false);
+
+			expect(areaService.getLastActivelyCleaningState(duid)).toBe(false);
+		});
+
+		it('should update existing state', () => {
+			const duid = 'test-device-state-update';
+
+			areaService.setLastActivelyCleaningState(duid, true);
+			expect(areaService.getLastActivelyCleaningState(duid)).toBe(true);
+
+			areaService.setLastActivelyCleaningState(duid, false);
+			expect(areaService.getLastActivelyCleaningState(duid)).toBe(false);
+
+			areaService.setLastActivelyCleaningState(duid, true);
+			expect(areaService.getLastActivelyCleaningState(duid)).toBe(true);
+		});
+
+		it('should support multiple devices independently', () => {
+			const device1 = 'device-state-1';
+			const device2 = 'device-state-2';
+
+			areaService.setLastActivelyCleaningState(device1, true);
+			areaService.setLastActivelyCleaningState(device2, false);
+
+			expect(areaService.getLastActivelyCleaningState(device1)).toBe(true);
+			expect(areaService.getLastActivelyCleaningState(device2)).toBe(false);
+		});
+
+		it('should clear state in clearAll', () => {
+			const duid = 'test-device-state-clear';
+
+			areaService.setLastActivelyCleaningState(duid, true);
+			expect(areaService.getLastActivelyCleaningState(duid)).toBe(true);
+
+			areaService.clearAll();
+
+			expect(areaService.getLastActivelyCleaningState(duid)).toBe(false);
+		});
+
+		it('should clear state for multiple devices', () => {
+			const device1 = 'device-clear-1';
+			const device2 = 'device-clear-2';
+
+			areaService.setLastActivelyCleaningState(device1, true);
+			areaService.setLastActivelyCleaningState(device2, true);
+
+			expect(areaService.getLastActivelyCleaningState(device1)).toBe(true);
+			expect(areaService.getLastActivelyCleaningState(device2)).toBe(true);
+
+			areaService.clearAll();
+
+			expect(areaService.getLastActivelyCleaningState(device1)).toBe(false);
+			expect(areaService.getLastActivelyCleaningState(device2)).toBe(false);
+		});
+
+		it('should log debug message when setting state', () => {
+			const duid = 'test-device-state-log';
+
+			areaService.setLastActivelyCleaningState(duid, true);
+
+			expect(mockLogger.debug).toHaveBeenCalledWith('AreaManagementService - setLastActivelyCleaningState', {
+				duid,
+				isActivelyCleaning: true,
+			});
+		});
+	});
+
 	describe('registerAreasListener', () => {
 		it('registers callback per duid', () => {
 			const cb = vi.fn();

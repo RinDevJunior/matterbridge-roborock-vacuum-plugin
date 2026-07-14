@@ -191,6 +191,16 @@ export class RoborockService {
 		return this.areaService.getProgress(duid);
 	}
 
+	/** Set the stored "was actively cleaning" state for a device. */
+	public setLastActivelyCleaningState(duid: string, isActivelyCleaning: boolean): void {
+		this.areaService.setLastActivelyCleaningState(duid, isActivelyCleaning);
+	}
+
+	/** Get the stored "was actively cleaning" state for a device. */
+	public getLastActivelyCleaningState(duid: string): boolean {
+		return this.areaService.getLastActivelyCleaningState(duid);
+	}
+
 	/** Register a callback invoked whenever supported areas are updated for a device. */
 	public registerAreasListener(
 		duid: string,
