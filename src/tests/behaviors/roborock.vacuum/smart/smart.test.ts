@@ -39,6 +39,7 @@ describe('setCommandHandlerSmart', () => {
 			resumeClean: vi.fn(),
 			stopAndGoHome: vi.fn(),
 			playSoundToLocate: vi.fn(),
+			setProgress: vi.fn(),
 		});
 
 		cleanModeSettings = {
@@ -68,6 +69,7 @@ describe('setCommandHandlerSmart', () => {
 		);
 		await handler.executeCommand('changeToMode', 2); // 2 = Cleaning
 		expect(roborockService.startClean).toHaveBeenCalledWith(duid);
+		expect(roborockService.setProgress).toHaveBeenCalledWith(duid, []);
 	});
 
 	it('should call changeCleanMode for Smart Plan', async () => {

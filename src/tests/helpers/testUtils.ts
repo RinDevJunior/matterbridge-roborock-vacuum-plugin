@@ -208,6 +208,8 @@ export function createMockRoborockService(overrides: Partial<RoborockService> = 
 		getSelectedAreas: vi.fn().mockReturnValue([]),
 		getProgress: vi.fn().mockReturnValue([]),
 		setProgress: vi.fn(),
+		getLastActivelyCleaningState: vi.fn().mockReturnValue(false),
+		setLastActivelyCleaningState: vi.fn(),
 		getMapInfo: vi.fn().mockResolvedValue({ maps: [], allRooms: [] }),
 		getRoomMap: vi.fn().mockResolvedValue(undefined),
 		setDeviceRooms: vi.fn(),

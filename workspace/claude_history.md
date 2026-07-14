@@ -1,5 +1,21 @@
 # Claude History
 
+## 2026-07-14 — Reset ServiceArea.progress on clean start (third trigger)
+
+**Task:** Add third trigger for resetting `ServiceArea.progress` per-room state when vacuum starts new clean; detect genuine Docked/Stopped/Error → actively-cleaning operationalState transitions using `lastActivelyCleaningState` flag to avoid false positives on mid-clean detours.
+
+**Changes:**
+
+- `src/runtimes/handlers/serviceAreaHandler.ts` — added third trigger in handleServiceAreaUpdate to call resetProgress on active-clean entry
+- `src/services/areaManagementService.ts` — added per-device `lastActivelyCleaningState` flag and `setLastActivelyCleaningState(state)` method
+- `src/services/roborockService.ts` — added passthrough proxy `setLastActivelyCleaningState(state)`
+- `src/tests/runtimes/handlers/serviceAreaHandler.test.ts` — tests for clean-start progress reset trigger
+- `src/tests/services/areaManagementService.test.ts` — tests for `lastActivelyCleaningState` flag lifecycle
+- `src/tests/services/roborockService/roborockService.areamanagement.test.ts` — tests for passthrough proxy method
+- `src/tests/helpers/testUtils.ts` — helper updates for test fixtures
+
+**Outcome:** Pass (reviewed and approved; all verification gates pass: format:ci, lint:fix:ci, type-check:ci, test:ci).
+
 ## 2026-07-14 — Vacuum error → RVC operationalError mapping (ideas 2–6)
 
 **Task:** Vacuum `error_code` → Matter RVC `operationalError` enhancements: unknown-code fallback, enum 33, semantic refinements for 8 codes, and table-driven Map refactor in `VacuumStatus.ts`.
