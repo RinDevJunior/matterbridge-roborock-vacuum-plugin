@@ -1,0 +1,34 @@
+{
+	"mcpServers": {
+		"codegraph": {
+			"type": "stdio",
+			"command": "codegraph",
+			"args": ["serve", "--mcp"]
+		},
+		"glob-grep": {
+			"type": "stdio",
+			"command": "node",
+			"args": [".claude/tools/glob-grep-server.cjs"]
+		},
+		"cli-runner": {
+			"type": "stdio",
+			"command": "node",
+			"args": [".claude/tools/cli-runner-server.cjs"]
+		},
+		"read-log": {
+			"type": "stdio",
+			"command": "node",
+			"args": [".claude/tools/read-log-server.cjs"]
+		},
+		"discord-send": {
+			"type": "stdio",
+			"command": "node",
+			"args": [".claude/tools/discord-send-server.cjs"]
+		},
+		"github-release": {
+			"type": "stdio",
+			"command": "node",
+			"args": [".claude/tools/github-release-server.cjs"]
+		}
+	}
+}

@@ -64,14 +64,12 @@ describe('RoborockService - Comprehensive Coverage', () => {
 			getRoomMap: vi.fn(),
 			getScenes: vi.fn(),
 			startScene: vi.fn(),
-			setMessageClient: vi.fn(),
 			setIotApi: vi.fn(),
 			clearAll: vi.fn(),
 		};
 
 		mockMessageService = {
 			getCleanModeData: vi.fn(),
-			getRoomIdFromMap: vi.fn(),
 			changeCleanMode: vi.fn(),
 			startClean: vi.fn().mockResolvedValue(undefined),
 			pauseClean: vi.fn(),
@@ -79,8 +77,6 @@ describe('RoborockService - Comprehensive Coverage', () => {
 			resumeClean: vi.fn(),
 			stopClean: vi.fn().mockResolvedValue(undefined),
 			playSoundToLocate: vi.fn(),
-			customGet: vi.fn(),
-			customSend: vi.fn(),
 			setIotApi: vi.fn(),
 			getMapInfo: vi.fn(),
 			clearAll: vi.fn(),
@@ -293,23 +289,6 @@ describe('RoborockService - Comprehensive Coverage', () => {
 			expect(result.shouldContinue).toBe(false);
 			expect(result.userData).toBeUndefined();
 			expect(mockLogger.info).toHaveBeenCalledWith('Authentication incomplete. Further action required (e.g., 2FA).');
-		});
-	});
-
-	describe('getCustomAPI', () => {
-		it('should throw error when iotApi is not initialized', async () => {
-			vi.mocked(mockContainer.getIotApi)?.mockReturnValue(undefined);
-			await expect(service.getCustomAPI('/test')).rejects.toThrow('IoT API not initialized. Please login first.');
-		});
-
-		it('should call iotApi.getCustom when iotApi is initialized', async () => {
-			const mockIotApi = { getCustom: vi.fn().mockResolvedValue({ data: 'test' }) };
-			vi.mocked(mockContainer.getIotApi)?.mockReturnValue(asPartial<RoborockIoTApi>(mockIotApi));
-
-			const result = await service.getCustomAPI('/test');
-
-			expect(result).toEqual({ data: 'test' });
-			expect(mockIotApi.getCustom).toHaveBeenCalledWith('/test');
 		});
 	});
 

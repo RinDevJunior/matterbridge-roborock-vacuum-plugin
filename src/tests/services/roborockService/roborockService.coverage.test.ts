@@ -5,11 +5,9 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { CleanModeSetting } from '../../../behaviors/roborock.vacuum/core/CleanModeSetting.js';
 import { CleanSequenceType } from '../../../behaviors/roborock.vacuum/enums/CleanSequenceType.js';
-import { MapInfo, RoomIndexMap } from '../../../core/application/models/index.js';
+import { RoomIndexMap } from '../../../core/application/models/index.js';
 import type { PlatformConfigManager } from '../../../platform/platformConfigManager.js';
-import { RoborockIoTApi } from '../../../roborockCommunication/api/iotClient.js';
-import { Device, Home, RawRoomMappingData, Scene, UserData } from '../../../roborockCommunication/models/index.js';
-import { RequestMessage } from '../../../roborockCommunication/models/index.js';
+import { Device, Home, Scene, UserData } from '../../../roborockCommunication/models/index.js';
 import { AreaManagementService } from '../../../services/areaManagementService.js';
 import { AuthenticationCoordinator } from '../../../services/authentication/AuthenticationCoordinator.js';
 import { ConnectionService } from '../../../services/connectionService.js';
@@ -68,7 +66,6 @@ describe('RoborockService - Complete Coverage', () => {
 
 		mockMessageService = asPartial<MessageRoutingService>({
 			getCleanModeData: vi.fn(),
-			getRoomIdFromMap: vi.fn(),
 			changeCleanMode: vi.fn(),
 			startClean: vi.fn(),
 			pauseClean: vi.fn(),
@@ -76,8 +73,6 @@ describe('RoborockService - Complete Coverage', () => {
 			resumeClean: vi.fn(),
 			stopClean: vi.fn(),
 			playSoundToLocate: vi.fn(),
-			customGet: vi.fn(),
-			customSend: vi.fn(),
 			getSerialNumber: vi.fn().mockResolvedValue('SN-1234'),
 		});
 
@@ -321,22 +316,18 @@ describe('RoborockService - Complete Coverage', () => {
 		});
 
 		it('should delegate getMapInfo to areaService', async () => {
-			const mapInfo = MapInfo.empty();
-			vi.mocked(mockAreaService.getMapInfo).mockResolvedValue(mapInfo);
+			vi.mocked(mockAreaService.getMapInfo).mockResolvedValue(undefined);
 
-			const result = await service.getMapInfo('duid');
+			await service.getMapInfo('duid');
 
-			expect(result).toEqual(mapInfo);
 			expect(mockAreaService.getMapInfo).toHaveBeenCalledWith('duid');
 		});
 
 		it('should delegate getRoomMap to areaService', async () => {
-			const roomMap = asPartial<RawRoomMappingData>([]);
-			vi.mocked(mockAreaService.getRoomMap).mockResolvedValue(roomMap);
+			vi.mocked(mockAreaService.getRoomMap).mockResolvedValue(undefined);
 
-			const result = await service.getRoomMap('duid', 1);
+			await service.getRoomMap('duid', 1);
 
-			expect(result).toEqual(roomMap);
 			expect(mockAreaService.getRoomMap).toHaveBeenCalledWith('duid', 1);
 		});
 
@@ -377,23 +368,6 @@ describe('RoborockService - Complete Coverage', () => {
 
 			expect(result).toEqual(cleanMode);
 			expect(mockMessageService.getCleanModeData).toHaveBeenCalledWith('duid');
-		});
-
-		it('should delegate getRoomIdFromMap to messageService', async () => {
-			vi.mocked(mockMessageService.getRoomIdFromMap).mockResolvedValue(5);
-
-			const result = await service.getRoomIdFromMap('duid');
-
-			expect(result).toBe(5);
-			expect(mockMessageService.getRoomIdFromMap).toHaveBeenCalledWith('duid');
-		});
-
-		it('should return undefined when getRoomIdFromMap has no data', async () => {
-			vi.mocked(mockMessageService.getRoomIdFromMap).mockResolvedValue(undefined);
-
-			const result = await service.getRoomIdFromMap('duid');
-
-			expect(result).toBeUndefined();
 		});
 
 		it('should delegate changeCleanMode to messageService', async () => {
@@ -442,37 +416,6 @@ describe('RoborockService - Complete Coverage', () => {
 			await service.playSoundToLocate('duid');
 
 			expect(mockMessageService.playSoundToLocate).toHaveBeenCalledWith('duid');
-		});
-
-		it('should delegate customGet to messageService', async () => {
-			const request = { method: 'get_status' } as RequestMessage;
-			const response = { state: 8 };
-			vi.mocked(mockMessageService.customGet).mockResolvedValue(response);
-
-			const result = await service.customGet('duid', request);
-
-			expect(result).toEqual(response);
-			expect(mockMessageService.customGet).toHaveBeenCalledWith('duid', request);
-		});
-
-		it('should delegate customSend to messageService', async () => {
-			const request = { method: 'app_start' } as RequestMessage;
-
-			await service.customSend('duid', request);
-
-			expect(mockMessageService.customSend).toHaveBeenCalledWith('duid', request);
-		});
-	});
-
-	describe('Custom API', () => {
-		it('should call iotApi.getCustom when initialized', async () => {
-			const mockIotApi = { getCustom: vi.fn().mockResolvedValue({ result: 'success' }) };
-			vi.mocked(mockContainer.getIotApi).mockReturnValue(asPartial<RoborockIoTApi>(mockIotApi));
-
-			const result = await service.getCustomAPI<{ result: string }>('/custom/endpoint');
-
-			expect(result).toEqual({ result: 'success' });
-			expect(mockIotApi.getCustom).toHaveBeenCalledWith('/custom/endpoint');
 		});
 	});
 

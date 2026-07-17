@@ -53,7 +53,6 @@ function calculateProtocol(protocol: ProtocolVersion | string, model: DeviceMode
 			} else if (shortModelCode.startsWith('sc')) {
 				return NewProtocolVersion.B01_Q7;
 			} else {
-				// throw new Error('Unsupported robot model: ' + model + ', for B01 protocol');
 				throw new Error(`Unsupported robot model: ${model}, protocol: ${protocol}, for B01 protocol`);
 			}
 		}

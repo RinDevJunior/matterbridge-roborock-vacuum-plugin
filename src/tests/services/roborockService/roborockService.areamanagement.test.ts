@@ -37,6 +37,7 @@ describe('RoborockService - Area Management', () => {
 				enableAdvancedFeature: false,
 				settings: {
 					clearStorageOnStartup: false,
+					enableLiveMapUpdates: false,
 					showRoutinesAsRoom: false,
 					includeDockStationStatus: false,
 					includeVacuumErrorStatus: false,
@@ -103,5 +104,93 @@ describe('RoborockService - Area Management', () => {
 	it('should filter out invalid areas', () => {
 		roborockService.setSelectedAreas('duid-123', [7, 8]);
 		expect(roborockService.getSelectedAreas('duid-123')).toEqual([7, 8]);
+	});
+
+	describe('new delegation methods', () => {
+		const duid = 'duid-delegate';
+
+		it('registerAreasListener delegates to areaService.registerAreasListener', () => {
+			const cb = vi.fn();
+			roborockService.registerAreasListener(duid, cb);
+			// Verify by triggering a setSupportedAreas that invokes the callback
+			roborockService.setSupportedAreas(duid, []);
+			expect(cb).toHaveBeenCalledWith([], []);
+		});
+
+		it('setSupportedMaps delegates to areaService.setSupportedMaps', () => {
+			const maps = [{ mapId: 1, name: 'Map 1' }];
+			roborockService.setSupportedMaps(duid, maps);
+			expect(roborockService.getSupportedMaps(duid)).toEqual(maps);
+		});
+
+		it('getSupportedMaps delegates to areaService.getSupportedMaps', () => {
+			expect(roborockService.getSupportedMaps('unknown-duid')).toEqual([]);
+		});
+
+		it('startPeriodicAreaRefresh delegates to areaService.startPeriodicRefresh', () => {
+			// Just verifies it does not throw
+			expect(() => roborockService.startPeriodicAreaRefresh(duid, 99999999)).not.toThrow();
+		});
+
+		it('getSupportedRoutines delegates to areaService.getSupportedRoutines', () => {
+			expect(roborockService.getSupportedRoutines('unknown-duid')).toBeUndefined();
+		});
+
+		it('setDeviceRooms delegates to areaService.setDeviceRooms', () => {
+			expect(() => roborockService.setDeviceRooms(duid, [])).not.toThrow();
+		});
+
+		it('switchMap delegates to messageRoutingService.switchMap', async () => {
+			// switchMap requires a registered dispatcher; should throw DeviceError when none
+			await expect(roborockService.switchMap(duid, 1)).rejects.toThrow();
+		});
+
+		it('setProgress delegates to areaService.setProgress', () => {
+			const progress = [{ areaId: 1, status: 0 }];
+			roborockService.setProgress(duid, progress as any);
+			expect(roborockService.getProgress(duid)).toEqual(progress);
+		});
+
+		it('getProgress delegates to areaService.getProgress', () => {
+			expect(roborockService.getProgress('unknown-duid')).toEqual([]);
+		});
+
+		it('getProgress returns progress array previously set via setProgress', () => {
+			const duid2 = 'duid-progress-test';
+			const progress = [{ areaId: 5, status: 1 }];
+			roborockService.setProgress(duid2, progress as any);
+			expect(roborockService.getProgress(duid2)).toEqual(progress);
+		});
+
+		it('setLastActivelyCleaningState delegates to areaService.setLastActivelyCleaningState', () => {
+			roborockService.setLastActivelyCleaningState(duid, true);
+			expect(roborockService.getLastActivelyCleaningState(duid)).toBe(true);
+		});
+
+		it('getLastActivelyCleaningState delegates to areaService.getLastActivelyCleaningState', () => {
+			expect(roborockService.getLastActivelyCleaningState('unknown-duid')).toBe(false);
+		});
+
+		it('getLastActivelyCleaningState returns state previously set via setLastActivelyCleaningState', () => {
+			const duid2 = 'duid-state-test';
+			roborockService.setLastActivelyCleaningState(duid2, true);
+			expect(roborockService.getLastActivelyCleaningState(duid2)).toBe(true);
+		});
+
+		it('getLastActivelyCleaningState defaults to false for unset duid', () => {
+			expect(roborockService.getLastActivelyCleaningState('new-duid-123')).toBe(false);
+		});
+
+		it('setLastActivelyCleaningState can toggle state between true and false', () => {
+			const duid2 = 'duid-toggle-test';
+			roborockService.setLastActivelyCleaningState(duid2, true);
+			expect(roborockService.getLastActivelyCleaningState(duid2)).toBe(true);
+
+			roborockService.setLastActivelyCleaningState(duid2, false);
+			expect(roborockService.getLastActivelyCleaningState(duid2)).toBe(false);
+
+			roborockService.setLastActivelyCleaningState(duid2, true);
+			expect(roborockService.getLastActivelyCleaningState(duid2)).toBe(true);
+		});
 	});
 });

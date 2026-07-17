@@ -6,4 +6,5 @@ export enum NotifyMessageTypes {
 	ErrorOccurred = 'ErrorOccurred',
 	CleanModeUpdate = 'CleanModeUpdate',
 	ServiceAreaUpdate = 'ServiceAreaUpdate',
+	ActiveMapChanged = 'ActiveMapChanged',
 }

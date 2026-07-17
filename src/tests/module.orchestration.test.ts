@@ -32,6 +32,7 @@ function createMockConfig(overrides: Partial<RoborockPluginPlatformConfig> = {})
 			enableAdvancedFeature: false,
 			settings: {
 				clearStorageOnStartup: false,
+				enableLiveMapUpdates: false,
 				showRoutinesAsRoom: false,
 				includeDockStationStatus: false,
 				includeVacuumErrorStatus: false,
@@ -219,7 +220,11 @@ describe('RoborockMatterbridgePlatform - orchestration', () => {
 	describe('onConfigure', () => {
 		it('should set up polling interval when startup is completed', async () => {
 			platform.state.setStartupCompleted(true);
-			platform.platformRunner = asPartial<PlatformRunner>({ requestHomeData: vi.fn().mockResolvedValue(undefined) });
+			platform.platformRunner = asPartial<PlatformRunner>({
+				requestHomeData: vi.fn().mockResolvedValue(undefined),
+				startWatchdog: vi.fn(),
+				stopWatchdog: vi.fn(),
+			});
 
 			await platform.onConfigure();
 
@@ -232,7 +237,11 @@ describe('RoborockMatterbridgePlatform - orchestration', () => {
 
 		it('should not set up interval when startup is not completed', async () => {
 			platform.state.setStartupCompleted(false);
-			platform.platformRunner = asPartial<PlatformRunner>({ requestHomeData: vi.fn().mockResolvedValue(undefined) });
+			platform.platformRunner = asPartial<PlatformRunner>({
+				requestHomeData: vi.fn().mockResolvedValue(undefined),
+				startWatchdog: vi.fn(),
+				stopWatchdog: vi.fn(),
+			});
 
 			await platform.onConfigure();
 
@@ -247,6 +256,8 @@ describe('RoborockMatterbridgePlatform - orchestration', () => {
 			platform.state.setStartupCompleted(true);
 			platform.platformRunner = asPartial<PlatformRunner>({
 				requestHomeData: vi.fn().mockRejectedValue(new Error('Network error')),
+				startWatchdog: vi.fn(),
+				stopWatchdog: vi.fn(),
 			});
 
 			await platform.onConfigure();
@@ -260,6 +271,8 @@ describe('RoborockMatterbridgePlatform - orchestration', () => {
 			platform.state.setStartupCompleted(true);
 			platform.platformRunner = asPartial<PlatformRunner>({
 				requestHomeData: vi.fn().mockRejectedValue('string error'),
+				startWatchdog: vi.fn(),
+				stopWatchdog: vi.fn(),
 			});
 
 			await platform.onConfigure();
@@ -326,6 +339,8 @@ describe('RoborockMatterbridgePlatform - orchestration', () => {
 			platform.state.setStartupCompleted(true);
 			platform.platformRunner = asPartial<PlatformRunner>({
 				requestHomeData: vi.fn().mockResolvedValue(undefined),
+				startWatchdog: vi.fn(),
+				stopWatchdog: vi.fn(),
 				burstPolling: asPartial<BurstPollingManager>({ stopAllBurstPolling: vi.fn() }),
 			});
 
@@ -399,6 +414,8 @@ describe('RoborockMatterbridgePlatform - orchestration', () => {
 		it('should call stopAllBurstPolling on shutdown when platformRunner is set', async () => {
 			platform.platformRunner = asPartial<PlatformRunner>({
 				requestHomeData: vi.fn().mockResolvedValue(undefined),
+				startWatchdog: vi.fn(),
+				stopWatchdog: vi.fn(),
 				burstPolling: asPartial<BurstPollingManager>({ stopAllBurstPolling: vi.fn() }),
 			});
 
@@ -411,7 +428,11 @@ describe('RoborockMatterbridgePlatform - orchestration', () => {
 	describe('onConfigure - email notification', () => {
 		it('should send test email notification when enabled and roborockService is available', async () => {
 			platform.state.setStartupCompleted(true);
-			platform.platformRunner = asPartial<PlatformRunner>({ requestHomeData: vi.fn().mockResolvedValue(undefined) });
+			platform.platformRunner = asPartial<PlatformRunner>({
+				requestHomeData: vi.fn().mockResolvedValue(undefined),
+				startWatchdog: vi.fn(),
+				stopWatchdog: vi.fn(),
+			});
 
 			const mockSendTestEmail = vi.fn().mockResolvedValue(undefined);
 			platform.discovery.roborockService = asPartial<RoborockService>({
@@ -430,7 +451,11 @@ describe('RoborockMatterbridgePlatform - orchestration', () => {
 
 		it('should not send test email when email notification is disabled', async () => {
 			platform.state.setStartupCompleted(true);
-			platform.platformRunner = asPartial<PlatformRunner>({ requestHomeData: vi.fn().mockResolvedValue(undefined) });
+			platform.platformRunner = asPartial<PlatformRunner>({
+				requestHomeData: vi.fn().mockResolvedValue(undefined),
+				startWatchdog: vi.fn(),
+				stopWatchdog: vi.fn(),
+			});
 
 			const mockSendTestEmail = vi.fn().mockResolvedValue(undefined);
 			platform.discovery.roborockService = asPartial<RoborockService>({
@@ -449,7 +474,11 @@ describe('RoborockMatterbridgePlatform - orchestration', () => {
 
 		it('should not send test email when roborockService is undefined', async () => {
 			platform.state.setStartupCompleted(true);
-			platform.platformRunner = asPartial<PlatformRunner>({ requestHomeData: vi.fn().mockResolvedValue(undefined) });
+			platform.platformRunner = asPartial<PlatformRunner>({
+				requestHomeData: vi.fn().mockResolvedValue(undefined),
+				startWatchdog: vi.fn(),
+				stopWatchdog: vi.fn(),
+			});
 			platform.discovery.roborockService = undefined;
 
 			Object.defineProperty(platform.configManager, 'isEmailNotificationEnabled', {

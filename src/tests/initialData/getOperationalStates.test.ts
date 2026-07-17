@@ -64,6 +64,7 @@ describe('getOperationalStates', () => {
 			VacuumErrorCode.ClearBrushPositioningError,
 			VacuumErrorCode.MoppingRollerJammed,
 			VacuumErrorCode.MoppingRollerJammed2,
+			VacuumErrorCode.MoppingRollerNotLowered,
 		];
 		for (const code of brushErrors) {
 			const vacuumStatus = new VacuumStatus(code);
@@ -71,21 +72,22 @@ describe('getOperationalStates', () => {
 		}
 	});
 
-	it('getErrorFromErrorCode returns DustBinMissing for dustbin errors', () => {
-		const dustbinErrors = [
-			VacuumErrorCode.NoDustbin,
-			VacuumErrorCode.StrainerError,
-			VacuumErrorCode.CleanAutoEmptyDock,
-		];
-		for (const code of dustbinErrors) {
-			const vacuumStatus = new VacuumStatus(code);
-			expect(vacuumStatus.getErrorState()).toBe(RvcOperationalState.ErrorState.DustBinMissing);
-		}
+	it('getErrorFromErrorCode returns DustBinMissing for missing dustbin', () => {
+		const vacuumStatus = new VacuumStatus(VacuumErrorCode.NoDustbin);
+		expect(vacuumStatus.getErrorState()).toBe(RvcOperationalState.ErrorState.DustBinMissing);
 	});
 
-	it('getErrorFromErrorCode returns DustBinFull for clogged filter', () => {
-		const vacuumStatus = new VacuumStatus(VacuumErrorCode.FilterBlocked);
-		expect(vacuumStatus.getErrorState()).toBe(RvcOperationalState.ErrorState.DustBinFull);
+	it('getErrorFromErrorCode returns DustBinFull for dustbin full errors', () => {
+		const dustBinFullErrors = [
+			VacuumErrorCode.StrainerError,
+			VacuumErrorCode.CleanAutoEmptyDock,
+			VacuumErrorCode.AutoEmptyDockFanError,
+			VacuumErrorCode.FilterBlocked,
+		];
+		for (const code of dustBinFullErrors) {
+			const vacuumStatus = new VacuumStatus(code);
+			expect(vacuumStatus.getErrorState()).toBe(RvcOperationalState.ErrorState.DustBinFull);
+		}
 	});
 
 	it('getErrorFromErrorCode returns LowBattery only for low battery', () => {
@@ -131,8 +133,6 @@ describe('getOperationalStates', () => {
 			VacuumErrorCode.BatteryError,
 			VacuumErrorCode.AutoEmptyDockVoltage,
 			VacuumErrorCode.AudioError,
-			VacuumErrorCode.MoppingRollerNotLowered,
-			VacuumErrorCode.SinkStrainerHoare,
 			VacuumErrorCode.CheckCleanCarouse,
 		];
 		for (const code of systemErrors) {
@@ -150,9 +150,8 @@ describe('getOperationalStates', () => {
 		const waterTankErrors = [
 			VacuumErrorCode.ClearWaterBoxHoare,
 			VacuumErrorCode.ClearBrushInstalledProperly,
-			VacuumErrorCode.FilterScreenException,
 			VacuumErrorCode.UpWaterException,
-			VacuumErrorCode.WaterCarriageDrop,
+			VacuumErrorCode.SinkStrainerHoare,
 		];
 		for (const code of waterTankErrors) {
 			const vacuumStatus = new VacuumStatus(code);
@@ -160,21 +159,32 @@ describe('getOperationalStates', () => {
 		}
 	});
 
-	it('getErrorFromErrorCode returns DirtyWaterTankFull for dirty water errors', () => {
-		const dirtyWaterErrors = [
-			VacuumErrorCode.DirtyWaterBoxHoare,
-			VacuumErrorCode.DrainWaterException,
-			VacuumErrorCode.CleanCarouselWaterFull,
-		];
-		for (const code of dirtyWaterErrors) {
+	it('getErrorFromErrorCode returns WaterTankLidOpen for filter screen exception', () => {
+		const vacuumStatus = new VacuumStatus(VacuumErrorCode.FilterScreenException);
+		expect(vacuumStatus.getErrorState()).toBe(RvcOperationalState.ErrorState.WaterTankLidOpen);
+	});
+
+	it('getErrorFromErrorCode returns MopCleaningPadMissing for water carriage drop', () => {
+		const vacuumStatus = new VacuumStatus(VacuumErrorCode.WaterCarriageDrop);
+		expect(vacuumStatus.getErrorState()).toBe(RvcOperationalState.ErrorState.MopCleaningPadMissing);
+	});
+
+	it('getErrorFromErrorCode returns DirtyWaterTankMissing for missing dirty water box', () => {
+		const vacuumStatus = new VacuumStatus(VacuumErrorCode.DirtyWaterBoxHoare);
+		expect(vacuumStatus.getErrorState()).toBe(RvcOperationalState.ErrorState.DirtyWaterTankMissing);
+	});
+
+	it('getErrorFromErrorCode returns DirtyWaterTankFull for dirty water full errors', () => {
+		const dirtyWaterFullErrors = [VacuumErrorCode.DrainWaterException, VacuumErrorCode.CleanCarouselWaterFull];
+		for (const code of dirtyWaterFullErrors) {
 			const vacuumStatus = new VacuumStatus(code);
 			expect(vacuumStatus.getErrorState()).toBe(RvcOperationalState.ErrorState.DirtyWaterTankFull);
 		}
 	});
 
-	it('getErrorFromErrorCode returns NoError for unknown error codes', () => {
+	it('getErrorFromErrorCode returns UnableToCompleteOperation for unknown error codes', () => {
 		const vacuumStatus = new VacuumStatus(999 as VacuumErrorCode);
-		expect(vacuumStatus.getErrorState()).toBe(RvcOperationalState.ErrorState.NoError);
+		expect(vacuumStatus.getErrorState()).toBe(RvcOperationalState.ErrorState.UnableToCompleteOperation);
 	});
 
 	it('getErrorFromDSS handles undefined status', () => {

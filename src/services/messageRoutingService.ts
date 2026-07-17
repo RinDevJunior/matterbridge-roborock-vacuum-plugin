@@ -37,8 +37,31 @@ export class MessageRoutingService {
 		return this.getMessageDispatcher(duid).getMapInfo(duid);
 	}
 
+	public getMapInfoV2(duid: string): Promise<void> {
+		return this.getMessageDispatcher(duid).getMapInfoV2(duid);
+	}
+
+	public switchMap(duid: string, mapId: number): Promise<void> {
+		this.logger.notice(`[MessageRoutingService] switchMap duid=${duid} mapId=${mapId}`);
+		return this.getMessageDispatcher(duid).switchMap(duid, mapId);
+	}
+
 	public getRoomMap(duid: string, activeMap: number): Promise<RawRoomMappingData> {
 		return this.getMessageDispatcher(duid).getRoomMap(duid, activeMap);
+	}
+
+	public getRoomMapV2(duid: string, activeMap: number): Promise<void> {
+		return this.getMessageDispatcher(duid).getRoomMapV2(duid, activeMap);
+	}
+
+	/** Get vacuum's current room from map. */
+	public async getRoomIdFromMap(duid: string): Promise<number | undefined> {
+		const data = await this.getMessageDispatcher(duid).getHomeMap(duid);
+		return data?.vacuumRoom;
+	}
+
+	public async requestHomeMapPush(duid: string): Promise<void> {
+		await this.getMessageDispatcher(duid).getHomeMap(duid);
 	}
 
 	public async getSerialNumber(duid: string): Promise<string> {
@@ -54,12 +77,6 @@ export class MessageRoutingService {
 			throw new DeviceError('Failed to retrieve clean mode data', duid);
 		}
 		return data;
-	}
-
-	/** Get vacuum's current room from map. */
-	public async getRoomIdFromMap(duid: string): Promise<number | undefined> {
-		const data = await this.getMessageDispatcher(duid).getHomeMap(duid);
-		return data?.vacuumRoom;
 	}
 
 	/** Change cleaning mode settings. */
@@ -103,6 +120,11 @@ export class MessageRoutingService {
 	public async resumeClean(duid: string): Promise<void> {
 		this.logger.debug('MessageRoutingService - resumeClean');
 		await this.getMessageDispatcher(duid).resumeCleaning(duid);
+	}
+
+	public async skipRoomCleaning(duid: string): Promise<void> {
+		this.logger.debug('MessageRoutingService - skipRoomCleaning');
+		await this.getMessageDispatcher(duid).skipRoomCleaning(duid);
 	}
 
 	public async stopClean(duid: string): Promise<void> {

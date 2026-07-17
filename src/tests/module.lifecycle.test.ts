@@ -4,8 +4,8 @@ import type { LocalStorage } from 'node-persist';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { RoborockPluginPlatformConfig } from '../model/RoborockPluginPlatformConfig.js';
-import { RoborockMatterbridgePlatform } from '../module.js';
 import initializePlugin from '../module.js';
+import { RoborockMatterbridgePlatform } from '../module.js';
 import type { PlatformRunner } from '../platformRunner.js';
 import { DeviceModel } from '../roborockCommunication/models/deviceModel.js';
 import type { Device, DeviceSpecs } from '../roborockCommunication/models/index.js';
@@ -52,6 +52,7 @@ function createMockConfig(overrides: Partial<RoborockPluginPlatformConfig> = {})
 			enableAdvancedFeature: false,
 			settings: {
 				clearStorageOnStartup: false,
+				enableLiveMapUpdates: false,
 				showRoutinesAsRoom: false,
 				includeDockStationStatus: false,
 				includeVacuumErrorStatus: false,
@@ -240,6 +241,10 @@ describe('module.ts coverage tests', () => {
 				setSupportedAreas: vi.fn(),
 				setSupportedAreaIndexMap: vi.fn(),
 				activateDeviceNotify: vi.fn(),
+				registerAreasListener: vi.fn(),
+				startPeriodicAreaRefresh: vi.fn(),
+				setDeviceRooms: vi.fn(),
+				resolveInitialAreas: vi.fn().mockResolvedValue({ supportedAreas: [], supportedMaps: [] }),
 			});
 			platform.registry.registerDevice(mockDevice as Device);
 
@@ -396,6 +401,7 @@ describe('module.ts coverage tests', () => {
 					enableAdvancedFeature: true,
 					settings: {
 						clearStorageOnStartup: false,
+						enableLiveMapUpdates: false,
 						enableCleanModeMapping: true,
 						cleanModeSettings: {
 							vacuuming: { fanMode: 'Silent', mopRouteMode: 'Standard' },

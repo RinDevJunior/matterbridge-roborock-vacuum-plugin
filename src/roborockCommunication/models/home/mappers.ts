@@ -25,6 +25,36 @@ export const HomeModelMapper = {
 		} satisfies MapRoomDto;
 	},
 
+	rawRoomDataToRoomMappings(
+		rawData: RawRoomMappingData,
+		mapId: number,
+		mapInfo: MapInfo,
+		rooms: RoomDto[],
+	): RoomMapping[] {
+		return rawData
+			.map((entry) => this.rawArrayToMapRoomDto(entry, mapId))
+			.map((dto) => this.enrichMapRoomDtoFromMapInfo(dto, mapInfo))
+			.map((dto) => this.toRoomMapping(dto, rooms));
+	},
+
+	enrichMapRoomDtoFromMapInfo(dto: MapRoomDto, mapInfo: MapInfo): MapRoomDto {
+		if (dto.iot_name) {
+			return dto;
+		}
+
+		const { allRooms } = mapInfo;
+		const cached =
+			allRooms.find((room) => room.id === dto.id && room.iot_name_id === dto.iot_name_id) ??
+			allRooms.find((room) => room.id === dto.id) ??
+			allRooms.find((room) => room.iot_name_id === dto.iot_name_id);
+
+		if (cached?.iot_name) {
+			return { ...dto, iot_name: cached.iot_name };
+		}
+
+		return dto;
+	},
+
 	toMapInfo(dto: MultipleMapDto): MapInfo {
 		return new MapInfo(dto);
 	},

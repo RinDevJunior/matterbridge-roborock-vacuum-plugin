@@ -340,6 +340,57 @@ describe('ConnectionService additional coverage', () => {
 		service = new ConnectionService(mockClientManager, mockLogger, mockMessageRoutingService as MessageRoutingService);
 	});
 
+	describe('Registration gating', () => {
+		function registeredListenerNames(): string[] {
+			return vi.mocked(mockClientRouter.registerMessageListener).mock.calls.map(([listener]) => listener.name);
+		}
+
+		it('should register V1StatusListener only when device is V1', async () => {
+			const device: Device = asPartial<Device>({
+				...mockDevice,
+				pv: ProtocolVersion.V1,
+				specs: asPartial<DeviceSpecs>({
+					protocol: ProtocolVersion.V1,
+					model: DeviceModel.S6,
+				}),
+			});
+			service.setDeviceNotify(vi.fn());
+			service.clientRouter = asPartial<ClientRouter>(mockClientRouter);
+
+			await service.initializeMessageClientForLocal(device);
+
+			const listenerNames = registeredListenerNames();
+			expect(listenerNames[0]).toBe('DeviceStatusListener');
+			expect(listenerNames).toContain('DeviceStatusListener');
+			expect(listenerNames).toContain('V1StatusListener');
+			expect(listenerNames).not.toContain('B01StatusListener');
+		});
+
+		it('should register B01StatusListener only when device is B01', async () => {
+			const device: Device = asPartial<Device>({
+				...mockDevice,
+				specs: asPartial<DeviceSpecs>({
+					protocol: ProtocolVersion.V1,
+					model: DeviceModel.S6,
+					hasRealTimeConnection: false,
+				}),
+				pv: ProtocolVersion.B01,
+				duid: 'b01-duid',
+				deviceStatus: { 101: { 81: { ipAddress: '1.2.3.4' } } },
+			});
+			service.setDeviceNotify(vi.fn());
+			service.clientRouter = asPartial<ClientRouter>(mockClientRouter);
+
+			await service.initializeMessageClientForLocal(device);
+
+			const listenerNames = registeredListenerNames();
+			expect(listenerNames[0]).toBe('DeviceStatusListener');
+			expect(listenerNames).toContain('DeviceStatusListener');
+			expect(listenerNames).toContain('B01StatusListener');
+			expect(listenerNames).not.toContain('V1StatusListener');
+		});
+	});
+
 	it('should handle B01 protocol and UDP client setup', async () => {
 		const device: Device = asPartial<Device>({
 			...mockDevice,

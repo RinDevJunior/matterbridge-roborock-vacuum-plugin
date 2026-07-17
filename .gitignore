@@ -33,4 +33,14 @@ yarn-error.log*
 npm-shrinkwrap.json
 web-for-testing/src/accountStore.ts
 test-report.junit.xml
+type-check.log
 .cli-session.json
+
+# CodeGraph local index
+.codegraph/
+
+# Ephemeral per-task workspace — permanent files allowlisted, per-task folders auto-ignored
+workspace/*
+!workspace/todo-task/
+!workspace/to_do.md
+!workspace/claude_history.md

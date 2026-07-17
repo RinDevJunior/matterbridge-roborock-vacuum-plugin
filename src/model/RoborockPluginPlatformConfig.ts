@@ -52,6 +52,8 @@ export interface AdvancedFeatureSetting {
 	matterOverrideSettings: MatterOverrideSettings;
 	enableEmailNotification: boolean;
 	emailNotificationSettings: EmailNotificationSettings;
+	enableLiveMapUpdates: boolean;
+	enableEstimatedEndTime?: boolean;
 }
 
 export interface DeviceProductNameOverride {
@@ -129,6 +131,8 @@ export function createDefaultAdvancedFeature(): AdvancedFeatureConfiguration {
 			},
 			enableEmailNotification: false,
 			emailNotificationSettings: {},
+			enableLiveMapUpdates: false,
+			enableEstimatedEndTime: false,
 		},
 	};
 }

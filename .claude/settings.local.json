@@ -2,28 +2,28 @@
 	"permissions": {
 		"allow": [
 			"Bash(npm run test:*)",
-			"Bash(npm run test:coverage:*)",
-			"Bash(npm run lint:fix:*)",
 			"Bash(npm run build:local:*)",
-			"Bash(clear:*)",
-			"Bash(npm test:*)",
-			"Bash(npx vitest:*)",
 			"Bash(npm run coverage:*)",
 			"Bash(npm run type-check:*)",
-			"Bash(tree:*)",
-			"Bash(cut:*)",
-			"Bash(grep:*)",
-			"Bash(npm install:*)",
-			"WebFetch(domain:api.codecov.io)",
-			"Bash(curl:*)",
 			"Bash(npm run precommit:*)",
 			"mcp__codecov__get_pull_request_coverage",
-			"Bash(npx tsc --noEmit)",
-			"Bash(npm run:*)",
 			"mcp__plugin_claude-mem_mcp-search__smart_search",
-			"mcp__plugin_claude-mem_mcp-search__smart_unfold"
+			"mcp__plugin_claude-mem_mcp-search__smart_unfold",
+			"Glob",
+			"Grep",
+			"mcp__codegraph__*",
+			"Bash(node scripts/clean-paths.mjs*)",
+			"Bash(codegraph *)",
+			"Bash(git log*)",
+			"Bash(git add*)",
+			"Bash(git status*)"
 		]
 	},
+	"enabledMcpjsonServers": ["codegraph", "glob-grep", "cli-runner", "read-log", "discord-send", "github-release"],
 	"outputStyle": "default",
-	"spinnerTipsEnabled": true
+	"spinnerTipsEnabled": true,
+	"statusLine": {
+		"type": "command",
+		"command": "bash .claude/statusline-command.sh"
+	}
 }

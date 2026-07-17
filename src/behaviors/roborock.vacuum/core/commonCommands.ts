@@ -16,6 +16,11 @@ export function registerCommonCommands(
 		roborockService.setSelectedAreas(duid, newAreas ?? []);
 	});
 
+	handler.setCommandHandler(CommandNames.SKIP_AREA, async (skippedArea: number) => {
+		logger.notice(`${behaviorName}-skipArea: ${skippedArea}`);
+		await roborockService.skipRoomCleaning(duid);
+	});
+
 	handler.setCommandHandler(CommandNames.PAUSE, async () => {
 		logger.notice(`${behaviorName}-Pause`);
 		await roborockService.pauseClean(duid);

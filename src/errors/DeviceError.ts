@@ -31,36 +31,6 @@ export class DeviceConnectionError extends DeviceError {
 	}
 }
 
-/** Device is offline or unreachable. */
-export class DeviceOfflineError extends DeviceError {
-	constructor(duid: string) {
-		super(`Device is offline: ${duid}`, duid, {
-			reason: 'DEVICE_OFFLINE',
-		});
-	}
-}
-
-/** Device command failed. */
-export class DeviceCommandError extends DeviceError {
-	constructor(duid: string, command: string, reason?: string) {
-		super(`Command failed for device ${duid}: ${command}. ${reason ?? ''}`, duid, {
-			reason: 'COMMAND_FAILED',
-			command,
-			commandReason: reason,
-		});
-	}
-}
-
-/** Device model not supported. */
-export class UnsupportedDeviceError extends DeviceError {
-	constructor(model: string, duid?: string) {
-		super(`Device model is not supported: ${model}`, duid, {
-			reason: 'UNSUPPORTED_MODEL',
-			model,
-		});
-	}
-}
-
 /** Device initialization failed. */
 export class DeviceInitializationError extends DeviceError {
 	constructor(duid: string, reason: string) {

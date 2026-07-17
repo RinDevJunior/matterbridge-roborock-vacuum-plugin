@@ -27,31 +27,11 @@ export class InvalidCredentialsError extends AuthenticationError {
 	}
 }
 
-/** Invalid verification code format. */
-export class InvalidVerificationCodeError extends AuthenticationError {
-	constructor(code?: string) {
-		super('Invalid verification code format. Expected 6 digits.', {
-			reason: 'INVALID_CODE_FORMAT',
-			providedCode: code,
-		});
-	}
-}
-
 /** Auth token has expired. */
 export class TokenExpiredError extends AuthenticationError {
 	constructor() {
 		super('Authentication token has expired. Please log in again.', {
 			reason: 'TOKEN_EXPIRED',
-		});
-	}
-}
-
-/** Too many auth attempts. */
-export class RateLimitExceededError extends AuthenticationError {
-	constructor(retryAfter?: number) {
-		super('Too many authentication attempts. Please try again later.', {
-			reason: 'RATE_LIMIT_EXCEEDED',
-			retryAfter,
 		});
 	}
 }

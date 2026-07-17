@@ -6,6 +6,7 @@ import { AbstractMessageListener } from '../abstractMessageListener.js';
 
 export class HelloResponseListener implements AbstractMessageListener {
 	readonly name = 'HelloResponseListener';
+	readonly requiresBody = false;
 
 	private handler?: (data: ResponseMessage) => void;
 	private timer?: NodeJS.Timeout;

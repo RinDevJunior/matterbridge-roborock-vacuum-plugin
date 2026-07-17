@@ -26,4 +26,5 @@ export interface AbstractMessageHandler {
 	onServiceAreaUpdate(message: ServiceAreaUpdateMessage): Promise<void>;
 
 	onAdditionalProps(value: number): Promise<void>;
+	onActiveMapChanged(mapId: number): Promise<void>;
 }

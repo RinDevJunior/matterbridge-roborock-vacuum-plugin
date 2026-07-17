@@ -128,6 +128,14 @@ export interface ServiceAreaUpdatePayload {
  * }
  * ```
  */
+export interface ActiveMapChangedPayload {
+	type: NotifyMessageTypes.ActiveMapChanged;
+	data: {
+		duid: string;
+		mapId: number;
+	};
+}
+
 export type MessagePayload =
 	| HomeDataPayload
 	| BatteryUpdatePayload
@@ -135,4 +143,5 @@ export type MessagePayload =
 	| DeviceStatusPayload
 	| DeviceStatusSimplePayload
 	| CleanModeUpdatePayload
-	| ServiceAreaUpdatePayload;
+	| ServiceAreaUpdatePayload
+	| ActiveMapChangedPayload;

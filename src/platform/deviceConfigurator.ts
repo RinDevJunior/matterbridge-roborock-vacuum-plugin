@@ -2,10 +2,11 @@ import { bridgedNode, MatterbridgeDynamicPlatform, MatterbridgeEndpoint } from '
 import type { AnsiLogger } from 'matterbridge/logger';
 import { debugStringify } from 'matterbridge/logger';
 import { UINT16_MAX, UINT32_MAX, VendorId } from 'matterbridge/matter';
-import { BridgedDeviceBasicInformation, Descriptor, Identify } from 'matterbridge/matter/clusters';
+import { BridgedDeviceBasicInformation, Descriptor, Identify, ServiceArea } from 'matterbridge/matter/clusters';
 import { isValidNumber, isValidString } from 'matterbridge/utils';
 
-import { RoomMap } from '../core/application/models/index.js';
+import { ROUTINE_MAP_ID } from '../constants/ids.js';
+import { MapInfo, RoomMap } from '../core/application/models/index.js';
 import { HomeEntity } from '../core/domain/entities/Home.js';
 import { MatterOverrideSettings } from '../model/RoborockPluginPlatformConfig.js';
 import { PlatformRunner } from '../platformRunner.js';
@@ -72,6 +73,13 @@ export class DeviceConfigurator {
 		this.log.notice('Activating device notify handlers');
 		this.getPlatformRunner().activateHandlerFunctions();
 
+		// Start periodic area refresh for all configured devices
+		// (initial area resolution is now done in configureDevice, before registration)
+		for (const [duid, _robot] of this.registry.robotsMap) {
+			if (!configureSuccess.get(duid)) continue;
+			roborockService.startPeriodicAreaRefresh(duid);
+		}
+
 		this.log.info('onConfigureDevice finished');
 	}
 
@@ -92,13 +100,32 @@ export class DeviceConfigurator {
 			vacuum.serialNumber = await roborockService.getSerialNumber(vacuum.duid);
 		}
 
-		const { activeMapId, mapInfo, roomMap } = await RoomMap.fromMapInfo(vacuum, { roborockService, log: this.log });
-		this.log.debug('Initializing - roomMap: ', debugStringify(roomMap));
-
 		const homeData = vacuum.store.homeData;
-		const homeInfo = new HomeEntity(homeData.id, homeData.name, roomMap, mapInfo, activeMapId);
+		roborockService.setDeviceRooms(vacuum.duid, homeData.rooms);
+		const homeInfo = new HomeEntity(homeData.id, homeData.name, RoomMap.empty(), MapInfo.empty(), -1);
 
-		const robot = new RoborockVacuumCleaner(vacuum, homeInfo, this.configManager, roborockService, this.log);
+		const resolved = await roborockService.resolveInitialAreas(vacuum.duid);
+		const supportedAreas = resolved.supportedAreas;
+		const supportedMaps = resolved.supportedMaps;
+
+		const robot = new RoborockVacuumCleaner(
+			vacuum,
+			homeInfo,
+			this.configManager,
+			roborockService,
+			this.log,
+			supportedAreas,
+			supportedMaps,
+		);
+
+		roborockService.registerAreasListener(vacuum.duid, (areas, maps) => {
+			const routines = roborockService.getSupportedRoutines(vacuum.duid) ?? [];
+			const routineMap: ServiceArea.Map = { mapId: ROUTINE_MAP_ID, name: 'Routine' };
+			const allMaps = routines.length > 0 ? [...maps, routineMap] : maps;
+			robot.updateAttribute(ServiceArea.id, 'currentArea', null, this.log);
+			robot.updateAttribute(ServiceArea.id, 'supportedMaps', allMaps, this.log);
+			robot.updateAttribute(ServiceArea.id, 'supportedAreas', [...areas, ...routines], this.log);
+		});
 
 		const behaviorHandler = configureBehavior(
 			vacuum.specs.model,
@@ -109,6 +136,8 @@ export class DeviceConfigurator {
 			this.configManager.forceRunAtDefault,
 			this.log,
 			() => this.getPlatformRunner().burstPolling.startBurstPolling(vacuum.duid),
+			vacuum.featureSet,
+			vacuum.newFeatureSet,
 		);
 
 		robot.configureHandler(behaviorHandler);

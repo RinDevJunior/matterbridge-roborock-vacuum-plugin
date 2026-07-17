@@ -1,0 +1,6 @@
+[07:23:40.455] [Matterbridge Roborock Vacuum Plugin] [debug] [ChainedMessageListener] Invoking listener: SimpleMessageListener 
+[07:23:40.456] [Matterbridge Roborock Vacuum Plugin] [debug] [SimpleMessageListener]: No rpc_response data found in message 
+[07:23:40.647] [Matterbridge Roborock Vacuum Plugin] [debug] [ChainedMessageListener] Invoking listener: SimpleMessageListener 
+[07:23:40.649] [Matterbridge Roborock Vacuum Plugin] [debug] [SimpleMessageListener]: No rpc_response data found in message 
+[07:23:40.696] [Matterbridge Roborock Vacuum Plugin] [debug] [ChainedMessageListener] Invoking listener: SimpleMessageListener 
+[07:23:40.697] [Matterbridge Roborock Vacuum Plugin] [debug] [SimpleMessageListener]: No rpc_response data found in message 

@@ -1,10 +1,10 @@
-import crypto, { BinaryLike, CipherKey } from 'node:crypto';
+import crypto, { CipherKey } from 'node:crypto';
 
-export function md5bin(str: BinaryLike): Buffer {
+export function md5bin(str: string | NodeJS.ArrayBufferView): Buffer {
 	return crypto.createHash('md5').update(str).digest();
 }
 
-export function md5hex(str: BinaryLike): string {
+export function md5hex(str: string | NodeJS.ArrayBufferView): string {
 	return crypto.createHash('md5').update(str).digest('hex');
 }
 

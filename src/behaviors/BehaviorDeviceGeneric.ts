@@ -6,6 +6,7 @@ import { Behavior, MaybePromise } from 'matterbridge/matter';
 export const CommandNames = {
 	IDENTIFY: 'identify',
 	SELECT_AREAS: 'selectAreas',
+	SKIP_AREA: 'skipArea',
 	CHANGE_TO_MODE: 'changeToMode',
 	PAUSE: 'pause',
 	RESUME: 'resume',
@@ -15,6 +16,7 @@ export const CommandNames = {
 
 export interface DeviceEndpointCommands extends DeviceCommands {
 	selectAreas: (newAreas: number[]) => MaybePromise;
+	skipArea: (skippedArea: number) => MaybePromise;
 	changeToMode: (newMode: number) => MaybePromise;
 	pause: () => MaybePromise;
 	resume: () => MaybePromise;

@@ -1,6 +1,11 @@
 .github/
 .vscode/
-docs/
+docs/*
+!docs/README_*.md
+!docs/state_resolution_matrix.md
+!docs/status.md
+!docs/vacuum_error_code_mapping.md
+workspace/
 web-for-testing/
 src/
 .tarignore

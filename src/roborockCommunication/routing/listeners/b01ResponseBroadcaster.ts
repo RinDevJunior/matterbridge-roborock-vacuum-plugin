@@ -32,6 +32,7 @@ export class B01ResponseBroadcaster implements ResponseBroadcaster {
 
 		this.logger.debug(`[B01ResponseBroadcaster] Dispatching message to ${matchedListeners.length} listeners.`);
 		for (const listener of matchedListeners) {
+			if (listener.requiresBody && message.body === undefined) continue;
 			try {
 				this.logger.debug(`[B01ResponseBroadcaster] Invoking listener: ${listener.name}`);
 				await listener.onMessage(message);

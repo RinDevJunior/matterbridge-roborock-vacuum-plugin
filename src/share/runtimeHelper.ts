@@ -12,17 +12,24 @@ const resolverCache = new Map<string, ModeResolver>();
 
 /**
  * Get the appropriate clean mode resolver based on device model capabilities.
- * Resolvers are cached per model for efficiency.
+ * Resolvers are cached per model+featureSet combination for efficiency.
  */
-export function getCleanModeResolver(model: DeviceModel, forceRunAtDefault: boolean): ModeResolver {
+export function getCleanModeResolver(
+	model: DeviceModel,
+	forceRunAtDefault: boolean,
+	featureSet?: string,
+	newFeatureSet?: string,
+): ModeResolver {
 	if (forceRunAtDefault) {
 		return defaultModeResolver;
 	}
 
-	const key = model as string;
+	const key = `${model}|${featureSet ?? ''}|${newFeatureSet ?? ''}`;
 	if (!resolverCache.has(key)) {
-		const modes = getAllModesForDevice(key);
-		const resolver = hasSmartPlan(key) ? createSmartModeResolver(modes) : createDefaultModeResolver(modes);
+		const modes = getAllModesForDevice(model, featureSet, newFeatureSet);
+		const resolver = hasSmartPlan(model, featureSet, newFeatureSet)
+			? createSmartModeResolver(modes)
+			: createDefaultModeResolver(modes);
 		resolverCache.set(key, resolver);
 	}
 

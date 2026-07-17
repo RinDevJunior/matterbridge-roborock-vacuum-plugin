@@ -1,11 +1,11 @@
 import { randomInt } from 'node:crypto';
 
 import { AnsiLogger, debugStringify } from 'matterbridge/logger';
-import { AreaNamespaceTag } from 'matterbridge/matter';
+import { CommonAreaNamespaceTag } from 'matterbridge/matter';
 import { ServiceArea } from 'matterbridge/matter/clusters';
 
 import { DEFAULT_AREA_ID_UNKNOWN, RANDOM_ROOM_MAX, RANDOM_ROOM_MIN } from '../constants/index.js';
-import { RoomIndexMap, RoomMapping } from '../core/application/models/index.js';
+import { MapInfo, RoomIndexMap, RoomMap, RoomMapping } from '../core/application/models/index.js';
 import { HomeEntity } from '../core/domain/entities/Home.js';
 
 export interface AreaInfo {
@@ -53,14 +53,38 @@ export interface SupportedAreasResult {
 	roomIndexMap: RoomIndexMap;
 }
 
+export function toSupportedMaps(mapInfo: MapInfo, enableMultipleMap = true): ServiceArea.Map[] {
+	const maps = enableMultipleMap ? mapInfo.maps : mapInfo.maps.slice(0, 1);
+	return maps.map((map) => ({
+		mapId: map.id,
+		name: map.name ?? `Map ${map.id}`,
+	}));
+}
+
+/**
+ * Build placeholder supportedMaps entries for areas with non-null mapIds when no real maps are available.
+ * Extracts distinct mapIds from areas and creates a synthetic map entry for each.
+ * @param areas - Service areas to extract distinct mapIds from
+ * @returns Array of placeholder map entries, one per distinct non-null mapId found
+ */
+function buildPlaceholderSupportedMaps(areas: ServiceArea.Area[]): ServiceArea.Map[] {
+	const distinctMapIds = [...new Set(areas.map((a) => a.mapId).filter((id): id is number => id !== null))];
+	return distinctMapIds.map((mapId) => ({ mapId, name: `Map ${mapId}` }));
+}
+
 /**
  * Convert vacuum rooms and room map to Matter ServiceArea areas.
  * Handles single and multiple map configurations.
  * @param homeInFo - Home entity containing room and map information
  * @param logger - Logger for debugging and error reporting
+ * @param enableMultipleMap - When false, expose only the primary map and its rooms
  * @returns Supported areas, maps, and room index mapping
  */
-export function getSupportedAreas(homeInFo: HomeEntity, logger: AnsiLogger): SupportedAreasResult {
+export function getSupportedAreas(
+	homeInFo: HomeEntity,
+	logger: AnsiLogger,
+	enableMultipleMap = true,
+): SupportedAreasResult {
 	logger.debug('getSupportedAreas-vacuum room', debugStringify(homeInFo.rawRooms));
 	logger.debug('getSupportedAreas-roomMap', homeInFo.roomMap ? debugStringify(homeInFo.roomMap) : 'undefined');
 
@@ -85,20 +109,29 @@ export function getSupportedAreas(homeInFo: HomeEntity, logger: AnsiLogger): Sup
 		};
 	}
 
-	const { supportedAreas, areaInfos, roomInfos } = processValidData(homeInFo);
+	const entityForProcessing = enableMultipleMap
+		? homeInFo
+		: new HomeEntity(
+				homeInFo.id,
+				homeInFo.name,
+				new RoomMap(homeInFo.roomMap.getRooms(homeInFo.mapInfo.maps, false)),
+				homeInFo.mapInfo,
+				homeInFo.activeMapId,
+			);
 
-	const supportedMaps = homeInFo.mapInfo.maps.map((map) => ({
-		mapId: map.id,
-		name: map.name ?? `Map ${map.id}`,
-	}));
+	const { supportedAreas, areaInfos, roomInfos } = processValidData(entityForProcessing);
+
+	const supportedMaps = toSupportedMaps(homeInFo.mapInfo, enableMultipleMap);
+	const effectiveSupportedMaps =
+		supportedMaps.length > 0 ? supportedMaps : buildPlaceholderSupportedMaps(supportedAreas);
 
 	logger.debug('getSupportedAreas - supportedAreas', debugStringify(supportedAreas));
-	logger.debug('getSupportedAreas - supportedMaps', debugStringify(supportedMaps));
+	logger.debug('getSupportedAreas - supportedMaps', debugStringify(effectiveSupportedMaps));
 	const roomIndexMap = new RoomIndexMap(areaInfos, roomInfos);
 
 	return {
 		supportedAreas,
-		supportedMaps,
+		supportedMaps: effectiveSupportedMaps,
 		roomIndexMap,
 	};
 }
@@ -138,22 +171,85 @@ function processValidData(homeInFo: HomeEntity): ProcessedData {
 	};
 }
 
+/**
+ * Maps a B01 roomTypeId (0–11, per ioBroker ROOM_TYPE_ID_TO_TOKEN) to a CommonAreaNamespaceTag numeric value.
+ * Returns null for unknown / fallback (roomTypeId 0).
+ */
+export function roomTypeIdToAreaTag(roomTypeId: number): number | null {
+	switch (roomTypeId) {
+		case 0:
+			return null;
+		case 1:
+			return CommonAreaNamespaceTag.PrimaryBedroom.tag;
+		case 2:
+			return CommonAreaNamespaceTag.GuestBedroom.tag;
+		case 3:
+			return CommonAreaNamespaceTag.Bedroom.tag;
+		case 4:
+			return CommonAreaNamespaceTag.LivingRoom.tag;
+		case 5:
+			return CommonAreaNamespaceTag.Dining.tag;
+		case 6:
+			return CommonAreaNamespaceTag.Kitchen.tag;
+		case 7:
+			return CommonAreaNamespaceTag.Balcony.tag;
+		case 8:
+			return CommonAreaNamespaceTag.Bathroom.tag;
+		case 9:
+			return CommonAreaNamespaceTag.Hallway.tag;
+		case 10:
+			return CommonAreaNamespaceTag.Study.tag;
+		case 11:
+			return CommonAreaNamespaceTag.Corridor.tag;
+		// B01 extended room type IDs (2001–2011) — ioBroker ROOM_TYPE_MAP b01/constants.ts
+		case 2001:
+			return CommonAreaNamespaceTag.Bedroom.tag; // "bedroom"
+		case 2002:
+			return CommonAreaNamespaceTag.Dining.tag; // "dinnerroom"
+		case 2003:
+			return CommonAreaNamespaceTag.Bathroom.tag; // "restroom"
+		case 2004:
+			return CommonAreaNamespaceTag.Corridor.tag; // "corridor"
+		case 2005:
+			return CommonAreaNamespaceTag.Kitchen.tag; // "kitchen"
+		case 2006:
+			return CommonAreaNamespaceTag.LivingRoom.tag; // "livingroom"
+		case 2007:
+			return CommonAreaNamespaceTag.Balcony.tag; // "balcony"
+		case 2008:
+			return CommonAreaNamespaceTag.Study.tag; // "study"
+		case 2009:
+			return CommonAreaNamespaceTag.Hallway.tag; // "entryway"
+		case 2010:
+			return CommonAreaNamespaceTag.PrimaryBedroom.tag; // "masterbedrroom"
+		case 2011:
+			return CommonAreaNamespaceTag.GuestBedroom.tag; // "guestbedrroom"
+		default:
+			return null;
+	}
+}
+
 function populateAreaNamespaceTag(room: RoomMapping): number | null {
+	if (room.areaType !== undefined) {
+		return room.areaType;
+	}
+
 	if (room.tag && room.tag > 0) {
 		switch (room.tag) {
 			case 1:
+				return CommonAreaNamespaceTag.Bedroom.tag;
 			case 2:
-				return AreaNamespaceTag.Bedroom.tag;
+				return CommonAreaNamespaceTag.PrimaryBedroom.tag;
 			case 3:
-				return AreaNamespaceTag.GuestBedroom.tag;
+				return CommonAreaNamespaceTag.GuestBedroom.tag;
 			case 6:
-				return AreaNamespaceTag.LivingRoom.tag;
+				return CommonAreaNamespaceTag.LivingRoom.tag;
 			case 7:
-				return AreaNamespaceTag.Balcony.tag;
+				return CommonAreaNamespaceTag.Balcony.tag;
 			case 9:
-				return AreaNamespaceTag.Study.tag;
+				return CommonAreaNamespaceTag.Study.tag;
 			case 14:
-				return AreaNamespaceTag.Kitchen.tag;
+				return CommonAreaNamespaceTag.Kitchen.tag;
 			default:
 				return null;
 		}

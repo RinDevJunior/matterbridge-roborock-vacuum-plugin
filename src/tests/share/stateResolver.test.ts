@@ -47,6 +47,47 @@ describe('resolveDeviceState - 56-row State Resolution Matrix', () => {
 			});
 		});
 
+		describe('BackToDockWashingDuster Status Override', () => {
+			it('should return Cleaning/FillingWaterTank for dock tank fill status', () => {
+				const message = new StatusChangeMessage(
+					'test-duid',
+					OperationStatusCode.BackToDockWashingDuster,
+					true,
+					false,
+					false,
+					false,
+					false,
+					false,
+				);
+
+				const result = resolveDeviceState(message);
+
+				expect(result.runMode).toBe(RvcRunMode.ModeTag.Cleaning);
+				expect(result.operationalState).toBe(RvcOperationalState.OperationalState.FillingWaterTank);
+			});
+		});
+
+		describe('WashingTheMop fill phase override', () => {
+			it('should return FillingWaterTank when wash_status indicates fill phase', () => {
+				const message = new StatusChangeMessage(
+					'test-duid',
+					OperationStatusCode.WashingTheMop,
+					true,
+					false,
+					false,
+					false,
+					false,
+					false,
+					1,
+				);
+
+				const result = resolveDeviceState(message);
+
+				expect(result.runMode).toBe(RvcRunMode.ModeTag.Cleaning);
+				expect(result.operationalState).toBe(RvcOperationalState.OperationalState.FillingWaterTank);
+			});
+		});
+
 		describe('WashingTheMop Status Override - Row 54', () => {
 			it('should ignore all flags and return Cleaning/CleaningMop (real data: 01:01:04)', () => {
 				const message = new StatusChangeMessage(
@@ -650,6 +691,7 @@ describe('resolveDeviceState - 56-row State Resolution Matrix', () => {
 
 				expect(result.runMode).toBe(RvcRunMode.ModeTag.Idle);
 				expect(result.operationalState).toBe(RvcOperationalState.OperationalState.Error);
+				expect(result.operationalError).toBe(RvcOperationalState.ErrorState.FailedToFindChargingDock);
 			});
 
 			it('should handle ZoneClean status - Row 41', () => {

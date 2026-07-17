@@ -1,6 +1,7 @@
 import { RvcOperationalState, RvcRunMode } from 'matterbridge/matter/clusters';
 import { describe, expect, it } from 'vitest';
 
+import { getDefaultOperationalStates } from '../../behaviors/roborock.vacuum/core/runModeConfig.js';
 import { OperationStatusCode } from '../../roborockCommunication/enums/index.js';
 import { state_to_matter_operational_status, state_to_matter_state } from '../../share/function.js';
 
@@ -73,8 +74,17 @@ describe('share/function helpers', () => {
 			expect(state_to_matter_operational_status(OperationStatusCode.ReturningDock)).toBe(
 				RvcOperationalState.OperationalState.SeekingCharger,
 			);
+		});
+
+		it('returns extended operational states for dock maintenance statuses', () => {
 			expect(state_to_matter_operational_status(OperationStatusCode.EmptyingDustContainer)).toBe(
-				RvcOperationalState.OperationalState.SeekingCharger,
+				RvcOperationalState.OperationalState.EmptyingDustBin,
+			);
+			expect(state_to_matter_operational_status(OperationStatusCode.WashingTheMop)).toBe(
+				RvcOperationalState.OperationalState.CleaningMop,
+			);
+			expect(state_to_matter_operational_status(OperationStatusCode.BackToDockWashingDuster)).toBe(
+				RvcOperationalState.OperationalState.FillingWaterTank,
 			);
 		});
 
@@ -89,6 +99,21 @@ describe('share/function helpers', () => {
 				RvcOperationalState.OperationalState.Docked,
 			);
 			expect(state_to_matter_operational_status(undefined)).toBe(undefined);
+		});
+	});
+
+	describe('getDefaultOperationalStates', () => {
+		it('should include all four extended operational state IDs', () => {
+			const states = getDefaultOperationalStates().map((entry) => entry.operationalStateId);
+
+			expect(states).toEqual(
+				expect.arrayContaining([
+					RvcOperationalState.OperationalState.EmptyingDustBin,
+					RvcOperationalState.OperationalState.CleaningMop,
+					RvcOperationalState.OperationalState.FillingWaterTank,
+					RvcOperationalState.OperationalState.UpdatingMaps,
+				]),
+			);
 		});
 	});
 });

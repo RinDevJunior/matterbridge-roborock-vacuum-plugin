@@ -5,7 +5,19 @@ package SCMap;
 message RobotMap {
     uint32 mapType = 1;
     MapHeadInfo mapHead = 3;
+    DeviceCurrentPoseInfo currentPose = 8;
     repeated RoomDataInfo roomDataInfo = 12;
+    DeviceRoomMatrix roomMatrix = 13;
+}
+
+message DeviceCurrentPoseInfo {
+    float x = 1;
+    float y = 2;
+    float phi = 3;
+}
+
+message DeviceRoomMatrix {
+    bytes matrix = 1;
 }
 
 message MapHeadInfo {

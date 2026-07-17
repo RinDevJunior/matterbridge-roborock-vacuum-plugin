@@ -14,13 +14,15 @@ import {
 	Q7RequestMethod,
 } from '../../enums/Q7RequestCode.js';
 import { B01VacuumModeResolver } from '../../helper/B01VacuumModeResolver.js';
-import { NetworkInfo, RawRoomMappingData } from '../../models/index.js';
+import { RawRoomMappingData } from '../../models/home/index.js';
+import { NetworkInfo } from '../../models/index.js';
 import { RequestMessage } from '../../models/requestMessage.js';
 import { Client } from '../../routing/client.js';
 import { AbstractMessageDispatcher } from './abstractMessageDispatcher.js';
 
 export class Q7MessageDispatcher implements AbstractMessageDispatcher {
 	public dispatcherName = 'Q7MessageDispatcher';
+	public readonly supportsMapQueryResponse = false;
 	private lastB01Id: number;
 
 	private get messageId() {
@@ -49,7 +51,7 @@ export class Q7MessageDispatcher implements AbstractMessageDispatcher {
 		return duid;
 	}
 
-	public async getDeviceStatus(duid: string): Promise<void> {
+	public getDeviceStatus(duid: string): Promise<void> {
 		const request = new RequestMessage({
 			dps: this.createDps(Q7RequestMethod.get_prop, {
 				property: [
@@ -67,7 +69,7 @@ export class Q7MessageDispatcher implements AbstractMessageDispatcher {
 				],
 			}),
 		});
-		await this.client.send(duid, request);
+		return this.client.send(duid, request);
 	}
 
 	// #region Core Data Retrieval
@@ -83,33 +85,60 @@ export class Q7MessageDispatcher implements AbstractMessageDispatcher {
 		return new MapInfo({ max_multi_map: 0, max_bak_map: 0, multi_map_count: 0, map_info: [] });
 	}
 
+	public getMapInfoV2(duid: string): Promise<void> {
+		return this.client.send(
+			duid,
+			new RequestMessage({ messageId: this.messageId, dps: this.createDps(Q7RequestMethod.get_map_list, {}) }),
+		);
+	}
+
 	public async getRoomMap(duid: string, activeMap: number): Promise<RawRoomMappingData> {
 		await this.client.send(
 			duid,
 			new RequestMessage({
 				messageId: this.messageId,
-				dps: this.createDps(Q7RequestMethod.get_room_mapping_backup_1, { map_id: activeMap, prefer_type: 1 }),
+				dps: this.createDps(Q7RequestMethod.get_room_mapping, { force: 1, map_type: 0 }),
 			}),
 		);
 		return [];
 	}
 
+	public getRoomMapV2(duid: string, activeMap: number): Promise<void> {
+		return this.client.send(
+			duid,
+			new RequestMessage({
+				messageId: this.messageId,
+				dps: this.createDps(Q7RequestMethod.get_room_mapping, { force: 1, map_type: 0 }),
+			}),
+		);
+	}
+
+	public async switchMap(duid: string, mapId: number): Promise<void> {
+		await this.client.send(
+			duid,
+			new RequestMessage({
+				messageId: this.messageId,
+				dps: this.createDps(Q7RequestMethod.set_cur_map, { map_id: mapId }),
+			}),
+		);
+	}
+
 	// #endregion Core Data Retrieval
 
 	// #region Cleaning Commands
-	public async goHome(duid: string): Promise<void> {
+	public goHome(duid: string): Promise<void> {
 		const request = new RequestMessage({
 			messageId: this.messageId,
 			dps: this.createDps(Q7RequestMethod.app_charge, {}),
 		});
-		await this.client.send(duid, request);
+		return this.client.send(duid, request);
 	}
 
 	public async startCleaning(duid: string): Promise<void> {
 		await this.startRoomCleaning(duid, [], 1);
 	}
 
-	public async startRoomCleaning(duid: string, roomIds: number[], repeat: number): Promise<void> {
+	public startRoomCleaning(duid: string, roomIds: number[], repeat: number): Promise<void> {
 		const request = new RequestMessage({
 			messageId: this.messageId,
 			dps: this.createDps(Q7RequestMethod.app_start_stop, {
@@ -118,10 +147,10 @@ export class Q7MessageDispatcher implements AbstractMessageDispatcher {
 				room_ids: roomIds,
 			}),
 		});
-		await this.client.send(duid, request);
+		return this.client.send(duid, request);
 	}
 
-	public async pauseCleaning(duid: string): Promise<void> {
+	public pauseCleaning(duid: string): Promise<void> {
 		const request = new RequestMessage({
 			messageId: this.messageId,
 			dps: this.createDps(Q7RequestMethod.app_start_stop, {
@@ -130,7 +159,7 @@ export class Q7MessageDispatcher implements AbstractMessageDispatcher {
 				room_ids: [],
 			}),
 		});
-		await this.client.send(duid, request);
+		return this.client.send(duid, request);
 	}
 
 	public async resumeCleaning(duid: string): Promise<void> {
@@ -141,7 +170,11 @@ export class Q7MessageDispatcher implements AbstractMessageDispatcher {
 		await this.startRoomCleaning(duid, [], 1);
 	}
 
-	public async stopCleaning(duid: string): Promise<void> {
+	public skipRoomCleaning(duid: string): Promise<void> {
+		throw new Error(`skipRoomCleaning is not supported on ${this.dispatcherName}`);
+	}
+
+	public stopCleaning(duid: string): Promise<void> {
 		const request = new RequestMessage({
 			messageId: this.messageId,
 			dps: this.createDps(Q7RequestMethod.app_start_stop, {
@@ -150,17 +183,17 @@ export class Q7MessageDispatcher implements AbstractMessageDispatcher {
 				room_ids: [],
 			}),
 		});
-		await this.client.send(duid, request);
+		return this.client.send(duid, request);
 	}
 
-	public async findMyRobot(duid: string): Promise<void> {
+	public findMyRobot(duid: string): Promise<void> {
 		const request = new RequestMessage({ messageId: this.messageId, dps: this.createDps(Q7RequestMethod.find_me, {}) });
-		await this.client.send(duid, request);
+		return this.client.send(duid, request);
 	}
 
-	public async sendCustomMessage(duid: string, def: RequestMessage): Promise<void> {
+	public sendCustomMessage(duid: string, def: RequestMessage): Promise<void> {
 		const request = new RequestMessage({ ...def, messageId: this.messageId });
-		await this.client.send(duid, request);
+		return this.client.send(duid, request);
 	}
 
 	public async getCustomMessage<T = unknown>(duid: string, def: RequestMessage): Promise<T> {
@@ -200,40 +233,42 @@ export class Q7MessageDispatcher implements AbstractMessageDispatcher {
 		return { [Q7RequestCode.query]: { msgId: messageId, method: method, params: params } };
 	}
 
-	private async setCleanMode(duid: string, suctionPower: number, waterFlow: number): Promise<void> {
+	private setCleanMode(duid: string, suctionPower: number, waterFlow: number): Promise<void> {
 		const request = new RequestMessage({
 			messageId: this.messageId,
 			dps: this.createDps(Q7RequestMethod.set_prop, {
 				'mode': B01VacuumModeResolver.resolveQ7CleanMode(suctionPower, waterFlow),
 			}),
 		});
-		await this.client.send(duid, request);
+		return this.client.send(duid, request);
 	}
 
-	private async setVacuumMode(duid: string, suctionPower: number): Promise<void> {
+	private setVacuumMode(duid: string, suctionPower: number): Promise<void> {
 		const request = new RequestMessage({
 			messageId: this.messageId,
-			dps: this.createDps(Q7RequestMethod.set_prop, { 'wind': B01VacuumModeResolver.resolveVacuumMode(suctionPower) }),
+			dps: this.createDps(Q7RequestMethod.set_prop, {
+				'wind': B01VacuumModeResolver.resolveQ7VacuumMode(suctionPower),
+			}),
 		});
-		await this.client.send(duid, request);
+		return this.client.send(duid, request);
 	}
 
-	private async setMopMode(duid: string, waterFlow: number): Promise<void> {
+	private setMopMode(duid: string, waterFlow: number): Promise<void> {
 		const request = new RequestMessage({
 			messageId: this.messageId,
 			dps: this.createDps(Q7RequestMethod.set_prop, { 'water': B01VacuumModeResolver.resolveMopMode(waterFlow) }),
 		});
-		await this.client.send(duid, request);
+		return this.client.send(duid, request);
 	}
 
-	async setCleanRoute(duid: string, mopRoute: number): Promise<void> {
+	public setCleanRoute(duid: string, mopRoute: number): Promise<void> {
 		const request = new RequestMessage({
 			messageId: this.messageId,
 			dps: this.createDps(Q7RequestMethod.set_prop, {
 				'clean_path_preference': B01VacuumModeResolver.resolveCleanRoute(mopRoute),
 			}),
 		});
-		await this.client.send(duid, request);
+		return this.client.send(duid, request);
 	}
 	// #endregion Private Helpers
 }

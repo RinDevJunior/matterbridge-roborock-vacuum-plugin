@@ -52,15 +52,12 @@ describe('PollingService', () => {
 		mockMessageRoutingService = asPartial<MessageRoutingService>({
 			getMessageDispatcher: vi.fn().mockReturnValue(mockMessageDispatcher),
 			getCleanModeData: vi.fn(),
-			getRoomIdFromMap: vi.fn(),
 			changeCleanMode: vi.fn(),
 			startClean: vi.fn(),
 			pauseClean: vi.fn(),
 			stopAndGoHome: vi.fn(),
 			resumeClean: vi.fn(),
 			playSoundToLocate: vi.fn(),
-			customGet: vi.fn(),
-			customSend: vi.fn(),
 			setIotApi: vi.fn(),
 			clearAll: vi.fn(),
 		});

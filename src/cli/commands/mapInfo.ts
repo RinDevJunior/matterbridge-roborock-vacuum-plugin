@@ -1,28 +1,40 @@
 import { AnsiLogger } from 'matterbridge/logger';
 
 import { connectDevice } from '../connection.js';
+import { parseDeviceStatusPush, parseMapInfoPush, resolveActiveMapId } from '../mapListHelpers.js';
 import { CliSession } from '../types.js';
+import { waitForPush } from '../waitForPush.js';
 
 export async function cmdMapInfo(duid: string, session: CliSession, logger: AnsiLogger, local = false): Promise<void> {
 	const { clientRouter, dispatcher } = await connectDevice(duid, session, logger, local);
 	try {
-		const mapInfo = await dispatcher.getMapInfo(duid);
+		const mapInfoPromise = waitForPush(clientRouter, duid, parseMapInfoPush);
+		const statusPromise = waitForPush(clientRouter, duid, parseDeviceStatusPush);
 
-		if (mapInfo.maps.length === 0) {
-			console.log('No map info found.');
+		await dispatcher.getMapInfo(duid);
+		await dispatcher.getDeviceStatus(duid);
+		console.log('Waiting for map info response...');
+
+		const [mapResult, statusResult] = await Promise.all([mapInfoPromise, statusPromise]);
+
+		if (!mapResult) {
+			console.log('No response received within timeout.');
 			return;
 		}
 
-		console.log(`Map info for device ${duid}:\n`);
-		for (const map of mapInfo.maps) {
-			console.log(`Map: ${map.name} (id=${map.id})  rooms=${map.rooms.length}`);
-			for (const room of map.rooms) {
-				console.log(
-					`  id=${room.id}  tag=${room.tag}  iot_name_id=${room.iot_name_id}  name=${room.iot_name ?? '(unknown)'}`,
-				);
-			}
-			console.log('');
+		const activeMapId = resolveActiveMapId(statusResult);
+
+		const maps = (mapResult as { map_info?: { mapFlag?: number; name?: string }[] }).map_info ?? [];
+		console.log('\nMaps:');
+		for (const map of maps) {
+			const id = map.mapFlag ?? '?';
+			const name = map.name ?? '(unnamed)';
+			const active = activeMapId !== undefined && map.mapFlag === activeMapId ? ' [ACTIVE]' : '';
+			console.log(`  ${id}  ${name}${active}`);
 		}
+
+		console.log('\nRaw response:');
+		console.log(JSON.stringify(mapResult, null, 2));
 	} finally {
 		await clientRouter.disconnect();
 	}

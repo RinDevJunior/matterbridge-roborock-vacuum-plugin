@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { CleanModeSetting } from '../../../../behaviors/roborock.vacuum/core/CleanModeSetting.js';
 import { CleanSequenceType } from '../../../../behaviors/roborock.vacuum/enums/CleanSequenceType.js';
+import { Q7RequestCode, Q7RequestMethod } from '../../../../roborockCommunication/enums/Q7RequestCode.js';
 import { RequestMessage } from '../../../../roborockCommunication/models/index.js';
 import { Q7MessageDispatcher } from '../../../../roborockCommunication/protocol/dispatcher/Q7MessageDispatcher.js';
 import { asPartial, asType } from '../../../testUtils.js';
@@ -28,6 +29,22 @@ function createMockClient() {
 		registerConnectionListener: vi.fn(),
 		registerMessageListener: vi.fn(),
 	};
+}
+
+function getQueryDpsFromSendCall(
+	client: ReturnType<typeof createMockClient>,
+	callIndex = 0,
+): { method: string; params?: unknown } {
+	const sentMsg = client.send.mock.calls[callIndex][1] as RequestMessage;
+	const dpsMap = sentMsg.dps;
+	if (!dpsMap) {
+		throw new Error('expected dps on sent message');
+	}
+	const queryPayload = dpsMap[Q7RequestCode.query];
+	if (!queryPayload || typeof queryPayload !== 'object') {
+		throw new Error('expected query DPS payload on sent message');
+	}
+	return queryPayload as { method: string; params?: unknown };
 }
 
 // --- Test Suite ---
@@ -70,26 +87,44 @@ describe('Q7MessageDispatcher', () => {
 		});
 	});
 
-	describe('getHomeMap', () => {
-		it('should return an empty object', async () => {
-			const result = await dispatcher.getHomeMap(duid);
-			expect(result).toEqual({});
-		});
-	});
-
 	describe('getMapInfo', () => {
-		it('should call client.send and return stub MapInfo', async () => {
+		it('should call client.send and return empty MapInfo', async () => {
 			const result = await dispatcher.getMapInfo(duid);
 			expect(client.send).toHaveBeenCalled();
-			expect(result).toBeInstanceOf(Object);
+			expect(client.query).not.toHaveBeenCalled();
+			expect(result).toBeDefined();
+		});
+
+		it('should call client.send and return void when using V2', async () => {
+			const result = await dispatcher.getMapInfoV2(duid);
+			expect(client.send).toHaveBeenCalled();
+			expect(result).toBeUndefined();
 		});
 	});
 
 	describe('getRoomMap', () => {
-		it('should call client.send and return empty array', async () => {
+		it('should send upload_by_maptype with force:1 map_type:0', async () => {
 			const result = await dispatcher.getRoomMap(duid, 1);
 			expect(client.send).toHaveBeenCalled();
+			const dps = getQueryDpsFromSendCall(client);
+			expect(dps.method).toBe(Q7RequestMethod.get_room_mapping);
+			expect(dps.params).toEqual({ force: 1, map_type: 0 });
 			expect(result).toEqual([]);
+		});
+
+		it('should send upload_by_maptype with force:1 map_type:0 when using V2', async () => {
+			const result = await dispatcher.getRoomMapV2(duid, 1);
+			expect(client.send).toHaveBeenCalled();
+			const dps = getQueryDpsFromSendCall(client);
+			expect(dps.method).toBe(Q7RequestMethod.get_room_mapping);
+			expect(dps.params).toEqual({ force: 1, map_type: 0 });
+			expect(result).toBeUndefined();
+		});
+
+		it('should NOT use get_preference (backup_1) method', async () => {
+			await dispatcher.getRoomMap(duid, 1);
+			const dps = getQueryDpsFromSendCall(client);
+			expect(dps.method).not.toBe(Q7RequestMethod.get_room_mapping_backup_1);
 		});
 	});
 

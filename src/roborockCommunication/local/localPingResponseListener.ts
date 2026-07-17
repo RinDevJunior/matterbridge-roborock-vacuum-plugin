@@ -5,6 +5,7 @@ import { AbstractMessageListener } from '../routing/listeners/abstractMessageLis
 
 export class LocalPingResponseListener implements AbstractMessageListener {
 	readonly name = 'LocalPingResponseListener';
+	readonly requiresBody = false;
 	private timer?: NodeJS.Timeout;
 
 	public lastPingResponse: number;

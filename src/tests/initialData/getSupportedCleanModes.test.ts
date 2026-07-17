@@ -8,7 +8,12 @@ import { createMockConfigManager } from '../helpers/testUtils.js';
 describe('getSupportedCleanModes', () => {
 	it('returns smart modes for QREVO models', () => {
 		const setting = createMockConfigManager({ useVacationModeToSendVacuumToDock: false });
-		const modes = getSupportedCleanModes(DeviceModel.QREVO_EDGE_5V1, setting);
+		const modes = getSupportedCleanModes(
+			DeviceModel.QREVO_EDGE_5V1,
+			setting,
+			'2247397454282751',
+			'00000000082834C1C2FA8F5C7EDEFFFE',
+		);
 		expect(modes.some((m) => m.mode === 4)).toBe(true);
 		expect(modes.some((m) => m.mode === 5)).toBe(true);
 	});

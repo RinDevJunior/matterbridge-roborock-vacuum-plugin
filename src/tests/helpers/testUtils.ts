@@ -206,10 +206,19 @@ export function createMockRoborockService(overrides: Partial<RoborockService> = 
 		getSupportedAreas: vi.fn().mockReturnValue([]),
 		getSupportedAreasIndexMap: vi.fn().mockReturnValue(new Map()),
 		getSelectedAreas: vi.fn().mockReturnValue([]),
+		getProgress: vi.fn().mockReturnValue([]),
+		setProgress: vi.fn(),
+		getLastActivelyCleaningState: vi.fn().mockReturnValue(false),
+		setLastActivelyCleaningState: vi.fn(),
 		getMapInfo: vi.fn().mockResolvedValue({ maps: [], allRooms: [] }),
-		getRoomMap: vi.fn().mockResolvedValue(new Map()),
+		getRoomMap: vi.fn().mockResolvedValue(undefined),
+		setDeviceRooms: vi.fn(),
+		resolveInitialAreas: vi.fn().mockResolvedValue({ supportedAreas: [], supportedMaps: [] }),
+		ensureAreasForMap: vi.fn().mockResolvedValue(false),
 		getSerialNumber: vi.fn().mockResolvedValue('mock-serial'),
 		requestDeviceStatusOnce: vi.fn().mockResolvedValue(undefined),
+		registerAreasListener: vi.fn(),
+		startPeriodicAreaRefresh: vi.fn(),
 	};
 	return { ...base, ...overrides } as Partial<RoborockService> as RoborockService;
 }
@@ -240,3 +249,15 @@ export function setReadOnlyProperty<T>(obj: T, key: string | symbol, value: unkn
 		configurable: true,
 	});
 }
+
+export type { LegacyMapFixtureOptions } from './legacyMapFixture.js';
+export {
+	buildCleanedBlocksBlock,
+	buildEncryptedV1MapPayload,
+	buildGenericBlock,
+	buildImageBlock,
+	buildLegacyMapBuffer,
+	buildMapHeader,
+	buildPositionBlock,
+	LEGACY_BLOCK_TYPE,
+} from './legacyMapFixture.js';

@@ -7,6 +7,7 @@ import { state_to_matter_operational_status, state_to_matter_state } from './fun
 export interface ResolvedState {
 	runMode: RvcRunMode.ModeTag;
 	operationalState: RvcOperationalState.OperationalState;
+	operationalError?: RvcOperationalState.ErrorState;
 }
 
 /**
@@ -35,7 +36,7 @@ export interface ResolvedState {
  * @param message StatusChangeMessage containing status code and modifier flags
  * @returns ResolvedState with runMode and operationalState
  *
- * @see misc/state_resolution_matrix.md - Complete 47-row matrix documentation
+ * @see docs/state_resolution_matrix.md - Complete 47-row matrix documentation
  */
 export function resolveDeviceState(message: StatusChangeMessage): ResolvedState {
 	const status = message.status;
@@ -98,6 +99,15 @@ export function resolveDeviceState(message: StatusChangeMessage): ResolvedState 
 		};
 	}
 
+	// ChargingError Status Override - Failed to find or reach charging dock
+	if (status === OperationStatusCode.ChargingError) {
+		return {
+			runMode: RvcRunMode.ModeTag.Idle,
+			operationalState: RvcOperationalState.OperationalState.Error,
+			operationalError: RvcOperationalState.ErrorState.FailedToFindChargingDock,
+		};
+	}
+
 	// EmptyingDustContainer Status Override - Row 44
 	if (status === OperationStatusCode.EmptyingDustContainer) {
 		return {
@@ -106,8 +116,22 @@ export function resolveDeviceState(message: StatusChangeMessage): ResolvedState 
 		};
 	}
 
+	// BackToDockWashingDuster Status Override - tank fill at dock
+	if (status === OperationStatusCode.BackToDockWashingDuster) {
+		return {
+			runMode: RvcRunMode.ModeTag.Cleaning,
+			operationalState: RvcOperationalState.OperationalState.FillingWaterTank,
+		};
+	}
+
 	// WashingTheMop Status Override - Row 45
-	if (status === OperationStatusCode.WashingTheMop) {
+	if (status === OperationStatusCode.WashingTheMop || status === OperationStatusCode.WashingTheMop2) {
+		if (isFillingWaterTankPhase(message)) {
+			return {
+				runMode: RvcRunMode.ModeTag.Cleaning,
+				operationalState: RvcOperationalState.OperationalState.FillingWaterTank,
+			};
+		}
 		return {
 			runMode: RvcRunMode.ModeTag.Cleaning,
 			operationalState: RvcOperationalState.OperationalState.CleaningMop,
@@ -197,6 +221,16 @@ export function resolveDeviceState(message: StatusChangeMessage): ResolvedState 
 	state = applyInFreshStateModifier(state, message);
 
 	return state;
+}
+
+function isFillingWaterTankPhase(message: StatusChangeMessage): boolean {
+	if (message.replenishMode !== undefined && message.replenishMode > 0) {
+		return true;
+	}
+	if (message.washStatus !== undefined && message.washStatus > 0) {
+		return true;
+	}
+	return false;
 }
 
 /**

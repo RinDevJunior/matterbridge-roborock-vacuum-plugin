@@ -1,6 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { MapInfo } from '../../../../core/application/models/MapInfo.js';
 import type { MapInfoPlatformContext, MapReference } from '../../../../core/application/models/RoomMap.js';
 import { RoomMap } from '../../../../core/application/models/RoomMap.js';
 import type { RoomMapping } from '../../../../core/application/models/RoomMapping.js';
@@ -115,78 +114,26 @@ describe('RoomMap', () => {
 			};
 		});
 
-		it('should return empty result when roborockService is undefined', async () => {
+		it('should log error and return when roborockService is undefined', async () => {
 			context.roborockService = undefined;
 			const device = createMockDevice();
 
 			const result = await RoomMap.fromMapInfo(device, context);
 
-			expect(result.activeMapId).toBe(0);
-			expect(result.roomMap.hasRooms).toBe(false);
-			expect(result.mapInfo).toBeInstanceOf(MapInfo);
+			expect(result).toBeUndefined();
 			expect(context.log.error).toHaveBeenCalledWith('Roborock service not initialized');
 		});
 
-		it('should use mapInfo rooms when mapInfo hasRooms', async () => {
-			const mapInfo = new MapInfo({
-				max_multi_map: 1,
-				max_bak_map: 1,
-				multi_map_count: 1,
-				map_info: [
-					{
-						mapFlag: 5,
-						add_time: 0,
-						length: 1,
-						name: 'Home',
-						bak_maps: [],
-						rooms: [{ id: 1, tag: 0, iot_name_id: 'room1', iot_name: 'Living Room' }],
-					},
-				],
-			});
-			const roomData: [number, string][] = [[1, 'room1']];
-			vi.mocked(roborockService.getMapInfo).mockResolvedValue(mapInfo);
-			vi.mocked(roborockService.getRoomMap).mockResolvedValue(roomData);
+		it('should call getMapInfo and getRoomMap on the service', async () => {
+			vi.mocked(roborockService.getMapInfo).mockResolvedValue(undefined);
+			vi.mocked(roborockService.getRoomMap).mockResolvedValue(undefined);
 			const device = createMockDevice();
 
 			const result = await RoomMap.fromMapInfo(device, context);
 
-			expect(result.roomMap.hasRooms).toBe(true);
-			expect(result.roomMap.rooms).toHaveLength(1);
-			expect(result.mapInfo).toBe(mapInfo);
-			expect(device.mapInfos).toBe(mapInfo.maps);
-		});
-
-		it('should fall back to roomData when mapInfo has no rooms', async () => {
-			const mapInfo = new MapInfo({
-				max_multi_map: 1,
-				max_bak_map: 1,
-				multi_map_count: 1,
-				map_info: [{ mapFlag: 3, add_time: 0, length: 0, name: 'Home', bak_maps: [] }],
-			});
-			const roomData: [number, string][] = [
-				[1, 'room1'],
-				[2, 'room2'],
-			];
-			vi.mocked(roborockService.getMapInfo).mockResolvedValue(mapInfo);
-			vi.mocked(roborockService.getRoomMap).mockResolvedValue(roomData);
-			const device = createMockDevice();
-
-			const result = await RoomMap.fromMapInfo(device, context);
-
-			expect(result.activeMapId).toBe(3);
-			expect(result.roomMap.hasRooms).toBe(true);
-			expect(result.roomMap.rooms).toHaveLength(2);
-		});
-
-		it('should set activeMapId to 0 when maps array is empty', async () => {
-			const mapInfo = MapInfo.empty();
-			vi.mocked(roborockService.getMapInfo).mockResolvedValue(mapInfo);
-			vi.mocked(roborockService.getRoomMap).mockResolvedValue([]);
-			const device = createMockDevice();
-
-			const result = await RoomMap.fromMapInfo(device, context);
-
-			expect(result.activeMapId).toBe(0);
+			expect(result).toBeUndefined();
+			expect(roborockService.getMapInfo).toHaveBeenCalledWith(device.duid);
+			expect(roborockService.getRoomMap).toHaveBeenCalledWith(device.duid, -1);
 		});
 	});
 });

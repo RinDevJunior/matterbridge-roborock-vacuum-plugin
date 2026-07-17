@@ -191,6 +191,8 @@ export class RoborockMatterbridgePlatform extends MatterbridgeDynamicPlatform {
 			}
 		}, intervalMs);
 
+		this.platformRunner.startWatchdog();
+
 		this.snackbarMessage('Roborock Vacuum Plugin is ready', 5000, 'success');
 
 		if (this.configManager.isEmailNotificationEnabled && this.discovery.roborockService) {
@@ -208,6 +210,7 @@ export class RoborockMatterbridgePlatform extends MatterbridgeDynamicPlatform {
 		}
 
 		this.platformRunner.burstPolling.stopAllBurstPolling();
+		this.platformRunner.stopWatchdog();
 
 		if (this.roborockService) {
 			this.roborockService.stopService();

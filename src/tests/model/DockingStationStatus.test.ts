@@ -4,6 +4,29 @@ import { describe, expect, it } from 'vitest';
 import { DockStationStatus, DockStationStatusCode } from '../../model/DockStationStatus.js';
 import { DockErrorCode } from '../../roborockCommunication/enums/vacuumAndDockErrorCode.js';
 
+const OK = DockStationStatusCode.OK;
+const ERR = DockStationStatusCode.Error;
+
+function createDockStatus(
+	overrides: Partial<{
+		cleanFluidStatus: DockStationStatusCode;
+		waterBoxFilterStatus: DockStationStatusCode;
+		dustBagStatus: DockStationStatusCode;
+		dirtyWaterBoxStatus: DockStationStatusCode;
+		clearWaterBoxStatus: DockStationStatusCode;
+		isUpdownWaterReady: DockStationStatusCode;
+	}> = {},
+): DockStationStatus {
+	return new DockStationStatus(
+		overrides.cleanFluidStatus ?? OK,
+		overrides.waterBoxFilterStatus ?? OK,
+		overrides.dustBagStatus ?? OK,
+		overrides.dirtyWaterBoxStatus ?? OK,
+		overrides.clearWaterBoxStatus ?? OK,
+		overrides.isUpdownWaterReady ?? OK,
+	);
+}
+
 describe('DockStationStatus', () => {
 	it('should parse docking station status correctly', () => {
 		const dss = 2729;
@@ -24,26 +47,22 @@ describe('DockStationStatus', () => {
 	});
 
 	it('should detect error in any status field', () => {
-		const status = new DockStationStatus(
-			DockStationStatusCode.OK,
-			DockStationStatusCode.OK,
-			DockStationStatusCode.Error,
-			DockStationStatusCode.OK,
-			DockStationStatusCode.OK,
-			DockStationStatusCode.OK,
-		);
+		const status = createDockStatus({ dustBagStatus: ERR });
 		expect(status.hasError()).toBe(true);
 	});
 
-	it('should return true if error in any field', () => {
-		const status = new DockStationStatus(
-			2,
-			2,
-			2,
-			2,
-			1, // This means there is a problem with the clear water box
-			1, // This means there is a problem with the updown water
-		);
+	it('should return true when isUpdownWaterReady is Error', () => {
+		const status = createDockStatus({ isUpdownWaterReady: ERR });
+		expect(status.hasError()).toBe(true);
+	});
+
+	it('should return true when clearWater and isUpdownWaterReady are both Error', () => {
+		const status = createDockStatus({ clearWaterBoxStatus: ERR, isUpdownWaterReady: ERR });
+		expect(status.hasError()).toBe(true);
+	});
+
+	it('should return true for dss=2729 when isUpdownWaterReady is Error', () => {
+		const status = DockStationStatus.parseDockStationStatus(2729);
 		expect(status.hasError()).toBe(true);
 	});
 
@@ -70,130 +89,71 @@ describe('DockStationStatus', () => {
 	});
 
 	describe('getMatterOperationalError', () => {
-		it('should return WaterTankMissing when cleanFluidStatus is Error', () => {
-			const status = new DockStationStatus(
-				DockStationStatusCode.Error,
-				DockStationStatusCode.OK,
-				DockStationStatusCode.OK,
-				DockStationStatusCode.OK,
-				DockStationStatusCode.OK,
-				DockStationStatusCode.OK,
-			);
-			expect(status.getMatterOperationalError()).toBe(RvcOperationalState.ErrorState.WaterTankMissing);
-		});
-
-		it('should return WaterTankLidOpen when waterBoxFilterStatus is Error', () => {
-			const status = new DockStationStatus(
-				DockStationStatusCode.OK,
-				DockStationStatusCode.Error,
-				DockStationStatusCode.OK,
-				DockStationStatusCode.OK,
-				DockStationStatusCode.OK,
-				DockStationStatusCode.OK,
-			);
-			expect(status.getMatterOperationalError()).toBe(RvcOperationalState.ErrorState.WaterTankLidOpen);
-		});
-
-		it('should return DustBinFull when dustBagStatus is Error', () => {
-			const status = new DockStationStatus(
-				DockStationStatusCode.OK,
-				DockStationStatusCode.OK,
-				DockStationStatusCode.Error,
-				DockStationStatusCode.OK,
-				DockStationStatusCode.OK,
-				DockStationStatusCode.OK,
-			);
-			expect(status.getMatterOperationalError()).toBe(RvcOperationalState.ErrorState.DustBinFull);
-		});
-
-		it('should return DirtyWaterTankFull when dirtyWaterBoxStatus is Error', () => {
-			const status = new DockStationStatus(
-				DockStationStatusCode.OK,
-				DockStationStatusCode.OK,
-				DockStationStatusCode.OK,
-				DockStationStatusCode.Error,
-				DockStationStatusCode.OK,
-				DockStationStatusCode.OK,
-			);
-			expect(status.getMatterOperationalError()).toBe(RvcOperationalState.ErrorState.DirtyWaterTankFull);
-		});
-
-		it('should return WaterTankEmpty when clearWaterBoxStatus is Error', () => {
-			const status = new DockStationStatus(
-				DockStationStatusCode.OK,
-				DockStationStatusCode.OK,
-				DockStationStatusCode.OK,
-				DockStationStatusCode.OK,
-				DockStationStatusCode.Error,
-				DockStationStatusCode.OK,
-			);
-			expect(status.getMatterOperationalError()).toBe(RvcOperationalState.ErrorState.WaterTankEmpty);
+		it.each([
+			['clearWaterBoxStatus', { clearWaterBoxStatus: ERR }, RvcOperationalState.ErrorState.WaterTankEmpty],
+			['dirtyWaterBoxStatus', { dirtyWaterBoxStatus: ERR }, RvcOperationalState.ErrorState.DirtyWaterTankFull],
+			['dustBagStatus', { dustBagStatus: ERR }, RvcOperationalState.ErrorState.DustBinMissing],
+			['cleanFluidStatus', { cleanFluidStatus: ERR }, RvcOperationalState.ErrorState.WaterTankMissing],
+			['waterBoxFilterStatus', { waterBoxFilterStatus: ERR }, RvcOperationalState.ErrorState.WaterTankMissing],
+			['isUpdownWaterReady', { isUpdownWaterReady: ERR }, RvcOperationalState.ErrorState.UnableToCompleteOperation],
+		] as const)('should return expected ErrorState when %s is Error', (_field, overrides, expected) => {
+			const status = createDockStatus(overrides);
+			expect(status.getMatterOperationalError()).toBe(expected);
 		});
 
 		it('should return NoError when no errors', () => {
-			const status = new DockStationStatus(
-				DockStationStatusCode.OK,
-				DockStationStatusCode.OK,
-				DockStationStatusCode.OK,
-				DockStationStatusCode.OK,
-				DockStationStatusCode.OK,
-				DockStationStatusCode.OK,
-			);
-			expect(status.getMatterOperationalError()).toBe(RvcOperationalState.ErrorState.NoError);
+			expect(createDockStatus().getMatterOperationalError()).toBe(RvcOperationalState.ErrorState.NoError);
+		});
+
+		it('should return WaterTankEmpty when clearWater and dustBag are both Error', () => {
+			const status = createDockStatus({ clearWaterBoxStatus: ERR, dustBagStatus: ERR });
+			expect(status.getMatterOperationalError()).toBe(RvcOperationalState.ErrorState.WaterTankEmpty);
+		});
+
+		it('should return DirtyWaterTankFull when dirtyWater and cleanFluid are both Error', () => {
+			const status = createDockStatus({ dirtyWaterBoxStatus: ERR, cleanFluidStatus: ERR });
+			expect(status.getMatterOperationalError()).toBe(RvcOperationalState.ErrorState.DirtyWaterTankFull);
+		});
+
+		it('should return DustBinMissing when dustBag and cleanFluid are both Error', () => {
+			const status = createDockStatus({ dustBagStatus: ERR, cleanFluidStatus: ERR });
+			expect(status.getMatterOperationalError()).toBe(RvcOperationalState.ErrorState.DustBinMissing);
+		});
+
+		it('should return WaterTankMissing when filter and cleanFluid are both Error', () => {
+			const status = createDockStatus({ waterBoxFilterStatus: ERR, cleanFluidStatus: ERR });
+			expect(status.getMatterOperationalError()).toBe(RvcOperationalState.ErrorState.WaterTankMissing);
+		});
+
+		it('should return UnableToCompleteOperation when only isUpdownWaterReady is Error', () => {
+			const status = createDockStatus({ isUpdownWaterReady: ERR });
+			expect(status.getMatterOperationalError()).toBe(RvcOperationalState.ErrorState.UnableToCompleteOperation);
+		});
+
+		it('should return WaterTankEmpty for python-roborock dss=149 fixture', () => {
+			const status = DockStationStatus.parseDockStationStatus(149);
+			expect(status.clearWaterBoxStatus).toBe(DockStationStatusCode.Error);
+			expect(status.dirtyWaterBoxStatus).toBe(DockStationStatusCode.Error);
+			expect(status.getMatterOperationalError()).toBe(RvcOperationalState.ErrorState.WaterTankEmpty);
 		});
 	});
 
 	describe('parseDockErrorCode', () => {
-		it('should return NoError for DockErrorCode.None', () => {
-			expect(DockStationStatus.parseDockErrorCode(DockErrorCode.None)).toBe(RvcOperationalState.ErrorState.NoError);
-		});
-
-		it('should return WaterTankEmpty for DockErrorCode.WaterEmpty', () => {
-			expect(DockStationStatus.parseDockErrorCode(DockErrorCode.WaterEmpty)).toBe(
-				RvcOperationalState.ErrorState.WaterTankEmpty,
-			);
-		});
-
-		it('should return DustBinFull for DockErrorCode.DuctBlockage', () => {
-			expect(DockStationStatus.parseDockErrorCode(DockErrorCode.DuctBlockage)).toBe(
-				RvcOperationalState.ErrorState.DustBinFull,
-			);
-		});
-
-		it('should return DirtyWaterTankFull for DockErrorCode.WasteWaterTankFull', () => {
-			expect(DockStationStatus.parseDockErrorCode(DockErrorCode.WasteWaterTankFull)).toBe(
-				RvcOperationalState.ErrorState.DirtyWaterTankFull,
-			);
-		});
-
-		it('should return DirtyWaterTankFull for DockErrorCode.CleaningTankFullOrBlocked', () => {
-			expect(DockStationStatus.parseDockErrorCode(DockErrorCode.CleaningTankFullOrBlocked)).toBe(
-				RvcOperationalState.ErrorState.DirtyWaterTankFull,
-			);
-		});
-
-		it('should return BrushJammed for DockErrorCode.MaintenanceBrushJammed', () => {
-			expect(DockStationStatus.parseDockErrorCode(DockErrorCode.MaintenanceBrushJammed)).toBe(
-				RvcOperationalState.ErrorState.BrushJammed,
-			);
-		});
-
-		it('should return DirtyWaterTankMissing for DockErrorCode.DirtyTankLatchOpen', () => {
-			expect(DockStationStatus.parseDockErrorCode(DockErrorCode.DirtyTankLatchOpen)).toBe(
-				RvcOperationalState.ErrorState.DirtyWaterTankMissing,
-			);
-		});
-
-		it('should return DustBinMissing for DockErrorCode.NoDustbin', () => {
-			expect(DockStationStatus.parseDockErrorCode(DockErrorCode.NoDustbin)).toBe(
-				RvcOperationalState.ErrorState.DustBinMissing,
-			);
-		});
-
-		it('should return UnableToCompleteOperation for unknown error codes', () => {
-			expect(DockStationStatus.parseDockErrorCode(999 as DockErrorCode)).toBe(
-				RvcOperationalState.ErrorState.UnableToCompleteOperation,
-			);
+		it.each([
+			[DockErrorCode.None, RvcOperationalState.ErrorState.NoError],
+			[DockErrorCode.NoDustbinOrFilter, RvcOperationalState.ErrorState.DustBinMissing],
+			[DockErrorCode.AutoEmptyDockFanError, RvcOperationalState.ErrorState.DustBinFull],
+			[DockErrorCode.AutoEmptyDockVoltageError, RvcOperationalState.ErrorState.UnableToCompleteOperation],
+			[DockErrorCode.DuctBlockage, RvcOperationalState.ErrorState.DustBinFull],
+			[DockErrorCode.WaterEmpty, RvcOperationalState.ErrorState.WaterTankEmpty],
+			[DockErrorCode.WasteWaterTankFull, RvcOperationalState.ErrorState.DirtyWaterTankFull],
+			[DockErrorCode.CleaningTankFullOrBlocked, RvcOperationalState.ErrorState.DirtyWaterTankFull],
+			[DockErrorCode.MaintenanceBrushJammed, RvcOperationalState.ErrorState.BrushJammed],
+			[DockErrorCode.DirtyTankLatchOpen, RvcOperationalState.ErrorState.DirtyWaterTankMissing],
+			[DockErrorCode.NoDustbin, RvcOperationalState.ErrorState.DustBinMissing],
+			[999 as DockErrorCode, RvcOperationalState.ErrorState.UnableToCompleteOperation],
+		] as const)('should map dock error code %i to %s', (code, expected) => {
+			expect(DockStationStatus.parseDockErrorCode(code)).toBe(expected);
 		});
 	});
 });

@@ -33,6 +33,40 @@ function extractBits(value: number, position: number): number {
 	return (value >> position) & BIT_MASK_2BITS;
 }
 
+const DOCK_ERROR_TO_MATTER: ReadonlyMap<DockErrorCode, RvcOperationalState.ErrorState> = new Map([
+	[DockErrorCode.None, RvcOperationalState.ErrorState.NoError],
+	[DockErrorCode.NoDustbinOrFilter, RvcOperationalState.ErrorState.DustBinMissing],
+	[DockErrorCode.AutoEmptyDockFanError, RvcOperationalState.ErrorState.DustBinFull],
+	[DockErrorCode.AutoEmptyDockVoltageError, RvcOperationalState.ErrorState.UnableToCompleteOperation],
+	[DockErrorCode.DuctBlockage, RvcOperationalState.ErrorState.DustBinFull],
+	[DockErrorCode.WaterEmpty, RvcOperationalState.ErrorState.WaterTankEmpty],
+	[DockErrorCode.WasteWaterTankFull, RvcOperationalState.ErrorState.DirtyWaterTankFull],
+	[DockErrorCode.CleaningTankFullOrBlocked, RvcOperationalState.ErrorState.DirtyWaterTankFull],
+	[DockErrorCode.MaintenanceBrushJammed, RvcOperationalState.ErrorState.BrushJammed],
+	[DockErrorCode.DirtyTankLatchOpen, RvcOperationalState.ErrorState.DirtyWaterTankMissing],
+	[DockErrorCode.NoDustbin, RvcOperationalState.ErrorState.DustBinMissing],
+]);
+
+type DssFieldKey =
+	| 'clearWaterBoxStatus'
+	| 'dirtyWaterBoxStatus'
+	| 'dustBagStatus'
+	| 'cleanFluidStatus'
+	| 'waterBoxFilterStatus'
+	| 'isUpdownWaterReady';
+
+const DSS_FIELD_PRIORITY: readonly {
+	field: DssFieldKey;
+	errorState: RvcOperationalState.ErrorState;
+}[] = [
+	{ field: 'clearWaterBoxStatus', errorState: RvcOperationalState.ErrorState.WaterTankEmpty },
+	{ field: 'dirtyWaterBoxStatus', errorState: RvcOperationalState.ErrorState.DirtyWaterTankFull },
+	{ field: 'dustBagStatus', errorState: RvcOperationalState.ErrorState.DustBinMissing },
+	{ field: 'cleanFluidStatus', errorState: RvcOperationalState.ErrorState.WaterTankMissing },
+	{ field: 'waterBoxFilterStatus', errorState: RvcOperationalState.ErrorState.WaterTankMissing },
+	{ field: 'isUpdownWaterReady', errorState: RvcOperationalState.ErrorState.UnableToCompleteOperation },
+];
+
 export class DockStationStatus {
 	constructor(
 		public readonly cleanFluidStatus: DockStationStatusCode,
@@ -49,26 +83,16 @@ export class DockStationStatus {
 			this.waterBoxFilterStatus === DockStationStatusCode.Error ||
 			this.dustBagStatus === DockStationStatusCode.Error ||
 			this.dirtyWaterBoxStatus === DockStationStatusCode.Error ||
-			this.clearWaterBoxStatus === DockStationStatusCode.Error
-			// || this.isUpdownWaterReady === DockStationStatusCode.Error
+			this.clearWaterBoxStatus === DockStationStatusCode.Error ||
+			this.isUpdownWaterReady === DockStationStatusCode.Error
 		);
 	}
 
 	public getMatterOperationalError(): RvcOperationalState.ErrorState {
-		if (this.cleanFluidStatus === DockStationStatusCode.Error) {
-			return RvcOperationalState.ErrorState.WaterTankMissing;
-		}
-		if (this.waterBoxFilterStatus === DockStationStatusCode.Error) {
-			return RvcOperationalState.ErrorState.WaterTankLidOpen;
-		}
-		if (this.dustBagStatus === DockStationStatusCode.Error) {
-			return RvcOperationalState.ErrorState.DustBinFull;
-		}
-		if (this.dirtyWaterBoxStatus === DockStationStatusCode.Error) {
-			return RvcOperationalState.ErrorState.DirtyWaterTankFull;
-		}
-		if (this.clearWaterBoxStatus === DockStationStatusCode.Error) {
-			return RvcOperationalState.ErrorState.WaterTankEmpty;
+		for (const { field, errorState } of DSS_FIELD_PRIORITY) {
+			if (this[field] === DockStationStatusCode.Error) {
+				return errorState;
+			}
 		}
 
 		return RvcOperationalState.ErrorState.NoError;
@@ -86,24 +110,6 @@ export class DockStationStatus {
 	}
 
 	public static parseDockErrorCode(dockErrorCode: DockErrorCode): RvcOperationalState.ErrorState {
-		switch (dockErrorCode) {
-			case DockErrorCode.WaterEmpty:
-				return RvcOperationalState.ErrorState.WaterTankEmpty;
-			case DockErrorCode.DuctBlockage:
-				return RvcOperationalState.ErrorState.DustBinFull;
-			case DockErrorCode.WasteWaterTankFull:
-			case DockErrorCode.CleaningTankFullOrBlocked:
-				return RvcOperationalState.ErrorState.DirtyWaterTankFull;
-			case DockErrorCode.MaintenanceBrushJammed:
-				return RvcOperationalState.ErrorState.BrushJammed;
-			case DockErrorCode.DirtyTankLatchOpen:
-				return RvcOperationalState.ErrorState.DirtyWaterTankMissing;
-			case DockErrorCode.NoDustbin:
-				return RvcOperationalState.ErrorState.DustBinMissing;
-			case DockErrorCode.None:
-				return RvcOperationalState.ErrorState.NoError;
-			default:
-				return RvcOperationalState.ErrorState.UnableToCompleteOperation;
-		}
+		return DOCK_ERROR_TO_MATTER.get(dockErrorCode) ?? RvcOperationalState.ErrorState.UnableToCompleteOperation;
 	}
 }
