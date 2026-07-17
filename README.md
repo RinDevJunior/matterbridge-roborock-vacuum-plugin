@@ -93,7 +93,7 @@ To get the **DUID** for your devices, you have two options:
 ### 🚧 Project Status
 
 - **Under active development**
-- Requires **`matterbridge@3.7.3`**
+- Requires **`matterbridge@3.9.4`**
 
 ---
 
