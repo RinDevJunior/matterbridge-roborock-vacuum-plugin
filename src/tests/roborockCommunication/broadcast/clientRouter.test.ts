@@ -47,6 +47,8 @@ describe('ClientRouter', () => {
 			isConnected: vi.fn().mockReturnValue(true),
 			connect: vi.fn(),
 			disconnect: vi.fn(),
+			reportQuerySuccess: vi.fn(),
+			reportQueryTimeout: vi.fn(),
 		};
 
 		mockLocalNetworkClient = {
