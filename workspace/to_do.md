@@ -2,6 +2,7 @@
 
 ## Completed
 
+- [x] Event-driven MQTT health monitoring + general exponential backoff — replaces blind hourly `keepConnectionAlive` force-reconnect; ported python-roborock's `HealthManager` concept. All gates pass; PR to `develop` pending.
 - [x] Release candidate `1.1.7-rc04` created
 - [x] Fix `ChargingError` (status code 9) to properly set `operationalError = FailedToFindChargingDock`
 - [x] Investigate feature gaps (reference vs current plugin) — gaps analysis complete

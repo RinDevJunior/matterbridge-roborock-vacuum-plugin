@@ -1,5 +1,19 @@
 # Claude History
 
+## 2026-07-18 — Event-driven MQTT health monitoring + general backoff
+
+**Task:** Replace `MQTTClient`'s blind unconditional hourly force-reconnect (`keepConnectionAlive`) with an event-driven health monitor, and add exponential backoff for general (non-auth) MQTT errors/closes/offline events. Based on research into python-roborock's `HealthManager` concept (`workspace/mqtt-disconnect-recovery-reference/answer.md`, via `/ref-idea`).
+
+**Changes:**
+
+- `src/roborockCommunication/mqtt/mqttHealthMonitor.ts` (new) — `MqttHealthMonitor` class tracking consecutive query timeouts; `shouldRestart()` gated by both a timeout threshold and a restart cooldown.
+- `src/roborockCommunication/mqtt/mqttClient.ts` — removed `keepConnectionAlive()`/`keepConnectionAliveInterval`; added `reportQuerySuccess()`/`reportQueryTimeout()` (public), `forceReconnect()`, `scheduleGeneralBackoffReconnect()` (general exponential backoff, 10s→6h, ×1.5), wired into `onClose`/`onOffline`/`onError` (non-auth branch)/`onConnect` reset/`terminateConnection`/`disconnect` cleanup.
+- `src/roborockCommunication/routing/clientRouter.ts` — `query()` reports success/timeout to `mqttClient`, guarded by `request.secure` so local-client queries never affect MQTT health state.
+- `src/constants/timeouts.ts` — added `HEALTH_TIMEOUT_THRESHOLD`, `HEALTH_RESTART_COOLDOWN_MS`, `MIN_BACKOFF_INTERVAL_MS`, `MAX_BACKOFF_INTERVAL_MS`, `BACKOFF_MULTIPLIER`.
+- `src/tests/roborockCommunication/mqtt/mqttHealthMonitor.test.ts` (new), `src/tests/roborockCommunication/broadcast/client/MQTTClient.test.ts`, `src/tests/roborockCommunication/broadcast/clientRouter.test.ts` — test coverage for the above.
+
+**Outcome:** Pass (reviewed and approved; all four verification gates pass: format:ci, lint:fix:ci, type-check:ci, test:ci). Built in worktree `mqtt-reconnect-health-backoff`, PR to `develop` pending.
+
 ## 2026-07-14 — Reset ServiceArea.progress on clean start (third trigger)
 
 **Task:** Add third trigger for resetting `ServiceArea.progress` per-room state when vacuum starts new clean; detect genuine Docked/Stopped/Error → actively-cleaning operationalState transitions using `lastActivelyCleaningState` flag to avoid false positives on mid-clean detours.
