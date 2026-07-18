@@ -26,6 +26,31 @@ export const RECONNECT_DELAY_MS = 10000;
 export const KEEPALIVE_INTERVAL_MS = 60 * 60 * 1000;
 
 /**
+ * Consecutive query timeouts before the MQTT health monitor forces a reconnect (mirrors python-roborock TIMEOUT_THRESHOLD).
+ */
+export const HEALTH_TIMEOUT_THRESHOLD = 3;
+
+/**
+ * Minimum time between health-monitor-triggered forced reconnects (mirrors python-roborock RESTART_COOLDOWN, 30 min).
+ */
+export const HEALTH_RESTART_COOLDOWN_MS = 30 * 60 * 1000;
+
+/**
+ * Starting delay for general (non-auth) MQTT backoff reconnects (mirrors python-roborock MIN_BACKOFF_INTERVAL, 10s).
+ */
+export const MIN_BACKOFF_INTERVAL_MS = 10 * 1000;
+
+/**
+ * Cap for general MQTT backoff delay (mirrors python-roborock MAX_BACKOFF_INTERVAL, 6h).
+ */
+export const MAX_BACKOFF_INTERVAL_MS = 6 * 60 * 60 * 1000;
+
+/**
+ * Multiplier applied to the general MQTT backoff delay on each consecutive failure (mirrors python-roborock BACKOFF_MULTIPLIER).
+ */
+export const BACKOFF_MULTIPLIER = 1.5;
+
+/**
  * Minimum time between verification code requests (15 minutes).
  * Rate limiting for 2FA code generation.
  */

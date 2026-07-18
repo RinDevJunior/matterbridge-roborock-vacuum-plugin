@@ -108,8 +108,15 @@ export class ClientRouter implements Client {
 		this.broadcasterFactory.register(listener);
 		try {
 			await this.send(duid, request);
-			return await listener.waitFor();
+			const result = await listener.waitFor();
+			if (request.secure) {
+				this.mqttClient.reportQuerySuccess();
+			}
+			return result;
 		} catch (error) {
+			if (request.secure) {
+				this.mqttClient.reportQueryTimeout();
+			}
 			this.logger.error(error instanceof Error ? error.message : String(error));
 			return undefined;
 		} finally {

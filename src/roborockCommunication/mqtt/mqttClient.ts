@@ -1,11 +1,19 @@
 import { AnsiLogger, debugStringify } from 'matterbridge/logger';
 import mqtt, { ErrorWithReasonCode, IConnackPacket, ISubscriptionGrant, MqttClient as MqttLibClient } from 'mqtt';
 
-import { KEEPALIVE_INTERVAL_MS } from '../../constants/timeouts.js';
+import {
+	BACKOFF_MULTIPLIER,
+	HEALTH_RESTART_COOLDOWN_MS,
+	HEALTH_TIMEOUT_THRESHOLD,
+	KEEPALIVE_INTERVAL_MS,
+	MAX_BACKOFF_INTERVAL_MS,
+	MIN_BACKOFF_INTERVAL_MS,
+} from '../../constants/timeouts.js';
 import * as CryptoUtils from '../helper/cryptoHelper.js';
 import { MessageContext, RequestMessage, Rriot, UserData } from '../models/index.js';
 import { AbstractClient } from '../routing/abstractClient.js';
 import { ResponseBroadcaster } from '../routing/listeners/responseBroadcaster.js';
+import { MqttHealthMonitor } from './mqttHealthMonitor.js';
 
 export class MQTTClient extends AbstractClient {
 	protected override clientName = 'MQTTClient';
@@ -14,11 +22,14 @@ export class MQTTClient extends AbstractClient {
 	private readonly mqttUsername: string;
 	private readonly mqttPassword: string;
 	private mqttClient: MqttLibClient | undefined = undefined;
-	private keepConnectionAliveInterval: NodeJS.Timeout | undefined = undefined;
 	private connected = false;
 	private isForceReconnecting = false;
 	private consecutiveAuthErrors = 0;
 	private authErrorBackoffTimeout: NodeJS.Timeout | undefined = undefined;
+	private readonly healthMonitor = new MqttHealthMonitor(HEALTH_TIMEOUT_THRESHOLD, HEALTH_RESTART_COOLDOWN_MS);
+	private consecutiveGeneralFailures = 0;
+	private generalBackoffMs = MIN_BACKOFF_INTERVAL_MS;
+	private generalBackoffTimeout: NodeJS.Timeout | undefined = undefined;
 
 	public constructor(
 		logger: AnsiLogger,
@@ -67,8 +78,6 @@ export class MQTTClient extends AbstractClient {
 		this.mqttClient.on('disconnect', this.onDisconnect.bind(this));
 		this.mqttClient.on('offline', this.onOffline.bind(this));
 		this.mqttClient.on('message', this.onMessage.bind(this));
-
-		this.keepConnectionAlive();
 	}
 
 	public override async disconnect(): Promise<void> {
@@ -78,14 +87,14 @@ export class MQTTClient extends AbstractClient {
 		}
 
 		try {
-			if (this.keepConnectionAliveInterval) {
-				clearInterval(this.keepConnectionAliveInterval);
-				this.keepConnectionAliveInterval = undefined;
-			}
-
 			if (this.authErrorBackoffTimeout) {
 				clearTimeout(this.authErrorBackoffTimeout);
 				this.authErrorBackoffTimeout = undefined;
+			}
+
+			if (this.generalBackoffTimeout) {
+				clearTimeout(this.generalBackoffTimeout);
+				this.generalBackoffTimeout = undefined;
 			}
 
 			this.mqttClient.end();
@@ -112,24 +121,52 @@ export class MQTTClient extends AbstractClient {
 		this.logger.debug(`[MQTTClient] sent message to ${duid}`);
 	}
 
-	private keepConnectionAlive(): void {
-		if (this.keepConnectionAliveInterval) {
-			clearInterval(this.keepConnectionAliveInterval);
-			this.keepConnectionAliveInterval.unref();
+	public reportQuerySuccess(): void {
+		this.healthMonitor.onSuccess();
+	}
+
+	public reportQueryTimeout(): void {
+		this.healthMonitor.onTimeout();
+		if (this.healthMonitor.shouldRestart(Date.now())) {
+			this.logger.warn(
+				`[MQTTClient] Health monitor: too many consecutive query timeouts (${this.healthMonitor.getConsecutiveTimeouts()})`,
+			);
+			this.forceReconnect('health monitor: too many consecutive query timeouts');
+			this.healthMonitor.recordRestart(Date.now());
+		}
+	}
+
+	private forceReconnect(reason: string): void {
+		if (this.mqttClient) {
+			this.logger.debug(`[MQTTClient] Force reconnecting: ${reason}`);
+			this.isForceReconnecting = true;
+			this.mqttClient.end();
+			this.mqttClient.reconnect();
+		} else {
+			this.logger.info(`[MQTTClient] Force reconnecting (new connection): ${reason}`);
+			this.connect();
+		}
+	}
+
+	private scheduleGeneralBackoffReconnect(reason: string): void {
+		this.consecutiveGeneralFailures++;
+		const delayMs = this.generalBackoffMs;
+		this.generalBackoffMs = Math.min(this.generalBackoffMs * BACKOFF_MULTIPLIER, MAX_BACKOFF_INTERVAL_MS);
+
+		if (this.generalBackoffTimeout) {
+			clearTimeout(this.generalBackoffTimeout);
 		}
 
-		// Always do a reconnect because the mqtt sometimes does not response any more
-		this.keepConnectionAliveInterval = setInterval(() => {
-			if (this.mqttClient) {
-				this.logger.debug('[MQTTClient] Force reconnecting to ensure fresh connection');
-				this.isForceReconnecting = true;
-				this.mqttClient.end();
-				this.mqttClient.reconnect();
-			} else {
-				this.logger.info('[MQTTClient] Force reconnecting to ensure fresh connection (new connection)');
-				this.connect();
-			}
-		}, KEEPALIVE_INTERVAL_MS);
+		this.logger.warn(
+			`[MQTTClient] Scheduling general backoff reconnect: ${reason} (delay: ${delayMs}ms, failures: ${this.consecutiveGeneralFailures})`,
+		);
+
+		this.terminateConnection();
+		this.generalBackoffTimeout = setTimeout(() => {
+			this.generalBackoffTimeout = undefined;
+			this.connect();
+		}, delayMs);
+		this.generalBackoffTimeout.unref();
 	}
 
 	private async onConnect(result: IConnackPacket): Promise<void> {
@@ -143,6 +180,13 @@ export class MQTTClient extends AbstractClient {
 
 		this.connected = true;
 		this.consecutiveAuthErrors = 0;
+		this.consecutiveGeneralFailures = 0;
+		this.generalBackoffMs = MIN_BACKOFF_INTERVAL_MS;
+		if (this.generalBackoffTimeout) {
+			clearTimeout(this.generalBackoffTimeout);
+			this.generalBackoffTimeout = undefined;
+		}
+
 		this.logger.info(`[MQTTClient] connected to MQTT broker with result: ${debugStringify(result)}`);
 		this.subscribeToQueue();
 
@@ -205,18 +249,20 @@ export class MQTTClient extends AbstractClient {
 				}, KEEPALIVE_INTERVAL_MS);
 				this.authErrorBackoffTimeout.unref();
 			}
+		} else {
+			this.scheduleGeneralBackoffReconnect(`MQTT connection error: ${errorMessage}`);
 		}
 	}
 
 	private terminateConnection(): void {
-		if (this.keepConnectionAliveInterval) {
-			clearInterval(this.keepConnectionAliveInterval);
-			this.keepConnectionAliveInterval = undefined;
-		}
-
 		if (this.authErrorBackoffTimeout) {
 			clearTimeout(this.authErrorBackoffTimeout);
 			this.authErrorBackoffTimeout = undefined;
+		}
+
+		if (this.generalBackoffTimeout) {
+			clearTimeout(this.generalBackoffTimeout);
+			this.generalBackoffTimeout = undefined;
 		}
 
 		if (this.mqttClient) {
@@ -230,6 +276,7 @@ export class MQTTClient extends AbstractClient {
 	private async onClose(): Promise<void> {
 		if (this.connected && !this.isForceReconnecting) {
 			await this.connectionBroadcaster.onClose(`mqtt-${this.mqttUsername}`);
+			this.scheduleGeneralBackoffReconnect('MQTT connection closed unexpectedly');
 		}
 
 		this.connected = false;
@@ -238,6 +285,7 @@ export class MQTTClient extends AbstractClient {
 	private async onOffline(): Promise<void> {
 		this.connected = false;
 		await this.connectionBroadcaster.onOffline(`mqtt-${this.mqttUsername}`);
+		this.scheduleGeneralBackoffReconnect('MQTT client went offline');
 	}
 
 	private onReconnect(): void {
