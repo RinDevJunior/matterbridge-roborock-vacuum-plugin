@@ -4,6 +4,7 @@ import { afterAll, afterEach, beforeEach, describe, expect, it, vi } from 'vites
 
 import { MessageContext, RequestMessage } from '../../../../roborockCommunication/models/index.js';
 import { MQTTClient } from '../../../../roborockCommunication/mqtt/mqttClient.js';
+import { MqttHealthMonitor } from '../../../../roborockCommunication/mqtt/mqttHealthMonitor.js';
 import { ConnectionBroadcaster } from '../../../../roborockCommunication/routing/listeners/connectionBroadcaster.js';
 import { V1ResponseBroadcaster } from '../../../../roborockCommunication/routing/listeners/v1ResponseBroadcaster.js';
 import { asPartial, asType, createMockLogger } from '../../../helpers/testUtils.js';
@@ -49,12 +50,9 @@ describe('MQTTClient (additional)', () => {
 	it('connect calls mqtt.connect and registers event handlers', () => {
 		const mockMqttClient: any = { on: vi.fn(), end: vi.fn(), reconnect: vi.fn(), publish: vi.fn(), subscribe: vi.fn() };
 
-		// prevent keepAlive timer from running
 		const spyConnect = vi.spyOn(mqtt, 'connect').mockImplementation(() => asType<any>(mockMqttClient));
 
 		const client = new MQTTClient(logger, context, userdata, responseBroadcaster);
-
-		client['keepConnectionAlive'] = vi.fn();
 
 		client.connect();
 
@@ -89,7 +87,6 @@ describe('MQTTClient (additional)', () => {
 
 		const client = new MQTTClient(logger, context, userdata, responseBroadcaster);
 
-		client['keepConnectionAlive'] = vi.fn();
 		client['mqttClient'] = mockMqttClient;
 		client['connected'] = true;
 
@@ -164,7 +161,7 @@ describe('MQTTClient', () => {
 		globalThis.mockConnect.mockReturnValue(client);
 	});
 
-	function createMQTTClient() {
+	function createMQTTClient(overrideHealthMonitor?: any) {
 		class TestMQTTClient extends MQTTClient {
 			constructor() {
 				super(logger, context, userdata, responseBroadcaster);
@@ -197,6 +194,13 @@ describe('MQTTClient', () => {
 			writable: true,
 		});
 
+		if (overrideHealthMonitor) {
+			Object.defineProperty(mqttClient, 'healthMonitor', {
+				value: overrideHealthMonitor,
+				writable: true,
+			});
+		}
+
 		createdClients.push(mqttClient);
 		return mqttClient;
 	}
@@ -205,8 +209,11 @@ describe('MQTTClient', () => {
 		// Clean up any MQTT clients to prevent timer leaks
 		for (const mqttClient of createdClients) {
 			try {
-				if (mqttClient.keepConnectionAliveInterval) {
-					clearInterval(mqttClient.keepConnectionAliveInterval);
+				if (mqttClient.generalBackoffTimeout) {
+					clearTimeout(mqttClient.generalBackoffTimeout);
+				}
+				if (mqttClient.authErrorBackoffTimeout) {
+					clearTimeout(mqttClient.authErrorBackoffTimeout);
 				}
 				if (mqttClient.mqttClient) {
 					// Force the client to null to prevent reconnect attempts
@@ -400,58 +407,29 @@ describe('MQTTClient', () => {
 		expect(typeof actualClient?.subscribe).toBe('function');
 	});
 
-	it('keepConnectionAlive should setup interval that reconnects client', () => {
-		vi.useFakeTimers();
+	it('forceReconnect should end and reconnect existing mqttClient', () => {
 		const mqttClient = createMQTTClient();
 		mqttClient['mqttClient'] = client;
 		mqttClient['connected'] = true;
-		mqttClient['keepConnectionAlive']();
 
-		expect(mqttClient['keepConnectionAliveInterval']).toBeDefined();
-		// Fast-forward time by 60 minutes to trigger the interval callback
-		vi.advanceTimersByTime(60 * 60 * 1000);
+		mqttClient['forceReconnect']('test reason');
 
-		expect(logger.debug).toHaveBeenCalledWith('[MQTTClient] Force reconnecting to ensure fresh connection');
-
-		// Clean up
-		clearInterval(mqttClient['keepConnectionAliveInterval']);
-		vi.useRealTimers();
+		expect(mqttClient['isForceReconnecting']).toBe(true);
+		expect(client.end).toHaveBeenCalled();
+		expect(client.reconnect).toHaveBeenCalled();
+		expect(logger.debug).toHaveBeenCalledWith('[MQTTClient] Force reconnecting: test reason');
 	});
 
-	it('keepConnectionAlive should call connect if mqttClient is undefined', () => {
-		vi.useFakeTimers();
+	it('forceReconnect should call connect if mqttClient is undefined', () => {
 		const mqttClient = createMQTTClient();
 		const connectSpy = vi.spyOn(mqttClient, 'connect');
 		mqttClient['mqttClient'] = undefined;
 		mqttClient['connected'] = false;
-		mqttClient['keepConnectionAlive']();
 
-		// Fast-forward time by 60 minutes to trigger the interval callback
-		vi.advanceTimersByTime(60 * 60 * 1000);
+		mqttClient['forceReconnect']('test reason');
 
 		expect(connectSpy).toHaveBeenCalled();
-
-		// Clean up
-		clearInterval(mqttClient['keepConnectionAliveInterval']);
-		vi.useRealTimers();
-	});
-
-	it('keepConnectionAlive should clear existing interval before setting new one', () => {
-		vi.useFakeTimers();
-		const mqttClient = createMQTTClient();
-		const clearIntervalSpy = vi.spyOn(global, 'clearInterval');
-
-		// Set initial interval
-		mqttClient['keepConnectionAlive']();
-		const firstInterval = mqttClient['keepConnectionAliveInterval'];
-
-		// Call again to clear and reset
-		mqttClient['keepConnectionAlive']();
-		expect(clearIntervalSpy).toHaveBeenCalledWith(firstInterval);
-
-		// Clean up
-		clearInterval(mqttClient['keepConnectionAliveInterval']);
-		vi.useRealTimers();
+		expect(logger.info).toHaveBeenCalledWith('[MQTTClient] Force reconnecting (new connection): test reason');
 	});
 
 	it('disconnect should return early if not connected', async () => {
@@ -494,15 +472,13 @@ describe('MQTTClient', () => {
 		expect(mqttClient['connectionBroadcaster'].onConnected).toHaveBeenCalledWith('mqtt-c6d6afb9');
 	});
 
-	it('should NOT broadcast onClose or onConnected when keepConnectionAlive forces reconnect', async () => {
-		vi.useFakeTimers();
+	it('should NOT broadcast onClose or onConnected when forceReconnect triggers the close', async () => {
 		const mqttClient = createMQTTClient();
 		mqttClient['mqttClient'] = client;
 		mqttClient['connected'] = true;
 		mqttClient['subscribeToQueue'] = vi.fn();
 
-		mqttClient['keepConnectionAlive']();
-		vi.advanceTimersByTime(60 * 60 * 1000);
+		mqttClient['forceReconnect']('test reason');
 
 		expect(mqttClient['isForceReconnecting']).toBe(true);
 
@@ -513,9 +489,6 @@ describe('MQTTClient', () => {
 		expect(mqttClient['connectionBroadcaster'].onConnected).not.toHaveBeenCalled();
 
 		expect(mqttClient['isForceReconnecting']).toBe(false);
-
-		clearInterval(mqttClient['keepConnectionAliveInterval']);
-		vi.useRealTimers();
 	});
 
 	it('onOffline should set connected to false and call onOffline', async () => {
@@ -607,13 +580,13 @@ describe('MQTTClient', () => {
 		const mqttClient = createMQTTClient();
 		mqttClient['mqttClient'] = client;
 		mqttClient['connected'] = true;
-		mqttClient['keepConnectionAliveInterval'] = setInterval(() => {}, 1000);
 		mqttClient['authErrorBackoffTimeout'] = setTimeout(() => {}, 1000);
+		mqttClient['generalBackoffTimeout'] = setTimeout(() => {}, 1000);
 
 		mqttClient['terminateConnection']();
 
-		expect(mqttClient['keepConnectionAliveInterval']).toBeUndefined();
 		expect(mqttClient['authErrorBackoffTimeout']).toBeUndefined();
+		expect(mqttClient['generalBackoffTimeout']).toBeUndefined();
 		expect(client.end).toHaveBeenCalledWith(true);
 		expect(mqttClient['mqttClient']).toBeUndefined();
 		expect(mqttClient['connected']).toBe(false);
@@ -623,8 +596,8 @@ describe('MQTTClient', () => {
 		const mqttClient = createMQTTClient();
 		mqttClient['mqttClient'] = client;
 		mqttClient['connected'] = true;
-		mqttClient['keepConnectionAliveInterval'] = undefined;
 		mqttClient['authErrorBackoffTimeout'] = undefined;
+		mqttClient['generalBackoffTimeout'] = undefined;
 
 		mqttClient['terminateConnection']();
 
@@ -640,28 +613,6 @@ describe('MQTTClient', () => {
 		mqttClient['terminateConnection']();
 
 		expect(mqttClient['connected']).toBe(false);
-	});
-
-	it('keepConnectionAlive should reconnect when client does not exists', () => {
-		vi.useFakeTimers();
-		const mqttClient = createMQTTClient();
-		const connectSpy = vi.spyOn(mqttClient, 'connect');
-		const originalClient = mqttClient['mqttClient'];
-		mqttClient['mqttClient'] = undefined;
-		mqttClient['connected'] = false;
-		mqttClient['keepConnectionAlive']();
-
-		// Fast-forward time by 60 minutes to trigger the interval callback
-		vi.advanceTimersByTime(60 * 60 * 1000);
-
-		expect(connectSpy).toHaveBeenCalled();
-		expect(logger.info).toHaveBeenCalledWith(
-			'[MQTTClient] Force reconnecting to ensure fresh connection (new connection)',
-		);
-
-		// Clean up
-		clearInterval(mqttClient['keepConnectionAliveInterval']);
-		vi.useRealTimers();
 	});
 
 	it('onConnect should return early if result is falsy', async () => {
@@ -696,17 +647,6 @@ describe('MQTTClient', () => {
 		expect(logger.error).toHaveBeenCalledWith('[MQTTClient] cannot subscribe, client not connected');
 	});
 
-	it('disconnect should clear keepConnectionAliveInterval', async () => {
-		const mqttClient = createMQTTClient();
-		mqttClient['mqttClient'] = client;
-		mqttClient['connected'] = true;
-		mqttClient['keepConnectionAliveInterval'] = setInterval(() => {}, 1000);
-
-		await mqttClient.disconnect();
-
-		expect(mqttClient['keepConnectionAliveInterval']).toBeUndefined();
-	});
-
 	it('disconnect should clear authErrorBackoffTimeout', async () => {
 		const mqttClient = createMQTTClient();
 		mqttClient['mqttClient'] = client;
@@ -731,5 +671,254 @@ describe('MQTTClient', () => {
 		});
 		await mqttClient['onMessage']('topic/duid', Buffer.from('msg'));
 		expect(logger.error).toHaveBeenCalledWith(expect.stringContaining('unable to process message'));
+	});
+
+	describe('Health Monitor Integration', () => {
+		it('reportQuerySuccess should reset consecutive timeouts', () => {
+			const mqttClient = createMQTTClient();
+			mqttClient['healthMonitor'].onTimeout();
+			mqttClient['healthMonitor'].onTimeout();
+			expect(mqttClient['healthMonitor'].getConsecutiveTimeouts()).toBe(2);
+
+			mqttClient.reportQuerySuccess();
+
+			expect(mqttClient['healthMonitor'].getConsecutiveTimeouts()).toBe(0);
+		});
+
+		it('reportQueryTimeout should increment timeout counter', () => {
+			const mqttClient = createMQTTClient();
+			expect(mqttClient['healthMonitor'].getConsecutiveTimeouts()).toBe(0);
+
+			mqttClient.reportQueryTimeout();
+
+			expect(mqttClient['healthMonitor'].getConsecutiveTimeouts()).toBe(1);
+		});
+
+		it('reportQueryTimeout should not forceReconnect when threshold not reached', () => {
+			const mqttClient = createMQTTClient();
+			const forceReconnectSpy = vi.spyOn(mqttClient as any, 'forceReconnect');
+
+			mqttClient.reportQueryTimeout();
+			mqttClient.reportQueryTimeout();
+
+			expect(forceReconnectSpy).not.toHaveBeenCalled();
+			expect(mqttClient['healthMonitor'].getConsecutiveTimeouts()).toBe(2);
+		});
+
+		it('reportQueryTimeout should forceReconnect when threshold is reached', () => {
+			const mqttClient = createMQTTClient();
+			const forceReconnectSpy = vi.spyOn(mqttClient as any, 'forceReconnect');
+
+			mqttClient.reportQueryTimeout();
+			mqttClient.reportQueryTimeout();
+			mqttClient.reportQueryTimeout();
+
+			expect(forceReconnectSpy).toHaveBeenCalledWith('health monitor: too many consecutive query timeouts');
+			expect(logger.warn).toHaveBeenCalledWith(
+				expect.stringContaining('Health monitor: too many consecutive query timeouts'),
+			);
+			// After recordRestart, counter is reset
+			expect(mqttClient['healthMonitor'].getConsecutiveTimeouts()).toBe(0);
+		});
+
+		it('reportQueryTimeout should respect cooldown after health-triggered restart', () => {
+			vi.useFakeTimers();
+			const testMonitor = new MqttHealthMonitor(3, 500); // 500ms cooldown for testing
+			const mqttClient = createMQTTClient(testMonitor);
+			const forceReconnectSpy = vi.spyOn(mqttClient as any, 'forceReconnect');
+
+			// First batch of timeouts triggers restart
+			for (let i = 0; i < 3; i++) mqttClient.reportQueryTimeout();
+			expect(forceReconnectSpy).toHaveBeenCalledTimes(1);
+
+			// Immediately try again - should not trigger due to cooldown
+			vi.advanceTimersByTime(100);
+			for (let i = 0; i < 3; i++) mqttClient.reportQueryTimeout();
+			expect(forceReconnectSpy).toHaveBeenCalledTimes(1); // Still just 1
+
+			// After cooldown expires, should trigger again
+			vi.advanceTimersByTime(400); // Now 500ms has passed
+			for (let i = 0; i < 3; i++) mqttClient.reportQueryTimeout();
+			expect(forceReconnectSpy).toHaveBeenCalledTimes(2);
+		});
+	});
+
+	describe('General Backoff Integration', () => {
+		it('onClose should schedule general backoff when connected and not force reconnecting', async () => {
+			const mqttClient = createMQTTClient();
+			mqttClient['connected'] = true;
+			mqttClient['isForceReconnecting'] = false;
+			const scheduleGeneralBackoffSpy = vi.spyOn(mqttClient as any, 'scheduleGeneralBackoffReconnect');
+
+			await mqttClient['onClose']();
+
+			expect(scheduleGeneralBackoffSpy).toHaveBeenCalledWith('MQTT connection closed unexpectedly');
+		});
+
+		it('onClose should not schedule backoff when isForceReconnecting is true', async () => {
+			const mqttClient = createMQTTClient();
+			mqttClient['connected'] = true;
+			mqttClient['isForceReconnecting'] = true;
+			const scheduleGeneralBackoffSpy = vi.spyOn(mqttClient as any, 'scheduleGeneralBackoffReconnect');
+
+			await mqttClient['onClose']();
+
+			expect(scheduleGeneralBackoffSpy).not.toHaveBeenCalled();
+		});
+
+		it('onClose should not schedule backoff when not connected', async () => {
+			const mqttClient = createMQTTClient();
+			mqttClient['connected'] = false;
+			const scheduleGeneralBackoffSpy = vi.spyOn(mqttClient as any, 'scheduleGeneralBackoffReconnect');
+
+			await mqttClient['onClose']();
+
+			expect(scheduleGeneralBackoffSpy).not.toHaveBeenCalled();
+		});
+
+		it('onOffline should always schedule general backoff', async () => {
+			const mqttClient = createMQTTClient();
+			mqttClient['connected'] = true;
+			const scheduleGeneralBackoffSpy = vi.spyOn(mqttClient as any, 'scheduleGeneralBackoffReconnect');
+
+			await mqttClient['onOffline']();
+
+			expect(scheduleGeneralBackoffSpy).toHaveBeenCalledWith('MQTT client went offline');
+		});
+
+		it('onError should schedule general backoff for non-auth errors', async () => {
+			const mqttClient = createMQTTClient();
+			const scheduleGeneralBackoffSpy = vi.spyOn(mqttClient as any, 'scheduleGeneralBackoffReconnect');
+
+			await mqttClient['onError'](new Error('Connection lost'));
+
+			expect(scheduleGeneralBackoffSpy).toHaveBeenCalledWith(expect.stringContaining('MQTT connection error'));
+		});
+
+		it('onError should not schedule general backoff for auth errors', async () => {
+			const mqttClient = createMQTTClient();
+			const scheduleGeneralBackoffSpy = vi.spyOn(mqttClient as any, 'scheduleGeneralBackoffReconnect');
+
+			await mqttClient['onError'](asPartial<ErrorWithReasonCode>({ code: 5 }));
+
+			expect(scheduleGeneralBackoffSpy).not.toHaveBeenCalled();
+		});
+
+		it('scheduleGeneralBackoffReconnect should compute exponential backoff delay', async () => {
+			vi.useFakeTimers();
+			const mqttClient = createMQTTClient();
+			mqttClient['mqttClient'] = client;
+			const connectSpy = vi.spyOn(mqttClient, 'connect');
+
+			const { MIN_BACKOFF_INTERVAL_MS, BACKOFF_MULTIPLIER, MAX_BACKOFF_INTERVAL_MS } =
+				await import('../../../../constants/timeouts.js');
+
+			// First call
+			mqttClient['scheduleGeneralBackoffReconnect']('error 1');
+			expect(logger.warn).toHaveBeenCalledWith(expect.stringContaining(`delay: ${MIN_BACKOFF_INTERVAL_MS}ms`));
+
+			// Advance and trigger
+			vi.advanceTimersByTime(MIN_BACKOFF_INTERVAL_MS + 100);
+			expect(connectSpy).toHaveBeenCalledTimes(1);
+
+			connectSpy.mockClear();
+
+			// Second call (exponential increase)
+			const expectedDelay = Math.min(MIN_BACKOFF_INTERVAL_MS * BACKOFF_MULTIPLIER, MAX_BACKOFF_INTERVAL_MS);
+			mqttClient['scheduleGeneralBackoffReconnect']('error 2');
+			expect(logger.warn).toHaveBeenCalledWith(expect.stringContaining(`delay: ${Math.floor(expectedDelay)}ms`));
+
+			vi.useRealTimers();
+		});
+
+		it('scheduleGeneralBackoffReconnect should clear pre-existing timeout', () => {
+			vi.useFakeTimers();
+			const mqttClient = createMQTTClient();
+			mqttClient['mqttClient'] = client;
+
+			const clearTimeoutSpy = vi.spyOn(global, 'clearTimeout');
+
+			mqttClient['scheduleGeneralBackoffReconnect']('error 1');
+			const firstTimeout = mqttClient['generalBackoffTimeout'];
+
+			mqttClient['scheduleGeneralBackoffReconnect']('error 2');
+
+			expect(clearTimeoutSpy).toHaveBeenCalledWith(firstTimeout);
+
+			vi.useRealTimers();
+		});
+
+		it('onConnect should reset general backoff state', async () => {
+			const mqttClient = createMQTTClient();
+			mqttClient['consecutiveGeneralFailures'] = 5;
+			mqttClient['generalBackoffMs'] = 30000;
+			mqttClient['generalBackoffTimeout'] = setTimeout(() => {}, 1000);
+
+			const { MIN_BACKOFF_INTERVAL_MS } = await import('../../../../constants/timeouts.js');
+
+			await mqttClient['onConnect'](asType<IConnackPacket>({}));
+
+			expect(mqttClient['consecutiveGeneralFailures']).toBe(0);
+			expect(mqttClient['generalBackoffMs']).toBe(MIN_BACKOFF_INTERVAL_MS);
+			expect(mqttClient['generalBackoffTimeout']).toBeUndefined();
+		});
+
+		it('terminateConnection should clear generalBackoffTimeout', () => {
+			const mqttClient = createMQTTClient();
+			mqttClient['generalBackoffTimeout'] = setTimeout(() => {}, 1000);
+			mqttClient['mqttClient'] = client;
+
+			mqttClient['terminateConnection']();
+
+			expect(mqttClient['generalBackoffTimeout']).toBeUndefined();
+		});
+
+		it('disconnect should clear generalBackoffTimeout', async () => {
+			const mqttClient = createMQTTClient();
+			mqttClient['mqttClient'] = client;
+			mqttClient['connected'] = true;
+			mqttClient['generalBackoffTimeout'] = setTimeout(() => {}, 1000);
+
+			await mqttClient.disconnect();
+
+			expect(mqttClient['generalBackoffTimeout']).toBeUndefined();
+		});
+
+		it('scheduleGeneralBackoffReconnect should call terminateConnection before scheduling reconnect', () => {
+			vi.useFakeTimers();
+			const mqttClient = createMQTTClient();
+			const terminateSpy = vi.spyOn(mqttClient as any, 'terminateConnection');
+
+			mqttClient['scheduleGeneralBackoffReconnect']('test error');
+
+			expect(terminateSpy).toHaveBeenCalled();
+
+			vi.useRealTimers();
+		});
+	});
+
+	describe('Re-entrant onClose from forceReconnect', () => {
+		it('should handle re-entrant onClose when forceReconnect calls mqttClient.end()', async () => {
+			vi.useFakeTimers();
+			const mqttClient = createMQTTClient();
+			mqttClient['mqttClient'] = client;
+			mqttClient['connected'] = true;
+
+			// Call forceReconnect which sets isForceReconnecting and calls client.end()
+			mqttClient['forceReconnect']('test reason');
+
+			expect(mqttClient['isForceReconnecting']).toBe(true);
+
+			// Simulate the mqtt client firing the close event from end()
+			await mqttClient['onClose']();
+
+			// Verify that onClose did not broadcast because isForceReconnecting is true
+			expect(mqttClient['connectionBroadcaster'].onClose).not.toHaveBeenCalled();
+
+			// Verify that scheduleGeneralBackoffReconnect was NOT called from this onClose
+			expect(logger.warn).not.toHaveBeenCalledWith(expect.stringContaining('Scheduling general backoff reconnect'));
+
+			vi.useRealTimers();
+		});
 	});
 });
