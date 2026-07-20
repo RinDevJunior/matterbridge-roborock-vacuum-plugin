@@ -59,7 +59,6 @@ It is version-controlled — commit and push changes so teammates can pull the l
 
 ## Test Patterns
 
-- **DockStationStatus tests:** `createDockStatus({ field: ERR })` helper with `OK`/`ERR` constants; `it.each` for `parseDockErrorCode` (baseline + 32/33/35) and single-field dss mappings; priority scenarios + `dss=149`/`dss=2729` fixtures for `hasError`/`getMatterOperationalError`.
 - **VacuumStatus tests:** `it.each` full `VACUUM_ERROR_TO_MATTER` table in `src/tests/model/VacuumStatus.test.ts`; unknown `999`/`47` → `UnableToCompleteOperation`; `hasError` for None/unknown/33; `VACUUM_ERROR_TO_MATTER.size` vs enum count. Slim semantic groups in `getOperationalStates.test.ts`.
 - **CLI command tests (`src/tests/cli/`):** mock module boundaries via `vi.mock` with relative `.js` paths, static-import after the mocks. Class constructor mocks need a real `function` (not arrow) in `mockImplementation` or `new` throws.
 - **AreaManagementService.resolveInitialAreas tests:** calls `getMapInfo` then `getRoomMap`, catches errors without throwing. Verify call order with `mock.invocationCallOrder`, error logging with `logger.error`.
@@ -69,12 +68,12 @@ It is version-controlled — commit and push changes so teammates can pull the l
 - **computeAreaEstimatedTime tests:** pure helper returning raw remaining seconds (no `now +`); `25%/60` → `180`; `100%` → `0`; bounds 5–100%; `cleanPercent=undefined` → `null`. Import from `src/share/estimatedEndTime.js`.
 - **ModeHandler tests (IdleModeHandler):** test `canHandle(mode, activity)` returns true only for target activity (Idle), false for others (Cleaning/Mapping/unknown). Integration: add tests to `behaviorConfig.test.ts` that call `registry.handle(duid, mode, activity, context)` and verify `roborockService` method + logger call; run on both DefaultBehavior and BehaviorSmart configs.
 - **RoborockServiceAreaServer.selectAreas override tests:** spy on parent prototype's selectAreas via `vi.spyOn(Object.getPrototypeOf(Object.getPrototypeOf(server)), 'selectAreas')` and mock its response to avoid deep matterbridge machinery; verify override calls `device.resolveAllRoomsForActiveMap()` for empty input, `device.trySwitchMap(areas)` for non-empty input, forwards resolved/original request to super with correct arguments.
+- **Status listener error-code tests (V1StatusListener, handleHomeDataMessage):** listener fires `onError` whenever error-related field is _defined_ (including 0/None), not only non-zero; test three cases: payload with None/0 codes, field-absent (no call), sequential error→clear (both called). For home-data, `updateRobotWithPayload(ErrorOccurred)` only if errorCode defined; missing field never dispatches.
 
 ## Common Pitfalls
 
 <!-- Things to avoid — bugs found, anti-patterns, footguns -->
 
-- `buildBehaviorConfig(model, featureSet?, newFeatureSet?)` caches by model key only — acceptable (same model → same feature set); include a feature hash in the key if per-feature caching is ever needed.
 - `decodeFeatureSet` returns all-false on invalid `featureSet` (try/catch around `BigInt()`); Group D nibble extraction returns false on out-of-range/non-hex chars.
 - `Device` (`roborockCommunication/models/device.ts`) has no `.rooms` — room data lives in `Device.mapInfos: MapEntry[]` (each entry has `.rooms: MapRoomDto[]`).
 - `npm run format` covers `**/*.md` — it can reformat markdown emphasis in unrelated dirty files. Diff-check after formatting and revert out-of-scope changes.
