@@ -1509,7 +1509,7 @@ describe('resolveAreaFromCleaningInfo — V1 fallback when cleaningInfo is absen
 		const mockRoborockService = asPartial<RoborockService>({
 			getSupportedAreas: vi.fn().mockReturnValue([{ areaId: 5, mapId: 0 } as ServiceArea.Area]),
 			getSupportedAreasIndexMap: vi.fn().mockReturnValue(indexMap),
-			getSelectedAreas: vi.fn().mockReturnValue([]), // Empty to enter else branch at line 233
+			getSelectedAreas: vi.fn().mockReturnValue([5, 6, 7]), // Multi-room realistic scenario (includes resolved area 5)
 			getProgress: vi.fn().mockReturnValue([]),
 			setProgress: vi.fn(),
 			getLastActivelyCleaningState: vi.fn().mockReturnValue(false),
@@ -1548,8 +1548,18 @@ describe('resolveAreaFromCleaningInfo — V1 fallback when cleaningInfo is absen
 		expect(mockRoborockService.getV1ResolvedSegment).toHaveBeenCalledWith('test-duid-v1');
 		// Refresh should NOT be called because cache is fresh
 		expect(mockRoborockService.requestV1MapRefresh).not.toHaveBeenCalled();
-		// updateAttribute should have been called with the mapped area (5)
-		expect(vi.mocked(robotV1.updateAttribute).mock.calls.some((call) => call[2] === 5)).toBe(true);
+		// updateAttribute should have been called with currentArea = 5 (resolved from segment)
+		expect(
+			vi.mocked(robotV1.updateAttribute).mock.calls.some((call) => call[1] === 'currentArea' && call[2] === 5),
+		).toBe(true);
+		// selectedAreas should remain [5, 6, 7] (not empty)
+		expect(
+			vi
+				.mocked(robotV1.updateAttribute)
+				.mock.calls.some(
+					(call) => call[1] === 'selectedAreas' && JSON.stringify(call[2]) === JSON.stringify([5, 6, 7]),
+				),
+		).toBe(true);
 	});
 
 	it('should call requestV1MapRefresh when V1 device has no cleaningInfo and cache is empty', async () => {
@@ -1558,7 +1568,7 @@ describe('resolveAreaFromCleaningInfo — V1 fallback when cleaningInfo is absen
 		const mockRoborockService = asPartial<RoborockService>({
 			getSupportedAreas: vi.fn().mockReturnValue([{ areaId: 5, mapId: 0 } as ServiceArea.Area]),
 			getSupportedAreasIndexMap: vi.fn().mockReturnValue(indexMap),
-			getSelectedAreas: vi.fn().mockReturnValue([]), // Empty to enter else branch at line 233
+			getSelectedAreas: vi.fn().mockReturnValue([5, 6, 7]), // Multi-room realistic scenario
 			getProgress: vi.fn().mockReturnValue([]),
 			setProgress: vi.fn(),
 			getLastActivelyCleaningState: vi.fn().mockReturnValue(false),
@@ -1595,6 +1605,10 @@ describe('resolveAreaFromCleaningInfo — V1 fallback when cleaningInfo is absen
 		expect(mockRoborockService.getV1ResolvedSegment).toHaveBeenCalledWith('test-duid-v1-empty');
 		// Refresh should be called to populate the cache for next tick
 		expect(mockRoborockService.requestV1MapRefresh).toHaveBeenCalledWith('test-duid-v1-empty');
+		// currentArea should fall back to selectedAreas[0] (5) when cache is empty but clean_time > 0
+		expect(
+			vi.mocked(robotV1.updateAttribute).mock.calls.some((call) => call[1] === 'currentArea' && call[2] === 5),
+		).toBe(true);
 	});
 
 	it('should NOT call requestV1MapRefresh when V1 device has valid cleaningInfo (regression guard)', async () => {
@@ -1648,7 +1662,7 @@ describe('resolveAreaFromCleaningInfo — V1 fallback when cleaningInfo is absen
 		const mockRoborockService = asPartial<RoborockService>({
 			getSupportedAreas: vi.fn().mockReturnValue([{ areaId: 5, mapId: 0 } as ServiceArea.Area]),
 			getSupportedAreasIndexMap: vi.fn().mockReturnValue(indexMap),
-			getSelectedAreas: vi.fn().mockReturnValue([5]),
+			getSelectedAreas: vi.fn().mockReturnValue([5, 6, 7]), // Multi-room realistic scenario
 			getProgress: vi.fn().mockReturnValue([]),
 			setProgress: vi.fn(),
 			getLastActivelyCleaningState: vi.fn().mockReturnValue(false),
@@ -1684,6 +1698,10 @@ describe('resolveAreaFromCleaningInfo — V1 fallback when cleaningInfo is absen
 		// Assert — V1 fallback should not be called for non-V1 devices
 		expect(mockRoborockService.getV1ResolvedSegment).not.toHaveBeenCalled();
 		expect(mockRoborockService.requestV1MapRefresh).not.toHaveBeenCalled();
+		// Non-V1 multi-room clean with clean_time > 0 should fall back to pinning currentArea to selectedAreas[0]
+		expect(
+			vi.mocked(robotB01.updateAttribute).mock.calls.some((call) => call[1] === 'currentArea' && call[2] === 5),
+		).toBe(true);
 	});
 
 	it('should set currentArea to null when segment maps to no area (unmapped segment)', async () => {
@@ -1692,7 +1710,7 @@ describe('resolveAreaFromCleaningInfo — V1 fallback when cleaningInfo is absen
 		const mockRoborockService = asPartial<RoborockService>({
 			getSupportedAreas: vi.fn().mockReturnValue([{ areaId: 5, mapId: 0 } as ServiceArea.Area]),
 			getSupportedAreasIndexMap: vi.fn().mockReturnValue(indexMap),
-			getSelectedAreas: vi.fn().mockReturnValue([]), // Empty to enter else branch at line 233
+			getSelectedAreas: vi.fn().mockReturnValue([5, 6, 7]), // Multi-room realistic scenario
 			getProgress: vi.fn().mockReturnValue([]),
 			setProgress: vi.fn(),
 			getLastActivelyCleaningState: vi.fn().mockReturnValue(false),
@@ -1725,11 +1743,304 @@ describe('resolveAreaFromCleaningInfo — V1 fallback when cleaningInfo is absen
 		// Act
 		await handleServiceAreaUpdate(robotV1, message, platform);
 
-		// Assert — currentArea should be set to null for unmapped segment
+		// Assert — unmapped segment (999) does not map to any area via roomIndexMap (which only has segment 42), so resolved area is null
+		// When V1 resolution returns null and clean_time > 0, fallback to pin-to-first-area (selectedAreas[0] = 5)
+		expect(
+			vi.mocked(robotV1.updateAttribute).mock.calls.some((call) => call[1] === 'currentArea' && call[2] === 5),
+		).toBe(true);
+		// Refresh should NOT be called because we got a valid (but unmapped) segment from cache
+		expect(mockRoborockService.requestV1MapRefresh).not.toHaveBeenCalled();
+	});
+
+	it('should resolve real current room when V1 device has multi-room selection and fresh segment cache (bug fix)', async () => {
+		// Arrange — This is the regression test for the bug fix: V1 devices with multi-room selection
+		// should resolve currentArea from the cached segment, not pin to selectedAreas[0]
+		const indexMap = createRoomIndexMapForSegment(42, 2, 0); // Segment 42 maps to areaId 2
+		const mockRoborockService = asPartial<RoborockService>({
+			getSupportedAreas: vi.fn().mockReturnValue([{ areaId: 2, mapId: 0 } as ServiceArea.Area]),
+			getSupportedAreasIndexMap: vi.fn().mockReturnValue(indexMap),
+			getSelectedAreas: vi.fn().mockReturnValue([0, 1, 2]), // Multi-room: Living Room (0) first, but robot is in room 2
+			getProgress: vi.fn().mockReturnValue([]),
+			setProgress: vi.fn(),
+			getLastActivelyCleaningState: vi.fn().mockReturnValue(false),
+			setLastActivelyCleaningState: vi.fn(),
+			getV1ResolvedSegment: vi.fn().mockReturnValue(42), // Cache hit with segment 42 → areaId 2
+			requestV1MapRefresh: vi.fn(),
+		});
+
+		const platform = asPartial<RoborockMatterbridgePlatform>({
+			log: createMockLogger(),
+			configManager: createMockConfigManager(),
+			roborockService: mockRoborockService,
+		});
+
+		// Create robot with V1 protocol
+		const robotV1 = asPartial<RoborockVacuumCleaner>({
+			device: asPartial<Device>({ duid: 'test-duid-v1-bug-fix', pv: ProtocolVersion.V1 }),
+			homeInFo: asPartial<HomeEntity>({ activeMapId: 0 }),
+			updateAttribute: vi.fn().mockResolvedValue(undefined),
+			getAttribute: vi.fn().mockReturnValue(undefined),
+		});
+
+		const message: ServiceAreaUpdateMessage = {
+			duid: 'test-duid-v1-bug-fix',
+			state: OperationStatusCode.Cleaning,
+			cleaningInfo: undefined, // Absent (V1 fallback path)
+			cleaningProcess: { clean_area: 100, clean_time: 600 }, // Actively cleaning
+		};
+
+		// Act
+		await handleServiceAreaUpdate(robotV1, message, platform);
+
+		// Assert — currentArea should be 2 (resolved from segment 42), NOT 0 (first of selectedAreas)
+		// This is the bug fix: previously it would always pin to selectedAreas[0] = 0
+		expect(
+			vi.mocked(robotV1.updateAttribute).mock.calls.some((call) => call[1] === 'currentArea' && call[2] === 2),
+		).toBe(true);
+		expect(
+			vi.mocked(robotV1.updateAttribute).mock.calls.some((call) => call[1] === 'currentArea' && call[2] === 0),
+		).toBe(false);
+		// Refresh should NOT be called because cache is fresh
+		expect(mockRoborockService.requestV1MapRefresh).not.toHaveBeenCalled();
+	});
+
+	it('should fallback to pin-first-area when V1 device has multi-room selection but cache is empty', async () => {
+		// Arrange — V1 device with multi-room, but segment cache is empty (cache miss)
+		const indexMap = createRoomIndexMapForSegment(42, 2, 0);
+		const mockRoborockService = asPartial<RoborockService>({
+			getSupportedAreas: vi.fn().mockReturnValue([{ areaId: 2, mapId: 0 } as ServiceArea.Area]),
+			getSupportedAreasIndexMap: vi.fn().mockReturnValue(indexMap),
+			getSelectedAreas: vi.fn().mockReturnValue([0, 1, 2]),
+			getProgress: vi.fn().mockReturnValue([]),
+			setProgress: vi.fn(),
+			getLastActivelyCleaningState: vi.fn().mockReturnValue(false),
+			setLastActivelyCleaningState: vi.fn(),
+			getV1ResolvedSegment: vi.fn().mockReturnValue(undefined), // Cache miss
+			requestV1MapRefresh: vi.fn(),
+		});
+
+		const platform = asPartial<RoborockMatterbridgePlatform>({
+			log: createMockLogger(),
+			configManager: createMockConfigManager(),
+			roborockService: mockRoborockService,
+		});
+
+		const robotV1 = asPartial<RoborockVacuumCleaner>({
+			device: asPartial<Device>({ duid: 'test-duid-v1-cache-miss', pv: ProtocolVersion.V1 }),
+			homeInFo: asPartial<HomeEntity>({ activeMapId: 0 }),
+			updateAttribute: vi.fn().mockResolvedValue(undefined),
+			getAttribute: vi.fn().mockReturnValue(undefined),
+		});
+
+		const message: ServiceAreaUpdateMessage = {
+			duid: 'test-duid-v1-cache-miss',
+			state: OperationStatusCode.Cleaning,
+			cleaningInfo: undefined,
+			cleaningProcess: { clean_area: 100, clean_time: 600 },
+		};
+
+		// Act
+		await handleServiceAreaUpdate(robotV1, message, platform);
+
+		// Assert — currentArea should fall back to selectedAreas[0] = 0
+		expect(
+			vi.mocked(robotV1.updateAttribute).mock.calls.some((call) => call[1] === 'currentArea' && call[2] === 0),
+		).toBe(true);
+		// requestV1MapRefresh should be triggered to populate cache for next tick
+		expect(mockRoborockService.requestV1MapRefresh).toHaveBeenCalledWith('test-duid-v1-cache-miss');
+	});
+
+	it('should fallback to pin-first-area when resolved segment maps outside selectedAreas', async () => {
+		// Arrange — V1 device with multi-room selection, but resolved segment maps to an area NOT in selectedAreas
+		// (e.g. the segment maps to a room from a different map)
+		const indexMap = createRoomIndexMapForSegment(42, 9, 0); // Segment 42 maps to areaId 9
+		const mockRoborockService = asPartial<RoborockService>({
+			getSupportedAreas: vi.fn().mockReturnValue([{ areaId: 9, mapId: 0 } as ServiceArea.Area]),
+			getSupportedAreasIndexMap: vi.fn().mockReturnValue(indexMap),
+			getSelectedAreas: vi.fn().mockReturnValue([0, 1, 2]), // areaId 9 is NOT in this list
+			getProgress: vi.fn().mockReturnValue([]),
+			setProgress: vi.fn(),
+			getLastActivelyCleaningState: vi.fn().mockReturnValue(false),
+			setLastActivelyCleaningState: vi.fn(),
+			getV1ResolvedSegment: vi.fn().mockReturnValue(42), // Cache hit, but segment maps outside selectedAreas
+			requestV1MapRefresh: vi.fn(),
+		});
+
+		const platform = asPartial<RoborockMatterbridgePlatform>({
+			log: createMockLogger(),
+			configManager: createMockConfigManager(),
+			roborockService: mockRoborockService,
+		});
+
+		const robotV1 = asPartial<RoborockVacuumCleaner>({
+			device: asPartial<Device>({ duid: 'test-duid-v1-outside', pv: ProtocolVersion.V1 }),
+			homeInFo: asPartial<HomeEntity>({ activeMapId: 0 }),
+			updateAttribute: vi.fn().mockResolvedValue(undefined),
+			getAttribute: vi.fn().mockReturnValue(undefined),
+		});
+
+		const message: ServiceAreaUpdateMessage = {
+			duid: 'test-duid-v1-outside',
+			state: OperationStatusCode.Cleaning,
+			cleaningInfo: undefined,
+			cleaningProcess: { clean_area: 100, clean_time: 600 },
+		};
+
+		// Act
+		await handleServiceAreaUpdate(robotV1, message, platform);
+
+		// Assert — currentArea should fall back to selectedAreas[0] = 0 (safety guard)
+		expect(
+			vi.mocked(robotV1.updateAttribute).mock.calls.some((call) => call[1] === 'currentArea' && call[2] === 0),
+		).toBe(true);
+		// Refresh should NOT be called (segment cache was fresh, just outside selectedAreas)
+		expect(mockRoborockService.requestV1MapRefresh).not.toHaveBeenCalled();
+	});
+
+	it('should pin-to-first-area for non-V1 multi-room clean (no regression)', async () => {
+		// Arrange — Non-V1 protocol device with multi-room selection
+		// Should maintain existing behavior: pin currentArea to selectedAreas[0]
+		const indexMap = createRoomIndexMapForSegment(42, 5, 0);
+		const mockRoborockService = asPartial<RoborockService>({
+			getSupportedAreas: vi.fn().mockReturnValue([{ areaId: 5, mapId: 0 } as ServiceArea.Area]),
+			getSupportedAreasIndexMap: vi.fn().mockReturnValue(indexMap),
+			getSelectedAreas: vi.fn().mockReturnValue([5, 6, 7]),
+			getProgress: vi.fn().mockReturnValue([]),
+			setProgress: vi.fn(),
+			getLastActivelyCleaningState: vi.fn().mockReturnValue(false),
+			setLastActivelyCleaningState: vi.fn(),
+			getV1ResolvedSegment: vi.fn(),
+			requestV1MapRefresh: vi.fn(),
+		});
+
+		const platform = asPartial<RoborockMatterbridgePlatform>({
+			log: createMockLogger(),
+			configManager: createMockConfigManager(),
+			roborockService: mockRoborockService,
+		});
+
+		const robotL01 = asPartial<RoborockVacuumCleaner>({
+			device: asPartial<Device>({ duid: 'test-duid-l01', pv: ProtocolVersion.L01 }), // Non-V1
+			homeInFo: asPartial<HomeEntity>({ activeMapId: 0 }),
+			updateAttribute: vi.fn().mockResolvedValue(undefined),
+			getAttribute: vi.fn().mockReturnValue(undefined),
+		});
+
+		const message: ServiceAreaUpdateMessage = {
+			duid: 'test-duid-l01',
+			state: OperationStatusCode.Cleaning,
+			cleaningInfo: undefined,
+			cleaningProcess: { clean_area: 100, clean_time: 600 },
+		};
+
+		// Act
+		await handleServiceAreaUpdate(robotL01, message, platform);
+
+		// Assert — Non-V1 should pin to selectedAreas[0] = 5 (existing behavior preserved)
+		expect(
+			vi.mocked(robotL01.updateAttribute).mock.calls.some((call) => call[1] === 'currentArea' && call[2] === 5),
+		).toBe(true);
+		// V1 resolution mechanisms should NOT be called for non-V1 protocols
+		expect(mockRoborockService.getV1ResolvedSegment).not.toHaveBeenCalled();
+		expect(mockRoborockService.requestV1MapRefresh).not.toHaveBeenCalled();
+	});
+
+	it('should immediately pin single selected area without V1 resolution', async () => {
+		// Arrange — Single selected area (unambiguous, no need for V1 segment resolution)
+		const indexMap = createRoomIndexMapForSegment(42, 5, 0);
+		const mockRoborockService = asPartial<RoborockService>({
+			getSupportedAreas: vi.fn().mockReturnValue([{ areaId: 5, mapId: 0 } as ServiceArea.Area]),
+			getSupportedAreasIndexMap: vi.fn().mockReturnValue(indexMap),
+			getSelectedAreas: vi.fn().mockReturnValue([5]), // Single area
+			getProgress: vi.fn().mockReturnValue([]),
+			setProgress: vi.fn(),
+			getLastActivelyCleaningState: vi.fn().mockReturnValue(false),
+			setLastActivelyCleaningState: vi.fn(),
+			getV1ResolvedSegment: vi.fn(),
+			requestV1MapRefresh: vi.fn(),
+		});
+
+		const platform = asPartial<RoborockMatterbridgePlatform>({
+			log: createMockLogger(),
+			configManager: createMockConfigManager(),
+			roborockService: mockRoborockService,
+		});
+
+		const robotV1 = asPartial<RoborockVacuumCleaner>({
+			device: asPartial<Device>({ duid: 'test-duid-v1-single', pv: ProtocolVersion.V1 }),
+			homeInFo: asPartial<HomeEntity>({ activeMapId: 0 }),
+			updateAttribute: vi.fn().mockResolvedValue(undefined),
+			getAttribute: vi.fn().mockReturnValue(undefined),
+		});
+
+		const message: ServiceAreaUpdateMessage = {
+			duid: 'test-duid-v1-single',
+			state: OperationStatusCode.Cleaning,
+			cleaningInfo: undefined,
+			cleaningProcess: { clean_area: 100, clean_time: 60 },
+		};
+
+		// Act
+		await handleServiceAreaUpdate(robotV1, message, platform);
+
+		// Assert — currentArea should be pinned to the only area (5)
+		expect(
+			vi.mocked(robotV1.updateAttribute).mock.calls.some((call) => call[1] === 'currentArea' && call[2] === 5),
+		).toBe(true);
+		// V1 resolution should NOT be called for single-area clean
+		expect(mockRoborockService.getV1ResolvedSegment).not.toHaveBeenCalled();
+		expect(mockRoborockService.requestV1MapRefresh).not.toHaveBeenCalled();
+	});
+
+	it('should handle zero selected areas with null currentArea and empty selectedAreas', async () => {
+		// Arrange — Zero selected areas (e.g., edge case or state inconsistency)
+		const indexMap = createRoomIndexMapForSegment(42, 5, 0);
+		const mockRoborockService = asPartial<RoborockService>({
+			getSupportedAreas: vi.fn().mockReturnValue([{ areaId: 5, mapId: 0 } as ServiceArea.Area]),
+			getSupportedAreasIndexMap: vi.fn().mockReturnValue(indexMap),
+			getSelectedAreas: vi.fn().mockReturnValue([]), // Zero areas
+			getProgress: vi.fn().mockReturnValue([]),
+			setProgress: vi.fn(),
+			getLastActivelyCleaningState: vi.fn().mockReturnValue(false),
+			setLastActivelyCleaningState: vi.fn(),
+			getV1ResolvedSegment: vi.fn(),
+			requestV1MapRefresh: vi.fn(),
+		});
+
+		const platform = asPartial<RoborockMatterbridgePlatform>({
+			log: createMockLogger(),
+			configManager: createMockConfigManager(),
+			roborockService: mockRoborockService,
+		});
+
+		const robotV1 = asPartial<RoborockVacuumCleaner>({
+			device: asPartial<Device>({ duid: 'test-duid-v1-zero', pv: ProtocolVersion.V1 }),
+			homeInFo: asPartial<HomeEntity>({ activeMapId: 0 }),
+			updateAttribute: vi.fn().mockResolvedValue(undefined),
+			getAttribute: vi.fn().mockReturnValue(undefined),
+		});
+
+		const message: ServiceAreaUpdateMessage = {
+			duid: 'test-duid-v1-zero',
+			state: OperationStatusCode.Cleaning,
+			cleaningInfo: undefined,
+			cleaningProcess: { clean_area: 100, clean_time: 60 },
+		};
+
+		// Act
+		await handleServiceAreaUpdate(robotV1, message, platform);
+
+		// Assert — currentArea should be null and selectedAreas should be empty
 		expect(
 			vi.mocked(robotV1.updateAttribute).mock.calls.some((call) => call[1] === 'currentArea' && call[2] === null),
 		).toBe(true);
-		// Refresh should NOT be called because we got a valid (but unmapped) segment from cache
+		expect(
+			vi
+				.mocked(robotV1.updateAttribute)
+				.mock.calls.some((call) => call[1] === 'selectedAreas' && JSON.stringify(call[2]) === JSON.stringify([])),
+		).toBe(true);
+		// V1 resolution should NOT be called for zero-area case
+		expect(mockRoborockService.getV1ResolvedSegment).not.toHaveBeenCalled();
 		expect(mockRoborockService.requestV1MapRefresh).not.toHaveBeenCalled();
 	});
 });
