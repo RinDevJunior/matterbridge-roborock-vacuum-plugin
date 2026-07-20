@@ -1,5 +1,19 @@
 # Claude History
 
+## 2026-07-18 — Fix error-clear transitions not reported to Matter
+
+**Task:** Fix bug where vacuum/dock error-clear transitions were never reported to the Matter controller. Root cause: error-handling gates in v1StatusListener.ts and handleHomeDataMessage.ts only fired when error code was non-zero, preventing the error-clear path from ever reaching the correct reset logic in handleErrorOccurred.
+
+**Changes:**
+
+- `src/roborockCommunication/routing/listeners/implementation/v1StatusListener.ts` — widened error gate to fire whenever error field is defined (not just non-zero)
+- `src/runtimes/handleHomeDataMessage.ts` — widened error gate to match v1StatusListener pattern
+- `src/tests/roborockCommunication/routing/listeners/implementation/v1StatusListener.test.ts` — updated stale assertions, added field-absent and error-clear-transition coverage
+- `src/tests/roborockCommunication/broadcast/listener/implementation/v1StatusListener.test.ts` — updated stale assertions and added transition coverage
+- `src/tests/runtimes/handleHomeDataMessage.test.ts` — updated stale assertions and added field-absent/clear-transition coverage
+
+**Outcome:** Pass (reviewer approved; all verification gates passed: format:ci, lint:fix:ci, type-check:ci, test:ci).
+
 ## 2026-07-14 — Reset ServiceArea.progress on clean start (third trigger)
 
 **Task:** Add third trigger for resetting `ServiceArea.progress` per-room state when vacuum starts new clean; detect genuine Docked/Stopped/Error → actively-cleaning operationalState transitions using `lastActivelyCleaningState` flag to avoid false positives on mid-clean detours.

@@ -4,6 +4,16 @@ All notable changes to this project will be documented in this file.
 
 ---
 
+## [1.1.8-rc01] - 2026-07-20
+
+### Fixed
+
+- **Error-clear transitions not reported to Matter controller** — `V1StatusListener` and `handleHomeDataMessage` only ran the error-handling path when the error code was non-zero, so a device clearing an error never reached the existing clear-to-`NoError` reset logic. Both gates now fire whenever the error field is defined, matching the already-correct `B01StatusListener` pattern.
+
+<a href="https://www.buymeacoffee.com/rinnvspktr" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/default-orange.png" alt="Buy Me A Coffee" height="41" width="174"></a>
+
+---
+
 ## [1.1.7] - 2026-07-17
 
 ### Changed
