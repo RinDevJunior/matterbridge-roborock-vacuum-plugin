@@ -4,6 +4,17 @@ Entries are listed in reverse chronological order (most recent first). Older ent
 
 ---
 
+## 2026-07-20 — Fix currentArea freeze during V1-protocol multi-room cleans
+
+**Task:** Fix bug where Apple Home showed vacuum permanently "Cleaning Living Room" (or first selected room) during scheduled/multi-room cleans on V1-protocol Roborock devices (reported by S8 owner, affects any V1-protocol device). Root cause: handleCleaningWithoutInfo unconditionally pinned currentArea to selectedAreas[0] whenever multiple rooms were selected (added in commit #125), ordered before V1 segment-cache resolution logic, making that logic unreachable.
+
+**Changes:**
+
+- `src/runtimes/handlers/serviceAreaHandler.ts` — reordered handleCleaningWithoutInfo to try V1 segment-cache resolution (new resolveV1CurrentArea helper) first, falling back to pin-to-first-area only on cache miss or area-outside-selection; extracted shared publishAreaProgress helper to remove duplicated progress-publish logic
+- `src/tests/runtimes/handlers/serviceAreaHandler.test.ts` — added 6 new regression tests for V1 fallback with multi-room selection, updated 4 stale tests, fixed 3 stale comments
+
+**Outcome:** Pass (reviewer approved with no blocking issues; all verification gates passed: format:ci, lint:fix:ci, type-check:ci, test:ci).
+
 ## 2026-07-18 — Fix error-clear transitions not reported to Matter
 
 **Task:** Fix bug where vacuum/dock error-clear transitions were never reported to the Matter controller. Root cause: error-handling gates in v1StatusListener.ts and handleHomeDataMessage.ts only fired when error code was non-zero, preventing the error-clear path from ever reaching the correct reset logic in handleErrorOccurred.

@@ -69,12 +69,12 @@ It is version-controlled — commit and push changes so teammates can pull the l
 - **ModeHandler tests (IdleModeHandler):** test `canHandle(mode, activity)` returns true only for target activity (Idle), false for others (Cleaning/Mapping/unknown). Integration: add tests to `behaviorConfig.test.ts` that call `registry.handle(duid, mode, activity, context)` and verify `roborockService` method + logger call; run on both DefaultBehavior and BehaviorSmart configs.
 - **RoborockServiceAreaServer.selectAreas override tests:** spy on parent prototype's selectAreas via `vi.spyOn(Object.getPrototypeOf(Object.getPrototypeOf(server)), 'selectAreas')` and mock its response to avoid deep matterbridge machinery; verify override calls `device.resolveAllRoomsForActiveMap()` for empty input, `device.trySwitchMap(areas)` for non-empty input, forwards resolved/original request to super with correct arguments.
 - **Status listener error-code tests (V1StatusListener, handleHomeDataMessage):** listener fires `onError` whenever error-related field is _defined_ (including 0/None), not only non-zero; test three cases: payload with None/0 codes, field-absent (no call), sequential error→clear (both called). For home-data, `updateRobotWithPayload(ErrorOccurred)` only if errorCode defined; missing field never dispatches.
+- **handleCleaningWithoutInfo + resolveV1CurrentArea tests:** test realistic multi-room `selectedAreas = [0, 1, 2...]` (not empty arrays) to match real-world scheduled-clean scenarios. Verify V1 resolution attempts before falling back to pin-first-area. Cover: fresh cache (resolves correct room), cache miss (pin-first + refresh), segment outside selectedAreas (pin-first + no refresh), non-V1 protocol (pin-first + no V1 calls), single area (immediate pin, no resolution), zero areas (null + empty).
 
 ## Common Pitfalls
 
 <!-- Things to avoid — bugs found, anti-patterns, footguns -->
 
-- `decodeFeatureSet` returns all-false on invalid `featureSet` (try/catch around `BigInt()`); Group D nibble extraction returns false on out-of-range/non-hex chars.
 - `Device` (`roborockCommunication/models/device.ts`) has no `.rooms` — room data lives in `Device.mapInfos: MapEntry[]` (each entry has `.rooms: MapRoomDto[]`).
 - `npm run format` covers `**/*.md` — it can reformat markdown emphasis in unrelated dirty files. Diff-check after formatting and revert out-of-scope changes.
 - `LegacyMapParser` V1 widths: position x/y are `Int32LE` 4 bytes apart (`+0`, `+4`); image `segmentCount` `UInt32LE` at `+0x08`, top/left/height/width `Int32LE` at `+0x0c..+0x18`. Cross-check binary layouts against a second OSS parser.
@@ -84,6 +84,7 @@ It is version-controlled — commit and push changes so teammates can pull the l
 - `SELECT_AREAS` empty-input path (`roborockVacuumCleaner.ts:164-176`) must NOT call `trySwitchMap` — keep empty vs explicit branches structurally separate with early `return`, else V10/V1 (`activeMapId=-1`) fires unguarded `switchMap` on every global-clean.
 - ESLint `preserve-caught-error` requires re-thrown errors to carry `{ cause: err }` — omitting it fails `lint:fix:ci` even when the message embeds the original error text.
 - ESLint `no-base-to-string` prohibits stringifying `err.cause` directly in templates (`String(err.cause)`) — check `if (cause instanceof Error)` first, then safely access `.message`; this prevents accidental `[object Object]` in logs.
+- `handleCleaningWithoutInfo`'s `selectedAreas.length > 1 && clean_time > 0` pin-to-`selectedAreas[0]` branch was added in the same commit (4be5ff7/#125) as the V1 segment-cache `else` branch, but ordered first — it shadowed real V1 room tracking for the entire duration of any multi-room clean (Jul 20, 2026 fix, `s8-schedule-clean-room-stuck`). Watch for this pattern: two fallback mechanisms added together where one silently wins.
 
 ## Module Notes
 
