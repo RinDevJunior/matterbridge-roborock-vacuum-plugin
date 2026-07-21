@@ -4,6 +4,18 @@ Entries are listed in reverse chronological order (most recent first). Older ent
 
 ---
 
+## 2026-07-22 — Fix isUpdownWaterReady false-positive in dock error detection
+
+**Task:** Fix false-positive "Docking station error detected: UnableToCompleteOperation" reported to Apple Home/Matter when vacuum was idle and charging with no real fault. Root cause: isUpdownWaterReady dss-bitfield (bits 0-1, intended for up/down water lift-pump faults) was included in hasError() and DSS_FIELD_PRIORITY despite no corresponding Matter RVC enum; real hardware showed this field's steady-state value is 1 during idle/charging, not a transient fault signal.
+
+**Changes:**
+
+- `src/model/DockStationStatus.ts` — excluded isUpdownWaterReady from hasError() and DSS_FIELD_PRIORITY; field remains parsed/exposed on the object for future debugging
+- `wiki/Error-Handling-Reporting.md` — updated priority table to reflect five monitored dss fields (clearWater, dirtyWater, dustBag, cleanFluid, filter) instead of six
+- `src/tests/model/DockingStationStatus.test.ts` — updated 4 tests to reflect corrected behavior (isUpdownWaterReady=Error alone now yields false/NoError)
+
+**Outcome:** Pass (all verification gates passed: format:ci, lint:fix:ci, type-check:ci, test:ci; reviewer approved logic change).
+
 ## 2026-07-20 — Fix currentArea freeze during V1-protocol multi-room cleans
 
 **Task:** Fix bug where Apple Home showed vacuum permanently "Cleaning Living Room" (or first selected room) during scheduled/multi-room cleans on V1-protocol Roborock devices (reported by S8 owner, affects any V1-protocol device). Root cause: handleCleaningWithoutInfo unconditionally pinned currentArea to selectedAreas[0] whenever multiple rooms were selected (added in commit #125), ordered before V1 segment-cache resolution logic, making that logic unreachable.

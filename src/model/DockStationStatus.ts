@@ -48,12 +48,7 @@ const DOCK_ERROR_TO_MATTER: ReadonlyMap<DockErrorCode, RvcOperationalState.Error
 ]);
 
 type DssFieldKey =
-	| 'clearWaterBoxStatus'
-	| 'dirtyWaterBoxStatus'
-	| 'dustBagStatus'
-	| 'cleanFluidStatus'
-	| 'waterBoxFilterStatus'
-	| 'isUpdownWaterReady';
+	'clearWaterBoxStatus' | 'dirtyWaterBoxStatus' | 'dustBagStatus' | 'cleanFluidStatus' | 'waterBoxFilterStatus';
 
 const DSS_FIELD_PRIORITY: readonly {
 	field: DssFieldKey;
@@ -64,7 +59,6 @@ const DSS_FIELD_PRIORITY: readonly {
 	{ field: 'dustBagStatus', errorState: RvcOperationalState.ErrorState.DustBinMissing },
 	{ field: 'cleanFluidStatus', errorState: RvcOperationalState.ErrorState.WaterTankMissing },
 	{ field: 'waterBoxFilterStatus', errorState: RvcOperationalState.ErrorState.WaterTankMissing },
-	{ field: 'isUpdownWaterReady', errorState: RvcOperationalState.ErrorState.UnableToCompleteOperation },
 ];
 
 export class DockStationStatus {
@@ -83,8 +77,7 @@ export class DockStationStatus {
 			this.waterBoxFilterStatus === DockStationStatusCode.Error ||
 			this.dustBagStatus === DockStationStatusCode.Error ||
 			this.dirtyWaterBoxStatus === DockStationStatusCode.Error ||
-			this.clearWaterBoxStatus === DockStationStatusCode.Error ||
-			this.isUpdownWaterReady === DockStationStatusCode.Error
+			this.clearWaterBoxStatus === DockStationStatusCode.Error
 		);
 	}
 
