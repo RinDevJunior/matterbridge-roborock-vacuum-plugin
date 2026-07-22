@@ -4,6 +4,16 @@ All notable changes to this project will be documented in this file.
 
 ---
 
+## [1.1.8-rc03] - 2026-07-22
+
+### Changed
+
+- **Requires matterbridge@3.10.0** — Minimum required Matterbridge version bumped from `3.9.4` to `3.10.0`. This is a dependency-version-only update; no plugin code changes were required, and all verification gates passed against the real matterbridge 3.10.0 API.
+
+<a href="https://www.buymeacoffee.com/rinnvspktr" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/default-orange.png" alt="Buy Me A Coffee" height="41" width="174"></a>
+
+---
+
 ## [1.1.8-rc02] - 2026-07-22
 
 ### Fixed
