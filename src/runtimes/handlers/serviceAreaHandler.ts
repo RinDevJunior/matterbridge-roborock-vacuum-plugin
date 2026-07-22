@@ -306,7 +306,10 @@ async function handleCleaningWithoutInfo(
 		}
 
 		if (message.cleaningProcess.clean_time > 0) {
-			await publishAreaProgress(robot, message, platform, selectedAreas, selectedAreas[0]);
+			const lastKnownArea = robot.getAttribute(ServiceArea.id, 'currentArea', logger);
+			const fallbackAreaId =
+				typeof lastKnownArea === 'number' && selectedAreas.includes(lastKnownArea) ? lastKnownArea : selectedAreas[0];
+			await publishAreaProgress(robot, message, platform, selectedAreas, fallbackAreaId);
 			return;
 		}
 	}
@@ -399,7 +402,7 @@ async function resolveAreaFromCleaningInfo(
 	const mappedArea =
 		roomIndexMap.getAreaId(segmentId, robot.homeInFo.activeMapId) ?? roomIndexMap.getAreaIdV2(segmentId);
 
-	if (!mappedArea) {
+	if (mappedArea === undefined) {
 		logger.debug(
 			`No mapped area found, skipping area mapping.
         sourceSegmentId: ${sourceSegmentId},
