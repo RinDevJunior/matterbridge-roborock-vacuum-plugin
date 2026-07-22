@@ -16,6 +16,19 @@ Entries are listed in reverse chronological order (most recent first). Older ent
 
 **Outcome:** Pass (all verification gates passed: format:ci, lint:fix:ci, type-check:ci, test:ci; reviewer approved logic change).
 
+## 2026-07-22 — Fix room/mode mismatch in HomeKit during cleaning (rc02)
+
+**Task:** Fix HomeKit room indicator flickering/mismatching during multi-room cleans and incorrect mode display ("Automatic" shown when running "Max"). Root causes: (1) handleCleaningWithoutInfo unconditionally pinning currentArea to selectedAreas[0] when cleaningInfo transiently absent; (2) falsy-zero bug in resolveAreaFromCleaningInfo treating areaId=0 as not-found; (3) ModeResolver.resolveFallback() collapsing to generic Default when exact preset not matched.
+
+**Changes:**
+
+- `src/runtimes/handlers/serviceAreaHandler.ts` — last-known-area preservation fallback; avoid unconditional pin-to-first-area
+- `src/behaviors/roborock.vacuum/core/modeResolver.ts` — category-aware resolveFallback matching suction power/water flow before Default fallback; fixed falsy-zero check to `=== undefined`
+- `src/tests/runtimes/handlers/serviceAreaHandler.test.ts` — added area handling edge-case tests
+- `src/tests/behaviors/roborock.vacuum/core/modeResolver.test.ts` — added mode resolution coverage for edge-case presets
+
+**Outcome:** Pass (all verification gates passed: format:ci, lint:fix:ci, type-check:ci, test:ci; reviewer approved with no blocking issues).
+
 ## 2026-07-20 — Fix currentArea freeze during V1-protocol multi-room cleans
 
 **Task:** Fix bug where Apple Home showed vacuum permanently "Cleaning Living Room" (or first selected room) during scheduled/multi-room cleans on V1-protocol Roborock devices (reported by S8 owner, affects any V1-protocol device). Root cause: handleCleaningWithoutInfo unconditionally pinned currentArea to selectedAreas[0] whenever multiple rooms were selected (added in commit #125), ordered before V1 segment-cache resolution logic, making that logic unreachable.

@@ -463,6 +463,165 @@ describe('handleServiceAreaUpdate multi-room without cleaning_info', () => {
 		);
 		expect(robot.updateAttribute).toHaveBeenCalledWith(ServiceArea.id, 'currentArea', 10, expect.anything());
 	});
+
+	it('should fall back to selectedAreas[0] on first no-info update when no last-known currentArea exists', async () => {
+		const selectedAreas = [0, 1, 2];
+		const mockRoborockService = asPartial<RoborockService>({
+			getSelectedAreas: vi.fn().mockReturnValue(selectedAreas),
+			getProgress: vi.fn().mockReturnValue([]),
+			setProgress: vi.fn(),
+			getLastActivelyCleaningState: vi.fn().mockReturnValue(false),
+			setLastActivelyCleaningState: vi.fn(),
+		});
+		const platform = asPartial<RoborockMatterbridgePlatform>({
+			log: createMockLogger(),
+			configManager: createMockConfigManager(),
+			roborockService: mockRoborockService,
+		});
+
+		// getAttribute returns undefined for currentArea (no prior value)
+		vi.mocked(robot.getAttribute).mockImplementation((_clusterId, attrName) => {
+			if (attrName === 'selectedAreas') {
+				return selectedAreas;
+			}
+			if (attrName === 'currentArea') {
+				return undefined;
+			}
+			return undefined;
+		});
+
+		const message: ServiceAreaUpdateMessage = {
+			duid: 'test-duid-multi-first',
+			state: OperationStatusCode.Cleaning,
+			cleaningInfo: undefined,
+			cleaningProcess: { clean_area: 100, clean_time: 50 },
+		};
+
+		await handleServiceAreaUpdate(robot, message, platform);
+
+		// Should fall back to selectedAreas[0] = 0 when no last-known area exists
+		expect(robot.updateAttribute).toHaveBeenCalledWith(ServiceArea.id, 'currentArea', 0, expect.anything());
+	});
+
+	it('should use last-known currentArea when it exists and is in selectedAreas', async () => {
+		const selectedAreas = [0, 1, 2];
+		const lastKnownArea = 2;
+		const mockRoborockService = asPartial<RoborockService>({
+			getSelectedAreas: vi.fn().mockReturnValue(selectedAreas),
+			getProgress: vi.fn().mockReturnValue([]),
+			setProgress: vi.fn(),
+			getLastActivelyCleaningState: vi.fn().mockReturnValue(false),
+			setLastActivelyCleaningState: vi.fn(),
+		});
+		const platform = asPartial<RoborockMatterbridgePlatform>({
+			log: createMockLogger(),
+			configManager: createMockConfigManager(),
+			roborockService: mockRoborockService,
+		});
+
+		// getAttribute returns the last-known currentArea
+		vi.mocked(robot.getAttribute).mockImplementation((_clusterId, attrName) => {
+			if (attrName === 'selectedAreas') {
+				return selectedAreas;
+			}
+			if (attrName === 'currentArea') {
+				return lastKnownArea;
+			}
+			return undefined;
+		});
+
+		const message: ServiceAreaUpdateMessage = {
+			duid: 'test-duid-multi-lastknown',
+			state: OperationStatusCode.Cleaning,
+			cleaningInfo: undefined,
+			cleaningProcess: { clean_area: 100, clean_time: 50 },
+		};
+
+		await handleServiceAreaUpdate(robot, message, platform);
+
+		// Should republish the last-known area, NOT selectedAreas[0]
+		expect(robot.updateAttribute).toHaveBeenCalledWith(ServiceArea.id, 'currentArea', lastKnownArea, expect.anything());
+	});
+
+	it('should use last-known currentArea = 0 when it is falsy but valid and in selectedAreas', async () => {
+		const selectedAreas = [0, 1, 2];
+		const lastKnownArea = 0;
+		const mockRoborockService = asPartial<RoborockService>({
+			getSelectedAreas: vi.fn().mockReturnValue(selectedAreas),
+			getProgress: vi.fn().mockReturnValue([]),
+			setProgress: vi.fn(),
+			getLastActivelyCleaningState: vi.fn().mockReturnValue(false),
+			setLastActivelyCleaningState: vi.fn(),
+		});
+		const platform = asPartial<RoborockMatterbridgePlatform>({
+			log: createMockLogger(),
+			configManager: createMockConfigManager(),
+			roborockService: mockRoborockService,
+		});
+
+		// getAttribute returns 0 (the falsy-zero edge case)
+		vi.mocked(robot.getAttribute).mockImplementation((_clusterId, attrName) => {
+			if (attrName === 'selectedAreas') {
+				return selectedAreas;
+			}
+			if (attrName === 'currentArea') {
+				return lastKnownArea;
+			}
+			return undefined;
+		});
+
+		const message: ServiceAreaUpdateMessage = {
+			duid: 'test-duid-multi-zero',
+			state: OperationStatusCode.Cleaning,
+			cleaningInfo: undefined,
+			cleaningProcess: { clean_area: 100, clean_time: 50 },
+		};
+
+		await handleServiceAreaUpdate(robot, message, platform);
+
+		// Should republish 0, not selectedAreas[0] and not treat it as "missing"
+		expect(robot.updateAttribute).toHaveBeenCalledWith(ServiceArea.id, 'currentArea', lastKnownArea, expect.anything());
+	});
+
+	it('should fall back to selectedAreas[0] when last-known currentArea is stale (not in selectedAreas)', async () => {
+		const selectedAreas = [1, 2];
+		const staleArea = 5;
+		const mockRoborockService = asPartial<RoborockService>({
+			getSelectedAreas: vi.fn().mockReturnValue(selectedAreas),
+			getProgress: vi.fn().mockReturnValue([]),
+			setProgress: vi.fn(),
+			getLastActivelyCleaningState: vi.fn().mockReturnValue(false),
+			setLastActivelyCleaningState: vi.fn(),
+		});
+		const platform = asPartial<RoborockMatterbridgePlatform>({
+			log: createMockLogger(),
+			configManager: createMockConfigManager(),
+			roborockService: mockRoborockService,
+		});
+
+		// getAttribute returns a stale area value not in selectedAreas
+		vi.mocked(robot.getAttribute).mockImplementation((_clusterId, attrName) => {
+			if (attrName === 'selectedAreas') {
+				return selectedAreas;
+			}
+			if (attrName === 'currentArea') {
+				return staleArea;
+			}
+			return undefined;
+		});
+
+		const message: ServiceAreaUpdateMessage = {
+			duid: 'test-duid-multi-stale',
+			state: OperationStatusCode.Cleaning,
+			cleaningInfo: undefined,
+			cleaningProcess: { clean_area: 100, clean_time: 50 },
+		};
+
+		await handleServiceAreaUpdate(robot, message, platform);
+
+		// Should fall back to selectedAreas[0] when last-known area is stale
+		expect(robot.updateAttribute).toHaveBeenCalledWith(ServiceArea.id, 'currentArea', 1, expect.anything());
+	});
 });
 
 describe('markAreaSkipped and getNextPendingArea', () => {
@@ -619,6 +778,117 @@ describe('resolveAreaFromCleaningInfo — progress updates with area resolution'
 				expect.objectContaining({ areaId: 2, status: ServiceArea.OperationalStatus.Operating }),
 			]),
 		);
+	});
+
+	it('should publish areaId 0 as currentArea when segment resolves to 0 (falsy-zero fix)', async () => {
+		const selectedAreas = [0, 1, 2];
+		const initialProgress: ServiceArea.Progress[] = [
+			{ areaId: 0, status: ServiceArea.OperationalStatus.Pending },
+			{ areaId: 1, status: ServiceArea.OperationalStatus.Pending },
+			{ areaId: 2, status: ServiceArea.OperationalStatus.Pending },
+		];
+
+		const roomMapData = new Map<number, AreaInfo>([
+			[0, { roomId: 5, mapId: 100, roomName: 'Room 0' }],
+			[1, { roomId: 10, mapId: 100, roomName: 'Room 1' }],
+			[2, { roomId: 20, mapId: 100, roomName: 'Room 2' }],
+		]);
+		const roomInfo = new Map<string, SegmentInfo>([
+			['5-100', { areaId: 0, mapId: 100, roomName: 'Room 0' }],
+			['10-100', { areaId: 1, mapId: 100, roomName: 'Room 1' }],
+			['20-100', { areaId: 2, mapId: 100, roomName: 'Room 2' }],
+		]);
+		const indexMap = new RoomIndexMap(roomMapData, roomInfo);
+
+		const mockRoborockService = asPartial<RoborockService>({
+			getSupportedAreas: vi.fn().mockReturnValue([]),
+			getSupportedAreasIndexMap: vi.fn().mockReturnValue(indexMap),
+			getSelectedAreas: vi.fn().mockReturnValue(selectedAreas),
+			getProgress: vi.fn().mockReturnValue(initialProgress),
+			setProgress: vi.fn(),
+			getLastActivelyCleaningState: vi.fn().mockReturnValue(false),
+			setLastActivelyCleaningState: vi.fn(),
+		});
+
+		const platform = asPartial<RoborockMatterbridgePlatform>({
+			log: createMockLogger(),
+			configManager: createMockConfigManager(),
+			roborockService: mockRoborockService,
+		});
+
+		vi.mocked(robot.getAttribute).mockReturnValue(selectedAreas);
+
+		const cleaningInfo: CleanInformation = {
+			segment_id: 5,
+			target_segment_id: INVALID_SEGMENT_ID,
+			fan_power: 0,
+			water_box_status: 0,
+			mop_mode: 0,
+		};
+
+		const message: ServiceAreaUpdateMessage = {
+			duid: 'test-duid-zero-area',
+			state: OperationStatusCode.RoomClean,
+			cleaningInfo,
+			cleaningProcess: { clean_area: 100, clean_time: 60 },
+		};
+
+		await handleServiceAreaUpdate(robot, message, platform);
+
+		// Verify currentArea is set to 0, not null
+		expect(robot.updateAttribute).toHaveBeenCalledWith(ServiceArea.id, 'currentArea', 0, expect.anything());
+	});
+
+	it('should clear currentArea when segment resolves to undefined (genuinely no match)', async () => {
+		const selectedAreas = [1, 2];
+		const roomMapData = new Map<number, AreaInfo>([
+			[1, { roomId: 10, mapId: 100, roomName: 'Room 1' }],
+			[2, { roomId: 20, mapId: 100, roomName: 'Room 2' }],
+		]);
+		const roomInfo = new Map<string, SegmentInfo>([
+			['10-100', { areaId: 1, mapId: 100, roomName: 'Room 1' }],
+			['20-100', { areaId: 2, mapId: 100, roomName: 'Room 2' }],
+		]);
+		const indexMap = new RoomIndexMap(roomMapData, roomInfo);
+		// No mapping for segment 999
+
+		const mockRoborockService = asPartial<RoborockService>({
+			getSupportedAreas: vi.fn().mockReturnValue([]),
+			getSupportedAreasIndexMap: vi.fn().mockReturnValue(indexMap),
+			getSelectedAreas: vi.fn().mockReturnValue(selectedAreas),
+			getProgress: vi.fn().mockReturnValue([]),
+			setProgress: vi.fn(),
+			getLastActivelyCleaningState: vi.fn().mockReturnValue(true),
+			setLastActivelyCleaningState: vi.fn(),
+		});
+
+		const platform = asPartial<RoborockMatterbridgePlatform>({
+			log: createMockLogger(),
+			configManager: createMockConfigManager(),
+			roborockService: mockRoborockService,
+		});
+
+		vi.mocked(robot.getAttribute).mockReturnValue(selectedAreas);
+
+		const cleaningInfo: CleanInformation = {
+			segment_id: 999,
+			target_segment_id: INVALID_SEGMENT_ID,
+			fan_power: 0,
+			water_box_status: 0,
+			mop_mode: 0,
+		};
+
+		const message: ServiceAreaUpdateMessage = {
+			duid: 'test-duid-undefined-area',
+			state: OperationStatusCode.RoomClean,
+			cleaningInfo,
+			cleaningProcess: { clean_area: 100, clean_time: 60 },
+		};
+
+		await handleServiceAreaUpdate(robot, message, platform);
+
+		// Verify currentArea is cleared to null
+		expect(robot.updateAttribute).toHaveBeenCalledWith(ServiceArea.id, 'currentArea', null, expect.anything());
 	});
 
 	it('should not update progress when cleaningInfo resolves to null mappedArea', async () => {
