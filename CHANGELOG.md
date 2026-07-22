@@ -4,6 +4,18 @@ All notable changes to this project will be documented in this file.
 
 ---
 
+## [1.1.8-rc04] - 2026-07-22
+
+### Fixed
+
+- **Room indicator flickering/mismatching during multi-room cleans** — Service-area handling now preserves the last-known cleaning area and correctly treats an `areaId` of `0` as valid instead of falsy, so HomeKit no longer flickers to the wrong room or drops the room indicator while the vacuum works through a multi-room clean.
+- **Clean mode incorrectly falling back to "Automatic"** — Mode resolution is now category-aware when matching water-flow/route combinations, so running a specific mode like Max with a non-canonical combo is reported correctly instead of falling back to a generic "Automatic" in HomeKit.
+- **Unsupported "Vacuum Then Mop" mode shown in HomeKit** — The OneTime clean mode is now gated on device capability, so devices that don't support "Vacuum Then Mop" no longer expose it as a selectable mode.
+
+<a href="https://www.buymeacoffee.com/rinnvspktr" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/default-orange.png" alt="Buy Me A Coffee" height="41" width="174"></a>
+
+---
+
 ## [1.1.8-rc03] - 2026-07-22
 
 ### Changed
