@@ -2,6 +2,10 @@ import { CleanSequenceType, MopWaterFlow, VacuumSuctionPower } from '../enums/in
 import { CleanModeConfig, CleanModeDisplayLabel, CleanModeLabelInfo } from './cleanModeConfig/index.js';
 import { CleanModeSetting } from './CleanModeSetting.js';
 
+function supportsMode(configs: CleanModeConfig[], mode: number): boolean {
+	return configs.some((c) => c.mode === mode);
+}
+
 enum BehaviorType {
 	Default = 'default',
 	Smart = 'smart',
@@ -66,10 +70,14 @@ export class ModeResolver {
  * Create resolver for default devices.
  */
 export function createDefaultModeResolver(configs: CleanModeConfig[]): ModeResolver {
+	const canResolveVacFollowedByMop = supportsMode(
+		configs,
+		CleanModeLabelInfo[CleanModeDisplayLabel.VacFollowedByMop].mode,
+	);
 	return new ModeResolver(
 		configs,
 		(setting) => {
-			if (setting.sequenceType === CleanSequenceType.OneTime) {
+			if (canResolveVacFollowedByMop && setting.sequenceType === CleanSequenceType.OneTime) {
 				return CleanModeLabelInfo[CleanModeDisplayLabel.VacFollowedByMop].mode;
 			}
 			if (setting.isCustomMode) {
@@ -85,13 +93,17 @@ export function createDefaultModeResolver(configs: CleanModeConfig[]): ModeResol
  * Create resolver for smart devices.
  */
 export function createSmartModeResolver(configs: CleanModeConfig[]): ModeResolver {
+	const canResolveVacFollowedByMop = supportsMode(
+		configs,
+		CleanModeLabelInfo[CleanModeDisplayLabel.VacFollowedByMop].mode,
+	);
 	return new ModeResolver(
 		configs,
 		(setting) => {
 			if (setting.isSmartMode) {
 				return CleanModeLabelInfo[CleanModeDisplayLabel.SmartPlan].mode;
 			}
-			if (setting.sequenceType === CleanSequenceType.OneTime) {
+			if (canResolveVacFollowedByMop && setting.sequenceType === CleanSequenceType.OneTime) {
 				return CleanModeLabelInfo[CleanModeDisplayLabel.VacFollowedByMop].mode;
 			}
 			if (setting.isCustomMode) {
