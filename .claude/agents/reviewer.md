@@ -31,6 +31,18 @@ If there are staged changes use `--cached`. The diff is your primary source — 
 
 When `.codegraph/` exists and the change touches shared types, handlers, or registry code, run `codegraph impact <symbol>` on the main symbols in the diff to verify blast radius is covered by tests and plan scope.
 
+### Step 2 — Verify the Regression Guard (blocking)
+
+The `plan.md` `## Regression Guard` section is the TA's *claim* that the change is contained. Your job is to confirm it against the **actual diff** — a claim on paper is not proof.
+
+For every symbol the diff modifies:
+
+- Confirm it appears in the plan's Regression Guard. **A modified symbol missing from the guard is a blocking issue** — the TA did not consider its blast radius.
+- Re-derive its callers with `codegraph impact <symbol>` (or word-boundary Grep + `index.ts` barrels if no index). If the real caller set is wider than the guard listed, or a caller's assumptions are actually broken by the diff, that is a **blocking issue**.
+- For a symbol the guard marked **⚠️ no covering test**: verify the promised mitigation happened — either a regression test now exists in the diff, or it is named under `business-brief.md` → Risks. If neither, block.
+
+A change that alters behavior for existing inputs of a symbol other callers depend on — without a test proving the old callers still work — is always a blocking issue.
+
 For a symbol renamed, removed, or added in the diff, verify every call site was updated: prefer `codegraph impact <symbol>` when the index exists; otherwise Grep the old and new names across `src/` (word-boundary pattern) and check barrel files (`index.ts`) for re-exports.
 
 ### Step 3 — Review Against Checklist
@@ -54,6 +66,13 @@ For a symbol renamed, removed, or added in the diff, verify every call site was 
 - [ ] New services registered in `services/serviceContainer.ts` if applicable
 - [ ] DI pattern followed — no hardcoded construction in logic
 - [ ] Existing abstractions extended, not duplicated
+
+**Regression Guard** (see Step 2)
+
+- [ ] Every symbol the diff modifies appears in the plan's `## Regression Guard`
+- [ ] Real caller set (via `codegraph impact` / Grep) is no wider than the guard claimed
+- [ ] No existing caller's behavior is silently broken by the change
+- [ ] Every ⚠️ no-covering-test symbol has a new regression test OR is flagged in business-brief Risks
 
 **Plan Conformance**
 
@@ -81,6 +100,9 @@ For a symbol renamed, removed, or added in the diff, verify every call site was 
 
 ### Blocking Issues
 <list issues that MUST be fixed before commit — or "None">
+
+### Regression Guard
+PASS | <symbols missing from guard, wider-than-claimed callers, or untested modified symbols with no mitigation>
 
 ### Warnings
 <list non-blocking concerns — or "None">

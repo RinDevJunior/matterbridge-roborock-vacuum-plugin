@@ -190,6 +190,16 @@ For every function or file you are about to list under "Files to Create" (or a n
 - If an existing function/helper already does this (or nearly does), prefer reusing it or extending it over writing a new one — reflect that in `plan.md`'s Approach/Implementation Steps instead of "Files to Create".
 - Only list something under "Files to Create" once you've confirmed nothing equivalent exists.
 
+### Step 5b — Regression Guard (mandatory before writing the plan)
+
+Before you write `plan.md`, prove the change is contained. For **every symbol** you list under "Files to Modify" (and any existing symbol a new file will call into):
+
+- Run `codegraph explore "<symbol>"` (or `codegraph impact <symbol>` when available) to pull its **callers + covering tests** from the blast radius. Fall back to a word-boundary Grep sweep if `.codegraph/` is missing.
+- For each caller, state in one line **why it stays intact** — e.g. "signature unchanged", "new branch only, old path untouched", "behavior identical for existing inputs".
+- If a modified symbol has **⚠️ no covering test**, it has no safety net — you MUST either (a) add a regression-test case to `test-plan.md` and include the `test-writer` step, or (b) list it explicitly under `business-brief.md` → Risks so the user decides at the approval gate. Never leave an untested modified symbol silent.
+
+Record the result in the `## Regression Guard` section of `plan.md` (below). If you cannot show a symbol stays intact, the plan is not ready — narrow the approach or escalate complexity and spawn `investigator` to trace the coupling.
+
 ### Step 6 — Produce Plan
 
 Write `plan.md`:
@@ -227,6 +237,12 @@ low | medium | high
 - Follow existing patterns in <file>
 - Do NOT change <file> (test only)
 - Match naming: <example>
+
+## Regression Guard
+<for each symbol in Files to Modify — from CodeGraph blast radius:>
+- `src/x.ts` — `fooBar()` — callers: `a.ts:12`, `b.ts:40`; tests: `x.test.ts` — stays intact because <signature unchanged / new branch only / identical for existing inputs>
+- `src/y.ts` — `bazQux()` — callers: `c.ts:88`; ⚠️ NO covering test → regression case added to test-plan.md | flagged in business-brief Risks
+<if any symbol cannot be shown intact, do NOT mark Status: ready>
 
 ## Status
 ready
@@ -284,7 +300,7 @@ Write `business-brief.md` in the task folder — a plain-language translation of
 <important exclusions, boundaries, or non-goals>
 
 ### 🟡 Risks or Questions
-<business-facing risks/questions, or "None">
+<business-facing risks/questions, or "None". Any modified symbol with no covering test that you chose NOT to test must appear here in plain language — e.g. "We are changing part X which has no automated safety test; there is a small chance it affects Y.">
 ```
 
 **Writing style — write for a non-native English reader (approx. IELTS 5.5–6 level):** short sentences, one idea each; plain everyday words, no jargon; bullets over paragraphs; concrete before → after examples where useful. No file names, service names, or code — this is for a business reader. Do not promise dates or compatibility guarantees not in the requirement.
@@ -298,6 +314,7 @@ Report a **≤10-line summary** — the EM reviews this summary and must NOT rea
 - `plan.md` path + `Status: ready` (and `test-plan.md` path, or "skipped" with reason) + `business-brief.md` path
 - One-line approach + files touched count
 - Complexity used (and any escalation)
+- Regression Guard: covered (N symbols) | risks flagged (list untested ones sent to business-brief)
 - Whether wiki-manager / investigator were spawned
 - Any blocking issues
 
@@ -328,6 +345,7 @@ After `plan.md`, append new architectural decisions to `.claude/memory.md` (max 
 - Never mix logic and test planning in one step — implementation content goes in `plan.md`, test-case content goes in `test-plan.md`, never both in the same file
 - Be explicit: file paths, function signatures, interface names
 - Before listing a new function/file under "Files to Create", check via CodeGraph (natural-language query) that nothing equivalent already exists — prefer reuse/extension over duplication
+- Never mark `plan.md` `Status: ready` without a complete `## Regression Guard` — every modified symbol's callers listed and shown intact; every untested modified symbol either given a test in `test-plan.md` or flagged in `business-brief.md` Risks
 - The implementer runs on **haiku by default** — the plan must have no ambiguity
 - For **high** complexity: never deep-trace code — spawn investigator
 - Never spawn investigator for a locate-only question — use Explore (or CodeGraph); investigator is reserved for multi-question, cross-module traces that need an answers file

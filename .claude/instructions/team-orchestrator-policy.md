@@ -68,11 +68,19 @@ If direct-executor says it's bigger than it looked → restart as medium/high.
 | High                  | same, implementer on sonnet                                              |
 | Security-sensitive    | always include reviewer, even low                                        |
 | Docs only             | documenter                                                               |
-| Release               | release-manager (user request only)                                      |
+| Release               | release-manager (user request only) → post-publish cleanup (see below)   |
 | Commit/finalize       | finalizer                                                                |
 | Build/lint/test check | compiler (user request only)                                             |
 | Wiki refresh          | wiki-manager update — batched, user request/pre-release only             |
 | Ad-hoc opt-out        | direct-executor, no pipeline                                             |
+
+## Post-release cleanup
+
+After `release-manager` reports the **GitHub release was published successfully** (the separate publish step — not the RC bump alone), the bump is already committed and pushed, so only ephemeral `workspace/<task>/` folders remain. Then:
+
+1. Ask the user: **"Release published. Clean up ephemeral release artifacts now?"** — do NOT auto-clean (honors the "cleaner only on explicit request" rule).
+2. On confirmation, spawn `finalizer` in **cleanup-only mode** (Step 1 only — no staging, no format, no precommit, no commit message).
+3. Do nothing if the user declines, or if only the RC bump ran without a GitHub publish.
 
 ## Model policy
 
