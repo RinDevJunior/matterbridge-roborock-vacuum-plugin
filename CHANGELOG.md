@@ -4,6 +4,17 @@ All notable changes to this project will be documented in this file.
 
 ---
 
+## [1.1.8-rc02] - 2026-07-22
+
+### Fixed
+
+- **Vacuum stuck showing "Cleaning" a single room during scheduled/multi-room cleans** — On V1-protocol Roborock devices, `handleCleaningWithoutInfo` could freeze `currentArea` on the first room, so Apple Home kept reporting the vacuum as permanently cleaning that room even after it moved on to clean other rooms in the schedule.
+- **False-positive dock error shown while idle/charging** — The `isUpdownWaterReady` dss-bitfield was mistakenly included in dock error detection, causing an "Unable to Complete Operation" error to appear in Apple Home even when the vacuum had no real fault and was simply idle or charging on the dock.
+
+<a href="https://www.buymeacoffee.com/rinnvspktr" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/default-orange.png" alt="Buy Me A Coffee" height="41" width="174"></a>
+
+---
+
 ## [1.1.8-rc01] - 2026-07-20
 
 ### Fixed
