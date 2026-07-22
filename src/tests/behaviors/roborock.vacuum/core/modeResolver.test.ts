@@ -6,6 +6,8 @@ import {
 	CleanModeLabelInfo,
 	mopOnlyModeConfigs,
 	smartCleanModeConfigs,
+	smartPlanModeConfig,
+	vacFollowedByMopModeConfig,
 	vacuumAndMopModeConfigs,
 	vacuumOnlyModeConfigs,
 } from '../../../../behaviors/roborock.vacuum/core/cleanModeConfig/index.js';
@@ -227,7 +229,7 @@ describe('ModeResolver', () => {
 	});
 
 	describe('createDefaultModeResolver', () => {
-		it('should resolve OneTime sequenceType to VacFollowedByMop mode', () => {
+		it('should fall through when VacFollowedByMop is unsupported with OneTime sequenceType', () => {
 			const resolver = createDefaultModeResolver(baseCleanModeConfigs);
 			const setting = new CleanModeSetting(
 				VacuumSuctionPower.Balanced,
@@ -236,7 +238,7 @@ describe('ModeResolver', () => {
 				MopRoute.Standard,
 				CleanSequenceType.OneTime,
 			);
-			expect(resolver.resolve(setting)).toBe(CleanModeLabelInfo[CleanModeDisplayLabel.VacFollowedByMop].mode);
+			expect(resolver.resolve(setting)).toBe(CleanModeLabelInfo[CleanModeDisplayLabel.VacuumAndMopDefault].mode);
 		});
 
 		it('should resolve custom mode to EnergySaving', () => {
@@ -268,8 +270,32 @@ describe('ModeResolver', () => {
 			expect(resolver.behavior).toBe('default');
 		});
 
-		it('should prioritize OneTime over custom mode', () => {
+		it('should fall through to custom mode when VacFollowedByMop is unsupported with OneTime sequenceType', () => {
 			const resolver = createDefaultModeResolver(baseCleanModeConfigs);
+			const setting = new CleanModeSetting(
+				VacuumSuctionPower.Custom,
+				MopWaterFlow.Custom,
+				0,
+				MopRoute.Custom,
+				CleanSequenceType.OneTime,
+			);
+			expect(resolver.resolve(setting)).toBe(CleanModeLabelInfo[CleanModeDisplayLabel.VacuumAndMopEnergySaving].mode);
+		});
+
+		it('should resolve OneTime sequenceType to VacFollowedByMop mode when supported', () => {
+			const resolver = createDefaultModeResolver([vacFollowedByMopModeConfig, ...baseCleanModeConfigs]);
+			const setting = new CleanModeSetting(
+				VacuumSuctionPower.Balanced,
+				MopWaterFlow.Medium,
+				0,
+				MopRoute.Standard,
+				CleanSequenceType.OneTime,
+			);
+			expect(resolver.resolve(setting)).toBe(CleanModeLabelInfo[CleanModeDisplayLabel.VacFollowedByMop].mode);
+		});
+
+		it('should prioritize OneTime over custom mode when VacFollowedByMop is supported', () => {
+			const resolver = createDefaultModeResolver([vacFollowedByMopModeConfig, ...baseCleanModeConfigs]);
 			const setting = new CleanModeSetting(
 				VacuumSuctionPower.Custom,
 				MopWaterFlow.Custom,
@@ -339,6 +365,18 @@ describe('ModeResolver', () => {
 				CleanSequenceType.OneTime,
 			);
 			expect(resolver.resolve(setting)).toBe(CleanModeLabelInfo[CleanModeDisplayLabel.VacFollowedByMop].mode);
+		});
+
+		it('should fall through when VacFollowedByMop is unsupported in smart mode with OneTime sequenceType', () => {
+			const resolver = createSmartModeResolver([smartPlanModeConfig, ...baseCleanModeConfigs]);
+			const setting = new CleanModeSetting(
+				VacuumSuctionPower.Balanced,
+				MopWaterFlow.Medium,
+				0,
+				MopRoute.Standard,
+				CleanSequenceType.OneTime,
+			);
+			expect(resolver.resolve(setting)).toBe(CleanModeLabelInfo[CleanModeDisplayLabel.VacuumAndMopDefault].mode);
 		});
 	});
 });
