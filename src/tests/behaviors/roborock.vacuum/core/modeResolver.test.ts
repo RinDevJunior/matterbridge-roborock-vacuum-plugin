@@ -4,9 +4,12 @@ import {
 	baseCleanModeConfigs,
 	CleanModeDisplayLabel,
 	CleanModeLabelInfo,
+	mopOnlyModeConfigs,
 	smartCleanModeConfigs,
 	smartPlanModeConfig,
 	vacFollowedByMopModeConfig,
+	vacuumAndMopModeConfigs,
+	vacuumOnlyModeConfigs,
 } from '../../../../behaviors/roborock.vacuum/core/cleanModeConfig/index.js';
 import { CleanModeSetting } from '../../../../behaviors/roborock.vacuum/core/CleanModeSetting.js';
 import {
@@ -110,6 +113,118 @@ describe('ModeResolver', () => {
 				CleanSequenceType.Persist,
 			);
 			expect(resolver.resolve(setting)).toBe(CleanModeLabelInfo[CleanModeDisplayLabel.VacuumAndMopDefault].mode);
+		});
+	});
+
+	describe('resolveFallback — category-aware matching (rc02 fix)', () => {
+		it('should match vacuum+mop category by suction power when exact triple does not match', () => {
+			const resolver = new ModeResolver(vacuumAndMopModeConfigs);
+			// Max suction with a non-canonical water flow/route combination
+			// Should resolve to VacuumAndMopMax mode instead of VacuumAndMopDefault
+			const setting = new CleanModeSetting(
+				VacuumSuctionPower.Max,
+				MopWaterFlow.High, // Non-canonical combo
+				0,
+				MopRoute.DeepPlus, // Non-canonical combo
+				CleanSequenceType.Persist,
+			);
+			const result = resolver.resolve(setting);
+			// Should find a VacuumAndMopMax config that matches the suction power
+			const vacuumAndMopMaxConfigs = vacuumAndMopModeConfigs.filter(
+				(c) => c.setting.suctionPower === VacuumSuctionPower.Max && c.setting.waterFlow !== MopWaterFlow.Off,
+			);
+			expect(vacuumAndMopMaxConfigs.length).toBeGreaterThan(0);
+			expect(result).toBe(vacuumAndMopMaxConfigs[0].mode);
+		});
+
+		it('should match vacuum-only category by suction power when mop is off', () => {
+			const resolver = new ModeResolver(baseCleanModeConfigs);
+			// Max suction with mop off and non-canonical mop route
+			// Should resolve to VacuumMax mode, not VacuumDefault
+			const setting = new CleanModeSetting(
+				VacuumSuctionPower.Max,
+				MopWaterFlow.Off,
+				0,
+				MopRoute.Deep, // Non-canonical but mop is off
+				CleanSequenceType.Persist,
+			);
+			const result = resolver.resolve(setting);
+			// Should find a VacuumMax config
+			const vacuumMaxConfigs = vacuumOnlyModeConfigs.filter(
+				(c) => c.setting.suctionPower === VacuumSuctionPower.Max && c.setting.waterFlow === MopWaterFlow.Off,
+			);
+			expect(vacuumMaxConfigs.length).toBeGreaterThan(0);
+			expect(result).toBe(vacuumMaxConfigs[0].mode);
+		});
+
+		it('should match mop-only category by water flow when vacuum is off', () => {
+			const resolver = new ModeResolver(baseCleanModeConfigs);
+			// Mop with High water flow and mop vacuum off with non-canonical route
+			// Should resolve to MopMax mode, not MopDefault
+			const setting = new CleanModeSetting(
+				VacuumSuctionPower.Off,
+				MopWaterFlow.High,
+				0,
+				MopRoute.Fast, // Non-canonical but vacuum is off
+				CleanSequenceType.Persist,
+			);
+			const result = resolver.resolve(setting);
+			// Should find a MopHigh config (mop-only category)
+			const mopHighConfigs = mopOnlyModeConfigs.filter(
+				(c) => c.setting.suctionPower === VacuumSuctionPower.Off && c.setting.waterFlow === MopWaterFlow.High,
+			);
+			expect(mopHighConfigs.length).toBeGreaterThan(0);
+			expect(result).toBe(mopHighConfigs[0].mode);
+		});
+
+		it('should fall back to category default when no same-category match exists', () => {
+			const resolver = new ModeResolver(baseCleanModeConfigs);
+			// Unrecognized suction power + active water flow
+			// No vacuum-only mode exists for this suction value, should fall to VacuumAndMopDefault
+			const setting = new CleanModeSetting(
+				999, // Unrecognized suction power
+				MopWaterFlow.High,
+				0,
+				MopRoute.Standard,
+				CleanSequenceType.Persist,
+			);
+			const result = resolver.resolve(setting);
+			expect(result).toBe(CleanModeLabelInfo[CleanModeDisplayLabel.VacuumAndMopDefault].mode);
+		});
+
+		it('should preserve exact-match priority over fallback matching', () => {
+			const resolver = new ModeResolver(baseCleanModeConfigs);
+			// Exact match for VacuumAndMopQuiet triple should take priority
+			const setting = new CleanModeSetting(
+				VacuumSuctionPower.Quiet,
+				MopWaterFlow.Low,
+				0,
+				MopRoute.Standard,
+				CleanSequenceType.Persist,
+			);
+			const result = resolver.resolve(setting);
+			// Should resolve via exact match, not fallback
+			expect(result).toBe(CleanModeLabelInfo[CleanModeDisplayLabel.VacuumAndMopQuiet].mode);
+		});
+
+		it('should match vacuum+mop balanced suction with different water flow', () => {
+			const resolver = new ModeResolver(vacuumAndMopModeConfigs);
+			// Balanced suction with non-canonical water flow
+			// Should find a BalancedMop config by suction power match
+			const setting = new CleanModeSetting(
+				VacuumSuctionPower.Balanced,
+				MopWaterFlow.Low, // Non-canonical combo (e.g., Balanced typically pairs with Medium)
+				0,
+				MopRoute.Custom,
+				CleanSequenceType.Persist,
+			);
+			const result = resolver.resolve(setting);
+			// Should find a config with Balanced suction in vacuum+mop category
+			const balancedConfigs = vacuumAndMopModeConfigs.filter(
+				(c) => c.setting.suctionPower === VacuumSuctionPower.Balanced && c.setting.waterFlow !== MopWaterFlow.Off,
+			);
+			expect(balancedConfigs.length).toBeGreaterThan(0);
+			expect(result).toBe(balancedConfigs[0].mode);
 		});
 	});
 

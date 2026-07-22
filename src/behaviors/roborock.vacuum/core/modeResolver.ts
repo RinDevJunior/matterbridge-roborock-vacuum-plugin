@@ -17,6 +17,7 @@ enum BehaviorType {
  */
 export class ModeResolver {
 	private readonly settingsToModeMap: Map<string, number>;
+	private readonly configs: CleanModeConfig[];
 	private readonly customCheckFn?: (setting: CleanModeSetting) => number | undefined;
 
 	constructor(
@@ -25,6 +26,7 @@ export class ModeResolver {
 		public readonly behavior = BehaviorType.Default,
 	) {
 		this.settingsToModeMap = new Map(configs.map((c) => [this.serializeSetting(c.setting), c.mode]));
+		this.configs = configs;
 		this.customCheckFn = customCheckFn;
 	}
 
@@ -57,12 +59,32 @@ export class ModeResolver {
 	}
 
 	private resolveFallback(setting: CleanModeSetting): number | undefined {
-		if (setting.suctionPower === VacuumSuctionPower.Off)
-			return CleanModeLabelInfo[CleanModeDisplayLabel.MopDefault].mode;
-		if (setting.waterFlow === MopWaterFlow.Off) return CleanModeLabelInfo[CleanModeDisplayLabel.VacuumDefault].mode;
-		if (setting.suctionPower !== VacuumSuctionPower.Off && setting.waterFlow !== MopWaterFlow.Off)
-			return CleanModeLabelInfo[CleanModeDisplayLabel.VacuumAndMopDefault].mode;
-		return undefined;
+		const isVacuumOff = setting.suctionPower === VacuumSuctionPower.Off;
+		const isMopOff = setting.waterFlow === MopWaterFlow.Off;
+
+		if (isVacuumOff) {
+			const sameWaterFlow = this.configs.find(
+				(c) => c.setting.suctionPower === VacuumSuctionPower.Off && c.setting.waterFlow === setting.waterFlow,
+			);
+			return sameWaterFlow ? sameWaterFlow.mode : CleanModeLabelInfo[CleanModeDisplayLabel.MopDefault].mode;
+		}
+
+		if (isMopOff) {
+			const sameSuction = this.configs.find(
+				(c) => c.setting.waterFlow === MopWaterFlow.Off && c.setting.suctionPower === setting.suctionPower,
+			);
+			return sameSuction ? sameSuction.mode : CleanModeLabelInfo[CleanModeDisplayLabel.VacuumDefault].mode;
+		}
+
+		const sameSuctionVacuumAndMop = this.configs.find(
+			(c) =>
+				c.setting.waterFlow !== MopWaterFlow.Off &&
+				c.setting.suctionPower !== VacuumSuctionPower.Off &&
+				c.setting.suctionPower === setting.suctionPower,
+		);
+		return sameSuctionVacuumAndMop
+			? sameSuctionVacuumAndMop.mode
+			: CleanModeLabelInfo[CleanModeDisplayLabel.VacuumAndMopDefault].mode;
 	}
 }
 
