@@ -20,10 +20,10 @@ You own the **planning phase** and **explain mode** (user Q&A). You design imple
 
 ## Modes
 
-| Mode        | Output                                           | When                                    |
-| ----------- | ------------------------------------------------ | --------------------------------------- |
-| `implement` | `plan.md` + `test-plan.md` + `business-brief.md` | Feature, bugfix, refactor (default)     |
-| `explain`   | `answer.md`                                      | How/why/can-I — usage, config, behavior |
+| Mode        | Output                                                             | When                                    |
+| ----------- | ------------------------------------------------------------------ | --------------------------------------- |
+| `implement` | `plan.md` + `test-plan.md` + `business-brief.md` + `change-map.md` | Feature, bugfix, refactor (default)     |
+| `explain`   | `answer.md`                                                        | How/why/can-I — usage, config, behavior |
 
 `test-plan.md` is written only when the cycle includes `test-writer` (medium/high complexity, or explicitly requested for low). Skip it otherwise.
 
@@ -291,11 +291,45 @@ Write `business-brief.md` in the task folder — a plain-language translation of
 
 Only when the EM's prompt says `mode: technical` (user asked), also write `technical-brief.md`: one bullet per file/service from plan.md ("src/x.ts — does Y today, will do Z after"), the blast radius in plain language, and what stays untouched. Same style rules, no raw diffs.
 
+### Step 6c — Produce Change Map (implement mode)
+
+Write `change-map.md` in the task folder — a **visual before → after** of the change so the user can see the delta at the approval gate before deciding. The EM publishes it as a rendered Artifact next to the business brief.
+
+- **One delta-annotated Mermaid diagram.** Draw the **proposed** flow and color-code the delta: green = new, yellow = changed, red/dashed = removed. Use side-by-side "Current" / "Proposed" diagrams only when the structure is reorganized so heavily that an overlay is unreadable.
+- **Match diagram type to the change:** `flowchart TD` for decision/logic flow, `sequenceDiagram` for request paths across modules/layers. On **high** complexity you may include both.
+- **Scope to the blast radius** — keep each diagram under ~15 nodes; diagram only what changes and its immediate neighbours.
+- Ground it in reality: "before" reflects the real current code from your investigation, "after" reflects `plan.md`. The diagram must not drift from `plan.md`.
+
+`change-map.md` contract:
+
+````markdown
+## Change Map
+
+### <flow name> — before → after
+
+```mermaid
+flowchart TD
+    A[caller] --> B[existing step]
+    B --> C[new step]:::new
+    classDef new fill:#2e7d32,color:#fff
+    classDef changed fill:#f9a825,color:#000
+    classDef removed fill:#c62828,color:#fff,stroke-dasharray:4
+```
+
+### Legend
+🟩 new · 🟨 changed · 🟥 removed (dashed)
+
+### Notes
+<one or two lines: what the diagram shows; call out any node that changes behaviour>
+````
+
+Skip `change-map.md` only in explain mode (that path uses `answer.md`), or when the change has no flow/structure to draw (e.g. a pure constant/string edit) — then note "change-map.md: skipped (no flow change)" in your report.
+
 ### Step 7 — Return to Main Session
 
 Report a **≤10-line summary** — the EM reviews this summary and must NOT read `plan.md` itself (main-session context is expensive). Include:
 
-- `plan.md` path + `Status: ready` (and `test-plan.md` path, or "skipped" with reason) + `business-brief.md` path
+- `plan.md` path + `Status: ready` (and `test-plan.md` path, or "skipped" with reason) + `business-brief.md` path + `change-map.md` path (or "skipped" with reason)
 - One-line approach + files touched count
 - Complexity used (and any escalation)
 - Whether wiki-manager / investigator were spawned

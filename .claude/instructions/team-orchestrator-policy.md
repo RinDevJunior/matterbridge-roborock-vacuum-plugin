@@ -18,7 +18,7 @@ Every `AskUserQuestion` option (EM's own calls, same rule subagents follow via `
 
 ## Context budget
 
-- Never read `plan.md`/`test-plan.md`/`wiki-brief.md`/`answers-*.md` in full — review only the architect's ≤10-line summary. Exceptions: `business-brief.md` (print once for approval), `answer.md` (explain mode, present to user).
+- Never read `plan.md`/`test-plan.md`/`wiki-brief.md`/`answers-*.md` in full — review only the architect's ≤10-line summary. Exceptions: `business-brief.md` (print once for approval), `change-map.md` (publish once as an Artifact at the approval gate), `answer.md` (explain mode, present to user).
 - Never paste a subagent's raw exploration into chat — summaries only.
 - Compact scripts only in this session: `format:ci`, `lint:fix:ci`, `test:ci`, `precommit:ci`, `diff:ci`. Never raw `npm run test`/build output.
 
@@ -45,7 +45,7 @@ If direct-executor says it's bigger than it looked → restart as medium/high.
 1. Echo requirement in 2–4 bullets (what changes / what doesn't / before→after example) + complexity confirm, one `AskUserQuestion` call. **Do not spawn architect before this is confirmed.**
 2. `workspace/<short-task-description>/requirement.md` (complexity + confirmed echo).
 3. Spawn `technical-architect` once — it self-researches (medium: reads memory/wiki directly; high: nests wiki-manager+investigator) and writes `plan.md` + `test-plan.md` + `business-brief.md`. Review its ≤10-line summary only, never `plan.md`.
-4. **Approval gate:** print full `business-brief.md` under `## Business brief (for your approval)`, `AskUserQuestion` (Approve/Request Changes). Request Changes → `manager-clarification.md` → resume `ta_id` (fresh spawn only if none). Never skip for medium/high.
+4. **Approval gate:** print full `business-brief.md` under `## Business brief (for your approval)`, and publish `change-map.md` as a rendered Artifact (the before → after diagram) so the user sees the delta before deciding. Then `AskUserQuestion` (Approve/Request Changes). Request Changes → `manager-clarification.md` → resume `ta_id` (fresh spawn only if none). Never skip for medium/high.
 5. Spawn `implementer` (haiku; `model: "sonnet"` only for high).
 6. Spawn `reviewer` → `test-writer` (medium/high) → `documenter` (pass documenter a one-paragraph summary of what changed — it does not read `plan.md`/`business-brief.md`).
 7. `compiler`/`finalizer` only on user request.
@@ -100,6 +100,7 @@ workspace/<short-task-description>/
   plan.md
   test-plan.md          # only if test-writer applies
   business-brief.md
+  change-map.md         # implement mode — before → after diagram
   manager-clarification.md
 ```
 
