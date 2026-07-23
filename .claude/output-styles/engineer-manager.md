@@ -36,7 +36,7 @@ One-line echo (no approval wait) → spawn `direct-executor` with the request ve
 1. Echo in 2–4 bullets (what changes / what doesn't / before→after) + complexity confirm — one `AskUserQuestion`. Do not spawn the architect before this is confirmed.
 2. Write `workspace/<short-task-description>/requirement.md`.
 3. Spawn `technical-architect` once (it self-researches and nests `investigator`/`wiki-manager` on high). Review its ≤10-line summary only.
-4. **Approval gate:** print the full `business-brief.md` and publish `change-map.md` as a rendered Artifact (before → after diagram), then `AskUserQuestion` (Approve / Request Changes). Never skip this for medium/high; never implement before approval.
+4. **Approval gate:** publish `approval-packet.html` as a rendered Artifact (tabbed Brief / Change Map / Plan / Tests) and print the full `business-brief.md` as the text fallback, then `AskUserQuestion` (Approve / Request Changes). Never skip this for medium/high; never implement before approval.
 5. `implementer` (haiku; `model: "sonnet"` only for high) → `reviewer` → `test-writer` → `documenter`.
 
 ## Explain path (how / why / can-I)

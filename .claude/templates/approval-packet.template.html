@@ -1,0 +1,171 @@
+<!--
+  Approval Packet template — filled by technical-architect (implement mode).
+  Copy to workspace/<task>/approval-packet.html and replace every <!--{{SLOT_*}}--> marker.
+  The EM publishes the result as an Artifact at the approval gate. Self-contained: no external assets.
+  Slots:
+    {{TASK_TITLE}}     plain task name (also used in <title>)
+    {{COMPLEXITY}}     low | medium | high
+    {{SLOT_BRIEF}}     business-brief.md as HTML (h3 sections + p / ul.keys)
+    {{SLOT_CHANGEMAP}} the <pre class="mermaid">…</pre> block from change-map.md + legend/notes
+    {{SLOT_PLAN}}      Files to Modify/Create as a table + Implementation Steps as ul.keys
+    {{SLOT_TESTS}}     Cases to Cover as ul.keys, or a "no test step" note
+-->
+<title><!--{{TASK_TITLE}}--> — Approval Packet</title>
+<style>
+  :root {
+    --bg: #eef1f5; --surface: #ffffff; --surface-2: #f6f8fb; --ink: #16202b; --ink-soft: #33404e;
+    --muted: #5c6b7a; --border: #dbe2ea; --accent: #0b8f94; --accent-ink: #ffffff;
+    --done-fg: #1a7d4b; --done-bg: #e0f2e6; --pending-fg: #a9640a; --pending-bg: #f7ebd6;
+    --defer-fg: #5a6b7c; --defer-bg: #e7edf3; --info-fg: #2f6fb0; --info-bg: #e2edf8;
+    --shadow: 0 1px 2px rgba(20,32,43,.06), 0 8px 24px rgba(20,32,43,.06);
+    --mono: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace;
+    --sans: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0c1219; --surface: #141d28; --surface-2: #101823; --ink: #e7eef5; --ink-soft: #c2cedb;
+      --muted: #8394a4; --border: #223041; --accent: #2bd4d9; --accent-ink: #052226;
+      --done-fg: #48d38c; --done-bg: #123528; --pending-fg: #e6ab48; --pending-bg: #382a13;
+      --defer-fg: #93a3b4; --defer-bg: #1c2833; --info-fg: #6db0ec; --info-bg: #14293c;
+      --shadow: 0 1px 2px rgba(0,0,0,.3), 0 10px 30px rgba(0,0,0,.35);
+    }
+  }
+  :root[data-theme="light"] {
+    --bg: #eef1f5; --surface: #ffffff; --surface-2: #f6f8fb; --ink: #16202b; --ink-soft: #33404e;
+    --muted: #5c6b7a; --border: #dbe2ea; --accent: #0b8f94; --accent-ink: #ffffff;
+    --done-fg: #1a7d4b; --done-bg: #e0f2e6; --pending-fg: #a9640a; --pending-bg: #f7ebd6;
+    --defer-fg: #5a6b7c; --defer-bg: #e7edf3; --info-fg: #2f6fb0; --info-bg: #e2edf8;
+    --shadow: 0 1px 2px rgba(20,32,43,.06), 0 8px 24px rgba(20,32,43,.06);
+  }
+  :root[data-theme="dark"] {
+    --bg: #0c1219; --surface: #141d28; --surface-2: #101823; --ink: #e7eef5; --ink-soft: #c2cedb;
+    --muted: #8394a4; --border: #223041; --accent: #2bd4d9; --accent-ink: #052226;
+    --done-fg: #48d38c; --done-bg: #123528; --pending-fg: #e6ab48; --pending-bg: #382a13;
+    --defer-fg: #93a3b4; --defer-bg: #1c2833; --info-fg: #6db0ec; --info-bg: #14293c;
+    --shadow: 0 1px 2px rgba(0,0,0,.3), 0 10px 30px rgba(0,0,0,.35);
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font-family: var(--sans); line-height: 1.55; -webkit-font-smoothing: antialiased; }
+  .wrap { max-width: 940px; margin: 0 auto; padding: 30px 20px 64px; }
+  header.masthead { display: flex; flex-direction: column; gap: 8px; }
+  .eyebrow { font-family: var(--mono); font-size: 11.5px; letter-spacing: .14em; text-transform: uppercase; color: var(--accent); font-weight: 600; }
+  h1 { font-size: clamp(21px, 3.2vw, 28px); line-height: 1.15; margin: 0; letter-spacing: -.02em; text-wrap: balance; }
+  .metaline { display: flex; flex-wrap: wrap; gap: 8px 10px; align-items: center; margin: 6px 0 0; }
+  .chip { font-family: var(--mono); font-size: 11.5px; font-weight: 600; letter-spacing: .02em; padding: 3px 9px; border-radius: 999px; border: 1px solid transparent; white-space: nowrap; }
+  .chip.done { color: var(--done-fg); background: var(--done-bg); }
+  .chip.pending { color: var(--pending-fg); background: var(--pending-bg); }
+  .chip.defer { color: var(--defer-fg); background: var(--defer-bg); }
+  .chip.info { color: var(--info-fg); background: var(--info-bg); }
+  .chip.file { color: var(--muted); background: var(--surface-2); border-color: var(--border); }
+
+  .tabbar { display: flex; gap: 4px; border-bottom: 1px solid var(--border); margin: 22px 0; overflow-x: auto; scrollbar-width: thin; position: sticky; top: 0; background: var(--bg); z-index: 5; padding-top: 4px; }
+  .tab { appearance: none; border: 0; background: transparent; color: var(--muted); cursor: pointer; font-family: var(--sans); font-size: 13.5px; font-weight: 550; padding: 11px 15px 13px; white-space: nowrap; border-bottom: 2px solid transparent; margin-bottom: -1px; border-radius: 8px 8px 0 0; transition: color .15s, background .15s; }
+  .tab:hover { color: var(--ink-soft); background: var(--surface-2); }
+  .tab[aria-selected="true"] { color: var(--accent); border-bottom-color: var(--accent); }
+  .tab:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  .panel { display: none; animation: fade .22s ease; }
+  .panel.active { display: block; }
+  @keyframes fade { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+  @media (prefers-reduced-motion: reduce) { .panel { animation: none; } }
+
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 22px 24px; box-shadow: var(--shadow); }
+  .card h2 { margin: 0 0 6px; font-size: 18px; letter-spacing: -.015em; text-wrap: balance; }
+  .card h3 { margin: 20px 0 8px; font-size: 13px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); }
+  .card h3:first-child, .card h2:first-child { margin-top: 0; }
+  .card p { margin: 10px 0; color: var(--ink-soft); font-size: 14.5px; }
+  .card p.lede { color: var(--ink); font-size: 15.5px; }
+  code { font-family: var(--mono); font-size: .88em; background: var(--surface-2); border: 1px solid var(--border); padding: 1px 5px; border-radius: 5px; color: var(--ink); }
+
+  ul.keys { margin: 8px 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 8px; }
+  ul.keys li { position: relative; padding-left: 20px; font-size: 14.5px; color: var(--ink-soft); }
+  ul.keys li::before { content: ""; position: absolute; left: 3px; top: 9px; width: 6px; height: 6px; border-radius: 2px; background: var(--accent); }
+
+  .tablewrap { overflow-x: auto; margin: 10px 0; border: 1px solid var(--border); border-radius: 10px; }
+  table { border-collapse: collapse; width: 100%; font-size: 13.5px; min-width: 440px; }
+  th, td { text-align: left; padding: 9px 12px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  th { background: var(--surface-2); font-size: 11.5px; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); font-weight: 600; }
+  tr:last-child td { border-bottom: 0; }
+  td code { background: transparent; border: 0; padding: 0; color: var(--accent); }
+
+  .diagram { background: var(--surface-2); border: 1px solid var(--border); border-radius: 12px; padding: 14px; margin: 12px 0; overflow-x: auto; }
+  .diagram pre.mermaid { margin: 0; text-align: center; }
+  .legend { display: flex; flex-wrap: wrap; gap: 6px 14px; margin: 8px 2px 0; font-size: 12px; color: var(--muted); font-family: var(--mono); }
+
+  footer { margin-top: 26px; padding-top: 14px; border-top: 1px solid var(--border); color: var(--muted); font-size: 12.5px; }
+  @media (max-width: 620px) { .card { padding: 18px 16px; } }
+</style>
+
+<div class="wrap">
+  <header class="masthead">
+    <span class="eyebrow">Approval Packet</span>
+    <h1><!--{{TASK_TITLE}}--></h1>
+    <div class="metaline">
+      <span class="chip pending">AWAITING APPROVAL</span>
+      <span class="chip defer">Complexity: <!--{{COMPLEXITY}}--></span>
+    </div>
+  </header>
+
+  <div class="tabbar" role="tablist" aria-label="Approval packet">
+    <button class="tab" role="tab" aria-selected="true" aria-controls="p-brief" id="t-brief">Brief</button>
+    <button class="tab" role="tab" aria-selected="false" aria-controls="p-map" id="t-map" tabindex="-1">Change Map</button>
+    <button class="tab" role="tab" aria-selected="false" aria-controls="p-plan" id="t-plan" tabindex="-1">Plan</button>
+    <button class="tab" role="tab" aria-selected="false" aria-controls="p-tests" id="t-tests" tabindex="-1">Tests</button>
+  </div>
+
+  <section class="panel active" role="tabpanel" id="p-brief" aria-labelledby="t-brief">
+    <div class="card">
+      <!--{{SLOT_BRIEF}}-->
+    </div>
+  </section>
+
+  <section class="panel" role="tabpanel" id="p-map" aria-labelledby="t-map" hidden>
+    <div class="card">
+      <h2>Change Map — before → after</h2>
+      <!--{{SLOT_CHANGEMAP}}-->
+    </div>
+  </section>
+
+  <section class="panel" role="tabpanel" id="p-plan" aria-labelledby="t-plan" hidden>
+    <div class="card">
+      <h2>Plan at a glance</h2>
+      <!--{{SLOT_PLAN}}-->
+    </div>
+  </section>
+
+  <section class="panel" role="tabpanel" id="p-tests" aria-labelledby="t-tests" hidden>
+    <div class="card">
+      <h2>Test plan</h2>
+      <!--{{SLOT_TESTS}}-->
+    </div>
+  </section>
+
+  <footer>Approve or request changes in chat. This packet is a private snapshot of the task folder.</footer>
+</div>
+
+<script>
+  (function () {
+    var tabs = Array.prototype.slice.call(document.querySelectorAll('.tab'));
+    var panels = Array.prototype.slice.call(document.querySelectorAll('.panel'));
+    function select(i) {
+      tabs.forEach(function (t, j) {
+        var on = i === j;
+        t.setAttribute('aria-selected', on ? 'true' : 'false');
+        t.tabIndex = on ? 0 : -1;
+        panels[j].classList.toggle('active', on);
+        if (on) { panels[j].removeAttribute('hidden'); } else { panels[j].setAttribute('hidden', ''); }
+      });
+    }
+    tabs.forEach(function (t, i) {
+      t.addEventListener('click', function () { select(i); });
+      t.addEventListener('keydown', function (e) {
+        var n = null;
+        if (e.key === 'ArrowRight') n = (i + 1) % tabs.length;
+        else if (e.key === 'ArrowLeft') n = (i - 1 + tabs.length) % tabs.length;
+        else if (e.key === 'Home') n = 0;
+        else if (e.key === 'End') n = tabs.length - 1;
+        if (n !== null) { e.preventDefault(); select(n); tabs[n].focus(); }
+      });
+    });
+  })();
+</script>
