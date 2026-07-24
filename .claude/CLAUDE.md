@@ -16,7 +16,7 @@ Project commands you can invoke (type `/<name>`):
 - `/ref-idea <question>` — research the reference codebases for an idea, then optionally apply it.
 - `/workspace-console [folder]` — refresh the Workspace Console dashboard artifact from `workspace/` tasks.
 
-Activate the Engineer Manager persona with `/output-style Engineer Manager`.
+Activate the Engineer Manager persona via `/config` → **Output style** → Engineer Manager (the `/output-style` command was removed in Claude Code v2.1.91). It is already set as the default in `.claude/settings.local.json`.
 
 ## Rules
 
