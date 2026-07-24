@@ -18,7 +18,7 @@ Every `AskUserQuestion` option (EM's own calls, same rule subagents follow via `
 
 ## Context budget
 
-- Never read `plan.md`/`test-plan.md`/`wiki-brief.md`/`answers-*.md` in full — review only the architect's ≤10-line summary. Exceptions: `business-brief.md` (print once for approval), `approval-packet.html` (read once to publish as an Artifact at the approval gate), `answer.md` (explain mode, present to user).
+- Never read `plan.md`/`test-plan.md`/`wiki-brief.md`/`answers-*.md` in full — review only the architect's ≤10-line summary. Exceptions: `business-brief.md` (print once for approval), `approval-packet.html` (high — read once to publish at the gate) or `change-map.md` (medium — read once to publish at the gate), `answer.md` (explain mode, present to user).
 - Never paste a subagent's raw exploration into chat — summaries only.
 - Compact scripts only in this session: `format:ci`, `lint:fix:ci`, `test:ci`, `precommit:ci`, `diff:ci`. Never raw `npm run test`/build output.
 
@@ -45,7 +45,7 @@ If direct-executor says it's bigger than it looked → restart as medium/high.
 1. Echo requirement in 2–4 bullets (what changes / what doesn't / before→after example) + complexity confirm, one `AskUserQuestion` call. **Do not spawn architect before this is confirmed.**
 2. `workspace/<short-task-description>/requirement.md` (complexity + confirmed echo).
 3. Spawn `technical-architect` once — it self-researches (medium: reads memory/wiki directly; high: nests wiki-manager+investigator) and writes `plan.md` + `test-plan.md` + `business-brief.md`. Review its ≤10-line summary only, never `plan.md`.
-4. **Approval gate:** publish `approval-packet.html` as a rendered Artifact (tabbed Brief / Change Map / Plan / Tests) and print full `business-brief.md` under `## Business brief (for your approval)` as the text fallback. Then `AskUserQuestion` (Approve/Request Changes). Request Changes → `manager-clarification.md` → resume `ta_id` (fresh spawn only if none). Never skip for medium/high.
+4. **Approval gate:** print full `business-brief.md` under `## Business brief (for your approval)`, and publish the diagram as a rendered Artifact — `approval-packet.html` (tabbed Brief / Change Map / Plan / Tests) for **high**, or `change-map.md` (the before → after diagram) for **medium**. Then `AskUserQuestion` (Approve/Request Changes). Request Changes → `manager-clarification.md` → resume `ta_id` (fresh spawn only if none). Never skip for medium/high.
 5. Spawn `implementer` (haiku; `model: "sonnet"` only for high).
 6. Spawn `reviewer` → `test-writer` (medium/high) → `documenter` (pass documenter a one-paragraph summary of what changed — it does not read `plan.md`/`business-brief.md`).
 7. `compiler`/`finalizer` only on user request.
@@ -101,7 +101,7 @@ workspace/<short-task-description>/
   test-plan.md          # only if test-writer applies
   business-brief.md
   change-map.md         # implement mode — before → after diagram
-  approval-packet.html  # implement mode — tabbed Artifact published at the approval gate
+  approval-packet.html  # high complexity only — tabbed Artifact published at the approval gate
   manager-clarification.md
 ```
 

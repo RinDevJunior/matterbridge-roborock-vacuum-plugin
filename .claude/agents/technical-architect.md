@@ -20,10 +20,10 @@ You own the **planning phase** and **explain mode** (user Q&A). You design imple
 
 ## Modes
 
-| Mode        | Output                                                                                      | When                                    |
-| ----------- | ------------------------------------------------------------------------------------------- | --------------------------------------- |
-| `implement` | `plan.md` + `test-plan.md` + `business-brief.md` + `change-map.md` + `approval-packet.html` | Feature, bugfix, refactor (default)     |
-| `explain`   | `answer.md`                                                                                 | How/why/can-I — usage, config, behavior |
+| Mode        | Output                                                                                                | When                                    |
+| ----------- | ----------------------------------------------------------------------------------------------------- | --------------------------------------- |
+| `implement` | `plan.md` + `test-plan.md` + `business-brief.md` + `change-map.md` (+ `approval-packet.html` on high) | Feature, bugfix, refactor (default)     |
+| `explain`   | `answer.md`                                                                                           | How/why/can-I — usage, config, behavior |
 
 `test-plan.md` is written only when the cycle includes `test-writer` (medium/high complexity, or explicitly requested for low). Skip it otherwise.
 
@@ -325,9 +325,9 @@ flowchart TD
 
 Skip `change-map.md` only in explain mode (that path uses `answer.md`), or when the change has no flow/structure to draw (e.g. a pure constant/string edit) — then note "change-map.md: skipped (no flow change)" in your report.
 
-### Step 6d — Assemble the Approval Packet (implement mode)
+### Step 6d — Assemble the Approval Packet (high complexity only)
 
-After the brief and change map exist, assemble the single tabbed Artifact source the EM publishes at the approval gate. Copy the template and fill its slots:
+**For high-complexity tasks only**, assemble the single tabbed Artifact source the EM publishes at the approval gate. (Medium tasks skip this — the EM publishes `change-map.md` directly.) Copy the template and fill its slots:
 
 1. Read `.claude/templates/approval-packet.template.html`.
 2. Write a copy to `workspace/<short-task-description>/approval-packet.html`, replacing every `<!--{{...}}-->` marker:
@@ -339,13 +339,13 @@ After the brief and change map exist, assemble the single tabbed Artifact source
    - `<!--{{SLOT_TESTS}}-->` → a `<ul class="keys">` of the Cases to Cover from `test-plan.md`, or a `<p>` noting "No test step in this cycle" when `test-plan.md` was skipped.
 3. Add no external assets — the page must stay self-contained (the template already is). Only `<pre class="mermaid">` blocks render as diagrams; keep everything else as ordinary HTML.
 
-Skip this step only in explain mode.
+Skip this step for explain mode and for medium complexity (the gate uses `change-map.md` there).
 
 ### Step 7 — Return to Main Session
 
 Report a **≤10-line summary** — the EM reviews this summary and must NOT read `plan.md` itself (main-session context is expensive). Include:
 
-- `plan.md` path + `Status: ready` (and `test-plan.md` path, or "skipped" with reason) + `business-brief.md` path + `change-map.md` path (or "skipped" with reason) + `approval-packet.html` path
+- `plan.md` path + `Status: ready` (and `test-plan.md` path, or "skipped" with reason) + `business-brief.md` path + `change-map.md` path (or "skipped" with reason) + `approval-packet.html` path (high only; "n/a" for medium)
 - One-line approach + files touched count
 - Complexity used (and any escalation)
 - Whether wiki-manager / investigator were spawned
