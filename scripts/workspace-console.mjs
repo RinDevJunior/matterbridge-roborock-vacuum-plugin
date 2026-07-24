@@ -1,4 +1,4 @@
-#!/usr/bin/env node
+/* eslint-disable no-console, n/no-process-exit */
 // Workspace Console renderer.
 //
 // The Workspace Console artifact is a *render* of a persistent task index, not a
@@ -17,7 +17,7 @@
 // The canonical artifact URL lives in the index (`artifactUrl`); `init` seeds it with
 // DEFAULT_ARTIFACT_URL so a fresh machine updates the same artifact in place.
 
-import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 
 const DEFAULT_ARTIFACT_URL = 'https://claude.ai/code/artifact/6425695a-b0e4-4719-8cf8-9ff31fc2c2e6';
@@ -27,62 +27,65 @@ const OUT_PATH = resolve('workspace/.console.html');
 /** @typedef {{id:string,title:string,status:string,source?:string,summary?:string,keyPoints?:string[],changeMapMermaid?:string,updatedAt?:string}} Task */
 
 const STATUS = {
-  done: { cls: 'done', label: 'Done' },
-  'in-progress': { cls: 'active', label: 'In progress' },
-  pending: { cls: 'pending', label: 'Pending' },
-  deferred: { cls: 'defer', label: 'Deferred' },
-  reference: { cls: 'info', label: 'Reference' },
+	done: { cls: 'done', label: 'Done' },
+	'in-progress': { cls: 'active', label: 'In progress' },
+	pending: { cls: 'pending', label: 'Pending' },
+	deferred: { cls: 'defer', label: 'Deferred' },
+	reference: { cls: 'info', label: 'Reference' },
 };
 const statusInfo = (s) => STATUS[s] || { cls: 'defer', label: s || 'Unknown' };
 
 const esc = (v) =>
-  String(v ?? '')
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;');
+	String(v ?? '')
+		.replace(/&/g, '&amp;')
+		.replace(/</g, '&lt;')
+		.replace(/>/g, '&gt;')
+		.replace(/"/g, '&quot;');
 
 // Mermaid source must keep its `>` arrows; only neutralize the HTML-breaking chars.
-const escMermaid = (v) => String(v ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;');
+const escMermaid = (v) =>
+	String(v ?? '')
+		.replace(/&/g, '&amp;')
+		.replace(/</g, '&lt;');
 
 function loadIndex() {
-  if (!existsSync(INDEX_PATH)) {
-    throw new Error(`No index at ${INDEX_PATH}. Run "node scripts/workspace-console.mjs init" first.`);
-  }
-  const idx = JSON.parse(readFileSync(INDEX_PATH, 'utf8'));
-  idx.tasks = Array.isArray(idx.tasks) ? idx.tasks : [];
-  idx.artifactUrl = idx.artifactUrl || DEFAULT_ARTIFACT_URL;
-  return idx;
+	if (!existsSync(INDEX_PATH)) {
+		throw new Error(`No index at ${INDEX_PATH}. Run "node scripts/workspace-console.mjs init" first.`);
+	}
+	const idx = JSON.parse(readFileSync(INDEX_PATH, 'utf8'));
+	idx.tasks = Array.isArray(idx.tasks) ? idx.tasks : [];
+	idx.artifactUrl = idx.artifactUrl || DEFAULT_ARTIFACT_URL;
+	return idx;
 }
 
 function init() {
-  if (existsSync(INDEX_PATH)) {
-    console.log(`Index already exists at ${INDEX_PATH} — left untouched.`);
-    return;
-  }
-  mkdirSync(dirname(INDEX_PATH), { recursive: true });
-  const seed = { artifactUrl: DEFAULT_ARTIFACT_URL, updatedAt: new Date().toISOString(), tasks: [] };
-  writeFileSync(INDEX_PATH, JSON.stringify(seed, null, 2) + '\n');
-  console.log(`Created ${INDEX_PATH}`);
+	if (existsSync(INDEX_PATH)) {
+		console.log(`Index already exists at ${INDEX_PATH} — left untouched.`);
+		return;
+	}
+	mkdirSync(dirname(INDEX_PATH), { recursive: true });
+	const seed = { artifactUrl: DEFAULT_ARTIFACT_URL, updatedAt: new Date().toISOString(), tasks: [] };
+	writeFileSync(INDEX_PATH, JSON.stringify(seed, null, 2) + '\n');
+	console.log(`Created ${INDEX_PATH}`);
 }
 
 function renderKeyPoints(points) {
-  if (!Array.isArray(points) || points.length === 0) return '';
-  return `<ul class="keys">${points.map((p) => `<li>${esc(p)}</li>`).join('')}</ul>`;
+	if (!Array.isArray(points) || points.length === 0) return '';
+	return `<ul class="keys">${points.map((p) => `<li>${esc(p)}</li>`).join('')}</ul>`;
 }
 
 function renderChangeMap(mermaid) {
-  if (!mermaid) return '';
-  return `<div class="diagram"><pre class="mermaid">\n${escMermaid(mermaid)}\n</pre></div>`;
+	if (!mermaid) return '';
+	return `<div class="diagram"><pre class="mermaid">\n${escMermaid(mermaid)}\n</pre></div>`;
 }
 
 function renderTaskPanel(task, i) {
-  const st = statusInfo(task.status);
-  const meta = [
-    `<span class="chip ${st.cls}">${esc(st.label).toUpperCase()}</span>`,
-    task.source ? `<span class="chip file">${esc(task.source)}</span>` : '',
-  ].join('');
-  return `  <section class="panel${i === 0 ? ' active' : ''}" role="tabpanel" id="p-${i}" aria-labelledby="t-${i}"${i === 0 ? '' : ' hidden'}>
+	const st = statusInfo(task.status);
+	const meta = [
+		`<span class="chip ${st.cls}">${esc(st.label).toUpperCase()}</span>`,
+		task.source ? `<span class="chip file">${esc(task.source)}</span>` : '',
+	].join('');
+	return `  <section class="panel${i === 0 ? ' active' : ''}" role="tabpanel" id="p-${i}" aria-labelledby="t-${i}"${i === 0 ? '' : ' hidden'}>
     <div class="card">
       <h2>${esc(task.title || task.id)}</h2>
       <div class="metaline">${meta}</div>
@@ -94,51 +97,51 @@ function renderTaskPanel(task, i) {
 }
 
 function renderTab(task, i) {
-  const st = statusInfo(task.status);
-  return `    <button class="tab" role="tab" aria-selected="${i === 0}" aria-controls="p-${i}" id="t-${i}"${i === 0 ? '' : ' tabindex="-1"'}><span class="dot ${st.cls}"></span>${esc(task.title || task.id)}</button>`;
+	const st = statusInfo(task.status);
+	return `    <button class="tab" role="tab" aria-selected="${i === 0}" aria-controls="p-${i}" id="t-${i}"${i === 0 ? '' : ' tabindex="-1"'}><span class="dot ${st.cls}"></span>${esc(task.title || task.id)}</button>`;
 }
 
 function renderOverview(tasks) {
-  const rows = tasks
-    .map((t) => {
-      const st = statusInfo(t.status);
-      return `<li><span class="chip ${st.cls}">${esc(st.label)}</span><span>${esc(t.title || t.id)}${t.summary ? ` — <span class="ov-sum">${esc(t.summary)}</span>` : ''}</span></li>`;
-    })
-    .join('');
-  return `<ul class="overview">${rows || '<li><span>No tasks in the index yet.</span></li>'}</ul>`;
+	const rows = tasks
+		.map((t) => {
+			const st = statusInfo(t.status);
+			return `<li><span class="chip ${st.cls}">${esc(st.label)}</span><span>${esc(t.title || t.id)}${t.summary ? ` — <span class="ov-sum">${esc(t.summary)}</span>` : ''}</span></li>`;
+		})
+		.join('');
+	return `<ul class="overview">${rows || '<li><span>No tasks in the index yet.</span></li>'}</ul>`;
 }
 
 function render() {
-  const idx = loadIndex();
-  const tasks = idx.tasks;
-  const counts = { done: 0, pending: 0, deferred: 0 };
-  for (const t of tasks) {
-    if (t.status === 'done') counts.done++;
-    else if (t.status === 'pending' || t.status === 'in-progress') counts.pending++;
-    else counts.deferred++;
-  }
+	const idx = loadIndex();
+	const tasks = idx.tasks;
+	const counts = { done: 0, pending: 0, deferred: 0 };
+	for (const t of tasks) {
+		if (t.status === 'done') counts.done++;
+		else if (t.status === 'pending' || t.status === 'in-progress') counts.pending++;
+		else counts.deferred++;
+	}
 
-  // Overview is tab 0; tasks follow.
-  const tabs = [
-    `    <button class="tab" role="tab" aria-selected="true" aria-controls="p-0" id="t-0"><span class="dot"></span>Overview</button>`,
-    ...tasks.map((t, i) => renderTab(t, i + 1)),
-  ].join('\n');
+	// Overview is tab 0; tasks follow.
+	const tabs = [
+		`    <button class="tab" role="tab" aria-selected="true" aria-controls="p-0" id="t-0"><span class="dot"></span>Overview</button>`,
+		...tasks.map((t, i) => renderTab(t, i + 1)),
+	].join('\n');
 
-  const panels = [
-    `  <section class="panel active" role="tabpanel" id="p-0" aria-labelledby="t-0">
+	const panels = [
+		`  <section class="panel active" role="tabpanel" id="p-0" aria-labelledby="t-0">
     <div class="card">
       <h2>Workspace overview</h2>
       <p>${tasks.length} task${tasks.length === 1 ? '' : 's'} tracked in the local index. Each has its own tab.</p>
       ${renderOverview(tasks)}
     </div>
   </section>`,
-    ...tasks.map((t, i) => renderTaskPanel(t, i + 1)),
-  ].join('\n');
+		...tasks.map((t, i) => renderTaskPanel(t, i + 1)),
+	].join('\n');
 
-  const updated = idx.updatedAt ? new Date(idx.updatedAt) : new Date();
-  const updatedStr = updated.toISOString().slice(0, 16).replace('T', ' ') + ' UTC';
+	const updated = idx.updatedAt ? new Date(idx.updatedAt) : new Date();
+	const updatedStr = updated.toISOString().slice(0, 16).replace('T', ' ') + ' UTC';
 
-  const html = `<title>Workspace Console — Roborock Plugin</title>
+	const html = `<title>Workspace Console — Roborock Plugin</title>
 <style>
   :root {
     --bg:#eef1f5; --surface:#fff; --surface-2:#f6f8fb; --ink:#16202b; --ink-soft:#33404e; --muted:#5c6b7a;
@@ -262,15 +265,15 @@ ${panels}
 </script>
 `;
 
-  writeFileSync(OUT_PATH, html);
-  console.log(`Rendered ${tasks.length} task(s) -> ${OUT_PATH}`);
-  console.log(`Artifact URL (publish target): ${idx.artifactUrl}`);
+	writeFileSync(OUT_PATH, html);
+	console.log(`Rendered ${tasks.length} task(s) -> ${OUT_PATH}`);
+	console.log(`Artifact URL (publish target): ${idx.artifactUrl}`);
 }
 
 const cmd = process.argv[2] || 'render';
 if (cmd === 'init') init();
 else if (cmd === 'render') render();
 else {
-  console.error(`Unknown command "${cmd}". Use: init | render`);
-  process.exit(1);
+	console.error(`Unknown command "${cmd}". Use: init | render`);
+	process.exit(1);
 }

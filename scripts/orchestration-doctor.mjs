@@ -1,4 +1,4 @@
-#!/usr/bin/env node
+/* eslint-disable no-console, n/no-process-exit */
 // Orchestration doctor — a fast health check for the .claude/ orchestration setup.
 //
 // Catches the silent breakage that hurts most: a skill/agent/style with missing
@@ -8,7 +8,7 @@
 //
 // Usage: node scripts/orchestration-doctor.mjs
 
-import { readdirSync, readFileSync, existsSync, statSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 
 const problems = [];
