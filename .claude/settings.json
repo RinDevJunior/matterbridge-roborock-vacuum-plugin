@@ -5,7 +5,6 @@
 	},
 	"enabledMcpjsonServers": ["glob-grep"],
 	"includeCoAuthoredBy": false,
-	"advisorModel": "opus",
 	"enabledPlugins": {
 		"ponytail@ponytail": false,
 		"pyright-lsp@claude-plugins-official": false,
