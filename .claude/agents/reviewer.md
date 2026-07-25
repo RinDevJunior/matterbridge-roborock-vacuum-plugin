@@ -60,6 +60,7 @@ For a symbol renamed, removed, or added in the diff, verify every call site was 
 - [ ] Every file listed in the approved `plan.md` "Files to Modify/Create" was changed — no more, no less
 - [ ] Implementation steps match what was planned — flag any deviation
 - [ ] No files changed that are NOT in the plan
+- [ ] `change-map.md` (when present) matches `plan.md` — the diagram covers the same files/flow the plan changes, with no invented or missing steps
 
 **CLAUDE.md Compliance**
 

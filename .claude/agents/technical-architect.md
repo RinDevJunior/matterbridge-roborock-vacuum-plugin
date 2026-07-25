@@ -20,10 +20,10 @@ You own the **planning phase** and **explain mode** (user Q&A). You design imple
 
 ## Modes
 
-| Mode        | Output                                           | When                                    |
-| ----------- | ------------------------------------------------ | --------------------------------------- |
-| `implement` | `plan.md` + `test-plan.md` + `business-brief.md` | Feature, bugfix, refactor (default)     |
-| `explain`   | `answer.md`                                      | How/why/can-I — usage, config, behavior |
+| Mode        | Output                                                                                                | When                                    |
+| ----------- | ----------------------------------------------------------------------------------------------------- | --------------------------------------- |
+| `implement` | `plan.md` + `test-plan.md` + `business-brief.md` + `change-map.md` (+ `approval-packet.html` on high) | Feature, bugfix, refactor (default)     |
+| `explain`   | `answer.md`                                                                                           | How/why/can-I — usage, config, behavior |
 
 `test-plan.md` is written only when the cycle includes `test-writer` (medium/high complexity, or explicitly requested for low). Skip it otherwise.
 
@@ -291,11 +291,61 @@ Write `business-brief.md` in the task folder — a plain-language translation of
 
 Only when the EM's prompt says `mode: technical` (user asked), also write `technical-brief.md`: one bullet per file/service from plan.md ("src/x.ts — does Y today, will do Z after"), the blast radius in plain language, and what stays untouched. Same style rules, no raw diffs.
 
+### Step 6c — Produce Change Map (implement mode)
+
+Write `change-map.md` in the task folder — a **visual before → after** of the change so the user can see the delta at the approval gate before deciding. The EM publishes it as a rendered Artifact next to the business brief.
+
+- **One delta-annotated Mermaid diagram.** Draw the **proposed** flow and color-code the delta: green = new, yellow = changed, red/dashed = removed. Use side-by-side "Current" / "Proposed" diagrams only when the structure is reorganized so heavily that an overlay is unreadable.
+- **Match diagram type to the change:** `flowchart TD` for decision/logic flow, `sequenceDiagram` for request paths across modules/layers. On **high** complexity you may include both.
+- **Scope to the blast radius** — keep each diagram under ~15 nodes; diagram only what changes and its immediate neighbours.
+- Ground it in reality: "before" reflects the real current code from your investigation, "after" reflects `plan.md`. The diagram must not drift from `plan.md`.
+
+`change-map.md` contract:
+
+````markdown
+## Change Map
+
+### <flow name> — before → after
+
+```mermaid
+flowchart TD
+    A[caller] --> B[existing step]
+    B --> C[new step]:::new
+    classDef new fill:#2e7d32,color:#fff
+    classDef changed fill:#f9a825,color:#000
+    classDef removed fill:#c62828,color:#fff,stroke-dasharray:4
+```
+
+### Legend
+🟩 new · 🟨 changed · 🟥 removed (dashed)
+
+### Notes
+<one or two lines: what the diagram shows; call out any node that changes behaviour>
+````
+
+Skip `change-map.md` only in explain mode (that path uses `answer.md`), or when the change has no flow/structure to draw (e.g. a pure constant/string edit) — then note "change-map.md: skipped (no flow change)" in your report.
+
+### Step 6d — Assemble the Approval Packet (high complexity only)
+
+**For high-complexity tasks only**, assemble the single tabbed Artifact source the EM publishes at the approval gate. (Medium tasks skip this — the EM publishes `change-map.md` directly.) Copy the template and fill its slots:
+
+1. Read `.claude/templates/approval-packet.template.html`.
+2. Write a copy to `workspace/<short-task-description>/approval-packet.html`, replacing every `<!--{{...}}-->` marker:
+   - `<!--{{TASK_TITLE}}-->` (two places — `<title>` and `<h1>`) → the plain task name.
+   - `<!--{{COMPLEXITY}}-->` → `low` | `medium` | `high`.
+   - `<!--{{SLOT_BRIEF}}-->` → the business brief as HTML: one `<h3>` per brief section with `<p>` / `<ul class="keys"><li>` content, keeping the plain-language wording from `business-brief.md`.
+   - `<!--{{SLOT_CHANGEMAP}}-->` → the exact `<pre class="mermaid">…</pre>` block from `change-map.md`, then a `<div class="legend">` (new / changed / removed) and a short `<p>` of notes. If the change map was skipped, put a single `<p>` saying so.
+   - `<!--{{SLOT_PLAN}}-->` → a `<div class="tablewrap"><table>` of Files to Modify / Create (file → what changes) plus a `<ul class="keys">` of the implementation steps.
+   - `<!--{{SLOT_TESTS}}-->` → a `<ul class="keys">` of the Cases to Cover from `test-plan.md`, or a `<p>` noting "No test step in this cycle" when `test-plan.md` was skipped.
+3. Add no external assets — the page must stay self-contained (the template already is). Only `<pre class="mermaid">` blocks render as diagrams; keep everything else as ordinary HTML.
+
+Skip this step for explain mode and for medium complexity (the gate uses `change-map.md` there).
+
 ### Step 7 — Return to Main Session
 
 Report a **≤10-line summary** — the EM reviews this summary and must NOT read `plan.md` itself (main-session context is expensive). Include:
 
-- `plan.md` path + `Status: ready` (and `test-plan.md` path, or "skipped" with reason) + `business-brief.md` path
+- `plan.md` path + `Status: ready` (and `test-plan.md` path, or "skipped" with reason) + `business-brief.md` path + `change-map.md` path (or "skipped" with reason) + `approval-packet.html` path (high only; "n/a" for medium)
 - One-line approach + files touched count
 - Complexity used (and any escalation)
 - Whether wiki-manager / investigator were spawned

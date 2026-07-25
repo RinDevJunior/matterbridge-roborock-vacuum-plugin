@@ -20,7 +20,7 @@
 		]
 	},
 	"enabledMcpjsonServers": ["codegraph", "glob-grep", "cli-runner", "read-log", "discord-send", "github-release"],
-	"outputStyle": "default",
+	"outputStyle": "Engineer Manager",
 	"spinnerTipsEnabled": true,
 	"statusLine": {
 		"type": "command",

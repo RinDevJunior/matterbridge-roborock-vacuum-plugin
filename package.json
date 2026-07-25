@@ -32,8 +32,10 @@
 		"apple home"
 	],
 	"scripts": {
-		"precommit": "npm run lint && npm run type-check && npm run dup-check && npm run format:check && npm run test",
+		"precommit": "npm run lint && npm run type-check && npm run dup-check && npm run format:check && npm run doctor && npm run test",
 		"precommit:ci": "node scripts/run-precommit-summary.mjs",
+		"doctor": "node scripts/orchestration-doctor.mjs",
+		"doctor:ci": "node scripts/orchestration-doctor.mjs",
 		"precondition": "npm install -g matterbridge@3.10.0",
 		"build:local": "npm run deepClean && npm install && npm link matterbridge && npm run build && npm run matterbridge:add",
 		"build:local:ci": "node scripts/run-build-local-summary.mjs",
