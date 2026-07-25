@@ -1,37 +1,30 @@
 {
-  "permissions": {
-    "allow": [
-      "Bash(npm run test:*)",
-      "Bash(npm run build:local:*)",
-      "Bash(npm run coverage:*)",
-      "Bash(npm run type-check:*)",
-      "Bash(npm run precommit:*)",
-      "mcp__codecov__get_pull_request_coverage",
-      "mcp__plugin_claude-mem_mcp-search__smart_search",
-      "mcp__plugin_claude-mem_mcp-search__smart_unfold",
-      "Glob",
-      "Grep",
-      "mcp__codegraph__*",
-      "Bash(node scripts/clean-paths.mjs*)",
-      "Bash(codegraph *)",
-      "Bash(git log*)",
-      "Bash(git add*)",
-      "Bash(git status*)",
-      "mcp__read-log__ReadLog"
-    ]
-  },
-  "enabledMcpjsonServers": [
-    "codegraph",
-    "glob-grep",
-    "cli-runner",
-    "read-log",
-    "discord-send",
-    "github-release"
-  ],
-  "statusLine": {
-    "type": "command",
-    "command": "bash .claude/statusline-command.sh"
-  },
-  "outputStyle": "Engineer Manager",
-  "spinnerTipsEnabled": true
+	"permissions": {
+		"allow": [
+			"Bash(npm run test:*)",
+			"Bash(npm run build:local:*)",
+			"Bash(npm run coverage:*)",
+			"Bash(npm run type-check:*)",
+			"Bash(npm run precommit:*)",
+			"mcp__codecov__get_pull_request_coverage",
+			"mcp__plugin_claude-mem_mcp-search__smart_search",
+			"mcp__plugin_claude-mem_mcp-search__smart_unfold",
+			"Glob",
+			"Grep",
+			"mcp__codegraph__*",
+			"Bash(node scripts/clean-paths.mjs*)",
+			"Bash(codegraph *)",
+			"Bash(git log*)",
+			"Bash(git add*)",
+			"Bash(git status*)",
+			"mcp__read-log__ReadLog"
+		]
+	},
+	"enabledMcpjsonServers": ["codegraph", "glob-grep", "cli-runner", "read-log", "discord-send", "github-release"],
+	"statusLine": {
+		"type": "command",
+		"command": "bash .claude/statusline-command.sh"
+	},
+	"outputStyle": "Engineer Manager",
+	"spinnerTipsEnabled": true
 }
