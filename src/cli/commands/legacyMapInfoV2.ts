@@ -131,12 +131,23 @@ export async function cmdLegacyMapInfoV2(
 		const height = image.dimensions.height;
 		const pixelBounds = computeSegmentPixelBounds(image.pixels.segments, width);
 
+		const pixelCounts = new Map<number, number>();
+		for (const packed of image.pixels.segments) {
+			const segmentId = packed >> 21;
+			pixelCounts.set(segmentId, (pixelCounts.get(segmentId) ?? 0) + 1);
+		}
+
 		console.log('\nSegments:');
+		console.log(
+			'(approxBounds is a rectangle approximation; the exact per-pixel shape for each room is in the .grid.txt/.ppm files below, keyed by gridChar)',
+		);
 		for (const seg of image.segments.list) {
 			const name = roomDisplayName(seg.id, namedRooms);
 			const bounds = pixelBounds.get(seg.id);
+			const exactPixelCount = pixelCounts.get(seg.id) ?? 0;
+			const gridChar = seg.id.toString(36);
 			console.log(
-				`  [${seg.id}] ${name || '(unnamed)'}  center=${JSON.stringify(seg.center)}  bounds=${bounds ? JSON.stringify(bounds) : 'n/a'}`,
+				`  [${seg.id}] ${name || '(unnamed)'}  center=${JSON.stringify(seg.center)}  approxBounds=${bounds ? JSON.stringify(bounds) : 'n/a'}  exactPixelCount=${exactPixelCount}  gridChar='${gridChar}'`,
 			);
 		}
 
