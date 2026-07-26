@@ -36,6 +36,7 @@ ${row('room-info', '--duid <duid>', 'Get room mapping (active map)')}
 ${row('map-info', '--duid <duid>', 'Get all maps with rooms')}
 ${row('legacy-map-info', '--duid <duid>', 'Parse V1 map binary: robot position + current room')}
 ${row('legacy-map-info-v2', '--duid <duid>', 'Dump V1 map: positions, segment bounds, + grid/PPM files (fixture capture)')}
+${' '.repeat(2 + NAME_WIDTH)}${d}[--exclude-islands <n,n,...>]     ${r}Strip numbered disconnected pixel islands (see Islands: table), writing .cleaned.grid.txt/.ppm
 ${row('b01-pose-info', '--duid <duid>', 'Decode Q10 currentPose/roomMatrix: robot position + resolved room (experimental)')}
 ${row('b01-map-info', '--duid <duid>', 'Test B01 map parser Q7/Q10 classifier against a live device (experimental, diagnostic)')}
 ${row('scenes', '--duid <duid> [--detail]', 'List cleaning scenes/routines')}
