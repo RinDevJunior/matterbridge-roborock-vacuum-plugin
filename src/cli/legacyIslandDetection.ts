@@ -16,7 +16,7 @@ export interface PixelIsland {
 }
 
 export interface IslandClassification {
-	displayIndex: number; // 1-based, stable within one CLI run — what --exclude-islands refers to
+	displayIndex: number; // 1-based, stable within one CLI run
 	island: PixelIsland;
 	excluded: boolean;
 	reason: 'zone-overlap' | 'wall-adjacent' | 'size-heuristic' | 'kept' | 'manual-override';
@@ -127,17 +127,6 @@ export function classifyIslands(
 			excluded: reason !== 'kept',
 			reason,
 		};
-	});
-}
-
-export function applyManualExclusions(
-	classifications: IslandClassification[],
-	manualDisplayIndices: number[],
-): IslandClassification[] {
-	const manualSet = new Set(manualDisplayIndices);
-	return classifications.map((classification) => {
-		if (!manualSet.has(classification.displayIndex)) return classification;
-		return { ...classification, excluded: true, reason: 'manual-override' };
 	});
 }
 

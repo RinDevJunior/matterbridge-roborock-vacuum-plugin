@@ -89,22 +89,9 @@ export async function main(): Promise<void> {
 			case 'legacy-map-info':
 				await cmdLegacyMapInfo(duid, session, logger, local);
 				break;
-			case 'legacy-map-info-v2': {
-				const excludeIslandsArg = args['exclude-islands'];
-				const excludeIslands = excludeIslandsArg
-					? excludeIslandsArg
-							.split(',')
-							.map((value) => Number(value))
-							.filter((value) => !Number.isNaN(value))
-					: [];
-				const autoExclude = args['no-auto-exclude'] !== 'true';
-				const highlightIslandArg = args['highlight-island'];
-				const highlightIsland = highlightIslandArg
-					? [highlightIslandArg].map((value) => Number(value)).filter((value) => !Number.isNaN(value))[0]
-					: undefined;
-				await cmdLegacyMapInfoV2(duid, session, logger, local, excludeIslands, autoExclude, highlightIsland);
+			case 'legacy-map-info-v2':
+				await cmdLegacyMapInfoV2(duid, session, logger, local);
 				break;
-			}
 			case 'b01-pose-info':
 				await cmdB01PoseInfo(duid, session, logger, local);
 				break;

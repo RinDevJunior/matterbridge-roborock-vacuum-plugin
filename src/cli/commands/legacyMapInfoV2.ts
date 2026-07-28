@@ -6,12 +6,7 @@ import { LegacyMapParser } from '../../roborockCommunication/map/v1/mapParser.js
 import { decryptAndUnzipV1Map } from '../../roborockCommunication/map/v1/v1MapDecryptor.js';
 import { Protocol } from '../../roborockCommunication/models/index.js';
 import { connectDevice } from '../connection.js';
-import {
-	applyManualExclusions,
-	classifyIslands,
-	findConnectedIslands,
-	IslandClassification,
-} from '../legacyIslandDetection.js';
+import { classifyIslands, findConnectedIslands, IslandClassification } from '../legacyIslandDetection.js';
 import { stampIslandLabels } from '../mapLabeling.js';
 import {
 	extractNamedRooms,
@@ -83,9 +78,6 @@ export async function cmdLegacyMapInfoV2(
 	session: CliSession,
 	logger: AnsiLogger,
 	local = false,
-	excludeIslands: number[] = [],
-	autoExclude = true,
-	highlightIsland?: number,
 ): Promise<void> {
 	const { clientRouter, dispatcher } = await connectDevice(duid, session, logger, local);
 	try {
@@ -166,12 +158,7 @@ export async function cmdLegacyMapInfoV2(
 		}
 
 		const islands = findConnectedIslands(image.pixels.segments, width, height);
-		let classifications: IslandClassification[] = autoExclude
-			? classifyIslands(islands, mapData, image)
-			: islands.map((island, i) => ({ displayIndex: i + 1, island, excluded: false, reason: 'kept' as const }));
-		if (excludeIslands.length > 0) {
-			classifications = applyManualExclusions(classifications, excludeIslands);
-		}
+		const classifications: IslandClassification[] = classifyIslands(islands, mapData, image);
 
 		console.log('\nIslands:');
 		for (const classification of classifications) {
@@ -257,24 +244,6 @@ export async function cmdLegacyMapInfoV2(
 			cleanedGridLines.push(cleanedLine);
 		}
 
-		let highlightedRgbBuffer: Buffer | undefined;
-		if (highlightIsland !== undefined) {
-			const target = classifications.find((c) => c.displayIndex === highlightIsland);
-			if (!target) {
-				console.warn(
-					`\nWarning: --highlight-island=${highlightIsland} does not match any island's displayIndex in this run; skipping .highlighted.ppm output.`,
-				);
-			} else {
-				highlightedRgbBuffer = Buffer.from(rgbBuffer);
-				for (const index of target.island.pixelIndices) {
-					const offset = index * 3;
-					highlightedRgbBuffer[offset] = 255;
-					highlightedRgbBuffer[offset + 1] = 0;
-					highlightedRgbBuffer[offset + 2] = 255;
-				}
-			}
-		}
-
 		// Always-on index lookup image: every island (kept and excluded) gets its displayIndex
 		// stamped directly on the map, built from the same base rgbBuffer used for the plain .ppm —
 		// no flag needed, so users never have to cross-reference the console table by hand.
@@ -286,7 +255,6 @@ export async function cmdLegacyMapInfoV2(
 		const ppmPath = `legacy-map-v2-${duid}-${epochMs}.ppm`;
 		const cleanedGridPath = `legacy-map-v2-${duid}-${epochMs}.cleaned.grid.txt`;
 		const cleanedPpmPath = `legacy-map-v2-${duid}-${epochMs}.cleaned.ppm`;
-		const highlightedPpmPath = `legacy-map-v2-${duid}-${epochMs}.highlighted.ppm`;
 		const indexedPpmPath = `legacy-map-v2-${duid}-${epochMs}.indexed.ppm`;
 
 		writeFileSync(gridPath, gridLines.join('\n') + '\n', 'utf8');
@@ -297,19 +265,12 @@ export async function cmdLegacyMapInfoV2(
 		writeFileSync(cleanedGridPath, cleanedGridLines.join('\n') + '\n', 'utf8');
 		writeFileSync(cleanedPpmPath, Buffer.concat([ppmHeader, cleanedRgbBuffer]));
 
-		if (highlightedRgbBuffer) {
-			writeFileSync(highlightedPpmPath, Buffer.concat([ppmHeader, highlightedRgbBuffer]));
-		}
-
 		writeFileSync(indexedPpmPath, Buffer.concat([ppmHeader, indexedRgbBuffer]));
 
 		console.log('\nWrote text grid to:', gridPath);
 		console.log('Wrote PPM image to:', ppmPath);
 		console.log('Wrote cleaned text grid to:', cleanedGridPath);
 		console.log('Wrote cleaned PPM image to:', cleanedPpmPath);
-		if (highlightedRgbBuffer) {
-			console.log('Wrote highlighted PPM image to:', highlightedPpmPath);
-		}
 		console.log('Wrote indexed PPM image to:', indexedPpmPath, '(every island labeled with its displayIndex number)');
 		console.log(
 			'(Note: image is written in raw buffer row order — row 0 is the first stored row, which may appear',

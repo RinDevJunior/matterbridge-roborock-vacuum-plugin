@@ -1,12 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import {
-	applyManualExclusions,
-	classifyIslands,
-	findConnectedIslands,
-	type IslandClassification,
-	type PixelIsland,
-} from '../../cli/legacyIslandDetection.js';
+import { classifyIslands, findConnectedIslands, type PixelIsland } from '../../cli/legacyIslandDetection.js';
 import { asPartial } from '../testUtils.js';
 
 describe('legacyIslandDetection', () => {
@@ -338,60 +332,6 @@ describe('legacyIslandDetection', () => {
 			const classifications = classifyIslands(islands, mapData, image);
 			expect(classifications[0].displayIndex).toBe(1);
 			expect(classifications[1].displayIndex).toBe(2);
-		});
-	});
-
-	describe('applyManualExclusions', () => {
-		it('marks island as manual-override when displayIndex matches manual list', () => {
-			const classification: IslandClassification = {
-				displayIndex: 1,
-				island: asPartial<PixelIsland>({}),
-				excluded: false,
-				reason: 'kept',
-			};
-			const classifications = [classification];
-			const result = applyManualExclusions(classifications, [1]);
-			expect(result[0].excluded).toBe(true);
-			expect(result[0].reason).toBe('manual-override');
-		});
-
-		it('overrides already-excluded classification to manual-override when in manual list', () => {
-			const classification: IslandClassification = {
-				displayIndex: 1,
-				island: asPartial<PixelIsland>({}),
-				excluded: true,
-				reason: 'zone-overlap',
-			};
-			const classifications = [classification];
-			const result = applyManualExclusions(classifications, [1]);
-			// Manual override replaces any prior reason
-			expect(result[0].excluded).toBe(true);
-			expect(result[0].reason).toBe('manual-override');
-		});
-
-		it('returns unchanged classifications for non-matching displayIndex', () => {
-			const classification: IslandClassification = {
-				displayIndex: 1,
-				island: asPartial<PixelIsland>({}),
-				excluded: false,
-				reason: 'kept',
-			};
-			const classifications = [classification];
-			const result = applyManualExclusions(classifications, [2]);
-			expect(result[0]).toEqual(classification);
-		});
-
-		it('returns new array without mutating original', () => {
-			const classification: IslandClassification = {
-				displayIndex: 1,
-				island: asPartial<PixelIsland>({}),
-				excluded: false,
-				reason: 'kept',
-			};
-			const classifications = [classification];
-			const result = applyManualExclusions(classifications, [1]);
-			expect(result).not.toBe(classifications);
-			expect(classifications[0].excluded).toBe(false); // original unchanged
 		});
 	});
 });
