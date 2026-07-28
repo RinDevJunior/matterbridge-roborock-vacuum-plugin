@@ -4,6 +4,25 @@ All notable changes to this project will be documented in this file.
 
 ---
 
+## [1.1.8-rc05] - 2026-07-28
+
+### Added
+
+- **Room-boundary containment check for V1 room resolution** — `LegacyMapParser.resolveCurrentRoom` now runs a bounding-box containment check before falling back to nearest-center-distance, fixing wrong-room reports at doorways and room thresholds on V1-protocol devices.
+- **Full island/noise classification system** — Detected map islands are now classified by reason (zone-overlap, wall-adjacent, size-heuristic) with a real-device-tuned 30% size threshold, superseding the simpler island-numbering approach and always producing `.cleaned.ppm`/`.indexed.ppm` output automatically.
+
+### Changed
+
+- **Manual island-override CLI flags removed** — Removed `--exclude-islands`, `--no-auto-exclude`, and `--highlight-island` along with their underlying features; island/noise classification is now always-on and automatic.
+
+### Fixed
+
+- **Size-heuristic classification gate bug** — Corrected a bug in the size-heuristic gate used during island classification so noise islands are filtered as intended.
+
+<a href="https://www.buymeacoffee.com/rinnvspktr" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/default-orange.png" alt="Buy Me A Coffee" height="41" width="174"></a>
+
+---
+
 ## [1.1.8-rc04] - 2026-07-22
 
 ### Fixed
