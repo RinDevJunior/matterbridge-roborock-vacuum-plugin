@@ -185,7 +185,7 @@ export function createMockDeviceRegistry(
 		devicesMap: new Map<string, Device>(),
 		getRobot: (duid: string) => rmap.get(duid),
 		hasDevices: vi.fn(() => rmap.size > 0),
-		registerRobot: vi.fn((robot: RoborockVacuumCleaner) => undefined),
+		registerRobot: vi.fn((_robot: RoborockVacuumCleaner) => undefined),
 		register: vi.fn((_device: Device, _robot: RoborockVacuumCleaner) => undefined),
 		registerDevice: vi.fn((_device: Device) => undefined),
 		unregister: vi.fn((_sn: string) => undefined),
@@ -259,5 +259,7 @@ export {
 	buildLegacyMapBuffer,
 	buildMapHeader,
 	buildPositionBlock,
+	buildWallBlock,
+	buildZoneBlock,
 	LEGACY_BLOCK_TYPE,
 } from './legacyMapFixture.js';

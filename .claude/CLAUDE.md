@@ -7,6 +7,17 @@ Orchestration source of truth: `.claude/`.
 - **Main session (Engineer Manager):** read `.claude/instructions/team-orchestrator-policy.md` (or `/load-policy`) before orchestrating. Dispatch subagents — never write production code/tests yourself.
 - **Subagents:** follow only `.claude/agents/<name>.md`. Don't read the orchestrator policy; don't spawn other agents unless your definition says so.
 
+## Commands
+
+Project commands you can invoke (type `/<name>`):
+
+- `/load-policy` — load the full orchestration policy into the main session (EM only).
+- `/status-of <feature>` — status report: what we do now, what is missing, what is planned.
+- `/ref-idea <question>` — research the reference codebases for an idea, then optionally apply it.
+- `/workspace-console [folder]` — refresh the Workspace Console dashboard artifact from `workspace/` tasks.
+
+Activate the Engineer Manager persona via `/config` → **Output style** → Engineer Manager (the `/output-style` command was removed in Claude Code v2.1.91). It is already set as the default in `.claude/settings.local.json`.
+
 ## Rules
 
 - Be concise — no yapping, details only when asked.
@@ -15,7 +26,7 @@ Orchestration source of truth: `.claude/`.
 
 ## Verification
 
-Compact scripts only: `format:ci`, `lint:fix:ci`, `test:ci`, `precommit:ci`, `diff:ci`, `type-check:ci`, `build:local:ci`. Never raw `npm run test`/`build:local`/`tsc`, never paste full output — `*:ci` output is already compact, print as-is.
+Compact scripts only: `format:ci`, `lint:fix:ci`, `test:ci`, `precommit:ci`, `diff:ci`, `type-check:ci`, `build:local:ci`, `doctor:ci`. Never raw `npm run test`/`build:local`/`tsc`, never paste full output — `*:ci` output is already compact, print as-is.
 
 On `path/to/file.ts(line,col): error ...`, jump straight to `Read(file, offset: line, limit: ~15-20)` — don't grep/re-read the whole file first. Each agent's own verification gate must PASS before it reports complete.
 
