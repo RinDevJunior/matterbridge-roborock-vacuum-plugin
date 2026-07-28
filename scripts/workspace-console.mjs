@@ -59,14 +59,18 @@ function loadIndex() {
 }
 
 function init() {
-	if (existsSync(INDEX_PATH)) {
-		console.log(`Index already exists at ${INDEX_PATH} — left untouched.`);
-		return;
-	}
 	mkdirSync(dirname(INDEX_PATH), { recursive: true });
 	const seed = { artifactUrl: DEFAULT_ARTIFACT_URL, updatedAt: new Date().toISOString(), tasks: [] };
-	writeFileSync(INDEX_PATH, JSON.stringify(seed, null, 2) + '\n');
-	console.log(`Created ${INDEX_PATH}`);
+	try {
+		writeFileSync(INDEX_PATH, JSON.stringify(seed, null, 2) + '\n', { flag: 'wx' });
+		console.log(`Created ${INDEX_PATH}`);
+	} catch (err) {
+		if (err.code === 'EEXIST') {
+			console.log(`Index already exists at ${INDEX_PATH} — left untouched.`);
+			return;
+		}
+		throw err;
+	}
 }
 
 function renderKeyPoints(points) {

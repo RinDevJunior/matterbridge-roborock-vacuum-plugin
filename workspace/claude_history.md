@@ -4,6 +4,46 @@ Entries are listed in reverse chronological order (most recent first). Older ent
 
 ---
 
+## 2026-07-28 — Add bounding-box containment check to V1 room-resolution fallback
+
+**Task:** Improve V1 map parser's room-resolution algorithm by adding a bounding-box containment tier between exact-pixel match and nearest-center fallback. Previously, when robot's position didn't land on an exactly-tagged room pixel (common at doorways), the code fell straight to nearest-center distance with no containment check — a large neighboring room's center could be numerically closer, producing wrong-room reports (e.g., Roborock S8 showing "Storage Room" when in "Dining Room").
+
+**Changes:**
+
+- `src/roborockCommunication/map/v1/mapParser.ts` — added `findContainingSegment` tier in `LegacyMapParser.resolveCurrentRoom`; if robot's position falls inside exactly one room's bounding box, that room is used; ambiguous (2+ overlapping) or zero-match cases fall through to existing nearest-center behavior unchanged
+- `src/roborockCommunication/map/v1/types.ts` — added `boundingBox` field to `LegacySegmentInfo`, reusing pixel-space bounds already computed elsewhere
+- `src/tests/model/legacyMapParser.test.ts` — added 5 new test cases (containment-wins-over-closer-center, ambiguous fallback, zero-match fallback, exact-pixel-still-wins, namedRooms-through-containment); fixed stale existing test for new `boundingBox` field
+- `src/tests/cli/legacyIslandDetection.test.ts` — fixed pre-existing test bug (stale pixelCount lookup from earlier 15%→30% threshold change)
+
+**Outcome:** Pass (all verification gates: format:ci, lint:fix:ci, type-check:ci, test:ci; 47 tests green across both test files). Reviewer approved production logic; test-writer added comprehensive coverage. Only affects V1-protocol devices' fallback path; newer-protocol devices unaffected. Follow-up: algorithmic improvement to a confirmed gap, but not proven to fix the original S8 report—if another room-mismatch report comes in, this fix narrows but does not eliminate the space of possible causes.
+
+## 2026-07-27 — Fix global gate bug in island size-heuristic exclusion
+
+**Task:** Fix bug where the size-heuristic exclusion rule for tiny islands was disabled globally if the map had ANY wall/zone data anywhere. Root cause: map-wide `hasNoWallOrZoneData` gate prevented the heuristic from running when unrelated wall/zone data existed elsewhere on the map. Found on first real-device test of the virtual-wall/island-detection feature (shipped in prior 2026-07-27 entry).
+
+**Changes:**
+
+- `src/cli/legacyIslandDetection.ts` — removed map-wide `hasNoWallOrZoneData` gate; size-heuristic now evaluates per-island unconditionally as last-resort fallback after zone-overlap and wall-adjacent checks
+- `src/tests/cli/legacyIslandDetection.test.ts` — updated stale test that asserted old buggy behavior; added 2 new test cases (mirroring real bug scenario, confirming wall-adjacent priority over size-heuristic)
+
+**Outcome:** Pass (all verification gates: format:ci, lint:fix:ci, type-check:ci, test:ci; 18 tests green in affected file; reviewer approved). Existing follow-up (wall/zone coordinate-unit real-device validation) remains pending, tracked separately in workspace/virtual-wall-detection-feasibility/.
+
+## 2026-07-27 — Add zone/wall detection and island classification to legacy-map-info-v2 CLI
+
+**Task:** Extend V1 map parser to decode previously-skipped block types 9 (forbidden zones), 10 (virtual walls), 12 (no-mop zones) and wire automatic island (connected-component) detection with zone-overlap/wall-adjacency/size-heuristic exclusion logic into legacy-map-info-v2 diagnostic command. Produces cleaned grid/PPM outputs for manual/automatic excludable island removal without re-download.
+
+**Changes:**
+
+- `src/roborockCommunication/map/v1/mapParser.ts` — added decoding for blocks 9/10/12 (forbidden zones, virtual walls, no-mop zones); coordinate interpretation verified same as robotPosition (raw mm)
+- `src/roborockCommunication/map/v1/types.ts` — added ZoneRect, VirtualWall, NoMopZone type definitions and MapDataBlocks interface
+- `src/cli/legacyIslandDetection.ts` — new pure module for 4-connectivity flood-fill island detection and island classification (zone-overlap, wall-adjacent, size-heuristic excludable; preserves largest island)
+- `src/cli/commands/legacyMapInfoV2.ts` — added --exclude-islands=<numbers>, --no-auto-exclude flags; outputs .cleaned.grid.txt/.cleaned.ppm variants alongside originals
+- `src/cli/main.ts` — wired new flags into command handler
+- `src/tests/model/legacyMapParser.test.ts` — added 8 tests for zone/wall/no-mop block decoding
+- `src/tests/cli/legacyIslandDetection.test.ts` — new file with 15 tests for island detection, classification, and exclusion scenarios
+
+**Outcome:** Pass (all verification gates: format:ci, lint:fix:ci, type-check:ci, test:ci; reviewer approved with no blocking issues). Known caveat: wall/zone coordinate-unit assumptions (raw mm, same space as robotPosition) remain unverified against real V1 device capture with configured virtual walls.
+
 ## 2026-07-22 — Fix isUpdownWaterReady false-positive in dock error detection
 
 **Task:** Fix false-positive "Docking station error detected: UnableToCompleteOperation" reported to Apple Home/Matter when vacuum was idle and charging with no real fault. Root cause: isUpdownWaterReady dss-bitfield (bits 0-1, intended for up/down water lift-pump faults) was included in hasError() and DSS_FIELD_PRIORITY despite no corresponding Matter RVC enum; real hardware showed this field's steady-state value is 1 during idle/charging, not a transient fault signal.
