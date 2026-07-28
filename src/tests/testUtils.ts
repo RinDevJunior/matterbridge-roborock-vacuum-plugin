@@ -9,6 +9,8 @@ export {
 	buildLegacyMapBuffer,
 	buildMapHeader,
 	buildPositionBlock,
+	buildWallBlock,
+	buildZoneBlock,
 	createMockAuthApi,
 	createMockConfigManager,
 	createMockDeviceRegistry,
