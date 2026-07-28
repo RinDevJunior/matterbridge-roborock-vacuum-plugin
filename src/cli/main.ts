@@ -90,7 +90,7 @@ export async function main(): Promise<void> {
 				await cmdLegacyMapInfo(duid, session, logger, local);
 				break;
 			case 'legacy-map-info-v2':
-				await cmdLegacyMapInfoV2(duid, session, logger, local);
+				await cmdLegacyMapInfoV2(duid, session, logger, local, args['exclude-islands']);
 				break;
 			case 'b01-pose-info':
 				await cmdB01PoseInfo(duid, session, logger, local);
