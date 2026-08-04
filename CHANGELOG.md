@@ -4,6 +4,16 @@ All notable changes to this project will be documented in this file.
 
 ---
 
+## [1.1.8-rc06] - 2026-08-04
+
+### Fixed
+
+- **Room-detection flip-flop on Roborock S8 / V1 map devices** — `ServiceArea.currentArea` was oscillating between non-adjacent rooms every 1-2 minutes near hub areas (e.g. a corridor bordering many rooms) due to zero temporal smoothing in `AreaManagementService.setV1ResolvedSegment`; a 2-consecutive-match confirmation gate is now required before publishing a resolved room change. This is a follow-up to the room-boundary containment work shipped in 1.1.8-rc05 (PR #154), which was correct per-snapshot but didn't address rapid oscillation across independent map pushes. Only `src/services/areaManagementService.ts` changed; V2 map devices are unaffected.
+
+<a href="https://www.buymeacoffee.com/rinnvspktr" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/default-orange.png" alt="Buy Me A Coffee" height="41" width="174"></a>
+
+---
+
 ## [1.1.8-rc05] - 2026-07-28
 
 ### Added
