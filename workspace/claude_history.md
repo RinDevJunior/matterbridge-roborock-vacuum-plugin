@@ -4,6 +4,17 @@ Entries are listed in reverse chronological order (most recent first). Older ent
 
 ---
 
+## 2026-08-03 — Fix room-detection flip-flop bug on V1 map devices
+
+**Task:** Fix spurious room-detection oscillation on Roborock S8/V1 map devices where ServiceArea.currentArea flipped between non-adjacent rooms every 1-2 minutes due to pose noise near corridor hubs. Root cause: AreaManagementService.setV1ResolvedSegment published room resolutions immediately on each map push with no temporal smoothing, causing false positive room changes.
+
+**Changes:**
+
+- `src/services/areaManagementService.ts` — added v1PendingResolution map to implement 2-consecutive-match confirmation gate before publishing resolved segments; added V1_SEGMENT_CONFIRMATION_THRESHOLD constant (value 2); confirmation cache cleared alongside v1RoomResolutionCache in clearAll()
+- `src/tests/services/areaManagementService.test.ts` — updated 5 existing tests to call setV1ResolvedSegment twice for confirmation flow; added 7 new debounce/confirmation tests validating gate logic
+
+**Outcome:** Pass (all verification gates: format:ci, lint:fix:ci, type-check:ci, test:ci; 109 tests green). Reviewer approved for production. V2 map devices unaffected.
+
 ## 2026-07-28 — Add bounding-box containment check to V1 room-resolution fallback
 
 **Task:** Improve V1 map parser's room-resolution algorithm by adding a bounding-box containment tier between exact-pixel match and nearest-center fallback. Previously, when robot's position didn't land on an exactly-tagged room pixel (common at doorways), the code fell straight to nearest-center distance with no containment check — a large neighboring room's center could be numerically closer, producing wrong-room reports (e.g., Roborock S8 showing "Storage Room" when in "Dining Room").
