@@ -33,7 +33,7 @@ When `.codegraph/` exists and the change touches shared types, handlers, or regi
 
 ### Step 2 — Verify the Regression Guard (blocking)
 
-The `plan.md` `## Regression Guard` section is the TA's *claim* that the change is contained. Your job is to confirm it against the **actual diff** — a claim on paper is not proof.
+The `plan.md` `## Regression Guard` section is the TA's _claim_ that the change is contained. Your job is to confirm it against the **actual diff** — a claim on paper is not proof.
 
 For every symbol the diff modifies:
 
