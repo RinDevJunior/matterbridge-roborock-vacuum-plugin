@@ -36,7 +36,7 @@
 		"precommit:ci": "node scripts/run-precommit-summary.mjs",
 		"doctor": "node scripts/orchestration-doctor.mjs",
 		"doctor:ci": "node scripts/orchestration-doctor.mjs",
-		"precondition": "npm install -g matterbridge@3.10.0",
+		"precondition": "npm install -g matterbridge@3.10.4",
 		"build:local": "npm run deepClean && npm install && npm link matterbridge && npm run build && npm run matterbridge:add",
 		"build:local:ci": "node scripts/run-build-local-summary.mjs",
 		"build:production": "tsc --project tsconfig.production.json",
@@ -76,7 +76,7 @@
 		"dev:unlink": "npm unlink matterbridge"
 	},
 	"engines": {
-		"matterbridge": "^3.10.0",
+		"matterbridge": "^3.10.4",
 		"node": ">=24 <25"
 	},
 	"devDependencies": {
