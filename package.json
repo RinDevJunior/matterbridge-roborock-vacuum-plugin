@@ -114,7 +114,7 @@
 		"mqtt": "^5.15.2",
 		"node-persist": "^4.0.4",
 		"nodemailer": "^8.0.4",
-		"protobufjs": "^8.0.0",
+		"protobufjs": "^8.7.2",
 		"semver": "^7.8.5"
 	},
 	"overrides": {
