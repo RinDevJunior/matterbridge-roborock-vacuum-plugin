@@ -97,7 +97,7 @@ export class B01MapParser {
 	}
 
 	public parseRooms(buffer: Buffer): B01MapInfo {
-		const decoded: Record<string, unknown> = this.robotMapType.decode(buffer) as unknown as Record<string, unknown>;
+		const decoded: Record<string, unknown> = this.robotMapType.decode(buffer);
 		const roomDataInfo = decoded.roomDataInfo as Record<string, unknown>[] | undefined;
 		const mapHead = decoded.mapHead as Record<string, unknown> | undefined;
 		const mapId = typeof mapHead?.mapHeadId === 'number' && mapHead.mapHeadId > 0 ? mapHead.mapHeadId : undefined;
