@@ -8,6 +8,7 @@ export interface LegacySegmentInfo {
 	id: number;
 	name: string;
 	center: [number, number]; // [x_mm, y_mm] centroid of segment bounding box
+	boundingBox: { minX: number; maxX: number; minY: number; maxY: number }; // pixel-space bounding box, relative to image origin — same convention as resolveCurrentRoom's pxRel/pyRel
 }
 
 export interface LegacyImageBlock {
@@ -24,9 +25,23 @@ export interface LegacyImageBlock {
 	};
 }
 
+export interface LegacyWallLine {
+	x1: number;
+	y1: number;
+	x2: number;
+	y2: number; // raw mm, robot coordinate space (same as robotPosition)
+}
+
+export interface LegacyZoneQuad {
+	points: [number, number][]; // exactly 4 raw-mm (x,y) corners, wire order preserved
+}
+
 export interface LegacyMapData {
 	robotPosition?: LegacyRobotPosition;
 	chargerPosition?: LegacyRobotPosition;
 	image?: LegacyImageBlock;
 	currentlyCleanedBlocks?: number[]; // segment IDs in the active cleaning task
+	virtualWalls?: LegacyWallLine[]; // decoded block type 10
+	noGoZones?: LegacyZoneQuad[]; // decoded block type 9
+	noMopZones?: LegacyZoneQuad[]; // decoded block type 12
 }

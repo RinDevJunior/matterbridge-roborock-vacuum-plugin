@@ -1,7 +1,6 @@
 import { AnsiLogger, debugStringify } from 'matterbridge/logger';
 
 import { CleanModeSetting } from '../../../../behaviors/roborock.vacuum/core/CleanModeSetting.js';
-import { DockStationStatus } from '../../../../model/DockStationStatus.js';
 import {
 	BatteryMessage,
 	DeviceStatus,
@@ -99,15 +98,7 @@ export class V1StatusListener implements AbstractMessageListener {
 
 		const batteryMessage = new BatteryMessage(message.duid, battery, chargeStatus, state);
 
-		const dockStationStatus =
-			dockStationStatusCode !== undefined ? DockStationStatus.parseDockStationStatus(dockStationStatusCode) : undefined;
-		const hasDockStationError = dockStationStatus?.hasError() ?? false;
-
-		if (
-			(vacuumErrorCode !== undefined && vacuumErrorCode !== 0) ||
-			(dockErrorCode !== undefined && dockErrorCode !== 0) ||
-			hasDockStationError
-		) {
+		if (vacuumErrorCode !== undefined || dockErrorCode !== undefined || dockStationStatusCode !== undefined) {
 			await this.handler.onError(new VacuumError(message.duid, vacuumErrorCode, dockErrorCode, dockStationStatusCode));
 		}
 

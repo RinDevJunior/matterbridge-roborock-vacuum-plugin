@@ -16,14 +16,15 @@
 			"Bash(codegraph *)",
 			"Bash(git log*)",
 			"Bash(git add*)",
-			"Bash(git status*)"
+			"Bash(git status*)",
+			"mcp__read-log__ReadLog"
 		]
 	},
 	"enabledMcpjsonServers": ["codegraph", "glob-grep", "cli-runner", "read-log", "discord-send", "github-release"],
-	"outputStyle": "default",
-	"spinnerTipsEnabled": true,
 	"statusLine": {
 		"type": "command",
 		"command": "bash .claude/statusline-command.sh"
-	}
+	},
+	"outputStyle": "Engineer Manager",
+	"spinnerTipsEnabled": true
 }

@@ -2,6 +2,10 @@ import { CleanSequenceType, MopWaterFlow, VacuumSuctionPower } from '../enums/in
 import { CleanModeConfig, CleanModeDisplayLabel, CleanModeLabelInfo } from './cleanModeConfig/index.js';
 import { CleanModeSetting } from './CleanModeSetting.js';
 
+function supportsMode(configs: CleanModeConfig[], mode: number): boolean {
+	return configs.some((c) => c.mode === mode);
+}
+
 enum BehaviorType {
 	Default = 'default',
 	Smart = 'smart',
@@ -13,6 +17,7 @@ enum BehaviorType {
  */
 export class ModeResolver {
 	private readonly settingsToModeMap: Map<string, number>;
+	private readonly configs: CleanModeConfig[];
 	private readonly customCheckFn?: (setting: CleanModeSetting) => number | undefined;
 
 	constructor(
@@ -21,6 +26,7 @@ export class ModeResolver {
 		public readonly behavior = BehaviorType.Default,
 	) {
 		this.settingsToModeMap = new Map(configs.map((c) => [this.serializeSetting(c.setting), c.mode]));
+		this.configs = configs;
 		this.customCheckFn = customCheckFn;
 	}
 
@@ -53,12 +59,32 @@ export class ModeResolver {
 	}
 
 	private resolveFallback(setting: CleanModeSetting): number | undefined {
-		if (setting.suctionPower === VacuumSuctionPower.Off)
-			return CleanModeLabelInfo[CleanModeDisplayLabel.MopDefault].mode;
-		if (setting.waterFlow === MopWaterFlow.Off) return CleanModeLabelInfo[CleanModeDisplayLabel.VacuumDefault].mode;
-		if (setting.suctionPower !== VacuumSuctionPower.Off && setting.waterFlow !== MopWaterFlow.Off)
-			return CleanModeLabelInfo[CleanModeDisplayLabel.VacuumAndMopDefault].mode;
-		return undefined;
+		const isVacuumOff = setting.suctionPower === VacuumSuctionPower.Off;
+		const isMopOff = setting.waterFlow === MopWaterFlow.Off;
+
+		if (isVacuumOff) {
+			const sameWaterFlow = this.configs.find(
+				(c) => c.setting.suctionPower === VacuumSuctionPower.Off && c.setting.waterFlow === setting.waterFlow,
+			);
+			return sameWaterFlow ? sameWaterFlow.mode : CleanModeLabelInfo[CleanModeDisplayLabel.MopDefault].mode;
+		}
+
+		if (isMopOff) {
+			const sameSuction = this.configs.find(
+				(c) => c.setting.waterFlow === MopWaterFlow.Off && c.setting.suctionPower === setting.suctionPower,
+			);
+			return sameSuction ? sameSuction.mode : CleanModeLabelInfo[CleanModeDisplayLabel.VacuumDefault].mode;
+		}
+
+		const sameSuctionVacuumAndMop = this.configs.find(
+			(c) =>
+				c.setting.waterFlow !== MopWaterFlow.Off &&
+				c.setting.suctionPower !== VacuumSuctionPower.Off &&
+				c.setting.suctionPower === setting.suctionPower,
+		);
+		return sameSuctionVacuumAndMop
+			? sameSuctionVacuumAndMop.mode
+			: CleanModeLabelInfo[CleanModeDisplayLabel.VacuumAndMopDefault].mode;
 	}
 }
 
@@ -66,10 +92,14 @@ export class ModeResolver {
  * Create resolver for default devices.
  */
 export function createDefaultModeResolver(configs: CleanModeConfig[]): ModeResolver {
+	const canResolveVacFollowedByMop = supportsMode(
+		configs,
+		CleanModeLabelInfo[CleanModeDisplayLabel.VacFollowedByMop].mode,
+	);
 	return new ModeResolver(
 		configs,
 		(setting) => {
-			if (setting.sequenceType === CleanSequenceType.OneTime) {
+			if (canResolveVacFollowedByMop && setting.sequenceType === CleanSequenceType.OneTime) {
 				return CleanModeLabelInfo[CleanModeDisplayLabel.VacFollowedByMop].mode;
 			}
 			if (setting.isCustomMode) {
@@ -85,13 +115,17 @@ export function createDefaultModeResolver(configs: CleanModeConfig[]): ModeResol
  * Create resolver for smart devices.
  */
 export function createSmartModeResolver(configs: CleanModeConfig[]): ModeResolver {
+	const canResolveVacFollowedByMop = supportsMode(
+		configs,
+		CleanModeLabelInfo[CleanModeDisplayLabel.VacFollowedByMop].mode,
+	);
 	return new ModeResolver(
 		configs,
 		(setting) => {
 			if (setting.isSmartMode) {
 				return CleanModeLabelInfo[CleanModeDisplayLabel.SmartPlan].mode;
 			}
-			if (setting.sequenceType === CleanSequenceType.OneTime) {
+			if (canResolveVacFollowedByMop && setting.sequenceType === CleanSequenceType.OneTime) {
 				return CleanModeLabelInfo[CleanModeDisplayLabel.VacFollowedByMop].mode;
 			}
 			if (setting.isCustomMode) {

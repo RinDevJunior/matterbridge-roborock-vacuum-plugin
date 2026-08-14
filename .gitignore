@@ -15,6 +15,7 @@ web-for-testing/out/
 web-for-testing/src/ext
 jest/
 report/
+.idea/
 
 
 # TypeScript cache

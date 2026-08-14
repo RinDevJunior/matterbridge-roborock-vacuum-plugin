@@ -18,7 +18,7 @@ Every `AskUserQuestion` option (EM's own calls, same rule subagents follow via `
 
 ## Context budget
 
-- Never read `plan.md`/`test-plan.md`/`wiki-brief.md`/`answers-*.md` in full — review only the architect's ≤10-line summary. Exceptions: `business-brief.md` (print once for approval), `answer.md` (explain mode, present to user).
+- Never read `plan.md`/`test-plan.md`/`wiki-brief.md`/`answers-*.md` in full — review only the architect's ≤10-line summary. Exceptions: `business-brief.md` (print once for approval), `approval-packet.html` (high — read once to publish at the gate) or `change-map.md` (medium — read once to publish at the gate), `answer.md` (explain mode, present to user).
 - Never paste a subagent's raw exploration into chat — summaries only.
 - Compact scripts only in this session: `format:ci`, `lint:fix:ci`, `test:ci`, `precommit:ci`, `diff:ci`. Never raw `npm run test`/build output.
 
@@ -45,7 +45,7 @@ If direct-executor says it's bigger than it looked → restart as medium/high.
 1. Echo requirement in 2–4 bullets (what changes / what doesn't / before→after example) + complexity confirm, one `AskUserQuestion` call. **Do not spawn architect before this is confirmed.**
 2. `workspace/<short-task-description>/requirement.md` (complexity + confirmed echo).
 3. Spawn `technical-architect` once — it self-researches (medium: reads memory/wiki directly; high: nests wiki-manager+investigator) and writes `plan.md` + `test-plan.md` + `business-brief.md`. Review its ≤10-line summary only, never `plan.md`.
-4. **Approval gate:** print full `business-brief.md` under `## Business brief (for your approval)`, `AskUserQuestion` (Approve/Request Changes). Request Changes → `manager-clarification.md` → resume `ta_id` (fresh spawn only if none). Never skip for medium/high.
+4. **Approval gate:** print full `business-brief.md` under `## Business brief (for your approval)`, and publish the diagram as a rendered Artifact — `approval-packet.html` (tabbed Brief / Change Map / Plan / Tests) for **high**, or `change-map.md` (the before → after diagram) for **medium**. Then `AskUserQuestion` (Approve/Request Changes). Request Changes → `manager-clarification.md` → resume `ta_id` (fresh spawn only if none). Never skip for medium/high.
 5. Spawn `implementer` (haiku; `model: "sonnet"` only for high).
 6. Spawn `reviewer` → `test-writer` (medium/high) → `documenter` (pass documenter a one-paragraph summary of what changed — it does not read `plan.md`/`business-brief.md`).
 7. `compiler`/`finalizer` only on user request.
@@ -68,11 +68,19 @@ If direct-executor says it's bigger than it looked → restart as medium/high.
 | High                  | same, implementer on sonnet                                              |
 | Security-sensitive    | always include reviewer, even low                                        |
 | Docs only             | documenter                                                               |
-| Release               | release-manager (user request only)                                      |
+| Release               | release-manager (user request only) → post-publish cleanup (see below)   |
 | Commit/finalize       | finalizer                                                                |
 | Build/lint/test check | compiler (user request only)                                             |
 | Wiki refresh          | wiki-manager update — batched, user request/pre-release only             |
 | Ad-hoc opt-out        | direct-executor, no pipeline                                             |
+
+## Post-release cleanup
+
+After `release-manager` reports the **GitHub release was published successfully** (the separate publish step — not the RC bump alone), the bump is already committed and pushed, so only ephemeral `workspace/<task>/` folders remain. Then:
+
+1. Ask the user: **"Release published. Clean up ephemeral release artifacts now?"** — do NOT auto-clean (honors the "cleaner only on explicit request" rule).
+2. On confirmation, spawn `finalizer` in **cleanup-only mode** (Step 1 only — no staging, no format, no precommit, no commit message).
+3. Do nothing if the user declines, or if only the RC bump ran without a GitHub publish.
 
 ## Model policy
 
@@ -100,6 +108,8 @@ workspace/<short-task-description>/
   plan.md
   test-plan.md          # only if test-writer applies
   business-brief.md
+  change-map.md         # implement mode — before → after diagram
+  approval-packet.html  # high complexity only — tabbed Artifact published at the approval gate
   manager-clarification.md
 ```
 

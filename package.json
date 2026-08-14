@@ -1,6 +1,6 @@
 {
 	"name": "matterbridge-roborock-vacuum-plugin",
-	"version": "1.1.7",
+	"version": "1.1.8-rc06",
 	"description": "Matterbridge Roborock Vacuum Plugin",
 	"author": "https://github.com/RinDevJunior",
 	"license": "MIT",
@@ -32,16 +32,18 @@
 		"apple home"
 	],
 	"scripts": {
-		"precommit": "npm run lint && npm run type-check && npm run dup-check && npm run format:check && npm run test",
+		"precommit": "npm run lint && npm run type-check && npm run dup-check && npm run format:check && npm run doctor && npm run test",
 		"precommit:ci": "node scripts/run-precommit-summary.mjs",
-		"precondition": "npm install -g matterbridge@3.9.4",
+		"doctor": "node scripts/orchestration-doctor.mjs",
+		"doctor:ci": "node scripts/orchestration-doctor.mjs",
+		"precondition": "npm install -g matterbridge@3.10.4",
 		"build:local": "npm run deepClean && npm install && npm link matterbridge && npm run build && npm run matterbridge:add",
 		"build:local:ci": "node scripts/run-build-local-summary.mjs",
 		"build:production": "tsc --project tsconfig.production.json",
 		"start": "tsc && matterbridge -childbridge",
 		"cli": "node dist/cli.js",
-		"build:package": "cd .. && tar --exclude-from='matterbridge-roborock-vacuum-plugin/.tarignore' -czvf matterbridge-roborock-vacuum-plugin-1.1.7.tgz matterbridge-roborock-vacuum-plugin",
-		"build:compress": "tar --exclude-from='matterbridge-roborock-vacuum-plugin/.tarignore' -czvf matterbridge-roborock-vacuum-plugin-1.1.7.tgz matterbridge-roborock-vacuum-plugin",
+		"build:package": "cd .. && tar --exclude-from='matterbridge-roborock-vacuum-plugin/.tarignore' -czvf matterbridge-roborock-vacuum-plugin-1.1.8.tgz matterbridge-roborock-vacuum-plugin",
+		"build:compress": "tar --exclude-from='matterbridge-roborock-vacuum-plugin/.tarignore' -czvf matterbridge-roborock-vacuum-plugin-1.1.8.tgz matterbridge-roborock-vacuum-plugin",
 		"dup-check": "npx jscpd",
 		"build": "tsc",
 		"type-check": "tsc --noEmit",
@@ -74,7 +76,7 @@
 		"dev:unlink": "npm unlink matterbridge"
 	},
 	"engines": {
-		"matterbridge": "^3.9.4",
+		"matterbridge": "^3.10.4",
 		"node": ">=24 <25"
 	},
 	"devDependencies": {
@@ -83,7 +85,7 @@
 		"@eslint/markdown": "^8.0.1",
 		"@types/node": "^26.1.0",
 		"@types/node-persist": "3.1.8",
-		"@types/nodemailer": "^7.0.11",
+		"@types/nodemailer": "^8.0.1",
 		"@types/semver": "^7.7.1",
 		"@vitest/coverage-v8": "^4.1.10",
 		"@vitest/eslint-plugin": "^1.6.21",
@@ -111,8 +113,8 @@
 		"crc-32": "1.2.2",
 		"mqtt": "^5.15.2",
 		"node-persist": "^4.0.4",
-		"nodemailer": "^8.0.4",
-		"protobufjs": "^8.0.0",
+		"nodemailer": "^9.0.5",
+		"protobufjs": "^8.7.2",
 		"semver": "^7.8.5"
 	},
 	"overrides": {

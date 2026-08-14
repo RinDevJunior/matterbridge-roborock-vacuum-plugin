@@ -158,6 +158,62 @@ function shouldPublishEstimatedEndTime(platform: RoborockMatterbridgePlatform, s
 	return platform.configManager.isEstimatedEndTimeEnabled && CLEANING_STATES.has(state);
 }
 
+async function publishAreaProgress(
+	robot: RoborockVacuumCleaner,
+	message: ServiceAreaUpdateMessage,
+	platform: RoborockMatterbridgePlatform,
+	selectedAreas: number[],
+	activeAreaId: number,
+): Promise<void> {
+	const logger = platform.log;
+	await robot.updateAttribute(ServiceArea.id, 'selectedAreas', selectedAreas, logger);
+	await updateCurrentAreaAndEstimate(robot, activeAreaId, message, platform);
+
+	const estimatedTimeForActiveArea = shouldPublishEstimatedEndTime(platform, message.state)
+		? computeAreaEstimatedTime(message.cleaningProcess.clean_time, message.cleaningProcess.clean_percent)
+		: null;
+	const existingProgress = platform.roborockService?.getProgress(robot.device.duid) ?? [];
+	const updatedProgress = buildProgressUpdate(
+		existingProgress,
+		selectedAreas,
+		activeAreaId,
+		estimatedTimeForActiveArea,
+	);
+	platform.roborockService?.setProgress(robot.device.duid, updatedProgress);
+	await robot.updateAttribute(ServiceArea.id, 'progress', updatedProgress, logger);
+}
+
+function resolveV1CurrentArea(
+	robot: RoborockVacuumCleaner,
+	platform: RoborockMatterbridgePlatform,
+	selectedAreas: number[],
+): number | null {
+	if (robot.device.pv !== ProtocolVersion.V1 || !platform.roborockService) {
+		return null;
+	}
+
+	const roomIndexMap = platform.roborockService.getSupportedAreasIndexMap(robot.device.duid);
+	if (!roomIndexMap) {
+		return null;
+	}
+
+	const cachedSegmentId = platform.roborockService.getV1ResolvedSegment(robot.device.duid);
+	if (cachedSegmentId === undefined) {
+		void platform.roborockService.requestV1MapRefresh(robot.device.duid);
+		return null;
+	}
+
+	const mappedArea =
+		roomIndexMap.getAreaId(cachedSegmentId, robot.homeInFo.activeMapId) ??
+		roomIndexMap.getAreaIdV2(cachedSegmentId) ??
+		null;
+	if (mappedArea === null || !selectedAreas.includes(mappedArea)) {
+		return null;
+	}
+
+	return mappedArea;
+}
+
 export async function handleServiceAreaUpdate(
 	robot: RoborockVacuumCleaner,
 	message: ServiceAreaUpdateMessage,
@@ -237,43 +293,29 @@ async function handleCleaningWithoutInfo(
 		return;
 	}
 
-	if (selectedAreas.length === 1 || (selectedAreas.length > 1 && message.cleaningProcess.clean_time > 0)) {
-		await robot.updateAttribute(ServiceArea.id, 'selectedAreas', selectedAreas, logger);
-		await updateCurrentAreaAndEstimate(robot, selectedAreas[0], message, platform);
+	if (selectedAreas.length === 1) {
+		await publishAreaProgress(robot, message, platform, selectedAreas, selectedAreas[0]);
+		return;
+	}
 
-		const estimatedTimeForActiveArea = shouldPublishEstimatedEndTime(platform, message.state)
-			? computeAreaEstimatedTime(message.cleaningProcess.clean_time, message.cleaningProcess.clean_percent)
-			: null;
-		const existingProgress = platform.roborockService?.getProgress(robot.device.duid) ?? [];
-		const updatedProgress = buildProgressUpdate(
-			existingProgress,
-			selectedAreas,
-			selectedAreas[0],
-			estimatedTimeForActiveArea,
-		);
-		platform.roborockService?.setProgress(robot.device.duid, updatedProgress);
-		await robot.updateAttribute(ServiceArea.id, 'progress', updatedProgress, logger);
-	} else {
-		await robot.updateAttribute(ServiceArea.id, 'selectedAreas', [], logger);
-
-		let currentAreaId: number | null = null;
-		if (robot.device.pv === ProtocolVersion.V1 && platform.roborockService) {
-			const roomIndexMap = platform.roborockService.getSupportedAreasIndexMap(robot.device.duid);
-			if (roomIndexMap) {
-				const cachedSegmentId = platform.roborockService.getV1ResolvedSegment(robot.device.duid);
-				if (cachedSegmentId !== undefined) {
-					currentAreaId =
-						roomIndexMap.getAreaId(cachedSegmentId, robot.homeInFo.activeMapId) ??
-						roomIndexMap.getAreaIdV2(cachedSegmentId) ??
-						null;
-				} else {
-					void platform.roborockService.requestV1MapRefresh(robot.device.duid);
-				}
-			}
+	if (selectedAreas.length > 1) {
+		const resolvedAreaId = resolveV1CurrentArea(robot, platform, selectedAreas);
+		if (resolvedAreaId !== null) {
+			await publishAreaProgress(robot, message, platform, selectedAreas, resolvedAreaId);
+			return;
 		}
 
-		await updateCurrentAreaAndEstimate(robot, currentAreaId, message, platform);
+		if (message.cleaningProcess.clean_time > 0) {
+			const lastKnownArea = robot.getAttribute(ServiceArea.id, 'currentArea', logger);
+			const fallbackAreaId =
+				typeof lastKnownArea === 'number' && selectedAreas.includes(lastKnownArea) ? lastKnownArea : selectedAreas[0];
+			await publishAreaProgress(robot, message, platform, selectedAreas, fallbackAreaId);
+			return;
+		}
 	}
+
+	await robot.updateAttribute(ServiceArea.id, 'selectedAreas', [], logger);
+	await updateCurrentAreaAndEstimate(robot, null, message, platform);
 }
 
 export async function handleActiveMapChanged(
@@ -360,7 +402,7 @@ async function resolveAreaFromCleaningInfo(
 	const mappedArea =
 		roomIndexMap.getAreaId(segmentId, robot.homeInFo.activeMapId) ?? roomIndexMap.getAreaIdV2(segmentId);
 
-	if (!mappedArea) {
+	if (mappedArea === undefined) {
 		logger.debug(
 			`No mapped area found, skipping area mapping.
         sourceSegmentId: ${sourceSegmentId},
@@ -382,14 +424,6 @@ async function resolveAreaFromCleaningInfo(
       activeArea: ${debugStringify(supportedAreas.find((x) => x.areaId === mappedArea))}`,
 	);
 
-	await updateCurrentAreaAndEstimate(robot, mappedArea, message, platform);
-
 	const selectedAreas = robot.getAttribute(ServiceArea.id, 'selectedAreas', logger) ?? [];
-	const estimatedTimeForActiveArea = shouldPublishEstimatedEndTime(platform, message.state)
-		? computeAreaEstimatedTime(message.cleaningProcess.clean_time, message.cleaningProcess.clean_percent)
-		: null;
-	const existingProgress = platform.roborockService.getProgress(robot.device.duid);
-	const updatedProgress = buildProgressUpdate(existingProgress, selectedAreas, mappedArea, estimatedTimeForActiveArea);
-	platform.roborockService.setProgress(robot.device.duid, updatedProgress);
-	await robot.updateAttribute(ServiceArea.id, 'progress', updatedProgress, logger);
+	await publishAreaProgress(robot, message, platform, selectedAreas, mappedArea);
 }

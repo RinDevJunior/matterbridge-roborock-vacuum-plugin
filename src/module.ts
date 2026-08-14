@@ -213,7 +213,7 @@ export class RoborockMatterbridgePlatform extends MatterbridgeDynamicPlatform {
 		this.platformRunner.stopWatchdog();
 
 		if (this.roborockService) {
-			this.roborockService.stopService();
+			await this.roborockService.stopService();
 			this.roborockService = undefined;
 		}
 

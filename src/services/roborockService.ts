@@ -167,8 +167,8 @@ export class RoborockService {
 	}
 
 	/** Stop service and clean up resources. */
-	public stopService(): void {
-		this.container.destroy();
+	public async stopService(): Promise<void> {
+		await this.container.destroy();
 	}
 
 	/** Set selected cleaning areas for a device. */
