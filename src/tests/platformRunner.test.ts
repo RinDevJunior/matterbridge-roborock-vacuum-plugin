@@ -25,6 +25,7 @@ import {
 } from '../roborockCommunication/models/index.js';
 import * as handleHomeDataMessage from '../runtimes/handleHomeDataMessage.js';
 import * as handleLocalMessage from '../runtimes/handleLocalMessage.js';
+import { getOperationalErrorName } from '../share/matterStateNames.js';
 import * as runtimeHelper from '../share/runtimeHelper.js';
 import type { MessagePayload } from '../types/MessagePayloads.js';
 import { NotifyMessageTypes } from '../types/notifyMessageTypes.js';
@@ -844,7 +845,10 @@ describe('PlatformRunner.updateRobotWithPayload', () => {
 		expect(robot.updateAttribute).toHaveBeenCalledWith(
 			RvcOperationalState.Cluster.id,
 			'operationalError',
-			{ errorStateId: RvcOperationalState.ErrorState.NoError },
+			{
+				errorStateId: RvcOperationalState.ErrorState.NoError,
+				errorStateDetails: getOperationalErrorName(RvcOperationalState.ErrorState.NoError),
+			},
 			mockLogger,
 		);
 	});
@@ -888,7 +892,10 @@ describe('PlatformRunner.updateRobotWithPayload', () => {
 		expect(robot.updateAttribute).toHaveBeenCalledWith(
 			RvcOperationalState.Cluster.id,
 			'operationalError',
-			{ errorStateId: RvcOperationalState.ErrorState.FailedToFindChargingDock },
+			{
+				errorStateId: RvcOperationalState.ErrorState.FailedToFindChargingDock,
+				errorStateDetails: getOperationalErrorName(RvcOperationalState.ErrorState.FailedToFindChargingDock),
+			},
 			mockLogger,
 		);
 	});
@@ -923,7 +930,10 @@ describe('PlatformRunner.updateRobotWithPayload', () => {
 		expect(robot.updateAttribute).toHaveBeenCalledWith(
 			RvcOperationalState.Cluster.id,
 			'operationalError',
-			{ errorStateId: RvcOperationalState.ErrorState.NoError },
+			{
+				errorStateId: RvcOperationalState.ErrorState.NoError,
+				errorStateDetails: getOperationalErrorName(RvcOperationalState.ErrorState.NoError),
+			},
 			mockLogger,
 		);
 	});
@@ -1088,7 +1098,10 @@ describe('PlatformRunner.updateRobotWithPayload', () => {
 		expect(robot.updateAttribute).toHaveBeenCalledWith(
 			RvcOperationalState.Cluster.id,
 			'operationalError',
-			{ errorStateId: RvcOperationalState.ErrorState.WaterTankEmpty },
+			{
+				errorStateId: RvcOperationalState.ErrorState.WaterTankEmpty,
+				errorStateDetails: getOperationalErrorName(RvcOperationalState.ErrorState.WaterTankEmpty),
+			},
 			mockLogger,
 		);
 	});
@@ -1117,7 +1130,10 @@ describe('PlatformRunner.updateRobotWithPayload', () => {
 		expect(robot.updateAttribute).toHaveBeenCalledWith(
 			RvcOperationalState.Cluster.id,
 			'operationalError',
-			{ errorStateId: RvcOperationalState.ErrorState.NoError },
+			{
+				errorStateId: RvcOperationalState.ErrorState.NoError,
+				errorStateDetails: getOperationalErrorName(RvcOperationalState.ErrorState.NoError),
+			},
 			mockLogger,
 		);
 	});

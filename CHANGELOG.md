@@ -4,6 +4,21 @@ All notable changes to this project will be documented in this file.
 
 ---
 
+## [1.1.8-rc07] - 2026-09-13
+
+### Changed
+
+- **Matterbridge dependency bumped to 3.10.9** — Updated the required/tested matterbridge version.
+
+### Fixed
+
+- **Operational error state could get stuck after a vacuum error cleared** — `RvcOperationalState.operationalError` (errorStateId) could remain stuck at a non-zero error value forever once a vacuum error occurred, even after the condition cleared, when dock-station-status reporting was off. Error handling now goes through a shared `buildOperationalError` helper so the state is reliably reset.
+- **Error details/label never showed the real error** — `errorStateDetails`/`errorStateLabel` were never populated on real errors, leaving stale "Fully operational" text displayed next to an active error code.
+
+<a href="https://www.buymeacoffee.com/rinnvspktr" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/default-orange.png" alt="Buy Me A Coffee" height="41" width="174"></a>
+
+---
+
 ## [1.1.8-rc06] - 2026-08-04
 
 ### Fixed
