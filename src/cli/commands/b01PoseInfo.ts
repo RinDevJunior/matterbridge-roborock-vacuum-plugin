@@ -1,3 +1,6 @@
+import fs from 'node:fs';
+import path from 'node:path';
+
 import { AnsiLogger } from 'matterbridge/logger';
 
 import { B01MapParser } from '../../roborockCommunication/map/b01/b01MapParser.js';
@@ -56,6 +59,40 @@ export async function cmdB01PoseInfo(
 			resolvedRoom ?? 'could not determine — roomMatrix decoding not yet implemented, pending real-device capture',
 		);
 
+		if (b01Info.headerUnknownByte6 !== undefined) {
+			console.log(
+				`\nUnused header byte (offset 6, diagnostic — unconfirmed): ${b01Info.headerUnknownByte6} (0x${b01Info.headerUnknownByte6.toString(16).padStart(2, '0')})`,
+			);
+		}
+
+		if (b01Info.headerReserved) {
+			const reserved = b01Info.headerReserved;
+			console.log('\nUnused header bytes (offsets 11-26, diagnostic — meaning unconfirmed):');
+			console.log('  hex:', reserved.toString('hex'));
+
+			if (reserved.length >= 16) {
+				const int32Pairs = [0, 4, 8, 12].map((offset) => ({
+					offset,
+					int32: reserved.readInt32BE(offset),
+					uint32: reserved.readUInt32BE(offset),
+				}));
+				console.log('  as int32BE/uint32BE @ offsets 0,4,8,12 (e.g. possible origin X/Y pair):');
+				for (const { offset, int32, uint32 } of int32Pairs) {
+					console.log(`    [${offset}] int32=${int32}  uint32=${uint32}`);
+				}
+
+				const int16Values = [0, 2, 4, 6, 8, 10, 12, 14].map((offset) => ({
+					offset,
+					int16: reserved.readInt16BE(offset),
+					uint16: reserved.readUInt16BE(offset),
+				}));
+				console.log('  as int16BE/uint16BE @ offsets 0,2,4,6,8,10,12,14 (e.g. possible scale/origin fields):');
+				for (const { offset, int16, uint16 } of int16Values) {
+					console.log(`    [${offset}] int16=${int16}  uint16=${uint16}`);
+				}
+			}
+		}
+
 		console.log('\nRaw rooms (roomDataInfo):');
 		for (const room of b01Info.rooms) {
 			console.log(`  [${room.roomId}] ${room.roomName || '(unnamed)'}  labelPos=${JSON.stringify(room.labelPos)}`);
@@ -71,6 +108,12 @@ export async function cmdB01PoseInfo(
 				'Raw roomMatrix first bytes (hex, diagnostic only, not decoded):',
 				matrixData.subarray(0, 64).toString('hex'),
 			);
+
+			const diagnosticsDir = path.join(process.cwd(), '.diagnostics');
+			fs.mkdirSync(diagnosticsDir, { recursive: true });
+			const dumpPath = path.join(diagnosticsDir, `roomMatrix-${duid}-${Date.now()}.bin`);
+			fs.writeFileSync(dumpPath, matrixData);
+			console.log('Full roomMatrix buffer written to:', dumpPath);
 		} else {
 			console.log('\nRaw roomMatrix byte length (diagnostic only, not decoded): not found');
 		}

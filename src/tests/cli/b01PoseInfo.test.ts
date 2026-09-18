@@ -9,6 +9,15 @@ const mockConnectDevice = vi.fn();
 const mockWaitForPush = vi.fn();
 const mockParseRoomsFromEncryptedBinary = vi.fn();
 const mockResolveRoomFromPose = vi.fn();
+const mockMkdirSync = vi.fn();
+const mockWriteFileSync = vi.fn();
+
+vi.mock('node:fs', () => ({
+	default: {
+		mkdirSync: (...args: unknown[]) => mockMkdirSync(...args),
+		writeFileSync: (...args: unknown[]) => mockWriteFileSync(...args),
+	},
+}));
 
 vi.mock('../../cli/connection.js', () => ({
 	connectDevice: (...args: unknown[]) => mockConnectDevice(...args),
@@ -108,6 +117,8 @@ describe('cmdB01PoseInfo', () => {
 			'Resolved room:',
 			'could not determine — roomMatrix decoding not yet implemented, pending real-device capture',
 		);
+		expect(mockMkdirSync).toHaveBeenCalledWith(expect.stringContaining('.diagnostics'), { recursive: true });
+		expect(mockWriteFileSync).toHaveBeenCalledWith(expect.stringContaining('roomMatrix-duid-1-'), expect.any(Buffer));
 		expect(clientRouter.disconnect).toHaveBeenCalledTimes(1);
 	});
 

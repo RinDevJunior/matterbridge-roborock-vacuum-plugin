@@ -39,6 +39,9 @@ type-check.log
 # CodeGraph local index
 .codegraph/
 
+# CLI diagnostic dumps (raw roomMatrix buffers, etc.)
+.diagnostics/
+
 # Ephemeral per-task workspace — permanent files allowlisted, per-task folders auto-ignored
 workspace/*
 !workspace/todo-task/

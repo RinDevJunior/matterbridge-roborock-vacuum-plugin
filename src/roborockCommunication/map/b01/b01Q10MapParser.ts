@@ -10,8 +10,10 @@ export function parseQ10MapPacket(payload: Buffer): B01MapInfo {
 	}
 
 	const mapId = payload.readUInt32BE(2);
+	const headerUnknownByte6 = payload[6];
 	const width = payload.readUInt16BE(7);
 	const height = payload.readUInt16BE(9);
+	const headerReserved = Buffer.from(payload.subarray(11, 27));
 	const compressedLength = payload.readUInt16BE(27);
 
 	if (width <= 0 || height <= 0 || HEADER_SIZE + compressedLength > payload.length) {
@@ -42,5 +44,5 @@ export function parseQ10MapPacket(payload: Buffer): B01MapInfo {
 		rooms.push({ roomId, roomName });
 	}
 
-	return { rooms, mapId, currentPose: undefined, roomMatrix };
+	return { rooms, mapId, currentPose: undefined, roomMatrix, headerUnknownByte6, headerReserved };
 }

@@ -24,4 +24,8 @@ export interface B01MapInfo {
 	mapId?: number;
 	currentPose?: B01Pose;
 	roomMatrix?: B01RoomMatrix;
+	/** Diagnostic-only, unconfirmed: raw header byte 6 (meaning unknown). */
+	headerUnknownByte6?: number;
+	/** Diagnostic-only, unconfirmed: raw header bytes 11-26 (meaning unknown). */
+	headerReserved?: Buffer;
 }
