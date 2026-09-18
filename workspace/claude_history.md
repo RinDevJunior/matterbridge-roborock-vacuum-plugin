@@ -1,5 +1,28 @@
 # Claude History
 
+## 2026-09-19 — Q10 live-position ServiceArea fallback (opt-in, default off)
+
+**Task:** Implement opt-in live-position fallback for Roborock Q10's Matter ServiceArea CurrentArea/Progress reporting when device sends no cleaning_info/segment_id; port grid-cell classification and pose-to-room resolution from confirmed reference byte format; parse origin/resolution from Q10 map header; add trace-position-to-mm coordinate conversion; wire position-resolution callback through map listener; add resolution cache mirroring V1 cache; introduce `enableB01LivePositionFallback` config flag (default false).
+
+**Changes:**
+
+- `src/roborockCommunication/map/b01/roomMatrixResolver.ts` — grid-cell classification, pose-to-room resolution core logic
+- `src/roborockCommunication/map/b01/b01MapParser.ts` — origin/resolution parsing from Q10 map header
+- `src/roborockCommunication/map/b01/b01Q10MapParser.ts` — coordinate system and trace-position-to-mm conversion
+- `src/roborockCommunication/map/b01/types.ts` — type definitions for room matrix and coordinate resolution
+- `src/roborockCommunication/routing/listeners/implementation/mapInfoListener.ts` — position-resolution callback wiring
+- `src/runtimes/handlers/serviceAreaHandler.ts` — integrated live-position fallback into serviceAreaUpdate
+- `src/services/areaManagementService.ts` — resolution cache (mirrors V1 pattern)
+- `src/services/roborockService.ts` — proxy passthrough for resolution cache access
+- `src/services/connectionService.ts` — listener protocol routing consistency
+- `src/model/RoborockPluginPlatformConfig.ts` — config schema for `enableB01LivePositionFallback` flag
+- `src/platform/platformConfigManager.ts` — config manager updates
+- `matterbridge-roborock-vacuum-plugin.schema.json` — JSON schema for new config flag
+- `src/cli/commands/b01PoseInfo.ts` — diagnostic CLI command (prior groundwork: expose raw Q10 map bytes)
+- Tests: roomMatrixResolver, b01MapParser, b01Q10MapParser, b01Q10TraceParser, mapInfoListener, serviceAreaHandler, areaManagementService, roborockService, platformConfig, b01PoseInfo
+
+**Outcome:** Pass (addresses GitHub issue #157; PR #158 on RinDevJunior fork). Y-axis sign in coordinate transform not yet confirmed on real hardware—flag remains opt-in default off pending manual validation step. Diagnostic groundwork (raw Q10 map bytes via `b01-pose-info` CLI) already live-validated on real Q10 S5+.
+
 ## 2026-07-14 — Reset ServiceArea.progress on clean start (third trigger)
 
 **Task:** Add third trigger for resetting `ServiceArea.progress` per-room state when vacuum starts new clean; detect genuine Docked/Stopped/Error → actively-cleaning operationalState transitions using `lastActivelyCleaningState` flag to avoid false positives on mid-clean detours.
