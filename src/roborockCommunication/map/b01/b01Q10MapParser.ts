@@ -1,5 +1,5 @@
 import { decompressLz4Block } from './lz4BlockDecompressor.js';
-import { B01MapInfo, B01RoomInfo, B01RoomMatrix } from './types.js';
+import { B01GridOrigin, B01MapInfo, B01RoomInfo, B01RoomMatrix } from './types.js';
 
 const ROOM_RECORD_SIZE = 47;
 const HEADER_SIZE = 29;
@@ -20,10 +20,18 @@ export function parseQ10MapPacket(payload: Buffer): B01MapInfo {
 		throw new Error('Q10 map packet: invalid width/height or compressed length out of bounds');
 	}
 
+	const originXRaw = payload.readInt16BE(11);
+	const originYRaw = payload.readInt16BE(13);
+	const resolutionRaw = payload.readUInt16BE(15);
+	const origin: B01GridOrigin | undefined =
+		originXRaw === 0 && originYRaw === 0
+			? undefined
+			: { x: Math.round(originXRaw / 10), y: Math.round(originYRaw / 10), resolutionMmPerPixel: resolutionRaw * 10 };
+
 	const decoded = decompressLz4Block(payload.subarray(HEADER_SIZE, HEADER_SIZE + compressedLength));
 
 	const gridSize = width * height;
-	const roomMatrix: B01RoomMatrix = { data: decoded.subarray(0, gridSize), width, height };
+	const roomMatrix: B01RoomMatrix = { data: decoded.subarray(0, gridSize), width, height, origin };
 	const roomSection = decoded.subarray(gridSize);
 	if (roomSection.length < 2 || roomSection[0] !== 0x01) {
 		throw new Error('Q10 map packet: unrecognized room-section layout after grid split');

@@ -257,17 +257,27 @@ async function handleCleaningWithoutInfo(
 		await robot.updateAttribute(ServiceArea.id, 'selectedAreas', [], logger);
 
 		let currentAreaId: number | null = null;
-		if (robot.device.pv === ProtocolVersion.V1 && platform.roborockService) {
+		if (platform.roborockService) {
 			const roomIndexMap = platform.roborockService.getSupportedAreasIndexMap(robot.device.duid);
 			if (roomIndexMap) {
-				const cachedSegmentId = platform.roborockService.getV1ResolvedSegment(robot.device.duid);
-				if (cachedSegmentId !== undefined) {
-					currentAreaId =
-						roomIndexMap.getAreaId(cachedSegmentId, robot.homeInFo.activeMapId) ??
-						roomIndexMap.getAreaIdV2(cachedSegmentId) ??
-						null;
-				} else {
-					void platform.roborockService.requestV1MapRefresh(robot.device.duid);
+				if (robot.device.pv === ProtocolVersion.V1) {
+					const cachedSegmentId = platform.roborockService.getV1ResolvedSegment(robot.device.duid);
+					if (cachedSegmentId !== undefined) {
+						currentAreaId =
+							roomIndexMap.getAreaId(cachedSegmentId, robot.homeInFo.activeMapId) ??
+							roomIndexMap.getAreaIdV2(cachedSegmentId) ??
+							null;
+					} else {
+						void platform.roborockService.requestV1MapRefresh(robot.device.duid);
+					}
+				} else if (robot.device.pv === ProtocolVersion.B01) {
+					const cachedRoomId = platform.roborockService.getB01ResolvedRoom(robot.device.duid);
+					if (cachedRoomId !== undefined) {
+						currentAreaId =
+							roomIndexMap.getAreaId(cachedRoomId, robot.homeInFo.activeMapId) ??
+							roomIndexMap.getAreaIdV2(cachedRoomId) ??
+							null;
+					}
 				}
 			}
 		}

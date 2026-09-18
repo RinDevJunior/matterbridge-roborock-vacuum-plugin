@@ -189,6 +189,7 @@ export class ConnectionService {
 				: undefined;
 			const liveMapUpdates = this.configManager?.isLiveMapUpdatesEnabled ?? false;
 			const allowV1AreaUpdate = liveMapUpdates || !messageDispatcher.supportsMapQueryResponse;
+			const enableB01LivePositionFallback = this.configManager?.isB01LivePositionFallbackEnabled ?? false;
 			const mapInfoListener = new MapInfoListener(
 				device.duid,
 				device.store.homeData.rooms,
@@ -202,6 +203,9 @@ export class ConnectionService {
 				this.areaManagementService.isMultipleMapEnabled(),
 				() => this.clientRouter?.getSerializeNonce(),
 				(segmentId: number) => this.areaManagementService?.setV1ResolvedSegment(device.duid, segmentId),
+				enableB01LivePositionFallback
+					? (roomId: number) => this.areaManagementService?.setB01ResolvedRoom(device.duid, roomId)
+					: undefined,
 			);
 			this.clientRouter.registerMessageListener(mapInfoListener);
 		}

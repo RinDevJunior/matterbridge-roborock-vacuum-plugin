@@ -6,6 +6,20 @@ const POINT_SIZE = 4;
 const STRAY_POINT_MIN_COUNT = 3;
 const STRAY_POINT_OUTLIER_MULTIPLIER = 20;
 
+export const ROBOROCK_COORDINATE_OFFSET_MM = 25500;
+export const Q10_TRACE_UNIT_MM = 2.5;
+
+/**
+ * Convert a raw Q10 trace-packet (x, y) pair into Roborock-common millimeters, matching the
+ * scale/offset used elsewhere in the codebase (e.g. the legacy B01 protobuf `currentPose`).
+ */
+export function traceToRoborockMm(traceX: number, traceY: number): { x: number; y: number } {
+	return {
+		x: Math.round(ROBOROCK_COORDINATE_OFFSET_MM + traceX * Q10_TRACE_UNIT_MM),
+		y: Math.round(ROBOROCK_COORDINATE_OFFSET_MM + traceY * Q10_TRACE_UNIT_MM),
+	};
+}
+
 /**
  * A single (x, y) coordinate pair from a Q10 trace packet. Trace packets do not carry heading
  * (phi), so this interface omits it unlike B01Pose.
@@ -53,7 +67,8 @@ export function parseTracePacket(payload: Buffer): { sessionCounter: number; poi
 
 /**
  * Public entry point mirroring `parseQ10MapPacket` in `b01Q10MapParser.ts`. Wraps
- * `parseTracePacket`, taking the last point (current robot position) into `B01MapInfo.currentPose`.
+ * `parseTracePacket`, taking the last point (current robot position) into `B01MapInfo.currentPose`,
+ * converted to Roborock-common mm via `traceToRoborockMm`.
  * `rooms` is always `[]` and `mapId`/`roomMatrix` are always `undefined` — trace packets carry no
  * room, map ID, or matrix data.
  *
@@ -67,7 +82,7 @@ export function parseTracePacket(payload: Buffer): { sessionCounter: number; poi
 export function parseQ10TracePacket(payload: Buffer): B01MapInfo {
 	const { points } = parseTracePacket(payload);
 	const lastPoint = points.at(-1);
-	const currentPose: B01Pose | undefined = lastPoint ? { x: lastPoint.x, y: lastPoint.y } : undefined;
+	const currentPose: B01Pose | undefined = lastPoint ? traceToRoborockMm(lastPoint.x, lastPoint.y) : undefined;
 
 	return { rooms: [], mapId: undefined, currentPose, roomMatrix: undefined };
 }

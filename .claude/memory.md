@@ -56,6 +56,8 @@ It is version-controlled — commit and push changes so teammates can pull the l
 - Dock→Matter mapping (Jul 2026): default bundle Items 1+2+3+4 in `DockStationStatus.ts` only; Item 3 vs 5 mutually exclusive (full dss vs dustBag-only); codes 32/33/35 as `DockErrorCode` enum; dss priority clearWater→dirty→dustBag→cleanFluid→filter→updown.
 - `progress` reset on start-of-clean (Jul 14, 2026): 3rd trigger added — `handleServiceAreaUpdate` compares stored-vs-current `operationalState` "actively cleaning" classification (Docked/Stopped/Error = not cleaning), NOT raw `CLEANING_STATES` membership (misses `ReturningDock`/`EmptyingDustContainer` detours → false positives). Flag stored in `AreaManagementService` (proxied via `RoborockService`), not a module-level var.
 - Vacuum→Matter mapping (Jul 2026): bundle ideas 2–6 in `VacuumStatus.ts`; export `VACUUM_ERROR_TO_MATTER`; unknown non-zero → `UnableToCompleteOperation`; add `VacuumErrorCode.AutoEmptyDockFanError=33`; 8 semantic refinements per spike answer.md.
+- Q10 live-position fallback (Sep 2026, planned): `resolveRoomFromPose` gated by opt-in `enableB01LivePositionFallback` (default false, wired via `connectionService.ts` callback presence, not inside `MapInfoListener`). Q7 auto-excluded: only Q10's header carries origin, so `roomMatrix.origin` stays `undefined` for Q7 — no explicit model check needed.
+- Q10MessageDispatcher.getHomeMap() is an unimplemented stub (`return {}; // TODO`) — `requestHomeMapPush`/`requestV1MapRefresh` would silently no-op if reused for B01; do not add a B01 refresh trigger on top of it.
 
 ## Test Patterns
 
@@ -104,6 +106,7 @@ It is version-controlled — commit and push changes so teammates can pull the l
 - Does our TypeScript plugin call `APP_GET_INIT_STATUS`? If so, are `newFeatureInfo`/`newFeatureInfoStr`/`featureInfo` captured and stored?
 - `roomMatrix` (RobotMap field 13) confirmed undecoded in python-roborock/ioBroker.roborock/roborock-gitlab too — all define it, none decode it (room-pixel data comes from `roomChain`/occupancy grid instead). Still needs real Q10 packet capture.
 - `OperationStatusCode` 104: confirmed absent from canonical status enum in all 3 reference repos (identical `103→202` gap everywhere). The only "104" found is an unrelated DP-id (`BREAKPOINT_CLEAN`), not a status value — coincidence, not the answer.
+- Q10 world→pixel transform `y_sign` (+1/-1) and whether trace-pose mm should include the `+25500` Roborock-common offset before feeding the header-origin pixel transform are UNCONFIRMED (requirement.md point 4) — needs real-device validation via extended `b01-pose-info` CLI before `enableB01LivePositionFallback` is recommended on.
 
 ## Archive
 

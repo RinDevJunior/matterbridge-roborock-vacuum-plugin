@@ -11,7 +11,9 @@ import { decryptAndUnzipV1Map } from '../../../../roborockCommunication/map/v1/v
 import { AreaManagementService } from '../../../../services/areaManagementService.js';
 import { Q7RequestCode, Q7RequestMethod } from '../../../enums/Q7RequestCode.js';
 import { Q10RequestCode } from '../../../enums/Q10RequestCode.js';
+import { resolveRoomFromPose } from '../../../map/b01/roomMatrixResolver.js';
 import { normalizeB01RoomName } from '../../../map/b01/roomNameNormalizer.js';
+import { B01RoomMatrix } from '../../../map/b01/types.js';
 import { HomeModelMapper, RawRoomMappingData } from '../../../models/home/index.js';
 import { MapDataDto } from '../../../models/home/MapDataDto.js';
 import { MultipleMapDto } from '../../../models/home/MultipleMapDto.js';
@@ -26,6 +28,7 @@ export class MapInfoListener implements AbstractMessageListener {
 	private readonly b01MapParser = new B01MapParser();
 	private pendingB01MapInfo: MapInfo | undefined;
 	private pendingV1MapInfo: MapInfo | undefined;
+	private pendingB01RoomMatrix: B01RoomMatrix | undefined;
 
 	constructor(
 		public readonly duid: string,
@@ -40,6 +43,7 @@ export class MapInfoListener implements AbstractMessageListener {
 		private readonly enableMultipleMap = true,
 		private readonly sessionNonce?: () => Buffer | undefined,
 		private readonly onV1RoomResolved?: (segmentId: number) => void,
+		private readonly onB01PositionResolved?: (roomId: number) => void,
 	) {}
 
 	public async onMessage(message: ResponseMessage): Promise<void> {
@@ -179,6 +183,15 @@ export class MapInfoListener implements AbstractMessageListener {
 
 		try {
 			const b01Info = this.b01MapParser.parseRoomsFromEncryptedBinary(mapBuffer, modelShortCode, this.deviceSerial);
+			if (b01Info.roomMatrix) {
+				this.pendingB01RoomMatrix = b01Info.roomMatrix;
+			}
+			if (b01Info.currentPose && this.onB01PositionResolved) {
+				const roomId = resolveRoomFromPose(b01Info.currentPose, this.pendingB01RoomMatrix);
+				if (roomId !== undefined) {
+					this.onB01PositionResolved(roomId);
+				}
+			}
 			if (b01Info.rooms.length === 0) {
 				this.logger.debug(`[${this.duid}] MapInfoListener: B01 map binary has no rooms`);
 				return;

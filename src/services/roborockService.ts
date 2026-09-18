@@ -290,6 +290,11 @@ export class RoborockService {
 		return this.areaService.getV1ResolvedSegment(duid);
 	}
 
+	/** Get B01/Q10 resolved room ID from cache if available and not stale. */
+	public getB01ResolvedRoom(duid: string): number | undefined {
+		return this.areaService.getB01ResolvedRoom(duid);
+	}
+
 	/** Request V1 map push (fire-and-forget). */
 	public async requestV1MapRefresh(duid: string): Promise<void> {
 		return this.areaService.requestV1MapRefresh(duid);

@@ -216,6 +216,12 @@
 										"type": "boolean",
 										"default": false
 									},
+									"enableB01LivePositionFallback": {
+										"title": "Enable Q10 Live Position Fallback (Experimental)",
+										"description": "Resolve current cleaning room from live robot position for B01/Q10 devices when the device reports no cleaning_info. Unconfirmed coordinate-frame math — validate against your own device via the CLI b01-pose-info command before enabling. Requires advanced features.",
+										"type": "boolean",
+										"default": false
+									},
 									"clearStorageOnStartup": {
 										"title": "Clear Storage On Startup",
 										"description": "Clear persistence storage and re-initialize the plugin on next startup.",

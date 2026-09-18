@@ -59,6 +59,39 @@ export async function cmdB01PoseInfo(
 			resolvedRoom ?? 'could not determine — roomMatrix decoding not yet implemented, pending real-device capture',
 		);
 
+		console.log('\nWaiting for a Q10 trace packet (up to 15s, non-fatal if none arrives)...');
+		const tracePromise = waitForPush(
+			clientRouter,
+			duid,
+			(msg) => {
+				const buf = msg.body?.get(Protocol.map_response);
+				return Buffer.isBuffer(buf) && buf.length >= 2 && buf[0] === 0x02 && buf[1] === 0x01 ? buf : undefined;
+			},
+			15000,
+		);
+		const traceBuffer = await tracePromise;
+
+		let tracePose = b01Info.currentPose;
+		if (traceBuffer) {
+			try {
+				const traceInfo = parser.parseRoomsFromEncryptedBinary(traceBuffer, modelShortCode, deviceSerial);
+				tracePose = traceInfo.currentPose ?? tracePose;
+			} catch (err) {
+				console.error('Failed to decode Q10 trace packet:', err instanceof Error ? err.message : String(err));
+			}
+		} else {
+			console.log('No trace packet received within timeout.');
+		}
+
+		const roomNameFor = (roomId: number | undefined): string =>
+			roomId === undefined ? '' : (b01Info.rooms.find((r) => r.roomId === roomId)?.roomName ?? '(unknown room)');
+
+		const candidateYSignPos = resolveRoomFromPose(tracePose, b01Info.roomMatrix, 1);
+		const candidateYSignNeg = resolveRoomFromPose(tracePose, b01Info.roomMatrix, -1);
+		console.log('\nTrace-based robot pose:', tracePose ?? 'not found');
+		console.log('Resolved room (ySign=+1):', candidateYSignPos ?? 'no match', roomNameFor(candidateYSignPos));
+		console.log('Resolved room (ySign=-1):', candidateYSignNeg ?? 'no match', roomNameFor(candidateYSignNeg));
+
 		if (b01Info.headerUnknownByte6 !== undefined) {
 			console.log(
 				`\nUnused header byte (offset 6, diagnostic — unconfirmed): ${b01Info.headerUnknownByte6} (0x${b01Info.headerUnknownByte6.toString(16).padStart(2, '0')})`,

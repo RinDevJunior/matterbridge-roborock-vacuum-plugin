@@ -33,6 +33,7 @@ export class AreaManagementService {
 	private iotApi: RoborockIoTApi | undefined;
 	private mapInfoCache = new Map<string, MapInfo>();
 	private v1RoomResolutionCache = new Map<string, { segmentId: number; resolvedAtMs: number }>();
+	private b01RoomResolutionCache = new Map<string, { roomId: number; resolvedAtMs: number }>();
 
 	constructor(
 		private readonly logger: AnsiLogger,
@@ -401,6 +402,17 @@ export class AreaManagementService {
 		return cached.segmentId;
 	}
 
+	public setB01ResolvedRoom(duid: string, roomId: number): void {
+		this.b01RoomResolutionCache.set(duid, { roomId, resolvedAtMs: Date.now() });
+	}
+
+	public getB01ResolvedRoom(duid: string, maxAgeMs = 30_000): number | undefined {
+		const cached = this.b01RoomResolutionCache.get(duid);
+		if (!cached) return undefined;
+		if (Date.now() - cached.resolvedAtMs > maxAgeMs) return undefined;
+		return cached.roomId;
+	}
+
 	public async requestV1MapRefresh(duid: string): Promise<void> {
 		if (!this.serviceRouting) return;
 		try {
@@ -426,6 +438,7 @@ export class AreaManagementService {
 		this.deviceRooms.clear();
 		this.mapInfoCache.clear();
 		this.v1RoomResolutionCache.clear();
+		this.b01RoomResolutionCache.clear();
 		this.logger.debug('AreaManagementService - All data cleared');
 	}
 }

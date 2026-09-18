@@ -233,6 +233,10 @@ export class PlatformConfigManager {
 		return this.isAdvancedFeatureEnabled && (this.advancedFeatureSettings.enableEstimatedEndTime ?? false);
 	}
 
+	public get isB01LivePositionFallbackEnabled(): boolean {
+		return this.isAdvancedFeatureEnabled && (this.advancedFeatureSettings.enableB01LivePositionFallback ?? false);
+	}
+
 	public get emailNotificationSettings(): EmailNotificationSettings | undefined {
 		if (!this.isEmailNotificationEnabled) return undefined;
 		return this.advancedFeatureSettings.emailNotificationSettings;
