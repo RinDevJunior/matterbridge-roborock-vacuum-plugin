@@ -114,8 +114,12 @@ export class B01MapParser {
 
 		const roomMatrixRaw = decoded.roomMatrix as Record<string, unknown> | undefined;
 		const matrixBytes = roomMatrixRaw?.matrix;
+		const matrixWidth = typeof mapHead?.sizeX === 'number' ? mapHead.sizeX : 0;
+		const matrixHeight = typeof mapHead?.sizeY === 'number' ? mapHead.sizeY : 0;
 		const roomMatrix: B01RoomMatrix | undefined =
-			Buffer.isBuffer(matrixBytes) && matrixBytes.length > 0 ? { data: matrixBytes } : undefined;
+			Buffer.isBuffer(matrixBytes) && matrixBytes.length > 0
+				? { data: matrixBytes, width: matrixWidth, height: matrixHeight }
+				: undefined;
 
 		if (!roomDataInfo || roomDataInfo.length === 0) {
 			return { rooms: [], mapId, currentPose, roomMatrix };

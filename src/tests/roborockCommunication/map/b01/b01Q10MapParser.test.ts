@@ -118,7 +118,7 @@ describe('b01Q10MapParser', () => {
 				roomName: 'Bedroom',
 			});
 			expect(result.currentPose).toBeUndefined();
-			expect(result.roomMatrix).toBeUndefined();
+			expect(result.roomMatrix).toEqual({ data: grid, width, height });
 		});
 
 		it('should extract room name with various lengths', () => {

@@ -61,10 +61,19 @@ export async function cmdB01PoseInfo(
 			console.log(`  [${room.roomId}] ${room.roomName || '(unnamed)'}  labelPos=${JSON.stringify(room.labelPos)}`);
 		}
 
-		console.log(
-			'\nRaw roomMatrix byte length (diagnostic only, not decoded):',
-			b01Info.roomMatrix?.data.length ?? 'not found',
-		);
+		if (b01Info.roomMatrix?.data) {
+			const matrixData = b01Info.roomMatrix.data;
+			console.log('\nRaw roomMatrix byte length (diagnostic only, not decoded):', matrixData.length);
+			console.log(
+				`Raw roomMatrix grid: ${b01Info.roomMatrix.width}x${b01Info.roomMatrix.height} (diagnostic only, not decoded)`,
+			);
+			console.log(
+				'Raw roomMatrix first bytes (hex, diagnostic only, not decoded):',
+				matrixData.subarray(0, 64).toString('hex'),
+			);
+		} else {
+			console.log('\nRaw roomMatrix byte length (diagnostic only, not decoded): not found');
+		}
 	} finally {
 		await clientRouter.disconnect();
 	}

@@ -8,7 +8,7 @@ import type { B01Pose, B01RoomMatrix } from '../../../../roborockCommunication/m
 
 describe('resolveRoomFromPose', () => {
 	it('should return undefined when pose is undefined, regardless of roomMatrix state', () => {
-		const roomMatrix: B01RoomMatrix = { data: Buffer.from([1, 2, 3]) };
+		const roomMatrix: B01RoomMatrix = { data: Buffer.from([1, 2, 3]), width: 3, height: 1 };
 		// Never throws — a thrown error here would fail the test via vitest's default behavior.
 		expect(resolveRoomFromPose(undefined, roomMatrix)).toBeUndefined();
 	});
@@ -24,7 +24,7 @@ describe('resolveRoomFromPose', () => {
 
 	it('should return undefined when pose.x/pose.y are not numbers (defensive guard)', () => {
 		const malformedPose = { x: 'not-a-number', y: 2 } as unknown as B01Pose;
-		const roomMatrix: B01RoomMatrix = { data: Buffer.from([1, 2, 3]) };
+		const roomMatrix: B01RoomMatrix = { data: Buffer.from([1, 2, 3]), width: 3, height: 1 };
 		expect(resolveRoomFromPose(malformedPose, roomMatrix)).toBeUndefined();
 	});
 
@@ -36,7 +36,7 @@ describe('resolveRoomFromPose', () => {
 
 	it('should return undefined when roomMatrix.data is an empty Buffer', () => {
 		const pose: B01Pose = { x: 1, y: 2 };
-		const roomMatrix: B01RoomMatrix = { data: Buffer.alloc(0) };
+		const roomMatrix: B01RoomMatrix = { data: Buffer.alloc(0), width: 0, height: 0 };
 		expect(resolveRoomFromPose(pose, roomMatrix)).toBeUndefined();
 	});
 
@@ -46,13 +46,13 @@ describe('resolveRoomFromPose', () => {
 		// adds real decoding logic must consciously update this test, not accidentally regress
 		// this into a silent behavior change.
 		const pose: B01Pose = { x: 123.4, y: 567.8, phi: 1.57 };
-		const roomMatrix: B01RoomMatrix = { data: Buffer.from([1, 2, 3, 4, 5]) };
+		const roomMatrix: B01RoomMatrix = { data: Buffer.from([1, 2, 3, 4, 5]), width: 5, height: 1 };
 		expect(resolveRoomFromPose(pose, roomMatrix)).toBeUndefined();
 	});
 
 	it('should never throw for any combination of missing/malformed/empty/well-formed inputs', () => {
 		const pose: B01Pose = { x: 1, y: 2 };
-		const roomMatrix: B01RoomMatrix = { data: Buffer.from([1]) };
+		const roomMatrix: B01RoomMatrix = { data: Buffer.from([1]), width: 1, height: 1 };
 		const cases: [B01Pose | undefined, B01RoomMatrix | undefined][] = [
 			[undefined, undefined],
 			[pose, undefined],

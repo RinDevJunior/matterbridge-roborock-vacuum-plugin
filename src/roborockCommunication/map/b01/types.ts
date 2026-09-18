@@ -15,6 +15,8 @@ export interface B01Pose {
 export interface B01RoomMatrix {
 	/** Raw undecoded matrix bytes as received from the RobotMap protobuf push. */
 	data: Buffer;
+	width: number;
+	height: number;
 }
 
 export interface B01MapInfo {

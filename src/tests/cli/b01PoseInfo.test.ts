@@ -97,7 +97,7 @@ describe('cmdB01PoseInfo', () => {
 		mockParseRoomsFromEncryptedBinary.mockReturnValue({
 			rooms: [{ roomId: 1, roomName: 'Kitchen' }],
 			currentPose: { x: 1, y: 2 },
-			roomMatrix: { data: Buffer.from([1, 2, 3]) },
+			roomMatrix: { data: Buffer.from([1, 2, 3]), width: 3, height: 1 },
 		});
 		mockResolveRoomFromPose.mockReturnValue(undefined);
 
