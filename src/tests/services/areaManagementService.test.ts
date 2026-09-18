@@ -1467,4 +1467,100 @@ describe('AreaManagementService', () => {
 			expect(areaService.getV1ResolvedSegment(duid)).toBeUndefined();
 		});
 	});
+
+	describe('b01RoomResolutionCache', () => {
+		it('should set and get B01 resolved room within TTL', () => {
+			// Arrange
+			const duid = 'b01-device';
+			const roomId = 5;
+
+			// Act
+			areaService.setB01ResolvedRoom(duid, roomId);
+			const result = areaService.getB01ResolvedRoom(duid);
+
+			// Assert
+			expect(result).toBe(roomId);
+		});
+
+		it('should return undefined when no prior setB01ResolvedRoom call', () => {
+			// Act
+			const result = areaService.getB01ResolvedRoom('unknown-device');
+
+			// Assert
+			expect(result).toBeUndefined();
+		});
+
+		it('should return undefined after maxAgeMs has elapsed', () => {
+			// Arrange
+			vi.useFakeTimers();
+			const duid = 'b01-device-ttl';
+			const roomId = 3;
+			const maxAgeMs = 1000;
+
+			areaService.setB01ResolvedRoom(duid, roomId);
+			expect(areaService.getB01ResolvedRoom(duid, maxAgeMs)).toBe(roomId);
+
+			// Act — advance time past maxAgeMs
+			vi.advanceTimersByTime(maxAgeMs + 1);
+			const result = areaService.getB01ResolvedRoom(duid, maxAgeMs);
+
+			// Assert
+			expect(result).toBeUndefined();
+
+			vi.useRealTimers();
+		});
+
+		it('should clear B01 cache in clearAll()', () => {
+			// Arrange
+			const duid = 'b01-device-clear';
+			const roomId = 7;
+			areaService.setB01ResolvedRoom(duid, roomId);
+			expect(areaService.getB01ResolvedRoom(duid)).toBe(roomId);
+
+			// Act
+			areaService.clearAll();
+
+			// Assert
+			expect(areaService.getB01ResolvedRoom(duid)).toBeUndefined();
+		});
+
+		it('should support multiple devices independently', () => {
+			// Arrange
+			const device1 = 'b01-device-1';
+			const device2 = 'b01-device-2';
+			const roomId1 = 2;
+			const roomId2 = 8;
+
+			// Act
+			areaService.setB01ResolvedRoom(device1, roomId1);
+			areaService.setB01ResolvedRoom(device2, roomId2);
+
+			// Assert
+			expect(areaService.getB01ResolvedRoom(device1)).toBe(roomId1);
+			expect(areaService.getB01ResolvedRoom(device2)).toBe(roomId2);
+		});
+
+		it('should use default maxAgeMs of 30_000 when not specified', () => {
+			// Arrange
+			vi.useFakeTimers();
+			const duid = 'b01-device-default-ttl';
+			const roomId = 4;
+
+			areaService.setB01ResolvedRoom(duid, roomId);
+
+			// Act — advance 30 seconds (just under default TTL of 30_000 ms)
+			vi.advanceTimersByTime(30000 - 1);
+			const resultBeforeExpiry = areaService.getB01ResolvedRoom(duid);
+
+			// Advance past the default TTL
+			vi.advanceTimersByTime(2);
+			const resultAfterExpiry = areaService.getB01ResolvedRoom(duid);
+
+			// Assert
+			expect(resultBeforeExpiry).toBe(roomId);
+			expect(resultAfterExpiry).toBeUndefined();
+
+			vi.useRealTimers();
+		});
+	});
 });

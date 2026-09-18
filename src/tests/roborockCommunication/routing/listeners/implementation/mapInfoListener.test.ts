@@ -694,4 +694,272 @@ describe('MapInfoListener', () => {
 			expect(onV1RoomResolved).not.toHaveBeenCalled();
 		});
 	});
+
+	describe('B01 position-resolution (tryParseB01MapBinary position wiring)', () => {
+		it('should cache roomMatrix when B01 map packet received, then resolve pose from trace packet', async () => {
+			// Arrange
+			const onB01PositionResolved = vi.fn();
+			const listenerB01 = new MapInfoListener(
+				DUID,
+				[],
+				areaService,
+				createMockLogger(),
+				'roborock.vacuum.a27',
+				'ABC123',
+				undefined,
+				ProtocolVersion.B01,
+				true,
+				true,
+				undefined,
+				undefined,
+				onB01PositionResolved,
+			);
+
+			// Spy on the parseRoomsFromEncryptedBinary to control what gets returned
+			const parseRoomsSpy = vi.spyOn(
+				(
+					listenerB01 as unknown as {
+						b01MapParser: { parseRoomsFromEncryptedBinary: ReturnType<typeof vi.fn> };
+					}
+				).b01MapParser,
+				'parseRoomsFromEncryptedBinary',
+			);
+
+			// First message: full map packet with rooms and roomMatrix with origin
+			const mapPacketResult = {
+				rooms: [{ roomId: 5, roomName: 'Kitchen' }],
+				roomMatrix: {
+					data: Buffer.from([8, 8, 8]),
+					width: 3,
+					height: 1,
+					origin: { x: 0, y: 0, resolutionMmPerPixel: 50 },
+				},
+			};
+			parseRoomsSpy.mockReturnValueOnce(mapPacketResult);
+
+			const mapMsg = makeB01Message(DUID, (key) => {
+				if (key === Protocol.map_response) return Buffer.from('map');
+				return undefined;
+			});
+			await listenerB01.onMessage(mapMsg);
+
+			// Second message: trace packet that resolves to a room
+			const tracePacketResult = {
+				rooms: [],
+				currentPose: { x: 0, y: 0 }, // Maps to pixel (0,0) which holds value 8 (roomId 2)
+				roomMatrix: undefined, // Trace packets don't include roomMatrix
+			};
+			parseRoomsSpy.mockReturnValueOnce(tracePacketResult);
+
+			const traceMsg = makeB01Message(DUID, (key) => {
+				if (key === Protocol.map_response) return Buffer.from('trace');
+				return undefined;
+			});
+			await listenerB01.onMessage(traceMsg);
+
+			// Assert — onB01PositionResolved should be called with the resolved roomId
+			expect(onB01PositionResolved).toHaveBeenCalled();
+		});
+
+		it('should not call onB01PositionResolved when trace packet arrives before map packet (no cached matrix)', async () => {
+			// Arrange
+			const onB01PositionResolved = vi.fn();
+			const listenerB01 = new MapInfoListener(
+				DUID,
+				[],
+				areaService,
+				createMockLogger(),
+				'roborock.vacuum.a27',
+				'ABC123',
+				undefined,
+				ProtocolVersion.B01,
+				true,
+				true,
+				undefined,
+				undefined,
+				onB01PositionResolved,
+			);
+
+			const parseRoomsSpy = vi.spyOn(
+				(
+					listenerB01 as unknown as {
+						b01MapParser: { parseRoomsFromEncryptedBinary: ReturnType<typeof vi.fn> };
+					}
+				).b01MapParser,
+				'parseRoomsFromEncryptedBinary',
+			);
+
+			// First message: trace packet (no prior map packet cached)
+			const tracePacketResult = {
+				rooms: [],
+				currentPose: { x: 100, y: 100 },
+				roomMatrix: undefined,
+			};
+			parseRoomsSpy.mockReturnValueOnce(tracePacketResult);
+
+			const traceMsg = makeB01Message(DUID, (key) => {
+				if (key === Protocol.map_response) return Buffer.from('trace');
+				return undefined;
+			});
+			await listenerB01.onMessage(traceMsg);
+
+			// Assert — onB01PositionResolved should NOT be called (no roomMatrix cached yet)
+			expect(onB01PositionResolved).not.toHaveBeenCalled();
+		});
+
+		it('should not call onB01PositionResolved when trace pose resolves to undefined (background/floor cell)', async () => {
+			// Arrange
+			const onB01PositionResolved = vi.fn();
+			const listenerB01 = new MapInfoListener(
+				DUID,
+				[],
+				areaService,
+				createMockLogger(),
+				'roborock.vacuum.a27',
+				'ABC123',
+				undefined,
+				ProtocolVersion.B01,
+				true,
+				true,
+				undefined,
+				undefined,
+				onB01PositionResolved,
+			);
+
+			const parseRoomsSpy = vi.spyOn(
+				(
+					listenerB01 as unknown as {
+						b01MapParser: { parseRoomsFromEncryptedBinary: ReturnType<typeof vi.fn> };
+					}
+				).b01MapParser,
+				'parseRoomsFromEncryptedBinary',
+			);
+
+			// First message: full map packet with background bytes
+			const mapPacketResult = {
+				rooms: [{ roomId: 1, roomName: 'Kitchen' }],
+				roomMatrix: {
+					data: Buffer.from([243, 243, 243]), // All background (243)
+					width: 3,
+					height: 1,
+					origin: { x: 0, y: 0, resolutionMmPerPixel: 50 },
+				},
+			};
+			parseRoomsSpy.mockReturnValueOnce(mapPacketResult);
+
+			const mapMsg = makeB01Message(DUID, (key) => {
+				if (key === Protocol.map_response) return Buffer.from('map');
+				return undefined;
+			});
+			await listenerB01.onMessage(mapMsg);
+
+			// Second message: trace packet with pose mapping to background cell
+			const tracePacketResult = {
+				rooms: [],
+				currentPose: { x: 0, y: 0 },
+				roomMatrix: undefined,
+			};
+			parseRoomsSpy.mockReturnValueOnce(tracePacketResult);
+
+			const traceMsg = makeB01Message(DUID, (key) => {
+				if (key === Protocol.map_response) return Buffer.from('trace');
+				return undefined;
+			});
+			await listenerB01.onMessage(traceMsg);
+
+			// Assert — onB01PositionResolved should NOT be called (pose resolves to undefined)
+			expect(onB01PositionResolved).not.toHaveBeenCalled();
+		});
+
+		it('should not call onB01PositionResolved when onB01PositionResolved callback is not provided', async () => {
+			// Arrange — backward compatibility: listener without callback
+			const listenerB01 = new MapInfoListener(
+				DUID,
+				[],
+				areaService,
+				createMockLogger(),
+				'roborock.vacuum.a27',
+				'ABC123',
+				undefined,
+				ProtocolVersion.B01,
+				true,
+				true,
+				undefined,
+				undefined,
+				undefined, // No onB01PositionResolved callback
+			);
+
+			const parseRoomsSpy = vi.spyOn(
+				(
+					listenerB01 as unknown as {
+						b01MapParser: { parseRoomsFromEncryptedBinary: ReturnType<typeof vi.fn> };
+					}
+				).b01MapParser,
+				'parseRoomsFromEncryptedBinary',
+			);
+
+			// Message: trace packet (would resolve to a room, but no callback provided)
+			const tracePacketResult = {
+				rooms: [],
+				currentPose: { x: 0, y: 0 },
+				roomMatrix: undefined,
+			};
+			parseRoomsSpy.mockReturnValueOnce(tracePacketResult);
+
+			const traceMsg = makeB01Message(DUID, (key) => {
+				if (key === Protocol.map_response) return Buffer.from('trace');
+				return undefined;
+			});
+
+			// Act & Assert — should not throw, even though callback is missing
+			await expect(listenerB01.onMessage(traceMsg)).resolves.toBeUndefined();
+		});
+
+		it('should still skip applySupportedAreasResult when trace packet has rooms.length === 0 (early return preserved)', async () => {
+			// Arrange
+			const onB01PositionResolved = vi.fn();
+			const listenerB01 = new MapInfoListener(
+				DUID,
+				[],
+				areaService,
+				createMockLogger(),
+				'roborock.vacuum.a27',
+				'ABC123',
+				undefined,
+				ProtocolVersion.B01,
+				true,
+				true,
+				undefined,
+				undefined,
+				onB01PositionResolved,
+			);
+
+			const parseRoomsSpy = vi.spyOn(
+				(
+					listenerB01 as unknown as {
+						b01MapParser: { parseRoomsFromEncryptedBinary: ReturnType<typeof vi.fn> };
+					}
+				).b01MapParser,
+				'parseRoomsFromEncryptedBinary',
+			);
+
+			// Message: trace packet with rooms.length === 0 (should early return before applySupportedAreasResult)
+			const tracePacketResult = {
+				rooms: [], // Empty — should trigger early return
+				currentPose: { x: 100, y: 100 },
+				roomMatrix: undefined,
+			};
+			parseRoomsSpy.mockReturnValueOnce(tracePacketResult);
+
+			const traceMsg = makeB01Message(DUID, (key) => {
+				if (key === Protocol.map_response) return Buffer.from('trace');
+				return undefined;
+			});
+
+			await listenerB01.onMessage(traceMsg);
+
+			// Assert — applySupportedAreasResult should NOT be called (early return for empty rooms)
+			expect(areaService.applySupportedAreasResult).not.toHaveBeenCalled();
+		});
+	});
 });

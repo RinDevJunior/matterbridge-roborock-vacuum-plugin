@@ -420,10 +420,11 @@ describe('B01MapParser', () => {
 
 			const result = parser.parseRoomsFromEncryptedBinary(tracePacket, 'MODEL', 'SERIAL');
 
-			// Verify trace packet routing: empty rooms, no mapId, currentPose set from last point
+			// Verify trace packet routing: empty rooms, no mapId, currentPose set from last point (MM-converted)
+			// x: Math.round(25500 + 100 * 2.5) = 25750, y: Math.round(25500 + 200 * 2.5) = 26000
 			expect(result.rooms).toEqual([]);
 			expect(result.mapId).toBeUndefined();
-			expect(result.currentPose).toEqual({ x: 100, y: 200 });
+			expect(result.currentPose).toEqual({ x: 25750, y: 26000 });
 			expect(result.roomMatrix).toBeUndefined();
 		});
 
@@ -472,8 +473,8 @@ describe('B01MapParser', () => {
 			tracePacket.writeInt16BE(60, 20);
 
 			const result = parser.parseRoomsFromEncryptedBinary(tracePacket, 'MODEL', 'SERIAL');
-			// Last point should be (50, 60)
-			expect(result.currentPose).toEqual({ x: 50, y: 60 });
+			// Last point (50, 60) converts to MM: x: Math.round(25500 + 50 * 2.5) = 25625, y: Math.round(25500 + 60 * 2.5) = 25650
+			expect(result.currentPose).toEqual({ x: 25625, y: 25650 });
 		});
 
 		it('throws distinguishable error for malformed trace packet (invalid marker)', () => {

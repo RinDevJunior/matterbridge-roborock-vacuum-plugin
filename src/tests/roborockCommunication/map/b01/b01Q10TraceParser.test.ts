@@ -4,6 +4,9 @@ import {
 	type B01TracePoint,
 	parseQ10TracePacket,
 	parseTracePacket,
+	Q10_TRACE_UNIT_MM,
+	ROBOROCK_COORDINATE_OFFSET_MM,
+	traceToRoborockMm,
 } from '../../../../roborockCommunication/map/b01/b01Q10TraceParser.js';
 
 describe('b01Q10TraceParser', () => {
@@ -418,7 +421,7 @@ describe('b01Q10TraceParser', () => {
 			expect(result.roomMatrix).toBeUndefined();
 		});
 
-		it('should set currentPose to last point when points exist', () => {
+		it('should set currentPose to last point when points exist (MM-converted)', () => {
 			const buffer = Buffer.alloc(18); // header + 2 points
 			buffer[0] = 0x02;
 			buffer[1] = 0x01;
@@ -428,7 +431,13 @@ describe('b01Q10TraceParser', () => {
 			buffer.writeInt16BE(40, 16);
 
 			const result = parseQ10TracePacket(buffer);
-			expect(result.currentPose).toEqual({ x: 30, y: 40 });
+			// Trace point (30, 40) converts to MM:
+			// x: Math.round(25500 + 30 * 2.5) = Math.round(25575) = 25575
+			// y: Math.round(25500 + 40 * 2.5) = Math.round(25600) = 25600
+			expect(result.currentPose).toEqual({
+				x: Math.round(ROBOROCK_COORDINATE_OFFSET_MM + 30 * Q10_TRACE_UNIT_MM),
+				y: Math.round(ROBOROCK_COORDINATE_OFFSET_MM + 40 * Q10_TRACE_UNIT_MM),
+			});
 		});
 
 		it('should set currentPose to undefined when no points (empty body)', () => {
@@ -440,7 +449,7 @@ describe('b01Q10TraceParser', () => {
 			expect(result.currentPose).toBeUndefined();
 		});
 
-		it('should set currentPose to last point after stray-leading-point filter', () => {
+		it('should set currentPose to last point after stray-leading-point filter (MM-converted)', () => {
 			// Create a packet with 4 points where first is an outlier and will be filtered
 			const buffer = Buffer.alloc(26);
 			buffer[0] = 0x02;
@@ -458,7 +467,11 @@ describe('b01Q10TraceParser', () => {
 
 			const result = parseQ10TracePacket(buffer);
 			// After filter, first point dropped, so currentPose should be the last remaining point (120, 0)
-			expect(result.currentPose).toEqual({ x: 120, y: 0 });
+			// Converts to MM: x: Math.round(25500 + 120 * 2.5), y: Math.round(25500 + 0 * 2.5)
+			expect(result.currentPose).toEqual({
+				x: Math.round(ROBOROCK_COORDINATE_OFFSET_MM + 120 * Q10_TRACE_UNIT_MM),
+				y: Math.round(ROBOROCK_COORDINATE_OFFSET_MM + 0 * Q10_TRACE_UNIT_MM),
+			});
 		});
 
 		it('should throw when payload has invalid marker', () => {
@@ -475,7 +488,7 @@ describe('b01Q10TraceParser', () => {
 			expect(() => parseQ10TracePacket(buffer)).toThrow(/Q10 trace packet: body length is not a multiple of 4/);
 		});
 
-		it('should return currentPose with x and y but no phi field', () => {
+		it('should return currentPose with x and y but no phi field (MM-converted)', () => {
 			const buffer = Buffer.alloc(14);
 			buffer[0] = 0x02;
 			buffer[1] = 0x01;
@@ -483,9 +496,81 @@ describe('b01Q10TraceParser', () => {
 			buffer.writeInt16BE(456, 12);
 
 			const result = parseQ10TracePacket(buffer);
-			expect(result.currentPose?.x).toBe(123);
-			expect(result.currentPose?.y).toBe(456);
+			// Trace point (123, 456) converts to MM
+			const expectedX = Math.round(ROBOROCK_COORDINATE_OFFSET_MM + 123 * Q10_TRACE_UNIT_MM);
+			const expectedY = Math.round(ROBOROCK_COORDINATE_OFFSET_MM + 456 * Q10_TRACE_UNIT_MM);
+			expect(result.currentPose?.x).toBe(expectedX);
+			expect(result.currentPose?.y).toBe(expectedY);
 			expect(result.currentPose?.phi).toBeUndefined();
+		});
+	});
+
+	describe('traceToRoborockMm', () => {
+		it('should convert (0, 0) to offset coordinates (25500, 25500)', () => {
+			const result = traceToRoborockMm(0, 0);
+			expect(result).toEqual({
+				x: ROBOROCK_COORDINATE_OFFSET_MM,
+				y: ROBOROCK_COORDINATE_OFFSET_MM,
+			});
+			expect(result.x).toBe(25500);
+			expect(result.y).toBe(25500);
+		});
+
+		it('should apply trace unit conversion (Q10_TRACE_UNIT_MM = 2.5)', () => {
+			const result = traceToRoborockMm(100, 200);
+			// x: Math.round(25500 + 100 * 2.5) = Math.round(25750) = 25750
+			// y: Math.round(25500 + 200 * 2.5) = Math.round(26000) = 26000
+			expect(result).toEqual({
+				x: Math.round(ROBOROCK_COORDINATE_OFFSET_MM + 100 * Q10_TRACE_UNIT_MM),
+				y: Math.round(ROBOROCK_COORDINATE_OFFSET_MM + 200 * Q10_TRACE_UNIT_MM),
+			});
+		});
+
+		it('should correctly convert user-provided sample from requirement.md', () => {
+			// Using the real sample from requirement.md
+			const traceX = -2184;
+			const traceY = -729;
+			const result = traceToRoborockMm(traceX, traceY);
+			// x: Math.round(25500 + -2184 * 2.5) = Math.round(25500 - 5460) = Math.round(20040) = 20040
+			// y: Math.round(25500 + -729 * 2.5) = Math.round(25500 - 1822.5) = Math.round(23677.5) = 23678
+			const expectedX = Math.round(ROBOROCK_COORDINATE_OFFSET_MM + traceX * Q10_TRACE_UNIT_MM);
+			const expectedY = Math.round(ROBOROCK_COORDINATE_OFFSET_MM + traceY * Q10_TRACE_UNIT_MM);
+			expect(result).toEqual({ x: expectedX, y: expectedY });
+		});
+
+		it('should handle negative coordinates', () => {
+			const result = traceToRoborockMm(-1000, -500);
+			// x: Math.round(25500 - 2500) = 23000
+			// y: Math.round(25500 - 1250) = 24250
+			expect(result.x).toBe(Math.round(ROBOROCK_COORDINATE_OFFSET_MM - 2500));
+			expect(result.y).toBe(Math.round(ROBOROCK_COORDINATE_OFFSET_MM - 1250));
+		});
+
+		it('should correctly round non-integer results via Math.round', () => {
+			// Trace value producing a non-integer mm result
+			// 3 * 2.5 = 7.5, which rounds to 8
+			const result = traceToRoborockMm(3, 5);
+			// x: Math.round(25500 + 3 * 2.5) = Math.round(25507.5) = 25508
+			// y: Math.round(25500 + 5 * 2.5) = Math.round(25512.5) = 25512 or 25513
+			const expectedX = Math.round(ROBOROCK_COORDINATE_OFFSET_MM + 3 * Q10_TRACE_UNIT_MM);
+			const expectedY = Math.round(ROBOROCK_COORDINATE_OFFSET_MM + 5 * Q10_TRACE_UNIT_MM);
+			expect(result).toEqual({ x: expectedX, y: expectedY });
+		});
+
+		it('should handle very large trace values', () => {
+			const result = traceToRoborockMm(10000, 32767);
+			// Should compute without overflow
+			const expectedX = Math.round(ROBOROCK_COORDINATE_OFFSET_MM + 10000 * Q10_TRACE_UNIT_MM);
+			const expectedY = Math.round(ROBOROCK_COORDINATE_OFFSET_MM + 32767 * Q10_TRACE_UNIT_MM);
+			expect(result).toEqual({ x: expectedX, y: expectedY });
+		});
+
+		it('should handle very small (negative) trace values', () => {
+			const result = traceToRoborockMm(-10000, -32768);
+			// Should compute without underflow
+			const expectedX = Math.round(ROBOROCK_COORDINATE_OFFSET_MM - 10000 * Q10_TRACE_UNIT_MM);
+			const expectedY = Math.round(ROBOROCK_COORDINATE_OFFSET_MM - 32768 * Q10_TRACE_UNIT_MM);
+			expect(result).toEqual({ x: expectedX, y: expectedY });
 		});
 	});
 });

@@ -66,6 +66,8 @@ describe('RoborockService - Comprehensive Coverage', () => {
 			startScene: vi.fn(),
 			setIotApi: vi.fn(),
 			clearAll: vi.fn(),
+			getV1ResolvedSegment: vi.fn(),
+			getB01ResolvedRoom: vi.fn(),
 		};
 
 		mockMessageService = {
@@ -421,6 +423,35 @@ describe('RoborockService - Comprehensive Coverage', () => {
 			await service.startClean(duid);
 
 			expect(mockMessageService.startClean).toHaveBeenCalledWith(duid, { type: 'global' });
+		});
+	});
+
+	describe('getB01ResolvedRoom', () => {
+		it('should return result from areaService.getB01ResolvedRoom passthrough', () => {
+			// Arrange
+			const testDuid = 'test-duid-b01';
+			const expectedRoomId = 5;
+			vi.mocked(mockAreaService.getB01ResolvedRoom)?.mockReturnValue(expectedRoomId);
+
+			// Act
+			const result = service.getB01ResolvedRoom(testDuid);
+
+			// Assert
+			expect(result).toBe(expectedRoomId);
+			expect(mockAreaService.getB01ResolvedRoom).toHaveBeenCalledWith(testDuid);
+		});
+
+		it('should return undefined when areaService returns undefined', () => {
+			// Arrange
+			const testDuid = 'test-duid-no-cache';
+			vi.mocked(mockAreaService.getB01ResolvedRoom)?.mockReturnValue(undefined);
+
+			// Act
+			const result = service.getB01ResolvedRoom(testDuid);
+
+			// Assert
+			expect(result).toBeUndefined();
+			expect(mockAreaService.getB01ResolvedRoom).toHaveBeenCalledWith(testDuid);
 		});
 	});
 });

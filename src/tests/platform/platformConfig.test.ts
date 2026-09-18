@@ -638,6 +638,37 @@ describe('PlatformConfigManager', () => {
 		it('createDefaultAdvancedFeature defaults enableEstimatedEndTime to false', () => {
 			expect(createDefaultAdvancedFeature().settings.enableEstimatedEndTime).toBe(false);
 		});
+
+		it('isB01LivePositionFallbackEnabled returns true when advanced feature enabled and enableB01LivePositionFallback = true', () => {
+			config.advancedFeature = {
+				enableAdvancedFeature: true,
+				settings: { ...createDefaultAdvancedFeature().settings, enableB01LivePositionFallback: true },
+			};
+			manager = PlatformConfigManager.create(config, mockLogger);
+			expect(manager.isB01LivePositionFallbackEnabled).toBe(true);
+		});
+
+		it('isB01LivePositionFallbackEnabled returns false when advanced feature disabled', () => {
+			config.advancedFeature = {
+				enableAdvancedFeature: false,
+				settings: { ...createDefaultAdvancedFeature().settings, enableB01LivePositionFallback: true },
+			};
+			manager = PlatformConfigManager.create(config, mockLogger);
+			expect(manager.isB01LivePositionFallbackEnabled).toBe(false);
+		});
+
+		it('isB01LivePositionFallbackEnabled returns false when enableB01LivePositionFallback = false', () => {
+			config.advancedFeature = {
+				enableAdvancedFeature: true,
+				settings: { ...createDefaultAdvancedFeature().settings, enableB01LivePositionFallback: false },
+			};
+			manager = PlatformConfigManager.create(config, mockLogger);
+			expect(manager.isB01LivePositionFallbackEnabled).toBe(false);
+		});
+
+		it('createDefaultAdvancedFeature defaults enableB01LivePositionFallback to false', () => {
+			expect(createDefaultAdvancedFeature().settings.enableB01LivePositionFallback).toBe(false);
+		});
 	});
 
 	describe('device filtering', () => {

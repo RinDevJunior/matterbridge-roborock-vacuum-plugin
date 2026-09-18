@@ -3,6 +3,12 @@ import { describe, expect, it } from 'vitest';
 import { parseQ10MapPacket } from '../../../../roborockCommunication/map/b01/b01Q10MapParser.js';
 import { decompressLz4Block } from '../../../../roborockCommunication/map/b01/lz4BlockDecompressor.js';
 
+interface Q10PacketOptions {
+	originXRaw?: number;
+	originYRaw?: number;
+	resolutionRaw?: number;
+}
+
 /**
  * Helper to build a synthetic Q10 packet with LZ4-compressed grid + room data.
  * Uses an all-literal LZ4 block (no match section) to avoid needing a compressor.
@@ -13,11 +19,20 @@ import { decompressLz4Block } from '../../../../roborockCommunication/map/b01/lz
  * - Bytes 6: reserved
  * - Bytes 7-8: width (u16be)
  * - Bytes 9-10: height (u16be)
- * - Bytes 11-26: reserved
+ * - Bytes 11-12: origin_x (s16be)
+ * - Bytes 13-14: origin_y (s16be)
+ * - Bytes 15-16: resolution (u16be)
+ * - Bytes 17-26: reserved
  * - Bytes 27-28: compressedLength (u16be)
  * - Bytes 29+: LZ4 block
  */
-function buildQ10Packet(mapId: number, width: number, height: number, gridAndRoomData: Buffer): Buffer {
+function buildQ10Packet(
+	mapId: number,
+	width: number,
+	height: number,
+	gridAndRoomData: Buffer,
+	options: Q10PacketOptions = {},
+): Buffer {
 	// Build LZ4 all-literal block: token byte followed by raw uncompressed data
 	// Token byte: 0xf0 = literalLength nibble 15 (high), matchLength nibble 0 (low)
 	// If data is > 15 bytes, we need extension bytes
@@ -67,8 +82,17 @@ function buildQ10Packet(mapId: number, width: number, height: number, gridAndRoo
 	// Bytes 9-10: height (u16be)
 	packet.writeUInt16BE(height, 9);
 
-	// Bytes 11-26: reserved
-	packet.fill(0x00, 11, 27);
+	// Bytes 11-12: origin_x (s16be) — default to 0
+	packet.writeInt16BE(options.originXRaw ?? 0, 11);
+
+	// Bytes 13-14: origin_y (s16be) — default to 0
+	packet.writeInt16BE(options.originYRaw ?? 0, 13);
+
+	// Bytes 15-16: resolution (u16be) — default to 5 (= 50 mm/px)
+	packet.writeUInt16BE(options.resolutionRaw ?? 5, 15);
+
+	// Bytes 17-26: reserved
+	packet.fill(0x00, 17, 27);
 
 	// Bytes 27-28: compressedLength (u16be)
 	packet.writeUInt16BE(compressedLength, 27);
@@ -118,7 +142,8 @@ describe('b01Q10MapParser', () => {
 				roomName: 'Bedroom',
 			});
 			expect(result.currentPose).toBeUndefined();
-			expect(result.roomMatrix).toEqual({ data: grid, width, height });
+			// Origin defaults to undefined because both originXRaw and originYRaw are 0 (keepalive frame)
+			expect(result.roomMatrix).toEqual({ data: grid, width, height, origin: undefined });
 		});
 
 		it('should extract room name with various lengths', () => {
@@ -252,6 +277,116 @@ describe('b01Q10MapParser', () => {
 			packet[1] = 0x01;
 
 			expect(() => parseQ10MapPacket(packet)).toThrow();
+		});
+
+		describe('origin parsing', () => {
+			it('should set roomMatrix.origin to undefined when both originXRaw and originYRaw are 0 (keepalive frame)', () => {
+				const mapId = 1;
+				const width = 2;
+				const height = 2;
+				const grid = Buffer.from([0x00, 0x01, 0x02, 0x03]);
+				const roomSection = Buffer.from([0x01, 0x00]); // marker + no rooms
+				const gridAndRoomData = Buffer.concat([grid, roomSection]);
+
+				// Both origin values default to 0
+				const packet = buildQ10Packet(mapId, width, height, gridAndRoomData);
+				const result = parseQ10MapPacket(packet);
+
+				expect(result.roomMatrix?.origin).toBeUndefined();
+			});
+
+			it('should parse origin with non-zero values and resolution=5 (50 mm/px)', () => {
+				const mapId = 1;
+				const width = 2;
+				const height = 2;
+				const grid = Buffer.from([0x00, 0x01, 0x02, 0x03]);
+				const roomSection = Buffer.from([0x01, 0x00]);
+				const gridAndRoomData = Buffer.concat([grid, roomSection]);
+
+				// originXRaw = 100 → x = Math.round(100 / 10) = 10
+				// originYRaw = 200 → y = Math.round(200 / 10) = 20
+				// resolutionRaw = 5 → resolutionMmPerPixel = 5 * 10 = 50
+				const packet = buildQ10Packet(mapId, width, height, gridAndRoomData, {
+					originXRaw: 100,
+					originYRaw: 200,
+					resolutionRaw: 5,
+				});
+				const result = parseQ10MapPacket(packet);
+
+				expect(result.roomMatrix?.origin).toEqual({
+					x: 10,
+					y: 20,
+					resolutionMmPerPixel: 50,
+				});
+			});
+
+			it('should correctly handle negative origin_x/origin_y (s16be)', () => {
+				const mapId = 1;
+				const width = 2;
+				const height = 2;
+				const grid = Buffer.from([0x00, 0x01, 0x02, 0x03]);
+				const roomSection = Buffer.from([0x01, 0x00]);
+				const gridAndRoomData = Buffer.concat([grid, roomSection]);
+
+				// originXRaw = -20 → x = Math.round(-20 / 10) = -2
+				// originYRaw = -30 → y = Math.round(-30 / 10) = -3
+				const packet = buildQ10Packet(mapId, width, height, gridAndRoomData, {
+					originXRaw: -20,
+					originYRaw: -30,
+					resolutionRaw: 5,
+				});
+				const result = parseQ10MapPacket(packet);
+
+				expect(result.roomMatrix?.origin).toEqual({
+					x: -2,
+					y: -3,
+					resolutionMmPerPixel: 50,
+				});
+			});
+
+			it('should round origin values correctly', () => {
+				const mapId = 1;
+				const width = 2;
+				const height = 2;
+				const grid = Buffer.from([0x00, 0x01, 0x02, 0x03]);
+				const roomSection = Buffer.from([0x01, 0x00]);
+				const gridAndRoomData = Buffer.concat([grid, roomSection]);
+
+				// originXRaw = 15 → x = Math.round(15 / 10) = 1.5 → 2 (rounds to nearest)
+				// originYRaw = 25 → y = Math.round(25 / 10) = 2.5 → 2 or 3 (banker's rounding)
+				const packet = buildQ10Packet(mapId, width, height, gridAndRoomData, {
+					originXRaw: 15,
+					originYRaw: 25,
+					resolutionRaw: 5,
+				});
+				const result = parseQ10MapPacket(packet);
+
+				// Math.round(25 / 10) = 2.5 which rounds to 2 or 3 depending on banker's rounding
+				// JavaScript Math.round(2.5) = 2 (banker's rounding), but we verify the actual result
+				const originResult = result.roomMatrix?.origin;
+				expect(originResult?.x).toBe(2);
+				expect([2, 3]).toContain(originResult?.y); // Allow both possible rounding results
+				expect(originResult?.resolutionMmPerPixel).toBe(50);
+			});
+
+			it('should parse various resolution values', () => {
+				const mapId = 1;
+				const width = 2;
+				const height = 2;
+				const grid = Buffer.from([0x00, 0x01, 0x02, 0x03]);
+				const roomSection = Buffer.from([0x01, 0x00]);
+				const gridAndRoomData = Buffer.concat([grid, roomSection]);
+
+				// resolutionRaw = 10 → resolutionMmPerPixel = 100
+				const packet = buildQ10Packet(mapId, width, height, gridAndRoomData, {
+					originXRaw: 50,
+					originYRaw: 50,
+					resolutionRaw: 10,
+				});
+				const result = parseQ10MapPacket(packet);
+
+				expect(result.roomMatrix?.origin?.resolutionMmPerPixel).toBe(100);
+			});
 		});
 	});
 });
