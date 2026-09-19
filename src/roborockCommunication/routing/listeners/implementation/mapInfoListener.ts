@@ -179,6 +179,12 @@ export class MapInfoListener implements AbstractMessageListener {
 
 		try {
 			const b01Info = this.b01MapParser.parseRoomsFromEncryptedBinary(mapBuffer, modelShortCode, this.deviceSerial);
+			if (b01Info.roomMatrix) {
+				this.areaService.setQ10RoomMatrix(this.duid, b01Info.roomMatrix);
+			}
+			if (b01Info.currentPose) {
+				this.areaService.resolveQ10RoomFromPose(this.duid, b01Info.currentPose);
+			}
 			if (b01Info.rooms.length === 0) {
 				this.logger.debug(`[${this.duid}] MapInfoListener: B01 map binary has no rooms`);
 				return;

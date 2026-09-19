@@ -295,6 +295,16 @@ export class RoborockService {
 		return this.areaService.requestV1MapRefresh(duid);
 	}
 
+	/** Get Q10 resolved room ID from cache if available and not stale. */
+	public getQ10ResolvedRoom(duid: string): number | undefined {
+		return this.areaService.getQ10ResolvedRoom(duid);
+	}
+
+	/** Clear Q10 room resolution cache/state for a device. */
+	public clearQ10RoomResolution(duid: string): void {
+		this.areaService.clearQ10RoomResolution(duid);
+	}
+
 	/** Get all scenes for a home. */
 	public async getScenes(homeId: number): Promise<Scene[] | undefined> {
 		return this.areaService.getScenes(homeId);

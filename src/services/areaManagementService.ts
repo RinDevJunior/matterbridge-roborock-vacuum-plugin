@@ -14,6 +14,9 @@ import {
 } from '../initialData/getSupportedAreas.js';
 import { mergeSupportedAreasByMap } from '../initialData/mergeSupportedAreasByMap.js';
 import { RoborockIoTApi } from '../roborockCommunication/api/iotClient.js';
+import { GridCalibration, solveQ10GridCalibration } from '../roborockCommunication/map/b01/q10GridCalibration.js';
+import { resolveRoomFromPose } from '../roborockCommunication/map/b01/roomMatrixResolver.js';
+import { B01Pose, B01RoomMatrix } from '../roborockCommunication/map/b01/types.js';
 import { HomeModelMapper, RawRoomMappingData, RoomDto } from '../roborockCommunication/models/home/index.js';
 import { Scene } from '../roborockCommunication/models/index.js';
 import { MessageRoutingService } from './index.js';
@@ -34,8 +37,15 @@ export class AreaManagementService {
 	private mapInfoCache = new Map<string, MapInfo>();
 	private v1RoomResolutionCache = new Map<string, { segmentId: number; resolvedAtMs: number }>();
 	private v1PendingResolution = new Map<string, { segmentId: number; consecutiveCount: number }>();
+	private q10RoomMatrixCache = new Map<string, B01RoomMatrix>();
+	private q10TracePointsBuffer = new Map<string, { x: number; y: number }[]>();
+	private q10CalibrationCache = new Map<string, GridCalibration>();
+	private q10RoomResolutionCache = new Map<string, { roomId: number; resolvedAtMs: number }>();
+	private q10PendingResolution = new Map<string, { roomId: number; consecutiveCount: number }>();
 
 	private static readonly V1_SEGMENT_CONFIRMATION_THRESHOLD = 2;
+	private static readonly Q10_ROOM_CONFIRMATION_THRESHOLD = 2;
+	private static readonly Q10_TRACE_POINT_BUFFER_CAP = 30;
 
 	constructor(
 		private readonly logger: AnsiLogger,
@@ -422,6 +432,61 @@ export class AreaManagementService {
 		}
 	}
 
+	public setQ10RoomMatrix(duid: string, roomMatrix: B01RoomMatrix): void {
+		this.q10RoomMatrixCache.set(duid, roomMatrix);
+	}
+
+	public resolveQ10RoomFromPose(duid: string, pose: B01Pose | undefined): void {
+		if (!pose) return;
+		const roomMatrix = this.q10RoomMatrixCache.get(duid);
+		if (!roomMatrix) return;
+
+		const buffer = this.q10TracePointsBuffer.get(duid) ?? [];
+		buffer.push({ x: pose.x, y: pose.y });
+		if (buffer.length > AreaManagementService.Q10_TRACE_POINT_BUFFER_CAP) {
+			buffer.shift();
+		}
+		this.q10TracePointsBuffer.set(duid, buffer);
+
+		let calibration = this.q10CalibrationCache.get(duid);
+		if (!calibration) {
+			const solved = solveQ10GridCalibration(buffer, roomMatrix);
+			if (solved) {
+				calibration = solved;
+				this.q10CalibrationCache.set(duid, solved);
+			}
+		}
+
+		const roomId = resolveRoomFromPose(pose, roomMatrix, calibration);
+		if (roomId === undefined) return;
+
+		const pending = this.q10PendingResolution.get(duid);
+		const consecutiveCount = pending && pending.roomId === roomId ? pending.consecutiveCount + 1 : 1;
+		this.q10PendingResolution.set(duid, { roomId, consecutiveCount });
+
+		const confirmed = consecutiveCount >= AreaManagementService.Q10_ROOM_CONFIRMATION_THRESHOLD;
+		this.logger.debug('AreaManagementService - resolveQ10RoomFromPose', { duid, roomId, consecutiveCount, confirmed });
+
+		if (confirmed) {
+			this.q10RoomResolutionCache.set(duid, { roomId, resolvedAtMs: Date.now() });
+		}
+	}
+
+	public getQ10ResolvedRoom(duid: string, maxAgeMs = 30_000): number | undefined {
+		const cached = this.q10RoomResolutionCache.get(duid);
+		if (!cached) return undefined;
+		if (Date.now() - cached.resolvedAtMs > maxAgeMs) return undefined;
+		return cached.roomId;
+	}
+
+	public clearQ10RoomResolution(duid: string): void {
+		this.q10RoomMatrixCache.delete(duid);
+		this.q10TracePointsBuffer.delete(duid);
+		this.q10CalibrationCache.delete(duid);
+		this.q10RoomResolutionCache.delete(duid);
+		this.q10PendingResolution.delete(duid);
+	}
+
 	/** Clear all area management data and stop all refresh timers. */
 	public clearAll(): void {
 		for (const duid of this.refreshIntervals.keys()) {
@@ -439,6 +504,11 @@ export class AreaManagementService {
 		this.mapInfoCache.clear();
 		this.v1RoomResolutionCache.clear();
 		this.v1PendingResolution.clear();
+		this.q10RoomMatrixCache.clear();
+		this.q10TracePointsBuffer.clear();
+		this.q10CalibrationCache.clear();
+		this.q10RoomResolutionCache.clear();
+		this.q10PendingResolution.clear();
 		this.logger.debug('AreaManagementService - All data cleared');
 	}
 }

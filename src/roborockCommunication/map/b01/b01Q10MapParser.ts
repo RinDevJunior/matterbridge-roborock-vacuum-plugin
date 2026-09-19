@@ -12,6 +12,8 @@ export function parseQ10MapPacket(payload: Buffer): B01MapInfo {
 	const mapId = payload.readUInt32BE(2);
 	const width = payload.readUInt16BE(7);
 	const height = payload.readUInt16BE(9);
+	const originX = payload.readInt16BE(11);
+	const originY = payload.readInt16BE(13);
 	const compressedLength = payload.readUInt16BE(27);
 
 	if (width <= 0 || height <= 0 || HEADER_SIZE + compressedLength > payload.length) {
@@ -21,6 +23,7 @@ export function parseQ10MapPacket(payload: Buffer): B01MapInfo {
 	const decoded = decompressLz4Block(payload.subarray(HEADER_SIZE, HEADER_SIZE + compressedLength));
 
 	const gridSize = width * height;
+	const grid = decoded.subarray(0, gridSize);
 	const roomSection = decoded.subarray(gridSize);
 	if (roomSection.length < 2 || roomSection[0] !== 0x01) {
 		throw new Error('Q10 map packet: unrecognized room-section layout after grid split');
@@ -41,5 +44,10 @@ export function parseQ10MapPacket(payload: Buffer): B01MapInfo {
 		rooms.push({ roomId, roomName });
 	}
 
-	return { rooms, mapId, currentPose: undefined, roomMatrix: undefined };
+	return {
+		rooms,
+		mapId,
+		currentPose: undefined,
+		roomMatrix: { data: grid, width, height, originX, originY, roomIds: rooms.map((r) => r.roomId) },
+	};
 }

@@ -4,6 +4,28 @@ Entries are listed in reverse chronological order (most recent first). Older ent
 
 ---
 
+## 2026-09-18 — Implement Q10 live room tracking (grid calibration + trace-header fix)
+
+**Task:** Wire live Q10 robot position (via trace packets) into room resolution using grid-based roomMatrix lookup with auto-calibration search. Includes fixing 10→14 byte trace-packet header bug, extracting calibration parameters from Q10 LZ4 map binary, implementing search algorithm, and integrating into serviceAreaHandler for live CurrentArea/Progress updates during a clean.
+
+**Changes:**
+
+- `src/roborockCommunication/map/b01/b01Q10TraceParser.ts` — fixed TRACE_HEADER_LENGTH from 10 to 14 bytes; added heading field decode (s16be, offset 10-11) into B01Pose.phi; removed dropStrayLeadingPoint workaround and its associated constants
+- `src/roborockCommunication/map/b01/b01MapParser.ts` — updated to skip 14-byte header; wired trace packet hooks into mapInfoListener via b01Q10TraceParser fallback path
+- `src/roborockCommunication/map/b01/b01Q10MapParser.ts` — extended to capture grid bytes + calibration origin (origin_x/origin_y from bytes 11-14) into new B01RoomMatrix fields
+- `src/roborockCommunication/map/b01/roomMatrixResolver.ts` — added calibration parameter; implemented real pixel-lookup (world_to_pixel grid index -> cellValue decode -> room ID sanity-check); preserved "MUST NEVER THROW" contract with undefined fallback
+- `src/roborockCommunication/map/b01/q10GridCalibration.ts` — NEW pure module: ported solve_calibration_with_origin search (12.0–26.0 trace-units/pixel, step 0.5, Y-sign variants) to find best-fit calibration from rolling trace-point buffer + grid
+- `src/roborockCommunication/map/b01/types.ts` — extended B01RoomMatrix with grid bytes + calibration fields; added GridCalibration type
+- `src/roborockCommunication/routing/listeners/implementation/mapInfoListener.ts` — added hooks to store roomMatrix on grid-packet arrival and trigger resolution on trace-packet currentPose
+- `src/services/areaManagementService.ts` — added durable Q10 grid/calibration/point-buffer/resolved-room state (mirrors v1RoomResolutionCache pattern); exposed resolveQ10RoomFromPose + getQ10ResolvedRoom (2-consecutive-match confirmation gate) + clearQ10RoomResolution
+- `src/runtimes/handlers/serviceAreaHandler.ts` — added resolveQ10CurrentArea function; wired as ?? fallback in handleCleaningWithoutInfo; added clearQ10RoomResolution calls at 3 progress-reset trigger points
+- `src/services/roborockService.ts` — updated to call new resolver during live room tracking
+- `src/cli/commands/b01PoseInfo.ts` — CLI improvements for trace info display
+- All test files updated (b01MapParser.test.ts, b01Q10MapParser.test.ts, b01Q10TraceParser.test.ts, roomMatrixResolver.test.ts, serviceAreaHandler.test.ts, b01PoseInfo.test.ts, testUtils.ts)
+- `src/tests/roborockCommunication/map/b01/q10GridCalibration.test.ts` — NEW comprehensive test suite for calibration search algorithm
+
+**Outcome:** Pass (full test:ci suite passing, 300+ tests green). Approved by user, no blocking issues. Two non-blocking follow-ups flagged: (1) Q7 devices run unnecessary calibration search (no-op due to missing roomMatrix)—consider gating mapInfoListener.ts hooks on roomMatrix.width > 0; (2) b01-pose-info CLI's stale "not yet implemented" message text should be updated. Still-open item: worldToPixel coordinate formula is implementation-hypothesis pending real-device validation via b01-pose-info CLI before treating as fully hardware-confirmed.
+
 ## 2026-08-03 — Fix room-detection flip-flop bug on V1 map devices
 
 **Task:** Fix spurious room-detection oscillation on Roborock S8/V1 map devices where ServiceArea.currentArea flipped between non-adjacent rooms every 1-2 minutes due to pose noise near corridor hubs. Root cause: AreaManagementService.setV1ResolvedSegment published room resolutions immediately on each map push with no temporal smoothing, causing false positive room changes.

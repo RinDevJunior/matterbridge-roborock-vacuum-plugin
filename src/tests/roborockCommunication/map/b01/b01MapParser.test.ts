@@ -409,21 +409,22 @@ describe('B01MapParser', () => {
 		it('routes buffer starting with 0x02 0x01 marker to trace path', () => {
 			// Build a synthetic trace packet
 			// Marker: 0x02 0x01
-			// Header (10 bytes total) with session counter at offset 3
-			// Body: single point pair (x=100, y=200) at offsets 10-13
-			const tracePacket = Buffer.alloc(14);
+			// Header (14 bytes total) with session counter at offset 3, heading at offset 10
+			// Body: single point pair (x=100, y=200) at offsets 14-17
+			const tracePacket = Buffer.alloc(18);
 			tracePacket[0] = 0x02;
 			tracePacket[1] = 0x01;
 			tracePacket[3] = 5; // session counter
-			tracePacket.writeInt16BE(100, 10);
-			tracePacket.writeInt16BE(200, 12);
+			tracePacket.writeInt16BE(45, 10); // heading at offset 10
+			tracePacket.writeInt16BE(100, 14); // first point x at offset 14
+			tracePacket.writeInt16BE(200, 16); // first point y at offset 16
 
 			const result = parser.parseRoomsFromEncryptedBinary(tracePacket, 'MODEL', 'SERIAL');
 
-			// Verify trace packet routing: empty rooms, no mapId, currentPose set from last point
+			// Verify trace packet routing: empty rooms, no mapId, currentPose set from last point with heading
 			expect(result.rooms).toEqual([]);
 			expect(result.mapId).toBeUndefined();
-			expect(result.currentPose).toEqual({ x: 100, y: 200 });
+			expect(result.currentPose).toEqual({ x: 100, y: 200, phi: 45 });
 			expect(result.roomMatrix).toBeUndefined();
 		});
 
@@ -450,8 +451,8 @@ describe('B01MapParser', () => {
 		});
 
 		it('returns undefined currentPose when trace packet has no body (header only)', () => {
-			// Minimal trace packet: header only (10 bytes), no point body
-			const tracePacket = Buffer.alloc(10);
+			// Minimal trace packet: header only (14 bytes), no point body
+			const tracePacket = Buffer.alloc(14);
 			tracePacket[0] = 0x02;
 			tracePacket[1] = 0x01;
 
@@ -460,20 +461,22 @@ describe('B01MapParser', () => {
 		});
 
 		it('handles multiple points in trace packet, returning last as currentPose', () => {
-			// Build trace packet with 3 points
-			const tracePacket = Buffer.alloc(22);
+			// Build trace packet with 3 points: 14-byte header + 12 bytes (3 points x 4 bytes)
+			const tracePacket = Buffer.alloc(26);
 			tracePacket[0] = 0x02;
 			tracePacket[1] = 0x01;
-			tracePacket.writeInt16BE(10, 10);
-			tracePacket.writeInt16BE(20, 12);
-			tracePacket.writeInt16BE(30, 14);
-			tracePacket.writeInt16BE(40, 16);
-			tracePacket.writeInt16BE(50, 18);
-			tracePacket.writeInt16BE(60, 20);
+			tracePacket.writeInt16BE(90, 10); // heading at offset 10
+			// Points start at offset 14
+			tracePacket.writeInt16BE(10, 14);
+			tracePacket.writeInt16BE(20, 16);
+			tracePacket.writeInt16BE(30, 18);
+			tracePacket.writeInt16BE(40, 20);
+			tracePacket.writeInt16BE(50, 22);
+			tracePacket.writeInt16BE(60, 24);
 
 			const result = parser.parseRoomsFromEncryptedBinary(tracePacket, 'MODEL', 'SERIAL');
-			// Last point should be (50, 60)
-			expect(result.currentPose).toEqual({ x: 50, y: 60 });
+			// Last point should be (50, 60) with heading (90) as phi
+			expect(result.currentPose).toEqual({ x: 50, y: 60, phi: 90 });
 		});
 
 		it('throws distinguishable error for malformed trace packet (invalid marker)', () => {
@@ -488,8 +491,8 @@ describe('B01MapParser', () => {
 		});
 
 		it('throws distinguishable error for trace packet with non-4-byte-aligned body', () => {
-			// Buffer starts with 0x02 0x01 (trace marker) but has 5 bytes in body (not divisible by 4)
-			const malformedPacket = Buffer.alloc(15);
+			// Buffer starts with 0x02 0x01 (trace marker), 14-byte header + 5 bytes body (not divisible by 4)
+			const malformedPacket = Buffer.alloc(19);
 			malformedPacket[0] = 0x02;
 			malformedPacket[1] = 0x01;
 

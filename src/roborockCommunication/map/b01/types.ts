@@ -13,8 +13,13 @@ export interface B01Pose {
 }
 
 export interface B01RoomMatrix {
-	/** Raw undecoded matrix bytes as received from the RobotMap protobuf push. */
+	/** Grid bytes (one byte per cell, `(byte & 0xFC) >> 2` decodes the roomId). */
 	data: Buffer;
+	width: number;
+	height: number;
+	originX: number;
+	originY: number;
+	roomIds: number[];
 }
 
 export interface B01MapInfo {

@@ -115,7 +115,9 @@ export class B01MapParser {
 		const roomMatrixRaw = decoded.roomMatrix as Record<string, unknown> | undefined;
 		const matrixBytes = roomMatrixRaw?.matrix;
 		const roomMatrix: B01RoomMatrix | undefined =
-			Buffer.isBuffer(matrixBytes) && matrixBytes.length > 0 ? { data: matrixBytes } : undefined;
+			Buffer.isBuffer(matrixBytes) && matrixBytes.length > 0
+				? { data: matrixBytes, width: 0, height: 0, originX: 0, originY: 0, roomIds: [] }
+				: undefined;
 
 		if (!roomDataInfo || roomDataInfo.length === 0) {
 			return { rooms: [], mapId, currentPose, roomMatrix };

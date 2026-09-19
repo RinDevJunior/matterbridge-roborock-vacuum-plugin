@@ -19,7 +19,7 @@ import {
 import { RoborockService } from '../../../services/roborockService.js';
 import type { ServiceAreaUpdateMessage } from '../../../types/MessagePayloads.js';
 import { RoborockVacuumCleaner } from '../../../types/roborockVacuumCleaner.js';
-import { asPartial, createMockLogger } from '../../helpers/testUtils.js';
+import { asPartial, createMockLogger, createMockRoborockService } from '../../helpers/testUtils.js';
 
 function createMockConfigManager(estimatedEndTimeEnabled = false): PlatformConfigManager {
 	return asPartial<PlatformConfigManager>({
@@ -35,7 +35,7 @@ function createMockPlatform(
 	return asPartial<RoborockMatterbridgePlatform>({
 		log: createMockLogger(),
 		configManager: createMockConfigManager(estimatedEndTimeEnabled),
-		roborockService: asPartial<RoborockService>({
+		roborockService: createMockRoborockService({
 			getSupportedAreas: vi.fn().mockReturnValue(areas),
 			getSupportedAreasIndexMap: vi.fn().mockReturnValue(indexMap),
 			getSelectedAreas: vi.fn().mockReturnValue([]),
@@ -206,7 +206,7 @@ describe('handleServiceAreaUpdate with progress', () => {
 			{ areaId: 2, status: ServiceArea.OperationalStatus.Operating },
 		];
 
-		const mockRoborockService = asPartial<RoborockService>({
+		const mockRoborockService = createMockRoborockService({
 			getSelectedAreas: vi.fn().mockReturnValue(selectedAreas),
 			getProgress: vi.fn().mockReturnValue(initialProgress),
 			setProgress: vi.fn(),
@@ -235,7 +235,7 @@ describe('handleServiceAreaUpdate with progress', () => {
 
 	it('should initialize progress when cleaning starts with single selected area', async () => {
 		const selectedAreas = [5];
-		const mockRoborockService = asPartial<RoborockService>({
+		const mockRoborockService = createMockRoborockService({
 			getSelectedAreas: vi.fn().mockReturnValue(selectedAreas),
 			getProgress: vi.fn().mockReturnValue([]),
 			setProgress: vi.fn(),
@@ -286,7 +286,7 @@ describe('handleServiceAreaUpdate with progress', () => {
 
 	it('should handle progress when no prior progress exists on clean start', async () => {
 		const selectedAreas = [10];
-		const mockRoborockService = asPartial<RoborockService>({
+		const mockRoborockService = createMockRoborockService({
 			getSelectedAreas: vi.fn().mockReturnValue(selectedAreas),
 			getProgress: vi.fn().mockReturnValue([]),
 			setProgress: vi.fn(),
@@ -327,7 +327,7 @@ describe('handleServiceAreaUpdate with progress', () => {
 			{ areaId: 2, status: ServiceArea.OperationalStatus.Pending },
 		];
 
-		const mockRoborockService = asPartial<RoborockService>({
+		const mockRoborockService = createMockRoborockService({
 			getSelectedAreas: vi.fn().mockReturnValue(selectedAreas),
 			getProgress: vi.fn().mockReturnValue(initialProgress),
 			setProgress: vi.fn(),
@@ -356,7 +356,7 @@ describe('handleServiceAreaUpdate with progress', () => {
 
 	it('should not update progress when cleaning_info is undefined and clean_area is 0', async () => {
 		const selectedAreas = [1];
-		const mockRoborockService = asPartial<RoborockService>({
+		const mockRoborockService = createMockRoborockService({
 			getSelectedAreas: vi.fn().mockReturnValue(selectedAreas),
 			getProgress: vi.fn().mockReturnValue([]),
 			setProgress: vi.fn(),
@@ -398,7 +398,7 @@ describe('handleServiceAreaUpdate idle clears currentArea', () => {
 		const platform = asPartial<RoborockMatterbridgePlatform>({
 			log: createMockLogger(),
 			configManager: createMockConfigManager(),
-			roborockService: asPartial<RoborockService>({
+			roborockService: createMockRoborockService({
 				getSelectedAreas: vi.fn().mockReturnValue([1]),
 				getProgress: vi.fn().mockReturnValue([]),
 				setProgress: vi.fn(),
@@ -431,7 +431,7 @@ describe('handleServiceAreaUpdate multi-room without cleaning_info', () => {
 
 	it('should keep selectedAreas and set currentArea to first selected when clean_time > 0', async () => {
 		const selectedAreas = [10, 20];
-		const mockRoborockService = asPartial<RoborockService>({
+		const mockRoborockService = createMockRoborockService({
 			getSelectedAreas: vi.fn().mockReturnValue(selectedAreas),
 			getProgress: vi.fn().mockReturnValue([]),
 			setProgress: vi.fn(),
@@ -466,7 +466,7 @@ describe('handleServiceAreaUpdate multi-room without cleaning_info', () => {
 
 	it('should fall back to selectedAreas[0] on first no-info update when no last-known currentArea exists', async () => {
 		const selectedAreas = [0, 1, 2];
-		const mockRoborockService = asPartial<RoborockService>({
+		const mockRoborockService = createMockRoborockService({
 			getSelectedAreas: vi.fn().mockReturnValue(selectedAreas),
 			getProgress: vi.fn().mockReturnValue([]),
 			setProgress: vi.fn(),
@@ -506,7 +506,7 @@ describe('handleServiceAreaUpdate multi-room without cleaning_info', () => {
 	it('should use last-known currentArea when it exists and is in selectedAreas', async () => {
 		const selectedAreas = [0, 1, 2];
 		const lastKnownArea = 2;
-		const mockRoborockService = asPartial<RoborockService>({
+		const mockRoborockService = createMockRoborockService({
 			getSelectedAreas: vi.fn().mockReturnValue(selectedAreas),
 			getProgress: vi.fn().mockReturnValue([]),
 			setProgress: vi.fn(),
@@ -546,7 +546,7 @@ describe('handleServiceAreaUpdate multi-room without cleaning_info', () => {
 	it('should use last-known currentArea = 0 when it is falsy but valid and in selectedAreas', async () => {
 		const selectedAreas = [0, 1, 2];
 		const lastKnownArea = 0;
-		const mockRoborockService = asPartial<RoborockService>({
+		const mockRoborockService = createMockRoborockService({
 			getSelectedAreas: vi.fn().mockReturnValue(selectedAreas),
 			getProgress: vi.fn().mockReturnValue([]),
 			setProgress: vi.fn(),
@@ -586,7 +586,7 @@ describe('handleServiceAreaUpdate multi-room without cleaning_info', () => {
 	it('should fall back to selectedAreas[0] when last-known currentArea is stale (not in selectedAreas)', async () => {
 		const selectedAreas = [1, 2];
 		const staleArea = 5;
-		const mockRoborockService = asPartial<RoborockService>({
+		const mockRoborockService = createMockRoborockService({
 			getSelectedAreas: vi.fn().mockReturnValue(selectedAreas),
 			getProgress: vi.fn().mockReturnValue([]),
 			setProgress: vi.fn(),
@@ -671,7 +671,7 @@ describe('resolveAreaFromCleaningInfo — progress updates with area resolution'
 		]);
 		const indexMap = new RoomIndexMap(roomMapData, roomInfo);
 
-		const mockRoborockService = asPartial<RoborockService>({
+		const mockRoborockService = createMockRoborockService({
 			getSupportedAreas: vi.fn().mockReturnValue([]),
 			getSupportedAreasIndexMap: vi.fn().mockReturnValue(indexMap),
 			getSelectedAreas: vi.fn().mockReturnValue(selectedAreas),
@@ -735,7 +735,7 @@ describe('resolveAreaFromCleaningInfo — progress updates with area resolution'
 		]);
 		const indexMap = new RoomIndexMap(roomMapData, roomInfo);
 
-		const mockRoborockService = asPartial<RoborockService>({
+		const mockRoborockService = createMockRoborockService({
 			getSupportedAreas: vi.fn().mockReturnValue([]),
 			getSupportedAreasIndexMap: vi.fn().mockReturnValue(indexMap),
 			getSelectedAreas: vi.fn().mockReturnValue(selectedAreas),
@@ -800,7 +800,7 @@ describe('resolveAreaFromCleaningInfo — progress updates with area resolution'
 		]);
 		const indexMap = new RoomIndexMap(roomMapData, roomInfo);
 
-		const mockRoborockService = asPartial<RoborockService>({
+		const mockRoborockService = createMockRoborockService({
 			getSupportedAreas: vi.fn().mockReturnValue([]),
 			getSupportedAreasIndexMap: vi.fn().mockReturnValue(indexMap),
 			getSelectedAreas: vi.fn().mockReturnValue(selectedAreas),
@@ -852,7 +852,7 @@ describe('resolveAreaFromCleaningInfo — progress updates with area resolution'
 		const indexMap = new RoomIndexMap(roomMapData, roomInfo);
 		// No mapping for segment 999
 
-		const mockRoborockService = asPartial<RoborockService>({
+		const mockRoborockService = createMockRoborockService({
 			getSupportedAreas: vi.fn().mockReturnValue([]),
 			getSupportedAreasIndexMap: vi.fn().mockReturnValue(indexMap),
 			getSelectedAreas: vi.fn().mockReturnValue(selectedAreas),
@@ -898,7 +898,7 @@ describe('resolveAreaFromCleaningInfo — progress updates with area resolution'
 		const indexMap = new RoomIndexMap(roomMapData, roomInfo);
 		// No mapping for segment 99
 
-		const mockRoborockService = asPartial<RoborockService>({
+		const mockRoborockService = createMockRoborockService({
 			getSupportedAreas: vi.fn().mockReturnValue([]),
 			getSupportedAreasIndexMap: vi.fn().mockReturnValue(indexMap),
 			getSelectedAreas: vi.fn().mockReturnValue(selectedAreas),
@@ -955,7 +955,7 @@ describe('handleServiceAreaUpdate estimatedEndTime', () => {
 		estimatedEndTimeEnabled: boolean,
 		selectedAreas: number[] = [1],
 	): RoborockMatterbridgePlatform {
-		const mockRoborockService = asPartial<RoborockService>({
+		const mockRoborockService = createMockRoborockService({
 			getSupportedAreas: vi.fn().mockReturnValue([]),
 			getSupportedAreasIndexMap: vi.fn().mockReturnValue(indexMap),
 			getSelectedAreas: vi.fn().mockReturnValue(selectedAreas),
@@ -1035,7 +1035,7 @@ describe('handleServiceAreaUpdate estimatedEndTime', () => {
 		const expectedNow = Math.floor(Date.now() / 1000);
 
 		const selectedAreas = [10, 20];
-		const mockRoborockService = asPartial<RoborockService>({
+		const mockRoborockService = createMockRoborockService({
 			getSelectedAreas: vi.fn().mockReturnValue(selectedAreas),
 			getProgress: vi.fn().mockReturnValue([]),
 			setProgress: vi.fn(),
@@ -1117,7 +1117,7 @@ describe('handleServiceAreaUpdate estimatedEndTime', () => {
 
 	it('should clear currentArea and estimatedEndTime when traveling with clean_time 0', async () => {
 		const selectedAreas = [10];
-		const mockRoborockService = asPartial<RoborockService>({
+		const mockRoborockService = createMockRoborockService({
 			getSelectedAreas: vi.fn().mockReturnValue(selectedAreas),
 			getProgress: vi.fn().mockReturnValue([]),
 			setProgress: vi.fn(),
@@ -1323,7 +1323,7 @@ describe('resolveAreaFromCleaningInfo — fallback to getAreaIdV2 (Bug 1)', () =
 		const indexMap = new RoomIndexMap(roomMapData, roomInfo);
 
 		robot = createMockRobot('test-duid-composite', 100); // activeMapId = 100 matches
-		const mockRoborockService = asPartial<RoborockService>({
+		const mockRoborockService = createMockRoborockService({
 			getSupportedAreas: vi.fn().mockReturnValue([{ areaId: 1, mapId: 100 } as ServiceArea.Area]),
 			getSupportedAreasIndexMap: vi.fn().mockReturnValue(indexMap),
 			getSelectedAreas: vi.fn().mockReturnValue([1]),
@@ -1367,7 +1367,7 @@ describe('resolveAreaFromCleaningInfo — fallback to getAreaIdV2 (Bug 1)', () =
 		const indexMap = new RoomIndexMap(roomMapData, roomInfo);
 
 		robot = createMockRobot('test-duid-fallback', -1); // activeMapId = -1 (V10/V1 case)
-		const mockRoborockService = asPartial<RoborockService>({
+		const mockRoborockService = createMockRoborockService({
 			getSupportedAreas: vi.fn().mockReturnValue([{ areaId: 1, mapId: 0 } as ServiceArea.Area]),
 			getSupportedAreasIndexMap: vi.fn().mockReturnValue(indexMap),
 			getSelectedAreas: vi.fn().mockReturnValue([1]),
@@ -1411,7 +1411,7 @@ describe('resolveAreaFromCleaningInfo — fallback to getAreaIdV2 (Bug 1)', () =
 		const indexMap = new RoomIndexMap(roomMapData, roomInfo);
 
 		robot = createMockRobot('test-duid-both-miss', -1);
-		const mockRoborockService = asPartial<RoborockService>({
+		const mockRoborockService = createMockRoborockService({
 			getSupportedAreas: vi.fn().mockReturnValue([{ areaId: 1, mapId: 0 } as ServiceArea.Area]),
 			getSupportedAreasIndexMap: vi.fn().mockReturnValue(indexMap),
 			getSelectedAreas: vi.fn().mockReturnValue([1]),
@@ -1465,7 +1465,7 @@ describe('resolveAreaFromCleaningInfo — fallback to getAreaIdV2 (Bug 1)', () =
 		const indexMap = new RoomIndexMap(roomMapData, roomInfo);
 
 		robot = createMockRobot('test-duid-progress-fallback', -1);
-		const mockRoborockService = asPartial<RoborockService>({
+		const mockRoborockService = createMockRoborockService({
 			getSupportedAreas: vi
 				.fn()
 				.mockReturnValue([{ areaId: 1, mapId: 0 } as ServiceArea.Area, { areaId: 2, mapId: 0 } as ServiceArea.Area]),
@@ -1776,7 +1776,7 @@ describe('resolveAreaFromCleaningInfo — V1 fallback when cleaningInfo is absen
 	it('should resolve currentArea from cached segment when V1 device has no cleaningInfo and cache is fresh', async () => {
 		// Arrange
 		const indexMap = createRoomIndexMapForSegment(42, 5, 0);
-		const mockRoborockService = asPartial<RoborockService>({
+		const mockRoborockService = createMockRoborockService({
 			getSupportedAreas: vi.fn().mockReturnValue([{ areaId: 5, mapId: 0 } as ServiceArea.Area]),
 			getSupportedAreasIndexMap: vi.fn().mockReturnValue(indexMap),
 			getSelectedAreas: vi.fn().mockReturnValue([5, 6, 7]), // Multi-room realistic scenario (includes resolved area 5)
@@ -1835,7 +1835,7 @@ describe('resolveAreaFromCleaningInfo — V1 fallback when cleaningInfo is absen
 	it('should call requestV1MapRefresh when V1 device has no cleaningInfo and cache is empty', async () => {
 		// Arrange
 		const indexMap = createRoomIndexMapForSegment(42, 5, 0);
-		const mockRoborockService = asPartial<RoborockService>({
+		const mockRoborockService = createMockRoborockService({
 			getSupportedAreas: vi.fn().mockReturnValue([{ areaId: 5, mapId: 0 } as ServiceArea.Area]),
 			getSupportedAreasIndexMap: vi.fn().mockReturnValue(indexMap),
 			getSelectedAreas: vi.fn().mockReturnValue([5, 6, 7]), // Multi-room realistic scenario
@@ -1884,7 +1884,7 @@ describe('resolveAreaFromCleaningInfo — V1 fallback when cleaningInfo is absen
 	it('should NOT call requestV1MapRefresh when V1 device has valid cleaningInfo (regression guard)', async () => {
 		// Arrange
 		const indexMap = createRoomIndexMapForSegment(42, 5, 0);
-		const mockRoborockService = asPartial<RoborockService>({
+		const mockRoborockService = createMockRoborockService({
 			getSupportedAreas: vi.fn().mockReturnValue([{ areaId: 5, mapId: 0 } as ServiceArea.Area]),
 			getSupportedAreasIndexMap: vi.fn().mockReturnValue(indexMap),
 			getSelectedAreas: vi.fn().mockReturnValue([5]),
@@ -1929,7 +1929,7 @@ describe('resolveAreaFromCleaningInfo — V1 fallback when cleaningInfo is absen
 	it('should NOT call V1 fallback when device is not V1 (protocol gate)', async () => {
 		// Arrange
 		const indexMap = createRoomIndexMapForSegment(42, 5, 0);
-		const mockRoborockService = asPartial<RoborockService>({
+		const mockRoborockService = createMockRoborockService({
 			getSupportedAreas: vi.fn().mockReturnValue([{ areaId: 5, mapId: 0 } as ServiceArea.Area]),
 			getSupportedAreasIndexMap: vi.fn().mockReturnValue(indexMap),
 			getSelectedAreas: vi.fn().mockReturnValue([5, 6, 7]), // Multi-room realistic scenario
@@ -1977,7 +1977,7 @@ describe('resolveAreaFromCleaningInfo — V1 fallback when cleaningInfo is absen
 	it('should set currentArea to null when segment maps to no area (unmapped segment)', async () => {
 		// Arrange
 		const indexMap = createRoomIndexMapForSegment(42, 5, 0);
-		const mockRoborockService = asPartial<RoborockService>({
+		const mockRoborockService = createMockRoborockService({
 			getSupportedAreas: vi.fn().mockReturnValue([{ areaId: 5, mapId: 0 } as ServiceArea.Area]),
 			getSupportedAreasIndexMap: vi.fn().mockReturnValue(indexMap),
 			getSelectedAreas: vi.fn().mockReturnValue([5, 6, 7]), // Multi-room realistic scenario
@@ -2026,7 +2026,7 @@ describe('resolveAreaFromCleaningInfo — V1 fallback when cleaningInfo is absen
 		// Arrange — This is the regression test for the bug fix: V1 devices with multi-room selection
 		// should resolve currentArea from the cached segment, not pin to selectedAreas[0]
 		const indexMap = createRoomIndexMapForSegment(42, 2, 0); // Segment 42 maps to areaId 2
-		const mockRoborockService = asPartial<RoborockService>({
+		const mockRoborockService = createMockRoborockService({
 			getSupportedAreas: vi.fn().mockReturnValue([{ areaId: 2, mapId: 0 } as ServiceArea.Area]),
 			getSupportedAreasIndexMap: vi.fn().mockReturnValue(indexMap),
 			getSelectedAreas: vi.fn().mockReturnValue([0, 1, 2]), // Multi-room: Living Room (0) first, but robot is in room 2
@@ -2077,7 +2077,7 @@ describe('resolveAreaFromCleaningInfo — V1 fallback when cleaningInfo is absen
 	it('should fallback to pin-first-area when V1 device has multi-room selection but cache is empty', async () => {
 		// Arrange — V1 device with multi-room, but segment cache is empty (cache miss)
 		const indexMap = createRoomIndexMapForSegment(42, 2, 0);
-		const mockRoborockService = asPartial<RoborockService>({
+		const mockRoborockService = createMockRoborockService({
 			getSupportedAreas: vi.fn().mockReturnValue([{ areaId: 2, mapId: 0 } as ServiceArea.Area]),
 			getSupportedAreasIndexMap: vi.fn().mockReturnValue(indexMap),
 			getSelectedAreas: vi.fn().mockReturnValue([0, 1, 2]),
@@ -2124,7 +2124,7 @@ describe('resolveAreaFromCleaningInfo — V1 fallback when cleaningInfo is absen
 		// Arrange — V1 device with multi-room selection, but resolved segment maps to an area NOT in selectedAreas
 		// (e.g. the segment maps to a room from a different map)
 		const indexMap = createRoomIndexMapForSegment(42, 9, 0); // Segment 42 maps to areaId 9
-		const mockRoborockService = asPartial<RoborockService>({
+		const mockRoborockService = createMockRoborockService({
 			getSupportedAreas: vi.fn().mockReturnValue([{ areaId: 9, mapId: 0 } as ServiceArea.Area]),
 			getSupportedAreasIndexMap: vi.fn().mockReturnValue(indexMap),
 			getSelectedAreas: vi.fn().mockReturnValue([0, 1, 2]), // areaId 9 is NOT in this list
@@ -2171,7 +2171,7 @@ describe('resolveAreaFromCleaningInfo — V1 fallback when cleaningInfo is absen
 		// Arrange — Non-V1 protocol device with multi-room selection
 		// Should maintain existing behavior: pin currentArea to selectedAreas[0]
 		const indexMap = createRoomIndexMapForSegment(42, 5, 0);
-		const mockRoborockService = asPartial<RoborockService>({
+		const mockRoborockService = createMockRoborockService({
 			getSupportedAreas: vi.fn().mockReturnValue([{ areaId: 5, mapId: 0 } as ServiceArea.Area]),
 			getSupportedAreasIndexMap: vi.fn().mockReturnValue(indexMap),
 			getSelectedAreas: vi.fn().mockReturnValue([5, 6, 7]),
@@ -2218,7 +2218,7 @@ describe('resolveAreaFromCleaningInfo — V1 fallback when cleaningInfo is absen
 	it('should immediately pin single selected area without V1 resolution', async () => {
 		// Arrange — Single selected area (unambiguous, no need for V1 segment resolution)
 		const indexMap = createRoomIndexMapForSegment(42, 5, 0);
-		const mockRoborockService = asPartial<RoborockService>({
+		const mockRoborockService = createMockRoborockService({
 			getSupportedAreas: vi.fn().mockReturnValue([{ areaId: 5, mapId: 0 } as ServiceArea.Area]),
 			getSupportedAreasIndexMap: vi.fn().mockReturnValue(indexMap),
 			getSelectedAreas: vi.fn().mockReturnValue([5]), // Single area
@@ -2265,7 +2265,7 @@ describe('resolveAreaFromCleaningInfo — V1 fallback when cleaningInfo is absen
 	it('should handle zero selected areas with null currentArea and empty selectedAreas', async () => {
 		// Arrange — Zero selected areas (e.g., edge case or state inconsistency)
 		const indexMap = createRoomIndexMapForSegment(42, 5, 0);
-		const mockRoborockService = asPartial<RoborockService>({
+		const mockRoborockService = createMockRoborockService({
 			getSupportedAreas: vi.fn().mockReturnValue([{ areaId: 5, mapId: 0 } as ServiceArea.Area]),
 			getSupportedAreasIndexMap: vi.fn().mockReturnValue(indexMap),
 			getSelectedAreas: vi.fn().mockReturnValue([]), // Zero areas
@@ -2325,7 +2325,7 @@ describe('handleServiceAreaUpdate — start-of-clean progress reset', () => {
 
 	it('should reset progress when transitioning from Docked to Running', async () => {
 		// Arrange: was idle (operationalState = Docked), now transitioning to Running (cleaning)
-		const mockRoborockService = asPartial<RoborockService>({
+		const mockRoborockService = createMockRoborockService({
 			getSupportedAreas: vi.fn().mockReturnValue([]),
 			getSelectedAreas: vi.fn().mockReturnValue([1]),
 			getProgress: vi.fn().mockReturnValue([]),
@@ -2371,7 +2371,7 @@ describe('handleServiceAreaUpdate — start-of-clean progress reset', () => {
 	it('should not reset progress when still cleaning (no transition)', async () => {
 		// Arrange: was already cleaning (operationalState = Running), still running (no transition)
 		const initialProgress: ServiceArea.Progress[] = [{ areaId: 1, status: ServiceArea.OperationalStatus.Operating }];
-		const mockRoborockService = asPartial<RoborockService>({
+		const mockRoborockService = createMockRoborockService({
 			getSupportedAreas: vi.fn().mockReturnValue([]),
 			getSelectedAreas: vi.fn().mockReturnValue([1]),
 			getProgress: vi.fn().mockReturnValue(initialProgress),
@@ -2417,7 +2417,7 @@ describe('handleServiceAreaUpdate — start-of-clean progress reset', () => {
 
 	it('should not reset progress during mid-clean detour (e.g., Paused)', async () => {
 		// Arrange: detour state like Paused is still "actively cleaning" per operationalState classification
-		const mockRoborockService = asPartial<RoborockService>({
+		const mockRoborockService = createMockRoborockService({
 			getSupportedAreas: vi.fn().mockReturnValue([]),
 			getSelectedAreas: vi.fn().mockReturnValue([1]),
 			getProgress: vi.fn().mockReturnValue([]),
@@ -2462,7 +2462,7 @@ describe('handleServiceAreaUpdate — start-of-clean progress reset', () => {
 
 	it('should not reset progress when transitioning between two actively-cleaning states (e.g., SeekingCharger)', async () => {
 		// Arrange: was in some cleaning state, now SeekingCharger (auto-empty detour) which is still "actively cleaning"
-		const mockRoborockService = asPartial<RoborockService>({
+		const mockRoborockService = createMockRoborockService({
 			getSupportedAreas: vi.fn().mockReturnValue([]),
 			getSelectedAreas: vi.fn().mockReturnValue([1]),
 			getProgress: vi.fn().mockReturnValue([]),
@@ -2507,7 +2507,7 @@ describe('handleServiceAreaUpdate — start-of-clean progress reset', () => {
 
 	it('should not double-reset when operationalState is Docked (Idle branch handles reset)', async () => {
 		// Arrange: transitioning to Idle state (operationalState = Docked), flag was false (steady idle)
-		const mockRoborockService = asPartial<RoborockService>({
+		const mockRoborockService = createMockRoborockService({
 			getSupportedAreas: vi.fn().mockReturnValue([]),
 			getSelectedAreas: vi.fn().mockReturnValue([]),
 			getProgress: vi.fn().mockReturnValue([]),
@@ -2551,7 +2551,7 @@ describe('handleServiceAreaUpdate — start-of-clean progress reset', () => {
 
 	it('should store lastActivelyCleaningState on every call, regardless of transition', async () => {
 		// Arrange: verify that setLastActivelyCleaningState is called on EVERY invocation
-		const mockRoborockService = asPartial<RoborockService>({
+		const mockRoborockService = createMockRoborockService({
 			getSupportedAreas: vi.fn().mockReturnValue([]),
 			getSelectedAreas: vi.fn().mockReturnValue([1]),
 			getProgress: vi.fn().mockReturnValue([]),
@@ -2594,7 +2594,7 @@ describe('handleServiceAreaUpdate — start-of-clean progress reset', () => {
 
 	it('should not detect transition when operationalState is undefined (cold start)', async () => {
 		// Arrange: cold start, operationalState not yet set, flag defaults to false
-		const mockRoborockService = asPartial<RoborockService>({
+		const mockRoborockService = createMockRoborockService({
 			getSupportedAreas: vi.fn().mockReturnValue([]),
 			getSelectedAreas: vi.fn().mockReturnValue([1]),
 			getProgress: vi.fn().mockReturnValue([]),
@@ -2639,7 +2639,7 @@ describe('handleServiceAreaUpdate — start-of-clean progress reset', () => {
 
 	it('should detect transition when moving from Stopped to Running', async () => {
 		// Arrange: was in Stopped state (not cleaning), now Running (cleaning)
-		const mockRoborockService = asPartial<RoborockService>({
+		const mockRoborockService = createMockRoborockService({
 			getSupportedAreas: vi.fn().mockReturnValue([]),
 			getSelectedAreas: vi.fn().mockReturnValue([1]),
 			getProgress: vi.fn().mockReturnValue([]),
@@ -2678,7 +2678,7 @@ describe('handleServiceAreaUpdate — start-of-clean progress reset', () => {
 
 	it('should detect transition when moving from Error to Running', async () => {
 		// Arrange: was in Error state (not cleaning), now Running (cleaning)
-		const mockRoborockService = asPartial<RoborockService>({
+		const mockRoborockService = createMockRoborockService({
 			getSupportedAreas: vi.fn().mockReturnValue([]),
 			getSelectedAreas: vi.fn().mockReturnValue([1]),
 			getProgress: vi.fn().mockReturnValue([]),

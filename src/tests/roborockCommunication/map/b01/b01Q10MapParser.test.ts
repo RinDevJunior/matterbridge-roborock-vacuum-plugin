@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
 import { parseQ10MapPacket } from '../../../../roborockCommunication/map/b01/b01Q10MapParser.js';
-import { decompressLz4Block } from '../../../../roborockCommunication/map/b01/lz4BlockDecompressor.js';
 
 /**
  * Helper to build a synthetic Q10 packet with LZ4-compressed grid + room data.
@@ -103,7 +102,7 @@ describe('b01Q10MapParser', () => {
 			const mapId = 123;
 			const width = 2;
 			const height = 2;
-			const grid = Buffer.from([0x00, 0x01, 0x02, 0x03]); // 4 bytes (2x2)
+			const grid = Buffer.from([0x04, 0x08, 0x0c, 0x10]); // 4 bytes (2x2), roomIds [1,2,3,4]
 			const roomRecord = buildRoomRecord(10, 'Bedroom');
 			const roomSection = Buffer.concat([Buffer.from([0x01, 0x01]), roomRecord]); // marker + roomCount=1 + room
 			const gridAndRoomData = Buffer.concat([grid, roomSection]);
@@ -118,14 +117,61 @@ describe('b01Q10MapParser', () => {
 				roomName: 'Bedroom',
 			});
 			expect(result.currentPose).toBeUndefined();
-			expect(result.roomMatrix).toBeUndefined();
+
+			// Verify roomMatrix is populated
+			expect(result.roomMatrix).toBeDefined();
+			expect(result.roomMatrix?.width).toBe(width);
+			expect(result.roomMatrix?.height).toBe(height);
+			expect(result.roomMatrix?.data).toEqual(grid);
+			expect(result.roomMatrix?.roomIds).toEqual([10]);
+		});
+
+		it('should extract originX and originY from packet header', () => {
+			const mapId = 1;
+			const width = 3;
+			const height = 3;
+			const grid = Buffer.alloc(9, 0x04); // 3x3 grid, all room 1
+			const roomRecord = buildRoomRecord(1, 'Room');
+			const roomSection = Buffer.concat([Buffer.from([0x01, 0x01]), roomRecord]);
+			const gridAndRoomData = Buffer.concat([grid, roomSection]);
+
+			const packet = buildQ10Packet(mapId, width, height, gridAndRoomData);
+
+			// Set originX at offset 11-12 (signed int16be)
+			packet.writeInt16BE(1000, 11);
+			// Set originY at offset 13-14 (signed int16be)
+			packet.writeInt16BE(2000, 13);
+
+			const result = parseQ10MapPacket(packet);
+			expect(result.roomMatrix?.originX).toBe(1000);
+			expect(result.roomMatrix?.originY).toBe(2000);
+		});
+
+		it('should handle negative originX and originY values', () => {
+			const mapId = 1;
+			const width = 2;
+			const height = 2;
+			const grid = Buffer.alloc(4, 0x04);
+			const roomRecord = buildRoomRecord(1, 'Room');
+			const roomSection = Buffer.concat([Buffer.from([0x01, 0x01]), roomRecord]);
+			const gridAndRoomData = Buffer.concat([grid, roomSection]);
+
+			const packet = buildQ10Packet(mapId, width, height, gridAndRoomData);
+
+			// Set negative originX and originY
+			packet.writeInt16BE(-500, 11);
+			packet.writeInt16BE(-1000, 13);
+
+			const result = parseQ10MapPacket(packet);
+			expect(result.roomMatrix?.originX).toBe(-500);
+			expect(result.roomMatrix?.originY).toBe(-1000);
 		});
 
 		it('should extract room name with various lengths', () => {
 			const mapId = 1;
 			const width = 1;
 			const height = 1;
-			const grid = Buffer.from([0x00]);
+			const grid = Buffer.from([0x04]);
 
 			// Test short name
 			const roomRecord1 = buildRoomRecord(1, 'Room');
@@ -133,6 +179,7 @@ describe('b01Q10MapParser', () => {
 			const packet1 = buildQ10Packet(mapId, width, height, Buffer.concat([grid, roomSection1]));
 			const result1 = parseQ10MapPacket(packet1);
 			expect(result1.rooms[0].roomName).toBe('Room');
+			expect(result1.roomMatrix?.roomIds).toEqual([1]);
 
 			// Test longer name (20 bytes max)
 			const roomRecord2 = buildRoomRecord(2, 'Very Long Room Name!');
@@ -140,6 +187,7 @@ describe('b01Q10MapParser', () => {
 			const packet2 = buildQ10Packet(mapId, width, height, Buffer.concat([grid, roomSection2]));
 			const result2 = parseQ10MapPacket(packet2);
 			expect(result2.rooms[0].roomName).toBe('Very Long Room Name!');
+			expect(result2.roomMatrix?.roomIds).toEqual([2]);
 		});
 
 		it('should parse multiple room records sequentially', () => {
@@ -166,6 +214,9 @@ describe('b01Q10MapParser', () => {
 			expect(result.rooms[0]).toMatchObject({ roomId: 10, roomName: 'Living Room' });
 			expect(result.rooms[1]).toMatchObject({ roomId: 20, roomName: 'Bedroom' });
 			expect(result.rooms[2]).toMatchObject({ roomId: 30, roomName: 'Kitchen' });
+
+			// Verify roomIds in roomMatrix matches parsed rooms
+			expect(result.roomMatrix?.roomIds).toEqual([10, 20, 30]);
 		});
 
 		it('should return successfully parsed rooms when final room record is truncated', () => {

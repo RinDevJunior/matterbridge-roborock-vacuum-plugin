@@ -214,6 +214,36 @@ function resolveV1CurrentArea(
 	return mappedArea;
 }
 
+function resolveQ10CurrentArea(
+	robot: RoborockVacuumCleaner,
+	platform: RoborockMatterbridgePlatform,
+	selectedAreas: number[],
+): number | null {
+	if (robot.device.pv !== ProtocolVersion.B01 || !platform.roborockService) {
+		return null;
+	}
+
+	const roomIndexMap = platform.roborockService.getSupportedAreasIndexMap(robot.device.duid);
+	if (!roomIndexMap) {
+		return null;
+	}
+
+	const resolvedRoomId = platform.roborockService.getQ10ResolvedRoom(robot.device.duid);
+	if (resolvedRoomId === undefined) {
+		return null;
+	}
+
+	const mappedArea =
+		roomIndexMap.getAreaId(resolvedRoomId, robot.homeInFo.activeMapId) ??
+		roomIndexMap.getAreaIdV2(resolvedRoomId) ??
+		null;
+	if (mappedArea === null || !selectedAreas.includes(mappedArea)) {
+		return null;
+	}
+
+	return mappedArea;
+}
+
 export async function handleServiceAreaUpdate(
 	robot: RoborockVacuumCleaner,
 	message: ServiceAreaUpdateMessage,
@@ -237,6 +267,7 @@ export async function handleServiceAreaUpdate(
 			`[${robot.device.duid}] Detected transition to actively cleaning (operationalState=${operationalState}), resetting progress`,
 		);
 		platform.roborockService?.setProgress(robot.device.duid, []);
+		platform.roborockService?.clearQ10RoomResolution(robot.device.duid);
 		await robot.updateAttribute(ServiceArea.id, 'progress', [], logger);
 	}
 
@@ -246,6 +277,7 @@ export async function handleServiceAreaUpdate(
 		await robot.updateAttribute(ServiceArea.id, 'selectedAreas', selectedAreas, logger);
 
 		platform.roborockService?.setProgress(robot.device.duid, []);
+		platform.roborockService?.clearQ10RoomResolution(robot.device.duid);
 		await robot.updateAttribute(ServiceArea.id, 'progress', [], logger);
 		await robot.updateAttribute(ServiceArea.id, 'currentArea', null, logger);
 		await robot.updateAttribute(ServiceArea.id, 'estimatedEndTime', null, logger);
@@ -299,7 +331,8 @@ async function handleCleaningWithoutInfo(
 	}
 
 	if (selectedAreas.length > 1) {
-		const resolvedAreaId = resolveV1CurrentArea(robot, platform, selectedAreas);
+		const resolvedAreaId =
+			resolveV1CurrentArea(robot, platform, selectedAreas) ?? resolveQ10CurrentArea(robot, platform, selectedAreas);
 		if (resolvedAreaId !== null) {
 			await publishAreaProgress(robot, message, platform, selectedAreas, resolvedAreaId);
 			return;
@@ -371,6 +404,7 @@ export async function handleActiveMapChanged(
 	await robot.updateAttribute(ServiceArea.id, 'estimatedEndTime', null, logger);
 
 	platform.roborockService?.setProgress(robot.device.duid, []);
+	platform.roborockService?.clearQ10RoomResolution(robot.device.duid);
 	await robot.updateAttribute(ServiceArea.id, 'progress', [], logger);
 }
 
