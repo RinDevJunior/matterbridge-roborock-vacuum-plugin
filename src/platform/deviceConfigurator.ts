@@ -122,7 +122,6 @@ export class DeviceConfigurator {
 			const routines = roborockService.getSupportedRoutines(vacuum.duid) ?? [];
 			const routineMap: ServiceArea.Map = { mapId: ROUTINE_MAP_ID, name: 'Routine' };
 			const allMaps = routines.length > 0 ? [...maps, routineMap] : maps;
-			robot.updateAttribute(ServiceArea.id, 'currentArea', null, this.log);
 			robot.updateAttribute(ServiceArea.id, 'supportedMaps', allMaps, this.log);
 			robot.updateAttribute(ServiceArea.id, 'supportedAreas', [...areas, ...routines], this.log);
 		});

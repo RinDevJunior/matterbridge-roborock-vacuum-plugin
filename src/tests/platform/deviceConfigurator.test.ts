@@ -1,6 +1,7 @@
 import type { MatterbridgeDynamicPlatform } from 'matterbridge';
 import { bridgedNode } from 'matterbridge';
 import type { AnsiLogger } from 'matterbridge/logger';
+import { ServiceArea } from 'matterbridge/matter/clusters';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { createDefaultAdvancedFeature } from '../../model/RoborockPluginPlatformConfig.js';
@@ -894,6 +895,76 @@ describe('DeviceConfigurator', () => {
 
 			// Verify registerAreasListener is called for the device
 			expect(roborockService.registerAreasListener).toHaveBeenCalledWith(device.duid, expect.any(Function));
+		});
+
+		it('should not clear currentArea when the areas listener callback runs, only refresh supportedMaps/supportedAreas', async () => {
+			const device = makeMockDevice('duid-1');
+			const updateAttribute = vi.fn();
+			vi.mocked(RoborockVacuumCleaner).mockImplementationOnce(function (this: RoborockVacuumCleaner) {
+				Object.assign(
+					this,
+					asPartial<RoborockVacuumCleaner>({
+						device,
+						deviceName: `Roborock-${device.duid}`,
+						serialNumber: device.duid,
+						configureHandler: vi.fn(),
+						getClusterServerOptions: vi.fn().mockReturnValue({
+							softwareVersion: 1,
+							softwareVersionString: '1.0.0',
+							hardwareVersion: 1,
+							hardwareVersionString: '1.0.0',
+							deviceTypeList: [],
+						}),
+						createDefaultIdentifyClusterServer: vi.fn(),
+						createDefaultBridgedDeviceBasicInformationClusterServer: vi.fn(),
+						mode: undefined,
+						deviceTypes: new Map(),
+						updateAttribute,
+					}),
+				);
+			});
+
+			registry = createMockDeviceRegistry({
+				hasDevices: vi.fn().mockReturnValue(true),
+				getAllDevices: vi.fn().mockReturnValue([device]),
+				robotsMap: new Map(),
+			});
+
+			roborockService = createMockRoborockService({
+				resolveInitialAreas: vi.fn().mockResolvedValue({ supportedAreas: [], supportedMaps: [] }),
+				initializeMessageClientForLocal: vi.fn().mockResolvedValue(true),
+				registerAreasListener: vi.fn(),
+				startPeriodicAreaRefresh: vi.fn(),
+				setDeviceNotify: vi.fn(),
+				getSupportedRoutines: vi.fn().mockReturnValue([]),
+			});
+
+			configurator = new DeviceConfigurator(
+				platform,
+				configManager,
+				registry,
+				() => platformRunner,
+				snackbarMessage,
+				log,
+			);
+
+			await configurator.onConfigureDevice(roborockService);
+
+			const registeredCallback = vi.mocked(roborockService.registerAreasListener).mock.calls[0][1];
+			const sampleAreas = [{ areaId: 1, mapId: 1, name: 'Living Room' } as unknown as ServiceArea.Area];
+			const sampleMaps = [{ mapId: 1, name: 'Map 1' }];
+
+			registeredCallback(sampleAreas, sampleMaps);
+
+			// Regression guard: invoking the areas listener must never touch currentArea.
+			expect(updateAttribute).not.toHaveBeenCalledWith(
+				ServiceArea.id,
+				'currentArea',
+				expect.anything(),
+				expect.anything(),
+			);
+			expect(updateAttribute).toHaveBeenCalledWith(ServiceArea.id, 'supportedMaps', sampleMaps, log);
+			expect(updateAttribute).toHaveBeenCalledWith(ServiceArea.id, 'supportedAreas', sampleAreas, log);
 		});
 
 		it('should call startPeriodicAreaRefresh for successfully configured devices', async () => {
