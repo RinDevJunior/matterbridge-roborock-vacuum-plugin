@@ -1,5 +1,18 @@
 # Claude History
 
+## 2026-09-19 — Reduce ServiceArea startup latency (immediate map refresh on startup)
+
+**Task:** Fix 5-minute startup delay in live-position fallback: `AreaManagementService.startPeriodicRefresh` was only fetching maps on the first 5-minute interval tick, causing `ServiceArea.CurrentArea` to stay `null` for up to 5 minutes after Matterbridge restart even during active cleaning. Solution: extracted interval-tick body into new private `triggerMapInfoRefresh(duid)` helper, called immediately when `startPeriodicRefresh` starts, then reused for existing 5-minute interval ticks.
+
+**Changes:**
+
+- `src/services/areaManagementService.ts` — extracted `triggerMapInfoRefresh` helper, called immediately on startup
+- `src/tests/services/areaManagementService.test.ts` — tests updated, 109/109 passing
+- `src/roborockCommunication/map/b01/roomMatrixResolver.ts` — doc-only Y-axis sign confirmation note
+- `matterbridge-roborock-vacuum-plugin.schema.json` — updated description for `enableB01LivePositionFallback` flag
+
+**Outcome:** Pass (unconditional, no new config gating, same fire-and-forget error handling as interval ticks; verified on real Q10 S5+ hardware with `enableB01LivePositionFallback` enabled; reviewed and approved).
+
 ## 2026-09-19 — Q10 live-position ServiceArea fallback (opt-in, default off)
 
 **Task:** Implement opt-in live-position fallback for Roborock Q10's Matter ServiceArea CurrentArea/Progress reporting when device sends no cleaning_info/segment_id; port grid-cell classification and pose-to-room resolution from confirmed reference byte format; parse origin/resolution from Q10 map header; add trace-position-to-mm coordinate conversion; wire position-resolution callback through map listener; add resolution cache mirroring V1 cache; introduce `enableB01LivePositionFallback` config flag (default false).

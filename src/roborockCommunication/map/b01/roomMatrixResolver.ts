@@ -34,7 +34,8 @@ export function classifyGridByte(value: number): GridCellClassification {
  * resolution to compute grid pixel coordinates.
  *
  * `ySign` defaults to +1 (world-Y increases upward assumption) — verified correct via
- * real-device validation on Roborock Q10 S5+. Exposed as a parameter (not hardcoded) so the
+ * real-device validation on Roborock Q10 S5+, and independently confirmed on a second Q10 S5+ unit.
+ * Exposed as a parameter (not hardcoded) so the
  * CLI validation tool can compare outcomes against ground truth if needed.
  */
 export function resolveRoomFromPose(

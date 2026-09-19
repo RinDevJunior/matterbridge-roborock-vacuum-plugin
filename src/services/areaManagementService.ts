@@ -356,13 +356,18 @@ export class AreaManagementService {
 		this.setSupportedAreas(duid, sortedAreas);
 	}
 
+	private triggerMapInfoRefresh(duid: string): void {
+		this.logger.debug(`AreaManagementService - triggering map info refresh for ${duid}`);
+		this.getMapInfo(duid).catch((err: unknown) => {
+			this.logger.error(`AreaManagementService - getMapInfo refresh failed for ${duid}: ${String(err)}`);
+		});
+	}
+
 	public startPeriodicRefresh(duid: string, intervalMs = 5 * 60 * 1000): void {
 		this.stopPeriodicRefresh(duid);
+		this.triggerMapInfoRefresh(duid);
 		const handle = setInterval(() => {
-			this.logger.debug(`AreaManagementService - periodic area refresh for ${duid}`);
-			this.getMapInfo(duid).catch((err: unknown) => {
-				this.logger.error(`AreaManagementService - getMapInfo refresh failed for ${duid}: ${String(err)}`);
-			});
+			this.triggerMapInfoRefresh(duid);
 		}, intervalMs);
 		this.refreshIntervals.set(duid, handle);
 	}
