@@ -392,6 +392,72 @@ describe('MapInfoListener', () => {
 			expect(logger.debug).toHaveBeenCalledWith(expect.stringContaining('B01 map binary has no rooms'));
 		});
 
+		it('should still resolve pose using cached roomMatrix when a later B01 push has no rooms (issue #160)', async () => {
+			// Arrange — room-less "trace" pushes routinely arrive between full map pushes on Q10/B01
+			const onB01PositionResolved = vi.fn();
+			const listenerWithDevice = new MapInfoListener(
+				DUID,
+				[],
+				areaService,
+				createMockLogger(),
+				'roborock.vacuum.a27',
+				'ABC123',
+				undefined,
+				ProtocolVersion.B01,
+				true,
+				true,
+				undefined,
+				undefined,
+				onB01PositionResolved,
+			);
+			const parseRoomsSpy = vi.spyOn(
+				(
+					listenerWithDevice as unknown as {
+						b01MapParser: { parseRoomsFromEncryptedBinary: ReturnType<typeof vi.fn> };
+					}
+				).b01MapParser,
+				'parseRoomsFromEncryptedBinary',
+			);
+
+			// First push: full map packet with rooms and roomMatrix (no pose in this fixture)
+			const mapPacketResult = {
+				rooms: [{ roomId: 5, roomName: 'Kitchen' }],
+				roomMatrix: {
+					data: Buffer.from([8, 8, 8]),
+					width: 3,
+					height: 1,
+					origin: { x: 0, y: 0, resolutionMmPerPixel: 50 },
+				},
+			};
+			parseRoomsSpy.mockReturnValueOnce(mapPacketResult);
+
+			const mapMsg = makeB01Message(DUID, (key) => {
+				if (key === Protocol.map_response) return Buffer.from('map');
+				return undefined;
+			});
+			await listenerWithDevice.onMessage(mapMsg);
+
+			// Second push: room-less trace packet — rooms: [] and roomMatrix: undefined, but a
+			// currentPose that resolves against the FIRST push's cached matrix (pixel (0,0) → byte 8 → roomId 2)
+			const roomlessTraceResult = {
+				rooms: [],
+				currentPose: { x: 25500, y: 25500 },
+				roomMatrix: undefined,
+			};
+			parseRoomsSpy.mockReturnValueOnce(roomlessTraceResult);
+
+			const traceMsg = makeB01Message(DUID, (key) => {
+				if (key === Protocol.map_response) return Buffer.from('trace');
+				return undefined;
+			});
+			await listenerWithDevice.onMessage(traceMsg);
+
+			// Assert — pendingB01RoomMatrix from the first push was NOT cleared by the room-less push,
+			// so pose resolution still fires using the cached matrix
+			expect(onB01PositionResolved).toHaveBeenCalledTimes(1);
+			expect(onB01PositionResolved).toHaveBeenCalledWith(2);
+		});
+
 		it('should warn and skip when B01 map binary parse throws', async () => {
 			const logger = createMockLogger();
 			const listenerWithDevice = new MapInfoListener(DUID, [], areaService, logger, 'roborock.vacuum.a27', 'ABC123');
