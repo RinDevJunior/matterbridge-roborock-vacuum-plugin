@@ -23,6 +23,7 @@ const CLEANING_STATES = new Set([
 	OperationStatusCode.Mapping,
 	OperationStatusCode.CleanMopCleaning,
 	OperationStatusCode.CleanMopMopping,
+	OperationStatusCode.ActivelyCleaningQ10,
 ]);
 
 function isActivelyCleaningOperationalState(
@@ -164,7 +165,9 @@ export async function handleServiceAreaUpdate(
 	platform: RoborockMatterbridgePlatform,
 ): Promise<void> {
 	const logger = platform.log;
-	logger.debug(`Handling service area update: ${debugStringify(message)}`);
+	logger.debug(
+		`Handling service area update (state=${OperationStatusCode[message.state]}): ${debugStringify(message)}`,
+	);
 
 	// Detect transition from not-actively-cleaning to actively-cleaning and reset progress.
 	const operationalState: RvcOperationalState.OperationalState | undefined = robot.getAttribute(
