@@ -78,7 +78,10 @@ export class AreaManagementService {
 
 	/** Store the "was actively cleaning" state for a device. */
 	public setLastActivelyCleaningState(duid: string, isActivelyCleaning: boolean): void {
-		this.logger.debug('AreaManagementService - setLastActivelyCleaningState', { duid, isActivelyCleaning });
+		this.logger.debug(
+			'AreaManagementService - setLastActivelyCleaningState',
+			debugStringify({ duid, isActivelyCleaning }),
+		);
 		this.lastActivelyCleaningState.set(duid, isActivelyCleaning);
 	}
 

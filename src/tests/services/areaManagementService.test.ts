@@ -600,10 +600,10 @@ describe('AreaManagementService', () => {
 
 			areaService.setLastActivelyCleaningState(duid, true);
 
-			expect(mockLogger.debug).toHaveBeenCalledWith('AreaManagementService - setLastActivelyCleaningState', {
-				duid,
-				isActivelyCleaning: true,
-			});
+			expect(mockLogger.debug).toHaveBeenCalledWith(
+				'AreaManagementService - setLastActivelyCleaningState',
+				debugStringify({ duid, isActivelyCleaning: true }),
+			);
 		});
 	});
 
