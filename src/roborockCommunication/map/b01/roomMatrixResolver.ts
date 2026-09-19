@@ -1,3 +1,4 @@
+import { ROBOROCK_COORDINATE_OFFSET_MM } from './b01Q10TraceParser.js';
 import type { B01Pose, B01RoomMatrix } from './types.js';
 
 export type GridCellKind = 'unknown' | 'background' | 'floor' | 'wall' | 'room';
@@ -26,9 +27,15 @@ export function classifyGridByte(value: number): GridCellClassification {
  * cell (this is a deliberate plausibility guard, not a full correctness proof — see plan.md
  * Validation Plan; a wrong room ID is worse than no room ID).
  *
- * `ySign` defaults to +1 (world-Y increases upward assumption) — UNCONFIRMED, see
- * requirement.md point 4. Exposed as a parameter (not hardcoded) so the CLI validation tool
- * can compare +1 vs -1 against real-device ground truth before this ships trusted.
+ * **Coordinate frame transformation:** The input `pose` is received in Roborock-common mm
+ * (offset by +25500 from the device's raw native frame). The `roomMatrix.origin` is expressed
+ * in the device's raw native frame. This function internally converts the pose back to the raw
+ * frame by subtracting `ROBOROCK_COORDINATE_OFFSET_MM` before applying the origin and
+ * resolution to compute grid pixel coordinates.
+ *
+ * `ySign` defaults to +1 (world-Y increases upward assumption) — verified correct via
+ * real-device validation on Roborock Q10 S5+. Exposed as a parameter (not hardcoded) so the
+ * CLI validation tool can compare outcomes against ground truth if needed.
  */
 export function resolveRoomFromPose(
 	pose: B01Pose | undefined,
@@ -44,8 +51,12 @@ export function resolveRoomFromPose(
 	const { x: originX, y: originY, resolutionMmPerPixel } = roomMatrix.origin;
 	if (resolutionMmPerPixel <= 0) return undefined;
 
-	const pixelX = Math.round(pose.x / resolutionMmPerPixel + originX);
-	const pixelY = Math.round(originY - ySign * (pose.y / resolutionMmPerPixel));
+	// Convert pose from Roborock-common mm back to device's raw native frame
+	const worldX = pose.x - ROBOROCK_COORDINATE_OFFSET_MM;
+	const worldY = pose.y - ROBOROCK_COORDINATE_OFFSET_MM;
+
+	const pixelX = Math.round(worldX / resolutionMmPerPixel + originX);
+	const pixelY = Math.round(originY - ySign * (worldY / resolutionMmPerPixel));
 
 	if (pixelX < 0 || pixelX >= roomMatrix.width || pixelY < 0 || pixelY >= roomMatrix.height) return undefined;
 
