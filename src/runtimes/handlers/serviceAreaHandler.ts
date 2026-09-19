@@ -184,7 +184,7 @@ export async function handleServiceAreaUpdate(
 		await robot.updateAttribute(ServiceArea.id, 'progress', [], logger);
 	}
 
-	if (message.state === OperationStatusCode.Idle) {
+	if (message.state === OperationStatusCode.Idle || message.state === OperationStatusCode.IdleDockedQ10) {
 		logger.debug('Robot is idle, updating selectedAreas from Roborock service');
 		const selectedAreas = platform.roborockService?.getSelectedAreas(robot.device.duid) ?? [];
 		await robot.updateAttribute(ServiceArea.id, 'selectedAreas', selectedAreas, logger);

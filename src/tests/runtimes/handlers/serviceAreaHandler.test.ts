@@ -419,6 +419,41 @@ describe('handleServiceAreaUpdate idle clears currentArea', () => {
 		expect(robot.updateAttribute).toHaveBeenCalledWith(ServiceArea.id, 'currentArea', null, expect.anything());
 		expect(robot.updateAttribute).toHaveBeenCalledWith(ServiceArea.id, 'estimatedEndTime', null, expect.anything());
 	});
+
+	it('should clear currentArea, selectedAreas, progress, and estimatedEndTime when device sends non-canonical Q10 idle status code', async () => {
+		const mockRoborockService = asPartial<RoborockService>({
+			getSelectedAreas: vi.fn().mockReturnValue([7]),
+			getProgress: vi.fn().mockReturnValue([{ areaId: 7, status: ServiceArea.OperationalStatus.Operating }]),
+			setProgress: vi.fn(),
+			getLastActivelyCleaningState: vi.fn().mockReturnValue(false),
+			setLastActivelyCleaningState: vi.fn(),
+		});
+
+		const platform = asPartial<RoborockMatterbridgePlatform>({
+			log: createMockLogger(),
+			configManager: createMockConfigManager(),
+			roborockService: mockRoborockService,
+		});
+
+		// Q10 idle status code 105 (IdleDockedQ10) — regression test for real device behavior
+		const message: ServiceAreaUpdateMessage = {
+			duid: 'test-duid-idle-clear',
+			state: OperationStatusCode.IdleDockedQ10,
+			cleaningInfo: undefined,
+			cleaningProcess: { clean_area: 0, clean_time: 0 },
+		};
+
+		await handleServiceAreaUpdate(robot, message, platform);
+
+		// Verify selectedAreas reset to current state
+		expect(robot.updateAttribute).toHaveBeenCalledWith(ServiceArea.id, 'selectedAreas', [7], expect.anything());
+		// Verify progress cleared
+		expect(mockRoborockService.setProgress).toHaveBeenCalledWith(robot.device.duid, []);
+		expect(robot.updateAttribute).toHaveBeenCalledWith(ServiceArea.id, 'progress', [], expect.anything());
+		// Verify currentArea and estimatedEndTime cleared
+		expect(robot.updateAttribute).toHaveBeenCalledWith(ServiceArea.id, 'currentArea', null, expect.anything());
+		expect(robot.updateAttribute).toHaveBeenCalledWith(ServiceArea.id, 'estimatedEndTime', null, expect.anything());
+	});
 });
 
 describe('handleServiceAreaUpdate multi-room without cleaning_info', () => {

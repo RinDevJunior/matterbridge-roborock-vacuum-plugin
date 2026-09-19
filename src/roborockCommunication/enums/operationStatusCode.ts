@@ -41,4 +41,5 @@ export enum OperationStatusCode {
 	ZoneCleanMopMopping = 6309,
 	BackToDockWashingDuster = 6310,
 	// TODO: Q10 series has 104, what is that?
+	IdleDockedQ10 = 105, // Confirmed docked/idle via live Roborock Q10 S5+ log capture (stationary, 99% battery charging, observed repeatedly with zero activity). NOT in the canonical enum used by other Roborock models — do not assume this applies to other devices. Raw code 102 was separately confirmed to occur WHILE actively cleaning, so do NOT add it here or treat unrecognized codes as idle by default.
 }
