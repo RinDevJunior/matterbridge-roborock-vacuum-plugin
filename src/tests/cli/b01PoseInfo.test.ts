@@ -684,12 +684,8 @@ describe('cmdB01PoseInfo', () => {
 			await expect(cmdB01PoseInfo('duid-1', session, logger)).resolves.toBeUndefined();
 
 			// Verify the empty room name falls back to "(unnamed)"
-			expect(consoleLogSpy).toHaveBeenCalledWith(
-				'  [1] (unnamed)  labelPos=' + JSON.stringify({ x: 10, y: 20 }),
-			);
-			expect(consoleLogSpy).toHaveBeenCalledWith(
-				'  [2] Kitchen  labelPos=' + JSON.stringify({ x: 30, y: 40 }),
-			);
+			expect(consoleLogSpy).toHaveBeenCalledWith('  [1] (unnamed)  labelPos=' + JSON.stringify({ x: 10, y: 20 }));
+			expect(consoleLogSpy).toHaveBeenCalledWith('  [2] Kitchen  labelPos=' + JSON.stringify({ x: 30, y: 40 }));
 		});
 	});
 
@@ -738,7 +734,9 @@ describe('cmdB01PoseInfo', () => {
 
 			// Verify the diagnostic line was NOT logged
 			const calls = vi.mocked(consoleLogSpy).mock.calls;
-			const hexLogLines = calls.filter((call: unknown[]) => (call[0] as string | undefined)?.includes?.('Unused header byte (offset 6'));
+			const hexLogLines = calls.filter((call: unknown[]) =>
+				(call[0] as string | undefined)?.includes?.('Unused header byte (offset 6'),
+			);
 			expect(hexLogLines).toHaveLength(0);
 		});
 
@@ -800,7 +798,9 @@ describe('cmdB01PoseInfo', () => {
 			);
 
 			// Verify all 4 int32 pairs are logged
-			const int32LogCalls = vi.mocked(consoleLogSpy).mock.calls.filter((call: unknown[]) => (call[0] as string | undefined)?.includes?.('[0] int32='));
+			const int32LogCalls = vi
+				.mocked(consoleLogSpy)
+				.mock.calls.filter((call: unknown[]) => (call[0] as string | undefined)?.includes?.('[0] int32='));
 			expect(int32LogCalls.length).toBeGreaterThanOrEqual(1);
 		});
 
@@ -866,7 +866,9 @@ describe('cmdB01PoseInfo', () => {
 			// Verify no diagnostic header bytes lines are logged
 			const headerReservedCalls = vi
 				.mocked(consoleLogSpy)
-				.mock.calls.filter((call: unknown[]) => (call[0] as string | undefined)?.includes?.('Unused header bytes (offsets 11-26'));
+				.mock.calls.filter((call: unknown[]) =>
+					(call[0] as string | undefined)?.includes?.('Unused header bytes (offsets 11-26'),
+				);
 			expect(headerReservedCalls).toHaveLength(0);
 		});
 	});
