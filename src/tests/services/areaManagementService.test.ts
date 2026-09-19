@@ -780,13 +780,26 @@ describe('AreaManagementService', () => {
 			vi.useRealTimers();
 		});
 
-		it('starts interval and calls getMapInfo periodically', async () => {
+		it('should call getMapInfo immediately when startPeriodicRefresh is called (time 0)', async () => {
 			const mapInfo = new MapInfo({ max_multi_map: 0, max_bak_map: 0, multi_map_count: 0, map_info: [] });
 			mockMessageRoutingService.getMapInfo.mockResolvedValue(mapInfo);
 
 			areaService.startPeriodicRefresh(mockDeviceId, 5000);
+			// Flush pending promises at time 0 to capture the immediate call
+			await vi.advanceTimersByTimeAsync(0);
+			expect(mockMessageRoutingService.getMapInfo).toHaveBeenCalledTimes(1);
+			areaService.stopPeriodicRefresh(mockDeviceId);
+		});
+
+		it('should call getMapInfo immediately plus once after interval', async () => {
+			const mapInfo = new MapInfo({ max_multi_map: 0, max_bak_map: 0, multi_map_count: 0, map_info: [] });
+			mockMessageRoutingService.getMapInfo.mockResolvedValue(mapInfo);
+
+			areaService.startPeriodicRefresh(mockDeviceId, 5000);
+			// After immediate call, advance timers to trigger the interval tick
 			await vi.advanceTimersByTimeAsync(5001);
-			expect(mockMessageRoutingService.getMapInfo).toHaveBeenCalled();
+			// Should have been called twice: once immediately (at time 0) and once at interval tick (at time 5000)
+			expect(mockMessageRoutingService.getMapInfo).toHaveBeenCalledTimes(2);
 			areaService.stopPeriodicRefresh(mockDeviceId);
 		});
 
@@ -795,9 +808,12 @@ describe('AreaManagementService', () => {
 			mockMessageRoutingService.getMapInfo.mockResolvedValue(mapInfo);
 
 			areaService.startPeriodicRefresh(mockDeviceId, 5000);
+			await vi.advanceTimersByTimeAsync(0); // Flush immediate call
 			areaService.stopPeriodicRefresh(mockDeviceId);
+			const callCountAfterStop = mockMessageRoutingService.getMapInfo.mock.calls.length;
 			await vi.advanceTimersByTimeAsync(10000);
-			expect(mockMessageRoutingService.getMapInfo).not.toHaveBeenCalled();
+			// Should not have additional calls after stop (only the 1 immediate call from start)
+			expect(mockMessageRoutingService.getMapInfo).toHaveBeenCalledTimes(callCountAfterStop);
 		});
 
 		it('startPeriodicRefresh replaces existing interval (stopPeriodicRefresh called first)', async () => {
@@ -805,18 +821,31 @@ describe('AreaManagementService', () => {
 			mockMessageRoutingService.getMapInfo.mockResolvedValue(mapInfo);
 
 			areaService.startPeriodicRefresh(mockDeviceId, 5000);
-			areaService.startPeriodicRefresh(mockDeviceId, 5000); // replace
+			// First call's immediate fetch fires immediately
+			await vi.advanceTimersByTimeAsync(0);
+			areaService.startPeriodicRefresh(mockDeviceId, 5000); // replace - triggers stopPeriodicRefresh then another immediate call
+			// Second call's immediate fetch
+			await vi.advanceTimersByTimeAsync(0);
+			// At this point: 2 immediate calls, 0 interval ticks
+			expect(mockMessageRoutingService.getMapInfo).toHaveBeenCalledTimes(2);
+			// Now advance to trigger the interval tick from the second call
 			await vi.advanceTimersByTimeAsync(5001);
-			// Only one interval active, so getMapInfo called once per tick
-			expect(mockMessageRoutingService.getMapInfo).toHaveBeenCalledTimes(1);
+			// Should be: 2 immediate calls + 1 interval tick = 3 total
+			expect(mockMessageRoutingService.getMapInfo).toHaveBeenCalledTimes(3);
 			areaService.stopPeriodicRefresh(mockDeviceId);
 		});
 
 		it('logs error when periodic getMapInfo fails', async () => {
 			mockMessageRoutingService.getMapInfo.mockRejectedValue(new Error('network failure'));
 			areaService.startPeriodicRefresh(mockDeviceId, 5000);
-			await vi.advanceTimersByTimeAsync(5001);
+			// Flush the immediate call to trigger the error catch and log
+			await vi.advanceTimersByTimeAsync(0);
 			expect(mockLogger.error).toHaveBeenCalledWith(expect.stringContaining('network failure'));
+			const errorCallCountAfterImmediate = mockLogger.error.mock.calls.length;
+			// Advance to trigger interval tick error
+			await vi.advanceTimersByTimeAsync(5001);
+			// Error should have been logged again for the interval tick
+			expect(mockLogger.error.mock.calls.length).toBeGreaterThan(errorCallCountAfterImmediate);
 			areaService.stopPeriodicRefresh(mockDeviceId);
 		});
 	});
@@ -835,9 +864,14 @@ describe('AreaManagementService', () => {
 			mockMessageRoutingService.getMapInfo.mockResolvedValue(mapInfo);
 
 			areaService.startPeriodicRefresh(mockDeviceId, 5000);
+			// Flush immediate call from startPeriodicRefresh
+			await vi.advanceTimersByTimeAsync(0);
+			const callCountBeforeClearAll = mockMessageRoutingService.getMapInfo.mock.calls.length;
 			areaService.clearAll();
+			// Advance past the interval to verify no more calls happen
 			await vi.advanceTimersByTimeAsync(10000);
-			expect(mockMessageRoutingService.getMapInfo).not.toHaveBeenCalled();
+			// Should have exactly 1 call (the immediate call) and no additional calls from interval
+			expect(mockMessageRoutingService.getMapInfo).toHaveBeenCalledTimes(callCountBeforeClearAll);
 		});
 	});
 
