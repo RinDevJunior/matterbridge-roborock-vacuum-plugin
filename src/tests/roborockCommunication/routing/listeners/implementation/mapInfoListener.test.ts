@@ -746,7 +746,7 @@ describe('MapInfoListener', () => {
 			// Second message: trace packet that resolves to a room
 			const tracePacketResult = {
 				rooms: [],
-				currentPose: { x: 0, y: 0 }, // Maps to pixel (0,0) which holds value 8 (roomId 2)
+				currentPose: { x: 25500, y: 25500 }, // Maps to pixel (0,0) which holds value 8 (roomId 2)
 				roomMatrix: undefined, // Trace packets don't include roomMatrix
 			};
 			parseRoomsSpy.mockReturnValueOnce(tracePacketResult);
