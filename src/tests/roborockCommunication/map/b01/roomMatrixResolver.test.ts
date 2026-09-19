@@ -163,9 +163,11 @@ describe('resolveRoomFromPose', () => {
 		// Construct a 3x3 grid: all cells room-classified
 		// Byte value 8 means roomId 2 (8 >> 2)
 		const grid = Buffer.from([8, 12, 16, 20, 8, 28, 32, 36, 40]);
-		// origin at (1, 1), so pose (0, 0) maps to grid pixel (1, 1)
+		// origin at (1, 1), so pose in Roborock-common mm that maps to grid pixel (1, 1):
+		// pose.x = 25500 + 50 * (1 - 1) = 25500
+		// pose.y = 25500 + 50 * (1 - 1) = 25500
 		const origin: B01GridOrigin = { x: 1, y: 1, resolutionMmPerPixel: 50 };
-		const pose: B01Pose = { x: 0, y: 0 };
+		const pose: B01Pose = { x: 25500, y: 25500 };
 		const result = resolveRoomFromPose(pose, { data: grid, width: 3, height: 3, origin });
 		expect(result).toBe(2); // 8 >> 2 === 2
 	});
@@ -184,12 +186,17 @@ describe('resolveRoomFromPose', () => {
 			16, // row 2: roomId 4
 		]);
 		const origin: B01GridOrigin = { x: 1, y: 1, resolutionMmPerPixel: 50 };
-		// With ySign=1 and pose y=0, should map to pixel (1,1) -> roomId 3
-		const pose: B01Pose = { x: 0, y: 0 };
-		expect(resolveRoomFromPose(pose, { data: grid, width: 3, height: 3, origin }, 1)).toBe(3);
+		// With ySign=1: pixelY = round(1 - (pose.y - 25500) / 50)
+		// For pixelY=1: pose.y = 25500 + 50 * (1 - 1) = 25500
+		// With ySign=-1: pixelY = round(1 + (pose.y - 25500) / 50)
+		// For pixelY=0: pose.y = 25500 + 50 * (0 - 1) = 25450
+		// For pixelY=2: pose.y = 25500 + 50 * (2 - 1) = 25550
+		const poseYSignPos: B01Pose = { x: 25500, y: 25500 };
+		expect(resolveRoomFromPose(poseYSignPos, { data: grid, width: 3, height: 3, origin }, 1)).toBe(3);
 
-		// With ySign=-1 and same pose, transformation changes, may land on different row
-		const resultYSignNeg = resolveRoomFromPose(pose, { data: grid, width: 3, height: 3, origin }, -1);
+		// With ySign=-1 and different pose.y, the transformation changes
+		const poseYSignNeg: B01Pose = { x: 25500, y: 25550 };
+		const resultYSignNeg = resolveRoomFromPose(poseYSignNeg, { data: grid, width: 3, height: 3, origin }, -1);
 		// Both should be valid room IDs (not undefined) or one could be out of bounds
 		// depending on math — the key is they can differ, proving ySign affects behavior
 		expect(typeof resultYSignNeg === 'number' || resultYSignNeg === undefined).toBe(true);
@@ -207,5 +214,37 @@ describe('resolveRoomFromPose', () => {
 		for (const [p, m] of cases) {
 			expect(() => resolveRoomFromPose(p, m)).not.toThrow();
 		}
+	});
+
+	it('should resolve a real captured Q10 pose (Séjour, ground-truth validated on real hardware)', () => {
+		// Real capture data from Roborock Q10 S5+ (Sep 2026):
+		// - Robot physically confirmed in "Séjour" room (roomId 10)
+		// - Captured pose (Roborock-common mm format, pre-offset): { x: 27920, y: 28220 }
+		// - roomMatrix.origin (raw device frame): { x: 149, y: 209, resolutionMmPerPixel: 50 }
+		// - Grid dimensions: width: 254, height: 280
+		// - Expected resolved pixel: (197, 155) → grid index 39567
+		// - Grid byte at that index: 40 → roomId = 40 >> 2 = 10 ✓
+		//
+		// Coordinate transform:
+		// - worldX = 27920 - 25500 = 2420
+		// - worldY = 28220 - 25500 = 2720
+		// - pixelX = Math.round(2420/50 + 149) = 197
+		// - pixelY = Math.round(209 - 2720/50) = 155
+
+		const gridSize = 254 * 280; // 71120 bytes
+		const grid = Buffer.alloc(gridSize, 243); // Fill with background/sentinel value
+
+		// Place room byte at the critical pixel index
+		const pixelX = 197;
+		const pixelY = 155;
+		const index = pixelY * 254 + pixelX; // = 39567
+		grid[index] = 40; // roomId = 40 >> 2 = 10
+
+		const pose: B01Pose = { x: 27920, y: 28220 };
+		const origin: B01GridOrigin = { x: 149, y: 209, resolutionMmPerPixel: 50 };
+		const roomMatrix: B01RoomMatrix = { data: grid, width: 254, height: 280, origin };
+
+		const result = resolveRoomFromPose(pose, roomMatrix);
+		expect(result).toBe(10);
 	});
 });
