@@ -35,6 +35,7 @@ ${row('clean-mode', '--duid <duid>', 'Get current clean mode settings')}
 ${row('room-info', '--duid <duid>', 'Get room mapping (active map)')}
 ${row('map-info', '--duid <duid>', 'Get all maps with rooms')}
 ${row('legacy-map-info', '--duid <duid>', 'Parse V1 map binary: robot position + current room')}
+${row('legacy-map-info-v2', '--duid <duid>', 'Dump V1 map: positions, segment bounds, + grid/PPM files (fixture capture)')}
 ${row('b01-pose-info', '--duid <duid>', 'Decode Q10 currentPose/roomMatrix: robot position + resolved room (experimental)')}
 ${row('b01-map-info', '--duid <duid>', 'Test B01 map parser Q7/Q10 classifier against a live device (experimental, diagnostic)')}
 ${row('scenes', '--duid <duid> [--detail]', 'List cleaning scenes/routines')}
@@ -52,6 +53,7 @@ ${b}Examples:${r}
   npm run cli -- --command ${g}room-info  ${r}--duid ${c}<duid>${r}
   npm run cli -- --command ${g}map-info   ${r}--duid ${c}<duid>${r}
   npm run cli -- --command ${g}legacy-map-info${r}  --duid ${c}<duid>${r}
+  npm run cli -- --command ${g}legacy-map-info-v2${r}  --duid ${c}<duid>${r}
   npm run cli -- --command ${g}b01-pose-info${r}  --duid ${c}<duid>${r}
   npm run cli -- --command ${g}b01-map-info${r}  --duid ${c}<duid>${r}
   npm run cli -- --command ${g}custom     ${r}--duid ${c}<duid>${r} --method get_prop --params '["get_status"]'

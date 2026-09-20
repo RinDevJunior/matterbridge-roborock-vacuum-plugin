@@ -51,9 +51,9 @@ describe('DockStationStatus', () => {
 		expect(status.hasError()).toBe(true);
 	});
 
-	it('should return true when isUpdownWaterReady is Error', () => {
+	it('should return false when only isUpdownWaterReady is Error', () => {
 		const status = createDockStatus({ isUpdownWaterReady: ERR });
-		expect(status.hasError()).toBe(true);
+		expect(status.hasError()).toBe(false);
 	});
 
 	it('should return true when clearWater and isUpdownWaterReady are both Error', () => {
@@ -61,9 +61,9 @@ describe('DockStationStatus', () => {
 		expect(status.hasError()).toBe(true);
 	});
 
-	it('should return true for dss=2729 when isUpdownWaterReady is Error', () => {
+	it('should return false for dss=2729 (isUpdownWaterReady is not treated as a dock error)', () => {
 		const status = DockStationStatus.parseDockStationStatus(2729);
-		expect(status.hasError()).toBe(true);
+		expect(status.hasError()).toBe(false);
 	});
 
 	it('should handle missing clean water tank status gracefully', () => {
@@ -95,7 +95,6 @@ describe('DockStationStatus', () => {
 			['dustBagStatus', { dustBagStatus: ERR }, RvcOperationalState.ErrorState.DustBinMissing],
 			['cleanFluidStatus', { cleanFluidStatus: ERR }, RvcOperationalState.ErrorState.WaterTankMissing],
 			['waterBoxFilterStatus', { waterBoxFilterStatus: ERR }, RvcOperationalState.ErrorState.WaterTankMissing],
-			['isUpdownWaterReady', { isUpdownWaterReady: ERR }, RvcOperationalState.ErrorState.UnableToCompleteOperation],
 		] as const)('should return expected ErrorState when %s is Error', (_field, overrides, expected) => {
 			const status = createDockStatus(overrides);
 			expect(status.getMatterOperationalError()).toBe(expected);
@@ -125,9 +124,9 @@ describe('DockStationStatus', () => {
 			expect(status.getMatterOperationalError()).toBe(RvcOperationalState.ErrorState.WaterTankMissing);
 		});
 
-		it('should return UnableToCompleteOperation when only isUpdownWaterReady is Error', () => {
+		it('should return NoError when only isUpdownWaterReady is Error', () => {
 			const status = createDockStatus({ isUpdownWaterReady: ERR });
-			expect(status.getMatterOperationalError()).toBe(RvcOperationalState.ErrorState.UnableToCompleteOperation);
+			expect(status.getMatterOperationalError()).toBe(RvcOperationalState.ErrorState.NoError);
 		});
 
 		it('should return WaterTankEmpty for python-roborock dss=149 fixture', () => {

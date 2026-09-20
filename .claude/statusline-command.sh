@@ -112,3 +112,19 @@ if [ -n "$cwd" ]; then
   printf "${BLUE}📁 %s${RESET}" "${cwd/#$HOME/~}"
 fi
 printf "\n"
+
+# Row 5: git branch + commits ahead of origin/dev
+if [ -n "$cwd" ] && git -C "$cwd" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+  branch=$(git -C "$cwd" branch --show-current 2>/dev/null)
+  if [ -n "$branch" ]; then
+    printf "${GREEN}⎇ %s${RESET}" "$branch"
+    if git -C "$cwd" rev-parse --verify --quiet origin/dev >/dev/null 2>&1; then
+      ahead=$(git -C "$cwd" rev-list --count origin/dev..HEAD 2>/dev/null)
+      if [ -n "$ahead" ]; then
+        if [ "$ahead" -gt 0 ]; then acolor="$YELLOW"; else acolor="$FAINT"; fi
+        printf " ${DIM}·${RESET} ${acolor}↑%s vs origin/dev${RESET}" "$ahead"
+      fi
+    fi
+  fi
+fi
+printf "\n"

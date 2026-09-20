@@ -1,5 +1,110 @@
 # Claude History
 
+Entries are listed in reverse chronological order (most recent first). Older entries (2026-07-03 and earlier) have been moved to `workspace/claude_history_archive.md` to keep this file focused on recent work.
+
+---
+
+## 2026-08-03 — Fix room-detection flip-flop bug on V1 map devices
+
+**Task:** Fix spurious room-detection oscillation on Roborock S8/V1 map devices where ServiceArea.currentArea flipped between non-adjacent rooms every 1-2 minutes due to pose noise near corridor hubs. Root cause: AreaManagementService.setV1ResolvedSegment published room resolutions immediately on each map push with no temporal smoothing, causing false positive room changes.
+
+**Changes:**
+
+- `src/services/areaManagementService.ts` — added v1PendingResolution map to implement 2-consecutive-match confirmation gate before publishing resolved segments; added V1_SEGMENT_CONFIRMATION_THRESHOLD constant (value 2); confirmation cache cleared alongside v1RoomResolutionCache in clearAll()
+- `src/tests/services/areaManagementService.test.ts` — updated 5 existing tests to call setV1ResolvedSegment twice for confirmation flow; added 7 new debounce/confirmation tests validating gate logic
+
+**Outcome:** Pass (all verification gates: format:ci, lint:fix:ci, type-check:ci, test:ci; 109 tests green). Reviewer approved for production. V2 map devices unaffected.
+
+## 2026-07-28 — Add bounding-box containment check to V1 room-resolution fallback
+
+**Task:** Improve V1 map parser's room-resolution algorithm by adding a bounding-box containment tier between exact-pixel match and nearest-center fallback. Previously, when robot's position didn't land on an exactly-tagged room pixel (common at doorways), the code fell straight to nearest-center distance with no containment check — a large neighboring room's center could be numerically closer, producing wrong-room reports (e.g., Roborock S8 showing "Storage Room" when in "Dining Room").
+
+**Changes:**
+
+- `src/roborockCommunication/map/v1/mapParser.ts` — added `findContainingSegment` tier in `LegacyMapParser.resolveCurrentRoom`; if robot's position falls inside exactly one room's bounding box, that room is used; ambiguous (2+ overlapping) or zero-match cases fall through to existing nearest-center behavior unchanged
+- `src/roborockCommunication/map/v1/types.ts` — added `boundingBox` field to `LegacySegmentInfo`, reusing pixel-space bounds already computed elsewhere
+- `src/tests/model/legacyMapParser.test.ts` — added 5 new test cases (containment-wins-over-closer-center, ambiguous fallback, zero-match fallback, exact-pixel-still-wins, namedRooms-through-containment); fixed stale existing test for new `boundingBox` field
+- `src/tests/cli/legacyIslandDetection.test.ts` — fixed pre-existing test bug (stale pixelCount lookup from earlier 15%→30% threshold change)
+
+**Outcome:** Pass (all verification gates: format:ci, lint:fix:ci, type-check:ci, test:ci; 47 tests green across both test files). Reviewer approved production logic; test-writer added comprehensive coverage. Only affects V1-protocol devices' fallback path; newer-protocol devices unaffected. Follow-up: algorithmic improvement to a confirmed gap, but not proven to fix the original S8 report—if another room-mismatch report comes in, this fix narrows but does not eliminate the space of possible causes.
+
+## 2026-07-27 — Fix global gate bug in island size-heuristic exclusion
+
+**Task:** Fix bug where the size-heuristic exclusion rule for tiny islands was disabled globally if the map had ANY wall/zone data anywhere. Root cause: map-wide `hasNoWallOrZoneData` gate prevented the heuristic from running when unrelated wall/zone data existed elsewhere on the map. Found on first real-device test of the virtual-wall/island-detection feature (shipped in prior 2026-07-27 entry).
+
+**Changes:**
+
+- `src/cli/legacyIslandDetection.ts` — removed map-wide `hasNoWallOrZoneData` gate; size-heuristic now evaluates per-island unconditionally as last-resort fallback after zone-overlap and wall-adjacent checks
+- `src/tests/cli/legacyIslandDetection.test.ts` — updated stale test that asserted old buggy behavior; added 2 new test cases (mirroring real bug scenario, confirming wall-adjacent priority over size-heuristic)
+
+**Outcome:** Pass (all verification gates: format:ci, lint:fix:ci, type-check:ci, test:ci; 18 tests green in affected file; reviewer approved). Existing follow-up (wall/zone coordinate-unit real-device validation) remains pending, tracked separately in workspace/virtual-wall-detection-feasibility/.
+
+## 2026-07-27 — Add zone/wall detection and island classification to legacy-map-info-v2 CLI
+
+**Task:** Extend V1 map parser to decode previously-skipped block types 9 (forbidden zones), 10 (virtual walls), 12 (no-mop zones) and wire automatic island (connected-component) detection with zone-overlap/wall-adjacency/size-heuristic exclusion logic into legacy-map-info-v2 diagnostic command. Produces cleaned grid/PPM outputs for manual/automatic excludable island removal without re-download.
+
+**Changes:**
+
+- `src/roborockCommunication/map/v1/mapParser.ts` — added decoding for blocks 9/10/12 (forbidden zones, virtual walls, no-mop zones); coordinate interpretation verified same as robotPosition (raw mm)
+- `src/roborockCommunication/map/v1/types.ts` — added ZoneRect, VirtualWall, NoMopZone type definitions and MapDataBlocks interface
+- `src/cli/legacyIslandDetection.ts` — new pure module for 4-connectivity flood-fill island detection and island classification (zone-overlap, wall-adjacent, size-heuristic excludable; preserves largest island)
+- `src/cli/commands/legacyMapInfoV2.ts` — added --exclude-islands=<numbers>, --no-auto-exclude flags; outputs .cleaned.grid.txt/.cleaned.ppm variants alongside originals
+- `src/cli/main.ts` — wired new flags into command handler
+- `src/tests/model/legacyMapParser.test.ts` — added 8 tests for zone/wall/no-mop block decoding
+- `src/tests/cli/legacyIslandDetection.test.ts` — new file with 15 tests for island detection, classification, and exclusion scenarios
+
+**Outcome:** Pass (all verification gates: format:ci, lint:fix:ci, type-check:ci, test:ci; reviewer approved with no blocking issues). Known caveat: wall/zone coordinate-unit assumptions (raw mm, same space as robotPosition) remain unverified against real V1 device capture with configured virtual walls.
+
+## 2026-07-22 — Fix isUpdownWaterReady false-positive in dock error detection
+
+**Task:** Fix false-positive "Docking station error detected: UnableToCompleteOperation" reported to Apple Home/Matter when vacuum was idle and charging with no real fault. Root cause: isUpdownWaterReady dss-bitfield (bits 0-1, intended for up/down water lift-pump faults) was included in hasError() and DSS_FIELD_PRIORITY despite no corresponding Matter RVC enum; real hardware showed this field's steady-state value is 1 during idle/charging, not a transient fault signal.
+
+**Changes:**
+
+- `src/model/DockStationStatus.ts` — excluded isUpdownWaterReady from hasError() and DSS_FIELD_PRIORITY; field remains parsed/exposed on the object for future debugging
+- `wiki/Error-Handling-Reporting.md` — updated priority table to reflect five monitored dss fields (clearWater, dirtyWater, dustBag, cleanFluid, filter) instead of six
+- `src/tests/model/DockingStationStatus.test.ts` — updated 4 tests to reflect corrected behavior (isUpdownWaterReady=Error alone now yields false/NoError)
+
+**Outcome:** Pass (all verification gates passed: format:ci, lint:fix:ci, type-check:ci, test:ci; reviewer approved logic change).
+
+## 2026-07-22 — Fix room/mode mismatch in HomeKit during cleaning (rc02)
+
+**Task:** Fix HomeKit room indicator flickering/mismatching during multi-room cleans and incorrect mode display ("Automatic" shown when running "Max"). Root causes: (1) handleCleaningWithoutInfo unconditionally pinning currentArea to selectedAreas[0] when cleaningInfo transiently absent; (2) falsy-zero bug in resolveAreaFromCleaningInfo treating areaId=0 as not-found; (3) ModeResolver.resolveFallback() collapsing to generic Default when exact preset not matched.
+
+**Changes:**
+
+- `src/runtimes/handlers/serviceAreaHandler.ts` — last-known-area preservation fallback; avoid unconditional pin-to-first-area
+- `src/behaviors/roborock.vacuum/core/modeResolver.ts` — category-aware resolveFallback matching suction power/water flow before Default fallback; fixed falsy-zero check to `=== undefined`
+- `src/tests/runtimes/handlers/serviceAreaHandler.test.ts` — added area handling edge-case tests
+- `src/tests/behaviors/roborock.vacuum/core/modeResolver.test.ts` — added mode resolution coverage for edge-case presets
+
+**Outcome:** Pass (all verification gates passed: format:ci, lint:fix:ci, type-check:ci, test:ci; reviewer approved with no blocking issues).
+
+## 2026-07-20 — Fix currentArea freeze during V1-protocol multi-room cleans
+
+**Task:** Fix bug where Apple Home showed vacuum permanently "Cleaning Living Room" (or first selected room) during scheduled/multi-room cleans on V1-protocol Roborock devices (reported by S8 owner, affects any V1-protocol device). Root cause: handleCleaningWithoutInfo unconditionally pinned currentArea to selectedAreas[0] whenever multiple rooms were selected (added in commit #125), ordered before V1 segment-cache resolution logic, making that logic unreachable.
+
+**Changes:**
+
+- `src/runtimes/handlers/serviceAreaHandler.ts` — reordered handleCleaningWithoutInfo to try V1 segment-cache resolution (new resolveV1CurrentArea helper) first, falling back to pin-to-first-area only on cache miss or area-outside-selection; extracted shared publishAreaProgress helper to remove duplicated progress-publish logic
+- `src/tests/runtimes/handlers/serviceAreaHandler.test.ts` — added 6 new regression tests for V1 fallback with multi-room selection, updated 4 stale tests, fixed 3 stale comments
+
+**Outcome:** Pass (reviewer approved with no blocking issues; all verification gates passed: format:ci, lint:fix:ci, type-check:ci, test:ci).
+
+## 2026-07-18 — Fix error-clear transitions not reported to Matter
+
+**Task:** Fix bug where vacuum/dock error-clear transitions were never reported to the Matter controller. Root cause: error-handling gates in v1StatusListener.ts and handleHomeDataMessage.ts only fired when error code was non-zero, preventing the error-clear path from ever reaching the correct reset logic in handleErrorOccurred.
+
+**Changes:**
+
+- `src/roborockCommunication/routing/listeners/implementation/v1StatusListener.ts` — widened error gate to fire whenever error field is defined (not just non-zero)
+- `src/runtimes/handleHomeDataMessage.ts` — widened error gate to match v1StatusListener pattern
+- `src/tests/roborockCommunication/routing/listeners/implementation/v1StatusListener.test.ts` — updated stale assertions, added field-absent and error-clear-transition coverage
+- `src/tests/roborockCommunication/broadcast/listener/implementation/v1StatusListener.test.ts` — updated stale assertions and added transition coverage
+- `src/tests/runtimes/handleHomeDataMessage.test.ts` — updated stale assertions and added field-absent/clear-transition coverage
+
+**Outcome:** Pass (reviewer approved; all verification gates passed: format:ci, lint:fix:ci, type-check:ci, test:ci).
+
 ## 2026-07-14 — Reset ServiceArea.progress on clean start (third trigger)
 
 **Task:** Add third trigger for resetting `ServiceArea.progress` per-room state when vacuum starts new clean; detect genuine Docked/Stopped/Error → actively-cleaning operationalState transitions using `lastActivelyCleaningState` flag to avoid false positives on mid-clean detours.
@@ -361,304 +466,3 @@
 - `src/tests/roborockCommunication/routing/listeners/implementation/mapInfoListener.test.ts` — B01 binary parse `roomTypeId` → `areaType` integration tests
 
 **Outcome:** Pass (reviewed). B01/Q10 rooms now get correct Apple Home category icons; V10 tag switch preserved. Extended B01 room IDs (2001–2011) and real-device icon validation remain deferred.
-
-## 2026-07-03 — External room list sources (R1 + R3)
-
-**Task:** Align Q7 map fetch to `service.upload_by_maptype` (R1) and add B01 firmware-style room name normalizer at the listener layer (R3). R2 (deterministic `"Room {id}"` fallback in `getSupportedAreas.ts`) skipped per user preference.
-
-**Changes:**
-
-- `src/roborockCommunication/protocol/dispatcher/Q7MessageDispatcher.ts` — R1: `getRoomMap`/`getRoomMapV2` switch from `get_room_mapping_backup_1` to `get_room_mapping` with `{ force: 1, map_type: 0 }`
-- `src/roborockCommunication/map/b01/roomNameNormalizer.ts` — R3: new pure normalizer for `rr_*` tokens, `roomTypeId` lookup, and `roomN` pattern
-- `src/roborockCommunication/routing/listeners/implementation/mapInfoListener.ts` — R3: apply `normalizeB01RoomName` in `tryParseB01MapBinary()` `iot_name` assignment
-- `src/tests/roborockCommunication/map/b01/roomNameNormalizer.test.ts` — unit tests for normalizer
-
-**Outcome:** Pass (reviewed). R2 intentionally not implemented — random `Unknown Room ####` fallback retained in `getSupportedAreas.ts`. Q7 hardware validation for R1 still recommended on real device.
-
-## 2026-07-03 — B01 currentPose/roomMatrix decode (Phase 1 CLI)
-
-**Task:** Phase 1 only — decode Q10 `currentPose`/`roomMatrix` from B01 RobotMap protobuf and expose via `b01-pose-info` CLI; shared core with safe no-op `resolveRoomFromPose()`. Phase 2 production wiring explicitly deferred.
-
-**Changes:**
-
-- `src/roborockCommunication/map/b01/roborockProto.ts` — `currentPose` (field 8) and `roomMatrix` (field 13) on RobotMap
-- `src/roborockCommunication/map/b01/types.ts` — `B01Pose`, `B01RoomMatrix`; extended `B01MapInfo`
-- `src/roborockCommunication/map/b01/b01MapParser.ts` — defensive extraction of currentPose/roomMatrix
-- `src/roborockCommunication/map/b01/roomMatrixResolver.ts` — new; `resolveRoomFromPose()` safe no-op (always undefined)
-- `src/cli/commands/b01PoseInfo.ts` — new `b01-pose-info` command (connectDevice → waitForPush → parse → resolve → print)
-- `src/cli/main.ts`, `src/cli/help.ts` — wire `b01-pose-info` command and help row
-- Incidental: legacy map path renamed `legacy` → `v1` (`mapParser`, `types`, `v1MapDecryptor` + tests)
-- `src/tests/cli/b01PoseInfo.test.ts` — CLI command tests
-- `src/tests/roborockCommunication/map/b01/roomMatrixResolver.test.ts` — resolver guard tests
-- `src/tests/roborockCommunication/map/b01/b01MapParser.test.ts` — currentPose/roomMatrix extraction tests
-- `src/tests/cli/mapListHelpers.test.ts` — updated for v1 path rename
-
-**Outcome:** Pass (Phase 1 only, reviewed). CLI ready for real Q10 device capture; room-matrix pixel decode intentionally unimplemented; Phase 2 (areaManagementService/roborockService/mapInfoListener/serviceAreaHandler wiring) deferred.
-
-## 2026-07-03 — Legacy map room names in legacy-map-info CLI
-
-**Task:** Wire human-readable room names into `legacy-map-info` by fetching `get_multi_maps_list` + active map status in parallel with the V1 binary push, mapping `rooms[].iot_name` to segment IDs on the active map.
-
-**Changes:**
-
-- `src/cli/mapListHelpers.ts` — shared CLI helpers: `resolveActiveMapId`, push parsers, `extractNamedRooms`, `roomDisplayName`
-- `src/cli/commands/legacyMapInfo.ts` — triple parallel push listeners; pass `LegacyNamedRoom[]` to `resolveCurrentRoom`; enrich segment list output
-- `src/cli/commands/mapInfo.ts` — import shared helpers instead of private duplicates (no behavior change)
-- `src/tests/cli/mapListHelpers.test.ts` — unit tests for helper functions
-
-**Outcome:** Pass (reviewed). CLI-only; names from `get_multi_maps_list` filtered by active `mapFlag`; `(unnamed)` fallback when status unknown or device returns no map list.
-
-## 2026-07-03 — A187 legacy map parse fix (Int32LE + CLI)
-
-**Task:** Fix V1 map parser field widths (UInt16LE → Int32LE for position x/y and image dimensions) and stop awaiting `getHomeMap` RPC so the CLI no longer hangs 10s waiting for an RPC that only returns `vacuumRoom`.
-
-**Changes:**
-
-- `src/roborockCommunication/map/legacy/mapParser.ts` — Int32LE position x/y; Int32LE image top/left/height/width; UInt32LE segmentCount
-- `src/cli/commands/legacyMapInfo.ts` — fire-and-forget `getHomeMap`; rely on Protocol 301 push listener only
-- `src/tests/exampleData/legacyMapFixture.ts` — fixture builders aligned to Int32LE layout
-- `src/tests/roborockCommunication/map/legacy/legacyMapParser.test.ts` — updated assertions for corrected field widths
-
-**Outcome:** Pass (reviewed). Validated on live A187 — robot position, image dimensions, and segment centers now parse correctly.
-
-## 2026-07-03 — V1 map inner decryption fix
-
-**Task:** Fix `legacy-map-info` CLI to decrypt the Protocol 301 inner layer before parsing — the push buffer is outer-decrypted only (24-byte envelope + AES-128-CBC + gzip), not a ready-to-parse `"rr"` binary.
-
-**Changes:**
-
-- `src/roborockCommunication/map/legacy/v1MapDecryptor.ts` — `decryptAndUnzipV1Map`: strip envelope, AES-128-CBC(sessionNonce), gunzip
-- `src/roborockCommunication/routing/clientRouter.ts` — `getSerializeNonce()` exposes `MessageContext.serializeNonce` for map decryption
-- `src/cli/commands/legacyMapInfo.ts` — decrypt raw Protocol 301 push before `LegacyMapParser.parse()`
-- `src/tests/exampleData/legacyMapFixture.ts` — `buildEncryptedV1MapPayload` round-trip fixture helper
-- `src/tests/roborockCommunication/map/legacy/v1MapDecryptor.test.ts` — round-trip, wrong-nonce, and too-small buffer tests
-
-**Outcome:** Pass (reviewed). `LegacyMapParser` unchanged (`"rr"`-only); CLI now matches ioBroker/roborock-gitlab wire format.
-
-## 2026-07-02 — Legacy V1 map parser + legacy-map-info CLI
-
-**Task:** Prototype position-to-room containment for legacy V1 vacuums by parsing `get_map_v1` binary (Protocol 301); validated via new `legacy-map-info` CLI command. No plugin runtime changes.
-
-**Changes:**
-
-- `src/roborockCommunication/map/legacy/types.ts` — LegacyMapData, image/segment/robot types
-- `src/roborockCommunication/map/legacy/mapParser.ts` — LegacyMapParser: parse binary blocks, resolveCurrentRoom
-- `src/cli/commands/legacyMapInfo.ts` — cmdLegacyMapInfo: waitForPush + getHomeMap, print room/segments
-- `src/cli/main.ts`, `src/cli/help.ts` — register `legacy-map-info` command
-- `src/tests/exampleData/legacyMapFixture.ts` — programmatic V1 map binary builders
-- `src/tests/roborockCommunication/map/legacy/legacyMapParser.test.ts` — parse + resolveCurrentRoom tests
-
-**Outcome:** Pass (reviewed). CLI probe only; runtime still uses `vacuumRoom` from getHomeMap RPC.
-
-## 2026-06-29 — Wiki gap fill: 5 new pages + 6 expanded
-
-**Task:** Created 5 new wiki pages documenting message pipeline, listeners, dispatchers, feature flags, and room/map data; expanded 6 existing pages with missing sections; updated Home.md index.
-
-**Changes:**
-
-- `wiki/Runtime-Handlers-Pipeline.md` — created; documents PlatformRunner dispatch chain, handler signatures, burst polling integration
-- `wiki/Message-Listeners-Architecture.md` — created; documents broadcaster/listener pattern, V1/B01/MapInfo listener implementations
-- `wiki/Message-Dispatchers-Protocol-Routing.md` — created; documents dispatcher factory, V10/Q7/Q10 protocol-specific routing
-- `wiki/Feature-Flags-Device-Capabilities.md` — created; documents featureSetDecoder Groups A–G, clean mode gating, DeviceFeatures registry
-- `wiki/Room-Map-Data-Pipeline.md` — created; documents DTO → Mapper → Model transformation, AreaManagementService endpoint
-- `wiki/Polling-Real-Time-Connection.md` — added cross-link to Runtime-Handlers-Pipeline
-- `wiki/Supporting-Domains.md` — added AreaManagementService lifecycle section with methods table
-- `wiki/Roborock-Protocol-Wire-Format.md` — added Encode Pipeline and Serializer Factory sections
-- `wiki/MQTT-Local-Communication.md` — added AbstractClient section documenting broadcaster/listener host
-- `wiki/Error-Handling-Reporting.md` — added partial-implementation note to EmailNotificationService section
-- `wiki/Home.md` — added "Message & Protocol Flow" index section with links to 5 new pages
-
-**Outcome:** Pass. Implementer created all 5 new pages and expanded all 6 existing pages per plan.md specifications. Wiki coverage now complete with no gaps remaining.
-
-## 2026-06-29 — Wiki documentation fixes
-
-**Task:** Applied accuracy fixes to documentation across wiki and agent-answers. Fixed 6 files based on review against current source code.
-
-**Changes:**
-
-- `wiki/Clean-Mode-Domain.md` — rewrote "Special Modes" section: removed `vacAndMopDeepModeConfig` row, clarified feature-flag conditions for SmartPlan and VacFollowedByMop; rewrote "Device Capability Registry" section to document feature-flag-driven behavior and unused `_model` parameters
-- `wiki/Home.md` — removed broken links table, replaced with archived note; added cross-links to flow documentation (`status-update-flow.md` and `room-map-sync-flow.md`)
-- `wiki/Roborock-Protocol-Wire-Format.md` — corrected file path to include `deserializers/` subdirectory
-- `wiki/Matterbridge-Device-Registration.md` — updated `hasSmartPlan` call signature to include feature set parameters and documented feature-flag gating
-- `wiki/Service-Area-Update.md` — translated 100% from Vietnamese to English while preserving all technical content and structure
-- `docs/agent-answers.md` — added historical banner to DEVICE_EXTRA_MODES session explaining that static model lookup has been replaced by feature-flag-driven implementation
-
-**Outcome:** Pass. Reviewer approved all changes. Wiki now accurately reflects current feature-flag-driven architecture with no static model whitelists.
-
-## 2026-06-27 — Wired hasSmartPlan to is_smart_clean_mode_set_supported feature flag
-
-**Task:** Wire `hasSmartPlan` to the `is_smart_clean_mode_set_supported` feature flag instead of always returning `false`.
-
-**Changes:**
-
-- `src/behaviors/roborock.vacuum/core/deviceCapabilityRegistry.ts` — updated `hasSmartPlan` signature from `hasSmartPlan(_model: string): boolean` to `hasSmartPlan(_model: string, featureSet?: string, newFeatureSet?: string): boolean`; changed implementation to decode feature flags and return `features.is_smart_clean_mode_set_supported` instead of hardcoded `false`
-- `src/behaviors/roborock.vacuum/core/behaviorConfig.ts` — updated call to `hasSmartPlan(model)` to pass feature parameters: `hasSmartPlan(model, featureSet, newFeatureSet)`
-
-**Outcome:** Pass. SmartPlan (mode 4) is now dynamically gated by the `is_smart_clean_mode_set_supported` feature flag from the device's feature set. The feature flag is decoded using the existing `decodeFeatureSet` function.
-
-## 2026-06-27 — Wired featureSetDecoder into capability registry
-
-**Task:** Wire `featureSetDecoder` into `deviceCapabilityRegistry` to dynamically gate `VacFollowedByMop` (mode 11) on the `is_clean_then_mop_mode_supported` feature flag (bit 93 of `newFeatureSet`), while keeping `SmartPlan` (mode 4) and `VacAndMopDeep` (mode 12) as static model-string lookups.
-
-**Changes:**
-
-- `src/behaviors/roborock.vacuum/core/deviceCapabilityRegistry.ts` — added `decodeFeatureSet` import; updated `getExtraModes` signature with optional `featureSet?` and `newFeatureSet?` parameters; implemented hybrid filter logic that decodes feature flags only when device context is present and gates mode 11 on `is_clean_then_mop_mode_supported`; updated `getAllModesForDevice` signature and body to thread optional params through
-- `src/behaviors/roborock.vacuum/core/behaviorConfig.ts` — extended function signature with `featureSet?` and `newFeatureSet?` parameters; threaded them into `getAllModesForDevice` call
-- `src/initialData/getSupportedCleanModes.ts` — extended function signature with optional feature params; passed them to `getAllModesForDevice`
-- `src/platform/deviceConfigurator.ts` — threaded `vacuum.featureSet` and `vacuum.newFeatureSet` into `configureBehavior` call
-- `src/platform/behaviorFactory.ts` — threaded feature params through to called functions
-- `src/types/roborockVacuumCleaner.ts` — passed `device.featureSet` and `device.newFeatureSet` to `getSupportedCleanModes` call
-
-**Outcome:** Pass with notes. All registry functions accept feature flags as optional parameters for backward compatibility. Existing callers without device context (e.g., `runtimeHelper.ts`, `matterStateNames.ts`) compile unchanged. VacFollowedByMop is now dynamically gated; SmartPlan and VacAndMopDeep remain static as planned.
-
-## 2026-06-27 — Implemented featureSetDecoder.ts
-
-**Task:** Implemented pure TypeScript decoder that parses `featureSet` (64-bit integer string) and `newFeatureSet` (hex string) from Device DTO into ~172 named boolean `DeviceFeatures` capability flags, mirroring python-roborock's `DeviceFeatures.from_feature_flags()`.
-
-**Changes:**
-
-- `src/share/featureSetDecoder.ts` — created `DeviceFeatures` interface with Groups A–D decoded fields, Groups E–F–G defaulted to false, and 3 raw diagnostic fields; implemented `decodeFeatureSet` function with Group A (lower 32-bit masks), Group B (upper 32-bit bit-index tests), Group C (last 8 hex chars masked), Group D (nibble-index extraction with private `extractNibbleBit` helper); added error handling for invalid `featureSet` (try/catch BigInt) and invalid hex (NaN guard for maskC)
-
-**Outcome:** Pass. File created at `src/share/featureSetDecoder.ts` as a pure utility (no DI, no side effects) with comprehensive guard against invalid inputs. Wiring into capability registry deferred to separate task.
-
-## 2026-06-27 — Investigated Feature Gap 4 (roomNames Config Override)
-
-**Task:** Investigated Gap 4 from feature-gap analysis to understand the deferred roomNames config override issue and confirm Gap 5 was already implemented.
-
-**Changes:**
-
-- `docs/finding/feature-gap.md` — added investigation findings (Gap 4 root cause, name resolution flow, RoomMapping shape, call sites, config type, schema location) and implementation plan (3-step procedure to add config option)
-
-**Outcome:** Pass. Gap 4 is a low-priority deferred issue with complete implementation plan ready to execute when a user reports missing room names. Gap 5 (FullyCharged explicit state) confirmed already implemented. Gaps 1, 2, 5 closed; Gaps 3 and 4 remain open (low priority).
-
-## 2026-06-27 (Session 36)
-
-- Fixed `ChargingError` (status code 9) to properly set `operationalError` when the robot fails to find or reach the charging dock:
-  - Extended `ResolvedState` interface to include optional `operationalError?: RvcOperationalState.ErrorState`.
-  - Added status override for `ChargingError` in `stateResolver.ts` that sets `operationalState = Error` and `operationalError = FailedToFindChargingDock`.
-  - Updated `deviceStateHandler.ts` to apply the `operationalError` from the resolved state when updating Matter attributes.
-  - Updated test in `stateResolver.test.ts` to verify `operationalError` is correctly set for `ChargingError` status.
-- Root cause: `ChargingError` was only setting `operationalState = Error` but not the detail field `operationalError`, leaving the Matter controller unable to distinguish the specific failure reason. Now the Matter controller can properly report the "FailedToFindChargingDock" error state.
-- All 175 test files / 1877 tests pass. Build successful.
-
-## 2026-06-25 (Session 35)
-
-- Fixed 15 failing tests across 4 test files after the V1/V2 dispatcher refactor:
-  - `V01MessageDispatcher.test.ts`: Updated `getMapInfo` tests to expect `MapInfo` (not `undefined`); replaced "liveMapUpdates=true" tests with explicit `getMapInfoV2`/`getRoomMapV2` tests; fixed `getRoomMap` no-data test to expect `[]` instead of `undefined`.
-  - `Q7MessageDispatcher.test.ts` / `Q10MessageDispatcher.test.ts`: Fixed `getMapInfo` tests to verify `client.send` (not `client.query`, as Q7/Q10 are push-based); replaced "liveMapUpdates=true" tests with V2 method tests; fixed `getRoomMap` to expect `[]`.
-  - `areaManagementService.test.ts`: Added `MapInfo` import; updated mocks to return `MapInfo`/`[]` instead of `undefined`; fixed "no maps" assertion to `toBeDefined()` with `maps.length === 0`.
-- Removed `supportsMapQueryResponse` check from `areaManagementService.getMapInfo`/`getRoomMap` — routing now uses only `this.liveMapUpdates` flag (simpler, Q7/Q10 V1 path sends the request and returns empty data which is safe).
-- All 175 test files / 1877 tests pass.
-
-## 2026-06-25 (Session 34)
-
-- Restored `getMapInfo` to return `MultipleMapDto[] | undefined` propagated through the full call chain:
-  - `V10MessageDispatcher.getMapInfo`: `liveMapUpdates=false` uses `client.query<MultipleMapDto[]>()` returning actual data; `liveMapUpdates=true` uses `client.send()` and returns `undefined`.
-  - `Q7MessageDispatcher.getMapInfo` / `Q10MessageDispatcher.getMapInfo`: return type `Promise<MultipleMapDto[] | undefined>`, always return `undefined` (push data handled by MapInfoListener).
-  - `abstractMessageDispatcher` interface updated to `getMapInfo(): Promise<MultipleMapDto[] | undefined>`.
-  - `messageRoutingService`, `roborockService` propagate the return type.
-  - `areaManagementService.getMapInfo`: explicitly processes returned `MultipleMapDto[]` → `MapInfo` → derives `supportedMaps` directly from `mapInfo.maps` (cannot use `getSupportedAreas` — it falls back when rooms are empty) → `setSupportedMaps` only (not `setSupportedAreas`, to avoid overwriting rooms).
-  - `areaManagementService.getRoomMap`: removed `setSupportedMaps` call — `setSupportedAreas` reads current `supportedMaps` (set by `getMapInfo`) when calling the listener, preserving maps across the two-step startup flow.
-- Fixed two test mocks: `mockResolvedValue()` → `mockResolvedValue(undefined)` in `RoomMap.test.ts` and `roborockService.coverage.test.ts`.
-- Lint clean, 175 test files / 1875 tests pass.
-
-## 2026-06-25 (Session 33)
-
-- Fully restored original `getRoomMap` data flow (broken by `fcfdfb6` fire-and-forget refactor):
-  - `V10MessageDispatcher.getRoomMap`: `liveMapUpdates=false` uses `client.query<RawRoomMappingData>()` and returns actual room data; `liveMapUpdates=true` uses `client.send()` and returns `undefined`.
-  - `Q7MessageDispatcher.getRoomMap` / `Q10MessageDispatcher.getRoomMap`: return `Promise<RawRoomMappingData | undefined>` (always `undefined`, data handled by MapInfoListener push).
-  - `AbstractMessageDispatcher` interface updated to `getRoomMap(): Promise<RawRoomMappingData | undefined>`.
-  - `messageRoutingService`, `areaManagementService`, `roborockService` propagate the return type.
-  - `areaManagementService.getRoomMap`: explicitly processes returned `RawRoomMappingData` → `RoomMap` → `HomeEntity` → `setSupportedAreas/Maps/IndexMap` (mirrors `MapInfoListener.updateAreas`).
-  - `areaManagementService` stores `deviceRooms` per-duid (via new `setDeviceRooms`) for room-name lookup during explicit processing; cleared in `clearAll()`.
-  - `roborockService.setDeviceRooms` delegates to `areaService.setDeviceRooms`.
-  - `deviceConfigurator.configureDevice`: calls `roborockService.setDeviceRooms(duid, homeData.rooms)` before device init.
-  - `deviceConfigurator.onConfigureDevice`: calls `await roborockService.getRoomMap(duid, -1)` after `getMapInfo` in the startup loop.
-- Updated V10 `getRoomMap` tests: default case asserts `client.query` called and result equals raw data; added "no data" case; live case asserts `client.send`.
-- Added `setDeviceRooms: vi.fn()` and corrected `getRoomMap` mock return to `undefined` in shared test utilities.
-- Fixed `enableLiveMapUpdates` missing from all affected test config fixtures.
-- Lint clean, 175 test files / 1875 tests pass.
-
-## 2026-06-24 (Session 32)
-
-- Wired `onActiveMapChanged` callback from `MapInfoListener` into `connectionService.ts` via `NotifyMessageTypes.ActiveMapChanged`.
-- Added `handleActiveMapChanged` to `serviceAreaHandler.ts`: sets `selectedAreas` to all rooms on the new map, `currentArea` to `null`.
-- Added early return in `resolveAreaFromCleaningInfo` when `segmentId === INVALID_SEGMENT_ID` to prevent overwriting `currentArea` after map switch.
-- Wired `requestStatus` callback into `V1StatusListener`: fires `getDeviceStatus` immediately when `additional_props` (DPS 128) push received.
-- Added `deviceProtocol` guard in `MapInfoListener.tryParseB01MapBinary`: V1 devices skip binary parsing, keeping `warn` log for genuine B01 failures.
-- Implemented `switchMap` on all dispatchers: V1 (`load_multi_map`), Q7 (`service.set_cur_map`), Q10 (DP 60 `multi_map_switch`).
-- Added `trySwitchMap` to `RoborockVacuumCleaner`: detects when selected areas belong to a different map and calls `roborockService.switchMap`.
-- Initialized `activeMapId = -1` in `deviceConfigurator.ts` so first status response always triggers `handleActiveMapChanged` and populates `selectedAreas` on startup.
-- Refactored `connectionService.ts`: moved dispatcher creation before listeners to eliminate lazy `requestStatusFn` pattern; replaced non-null assertion with captured local variable.
-- Fixed lint errors: `prefer-const`, `no-non-null-assertion`, `no-base-to-string` (`JSON.stringify`), import sort.
-- Analysed Q10 active map detection: fires via `tryParseB01MapBinary` → `onActiveMapChanged(b01Info.mapId)` from binary map blob (Protocol 301), not from list response.
-
-## 2026-06-24 (Session 31)
-
-- Added `requiresBody: boolean` to `AbstractMessageListener` interface (non-optional).
-- Set `requiresBody = true` on: `V1StatusListener`, `B01StatusListener`, `MapInfoListener`, `DeviceStatusListener`.
-- Set `requiresBody = false` on: `HelloResponseListener`, `MapResponseListener`, `OneShotResponseListener`, `LocalPingResponseListener`, `LoggingMessageListener`, `PushCaptureListener`.
-- Both `V1ResponseBroadcaster` and `B01ResponseBroadcaster` now silently skip listeners with `requiresBody = true` when message body is absent.
-- Added 2 tests per broadcaster (skip when body absent + pass-through when `requiresBody = false`); updated all test mocks.
-- Bumped version `1.1.7-rc02` → `1.1.7-rc03` across `package.json`, `schema.json`, `config.json`.
-
-## 2026-06-23 (Session 30)
-
-- Verified status update flow issues (Issues 1–6) against current code:
-  - Issues 1, 2, 4, 6 already fixed in prior sessions; updated `docs/to_do.md` to reflect.
-  - Issue 5: replaced global `allDevicesHaveRealTimeConnection` short-circuit in `requestHomeData` with per-device staleness check using `robot.lastUpdateAt` + `WATCHDOG_THRESHOLD_MS`; updated `updateFromHomeData` to send status updates to stale real-time devices.
-  - Issue 3: fixed falsy checks in `handleHomeDataMessage.ts` — `if (batteryLevel)` → `if (batteryLevel != null)`, `if (suctionPower && waterBoxMode)` → `if (suctionPower != null && waterBoxMode != null)`.
-- Verified remaining todos against current code — all resolved:
-  - `stateResolver.ts` bugs: implementation matches `misc/state_resolution_matrix.md`; doc was lost but no remaining discrepancies.
-  - Routine selection: `buildCleanCommand` already separates routines/rooms and uses `indexMap.getRoomId()`.
-  - MQTT keepalive: unconditional reconnect re-enabled deliberately.
-  - `B01ResponseBroadcaster`: already integrated in `connectionService.ts` + `ResponseBroadcasterFactory`.
-- Cleaned `docs/claude_history.md` — kept entries from May 2026 onward (1 month).
-
-## 2026-06-21 (Session 29)
-
-- Implemented fire-and-forget v3 Tasks 3 & 4:
-  - **Task 3**: Created `MapInfoListener` at `src/roborockCommunication/routing/listeners/implementation/mapInfoListener.ts`. Handles V1 push responses by shape detection (no messageId correlation): `isRawRoomMappingData` checks for array-of-arrays, `isMultipleMapDto` checks for `map_info` presence. Calls `updateAreas()` which constructs a temporary `HomeEntity` and runs `getSupportedAreas()` → updates `AreaManagementService`. B01-Q10 and B01-Q7 branches are debug-logged stubs pending device log confirmation.
-  - **Task 4**: Injected `AreaManagementService` as optional constructor param in `ConnectionService`. Updated `ServiceContainer.getConnectionService()` to pass it. In `initializeMessageClientForLocal`, registered `MapInfoListener` after `simpleMessageListener` using `device.store.homeData.rooms` for room name mapping.
-  - Added 12 unit tests for `MapInfoListener` covering duid filtering, V1 room map / map info parsing, B01-Q10/Q7 stubs.
-  - All 176 test files, 1892 tests pass. `npm run type-check` exits 0.
-
-## 2026-06-21 (Session 28)
-
-- Implemented fire-and-forget v3 Tasks 1, 2, and 5 (full chain):
-  - **Task 1**: Converted `getMapInfo()`/`getRoomMap()` to `Promise<void>` across all 7 layers: `abstractMessageDispatcher` interface, `V10MessageDispatcher` (dropped `client.query`, removed `MultipleMapDto` import), `Q10MessageDispatcher`, `Q7MessageDispatcher`, `messageRoutingService`, `areaManagementService`, `roborockService`.
-  - **Task 2**: Rewrote `RoomMap.fromMapInfo()` to `Promise<void>` (fires both requests, returns immediately). Removed `MapInfoResult` interface, `HomeModelMapper` and `debugStringify` imports from `RoomMap.ts`. Updated `deviceConfigurator.ts` to construct `HomeEntity` with `RoomMap.empty()` and `MapInfo.empty()`.
-  - **Task 5**: Deleted the blocking `getRoomMap` + `activeMapId` update block from `serviceAreaHandler.ts` lines 109–112. Changed the empty room map guard log from `error` to `debug`.
-  - Updated CLI commands (`mapInfo.ts`, `rooms.ts`) to fire-and-return pattern.
-  - Updated all affected tests across 8 test files (V01/Q10/Q7 dispatchers, RoomMap, platformRunner, platformRunner2, areaManagementService, roborockService.coverage, deviceConfigurator).
-  - `npm run type-check` exits 0. `npm test` — 1880 tests pass (175 files).
-
-## 2026-06-20 (Session 27)
-
-- Audited the status update flow across `deviceStateHandler.ts`, `getBatteryStatus.ts`, `handleHomeDataMessage.ts`, `platformRunner.ts`, `function.ts`.
-- Found 3 bugs and 3 design issues; documented in `docs/status-update-flow-issues.md`.
-- High: `handleDeviceStatusSimpleUpdate` passes `RvcRunMode.ModeTag` (converted) to `state_to_matter_operational_status` instead of the original `OperationStatusCode` — operational state always `Docked` on the simple path.
-- Medium: `getBatteryState` returns `IsAtFullCharge` as default for non-dock states (Cleaning, Paused, etc.), which can incorrectly trigger `Charging → Docked` transition during battery updates.
-- Low: `batteryLevel` falsy check in `updateFromHomeData` silently drops 0% battery.
-
-## 2026-06-12 (Session 26)
-
-- Full codebase read-through (learn-codebase): read every remaining source file in `src/roborockCommunication/routing/`, `src/cli/` (+ `cli.ts`), `src/model/`, `src/errors/`, `src/initialData/`, `src/constants/`, `src/runtimes/` (incl. `handlers/`), `src/share/`, `src/types/`, `src/core/domain/`, `src/core/application/models/`, `module.ts`, `settings.ts`, `platformRunner.ts`, and the `behaviors/roborock.vacuum/core/` mode-handling system.
-- Created `docs/authentication-flow.md` - mermaid flowchart + summary of the `AuthenticationCoordinator` → `PasswordAuthStrategy`/`TwoFactorAuthStrategy` flow (cached-token check, password login, 2FA verification-code flow, error mapping).
-- Updated `docs/CODE_STRUCTURE.md` to fix drift from current source (v1.1.7-rc01):
-  - `routing/listeners/`: removed stale `services/` subtree (`pendingResponseTracker.ts`, `b01/v1PendingResponseTracker.ts`), added `oneShotResponseListener.ts`.
-  - `initialData/`: replaced nonexistent `getSupportedScenes.ts` with `getSupportedRoutines.ts`, added per-file descriptions.
-  - `constants/`: noted `sensitiveDataRegexReplacements.ts` is not re-exported from `index.ts`.
-  - `model/`: documented all 7 files (was missing `AuthenticationResponse.ts`, `CleanCommand.ts`, `RoborockPluginPlatformConfig.ts`, `VacuumStatus.ts`).
-  - `errors/`: documented full `BaseError` hierarchy.
-  - Added new "Error Handling & Plugin Models" and "CLI Tool" sections + ToC entries; bumped version/date header.
-
-## 2026-05-17 (Session 25)
-
-- Improved patch coverage from 83.85% to higher by adding 8 new tests targeting uncovered branches in changed files.
-- `oneShotResponseListener.test.ts`: added test for wrong-duid messages (covers line 34 false branch) and `onMessage-before-waitFor` (covers line 40 false branch when timer is undefined).
-- `responseBroadcasterFactory.test.ts`: added `deregister` test (covers lines 31-32).
-- `clientRouter.test.ts`: added `registerDevice`, `updateNonce`, `isReady`, `unregisterClient`, `query` timeout, and `query` resolve tests; added `error`/`warn` to mockLogger.
-- `abstractClient.test.ts`: added `isReady` delegates to `isConnected` test (covers line 40).
-- `v1ResponseBroadcaster.test.ts` / `b01ResponseBroadcaster.test.ts`: replaced "throw Error" with `throw 'raw string error'` to cover the `String(error)` branch in the non-Error exception handler.
-- All 175 test files, 1876 tests pass (+8). Precommit clean.

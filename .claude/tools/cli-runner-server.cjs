@@ -26,6 +26,7 @@ const ALLOWED_COMMANDS = [
   'room-info',
   'map-info',
   'legacy-map-info',
+  'legacy-map-info-v2',
   'b01-pose-info',
   'scenes',
   'network-info',

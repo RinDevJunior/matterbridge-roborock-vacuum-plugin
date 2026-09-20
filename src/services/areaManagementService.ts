@@ -33,6 +33,9 @@ export class AreaManagementService {
 	private iotApi: RoborockIoTApi | undefined;
 	private mapInfoCache = new Map<string, MapInfo>();
 	private v1RoomResolutionCache = new Map<string, { segmentId: number; resolvedAtMs: number }>();
+	private v1PendingResolution = new Map<string, { segmentId: number; consecutiveCount: number }>();
+
+	private static readonly V1_SEGMENT_CONFIRMATION_THRESHOLD = 2;
 
 	constructor(
 		private readonly logger: AnsiLogger,
@@ -391,7 +394,16 @@ export class AreaManagementService {
 	}
 
 	public setV1ResolvedSegment(duid: string, segmentId: number): void {
-		this.v1RoomResolutionCache.set(duid, { segmentId, resolvedAtMs: Date.now() });
+		const pending = this.v1PendingResolution.get(duid);
+		const consecutiveCount = pending && pending.segmentId === segmentId ? pending.consecutiveCount + 1 : 1;
+		this.v1PendingResolution.set(duid, { segmentId, consecutiveCount });
+
+		const confirmed = consecutiveCount >= AreaManagementService.V1_SEGMENT_CONFIRMATION_THRESHOLD;
+		this.logger.debug('AreaManagementService - setV1ResolvedSegment', { duid, segmentId, consecutiveCount, confirmed });
+
+		if (confirmed) {
+			this.v1RoomResolutionCache.set(duid, { segmentId, resolvedAtMs: Date.now() });
+		}
 	}
 
 	public getV1ResolvedSegment(duid: string, maxAgeMs = 30_000): number | undefined {
@@ -426,6 +438,7 @@ export class AreaManagementService {
 		this.deviceRooms.clear();
 		this.mapInfoCache.clear();
 		this.v1RoomResolutionCache.clear();
+		this.v1PendingResolution.clear();
 		this.logger.debug('AreaManagementService - All data cleared');
 	}
 }

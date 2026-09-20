@@ -4,6 +4,121 @@ All notable changes to this project will be documented in this file.
 
 ---
 
+## [1.1.9] - 2026-09-20
+
+This release also includes all changes from 1.1.8-rc01..rc07, which were not in public 1.1.8.
+
+### Added
+
+- **Room-boundary containment for V1 room resolution** — Bounding-box containment is checked before nearest-center fallback, fixing wrong-room reports at doorways.
+- **Island/noise classification** — Map islands are classified automatically by reason (zone-overlap, wall-adjacent, size-heuristic).
+
+### Changed
+
+- **Matterbridge requirement bumped to 3.10.9** — Updated the required/tested matterbridge version (from 3.9.4 via 3.10.0).
+- **Manual island-override CLI flags removed** — `--exclude-islands`, `--no-auto-exclude` and `--highlight-island` are gone; classification is always automatic.
+
+### Fixed
+
+- **Operational error state stuck after error cleared** — Error handling now uses a shared `buildOperationalError` helper and populates error details/label correctly.
+- **Room-detection flip-flop on S8 / V1 map devices** — A 2-consecutive-match gate now smooths resolved-room changes.
+- **Room indicator flicker and wrong clean mode** — Last-known cleaning area is preserved, `areaId` 0 is valid, and mode resolution is category-aware.
+- **Unsupported "Vacuum Then Mop" mode exposed** — The mode is now gated on device capability.
+- **Vacuum stuck on one room and false-positive dock error** — V1 `currentArea` no longer freezes, and `isUpdownWaterReady` is excluded from dock error detection.
+- **Error-clear transitions not reported** — V1 listeners now run error handling whenever the error field is defined.
+- **Size-heuristic classification gate bug** — Noise islands are now filtered as intended.
+
+<a href="https://www.buymeacoffee.com/rinnvspktr" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/default-orange.png" alt="Buy Me A Coffee" height="41" width="174"></a>
+
+---
+
+## [1.1.8-rc07] - 2026-09-13
+
+### Changed
+
+- **Matterbridge dependency bumped to 3.10.9** — Updated the required/tested matterbridge version.
+
+### Fixed
+
+- **Operational error state could get stuck after a vacuum error cleared** — `RvcOperationalState.operationalError` (errorStateId) could remain stuck at a non-zero error value forever once a vacuum error occurred, even after the condition cleared, when dock-station-status reporting was off. Error handling now goes through a shared `buildOperationalError` helper so the state is reliably reset.
+- **Error details/label never showed the real error** — `errorStateDetails`/`errorStateLabel` were never populated on real errors, leaving stale "Fully operational" text displayed next to an active error code.
+
+<a href="https://www.buymeacoffee.com/rinnvspktr" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/default-orange.png" alt="Buy Me A Coffee" height="41" width="174"></a>
+
+---
+
+## [1.1.8-rc06] - 2026-08-04
+
+### Fixed
+
+- **Room-detection flip-flop on Roborock S8 / V1 map devices** — `ServiceArea.currentArea` was oscillating between non-adjacent rooms every 1-2 minutes near hub areas (e.g. a corridor bordering many rooms) due to zero temporal smoothing in `AreaManagementService.setV1ResolvedSegment`; a 2-consecutive-match confirmation gate is now required before publishing a resolved room change. This is a follow-up to the room-boundary containment work shipped in 1.1.8-rc05 (PR #154), which was correct per-snapshot but didn't address rapid oscillation across independent map pushes. Only `src/services/areaManagementService.ts` changed; V2 map devices are unaffected.
+
+<a href="https://www.buymeacoffee.com/rinnvspktr" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/default-orange.png" alt="Buy Me A Coffee" height="41" width="174"></a>
+
+---
+
+## [1.1.8-rc05] - 2026-07-28
+
+### Added
+
+- **Room-boundary containment check for V1 room resolution** — `LegacyMapParser.resolveCurrentRoom` now runs a bounding-box containment check before falling back to nearest-center-distance, fixing wrong-room reports at doorways and room thresholds on V1-protocol devices.
+- **Full island/noise classification system** — Detected map islands are now classified by reason (zone-overlap, wall-adjacent, size-heuristic) with a real-device-tuned 30% size threshold, superseding the simpler island-numbering approach and always producing `.cleaned.ppm`/`.indexed.ppm` output automatically.
+
+### Changed
+
+- **Manual island-override CLI flags removed** — Removed `--exclude-islands`, `--no-auto-exclude`, and `--highlight-island` along with their underlying features; island/noise classification is now always-on and automatic.
+
+### Fixed
+
+- **Size-heuristic classification gate bug** — Corrected a bug in the size-heuristic gate used during island classification so noise islands are filtered as intended.
+
+<a href="https://www.buymeacoffee.com/rinnvspktr" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/default-orange.png" alt="Buy Me A Coffee" height="41" width="174"></a>
+
+---
+
+## [1.1.8-rc04] - 2026-07-22
+
+### Fixed
+
+- **Room indicator flickering/mismatching during multi-room cleans** — Service-area handling now preserves the last-known cleaning area and correctly treats an `areaId` of `0` as valid instead of falsy, so HomeKit no longer flickers to the wrong room or drops the room indicator while the vacuum works through a multi-room clean.
+- **Clean mode incorrectly falling back to "Automatic"** — Mode resolution is now category-aware when matching water-flow/route combinations, so running a specific mode like Max with a non-canonical combo is reported correctly instead of falling back to a generic "Automatic" in HomeKit.
+- **Unsupported "Vacuum Then Mop" mode shown in HomeKit** — The OneTime clean mode is now gated on device capability, so devices that don't support "Vacuum Then Mop" no longer expose it as a selectable mode.
+
+<a href="https://www.buymeacoffee.com/rinnvspktr" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/default-orange.png" alt="Buy Me A Coffee" height="41" width="174"></a>
+
+---
+
+## [1.1.8-rc03] - 2026-07-22
+
+### Changed
+
+- **Requires matterbridge@3.10.0** — Minimum required Matterbridge version bumped from `3.9.4` to `3.10.0`. This is a dependency-version-only update; no plugin code changes were required, and all verification gates passed against the real matterbridge 3.10.0 API.
+
+<a href="https://www.buymeacoffee.com/rinnvspktr" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/default-orange.png" alt="Buy Me A Coffee" height="41" width="174"></a>
+
+---
+
+## [1.1.8-rc02] - 2026-07-22
+
+### Fixed
+
+- **Vacuum stuck showing "Cleaning" a single room during scheduled/multi-room cleans** — On V1-protocol Roborock devices, `handleCleaningWithoutInfo` could freeze `currentArea` on the first room, so Apple Home kept reporting the vacuum as permanently cleaning that room even after it moved on to clean other rooms in the schedule.
+- **False-positive dock error shown while idle/charging** — The `isUpdownWaterReady` dss-bitfield was mistakenly included in dock error detection, causing an "Unable to Complete Operation" error to appear in Apple Home even when the vacuum had no real fault and was simply idle or charging on the dock.
+
+<a href="https://www.buymeacoffee.com/rinnvspktr" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/default-orange.png" alt="Buy Me A Coffee" height="41" width="174"></a>
+
+---
+
+## [1.1.8-rc01] - 2026-07-20
+
+### Fixed
+
+- **Error-clear transitions not reported to Matter controller** — `V1StatusListener` and `handleHomeDataMessage` only ran the error-handling path when the error code was non-zero, so a device clearing an error never reached the existing clear-to-`NoError` reset logic. Both gates now fire whenever the error field is defined, matching the already-correct `B01StatusListener` pattern.
+
+<a href="https://www.buymeacoffee.com/rinnvspktr" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/default-orange.png" alt="Buy Me A Coffee" height="41" width="174"></a>
+
+---
+
 ## [1.1.8] - 2026-09-20
 
 ### Fixed

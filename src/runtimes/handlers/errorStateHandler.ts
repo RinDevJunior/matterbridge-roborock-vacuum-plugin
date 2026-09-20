@@ -9,6 +9,10 @@ import type { DeviceErrorMessage } from '../../roborockCommunication/models/inde
 import { getOperationalErrorName } from '../../share/matterStateNames.js';
 import type { RoborockVacuumCleaner } from '../../types/roborockVacuumCleaner.js';
 
+function buildOperationalError(errorStateId: RvcOperationalState.ErrorState): RvcOperationalState.ErrorStateStruct {
+	return { errorStateId, errorStateDetails: getOperationalErrorName(errorStateId) };
+}
+
 export async function handleErrorOccurred(
 	robot: RoborockVacuumCleaner,
 	message: DeviceErrorMessage,
@@ -34,7 +38,12 @@ export async function handleErrorOccurred(
 				RvcOperationalState.OperationalState.Error,
 				platform.log,
 			),
-			robot.updateAttribute(RvcOperationalState.id, 'operationalError', { errorStateId: errorDetail }, platform.log),
+			robot.updateAttribute(
+				RvcOperationalState.id,
+				'operationalError',
+				buildOperationalError(errorDetail),
+				platform.log,
+			),
 		]);
 		return;
 	}
@@ -50,13 +59,22 @@ export async function handleErrorOccurred(
 		await robot.updateAttribute(
 			RvcOperationalState.id,
 			'operationalError',
-			{ errorStateId: RvcOperationalState.ErrorState.NoError },
+			buildOperationalError(RvcOperationalState.ErrorState.NoError),
 			platform.log,
 		);
 		return;
 	}
 
 	if (!platform.configManager.includeDockStationStatus) {
+		platform.log.debug(
+			'Docking station status reporting disabled; clearing operational error (no active vacuum error).',
+		);
+		await robot.updateAttribute(
+			RvcOperationalState.id,
+			'operationalError',
+			buildOperationalError(RvcOperationalState.ErrorState.NoError),
+			platform.log,
+		);
 		return;
 	}
 
@@ -75,14 +93,19 @@ export async function handleErrorOccurred(
 					RvcOperationalState.OperationalState.Error,
 					platform.log,
 				),
-				robot.updateAttribute(RvcOperationalState.id, 'operationalError', { errorStateId: errorDetail }, platform.log),
+				robot.updateAttribute(
+					RvcOperationalState.id,
+					'operationalError',
+					buildOperationalError(errorDetail),
+					platform.log,
+				),
 			]);
 		} else {
 			platform.log.debug('No docking station errors detected.');
 			await robot.updateAttribute(
 				RvcOperationalState.id,
 				'operationalError',
-				{ errorStateId: RvcOperationalState.ErrorState.NoError },
+				buildOperationalError(RvcOperationalState.ErrorState.NoError),
 				platform.log,
 			);
 		}
@@ -96,7 +119,7 @@ export async function handleErrorOccurred(
 			await robot.updateAttribute(
 				RvcOperationalState.id,
 				'operationalError',
-				{ errorStateId: dockStatus },
+				buildOperationalError(dockStatus),
 				platform.log,
 			);
 		} else {
@@ -104,7 +127,7 @@ export async function handleErrorOccurred(
 			await robot.updateAttribute(
 				RvcOperationalState.id,
 				'operationalError',
-				{ errorStateId: RvcOperationalState.ErrorState.NoError },
+				buildOperationalError(RvcOperationalState.ErrorState.NoError),
 				platform.log,
 			);
 		}
@@ -117,7 +140,7 @@ export async function handleErrorOccurred(
 	await robot.updateAttribute(
 		RvcOperationalState.id,
 		'operationalError',
-		{ errorStateId: RvcOperationalState.ErrorState.NoError },
+		buildOperationalError(RvcOperationalState.ErrorState.NoError),
 		platform.log,
 	);
 }
