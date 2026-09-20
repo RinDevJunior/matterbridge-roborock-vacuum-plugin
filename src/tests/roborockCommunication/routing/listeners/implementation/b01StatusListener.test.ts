@@ -358,6 +358,31 @@ describe('B01StatusListener', () => {
 					}),
 				);
 			});
+
+			it('should leave cleaningInfo undefined when room_id_list entry is not a finite number', async () => {
+				const msg = makeQ10Message(duid, {
+					[Q10RequestCode.clean_area]: 400,
+					[Q10RequestCode.common_request]: {
+						[Q10RequestCode.clean_expand]: {
+							room_id_list: ['not-a-number'],
+						},
+					},
+				});
+				await expect(listener.onMessage(msg)).resolves.toBeUndefined();
+				expect(handler.onServiceAreaUpdate).toHaveBeenCalledWith(
+					expect.objectContaining({
+						cleaningInfo: undefined,
+					}),
+				);
+			});
+
+			it('extractQ10RoomId returns undefined when message.body is missing (defensive guard)', () => {
+				const noBodyMessage = asPartial<ResponseMessage>({ duid, body: undefined });
+				const result = (
+					listener as unknown as { extractQ10RoomId: (m: ResponseMessage) => number | undefined }
+				).extractQ10RoomId(noBodyMessage);
+				expect(result).toBeUndefined();
+			});
 		});
 
 		describe('clean_percent (DP 87) — addendum', () => {
