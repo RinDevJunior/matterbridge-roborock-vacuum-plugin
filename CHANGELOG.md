@@ -4,6 +4,16 @@ All notable changes to this project will be documented in this file.
 
 ---
 
+## [1.1.8] - 2026-09-20
+
+### Fixed
+
+- **Roborock Q10 actively-cleaning status code 104 not recognized** — Added the non-canonical raw status code `104` (reported by Q10 S5+ while cleaning) to the known operation status codes and cleaning states, so ServiceArea progress and current-area updates are no longer silently dropped during an active clean.
+
+<a href="https://www.buymeacoffee.com/rinnvspktr" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/default-orange.png" alt="Buy Me A Coffee" height="41" width="174"></a>
+
+---
+
 ## [1.1.7] - 2026-07-17
 
 ### Changed
