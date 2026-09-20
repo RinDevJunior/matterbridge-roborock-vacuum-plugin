@@ -4,9 +4,9 @@ All notable changes to this project will be documented in this file.
 
 ---
 
-## [1.1.9-rc01] - 2026-09-20
+## [1.1.9] - 2026-09-20
 
-New release candidate line after public 1.1.8. Carries over all 1.1.8-rc01..rc07 changes, which are not in public 1.1.8.
+This release also includes all changes from 1.1.8-rc01..rc07, which were not in public 1.1.8.
 
 ### Added
 
