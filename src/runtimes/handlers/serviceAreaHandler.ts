@@ -26,9 +26,7 @@ const CLEANING_STATES = new Set([
 	OperationStatusCode.ActivelyCleaningQ10,
 ]);
 
-function isActivelyCleaningOperationalState(
-	operationalState: RvcOperationalState.OperationalState | undefined,
-): boolean {
+function isCleaningSessionActiveState(operationalState: RvcOperationalState.OperationalState | undefined): boolean {
 	return (
 		operationalState !== undefined &&
 		operationalState !== RvcOperationalState.OperationalState.Docked &&
@@ -169,17 +167,18 @@ export async function handleServiceAreaUpdate(
 		`Handling service area update (state=${OperationStatusCode[message.state]}): ${debugStringify(message)}`,
 	);
 
-	// Detect transition from not-actively-cleaning to actively-cleaning and reset progress.
+	// Detect transition from cleaning-session-inactive to cleaning-session-active and reset progress.
 	const operationalState: RvcOperationalState.OperationalState | undefined = robot.getAttribute(
 		RvcOperationalState.id,
 		'operationalState',
 		logger,
 	);
-	const isActivelyCleaningNow = isActivelyCleaningOperationalState(operationalState);
-	const wasActivelyCleaning = platform.roborockService?.getLastActivelyCleaningState(robot.device.duid) ?? false;
-	platform.roborockService?.setLastActivelyCleaningState(robot.device.duid, isActivelyCleaningNow);
+	const isCleaningSessionActiveNow = isCleaningSessionActiveState(operationalState);
+	const wasCleaningSessionActive =
+		platform.roborockService?.getLastCleaningSessionActiveState(robot.device.duid) ?? false;
+	platform.roborockService?.setLastCleaningSessionActiveState(robot.device.duid, isCleaningSessionActiveNow);
 
-	if (!wasActivelyCleaning && isActivelyCleaningNow) {
+	if (!wasCleaningSessionActive && isCleaningSessionActiveNow) {
 		logger.debug(
 			`[${robot.device.duid}] Detected transition to actively cleaning (operationalState=${operationalState}), resetting progress`,
 		);
@@ -301,7 +300,7 @@ export async function handleActiveMapChanged(
 		'operationalState',
 		logger,
 	);
-	if (isActivelyCleaningOperationalState(operationalState)) {
+	if (isCleaningSessionActiveState(operationalState)) {
 		logger.debug(
 			`[${robot.device.duid}] ActiveMapChanged: ignoring map change to ${mapId} while actively cleaning (operationalState=${operationalState})`,
 		);

@@ -1,5 +1,21 @@
 # Claude History
 
+## 2026-09-19 — Rename isActivelyCleaning* to isCleaningSessionActive* (clarify semantics)
+
+**Task:** Identifier rename fixing misleading flag name discovered during Q10 live-position debugging. Flag means "cleaning session still active (not idle/docked/stopped/error), possibly mid-detour e.g. returning to dock" — not literally "vacuuming right now". Renamed: isActivelyCleaningOperationalState→isCleaningSessionActiveState, isActivelyCleaningNow/wasActivelyCleaning→isCleaningSessionActiveNow/wasCleaningSessionActive, set/getLastActivelyCleaningState→set/getLastCleaningSessionActiveState, private field lastActivelyCleaningState→lastCleaningSessionActiveState, debug log field isActivelyCleaning→isCleaningSessionActive.
+
+**Changes:**
+
+- `src/services/areaManagementService.ts` — method/field renames for session-active state tracking
+- `src/services/roborockService.ts` — proxy method renames
+- `src/runtimes/handlers/serviceAreaHandler.ts` — updated state references
+- `src/tests/services/areaManagementService.test.ts` — tests updated
+- `src/tests/services/roborockService.test.ts` — tests updated
+- `src/tests/services/roborockService/roborockService.areamanagement.test.ts` — tests updated
+- `src/tests/runtimes/handlers/serviceAreaHandler.test.ts` — tests updated
+
+**Outcome:** Pass (pure rename, no behavior change; reviewer approved; 2510 tests passing).
+
 ## 2026-09-19 — Reduce ServiceArea startup latency (immediate map refresh on startup)
 
 **Task:** Fix 5-minute startup delay in live-position fallback: `AreaManagementService.startPeriodicRefresh` was only fetching maps on the first 5-minute interval tick, causing `ServiceArea.CurrentArea` to stay `null` for up to 5 minutes after Matterbridge restart even during active cleaning. Solution: extracted interval-tick body into new private `triggerMapInfoRefresh(duid)` helper, called immediately when `startPeriodicRefresh` starts, then reused for existing 5-minute interval ticks.

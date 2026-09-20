@@ -162,35 +162,35 @@ describe('RoborockService - Area Management', () => {
 			expect(roborockService.getProgress(duid2)).toEqual(progress);
 		});
 
-		it('setLastActivelyCleaningState delegates to areaService.setLastActivelyCleaningState', () => {
-			roborockService.setLastActivelyCleaningState(duid, true);
-			expect(roborockService.getLastActivelyCleaningState(duid)).toBe(true);
+		it('setLastCleaningSessionActiveState delegates to areaService.setLastCleaningSessionActiveState', () => {
+			roborockService.setLastCleaningSessionActiveState(duid, true);
+			expect(roborockService.getLastCleaningSessionActiveState(duid)).toBe(true);
 		});
 
-		it('getLastActivelyCleaningState delegates to areaService.getLastActivelyCleaningState', () => {
-			expect(roborockService.getLastActivelyCleaningState('unknown-duid')).toBe(false);
+		it('getLastCleaningSessionActiveState delegates to areaService.getLastCleaningSessionActiveState', () => {
+			expect(roborockService.getLastCleaningSessionActiveState('unknown-duid')).toBe(false);
 		});
 
-		it('getLastActivelyCleaningState returns state previously set via setLastActivelyCleaningState', () => {
+		it('getLastCleaningSessionActiveState returns state previously set via setLastCleaningSessionActiveState', () => {
 			const duid2 = 'duid-state-test';
-			roborockService.setLastActivelyCleaningState(duid2, true);
-			expect(roborockService.getLastActivelyCleaningState(duid2)).toBe(true);
+			roborockService.setLastCleaningSessionActiveState(duid2, true);
+			expect(roborockService.getLastCleaningSessionActiveState(duid2)).toBe(true);
 		});
 
-		it('getLastActivelyCleaningState defaults to false for unset duid', () => {
-			expect(roborockService.getLastActivelyCleaningState('new-duid-123')).toBe(false);
+		it('getLastCleaningSessionActiveState defaults to false for unset duid', () => {
+			expect(roborockService.getLastCleaningSessionActiveState('new-duid-123')).toBe(false);
 		});
 
-		it('setLastActivelyCleaningState can toggle state between true and false', () => {
+		it('setLastCleaningSessionActiveState can toggle state between true and false', () => {
 			const duid2 = 'duid-toggle-test';
-			roborockService.setLastActivelyCleaningState(duid2, true);
-			expect(roborockService.getLastActivelyCleaningState(duid2)).toBe(true);
+			roborockService.setLastCleaningSessionActiveState(duid2, true);
+			expect(roborockService.getLastCleaningSessionActiveState(duid2)).toBe(true);
 
-			roborockService.setLastActivelyCleaningState(duid2, false);
-			expect(roborockService.getLastActivelyCleaningState(duid2)).toBe(false);
+			roborockService.setLastCleaningSessionActiveState(duid2, false);
+			expect(roborockService.getLastCleaningSessionActiveState(duid2)).toBe(false);
 
-			roborockService.setLastActivelyCleaningState(duid2, true);
-			expect(roborockService.getLastActivelyCleaningState(duid2)).toBe(true);
+			roborockService.setLastCleaningSessionActiveState(duid2, true);
+			expect(roborockService.getLastCleaningSessionActiveState(duid2)).toBe(true);
 		});
 	});
 });

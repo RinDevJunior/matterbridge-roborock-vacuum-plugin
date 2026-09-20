@@ -41,8 +41,8 @@ function createMockPlatform(
 			getSelectedAreas: vi.fn().mockReturnValue([]),
 			getProgress: vi.fn().mockReturnValue([]),
 			setProgress: vi.fn(),
-			getLastActivelyCleaningState: vi.fn().mockReturnValue(false),
-			setLastActivelyCleaningState: vi.fn(),
+			getLastCleaningSessionActiveState: vi.fn().mockReturnValue(false),
+			setLastCleaningSessionActiveState: vi.fn(),
 			ensureAreasForMap: vi.fn().mockResolvedValue(false),
 		}),
 	});
@@ -210,8 +210,8 @@ describe('handleServiceAreaUpdate with progress', () => {
 			getSelectedAreas: vi.fn().mockReturnValue(selectedAreas),
 			getProgress: vi.fn().mockReturnValue(initialProgress),
 			setProgress: vi.fn(),
-			getLastActivelyCleaningState: vi.fn().mockReturnValue(false),
-			setLastActivelyCleaningState: vi.fn(),
+			getLastCleaningSessionActiveState: vi.fn().mockReturnValue(false),
+			setLastCleaningSessionActiveState: vi.fn(),
 		});
 
 		const platform = asPartial<RoborockMatterbridgePlatform>({
@@ -239,8 +239,8 @@ describe('handleServiceAreaUpdate with progress', () => {
 			getSelectedAreas: vi.fn().mockReturnValue(selectedAreas),
 			getProgress: vi.fn().mockReturnValue([]),
 			setProgress: vi.fn(),
-			getLastActivelyCleaningState: vi.fn().mockReturnValue(false),
-			setLastActivelyCleaningState: vi.fn(),
+			getLastCleaningSessionActiveState: vi.fn().mockReturnValue(false),
+			setLastCleaningSessionActiveState: vi.fn(),
 		});
 
 		const platform = asPartial<RoborockMatterbridgePlatform>({
@@ -290,8 +290,8 @@ describe('handleServiceAreaUpdate with progress', () => {
 			getSelectedAreas: vi.fn().mockReturnValue(selectedAreas),
 			getProgress: vi.fn().mockReturnValue([]),
 			setProgress: vi.fn(),
-			getLastActivelyCleaningState: vi.fn().mockReturnValue(true),
-			setLastActivelyCleaningState: vi.fn(),
+			getLastCleaningSessionActiveState: vi.fn().mockReturnValue(true),
+			setLastCleaningSessionActiveState: vi.fn(),
 		});
 
 		const platform = asPartial<RoborockMatterbridgePlatform>({
@@ -331,8 +331,8 @@ describe('handleServiceAreaUpdate with progress', () => {
 			getSelectedAreas: vi.fn().mockReturnValue(selectedAreas),
 			getProgress: vi.fn().mockReturnValue(initialProgress),
 			setProgress: vi.fn(),
-			getLastActivelyCleaningState: vi.fn().mockReturnValue(false),
-			setLastActivelyCleaningState: vi.fn(),
+			getLastCleaningSessionActiveState: vi.fn().mockReturnValue(false),
+			setLastCleaningSessionActiveState: vi.fn(),
 		});
 
 		const platform = asPartial<RoborockMatterbridgePlatform>({
@@ -360,8 +360,8 @@ describe('handleServiceAreaUpdate with progress', () => {
 			getSelectedAreas: vi.fn().mockReturnValue(selectedAreas),
 			getProgress: vi.fn().mockReturnValue([]),
 			setProgress: vi.fn(),
-			getLastActivelyCleaningState: vi.fn().mockReturnValue(true),
-			setLastActivelyCleaningState: vi.fn(),
+			getLastCleaningSessionActiveState: vi.fn().mockReturnValue(true),
+			setLastCleaningSessionActiveState: vi.fn(),
 		});
 
 		const platform = asPartial<RoborockMatterbridgePlatform>({
@@ -402,8 +402,8 @@ describe('handleServiceAreaUpdate idle clears currentArea', () => {
 				getSelectedAreas: vi.fn().mockReturnValue([1]),
 				getProgress: vi.fn().mockReturnValue([]),
 				setProgress: vi.fn(),
-				getLastActivelyCleaningState: vi.fn().mockReturnValue(false),
-				setLastActivelyCleaningState: vi.fn(),
+				getLastCleaningSessionActiveState: vi.fn().mockReturnValue(false),
+				setLastCleaningSessionActiveState: vi.fn(),
 			}),
 		});
 
@@ -425,8 +425,8 @@ describe('handleServiceAreaUpdate idle clears currentArea', () => {
 			getSelectedAreas: vi.fn().mockReturnValue([7]),
 			getProgress: vi.fn().mockReturnValue([{ areaId: 7, status: ServiceArea.OperationalStatus.Operating }]),
 			setProgress: vi.fn(),
-			getLastActivelyCleaningState: vi.fn().mockReturnValue(false),
-			setLastActivelyCleaningState: vi.fn(),
+			getLastCleaningSessionActiveState: vi.fn().mockReturnValue(false),
+			setLastCleaningSessionActiveState: vi.fn(),
 		});
 
 		const platform = asPartial<RoborockMatterbridgePlatform>({
@@ -470,8 +470,8 @@ describe('handleServiceAreaUpdate multi-room without cleaning_info', () => {
 			getSelectedAreas: vi.fn().mockReturnValue(selectedAreas),
 			getProgress: vi.fn().mockReturnValue([]),
 			setProgress: vi.fn(),
-			getLastActivelyCleaningState: vi.fn().mockReturnValue(false),
-			setLastActivelyCleaningState: vi.fn(),
+			getLastCleaningSessionActiveState: vi.fn().mockReturnValue(false),
+			setLastCleaningSessionActiveState: vi.fn(),
 		});
 		const platform = asPartial<RoborockMatterbridgePlatform>({
 			log: createMockLogger(),
@@ -505,8 +505,8 @@ describe('handleServiceAreaUpdate multi-room without cleaning_info', () => {
 			getSelectedAreas: vi.fn().mockReturnValue(selectedAreas),
 			getProgress: vi.fn().mockReturnValue([]),
 			setProgress: vi.fn(),
-			getLastActivelyCleaningState: vi.fn().mockReturnValue(false),
-			setLastActivelyCleaningState: vi.fn(),
+			getLastCleaningSessionActiveState: vi.fn().mockReturnValue(false),
+			setLastCleaningSessionActiveState: vi.fn(),
 		});
 		const platform = asPartial<RoborockMatterbridgePlatform>({
 			log: createMockLogger(),
@@ -567,8 +567,8 @@ describe('handleServiceAreaUpdate without cleaning_info — B01 live position fa
 			requestV1MapRefresh: vi.fn(), // Should NOT be called for B01
 			getProgress: vi.fn().mockReturnValue([]),
 			setProgress: vi.fn(),
-			getLastActivelyCleaningState: vi.fn().mockReturnValue(false),
-			setLastActivelyCleaningState: vi.fn(),
+			getLastCleaningSessionActiveState: vi.fn().mockReturnValue(false),
+			setLastCleaningSessionActiveState: vi.fn(),
 		});
 		const platform = asPartial<RoborockMatterbridgePlatform>({
 			log: createMockLogger(),
@@ -645,8 +645,8 @@ describe('resolveAreaFromCleaningInfo — progress updates with area resolution'
 			getSelectedAreas: vi.fn().mockReturnValue(selectedAreas),
 			getProgress: vi.fn().mockReturnValue(initialProgress),
 			setProgress: vi.fn(),
-			getLastActivelyCleaningState: vi.fn().mockReturnValue(false),
-			setLastActivelyCleaningState: vi.fn(),
+			getLastCleaningSessionActiveState: vi.fn().mockReturnValue(false),
+			setLastCleaningSessionActiveState: vi.fn(),
 		});
 
 		const platform = asPartial<RoborockMatterbridgePlatform>({
@@ -709,8 +709,8 @@ describe('resolveAreaFromCleaningInfo — progress updates with area resolution'
 			getSelectedAreas: vi.fn().mockReturnValue(selectedAreas),
 			getProgress: vi.fn().mockReturnValue(initialProgress),
 			setProgress: vi.fn(),
-			getLastActivelyCleaningState: vi.fn().mockReturnValue(false),
-			setLastActivelyCleaningState: vi.fn(),
+			getLastCleaningSessionActiveState: vi.fn().mockReturnValue(false),
+			setLastCleaningSessionActiveState: vi.fn(),
 		});
 
 		const platform = asPartial<RoborockMatterbridgePlatform>({
@@ -761,8 +761,8 @@ describe('resolveAreaFromCleaningInfo — progress updates with area resolution'
 			getSelectedAreas: vi.fn().mockReturnValue(selectedAreas),
 			getProgress: vi.fn().mockReturnValue([]),
 			setProgress: vi.fn(),
-			getLastActivelyCleaningState: vi.fn().mockReturnValue(true),
-			setLastActivelyCleaningState: vi.fn(),
+			getLastCleaningSessionActiveState: vi.fn().mockReturnValue(true),
+			setLastCleaningSessionActiveState: vi.fn(),
 		});
 
 		const platform = asPartial<RoborockMatterbridgePlatform>({
@@ -818,8 +818,8 @@ describe('handleServiceAreaUpdate estimatedEndTime', () => {
 			getSelectedAreas: vi.fn().mockReturnValue(selectedAreas),
 			getProgress: vi.fn().mockReturnValue([]),
 			setProgress: vi.fn(),
-			getLastActivelyCleaningState: vi.fn().mockReturnValue(false),
-			setLastActivelyCleaningState: vi.fn(),
+			getLastCleaningSessionActiveState: vi.fn().mockReturnValue(false),
+			setLastCleaningSessionActiveState: vi.fn(),
 		});
 
 		return asPartial<RoborockMatterbridgePlatform>({
@@ -896,8 +896,8 @@ describe('handleServiceAreaUpdate estimatedEndTime', () => {
 			getSelectedAreas: vi.fn().mockReturnValue(selectedAreas),
 			getProgress: vi.fn().mockReturnValue([]),
 			setProgress: vi.fn(),
-			getLastActivelyCleaningState: vi.fn().mockReturnValue(false),
-			setLastActivelyCleaningState: vi.fn(),
+			getLastCleaningSessionActiveState: vi.fn().mockReturnValue(false),
+			setLastCleaningSessionActiveState: vi.fn(),
 		});
 		const platform = asPartial<RoborockMatterbridgePlatform>({
 			log: createMockLogger(),
@@ -978,8 +978,8 @@ describe('handleServiceAreaUpdate estimatedEndTime', () => {
 			getSelectedAreas: vi.fn().mockReturnValue(selectedAreas),
 			getProgress: vi.fn().mockReturnValue([]),
 			setProgress: vi.fn(),
-			getLastActivelyCleaningState: vi.fn().mockReturnValue(false),
-			setLastActivelyCleaningState: vi.fn(),
+			getLastCleaningSessionActiveState: vi.fn().mockReturnValue(false),
+			setLastCleaningSessionActiveState: vi.fn(),
 		});
 		const platform = asPartial<RoborockMatterbridgePlatform>({
 			log: createMockLogger(),
@@ -1186,8 +1186,8 @@ describe('resolveAreaFromCleaningInfo — fallback to getAreaIdV2 (Bug 1)', () =
 			getSelectedAreas: vi.fn().mockReturnValue([1]),
 			getProgress: vi.fn().mockReturnValue([]),
 			setProgress: vi.fn(),
-			getLastActivelyCleaningState: vi.fn().mockReturnValue(false),
-			setLastActivelyCleaningState: vi.fn(),
+			getLastCleaningSessionActiveState: vi.fn().mockReturnValue(false),
+			setLastCleaningSessionActiveState: vi.fn(),
 		});
 
 		const platform = asPartial<RoborockMatterbridgePlatform>({
@@ -1230,8 +1230,8 @@ describe('resolveAreaFromCleaningInfo — fallback to getAreaIdV2 (Bug 1)', () =
 			getSelectedAreas: vi.fn().mockReturnValue([1]),
 			getProgress: vi.fn().mockReturnValue([]),
 			setProgress: vi.fn(),
-			getLastActivelyCleaningState: vi.fn().mockReturnValue(false),
-			setLastActivelyCleaningState: vi.fn(),
+			getLastCleaningSessionActiveState: vi.fn().mockReturnValue(false),
+			setLastCleaningSessionActiveState: vi.fn(),
 		});
 
 		const platform = asPartial<RoborockMatterbridgePlatform>({
@@ -1274,8 +1274,8 @@ describe('resolveAreaFromCleaningInfo — fallback to getAreaIdV2 (Bug 1)', () =
 			getSelectedAreas: vi.fn().mockReturnValue([1]),
 			getProgress: vi.fn().mockReturnValue([]),
 			setProgress: vi.fn(),
-			getLastActivelyCleaningState: vi.fn().mockReturnValue(false),
-			setLastActivelyCleaningState: vi.fn(),
+			getLastCleaningSessionActiveState: vi.fn().mockReturnValue(false),
+			setLastCleaningSessionActiveState: vi.fn(),
 		});
 
 		const platform = asPartial<RoborockMatterbridgePlatform>({
@@ -1330,8 +1330,8 @@ describe('resolveAreaFromCleaningInfo — fallback to getAreaIdV2 (Bug 1)', () =
 			getSelectedAreas: vi.fn().mockReturnValue(selectedAreas),
 			getProgress: vi.fn().mockReturnValue(initialProgress),
 			setProgress: vi.fn(),
-			getLastActivelyCleaningState: vi.fn().mockReturnValue(false),
-			setLastActivelyCleaningState: vi.fn(),
+			getLastCleaningSessionActiveState: vi.fn().mockReturnValue(false),
+			setLastCleaningSessionActiveState: vi.fn(),
 		});
 
 		const platform = asPartial<RoborockMatterbridgePlatform>({
@@ -1639,8 +1639,8 @@ describe('resolveAreaFromCleaningInfo — V1 fallback when cleaningInfo is absen
 			getSelectedAreas: vi.fn().mockReturnValue([]), // Empty to enter else branch at line 233
 			getProgress: vi.fn().mockReturnValue([]),
 			setProgress: vi.fn(),
-			getLastActivelyCleaningState: vi.fn().mockReturnValue(false),
-			setLastActivelyCleaningState: vi.fn(),
+			getLastCleaningSessionActiveState: vi.fn().mockReturnValue(false),
+			setLastCleaningSessionActiveState: vi.fn(),
 			getV1ResolvedSegment: vi.fn().mockReturnValue(42), // Cache hit with segmentId 42
 			requestV1MapRefresh: vi.fn(),
 		});
@@ -1688,8 +1688,8 @@ describe('resolveAreaFromCleaningInfo — V1 fallback when cleaningInfo is absen
 			getSelectedAreas: vi.fn().mockReturnValue([]), // Empty to enter else branch at line 233
 			getProgress: vi.fn().mockReturnValue([]),
 			setProgress: vi.fn(),
-			getLastActivelyCleaningState: vi.fn().mockReturnValue(false),
-			setLastActivelyCleaningState: vi.fn(),
+			getLastCleaningSessionActiveState: vi.fn().mockReturnValue(false),
+			setLastCleaningSessionActiveState: vi.fn(),
 			getV1ResolvedSegment: vi.fn().mockReturnValue(undefined), // Cache miss
 			requestV1MapRefresh: vi.fn(),
 		});
@@ -1733,8 +1733,8 @@ describe('resolveAreaFromCleaningInfo — V1 fallback when cleaningInfo is absen
 			getSelectedAreas: vi.fn().mockReturnValue([5]),
 			getProgress: vi.fn().mockReturnValue([]),
 			setProgress: vi.fn(),
-			getLastActivelyCleaningState: vi.fn().mockReturnValue(false),
-			setLastActivelyCleaningState: vi.fn(),
+			getLastCleaningSessionActiveState: vi.fn().mockReturnValue(false),
+			setLastCleaningSessionActiveState: vi.fn(),
 			getV1ResolvedSegment: vi.fn(), // Should not be called
 			requestV1MapRefresh: vi.fn(),
 		});
@@ -1778,8 +1778,8 @@ describe('resolveAreaFromCleaningInfo — V1 fallback when cleaningInfo is absen
 			getSelectedAreas: vi.fn().mockReturnValue([5]),
 			getProgress: vi.fn().mockReturnValue([]),
 			setProgress: vi.fn(),
-			getLastActivelyCleaningState: vi.fn().mockReturnValue(false),
-			setLastActivelyCleaningState: vi.fn(),
+			getLastCleaningSessionActiveState: vi.fn().mockReturnValue(false),
+			setLastCleaningSessionActiveState: vi.fn(),
 			getV1ResolvedSegment: vi.fn(),
 			requestV1MapRefresh: vi.fn(),
 		});
@@ -1822,8 +1822,8 @@ describe('resolveAreaFromCleaningInfo — V1 fallback when cleaningInfo is absen
 			getSelectedAreas: vi.fn().mockReturnValue([]), // Empty to enter else branch at line 233
 			getProgress: vi.fn().mockReturnValue([]),
 			setProgress: vi.fn(),
-			getLastActivelyCleaningState: vi.fn().mockReturnValue(false),
-			setLastActivelyCleaningState: vi.fn(),
+			getLastCleaningSessionActiveState: vi.fn().mockReturnValue(false),
+			setLastCleaningSessionActiveState: vi.fn(),
 			getV1ResolvedSegment: vi.fn().mockReturnValue(999), // Unmapped segment ID
 			requestV1MapRefresh: vi.fn(),
 		});
@@ -1876,8 +1876,8 @@ describe('handleServiceAreaUpdate — start-of-clean progress reset', () => {
 			getSelectedAreas: vi.fn().mockReturnValue([1]),
 			getProgress: vi.fn().mockReturnValue([]),
 			setProgress: vi.fn(),
-			getLastActivelyCleaningState: vi.fn().mockReturnValue(false), // was not cleaning
-			setLastActivelyCleaningState: vi.fn(),
+			getLastCleaningSessionActiveState: vi.fn().mockReturnValue(false), // was not cleaning
+			setLastCleaningSessionActiveState: vi.fn(),
 		});
 
 		const platform = asPartial<RoborockMatterbridgePlatform>({
@@ -1908,7 +1908,7 @@ describe('handleServiceAreaUpdate — start-of-clean progress reset', () => {
 		expect(vi.mocked(mockRoborockService.setProgress).mock.calls[0]).toEqual(['test-duid-clean-start', []]);
 		expect(robot.updateAttribute).toHaveBeenCalledWith(ServiceArea.id, 'progress', [], expect.anything());
 		// Verify the new state was stored
-		expect(vi.mocked(mockRoborockService.setLastActivelyCleaningState).mock.calls[0]).toEqual([
+		expect(vi.mocked(mockRoborockService.setLastCleaningSessionActiveState).mock.calls[0]).toEqual([
 			'test-duid-clean-start',
 			true,
 		]);
@@ -1922,8 +1922,8 @@ describe('handleServiceAreaUpdate — start-of-clean progress reset', () => {
 			getSelectedAreas: vi.fn().mockReturnValue([1]),
 			getProgress: vi.fn().mockReturnValue(initialProgress),
 			setProgress: vi.fn(),
-			getLastActivelyCleaningState: vi.fn().mockReturnValue(true), // already was cleaning
-			setLastActivelyCleaningState: vi.fn(),
+			getLastCleaningSessionActiveState: vi.fn().mockReturnValue(true), // already was cleaning
+			setLastCleaningSessionActiveState: vi.fn(),
 		});
 
 		const platform = asPartial<RoborockMatterbridgePlatform>({
@@ -1955,7 +1955,7 @@ describe('handleServiceAreaUpdate — start-of-clean progress reset', () => {
 		const hasEmptyResetAsFirstCall = setCalls.length > 0 && setCalls[0][1].length === 0;
 		expect(hasEmptyResetAsFirstCall).toBe(false);
 		// Verify state was stored as true (still actively cleaning)
-		expect(vi.mocked(mockRoborockService.setLastActivelyCleaningState).mock.calls[0]).toEqual([
+		expect(vi.mocked(mockRoborockService.setLastCleaningSessionActiveState).mock.calls[0]).toEqual([
 			'test-duid-clean-start',
 			true,
 		]);
@@ -1968,8 +1968,8 @@ describe('handleServiceAreaUpdate — start-of-clean progress reset', () => {
 			getSelectedAreas: vi.fn().mockReturnValue([1]),
 			getProgress: vi.fn().mockReturnValue([]),
 			setProgress: vi.fn(),
-			getLastActivelyCleaningState: vi.fn().mockReturnValue(true), // was actively cleaning
-			setLastActivelyCleaningState: vi.fn(),
+			getLastCleaningSessionActiveState: vi.fn().mockReturnValue(true), // was actively cleaning
+			setLastCleaningSessionActiveState: vi.fn(),
 		});
 
 		const platform = asPartial<RoborockMatterbridgePlatform>({
@@ -2000,7 +2000,7 @@ describe('handleServiceAreaUpdate — start-of-clean progress reset', () => {
 		const hasEmptyResetAsFirstCall = setCalls.length > 0 && setCalls[0][1].length === 0;
 		expect(hasEmptyResetAsFirstCall).toBe(false);
 		// Verify Paused state is stored as true (still actively cleaning)
-		expect(vi.mocked(mockRoborockService.setLastActivelyCleaningState).mock.calls[0]).toEqual([
+		expect(vi.mocked(mockRoborockService.setLastCleaningSessionActiveState).mock.calls[0]).toEqual([
 			'test-duid-clean-start',
 			true,
 		]);
@@ -2013,8 +2013,8 @@ describe('handleServiceAreaUpdate — start-of-clean progress reset', () => {
 			getSelectedAreas: vi.fn().mockReturnValue([1]),
 			getProgress: vi.fn().mockReturnValue([]),
 			setProgress: vi.fn(),
-			getLastActivelyCleaningState: vi.fn().mockReturnValue(true), // was cleaning before detour
-			setLastActivelyCleaningState: vi.fn(),
+			getLastCleaningSessionActiveState: vi.fn().mockReturnValue(true), // was cleaning before detour
+			setLastCleaningSessionActiveState: vi.fn(),
 		});
 
 		const platform = asPartial<RoborockMatterbridgePlatform>({
@@ -2045,7 +2045,7 @@ describe('handleServiceAreaUpdate — start-of-clean progress reset', () => {
 		const hasEmptyResetAsFirstCall = setCalls.length > 0 && setCalls[0][1].length === 0;
 		expect(hasEmptyResetAsFirstCall).toBe(false);
 		// Verify SeekingCharger state is stored as true
-		expect(vi.mocked(mockRoborockService.setLastActivelyCleaningState).mock.calls[0]).toEqual([
+		expect(vi.mocked(mockRoborockService.setLastCleaningSessionActiveState).mock.calls[0]).toEqual([
 			'test-duid-clean-start',
 			true,
 		]);
@@ -2058,8 +2058,8 @@ describe('handleServiceAreaUpdate — start-of-clean progress reset', () => {
 			getSelectedAreas: vi.fn().mockReturnValue([]),
 			getProgress: vi.fn().mockReturnValue([]),
 			setProgress: vi.fn(),
-			getLastActivelyCleaningState: vi.fn().mockReturnValue(false),
-			setLastActivelyCleaningState: vi.fn(),
+			getLastCleaningSessionActiveState: vi.fn().mockReturnValue(false),
+			setLastCleaningSessionActiveState: vi.fn(),
 		});
 
 		const platform = asPartial<RoborockMatterbridgePlatform>({
@@ -2089,21 +2089,21 @@ describe('handleServiceAreaUpdate — start-of-clean progress reset', () => {
 		const resetCalls = vi.mocked(mockRoborockService.setProgress).mock.calls.filter((call) => call[1].length === 0);
 		expect(resetCalls.length).toBe(1); // Only Idle branch resets
 		// Verify flag is stored as false
-		expect(vi.mocked(mockRoborockService.setLastActivelyCleaningState).mock.calls[0]).toEqual([
+		expect(vi.mocked(mockRoborockService.setLastCleaningSessionActiveState).mock.calls[0]).toEqual([
 			'test-duid-clean-start',
 			false,
 		]);
 	});
 
-	it('should store lastActivelyCleaningState on every call, regardless of transition', async () => {
-		// Arrange: verify that setLastActivelyCleaningState is called on EVERY invocation
+	it('should store lastCleaningSessionActiveState on every call, regardless of transition', async () => {
+		// Arrange: verify that setLastCleaningSessionActiveState is called on EVERY invocation
 		const mockRoborockService = asPartial<RoborockService>({
 			getSupportedAreas: vi.fn().mockReturnValue([]),
 			getSelectedAreas: vi.fn().mockReturnValue([1]),
 			getProgress: vi.fn().mockReturnValue([]),
 			setProgress: vi.fn(),
-			getLastActivelyCleaningState: vi.fn().mockReturnValue(true),
-			setLastActivelyCleaningState: vi.fn(),
+			getLastCleaningSessionActiveState: vi.fn().mockReturnValue(true),
+			setLastCleaningSessionActiveState: vi.fn(),
 		});
 
 		const platform = asPartial<RoborockMatterbridgePlatform>({
@@ -2129,10 +2129,10 @@ describe('handleServiceAreaUpdate — start-of-clean progress reset', () => {
 		// Act
 		await handleServiceAreaUpdate(robot, message, platform);
 
-		// Assert: setLastActivelyCleaningState must be called with the current isActivelyCleaning value
-		expect(vi.mocked(mockRoborockService.setLastActivelyCleaningState)).toHaveBeenCalled();
+		// Assert: setLastCleaningSessionActiveState must be called with the current isCleaningSessionActive value
+		expect(vi.mocked(mockRoborockService.setLastCleaningSessionActiveState)).toHaveBeenCalled();
 		// Should have been called with (duid, true) since operationalState is Running
-		expect(vi.mocked(mockRoborockService.setLastActivelyCleaningState).mock.calls[0]).toEqual([
+		expect(vi.mocked(mockRoborockService.setLastCleaningSessionActiveState).mock.calls[0]).toEqual([
 			'test-duid-clean-start',
 			true,
 		]);
@@ -2145,8 +2145,8 @@ describe('handleServiceAreaUpdate — start-of-clean progress reset', () => {
 			getSelectedAreas: vi.fn().mockReturnValue([1]),
 			getProgress: vi.fn().mockReturnValue([]),
 			setProgress: vi.fn(),
-			getLastActivelyCleaningState: vi.fn().mockReturnValue(false),
-			setLastActivelyCleaningState: vi.fn(),
+			getLastCleaningSessionActiveState: vi.fn().mockReturnValue(false),
+			setLastCleaningSessionActiveState: vi.fn(),
 		});
 
 		const platform = asPartial<RoborockMatterbridgePlatform>({
@@ -2177,7 +2177,7 @@ describe('handleServiceAreaUpdate — start-of-clean progress reset', () => {
 		const hasEmptyResetAsFirstCall = setCalls.length > 0 && setCalls[0][1].length === 0;
 		expect(hasEmptyResetAsFirstCall).toBe(false);
 		// Flag should be stored as false (undefined operationalState is not "actively cleaning")
-		expect(vi.mocked(mockRoborockService.setLastActivelyCleaningState).mock.calls[0]).toEqual([
+		expect(vi.mocked(mockRoborockService.setLastCleaningSessionActiveState).mock.calls[0]).toEqual([
 			'test-duid-clean-start',
 			false,
 		]);
@@ -2190,8 +2190,8 @@ describe('handleServiceAreaUpdate — start-of-clean progress reset', () => {
 			getSelectedAreas: vi.fn().mockReturnValue([1]),
 			getProgress: vi.fn().mockReturnValue([]),
 			setProgress: vi.fn(),
-			getLastActivelyCleaningState: vi.fn().mockReturnValue(false), // was stopped
-			setLastActivelyCleaningState: vi.fn(),
+			getLastCleaningSessionActiveState: vi.fn().mockReturnValue(false), // was stopped
+			setLastCleaningSessionActiveState: vi.fn(),
 		});
 
 		const platform = asPartial<RoborockMatterbridgePlatform>({
@@ -2229,8 +2229,8 @@ describe('handleServiceAreaUpdate — start-of-clean progress reset', () => {
 			getSelectedAreas: vi.fn().mockReturnValue([1]),
 			getProgress: vi.fn().mockReturnValue([]),
 			setProgress: vi.fn(),
-			getLastActivelyCleaningState: vi.fn().mockReturnValue(false), // was in error
-			setLastActivelyCleaningState: vi.fn(),
+			getLastCleaningSessionActiveState: vi.fn().mockReturnValue(false), // was in error
+			setLastCleaningSessionActiveState: vi.fn(),
 		});
 
 		const platform = asPartial<RoborockMatterbridgePlatform>({

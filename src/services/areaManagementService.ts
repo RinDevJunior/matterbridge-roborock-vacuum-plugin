@@ -25,7 +25,7 @@ export class AreaManagementService {
 	private supportedRoutines = new Map<string, ServiceArea.Area[]>();
 	private selectedAreas = new Map<string, number[]>();
 	private progress = new Map<string, ServiceArea.Progress[]>();
-	private lastActivelyCleaningState = new Map<string, boolean>();
+	private lastCleaningSessionActiveState = new Map<string, boolean>();
 	private supportedAreaIndexMaps = new Map<string, RoomIndexMap>();
 	private areasListeners = new Map<string, (areas: ServiceArea.Area[], maps: ServiceArea.Map[]) => void>();
 	private refreshIntervals = new Map<string, NodeJS.Timeout>();
@@ -76,18 +76,18 @@ export class AreaManagementService {
 		return this.progress.get(duid) ?? [];
 	}
 
-	/** Store the "was actively cleaning" state for a device. */
-	public setLastActivelyCleaningState(duid: string, isActivelyCleaning: boolean): void {
+	/** Store the "cleaning session active" state for a device. */
+	public setLastCleaningSessionActiveState(duid: string, isCleaningSessionActive: boolean): void {
 		this.logger.debug(
-			'AreaManagementService - setLastActivelyCleaningState',
-			debugStringify({ duid, isActivelyCleaning }),
+			'AreaManagementService - setLastCleaningSessionActiveState',
+			debugStringify({ duid, isCleaningSessionActive }),
 		);
-		this.lastActivelyCleaningState.set(duid, isActivelyCleaning);
+		this.lastCleaningSessionActiveState.set(duid, isCleaningSessionActive);
 	}
 
-	/** Retrieve the stored "was actively cleaning" state for a device. */
-	public getLastActivelyCleaningState(duid: string): boolean {
-		return this.lastActivelyCleaningState.get(duid) ?? false;
+	/** Retrieve the stored "cleaning session active" state for a device. */
+	public getLastCleaningSessionActiveState(duid: string): boolean {
+		return this.lastCleaningSessionActiveState.get(duid) ?? false;
 	}
 
 	public registerAreasListener(
@@ -440,7 +440,7 @@ export class AreaManagementService {
 		this.supportedRoutines.clear();
 		this.selectedAreas.clear();
 		this.progress.clear();
-		this.lastActivelyCleaningState.clear();
+		this.lastCleaningSessionActiveState.clear();
 		this.supportedAreaIndexMaps.clear();
 		this.areasListeners.clear();
 		this.deviceRooms.clear();
