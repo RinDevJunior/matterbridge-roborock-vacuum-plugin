@@ -4,6 +4,34 @@ All notable changes to this project will be documented in this file.
 
 ---
 
+## [1.1.9-rc01] - 2026-09-20
+
+New release candidate line after public 1.1.8. Carries over all 1.1.8-rc01..rc07 changes, which are not in public 1.1.8.
+
+### Added
+
+- **Room-boundary containment for V1 room resolution** — Bounding-box containment is checked before nearest-center fallback, fixing wrong-room reports at doorways.
+- **Island/noise classification** — Map islands are classified automatically by reason (zone-overlap, wall-adjacent, size-heuristic).
+
+### Changed
+
+- **Matterbridge requirement bumped to 3.10.9** — Updated the required/tested matterbridge version (from 3.9.4 via 3.10.0).
+- **Manual island-override CLI flags removed** — `--exclude-islands`, `--no-auto-exclude` and `--highlight-island` are gone; classification is always automatic.
+
+### Fixed
+
+- **Operational error state stuck after error cleared** — Error handling now uses a shared `buildOperationalError` helper and populates error details/label correctly.
+- **Room-detection flip-flop on S8 / V1 map devices** — A 2-consecutive-match gate now smooths resolved-room changes.
+- **Room indicator flicker and wrong clean mode** — Last-known cleaning area is preserved, `areaId` 0 is valid, and mode resolution is category-aware.
+- **Unsupported "Vacuum Then Mop" mode exposed** — The mode is now gated on device capability.
+- **Vacuum stuck on one room and false-positive dock error** — V1 `currentArea` no longer freezes, and `isUpdownWaterReady` is excluded from dock error detection.
+- **Error-clear transitions not reported** — V1 listeners now run error handling whenever the error field is defined.
+- **Size-heuristic classification gate bug** — Noise islands are now filtered as intended.
+
+<a href="https://www.buymeacoffee.com/rinnvspktr" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/default-orange.png" alt="Buy Me A Coffee" height="41" width="174"></a>
+
+---
+
 ## [1.1.8-rc07] - 2026-09-13
 
 ### Changed
