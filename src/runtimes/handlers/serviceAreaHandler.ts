@@ -264,6 +264,7 @@ export async function handleServiceAreaUpdate(
 		await robot.updateAttribute(ServiceArea.id, 'progress', [], logger);
 		await robot.updateAttribute(ServiceArea.id, 'currentArea', null, logger);
 		await robot.updateAttribute(ServiceArea.id, 'estimatedEndTime', null, logger);
+		platform.roborockService?.clearPendingRoomResolution(robot.device.duid);
 		return;
 	}
 
@@ -381,6 +382,7 @@ export async function handleActiveMapChanged(
 	logger.debug(
 		`[${robot.device.duid}] ActiveMapChanged: setting selectedAreas to [${validAreaIds.join(', ')}] and currentArea to null (mapId ${mapId})`,
 	);
+	platform.roborockService?.clearPendingRoomResolution(robot.device.duid);
 	await robot.updateAttribute(ServiceArea.id, 'selectedAreas', validAreaIds, logger);
 	await robot.updateAttribute(ServiceArea.id, 'currentArea', null, logger);
 	await robot.updateAttribute(ServiceArea.id, 'estimatedEndTime', null, logger);
@@ -403,6 +405,7 @@ async function resolveAreaFromCleaningInfo(
 	const roomIndexMap = platform.roborockService?.getSupportedAreasIndexMap(robot.device.duid);
 	if (!roomIndexMap || !platform.roborockService) {
 		logger.debug('Room map not yet available, skipping room area resolution');
+		platform.roborockService?.setPendingRoomResolution(robot.device.duid, message);
 		return;
 	}
 
@@ -425,9 +428,12 @@ async function resolveAreaFromCleaningInfo(
         segmentId: ${segmentId},
         currentMappedAreas: ${debugStringify(roomIndexMap)}`,
 		);
+		platform.roborockService?.setPendingRoomResolution(robot.device.duid, message);
 		await updateCurrentAreaAndEstimate(robot, null, message, platform);
 		return;
 	}
+
+	platform.roborockService?.clearPendingRoomResolution(robot.device.duid);
 
 	const supportedAreas = platform.roborockService.getSupportedAreas(robot.device.duid);
 	logger.debug(
