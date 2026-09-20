@@ -4,6 +4,16 @@ All notable changes to this project will be documented in this file.
 
 ---
 
+## [1.2.0-rc01] - 2026-09-20
+
+### Changed
+
+- **Version bump** — Start of the 1.2.0 release-candidate line; no functional changes since 1.1.9.
+
+<a href="https://www.buymeacoffee.com/rinnvspktr" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/default-orange.png" alt="Buy Me A Coffee" height="41" width="174"></a>
+
+---
+
 ## [1.1.9] - 2026-09-20
 
 This release also includes all changes from 1.1.8-rc01..rc07, which were not in public 1.1.8.
