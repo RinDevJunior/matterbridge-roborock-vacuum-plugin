@@ -53,7 +53,7 @@
 		"test:file": "vitest run",
 		"test:coverage": "vitest run --coverage",
 		"test:report": "vitest run --reporter=junit --outputFile=test-report.junit.xml",
-		"test:ci": "vitest run --reporter=junit --outputFile=test-report.junit.xml >/dev/null 2>&1; node scripts/parse-junit-failures.mjs",
+		"test:ci": "node scripts/run-test-summary.mjs",
 		"test:affected": "sh -c 'AFFECTED=$(git diff --name-only HEAD | codegraph affected --stdin --quiet); if [ -n \"$AFFECTED\" ]; then vitest run $AFFECTED; else echo \"No affected tests (run npm run codegraph:init if .codegraph/ is missing)\"; fi'",
 		"codegraph:init": "codegraph init",
 		"codegraph:status": "codegraph status",

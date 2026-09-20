@@ -36,7 +36,6 @@ It is version-controlled — commit and push changes so teammates can pull the l
 
 <!-- Architectural and design decisions with rationale -->
 
-- `MatterbridgeServiceAreaServer.selectAreas` (`@matterbridge/core`) unconditionally calls `super.selectAreas(request)` with the ORIGINAL request AFTER our command handler runs, writing `this.state.selectedAreas` directly (bypasses `updateAttribute`). Any empty-input resolution must intercept in `RoborockServiceAreaServer.selectAreas` and forward a RESOLVED request to `super.selectAreas`, not `updateAttribute` from `roborockVacuumCleaner.ts`'s command handler — that write always loses the race.
 - `extra_time` → `estimatedEndTime` removed (Jul 2026); replacement: opt-in `enableEstimatedEndTime` (default off) + `clean_time`/`clean_percent` linear ETA in `src/share/estimatedEndTime.ts`. UPDATE (Sep 20, 2026): B01/Q10 no longer stays `null` — `b01StatusListener.ts`'s `tryHandleQ10Push` now reads DP 87 (`clean_progress`) into `cleaningProcess.clean_percent`, so the flag now works for B01/Q10 too when enabled. Q7 (`tryHandleQ7Response`) still does not read an equivalent field — Q7 stays `null`.
 - `robot.homeInFo.activeMapId` inits to `-1` (`deviceConfigurator.ts:105`), only written via B01/Q7 `onActiveMapChanged` — V10/V1 NEVER updates it. `RoomIndexMap.getAreaId(roomId,mapId)` then always misses for V10/V1 multi-map; `getAreaIdV2(roomId)` is the correct fallback.
 - No "currently selected map" Matter attribute exists — Apple Home infers active map from which map's rooms appear first in `supportedAreas`/`selectedAreas` (mirrors `roborockService.ts:350` `buildCleanCommand`).
@@ -53,6 +52,7 @@ It is version-controlled — commit and push changes so teammates can pull the l
 - `progress` reset on start-of-clean (Jul 14, 2026): 3rd trigger added — `handleServiceAreaUpdate` compares stored-vs-current `operationalState` "actively cleaning" classification (Docked/Stopped/Error = not cleaning), NOT raw `CLEANING_STATES` membership (misses `ReturningDock`/`EmptyingDustContainer` detours → false positives). Flag stored in `AreaManagementService` (proxied via `RoborockService`), not a module-level var.
 - Vacuum→Matter mapping (Jul 2026): bundle ideas 2–6 in `VacuumStatus.ts`; export `VACUUM_ERROR_TO_MATTER`; unknown non-zero → `UnableToCompleteOperation`; add `VacuumErrorCode.AutoEmptyDockFanError=33`; 8 semantic refinements per spike answer.md.
 - `dss` field `isUpdownWaterReady` (bits 0-1) does NOT reliably follow the shared Unknown/Error/OK convention on real hardware: dss=2729 shows it=1 (Error) persistently while idle/charging with zero other error signal — false positive. Excluded from `hasError()`/`DSS_FIELD_PRIORITY` (Jul 22, 2026 fix); still parsed, just not error-consulted. Prior Item-3 inclusion (Jul 2026) was only "medium confidence" (ioBroker label, no RVC enum) — now disproven. Re-check (Jul 22): python-roborock `v1_containers.py:277-278` is `hatch_door_status` (bits 12-14), NOT bits 0-1 as previously miscited — python-roborock parses no field at bits 0-1 at all, any version.
+- Q10 reconnect race fix (Sep 20, 2026): `AreaManagementService` gets a `pendingQ10RoomResolution` cache (30s TTL, mirrors `v1RoomResolutionCache` pattern) — `resolveAreaFromCleaningInfo` caches on both silent-failure branches, clears on success/idle/map-change. Retry is triggered by `deviceConfigurator.ts`'s existing `registerAreasListener` callback re-dispatching the cached message via `PlatformRunner.updateRobotWithPayload` (NOT a second `areasListeners` subscriber — kept single-subscriber deliberately, see `workspace/q10-room-resolution-race-fix/plan.md`).
 
 ## Test Patterns
 
@@ -86,6 +86,12 @@ It is version-controlled — commit and push changes so teammates can pull the l
 - `modeResolver.ts`'s `createDefaultModeResolver`/`createSmartModeResolver` `customCheckFn` OneTime branch (pre-fix Jul 22) unconditionally returned `VacFollowedByMop` mode (11) regardless of `configs` — real `seq_type` wire field (`v1StatusListener.ts:96`) reaches it on ANY non-B01 device (`connectionService.ts:161`), not just capability-gated ones. Fix: gate on `configs.some(mode===11)`, computed once per factory call (closures already have `configs` in scope, no signature change).
 - `errorStateHandler.ts` `handleErrorOccurred`'s `!includeDockStationStatus` guard (fixed Sep 13 2026): was bare `return;` with NO clear of `operationalError` when not-Running+no-vacuum-error — permanently stuck a real vacuum error's `errorStateId` forever (Grafana 5+ day stale). Fix: changed to `buildOperationalError` helper, clear error before early return, added `errorStateDetails` to all 7 writes (+ 1 in deviceStateHandler); no public signature changes.
 - B01/Q10 currentArea fix (Sep 20, 2026): `resolveAreaFromCleaningInfo`/`RoomIndexMap.getAreaId` (`serviceAreaHandler.ts:392-444`) has no V1-only gate — reused unmodified by having `B01StatusListener.tryHandleQ10Push` populate `ServiceAreaUpdateMessage.cleaningInfo.segment_id` from Q10's `common_request`(101)→`clean_expand`(91)→`room_id_list`, instead of always sending `undefined`. No changes needed to `serviceAreaHandler.ts`/`MessagePayloads.ts`.
+
+## Tooling & Environment
+
+<!-- npm/OS/shell footguns -->
+
+- `*:ci` scripts must avoid raw POSIX shell syntax (`>/dev/null`, `;` chaining) — npm defaults to cmd.exe on Windows and it can't parse them; wrap in a node script instead (see `scripts/run-test-summary.mjs`).
 
 ## Module Notes
 
