@@ -4,6 +4,7 @@ import { RvcOperationalState, ServiceArea } from 'matterbridge/matter/clusters';
 import { INVALID_SEGMENT_ID } from '../../constants/index.js';
 import type { RoborockMatterbridgePlatform } from '../../module.js';
 import { OperationStatusCode, ProtocolVersion } from '../../roborockCommunication/enums/index.js';
+import { isB01Q10CleaningState, isB01Q10IdleState, isB01Q10Robot } from '../../share/b01Q10StatusResolver.js';
 import { computeAreaEstimatedTime, computeEstimatedEndTimeFromCleanProgress } from '../../share/estimatedEndTime.js';
 import type { ServiceAreaUpdateMessage } from '../../types/MessagePayloads.js';
 import type { RoborockVacuumCleaner } from '../../types/roborockVacuumCleaner.js';
@@ -23,7 +24,6 @@ const CLEANING_STATES = new Set([
 	OperationStatusCode.Mapping,
 	OperationStatusCode.CleanMopCleaning,
 	OperationStatusCode.CleanMopMopping,
-	OperationStatusCode.ActivelyCleaningQ10,
 ]);
 
 function isActivelyCleaningOperationalState(
@@ -35,6 +35,16 @@ function isActivelyCleaningOperationalState(
 		operationalState !== RvcOperationalState.OperationalState.Stopped &&
 		operationalState !== RvcOperationalState.OperationalState.Error
 	);
+}
+
+function isCleaningStateForServiceArea(robot: RoborockVacuumCleaner, state: OperationStatusCode): boolean {
+	if (CLEANING_STATES.has(state)) return true;
+	return isB01Q10Robot(robot) && isB01Q10CleaningState(state);
+}
+
+function isIdleStateForServiceArea(robot: RoborockVacuumCleaner, state: OperationStatusCode): boolean {
+	if (state === OperationStatusCode.Idle) return true;
+	return isB01Q10Robot(robot) && isB01Q10IdleState(state);
 }
 
 export function buildProgressUpdate(
@@ -144,7 +154,7 @@ async function updateCurrentAreaAndEstimate(
 	const estimatedEndTime =
 		currentArea === null
 			? null
-			: shouldPublishEstimatedEndTime(platform, message.state)
+			: shouldPublishEstimatedEndTime(platform, robot, message.state)
 				? (computeEstimatedEndTimeFromCleanProgress(
 						message.cleaningProcess.clean_time,
 						message.cleaningProcess.clean_percent,
@@ -155,8 +165,12 @@ async function updateCurrentAreaAndEstimate(
 	await robot.updateAttribute(ServiceArea.id, 'estimatedEndTime', estimatedEndTime, logger);
 }
 
-function shouldPublishEstimatedEndTime(platform: RoborockMatterbridgePlatform, state: OperationStatusCode): boolean {
-	return platform.configManager.isEstimatedEndTimeEnabled && CLEANING_STATES.has(state);
+function shouldPublishEstimatedEndTime(
+	platform: RoborockMatterbridgePlatform,
+	robot: RoborockVacuumCleaner,
+	state: OperationStatusCode,
+): boolean {
+	return platform.configManager.isEstimatedEndTimeEnabled && isCleaningStateForServiceArea(robot, state);
 }
 
 async function publishAreaProgress(
@@ -170,7 +184,7 @@ async function publishAreaProgress(
 	await robot.updateAttribute(ServiceArea.id, 'selectedAreas', selectedAreas, logger);
 	await updateCurrentAreaAndEstimate(robot, activeAreaId, message, platform);
 
-	const estimatedTimeForActiveArea = shouldPublishEstimatedEndTime(platform, message.state)
+	const estimatedTimeForActiveArea = shouldPublishEstimatedEndTime(platform, robot, message.state)
 		? computeAreaEstimatedTime(message.cleaningProcess.clean_time, message.cleaningProcess.clean_percent)
 		: null;
 	const existingProgress = platform.roborockService?.getProgress(robot.device.duid) ?? [];
@@ -241,7 +255,7 @@ export async function handleServiceAreaUpdate(
 		await robot.updateAttribute(ServiceArea.id, 'progress', [], logger);
 	}
 
-	if (message.state === OperationStatusCode.Idle) {
+	if (isIdleStateForServiceArea(robot, message.state)) {
 		logger.debug('Robot is idle, updating selectedAreas from Roborock service');
 		const selectedAreas = platform.roborockService?.getSelectedAreas(robot.device.duid) ?? [];
 		await robot.updateAttribute(ServiceArea.id, 'selectedAreas', selectedAreas, logger);
@@ -253,7 +267,7 @@ export async function handleServiceAreaUpdate(
 		return;
 	}
 
-	if (!message.cleaningInfo && CLEANING_STATES.has(message.state)) {
+	if (!message.cleaningInfo && isCleaningStateForServiceArea(robot, message.state)) {
 		await handleCleaningWithoutInfo(robot, message, platform);
 		return;
 	}

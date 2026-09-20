@@ -34,7 +34,12 @@ export class B01MapParser {
 		return rawBuffer.length >= 2 && rawBuffer[0] === 0x01 && rawBuffer[1] === 0x01;
 	}
 
-	private isTracePacket(rawBuffer: Buffer): boolean {
+	/**
+	 * Whether `rawBuffer` is a Q10 "trace packet" (marker 0x02 0x01) — a frequent, position-only
+	 * frame that never carries room data by design. Exposed so callers (e.g. MapInfoListener) can
+	 * distinguish this expected empty-rooms case from a genuine full map frame that came back empty.
+	 */
+	public isTracePacket(rawBuffer: Buffer): boolean {
 		return rawBuffer.length >= 2 && rawBuffer[0] === 0x02 && rawBuffer[1] === 0x01;
 	}
 
