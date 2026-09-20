@@ -463,6 +463,45 @@ describe('handleServiceAreaUpdate multi-room without cleaning_info', () => {
 		);
 		expect(robot.updateAttribute).toHaveBeenCalledWith(ServiceArea.id, 'currentArea', 10, expect.anything());
 	});
+
+	it('should keep selectedAreas and set currentArea when device reports non-canonical Q10 actively-cleaning status code', async () => {
+		const selectedAreas = [10, 20];
+		const mockRoborockService = asPartial<RoborockService>({
+			getSelectedAreas: vi.fn().mockReturnValue(selectedAreas),
+			getProgress: vi.fn().mockReturnValue([]),
+			setProgress: vi.fn(),
+			getLastActivelyCleaningState: vi.fn().mockReturnValue(false),
+			setLastActivelyCleaningState: vi.fn(),
+		});
+		const platform = asPartial<RoborockMatterbridgePlatform>({
+			log: createMockLogger(),
+			configManager: createMockConfigManager(),
+			roborockService: mockRoborockService,
+		});
+
+		vi.mocked(robot.getAttribute).mockReturnValue(selectedAreas);
+
+		// Regression test for issue #162: raw status code 104 (Q10 S5+, ActivelyCleaningQ10) is a
+		// non-canonical status confirmed via live log capture to occur while actively cleaning. Before the
+		// fix it was neither Idle nor in CLEANING_STATES, so it fell through to the "no cleaning_info,
+		// skipping" early return, silently skipping the ServiceArea update.
+		const message: ServiceAreaUpdateMessage = {
+			duid: 'test-duid-multi',
+			state: OperationStatusCode.ActivelyCleaningQ10,
+			cleaningInfo: undefined,
+			cleaningProcess: { clean_area: 100, clean_time: 50 },
+		};
+
+		await handleServiceAreaUpdate(robot, message, platform);
+
+		expect(robot.updateAttribute).toHaveBeenCalledWith(
+			ServiceArea.id,
+			'selectedAreas',
+			selectedAreas,
+			expect.anything(),
+		);
+		expect(robot.updateAttribute).toHaveBeenCalledWith(ServiceArea.id, 'currentArea', 10, expect.anything());
+	});
 });
 
 describe('markAreaSkipped and getNextPendingArea', () => {

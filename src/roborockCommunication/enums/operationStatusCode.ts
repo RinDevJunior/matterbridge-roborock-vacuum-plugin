@@ -29,6 +29,7 @@ export enum OperationStatusCode {
 	FullyCharged = 100,
 	DeviceOffline = 101,
 	Locked = 103,
+	ActivelyCleaningQ10 = 104, // Confirmed active cleaning via live Roborock Q10 S5+ log capture (service area update with state 104 while cleaningProcess reported clean_area/clean_time). NOT in the canonical enum used by other Roborock models — do not assume this applies to other devices.
 	AirDryingStopping = 202,
 	RobotStatusMopping = 6301,
 	CleanMopCleaning = 6302,
@@ -40,5 +41,4 @@ export enum OperationStatusCode {
 	ZoneCleanMopCleaning = 6308,
 	ZoneCleanMopMopping = 6309,
 	BackToDockWashingDuster = 6310,
-	// TODO: Q10 series has 104, what is that?
 }

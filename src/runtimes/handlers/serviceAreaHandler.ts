@@ -23,6 +23,7 @@ const CLEANING_STATES = new Set([
 	OperationStatusCode.Mapping,
 	OperationStatusCode.CleanMopCleaning,
 	OperationStatusCode.CleanMopMopping,
+	OperationStatusCode.ActivelyCleaningQ10,
 ]);
 
 function isActivelyCleaningOperationalState(
