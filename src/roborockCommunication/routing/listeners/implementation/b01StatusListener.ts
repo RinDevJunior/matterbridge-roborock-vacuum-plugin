@@ -1,6 +1,7 @@
 import { AnsiLogger } from 'matterbridge/logger';
 
 import { CleanModeSetting } from '../../../../behaviors/roborock.vacuum/core/CleanModeSetting.js';
+import { INVALID_SEGMENT_ID } from '../../../../constants/index.js';
 import { DockErrorCode } from '../../../enums/index.js';
 import { OperationStatusCode } from '../../../enums/operationStatusCode.js';
 import { Q7RequestCode, Q7RequestMethod } from '../../../enums/Q7RequestCode.js';
@@ -58,6 +59,7 @@ export class B01StatusListener implements AbstractMessageListener {
 	private lastState: OperationStatusCode = OperationStatusCode.Unknown;
 	private lastSuctionPower = 0;
 	private lastWaterFlow = 0;
+	private lastRoomId: number | undefined = undefined;
 
 	constructor(
 		public readonly duid: string,
@@ -66,6 +68,21 @@ export class B01StatusListener implements AbstractMessageListener {
 
 	public registerHandler(handler: AbstractMessageHandler): void {
 		this.handler = handler;
+	}
+
+	private extractQ10RoomId(message: ResponseMessage): number | undefined {
+		if (!message.body) return undefined;
+		const commonRequest = message.body.get(Q10RequestCode.common_request);
+		if (typeof commonRequest !== 'object' || commonRequest === null) return undefined;
+
+		const cleanExpand = (commonRequest as Record<string, unknown>)[String(Q10RequestCode.clean_expand)];
+		if (typeof cleanExpand !== 'object' || cleanExpand === null) return undefined;
+
+		const roomIdList = (cleanExpand as Record<string, unknown>)['room_id_list'];
+		if (!Array.isArray(roomIdList) || roomIdList.length === 0) return undefined;
+
+		const roomId = Number(roomIdList[0]);
+		return Number.isFinite(roomId) ? roomId : undefined;
 	}
 
 	public async onMessage(message: ResponseMessage): Promise<void> {
@@ -83,6 +100,11 @@ export class B01StatusListener implements AbstractMessageListener {
 		const errorCode = message.body.get(Q10RequestCode.error_code);
 		if (errorCode !== undefined) {
 			await handler.onError(new VacuumError(this.duid, Number(errorCode), DockErrorCode.None, undefined));
+		}
+
+		const roomId = this.extractQ10RoomId(message);
+		if (roomId !== undefined) {
+			this.lastRoomId = roomId;
 		}
 
 		const state = message.body.get(Q10RequestCode.state);
@@ -141,16 +163,33 @@ export class B01StatusListener implements AbstractMessageListener {
 		const cleanArea = message.body.get(Q10RequestCode.clean_area);
 		const cleanTime = message.body.get(Q10RequestCode.clean_time);
 		const cleanTaskType = message.body.get(Q10RequestCode.clean_task_type);
+		const cleanProgress = message.body.get(Q10RequestCode.clean_progress);
 
-		if (cleanArea !== undefined || cleanTime !== undefined || cleanTaskType !== undefined) {
+		if (
+			cleanArea !== undefined ||
+			cleanTime !== undefined ||
+			cleanTaskType !== undefined ||
+			roomId !== undefined ||
+			cleanProgress !== undefined
+		) {
 			await handler.onServiceAreaUpdate({
 				duid: this.duid,
 				state: this.lastState,
 				cleaningProcess: {
 					clean_area: Number(cleanArea ?? 0),
 					clean_time: Number(cleanTime ?? 0),
+					clean_percent: cleanProgress !== undefined ? Number(cleanProgress) : undefined,
 				},
-				cleaningInfo: undefined,
+				cleaningInfo:
+					this.lastRoomId !== undefined
+						? {
+								segment_id: this.lastRoomId,
+								target_segment_id: INVALID_SEGMENT_ID,
+								fan_power: 0,
+								water_box_status: 0,
+								mop_mode: 0,
+							}
+						: undefined,
 			});
 		}
 	}

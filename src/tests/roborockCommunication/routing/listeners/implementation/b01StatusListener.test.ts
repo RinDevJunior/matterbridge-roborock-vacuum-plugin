@@ -172,6 +172,266 @@ describe('B01StatusListener', () => {
 				expect(handler.onServiceAreaUpdate).not.toHaveBeenCalled();
 			});
 		});
+
+		describe('room_id_list / cleaningInfo (currentArea fix)', () => {
+			it('should trigger onServiceAreaUpdate with segment_id when only room_id_list present', async () => {
+				const msg = makeQ10Message(duid, {
+					[Q10RequestCode.common_request]: {
+						[Q10RequestCode.clean_expand]: {
+							room_id_list: [5],
+						},
+					},
+				});
+				await listener.onMessage(msg);
+				expect(handler.onServiceAreaUpdate).toHaveBeenCalledWith(
+					expect.objectContaining({
+						duid,
+						cleaningInfo: expect.objectContaining({ segment_id: 5 }),
+					}),
+				);
+			});
+
+			it('should set cleaningInfo with segment_id when room_id_list present alongside clean_area', async () => {
+				const msg = makeQ10Message(duid, {
+					[Q10RequestCode.clean_area]: 500,
+					[Q10RequestCode.common_request]: {
+						[Q10RequestCode.clean_expand]: {
+							room_id_list: [7],
+						},
+					},
+				});
+				await listener.onMessage(msg);
+				expect(handler.onServiceAreaUpdate).toHaveBeenCalledWith(
+					expect.objectContaining({
+						duid,
+						cleaningProcess: expect.objectContaining({ clean_area: 500 }),
+						cleaningInfo: expect.objectContaining({ segment_id: 7 }),
+					}),
+				);
+			});
+
+			it('should set cleaningInfo to undefined when room_id_list never received', async () => {
+				const msg = makeQ10Message(duid, {
+					[Q10RequestCode.clean_area]: 300,
+				});
+				await listener.onMessage(msg);
+				expect(handler.onServiceAreaUpdate).toHaveBeenCalledWith(
+					expect.objectContaining({
+						duid,
+						cleaningProcess: expect.objectContaining({ clean_area: 300 }),
+						cleaningInfo: undefined,
+					}),
+				);
+			});
+
+			it('should persist lastRoomId across multiple messages (sticky cache)', async () => {
+				// First message: set room_id_list
+				const msg1 = makeQ10Message(duid, {
+					[Q10RequestCode.common_request]: {
+						[Q10RequestCode.clean_expand]: {
+							room_id_list: [5],
+						},
+					},
+				});
+				await listener.onMessage(msg1);
+
+				// Second message: only clean_time, no room_id_list
+				const msg2 = makeQ10Message(duid, {
+					[Q10RequestCode.clean_time]: 120,
+				});
+				await listener.onMessage(msg2);
+
+				// Verify both calls have segment_id: 5
+				expect(handler.onServiceAreaUpdate).toHaveBeenCalledTimes(2);
+				expect(handler.onServiceAreaUpdate).toHaveBeenNthCalledWith(
+					2,
+					expect.objectContaining({
+						cleaningInfo: expect.objectContaining({ segment_id: 5 }),
+					}),
+				);
+			});
+
+			it('should update lastRoomId when room_id_list changes mid-session', async () => {
+				// First message: set room_id_list to 5
+				const msg1 = makeQ10Message(duid, {
+					[Q10RequestCode.common_request]: {
+						[Q10RequestCode.clean_expand]: {
+							room_id_list: [5],
+						},
+					},
+				});
+				await listener.onMessage(msg1);
+
+				// Second message: change room_id_list to 8
+				const msg2 = makeQ10Message(duid, {
+					[Q10RequestCode.clean_time]: 200,
+					[Q10RequestCode.common_request]: {
+						[Q10RequestCode.clean_expand]: {
+							room_id_list: [8],
+						},
+					},
+				});
+				await listener.onMessage(msg2);
+
+				// Verify second call has segment_id: 8 (not 5)
+				expect(handler.onServiceAreaUpdate).toHaveBeenNthCalledWith(
+					2,
+					expect.objectContaining({
+						cleaningInfo: expect.objectContaining({ segment_id: 8 }),
+					}),
+				);
+			});
+
+			it('should not throw when common_request is not an object', async () => {
+				const msg = makeQ10Message(duid, {
+					[Q10RequestCode.clean_area]: 200,
+					[Q10RequestCode.common_request]: 12345, // not an object
+				});
+				await expect(listener.onMessage(msg)).resolves.toBeUndefined();
+				expect(handler.onServiceAreaUpdate).toHaveBeenCalledWith(
+					expect.objectContaining({
+						cleaningInfo: undefined,
+					}),
+				);
+			});
+
+			it('should not throw when clean_expand key is missing', async () => {
+				const msg = makeQ10Message(duid, {
+					[Q10RequestCode.clean_area]: 150,
+					[Q10RequestCode.common_request]: {
+						// clean_expand key missing
+						other_key: { room_id_list: [5] },
+					},
+				});
+				await expect(listener.onMessage(msg)).resolves.toBeUndefined();
+				expect(handler.onServiceAreaUpdate).toHaveBeenCalledWith(
+					expect.objectContaining({
+						cleaningInfo: undefined,
+					}),
+				);
+			});
+
+			it('should not throw and leave cleaningInfo undefined when room_id_list is empty array', async () => {
+				const msg = makeQ10Message(duid, {
+					[Q10RequestCode.clean_area]: 100,
+					[Q10RequestCode.common_request]: {
+						[Q10RequestCode.clean_expand]: {
+							room_id_list: [], // empty array
+						},
+					},
+				});
+				await expect(listener.onMessage(msg)).resolves.toBeUndefined();
+				expect(handler.onServiceAreaUpdate).toHaveBeenCalledWith(
+					expect.objectContaining({
+						cleaningInfo: undefined,
+					}),
+				);
+			});
+
+			it('should use first entry when room_id_list has multiple entries', async () => {
+				const msg = makeQ10Message(duid, {
+					[Q10RequestCode.common_request]: {
+						[Q10RequestCode.clean_expand]: {
+							room_id_list: [5, 8, 12],
+						},
+					},
+				});
+				await listener.onMessage(msg);
+				expect(handler.onServiceAreaUpdate).toHaveBeenCalledWith(
+					expect.objectContaining({
+						cleaningInfo: expect.objectContaining({ segment_id: 5 }),
+					}),
+				);
+			});
+
+			it('should not throw when clean_expand is not an object', async () => {
+				const msg = makeQ10Message(duid, {
+					[Q10RequestCode.clean_area]: 250,
+					[Q10RequestCode.common_request]: {
+						[Q10RequestCode.clean_expand]: 'not-an-object',
+					},
+				});
+				await expect(listener.onMessage(msg)).resolves.toBeUndefined();
+				expect(handler.onServiceAreaUpdate).toHaveBeenCalledWith(
+					expect.objectContaining({
+						cleaningInfo: undefined,
+					}),
+				);
+			});
+		});
+
+		describe('clean_percent (DP 87) — addendum', () => {
+			it('should set cleaningProcess.clean_percent when clean_progress present', async () => {
+				const msg = makeQ10Message(duid, {
+					[Q10RequestCode.clean_progress]: 42,
+				});
+				await listener.onMessage(msg);
+				expect(handler.onServiceAreaUpdate).toHaveBeenCalledWith(
+					expect.objectContaining({
+						duid,
+						cleaningProcess: expect.objectContaining({ clean_percent: 42 }),
+					}),
+				);
+			});
+
+			it('should trigger onServiceAreaUpdate when clean_progress alone present', async () => {
+				const msg = makeQ10Message(duid, {
+					[Q10RequestCode.clean_progress]: 55,
+				});
+				await listener.onMessage(msg);
+				// This was the gap: clean_progress alone should trigger the update
+				expect(handler.onServiceAreaUpdate).toHaveBeenCalledTimes(1);
+				expect(handler.onServiceAreaUpdate).toHaveBeenCalledWith(
+					expect.objectContaining({
+						duid,
+						cleaningProcess: expect.objectContaining({ clean_percent: 55 }),
+					}),
+				);
+			});
+
+			it('should set cleaningProcess.clean_percent to undefined when absent', async () => {
+				const msg = makeQ10Message(duid, {
+					[Q10RequestCode.clean_area]: 300,
+				});
+				await listener.onMessage(msg);
+				expect(handler.onServiceAreaUpdate).toHaveBeenCalledWith(
+					expect.objectContaining({
+						cleaningProcess: expect.objectContaining({ clean_percent: undefined }),
+					}),
+				);
+			});
+
+			it('should treat clean_progress: 0 as valid (not as absent)', async () => {
+				const msg = makeQ10Message(duid, {
+					[Q10RequestCode.clean_progress]: 0,
+				});
+				await listener.onMessage(msg);
+				expect(handler.onServiceAreaUpdate).toHaveBeenCalledWith(
+					expect.objectContaining({
+						cleaningProcess: expect.objectContaining({ clean_percent: 0 }),
+					}),
+				);
+			});
+
+			it('should set both clean_percent and segment_id when clean_progress and room_id_list present together', async () => {
+				const msg = makeQ10Message(duid, {
+					[Q10RequestCode.clean_progress]: 75,
+					[Q10RequestCode.common_request]: {
+						[Q10RequestCode.clean_expand]: {
+							room_id_list: [9],
+						},
+					},
+				});
+				await listener.onMessage(msg);
+				expect(handler.onServiceAreaUpdate).toHaveBeenCalledWith(
+					expect.objectContaining({
+						duid,
+						cleaningProcess: expect.objectContaining({ clean_percent: 75 }),
+						cleaningInfo: expect.objectContaining({ segment_id: 9 }),
+					}),
+				);
+			});
+		});
 	});
 
 	describe('tryHandleQ7Response', () => {

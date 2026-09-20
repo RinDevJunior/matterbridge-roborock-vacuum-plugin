@@ -4,6 +4,17 @@ Entries are listed in reverse chronological order (most recent first). Older ent
 
 ---
 
+## 2026-09-20 — B01/Q10 currentArea fix (room_id_list parsing + clean_percent addendum)
+
+**Task:** Fix B01/Q10 Matter `currentArea` staying `null` during cleaning by parsing device's real room telemetry (`room_id_list`, DPS 101→91 envelope) and populating `ServiceAreaUpdateMessage.cleaningInfo` instead of relying solely on the `handleCleaningWithoutInfo()` heuristic (no real room signal). Also read DP 87 (`clean_progress`) to populate `cleaningProcess.clean_percent` for estimated time feature support.
+
+**Changes:**
+
+- `src/roborockCommunication/routing/listeners/implementation/b01StatusListener.ts` — added `lastRoomId` sticky-cache field; new private `extractQ10RoomId()` method to safely extract room id from nested `message.body[Q10RequestCode.common_request][Q10RequestCode.clean_expand].room_id_list[0]` structure (returns `undefined` on any malformed shape); updated `tryHandleQ10Push()` to call `extractQ10RoomId()` on every push and cache result; extended `onServiceAreaUpdate` trigger condition to fire when room id or clean progress present; populate `cleaningInfo` with room id when `lastRoomId` defined (via pre-existing `CleanInformation` shape); also read DP 87 (`Q10RequestCode.clean_progress`) and populate `cleaningProcess.clean_percent`
+- `src/tests/roborockCommunication/routing/listeners/implementation/b01StatusListener.test.ts` — comprehensive test coverage for `extractQ10RoomId` (valid reads, missing keys, null/non-object/non-array shapes, empty arrays, non-numeric entries); updated service area update tests to verify `cleaningInfo` populated when room id present and `clean_percent` when progress read
+
+**Outcome:** Pass (all verification gates: format:ci, lint:fix:ci, type-check:ci, test:ci; 139 tests green). Reviewer approved for production. No changes to `serviceAreaHandler.ts`, `MessagePayloads.ts`, or `messageResult.ts` — reuses existing generic `resolveAreaFromCleaningInfo()` path already validated by V1 tests. B01/Q10 devices now properly resolve `currentArea` during multi-room cleaning; users with `enableEstimatedEndTime` config enabled (default off) gain estimated time calculations for B01/Q10 (previously unavailable).
+
 ## 2026-08-03 — Fix room-detection flip-flop bug on V1 map devices
 
 **Task:** Fix spurious room-detection oscillation on Roborock S8/V1 map devices where ServiceArea.currentArea flipped between non-adjacent rooms every 1-2 minutes due to pose noise near corridor hubs. Root cause: AreaManagementService.setV1ResolvedSegment published room resolutions immediately on each map push with no temporal smoothing, causing false positive room changes.
