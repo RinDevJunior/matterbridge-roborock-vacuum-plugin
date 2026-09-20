@@ -87,6 +87,15 @@ export class B01StatusListener implements AbstractMessageListener {
 
 		const state = message.body.get(Q10RequestCode.state);
 		if (state !== undefined) {
+			// Raw Q10 wire codes may be non-canonical (see B01Q10OperationStatusCode: 99/101/102/103/104/105/108)
+			// — they are passed through unchanged here. ServiceArea cleaning/idle classification happens
+			// downstream in serviceAreaHandler.ts, gated by isB01Q10Robot; isB01Q10CleaningState covers
+			// Sweeping/SweepAndMop/Relocating/Mopping (101/103 wired per issue #166 Clarification #3 — treated
+			// as active-cleaning on python-roborock cross-reference evidence, no independent live-capture on
+			// this plugin's own hardware). WaitingToCharge/SavingMap (108/99) stay documented-only, unwired.
+			// NOTE: this does NOT change the separate RvcOperationalState/RvcRunMode Matter-status path
+			// (stateResolver.ts/function.ts, untouched) — raw 101/103 there still resolve to canonical
+			// DeviceOffline/Locked → Error if a real Q10 sends them; only ServiceArea classification is fixed.
 			this.lastState = Number(state);
 			const statusMsg = new StatusChangeMessage(
 				this.duid,
