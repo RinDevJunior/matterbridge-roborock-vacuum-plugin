@@ -392,6 +392,30 @@ describe('MapInfoListener', () => {
 			expect(logger.debug).toHaveBeenCalledWith(expect.stringContaining('B01 map binary has no rooms'));
 		});
 
+		it('should skip the "no rooms" debug log when the B01 binary is a trace packet', async () => {
+			const logger = createMockLogger();
+			const listenerWithDevice = new MapInfoListener(DUID, [], areaService, logger, 'roborock.vacuum.a27', 'ABC123');
+			const b01MapParser = (
+				listenerWithDevice as unknown as {
+					b01MapParser: {
+						parseRoomsFromEncryptedBinary: ReturnType<typeof vi.fn>;
+						isTracePacket: ReturnType<typeof vi.fn>;
+					};
+				}
+			).b01MapParser;
+			vi.spyOn(b01MapParser, 'parseRoomsFromEncryptedBinary').mockReturnValue({ rooms: [], mapId: undefined });
+			vi.spyOn(b01MapParser, 'isTracePacket').mockReturnValue(true);
+
+			const msg = makeB01Message(DUID, (key) => {
+				if (key === Protocol.map_response) return Buffer.from('mock');
+				return undefined;
+			});
+			await listenerWithDevice.onMessage(msg);
+
+			expect(areaService.setSupportedAreas).not.toHaveBeenCalled();
+			expect(logger.debug).not.toHaveBeenCalledWith(expect.stringContaining('B01 map binary has no rooms'));
+		});
+
 		it('should warn and skip when B01 map binary parse throws', async () => {
 			const logger = createMockLogger();
 			const listenerWithDevice = new MapInfoListener(DUID, [], areaService, logger, 'roborock.vacuum.a27', 'ABC123');

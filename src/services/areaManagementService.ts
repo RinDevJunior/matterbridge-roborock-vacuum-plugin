@@ -16,6 +16,7 @@ import { mergeSupportedAreasByMap } from '../initialData/mergeSupportedAreasByMa
 import { RoborockIoTApi } from '../roborockCommunication/api/iotClient.js';
 import { HomeModelMapper, RawRoomMappingData, RoomDto } from '../roborockCommunication/models/home/index.js';
 import { Scene } from '../roborockCommunication/models/index.js';
+import type { ServiceAreaUpdateMessage } from '../types/index.js';
 import { MessageRoutingService } from './index.js';
 
 /** Manages cleaning areas, rooms, maps, and scenes. */
@@ -34,8 +35,10 @@ export class AreaManagementService {
 	private mapInfoCache = new Map<string, MapInfo>();
 	private v1RoomResolutionCache = new Map<string, { segmentId: number; resolvedAtMs: number }>();
 	private v1PendingResolution = new Map<string, { segmentId: number; consecutiveCount: number }>();
+	private pendingQ10RoomResolution = new Map<string, { message: ServiceAreaUpdateMessage; cachedAtMs: number }>();
 
 	private static readonly V1_SEGMENT_CONFIRMATION_THRESHOLD = 2;
+	private static readonly PENDING_Q10_RESOLUTION_MAX_AGE_MS = 30_000;
 
 	constructor(
 		private readonly logger: AnsiLogger,
@@ -413,6 +416,25 @@ export class AreaManagementService {
 		return cached.segmentId;
 	}
 
+	/** Cache an unresolved Q10 room resolution so it can be retried once areas update. */
+	public setPendingRoomResolution(duid: string, message: ServiceAreaUpdateMessage): void {
+		this.pendingQ10RoomResolution.set(duid, { message, cachedAtMs: Date.now() });
+	}
+
+	/** Consume (get + clear) a cached pending Q10 room resolution if it exists and is still fresh. */
+	public consumePendingRoomResolution(duid: string): ServiceAreaUpdateMessage | undefined {
+		const pending = this.pendingQ10RoomResolution.get(duid);
+		this.pendingQ10RoomResolution.delete(duid);
+		if (!pending) return undefined;
+		if (Date.now() - pending.cachedAtMs > AreaManagementService.PENDING_Q10_RESOLUTION_MAX_AGE_MS) return undefined;
+		return pending.message;
+	}
+
+	/** Clear a cached pending Q10 room resolution for a device (no return value). */
+	public clearPendingRoomResolution(duid: string): void {
+		this.pendingQ10RoomResolution.delete(duid);
+	}
+
 	public async requestV1MapRefresh(duid: string): Promise<void> {
 		if (!this.serviceRouting) return;
 		try {
@@ -439,6 +461,7 @@ export class AreaManagementService {
 		this.mapInfoCache.clear();
 		this.v1RoomResolutionCache.clear();
 		this.v1PendingResolution.clear();
+		this.pendingQ10RoomResolution.clear();
 		this.logger.debug('AreaManagementService - All data cleared');
 	}
 }
