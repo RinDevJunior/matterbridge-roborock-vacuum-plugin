@@ -215,5 +215,26 @@ describe('RoborockServiceAreaServer', () => {
 			expect(device.skipAreaHandler).toHaveBeenCalledWith(2);
 			expect(device.finalizeSkipArea).toHaveBeenCalledWith(2);
 		});
+
+		it('should call skipAreaHandler and succeed when currentArea is null but progress is non-empty', async () => {
+			const server = createServer(
+				{
+					selectedAreas: [1, 2, 3],
+					currentArea: null,
+					progress: [
+						{ areaId: 1, status: ServiceArea.OperationalStatus.Completed },
+						{ areaId: 2, status: ServiceArea.OperationalStatus.Pending },
+						{ areaId: 3, status: ServiceArea.OperationalStatus.Pending },
+					],
+				},
+				device,
+			);
+
+			const response = await server.skipArea({ skippedArea: 2 });
+
+			expect(response.status).toBe(ServiceArea.SkipAreaStatus.Success);
+			expect(device.skipAreaHandler).toHaveBeenCalledWith(2);
+			expect(device.finalizeSkipArea).toHaveBeenCalledWith(2);
+		});
 	});
 });
