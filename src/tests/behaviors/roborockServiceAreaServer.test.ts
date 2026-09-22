@@ -175,6 +175,26 @@ describe('RoborockServiceAreaServer', () => {
 			expect(response.status).toBe(ServiceArea.SkipAreaStatus.InvalidSkippedArea);
 		});
 
+		it('should return InvalidInMode when skippedArea is selected but not the currentArea', async () => {
+			const server = createServer(
+				{
+					selectedAreas: [1, 2, 3],
+					currentArea: 2,
+					progress: [
+						{ areaId: 1, status: ServiceArea.OperationalStatus.Completed },
+						{ areaId: 2, status: ServiceArea.OperationalStatus.Operating },
+						{ areaId: 3, status: ServiceArea.OperationalStatus.Pending },
+					],
+				},
+				device,
+			);
+
+			const response = await server.skipArea({ skippedArea: 3 });
+
+			expect(response.status).toBe(ServiceArea.SkipAreaStatus.InvalidInMode);
+			expect(device.skipAreaHandler).not.toHaveBeenCalled();
+		});
+
 		it('should call skipAreaHandler and advance progress on success', async () => {
 			const server = createServer(
 				{
