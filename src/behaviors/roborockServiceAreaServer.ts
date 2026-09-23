@@ -68,6 +68,13 @@ export class RoborockServiceAreaServer extends MatterbridgeServiceAreaServer {
 			return { status: ServiceArea.SkipAreaStatus.InvalidInMode, statusText: '' };
 		}
 
+		if (currentArea !== null && skippedArea !== currentArea) {
+			return {
+				status: ServiceArea.SkipAreaStatus.InvalidInMode,
+				statusText: `AreaID ${skippedArea} is not the area currently being cleaned`,
+			};
+		}
+
 		if (!device.skipAreaHandler) {
 			return { status: ServiceArea.SkipAreaStatus.InvalidInMode, statusText: '' };
 		}
