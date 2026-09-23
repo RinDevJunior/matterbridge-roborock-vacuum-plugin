@@ -40,5 +40,5 @@ export enum OperationStatusCode {
 	ZoneCleanMopCleaning = 6308,
 	ZoneCleanMopMopping = 6309,
 	BackToDockWashingDuster = 6310,
-	// TODO: Q10 series has 104, what is that?
+	// Q10-specific non-canonical status codes (102/104/105) live in B01Q10OperationStatusCode (separate file/type) — never add Q10 codes here, they can collide with canonical meanings (see issue #166).
 }

@@ -2,11 +2,17 @@ import { RvcOperationalState, ServiceArea } from 'matterbridge/matter/clusters';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { RoborockServiceAreaServer } from '../../behaviors/roborockServiceAreaServer.js';
+import { Device } from '../../roborockCommunication/models/index.js';
+import { RoborockService } from '../../services/roborockService.js';
 import type { RoborockVacuumCleaner } from '../../types/roborockVacuumCleaner.js';
 import { asPartial, createMockLogger, setReadOnlyProperty } from '../helpers/testUtils.js';
 
 function createMockDevice(overrides: Partial<RoborockVacuumCleaner> = {}): RoborockVacuumCleaner {
 	return asPartial<RoborockVacuumCleaner>({
+		device: asPartial<Device>({ duid: 'test-duid' }),
+		roborockService: asPartial<RoborockService>({
+			setProgress: vi.fn(),
+		}),
 		log: createMockLogger(),
 		getAttribute: vi.fn().mockReturnValue(RvcOperationalState.OperationalState.Running),
 		updateAttribute: vi.fn().mockResolvedValue(true),

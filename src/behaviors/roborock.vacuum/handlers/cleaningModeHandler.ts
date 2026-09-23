@@ -8,6 +8,7 @@ export class CleaningModeHandler implements ModeHandler {
 
 	public async handle(duid: string, _mode: number, activity: string, context: HandlerContext): Promise<void> {
 		context.logger.notice(`${context.behaviorName}-ChangeRunMode to:`, activity);
+		context.roborockService.setProgress(duid, []);
 		await context.roborockService.startClean(duid);
 	}
 }

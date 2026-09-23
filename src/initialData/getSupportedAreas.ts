@@ -62,6 +62,17 @@ export function toSupportedMaps(mapInfo: MapInfo, enableMultipleMap = true): Ser
 }
 
 /**
+ * Build placeholder supportedMaps entries for areas with non-null mapIds when no real maps are available.
+ * Extracts distinct mapIds from areas and creates a synthetic map entry for each.
+ * @param areas - Service areas to extract distinct mapIds from
+ * @returns Array of placeholder map entries, one per distinct non-null mapId found
+ */
+function buildPlaceholderSupportedMaps(areas: ServiceArea.Area[]): ServiceArea.Map[] {
+	const distinctMapIds = [...new Set(areas.map((a) => a.mapId).filter((id): id is number => id !== null))];
+	return distinctMapIds.map((mapId) => ({ mapId, name: `Map ${mapId}` }));
+}
+
+/**
  * Convert vacuum rooms and room map to Matter ServiceArea areas.
  * Handles single and multiple map configurations.
  * @param homeInFo - Home entity containing room and map information
@@ -111,14 +122,16 @@ export function getSupportedAreas(
 	const { supportedAreas, areaInfos, roomInfos } = processValidData(entityForProcessing);
 
 	const supportedMaps = toSupportedMaps(homeInFo.mapInfo, enableMultipleMap);
+	const effectiveSupportedMaps =
+		supportedMaps.length > 0 ? supportedMaps : buildPlaceholderSupportedMaps(supportedAreas);
 
 	logger.debug('getSupportedAreas - supportedAreas', debugStringify(supportedAreas));
-	logger.debug('getSupportedAreas - supportedMaps', debugStringify(supportedMaps));
+	logger.debug('getSupportedAreas - supportedMaps', debugStringify(effectiveSupportedMaps));
 	const roomIndexMap = new RoomIndexMap(areaInfos, roomInfos);
 
 	return {
 		supportedAreas,
-		supportedMaps,
+		supportedMaps: effectiveSupportedMaps,
 		roomIndexMap,
 	};
 }

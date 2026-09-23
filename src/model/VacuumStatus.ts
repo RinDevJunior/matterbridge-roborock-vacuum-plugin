@@ -2,7 +2,8 @@ import { RvcOperationalState } from 'matterbridge/matter/clusters';
 
 import { VacuumErrorCode } from '../roborockCommunication/enums/index.js';
 
-const errorCodeToErrorState = new Map<number, RvcOperationalState.ErrorState>([
+export const VACUUM_ERROR_TO_MATTER: ReadonlyMap<VacuumErrorCode, RvcOperationalState.ErrorState> = new Map([
+	[VacuumErrorCode.None, RvcOperationalState.ErrorState.NoError],
 	[VacuumErrorCode.LidarBlocked, RvcOperationalState.ErrorState.NavigationSensorObscured],
 	[VacuumErrorCode.CompassError, RvcOperationalState.ErrorState.NavigationSensorObscured],
 	[VacuumErrorCode.CliffSensorError, RvcOperationalState.ErrorState.NavigationSensorObscured],
@@ -25,8 +26,9 @@ const errorCodeToErrorState = new Map<number, RvcOperationalState.ErrorState>([
 	[VacuumErrorCode.MoppingRollerJammed, RvcOperationalState.ErrorState.BrushJammed],
 	[VacuumErrorCode.MoppingRollerJammed2, RvcOperationalState.ErrorState.BrushJammed],
 	[VacuumErrorCode.NoDustbin, RvcOperationalState.ErrorState.DustBinMissing],
-	[VacuumErrorCode.StrainerError, RvcOperationalState.ErrorState.DustBinMissing],
-	[VacuumErrorCode.CleanAutoEmptyDock, RvcOperationalState.ErrorState.DustBinMissing],
+	[VacuumErrorCode.StrainerError, RvcOperationalState.ErrorState.DustBinFull],
+	[VacuumErrorCode.CleanAutoEmptyDock, RvcOperationalState.ErrorState.DustBinFull],
+	[VacuumErrorCode.AutoEmptyDockFanError, RvcOperationalState.ErrorState.DustBinFull],
 	[VacuumErrorCode.FilterBlocked, RvcOperationalState.ErrorState.DustBinFull],
 	[VacuumErrorCode.LowBattery, RvcOperationalState.ErrorState.LowBattery],
 	[VacuumErrorCode.ChargingError, RvcOperationalState.ErrorState.UnableToStartOrResume],
@@ -43,16 +45,16 @@ const errorCodeToErrorState = new Map<number, RvcOperationalState.ErrorState>([
 	[VacuumErrorCode.BatteryError, RvcOperationalState.ErrorState.UnableToCompleteOperation],
 	[VacuumErrorCode.AutoEmptyDockVoltage, RvcOperationalState.ErrorState.UnableToCompleteOperation],
 	[VacuumErrorCode.AudioError, RvcOperationalState.ErrorState.UnableToCompleteOperation],
-	[VacuumErrorCode.MoppingRollerNotLowered, RvcOperationalState.ErrorState.UnableToCompleteOperation],
-	[VacuumErrorCode.SinkStrainerHoare, RvcOperationalState.ErrorState.UnableToCompleteOperation],
+	[VacuumErrorCode.MoppingRollerNotLowered, RvcOperationalState.ErrorState.BrushJammed],
+	[VacuumErrorCode.SinkStrainerHoare, RvcOperationalState.ErrorState.WaterTankMissing],
 	[VacuumErrorCode.CheckCleanCarouse, RvcOperationalState.ErrorState.UnableToCompleteOperation],
 	[VacuumErrorCode.ClearWaterBoxHoare, RvcOperationalState.ErrorState.WaterTankMissing],
 	[VacuumErrorCode.ClearBrushInstalledProperly, RvcOperationalState.ErrorState.WaterTankMissing],
-	[VacuumErrorCode.FilterScreenException, RvcOperationalState.ErrorState.WaterTankMissing],
+	[VacuumErrorCode.FilterScreenException, RvcOperationalState.ErrorState.WaterTankLidOpen],
 	[VacuumErrorCode.UpWaterException, RvcOperationalState.ErrorState.WaterTankMissing],
-	[VacuumErrorCode.WaterCarriageDrop, RvcOperationalState.ErrorState.WaterTankMissing],
+	[VacuumErrorCode.WaterCarriageDrop, RvcOperationalState.ErrorState.MopCleaningPadMissing],
 	[VacuumErrorCode.ClearWaterTankEmpty, RvcOperationalState.ErrorState.WaterTankEmpty],
-	[VacuumErrorCode.DirtyWaterBoxHoare, RvcOperationalState.ErrorState.DirtyWaterTankFull],
+	[VacuumErrorCode.DirtyWaterBoxHoare, RvcOperationalState.ErrorState.DirtyWaterTankMissing],
 	[VacuumErrorCode.DrainWaterException, RvcOperationalState.ErrorState.DirtyWaterTankFull],
 	[VacuumErrorCode.CleanCarouselWaterFull, RvcOperationalState.ErrorState.DirtyWaterTankFull],
 ]);
@@ -65,6 +67,6 @@ export class VacuumStatus {
 	}
 
 	public getErrorState(): RvcOperationalState.ErrorState {
-		return errorCodeToErrorState.get(this.errorCode) ?? RvcOperationalState.ErrorState.NoError;
+		return VACUUM_ERROR_TO_MATTER.get(this.errorCode) ?? RvcOperationalState.ErrorState.UnableToCompleteOperation;
 	}
 }

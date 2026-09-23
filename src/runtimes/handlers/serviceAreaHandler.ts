@@ -3,7 +3,8 @@ import { RvcOperationalState, ServiceArea } from 'matterbridge/matter/clusters';
 
 import { INVALID_SEGMENT_ID } from '../../constants/index.js';
 import type { RoborockMatterbridgePlatform } from '../../module.js';
-import { OperationStatusCode } from '../../roborockCommunication/enums/index.js';
+import { OperationStatusCode, ProtocolVersion } from '../../roborockCommunication/enums/index.js';
+import { isB01Q10CleaningState, isB01Q10IdleState, isB01Q10Robot } from '../../share/b01Q10StatusResolver.js';
 import { computeAreaEstimatedTime, computeEstimatedEndTimeFromCleanProgress } from '../../share/estimatedEndTime.js';
 import type { ServiceAreaUpdateMessage } from '../../types/MessagePayloads.js';
 import type { RoborockVacuumCleaner } from '../../types/roborockVacuumCleaner.js';
@@ -24,6 +25,27 @@ const CLEANING_STATES = new Set([
 	OperationStatusCode.CleanMopCleaning,
 	OperationStatusCode.CleanMopMopping,
 ]);
+
+function isActivelyCleaningOperationalState(
+	operationalState: RvcOperationalState.OperationalState | undefined,
+): boolean {
+	return (
+		operationalState !== undefined &&
+		operationalState !== RvcOperationalState.OperationalState.Docked &&
+		operationalState !== RvcOperationalState.OperationalState.Stopped &&
+		operationalState !== RvcOperationalState.OperationalState.Error
+	);
+}
+
+function isCleaningStateForServiceArea(robot: RoborockVacuumCleaner, state: OperationStatusCode): boolean {
+	if (CLEANING_STATES.has(state)) return true;
+	return isB01Q10Robot(robot) && isB01Q10CleaningState(state);
+}
+
+function isIdleStateForServiceArea(robot: RoborockVacuumCleaner, state: OperationStatusCode): boolean {
+	if (state === OperationStatusCode.Idle) return true;
+	return isB01Q10Robot(robot) && isB01Q10IdleState(state);
+}
 
 export function buildProgressUpdate(
 	existing: ServiceArea.Progress[],
@@ -132,7 +154,7 @@ async function updateCurrentAreaAndEstimate(
 	const estimatedEndTime =
 		currentArea === null
 			? null
-			: shouldPublishEstimatedEndTime(platform, message.state)
+			: shouldPublishEstimatedEndTime(platform, robot, message.state)
 				? (computeEstimatedEndTimeFromCleanProgress(
 						message.cleaningProcess.clean_time,
 						message.cleaningProcess.clean_percent,
@@ -143,8 +165,68 @@ async function updateCurrentAreaAndEstimate(
 	await robot.updateAttribute(ServiceArea.id, 'estimatedEndTime', estimatedEndTime, logger);
 }
 
-function shouldPublishEstimatedEndTime(platform: RoborockMatterbridgePlatform, state: OperationStatusCode): boolean {
-	return platform.configManager.isEstimatedEndTimeEnabled && CLEANING_STATES.has(state);
+function shouldPublishEstimatedEndTime(
+	platform: RoborockMatterbridgePlatform,
+	robot: RoborockVacuumCleaner,
+	state: OperationStatusCode,
+): boolean {
+	return platform.configManager.isEstimatedEndTimeEnabled && isCleaningStateForServiceArea(robot, state);
+}
+
+async function publishAreaProgress(
+	robot: RoborockVacuumCleaner,
+	message: ServiceAreaUpdateMessage,
+	platform: RoborockMatterbridgePlatform,
+	selectedAreas: number[],
+	activeAreaId: number,
+): Promise<void> {
+	const logger = platform.log;
+	await robot.updateAttribute(ServiceArea.id, 'selectedAreas', selectedAreas, logger);
+	await updateCurrentAreaAndEstimate(robot, activeAreaId, message, platform);
+
+	const estimatedTimeForActiveArea = shouldPublishEstimatedEndTime(platform, robot, message.state)
+		? computeAreaEstimatedTime(message.cleaningProcess.clean_time, message.cleaningProcess.clean_percent)
+		: null;
+	const existingProgress = platform.roborockService?.getProgress(robot.device.duid) ?? [];
+	const updatedProgress = buildProgressUpdate(
+		existingProgress,
+		selectedAreas,
+		activeAreaId,
+		estimatedTimeForActiveArea,
+	);
+	platform.roborockService?.setProgress(robot.device.duid, updatedProgress);
+	await robot.updateAttribute(ServiceArea.id, 'progress', updatedProgress, logger);
+}
+
+function resolveV1CurrentArea(
+	robot: RoborockVacuumCleaner,
+	platform: RoborockMatterbridgePlatform,
+	selectedAreas: number[],
+): number | null {
+	if (robot.device.pv !== ProtocolVersion.V1 || !platform.roborockService) {
+		return null;
+	}
+
+	const roomIndexMap = platform.roborockService.getSupportedAreasIndexMap(robot.device.duid);
+	if (!roomIndexMap) {
+		return null;
+	}
+
+	const cachedSegmentId = platform.roborockService.getV1ResolvedSegment(robot.device.duid);
+	if (cachedSegmentId === undefined) {
+		void platform.roborockService.requestV1MapRefresh(robot.device.duid);
+		return null;
+	}
+
+	const mappedArea =
+		roomIndexMap.getAreaId(cachedSegmentId, robot.homeInFo.activeMapId) ??
+		roomIndexMap.getAreaIdV2(cachedSegmentId) ??
+		null;
+	if (mappedArea === null || !selectedAreas.includes(mappedArea)) {
+		return null;
+	}
+
+	return mappedArea;
 }
 
 export async function handleServiceAreaUpdate(
@@ -155,25 +237,38 @@ export async function handleServiceAreaUpdate(
 	const logger = platform.log;
 	logger.debug(`Handling service area update: ${debugStringify(message)}`);
 
-	if (message.state === OperationStatusCode.Idle) {
+	// Detect transition from not-actively-cleaning to actively-cleaning and reset progress.
+	const operationalState: RvcOperationalState.OperationalState | undefined = robot.getAttribute(
+		RvcOperationalState.id,
+		'operationalState',
+		logger,
+	);
+	const isActivelyCleaningNow = isActivelyCleaningOperationalState(operationalState);
+	const wasActivelyCleaning = platform.roborockService?.getLastActivelyCleaningState(robot.device.duid) ?? false;
+	platform.roborockService?.setLastActivelyCleaningState(robot.device.duid, isActivelyCleaningNow);
+
+	if (!wasActivelyCleaning && isActivelyCleaningNow) {
+		logger.debug(
+			`[${robot.device.duid}] Detected transition to actively cleaning (operationalState=${operationalState}), resetting progress`,
+		);
+		platform.roborockService?.setProgress(robot.device.duid, []);
+		await robot.updateAttribute(ServiceArea.id, 'progress', [], logger);
+	}
+
+	if (isIdleStateForServiceArea(robot, message.state)) {
 		logger.debug('Robot is idle, updating selectedAreas from Roborock service');
 		const selectedAreas = platform.roborockService?.getSelectedAreas(robot.device.duid) ?? [];
 		await robot.updateAttribute(ServiceArea.id, 'selectedAreas', selectedAreas, logger);
 
-		const existingProgress = platform.roborockService?.getProgress(robot.device.duid) ?? [];
-		const finalProgress = existingProgress.map((p) =>
-			p.status === ServiceArea.OperationalStatus.Operating
-				? { ...p, status: ServiceArea.OperationalStatus.Completed }
-				: p,
-		);
-		platform.roborockService?.setProgress(robot.device.duid, finalProgress);
-		await robot.updateAttribute(ServiceArea.id, 'progress', finalProgress, logger);
+		platform.roborockService?.setProgress(robot.device.duid, []);
+		await robot.updateAttribute(ServiceArea.id, 'progress', [], logger);
 		await robot.updateAttribute(ServiceArea.id, 'currentArea', null, logger);
 		await robot.updateAttribute(ServiceArea.id, 'estimatedEndTime', null, logger);
+		platform.roborockService?.clearPendingRoomResolution(robot.device.duid);
 		return;
 	}
 
-	if (!message.cleaningInfo && CLEANING_STATES.has(message.state)) {
+	if (!message.cleaningInfo && isCleaningStateForServiceArea(robot, message.state)) {
 		await handleCleaningWithoutInfo(robot, message, platform);
 		return;
 	}
@@ -214,26 +309,29 @@ async function handleCleaningWithoutInfo(
 		return;
 	}
 
-	if (selectedAreas.length === 1 || (selectedAreas.length > 1 && message.cleaningProcess.clean_time > 0)) {
-		await robot.updateAttribute(ServiceArea.id, 'selectedAreas', selectedAreas, logger);
-		await updateCurrentAreaAndEstimate(robot, selectedAreas[0], message, platform);
-
-		const estimatedTimeForActiveArea = shouldPublishEstimatedEndTime(platform, message.state)
-			? computeAreaEstimatedTime(message.cleaningProcess.clean_time, message.cleaningProcess.clean_percent)
-			: null;
-		const existingProgress = platform.roborockService?.getProgress(robot.device.duid) ?? [];
-		const updatedProgress = buildProgressUpdate(
-			existingProgress,
-			selectedAreas,
-			selectedAreas[0],
-			estimatedTimeForActiveArea,
-		);
-		platform.roborockService?.setProgress(robot.device.duid, updatedProgress);
-		await robot.updateAttribute(ServiceArea.id, 'progress', updatedProgress, logger);
-	} else {
-		await robot.updateAttribute(ServiceArea.id, 'selectedAreas', [], logger);
-		await updateCurrentAreaAndEstimate(robot, null, message, platform);
+	if (selectedAreas.length === 1) {
+		await publishAreaProgress(robot, message, platform, selectedAreas, selectedAreas[0]);
+		return;
 	}
+
+	if (selectedAreas.length > 1) {
+		const resolvedAreaId = resolveV1CurrentArea(robot, platform, selectedAreas);
+		if (resolvedAreaId !== null) {
+			await publishAreaProgress(robot, message, platform, selectedAreas, resolvedAreaId);
+			return;
+		}
+
+		if (message.cleaningProcess.clean_time > 0) {
+			const lastKnownArea = robot.getAttribute(ServiceArea.id, 'currentArea', logger);
+			const fallbackAreaId =
+				typeof lastKnownArea === 'number' && selectedAreas.includes(lastKnownArea) ? lastKnownArea : selectedAreas[0];
+			await publishAreaProgress(robot, message, platform, selectedAreas, fallbackAreaId);
+			return;
+		}
+	}
+
+	await robot.updateAttribute(ServiceArea.id, 'selectedAreas', [], logger);
+	await updateCurrentAreaAndEstimate(robot, null, message, platform);
 }
 
 export async function handleActiveMapChanged(
@@ -248,12 +346,7 @@ export async function handleActiveMapChanged(
 		'operationalState',
 		logger,
 	);
-	const isActivelyCleaning =
-		operationalState !== undefined &&
-		operationalState !== RvcOperationalState.OperationalState.Docked &&
-		operationalState !== RvcOperationalState.OperationalState.Stopped &&
-		operationalState !== RvcOperationalState.OperationalState.Error;
-	if (isActivelyCleaning) {
+	if (isActivelyCleaningOperationalState(operationalState)) {
 		logger.debug(
 			`[${robot.device.duid}] ActiveMapChanged: ignoring map change to ${mapId} while actively cleaning (operationalState=${operationalState})`,
 		);
@@ -289,6 +382,7 @@ export async function handleActiveMapChanged(
 	logger.debug(
 		`[${robot.device.duid}] ActiveMapChanged: setting selectedAreas to [${validAreaIds.join(', ')}] and currentArea to null (mapId ${mapId})`,
 	);
+	platform.roborockService?.clearPendingRoomResolution(robot.device.duid);
 	await robot.updateAttribute(ServiceArea.id, 'selectedAreas', validAreaIds, logger);
 	await robot.updateAttribute(ServiceArea.id, 'currentArea', null, logger);
 	await robot.updateAttribute(ServiceArea.id, 'estimatedEndTime', null, logger);
@@ -311,6 +405,7 @@ async function resolveAreaFromCleaningInfo(
 	const roomIndexMap = platform.roborockService?.getSupportedAreasIndexMap(robot.device.duid);
 	if (!roomIndexMap || !platform.roborockService) {
 		logger.debug('Room map not yet available, skipping room area resolution');
+		platform.roborockService?.setPendingRoomResolution(robot.device.duid, message);
 		return;
 	}
 
@@ -325,7 +420,7 @@ async function resolveAreaFromCleaningInfo(
 	const mappedArea =
 		roomIndexMap.getAreaId(segmentId, robot.homeInFo.activeMapId) ?? roomIndexMap.getAreaIdV2(segmentId);
 
-	if (!mappedArea) {
+	if (mappedArea === undefined) {
 		logger.debug(
 			`No mapped area found, skipping area mapping.
         sourceSegmentId: ${sourceSegmentId},
@@ -333,9 +428,12 @@ async function resolveAreaFromCleaningInfo(
         segmentId: ${segmentId},
         currentMappedAreas: ${debugStringify(roomIndexMap)}`,
 		);
+		platform.roborockService?.setPendingRoomResolution(robot.device.duid, message);
 		await updateCurrentAreaAndEstimate(robot, null, message, platform);
 		return;
 	}
+
+	platform.roborockService?.clearPendingRoomResolution(robot.device.duid);
 
 	const supportedAreas = platform.roborockService.getSupportedAreas(robot.device.duid);
 	logger.debug(
@@ -347,14 +445,6 @@ async function resolveAreaFromCleaningInfo(
       activeArea: ${debugStringify(supportedAreas.find((x) => x.areaId === mappedArea))}`,
 	);
 
-	await updateCurrentAreaAndEstimate(robot, mappedArea, message, platform);
-
 	const selectedAreas = robot.getAttribute(ServiceArea.id, 'selectedAreas', logger) ?? [];
-	const estimatedTimeForActiveArea = shouldPublishEstimatedEndTime(platform, message.state)
-		? computeAreaEstimatedTime(message.cleaningProcess.clean_time, message.cleaningProcess.clean_percent)
-		: null;
-	const existingProgress = platform.roborockService.getProgress(robot.device.duid);
-	const updatedProgress = buildProgressUpdate(existingProgress, selectedAreas, mappedArea, estimatedTimeForActiveArea);
-	platform.roborockService.setProgress(robot.device.duid, updatedProgress);
-	await robot.updateAttribute(ServiceArea.id, 'progress', updatedProgress, logger);
+	await publishAreaProgress(robot, message, platform, selectedAreas, mappedArea);
 }

@@ -16,6 +16,7 @@ import { mergeSupportedAreasByMap } from '../initialData/mergeSupportedAreasByMa
 import { RoborockIoTApi } from '../roborockCommunication/api/iotClient.js';
 import { HomeModelMapper, RawRoomMappingData, RoomDto } from '../roborockCommunication/models/home/index.js';
 import { Scene } from '../roborockCommunication/models/index.js';
+import type { ServiceAreaUpdateMessage } from '../types/index.js';
 import { MessageRoutingService } from './index.js';
 
 /** Manages cleaning areas, rooms, maps, and scenes. */
@@ -25,12 +26,19 @@ export class AreaManagementService {
 	private supportedRoutines = new Map<string, ServiceArea.Area[]>();
 	private selectedAreas = new Map<string, number[]>();
 	private progress = new Map<string, ServiceArea.Progress[]>();
+	private lastActivelyCleaningState = new Map<string, boolean>();
 	private supportedAreaIndexMaps = new Map<string, RoomIndexMap>();
 	private areasListeners = new Map<string, (areas: ServiceArea.Area[], maps: ServiceArea.Map[]) => void>();
 	private refreshIntervals = new Map<string, NodeJS.Timeout>();
 	private deviceRooms = new Map<string, RoomDto[]>();
 	private iotApi: RoborockIoTApi | undefined;
 	private mapInfoCache = new Map<string, MapInfo>();
+	private v1RoomResolutionCache = new Map<string, { segmentId: number; resolvedAtMs: number }>();
+	private v1PendingResolution = new Map<string, { segmentId: number; consecutiveCount: number }>();
+	private pendingQ10RoomResolution = new Map<string, { message: ServiceAreaUpdateMessage; cachedAtMs: number }>();
+
+	private static readonly V1_SEGMENT_CONFIRMATION_THRESHOLD = 2;
+	private static readonly PENDING_Q10_RESOLUTION_MAX_AGE_MS = 30_000;
 
 	constructor(
 		private readonly logger: AnsiLogger,
@@ -71,6 +79,17 @@ export class AreaManagementService {
 
 	public getProgress(duid: string): ServiceArea.Progress[] {
 		return this.progress.get(duid) ?? [];
+	}
+
+	/** Store the "was actively cleaning" state for a device. */
+	public setLastActivelyCleaningState(duid: string, isActivelyCleaning: boolean): void {
+		this.logger.debug('AreaManagementService - setLastActivelyCleaningState', { duid, isActivelyCleaning });
+		this.lastActivelyCleaningState.set(duid, isActivelyCleaning);
+	}
+
+	/** Retrieve the stored "was actively cleaning" state for a device. */
+	public getLastActivelyCleaningState(duid: string): boolean {
+		return this.lastActivelyCleaningState.get(duid) ?? false;
 	}
 
 	public registerAreasListener(
@@ -377,6 +396,54 @@ export class AreaManagementService {
 		return this.iotApi.startScene(sceneId);
 	}
 
+	public setV1ResolvedSegment(duid: string, segmentId: number): void {
+		const pending = this.v1PendingResolution.get(duid);
+		const consecutiveCount = pending && pending.segmentId === segmentId ? pending.consecutiveCount + 1 : 1;
+		this.v1PendingResolution.set(duid, { segmentId, consecutiveCount });
+
+		const confirmed = consecutiveCount >= AreaManagementService.V1_SEGMENT_CONFIRMATION_THRESHOLD;
+		this.logger.debug('AreaManagementService - setV1ResolvedSegment', { duid, segmentId, consecutiveCount, confirmed });
+
+		if (confirmed) {
+			this.v1RoomResolutionCache.set(duid, { segmentId, resolvedAtMs: Date.now() });
+		}
+	}
+
+	public getV1ResolvedSegment(duid: string, maxAgeMs = 30_000): number | undefined {
+		const cached = this.v1RoomResolutionCache.get(duid);
+		if (!cached) return undefined;
+		if (Date.now() - cached.resolvedAtMs > maxAgeMs) return undefined;
+		return cached.segmentId;
+	}
+
+	/** Cache an unresolved Q10 room resolution so it can be retried once areas update. */
+	public setPendingRoomResolution(duid: string, message: ServiceAreaUpdateMessage): void {
+		this.pendingQ10RoomResolution.set(duid, { message, cachedAtMs: Date.now() });
+	}
+
+	/** Consume (get + clear) a cached pending Q10 room resolution if it exists and is still fresh. */
+	public consumePendingRoomResolution(duid: string): ServiceAreaUpdateMessage | undefined {
+		const pending = this.pendingQ10RoomResolution.get(duid);
+		this.pendingQ10RoomResolution.delete(duid);
+		if (!pending) return undefined;
+		if (Date.now() - pending.cachedAtMs > AreaManagementService.PENDING_Q10_RESOLUTION_MAX_AGE_MS) return undefined;
+		return pending.message;
+	}
+
+	/** Clear a cached pending Q10 room resolution for a device (no return value). */
+	public clearPendingRoomResolution(duid: string): void {
+		this.pendingQ10RoomResolution.delete(duid);
+	}
+
+	public async requestV1MapRefresh(duid: string): Promise<void> {
+		if (!this.serviceRouting) return;
+		try {
+			await this.serviceRouting.requestHomeMapPush(duid);
+		} catch (err: unknown) {
+			this.logger.debug(`[${duid}] requestV1MapRefresh failed: ${err instanceof Error ? err.message : String(err)}`);
+		}
+	}
+
 	/** Clear all area management data and stop all refresh timers. */
 	public clearAll(): void {
 		for (const duid of this.refreshIntervals.keys()) {
@@ -387,10 +454,14 @@ export class AreaManagementService {
 		this.supportedRoutines.clear();
 		this.selectedAreas.clear();
 		this.progress.clear();
+		this.lastActivelyCleaningState.clear();
 		this.supportedAreaIndexMaps.clear();
 		this.areasListeners.clear();
 		this.deviceRooms.clear();
 		this.mapInfoCache.clear();
+		this.v1RoomResolutionCache.clear();
+		this.v1PendingResolution.clear();
+		this.pendingQ10RoomResolution.clear();
 		this.logger.debug('AreaManagementService - All data cleared');
 	}
 }

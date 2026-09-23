@@ -48,7 +48,7 @@ export async function updateFromHomeData(homeData: Home, platform: RoborockMatte
 		const waterBoxMode = getVacuumProperty(device, 'water_box_mode');
 		const chargeStatus = getVacuumProperty(device, 'charge_status');
 
-		if (errorCode && errorCode !== 0) {
+		if (errorCode !== undefined) {
 			await platform.platformRunner.updateRobotWithPayload({
 				type: NotifyMessageTypes.ErrorOccurred,
 				data: {

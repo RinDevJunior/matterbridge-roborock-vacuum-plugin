@@ -11,6 +11,7 @@ import {
 	handleDeviceStatusSimpleUpdate,
 	handleDeviceStatusUpdate,
 } from '../../../runtimes/handlers/deviceStateHandler.js';
+import { getOperationalErrorName } from '../../../share/matterStateNames.js';
 import type { RoborockVacuumCleaner } from '../../../types/roborockVacuumCleaner.js';
 import { asPartial, createMockConfigManager, createMockLogger } from '../../helpers/testUtils.js';
 
@@ -170,7 +171,10 @@ describe('handleDeviceStatusSimpleUpdate with shared applyResolvedStateUpdates',
 				3,
 				RvcOperationalState.id,
 				'operationalError',
-				{ errorStateId: RvcOperationalState.ErrorState.FailedToFindChargingDock },
+				{
+					errorStateId: RvcOperationalState.ErrorState.FailedToFindChargingDock,
+					errorStateDetails: getOperationalErrorName(RvcOperationalState.ErrorState.FailedToFindChargingDock),
+				},
 				platform.log,
 			);
 		});

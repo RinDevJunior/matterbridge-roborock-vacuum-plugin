@@ -1,6 +1,6 @@
 ---
 name: release-manager
-description: Use this agent to create a release candidate and update the release note. It bumps the version across all required files and writes the CHANGELOG entry. Run only when explicitly asked to cut a release.
+description: Use this agent to create a release candidate and update the release note. It bumps the version across all required files and writes the CHANGELOG entry. Public releases come from main, release candidates from dev. Run only when explicitly asked to cut a release.
 model: sonnet
 color: orange
 effort: low
@@ -163,7 +163,11 @@ This is NOT part of the automatic Steps 1–9 flow above — it requires the ver
 
 Before calling `mcp__github-release__GitHubRelease`, confirm the bump is already on `targetBranch`. If any check fails, **stop** — report what is missing and ask the user to commit/push; do **not** create the release.
 
-1. Resolve `targetBranch` (`master` for a public release, `dev` for an RC — ask if not specified) and read the release version from `package.json` (or the tag the user requested).
+1. Resolve `targetBranch` from the release type — this is a fixed rule, never overridden by the caller's wording:
+   - **Public release** (tag has no `-rcN` suffix, e.g. `1.1.9`) → `targetBranch` is **`main`** only. Never `dev`, never `master`.
+   - **Release candidate** (tag has an `-rcN` suffix, e.g. `1.1.9-rc01`) → `targetBranch` is **`dev`** only. Never `main`.
+   - If the caller asks for a different branch than this rule allows → **stop** and report the conflict; do not create the release.
+     Read the release version from `package.json` (or the tag the user requested).
 2. Fetch remote state (read-only):
 
 ```bash
@@ -201,6 +205,7 @@ GitHub creates the tag automatically, pointing at `targetBranch`'s current HEAD.
 - Never change source logic, tests, or anything outside the files listed above
 - Never push or commit — leave that to the user
 - Never call `mcp__github-release__GitHubRelease` as part of the automatic Steps 1–9 flow — only when the user explicitly requests a GitHub release after their own commit/push
+- **Branch rule:** public releases (no `-rc` suffix) are cut from `main` only; release candidates (`-rcN`) from `dev` only. Version bumps for a public release land on `dev` first, then reach `main` via merge (PR) before the release is created.
 - Never call `mcp__github-release__GitHubRelease` unless the preflight checks above pass — if the version bump is not on `origin/<targetBranch>`, stop and tell the user to push first
 - If the user provides changelog content, write it into the CHANGELOG entry before reporting
 - Follow the fixed CHANGELOG entry format in Step 5 exactly (section order, spacing, coffee link, `---` separator) — do not infer format from prior entries

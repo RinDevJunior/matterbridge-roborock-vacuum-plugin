@@ -32,6 +32,7 @@ export enum VacuumErrorCode {
 	InvisibleWallDetected = 30,
 	CannotCrossCarpet = 31,
 	InternalError = 32,
+	AutoEmptyDockFanError = 33,
 	CleanAutoEmptyDock = 34,
 	AutoEmptyDockVoltage = 35,
 	MoppingRollerJammed = 36, // Wash roller may be jammed
@@ -56,6 +57,9 @@ export enum VacuumErrorCode {
 
 export enum DockErrorCode {
 	None = 0,
+	NoDustbinOrFilter = 32,
+	AutoEmptyDockFanError = 33,
+	AutoEmptyDockVoltageError = 35,
 	DuctBlockage = 34, // Duct blockage detected
 	WaterEmpty = 38, // Clean water tank empty
 	WasteWaterTankFull = 39, // Waste water tank full

@@ -392,6 +392,30 @@ describe('MapInfoListener', () => {
 			expect(logger.debug).toHaveBeenCalledWith(expect.stringContaining('B01 map binary has no rooms'));
 		});
 
+		it('should skip the "no rooms" debug log when the B01 binary is a trace packet', async () => {
+			const logger = createMockLogger();
+			const listenerWithDevice = new MapInfoListener(DUID, [], areaService, logger, 'roborock.vacuum.a27', 'ABC123');
+			const b01MapParser = (
+				listenerWithDevice as unknown as {
+					b01MapParser: {
+						parseRoomsFromEncryptedBinary: ReturnType<typeof vi.fn>;
+						isTracePacket: ReturnType<typeof vi.fn>;
+					};
+				}
+			).b01MapParser;
+			vi.spyOn(b01MapParser, 'parseRoomsFromEncryptedBinary').mockReturnValue({ rooms: [], mapId: undefined });
+			vi.spyOn(b01MapParser, 'isTracePacket').mockReturnValue(true);
+
+			const msg = makeB01Message(DUID, (key) => {
+				if (key === Protocol.map_response) return Buffer.from('mock');
+				return undefined;
+			});
+			await listenerWithDevice.onMessage(msg);
+
+			expect(areaService.setSupportedAreas).not.toHaveBeenCalled();
+			expect(logger.debug).not.toHaveBeenCalledWith(expect.stringContaining('B01 map binary has no rooms'));
+		});
+
 		it('should warn and skip when B01 map binary parse throws', async () => {
 			const logger = createMockLogger();
 			const listenerWithDevice = new MapInfoListener(DUID, [], areaService, logger, 'roborock.vacuum.a27', 'ABC123');
@@ -411,6 +435,49 @@ describe('MapInfoListener', () => {
 
 			expect(areaService.setSupportedAreas).not.toHaveBeenCalled();
 			expect(logger.warn).toHaveBeenCalledWith(expect.stringContaining('failed to parse B01 map binary'));
+		});
+
+		it('should not produce invalid Areas/supportedMaps when B01 binary arrives before multimap push', async () => {
+			// Arrange — B01 map binary arriving before any multimap/query_response push (reproduces real race)
+			const logger = createMockLogger();
+			const listenerWithDevice = new MapInfoListener(DUID, [], areaService, logger, 'roborock.vacuum.a27', 'ABC123');
+			vi.spyOn(
+				(listenerWithDevice as unknown as { b01MapParser: { parseRoomsFromEncryptedBinary: ReturnType<typeof vi.fn> } })
+					.b01MapParser,
+				'parseRoomsFromEncryptedBinary',
+			).mockReturnValue({
+				rooms: [
+					{ roomId: 5, roomName: 'Kitchen', roomTypeId: 6, colorId: 3 },
+					{ roomId: 6, roomName: 'Study', roomTypeId: 10, colorId: 7 },
+				],
+				mapId: undefined,
+			});
+
+			const msg = makeB01Message(DUID, (key) => {
+				if (key === Protocol.map_response) return Buffer.from('mock');
+				return undefined;
+			});
+
+			// Act — send binary WITHOUT sending multimap/query_response first (pendingB01MapInfo stays undefined)
+			await listenerWithDevice.onMessage(msg);
+
+			// Assert — capture the real SupportedAreasResult passed to applySupportedAreasResult
+			const applySupportedAreasResultCalls = vi.mocked(areaService.applySupportedAreasResult).mock.calls;
+			expect(applySupportedAreasResultCalls.length).toBeGreaterThan(0);
+			const lastCall = applySupportedAreasResultCalls[applySupportedAreasResultCalls.length - 1];
+
+			const result = lastCall[1] as unknown as {
+				supportedAreas: ServiceArea.Area[];
+				supportedMaps: ServiceArea.Map[];
+			};
+			expect(result.supportedMaps.length).toBeGreaterThan(0);
+
+			// Verify the invariant: all non-null area mapIds must appear in supportedMaps
+			const supportedMapIds = new Set(result.supportedMaps.map((m) => m.mapId));
+			const areasWithInvalidMapIds = result.supportedAreas.filter(
+				(area) => area.mapId !== null && !supportedMapIds.has(area.mapId),
+			);
+			expect(areasWithInvalidMapIds).toHaveLength(0);
 		});
 	});
 
@@ -497,6 +564,158 @@ describe('MapInfoListener', () => {
 			const areas = getAreasPassedToService();
 			expect(areas.length).toBeGreaterThan(0);
 			expect(areas[0]?.areaInfo.locationInfo?.areaType).toBe(CommonAreaNamespaceTag.Kitchen.tag);
+		});
+	});
+
+	describe('tryParseV1MapBinary', () => {
+		it('should skip when device protocol is not V1 (protocol gate)', async () => {
+			// Arrange
+			const onV1RoomResolved = vi.fn();
+			const sessionNonce = vi.fn().mockReturnValue(Buffer.from('nonce'));
+			const listenerB01 = new MapInfoListener(
+				DUID,
+				[],
+				areaService,
+				createMockLogger(),
+				'roborock.vacuum.b01',
+				'SER',
+				undefined,
+				ProtocolVersion.B01, // Not V1
+				true,
+				true,
+				sessionNonce,
+				onV1RoomResolved,
+			);
+
+			const msg = makeB01Message(DUID, (key) => {
+				if (key === Protocol.map_response) return Buffer.from('binary');
+				return undefined;
+			});
+
+			// Act
+			await listenerB01.onMessage(msg);
+
+			// Assert
+			expect(onV1RoomResolved).not.toHaveBeenCalled();
+			expect(sessionNonce).not.toHaveBeenCalled(); // Protocol gate prevents nonce call
+		});
+
+		it('should return early without error when sessionNonce is undefined (nonce not ready yet)', async () => {
+			// Arrange
+			const onV1RoomResolved = vi.fn();
+			const sessionNonce = vi.fn().mockReturnValue(undefined); // Nonce not ready
+			const listenerV1 = new MapInfoListener(
+				DUID,
+				[],
+				areaService,
+				createMockLogger(),
+				undefined,
+				undefined,
+				undefined,
+				ProtocolVersion.V1,
+				true,
+				true,
+				sessionNonce,
+				onV1RoomResolved,
+			);
+
+			const msg = makeB01Message(DUID, (key) => {
+				if (key === Protocol.map_response) return Buffer.from('data');
+				return undefined;
+			});
+
+			// Act & Assert — should not throw and not call callback
+			await expect(listenerV1.onMessage(msg)).resolves.toBeUndefined();
+			expect(onV1RoomResolved).not.toHaveBeenCalled();
+		});
+
+		it('should return early when message body has no map_response', async () => {
+			// Arrange
+			const onV1RoomResolved = vi.fn();
+			const sessionNonce = vi.fn().mockReturnValue(Buffer.from('nonce'));
+			const listenerV1 = new MapInfoListener(
+				DUID,
+				[],
+				areaService,
+				createMockLogger(),
+				undefined,
+				undefined,
+				undefined,
+				ProtocolVersion.V1,
+				true,
+				true,
+				sessionNonce,
+				onV1RoomResolved,
+			);
+
+			const msg = makeB01Message(DUID, () => undefined); // No map_response key
+
+			// Act
+			await listenerV1.onMessage(msg);
+
+			// Assert
+			expect(onV1RoomResolved).not.toHaveBeenCalled();
+			expect(sessionNonce).not.toHaveBeenCalled(); // Early return before nonce is needed
+		});
+
+		it('should not throw when onV1RoomResolved callback is not provided (backward compatibility)', async () => {
+			// Arrange — existing test call sites that don't pass the new params
+			const sessionNonce = vi.fn().mockReturnValue(Buffer.from('nonce'));
+			const listenerV1 = new MapInfoListener(
+				DUID,
+				[],
+				areaService,
+				createMockLogger(),
+				undefined,
+				undefined,
+				undefined,
+				ProtocolVersion.V1,
+				true,
+				true,
+				sessionNonce,
+				// onV1RoomResolved not provided — callback is optional
+			);
+
+			const msg = makeB01Message(DUID, (key) => {
+				if (key === Protocol.map_response) return Buffer.from('data');
+				return undefined;
+			});
+
+			// Act & Assert — should not throw
+			await expect(listenerV1.onMessage(msg)).resolves.toBeUndefined();
+		});
+
+		it('should return early when message body is missing', async () => {
+			// Arrange
+			const onV1RoomResolved = vi.fn();
+			const sessionNonce = vi.fn().mockReturnValue(Buffer.from('nonce'));
+			const listenerV1 = new MapInfoListener(
+				DUID,
+				[],
+				areaService,
+				createMockLogger(),
+				undefined,
+				undefined,
+				undefined,
+				ProtocolVersion.V1,
+				true,
+				true,
+				sessionNonce,
+				onV1RoomResolved,
+			);
+
+			// Message with no body
+			const msg = asPartial<ResponseMessage>({
+				duid: DUID,
+				body: undefined,
+				get: vi.fn(),
+			});
+
+			// Act
+			await listenerV1.onMessage(msg);
+
+			// Assert
+			expect(onV1RoomResolved).not.toHaveBeenCalled();
 		});
 	});
 });

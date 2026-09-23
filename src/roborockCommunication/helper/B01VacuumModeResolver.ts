@@ -1,7 +1,8 @@
 import { Q7MopRoute, Q7MopWaterFlow, Q7VacuumSuctionPower } from '../../behaviors/roborock.vacuum/b01/q7.js';
+import { VacuumSuctionPower } from '../../behaviors/roborock.vacuum/enums/VacuumSuctionPower.js';
 
 export const B01VacuumModeResolver = {
-	resolveVacuumMode(suctionPower: number): number {
+	resolveQ7VacuumMode(suctionPower: number): number {
 		switch (suctionPower) {
 			case Q7VacuumSuctionPower.Quiet:
 				return 1;
@@ -13,6 +14,23 @@ export const B01VacuumModeResolver = {
 				return 4;
 			case Q7VacuumSuctionPower.MaxPlus:
 				return 5;
+			default:
+				return 0;
+		}
+	},
+
+	resolveQ10VacuumMode(suctionPower: number): number {
+		switch (suctionPower) {
+			case VacuumSuctionPower.Quiet:
+				return 1;
+			case VacuumSuctionPower.Balanced:
+				return 2;
+			case VacuumSuctionPower.Turbo:
+				return 3;
+			case VacuumSuctionPower.Max:
+				return 4;
+			case VacuumSuctionPower.MaxPlus:
+				return 8;
 			default:
 				return 0;
 		}

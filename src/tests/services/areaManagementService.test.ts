@@ -512,6 +512,101 @@ describe('AreaManagementService', () => {
 		});
 	});
 
+	describe('Last Actively Cleaning State Management', () => {
+		it('should return false when no entry exists (default)', () => {
+			const state = areaService.getLastActivelyCleaningState('unknown-device');
+
+			expect(state).toBe(false);
+		});
+
+		it('should set and get last actively cleaning state', () => {
+			const duid = 'test-device-cleaning-state';
+
+			areaService.setLastActivelyCleaningState(duid, true);
+			const state = areaService.getLastActivelyCleaningState(duid);
+
+			expect(state).toBe(true);
+		});
+
+		it('should return true after setting to true', () => {
+			const duid = 'test-device-state-true';
+
+			areaService.setLastActivelyCleaningState(duid, true);
+
+			expect(areaService.getLastActivelyCleaningState(duid)).toBe(true);
+		});
+
+		it('should return false after setting to false', () => {
+			const duid = 'test-device-state-false';
+
+			areaService.setLastActivelyCleaningState(duid, false);
+
+			expect(areaService.getLastActivelyCleaningState(duid)).toBe(false);
+		});
+
+		it('should update existing state', () => {
+			const duid = 'test-device-state-update';
+
+			areaService.setLastActivelyCleaningState(duid, true);
+			expect(areaService.getLastActivelyCleaningState(duid)).toBe(true);
+
+			areaService.setLastActivelyCleaningState(duid, false);
+			expect(areaService.getLastActivelyCleaningState(duid)).toBe(false);
+
+			areaService.setLastActivelyCleaningState(duid, true);
+			expect(areaService.getLastActivelyCleaningState(duid)).toBe(true);
+		});
+
+		it('should support multiple devices independently', () => {
+			const device1 = 'device-state-1';
+			const device2 = 'device-state-2';
+
+			areaService.setLastActivelyCleaningState(device1, true);
+			areaService.setLastActivelyCleaningState(device2, false);
+
+			expect(areaService.getLastActivelyCleaningState(device1)).toBe(true);
+			expect(areaService.getLastActivelyCleaningState(device2)).toBe(false);
+		});
+
+		it('should clear state in clearAll', () => {
+			const duid = 'test-device-state-clear';
+
+			areaService.setLastActivelyCleaningState(duid, true);
+			expect(areaService.getLastActivelyCleaningState(duid)).toBe(true);
+
+			areaService.clearAll();
+
+			expect(areaService.getLastActivelyCleaningState(duid)).toBe(false);
+		});
+
+		it('should clear state for multiple devices', () => {
+			const device1 = 'device-clear-1';
+			const device2 = 'device-clear-2';
+
+			areaService.setLastActivelyCleaningState(device1, true);
+			areaService.setLastActivelyCleaningState(device2, true);
+
+			expect(areaService.getLastActivelyCleaningState(device1)).toBe(true);
+			expect(areaService.getLastActivelyCleaningState(device2)).toBe(true);
+
+			areaService.clearAll();
+
+			expect(areaService.getLastActivelyCleaningState(device1)).toBe(false);
+			expect(areaService.getLastActivelyCleaningState(device2)).toBe(false);
+		});
+
+		it('should log debug message when setting state', () => {
+			const duid = 'test-device-state-log';
+
+			areaService.setLastActivelyCleaningState(duid, true);
+
+			expect(mockLogger.debug).toHaveBeenCalledWith('AreaManagementService - setLastActivelyCleaningState', {
+				duid,
+				isActivelyCleaning: true,
+			});
+		});
+	});
+
 	describe('registerAreasListener', () => {
 		it('registers callback per duid', () => {
 			const cb = vi.fn();
@@ -1252,6 +1347,409 @@ describe('AreaManagementService', () => {
 				expect(result.supportedAreas[2].mapId).toBe(1);
 				expect(result.supportedAreas[3].mapId).toBe(1);
 			});
+		});
+	});
+
+	describe('V1 room resolution cache', () => {
+		beforeEach(() => {
+			vi.useFakeTimers();
+			vi.setSystemTime(new Date('2026-07-13T12:00:00Z'));
+		});
+
+		afterEach(() => {
+			vi.useRealTimers();
+		});
+
+		it('should set and retrieve V1 resolved segment', () => {
+			// Arrange
+			const duid = 'v1-device';
+			const segmentId = 42;
+
+			// Act
+			areaService.setV1ResolvedSegment(duid, segmentId);
+			areaService.setV1ResolvedSegment(duid, segmentId);
+			const result = areaService.getV1ResolvedSegment(duid);
+
+			// Assert
+			expect(result).toBe(segmentId);
+		});
+
+		it('should return undefined for duid that was never set', () => {
+			// Act
+			const result = areaService.getV1ResolvedSegment('unknown-duid');
+
+			// Assert
+			expect(result).toBeUndefined();
+		});
+
+		it('should return undefined when cached entry exceeds maxAgeMs', () => {
+			// Arrange
+			const duid = 'v1-device';
+			areaService.setV1ResolvedSegment(duid, 42);
+			areaService.setV1ResolvedSegment(duid, 42);
+
+			// Act — advance time beyond maxAgeMs (default 30_000)
+			vi.advanceTimersByTime(31_000);
+			const result = areaService.getV1ResolvedSegment(duid);
+
+			// Assert
+			expect(result).toBeUndefined();
+		});
+
+		it('should return cached segmentId just under the staleness threshold', () => {
+			// Arrange
+			const duid = 'v1-device';
+			areaService.setV1ResolvedSegment(duid, 42);
+			areaService.setV1ResolvedSegment(duid, 42);
+
+			// Act — advance time just under maxAgeMs (default 30_000)
+			vi.advanceTimersByTime(29_999);
+			const result = areaService.getV1ResolvedSegment(duid);
+
+			// Assert
+			expect(result).toBe(42);
+		});
+
+		it('should respect custom maxAgeMs parameter', () => {
+			// Arrange
+			const duid = 'v1-device';
+			const customMaxAge = 5_000;
+			areaService.setV1ResolvedSegment(duid, 42);
+			areaService.setV1ResolvedSegment(duid, 42);
+
+			// Act — advance time beyond custom maxAgeMs
+			vi.advanceTimersByTime(6_000);
+			const result = areaService.getV1ResolvedSegment(duid, customMaxAge);
+
+			// Assert
+			expect(result).toBeUndefined();
+		});
+
+		it('should call serviceRouting.requestHomeMapPush when requestV1MapRefresh is called', async () => {
+			// Arrange
+			const duid = 'v1-device';
+			mockMessageRoutingService.requestHomeMapPush = vi.fn().mockResolvedValue(undefined);
+
+			// Act
+			await areaService.requestV1MapRefresh(duid);
+
+			// Assert
+			expect(mockMessageRoutingService.requestHomeMapPush).toHaveBeenCalledWith(duid);
+		});
+
+		it('should catch and log error when requestHomeMapPush rejects', async () => {
+			// Arrange
+			const duid = 'v1-device';
+			const error = new Error('RPC failed');
+			mockMessageRoutingService.requestHomeMapPush = vi.fn().mockRejectedValue(error);
+
+			// Act & Assert — should not throw
+			await expect(areaService.requestV1MapRefresh(duid)).resolves.toBeUndefined();
+
+			// Verify error was logged at debug level
+			expect(mockLogger.debug).toHaveBeenCalledWith(expect.stringContaining('requestV1MapRefresh failed'));
+		});
+
+		it('should return early when serviceRouting is not provided', async () => {
+			// Arrange — service without messageRouting
+			const serviceNoRouting = new AreaManagementService(mockLogger as AnsiLogger, undefined);
+
+			// Act & Assert — should not throw
+			await expect(serviceNoRouting.requestV1MapRefresh('any-duid')).resolves.toBeUndefined();
+		});
+
+		it('should clear V1 cache in clearAll()', () => {
+			// Arrange
+			const duid = 'v1-device';
+			areaService.setV1ResolvedSegment(duid, 42);
+			areaService.setV1ResolvedSegment(duid, 42);
+			expect(areaService.getV1ResolvedSegment(duid)).toBe(42);
+
+			// Act
+			areaService.clearAll();
+
+			// Assert
+			expect(areaService.getV1ResolvedSegment(duid)).toBeUndefined();
+		});
+
+		describe('V1 debounce/confirmation behavior', () => {
+			it('should NOT publish a single resolution', () => {
+				// Arrange
+				const duid = 'v1-device-single';
+				const segmentId = 7;
+
+				// Act
+				areaService.setV1ResolvedSegment(duid, segmentId);
+				const result = areaService.getV1ResolvedSegment(duid);
+
+				// Assert
+				expect(result).toBeUndefined();
+			});
+
+			it('should publish two consecutive matching resolutions', () => {
+				// Arrange
+				const duid = 'v1-device-double';
+				const segmentId = 7;
+
+				// Act
+				areaService.setV1ResolvedSegment(duid, segmentId);
+				areaService.setV1ResolvedSegment(duid, segmentId);
+				const result = areaService.getV1ResolvedSegment(duid);
+
+				// Assert
+				expect(result).toBe(segmentId);
+			});
+
+			it('should not publish a single differing (outlier) resolution between two matching ones', () => {
+				// Arrange
+				const duid = 'v1-device-outlier';
+
+				// Act
+				areaService.setV1ResolvedSegment(duid, 7);
+				areaService.setV1ResolvedSegment(duid, 7);
+				// First two match — 7 is now published
+				expect(areaService.getV1ResolvedSegment(duid)).toBe(7);
+
+				// Single differing (outlier) resolution
+				areaService.setV1ResolvedSegment(duid, 9);
+				const result = areaService.getV1ResolvedSegment(duid);
+
+				// Assert
+				// Published value should still be 7 (unchanged)
+				expect(result).toBe(7);
+			});
+
+			it('should confirm genuine transition after 2 consecutive matching calls to new segment', () => {
+				// Arrange
+				const duid = 'v1-device-transition';
+
+				// Act
+				areaService.setV1ResolvedSegment(duid, 7);
+				areaService.setV1ResolvedSegment(duid, 7);
+				expect(areaService.getV1ResolvedSegment(duid)).toBe(7);
+
+				// Single outlier
+				areaService.setV1ResolvedSegment(duid, 9);
+				expect(areaService.getV1ResolvedSegment(duid)).toBe(7); // Still 7
+
+				// Now 2 consecutive 9s
+				areaService.setV1ResolvedSegment(duid, 9);
+				areaService.setV1ResolvedSegment(duid, 9);
+				const result = areaService.getV1ResolvedSegment(duid);
+
+				// Assert
+				expect(result).toBe(9);
+			});
+
+			it('should not confirm non-consecutive noise', () => {
+				// Arrange
+				const duid = 'v1-device-noise';
+				const sequence = [5, 6, 4, 6, 1]; // Never 2-in-a-row
+
+				// Act & Assert
+				for (const segmentId of sequence) {
+					areaService.setV1ResolvedSegment(duid, segmentId);
+					const result = areaService.getV1ResolvedSegment(duid);
+					// None should be published since no value repeats consecutively
+					expect(result).toBeUndefined();
+				}
+			});
+
+			it('should clear both confirmed and pending state in clearAll()', () => {
+				// Arrange
+				const duid = 'v1-device-pending-clear';
+
+				// Act & Assert — single call (pending, not confirmed)
+				areaService.setV1ResolvedSegment(duid, 7);
+				expect(areaService.getV1ResolvedSegment(duid)).toBeUndefined();
+
+				// Clear
+				areaService.clearAll();
+
+				// Call setV1ResolvedSegment once more with same segmentId
+				areaService.setV1ResolvedSegment(duid, 7);
+				const result = areaService.getV1ResolvedSegment(duid);
+
+				// Assert — should still be undefined because pending state was cleared
+				expect(result).toBeUndefined();
+			});
+
+			it('should maintain per-duid isolation', () => {
+				// Arrange
+				const duidA = 'duid-a';
+				const duidB = 'duid-b';
+
+				// Act
+				areaService.setV1ResolvedSegment(duidA, 7);
+				areaService.setV1ResolvedSegment(duidA, 7);
+				areaService.setV1ResolvedSegment(duidB, 9);
+
+				// Assert
+				expect(areaService.getV1ResolvedSegment(duidA)).toBe(7);
+				expect(areaService.getV1ResolvedSegment(duidB)).toBeUndefined();
+			});
+		});
+	});
+
+	describe('pendingRoomResolution', () => {
+		it('should cache and return the message on immediate consume', () => {
+			// Arrange
+			const duid = 'test-q10-device';
+			const message: any = {
+				duid,
+				state: 1,
+				cleaningInfo: { segment_id: 42 },
+				cleaningProcess: { clean_area: 100, clean_time: 60 },
+			};
+
+			// Act
+			areaService.setPendingRoomResolution(duid, message);
+			const result = areaService.consumePendingRoomResolution(duid);
+
+			// Assert
+			expect(result).toEqual(message);
+		});
+
+		it('should return undefined on second consume (delete-on-read)', () => {
+			// Arrange
+			const duid = 'test-q10-device-single-shot';
+			const message: any = {
+				duid,
+				state: 1,
+				cleaningInfo: { segment_id: 42 },
+				cleaningProcess: { clean_area: 100, clean_time: 60 },
+			};
+
+			// Act
+			areaService.setPendingRoomResolution(duid, message);
+			areaService.consumePendingRoomResolution(duid);
+			const secondResult = areaService.consumePendingRoomResolution(duid);
+
+			// Assert
+			expect(secondResult).toBeUndefined();
+		});
+
+		it('should return undefined when nothing ever cached for duid', () => {
+			// Arrange
+			const duid = 'unknown-device';
+
+			// Act
+			const result = areaService.consumePendingRoomResolution(duid);
+
+			// Assert
+			expect(result).toBeUndefined();
+		});
+
+		it('should return undefined when TTL elapsed (after 30s)', () => {
+			// Arrange
+			vi.useFakeTimers();
+			const duid = 'test-ttl-device';
+			const message: any = {
+				duid,
+				state: 1,
+				cleaningInfo: { segment_id: 42 },
+				cleaningProcess: { clean_area: 100, clean_time: 60 },
+			};
+
+			areaService.setPendingRoomResolution(duid, message);
+
+			// Act — advance time just past 30s TTL
+			vi.advanceTimersByTime(30_001);
+			const result = areaService.consumePendingRoomResolution(duid);
+
+			// Assert
+			expect(result).toBeUndefined();
+			vi.useRealTimers();
+		});
+
+		it('should return message when just under 30s TTL boundary', () => {
+			// Arrange
+			vi.useFakeTimers();
+			const duid = 'test-ttl-boundary-device';
+			const message: any = {
+				duid,
+				state: 1,
+				cleaningInfo: { segment_id: 42 },
+				cleaningProcess: { clean_area: 100, clean_time: 60 },
+			};
+
+			areaService.setPendingRoomResolution(duid, message);
+
+			// Act — advance time just before 30s TTL
+			vi.advanceTimersByTimeAsync(29_999);
+			const result = areaService.consumePendingRoomResolution(duid);
+
+			// Assert
+			expect(result).toEqual(message);
+			vi.useRealTimers();
+		});
+
+		it('should clear entry without returning it', () => {
+			// Arrange
+			const duid = 'test-clear-device';
+			const message: any = {
+				duid,
+				state: 1,
+				cleaningInfo: { segment_id: 42 },
+				cleaningProcess: { clean_area: 100, clean_time: 60 },
+			};
+
+			areaService.setPendingRoomResolution(duid, message);
+
+			// Act
+			areaService.clearPendingRoomResolution(duid);
+			const result = areaService.consumePendingRoomResolution(duid);
+
+			// Assert
+			expect(result).toBeUndefined();
+		});
+
+		it('should clear entry in clearAll()', () => {
+			// Arrange
+			const duid = 'test-clear-all-device';
+			const message: any = {
+				duid,
+				state: 1,
+				cleaningInfo: { segment_id: 42 },
+				cleaningProcess: { clean_area: 100, clean_time: 60 },
+			};
+
+			areaService.setPendingRoomResolution(duid, message);
+
+			// Act
+			areaService.clearAll();
+			const result = areaService.consumePendingRoomResolution(duid);
+
+			// Assert
+			expect(result).toBeUndefined();
+		});
+
+		it('should maintain per-duid isolation', () => {
+			// Arrange
+			const duidA = 'device-a';
+			const duidB = 'device-b';
+			const messageA: any = {
+				duid: duidA,
+				state: 1,
+				cleaningInfo: { segment_id: 10 },
+				cleaningProcess: { clean_area: 100, clean_time: 60 },
+			};
+			const messageB: any = {
+				duid: duidB,
+				state: 1,
+				cleaningInfo: { segment_id: 20 },
+				cleaningProcess: { clean_area: 200, clean_time: 120 },
+			};
+
+			// Act
+			areaService.setPendingRoomResolution(duidA, messageA);
+			areaService.setPendingRoomResolution(duidB, messageB);
+			const resultB = areaService.consumePendingRoomResolution(duidB);
+			const resultA = areaService.consumePendingRoomResolution(duidA);
+
+			// Assert
+			expect(resultA).toEqual(messageA);
+			expect(resultB).toEqual(messageB);
 		});
 	});
 });

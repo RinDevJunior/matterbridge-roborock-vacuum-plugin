@@ -200,6 +200,8 @@ export class ConnectionService {
 				device.specs.protocol,
 				allowV1AreaUpdate,
 				this.areaManagementService.isMultipleMapEnabled(),
+				() => this.clientRouter?.getSerializeNonce(),
+				(segmentId: number) => this.areaManagementService?.setV1ResolvedSegment(device.duid, segmentId),
 			);
 			this.clientRouter.registerMessageListener(mapInfoListener);
 		}

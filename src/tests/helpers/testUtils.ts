@@ -185,7 +185,7 @@ export function createMockDeviceRegistry(
 		devicesMap: new Map<string, Device>(),
 		getRobot: (duid: string) => rmap.get(duid),
 		hasDevices: vi.fn(() => rmap.size > 0),
-		registerRobot: vi.fn((robot: RoborockVacuumCleaner) => undefined),
+		registerRobot: vi.fn((_robot: RoborockVacuumCleaner) => undefined),
 		register: vi.fn((_device: Device, _robot: RoborockVacuumCleaner) => undefined),
 		registerDevice: vi.fn((_device: Device) => undefined),
 		unregister: vi.fn((_sn: string) => undefined),
@@ -205,9 +205,12 @@ export function createMockRoborockService(overrides: Partial<RoborockService> = 
 		getHomeDataForUpdating: vi.fn().mockResolvedValue(undefined),
 		getSupportedAreas: vi.fn().mockReturnValue([]),
 		getSupportedAreasIndexMap: vi.fn().mockReturnValue(new Map()),
+		getSupportedRoutines: vi.fn().mockReturnValue([]),
 		getSelectedAreas: vi.fn().mockReturnValue([]),
 		getProgress: vi.fn().mockReturnValue([]),
 		setProgress: vi.fn(),
+		getLastActivelyCleaningState: vi.fn().mockReturnValue(false),
+		setLastActivelyCleaningState: vi.fn(),
 		getMapInfo: vi.fn().mockResolvedValue({ maps: [], allRooms: [] }),
 		getRoomMap: vi.fn().mockResolvedValue(undefined),
 		setDeviceRooms: vi.fn(),
@@ -217,6 +220,9 @@ export function createMockRoborockService(overrides: Partial<RoborockService> = 
 		requestDeviceStatusOnce: vi.fn().mockResolvedValue(undefined),
 		registerAreasListener: vi.fn(),
 		startPeriodicAreaRefresh: vi.fn(),
+		setPendingRoomResolution: vi.fn(),
+		consumePendingRoomResolution: vi.fn().mockReturnValue(undefined),
+		clearPendingRoomResolution: vi.fn(),
 	};
 	return { ...base, ...overrides } as Partial<RoborockService> as RoborockService;
 }
@@ -257,5 +263,7 @@ export {
 	buildLegacyMapBuffer,
 	buildMapHeader,
 	buildPositionBlock,
+	buildWallBlock,
+	buildZoneBlock,
 	LEGACY_BLOCK_TYPE,
 } from './legacyMapFixture.js';

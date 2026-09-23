@@ -1,5 +1,4 @@
 import { AnsiLogger } from 'matterbridge/logger';
-import { ServiceArea } from 'matterbridge/matter/clusters';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { CleanModeSetting } from '../../behaviors/roborock.vacuum/core/CleanModeSetting.js';
@@ -279,13 +278,6 @@ describe('MessageRoutingService', () => {
 
 		it('should handle multiple room selection', async () => {
 			const selectedRooms = [16, 17, 18, 19];
-			const supportedRooms: ServiceArea.Area[] = [
-				{ areaId: 16 } as ServiceArea.Area,
-				{ areaId: 17 } as ServiceArea.Area,
-				{ areaId: 18 } as ServiceArea.Area,
-				{ areaId: 19 } as ServiceArea.Area,
-				{ areaId: 20 } as ServiceArea.Area,
-			];
 
 			await messageService.startClean(testDuid, { type: 'room', roomIds: selectedRooms });
 
@@ -411,11 +403,6 @@ describe('MessageRoutingService', () => {
 
 		it('should complete full cleaning workflow', async () => {
 			const selectedRooms = [16, 17];
-			const supportedRooms: ServiceArea.Area[] = [
-				{ areaId: 16 } as ServiceArea.Area,
-				{ areaId: 17 } as ServiceArea.Area,
-				{ areaId: 18 } as ServiceArea.Area,
-			];
 
 			// Start room clean
 			await messageService.startClean(testDuid, { type: 'room', roomIds: [16, 17] });
@@ -523,6 +510,40 @@ describe('MessageRoutingService', () => {
 			);
 			await expect(messageService.pauseClean(unknownDuid)).rejects.toThrow(
 				`MessageDispatcher not initialized for device ${unknownDuid}`,
+			);
+		});
+	});
+
+	describe('requestHomeMapPush', () => {
+		const testDuid = 'test-device-123';
+
+		it('should call getMessageDispatcher().getHomeMap(duid) and resolve', async () => {
+			// Arrange
+			messageService.registerMessageDispatcher(testDuid, mockDispatcher);
+			mockDispatcher.getHomeMap.mockResolvedValue(undefined);
+
+			// Act
+			await messageService.requestHomeMapPush(testDuid);
+
+			// Assert
+			expect(mockDispatcher.getHomeMap).toHaveBeenCalledWith(testDuid);
+		});
+
+		it('should propagate rejection from dispatcher when getHomeMap rejects', async () => {
+			// Arrange
+			const error = new Error('RPC failed');
+			messageService.registerMessageDispatcher(testDuid, mockDispatcher);
+			mockDispatcher.getHomeMap.mockRejectedValue(error);
+
+			// Act & Assert
+			await expect(messageService.requestHomeMapPush(testDuid)).rejects.toThrow('RPC failed');
+		});
+
+		it('should throw DeviceError when dispatcher not registered', async () => {
+			// Act & Assert
+			await expect(messageService.requestHomeMapPush('unregistered-duid')).rejects.toThrow(DeviceError);
+			await expect(messageService.requestHomeMapPush('unregistered-duid')).rejects.toThrow(
+				'MessageDispatcher not initialized for device unregistered-duid',
 			);
 		});
 	});

@@ -59,7 +59,7 @@ describe('V1StatusListener', () => {
 		await listener.onMessage(message);
 		expect(handler.onBatteryUpdate).toHaveBeenCalledWith(expect.objectContaining({ percentage: 100 }));
 		expect(handler.onStatusChanged).toHaveBeenCalledWith(expect.anything());
-		expect(handler.onError).not.toHaveBeenCalled();
+		expect(handler.onError).toHaveBeenCalledWith(expect.objectContaining({ vacuumErrorCode: 0, dockErrorCode: 0 }));
 	});
 
 	it('should handle rpc_response with error_code', async () => {
@@ -134,5 +134,44 @@ describe('V1StatusListener', () => {
 		expect(handler.onStatusChanged).not.toHaveBeenCalled();
 		expect(handler.onError).not.toHaveBeenCalled();
 		expect(logger.debug).toHaveBeenCalledWith("[V1StatusListener]: Ignoring simple 'ok' response");
+	});
+
+	it('should not call onError when error_code and dock_error_status fields are absent entirely', async () => {
+		message.isForProtocols.mockReturnValue(true);
+		message.get.mockReturnValue({
+			id: 15472,
+			result: [{ battery: 85, state: 8, dock_type: 1 }], // No error_code or dock_error_status
+		});
+		await listener.onMessage(message);
+		expect(handler.onBatteryUpdate).toHaveBeenCalledWith(expect.objectContaining({ percentage: 85 }));
+		expect(handler.onStatusChanged).toHaveBeenCalledWith(expect.anything());
+		expect(handler.onError).not.toHaveBeenCalled();
+	});
+
+	it('should call onError twice when error transitions from non-zero to zero in sequential messages', async () => {
+		message.isForProtocols.mockReturnValue(true);
+
+		// First message with non-zero vacuum error
+		message.get.mockReturnValue({
+			id: 15472,
+			result: [{ battery: 100, state: 8, error_code: 5, dock_error_status: 0, dock_type: 1 }],
+		});
+		await listener.onMessage(message);
+		expect(handler.onError).toHaveBeenCalledTimes(1);
+		expect(vi.mocked(handler.onError).mock.calls[0]?.[0]).toMatchObject({ vacuumErrorCode: 5 });
+
+		vi.clearAllMocks();
+
+		// Second message with error cleared to zero
+		message.get.mockReturnValue({
+			id: 15473,
+			result: [{ battery: 100, state: 8, error_code: 0, dock_error_status: 0, dock_type: 1 }],
+		});
+		await listener.onMessage(message);
+		expect(handler.onError).toHaveBeenCalledTimes(1);
+		expect(vi.mocked(handler.onError).mock.calls[0]?.[0]).toMatchObject({
+			vacuumErrorCode: 0,
+			dockErrorCode: 0,
+		});
 	});
 });

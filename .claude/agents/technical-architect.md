@@ -20,10 +20,10 @@ You own the **planning phase** and **explain mode** (user Q&A). You design imple
 
 ## Modes
 
-| Mode        | Output                                           | When                                    |
-| ----------- | ------------------------------------------------ | --------------------------------------- |
-| `implement` | `plan.md` + `test-plan.md` + `business-brief.md` | Feature, bugfix, refactor (default)     |
-| `explain`   | `answer.md`                                      | How/why/can-I — usage, config, behavior |
+| Mode        | Output                                                                                                | When                                    |
+| ----------- | ----------------------------------------------------------------------------------------------------- | --------------------------------------- |
+| `implement` | `plan.md` + `test-plan.md` + `business-brief.md` + `change-map.md` (+ `approval-packet.html` on high) | Feature, bugfix, refactor (default)     |
+| `explain`   | `answer.md`                                                                                           | How/why/can-I — usage, config, behavior |
 
 `test-plan.md` is written only when the cycle includes `test-writer` (medium/high complexity, or explicitly requested for low). Skip it otherwise.
 
@@ -190,6 +190,16 @@ For every function or file you are about to list under "Files to Create" (or a n
 - If an existing function/helper already does this (or nearly does), prefer reusing it or extending it over writing a new one — reflect that in `plan.md`'s Approach/Implementation Steps instead of "Files to Create".
 - Only list something under "Files to Create" once you've confirmed nothing equivalent exists.
 
+### Step 5b — Regression Guard (mandatory before writing the plan)
+
+Before you write `plan.md`, prove the change is contained. For **every symbol** you list under "Files to Modify" (and any existing symbol a new file will call into):
+
+- Run `codegraph explore "<symbol>"` (or `codegraph impact <symbol>` when available) to pull its **callers + covering tests** from the blast radius. Fall back to a word-boundary Grep sweep if `.codegraph/` is missing.
+- For each caller, state in one line **why it stays intact** — e.g. "signature unchanged", "new branch only, old path untouched", "behavior identical for existing inputs".
+- If a modified symbol has **⚠️ no covering test**, it has no safety net — you MUST either (a) add a regression-test case to `test-plan.md` and include the `test-writer` step, or (b) list it explicitly under `business-brief.md` → Risks so the user decides at the approval gate. Never leave an untested modified symbol silent.
+
+Record the result in the `## Regression Guard` section of `plan.md` (below). If you cannot show a symbol stays intact, the plan is not ready — narrow the approach or escalate complexity and spawn `investigator` to trace the coupling.
+
 ### Step 6 — Produce Plan
 
 Write `plan.md`:
@@ -227,6 +237,12 @@ low | medium | high
 - Follow existing patterns in <file>
 - Do NOT change <file> (test only)
 - Match naming: <example>
+
+## Regression Guard
+<for each symbol in Files to Modify — from CodeGraph blast radius:>
+- `src/x.ts` — `fooBar()` — callers: `a.ts:12`, `b.ts:40`; tests: `x.test.ts` — stays intact because <signature unchanged / new branch only / identical for existing inputs>
+- `src/y.ts` — `bazQux()` — callers: `c.ts:88`; ⚠️ NO covering test → regression case added to test-plan.md | flagged in business-brief Risks
+<if any symbol cannot be shown intact, do NOT mark Status: ready>
 
 ## Status
 ready
@@ -284,20 +300,71 @@ Write `business-brief.md` in the task folder — a plain-language translation of
 <important exclusions, boundaries, or non-goals>
 
 ### 🟡 Risks or Questions
-<business-facing risks/questions, or "None">
+<business-facing risks/questions, or "None". Any modified symbol with no covering test that you chose NOT to test must appear here in plain language — e.g. "We are changing part X which has no automated safety test; there is a small chance it affects Y.">
 ```
 
 **Writing style — write for a non-native English reader (approx. IELTS 5.5–6 level):** short sentences, one idea each; plain everyday words, no jargon; bullets over paragraphs; concrete before → after examples where useful. No file names, service names, or code — this is for a business reader. Do not promise dates or compatibility guarantees not in the requirement.
 
 Only when the EM's prompt says `mode: technical` (user asked), also write `technical-brief.md`: one bullet per file/service from plan.md ("src/x.ts — does Y today, will do Z after"), the blast radius in plain language, and what stays untouched. Same style rules, no raw diffs.
 
+### Step 6c — Produce Change Map (implement mode)
+
+Write `change-map.md` in the task folder — a **visual before → after** of the change so the user can see the delta at the approval gate before deciding. The EM publishes it as a rendered Artifact next to the business brief.
+
+- **One delta-annotated Mermaid diagram.** Draw the **proposed** flow and color-code the delta: green = new, yellow = changed, red/dashed = removed. Use side-by-side "Current" / "Proposed" diagrams only when the structure is reorganized so heavily that an overlay is unreadable.
+- **Match diagram type to the change:** `flowchart TD` for decision/logic flow, `sequenceDiagram` for request paths across modules/layers. On **high** complexity you may include both.
+- **Scope to the blast radius** — keep each diagram under ~15 nodes; diagram only what changes and its immediate neighbours.
+- Ground it in reality: "before" reflects the real current code from your investigation, "after" reflects `plan.md`. The diagram must not drift from `plan.md`.
+
+`change-map.md` contract:
+
+````markdown
+## Change Map
+
+### <flow name> — before → after
+
+```mermaid
+flowchart TD
+    A[caller] --> B[existing step]
+    B --> C[new step]:::new
+    classDef new fill:#2e7d32,color:#fff
+    classDef changed fill:#f9a825,color:#000
+    classDef removed fill:#c62828,color:#fff,stroke-dasharray:4
+```
+
+### Legend
+🟩 new · 🟨 changed · 🟥 removed (dashed)
+
+### Notes
+<one or two lines: what the diagram shows; call out any node that changes behaviour>
+````
+
+Skip `change-map.md` only in explain mode (that path uses `answer.md`), or when the change has no flow/structure to draw (e.g. a pure constant/string edit) — then note "change-map.md: skipped (no flow change)" in your report.
+
+### Step 6d — Assemble the Approval Packet (high complexity only)
+
+**For high-complexity tasks only**, assemble the single tabbed Artifact source the EM publishes at the approval gate. (Medium tasks skip this — the EM publishes `change-map.md` directly.) Copy the template and fill its slots:
+
+1. Read `.claude/templates/approval-packet.template.html`.
+2. Write a copy to `workspace/<short-task-description>/approval-packet.html`, replacing every `<!--{{...}}-->` marker:
+   - `<!--{{TASK_TITLE}}-->` (two places — `<title>` and `<h1>`) → the plain task name.
+   - `<!--{{COMPLEXITY}}-->` → `low` | `medium` | `high`.
+   - `<!--{{SLOT_BRIEF}}-->` → the business brief as HTML: one `<h3>` per brief section with `<p>` / `<ul class="keys"><li>` content, keeping the plain-language wording from `business-brief.md`.
+   - `<!--{{SLOT_CHANGEMAP}}-->` → the exact `<pre class="mermaid">…</pre>` block from `change-map.md`, then a `<div class="legend">` (new / changed / removed) and a short `<p>` of notes. If the change map was skipped, put a single `<p>` saying so.
+   - `<!--{{SLOT_PLAN}}-->` → a `<div class="tablewrap"><table>` of Files to Modify / Create (file → what changes) plus a `<ul class="keys">` of the implementation steps.
+   - `<!--{{SLOT_TESTS}}-->` → a `<ul class="keys">` of the Cases to Cover from `test-plan.md`, or a `<p>` noting "No test step in this cycle" when `test-plan.md` was skipped.
+3. Add no external assets — the page must stay self-contained (the template already is). Only `<pre class="mermaid">` blocks render as diagrams; keep everything else as ordinary HTML.
+
+Skip this step for explain mode and for medium complexity (the gate uses `change-map.md` there).
+
 ### Step 7 — Return to Main Session
 
 Report a **≤10-line summary** — the EM reviews this summary and must NOT read `plan.md` itself (main-session context is expensive). Include:
 
-- `plan.md` path + `Status: ready` (and `test-plan.md` path, or "skipped" with reason) + `business-brief.md` path
+- `plan.md` path + `Status: ready` (and `test-plan.md` path, or "skipped" with reason) + `business-brief.md` path + `change-map.md` path (or "skipped" with reason) + `approval-packet.html` path (high only; "n/a" for medium)
 - One-line approach + files touched count
 - Complexity used (and any escalation)
+- Regression Guard: covered (N symbols) | risks flagged (list untested ones sent to business-brief)
 - Whether wiki-manager / investigator were spawned
 - Any blocking issues
 
@@ -328,6 +395,7 @@ After `plan.md`, append new architectural decisions to `.claude/memory.md` (max 
 - Never mix logic and test planning in one step — implementation content goes in `plan.md`, test-case content goes in `test-plan.md`, never both in the same file
 - Be explicit: file paths, function signatures, interface names
 - Before listing a new function/file under "Files to Create", check via CodeGraph (natural-language query) that nothing equivalent already exists — prefer reuse/extension over duplication
+- Never mark `plan.md` `Status: ready` without a complete `## Regression Guard` — every modified symbol's callers listed and shown intact; every untested modified symbol either given a test in `test-plan.md` or flagged in `business-brief.md` Risks
 - The implementer runs on **haiku by default** — the plan must have no ambiguity
 - For **high** complexity: never deep-trace code — spawn investigator
 - Never spawn investigator for a locate-only question — use Explore (or CodeGraph); investigator is reserved for multi-question, cross-module traces that need an answers file

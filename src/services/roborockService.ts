@@ -21,7 +21,7 @@ import {
 	ServiceContainer,
 	ServiceContainerConfig,
 } from '../services/index.js';
-import { DeviceNotifyCallback, Factory } from '../types/index.js';
+import { DeviceNotifyCallback, Factory, type ServiceAreaUpdateMessage } from '../types/index.js';
 import { WssSendSnackbarMessage } from '../types/WssSendSnackbarMessage.js';
 import { AuthenticationCoordinator } from './authentication/AuthenticationCoordinator.js';
 
@@ -167,8 +167,8 @@ export class RoborockService {
 	}
 
 	/** Stop service and clean up resources. */
-	public stopService(): void {
-		this.container.destroy();
+	public async stopService(): Promise<void> {
+		await this.container.destroy();
 	}
 
 	/** Set selected cleaning areas for a device. */
@@ -189,6 +189,16 @@ export class RoborockService {
 	/** Get progress for cleaning areas for a device. */
 	public getProgress(duid: string): ServiceArea.Progress[] {
 		return this.areaService.getProgress(duid);
+	}
+
+	/** Set the stored "was actively cleaning" state for a device. */
+	public setLastActivelyCleaningState(duid: string, isActivelyCleaning: boolean): void {
+		this.areaService.setLastActivelyCleaningState(duid, isActivelyCleaning);
+	}
+
+	/** Get the stored "was actively cleaning" state for a device. */
+	public getLastActivelyCleaningState(duid: string): boolean {
+		return this.areaService.getLastActivelyCleaningState(duid);
 	}
 
 	/** Register a callback invoked whenever supported areas are updated for a device. */
@@ -273,6 +283,31 @@ export class RoborockService {
 	/** Switch to a different map on the device. */
 	public async switchMap(duid: string, mapId: number): Promise<void> {
 		await this.messageRoutingService.switchMap(duid, mapId);
+	}
+
+	/** Get V1 resolved segment ID from cache if available and not stale. */
+	public getV1ResolvedSegment(duid: string): number | undefined {
+		return this.areaService.getV1ResolvedSegment(duid);
+	}
+
+	/** Request V1 map push (fire-and-forget). */
+	public async requestV1MapRefresh(duid: string): Promise<void> {
+		return this.areaService.requestV1MapRefresh(duid);
+	}
+
+	/** Cache an unresolved Q10 room resolution to retry once areas update. */
+	public setPendingRoomResolution(duid: string, message: ServiceAreaUpdateMessage): void {
+		this.areaService.setPendingRoomResolution(duid, message);
+	}
+
+	/** Consume (get + clear) a cached pending Q10 room resolution, if still fresh. */
+	public consumePendingRoomResolution(duid: string): ServiceAreaUpdateMessage | undefined {
+		return this.areaService.consumePendingRoomResolution(duid);
+	}
+
+	/** Clear a cached pending Q10 room resolution for a device. */
+	public clearPendingRoomResolution(duid: string): void {
+		this.areaService.clearPendingRoomResolution(duid);
 	}
 
 	/** Get all scenes for a home. */
