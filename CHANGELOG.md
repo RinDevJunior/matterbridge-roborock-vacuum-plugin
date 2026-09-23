@@ -4,6 +4,16 @@ All notable changes to this project will be documented in this file.
 
 ---
 
+## [1.2.0-rc02] - 2026-09-23
+
+### Fixed
+
+- **`skipArea` rejected for rooms not currently being cleaned** — Room skip requests are now validated against the active cleaning session so `skipArea` is rejected when targeting a room that isn't currently being cleaned, preventing invalid skip commands from being sent to the device.
+
+<a href="https://www.buymeacoffee.com/rinnvspktr" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/default-orange.png" alt="Buy Me A Coffee" height="41" width="174"></a>
+
+---
+
 ## [1.2.0-rc01] - 2026-09-20
 
 ### Added
