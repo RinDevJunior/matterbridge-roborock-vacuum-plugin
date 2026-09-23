@@ -192,5 +192,42 @@ describe('RoborockService - Area Management', () => {
 			roborockService.setLastActivelyCleaningState(duid2, true);
 			expect(roborockService.getLastActivelyCleaningState(duid2)).toBe(true);
 		});
+
+		it('setPendingRoomResolution delegates to areaService.setPendingRoomResolution', () => {
+			const message: any = {
+				duid,
+				state: 1,
+				cleaningInfo: { segment_id: 42 },
+				cleaningProcess: { clean_area: 100, clean_time: 60 },
+			};
+			roborockService.setPendingRoomResolution(duid, message);
+			const result = roborockService.consumePendingRoomResolution(duid);
+			expect(result).toEqual(message);
+		});
+
+		it('consumePendingRoomResolution delegates to areaService.consumePendingRoomResolution', () => {
+			const message: any = {
+				duid,
+				state: 1,
+				cleaningInfo: { segment_id: 42 },
+				cleaningProcess: { clean_area: 100, clean_time: 60 },
+			};
+			roborockService.setPendingRoomResolution(duid, message);
+			const result = roborockService.consumePendingRoomResolution(duid);
+			expect(result).toEqual(message);
+		});
+
+		it('clearPendingRoomResolution delegates to areaService.clearPendingRoomResolution', () => {
+			const message: any = {
+				duid,
+				state: 1,
+				cleaningInfo: { segment_id: 42 },
+				cleaningProcess: { clean_area: 100, clean_time: 60 },
+			};
+			roborockService.setPendingRoomResolution(duid, message);
+			roborockService.clearPendingRoomResolution(duid);
+			const result = roborockService.consumePendingRoomResolution(duid);
+			expect(result).toBeUndefined();
+		});
 	});
 });

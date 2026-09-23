@@ -4,6 +4,34 @@ All notable changes to this project will be documented in this file.
 
 ---
 
+## [1.2.0-rc02] - 2026-09-23
+
+### Fixed
+
+- **`skipArea` rejected for rooms not currently being cleaned** — Room skip requests are now validated against the active cleaning session so `skipArea` is rejected when targeting a room that isn't currently being cleaned, preventing invalid skip commands from being sent to the device.
+
+<a href="https://www.buymeacoffee.com/rinnvspktr" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/default-orange.png" alt="Buy Me A Coffee" height="41" width="174"></a>
+
+---
+
+## [1.2.0-rc01] - 2026-09-20
+
+### Added
+
+- **B01/Q10 cleaning-progress support for estimated finish time** — B01/Q10 devices now also read cleaning progress (DP 87) into `clean_percent`, so the optional "estimated finish time" feature (off by default, `enableEstimatedEndTime` config flag) now works for B01/Q10 too, not just V1 devices.
+
+### Changed
+
+- **B01/Q10 status codes separated from the canonical status enum** — Q10-specific operation status codes now live in a dedicated `B01Q10OperationStatusCode` enum with a Q10 resolver used only for room/cleaning-progress tracking, and codes 101 (Relocating) and 103 (Mopping) now count as active cleaning; behavior for non-Q10 devices is unchanged.
+
+### Fixed
+
+- **B01/Q10 `currentArea` stuck at null while cleaning** — The Matter `ServiceArea.currentArea` attribute now resolves to the real room for B01/Q10-family vacuums (e.g. Q10 S5+) by reading the device's `room_id_list` telemetry, matching the behavior V1 devices already had.
+
+<a href="https://www.buymeacoffee.com/rinnvspktr" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/default-orange.png" alt="Buy Me A Coffee" height="41" width="174"></a>
+
+---
+
 ## [1.1.9] - 2026-09-20
 
 This release also includes all changes from 1.1.8-rc01..rc07, which were not in public 1.1.8.

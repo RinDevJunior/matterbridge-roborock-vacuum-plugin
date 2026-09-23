@@ -1590,4 +1590,166 @@ describe('AreaManagementService', () => {
 			});
 		});
 	});
+
+	describe('pendingRoomResolution', () => {
+		it('should cache and return the message on immediate consume', () => {
+			// Arrange
+			const duid = 'test-q10-device';
+			const message: any = {
+				duid,
+				state: 1,
+				cleaningInfo: { segment_id: 42 },
+				cleaningProcess: { clean_area: 100, clean_time: 60 },
+			};
+
+			// Act
+			areaService.setPendingRoomResolution(duid, message);
+			const result = areaService.consumePendingRoomResolution(duid);
+
+			// Assert
+			expect(result).toEqual(message);
+		});
+
+		it('should return undefined on second consume (delete-on-read)', () => {
+			// Arrange
+			const duid = 'test-q10-device-single-shot';
+			const message: any = {
+				duid,
+				state: 1,
+				cleaningInfo: { segment_id: 42 },
+				cleaningProcess: { clean_area: 100, clean_time: 60 },
+			};
+
+			// Act
+			areaService.setPendingRoomResolution(duid, message);
+			areaService.consumePendingRoomResolution(duid);
+			const secondResult = areaService.consumePendingRoomResolution(duid);
+
+			// Assert
+			expect(secondResult).toBeUndefined();
+		});
+
+		it('should return undefined when nothing ever cached for duid', () => {
+			// Arrange
+			const duid = 'unknown-device';
+
+			// Act
+			const result = areaService.consumePendingRoomResolution(duid);
+
+			// Assert
+			expect(result).toBeUndefined();
+		});
+
+		it('should return undefined when TTL elapsed (after 30s)', () => {
+			// Arrange
+			vi.useFakeTimers();
+			const duid = 'test-ttl-device';
+			const message: any = {
+				duid,
+				state: 1,
+				cleaningInfo: { segment_id: 42 },
+				cleaningProcess: { clean_area: 100, clean_time: 60 },
+			};
+
+			areaService.setPendingRoomResolution(duid, message);
+
+			// Act — advance time just past 30s TTL
+			vi.advanceTimersByTime(30_001);
+			const result = areaService.consumePendingRoomResolution(duid);
+
+			// Assert
+			expect(result).toBeUndefined();
+			vi.useRealTimers();
+		});
+
+		it('should return message when just under 30s TTL boundary', () => {
+			// Arrange
+			vi.useFakeTimers();
+			const duid = 'test-ttl-boundary-device';
+			const message: any = {
+				duid,
+				state: 1,
+				cleaningInfo: { segment_id: 42 },
+				cleaningProcess: { clean_area: 100, clean_time: 60 },
+			};
+
+			areaService.setPendingRoomResolution(duid, message);
+
+			// Act — advance time just before 30s TTL
+			vi.advanceTimersByTimeAsync(29_999);
+			const result = areaService.consumePendingRoomResolution(duid);
+
+			// Assert
+			expect(result).toEqual(message);
+			vi.useRealTimers();
+		});
+
+		it('should clear entry without returning it', () => {
+			// Arrange
+			const duid = 'test-clear-device';
+			const message: any = {
+				duid,
+				state: 1,
+				cleaningInfo: { segment_id: 42 },
+				cleaningProcess: { clean_area: 100, clean_time: 60 },
+			};
+
+			areaService.setPendingRoomResolution(duid, message);
+
+			// Act
+			areaService.clearPendingRoomResolution(duid);
+			const result = areaService.consumePendingRoomResolution(duid);
+
+			// Assert
+			expect(result).toBeUndefined();
+		});
+
+		it('should clear entry in clearAll()', () => {
+			// Arrange
+			const duid = 'test-clear-all-device';
+			const message: any = {
+				duid,
+				state: 1,
+				cleaningInfo: { segment_id: 42 },
+				cleaningProcess: { clean_area: 100, clean_time: 60 },
+			};
+
+			areaService.setPendingRoomResolution(duid, message);
+
+			// Act
+			areaService.clearAll();
+			const result = areaService.consumePendingRoomResolution(duid);
+
+			// Assert
+			expect(result).toBeUndefined();
+		});
+
+		it('should maintain per-duid isolation', () => {
+			// Arrange
+			const duidA = 'device-a';
+			const duidB = 'device-b';
+			const messageA: any = {
+				duid: duidA,
+				state: 1,
+				cleaningInfo: { segment_id: 10 },
+				cleaningProcess: { clean_area: 100, clean_time: 60 },
+			};
+			const messageB: any = {
+				duid: duidB,
+				state: 1,
+				cleaningInfo: { segment_id: 20 },
+				cleaningProcess: { clean_area: 200, clean_time: 120 },
+			};
+
+			// Act
+			areaService.setPendingRoomResolution(duidA, messageA);
+			areaService.setPendingRoomResolution(duidB, messageB);
+			const resultB = areaService.consumePendingRoomResolution(duidB);
+			const resultA = areaService.consumePendingRoomResolution(duidA);
+
+			// Assert
+			expect(resultA).toEqual(messageA);
+			expect(resultB).toEqual(messageB);
+		});
+	});
 });

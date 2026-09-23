@@ -21,7 +21,7 @@ import {
 	ServiceContainer,
 	ServiceContainerConfig,
 } from '../services/index.js';
-import { DeviceNotifyCallback, Factory } from '../types/index.js';
+import { DeviceNotifyCallback, Factory, type ServiceAreaUpdateMessage } from '../types/index.js';
 import { WssSendSnackbarMessage } from '../types/WssSendSnackbarMessage.js';
 import { AuthenticationCoordinator } from './authentication/AuthenticationCoordinator.js';
 
@@ -293,6 +293,21 @@ export class RoborockService {
 	/** Request V1 map push (fire-and-forget). */
 	public async requestV1MapRefresh(duid: string): Promise<void> {
 		return this.areaService.requestV1MapRefresh(duid);
+	}
+
+	/** Cache an unresolved Q10 room resolution to retry once areas update. */
+	public setPendingRoomResolution(duid: string, message: ServiceAreaUpdateMessage): void {
+		this.areaService.setPendingRoomResolution(duid, message);
+	}
+
+	/** Consume (get + clear) a cached pending Q10 room resolution, if still fresh. */
+	public consumePendingRoomResolution(duid: string): ServiceAreaUpdateMessage | undefined {
+		return this.areaService.consumePendingRoomResolution(duid);
+	}
+
+	/** Clear a cached pending Q10 room resolution for a device. */
+	public clearPendingRoomResolution(duid: string): void {
+		this.areaService.clearPendingRoomResolution(duid);
 	}
 
 	/** Get all scenes for a home. */

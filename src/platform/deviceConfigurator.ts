@@ -13,6 +13,7 @@ import { PlatformRunner } from '../platformRunner.js';
 import type { Device, DeviceSpecs } from '../roborockCommunication/models/index.js';
 import { RoborockService } from '../services/roborockService.js';
 import { configureBehavior } from '../share/behaviorFactory.js';
+import { NotifyMessageTypes } from '../types/notifyMessageTypes.js';
 import { RoborockVacuumCleaner } from '../types/roborockVacuumCleaner.js';
 import { WssSendSnackbarMessage } from '../types/WssSendSnackbarMessage.js';
 import { DeviceRegistry } from './deviceRegistry.js';
@@ -122,7 +123,19 @@ export class DeviceConfigurator {
 			const routines = roborockService.getSupportedRoutines(vacuum.duid) ?? [];
 			const routineMap: ServiceArea.Map = { mapId: ROUTINE_MAP_ID, name: 'Routine' };
 			const allMaps = routines.length > 0 ? [...maps, routineMap] : maps;
-			robot.updateAttribute(ServiceArea.id, 'currentArea', null, this.log);
+
+			const pendingResolution = roborockService.consumePendingRoomResolution(vacuum.duid);
+			if (pendingResolution) {
+				this.getPlatformRunner().updateRobotWithPayload({
+					type: NotifyMessageTypes.ServiceAreaUpdate,
+					data: pendingResolution,
+				});
+			} else {
+				const currentArea = robot.getAttribute(ServiceArea.id, 'currentArea', this.log);
+				if (currentArea === null || currentArea === undefined) {
+					robot.updateAttribute(ServiceArea.id, 'currentArea', null, this.log);
+				}
+			}
 			robot.updateAttribute(ServiceArea.id, 'supportedMaps', allMaps, this.log);
 			robot.updateAttribute(ServiceArea.id, 'supportedAreas', [...areas, ...routines], this.log);
 		});

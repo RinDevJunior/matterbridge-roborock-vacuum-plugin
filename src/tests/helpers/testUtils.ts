@@ -205,6 +205,7 @@ export function createMockRoborockService(overrides: Partial<RoborockService> = 
 		getHomeDataForUpdating: vi.fn().mockResolvedValue(undefined),
 		getSupportedAreas: vi.fn().mockReturnValue([]),
 		getSupportedAreasIndexMap: vi.fn().mockReturnValue(new Map()),
+		getSupportedRoutines: vi.fn().mockReturnValue([]),
 		getSelectedAreas: vi.fn().mockReturnValue([]),
 		getProgress: vi.fn().mockReturnValue([]),
 		setProgress: vi.fn(),
@@ -219,6 +220,9 @@ export function createMockRoborockService(overrides: Partial<RoborockService> = 
 		requestDeviceStatusOnce: vi.fn().mockResolvedValue(undefined),
 		registerAreasListener: vi.fn(),
 		startPeriodicAreaRefresh: vi.fn(),
+		setPendingRoomResolution: vi.fn(),
+		consumePendingRoomResolution: vi.fn().mockReturnValue(undefined),
+		clearPendingRoomResolution: vi.fn(),
 	};
 	return { ...base, ...overrides } as Partial<RoborockService> as RoborockService;
 }
