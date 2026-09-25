@@ -14,6 +14,7 @@ import { getOperationalStates, getSupportedCleanModes, getSupportedRoutines } fr
 import { DockStationStatus } from '../model/DockStationStatus.js';
 import { PlatformConfigManager } from '../platform/platformConfigManager.js';
 import { Device } from '../roborockCommunication/models/index.js';
+import { isV1Device } from '../roborockCommunication/protocol/dispatcher/dispatcherFactory.js';
 import { getNextPendingArea, markAreaSkipped } from '../runtimes/handlers/serviceAreaHandler.js';
 import { RoborockService } from '../services/roborockService.js';
 import { BehaviorFactoryResult } from '../share/behaviorFactory.js';
@@ -71,6 +72,10 @@ export class RoborockVacuumCleaner extends RoboticVacuumCleaner {
 			null,
 			deviceConfig.supportedMaps,
 		);
+
+		if (deviceConfig.supportsFilterMonitoring) {
+			this.createDefaultHepaFilterMonitoringClusterServer();
+		}
 
 		log.debug(
 			`Creating RoborockVacuumCleaner for device: ${deviceConfig.deviceName}, 
@@ -212,6 +217,13 @@ export class RoborockVacuumCleaner extends RoboticVacuumCleaner {
 			this.log.info('Stop command received');
 			behaviorHandler.executeCommand(CommandNames.STOP);
 		});
+
+		if (isV1Device(this.device.pv, this.device.specs.model)) {
+			this.addCommandHandlerWithErrorHandling('HepaFilterMonitoring.resetCondition', async () => {
+				this.log.info('Reset filter condition command received');
+				await behaviorHandler.executeCommand(CommandNames.RESET_FILTER);
+			});
+		}
 	}
 
 	/**
@@ -265,6 +277,7 @@ export class RoborockVacuumCleaner extends RoboticVacuumCleaner {
 			supportedMaps,
 			supportedAreaAndRoutines,
 			operationalState,
+			supportsFilterMonitoring: isV1Device(device.pv, device.specs.model),
 		};
 	}
 

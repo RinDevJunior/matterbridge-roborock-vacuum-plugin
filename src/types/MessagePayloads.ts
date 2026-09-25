@@ -136,6 +136,18 @@ export interface ActiveMapChangedPayload {
 	};
 }
 
+/**
+ * Consumable (filter) update message payload.
+ * Contains filter work time from V1 consumable status polling.
+ */
+export interface ConsumableUpdatePayload {
+	type: NotifyMessageTypes.ConsumableUpdate;
+	data: {
+		duid: string;
+		filterWorkTimeSec: number;
+	};
+}
+
 export type MessagePayload =
 	| HomeDataPayload
 	| BatteryUpdatePayload
@@ -144,4 +156,5 @@ export type MessagePayload =
 	| DeviceStatusSimplePayload
 	| CleanModeUpdatePayload
 	| ServiceAreaUpdatePayload
-	| ActiveMapChangedPayload;
+	| ActiveMapChangedPayload
+	| ConsumableUpdatePayload;

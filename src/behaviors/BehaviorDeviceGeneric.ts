@@ -12,6 +12,7 @@ export const CommandNames = {
 	RESUME: 'resume',
 	GO_HOME: 'goHome',
 	STOP: 'stop',
+	RESET_FILTER: 'resetFilter',
 } as const;
 
 export interface DeviceEndpointCommands extends DeviceCommands {
@@ -23,6 +24,7 @@ export interface DeviceEndpointCommands extends DeviceCommands {
 	goHome: () => MaybePromise;
 	identify: (identifyTime: number) => MaybePromise;
 	stop: () => MaybePromise;
+	resetFilter: () => MaybePromise;
 }
 
 export type DeviceCommandHandler = (...args: never[]) => MaybePromise;
