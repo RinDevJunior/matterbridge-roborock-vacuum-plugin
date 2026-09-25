@@ -216,6 +216,12 @@
 										"type": "boolean",
 										"default": false
 									},
+									"enableFilterMonitoring": {
+										"title": "Enable Filter Life Monitoring",
+										"description": "Enable filter life monitoring for V1-protocol devices (HepaFilterMonitoring cluster with reset command).",
+										"type": "boolean",
+										"default": false
+									},
 									"clearStorageOnStartup": {
 										"title": "Clear Storage On Startup",
 										"description": "Clear persistence storage and re-initialize the plugin on next startup.",

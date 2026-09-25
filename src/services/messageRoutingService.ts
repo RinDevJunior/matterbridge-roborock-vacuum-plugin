@@ -4,6 +4,7 @@ import { CleanModeSetting } from '../behaviors/roborock.vacuum/core/CleanModeSet
 import { MapInfo } from '../core/application/models/index.js';
 import { DeviceError } from '../errors/index.js';
 import { CleanCommand } from '../model/CleanCommand.js';
+import { ConsumableStatus } from '../model/ConsumableStatus.js';
 import { RoborockIoTApi } from '../roborockCommunication/api/iotClient.js';
 import { RawRoomMappingData, RequestMessage } from '../roborockCommunication/models/index.js';
 import { AbstractMessageDispatcher } from '../roborockCommunication/protocol/dispatcher/abstractMessageDispatcher.js';
@@ -144,6 +145,14 @@ export class MessageRoutingService {
 
 	public async customSend(duid: string, request: RequestMessage): Promise<void> {
 		return this.getMessageDispatcher(duid).sendCustomMessage(duid, request);
+	}
+
+	public async getConsumableStatus(duid: string): Promise<ConsumableStatus | undefined> {
+		return this.getMessageDispatcher(duid).getConsumableStatus?.(duid);
+	}
+
+	public async resetFilterConsumable(duid: string): Promise<void> {
+		await this.getMessageDispatcher(duid).resetFilterConsumable?.(duid);
 	}
 
 	public clearAll(): void {

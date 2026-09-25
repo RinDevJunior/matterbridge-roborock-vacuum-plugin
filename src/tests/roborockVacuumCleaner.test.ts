@@ -1,19 +1,22 @@
 import { MatterbridgeIdentifyServer, MatterbridgeServiceAreaServer } from 'matterbridge';
 import { MatterbridgeRvcOperationalStateServer } from 'matterbridge/devices';
 import { AnsiLogger } from 'matterbridge/logger';
-import { ModeBase, RvcCleanMode, ServiceArea } from 'matterbridge/matter/clusters';
+import { HepaFilterMonitoring, ModeBase, RvcCleanMode, ServiceArea } from 'matterbridge/matter/clusters';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { CommandNames } from '../behaviors/BehaviorDeviceGeneric.js';
 import { MapInfo } from '../core/application/models/MapInfo.js';
 import { RoomMap } from '../core/application/models/RoomMap.js';
 import { HomeEntity } from '../core/domain/entities/Home.js';
 import {
 	AdvancedFeatureConfiguration,
 	AdvancedFeatureSetting,
+	createDefaultAdvancedFeature,
 	PluginConfiguration,
 	RoborockPluginPlatformConfig,
 } from '../model/RoborockPluginPlatformConfig.js';
 import { PlatformConfigManager } from '../platform/platformConfigManager.js';
+import { Device, DeviceModel } from '../roborockCommunication/models/index.js';
 import { RoborockService } from '../services/roborockService.js';
 import { BehaviorFactoryResult } from '../share/behaviorFactory.js';
 import { RoborockVacuumCleaner } from '../types/roborockVacuumCleaner.js';
@@ -777,6 +780,150 @@ describe('RoborockVacuumCleaner', () => {
 			// read by controllers to know they can call CHANGE_TO_MODE at any time.
 			// No explicit test needed here beyond verifying the method completes.
 			expect(vacuum).toBeInstanceOf(RoborockVacuumCleaner);
+		});
+	});
+
+	describe('HepaFilterMonitoring cluster (V1-protocol only)', () => {
+		it('should have HepaFilterMonitoring cluster present for V1 protocol device - can read condition attribute', () => {
+			const v1Device = asType<Device>({
+				duid: 'duid-v1',
+				pv: '1.8.0',
+				specs: { model: DeviceModel.S7, firmwareVersion: '1.0.0' },
+				serialNumber: 'serial-v1',
+				name: 'V1Vac',
+				scenes: [],
+			});
+			const v1Vacuum = new RoborockVacuumCleaner(v1Device, homeInfo, configManager, roborockService, logger);
+
+			// V1 devices should have HepaFilterMonitoring cluster, condition should be readable (defaults to 100)
+			vi.spyOn(v1Vacuum, 'getAttribute').mockReturnValue(100);
+			const condition = v1Vacuum.getAttribute(HepaFilterMonitoring.id, 'condition', logger);
+			expect(condition).toBe(100);
+		});
+
+		it('should NOT have HepaFilterMonitoring cluster for Q10 (B01) device - condition attribute returns undefined', () => {
+			const q10Device = asType<Device>({
+				duid: 'duid-q10',
+				pv: '2.8.0',
+				specs: { model: DeviceModel.Q10_S5_PLUS, firmwareVersion: '1.0.0' },
+				serialNumber: 'serial-q10',
+				name: 'Q10Vac',
+				scenes: [],
+			});
+			const q10Vacuum = new RoborockVacuumCleaner(q10Device, homeInfo, configManager, roborockService, logger);
+
+			// Q10 devices should NOT have HepaFilterMonitoring cluster
+			vi.spyOn(q10Vacuum, 'getAttribute').mockReturnValue(undefined);
+			const condition = q10Vacuum.getAttribute(HepaFilterMonitoring.id, 'condition', logger);
+			expect(condition).toBeUndefined();
+		});
+
+		it('should NOT have HepaFilterMonitoring cluster for Q7 (B01) device - condition attribute returns undefined', () => {
+			const q7Device = asType<Device>({
+				duid: 'duid-q7',
+				pv: '2.8.0',
+				specs: { model: DeviceModel.Q7, firmwareVersion: '1.0.0' },
+				serialNumber: 'serial-q7',
+				name: 'Q7Vac',
+				scenes: [],
+			});
+			const q7Vacuum = new RoborockVacuumCleaner(q7Device, homeInfo, configManager, roborockService, logger);
+
+			// Q7 devices should NOT have HepaFilterMonitoring cluster
+			vi.spyOn(q7Vacuum, 'getAttribute').mockReturnValue(undefined);
+			const condition = q7Vacuum.getAttribute(HepaFilterMonitoring.id, 'condition', logger);
+			expect(condition).toBeUndefined();
+		});
+
+		it('should call executeCommand(RESET_FILTER) when resetCondition handler is invoked (V1 device)', async () => {
+			const v1Device = asType<Device>({
+				duid: 'duid-v1',
+				pv: '1.0',
+				specs: { model: DeviceModel.S7, firmwareVersion: '1.0.0' },
+				serialNumber: 'serial-v1',
+				name: 'V1Vac',
+				scenes: [],
+			});
+			const enabledConfigManager = PlatformConfigManager.create(
+				asPartial<RoborockPluginPlatformConfig>({
+					pluginConfiguration: asPartial<PluginConfiguration>({
+						enableMultipleMap: false,
+						enableServerMode: false,
+					}),
+					advancedFeature: {
+						enableAdvancedFeature: true,
+						settings: { ...createDefaultAdvancedFeature().settings, enableFilterMonitoring: true },
+					},
+				}),
+				createMockLogger(),
+			);
+			const v1Vacuum = new RoborockVacuumCleaner(v1Device, homeInfo, enabledConfigManager, roborockService, logger);
+
+			const behaviorHandler = asPartial<BehaviorFactoryResult>({
+				executeCommand: vi.fn().mockResolvedValue(undefined),
+				setCommandHandler: vi.fn(),
+				log: logger,
+				commands: {},
+			});
+
+			const addHandlerSpy = vi.spyOn(v1Vacuum as any, 'addCommandHandler');
+			v1Vacuum.configureHandler(behaviorHandler);
+
+			const call = addHandlerSpy.mock.calls.find(([key]) => key === 'HepaFilterMonitoring.resetCondition');
+			expect(call).toBeDefined();
+			if (call) {
+				const handler = call[1] as (context: unknown) => Promise<void>;
+				await handler({});
+			}
+
+			expect(behaviorHandler.executeCommand).toHaveBeenCalledWith(CommandNames.RESET_FILTER);
+		});
+
+		it('V1 device does NOT register resetCondition handler when enableFilterMonitoring is false', () => {
+			const v1Device = asType<Device>({
+				duid: 'duid-v1-disabled',
+				pv: '1.0',
+				specs: { model: DeviceModel.S7, firmwareVersion: '1.0.0' },
+				serialNumber: 'serial-v1-disabled',
+				name: 'V1VacDisabled',
+				scenes: [],
+			});
+			const v1Vacuum = new RoborockVacuumCleaner(v1Device, homeInfo, configManager, roborockService, logger);
+
+			const mockBehaviorHandler = asPartial<BehaviorFactoryResult>({
+				executeCommand: vi.fn(),
+				setCommandHandler: vi.fn(),
+				log: logger,
+				commands: {},
+			});
+
+			const addHandlerSpy = vi.spyOn(v1Vacuum as any, 'addCommandHandler');
+			v1Vacuum.configureHandler(mockBehaviorHandler);
+
+			const call = addHandlerSpy.mock.calls.find(([key]) => key === 'HepaFilterMonitoring.resetCondition');
+			expect(call).toBeUndefined();
+		});
+
+		it('Q10 device configureHandler does not register HepaFilterMonitoring.resetCondition', () => {
+			const q10Device = asType<Device>({
+				duid: 'duid-q10',
+				pv: '2.8.0',
+				specs: { model: DeviceModel.Q10_S5_PLUS, firmwareVersion: '1.0.0' },
+				serialNumber: 'serial-q10',
+				name: 'Q10Vac',
+				scenes: [],
+			});
+			const q10Vacuum = new RoborockVacuumCleaner(q10Device, homeInfo, configManager, roborockService, logger);
+
+			const mockBehaviorHandler = asPartial<BehaviorFactoryResult>({
+				executeCommand: vi.fn(),
+				setCommandHandler: vi.fn(),
+				log: logger,
+				commands: {},
+			});
+
+			// Q10 devices do not register resetCondition handler; should not throw
+			expect(() => q10Vacuum.configureHandler(mockBehaviorHandler)).not.toThrow();
 		});
 	});
 });

@@ -47,4 +47,9 @@ export function registerCommonCommands(
 		logger.notice(`${behaviorName}-Stop`);
 		await roborockService.stopClean(duid);
 	});
+
+	handler.setCommandHandler(CommandNames.RESET_FILTER, async () => {
+		logger.notice(`${behaviorName}-resetFilter`);
+		await roborockService.resetFilterConsumable(duid);
+	});
 }

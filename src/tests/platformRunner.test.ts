@@ -1,4 +1,12 @@
-import { PowerSource, RvcCleanMode, RvcOperationalState, RvcRunMode, ServiceArea } from 'matterbridge/matter/clusters';
+import {
+	HepaFilterMonitoring,
+	PowerSource,
+	ResourceMonitoring,
+	RvcCleanMode,
+	RvcOperationalState,
+	RvcRunMode,
+	ServiceArea,
+} from 'matterbridge/matter/clusters';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { CleanModeSetting } from '../behaviors/roborock.vacuum/core/CleanModeSetting.js';
@@ -595,6 +603,24 @@ describe('PlatformRunner.updateRobotWithPayload', () => {
 		await runner.updateRobotWithPayload(payload);
 
 		expect(robot.updateAttribute).not.toHaveBeenCalled();
+	});
+
+	it('should handle ConsumableUpdate message and update filter condition and changeIndication', async () => {
+		const consumableMessage = {
+			duid: 'test-duid',
+			filterWorkTimeSec: 270000,
+		};
+		const payload: MessagePayload = { type: NotifyMessageTypes.ConsumableUpdate, data: consumableMessage };
+
+		await runner.updateRobotWithPayload(payload);
+
+		expect(robot.updateAttribute).toHaveBeenCalledWith(HepaFilterMonitoring.id, 'condition', 50, mockLogger);
+		expect(robot.updateAttribute).toHaveBeenCalledWith(
+			HepaFilterMonitoring.id,
+			'changeIndication',
+			ResourceMonitoring.ChangeIndication.Ok,
+			mockLogger,
+		);
 	});
 
 	it('should handle ServiceAreaUpdate message when state is Idle', async () => {

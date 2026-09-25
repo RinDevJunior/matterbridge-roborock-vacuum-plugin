@@ -3,6 +3,7 @@ import { AnsiLogger } from 'matterbridge/logger';
 import { CleanModeSetting } from '../../../behaviors/roborock.vacuum/core/CleanModeSetting.js';
 import { MopRoute, MopWaterFlow } from '../../../behaviors/roborock.vacuum/enums/index.js';
 import { MapInfo } from '../../../core/application/models/index.js';
+import { ConsumableStatus } from '../../../model/ConsumableStatus.js';
 import { MapRoomResponse } from '../../../types/index.js';
 import { MultipleMapDto, RawRoomMappingData } from '../../models/home/index.js';
 import { DpsPayload, NetworkInfo, Protocol, RequestMessage, ResponseMessage } from '../../models/index.js';
@@ -100,6 +101,22 @@ export class V10MessageDispatcher implements AbstractMessageDispatcher {
 
 	public switchMap(duid: string, mapId: number): Promise<void> {
 		return this.client.send(duid, new RequestMessage({ method: 'load_multi_map', params: [mapId] }));
+	}
+
+	public async getConsumableStatus(duid: string): Promise<ConsumableStatus | undefined> {
+		const request = new RequestMessage({ method: 'get_consumable' });
+		const response = await this.client.query<Record<string, number>>(
+			duid,
+			request,
+			(msg) => parseV1Result(msg, request.messageId) as Record<string, number> | undefined,
+		);
+		if (!response || typeof response.filter_work_time !== 'number') return undefined;
+		return { filterWorkTimeSec: response.filter_work_time };
+	}
+
+	public async resetFilterConsumable(duid: string): Promise<void> {
+		const request = new RequestMessage({ method: 'reset_consumable', params: ['filter_work_time'] });
+		await this.client.send(duid, request);
 	}
 
 	public goHome(duid: string): Promise<void> {

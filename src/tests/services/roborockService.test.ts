@@ -5,6 +5,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { SCENE_AREA_ID_MIN } from '../../constants/index.js';
 import type { RoomIndexMap } from '../../core/application/models/index.js';
+import type { ConsumableStatus } from '../../model/ConsumableStatus.js';
 import type { PlatformConfigManager } from '../../platform/platformConfigManager.js';
 import { RoborockAuthenticateApi } from '../../roborockCommunication/api/authClient.js';
 import { RoborockIoTApi } from '../../roborockCommunication/api/iotClient.js';
@@ -81,9 +82,12 @@ describe('RoborockService - Comprehensive Coverage', () => {
 			getMapInfo: vi.fn(),
 			clearAll: vi.fn(),
 			getSerialNumber: vi.fn().mockResolvedValue('SN-ABC'),
+			getConsumableStatus: vi.fn(),
+			resetFilterConsumable: vi.fn(),
 		};
 		mockPollingService = {
 			activateDeviceNotifyOverLocal: vi.fn(),
+			activateConsumablePollingOverLocal: vi.fn(),
 			requestStatusOnce: vi.fn().mockResolvedValue(undefined),
 			stopPolling: vi.fn(),
 			shutdown: vi.fn(),
@@ -116,6 +120,7 @@ describe('RoborockService - Comprehensive Coverage', () => {
 			password: 'testpass',
 			verificationCode: undefined,
 			authenticationMethod: 'Password',
+			isFilterMonitoringEnabled: true,
 		};
 
 		service = new RoborockService(
@@ -421,6 +426,101 @@ describe('RoborockService - Comprehensive Coverage', () => {
 			await service.startClean(duid);
 
 			expect(mockMessageService.startClean).toHaveBeenCalledWith(duid, { type: 'global' });
+		});
+	});
+
+	describe('getConsumableStatus', () => {
+		it('should delegate to messageRoutingService.getConsumableStatus', async () => {
+			vi.mocked(mockMessageService.getConsumableStatus as ReturnType<typeof vi.fn>)?.mockResolvedValue({
+				filterWorkTimeSec: 100000,
+			});
+
+			const result = await service.getConsumableStatus('duid-1');
+
+			expect(result).toEqual({ filterWorkTimeSec: 100000 });
+			expect(mockMessageService.getConsumableStatus).toHaveBeenCalledWith('duid-1');
+		});
+	});
+
+	describe('resetFilterConsumable', () => {
+		it('should delegate to messageRoutingService.resetFilterConsumable', async () => {
+			await service.resetFilterConsumable('duid-1');
+			expect(mockMessageService.resetFilterConsumable).toHaveBeenCalledWith('duid-1');
+		});
+	});
+
+	describe('activateDeviceNotify - consumable polling', () => {
+		it('should call pollingService.activateConsumablePollingOverLocal with device and callback', () => {
+			const device: Device = { duid: 'test-duid' } as Device;
+
+			service.activateDeviceNotify(device);
+
+			expect(mockPollingService.activateConsumablePollingOverLocal).toHaveBeenCalledWith(device, expect.any(Function));
+		});
+
+		it('should invoke callback with ConsumableUpdate notification when consumable status received', () => {
+			const device: Device = { duid: 'test-duid' } as Device;
+			const capturedCallbacks: ((duid: string, status: ConsumableStatus) => void)[] = [];
+
+			vi.mocked(mockPollingService.activateConsumablePollingOverLocal)?.mockImplementation((d, cb) => {
+				capturedCallbacks.push(cb);
+			});
+
+			service.setDeviceNotify(vi.fn());
+			service.activateDeviceNotify(device);
+
+			expect(capturedCallbacks.length).toBe(1);
+			const callback = capturedCallbacks[0];
+			callback('test-duid', { filterWorkTimeSec: 100000 });
+			expect(service.deviceNotify).toHaveBeenCalledWith({
+				type: expect.stringContaining('ConsumableUpdate'),
+				data: { duid: 'test-duid', filterWorkTimeSec: 100000 },
+			});
+		});
+
+		it('should not throw when deviceNotify is undefined', () => {
+			const device: Device = { duid: 'test-duid' } as Device;
+			const capturedCallbacks: ((duid: string, status: ConsumableStatus) => void)[] = [];
+
+			vi.mocked(mockPollingService.activateConsumablePollingOverLocal)?.mockImplementation((d, cb) => {
+				capturedCallbacks.push(cb);
+			});
+
+			service.activateDeviceNotify(device);
+			// Don't set deviceNotify, leave it undefined
+
+			expect(capturedCallbacks.length).toBe(1);
+			const callback = capturedCallbacks[0];
+			expect(() => {
+				callback('test-duid', { filterWorkTimeSec: 100000 });
+			}).not.toThrow();
+		});
+
+		it('should NOT call activateConsumablePollingOverLocal when isFilterMonitoringEnabled is false', () => {
+			const device: Device = { duid: 'test-duid-no-monitoring' } as Device;
+			const disabledConfigManager = {
+				...mockConfigManager,
+				isFilterMonitoringEnabled: false,
+			};
+
+			const serviceWithDisabledFlag = new RoborockService(
+				{
+					refreshInterval: 10,
+					baseUrl: 'https://api.roborock.com',
+					persist: mockPersist as LocalStorage,
+					configManager: disabledConfigManager as PlatformConfigManager,
+					container: mockContainer as ServiceContainer,
+					toastMessage: vi.fn(),
+				},
+				mockLogger as AnsiLogger,
+				disabledConfigManager as PlatformConfigManager,
+			);
+
+			const callCountBefore = vi.mocked(mockPollingService.activateConsumablePollingOverLocal)?.mock.calls.length ?? 0;
+			serviceWithDisabledFlag.activateDeviceNotify(device);
+			const callCountAfter = vi.mocked(mockPollingService.activateConsumablePollingOverLocal)?.mock.calls.length ?? 0;
+
+			expect(callCountAfter).toBe(callCountBefore);
 		});
 	});
 });

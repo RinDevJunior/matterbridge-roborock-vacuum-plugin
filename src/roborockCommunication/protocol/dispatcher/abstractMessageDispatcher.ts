@@ -1,5 +1,6 @@
 import { CleanModeSetting } from '../../../behaviors/roborock.vacuum/core/CleanModeSetting.js';
 import { MapInfo } from '../../../core/application/models/index.js';
+import { ConsumableStatus } from '../../../model/ConsumableStatus.js';
 import { MapRoomResponse } from '../../../types/index.js';
 import { NetworkInfo, RawRoomMappingData, RequestMessage } from '../../models/index.js';
 
@@ -34,4 +35,7 @@ export interface AbstractMessageDispatcher {
 	getRoomMapV2(duid: string, activeMap: number): Promise<void>;
 	getSerialNumber(duid: string): Promise<string | undefined>;
 	switchMap(duid: string, mapId: number): Promise<void>;
+
+	getConsumableStatus?(duid: string): Promise<ConsumableStatus | undefined>;
+	resetFilterConsumable?(duid: string): Promise<void>;
 }
