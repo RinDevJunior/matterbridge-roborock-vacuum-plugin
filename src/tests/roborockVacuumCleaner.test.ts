@@ -784,14 +784,14 @@ describe('RoborockVacuumCleaner', () => {
 
 	describe('HepaFilterMonitoring cluster (V1-protocol only)', () => {
 		it('should have HepaFilterMonitoring cluster present for V1 protocol device - can read condition attribute', () => {
-			const v1Device = {
+			const v1Device = asType<Device>({
 				duid: 'duid-v1',
 				pv: '1.8.0',
-				specs: { model: 'roborock.s7', firmwareVersion: '1.0.0' },
+				specs: { model: DeviceModel.S7, firmwareVersion: '1.0.0' },
 				serialNumber: 'serial-v1',
 				name: 'V1Vac',
 				scenes: [],
-			} as any;
+			});
 			const v1Vacuum = new RoborockVacuumCleaner(v1Device, homeInfo, configManager, roborockService, logger);
 
 			// V1 devices should have HepaFilterMonitoring cluster, condition should be readable (defaults to 100)
@@ -801,14 +801,14 @@ describe('RoborockVacuumCleaner', () => {
 		});
 
 		it('should NOT have HepaFilterMonitoring cluster for Q10 (B01) device - condition attribute returns undefined', () => {
-			const q10Device = {
+			const q10Device = asType<Device>({
 				duid: 'duid-q10',
 				pv: '2.8.0',
 				specs: { model: DeviceModel.Q10_S5_PLUS, firmwareVersion: '1.0.0' },
 				serialNumber: 'serial-q10',
 				name: 'Q10Vac',
 				scenes: [],
-			} as any;
+			});
 			const q10Vacuum = new RoborockVacuumCleaner(q10Device, homeInfo, configManager, roborockService, logger);
 
 			// Q10 devices should NOT have HepaFilterMonitoring cluster
@@ -818,14 +818,14 @@ describe('RoborockVacuumCleaner', () => {
 		});
 
 		it('should NOT have HepaFilterMonitoring cluster for Q7 (B01) device - condition attribute returns undefined', () => {
-			const q7Device = {
+			const q7Device = asType<Device>({
 				duid: 'duid-q7',
 				pv: '2.8.0',
 				specs: { model: DeviceModel.Q7, firmwareVersion: '1.0.0' },
 				serialNumber: 'serial-q7',
 				name: 'Q7Vac',
 				scenes: [],
-			} as any;
+			});
 			const q7Vacuum = new RoborockVacuumCleaner(q7Device, homeInfo, configManager, roborockService, logger);
 
 			// Q7 devices should NOT have HepaFilterMonitoring cluster
@@ -834,38 +834,46 @@ describe('RoborockVacuumCleaner', () => {
 			expect(condition).toBeUndefined();
 		});
 
-		it('V1 device configureHandler supports HepaFilterMonitoring.resetCondition', () => {
-			const v1Device = {
+		it('should call executeCommand(RESET_FILTER) when resetCondition handler is invoked (V1 device)', async () => {
+			const v1Device = asType<Device>({
 				duid: 'duid-v1',
-				pv: '1.8.0',
+				pv: '1.0',
 				specs: { model: DeviceModel.S7, firmwareVersion: '1.0.0' },
 				serialNumber: 'serial-v1',
 				name: 'V1Vac',
 				scenes: [],
-			} as any;
+			});
 			const v1Vacuum = new RoborockVacuumCleaner(v1Device, homeInfo, configManager, roborockService, logger);
 
-			const mockBehaviorHandler = asPartial<BehaviorFactoryResult>({
+			const behaviorHandler = asPartial<BehaviorFactoryResult>({
 				executeCommand: vi.fn().mockResolvedValue(undefined),
 				setCommandHandler: vi.fn(),
 				log: logger,
 				commands: {},
 			});
 
-			// V1 devices register resetCondition handler; should not throw
-			expect(() => v1Vacuum.configureHandler(mockBehaviorHandler)).not.toThrow();
-			expect(mockBehaviorHandler.executeCommand).toBeDefined();
+			const addHandlerSpy = vi.spyOn(v1Vacuum as any, 'addCommandHandler');
+			v1Vacuum.configureHandler(behaviorHandler);
+
+			const call = addHandlerSpy.mock.calls.find(([key]) => key === 'HepaFilterMonitoring.resetCondition');
+			expect(call).toBeDefined();
+			if (call) {
+				const handler = call[1] as (context: unknown) => Promise<void>;
+				await handler({});
+			}
+
+			expect(behaviorHandler.executeCommand).toHaveBeenCalledWith(CommandNames.RESET_FILTER);
 		});
 
 		it('Q10 device configureHandler does not register HepaFilterMonitoring.resetCondition', () => {
-			const q10Device = {
+			const q10Device = asType<Device>({
 				duid: 'duid-q10',
 				pv: '2.8.0',
 				specs: { model: DeviceModel.Q10_S5_PLUS, firmwareVersion: '1.0.0' },
 				serialNumber: 'serial-q10',
 				name: 'Q10Vac',
 				scenes: [],
-			} as any;
+			});
 			const q10Vacuum = new RoborockVacuumCleaner(q10Device, homeInfo, configManager, roborockService, logger);
 
 			const mockBehaviorHandler = asPartial<BehaviorFactoryResult>({
