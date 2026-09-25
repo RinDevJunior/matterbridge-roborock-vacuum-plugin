@@ -11,6 +11,7 @@ import { HomeEntity } from '../core/domain/entities/Home.js';
 import {
 	AdvancedFeatureConfiguration,
 	AdvancedFeatureSetting,
+	createDefaultAdvancedFeature,
 	PluginConfiguration,
 	RoborockPluginPlatformConfig,
 } from '../model/RoborockPluginPlatformConfig.js';
@@ -843,7 +844,20 @@ describe('RoborockVacuumCleaner', () => {
 				name: 'V1Vac',
 				scenes: [],
 			});
-			const v1Vacuum = new RoborockVacuumCleaner(v1Device, homeInfo, configManager, roborockService, logger);
+			const enabledConfigManager = PlatformConfigManager.create(
+				asPartial<RoborockPluginPlatformConfig>({
+					pluginConfiguration: asPartial<PluginConfiguration>({
+						enableMultipleMap: false,
+						enableServerMode: false,
+					}),
+					advancedFeature: {
+						enableAdvancedFeature: true,
+						settings: { ...createDefaultAdvancedFeature().settings, enableFilterMonitoring: true },
+					},
+				}),
+				createMockLogger(),
+			);
+			const v1Vacuum = new RoborockVacuumCleaner(v1Device, homeInfo, enabledConfigManager, roborockService, logger);
 
 			const behaviorHandler = asPartial<BehaviorFactoryResult>({
 				executeCommand: vi.fn().mockResolvedValue(undefined),
@@ -863,6 +877,31 @@ describe('RoborockVacuumCleaner', () => {
 			}
 
 			expect(behaviorHandler.executeCommand).toHaveBeenCalledWith(CommandNames.RESET_FILTER);
+		});
+
+		it('V1 device does NOT register resetCondition handler when enableFilterMonitoring is false', () => {
+			const v1Device = asType<Device>({
+				duid: 'duid-v1-disabled',
+				pv: '1.0',
+				specs: { model: DeviceModel.S7, firmwareVersion: '1.0.0' },
+				serialNumber: 'serial-v1-disabled',
+				name: 'V1VacDisabled',
+				scenes: [],
+			});
+			const v1Vacuum = new RoborockVacuumCleaner(v1Device, homeInfo, configManager, roborockService, logger);
+
+			const mockBehaviorHandler = asPartial<BehaviorFactoryResult>({
+				executeCommand: vi.fn(),
+				setCommandHandler: vi.fn(),
+				log: logger,
+				commands: {},
+			});
+
+			const addHandlerSpy = vi.spyOn(v1Vacuum as any, 'addCommandHandler');
+			v1Vacuum.configureHandler(mockBehaviorHandler);
+
+			const call = addHandlerSpy.mock.calls.find(([key]) => key === 'HepaFilterMonitoring.resetCondition');
+			expect(call).toBeUndefined();
 		});
 
 		it('Q10 device configureHandler does not register HepaFilterMonitoring.resetCondition', () => {

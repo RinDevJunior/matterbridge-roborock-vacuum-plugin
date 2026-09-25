@@ -55,7 +55,10 @@
 				"deviceProductNames": []
 			},
 			"enableEmailNotification": false,
-			"emailNotificationSettings": {}
+			"emailNotificationSettings": {},
+			"enableLiveMapUpdates": false,
+			"enableEstimatedEndTime": false,
+			"enableFilterMonitoring": false
 		}
 	}
 }

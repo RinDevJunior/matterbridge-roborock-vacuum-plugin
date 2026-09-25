@@ -120,6 +120,7 @@ describe('RoborockService - Comprehensive Coverage', () => {
 			password: 'testpass',
 			verificationCode: undefined,
 			authenticationMethod: 'Password',
+			isFilterMonitoringEnabled: true,
 		};
 
 		service = new RoborockService(
@@ -493,6 +494,33 @@ describe('RoborockService - Comprehensive Coverage', () => {
 			expect(() => {
 				callback('test-duid', { filterWorkTimeSec: 100000 });
 			}).not.toThrow();
+		});
+
+		it('should NOT call activateConsumablePollingOverLocal when isFilterMonitoringEnabled is false', () => {
+			const device: Device = { duid: 'test-duid-no-monitoring' } as Device;
+			const disabledConfigManager = {
+				...mockConfigManager,
+				isFilterMonitoringEnabled: false,
+			};
+
+			const serviceWithDisabledFlag = new RoborockService(
+				{
+					refreshInterval: 10,
+					baseUrl: 'https://api.roborock.com',
+					persist: mockPersist as LocalStorage,
+					configManager: disabledConfigManager as PlatformConfigManager,
+					container: mockContainer as ServiceContainer,
+					toastMessage: vi.fn(),
+				},
+				mockLogger as AnsiLogger,
+				disabledConfigManager as PlatformConfigManager,
+			);
+
+			const callCountBefore = vi.mocked(mockPollingService.activateConsumablePollingOverLocal)?.mock.calls.length ?? 0;
+			serviceWithDisabledFlag.activateDeviceNotify(device);
+			const callCountAfter = vi.mocked(mockPollingService.activateConsumablePollingOverLocal)?.mock.calls.length ?? 0;
+
+			expect(callCountAfter).toBe(callCountBefore);
 		});
 	});
 });

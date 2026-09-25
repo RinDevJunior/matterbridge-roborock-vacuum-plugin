@@ -160,12 +160,14 @@ export class RoborockService {
 	/** Start polling device status via local network. */
 	public activateDeviceNotify(device: Device): void {
 		this.pollingService.activateDeviceNotifyOverLocal(device);
-		this.pollingService.activateConsumablePollingOverLocal(device, (duid, status) => {
-			void this.deviceNotify?.({
-				type: NotifyMessageTypes.ConsumableUpdate,
-				data: { duid, filterWorkTimeSec: status.filterWorkTimeSec },
+		if (this.configManager.isFilterMonitoringEnabled) {
+			this.pollingService.activateConsumablePollingOverLocal(device, (duid, status) => {
+				void this.deviceNotify?.({
+					type: NotifyMessageTypes.ConsumableUpdate,
+					data: { duid, filterWorkTimeSec: status.filterWorkTimeSec },
+				});
 			});
-		});
+		}
 	}
 
 	/** Trigger a one-shot local/MQTT status request for a device. */

@@ -638,6 +638,37 @@ describe('PlatformConfigManager', () => {
 		it('createDefaultAdvancedFeature defaults enableEstimatedEndTime to false', () => {
 			expect(createDefaultAdvancedFeature().settings.enableEstimatedEndTime).toBe(false);
 		});
+
+		it('isFilterMonitoringEnabled returns true when advanced feature enabled and enableFilterMonitoring = true', () => {
+			config.advancedFeature = {
+				enableAdvancedFeature: true,
+				settings: { ...createDefaultAdvancedFeature().settings, enableFilterMonitoring: true },
+			};
+			manager = PlatformConfigManager.create(config, mockLogger);
+			expect(manager.isFilterMonitoringEnabled).toBe(true);
+		});
+
+		it('isFilterMonitoringEnabled returns false when advanced feature disabled', () => {
+			config.advancedFeature = {
+				enableAdvancedFeature: false,
+				settings: { ...createDefaultAdvancedFeature().settings, enableFilterMonitoring: true },
+			};
+			manager = PlatformConfigManager.create(config, mockLogger);
+			expect(manager.isFilterMonitoringEnabled).toBe(false);
+		});
+
+		it('isFilterMonitoringEnabled returns false when enableFilterMonitoring = false', () => {
+			config.advancedFeature = {
+				enableAdvancedFeature: true,
+				settings: { ...createDefaultAdvancedFeature().settings, enableFilterMonitoring: false },
+			};
+			manager = PlatformConfigManager.create(config, mockLogger);
+			expect(manager.isFilterMonitoringEnabled).toBe(false);
+		});
+
+		it('createDefaultAdvancedFeature defaults enableFilterMonitoring to false', () => {
+			expect(createDefaultAdvancedFeature().settings.enableFilterMonitoring).toBe(false);
+		});
 	});
 
 	describe('device filtering', () => {
