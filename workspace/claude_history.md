@@ -4,6 +4,24 @@ Entries are listed in reverse chronological order (most recent first). Older ent
 
 ---
 
+## 2026-10-02 — ServiceArea Progress refactor to Matterbridge 3.10.12 native API
+
+**Task:** Refactor ServiceArea "Progress" feature to use native Matterbridge 3.10.12 ProgressReporting API (Luligu/matterbridge PR #643), replacing custom implementation with framework-level support and native skipArea command handler registration.
+
+**Changes:**
+
+- `package.json` — bump Matterbridge to ≥3.10.12 (engines + precondition); `package-lock.json` — update root engines
+- `README.md` — update Matterbridge version requirement (2 occurrences)
+- `docs/onboarding.md` — update Matterbridge version requirement
+- `src/types/roborockVacuumCleaner.ts` — RoborockVacuumCleaner now calls super() with progress: [] option to enable native ProgressReporting
+- `src/behaviors/roborockServiceAreaServer.ts` — createDefaultServiceAreaClusterServer override takes new 5th progress param; custom skipAreaHandler property removed; native skipArea command handler registered and awaited; skipArea validation (5 checks from #172) runs first, then calls super.skipArea, throw→InvalidInMode, non-Success passes through, finalizeSkipArea on Success only
+- `src/tests/behaviors/roborockServiceAreaServer.test.ts` — tests rewritten/added for native handler flow
+- `src/tests/roborockVacuumCleaner.test.ts` — tests rewritten/added
+
+**Outcome:** Pass (all verification gates: format:ci, lint:fix:ci, type-check:ci, test:ci). Pending: live-device validation (skip current room during multi-room clean); optional: drop npm-link hunks from package-lock.json; optional: upstream ask to Luligu to validate before forwarding skipArea to handler.
+
+---
+
 ## 2026-09-20 — B01/Q10 currentArea fix (room_id_list parsing + clean_percent addendum)
 
 **Task:** Fix B01/Q10 Matter `currentArea` staying `null` during cleaning by parsing device's real room telemetry (`room_id_list`, DPS 101→91 envelope) and populating `ServiceAreaUpdateMessage.cleaningInfo` instead of relying solely on the `handleCleaningWithoutInfo()` heuristic (no real room signal). Also read DP 87 (`clean_progress`) to populate `cleaningProcess.clean_percent` for estimated time feature support.
