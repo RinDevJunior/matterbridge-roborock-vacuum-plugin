@@ -4,6 +4,26 @@ All notable changes to this project will be documented in this file.
 
 ---
 
+## [1.2.0-rc03] - 2026-10-11
+
+### Added
+
+- **Native ServiceArea progress API** — Uses the native Matterbridge 3.10.12 ServiceArea progress/skipArea API; minimum Matterbridge version is now 3.10.12.
+
+### Changed
+
+- **Vite path resolution** — Switched to native Vite `resolve.tsconfigPaths`.
+- **Tooling and tests** — Cleaned up tooling and test setup.
+
+### Fixed
+
+- **ServiceArea progress finalization** — On run end, Operating areas become Completed and never-visited areas become Skipped.
+- **Progress wiped after finished clean** — Charging is no longer treated as cleaning, so progress is kept after a completed clean.
+
+<a href="https://www.buymeacoffee.com/rinnvspktr" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/default-orange.png" alt="Buy Me A Coffee" height="41" width="174"></a>
+
+---
+
 ## [1.2.0-rc02] - 2026-09-23
 
 ### Fixed
