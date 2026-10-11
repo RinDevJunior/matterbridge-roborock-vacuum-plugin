@@ -12,7 +12,7 @@ function run(command) {
 }
 
 function compactLintErrors(output) {
-	const lines = output.split('\n').map((line) => line.trimEnd());
+	const lines = output.split(/\r?\n/).map((line) => line.trimEnd());
 	const matched = lines.filter((line) => /\berror\b/i.test(line) || /✖/.test(line) || /ESLint/.test(line));
 	return [...new Set(matched)].slice(0, MAX_LINES).join('\n');
 }

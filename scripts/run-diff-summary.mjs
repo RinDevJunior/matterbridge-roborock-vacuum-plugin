@@ -37,7 +37,7 @@ function git(args) {
 		stdio: ['ignore', 'pipe', 'pipe'],
 	});
 	if (status !== 0) {
-		const detail = `${stderr}${stdout}`.trim().split('\n').slice(0, 5).join('\n');
+		const detail = `${stderr}${stdout}`.trim().split(/\r?\n/).slice(0, 5).join('\n');
 		console.log('DIFF FAIL');
 		console.log(detail || 'git failed');
 		process.exit(1);
@@ -68,7 +68,7 @@ function diffArgs(mode, branchBase) {
 
 function parseNameStatus(output) {
 	const entries = [];
-	for (const line of output.split('\n')) {
+	for (const line of output.split(/\r?\n/)) {
 		if (!line.trim()) {
 			continue;
 		}
@@ -86,7 +86,7 @@ function parseNameStatus(output) {
 
 function parseNumstat(output) {
 	const map = new Map();
-	for (const line of output.split('\n')) {
+	for (const line of output.split(/\r?\n/)) {
 		if (!line.trim()) {
 			continue;
 		}
@@ -120,7 +120,7 @@ function collectHints(diffOutput, paths) {
 	const blocks = diffOutput.split(/^diff --git /m).slice(1);
 
 	for (const block of blocks) {
-		const header = block.split('\n', 1)[0] ?? '';
+		const header = block.split(/\r?\n/, 1)[0] ?? '';
 		const match = header.match(/ b\/(.+)$/);
 		if (!match) {
 			continue;
@@ -131,7 +131,7 @@ function collectHints(diffOutput, paths) {
 		}
 
 		let fileHints = 0;
-		for (const line of block.split('\n')) {
+		for (const line of block.split(/\r?\n/)) {
 			if (!line.startsWith('+') || line.startsWith('+++')) {
 				continue;
 			}
