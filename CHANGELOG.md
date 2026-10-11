@@ -4,6 +4,18 @@ All notable changes to this project will be documented in this file.
 
 ---
 
+## [1.2.0-rc04] - 2026-10-11
+
+### Fixed
+
+- **Stale room list on Start** — Tapping Start cleaning in Apple Home no longer shows the previous run's finished rooms; progress is reset immediately on Start and seeded with Pending rows for the selected rooms (or all rooms of the active map).
+- **Resume keeps progress** — Resuming from Paused keeps the live progress instead of resetting it.
+- **Reliable run-end cleanup** — At run end currentArea and estimatedEndTime are cleared and session timers reset reliably.
+
+<a href="https://www.buymeacoffee.com/rinnvspktr" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/default-orange.png" alt="Buy Me A Coffee" height="41" width="174"></a>
+
+---
+
 ## [1.2.0-rc03] - 2026-10-11
 
 ### Added
