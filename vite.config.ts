@@ -7,10 +7,9 @@
 
 import { defineConfig } from 'vitest/config';
 import { fileURLToPath } from 'node:url';
-import tsconfigPaths from 'vite-tsconfig-paths';
 
 export default defineConfig({
-	plugins: [tsconfigPaths()],
+	resolve: { tsconfigPaths: true },
 	test: {
 		include: ['src/**/*.test.ts', 'src/**/*.spec.ts'],
 		exclude: ['dist', 'node_modules', 'src/pluginTemplate/**', 'src/cli/**', 'src/cli.ts'],
