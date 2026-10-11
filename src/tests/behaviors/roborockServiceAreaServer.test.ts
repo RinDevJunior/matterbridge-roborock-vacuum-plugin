@@ -250,6 +250,9 @@ describe('RoborockServiceAreaServer', () => {
 				},
 				device,
 			);
+			vi.mocked(device.getAttribute).mockImplementation((_id, attr) =>
+				attr === 'progress' ? [] : RvcOperationalState.OperationalState.Running,
+			);
 
 			const superSkipAreaSpy = vi.spyOn(Object.getPrototypeOf(Object.getPrototypeOf(server)), 'skipArea');
 			superSkipAreaSpy.mockResolvedValue({ status: ServiceArea.SkipAreaStatus.Success, statusText: '' });

@@ -65,6 +65,8 @@ describe('RoborockVacuumCleaner', () => {
 			setSupportedAreas: vi.fn(),
 			setSupportedAreaIndexMap: vi.fn(),
 			getSupportedAreas: vi.fn().mockReturnValue([]),
+			getProgress: vi.fn().mockReturnValue([]),
+			setProgress: vi.fn(),
 			switchMap: vi.fn().mockResolvedValue(undefined),
 		});
 		vacuum = new RoborockVacuumCleaner(device, homeInfo, configManager, roborockService, logger);
@@ -824,26 +826,28 @@ describe('RoborockVacuumCleaner', () => {
 	});
 
 	describe('Constructor and attributes parity', () => {
+		// Attributes are only readable once the endpoint is active, so assert on the seeded behavior options.
+		const optionsOf = (id: string): Record<string, unknown> =>
+			vacuum.behaviors.optionsFor((vacuum.behaviors.supported as any)[id]) as Record<string, unknown>;
+
 		it('should seed progress attribute to empty array (ProgressReporting enabled)', () => {
-			const progressAttr = vacuum.getAttribute(ServiceArea.id, 'progress', logger);
-			expect(progressAttr).toEqual([]);
+			const serviceArea = (vacuum.behaviors.supported as any).serviceArea;
+			expect(serviceArea.schema.supportedFeatures.has('PROG')).toBe(true);
+			expect(optionsOf('serviceArea').progress).toEqual([]);
 		});
 
 		it('should initialize all required ServiceArea attributes per contract', () => {
-			const operationalState = vacuum.getAttribute(RvcOperationalState.id, 'operationalState', logger);
-			const currentPhase = vacuum.getAttribute(RvcOperationalState.id, 'currentPhase', logger);
-			const phaseList = vacuum.getAttribute(RvcOperationalState.id, 'phaseList', logger);
-			const selectedAreas = vacuum.getAttribute(ServiceArea.id, 'selectedAreas', logger);
-			const currentArea = vacuum.getAttribute(ServiceArea.id, 'currentArea', logger);
-			const operationalMode = vacuum.getAttribute(RvcCleanMode.id, 'currentMode', logger);
+			const operationalState = optionsOf('rvcOperationalState');
+			const serviceArea = optionsOf('serviceArea');
+			const cleanMode = optionsOf('rvcCleanMode');
 
 			// Verify contract parity
-			expect(operationalState).toBe(RvcOperationalState.OperationalState.Docked);
-			expect(currentPhase).toBeNull();
-			expect(phaseList).toBeNull();
-			expect(selectedAreas).toEqual([]);
-			expect(currentArea).toBeNull();
-			expect(operationalMode).toBeDefined(); // First clean mode configured
+			expect(operationalState.operationalState).toBe(RvcOperationalState.OperationalState.Docked);
+			expect(operationalState.currentPhase).toBeNull();
+			expect(operationalState.phaseList).toBeNull();
+			expect(serviceArea.selectedAreas).toEqual([]);
+			expect(serviceArea.currentArea).toBeNull();
+			expect(cleanMode.currentMode).toBeDefined(); // First clean mode configured
 		});
 
 		it('should keep existing identify and SELECT_AREAS tests passing (regression)', async () => {
