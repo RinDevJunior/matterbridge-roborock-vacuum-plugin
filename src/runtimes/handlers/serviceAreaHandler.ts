@@ -26,14 +26,26 @@ const CLEANING_STATES = new Set([
 	OperationStatusCode.CleanMopMopping,
 ]);
 
+const ACTIVELY_CLEANING_OPERATIONAL_STATES: ReadonlySet<RvcOperationalState.OperationalState> = new Set([
+	RvcOperationalState.OperationalState.Running,
+	RvcOperationalState.OperationalState.Paused,
+	RvcOperationalState.OperationalState.SeekingCharger,
+	RvcOperationalState.OperationalState.EmptyingDustBin,
+	RvcOperationalState.OperationalState.CleaningMop,
+	RvcOperationalState.OperationalState.FillingWaterTank,
+	RvcOperationalState.OperationalState.UpdatingMaps,
+]);
+
 function isActivelyCleaningOperationalState(
 	operationalState: RvcOperationalState.OperationalState | undefined,
 ): boolean {
+	return operationalState !== undefined && ACTIVELY_CLEANING_OPERATIONAL_STATES.has(operationalState);
+}
+
+function isRunEndOperationalState(operationalState: RvcOperationalState.OperationalState | undefined): boolean {
 	return (
-		operationalState !== undefined &&
-		operationalState !== RvcOperationalState.OperationalState.Docked &&
-		operationalState !== RvcOperationalState.OperationalState.Stopped &&
-		operationalState !== RvcOperationalState.OperationalState.Error
+		operationalState === RvcOperationalState.OperationalState.Docked ||
+		operationalState === RvcOperationalState.OperationalState.Charging
 	);
 }
 
@@ -85,6 +97,29 @@ export function buildProgressUpdate(
 	}
 
 	return Array.from(progressMap.values());
+}
+
+export function finalizeProgressOnRunEnd(existing: ServiceArea.Progress[]): ServiceArea.Progress[] {
+	return existing.map((entry) => {
+		if (entry.status === ServiceArea.OperationalStatus.Operating) {
+			return { ...entry, status: ServiceArea.OperationalStatus.Completed };
+		}
+		if (entry.status === ServiceArea.OperationalStatus.Pending) {
+			return { ...entry, status: ServiceArea.OperationalStatus.Skipped };
+		}
+		return { ...entry };
+	});
+}
+
+export function isProgressFinalized(progress: ServiceArea.Progress[]): boolean {
+	return (
+		progress.length > 0 &&
+		progress.every(
+			(entry) =>
+				entry.status === ServiceArea.OperationalStatus.Completed ||
+				entry.status === ServiceArea.OperationalStatus.Skipped,
+		)
+	);
 }
 
 export function getNextPendingArea(
@@ -255,16 +290,42 @@ export async function handleServiceAreaUpdate(
 		await robot.updateAttribute(ServiceArea.id, 'progress', [], logger);
 	}
 
+	const isRunEnd =
+		wasActivelyCleaning &&
+		!isActivelyCleaningNow &&
+		(isRunEndOperationalState(operationalState) || isIdleStateForServiceArea(robot, message.state));
+	if (isRunEnd) {
+		const existingProgress = platform.roborockService?.getProgress(robot.device.duid) ?? [];
+		if (existingProgress.length > 0) {
+			logger.debug(
+				`[${robot.device.duid}] Detected run end (operationalState=${operationalState}), finalizing progress`,
+			);
+			const finalized = finalizeProgressOnRunEnd(existingProgress);
+			platform.roborockService?.setProgress(robot.device.duid, finalized);
+			await robot.updateAttribute(ServiceArea.id, 'progress', finalized, logger);
+		}
+	}
+
 	if (isIdleStateForServiceArea(robot, message.state)) {
 		logger.debug('Robot is idle, updating selectedAreas from Roborock service');
 		const selectedAreas = platform.roborockService?.getSelectedAreas(robot.device.duid) ?? [];
 		await robot.updateAttribute(ServiceArea.id, 'selectedAreas', selectedAreas, logger);
 
-		platform.roborockService?.setProgress(robot.device.duid, []);
-		await robot.updateAttribute(ServiceArea.id, 'progress', [], logger);
+		const progressNow = platform.roborockService?.getProgress(robot.device.duid) ?? [];
+		if (!isProgressFinalized(progressNow)) {
+			platform.roborockService?.setProgress(robot.device.duid, []);
+			await robot.updateAttribute(ServiceArea.id, 'progress', [], logger);
+		}
 		await robot.updateAttribute(ServiceArea.id, 'currentArea', null, logger);
 		await robot.updateAttribute(ServiceArea.id, 'estimatedEndTime', null, logger);
 		platform.roborockService?.clearPendingRoomResolution(robot.device.duid);
+		return;
+	}
+
+	if (isRunEndOperationalState(operationalState)) {
+		logger.debug(
+			`[${robot.device.duid}] Docked/charging (operationalState=${operationalState}), skipping service area publish to keep finalized progress`,
+		);
 		return;
 	}
 

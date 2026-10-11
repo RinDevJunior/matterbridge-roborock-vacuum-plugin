@@ -1,7 +1,7 @@
 import { MatterbridgeIdentifyServer, MatterbridgeServiceAreaServer } from 'matterbridge';
 import { MatterbridgeRvcOperationalStateServer } from 'matterbridge/devices';
 import { AnsiLogger } from 'matterbridge/logger';
-import { ModeBase, RvcCleanMode, ServiceArea } from 'matterbridge/matter/clusters';
+import { ModeBase, RvcCleanMode, RvcOperationalState, ServiceArea } from 'matterbridge/matter/clusters';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { MapInfo } from '../core/application/models/MapInfo.js';
@@ -65,6 +65,8 @@ describe('RoborockVacuumCleaner', () => {
 			setSupportedAreas: vi.fn(),
 			setSupportedAreaIndexMap: vi.fn(),
 			getSupportedAreas: vi.fn().mockReturnValue([]),
+			getProgress: vi.fn().mockReturnValue([]),
+			setProgress: vi.fn(),
 			switchMap: vi.fn().mockResolvedValue(undefined),
 		});
 		vacuum = new RoborockVacuumCleaner(device, homeInfo, configManager, roborockService, logger);
@@ -777,6 +779,178 @@ describe('RoborockVacuumCleaner', () => {
 			// read by controllers to know they can call CHANGE_TO_MODE at any time.
 			// No explicit test needed here beyond verifying the method completes.
 			expect(vacuum).toBeInstanceOf(RoborockVacuumCleaner);
+		});
+	});
+
+	describe('skipArea handler via configureHandler', () => {
+		it('should call behaviorHandler.executeCommand for skipArea command', async () => {
+			const behaviorHandler = {
+				executeCommand: vi.fn(),
+				setCommandHandler: vi.fn(),
+				log: logger,
+				commands: {},
+			} satisfies BehaviorFactoryResult;
+			vacuum.configureHandler(behaviorHandler);
+			await vacuum.executeCommandHandler(
+				'skipArea',
+				{ skippedArea: 2 },
+				'serviceArea',
+				vacuum.stateOf(MatterbridgeServiceAreaServer) as any,
+				vacuum,
+			);
+			expect(behaviorHandler.executeCommand).toHaveBeenCalledWith('skipArea', 2);
+		});
+
+		it('should rethrow handler error when skipArea handler rejects', async () => {
+			const behaviorHandler = {
+				executeCommand: vi.fn().mockRejectedValue(new Error('boom')),
+				setCommandHandler: vi.fn(),
+				log: logger,
+				commands: {},
+			} satisfies BehaviorFactoryResult;
+			vacuum.configureHandler(behaviorHandler);
+			await expect(
+				vacuum.executeCommandHandler(
+					'skipArea',
+					{ skippedArea: 2 },
+					'serviceArea',
+					vacuum.stateOf(MatterbridgeServiceAreaServer) as any,
+					vacuum,
+				),
+			).rejects.toThrow('boom');
+		});
+
+		it('should not have skipAreaHandler property (removed in favor of command handler)', () => {
+			expect((vacuum as any).skipAreaHandler).toBeUndefined();
+		});
+	});
+
+	describe('Constructor and attributes parity', () => {
+		// Attributes are only readable once the endpoint is active, so assert on the seeded behavior options.
+		const optionsOf = (id: string): Record<string, unknown> =>
+			vacuum.behaviors.optionsFor((vacuum.behaviors.supported as any)[id]) as Record<string, unknown>;
+
+		it('should seed progress attribute to empty array (ProgressReporting enabled)', () => {
+			const serviceArea = (vacuum.behaviors.supported as any).serviceArea;
+			expect(serviceArea.schema.supportedFeatures.has('PROG')).toBe(true);
+			expect(optionsOf('serviceArea').progress).toEqual([]);
+		});
+
+		it('should initialize all required ServiceArea attributes per contract', () => {
+			const operationalState = optionsOf('rvcOperationalState');
+			const serviceArea = optionsOf('serviceArea');
+			const cleanMode = optionsOf('rvcCleanMode');
+
+			// Verify contract parity
+			expect(operationalState.operationalState).toBe(RvcOperationalState.OperationalState.Docked);
+			expect(operationalState.currentPhase).toBeNull();
+			expect(operationalState.phaseList).toBeNull();
+			expect(serviceArea.selectedAreas).toEqual([]);
+			expect(serviceArea.currentArea).toBeNull();
+			expect(cleanMode.currentMode).toBeDefined(); // First clean mode configured
+		});
+
+		it('should keep existing identify and SELECT_AREAS tests passing (regression)', async () => {
+			const behaviorHandler = {
+				executeCommand: vi.fn(),
+				setCommandHandler: vi.fn(),
+				log: logger,
+				commands: {},
+			} satisfies BehaviorFactoryResult;
+			vacuum.configureHandler(behaviorHandler);
+
+			// Test identify still works
+			await vacuum.executeCommandHandler(
+				'identify',
+				{ identifyTime: 5 },
+				'identify',
+				vacuum.stateOf(MatterbridgeIdentifyServer) as any,
+				vacuum,
+			);
+			expect(behaviorHandler.executeCommand).toHaveBeenCalledWith('identify', 5);
+
+			// Reset mock
+			vi.clearAllMocks();
+
+			// Test SELECT_AREAS still works
+			await vacuum.executeCommandHandler(
+				'selectAreas',
+				{ newAreas: [1, 2] },
+				'serviceArea',
+				vacuum.stateOf(MatterbridgeServiceAreaServer) as any,
+				vacuum,
+			);
+			expect(behaviorHandler.executeCommand).toHaveBeenCalledWith('selectAreas', [1, 2]);
+		});
+	});
+
+	describe('finalizeSkipArea', () => {
+		it('should update currentArea and progress when skipping a non-final area', async () => {
+			const updatedProgress: ServiceArea.Progress[] = [
+				{ areaId: 1, status: ServiceArea.OperationalStatus.Completed },
+				{ areaId: 2, status: ServiceArea.OperationalStatus.Skipped },
+				{ areaId: 3, status: ServiceArea.OperationalStatus.Operating },
+			];
+			const updateAttributeSpy = vi.spyOn(vacuum, 'updateAttribute').mockResolvedValue(true);
+			vi.spyOn(vacuum, 'getAttribute').mockImplementation((clusterId, attributeName) => {
+				if (attributeName === 'selectedAreas') return [1, 2, 3];
+				return undefined;
+			});
+			vi.mocked(roborockService.getProgress).mockReturnValue([
+				{ areaId: 1, status: ServiceArea.OperationalStatus.Completed },
+				{ areaId: 2, status: ServiceArea.OperationalStatus.Operating },
+				{ areaId: 3, status: ServiceArea.OperationalStatus.Pending },
+			]);
+			vi.mocked(roborockService.setProgress as any).mockImplementation(() => {});
+
+			const result = await vacuum.finalizeSkipArea(2);
+
+			expect(result.nextAreaId).toBe(3);
+			expect(result.updatedProgress[1].status).toBe(ServiceArea.OperationalStatus.Skipped);
+			expect(result.updatedProgress[2].status).toBe(ServiceArea.OperationalStatus.Operating);
+			expect(updateAttributeSpy).toHaveBeenCalledWith(ServiceArea.id, 'currentArea', 3, expect.anything());
+		});
+
+		it('should set currentArea to null when skipping the last area', async () => {
+			const updateAttributeSpy = vi.spyOn(vacuum, 'updateAttribute').mockResolvedValue(true);
+			vi.spyOn(vacuum, 'getAttribute').mockImplementation((clusterId, attributeName) => {
+				if (attributeName === 'selectedAreas') return [1, 2, 3];
+				return undefined;
+			});
+			vi.mocked(roborockService.getProgress).mockReturnValue([
+				{ areaId: 1, status: ServiceArea.OperationalStatus.Completed },
+				{ areaId: 2, status: ServiceArea.OperationalStatus.Completed },
+				{ areaId: 3, status: ServiceArea.OperationalStatus.Operating },
+			]);
+			vi.mocked(roborockService.setProgress as any).mockImplementation(() => {});
+
+			const result = await vacuum.finalizeSkipArea(3);
+
+			expect(result.nextAreaId).toBeNull();
+			expect(updateAttributeSpy).toHaveBeenCalledWith(ServiceArea.id, 'currentArea', null, expect.anything());
+		});
+
+		it('should call roborockService.setProgress to sync the mirror', async () => {
+			const setProgressSpy = vi.mocked(roborockService.setProgress);
+			vi.spyOn(vacuum, 'updateAttribute').mockResolvedValue(true);
+			vi.spyOn(vacuum, 'getAttribute').mockImplementation((clusterId, attributeName) => {
+				if (attributeName === 'selectedAreas') return [1, 2];
+				return undefined;
+			});
+			vi.mocked(roborockService.getProgress).mockReturnValue([
+				{ areaId: 1, status: ServiceArea.OperationalStatus.Operating },
+				{ areaId: 2, status: ServiceArea.OperationalStatus.Pending },
+			]);
+
+			await vacuum.finalizeSkipArea(1);
+
+			expect(setProgressSpy).toHaveBeenCalledWith(
+				'duid-123',
+				expect.objectContaining({
+					0: expect.objectContaining({ areaId: 1, status: ServiceArea.OperationalStatus.Skipped }),
+					1: expect.objectContaining({ areaId: 2, status: ServiceArea.OperationalStatus.Operating }),
+				}),
+			);
 		});
 	});
 });

@@ -342,7 +342,7 @@ describe('PlatformRunner.updateRobotWithPayload', () => {
 		await runner.updateRobotWithPayload(payload);
 		expect(mockLogger.warn).toHaveBeenCalledWith('Vacuum error detected: NavigationSensorObscured');
 		expect(robot.updateAttribute).toHaveBeenCalledWith(
-			RvcOperationalState.Cluster.id,
+			RvcOperationalState.id,
 			'operationalState',
 			RvcOperationalState.OperationalState.Error,
 			mockLogger,
@@ -385,8 +385,8 @@ describe('PlatformRunner.updateRobotWithPayload', () => {
 
 		await runner.updateRobotWithPayload(payload);
 
-		expect(robot.updateAttribute).toHaveBeenCalledWith(PowerSource.Cluster.id, 'batPercentRemaining', 170, mockLogger);
-		expect(robot.updateAttribute).toHaveBeenCalledWith(PowerSource.Cluster.id, 'batChargeLevel', 0, mockLogger);
+		expect(robot.updateAttribute).toHaveBeenCalledWith(PowerSource.id, 'batPercentRemaining', 170, mockLogger);
+		expect(robot.updateAttribute).toHaveBeenCalledWith(PowerSource.id, 'batChargeLevel', 0, mockLogger);
 	});
 
 	it('should handle BatteryUpdate message with battery level and device status', async () => {
@@ -395,10 +395,10 @@ describe('PlatformRunner.updateRobotWithPayload', () => {
 
 		await runner.updateRobotWithPayload(payload);
 
-		expect(robot.updateAttribute).toHaveBeenCalledWith(PowerSource.Cluster.id, 'batPercentRemaining', 100, mockLogger);
-		expect(robot.updateAttribute).toHaveBeenCalledWith(PowerSource.Cluster.id, 'batChargeLevel', 1, mockLogger);
+		expect(robot.updateAttribute).toHaveBeenCalledWith(PowerSource.id, 'batPercentRemaining', 100, mockLogger);
+		expect(robot.updateAttribute).toHaveBeenCalledWith(PowerSource.id, 'batChargeLevel', 1, mockLogger);
 		expect(robot.updateAttribute).toHaveBeenCalledWith(
-			PowerSource.Cluster.id,
+			PowerSource.id,
 			'batChargeState',
 			PowerSource.BatChargeState.IsCharging,
 			mockLogger,
@@ -412,7 +412,7 @@ describe('PlatformRunner.updateRobotWithPayload', () => {
 		await runner.updateRobotWithPayload(payload);
 		expect(robot.updateAttribute).toHaveBeenCalledTimes(2);
 		expect(robot.updateAttribute).not.toHaveBeenCalledWith(
-			PowerSource.Cluster.id,
+			PowerSource.id,
 			'batChargeState',
 			expect.anything(),
 			mockLogger,
@@ -434,13 +434,8 @@ describe('PlatformRunner.updateRobotWithPayload', () => {
 
 		await runner.updateRobotWithPayload(payload);
 
-		expect(robot.updateAttribute).toHaveBeenCalledWith(RvcRunMode.Cluster.id, 'currentMode', 1, mockLogger);
-		expect(robot.updateAttribute).toHaveBeenCalledWith(
-			RvcOperationalState.Cluster.id,
-			'operationalState',
-			1,
-			mockLogger,
-		);
+		expect(robot.updateAttribute).toHaveBeenCalledWith(RvcRunMode.id, 'currentMode', 1, mockLogger);
+		expect(robot.updateAttribute).toHaveBeenCalledWith(RvcOperationalState.id, 'operationalState', 1, mockLogger);
 	});
 
 	it('should handle Unknown status with default state', async () => {
@@ -458,13 +453,8 @@ describe('PlatformRunner.updateRobotWithPayload', () => {
 
 		await runner.updateRobotWithPayload(payload);
 
-		expect(robot.updateAttribute).toHaveBeenCalledWith(RvcRunMode.Cluster.id, 'currentMode', 1, mockLogger);
-		expect(robot.updateAttribute).toHaveBeenCalledWith(
-			RvcOperationalState.Cluster.id,
-			'operationalState',
-			66,
-			mockLogger,
-		);
+		expect(robot.updateAttribute).toHaveBeenCalledWith(RvcRunMode.id, 'currentMode', 1, mockLogger);
+		expect(robot.updateAttribute).toHaveBeenCalledWith(RvcOperationalState.id, 'operationalState', 66, mockLogger);
 		expect(robot.updateAttribute).toHaveBeenCalledTimes(2);
 	});
 
@@ -512,7 +502,7 @@ describe('PlatformRunner.updateRobotWithPayload', () => {
 		expect(mockDockStatus.hasError).toHaveBeenCalled();
 		expect(handleLocalMessage.triggerDssError).toHaveBeenCalledWith(robotWithErrorStatus, platformWithDockStatus);
 		expect(robotWithErrorStatus.updateAttribute).not.toHaveBeenCalledWith(
-			RvcOperationalState.Cluster.id,
+			RvcOperationalState.id,
 			'operationalState',
 			expect.anything(),
 			mockLogger,
@@ -533,13 +523,8 @@ describe('PlatformRunner.updateRobotWithPayload', () => {
 		const payload: MessagePayload = { type: NotifyMessageTypes.DeviceStatus, data: statusMessage };
 
 		await runner.updateRobotWithPayload(payload);
-		expect(robot.updateAttribute).toHaveBeenCalledWith(RvcRunMode.Cluster.id, 'currentMode', 1, mockLogger);
-		expect(robot.updateAttribute).toHaveBeenCalledWith(
-			RvcOperationalState.Cluster.id,
-			'operationalState',
-			66,
-			mockLogger,
-		);
+		expect(robot.updateAttribute).toHaveBeenCalledWith(RvcRunMode.id, 'currentMode', 1, mockLogger);
+		expect(robot.updateAttribute).toHaveBeenCalledWith(RvcOperationalState.id, 'operationalState', 66, mockLogger);
 	});
 
 	it('should handle CleanModeUpdate message with full settings', async () => {
@@ -555,7 +540,7 @@ describe('PlatformRunner.updateRobotWithPayload', () => {
 
 		await runner.updateRobotWithPayload(payload);
 
-		expect(robot.updateAttribute).toHaveBeenCalledWith(RvcCleanMode.Cluster.id, 'currentMode', 1, mockLogger);
+		expect(robot.updateAttribute).toHaveBeenCalledWith(RvcCleanMode.id, 'currentMode', 1, mockLogger);
 		expect(robot.cleanModeSetting).toBeInstanceOf(CleanModeSetting);
 	});
 
@@ -613,18 +598,16 @@ describe('PlatformRunner.updateRobotWithPayload', () => {
 
 		await runner.updateRobotWithPayload(payload);
 
-		expect(robot.updateAttribute).toHaveBeenCalledWith(
-			ServiceArea.Cluster.id,
-			'selectedAreas',
-			selectedAreas,
-			mockLogger,
-		);
+		expect(robot.updateAttribute).toHaveBeenCalledWith(ServiceArea.id, 'selectedAreas', selectedAreas, mockLogger);
 	});
 
 	it('should handle ServiceAreaUpdate when state is Cleaning without cleaningInfo and clean_area is 0 (Traveling to room)', async () => {
 		const selectedAreas = [1, 2];
 		platform.roborockService = createMockRoborockService({ getSelectedAreas: vi.fn().mockReturnValue(selectedAreas) });
-		robot.getAttribute = mockRobotGetAttribute({ selectedAreas: undefined });
+		robot.getAttribute = mockRobotGetAttribute({
+			operationalState: RvcOperationalState.OperationalState.Running,
+			selectedAreas: undefined,
+		});
 		const serviceAreaMessage = {
 			duid: 'test-duid',
 			state: OperationStatusCode.Cleaning,
@@ -636,18 +619,16 @@ describe('PlatformRunner.updateRobotWithPayload', () => {
 		await runner.updateRobotWithPayload(payload);
 
 		expect(mockLogger.notice).toHaveBeenCalledWith('Vacuum is cleaning with no cleaning_info');
-		expect(robot.updateAttribute).toHaveBeenCalledWith(
-			ServiceArea.Cluster.id,
-			'selectedAreas',
-			selectedAreas,
-			mockLogger,
-		);
-		expect(robot.updateAttribute).toHaveBeenCalledWith(ServiceArea.Cluster.id, 'currentArea', null, mockLogger);
+		expect(robot.updateAttribute).toHaveBeenCalledWith(ServiceArea.id, 'selectedAreas', selectedAreas, mockLogger);
+		expect(robot.updateAttribute).toHaveBeenCalledWith(ServiceArea.id, 'currentArea', null, mockLogger);
 	});
 
 	it('should handle ServiceAreaUpdate when state is Cleaning without cleaningInfo and multiple rooms (Preparing)', async () => {
 		platform.roborockService = createMockRoborockService({ getSelectedAreas: vi.fn().mockReturnValue([1, 2]) });
-		robot.getAttribute = mockRobotGetAttribute({ selectedAreas: undefined });
+		robot.getAttribute = mockRobotGetAttribute({
+			operationalState: RvcOperationalState.OperationalState.Running,
+			selectedAreas: undefined,
+		});
 		const serviceAreaMessage = {
 			duid: 'test-duid',
 			state: OperationStatusCode.Cleaning,
@@ -659,11 +640,12 @@ describe('PlatformRunner.updateRobotWithPayload', () => {
 		await runner.updateRobotWithPayload(payload);
 
 		expect(mockLogger.notice).toHaveBeenCalledWith('Vacuum is cleaning with no cleaning_info');
-		expect(robot.updateAttribute).toHaveBeenCalledWith(ServiceArea.Cluster.id, 'selectedAreas', [1, 2], mockLogger);
-		expect(robot.updateAttribute).toHaveBeenCalledWith(ServiceArea.Cluster.id, 'currentArea', 1, mockLogger);
+		expect(robot.updateAttribute).toHaveBeenCalledWith(ServiceArea.id, 'selectedAreas', [1, 2], mockLogger);
+		expect(robot.updateAttribute).toHaveBeenCalledWith(ServiceArea.id, 'currentArea', 1, mockLogger);
 	});
 
 	it('should handle ServiceAreaUpdate when cleaningInfo is missing for non-cleaning state', async () => {
+		robot.getAttribute = mockRobotGetAttribute({ operationalState: RvcOperationalState.OperationalState.Running });
 		const serviceAreaMessage = {
 			duid: 'test-duid',
 			state: OperationStatusCode.Paused,
@@ -679,6 +661,7 @@ describe('PlatformRunner.updateRobotWithPayload', () => {
 	});
 
 	it('should handle ServiceAreaUpdate with cleaningInfo and valid segment_id', async () => {
+		robot.getAttribute = mockRobotGetAttribute({ operationalState: RvcOperationalState.OperationalState.Running });
 		robot.homeInFo.activeMapId = 1;
 		const cleaningInfo = asPartial<CleanInformation>({ segment_id: 4, target_segment_id: undefined });
 		const mappedArea = { areaId: 4, matterAreaId: 4, mapId: 1 };
@@ -703,10 +686,11 @@ describe('PlatformRunner.updateRobotWithPayload', () => {
 		await runner.updateRobotWithPayload(payload);
 		await Promise.resolve();
 
-		expect(robot.updateAttribute).toHaveBeenCalledWith(ServiceArea.Cluster.id, 'currentArea', 1, mockLogger);
+		expect(robot.updateAttribute).toHaveBeenCalledWith(ServiceArea.id, 'currentArea', 1, mockLogger);
 	});
 
 	it('should handle ServiceAreaUpdate with target_segment_id when segment_id is invalid', async () => {
+		robot.getAttribute = mockRobotGetAttribute({ operationalState: RvcOperationalState.OperationalState.Running });
 		robot.homeInFo.activeMapId = 1;
 		const cleaningInfo = asPartial<CleanInformation>({ segment_id: -1, target_segment_id: 5 });
 		const mappedArea = { areaId: 5, matterAreaId: 5, mapId: 1 };
@@ -732,7 +716,7 @@ describe('PlatformRunner.updateRobotWithPayload', () => {
 		await runner.updateRobotWithPayload(payload);
 		await Promise.resolve();
 
-		expect(robot.updateAttribute).toHaveBeenCalledWith(ServiceArea.Cluster.id, 'currentArea', 1, mockLogger);
+		expect(robot.updateAttribute).toHaveBeenCalledWith(ServiceArea.id, 'currentArea', 1, mockLogger);
 	});
 
 	it('should skip currentArea update when segment_id is INVALID_SEGMENT_ID', async () => {
@@ -759,10 +743,11 @@ describe('PlatformRunner.updateRobotWithPayload', () => {
 		await runner.updateRobotWithPayload(payload);
 		await Promise.resolve();
 
-		expect(robot.updateAttribute).not.toHaveBeenCalledWith(ServiceArea.Cluster.id, 'currentArea', null, mockLogger);
+		expect(robot.updateAttribute).not.toHaveBeenCalledWith(ServiceArea.id, 'currentArea', null, mockLogger);
 	});
 
 	it('should skip area mapping when no mapped area found', async () => {
+		robot.getAttribute = mockRobotGetAttribute({ operationalState: RvcOperationalState.OperationalState.Running });
 		const cleaningInfo = asPartial<CleanInformation>({ segment_id: 10, target_segment_id: undefined });
 		const areaInfo = new Map<number, AreaInfo>([[1, { roomId: 11, mapId: 1, roomName: 'roomName-1' }]]);
 		const roomInfo = new Map<string, SegmentInfo>([['11-1', { areaId: 1, mapId: 1, roomName: 'roomName-1' }]]);
@@ -843,7 +828,7 @@ describe('PlatformRunner.updateRobotWithPayload', () => {
 
 		expect(mockLogger.debug).toHaveBeenCalledWith('Vacuum running without errors, clearing error state.');
 		expect(robot.updateAttribute).toHaveBeenCalledWith(
-			RvcOperationalState.Cluster.id,
+			RvcOperationalState.id,
 			'operationalError',
 			{
 				errorStateId: RvcOperationalState.ErrorState.NoError,
@@ -884,13 +869,13 @@ describe('PlatformRunner.updateRobotWithPayload', () => {
 		expect(mockDockStatus.getMatterOperationalError).toHaveBeenCalled();
 		expect(mockLogger.warn).toHaveBeenCalledWith('Docking station error detected: FailedToFindChargingDock');
 		expect(robot.updateAttribute).toHaveBeenCalledWith(
-			RvcOperationalState.Cluster.id,
+			RvcOperationalState.id,
 			'operationalState',
 			RvcOperationalState.OperationalState.Error,
 			mockLogger,
 		);
 		expect(robot.updateAttribute).toHaveBeenCalledWith(
-			RvcOperationalState.Cluster.id,
+			RvcOperationalState.id,
 			'operationalError',
 			{
 				errorStateId: RvcOperationalState.ErrorState.FailedToFindChargingDock,
@@ -928,7 +913,7 @@ describe('PlatformRunner.updateRobotWithPayload', () => {
 
 		expect(mockLogger.debug).toHaveBeenCalledWith('No docking station errors detected.');
 		expect(robot.updateAttribute).toHaveBeenCalledWith(
-			RvcOperationalState.Cluster.id,
+			RvcOperationalState.id,
 			'operationalError',
 			{
 				errorStateId: RvcOperationalState.ErrorState.NoError,
@@ -950,7 +935,7 @@ describe('PlatformRunner.updateRobotWithPayload', () => {
 		await runner.updateRobotWithPayload(payload);
 
 		expect(mockLogger.debug).toHaveBeenCalledWith(expect.stringContaining('Handling error occurred'));
-		// expect(robot.updateAttribute).toHaveBeenCalledWith(RvcOperationalState.Cluster.id, 'operationalError', { errorStateId: RvcOperationalState.ErrorState.NoError }, mockLogger);
+		// expect(robot.updateAttribute).toHaveBeenCalledWith(RvcOperationalState.id, 'operationalError', { errorStateId: RvcOperationalState.ErrorState.NoError }, mockLogger);
 	});
 
 	it('should not update battery charge state when battery level is missing', async () => {
@@ -968,7 +953,7 @@ describe('PlatformRunner.updateRobotWithPayload', () => {
 
 		await runner.updateRobotWithPayload(payload);
 
-		expect(robot.updateAttribute).toHaveBeenCalledWith(RvcRunMode.Cluster.id, 'currentMode', 1, mockLogger);
+		expect(robot.updateAttribute).toHaveBeenCalledWith(RvcRunMode.id, 'currentMode', 1, mockLogger);
 	});
 
 	it('should trigger dock station error in DeviceStatusSimple when dock has error', async () => {
@@ -1002,7 +987,7 @@ describe('PlatformRunner.updateRobotWithPayload', () => {
 
 		expect(handleLocalMessage.triggerDssError).toHaveBeenCalledWith(robotWithDockError, platformWithDockStatus);
 		expect(robotWithDockError.updateAttribute).not.toHaveBeenCalledWith(
-			RvcOperationalState.Cluster.id,
+			RvcOperationalState.id,
 			'operationalState',
 			expect.anything(),
 			mockLogger,
@@ -1024,10 +1009,11 @@ describe('PlatformRunner.updateRobotWithPayload', () => {
 
 		await runner.updateRobotWithPayload(payload);
 
-		expect(robot.updateAttribute).toHaveBeenCalledWith(ServiceArea.Cluster.id, 'selectedAreas', [], mockLogger);
+		expect(robot.updateAttribute).toHaveBeenCalledWith(ServiceArea.id, 'selectedAreas', [], mockLogger);
 	});
 
 	it('should handle ServiceAreaUpdate with cleaningInfo but getSupportedAreas returns undefined', async () => {
+		robot.getAttribute = mockRobotGetAttribute({ operationalState: RvcOperationalState.OperationalState.Running });
 		const cleaningInfo = asPartial<CleanInformation>({ segment_id: 4, target_segment_id: undefined });
 		platform.roborockService = createMockRoborockService({
 			getSupportedAreas: vi.fn().mockReturnValue(undefined),
@@ -1045,7 +1031,12 @@ describe('PlatformRunner.updateRobotWithPayload', () => {
 		await runner.updateRobotWithPayload(payload);
 
 		expect(mockLogger.debug).toHaveBeenCalledWith(expect.stringContaining('Room map not yet available'));
-		expect(robot.updateAttribute).not.toHaveBeenCalled();
+		expect(robot.updateAttribute).not.toHaveBeenCalledWith(
+			ServiceArea.id,
+			'currentArea',
+			expect.anything(),
+			mockLogger,
+		);
 	});
 
 	it('should skip error handling when includeVacuumErrorStatus is disabled', async () => {
@@ -1096,7 +1087,7 @@ describe('PlatformRunner.updateRobotWithPayload', () => {
 
 		expect(mockLogger.warn).toHaveBeenCalledWith('Docking station error detected: WaterTankEmpty');
 		expect(robot.updateAttribute).toHaveBeenCalledWith(
-			RvcOperationalState.Cluster.id,
+			RvcOperationalState.id,
 			'operationalError',
 			{
 				errorStateId: RvcOperationalState.ErrorState.WaterTankEmpty,
@@ -1128,7 +1119,7 @@ describe('PlatformRunner.updateRobotWithPayload', () => {
 		await runnerWithDock.updateRobotWithPayload(payload);
 
 		expect(robot.updateAttribute).toHaveBeenCalledWith(
-			RvcOperationalState.Cluster.id,
+			RvcOperationalState.id,
 			'operationalError',
 			{
 				errorStateId: RvcOperationalState.ErrorState.NoError,
@@ -1148,7 +1139,7 @@ describe('PlatformRunner.updateRobotWithPayload', () => {
 		await runner.updateRobotWithPayload(payload);
 
 		expect(robot.updateAttribute).toHaveBeenCalledWith(
-			RvcOperationalState.Cluster.id,
+			RvcOperationalState.id,
 			'operationalState',
 			RvcOperationalState.OperationalState.Charging,
 			mockLogger,
@@ -1165,7 +1156,7 @@ describe('PlatformRunner.updateRobotWithPayload', () => {
 		await runner.updateRobotWithPayload(payload);
 
 		expect(robot.updateAttribute).toHaveBeenCalledWith(
-			RvcOperationalState.Cluster.id,
+			RvcOperationalState.id,
 			'operationalState',
 			RvcOperationalState.OperationalState.Docked,
 			mockLogger,
@@ -1182,7 +1173,7 @@ describe('PlatformRunner.updateRobotWithPayload', () => {
 		await runner.updateRobotWithPayload(payload);
 
 		expect(robot.updateAttribute).not.toHaveBeenCalledWith(
-			RvcOperationalState.Cluster.id,
+			RvcOperationalState.id,
 			'operationalState',
 			RvcOperationalState.OperationalState.Charging,
 			mockLogger,
@@ -1199,7 +1190,7 @@ describe('PlatformRunner.updateRobotWithPayload', () => {
 		await runner.updateRobotWithPayload(payload);
 
 		expect(robot.updateAttribute).not.toHaveBeenCalledWith(
-			RvcOperationalState.Cluster.id,
+			RvcOperationalState.id,
 			'operationalState',
 			RvcOperationalState.OperationalState.Docked,
 			mockLogger,
@@ -1300,7 +1291,7 @@ describe('PlatformRunner.updateRobotWithPayload', () => {
 
 		expect(mockLogger.debug).toHaveBeenCalledWith('Device is still charging, skipping Docked state update');
 		expect(robot.updateAttribute).not.toHaveBeenCalledWith(
-			RvcOperationalState.Cluster.id,
+			RvcOperationalState.id,
 			'operationalState',
 			RvcOperationalState.OperationalState.Docked,
 			expect.anything(),

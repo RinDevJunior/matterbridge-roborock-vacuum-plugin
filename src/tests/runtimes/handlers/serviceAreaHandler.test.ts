@@ -15,9 +15,11 @@ import {
 import { CleanInformation, Device, DeviceModel } from '../../../roborockCommunication/models/index.js';
 import {
 	buildProgressUpdate,
+	finalizeProgressOnRunEnd,
 	getNextPendingArea,
 	handleActiveMapChanged,
 	handleServiceAreaUpdate,
+	isProgressFinalized,
 	markAreaSkipped,
 } from '../../../runtimes/handlers/serviceAreaHandler.js';
 import { RoborockService } from '../../../services/roborockService.js';
@@ -3287,5 +3289,549 @@ describe('handleServiceAreaUpdate Q10 estimatedEndTime integration', () => {
 			.mock.calls.filter((call) => call[1] === 'estimatedEndTime');
 		// Should not have any estimatedEndTime update calls for non-cleaning paths
 		expect(estimatedEndTimeCalls.length).toBe(0);
+	});
+});
+
+const RUN_END_DUID = 'test-duid-run-end';
+
+function createStatefulProgressPlatform(
+	initialProgress: ServiceArea.Progress[],
+	wasActivelyCleaning: boolean,
+	selectedAreas: number[] | 'none' = [0, 1, 2, 3],
+	indexMap?: RoomIndexMap,
+): { platform: RoborockMatterbridgePlatform; service: RoborockService } {
+	let stored: ServiceArea.Progress[] = initialProgress;
+	const service = createDefaultMockRoborockService({
+		getSelectedAreas: vi.fn().mockReturnValue(selectedAreas === 'none' ? undefined : selectedAreas),
+		getSupportedAreasIndexMap: vi.fn().mockReturnValue(indexMap),
+		getProgress: vi.fn(() => stored),
+		setProgress: vi.fn((_duid: string, progress: ServiceArea.Progress[]) => {
+			stored = progress;
+		}),
+		getLastActivelyCleaningState: vi.fn().mockReturnValue(wasActivelyCleaning),
+		setLastActivelyCleaningState: vi.fn(),
+	});
+	const platform = asPartial<RoborockMatterbridgePlatform>({
+		log: createMockLogger(),
+		configManager: createMockConfigManager(),
+		roborockService: service,
+	});
+	return { platform, service };
+}
+
+function createRunEndMessage(state: OperationStatusCode): ServiceAreaUpdateMessage {
+	return {
+		duid: RUN_END_DUID,
+		state,
+		cleaningInfo: undefined,
+		cleaningProcess: { clean_area: 0, clean_time: 0 },
+	};
+}
+
+const PENDING_PROGRESS: ServiceArea.Progress[] = [
+	{ areaId: 0, status: ServiceArea.OperationalStatus.Operating },
+	{ areaId: 1, status: ServiceArea.OperationalStatus.Pending },
+	{ areaId: 2, status: ServiceArea.OperationalStatus.Pending },
+	{ areaId: 3, status: ServiceArea.OperationalStatus.Pending },
+];
+
+const FINALIZED_PROGRESS: ServiceArea.Progress[] = [
+	{ areaId: 0, status: ServiceArea.OperationalStatus.Completed },
+	{ areaId: 1, status: ServiceArea.OperationalStatus.Skipped },
+];
+
+describe('finalizeProgressOnRunEnd', () => {
+	it('should map Operating to Completed and Pending to Skipped when run ends', () => {
+		// Arrange
+		const input: ServiceArea.Progress[] = PENDING_PROGRESS.map((entry) => ({ ...entry }));
+
+		// Act
+		const result = finalizeProgressOnRunEnd(input);
+
+		// Assert
+		expect(result).toEqual([
+			{ areaId: 0, status: ServiceArea.OperationalStatus.Completed },
+			{ areaId: 1, status: ServiceArea.OperationalStatus.Skipped },
+			{ areaId: 2, status: ServiceArea.OperationalStatus.Skipped },
+			{ areaId: 3, status: ServiceArea.OperationalStatus.Skipped },
+		]);
+	});
+
+	it('should keep Completed and Skipped entries unchanged when mixed with active entries', () => {
+		// Arrange
+		const input: ServiceArea.Progress[] = [
+			{ areaId: 0, status: ServiceArea.OperationalStatus.Completed },
+			{ areaId: 1, status: ServiceArea.OperationalStatus.Operating },
+			{ areaId: 2, status: ServiceArea.OperationalStatus.Pending },
+			{ areaId: 3, status: ServiceArea.OperationalStatus.Skipped },
+		];
+
+		// Act
+		const result = finalizeProgressOnRunEnd(input);
+
+		// Assert
+		expect(result.map((entry) => entry.status)).toEqual([
+			ServiceArea.OperationalStatus.Completed,
+			ServiceArea.OperationalStatus.Completed,
+			ServiceArea.OperationalStatus.Skipped,
+			ServiceArea.OperationalStatus.Skipped,
+		]);
+	});
+
+	it('should return empty array when input is empty', () => {
+		// Arrange
+		const input: ServiceArea.Progress[] = [];
+
+		// Act
+		const result = finalizeProgressOnRunEnd(input);
+
+		// Assert
+		expect(result).toEqual([]);
+	});
+
+	it('should not mutate input entries when finalizing', () => {
+		// Arrange
+		const input: ServiceArea.Progress[] = [
+			{ areaId: 0, status: ServiceArea.OperationalStatus.Operating },
+			{ areaId: 1, status: ServiceArea.OperationalStatus.Pending },
+		];
+
+		// Act
+		const result = finalizeProgressOnRunEnd(input);
+
+		// Assert
+		expect(input[0].status).toBe(ServiceArea.OperationalStatus.Operating);
+		expect(input[1].status).toBe(ServiceArea.OperationalStatus.Pending);
+		expect(result).not.toBe(input);
+		expect(result[0]).not.toBe(input[0]);
+		expect(result[1]).not.toBe(input[1]);
+	});
+
+	it('should keep estimatedTime and other fields on finalized entries', () => {
+		// Arrange
+		const input: ServiceArea.Progress[] = [
+			{ areaId: 0, status: ServiceArea.OperationalStatus.Operating, estimatedTime: 120 },
+			{ areaId: 1, status: ServiceArea.OperationalStatus.Pending, estimatedTime: null },
+		];
+
+		// Act
+		const result = finalizeProgressOnRunEnd(input);
+
+		// Assert
+		expect(result[0]).toEqual({ areaId: 0, status: ServiceArea.OperationalStatus.Completed, estimatedTime: 120 });
+		expect(result[1]).toEqual({ areaId: 1, status: ServiceArea.OperationalStatus.Skipped, estimatedTime: null });
+	});
+});
+
+describe('isProgressFinalized', () => {
+	it.each([
+		{ label: 'empty progress', progress: [], expected: false },
+		{
+			label: 'only Completed and Skipped entries',
+			progress: [
+				{ areaId: 0, status: ServiceArea.OperationalStatus.Completed },
+				{ areaId: 1, status: ServiceArea.OperationalStatus.Skipped },
+			],
+			expected: true,
+		},
+		{
+			label: 'a Pending entry',
+			progress: [
+				{ areaId: 0, status: ServiceArea.OperationalStatus.Completed },
+				{ areaId: 1, status: ServiceArea.OperationalStatus.Pending },
+			],
+			expected: false,
+		},
+		{
+			label: 'an Operating entry',
+			progress: [{ areaId: 0, status: ServiceArea.OperationalStatus.Operating }],
+			expected: false,
+		},
+	])('should return $expected when progress contains $label', ({ progress, expected }) => {
+		// Arrange
+		const input: ServiceArea.Progress[] = progress;
+
+		// Act
+		const result = isProgressFinalized(input);
+
+		// Assert
+		expect(result).toBe(expected);
+	});
+});
+
+describe('handleActiveMapChanged — whitelist (Charging is not actively cleaning)', () => {
+	beforeEach(() => {
+		vi.clearAllMocks();
+	});
+
+	it('should allow updateAttribute when robot is charging', async () => {
+		// Arrange
+		const areas: ServiceArea.Area[] = [{ areaId: 5, mapId: 100 } as ServiceArea.Area];
+		const robot = createMockRobot(
+			'test-duid-guard-charging',
+			100,
+			[{ areaId: 5, mapId: 100 } as ServiceArea.Area],
+			RvcOperationalState.OperationalState.Charging,
+		);
+		const platform = createMockPlatform(areas, undefined, false);
+
+		// Act
+		await handleActiveMapChanged(robot, 100, platform);
+
+		// Assert
+		expect(robot.updateAttribute).toHaveBeenCalledWith(ServiceArea.id, 'selectedAreas', [5], expect.anything());
+		expect(robot.updateAttribute).toHaveBeenCalledWith(ServiceArea.id, 'currentArea', null, expect.anything());
+		expect(platform.roborockService?.setProgress).toHaveBeenCalledWith('test-duid-guard-charging', []);
+	});
+
+	it.each([
+		{ label: 'EmptyingDustBin', state: RvcOperationalState.OperationalState.EmptyingDustBin },
+		{ label: 'CleaningMop', state: RvcOperationalState.OperationalState.CleaningMop },
+		{ label: 'FillingWaterTank', state: RvcOperationalState.OperationalState.FillingWaterTank },
+		{ label: 'UpdatingMaps', state: RvcOperationalState.OperationalState.UpdatingMaps },
+	])('should skip updateAttribute when robot operationalState is $label', async ({ state }) => {
+		// Arrange
+		const areas: ServiceArea.Area[] = [{ areaId: 5, mapId: 100 } as ServiceArea.Area];
+		const robot = createMockRobot(
+			'test-duid-guard-active',
+			100,
+			[{ areaId: 5, mapId: 100 } as ServiceArea.Area],
+			state,
+		);
+		const platform = createMockPlatform(areas, undefined, false);
+
+		// Act
+		await handleActiveMapChanged(robot, 100, platform);
+
+		// Assert
+		expect(robot.updateAttribute).not.toHaveBeenCalled();
+		expect(platform.roborockService?.setProgress).not.toHaveBeenCalled();
+	});
+});
+
+describe('handleServiceAreaUpdate — whitelist transitions', () => {
+	beforeEach(() => {
+		vi.clearAllMocks();
+	});
+
+	it('should not reset progress when transitioning to Charging from not-cleaning (bug repro)', async () => {
+		// Arrange: previous poll was not cleaning, robot is now Charging (status 8)
+		const robot = createMockRobot(RUN_END_DUID, 0, undefined, RvcOperationalState.OperationalState.Charging);
+		const { platform, service } = createStatefulProgressPlatform([], false);
+
+		// Act
+		await handleServiceAreaUpdate(robot, createRunEndMessage(OperationStatusCode.Charging), platform);
+
+		// Assert: Charging no longer looks like a run start
+		expect(service.setProgress).not.toHaveBeenCalled();
+		expect(robot.updateAttribute).not.toHaveBeenCalledWith(ServiceArea.id, 'progress', [], expect.anything());
+		expect(service.setLastActivelyCleaningState).toHaveBeenCalledWith(RUN_END_DUID, false);
+	});
+
+	it('should not wipe existing finalized progress when Docked then Charging with flag false', async () => {
+		// Arrange
+		const robot = createMockRobot(RUN_END_DUID, 0, undefined, RvcOperationalState.OperationalState.Charging);
+		const { platform, service } = createStatefulProgressPlatform(FINALIZED_PROGRESS, false);
+
+		// Act
+		await handleServiceAreaUpdate(robot, createRunEndMessage(OperationStatusCode.Charging), platform);
+
+		// Assert
+		expect(service.getProgress(RUN_END_DUID)).toEqual(FINALIZED_PROGRESS);
+		expect(service.setProgress).not.toHaveBeenCalled();
+	});
+
+	it.each([
+		{ label: 'Running', state: RvcOperationalState.OperationalState.Running },
+		{ label: 'SeekingCharger', state: RvcOperationalState.OperationalState.SeekingCharger },
+		{ label: 'CleaningMop', state: RvcOperationalState.OperationalState.CleaningMop },
+	])('should not finalize progress when operationalState is still $label', async ({ state }) => {
+		// Arrange: run is still active, so no run-end finalization may fire
+		const robot = createMockRobot(RUN_END_DUID, 0, undefined, state);
+		const { platform, service } = createStatefulProgressPlatform(PENDING_PROGRESS, true);
+
+		// Act
+		await handleServiceAreaUpdate(robot, createRunEndMessage(OperationStatusCode.ReturningDock), platform);
+
+		// Assert
+		expect(service.setProgress).not.toHaveBeenCalled();
+		expect(robot.updateAttribute).not.toHaveBeenCalledWith(
+			ServiceArea.id,
+			'progress',
+			expect.anything(),
+			expect.anything(),
+		);
+	});
+
+	it.each([
+		{ label: 'Stopped', state: RvcOperationalState.OperationalState.Stopped },
+		{ label: 'Error', state: RvcOperationalState.OperationalState.Error },
+	])('should not finalize progress when run ends in $label', async ({ state }) => {
+		// Arrange: abnormal end is not a run end
+		const robot = createMockRobot(RUN_END_DUID, 0, undefined, state);
+		const { platform, service } = createStatefulProgressPlatform(PENDING_PROGRESS, true);
+
+		// Act
+		await handleServiceAreaUpdate(robot, createRunEndMessage(OperationStatusCode.ReturningDock), platform);
+
+		// Assert
+		expect(service.setProgress).not.toHaveBeenCalled();
+		expect(robot.updateAttribute).not.toHaveBeenCalledWith(
+			ServiceArea.id,
+			'progress',
+			expect.anything(),
+			expect.anything(),
+		);
+	});
+});
+
+describe('handleServiceAreaUpdate — run-end finalization', () => {
+	beforeEach(() => {
+		vi.clearAllMocks();
+	});
+
+	it('should finalize progress when docked after an active run', async () => {
+		// Arrange
+		const robot = createMockRobot(RUN_END_DUID, 0, undefined, RvcOperationalState.OperationalState.Docked);
+		const { platform, service } = createStatefulProgressPlatform(PENDING_PROGRESS, true);
+		const expected: ServiceArea.Progress[] = [
+			{ areaId: 0, status: ServiceArea.OperationalStatus.Completed },
+			{ areaId: 1, status: ServiceArea.OperationalStatus.Skipped },
+			{ areaId: 2, status: ServiceArea.OperationalStatus.Skipped },
+			{ areaId: 3, status: ServiceArea.OperationalStatus.Skipped },
+		];
+
+		// Act
+		await handleServiceAreaUpdate(robot, createRunEndMessage(OperationStatusCode.ReturningDock), platform);
+
+		// Assert
+		expect(service.setProgress).toHaveBeenCalledWith(RUN_END_DUID, expected);
+		expect(robot.updateAttribute).toHaveBeenCalledWith(ServiceArea.id, 'progress', expected, expect.anything());
+		expect(service.setLastActivelyCleaningState).toHaveBeenCalledWith(RUN_END_DUID, false);
+	});
+
+	it('should finalize progress when operationalState is Charging after an active run', async () => {
+		// Arrange: status 8 (Charging) observed case
+		const robot = createMockRobot(RUN_END_DUID, 0, undefined, RvcOperationalState.OperationalState.Charging);
+		const { platform, service } = createStatefulProgressPlatform(PENDING_PROGRESS, true);
+		const expected: ServiceArea.Progress[] = [
+			{ areaId: 0, status: ServiceArea.OperationalStatus.Completed },
+			{ areaId: 1, status: ServiceArea.OperationalStatus.Skipped },
+			{ areaId: 2, status: ServiceArea.OperationalStatus.Skipped },
+			{ areaId: 3, status: ServiceArea.OperationalStatus.Skipped },
+		];
+
+		// Act
+		await handleServiceAreaUpdate(robot, createRunEndMessage(OperationStatusCode.Charging), platform);
+
+		// Assert
+		expect(service.setProgress).toHaveBeenCalledWith(RUN_END_DUID, expected);
+		expect(robot.updateAttribute).toHaveBeenCalledWith(ServiceArea.id, 'progress', expected, expect.anything());
+		expect(service.setLastActivelyCleaningState).toHaveBeenCalledWith(RUN_END_DUID, false);
+	});
+
+	it('should keep finalized progress and not clear it to [] when Idle run end occurs', async () => {
+		// Arrange: stateful progress; Idle state while docked
+		const robot = createMockRobot(RUN_END_DUID, 0, undefined, RvcOperationalState.OperationalState.Docked);
+		const { platform, service } = createStatefulProgressPlatform(PENDING_PROGRESS, true, [0, 1, 2, 3]);
+
+		// Act
+		await handleServiceAreaUpdate(robot, createRunEndMessage(OperationStatusCode.Idle), platform);
+
+		// Assert: finalized progress survives the Idle branch
+		expect(service.getProgress(RUN_END_DUID)).toEqual([
+			{ areaId: 0, status: ServiceArea.OperationalStatus.Completed },
+			{ areaId: 1, status: ServiceArea.OperationalStatus.Skipped },
+			{ areaId: 2, status: ServiceArea.OperationalStatus.Skipped },
+			{ areaId: 3, status: ServiceArea.OperationalStatus.Skipped },
+		]);
+		const progressClears = vi
+			.mocked(robot.updateAttribute)
+			.mock.calls.filter((call) => call[1] === 'progress' && Array.isArray(call[2]) && call[2].length === 0);
+		expect(progressClears).toHaveLength(0);
+		expect(robot.updateAttribute).toHaveBeenCalledWith(
+			ServiceArea.id,
+			'selectedAreas',
+			[0, 1, 2, 3],
+			expect.anything(),
+		);
+		expect(robot.updateAttribute).toHaveBeenCalledWith(ServiceArea.id, 'currentArea', null, expect.anything());
+		expect(robot.updateAttribute).toHaveBeenCalledWith(ServiceArea.id, 'estimatedEndTime', null, expect.anything());
+	});
+
+	it('should not write progress when docked after a run with empty progress', async () => {
+		// Arrange
+		const robot = createMockRobot(RUN_END_DUID, 0, undefined, RvcOperationalState.OperationalState.Docked);
+		const { platform, service } = createStatefulProgressPlatform([], true);
+
+		// Act
+		await handleServiceAreaUpdate(robot, createRunEndMessage(OperationStatusCode.Charging), platform);
+
+		// Assert
+		expect(service.setProgress).not.toHaveBeenCalled();
+		expect(robot.updateAttribute).not.toHaveBeenCalledWith(
+			ServiceArea.id,
+			'progress',
+			expect.anything(),
+			expect.anything(),
+		);
+	});
+
+	it('should keep already finalized progress unchanged when run ends again (idempotent)', async () => {
+		// Arrange
+		const robot = createMockRobot(RUN_END_DUID, 0, undefined, RvcOperationalState.OperationalState.Docked);
+		const { platform, service } = createStatefulProgressPlatform(FINALIZED_PROGRESS, true);
+
+		// Act
+		await handleServiceAreaUpdate(robot, createRunEndMessage(OperationStatusCode.Charging), platform);
+
+		// Assert
+		expect(service.getProgress(RUN_END_DUID)).toEqual(FINALIZED_PROGRESS);
+		expect(robot.updateAttribute).toHaveBeenCalledWith(
+			ServiceArea.id,
+			'progress',
+			FINALIZED_PROGRESS,
+			expect.anything(),
+		);
+	});
+
+	it('should not modify progress on repeated docked polls after the run ended', async () => {
+		// Arrange: flag already false (steady docked polls after the run)
+		const robot = createMockRobot(RUN_END_DUID, 0, undefined, RvcOperationalState.OperationalState.Docked);
+		const { platform, service } = createStatefulProgressPlatform(FINALIZED_PROGRESS, false);
+
+		// Act
+		await handleServiceAreaUpdate(robot, createRunEndMessage(OperationStatusCode.Idle), platform);
+		await handleServiceAreaUpdate(robot, createRunEndMessage(OperationStatusCode.Idle), platform);
+
+		// Assert
+		expect(service.setProgress).not.toHaveBeenCalled();
+		expect(service.getProgress(RUN_END_DUID)).toEqual(FINALIZED_PROGRESS);
+		expect(robot.updateAttribute).not.toHaveBeenCalledWith(
+			ServiceArea.id,
+			'progress',
+			expect.anything(),
+			expect.anything(),
+		);
+	});
+
+	it('should not flip a Completed area back to Operating from a stale segment_id while docked', async () => {
+		// Arrange: stale cleaning_info maps to area 0, which is already Completed
+		const robot = createMockRobot(RUN_END_DUID, 0, undefined, RvcOperationalState.OperationalState.Docked);
+		const indexMap = createRoomIndexMapForSegment(5, 0);
+		const { platform, service } = createStatefulProgressPlatform(FINALIZED_PROGRESS, false, [0, 1], indexMap);
+		const message: ServiceAreaUpdateMessage = {
+			duid: RUN_END_DUID,
+			state: OperationStatusCode.Charging,
+			cleaningInfo: {
+				segment_id: 5,
+				target_segment_id: INVALID_SEGMENT_ID,
+				fan_power: 0,
+				water_box_status: 0,
+				mop_mode: 0,
+			},
+			cleaningProcess: { clean_area: 100, clean_time: 60 },
+		};
+
+		// Act
+		await handleServiceAreaUpdate(robot, message, platform);
+
+		// Assert: no publish, area not flipped back to Operating
+		const currentAreaWrites = vi.mocked(robot.updateAttribute).mock.calls.filter((call) => call[1] === 'currentArea');
+		expect(currentAreaWrites).toHaveLength(0);
+		expect(service.setProgress).not.toHaveBeenCalled();
+		expect(service.getProgress(RUN_END_DUID)).toEqual(FINALIZED_PROGRESS);
+	});
+});
+
+describe('handleServiceAreaUpdate — Idle branch keeps finalized progress', () => {
+	beforeEach(() => {
+		vi.clearAllMocks();
+	});
+
+	it('should still clear stale non-finalized progress when Idle with flag false', async () => {
+		// Arrange
+		const robot = createMockRobot(RUN_END_DUID, 0, undefined, RvcOperationalState.OperationalState.Docked);
+		const stale: ServiceArea.Progress[] = [
+			{ areaId: 0, status: ServiceArea.OperationalStatus.Pending },
+			{ areaId: 1, status: ServiceArea.OperationalStatus.Operating },
+		];
+		const { platform, service } = createStatefulProgressPlatform(stale, false);
+
+		// Act
+		await handleServiceAreaUpdate(robot, createRunEndMessage(OperationStatusCode.Idle), platform);
+
+		// Assert
+		expect(service.setProgress).toHaveBeenCalledWith(RUN_END_DUID, []);
+		expect(robot.updateAttribute).toHaveBeenCalledWith(ServiceArea.id, 'progress', [], expect.anything());
+	});
+
+	it('should keep already finalized progress when Idle with flag false', async () => {
+		// Arrange
+		const robot = createMockRobot(RUN_END_DUID, 0, undefined, RvcOperationalState.OperationalState.Docked);
+		const { platform, service } = createStatefulProgressPlatform(FINALIZED_PROGRESS, false);
+
+		// Act
+		await handleServiceAreaUpdate(robot, createRunEndMessage(OperationStatusCode.Idle), platform);
+
+		// Assert
+		expect(service.setProgress).not.toHaveBeenCalledWith(RUN_END_DUID, []);
+		expect(service.getProgress(RUN_END_DUID)).toEqual(FINALIZED_PROGRESS);
+	});
+
+	it('should write selectedAreas from roborockService when Idle with finalized progress', async () => {
+		// Arrange
+		const robot = createMockRobot(RUN_END_DUID, 0, undefined, RvcOperationalState.OperationalState.Docked);
+		const { platform } = createStatefulProgressPlatform(FINALIZED_PROGRESS, false, [2, 3]);
+
+		// Act
+		await handleServiceAreaUpdate(robot, createRunEndMessage(OperationStatusCode.Idle), platform);
+
+		// Assert
+		expect(robot.updateAttribute).toHaveBeenCalledWith(ServiceArea.id, 'selectedAreas', [2, 3], expect.anything());
+	});
+
+	it('should write empty selectedAreas when roborockService returns no selected areas', async () => {
+		// Arrange
+		const robot = createMockRobot(RUN_END_DUID, 0, undefined, RvcOperationalState.OperationalState.Docked);
+		const { platform } = createStatefulProgressPlatform(FINALIZED_PROGRESS, false, 'none');
+
+		// Act
+		await handleServiceAreaUpdate(robot, createRunEndMessage(OperationStatusCode.Idle), platform);
+
+		// Assert
+		expect(robot.updateAttribute).toHaveBeenCalledWith(ServiceArea.id, 'selectedAreas', [], expect.anything());
+	});
+});
+
+describe('handleServiceAreaUpdate — new run start after finalized run', () => {
+	beforeEach(() => {
+		vi.clearAllMocks();
+	});
+
+	it('should reset progress to [] when Running starts after a finalized run', async () => {
+		// Arrange: docked with finalized progress, now a real new run starts
+		const robot = createMockRobot(RUN_END_DUID, 0, undefined, RvcOperationalState.OperationalState.Running);
+		const { platform, service } = createStatefulProgressPlatform(FINALIZED_PROGRESS, false, [1]);
+
+		// Act
+		await handleServiceAreaUpdate(robot, createRunEndMessage(OperationStatusCode.Cleaning), platform);
+
+		// Assert
+		expect(vi.mocked(service.setProgress).mock.calls[0]).toEqual([RUN_END_DUID, []]);
+		expect(robot.updateAttribute).toHaveBeenCalledWith(ServiceArea.id, 'progress', [], expect.anything());
+	});
+
+	it('should reset progress to [] when Running starts from Charging with finalized progress', async () => {
+		// Arrange: flag false came from a Charging poll
+		const robot = createMockRobot(RUN_END_DUID, 0, undefined, RvcOperationalState.OperationalState.Running);
+		const { platform, service } = createStatefulProgressPlatform(FINALIZED_PROGRESS, false, [1]);
+
+		// Act
+		await handleServiceAreaUpdate(robot, createRunEndMessage(OperationStatusCode.Cleaning), platform);
+
+		// Assert
+		expect(vi.mocked(service.setProgress).mock.calls[0]).toEqual([RUN_END_DUID, []]);
+		expect(service.setLastActivelyCleaningState).toHaveBeenCalledWith(RUN_END_DUID, true);
 	});
 });
