@@ -309,6 +309,7 @@ describe('PlatformRunner.updateRobotWithPayload', () => {
 			updateAttribute: vi.fn().mockResolvedValue(true),
 			getAttribute: mockRobotGetAttribute(),
 			setAttribute: vi.fn(),
+			buildPendingProgressSeed: vi.fn().mockReturnValue([]),
 			cleanModeSetting: new CleanModeSetting(1, 1, 1, 1, CleanSequenceType.Persist),
 			dockStationStatus: asPartial<DockStationStatus>({}),
 			homeInFo: asPartial<HomeEntity>({ activeMapId: 0, mapInfo }),

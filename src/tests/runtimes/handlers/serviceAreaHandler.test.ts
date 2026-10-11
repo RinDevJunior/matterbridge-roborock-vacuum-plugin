@@ -81,6 +81,7 @@ function createMockRobot(
 		device: asPartial<Device>({ duid }),
 		homeInFo: asPartial<HomeEntity>({ activeMapId }),
 		updateAttribute: vi.fn().mockResolvedValue(undefined),
+		buildPendingProgressSeed: vi.fn().mockReturnValue([]),
 		getAttribute: vi.fn().mockImplementation((_clusterId, attrName) => {
 			if (attrName === 'supportedAreas') {
 				return matterSupportedAreas;
@@ -2449,13 +2450,15 @@ describe('resolveAreaFromCleaningInfo — V1 fallback when cleaningInfo is absen
 
 describe('handleServiceAreaUpdate — start-of-clean progress reset', () => {
 	let robot: RoborockVacuumCleaner;
+	const START_SEED: ServiceArea.Progress[] = buildProgressUpdate([], [1], null);
 
 	beforeEach(() => {
 		vi.clearAllMocks();
 		robot = createMockRobot('test-duid-clean-start', 0);
+		vi.mocked(robot.buildPendingProgressSeed).mockReturnValue(START_SEED);
 	});
 
-	it('should reset progress when transitioning from Docked to Running', async () => {
+	it('should seed Pending progress when transitioning from Docked to Running', async () => {
 		// Arrange: was idle (operationalState = Docked), now transitioning to Running (cleaning)
 		const mockRoborockService = createDefaultMockRoborockService({
 			getSupportedAreas: vi.fn().mockReturnValue([]),
@@ -2490,9 +2493,9 @@ describe('handleServiceAreaUpdate — start-of-clean progress reset', () => {
 		// Act
 		await handleServiceAreaUpdate(robot, message, platform);
 
-		// Assert: progress should be reset to []
-		expect(vi.mocked(mockRoborockService.setProgress).mock.calls[0]).toEqual(['test-duid-clean-start', []]);
-		expect(robot.updateAttribute).toHaveBeenCalledWith(ServiceArea.id, 'progress', [], expect.anything());
+		// Assert: progress is seeded with Pending rows (never [])
+		expect(vi.mocked(mockRoborockService.setProgress).mock.calls[0]).toEqual(['test-duid-clean-start', START_SEED]);
+		expect(robot.updateAttribute).toHaveBeenCalledWith(ServiceArea.id, 'progress', START_SEED, expect.anything());
 		// Verify the new state was stored
 		expect(vi.mocked(mockRoborockService.setLastActivelyCleaningState).mock.calls[0]).toEqual([
 			'test-duid-clean-start',
@@ -2803,9 +2806,9 @@ describe('handleServiceAreaUpdate — start-of-clean progress reset', () => {
 		// Act
 		await handleServiceAreaUpdate(robot, message, platform);
 
-		// Assert: progress should be reset to []
-		expect(vi.mocked(mockRoborockService.setProgress).mock.calls[0]).toEqual(['test-duid-clean-start', []]);
-		expect(robot.updateAttribute).toHaveBeenCalledWith(ServiceArea.id, 'progress', [], expect.anything());
+		// Assert: progress is seeded with Pending rows (never [])
+		expect(vi.mocked(mockRoborockService.setProgress).mock.calls[0]).toEqual(['test-duid-clean-start', START_SEED]);
+		expect(robot.updateAttribute).toHaveBeenCalledWith(ServiceArea.id, 'progress', START_SEED, expect.anything());
 	});
 
 	it('should detect transition when moving from Error to Running', async () => {
@@ -2842,9 +2845,9 @@ describe('handleServiceAreaUpdate — start-of-clean progress reset', () => {
 		// Act
 		await handleServiceAreaUpdate(robot, message, platform);
 
-		// Assert: progress should be reset to []
-		expect(vi.mocked(mockRoborockService.setProgress).mock.calls[0]).toEqual(['test-duid-clean-start', []]);
-		expect(robot.updateAttribute).toHaveBeenCalledWith(ServiceArea.id, 'progress', [], expect.anything());
+		// Assert: progress is seeded with Pending rows (never [])
+		expect(vi.mocked(mockRoborockService.setProgress).mock.calls[0]).toEqual(['test-duid-clean-start', START_SEED]);
+		expect(robot.updateAttribute).toHaveBeenCalledWith(ServiceArea.id, 'progress', START_SEED, expect.anything());
 	});
 });
 
@@ -2871,6 +2874,7 @@ describe('handleServiceAreaUpdate Q10-specific codes', () => {
 				}
 				return undefined;
 			}),
+			buildPendingProgressSeed: vi.fn().mockReturnValue([]),
 		});
 	}
 
@@ -3165,6 +3169,7 @@ describe('handleServiceAreaUpdate Q10 estimatedEndTime integration', () => {
 				}
 				return undefined;
 			}),
+			buildPendingProgressSeed: vi.fn().mockReturnValue([]),
 		});
 	}
 
@@ -3294,6 +3299,13 @@ describe('handleServiceAreaUpdate Q10 estimatedEndTime integration', () => {
 
 const RUN_END_DUID = 'test-duid-run-end';
 
+const RUN_START_MESSAGE: ServiceAreaUpdateMessage = {
+	duid: RUN_END_DUID,
+	state: OperationStatusCode.RoomClean,
+	cleaningInfo: undefined,
+	cleaningProcess: { clean_area: 100, clean_time: 60 },
+};
+
 function createStatefulProgressPlatform(
 	initialProgress: ServiceArea.Progress[],
 	wasActivelyCleaning: boolean,
@@ -3302,6 +3314,7 @@ function createStatefulProgressPlatform(
 ): { platform: RoborockMatterbridgePlatform; service: RoborockService } {
 	let stored: ServiceArea.Progress[] = initialProgress;
 	const service = createDefaultMockRoborockService({
+		getSupportedAreas: vi.fn().mockReturnValue([]),
 		getSelectedAreas: vi.fn().mockReturnValue(selectedAreas === 'none' ? undefined : selectedAreas),
 		getSupportedAreasIndexMap: vi.fn().mockReturnValue(indexMap),
 		getProgress: vi.fn(() => stored),
@@ -3809,29 +3822,259 @@ describe('handleServiceAreaUpdate — new run start after finalized run', () => 
 		vi.clearAllMocks();
 	});
 
-	it('should reset progress to [] when Running starts after a finalized run', async () => {
+	it('should reseed Pending progress when Running starts after a finalized run', async () => {
 		// Arrange: docked with finalized progress, now a real new run starts
+		const seed = buildProgressUpdate([], [1], null);
 		const robot = createMockRobot(RUN_END_DUID, 0, undefined, RvcOperationalState.OperationalState.Running);
+		vi.mocked(robot.buildPendingProgressSeed).mockReturnValue(seed);
 		const { platform, service } = createStatefulProgressPlatform(FINALIZED_PROGRESS, false, [1]);
 
 		// Act
 		await handleServiceAreaUpdate(robot, createRunEndMessage(OperationStatusCode.Cleaning), platform);
 
 		// Assert
-		expect(vi.mocked(service.setProgress).mock.calls[0]).toEqual([RUN_END_DUID, []]);
-		expect(robot.updateAttribute).toHaveBeenCalledWith(ServiceArea.id, 'progress', [], expect.anything());
+		expect(vi.mocked(service.setProgress).mock.calls[0]).toEqual([RUN_END_DUID, seed]);
+		expect(robot.updateAttribute).toHaveBeenCalledWith(ServiceArea.id, 'progress', seed, expect.anything());
 	});
 
-	it('should reset progress to [] when Running starts from Charging with finalized progress', async () => {
+	it('should reseed Pending progress when Running starts from Charging with finalized progress', async () => {
 		// Arrange: flag false came from a Charging poll
+		const seed = buildProgressUpdate([], [1], null);
 		const robot = createMockRobot(RUN_END_DUID, 0, undefined, RvcOperationalState.OperationalState.Running);
+		vi.mocked(robot.buildPendingProgressSeed).mockReturnValue(seed);
 		const { platform, service } = createStatefulProgressPlatform(FINALIZED_PROGRESS, false, [1]);
 
 		// Act
 		await handleServiceAreaUpdate(robot, createRunEndMessage(OperationStatusCode.Cleaning), platform);
 
 		// Assert
-		expect(vi.mocked(service.setProgress).mock.calls[0]).toEqual([RUN_END_DUID, []]);
+		expect(vi.mocked(service.setProgress).mock.calls[0]).toEqual([RUN_END_DUID, seed]);
 		expect(service.setLastActivelyCleaningState).toHaveBeenCalledWith(RUN_END_DUID, true);
 	});
+});
+
+describe('handleServiceAreaUpdate — Pending seed on run start', () => {
+	beforeEach(() => {
+		vi.clearAllMocks();
+	});
+
+	it('should write the Pending seed before any other progress write and never write [] when Docked to Running with selectedAreas [1,2]', async () => {
+		// Arrange
+		const seed = buildProgressUpdate([], [1, 2], null);
+		const robot = createMockRobot(RUN_END_DUID, 0, undefined, RvcOperationalState.OperationalState.Running);
+		vi.mocked(robot.buildPendingProgressSeed).mockReturnValue(seed);
+		const { platform, service } = createStatefulProgressPlatform(FINALIZED_PROGRESS, false, [1, 2]);
+
+		// Act
+		await handleServiceAreaUpdate(robot, RUN_START_MESSAGE, platform);
+
+		// Assert: first write is the seed, and no write is ever an empty list
+		const setProgressCalls = vi.mocked(service.setProgress).mock.calls;
+		expect(setProgressCalls[0]).toEqual([RUN_END_DUID, seed]);
+		expect(setProgressCalls.some((call) => call[1].length === 0)).toBe(false);
+		const progressWrites = vi.mocked(robot.updateAttribute).mock.calls.filter((call) => call[1] === 'progress');
+		expect(progressWrites[0][2]).toEqual(seed);
+		expect(progressWrites.some((call) => Array.isArray(call[2]) && call[2].length === 0)).toBe(false);
+	});
+
+	it('should seed all-room Pending rows via buildPendingProgressSeed when no areas are selected', async () => {
+		// Arrange
+		const allRoomSeed = buildProgressUpdate([], [0, 1, 2, 3], null);
+		const robot = createMockRobot(RUN_END_DUID, 0, undefined, RvcOperationalState.OperationalState.Running);
+		vi.mocked(robot.buildPendingProgressSeed).mockReturnValue(allRoomSeed);
+		const { platform, service } = createStatefulProgressPlatform([], false, 'none');
+
+		// Act
+		await handleServiceAreaUpdate(robot, RUN_START_MESSAGE, platform);
+
+		// Assert
+		expect(robot.buildPendingProgressSeed).toHaveBeenCalledTimes(1);
+		expect(vi.mocked(service.setProgress).mock.calls[0]).toEqual([RUN_END_DUID, allRoomSeed]);
+		expect(robot.updateAttribute).toHaveBeenCalledWith(ServiceArea.id, 'progress', allRoomSeed, expect.anything());
+	});
+
+	it('should keep one row per area when Running starts over an already-seeded Pending list', async () => {
+		// Arrange: resetProgressForNewRun already seeded the list before the first status
+		const seed = buildProgressUpdate([], [1, 2], null);
+		const roomMapData = new Map<number, AreaInfo>([
+			[1, { roomId: 10, mapId: 100, roomName: 'Room 1' }],
+			[2, { roomId: 20, mapId: 100, roomName: 'Room 2' }],
+		]);
+		const roomInfo = new Map<string, SegmentInfo>([
+			['10-100', { areaId: 1, mapId: 100, roomName: 'Room 1' }],
+			['20-100', { areaId: 2, mapId: 100, roomName: 'Room 2' }],
+		]);
+		const indexMap = new RoomIndexMap(roomMapData, roomInfo);
+		const robot = createMockRobot(RUN_END_DUID, 100, undefined, RvcOperationalState.OperationalState.Running);
+		vi.mocked(robot.buildPendingProgressSeed).mockReturnValue(seed);
+		vi.mocked(robot.getAttribute).mockImplementation((_clusterId, attrName) => {
+			if (attrName === 'operationalState') {
+				return RvcOperationalState.OperationalState.Running;
+			}
+			if (attrName === 'selectedAreas') {
+				return [1, 2];
+			}
+			return undefined;
+		});
+		const { platform, service } = createStatefulProgressPlatform(seed, false, [1, 2], indexMap);
+		const message: ServiceAreaUpdateMessage = {
+			...RUN_START_MESSAGE,
+			cleaningInfo: {
+				segment_id: 10,
+				target_segment_id: INVALID_SEGMENT_ID,
+				fan_power: 0,
+				water_box_status: 0,
+				mop_mode: 0,
+			},
+		};
+
+		// Act
+		await handleServiceAreaUpdate(robot, message, platform);
+
+		// Assert: area 1 is Operating, area 2 stays Pending, and no duplicate rows
+		const progress = service.getProgress(RUN_END_DUID);
+		expect(progress).toHaveLength(2);
+		expect(progress).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({ areaId: 1, status: ServiceArea.OperationalStatus.Operating }),
+				expect.objectContaining({ areaId: 2, status: ServiceArea.OperationalStatus.Pending }),
+			]),
+		);
+	});
+});
+
+describe('handleServiceAreaUpdate — run-end cleanup', () => {
+	beforeEach(() => {
+		vi.clearAllMocks();
+	});
+
+	it.each([
+		{
+			label: 'Charging',
+			operationalState: RvcOperationalState.OperationalState.Charging,
+			state: OperationStatusCode.Charging,
+		},
+		{
+			label: 'Docked',
+			operationalState: RvcOperationalState.OperationalState.Docked,
+			state: OperationStatusCode.ReturningDock,
+		},
+	])(
+		'should clear currentArea and estimatedEndTime and finalize progress without touching selectedAreas when run ends in $label',
+		async ({ operationalState, state }) => {
+			// Arrange
+			const robot = createMockRobot(RUN_END_DUID, 0, undefined, operationalState);
+			const { platform, service } = createStatefulProgressPlatform(PENDING_PROGRESS, true);
+
+			// Act
+			await handleServiceAreaUpdate(robot, createRunEndMessage(state), platform);
+
+			// Assert
+			expect(robot.updateAttribute).toHaveBeenCalledWith(ServiceArea.id, 'currentArea', null, expect.anything());
+			expect(robot.updateAttribute).toHaveBeenCalledWith(ServiceArea.id, 'estimatedEndTime', null, expect.anything());
+			expect(service.getProgress(RUN_END_DUID)).toEqual([
+				{ areaId: 0, status: ServiceArea.OperationalStatus.Completed },
+				{ areaId: 1, status: ServiceArea.OperationalStatus.Skipped },
+				{ areaId: 2, status: ServiceArea.OperationalStatus.Skipped },
+				{ areaId: 3, status: ServiceArea.OperationalStatus.Skipped },
+			]);
+			expect(robot.updateAttribute).not.toHaveBeenCalledWith(
+				ServiceArea.id,
+				'selectedAreas',
+				expect.anything(),
+				expect.anything(),
+			);
+		},
+	);
+
+	it('should clear currentArea and estimatedEndTime and reset session timers on Running to Idle run end', async () => {
+		// Arrange: operationalState moves Running -> Docked while the Idle status arrives
+		const robot = createMockRobot(RUN_END_DUID, 0, undefined, RvcOperationalState.OperationalState.Docked);
+		robot.operationSessionStartMs = 123;
+		robot.operationPausedAccumMs = 500;
+		robot.operationPausedSinceMs = 1;
+		const { platform } = createStatefulProgressPlatform(PENDING_PROGRESS, true);
+
+		// Act
+		await handleServiceAreaUpdate(robot, createRunEndMessage(OperationStatusCode.Idle), platform);
+
+		// Assert
+		expect(robot.updateAttribute).toHaveBeenCalledWith(ServiceArea.id, 'currentArea', null, expect.anything());
+		expect(robot.updateAttribute).toHaveBeenCalledWith(ServiceArea.id, 'estimatedEndTime', null, expect.anything());
+		expect(robot.operationSessionStartMs).toBeNull();
+		expect(robot.operationPausedAccumMs).toBe(0);
+		expect(robot.operationPausedSinceMs).toBeNull();
+	});
+
+	it('should keep finalized progress visible after the following Docked/Charging poll', async () => {
+		// Arrange
+		const robot = createMockRobot(RUN_END_DUID, 0, undefined, RvcOperationalState.OperationalState.Docked);
+		const { platform, service } = createStatefulProgressPlatform(PENDING_PROGRESS, true);
+		await handleServiceAreaUpdate(robot, createRunEndMessage(OperationStatusCode.ReturningDock), platform);
+		const finalized = service.getProgress(RUN_END_DUID);
+		vi.mocked(service.getLastActivelyCleaningState).mockReturnValue(false);
+		vi.mocked(service.setProgress).mockClear();
+
+		// Act
+		await handleServiceAreaUpdate(robot, createRunEndMessage(OperationStatusCode.Charging), platform);
+
+		// Assert: early return path, no re-publish of progress
+		expect(service.setProgress).not.toHaveBeenCalled();
+		expect(service.getProgress(RUN_END_DUID)).toEqual(finalized);
+	});
+
+	it('should clear currentArea and estimatedEndTime when run ends with empty progress', async () => {
+		// Arrange
+		const robot = createMockRobot(RUN_END_DUID, 0, undefined, RvcOperationalState.OperationalState.Charging);
+		const { platform, service } = createStatefulProgressPlatform([], true);
+
+		// Act
+		await handleServiceAreaUpdate(robot, createRunEndMessage(OperationStatusCode.Charging), platform);
+
+		// Assert
+		expect(robot.updateAttribute).toHaveBeenCalledWith(ServiceArea.id, 'currentArea', null, expect.anything());
+		expect(robot.updateAttribute).toHaveBeenCalledWith(ServiceArea.id, 'estimatedEndTime', null, expect.anything());
+		expect(service.setProgress).not.toHaveBeenCalled();
+	});
+
+	it('should reset operation session timers when the run ends', async () => {
+		// Arrange
+		const robot = createMockRobot(RUN_END_DUID, 0, undefined, RvcOperationalState.OperationalState.Charging);
+		robot.operationSessionStartMs = 123;
+		robot.operationPausedAccumMs = 500;
+		robot.operationPausedSinceMs = 1;
+		const { platform } = createStatefulProgressPlatform(PENDING_PROGRESS, true);
+
+		// Act
+		await handleServiceAreaUpdate(robot, createRunEndMessage(OperationStatusCode.Charging), platform);
+
+		// Assert
+		expect(robot.operationSessionStartMs).toBeNull();
+		expect(robot.operationPausedAccumMs).toBe(0);
+		expect(robot.operationPausedSinceMs).toBeNull();
+	});
+
+	it.each([
+		{ label: 'Running', operationalState: RvcOperationalState.OperationalState.Running },
+		{ label: 'Paused', operationalState: RvcOperationalState.OperationalState.Paused },
+	])(
+		'should not clear currentArea or session timers while operationalState is still $label',
+		async ({ operationalState }) => {
+			// Arrange
+			const robot = createMockRobot(RUN_END_DUID, 0, undefined, operationalState);
+			robot.operationSessionStartMs = 123;
+			robot.operationPausedAccumMs = 500;
+			robot.operationPausedSinceMs = 1;
+			const { platform } = createStatefulProgressPlatform(PENDING_PROGRESS, true, [0, 1, 2, 3]);
+
+			// Act
+			await handleServiceAreaUpdate(robot, RUN_START_MESSAGE, platform);
+
+			// Assert
+			expect(robot.updateAttribute).not.toHaveBeenCalledWith(ServiceArea.id, 'currentArea', null, expect.anything());
+			expect(robot.operationSessionStartMs).toBe(123);
+			expect(robot.operationPausedAccumMs).toBe(500);
+			expect(robot.operationPausedSinceMs).toBe(1);
+		},
+	);
 });

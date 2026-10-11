@@ -17,4 +17,5 @@ export interface HandlerContext {
 	cleanModeSettings?: CleanModeSettings;
 	cleanSettings: Record<number, CleanModeSetting>;
 	behaviorName: string;
+	onCleaningStart?: () => void | Promise<void>;
 }
