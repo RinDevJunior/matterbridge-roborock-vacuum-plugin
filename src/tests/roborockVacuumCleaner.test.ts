@@ -82,6 +82,97 @@ describe('RoborockVacuumCleaner', () => {
 		expect(vacuum.device).toBe(device);
 	});
 
+	describe('buildPendingProgressSeed', () => {
+		it('should seed Pending rows only for selectedAreas when areas are selected', () => {
+			vi.spyOn(vacuum, 'getAttribute').mockReturnValue([1, 2]);
+
+			const result = vacuum.buildPendingProgressSeed();
+
+			expect(result).toEqual([
+				{ areaId: 1, status: ServiceArea.OperationalStatus.Pending },
+				{ areaId: 2, status: ServiceArea.OperationalStatus.Pending },
+			]);
+		});
+
+		it('should seed Pending rows for all rooms of the active map when no areas are selected', () => {
+			vi.spyOn(vacuum, 'getAttribute').mockReturnValue([]);
+			const resolveSpy = vi.spyOn(vacuum, 'resolveAllRoomsForActiveMap').mockReturnValue([5, 6]);
+
+			const result = vacuum.buildPendingProgressSeed();
+
+			expect(resolveSpy).toHaveBeenCalledTimes(1);
+			expect(result).toEqual([
+				{ areaId: 5, status: ServiceArea.OperationalStatus.Pending },
+				{ areaId: 6, status: ServiceArea.OperationalStatus.Pending },
+			]);
+		});
+
+		it('should return an empty list when no areas are selected and the active map has no rooms', () => {
+			vi.spyOn(vacuum, 'getAttribute').mockReturnValue([]);
+			vi.spyOn(vacuum, 'resolveAllRoomsForActiveMap').mockReturnValue([]);
+
+			expect(vacuum.buildPendingProgressSeed()).toEqual([]);
+		});
+	});
+
+	describe('resetProgressForNewRun', () => {
+		function mockOperationalState(state: RvcOperationalState.OperationalState, selectedAreas: number[] = [1, 2]): void {
+			vi.spyOn(vacuum, 'getAttribute').mockImplementation((_clusterId, attribute) => {
+				if (attribute === 'operationalState') {
+					return state;
+				}
+				if (attribute === 'selectedAreas') {
+					return selectedAreas;
+				}
+				return undefined;
+			});
+		}
+
+		it('should write the same Pending seed to the service mirror and the Matter attribute when Docked', async () => {
+			mockOperationalState(RvcOperationalState.OperationalState.Docked);
+			const updateSpy = vi.spyOn(vacuum, 'updateAttribute').mockResolvedValue(true);
+			const expectedSeed = [
+				{ areaId: 1, status: ServiceArea.OperationalStatus.Pending },
+				{ areaId: 2, status: ServiceArea.OperationalStatus.Pending },
+			];
+
+			await vacuum.resetProgressForNewRun();
+
+			expect(roborockService.setProgress).toHaveBeenCalledWith('duid-123', expectedSeed);
+			expect(updateSpy).toHaveBeenCalledWith(ServiceArea.id, 'progress', expectedSeed, expect.anything());
+		});
+
+		it.each([
+			{ label: 'Charging', state: RvcOperationalState.OperationalState.Charging },
+			{ label: 'Stopped', state: RvcOperationalState.OperationalState.Stopped },
+			{ label: 'Error', state: RvcOperationalState.OperationalState.Error },
+		])('should reset progress when operationalState is $label (not actively cleaning)', async ({ state }) => {
+			mockOperationalState(state);
+			const updateSpy = vi.spyOn(vacuum, 'updateAttribute').mockResolvedValue(true);
+
+			await vacuum.resetProgressForNewRun();
+
+			expect(roborockService.setProgress).toHaveBeenCalledTimes(1);
+			expect(updateSpy).toHaveBeenCalledWith(ServiceArea.id, 'progress', expect.any(Array), expect.anything());
+		});
+
+		it.each([
+			{ label: 'Running', state: RvcOperationalState.OperationalState.Running },
+			{ label: 'Paused', state: RvcOperationalState.OperationalState.Paused },
+		])(
+			'should not touch live progress when operationalState is $label (resume-via-ChangeToMode safety)',
+			async ({ state }) => {
+				mockOperationalState(state);
+				const updateSpy = vi.spyOn(vacuum, 'updateAttribute').mockResolvedValue(true);
+
+				await vacuum.resetProgressForNewRun();
+
+				expect(roborockService.setProgress).not.toHaveBeenCalled();
+				expect(updateSpy).not.toHaveBeenCalled();
+			},
+		);
+	});
+
 	describe('resolveAllRoomsForActiveMap', () => {
 		it('should return rooms for active map when single map exists', () => {
 			const mockSupportedAreas: ServiceArea.Area[] = [

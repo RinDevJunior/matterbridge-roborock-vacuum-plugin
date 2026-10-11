@@ -6,6 +6,7 @@ import {
 	isCleaningOrMappingRunMode,
 	maybeEmitOperationCompletion,
 	type OperationSessionSnapshot,
+	resetOperationSessionTimers,
 	trackOperationSessionTiming,
 } from '../../../runtimes/handlers/operationCompletionTracker.js';
 import type { RoborockVacuumCleaner } from '../../../types/roborockVacuumCleaner.js';
@@ -185,6 +186,100 @@ describe('operationCompletionTracker', () => {
 
 			expect(robot.operationPausedAccumMs).toBe(15_000);
 			expect(robot.operationPausedSinceMs).toBeNull();
+		});
+	});
+
+	describe('resetOperationSessionTimers', () => {
+		it('should zero session start, paused-since, and paused accumulator', () => {
+			const robot = createMockRobot({
+				operationSessionStartMs: 123,
+				operationPausedSinceMs: 456,
+				operationPausedAccumMs: 789,
+			});
+
+			resetOperationSessionTimers(robot);
+
+			expect(robot.operationSessionStartMs).toBeNull();
+			expect(robot.operationPausedSinceMs).toBeNull();
+			expect(robot.operationPausedAccumMs).toBe(0);
+		});
+	});
+
+	describe('trackOperationSessionTiming start edge', () => {
+		it('should re-stamp start and clear stale pause counters when moving from Idle to Cleaning', () => {
+			vi.useFakeTimers();
+			const now = new Date('2026-07-05T13:00:00.000Z');
+			vi.setSystemTime(now);
+
+			const robot = createMockRobot({
+				operationSessionStartMs: new Date('2026-07-05T10:00:00.000Z').getTime(),
+				operationPausedSinceMs: new Date('2026-07-05T10:30:00.000Z').getTime(),
+				operationPausedAccumMs: 5_000,
+			});
+
+			trackOperationSessionTiming(robot, idleSnapshot(), cleaningSnapshot());
+
+			expect(robot.operationSessionStartMs).toBe(now.getTime());
+			expect(robot.operationPausedAccumMs).toBe(0);
+			expect(robot.operationPausedSinceMs).toBeNull();
+		});
+
+		it('should treat Mapping as cleaning for the start edge', () => {
+			vi.useFakeTimers();
+			const now = new Date('2026-07-05T13:00:00.000Z');
+			vi.setSystemTime(now);
+
+			const robot = createMockRobot({
+				operationSessionStartMs: new Date('2026-07-05T10:00:00.000Z').getTime(),
+			});
+
+			trackOperationSessionTiming(robot, idleSnapshot(), cleaningSnapshot({ runMode: RvcRunMode.ModeTag.Mapping }));
+
+			expect(robot.operationSessionStartMs).toBe(now.getTime());
+		});
+
+		it('should preserve existing start when moving from Cleaning to Cleaning', () => {
+			vi.useFakeTimers();
+			vi.setSystemTime(new Date('2026-07-05T13:00:00.000Z'));
+			const originalStart = new Date('2026-07-05T12:00:00.000Z').getTime();
+
+			const robot = createMockRobot({ operationSessionStartMs: originalStart });
+
+			trackOperationSessionTiming(robot, cleaningSnapshot(), cleaningSnapshot());
+
+			expect(robot.operationSessionStartMs).toBe(originalStart);
+		});
+
+		it('should still stamp a null start on Cleaning to Cleaning', () => {
+			vi.useFakeTimers();
+			const now = new Date('2026-07-05T13:00:00.000Z');
+			vi.setSystemTime(now);
+
+			const robot = createMockRobot({ operationSessionStartMs: null });
+
+			trackOperationSessionTiming(robot, cleaningSnapshot(), cleaningSnapshot());
+
+			expect(robot.operationSessionStartMs).toBe(now.getTime());
+		});
+	});
+
+	describe('maybeEmitOperationCompletion timer reset', () => {
+		it('should reset all three timer fields after emitting', async () => {
+			vi.useFakeTimers();
+			vi.setSystemTime(new Date('2026-07-05T12:01:00.000Z'));
+
+			const robot = createMockRobot({
+				operationSessionStartMs: new Date('2026-07-05T12:00:00.000Z').getTime(),
+				operationPausedSinceMs: 42,
+				operationPausedAccumMs: 1_000,
+			});
+
+			await maybeEmitOperationCompletion(robot, cleaningSnapshot(), idleSnapshot(), mockLogger);
+
+			expect(robot.triggerEvent).toHaveBeenCalled();
+			expect(robot.operationSessionStartMs).toBeNull();
+			expect(robot.operationPausedSinceMs).toBeNull();
+			expect(robot.operationPausedAccumMs).toBe(0);
 		});
 	});
 

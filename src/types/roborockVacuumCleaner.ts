@@ -14,7 +14,12 @@ import { getOperationalStates, getSupportedCleanModes, getSupportedRoutines } fr
 import { DockStationStatus } from '../model/DockStationStatus.js';
 import { PlatformConfigManager } from '../platform/platformConfigManager.js';
 import { Device } from '../roborockCommunication/models/index.js';
-import { getNextPendingArea, markAreaSkipped } from '../runtimes/handlers/serviceAreaHandler.js';
+import {
+	buildProgressUpdate,
+	getNextPendingArea,
+	isActivelyCleaningOperationalState,
+	markAreaSkipped,
+} from '../runtimes/handlers/serviceAreaHandler.js';
 import { RoborockService } from '../services/roborockService.js';
 import { BehaviorFactoryResult } from '../share/behaviorFactory.js';
 
@@ -285,6 +290,30 @@ export class RoborockVacuumCleaner extends RoboticVacuumCleaner {
 		await this.updateAttribute(ServiceArea.id, 'progress', updatedProgress, this.log);
 		await this.updateAttribute(ServiceArea.id, 'currentArea', nextAreaId, this.log);
 		return { updatedProgress, nextAreaId };
+	}
+
+	public buildPendingProgressSeed(): ServiceArea.Progress[] {
+		const selectedAreas: number[] = this.getAttribute(ServiceArea.id, 'selectedAreas', this.log) ?? [];
+		const areaIds = selectedAreas.length > 0 ? selectedAreas : this.resolveAllRoomsForActiveMap();
+		return buildProgressUpdate([], areaIds, null);
+	}
+
+	/**
+	 * Seeds Pending progress rows when a new clean starts. No-op while already actively cleaning
+	 * (e.g. a resume from Paused) so live progress is not wiped.
+	 */
+	public async resetProgressForNewRun(): Promise<void> {
+		const operationalState = this.getAttribute(RvcOperationalState.id, 'operationalState', this.log) as
+			RvcOperationalState.OperationalState | undefined;
+		if (isActivelyCleaningOperationalState(operationalState)) {
+			this.log.debug(
+				`[${this.device.duid}] Skipping progress reset: already actively cleaning (operationalState=${operationalState})`,
+			);
+			return;
+		}
+		const seed = this.buildPendingProgressSeed();
+		this.roborockService.setProgress(this.device.duid, seed);
+		await this.updateAttribute(ServiceArea.id, 'progress', seed, this.log);
 	}
 
 	public async trySwitchMap(selectedAreaIds: number[]): Promise<void> {

@@ -8,6 +8,7 @@ import { isB01Q10CleaningState, isB01Q10IdleState, isB01Q10Robot } from '../../s
 import { computeAreaEstimatedTime, computeEstimatedEndTimeFromCleanProgress } from '../../share/estimatedEndTime.js';
 import type { ServiceAreaUpdateMessage } from '../../types/MessagePayloads.js';
 import type { RoborockVacuumCleaner } from '../../types/roborockVacuumCleaner.js';
+import { resetOperationSessionTimers } from './operationCompletionTracker.js';
 
 const CLEANING_STATES = new Set([
 	OperationStatusCode.RoomClean,
@@ -36,7 +37,7 @@ const ACTIVELY_CLEANING_OPERATIONAL_STATES: ReadonlySet<RvcOperationalState.Oper
 	RvcOperationalState.OperationalState.UpdatingMaps,
 ]);
 
-function isActivelyCleaningOperationalState(
+export function isActivelyCleaningOperationalState(
 	operationalState: RvcOperationalState.OperationalState | undefined,
 ): boolean {
 	return operationalState !== undefined && ACTIVELY_CLEANING_OPERATIONAL_STATES.has(operationalState);
@@ -286,8 +287,9 @@ export async function handleServiceAreaUpdate(
 		logger.debug(
 			`[${robot.device.duid}] Detected transition to actively cleaning (operationalState=${operationalState}), resetting progress`,
 		);
-		platform.roborockService?.setProgress(robot.device.duid, []);
-		await robot.updateAttribute(ServiceArea.id, 'progress', [], logger);
+		const seed = robot.buildPendingProgressSeed();
+		platform.roborockService?.setProgress(robot.device.duid, seed);
+		await robot.updateAttribute(ServiceArea.id, 'progress', seed, logger);
 	}
 
 	const isRunEnd =
@@ -304,6 +306,9 @@ export async function handleServiceAreaUpdate(
 			platform.roborockService?.setProgress(robot.device.duid, finalized);
 			await robot.updateAttribute(ServiceArea.id, 'progress', finalized, logger);
 		}
+		await robot.updateAttribute(ServiceArea.id, 'currentArea', null, logger);
+		await robot.updateAttribute(ServiceArea.id, 'estimatedEndTime', null, logger);
+		resetOperationSessionTimers(robot);
 	}
 
 	if (isIdleStateForServiceArea(robot, message.state)) {

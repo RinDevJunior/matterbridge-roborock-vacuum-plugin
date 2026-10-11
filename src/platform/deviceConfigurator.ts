@@ -151,6 +151,7 @@ export class DeviceConfigurator {
 			() => this.getPlatformRunner().burstPolling.startBurstPolling(vacuum.duid),
 			vacuum.featureSet,
 			vacuum.newFeatureSet,
+			() => robot.resetProgressForNewRun(),
 		);
 
 		robot.configureHandler(behaviorHandler);
