@@ -28,6 +28,8 @@ Activate the Engineer Manager persona via `/config` → **Output style** → Eng
 
 Compact scripts only: `format:ci`, `lint:fix:ci`, `test:ci`, `precommit:ci`, `diff:ci`, `type-check:ci`, `build:local:ci`, `doctor:ci`. Never raw `npm run test`/`build:local`/`tsc`, never paste full output — `*:ci` output is already compact, print as-is.
 
+`*:ci` scripts in package.json must be a single `node scripts/<name>.mjs` call (no `>`/`2>&1`/`;`/`&&`/`sh -c`) so they run under Windows cmd.exe.
+
 On `path/to/file.ts(line,col): error ...`, jump straight to `Read(file, offset: line, limit: ~15-20)` — don't grep/re-read the whole file first. Each agent's own verification gate must PASS before it reports complete.
 
 ## Shared Memory

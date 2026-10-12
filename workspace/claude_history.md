@@ -4,6 +4,75 @@ Entries are listed in reverse chronological order (most recent first). Older ent
 
 ---
 
+## 2026-10-12 — Whole-project test coverage, B01 UDP client fix, persisted cleaning state flag, 08:00 clean investigation (PRs #180, #181, #182)
+
+**Task:** (1) Investigate unexpected two-room clean at 08:00. (2) Fix issue #179 (B01 UDP client leak). (3) Add opt-in persistence of cleaning run state (PR #181). (4) Raise whole-project test coverage (PR #182). Also closed #161 and #170 (Windows-safe CI scripts, coverage gaps).
+
+**Changes:**
+
+- `src/platform/**` / B01 local-network path — `LocalNetworkUDPClient` stored in `udpClientMap`, closed on re-init and shutdown, created only on the fall-through path (PR #180, issue #179 closed)
+- `src/**` (cleaning run state) — persist run state behind `advancedFeature.settings.enablePersistCleaningState` (default OFF); node-persist key `cleaningRun:<duid>`; V1 only; restore is confirmed/discarded by first status; 3 h validity; flag OFF deletes saved data; no shutdown flush; reviewer fix: confirmed restore never clears record (PR #181)
+- `src/tests/**/*.gaps.test.ts` — 71 new gap test files (PR #182); Node 25 fix: `engines.node` set to `>=24 <25`, real Node.js row logs an error, test pins `process.versions.node`
+- Coverage: without `src/cli` lines 99.8 / branches 98.4; raw with CLI 89.5 lines / 88.4 branches
+
+**Outcome:** Pass. Merged to dev: 73aaa6b (#180), 2fd9fd9 (#181), 43da1ad (#182). Investigation result: the 08:00 two-room clean was started by the 08:00 selectAreas, but at 08:19:43 an external Matter `rvcOperationalState.goHome` command from the same controller session sent the robot home. Plugin behaved correctly; no code change. Sender of the command is unknown.
+
+---
+
+## 2026-10-11 — Apple Home stale progress on Start (PR #176, release 1.2.0-rc04)
+
+**Task:** Fix Apple Home showing previous run's ServiceArea progress for 10–60+ s after tapping Start. Root cause: CleaningModeHandler only cleared the AreaManagementService mirror, never the Matter `ServiceArea.progress` attribute.
+
+**Changes:**
+
+- `src/types/roborockVacuumCleaner.ts` — new `resetProgressForNewRun()` (writes attribute + mirror; no-op while actively cleaning = resume guard); run end clears currentArea/estimatedEndTime and resets session timers
+- `src/behaviors/roborock.vacuum/core/modeHandler.ts` — onCleaningStart callback added to mode handler contract
+- `src/behaviors/roborock.vacuum/handlers/cleaningModeHandler.ts` — calls onCleaningStart; transition reset seeds Pending instead of `[]`
+- `src/platform/deviceConfigurator.ts`, `src/share/behaviorFactory.ts` — thread onCleaningStart through to HandlerContext
+- `src/runtimes/handlers/serviceAreaHandler.ts` — `buildPendingProgressSeed` seeds Pending rows from selectedAreas or all rooms of active map
+- `src/runtimes/handlers/operationCompletionTracker.ts` — run-end handling aligned with reset
+- Tests: `cleaningModeHandler.test.ts`, `behaviorFactory.test.ts`, `deviceConfigurator.test.ts`, `operationCompletionTracker.test.ts`, `roborockVacuumCleaner.test.ts`, `serviceAreaHandler.test.ts`
+
+**Outcome:** Pass (all verification gates). Merged to dev as 239dd35. Fast polling intentionally unchanged. Known limitations: Idle-code status between Start and first active status can clear Pending seed; mid-run recharge resume and plugin restart mid-run reset finished rooms to Pending. Codecov: 1 uncovered changed line.
+
+---
+
+## 2026-10-11 — Finalize ServiceArea progress on run end (PR #175, release 1.2.0-rc03)
+
+**Task:** Fix rooms not showing Completed after a clean. Root causes: no run-end finalization, and `isActivelyCleaningOperationalState` was a blacklist so Docked→Charging(65) wiped progress to `[]`. Also live-device investigation via Grafana/Loki matterbridge logs (state, supportedAreas/selectedAreas/progress, `map_status >> 2` = mapId).
+
+**Changes:**
+
+- `src/behaviors/roborockServiceAreaServer.ts` — cherry-picked native Matterbridge 3.10.12 progress/skipArea API (PR #174) onto branch; 6 failing unit tests fixed (test-only: mocks, optionsFor assertions)
+- `src/runtimes/handlers/serviceAreaHandler.ts` — active-state whitelist (SeekingCharger kept active); `finalizeProgressOnRunEnd` (Operating→Completed, never-visited Pending→Skipped); finalized progress kept until next real start; Idle branch no longer wipes it; Docked/Charging guard
+- `src/types/roborockVacuumCleaner.ts` — progress option wiring for native ProgressReporting
+- `vite.config.ts` — native Vite `resolve.tsconfigPaths` replaces vite-tsconfig-paths
+- `src/tests/**` — deprecated `X.Cluster.id` → `X.id`; test updates for finalization
+- `.claude/statusline-command.sh` — status line shows Claude Code version + update indicator (cache `~/.claude/cache/claude-code-latest-version`, 6h)
+- `package.json`, `package-lock.json`, `README.md`, `docs/onboarding.md`, `wiki` — lockfile and wiki committed
+
+**Outcome:** Pass (all verification gates). Merged to dev as f418e34. Release 1.2.0-rc03 (bump 68ce3f7; GitHub prerelease + Discord).
+
+---
+
+## 2026-10-02 — ServiceArea Progress refactor to Matterbridge 3.10.12 native API
+
+**Task:** Refactor ServiceArea "Progress" feature to use native Matterbridge 3.10.12 ProgressReporting API (Luligu/matterbridge PR #643), replacing custom implementation with framework-level support and native skipArea command handler registration.
+
+**Changes:**
+
+- `package.json` — bump Matterbridge to ≥3.10.12 (engines + precondition); `package-lock.json` — update root engines
+- `README.md` — update Matterbridge version requirement (2 occurrences)
+- `docs/onboarding.md` — update Matterbridge version requirement
+- `src/types/roborockVacuumCleaner.ts` — RoborockVacuumCleaner now calls super() with progress: [] option to enable native ProgressReporting
+- `src/behaviors/roborockServiceAreaServer.ts` — createDefaultServiceAreaClusterServer override takes new 5th progress param; custom skipAreaHandler property removed; native skipArea command handler registered and awaited; skipArea validation (5 checks from #172) runs first, then calls super.skipArea, throw→InvalidInMode, non-Success passes through, finalizeSkipArea on Success only
+- `src/tests/behaviors/roborockServiceAreaServer.test.ts` — tests rewritten/added for native handler flow
+- `src/tests/roborockVacuumCleaner.test.ts` — tests rewritten/added
+
+**Outcome:** Pass (all verification gates: format:ci, lint:fix:ci, type-check:ci, test:ci). Pending: live-device validation (skip current room during multi-room clean); optional: drop npm-link hunks from package-lock.json; optional: upstream ask to Luligu to validate before forwarding skipArea to handler.
+
+---
+
 ## 2026-09-20 — B01/Q10 currentArea fix (room_id_list parsing + clean_percent addendum)
 
 **Task:** Fix B01/Q10 Matter `currentArea` staying `null` during cleaning by parsing device's real room telemetry (`room_id_list`, DPS 101→91 envelope) and populating `ServiceAreaUpdateMessage.cleaningInfo` instead of relying solely on the `handleCleaningWithoutInfo()` heuristic (no real room signal). Also read DP 87 (`clean_progress`) to populate `cleaningProcess.clean_percent` for estimated time feature support.

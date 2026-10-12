@@ -55,6 +55,7 @@ export interface AdvancedFeatureSetting {
 	enableLiveMapUpdates: boolean;
 	enableEstimatedEndTime?: boolean;
 	enableFilterMonitoring?: boolean;
+	enablePersistCleaningState?: boolean;
 }
 
 export interface DeviceProductNameOverride {
@@ -135,6 +136,7 @@ export function createDefaultAdvancedFeature(): AdvancedFeatureConfiguration {
 			enableLiveMapUpdates: false,
 			enableEstimatedEndTime: false,
 			enableFilterMonitoring: false,
+			enablePersistCleaningState: false,
 		},
 	};
 }

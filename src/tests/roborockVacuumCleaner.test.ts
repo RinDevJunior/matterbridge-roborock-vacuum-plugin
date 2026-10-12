@@ -1,7 +1,13 @@
 import { MatterbridgeIdentifyServer, MatterbridgeServiceAreaServer } from 'matterbridge';
 import { MatterbridgeRvcOperationalStateServer } from 'matterbridge/devices';
 import { AnsiLogger } from 'matterbridge/logger';
-import { HepaFilterMonitoring, ModeBase, RvcCleanMode, ServiceArea } from 'matterbridge/matter/clusters';
+import {
+	HepaFilterMonitoring,
+	ModeBase,
+	RvcCleanMode,
+	RvcOperationalState,
+	ServiceArea,
+} from 'matterbridge/matter/clusters';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { CommandNames } from '../behaviors/BehaviorDeviceGeneric.js';
@@ -68,6 +74,8 @@ describe('RoborockVacuumCleaner', () => {
 			setSupportedAreas: vi.fn(),
 			setSupportedAreaIndexMap: vi.fn(),
 			getSupportedAreas: vi.fn().mockReturnValue([]),
+			getProgress: vi.fn().mockReturnValue([]),
+			setProgress: vi.fn(),
 			switchMap: vi.fn().mockResolvedValue(undefined),
 		});
 		vacuum = new RoborockVacuumCleaner(device, homeInfo, configManager, roborockService, logger);
@@ -81,6 +89,97 @@ describe('RoborockVacuumCleaner', () => {
 	it('should construct with correct properties', () => {
 		expect(vacuum).toBeInstanceOf(RoborockVacuumCleaner);
 		expect(vacuum.device).toBe(device);
+	});
+
+	describe('buildPendingProgressSeed', () => {
+		it('should seed Pending rows only for selectedAreas when areas are selected', () => {
+			vi.spyOn(vacuum, 'getAttribute').mockReturnValue([1, 2]);
+
+			const result = vacuum.buildPendingProgressSeed();
+
+			expect(result).toEqual([
+				{ areaId: 1, status: ServiceArea.OperationalStatus.Pending },
+				{ areaId: 2, status: ServiceArea.OperationalStatus.Pending },
+			]);
+		});
+
+		it('should seed Pending rows for all rooms of the active map when no areas are selected', () => {
+			vi.spyOn(vacuum, 'getAttribute').mockReturnValue([]);
+			const resolveSpy = vi.spyOn(vacuum, 'resolveAllRoomsForActiveMap').mockReturnValue([5, 6]);
+
+			const result = vacuum.buildPendingProgressSeed();
+
+			expect(resolveSpy).toHaveBeenCalledTimes(1);
+			expect(result).toEqual([
+				{ areaId: 5, status: ServiceArea.OperationalStatus.Pending },
+				{ areaId: 6, status: ServiceArea.OperationalStatus.Pending },
+			]);
+		});
+
+		it('should return an empty list when no areas are selected and the active map has no rooms', () => {
+			vi.spyOn(vacuum, 'getAttribute').mockReturnValue([]);
+			vi.spyOn(vacuum, 'resolveAllRoomsForActiveMap').mockReturnValue([]);
+
+			expect(vacuum.buildPendingProgressSeed()).toEqual([]);
+		});
+	});
+
+	describe('resetProgressForNewRun', () => {
+		function mockOperationalState(state: RvcOperationalState.OperationalState, selectedAreas: number[] = [1, 2]): void {
+			vi.spyOn(vacuum, 'getAttribute').mockImplementation((_clusterId, attribute) => {
+				if (attribute === 'operationalState') {
+					return state;
+				}
+				if (attribute === 'selectedAreas') {
+					return selectedAreas;
+				}
+				return undefined;
+			});
+		}
+
+		it('should write the same Pending seed to the service mirror and the Matter attribute when Docked', async () => {
+			mockOperationalState(RvcOperationalState.OperationalState.Docked);
+			const updateSpy = vi.spyOn(vacuum, 'updateAttribute').mockResolvedValue(true);
+			const expectedSeed = [
+				{ areaId: 1, status: ServiceArea.OperationalStatus.Pending },
+				{ areaId: 2, status: ServiceArea.OperationalStatus.Pending },
+			];
+
+			await vacuum.resetProgressForNewRun();
+
+			expect(roborockService.setProgress).toHaveBeenCalledWith('duid-123', expectedSeed);
+			expect(updateSpy).toHaveBeenCalledWith(ServiceArea.id, 'progress', expectedSeed, expect.anything());
+		});
+
+		it.each([
+			{ label: 'Charging', state: RvcOperationalState.OperationalState.Charging },
+			{ label: 'Stopped', state: RvcOperationalState.OperationalState.Stopped },
+			{ label: 'Error', state: RvcOperationalState.OperationalState.Error },
+		])('should reset progress when operationalState is $label (not actively cleaning)', async ({ state }) => {
+			mockOperationalState(state);
+			const updateSpy = vi.spyOn(vacuum, 'updateAttribute').mockResolvedValue(true);
+
+			await vacuum.resetProgressForNewRun();
+
+			expect(roborockService.setProgress).toHaveBeenCalledTimes(1);
+			expect(updateSpy).toHaveBeenCalledWith(ServiceArea.id, 'progress', expect.any(Array), expect.anything());
+		});
+
+		it.each([
+			{ label: 'Running', state: RvcOperationalState.OperationalState.Running },
+			{ label: 'Paused', state: RvcOperationalState.OperationalState.Paused },
+		])(
+			'should not touch live progress when operationalState is $label (resume-via-ChangeToMode safety)',
+			async ({ state }) => {
+				mockOperationalState(state);
+				const updateSpy = vi.spyOn(vacuum, 'updateAttribute').mockResolvedValue(true);
+
+				await vacuum.resetProgressForNewRun();
+
+				expect(roborockService.setProgress).not.toHaveBeenCalled();
+				expect(updateSpy).not.toHaveBeenCalled();
+			},
+		);
 	});
 
 	describe('resolveAllRoomsForActiveMap', () => {
@@ -406,10 +505,8 @@ describe('RoborockVacuumCleaner', () => {
 		});
 		const configManager = PlatformConfigManager.create(expConfig, expLogger);
 		const dev = { ...device, data: { model: 'roborock.s7', firmwareVersion: '2.0.0' } };
-		const testHomeInfo = new HomeEntity(1, 'Test', new RoomMap([]), MapInfo.empty(), 0);
 		const result = RoborockVacuumCleaner['initializeDeviceConfiguration'](
 			dev,
-			testHomeInfo,
 			configManager,
 			roborockService,
 			expLogger,
@@ -465,10 +562,8 @@ describe('RoborockVacuumCleaner', () => {
 			},
 		});
 		const configManager = PlatformConfigManager.create(minConfig, minLogger);
-		const testHomeInfo = new HomeEntity(1, 'Test', new RoomMap([]), MapInfo.empty(), 0);
 		const result = RoborockVacuumCleaner['initializeDeviceConfiguration'](
 			device,
-			testHomeInfo,
 			configManager,
 			roborockService,
 			minLogger,
@@ -498,7 +593,6 @@ describe('RoborockVacuumCleaner', () => {
 				name: 'TestVac',
 				scenes: [],
 			};
-			const mockHomeInfo = new HomeEntity(1, 'Test Home', RoomMap.empty(), MapInfo.empty(), 0);
 			const resolvedAreas = [
 				{ areaId: 1, mapId: 1, name: 'Living Room' } as any,
 				{ areaId: 2, mapId: 1, name: 'Kitchen' } as any,
@@ -520,7 +614,6 @@ describe('RoborockVacuumCleaner', () => {
 
 			const config = (RoborockVacuumCleaner as any).initializeDeviceConfiguration(
 				mockDevice,
-				mockHomeInfo,
 				mockConfigManager,
 				roborockService,
 				logger,
@@ -540,7 +633,6 @@ describe('RoborockVacuumCleaner', () => {
 				name: 'TestVac',
 				scenes: [],
 			};
-			const mockHomeInfo = new HomeEntity(1, 'Test Home', RoomMap.empty(), MapInfo.empty(), 0);
 			const resolvedMaps = [{ mapId: 1, name: 'Map 1' } as any];
 
 			const mockConfigManager = PlatformConfigManager.create(
@@ -559,7 +651,6 @@ describe('RoborockVacuumCleaner', () => {
 
 			const config = (RoborockVacuumCleaner as any).initializeDeviceConfiguration(
 				mockDevice,
-				mockHomeInfo,
 				mockConfigManager,
 				roborockService,
 				logger,
@@ -580,7 +671,6 @@ describe('RoborockVacuumCleaner', () => {
 				name: 'TestVac',
 				scenes: [],
 			};
-			const mockHomeInfo = new HomeEntity(1, 'Test Home', RoomMap.empty(), MapInfo.empty(), 0);
 			const resolvedMaps = [{ mapId: 1, name: 'Map 1' } as any];
 
 			const mockConfigManager = PlatformConfigManager.create(
@@ -599,7 +689,6 @@ describe('RoborockVacuumCleaner', () => {
 
 			const config = (RoborockVacuumCleaner as any).initializeDeviceConfiguration(
 				mockDevice,
-				mockHomeInfo,
 				mockConfigManager,
 				roborockService,
 				logger,
@@ -619,7 +708,6 @@ describe('RoborockVacuumCleaner', () => {
 				name: 'TestVac',
 				scenes: [],
 			};
-			const mockHomeInfo = new HomeEntity(1, 'Test Home', RoomMap.empty(), MapInfo.empty(), 0);
 			const resolvedAreas = [{ areaId: 1, mapId: 1 } as any, { areaId: 2, mapId: 1 } as any];
 
 			const mockConfigManager = PlatformConfigManager.create(
@@ -638,7 +726,6 @@ describe('RoborockVacuumCleaner', () => {
 
 			const config = (RoborockVacuumCleaner as any).initializeDeviceConfiguration(
 				mockDevice,
-				mockHomeInfo,
 				mockConfigManager,
 				roborockService,
 				logger,
@@ -658,7 +745,6 @@ describe('RoborockVacuumCleaner', () => {
 				name: 'TestVac',
 				scenes: [],
 			};
-			const mockHomeInfo = new HomeEntity(1, 'Test Home', RoomMap.empty(), MapInfo.empty(), 0);
 
 			const mockConfigManager = PlatformConfigManager.create(
 				asPartial<RoborockPluginPlatformConfig>({
@@ -676,7 +762,6 @@ describe('RoborockVacuumCleaner', () => {
 
 			const config = (RoborockVacuumCleaner as any).initializeDeviceConfiguration(
 				mockDevice,
-				mockHomeInfo,
 				mockConfigManager,
 				roborockService,
 				logger,
@@ -924,6 +1009,178 @@ describe('RoborockVacuumCleaner', () => {
 
 			// Q10 devices do not register resetCondition handler; should not throw
 			expect(() => q10Vacuum.configureHandler(mockBehaviorHandler)).not.toThrow();
+		});
+	});
+
+	describe('skipArea handler via configureHandler', () => {
+		it('should call behaviorHandler.executeCommand for skipArea command', async () => {
+			const behaviorHandler = {
+				executeCommand: vi.fn(),
+				setCommandHandler: vi.fn(),
+				log: logger,
+				commands: {},
+			} satisfies BehaviorFactoryResult;
+			vacuum.configureHandler(behaviorHandler);
+			await vacuum.executeCommandHandler(
+				'skipArea',
+				{ skippedArea: 2 },
+				'serviceArea',
+				vacuum.stateOf(MatterbridgeServiceAreaServer) as any,
+				vacuum,
+			);
+			expect(behaviorHandler.executeCommand).toHaveBeenCalledWith('skipArea', 2);
+		});
+
+		it('should rethrow handler error when skipArea handler rejects', async () => {
+			const behaviorHandler = {
+				executeCommand: vi.fn().mockRejectedValue(new Error('boom')),
+				setCommandHandler: vi.fn(),
+				log: logger,
+				commands: {},
+			} satisfies BehaviorFactoryResult;
+			vacuum.configureHandler(behaviorHandler);
+			await expect(
+				vacuum.executeCommandHandler(
+					'skipArea',
+					{ skippedArea: 2 },
+					'serviceArea',
+					vacuum.stateOf(MatterbridgeServiceAreaServer) as any,
+					vacuum,
+				),
+			).rejects.toThrow('boom');
+		});
+
+		it('should not have skipAreaHandler property (removed in favor of command handler)', () => {
+			expect((vacuum as any).skipAreaHandler).toBeUndefined();
+		});
+	});
+
+	describe('Constructor and attributes parity', () => {
+		// Attributes are only readable once the endpoint is active, so assert on the seeded behavior options.
+		const optionsOf = (id: string): Record<string, unknown> =>
+			vacuum.behaviors.optionsFor((vacuum.behaviors.supported as any)[id]) as Record<string, unknown>;
+
+		it('should seed progress attribute to empty array (ProgressReporting enabled)', () => {
+			const serviceArea = (vacuum.behaviors.supported as any).serviceArea;
+			expect(serviceArea.schema.supportedFeatures.has('PROG')).toBe(true);
+			expect(optionsOf('serviceArea').progress).toEqual([]);
+		});
+
+		it('should initialize all required ServiceArea attributes per contract', () => {
+			const operationalState = optionsOf('rvcOperationalState');
+			const serviceArea = optionsOf('serviceArea');
+			const cleanMode = optionsOf('rvcCleanMode');
+
+			// Verify contract parity
+			expect(operationalState.operationalState).toBe(RvcOperationalState.OperationalState.Docked);
+			expect(operationalState.currentPhase).toBeNull();
+			expect(operationalState.phaseList).toBeNull();
+			expect(serviceArea.selectedAreas).toEqual([]);
+			expect(serviceArea.currentArea).toBeNull();
+			expect(cleanMode.currentMode).toBeDefined(); // First clean mode configured
+		});
+
+		it('should keep existing identify and SELECT_AREAS tests passing (regression)', async () => {
+			const behaviorHandler = {
+				executeCommand: vi.fn(),
+				setCommandHandler: vi.fn(),
+				log: logger,
+				commands: {},
+			} satisfies BehaviorFactoryResult;
+			vacuum.configureHandler(behaviorHandler);
+
+			// Test identify still works
+			await vacuum.executeCommandHandler(
+				'identify',
+				{ identifyTime: 5 },
+				'identify',
+				vacuum.stateOf(MatterbridgeIdentifyServer) as any,
+				vacuum,
+			);
+			expect(behaviorHandler.executeCommand).toHaveBeenCalledWith('identify', 5);
+
+			// Reset mock
+			vi.clearAllMocks();
+
+			// Test SELECT_AREAS still works
+			await vacuum.executeCommandHandler(
+				'selectAreas',
+				{ newAreas: [1, 2] },
+				'serviceArea',
+				vacuum.stateOf(MatterbridgeServiceAreaServer) as any,
+				vacuum,
+			);
+			expect(behaviorHandler.executeCommand).toHaveBeenCalledWith('selectAreas', [1, 2]);
+		});
+	});
+
+	describe('finalizeSkipArea', () => {
+		it('should update currentArea and progress when skipping a non-final area', async () => {
+			const updatedProgress: ServiceArea.Progress[] = [
+				{ areaId: 1, status: ServiceArea.OperationalStatus.Completed },
+				{ areaId: 2, status: ServiceArea.OperationalStatus.Skipped },
+				{ areaId: 3, status: ServiceArea.OperationalStatus.Operating },
+			];
+			const updateAttributeSpy = vi.spyOn(vacuum, 'updateAttribute').mockResolvedValue(true);
+			vi.spyOn(vacuum, 'getAttribute').mockImplementation((clusterId, attributeName) => {
+				if (attributeName === 'selectedAreas') return [1, 2, 3];
+				return undefined;
+			});
+			vi.mocked(roborockService.getProgress).mockReturnValue([
+				{ areaId: 1, status: ServiceArea.OperationalStatus.Completed },
+				{ areaId: 2, status: ServiceArea.OperationalStatus.Operating },
+				{ areaId: 3, status: ServiceArea.OperationalStatus.Pending },
+			]);
+			vi.mocked(roborockService.setProgress as any).mockImplementation(() => {});
+
+			const result = await vacuum.finalizeSkipArea(2);
+
+			expect(result.nextAreaId).toBe(3);
+			expect(result.updatedProgress[1].status).toBe(ServiceArea.OperationalStatus.Skipped);
+			expect(result.updatedProgress[2].status).toBe(ServiceArea.OperationalStatus.Operating);
+			expect(updateAttributeSpy).toHaveBeenCalledWith(ServiceArea.id, 'currentArea', 3, expect.anything());
+		});
+
+		it('should set currentArea to null when skipping the last area', async () => {
+			const updateAttributeSpy = vi.spyOn(vacuum, 'updateAttribute').mockResolvedValue(true);
+			vi.spyOn(vacuum, 'getAttribute').mockImplementation((clusterId, attributeName) => {
+				if (attributeName === 'selectedAreas') return [1, 2, 3];
+				return undefined;
+			});
+			vi.mocked(roborockService.getProgress).mockReturnValue([
+				{ areaId: 1, status: ServiceArea.OperationalStatus.Completed },
+				{ areaId: 2, status: ServiceArea.OperationalStatus.Completed },
+				{ areaId: 3, status: ServiceArea.OperationalStatus.Operating },
+			]);
+			vi.mocked(roborockService.setProgress as any).mockImplementation(() => {});
+
+			const result = await vacuum.finalizeSkipArea(3);
+
+			expect(result.nextAreaId).toBeNull();
+			expect(updateAttributeSpy).toHaveBeenCalledWith(ServiceArea.id, 'currentArea', null, expect.anything());
+		});
+
+		it('should call roborockService.setProgress to sync the mirror', async () => {
+			const setProgressSpy = vi.mocked(roborockService.setProgress);
+			vi.spyOn(vacuum, 'updateAttribute').mockResolvedValue(true);
+			vi.spyOn(vacuum, 'getAttribute').mockImplementation((clusterId, attributeName) => {
+				if (attributeName === 'selectedAreas') return [1, 2];
+				return undefined;
+			});
+			vi.mocked(roborockService.getProgress).mockReturnValue([
+				{ areaId: 1, status: ServiceArea.OperationalStatus.Operating },
+				{ areaId: 2, status: ServiceArea.OperationalStatus.Pending },
+			]);
+
+			await vacuum.finalizeSkipArea(1);
+
+			expect(setProgressSpy).toHaveBeenCalledWith(
+				'duid-123',
+				expect.objectContaining({
+					0: expect.objectContaining({ areaId: 1, status: ServiceArea.OperationalStatus.Skipped }),
+					1: expect.objectContaining({ areaId: 2, status: ServiceArea.OperationalStatus.Operating }),
+				}),
+			);
 		});
 	});
 });

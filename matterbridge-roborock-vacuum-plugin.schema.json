@@ -1,6 +1,6 @@
 {
 	"title": "Matterbridge Roborock Vacuum Plugin",
-	"description": "matterbridge-roborock-vacuum-plugin v. 1.2.0-rc02 by https://github.com/RinDevJunior",
+	"description": "matterbridge-roborock-vacuum-plugin v. 1.2.0-rc05 by https://github.com/RinDevJunior",
 	"type": "object",
 	"properties": {
 		"name": {
@@ -219,6 +219,12 @@
 									"enableFilterMonitoring": {
 										"title": "Enable Filter Life Monitoring",
 										"description": "Enable filter life monitoring for V1-protocol devices (HepaFilterMonitoring cluster with reset command).",
+										"type": "boolean",
+										"default": false
+									},
+									"enablePersistCleaningState": {
+										"title": "Persist Cleaning State",
+										"description": "Experimental (V1 vacuums only). Save the current cleaning run (selected rooms and per-room progress) and restore it after a plugin restart while the robot is still cleaning. Turning this off deletes the saved data. Requires advanced features.",
 										"type": "boolean",
 										"default": false
 									},

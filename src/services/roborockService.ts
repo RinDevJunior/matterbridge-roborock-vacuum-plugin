@@ -205,6 +205,14 @@ export class RoborockService {
 		this.areaService.setLastActivelyCleaningState(duid, isActivelyCleaning);
 	}
 
+	public markRestoredRunPending(duid: string): void {
+		this.areaService.markRestoredRunPending(duid);
+	}
+
+	public consumeRestoredRunPending(duid: string): boolean {
+		return this.areaService.consumeRestoredRunPending(duid);
+	}
+
 	/** Get the stored "was actively cleaning" state for a device. */
 	public getLastActivelyCleaningState(duid: string): boolean {
 		return this.areaService.getLastActivelyCleaningState(duid);

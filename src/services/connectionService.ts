@@ -32,6 +32,7 @@ export class ConnectionService {
 	clientRouter: ClientRouter | undefined;
 	ipMap = new Map<string, string>();
 	localClientMap = new Map<string, Client>();
+	udpClientMap = new Map<string, LocalNetworkUDPClient>();
 	deviceNotify: DeviceNotifyCallback | undefined;
 	private emailService: EmailNotificationService | undefined;
 
@@ -212,7 +213,7 @@ export class ConnectionService {
 		// B01 devices use MQTT-only communication
 		if (device.pv === ProtocolVersion.B01) {
 			this.logger.debug(`Device: ${device.duid} uses B01 protocol, switch to use UDPClient`);
-			const localNetworkUDPClient = new LocalNetworkUDPClient(this.logger);
+			await this.closeUdpClient(device.duid);
 
 			const networkInfo = this.getNetworkInfoFromDeviceStatus(device);
 
@@ -229,6 +230,9 @@ export class ConnectionService {
 					.error(`Failed to set up local client for device ${device.duid} at IP ${networkInfo.ipAddress} via B01 setup.
             Continuing to listen for broadcasts.`);
 			}
+
+			const localNetworkUDPClient = new LocalNetworkUDPClient(this.logger);
+			this.udpClientMap.set(device.duid, localNetworkUDPClient);
 
 			localNetworkUDPClient.registerListener({
 				onMessage: async (duid: string, ip: string): Promise<void> => {
@@ -298,8 +302,14 @@ export class ConnectionService {
 			}
 		}
 
+		// Close all B01 UDP clients
+		for (const duid of [...this.udpClientMap.keys()]) {
+			await this.closeUdpClient(duid);
+		}
+
 		// Clear all state
 		this.localClientMap.clear();
+		this.udpClientMap.clear();
 		this.ipMap.clear();
 
 		this.clientRouter = undefined;
@@ -312,6 +322,22 @@ export class ConnectionService {
 	 */
 	private async sleep(ms: number): Promise<void> {
 		return new Promise((resolve) => setTimeout(resolve, ms));
+	}
+
+	/**
+	 * Helper: Disconnect and forget the B01 UDP client for the given device, if any.
+	 * Removes the entry before disconnecting so a failed disconnect cannot leave a stale reference.
+	 */
+	private async closeUdpClient(duid: string): Promise<void> {
+		const client = this.udpClientMap.get(duid);
+		if (!client) return;
+
+		this.udpClientMap.delete(duid);
+		try {
+			await client.disconnect();
+		} catch (error) {
+			this.logger.error(`Error disconnecting UDP client ${duid}:`, error);
+		}
 	}
 
 	/**

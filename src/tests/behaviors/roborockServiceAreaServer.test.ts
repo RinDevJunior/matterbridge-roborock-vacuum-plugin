@@ -16,7 +16,6 @@ function createMockDevice(overrides: Partial<RoborockVacuumCleaner> = {}): Robor
 		log: createMockLogger(),
 		getAttribute: vi.fn().mockReturnValue(RvcOperationalState.OperationalState.Running),
 		updateAttribute: vi.fn().mockResolvedValue(true),
-		skipAreaHandler: vi.fn().mockResolvedValue(undefined),
 		finalizeSkipArea: vi.fn().mockResolvedValue({
 			updatedProgress: [
 				{ areaId: 1, status: ServiceArea.OperationalStatus.Completed },
@@ -150,38 +149,75 @@ describe('RoborockServiceAreaServer', () => {
 			vi.mocked(device.getAttribute).mockReturnValue(RvcOperationalState.OperationalState.Docked);
 			const server = createServer({ selectedAreas: [1, 2], currentArea: 1 }, device);
 
+			const superSkipAreaSpy = vi.spyOn(Object.getPrototypeOf(Object.getPrototypeOf(server)), 'skipArea');
+			superSkipAreaSpy.mockResolvedValue({ status: ServiceArea.SkipAreaStatus.Success, statusText: '' });
+
 			const response = await server.skipArea({ skippedArea: 1 });
 
 			expect(response.status).toBe(ServiceArea.SkipAreaStatus.InvalidInMode);
-			expect(device.skipAreaHandler).not.toHaveBeenCalled();
+			expect(superSkipAreaSpy).toHaveBeenCalledTimes(0);
 		});
 
 		it('should return InvalidInMode when operational state is Stopped', async () => {
 			vi.mocked(device.getAttribute).mockReturnValue(RvcOperationalState.OperationalState.Stopped);
 			const server = createServer({ selectedAreas: [1, 2], currentArea: 1 }, device);
 
+			const superSkipAreaSpy = vi.spyOn(Object.getPrototypeOf(Object.getPrototypeOf(server)), 'skipArea');
+			superSkipAreaSpy.mockResolvedValue({ status: ServiceArea.SkipAreaStatus.Success, statusText: '' });
+
 			const response = await server.skipArea({ skippedArea: 1 });
 
 			expect(response.status).toBe(ServiceArea.SkipAreaStatus.InvalidInMode);
+			expect(superSkipAreaSpy).toHaveBeenCalledTimes(0);
+		});
+
+		it('should allow skipArea when operational state is Paused', async () => {
+			vi.mocked(device.getAttribute).mockReturnValue(RvcOperationalState.OperationalState.Paused);
+			const server = createServer(
+				{
+					selectedAreas: [1, 2],
+					currentArea: 1,
+					progress: [{ areaId: 1, status: ServiceArea.OperationalStatus.Operating }],
+				},
+				device,
+			);
+
+			const superSkipAreaSpy = vi.spyOn(Object.getPrototypeOf(Object.getPrototypeOf(server)), 'skipArea');
+			superSkipAreaSpy.mockResolvedValue({ status: ServiceArea.SkipAreaStatus.Success, statusText: '' });
+
+			const response = await server.skipArea({ skippedArea: 1 });
+
+			expect(response.status).toBe(ServiceArea.SkipAreaStatus.Success);
+			expect(superSkipAreaSpy).toHaveBeenCalledWith({ skippedArea: 1 });
+			expect(device.finalizeSkipArea).toHaveBeenCalledWith(1);
 		});
 
 		it('should return InvalidAreaList when selectedAreas is empty', async () => {
 			const server = createServer({ selectedAreas: [] }, device);
 
+			const superSkipAreaSpy = vi.spyOn(Object.getPrototypeOf(Object.getPrototypeOf(server)), 'skipArea');
+			superSkipAreaSpy.mockResolvedValue({ status: ServiceArea.SkipAreaStatus.Success, statusText: '' });
+
 			const response = await server.skipArea({ skippedArea: 1 });
 
 			expect(response.status).toBe(ServiceArea.SkipAreaStatus.InvalidAreaList);
+			expect(superSkipAreaSpy).toHaveBeenCalledTimes(0);
 		});
 
 		it('should return InvalidSkippedArea when skippedArea is not in selectedAreas', async () => {
 			const server = createServer({ selectedAreas: [1, 2], currentArea: 1 }, device);
 
+			const superSkipAreaSpy = vi.spyOn(Object.getPrototypeOf(Object.getPrototypeOf(server)), 'skipArea');
+			superSkipAreaSpy.mockResolvedValue({ status: ServiceArea.SkipAreaStatus.Success, statusText: '' });
+
 			const response = await server.skipArea({ skippedArea: 99 });
 
 			expect(response.status).toBe(ServiceArea.SkipAreaStatus.InvalidSkippedArea);
+			expect(response.statusText).toBe('AreaID 99 is not in the selected areas list');
+			expect(superSkipAreaSpy).toHaveBeenCalledTimes(0);
 		});
 
-		it('should return InvalidInMode when skippedArea is selected but not the currentArea', async () => {
+		it('should return InvalidInMode with correct message when skippedArea is not the currentArea (#172 regression)', async () => {
 			const server = createServer(
 				{
 					selectedAreas: [1, 2, 3],
@@ -194,14 +230,40 @@ describe('RoborockServiceAreaServer', () => {
 				},
 				device,
 			);
+
+			const superSkipAreaSpy = vi.spyOn(Object.getPrototypeOf(Object.getPrototypeOf(server)), 'skipArea');
+			superSkipAreaSpy.mockResolvedValue({ status: ServiceArea.SkipAreaStatus.Success, statusText: '' });
 
 			const response = await server.skipArea({ skippedArea: 3 });
 
 			expect(response.status).toBe(ServiceArea.SkipAreaStatus.InvalidInMode);
-			expect(device.skipAreaHandler).not.toHaveBeenCalled();
+			expect(response.statusText).toBe('AreaID 3 is not the area currently being cleaned');
+			expect(superSkipAreaSpy).toHaveBeenCalledTimes(0);
 		});
 
-		it('should call skipAreaHandler and advance progress on success', async () => {
+		it('should return InvalidInMode when currentArea is null and progress is empty', async () => {
+			const server = createServer(
+				{
+					selectedAreas: [1, 2, 3],
+					currentArea: null,
+					progress: [],
+				},
+				device,
+			);
+			vi.mocked(device.getAttribute).mockImplementation((_id, attr) =>
+				attr === 'progress' ? [] : RvcOperationalState.OperationalState.Running,
+			);
+
+			const superSkipAreaSpy = vi.spyOn(Object.getPrototypeOf(Object.getPrototypeOf(server)), 'skipArea');
+			superSkipAreaSpy.mockResolvedValue({ status: ServiceArea.SkipAreaStatus.Success, statusText: '' });
+
+			const response = await server.skipArea({ skippedArea: 1 });
+
+			expect(response.status).toBe(ServiceArea.SkipAreaStatus.InvalidInMode);
+			expect(superSkipAreaSpy).toHaveBeenCalledTimes(0);
+		});
+
+		it('should call super.skipArea and finalizeSkipArea on success when currentArea matches', async () => {
 			const server = createServer(
 				{
 					selectedAreas: [1, 2, 3],
@@ -215,32 +277,89 @@ describe('RoborockServiceAreaServer', () => {
 				device,
 			);
 
+			const superSkipAreaSpy = vi.spyOn(Object.getPrototypeOf(Object.getPrototypeOf(server)), 'skipArea');
+			superSkipAreaSpy.mockResolvedValue({ status: ServiceArea.SkipAreaStatus.Success, statusText: '' });
+
 			const response = await server.skipArea({ skippedArea: 2 });
 
 			expect(response.status).toBe(ServiceArea.SkipAreaStatus.Success);
-			expect(device.skipAreaHandler).toHaveBeenCalledWith(2);
+			expect(superSkipAreaSpy).toHaveBeenCalledWith({ skippedArea: 2 });
 			expect(device.finalizeSkipArea).toHaveBeenCalledWith(2);
 		});
 
-		it('should call skipAreaHandler and succeed when currentArea is null but progress is non-empty', async () => {
+		it('should call super.skipArea and finalizeSkipArea on success when currentArea is null but progress is non-empty', async () => {
 			const server = createServer(
 				{
 					selectedAreas: [1, 2, 3],
 					currentArea: null,
 					progress: [
 						{ areaId: 1, status: ServiceArea.OperationalStatus.Completed },
-						{ areaId: 2, status: ServiceArea.OperationalStatus.Pending },
+						{ areaId: 2, status: ServiceArea.OperationalStatus.Operating },
 						{ areaId: 3, status: ServiceArea.OperationalStatus.Pending },
 					],
 				},
 				device,
 			);
 
+			const superSkipAreaSpy = vi.spyOn(Object.getPrototypeOf(Object.getPrototypeOf(server)), 'skipArea');
+			superSkipAreaSpy.mockResolvedValue({ status: ServiceArea.SkipAreaStatus.Success, statusText: '' });
+
 			const response = await server.skipArea({ skippedArea: 2 });
 
 			expect(response.status).toBe(ServiceArea.SkipAreaStatus.Success);
-			expect(device.skipAreaHandler).toHaveBeenCalledWith(2);
+			expect(superSkipAreaSpy).toHaveBeenCalledWith({ skippedArea: 2 });
 			expect(device.finalizeSkipArea).toHaveBeenCalledWith(2);
+		});
+
+		it('should return native response unchanged when super.skipArea returns non-Success status', async () => {
+			const server = createServer(
+				{
+					selectedAreas: [1, 2, 3],
+					currentArea: 2,
+					progress: [
+						{ areaId: 1, status: ServiceArea.OperationalStatus.Completed },
+						{ areaId: 2, status: ServiceArea.OperationalStatus.Operating },
+						{ areaId: 3, status: ServiceArea.OperationalStatus.Pending },
+					],
+				},
+				device,
+			);
+
+			const superSkipAreaSpy = vi.spyOn(Object.getPrototypeOf(Object.getPrototypeOf(server)), 'skipArea');
+			const nativeErrorResponse = {
+				status: ServiceArea.SkipAreaStatus.InvalidSkippedArea,
+				statusText: 'Native error',
+			};
+			superSkipAreaSpy.mockResolvedValue(nativeErrorResponse);
+
+			const response = await server.skipArea({ skippedArea: 2 });
+
+			expect(response).toEqual(nativeErrorResponse);
+			expect(device.finalizeSkipArea).not.toHaveBeenCalled();
+		});
+
+		it('should map handler error to InvalidInMode and not call finalizeSkipArea', async () => {
+			const server = createServer(
+				{
+					selectedAreas: [1, 2, 3],
+					currentArea: 2,
+					progress: [
+						{ areaId: 1, status: ServiceArea.OperationalStatus.Completed },
+						{ areaId: 2, status: ServiceArea.OperationalStatus.Operating },
+						{ areaId: 3, status: ServiceArea.OperationalStatus.Pending },
+					],
+				},
+				device,
+			);
+
+			const superSkipAreaSpy = vi.spyOn(Object.getPrototypeOf(Object.getPrototypeOf(server)), 'skipArea');
+			superSkipAreaSpy.mockRejectedValue(new Error('Handler failed'));
+
+			const response = await server.skipArea({ skippedArea: 2 });
+
+			expect(response.status).toBe(ServiceArea.SkipAreaStatus.InvalidInMode);
+			expect(response.statusText).toBe('');
+			expect(device.finalizeSkipArea).not.toHaveBeenCalled();
 		});
 	});
 });

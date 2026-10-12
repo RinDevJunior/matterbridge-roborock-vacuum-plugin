@@ -27,6 +27,7 @@ export class AreaManagementService {
 	private selectedAreas = new Map<string, number[]>();
 	private progress = new Map<string, ServiceArea.Progress[]>();
 	private lastActivelyCleaningState = new Map<string, boolean>();
+	private restoredRunPending = new Set<string>();
 	private supportedAreaIndexMaps = new Map<string, RoomIndexMap>();
 	private areasListeners = new Map<string, (areas: ServiceArea.Area[], maps: ServiceArea.Map[]) => void>();
 	private refreshIntervals = new Map<string, NodeJS.Timeout>();
@@ -85,6 +86,14 @@ export class AreaManagementService {
 	public setLastActivelyCleaningState(duid: string, isActivelyCleaning: boolean): void {
 		this.logger.debug('AreaManagementService - setLastActivelyCleaningState', { duid, isActivelyCleaning });
 		this.lastActivelyCleaningState.set(duid, isActivelyCleaning);
+	}
+
+	public markRestoredRunPending(duid: string): void {
+		this.restoredRunPending.add(duid);
+	}
+
+	public consumeRestoredRunPending(duid: string): boolean {
+		return this.restoredRunPending.delete(duid);
 	}
 
 	/** Retrieve the stored "was actively cleaning" state for a device. */
@@ -455,6 +464,7 @@ export class AreaManagementService {
 		this.selectedAreas.clear();
 		this.progress.clear();
 		this.lastActivelyCleaningState.clear();
+		this.restoredRunPending.clear();
 		this.supportedAreaIndexMaps.clear();
 		this.areasListeners.clear();
 		this.deviceRooms.clear();
