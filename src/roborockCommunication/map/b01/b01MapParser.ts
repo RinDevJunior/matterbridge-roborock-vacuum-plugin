@@ -34,7 +34,12 @@ export class B01MapParser {
 		return rawBuffer.length >= 2 && rawBuffer[0] === 0x01 && rawBuffer[1] === 0x01;
 	}
 
-	private isTracePacket(rawBuffer: Buffer): boolean {
+	/**
+	 * Whether `rawBuffer` is a Q10 "trace packet" (marker 0x02 0x01) — a frequent, position-only
+	 * frame that never carries room data by design. Exposed so callers (e.g. MapInfoListener) can
+	 * distinguish this expected empty-rooms case from a genuine full map frame that came back empty.
+	 */
+	public isTracePacket(rawBuffer: Buffer): boolean {
 		return rawBuffer.length >= 2 && rawBuffer[0] === 0x02 && rawBuffer[1] === 0x01;
 	}
 
@@ -97,7 +102,7 @@ export class B01MapParser {
 	}
 
 	public parseRooms(buffer: Buffer): B01MapInfo {
-		const decoded: Record<string, unknown> = this.robotMapType.decode(buffer) as unknown as Record<string, unknown>;
+		const decoded: Record<string, unknown> = this.robotMapType.decode(buffer);
 		const roomDataInfo = decoded.roomDataInfo as Record<string, unknown>[] | undefined;
 		const mapHead = decoded.mapHead as Record<string, unknown> | undefined;
 		const mapId = typeof mapHead?.mapHeadId === 'number' && mapHead.mapHeadId > 0 ? mapHead.mapHeadId : undefined;

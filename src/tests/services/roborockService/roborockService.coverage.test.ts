@@ -78,6 +78,7 @@ describe('RoborockService - Complete Coverage', () => {
 
 		mockPollingService = {
 			activateDeviceNotifyOverLocal: vi.fn(),
+			activateConsumablePollingOverLocal: vi.fn(),
 			requestStatusOnce: vi.fn().mockResolvedValue(undefined),
 		};
 

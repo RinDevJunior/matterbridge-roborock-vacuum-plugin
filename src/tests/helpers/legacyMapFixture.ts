@@ -10,7 +10,10 @@ export const LEGACY_BLOCK_TYPE = {
 	CHARGER_LOCATION: 1,
 	IMAGE: 2,
 	ROBOT_POSITION: 8,
+	FORBIDDEN_ZONES: 9,
+	VIRTUAL_WALLS: 10,
 	CURRENTLY_CLEANED_BLOCKS: 11,
+	NO_MOP_ZONE: 12,
 } as const;
 
 export interface LegacyMapFixtureOptions {
@@ -22,6 +25,9 @@ export interface LegacyMapFixtureOptions {
 	};
 	imageSize?: { width: number; height: number; left: number; top: number };
 	cleanedBlocks?: number[];
+	virtualWalls?: { x1: number; y1: number; x2: number; y2: number }[];
+	noGoZones?: [number, number][][];
+	noMopZones?: [number, number][][];
 	/** Raw pre-built blocks (e.g. from {@link buildGenericBlock}) inserted after the known blocks. */
 	unknownBlocks?: Buffer[];
 }
@@ -98,6 +104,43 @@ export function buildCleanedBlocksBlock(segmentIds: number[]): Buffer {
 	return buffer;
 }
 
+export function buildWallBlock(walls: { x1: number; y1: number; x2: number; y2: number }[]): Buffer {
+	const hlength = 8;
+	const payloadLength = walls.length * 8;
+	const buffer = Buffer.alloc(hlength + payloadLength);
+	buffer.writeUInt16LE(LEGACY_BLOCK_TYPE.VIRTUAL_WALLS, 0);
+	buffer.writeUInt16LE(hlength, 2);
+	buffer.writeUInt32LE(payloadLength, 4);
+	buffer.writeUInt32LE(walls.length, 0x08);
+	walls.forEach((wall, i) => {
+		const offset = hlength + i * 8;
+		buffer.writeUInt16LE(wall.x1, offset);
+		buffer.writeUInt16LE(wall.y1, offset + 2);
+		buffer.writeUInt16LE(wall.x2, offset + 4);
+		buffer.writeUInt16LE(wall.y2, offset + 6);
+	});
+	return buffer;
+}
+
+export function buildZoneBlock(type: number, zones: [number, number][][]): Buffer {
+	const hlength = 8;
+	const payloadLength = zones.length * 16;
+	const buffer = Buffer.alloc(hlength + payloadLength);
+	buffer.writeUInt16LE(type, 0);
+	buffer.writeUInt16LE(hlength, 2);
+	buffer.writeUInt32LE(payloadLength, 4);
+	buffer.writeUInt32LE(zones.length, 0x08);
+	zones.forEach((zone, i) => {
+		const zoneOffset = hlength + i * 16;
+		zone.forEach(([x, y], corner) => {
+			const cornerOffset = zoneOffset + corner * 4;
+			buffer.writeUInt16LE(x, cornerOffset);
+			buffer.writeUInt16LE(y, cornerOffset + 2);
+		});
+	});
+	return buffer;
+}
+
 /** Builds a raw block of an arbitrary (non-parsed) type, to verify unknown blocks are skipped without error. */
 export function buildGenericBlock(type: number, payloadLength = 4): Buffer {
 	const hlength = 8;
@@ -138,6 +181,15 @@ export function buildLegacyMapBuffer(options: LegacyMapFixtureOptions): Buffer {
 	}
 	if (options.cleanedBlocks) {
 		blocks.push(buildCleanedBlocksBlock(options.cleanedBlocks));
+	}
+	if (options.virtualWalls) {
+		blocks.push(buildWallBlock(options.virtualWalls));
+	}
+	if (options.noGoZones) {
+		blocks.push(buildZoneBlock(LEGACY_BLOCK_TYPE.FORBIDDEN_ZONES, options.noGoZones));
+	}
+	if (options.noMopZones) {
+		blocks.push(buildZoneBlock(LEGACY_BLOCK_TYPE.NO_MOP_ZONE, options.noMopZones));
 	}
 	if (options.unknownBlocks) {
 		blocks.push(...options.unknownBlocks);

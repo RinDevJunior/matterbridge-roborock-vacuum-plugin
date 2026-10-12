@@ -68,18 +68,25 @@ export class RoborockServiceAreaServer extends MatterbridgeServiceAreaServer {
 			return { status: ServiceArea.SkipAreaStatus.InvalidInMode, statusText: '' };
 		}
 
-		if (!device.skipAreaHandler) {
-			return { status: ServiceArea.SkipAreaStatus.InvalidInMode, statusText: '' };
+		if (currentArea !== null && skippedArea !== currentArea) {
+			return {
+				status: ServiceArea.SkipAreaStatus.InvalidInMode,
+				statusText: `AreaID ${skippedArea} is not the area currently being cleaned`,
+			};
 		}
 
+		// All validation must precede super.skipArea: the native implementation forwards to the
+		// skipArea handler BEFORE validating, so the robot would be commanded for invalid requests.
+		let response: ServiceArea.SkipAreaResponse;
 		try {
-			await device.skipAreaHandler(skippedArea);
+			response = await super.skipArea(request);
 		} catch {
 			return { status: ServiceArea.SkipAreaStatus.InvalidInMode, statusText: '' };
 		}
 
-		await device.finalizeSkipArea(skippedArea);
+		if (response.status !== ServiceArea.SkipAreaStatus.Success) return response;
 
-		return { status: ServiceArea.SkipAreaStatus.Success, statusText: '' };
+		await device.finalizeSkipArea(skippedArea);
+		return response;
 	}
 }

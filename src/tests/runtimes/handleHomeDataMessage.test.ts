@@ -305,4 +305,49 @@ describe('updateFromHomeData', () => {
 		await updateFromHomeData(homeDataMismatch, platform);
 		expect(platformRunner.updateRobotWithPayload).toHaveBeenCalled();
 	});
+
+	it('should dispatch ErrorOccurred when error_code is 0 (cleared error)', async () => {
+		const homeDataWithClearedError = asPartial<Home>({
+			...homeData,
+			devices: [{ ...homeData.devices[0], deviceStatus: asPartial({ state: 8, battery: 100, error_code: 0 }) }],
+		});
+		platform.registry.robotsMap.clear();
+		platform.registry.robotsMap.set('test-duid', robot);
+
+		await updateFromHomeData(homeDataWithClearedError, platform);
+		expect(platformRunner.updateRobotWithPayload).toHaveBeenCalledWith(
+			expect.objectContaining({
+				type: 'ErrorOccurred',
+				data: expect.objectContaining({
+					vacuumErrorCode: 0,
+					dockErrorCode: 0,
+				}),
+			}),
+		);
+	});
+
+	it('should not dispatch ErrorOccurred when error_code field is absent from device status', async () => {
+		const homeDataWithoutErrorCode = asPartial<Home>({
+			...homeData,
+			devices: [{ ...homeData.devices[0], deviceStatus: asPartial({ state: 8, battery: 100 }) }],
+		});
+		platform.registry.robotsMap.clear();
+		platform.registry.robotsMap.set('test-duid', robot);
+
+		vi.clearAllMocks();
+		await updateFromHomeData(homeDataWithoutErrorCode, platform);
+
+		// Verify ErrorOccurred was NOT called for missing error_code
+		expect(platformRunner.updateRobotWithPayload).not.toHaveBeenCalledWith(
+			expect.objectContaining({
+				type: 'ErrorOccurred',
+			}),
+		);
+		// But DeviceStatusSimple should still be called
+		expect(platformRunner.updateRobotWithPayload).toHaveBeenCalledWith(
+			expect.objectContaining({
+				type: 'DeviceStatusSimple',
+			}),
+		);
+	});
 });

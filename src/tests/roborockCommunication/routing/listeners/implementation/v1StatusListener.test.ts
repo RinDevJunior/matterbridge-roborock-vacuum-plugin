@@ -211,7 +211,12 @@ describe('V1StatusListener', () => {
 			expect(handler.onStatusChanged).toHaveBeenCalled();
 			expect(handler.onCleanModeUpdate).toHaveBeenCalled();
 			expect(handler.onServiceAreaUpdate).toHaveBeenCalled();
-			expect(handler.onError).not.toHaveBeenCalled();
+			expect(handler.onError).toHaveBeenCalledWith(
+				expect.objectContaining({
+					vacuumErrorCode: VacuumErrorCode.None,
+					dockErrorCode: DockErrorCode.None,
+				}),
+			);
 		});
 
 		it('should call onError when vacuum error code is non-zero', async () => {
@@ -320,6 +325,57 @@ describe('V1StatusListener', () => {
 			const serviceAreaCall = vi.mocked(handler.onServiceAreaUpdate).mock.calls[0]?.[0];
 			expect(serviceAreaCall?.cleaningProcess).toEqual({ clean_area: 50, clean_time: 30 });
 			expect(serviceAreaCall?.cleaningProcess).not.toHaveProperty('clean_percent');
+		});
+
+		it('should not call onError when error_code, dock_error_status, and dss fields are absent entirely', async () => {
+			listener.registerHandler(handler);
+			const bodyWithoutErrorFields = {
+				state: OperationStatusCode.Idle,
+				battery: 80,
+				charge_status: 8,
+				in_cleaning: 0,
+				in_returning: 0,
+				in_fresh_state: 0,
+				is_locating: 0,
+				is_exploring: 0,
+				in_warmup: 0,
+				fan_power: 102,
+				water_box_mode: 203,
+				distance_off: 25,
+				mop_mode: 300,
+				seq_type: 0,
+				// Intentionally omitting: error_code, dock_error_status, dss
+			};
+			const message = makeRpcResponseMessage(duid, bodyWithoutErrorFields);
+			await listener.onMessage(message);
+			expect(handler.onError).not.toHaveBeenCalled();
+			expect(handler.onBatteryUpdate).toHaveBeenCalled();
+		});
+
+		it('should call onError twice when error transitions from non-zero to zero in sequential messages', async () => {
+			listener.registerHandler(handler);
+
+			// First message with non-zero vacuum error
+			const messageWithError = makeRpcResponseMessage(duid, {
+				...baseResultBody,
+				error_code: VacuumErrorCode.LidarBlocked,
+			});
+			await listener.onMessage(messageWithError);
+			expect(handler.onError).toHaveBeenCalledTimes(1);
+			expect(vi.mocked(handler.onError).mock.calls[0]?.[0]).toMatchObject({
+				vacuumErrorCode: VacuumErrorCode.LidarBlocked,
+			});
+
+			vi.clearAllMocks();
+
+			// Second message with error cleared to zero
+			const messageCleared = makeRpcResponseMessage(duid, baseResultBody);
+			await listener.onMessage(messageCleared);
+			expect(handler.onError).toHaveBeenCalledTimes(1);
+			expect(vi.mocked(handler.onError).mock.calls[0]?.[0]).toMatchObject({
+				vacuumErrorCode: VacuumErrorCode.None,
+				dockErrorCode: DockErrorCode.None,
+			});
 		});
 	});
 });

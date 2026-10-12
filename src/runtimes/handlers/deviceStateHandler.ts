@@ -6,7 +6,12 @@ import { getRunningMode } from '../../initialData/getSupportedRunModes.js';
 import type { RoborockMatterbridgePlatform } from '../../module.js';
 import { OperationStatusCode } from '../../roborockCommunication/enums/index.js';
 import { StatusChangeMessage } from '../../roborockCommunication/models/index.js';
-import { getOperationalStateName, getRunModeName, getRunModeNameV2 } from '../../share/matterStateNames.js';
+import {
+	getOperationalErrorName,
+	getOperationalStateName,
+	getRunModeName,
+	getRunModeNameV2,
+} from '../../share/matterStateNames.js';
 import type { ResolvedState } from '../../share/stateResolver.js';
 import { resolveDeviceState } from '../../share/stateResolver.js';
 import type { RoborockVacuumCleaner } from '../../types/roborockVacuumCleaner.js';
@@ -35,7 +40,10 @@ async function applyResolvedStateUpdates(
 			robot.updateAttribute(
 				RvcOperationalState.id,
 				'operationalError',
-				{ errorStateId: resolvedState.operationalError },
+				{
+					errorStateId: resolvedState.operationalError,
+					errorStateDetails: getOperationalErrorName(resolvedState.operationalError),
+				},
 				log,
 			),
 		);

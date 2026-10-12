@@ -1,4 +1,11 @@
-import { LegacyImageBlock, LegacyMapData, LegacyRobotPosition, LegacySegmentInfo } from './types.js';
+import {
+	LegacyImageBlock,
+	LegacyMapData,
+	LegacyRobotPosition,
+	LegacySegmentInfo,
+	LegacyWallLine,
+	LegacyZoneQuad,
+} from './types.js';
 
 const MM_PER_PIXEL = 50;
 
@@ -6,7 +13,10 @@ const BLOCK_TYPE = {
 	CHARGER_LOCATION: 1,
 	IMAGE: 2,
 	ROBOT_POSITION: 8,
+	FORBIDDEN_ZONES: 9,
+	VIRTUAL_WALLS: 10,
 	CURRENTLY_CLEANED_BLOCKS: 11,
+	NO_MOP_ZONE: 12,
 } as const;
 
 interface SegmentBoundingBox {
@@ -59,6 +69,15 @@ export class LegacyMapParser {
 				case BLOCK_TYPE.CURRENTLY_CLEANED_BLOCKS:
 					result.currentlyCleanedBlocks = this.parseCleanedBlocks(buffer, dataPosition);
 					break;
+				case BLOCK_TYPE.VIRTUAL_WALLS:
+					result.virtualWalls = this.parseWallLines(buffer, dataPosition, blockHLength);
+					break;
+				case BLOCK_TYPE.FORBIDDEN_ZONES:
+					result.noGoZones = this.parseZoneQuads(buffer, dataPosition, blockHLength);
+					break;
+				case BLOCK_TYPE.NO_MOP_ZONE:
+					result.noMopZones = this.parseZoneQuads(buffer, dataPosition, blockHLength);
+					break;
 				default:
 					break;
 			}
@@ -93,6 +112,12 @@ export class LegacyMapParser {
 				const name = namedRooms?.find((r) => r.id === segmentId)?.name ?? '';
 				return { segmentId, name };
 			}
+		}
+
+		const containing = this.findContainingSegment(pxRel, pyRel, data.image.segments.list);
+		if (containing) {
+			const name = namedRooms?.find((r) => r.id === containing.id)?.name ?? containing.name;
+			return { segmentId: containing.id, name };
 		}
 
 		return this.findNearestSegment(data.image.segments.list, x, y, namedRooms);
@@ -148,7 +173,10 @@ export class LegacyMapParser {
 			const bb = segmentBoundingBoxes.get(segmentId);
 			const centerX = bb ? Math.round(((bb.minX + bb.maxX) / 2 + left) * MM_PER_PIXEL) : 0;
 			const centerY = bb ? Math.round(((bb.minY + bb.maxY) / 2 + top) * MM_PER_PIXEL) : 0;
-			return { id: segmentId, name: '', center: [centerX, centerY] };
+			const boundingBox = bb
+				? { minX: bb.minX, maxX: bb.maxX, minY: bb.minY, maxY: bb.maxY }
+				: { minX: 0, maxX: -1, minY: 0, maxY: -1 };
+			return { id: segmentId, name: '', center: [centerX, centerY], boundingBox };
 		});
 
 		return {
@@ -168,6 +196,40 @@ export class LegacyMapParser {
 		return blocks;
 	}
 
+	private parseWallLines(buffer: Buffer, dataPosition: number, hlength: number): LegacyWallLine[] {
+		const count = buffer.readUInt32LE(dataPosition + 0x08);
+		const entriesStart = dataPosition + hlength;
+		const walls: LegacyWallLine[] = [];
+		for (let i = 0; i < count; i++) {
+			const entryOffset = entriesStart + i * 8;
+			if (entryOffset + 8 > buffer.length) break;
+			walls.push({
+				x1: buffer.readUInt16LE(entryOffset),
+				y1: buffer.readUInt16LE(entryOffset + 2),
+				x2: buffer.readUInt16LE(entryOffset + 4),
+				y2: buffer.readUInt16LE(entryOffset + 6),
+			});
+		}
+		return walls;
+	}
+
+	private parseZoneQuads(buffer: Buffer, dataPosition: number, hlength: number): LegacyZoneQuad[] {
+		const count = buffer.readUInt32LE(dataPosition + 0x08);
+		const entriesStart = dataPosition + hlength;
+		const zones: LegacyZoneQuad[] = [];
+		for (let i = 0; i < count; i++) {
+			const entryOffset = entriesStart + i * 16;
+			if (entryOffset + 16 > buffer.length) break;
+			const points: [number, number][] = [];
+			for (let corner = 0; corner < 4; corner++) {
+				const pointOffset = entryOffset + corner * 4;
+				points.push([buffer.readUInt16LE(pointOffset), buffer.readUInt16LE(pointOffset + 2)]);
+			}
+			zones.push({ points });
+		}
+		return zones;
+	}
+
 	private updateBoundingBox(map: Map<number, SegmentBoundingBox>, segmentId: number, px: number, py: number): void {
 		const existing = map.get(segmentId);
 		if (!existing) {
@@ -178,6 +240,18 @@ export class LegacyMapParser {
 		existing.maxX = Math.max(existing.maxX, px);
 		existing.minY = Math.min(existing.minY, py);
 		existing.maxY = Math.max(existing.maxY, py);
+	}
+
+	private findContainingSegment(
+		pxRel: number,
+		pyRel: number,
+		list: LegacySegmentInfo[],
+	): LegacySegmentInfo | undefined {
+		const matches = list.filter((segment) => {
+			const { minX, maxX, minY, maxY } = segment.boundingBox;
+			return pxRel >= minX && pxRel <= maxX && pyRel >= minY && pyRel <= maxY;
+		});
+		return matches.length === 1 ? matches[0] : undefined;
 	}
 
 	private findNearestSegment(

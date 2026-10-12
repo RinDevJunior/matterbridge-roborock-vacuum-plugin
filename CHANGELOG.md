@@ -4,6 +4,224 @@ All notable changes to this project will be documented in this file.
 
 ---
 
+## [1.2.0-rc06] - 2026-10-12
+
+### Added
+
+- **Filter life in Apple Home (V1 devices)** — The Matter HepaFilterMonitoring cluster now shows filter-life % with warning (15% or less) and critical (5% or less) alerts, opt-in via `advancedFeature.settings.enableFilterMonitoring` (default OFF) (#173).
+- **Reset filter command** — Resets both the Matter attribute and the device's own consumable timer.
+- **Filter life calculation** — Computed from `filter_work_time` against a rated life of 150 hours (540000 s): `round((540000 - filter_work_time) / 540000 * 100)`.
+- **Scope and caveats** — V1 protocol devices only (classic S-series and similar); Q10-style devices are excluded for now because the raw data semantics are unverified, and Q7 has no filter-life data source. Please report if the percentage does not match the Roborock app.
+
+<a href="https://www.buymeacoffee.com/rinnvspktr" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/default-orange.png" alt="Buy Me A Coffee" height="41" width="174"></a>
+
+---
+
+## [1.2.0-rc05] - 2026-10-12
+
+### Added
+
+- **Persist cleaning state (experimental)** — New feature flag `advancedFeature.settings.enablePersistCleaningState` (default OFF, V1 models only in this version) saves selected rooms, per-room progress, current room and active map to persistent storage while cleaning, and restores them after a plugin or Matterbridge restart if the robot is still cleaning; saved state older than 3 hours, a changed room list or a finished run starts fresh, and turning the flag off deletes saved data (#181).
+- **Persistence caveats** — Nothing is saved at shutdown, so the last status update can be lost; this needs real-robot feedback, please report your results.
+
+### Changed
+
+- **Windows-safe CI scripts** — The `*:ci` scripts are now Windows-safe (#170).
+- **Expanded unit tests** — A large set of new unit tests raises coverage without CLI to lines 99.8% and branches 98.4%; tooling only (#161, #178, #182).
+
+### Fixed
+
+- **B01 local UDP client leak** — The client is now stored and closed on re-init and shutdown (#179, #180).
+
+<a href="https://www.buymeacoffee.com/rinnvspktr" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/default-orange.png" alt="Buy Me A Coffee" height="41" width="174"></a>
+
+---
+
+## [1.2.0-rc04] - 2026-10-11
+
+### Fixed
+
+- **Stale room list on Start** — Tapping Start cleaning in Apple Home no longer shows the previous run's finished rooms; progress is reset immediately on Start and seeded with Pending rows for the selected rooms (or all rooms of the active map).
+- **Resume keeps progress** — Resuming from Paused keeps the live progress instead of resetting it.
+- **Reliable run-end cleanup** — At run end currentArea and estimatedEndTime are cleared and session timers reset reliably.
+
+<a href="https://www.buymeacoffee.com/rinnvspktr" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/default-orange.png" alt="Buy Me A Coffee" height="41" width="174"></a>
+
+---
+
+## [1.2.0-rc03] - 2026-10-11
+
+### Added
+
+- **Native ServiceArea progress API** — Uses the native Matterbridge 3.10.12 ServiceArea progress/skipArea API; minimum Matterbridge version is now 3.10.12.
+
+### Changed
+
+- **Vite path resolution** — Switched to native Vite `resolve.tsconfigPaths`.
+- **Tooling and tests** — Cleaned up tooling and test setup.
+
+### Fixed
+
+- **ServiceArea progress finalization** — On run end, Operating areas become Completed and never-visited areas become Skipped.
+- **Progress wiped after finished clean** — Charging is no longer treated as cleaning, so progress is kept after a completed clean.
+
+<a href="https://www.buymeacoffee.com/rinnvspktr" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/default-orange.png" alt="Buy Me A Coffee" height="41" width="174"></a>
+
+---
+
+## [1.2.0-rc02] - 2026-09-23
+
+### Fixed
+
+- **`skipArea` rejected for rooms not currently being cleaned** — Room skip requests are now validated against the active cleaning session so `skipArea` is rejected when targeting a room that isn't currently being cleaned, preventing invalid skip commands from being sent to the device.
+
+<a href="https://www.buymeacoffee.com/rinnvspktr" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/default-orange.png" alt="Buy Me A Coffee" height="41" width="174"></a>
+
+---
+
+## [1.2.0-rc01] - 2026-09-20
+
+### Added
+
+- **B01/Q10 cleaning-progress support for estimated finish time** — B01/Q10 devices now also read cleaning progress (DP 87) into `clean_percent`, so the optional "estimated finish time" feature (off by default, `enableEstimatedEndTime` config flag) now works for B01/Q10 too, not just V1 devices.
+
+### Changed
+
+- **B01/Q10 status codes separated from the canonical status enum** — Q10-specific operation status codes now live in a dedicated `B01Q10OperationStatusCode` enum with a Q10 resolver used only for room/cleaning-progress tracking, and codes 101 (Relocating) and 103 (Mopping) now count as active cleaning; behavior for non-Q10 devices is unchanged.
+
+### Fixed
+
+- **B01/Q10 `currentArea` stuck at null while cleaning** — The Matter `ServiceArea.currentArea` attribute now resolves to the real room for B01/Q10-family vacuums (e.g. Q10 S5+) by reading the device's `room_id_list` telemetry, matching the behavior V1 devices already had.
+
+<a href="https://www.buymeacoffee.com/rinnvspktr" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/default-orange.png" alt="Buy Me A Coffee" height="41" width="174"></a>
+
+---
+
+## [1.1.9] - 2026-09-20
+
+This release also includes all changes from 1.1.8-rc01..rc07, which were not in public 1.1.8.
+
+### Added
+
+- **Room-boundary containment for V1 room resolution** — Bounding-box containment is checked before nearest-center fallback, fixing wrong-room reports at doorways.
+- **Island/noise classification** — Map islands are classified automatically by reason (zone-overlap, wall-adjacent, size-heuristic).
+
+### Changed
+
+- **Matterbridge requirement bumped to 3.10.9** — Updated the required/tested matterbridge version (from 3.9.4 via 3.10.0).
+- **Manual island-override CLI flags removed** — `--exclude-islands`, `--no-auto-exclude` and `--highlight-island` are gone; classification is always automatic.
+
+### Fixed
+
+- **Operational error state stuck after error cleared** — Error handling now uses a shared `buildOperationalError` helper and populates error details/label correctly.
+- **Room-detection flip-flop on S8 / V1 map devices** — A 2-consecutive-match gate now smooths resolved-room changes.
+- **Room indicator flicker and wrong clean mode** — Last-known cleaning area is preserved, `areaId` 0 is valid, and mode resolution is category-aware.
+- **Unsupported "Vacuum Then Mop" mode exposed** — The mode is now gated on device capability.
+- **Vacuum stuck on one room and false-positive dock error** — V1 `currentArea` no longer freezes, and `isUpdownWaterReady` is excluded from dock error detection.
+- **Error-clear transitions not reported** — V1 listeners now run error handling whenever the error field is defined.
+- **Size-heuristic classification gate bug** — Noise islands are now filtered as intended.
+
+<a href="https://www.buymeacoffee.com/rinnvspktr" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/default-orange.png" alt="Buy Me A Coffee" height="41" width="174"></a>
+
+---
+
+## [1.1.8-rc07] - 2026-09-13
+
+### Changed
+
+- **Matterbridge dependency bumped to 3.10.9** — Updated the required/tested matterbridge version.
+
+### Fixed
+
+- **Operational error state could get stuck after a vacuum error cleared** — `RvcOperationalState.operationalError` (errorStateId) could remain stuck at a non-zero error value forever once a vacuum error occurred, even after the condition cleared, when dock-station-status reporting was off. Error handling now goes through a shared `buildOperationalError` helper so the state is reliably reset.
+- **Error details/label never showed the real error** — `errorStateDetails`/`errorStateLabel` were never populated on real errors, leaving stale "Fully operational" text displayed next to an active error code.
+
+<a href="https://www.buymeacoffee.com/rinnvspktr" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/default-orange.png" alt="Buy Me A Coffee" height="41" width="174"></a>
+
+---
+
+## [1.1.8-rc06] - 2026-08-04
+
+### Fixed
+
+- **Room-detection flip-flop on Roborock S8 / V1 map devices** — `ServiceArea.currentArea` was oscillating between non-adjacent rooms every 1-2 minutes near hub areas (e.g. a corridor bordering many rooms) due to zero temporal smoothing in `AreaManagementService.setV1ResolvedSegment`; a 2-consecutive-match confirmation gate is now required before publishing a resolved room change. This is a follow-up to the room-boundary containment work shipped in 1.1.8-rc05 (PR #154), which was correct per-snapshot but didn't address rapid oscillation across independent map pushes. Only `src/services/areaManagementService.ts` changed; V2 map devices are unaffected.
+
+<a href="https://www.buymeacoffee.com/rinnvspktr" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/default-orange.png" alt="Buy Me A Coffee" height="41" width="174"></a>
+
+---
+
+## [1.1.8-rc05] - 2026-07-28
+
+### Added
+
+- **Room-boundary containment check for V1 room resolution** — `LegacyMapParser.resolveCurrentRoom` now runs a bounding-box containment check before falling back to nearest-center-distance, fixing wrong-room reports at doorways and room thresholds on V1-protocol devices.
+- **Full island/noise classification system** — Detected map islands are now classified by reason (zone-overlap, wall-adjacent, size-heuristic) with a real-device-tuned 30% size threshold, superseding the simpler island-numbering approach and always producing `.cleaned.ppm`/`.indexed.ppm` output automatically.
+
+### Changed
+
+- **Manual island-override CLI flags removed** — Removed `--exclude-islands`, `--no-auto-exclude`, and `--highlight-island` along with their underlying features; island/noise classification is now always-on and automatic.
+
+### Fixed
+
+- **Size-heuristic classification gate bug** — Corrected a bug in the size-heuristic gate used during island classification so noise islands are filtered as intended.
+
+<a href="https://www.buymeacoffee.com/rinnvspktr" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/default-orange.png" alt="Buy Me A Coffee" height="41" width="174"></a>
+
+---
+
+## [1.1.8-rc04] - 2026-07-22
+
+### Fixed
+
+- **Room indicator flickering/mismatching during multi-room cleans** — Service-area handling now preserves the last-known cleaning area and correctly treats an `areaId` of `0` as valid instead of falsy, so HomeKit no longer flickers to the wrong room or drops the room indicator while the vacuum works through a multi-room clean.
+- **Clean mode incorrectly falling back to "Automatic"** — Mode resolution is now category-aware when matching water-flow/route combinations, so running a specific mode like Max with a non-canonical combo is reported correctly instead of falling back to a generic "Automatic" in HomeKit.
+- **Unsupported "Vacuum Then Mop" mode shown in HomeKit** — The OneTime clean mode is now gated on device capability, so devices that don't support "Vacuum Then Mop" no longer expose it as a selectable mode.
+
+<a href="https://www.buymeacoffee.com/rinnvspktr" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/default-orange.png" alt="Buy Me A Coffee" height="41" width="174"></a>
+
+---
+
+## [1.1.8-rc03] - 2026-07-22
+
+### Changed
+
+- **Requires matterbridge@3.10.0** — Minimum required Matterbridge version bumped from `3.9.4` to `3.10.0`. This is a dependency-version-only update; no plugin code changes were required, and all verification gates passed against the real matterbridge 3.10.0 API.
+
+<a href="https://www.buymeacoffee.com/rinnvspktr" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/default-orange.png" alt="Buy Me A Coffee" height="41" width="174"></a>
+
+---
+
+## [1.1.8-rc02] - 2026-07-22
+
+### Fixed
+
+- **Vacuum stuck showing "Cleaning" a single room during scheduled/multi-room cleans** — On V1-protocol Roborock devices, `handleCleaningWithoutInfo` could freeze `currentArea` on the first room, so Apple Home kept reporting the vacuum as permanently cleaning that room even after it moved on to clean other rooms in the schedule.
+- **False-positive dock error shown while idle/charging** — The `isUpdownWaterReady` dss-bitfield was mistakenly included in dock error detection, causing an "Unable to Complete Operation" error to appear in Apple Home even when the vacuum had no real fault and was simply idle or charging on the dock.
+
+<a href="https://www.buymeacoffee.com/rinnvspktr" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/default-orange.png" alt="Buy Me A Coffee" height="41" width="174"></a>
+
+---
+
+## [1.1.8-rc01] - 2026-07-20
+
+### Fixed
+
+- **Error-clear transitions not reported to Matter controller** — `V1StatusListener` and `handleHomeDataMessage` only ran the error-handling path when the error code was non-zero, so a device clearing an error never reached the existing clear-to-`NoError` reset logic. Both gates now fire whenever the error field is defined, matching the already-correct `B01StatusListener` pattern.
+
+<a href="https://www.buymeacoffee.com/rinnvspktr" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/default-orange.png" alt="Buy Me A Coffee" height="41" width="174"></a>
+
+---
+
+## [1.1.8] - 2026-09-20
+
+### Fixed
+
+- **Roborock Q10 actively-cleaning status code 104 not recognized** — Added the non-canonical raw status code `104` (reported by Q10 S5+ while cleaning) to the known operation status codes and cleaning states, so ServiceArea progress and current-area updates are no longer silently dropped during an active clean.
+
+<a href="https://www.buymeacoffee.com/rinnvspktr" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/default-orange.png" alt="Buy Me A Coffee" height="41" width="174"></a>
+
+---
+
 ## [1.1.7] - 2026-07-17
 
 ### Changed
