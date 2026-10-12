@@ -47,6 +47,8 @@ vi.mock('../../types/roborockVacuumCleaner.js', () => ({
 			hardwareVersionString: '1.0.0',
 			deviceTypeList: [],
 		});
+		this.getAttribute = vi.fn().mockReturnValue(undefined);
+		this.updateAttribute = vi.fn();
 		this.createDefaultIdentifyClusterServer = vi.fn();
 		this.createDefaultBridgedDeviceBasicInformationClusterServer = vi.fn();
 		this.mode = undefined;
@@ -282,6 +284,56 @@ describe('DeviceConfigurator cleaning-run restore', () => {
 		expect(log.warn).toHaveBeenCalledWith(expect.stringContaining('disk read failed'));
 		expect(vi.mocked(RoborockVacuumCleaner).mock.calls[0][7]).toBeUndefined();
 		expect(result).toBe(true);
+	});
+
+	it('should warn with the raw value and continue fresh when load rejects with a non-Error', async () => {
+		vi.mocked(store.load).mockRejectedValue('raw read failure');
+		const configurator = buildConfigurator(makeDevice(DUID));
+
+		const result = await configurator['configureDevice'](makeDevice(DUID), roborockService);
+
+		expect(log.warn).toHaveBeenCalledWith(expect.stringContaining('raw read failure'));
+		expect(vi.mocked(RoborockVacuumCleaner).mock.calls[0][7]).toBeUndefined();
+		expect(result).toBe(true);
+	});
+
+	it('should append the routine map and merged routine areas in the areas listener when routines exist', async () => {
+		const routine = asPartial<ServiceArea.Area>({ areaId: 50, mapId: 999 });
+		roborockService = createService({ getSupportedRoutines: vi.fn().mockReturnValue([routine]) });
+		const configurator = buildConfigurator(makeDevice(DUID));
+		await configurator.onConfigureDevice(roborockService);
+
+		const listener = vi.mocked(roborockService.registerAreasListener).mock.calls[0][1];
+		const mapOne = asPartial<ServiceArea.Map>({ mapId: MAP_ID, name: 'Ground' });
+		listener(makeAreas(), [mapOne]);
+
+		const robot = vi.mocked(RoborockVacuumCleaner).mock.instances[0];
+		expect(robot.updateAttribute).toHaveBeenCalledWith(
+			ServiceArea.id,
+			'supportedMaps',
+			[mapOne, { mapId: 999, name: 'Routine' }],
+			log,
+		);
+		expect(robot.updateAttribute).toHaveBeenCalledWith(
+			ServiceArea.id,
+			'supportedAreas',
+			[...makeAreas(), routine],
+			log,
+		);
+	});
+
+	it('should publish only the physical maps and areas when getSupportedRoutines returns undefined', async () => {
+		roborockService = createService({ getSupportedRoutines: vi.fn().mockReturnValue(undefined) });
+		const configurator = buildConfigurator(makeDevice(DUID));
+		await configurator.onConfigureDevice(roborockService);
+
+		const listener = vi.mocked(roborockService.registerAreasListener).mock.calls[0][1];
+		const mapOne = asPartial<ServiceArea.Map>({ mapId: MAP_ID, name: 'Ground' });
+		listener(makeAreas(), [mapOne]);
+
+		const robot = vi.mocked(RoborockVacuumCleaner).mock.instances[0];
+		expect(robot.updateAttribute).toHaveBeenCalledWith(ServiceArea.id, 'supportedMaps', [mapOne], log);
+		expect(robot.updateAttribute).toHaveBeenCalledWith(ServiceArea.id, 'supportedAreas', makeAreas(), log);
 	});
 
 	it('should warn and continue fresh when building the area fingerprint throws', async () => {

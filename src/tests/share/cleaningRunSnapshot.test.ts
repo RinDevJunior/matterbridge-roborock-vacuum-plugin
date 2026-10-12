@@ -212,6 +212,18 @@ describe('parseCleaningRunSnapshot', () => {
 		expect(parseCleaningRunSnapshot({ ...makeSnapshot(), selectedAreas: ['1', '2'] })).toBeUndefined();
 	});
 
+	it.each([
+		['a non-object progress row', { progress: [null] }],
+		['a progress row with a non-integer areaId', { progress: [{ areaId: 1.5, status: 1 }] }],
+		['a progress row with a string areaId', { progress: [{ areaId: '1', status: 1 }] }],
+		['a non-string duid', { duid: 42 }],
+		['a non-string areaFingerprint', { areaFingerprint: 42 }],
+		['a non-integer currentArea number', { currentArea: 1.5 }],
+		['a string currentArea', { currentArea: 'area-1' }],
+	])('should return undefined when the snapshot has %s', (_label, overrides) => {
+		expect(parseCleaningRunSnapshot({ ...makeSnapshot(), ...overrides })).toBeUndefined();
+	});
+
 	it('should keep currentArea 0 and null as valid values', () => {
 		expect(parseCleaningRunSnapshot({ ...makeSnapshot(), currentArea: 0 })?.currentArea).toBe(0);
 		expect(parseCleaningRunSnapshot({ ...makeSnapshot(), currentArea: null })?.currentArea).toBeNull();

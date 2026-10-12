@@ -98,6 +98,14 @@ describe('module onStart cleaning-run store wiring', () => {
 		expect(platform.cleaningRunStateStore).toBeUndefined();
 	});
 
+	it('should swallow a non-Error keys() rejection during flag-OFF cleanup and still finish onStart', async () => {
+		keys.mockRejectedValue('raw keys failure');
+		const platform = createPlatform(createConfig(false, false));
+
+		await expect(platform.onStart()).resolves.toBeUndefined();
+		expect(platform.cleaningRunStateStore).toBeUndefined();
+	});
+
 	it('should leave cleaningRunStateStore undefined when clearStorageOnStartup returns early', async () => {
 		const platform = createPlatform(createConfig(true, true));
 

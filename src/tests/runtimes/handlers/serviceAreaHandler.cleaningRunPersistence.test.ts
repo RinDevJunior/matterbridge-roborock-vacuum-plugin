@@ -271,6 +271,42 @@ describe('handleServiceAreaUpdate cleaning-run persistence', () => {
 			expect(store.save).not.toHaveBeenCalled();
 		});
 
+		it('should save with empty selectedAreas when the selectedAreas attribute is unset but progress exists', async () => {
+			const fake = createFakeService();
+			fake.lastActive.set(DUID, true);
+			fake.progress.set(DUID, [
+				asPartial<ServiceArea.Progress>({ areaId: 1, status: ServiceArea.OperationalStatus.Operating }),
+			]);
+			const store = createStore();
+			const { robot, attrs } = createRobot({ operationalState: RUNNING, selectedAreas: [1] });
+			vi.mocked(robot.getAttribute).mockImplementation((_cluster: unknown, name: string) =>
+				name === 'selectedAreas' ? undefined : attrs[name],
+			);
+			const platform = createPlatform(fake.service, store);
+
+			await handleServiceAreaUpdate(robot, createMessage(OperationStatusCode.Cleaning), platform);
+
+			expect(store.clear).not.toHaveBeenCalled();
+			expect(store.save).toHaveBeenCalledWith(DUID, expect.objectContaining({ selectedAreas: [] }));
+		});
+
+		it('should log a non-Error persist failure as its raw value without rejecting', async () => {
+			const fake = createFakeService();
+			const rawFailure: unknown = 'raw areas failure';
+			vi.mocked(fake.service.getSupportedAreas).mockImplementation(() => {
+				throw rawFailure;
+			});
+			const store = createStore();
+			const { robot } = createRobot({ operationalState: RUNNING, selectedAreas: [1] });
+			const platform = createPlatform(fake.service, store);
+
+			await expect(
+				handleServiceAreaUpdate(robot, createMessage(OperationStatusCode.Cleaning), platform),
+			).resolves.toBeUndefined();
+			expect(platform.log.debug).toHaveBeenCalledWith(expect.stringContaining('raw areas failure'));
+			expect(store.save).not.toHaveBeenCalled();
+		});
+
 		it('should propagate core error but still attempt persist via finally', async () => {
 			const fake = createFakeService();
 			const store = createStore();

@@ -108,6 +108,14 @@ describe('CleaningRunStateStore', () => {
 			expect(log.warn).toHaveBeenCalledWith(expect.stringContaining('disk error'));
 		});
 
+		it('should describe a non-Error rejection in the warning when getItem rejects with a string', async () => {
+			mocks = createPersistMocks({ getItem: vi.fn().mockRejectedValue('raw failure') });
+			store = new CleaningRunStateStore(mocks.persist, log);
+
+			await expect(store.load(DUID)).resolves.toBeUndefined();
+			expect(log.warn).toHaveBeenCalledWith(expect.stringContaining('raw failure'));
+		});
+
 		it('should swallow a removeItem rejection during corrupt-value cleanup', async () => {
 			mocks = createPersistMocks({
 				getItem: vi.fn().mockResolvedValue('garbage'),
@@ -213,6 +221,23 @@ describe('CleaningRunStateStore', () => {
 
 			await expect(store.clear(DUID)).resolves.toBeUndefined();
 			expect(log.warn).toHaveBeenCalledWith(expect.stringContaining('remove failed'));
+		});
+
+		it('should describe a non-Error rejection in the warning when removeItem rejects with a string', async () => {
+			mocks = createPersistMocks({ removeItem: vi.fn().mockRejectedValue('raw remove failure') });
+			store = new CleaningRunStateStore(mocks.persist, log);
+			await store.save(DUID, makeSnapshot());
+
+			await expect(store.clear(DUID)).resolves.toBeUndefined();
+			expect(log.warn).toHaveBeenCalledWith(expect.stringContaining('raw remove failure'));
+		});
+
+		it('should describe a non-Error rejection in the warning when setItem rejects with a string', async () => {
+			mocks = createPersistMocks({ setItem: vi.fn().mockRejectedValue('raw write failure') });
+			store = new CleaningRunStateStore(mocks.persist, log);
+
+			await expect(store.save(DUID, makeSnapshot())).resolves.toBeUndefined();
+			expect(log.warn).toHaveBeenCalledWith(expect.stringContaining('raw write failure'));
 		});
 
 		it('should write again when save runs with identical content after a clear', async () => {
