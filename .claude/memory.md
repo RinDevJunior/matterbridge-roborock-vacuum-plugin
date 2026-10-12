@@ -76,6 +76,7 @@ It is version-controlled — commit and push changes so teammates can pull the l
 
 - **scripts/ tests (Oct 11, 2026):** run real `.mjs` via child process; PATH = fake `git`/`codegraph`/`npx` bin dir (+ `/bin/cat` symlink) for POSIX-only `describe.skipIf(win32)`. Pure helpers via `node --input-type=module -e` harness.
 - **`*:ci` guard:** `ciScripts.test.ts` enforces single `node scripts/<x>.mjs` values; new `:ci` scripts must follow it.
+- **Mocking `node:crypto.randomInt` (Oct 12, 2026):** `vi.mock('node:crypto', importOriginal => ({...actual, randomInt: vi.fn()}))`; set `mockImplementation` in `beforeEach` (not once at top). `MapInfo` names never undefined (`Default Map N`), so use `asPartial<MapInfo>` for the `?? 'Map <id>'` arm.
 - **persistCleaningRunState tests (Oct 12, 2026):** SAVE only runs when `operationalState` attr is actively cleaning; CLEAR runs for Docked/Charging unless `message.state` is a cleaning state. Confirmed-restore with attr Docked + Cleaning msg → no clear, no save.
 
 ## Common Pitfalls
