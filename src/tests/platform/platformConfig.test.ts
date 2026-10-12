@@ -638,6 +638,44 @@ describe('PlatformConfigManager', () => {
 		it('createDefaultAdvancedFeature defaults enableEstimatedEndTime to false', () => {
 			expect(createDefaultAdvancedFeature().settings.enableEstimatedEndTime).toBe(false);
 		});
+
+		it('isPersistCleaningStateEnabled returns true when advanced feature enabled and enablePersistCleaningState = true', () => {
+			config.advancedFeature = {
+				enableAdvancedFeature: true,
+				settings: { ...createDefaultAdvancedFeature().settings, enablePersistCleaningState: true },
+			};
+			manager = PlatformConfigManager.create(config, mockLogger);
+			expect(manager.isPersistCleaningStateEnabled).toBe(true);
+		});
+
+		it('isPersistCleaningStateEnabled returns false when advanced feature disabled', () => {
+			config.advancedFeature = {
+				enableAdvancedFeature: false,
+				settings: { ...createDefaultAdvancedFeature().settings, enablePersistCleaningState: true },
+			};
+			manager = PlatformConfigManager.create(config, mockLogger);
+			expect(manager.isPersistCleaningStateEnabled).toBe(false);
+		});
+
+		it('isPersistCleaningStateEnabled returns false when enablePersistCleaningState = false', () => {
+			config.advancedFeature = {
+				enableAdvancedFeature: true,
+				settings: { ...createDefaultAdvancedFeature().settings, enablePersistCleaningState: false },
+			};
+			manager = PlatformConfigManager.create(config, mockLogger);
+			expect(manager.isPersistCleaningStateEnabled).toBe(false);
+		});
+
+		it('isPersistCleaningStateEnabled returns false when enablePersistCleaningState is undefined', () => {
+			const settings = { ...createDefaultAdvancedFeature().settings, enablePersistCleaningState: undefined };
+			config.advancedFeature = { enableAdvancedFeature: true, settings };
+			manager = PlatformConfigManager.create(config, mockLogger);
+			expect(manager.isPersistCleaningStateEnabled).toBe(false);
+		});
+
+		it('createDefaultAdvancedFeature defaults enablePersistCleaningState to false', () => {
+			expect(createDefaultAdvancedFeature().settings.enablePersistCleaningState).toBe(false);
+		});
 	});
 
 	describe('device filtering', () => {

@@ -5,6 +5,11 @@ import { INVALID_SEGMENT_ID } from '../../constants/index.js';
 import type { RoborockMatterbridgePlatform } from '../../module.js';
 import { OperationStatusCode, ProtocolVersion } from '../../roborockCommunication/enums/index.js';
 import { isB01Q10CleaningState, isB01Q10IdleState, isB01Q10Robot } from '../../share/b01Q10StatusResolver.js';
+import {
+	buildAreaFingerprint,
+	buildCleaningRunSnapshot,
+	isCleaningRunPersistenceSupported,
+} from '../../share/cleaningRunSnapshot.js';
 import { computeAreaEstimatedTime, computeEstimatedEndTimeFromCleanProgress } from '../../share/estimatedEndTime.js';
 import type { ServiceAreaUpdateMessage } from '../../types/MessagePayloads.js';
 import type { RoborockVacuumCleaner } from '../../types/roborockVacuumCleaner.js';
@@ -270,6 +275,105 @@ export async function handleServiceAreaUpdate(
 	message: ServiceAreaUpdateMessage,
 	platform: RoborockMatterbridgePlatform,
 ): Promise<void> {
+	try {
+		await handleServiceAreaUpdateCore(robot, message, platform);
+	} finally {
+		await persistCleaningRunState(robot, message, platform);
+	}
+}
+
+async function discardRestoredRun(robot: RoborockVacuumCleaner, platform: RoborockMatterbridgePlatform): Promise<void> {
+	const logger = platform.log;
+	const duid = robot.device.duid;
+	platform.roborockService?.setLastActivelyCleaningState(duid, false);
+	platform.roborockService?.setProgress(duid, []);
+	platform.roborockService?.setSelectedAreas(duid, []);
+	await robot.updateAttribute(ServiceArea.id, 'progress', [], logger);
+	await robot.updateAttribute(ServiceArea.id, 'selectedAreas', [], logger);
+	await robot.updateAttribute(ServiceArea.id, 'currentArea', null, logger);
+	await platform.cleaningRunStateStore?.clear(duid);
+	logger.info(`[${duid}] Restored cleaning run discarded`);
+}
+
+async function resolveRestoredRunOnFirstUpdate(
+	robot: RoborockVacuumCleaner,
+	message: ServiceAreaUpdateMessage,
+	platform: RoborockMatterbridgePlatform,
+	isActivelyCleaningNow: boolean,
+): Promise<boolean> {
+	const confirmed = isActivelyCleaningNow || isCleaningStateForServiceArea(robot, message.state);
+	if (confirmed) {
+		platform.log.debug(`[${robot.device.duid}] Robot is still cleaning, keeping restored run`);
+		return true;
+	}
+	await discardRestoredRun(robot, platform);
+	return false;
+}
+
+async function persistCleaningRunState(
+	robot: RoborockVacuumCleaner,
+	message: ServiceAreaUpdateMessage,
+	platform: RoborockMatterbridgePlatform,
+): Promise<void> {
+	const store = platform.cleaningRunStateStore;
+	const service = platform.roborockService;
+	if (!store || !service || !isCleaningRunPersistenceSupported(robot.device.pv)) return;
+
+	try {
+		const duid = robot.device.duid;
+		const operationalState: RvcOperationalState.OperationalState | undefined = robot.getAttribute(
+			RvcOperationalState.id,
+			'operationalState',
+			platform.log,
+		);
+
+		if (isActivelyCleaningOperationalState(operationalState)) {
+			const fingerprint = buildAreaFingerprint(
+				service.getSupportedAreas(duid),
+				service.getSupportedAreasIndexMap(duid),
+			);
+			if (fingerprint === undefined) return;
+
+			const selectedAreas = robot.getAttribute(ServiceArea.id, 'selectedAreas', platform.log) ?? [];
+			const currentArea = robot.getAttribute(ServiceArea.id, 'currentArea', platform.log) ?? null;
+			const progress = service.getProgress(duid);
+			if (selectedAreas.length === 0 && progress.length === 0) {
+				void store.clear(duid);
+				return;
+			}
+			void store.save(
+				duid,
+				buildCleaningRunSnapshot({
+					duid,
+					nowMs: Date.now(),
+					activeMapId: robot.homeInFo.activeMapId,
+					areaFingerprint: fingerprint,
+					selectedAreas,
+					currentArea,
+					progress,
+				}),
+			);
+			return;
+		}
+
+		if (
+			(isRunEndOperationalState(operationalState) || isIdleStateForServiceArea(robot, message.state)) &&
+			!isCleaningStateForServiceArea(robot, message.state)
+		) {
+			void store.clear(duid);
+		}
+	} catch (error) {
+		platform.log.debug(
+			`[${robot.device.duid}] Failed to persist cleaning state: ${error instanceof Error ? error.message : String(error)}`,
+		);
+	}
+}
+
+async function handleServiceAreaUpdateCore(
+	robot: RoborockVacuumCleaner,
+	message: ServiceAreaUpdateMessage,
+	platform: RoborockMatterbridgePlatform,
+): Promise<void> {
 	const logger = platform.log;
 	logger.debug(`Handling service area update: ${debugStringify(message)}`);
 
@@ -279,7 +383,10 @@ export async function handleServiceAreaUpdate(
 		'operationalState',
 		logger,
 	);
-	const isActivelyCleaningNow = isActivelyCleaningOperationalState(operationalState);
+	let isActivelyCleaningNow = isActivelyCleaningOperationalState(operationalState);
+	if (platform.cleaningRunStateStore && platform.roborockService?.consumeRestoredRunPending(robot.device.duid)) {
+		isActivelyCleaningNow = await resolveRestoredRunOnFirstUpdate(robot, message, platform, isActivelyCleaningNow);
+	}
 	const wasActivelyCleaning = platform.roborockService?.getLastActivelyCleaningState(robot.device.duid) ?? false;
 	platform.roborockService?.setLastActivelyCleaningState(robot.device.duid, isActivelyCleaningNow);
 
@@ -406,6 +513,10 @@ export async function handleActiveMapChanged(
 	platform: RoborockMatterbridgePlatform,
 ): Promise<void> {
 	const logger = platform.log;
+
+	if (platform.cleaningRunStateStore && platform.roborockService?.consumeRestoredRunPending(robot.device.duid)) {
+		await discardRestoredRun(robot, platform);
+	}
 
 	const operationalState: RvcOperationalState.OperationalState | undefined = robot.getAttribute(
 		RvcOperationalState.id,
