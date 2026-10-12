@@ -31,7 +31,7 @@ for (const block of xml.matchAll(/<testcase[^>]*>[\s\S]*?<\/testcase>/g)) {
 	const openTag = testcase.match(/^<testcase\s+([^>]+)>/)?.[1] ?? '';
 	const classname = openTag.match(/classname="([^"]*)"/)?.[1] ?? '';
 	const name = decodeXml(openTag.match(/\bname="([^"]*)"/)?.[1] ?? '');
-	const message = decodeXml(failure[1]).split('\n')[0].slice(0, MSG_MAX);
+	const message = decodeXml(failure[1]).split(/\r?\n/)[0].slice(0, MSG_MAX);
 	failures.push(`${classname} > ${name}: ${message}`);
 }
 

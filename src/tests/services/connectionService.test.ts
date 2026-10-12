@@ -8,6 +8,12 @@ vi.mock('nodemailer', () => ({
 	},
 }));
 
+vi.mock('../../roborockCommunication/local/udpClient.js', () => ({
+	LocalNetworkUDPClient: vi.fn(function () {
+		return { registerListener: vi.fn(), connect: vi.fn() };
+	}),
+}));
+
 import { AnsiLogger } from 'matterbridge/logger';
 
 import { DeviceConnectionError, DeviceInitializationError } from '../../errors/index.js';
@@ -270,6 +276,46 @@ describe('ConnectionService', () => {
 			).mockRejectedValue(new Error('Connection timeout'));
 
 			await expect(service.initializeMessageClient(mockDevice, mockUserData)).rejects.toThrow(DeviceConnectionError);
+		});
+
+		it('should throw DeviceInitializationError when ClientManager returns no ClientRouter', async () => {
+			// Arrange
+			asType<{ get: ReturnType<typeof vi.fn> }>(mockClientManager).get.mockReturnValue(undefined);
+			// Act
+			const attempt = service.initializeMessageClient(mockDevice, mockUserData);
+			// Assert
+			await expect(attempt).rejects.toThrow(DeviceInitializationError);
+			await expect(attempt).rejects.toThrow('Failed to get ClientRouter from ClientManager');
+			expect(mockLogger.error).toHaveBeenCalledWith('Failed to initialize message client:', expect.any(Error));
+		});
+
+		it('should wrap non-Error thrown values in DeviceInitializationError using their string form', async () => {
+			// Arrange
+			asType<{ get: ReturnType<typeof vi.fn> }>(mockClientManager).get.mockImplementation(() => {
+				throw asType<Error>('boom');
+			});
+			// Act
+			const attempt = service.initializeMessageClient(mockDevice, mockUserData);
+			// Assert
+			await expect(attempt).rejects.toThrow(DeviceInitializationError);
+			await expect(attempt).rejects.toThrow('boom');
+		});
+
+		it('should mark real-time connection when connection check is false during wait', async () => {
+			// Arrange
+			const device = asPartial<Device>({ ...mockDevice, specs: asPartial<DeviceSpecs>({}) });
+			const waitSpy = vi
+				.spyOn(asType<{ waitForConnection: (check: () => boolean) => Promise<number> }>(service), 'waitForConnection')
+				.mockImplementation(async (check) => {
+					service.clientRouter = undefined;
+					expect(check()).toBe(false);
+					return 0;
+				});
+			// Act
+			await service.initializeMessageClient(device, mockUserData);
+			// Assert
+			expect(waitSpy).toHaveBeenCalledTimes(1);
+			expect(device.specs.hasRealTimeConnection).toBe(true);
 		});
 	});
 
