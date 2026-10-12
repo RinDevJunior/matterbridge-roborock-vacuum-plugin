@@ -10,7 +10,7 @@ vi.mock('nodemailer', () => ({
 
 vi.mock('../../roborockCommunication/local/udpClient.js', () => ({
 	LocalNetworkUDPClient: vi.fn(function () {
-		return { registerListener: vi.fn(), connect: vi.fn() };
+		return { registerListener: vi.fn(), connect: vi.fn(), disconnect: vi.fn().mockResolvedValue(undefined) };
 	}),
 }));
 
