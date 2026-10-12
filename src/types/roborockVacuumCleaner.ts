@@ -22,6 +22,7 @@ import {
 } from '../runtimes/handlers/serviceAreaHandler.js';
 import { RoborockService } from '../services/roborockService.js';
 import { BehaviorFactoryResult } from '../share/behaviorFactory.js';
+import type { RestoredRunSeed } from '../share/cleaningRunSnapshot.js';
 
 interface IdentifyCommandRequest {
 	identifyTime?: number;
@@ -47,6 +48,7 @@ export class RoborockVacuumCleaner extends RoboticVacuumCleaner {
 		log: AnsiLogger,
 		resolvedAreas: ServiceArea.Area[] = [],
 		resolvedMaps: ServiceArea.Map[] = [],
+		restoredRun?: RestoredRunSeed,
 	) {
 		const deviceConfig = RoborockVacuumCleaner.initializeDeviceConfiguration(
 			device,
@@ -69,9 +71,10 @@ export class RoborockVacuumCleaner extends RoboticVacuumCleaner {
 			operationalState: RvcOperationalState.OperationalState.Docked,
 			operationalStateList: deviceConfig.operationalState,
 			supportedAreas: deviceConfig.supportedAreaAndRoutines,
-			currentArea: null,
+			selectedAreas: restoredRun?.selectedAreas,
+			currentArea: restoredRun?.currentArea ?? null,
 			supportedMaps: deviceConfig.supportedMaps,
-			progress: [],
+			progress: restoredRun?.progress ?? [],
 		});
 
 		log.debug(
