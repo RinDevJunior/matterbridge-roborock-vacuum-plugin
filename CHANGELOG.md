@@ -4,6 +4,26 @@ All notable changes to this project will be documented in this file.
 
 ---
 
+## [1.2.0-rc05] - 2026-10-12
+
+### Added
+
+- **Persist cleaning state (experimental)** — New feature flag `advancedFeature.settings.enablePersistCleaningState` (default OFF, V1 models only in this version) saves selected rooms, per-room progress, current room and active map to persistent storage while cleaning, and restores them after a plugin or Matterbridge restart if the robot is still cleaning; saved state older than 3 hours, a changed room list or a finished run starts fresh, and turning the flag off deletes saved data (#181).
+- **Persistence caveats** — Nothing is saved at shutdown, so the last status update can be lost; this needs real-robot feedback, please report your results.
+
+### Changed
+
+- **Windows-safe CI scripts** — The `*:ci` scripts are now Windows-safe (#170).
+- **Expanded unit tests** — A large set of new unit tests raises coverage without CLI to lines 99.8% and branches 98.4%; tooling only (#161, #178, #182).
+
+### Fixed
+
+- **B01 local UDP client leak** — The client is now stored and closed on re-init and shutdown (#179, #180).
+
+<a href="https://www.buymeacoffee.com/rinnvspktr" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/default-orange.png" alt="Buy Me A Coffee" height="41" width="174"></a>
+
+---
+
 ## [1.2.0-rc04] - 2026-10-11
 
 ### Fixed
