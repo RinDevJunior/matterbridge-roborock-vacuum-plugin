@@ -216,6 +216,12 @@
 										"type": "boolean",
 										"default": false
 									},
+									"enablePersistCleaningState": {
+										"title": "Persist Cleaning State",
+										"description": "Experimental (V1 vacuums only). Save the current cleaning run (selected rooms and per-room progress) and restore it after a plugin restart while the robot is still cleaning. Turning this off deletes the saved data. Requires advanced features.",
+										"type": "boolean",
+										"default": false
+									},
 									"clearStorageOnStartup": {
 										"title": "Clear Storage On Startup",
 										"description": "Clear persistence storage and re-initialize the plugin on next startup.",
