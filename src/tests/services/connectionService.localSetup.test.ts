@@ -24,7 +24,7 @@ import type { AnsiLogger } from 'matterbridge/logger';
 
 import type { PlatformConfigManager } from '../../platform/platformConfigManager.js';
 import { ProtocolVersion } from '../../roborockCommunication/enums/protocolVersion.js';
-import type { LocalNetworkUDPClient } from '../../roborockCommunication/local/udpClient.js';
+import { LocalNetworkUDPClient } from '../../roborockCommunication/local/udpClient.js';
 import {
 	Device,
 	DeviceModel,
@@ -50,6 +50,7 @@ const { udpStub } = vi.hoisted(() => ({
 	udpStub: {
 		registerListener: vi.fn(),
 		connect: vi.fn(),
+		disconnect: vi.fn().mockResolvedValue(undefined),
 	},
 }));
 
@@ -142,6 +143,8 @@ describe('ConnectionService local setup', () => {
 		mockDeviceNotify = vi.fn<DeviceNotifyCallback>();
 		localClient = makeLocalClientStub();
 		vi.mocked(mockClientRouter.registerClient).mockReturnValue(asType<Client>(localClient));
+		udpStub.disconnect.mockReset();
+		udpStub.disconnect.mockResolvedValue(undefined);
 
 		service = createService(createConfigManager(false));
 		service.setDeviceNotify(mockDeviceNotify);
@@ -298,6 +301,150 @@ describe('ConnectionService local setup', () => {
 
 			expect(mockLogger.error).toHaveBeenCalledWith('clientRouter not initialized');
 			expect(mockClientRouter.registerClient).not.toHaveBeenCalled();
+		});
+	});
+
+	describe('B01 UDP client lifecycle', () => {
+		it('should store the UDP client and connect it when no IP is known', async () => {
+			// Arrange
+			const device = createB01Device();
+
+			// Act
+			const result = await service.initializeMessageClientForLocal(device);
+
+			// Assert
+			expect(result).toBe(true);
+			expect(service.udpClientMap.get(B01_DUID)).toBe(udpStub);
+			expect(udpStub.connect).toHaveBeenCalledTimes(1);
+		});
+
+		it('should not create a UDP client when local setup succeeds with a known IP', async () => {
+			// Arrange
+			const device = createB01Device({
+				deviceStatus: {
+					[Protocol.rpc_request]: {
+						[RPC_Request_Segments.network_info]: { ipAddress: '10.0.0.5' },
+					},
+				},
+			});
+
+			// Act
+			const result = await service.initializeMessageClientForLocal(device);
+
+			// Assert
+			expect(result).toBe(true);
+			expect(service.udpClientMap.size).toBe(0);
+			expect(LocalNetworkUDPClient).not.toHaveBeenCalled();
+			expect(udpStub.connect).not.toHaveBeenCalled();
+		});
+
+		it('should disconnect the stored UDP client and clear udpClientMap when shutdown is called', async () => {
+			// Arrange
+			await service.initializeMessageClientForLocal(createB01Device());
+
+			// Act
+			await service.shutdown();
+
+			// Assert
+			expect(udpStub.disconnect).toHaveBeenCalledTimes(1);
+			expect(service.udpClientMap.size).toBe(0);
+		});
+
+		it('should disconnect the previous UDP client before connecting a new one when re-initialized', async () => {
+			// Arrange
+			await service.initializeMessageClientForLocal(createB01Device());
+
+			// Act
+			await service.initializeMessageClientForLocal(createB01Device());
+
+			// Assert
+			expect(udpStub.disconnect).toHaveBeenCalledTimes(1);
+			expect(udpStub.connect).toHaveBeenCalledTimes(2);
+			expect(vi.mocked(udpStub.disconnect).mock.invocationCallOrder[0]).toBeLessThan(
+				vi.mocked(udpStub.connect).mock.invocationCallOrder[1],
+			);
+			expect(service.udpClientMap.size).toBe(1);
+		});
+
+		it.each([
+			{
+				label: 'rejects',
+				arrange: (): void => {
+					udpStub.disconnect.mockRejectedValueOnce(new Error('socket closed'));
+				},
+			},
+			{
+				label: 'throws synchronously',
+				arrange: (): void => {
+					udpStub.disconnect.mockImplementationOnce(() => {
+						throw new Error('socket closed');
+					});
+				},
+			},
+		])('should log and continue shutdown when UDP disconnect $label', async ({ arrange }) => {
+			// Arrange
+			await service.initializeMessageClientForLocal(createB01Device());
+			service.ipMap.set(V1_DUID, '192.168.1.5');
+			await service.initializeMessageClientForLocal(createV1Device());
+			arrange();
+
+			// Act
+			await expect(service.shutdown()).resolves.toBeUndefined();
+
+			// Assert
+			expect(mockLogger.error).toHaveBeenCalledWith(
+				expect.stringContaining(`Error disconnecting UDP client ${B01_DUID}`),
+				expect.any(Error),
+			);
+			expect(service.udpClientMap.size).toBe(0);
+			expect(localClient.disconnect).toHaveBeenCalledTimes(1);
+		});
+
+		it('should store the new UDP client and return true when disconnect fails during re-init', async () => {
+			// Arrange
+			await service.initializeMessageClientForLocal(createB01Device());
+			udpStub.disconnect.mockRejectedValueOnce(new Error('socket closed'));
+
+			// Act
+			const result = await service.initializeMessageClientForLocal(createB01Device());
+
+			// Assert
+			expect(result).toBe(true);
+			expect(LocalNetworkUDPClient).toHaveBeenCalledTimes(2);
+			expect(udpStub.connect).toHaveBeenCalledTimes(2);
+			expect(service.udpClientMap.get(B01_DUID)).toBe(udpStub);
+			expect(mockLogger.error).toHaveBeenCalledWith(
+				expect.stringContaining(`Error disconnecting UDP client ${B01_DUID}`),
+				expect.any(Error),
+			);
+		});
+
+		it('should store and disconnect one UDP client per B01 device on shutdown', async () => {
+			// Arrange
+			await service.initializeMessageClientForLocal(createB01Device());
+			await service.initializeMessageClientForLocal(createB01Device({ duid: 'b01-duid-2' }));
+			expect(service.udpClientMap.size).toBe(2);
+
+			// Act
+			await service.shutdown();
+
+			// Assert
+			expect(udpStub.disconnect).toHaveBeenCalledTimes(2);
+			expect(service.udpClientMap.size).toBe(0);
+		});
+
+		it('should not touch udpClientMap or create a UDP client for a V1 device', async () => {
+			// Arrange
+			service.ipMap.set(V1_DUID, '192.168.1.5');
+
+			// Act
+			await service.initializeMessageClientForLocal(createV1Device());
+			await service.shutdown();
+
+			// Assert
+			expect(service.udpClientMap.size).toBe(0);
+			expect(LocalNetworkUDPClient).not.toHaveBeenCalled();
+			expect(udpStub.disconnect).not.toHaveBeenCalled();
 		});
 	});
 
