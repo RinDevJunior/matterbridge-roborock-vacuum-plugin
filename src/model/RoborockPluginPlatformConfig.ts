@@ -54,6 +54,7 @@ export interface AdvancedFeatureSetting {
 	emailNotificationSettings: EmailNotificationSettings;
 	enableLiveMapUpdates: boolean;
 	enableEstimatedEndTime?: boolean;
+	enableFilterMonitoring?: boolean;
 	enablePersistCleaningState?: boolean;
 }
 
@@ -134,6 +135,7 @@ export function createDefaultAdvancedFeature(): AdvancedFeatureConfiguration {
 			emailNotificationSettings: {},
 			enableLiveMapUpdates: false,
 			enableEstimatedEndTime: false,
+			enableFilterMonitoring: false,
 			enablePersistCleaningState: false,
 		},
 	};

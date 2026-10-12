@@ -14,6 +14,7 @@ import { getOperationalStates, getSupportedCleanModes, getSupportedRoutines } fr
 import { DockStationStatus } from '../model/DockStationStatus.js';
 import { PlatformConfigManager } from '../platform/platformConfigManager.js';
 import { Device } from '../roborockCommunication/models/index.js';
+import { isV1Device } from '../roborockCommunication/protocol/dispatcher/dispatcherFactory.js';
 import {
 	buildProgressUpdate,
 	getNextPendingArea,
@@ -35,6 +36,7 @@ export class RoborockVacuumCleaner extends RoboticVacuumCleaner {
 	operationSessionStartMs: number | null = null;
 	operationPausedSinceMs: number | null = null;
 	operationPausedAccumMs = 0;
+	private readonly supportsFilterMonitoring: boolean;
 
 	/**
 	 * Create a new Roborock Vacuum Cleaner device.
@@ -52,7 +54,6 @@ export class RoborockVacuumCleaner extends RoboticVacuumCleaner {
 	) {
 		const deviceConfig = RoborockVacuumCleaner.initializeDeviceConfiguration(
 			device,
-			homeInFo,
 			configManager,
 			roborockService,
 			log,
@@ -76,6 +77,12 @@ export class RoborockVacuumCleaner extends RoboticVacuumCleaner {
 			supportedMaps: deviceConfig.supportedMaps,
 			progress: restoredRun?.progress ?? [],
 		});
+
+		this.supportsFilterMonitoring = deviceConfig.supportsFilterMonitoring;
+
+		if (deviceConfig.supportsFilterMonitoring) {
+			this.createDefaultHepaFilterMonitoringClusterServer();
+		}
 
 		log.debug(
 			`Creating RoborockVacuumCleaner for device: ${deviceConfig.deviceName}, 
@@ -221,6 +228,13 @@ export class RoborockVacuumCleaner extends RoboticVacuumCleaner {
 			this.log.info('Stop command received');
 			behaviorHandler.executeCommand(CommandNames.STOP);
 		});
+
+		if (this.supportsFilterMonitoring) {
+			this.addCommandHandlerWithErrorHandling('HepaFilterMonitoring.resetCondition', async () => {
+				this.log.info('Reset filter condition command received');
+				await behaviorHandler.executeCommand(CommandNames.RESET_FILTER);
+			});
+		}
 	}
 
 	/**
@@ -228,7 +242,6 @@ export class RoborockVacuumCleaner extends RoboticVacuumCleaner {
 	 */
 	private static initializeDeviceConfiguration(
 		device: Device,
-		homeInFo: HomeEntity,
 		configManager: PlatformConfigManager,
 		roborockService: RoborockService,
 		log: AnsiLogger,
@@ -274,6 +287,7 @@ export class RoborockVacuumCleaner extends RoboticVacuumCleaner {
 			supportedMaps,
 			supportedAreaAndRoutines,
 			operationalState,
+			supportsFilterMonitoring: isV1Device(device.pv, device.specs.model) && configManager.isFilterMonitoringEnabled,
 		};
 	}
 

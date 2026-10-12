@@ -72,6 +72,12 @@ export const MQTT_REFRESH_INTERVAL_MULTIPLIER = 500;
 export const LOCAL_REFRESH_INTERVAL_MULTIPLIER = 1000;
 
 /**
+ * Refresh interval for consumable (filter) status polling (6 hours).
+ * Rated life spans hundreds of hours, so frequent polling is unnecessary.
+ */
+export const CONSUMABLE_STATUS_REFRESH_INTERVAL_MS = 6 * 60 * 60 * 1000;
+
+/**
  * Number of consecutive failures before entering backoff mode (5 failures).
  */
 export const FAILURE_THRESHOLD = 5;

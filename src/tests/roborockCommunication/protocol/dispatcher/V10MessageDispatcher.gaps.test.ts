@@ -182,4 +182,104 @@ describe('V10MessageDispatcher (gap coverage)', () => {
 			expect(setting.waterFlow).toBe(4);
 		});
 	});
+
+	describe('getConsumableStatus', () => {
+		async function captureConsumableParser() {
+			vi.mocked(client.query).mockResolvedValueOnce(undefined);
+			await dispatcher.getConsumableStatus('duid-1');
+			return {
+				parser: vi.mocked(client.query).mock.calls[0][2],
+				request: vi.mocked(client.query).mock.calls[0][1],
+			};
+		}
+
+		it('should return the parsed payload when the parser receives a matching rpc response', async () => {
+			// Arrange
+			const { parser, request } = await captureConsumableParser();
+			const payload = { filter_work_time: 1234 };
+			// Act
+			const parsed = parser(makeMsg(Protocol.rpc_response, request.messageId, payload));
+			// Assert
+			expect(parsed).toEqual(payload);
+		});
+
+		it('should unwrap the first element when the parser receives an array result', async () => {
+			// Arrange
+			const { parser, request } = await captureConsumableParser();
+			const payload = { filter_work_time: 1234 };
+			// Act
+			const parsed = parser(makeMsg(Protocol.general_response, request.messageId, [payload]));
+			// Assert
+			expect(parsed).toEqual(payload);
+		});
+
+		it('should return undefined from the parser when the message has no body', async () => {
+			// Arrange
+			const { parser } = await captureConsumableParser();
+			// Act
+			const parsed = parser(makeEmptyMsg());
+			// Assert
+			expect(parsed).toBeUndefined();
+		});
+
+		it('should return undefined from the parser when the dps id does not match', async () => {
+			// Arrange
+			const { parser, request } = await captureConsumableParser();
+			// Act
+			const parsed = parser(makeMsg(Protocol.rpc_response, request.messageId + 1000, { filter_work_time: 1 }));
+			// Assert
+			expect(parsed).toBeUndefined();
+		});
+
+		it('should return undefined when the query resolves undefined', async () => {
+			// Arrange
+			vi.mocked(client.query).mockResolvedValueOnce(undefined);
+			// Act
+			const result = await dispatcher.getConsumableStatus('duid-1');
+			// Assert
+			expect(result).toBeUndefined();
+		});
+
+		it('should return undefined when filter_work_time is not a number', async () => {
+			// Arrange
+			vi.mocked(client.query).mockResolvedValueOnce({ filter_work_time: '1234' });
+			// Act
+			const result = await dispatcher.getConsumableStatus('duid-1');
+			// Assert
+			expect(result).toBeUndefined();
+		});
+
+		it('should return filterWorkTimeSec when filter_work_time is zero', async () => {
+			// Arrange
+			vi.mocked(client.query).mockResolvedValueOnce({ filter_work_time: 0 });
+			// Act
+			const result = await dispatcher.getConsumableStatus('duid-1');
+			// Assert
+			expect(result).toEqual({ filterWorkTimeSec: 0 });
+		});
+	});
+
+	describe('resetFilterConsumable', () => {
+		it('should send reset_consumable with filter_work_time params to the device', async () => {
+			// Arrange
+			vi.mocked(client.send).mockResolvedValueOnce(undefined);
+			// Act
+			await dispatcher.resetFilterConsumable('duid-1');
+			// Assert
+			const sent = vi.mocked(client.send).mock.calls[0][1];
+			expect(vi.mocked(client.send).mock.calls[0][0]).toBe('duid-1');
+			expect(sent).toBeInstanceOf(RequestMessage);
+			expect(sent.method).toBe('reset_consumable');
+			expect(sent.params).toEqual(['filter_work_time']);
+		});
+
+		it('should resolve to undefined when the send succeeds', async () => {
+			// Arrange
+			vi.mocked(client.send).mockResolvedValueOnce(undefined);
+			// Act
+			const result = await dispatcher.resetFilterConsumable('duid-1');
+			// Assert
+			expect(result).toBeUndefined();
+		});
+	});
 });

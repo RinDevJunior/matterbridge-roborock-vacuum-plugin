@@ -392,4 +392,59 @@ describe('V10MessageDispatcher', () => {
 			expect(parseFn(msg)).toEqual(payload);
 		});
 	});
+
+	describe('getConsumableStatus', () => {
+		it('should call client.query with get_consumable method', async () => {
+			client.query.mockResolvedValueOnce(undefined);
+			await dispatcher.getConsumableStatus(duid);
+			expect(client.query).toHaveBeenCalled();
+			const call = client.query.mock.calls[0];
+			const requestMsg = call[1];
+			expect(requestMsg.method).toBe('get_consumable');
+		});
+
+		it('should return ConsumableStatus with filterWorkTimeSec when filter_work_time is present', async () => {
+			const response = { filter_work_time: 100000, other_field: 'ignored' };
+			client.query.mockResolvedValueOnce(response);
+			const result = await dispatcher.getConsumableStatus(duid);
+			expect(result).toEqual({ filterWorkTimeSec: 100000 });
+		});
+
+		it('should return undefined when response is undefined', async () => {
+			client.query.mockResolvedValueOnce(undefined);
+			const result = await dispatcher.getConsumableStatus(duid);
+			expect(result).toBeUndefined();
+		});
+
+		it('should return undefined when filter_work_time is missing', async () => {
+			const response = { other_field: 'no_filter_time' };
+			client.query.mockResolvedValueOnce(response);
+			const result = await dispatcher.getConsumableStatus(duid);
+			expect(result).toBeUndefined();
+		});
+
+		it('should return undefined when filter_work_time is not a number', async () => {
+			const response = { filter_work_time: 'not_a_number' };
+			client.query.mockResolvedValueOnce(response);
+			const result = await dispatcher.getConsumableStatus(duid);
+			expect(result).toBeUndefined();
+		});
+	});
+
+	describe('resetFilterConsumable', () => {
+		it('should call client.send with reset_consumable method and filter_work_time param', async () => {
+			await dispatcher.resetFilterConsumable(duid);
+			expect(client.send).toHaveBeenCalled();
+			const call = client.send.mock.calls[0];
+			expect(call[0]).toBe(duid);
+			const requestMsg = call[1];
+			expect(requestMsg.method).toBe('reset_consumable');
+			expect(requestMsg.params).toEqual(['filter_work_time']);
+		});
+
+		it('should not throw when client.send is called', async () => {
+			client.send.mockResolvedValueOnce(undefined);
+			await expect(dispatcher.resetFilterConsumable(duid)).resolves.not.toThrow();
+		});
+	});
 });

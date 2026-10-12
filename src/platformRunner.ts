@@ -4,6 +4,7 @@ import { BurstPollingManager } from './platform/burstPollingManager.js';
 import { updateFromHomeData } from './runtimes/handleHomeDataMessage.js';
 import { handleBatteryUpdate } from './runtimes/handlers/batteryStateHandler.js';
 import { handleCleanModeUpdate } from './runtimes/handlers/cleanModeHandler.js';
+import { handleConsumableUpdate } from './runtimes/handlers/consumableStateHandler.js';
 import { handleDeviceStatusSimpleUpdate, handleDeviceStatusUpdate } from './runtimes/handlers/deviceStateHandler.js';
 import { handleErrorOccurred } from './runtimes/handlers/errorStateHandler.js';
 import { handleActiveMapChanged, handleServiceAreaUpdate } from './runtimes/handlers/serviceAreaHandler.js';
@@ -104,6 +105,11 @@ export class PlatformRunner {
 			case NotifyMessageTypes.CleanModeUpdate:
 				await this.executeWithRobot(payload.data.duid, payload.data, (robot, data) =>
 					handleCleanModeUpdate(robot, data, this.platform),
+				);
+				break;
+			case NotifyMessageTypes.ConsumableUpdate:
+				await this.executeWithRobot(payload.data.duid, payload.data, (robot, data) =>
+					handleConsumableUpdate(robot, data, this.platform),
 				);
 				break;
 			case NotifyMessageTypes.ServiceAreaUpdate:
