@@ -5,15 +5,28 @@ import { ENGINES } from '../../settings.js';
 import { checkDependencyVersions } from '../../share/dependency-check.js';
 import { asPartial, createMockLogger, createMockMatterbridge } from '../helpers/testUtils.js';
 
+// Pinned Node version inside the engines range (">=24 <25") so the Nodejs row
+// never depends on the Node binary running the suite (Node 25 logs an error).
+const PINNED_NODE_VERSION = '24.13.1';
+
 describe('checkDependencyVersions (gaps)', () => {
 	let mockLogger: ReturnType<typeof createMockLogger>;
+	let originalVersionsDescriptor: PropertyDescriptor | undefined;
 
 	beforeEach(() => {
 		vi.clearAllMocks();
 		mockLogger = createMockLogger();
+		originalVersionsDescriptor = Object.getOwnPropertyDescriptor(process, 'versions');
+		Object.defineProperty(process, 'versions', {
+			value: { ...process.versions, node: PINNED_NODE_VERSION },
+			configurable: true,
+		});
 	});
 
 	afterEach(() => {
+		if (originalVersionsDescriptor) {
+			Object.defineProperty(process, 'versions', originalVersionsDescriptor);
+		}
 		vi.clearAllMocks();
 	});
 
