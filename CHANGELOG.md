@@ -4,6 +4,19 @@ All notable changes to this project will be documented in this file.
 
 ---
 
+## [1.2.0-rc06] - 2026-10-12
+
+### Added
+
+- **Filter life in Apple Home (V1 devices)** — The Matter HepaFilterMonitoring cluster now shows filter-life % with warning (15% or less) and critical (5% or less) alerts, opt-in via `advancedFeature.settings.enableFilterMonitoring` (default OFF) (#173).
+- **Reset filter command** — Resets both the Matter attribute and the device's own consumable timer.
+- **Filter life calculation** — Computed from `filter_work_time` against a rated life of 150 hours (540000 s): `round((540000 - filter_work_time) / 540000 * 100)`.
+- **Scope and caveats** — V1 protocol devices only (classic S-series and similar); Q10-style devices are excluded for now because the raw data semantics are unverified, and Q7 has no filter-life data source. Please report if the percentage does not match the Roborock app.
+
+<a href="https://www.buymeacoffee.com/rinnvspktr" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/default-orange.png" alt="Buy Me A Coffee" height="41" width="174"></a>
+
+---
+
 ## [1.2.0-rc05] - 2026-10-12
 
 ### Added
