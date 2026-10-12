@@ -831,7 +831,7 @@ describe('MQTTClient', () => {
 			vi.useRealTimers();
 		});
 
-		it('scheduleGeneralBackoffReconnect should clear pre-existing timeout', () => {
+		it('scheduleGeneralBackoffReconnect should ignore a second call while a general backoff timeout is pending', () => {
 			vi.useFakeTimers();
 			const mqttClient = createMQTTClient();
 			mqttClient['mqttClient'] = client;
@@ -843,8 +843,12 @@ describe('MQTTClient', () => {
 
 			mqttClient['scheduleGeneralBackoffReconnect']('error 2');
 
-			expect(clearTimeoutSpy).toHaveBeenCalledWith(firstTimeout);
+			expect(clearTimeoutSpy).not.toHaveBeenCalledWith(firstTimeout);
+			expect(mqttClient['generalBackoffTimeout']).toBe(firstTimeout);
+			expect(mqttClient['consecutiveGeneralFailures']).toBe(1);
+			expect(logger.warn).toHaveBeenCalledTimes(1);
 
+			clearTimeoutSpy.mockRestore();
 			vi.useRealTimers();
 		});
 

@@ -80,6 +80,7 @@ It is version-controlled — commit and push changes so teammates can pull the l
 - `modeResolver.ts` `createDefaultModeResolver`/`createSmartModeResolver` OneTime branch (pre-fix Jul 22) always returned mode 11 regardless of `configs`; real `seq_type` reaches it on any non-B01 device. Fix: gate on `configs.some(mode===11)`, computed once per factory call.
 - `errorStateHandler.ts` `handleErrorOccurred` (fixed Sep 13 2026): `!includeDockStationStatus` guard did bare `return;` without clearing `operationalError`, sticking a vacuum `errorStateId` forever. Fix: `buildOperationalError` helper clears before early return; `errorStateDetails` on all writes.
 - B01/Q10 currentArea (Sep 20, 2026): `resolveAreaFromCleaningInfo`/`RoomIndexMap.getAreaId` (`serviceAreaHandler.ts:392-444`) has no V1-only gate; `B01StatusListener.tryHandleQ10Push` now fills `cleaningInfo.segment_id` from `common_request`(101)→`clean_expand`(91)→`room_id_list`. No handler changes.
+- MQTT `scheduleGeneralBackoffReconnect` (Oct 12, 2026): early-returns while `authErrorBackoffTimeout` or `generalBackoffTimeout` is set (one failure per outage); `terminateConnection()` would cancel the 60-min auth timer.
 
 ## Tooling & Environment
 

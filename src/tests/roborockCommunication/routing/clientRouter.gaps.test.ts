@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { RequestMessage, ResponseMessage, UserData } from '../../../roborockCommunication/models/index.js';
 import type { MQTTClient } from '../../../roborockCommunication/mqtt/mqttClient.js';
@@ -110,5 +110,55 @@ describe('ClientRouter (gap coverage)', () => {
 		expect(logger.error).toHaveBeenCalledWith('local down');
 		expect(mqttClient.reportQueryTimeout).not.toHaveBeenCalled();
 		expect(mqttClient.reportQuerySuccess).not.toHaveBeenCalled();
+	});
+
+	describe('health signal reporting', () => {
+		afterEach(() => {
+			vi.useRealTimers();
+		});
+
+		it('should not report query success or timeout when a non-secure query resolves', async () => {
+			// Arrange
+			const router = new ClientRouter(createMockLogger(), userData);
+			const registerSpy = vi.spyOn(router['broadcasterFactory'], 'register');
+			const mqttClient = createMockMqttClient({
+				send: vi.fn().mockImplementation(async () => {
+					// Deliver the response after query() has attached its waitFor() resolver.
+					const listener = vi.mocked(registerSpy).mock.calls[0][0];
+					setTimeout(() => void listener.onMessage(asPartial<ResponseMessage>({ duid: 'duid' })), 0);
+				}),
+			});
+			router['mqttClient'] = mqttClient;
+			const request = asPartial<RequestMessage>({ secure: false, messageId: 8 });
+
+			// Act
+			const result = await router.query('duid', request, () => 'parsed', 1000);
+
+			// Assert
+			expect(result).toBe('parsed');
+			expect(mqttClient.reportQuerySuccess).not.toHaveBeenCalled();
+			expect(mqttClient.reportQueryTimeout).not.toHaveBeenCalled();
+		});
+
+		it('should report query timeout to the health monitor when a secure query gets no response', async () => {
+			// Arrange
+			vi.useFakeTimers();
+			const logger = createMockLogger();
+			const router = new ClientRouter(logger, userData);
+			const mqttClient = createMockMqttClient();
+			router['mqttClient'] = mqttClient;
+			const request = asPartial<RequestMessage>({ secure: true, messageId: 9 });
+
+			// Act
+			const pending = router.query('duid', request, () => 'parsed', 1000);
+			await vi.advanceTimersByTimeAsync(1000);
+			const result = await pending;
+
+			// Assert
+			expect(result).toBeUndefined();
+			expect(logger.error).toHaveBeenCalledWith(expect.stringContaining('Timeout after 1000ms'));
+			expect(mqttClient.reportQueryTimeout).toHaveBeenCalledTimes(1);
+			expect(mqttClient.reportQuerySuccess).not.toHaveBeenCalled();
+		});
 	});
 });

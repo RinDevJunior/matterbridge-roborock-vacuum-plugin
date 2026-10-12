@@ -1,10 +1,12 @@
-import type { MqttClient as MqttLibClient } from 'mqtt';
+import type { ErrorWithReasonCode, IConnackPacket, MqttClient as MqttLibClient } from 'mqtt';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { BACKOFF_MULTIPLIER, KEEPALIVE_INTERVAL_MS, MIN_BACKOFF_INTERVAL_MS } from '../../../constants/timeouts.js';
 import type { MessageContext, UserData } from '../../../roborockCommunication/models/index.js';
 import { MQTTClient } from '../../../roborockCommunication/mqtt/mqttClient.js';
+import type { ConnectionBroadcaster } from '../../../roborockCommunication/routing/listeners/connectionBroadcaster.js';
 import type { ResponseBroadcaster } from '../../../roborockCommunication/routing/listeners/responseBroadcaster.js';
-import { asType, createMockLogger } from '../../helpers/testUtils.js';
+import { asPartial, asType, createMockLogger } from '../../helpers/testUtils.js';
 
 const mqttMock = vi.hoisted(() => ({ connect: vi.fn() }));
 
@@ -115,6 +117,126 @@ describe('MQTTClient (gap coverage)', () => {
 			// Assert
 			expect(mockLogger.error).toHaveBeenCalledWith(expect.stringContaining('unable to process message'));
 			expect(mockLogger.error).toHaveBeenCalledWith(expect.stringContaining('boom'));
+		});
+	});
+
+	describe('backoff and health regressions', () => {
+		function stubConnectionBroadcaster(): ReturnType<typeof createStubBroadcaster> {
+			const broadcaster = createStubBroadcaster();
+			Object.defineProperty(client, 'connectionBroadcaster', { value: broadcaster, writable: true });
+			return broadcaster;
+		}
+
+		function createStubBroadcaster() {
+			return asPartial<ConnectionBroadcaster>({
+				onConnected: vi.fn().mockResolvedValue(undefined),
+				onDisconnected: vi.fn().mockResolvedValue(undefined),
+				onOffline: vi.fn().mockResolvedValue(undefined),
+				onClose: vi.fn().mockResolvedValue(undefined),
+				onError: vi.fn().mockResolvedValue(undefined),
+				onReconnect: vi.fn(),
+			});
+		}
+
+		async function triggerAuthBackoff(): Promise<void> {
+			for (let i = 0; i < 5; i++) {
+				await client['onError'](asPartial<ErrorWithReasonCode>({ code: 5 }));
+			}
+		}
+
+		it('should keep the 60-minute auth backoff when stray offline, close and error events arrive', async () => {
+			// Arrange
+			stubConnectionBroadcaster();
+			await triggerAuthBackoff();
+			const connectSpy = vi.spyOn(client, 'connect');
+
+			// Act
+			await client['onOffline']();
+			await client['onClose']();
+			await client['onError'](new Error('stray socket error'));
+			await vi.advanceTimersByTimeAsync(MIN_BACKOFF_INTERVAL_MS + 1);
+
+			// Assert
+			expect(client['authErrorBackoffTimeout']).toBeDefined();
+			expect(client['generalBackoffTimeout']).toBeUndefined();
+			expect(client['consecutiveGeneralFailures']).toBe(0);
+			expect(connectSpy).not.toHaveBeenCalled();
+
+			// Act
+			await vi.advanceTimersByTimeAsync(KEEPALIVE_INTERVAL_MS);
+
+			// Assert
+			expect(connectSpy).toHaveBeenCalledTimes(1);
+		});
+
+		it('should count error, close and offline in a row as one failure and grow the delay once', async () => {
+			// Arrange
+			stubConnectionBroadcaster();
+			client['connected'] = true;
+			client['mqttClient'] = libStub;
+
+			// Act
+			await client['onClose']();
+			await client['onError'](new Error('socket reset'));
+			await client['onOffline']();
+
+			// Assert
+			expect(client['consecutiveGeneralFailures']).toBe(1);
+			expect(client['generalBackoffMs']).toBe(MIN_BACKOFF_INTERVAL_MS * BACKOFF_MULTIPLIER);
+			expect(mockLogger.warn).toHaveBeenCalledTimes(1);
+			expect(mockLogger.warn).toHaveBeenCalledWith(
+				expect.stringContaining(`delay: ${MIN_BACKOFF_INTERVAL_MS}ms, failures: 1`),
+			);
+
+			// Act: fire the pending reconnect, then one more real failure
+			await vi.advanceTimersByTimeAsync(MIN_BACKOFF_INTERVAL_MS + 1);
+			await client['onError'](new Error('next failure'));
+
+			// Assert
+			expect(client['consecutiveGeneralFailures']).toBe(2);
+			expect(mockLogger.warn).toHaveBeenLastCalledWith(
+				expect.stringContaining(`delay: ${MIN_BACKOFF_INTERVAL_MS * BACKOFF_MULTIPLIER}ms, failures: 2`),
+			);
+		});
+
+		it('should ignore onOffline while a health-monitor forced reconnect is in progress', async () => {
+			// Arrange
+			const broadcaster = stubConnectionBroadcaster();
+			client['connected'] = true;
+			client['mqttClient'] = libStub;
+			client['forceReconnect']('health monitor: too many consecutive query timeouts');
+
+			// Act
+			await client['onOffline']();
+
+			// Assert
+			expect(client['isForceReconnecting']).toBe(true);
+			expect(broadcaster.onOffline).not.toHaveBeenCalled();
+			expect(client['consecutiveGeneralFailures']).toBe(0);
+			expect(client['generalBackoffTimeout']).toBeUndefined();
+			expect(client['connected']).toBe(true);
+		});
+
+		it('should reset the health monitor and backoff counters when connected', async () => {
+			// Arrange
+			stubConnectionBroadcaster();
+			client['mqttClient'] = libStub;
+			client['healthMonitor'].onTimeout();
+			client['healthMonitor'].onTimeout();
+			client['consecutiveGeneralFailures'] = 4;
+			client['generalBackoffMs'] = 30000;
+			client['consecutiveAuthErrors'] = 3;
+			client['generalBackoffTimeout'] = setTimeout(() => {}, 1000);
+
+			// Act
+			await client['onConnect'](asType<IConnackPacket>({}));
+
+			// Assert
+			expect(client['healthMonitor'].getConsecutiveTimeouts()).toBe(0);
+			expect(client['consecutiveGeneralFailures']).toBe(0);
+			expect(client['generalBackoffMs']).toBe(MIN_BACKOFF_INTERVAL_MS);
+			expect(client['consecutiveAuthErrors']).toBe(0);
+			expect(client['generalBackoffTimeout']).toBeUndefined();
 		});
 	});
 });

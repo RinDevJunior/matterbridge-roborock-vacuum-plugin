@@ -149,13 +149,13 @@ export class MQTTClient extends AbstractClient {
 	}
 
 	private scheduleGeneralBackoffReconnect(reason: string): void {
+		if (this.authErrorBackoffTimeout || this.generalBackoffTimeout) {
+			return;
+		}
+
 		this.consecutiveGeneralFailures++;
 		const delayMs = this.generalBackoffMs;
 		this.generalBackoffMs = Math.min(this.generalBackoffMs * BACKOFF_MULTIPLIER, MAX_BACKOFF_INTERVAL_MS);
-
-		if (this.generalBackoffTimeout) {
-			clearTimeout(this.generalBackoffTimeout);
-		}
 
 		this.logger.warn(
 			`[MQTTClient] Scheduling general backoff reconnect: ${reason} (delay: ${delayMs}ms, failures: ${this.consecutiveGeneralFailures})`,
@@ -182,6 +182,7 @@ export class MQTTClient extends AbstractClient {
 		this.consecutiveAuthErrors = 0;
 		this.consecutiveGeneralFailures = 0;
 		this.generalBackoffMs = MIN_BACKOFF_INTERVAL_MS;
+		this.healthMonitor.onSuccess();
 		if (this.generalBackoffTimeout) {
 			clearTimeout(this.generalBackoffTimeout);
 			this.generalBackoffTimeout = undefined;
@@ -283,6 +284,10 @@ export class MQTTClient extends AbstractClient {
 	}
 
 	private async onOffline(): Promise<void> {
+		if (this.isForceReconnecting) {
+			return;
+		}
+
 		this.connected = false;
 		await this.connectionBroadcaster.onOffline(`mqtt-${this.mqttUsername}`);
 		this.scheduleGeneralBackoffReconnect('MQTT client went offline');
