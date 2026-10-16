@@ -1017,7 +1017,7 @@ describe('RoborockVacuumCleaner', () => {
 		type ExecuteCommandRequest = Parameters<RoborockVacuumCleaner['executeCommandHandler']>[1];
 		type ExecuteCommandCluster = Parameters<RoborockVacuumCleaner['executeCommandHandler']>[2];
 
-		it.each<[ExecuteCommandName, ExecuteCommandCluster, ExecuteCommandRequest, string]>([
+		const errorLogCases: [ExecuteCommandName, ExecuteCommandCluster, ExecuteCommandRequest, string][] = [
 			['identify', 'identify', {}, 'Identify command failed'],
 			['selectAreas', 'serviceArea', { newAreas: [1, 2] }, 'Select areas command failed'],
 			['changeToMode', 'modeSelect', { newMode: 42 }, 'Change to mode command failed'],
@@ -1025,7 +1025,9 @@ describe('RoborockVacuumCleaner', () => {
 			['resume', 'rvcOperationalState', {}, 'Resume command failed'],
 			['goHome', 'rvcOperationalState', {}, 'GoHome command failed'],
 			['stop', 'rvcOperationalState', {}, 'Stop command failed'],
-		])(
+		];
+
+		it.each(errorLogCases)(
 			'should log error without throwing when %s executeCommand rejects',
 			async (command, cluster, request, expectedMessage) => {
 				// Arrange
@@ -1043,6 +1045,28 @@ describe('RoborockVacuumCleaner', () => {
 				// Assert
 				await vi.waitFor(() => {
 					expect(vacuum.log.error).toHaveBeenCalledWith(expect.stringContaining(`${expectedMessage}: boom`));
+				});
+			},
+		);
+
+		it.each(errorLogCases)(
+			'should log stringified error without throwing when %s executeCommand rejects with a non-Error',
+			async (command, cluster, request, expectedMessage) => {
+				// Arrange
+				const behaviorHandler = asPartial<BehaviorFactoryResult>({
+					executeCommand: vi.fn().mockRejectedValue('plain-failure'),
+					setCommandHandler: vi.fn(),
+					log: logger,
+					commands: {},
+				});
+				vacuum.configureHandler(behaviorHandler);
+
+				// Act
+				await vacuum.executeCommandHandler(command, request, cluster, asType<never>({}), vacuum);
+
+				// Assert
+				await vi.waitFor(() => {
+					expect(vacuum.log.error).toHaveBeenCalledWith(expect.stringContaining(`${expectedMessage}: plain-failure`));
 				});
 			},
 		);
