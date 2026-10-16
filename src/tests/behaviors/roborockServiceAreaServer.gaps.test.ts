@@ -14,7 +14,7 @@ function createMockDevice(): RoborockVacuumCleaner {
 		log: createMockLogger(),
 		getAttribute: vi.fn().mockReturnValue(RvcOperationalState.OperationalState.Running),
 		updateAttribute: vi.fn().mockResolvedValue(true),
-		finalizeSkipArea: vi.fn().mockResolvedValue(undefined),
+		finalizeSkipArea: vi.fn().mockResolvedValue({ updatedProgress: [], nextAreaId: null }),
 		resolveAllRoomsForActiveMap: vi.fn().mockReturnValue([]),
 		trySwitchMap: vi.fn().mockResolvedValue(undefined),
 	});

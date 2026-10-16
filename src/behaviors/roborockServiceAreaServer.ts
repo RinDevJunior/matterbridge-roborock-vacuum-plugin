@@ -15,7 +15,7 @@ export class RoborockServiceAreaServer extends MatterbridgeServiceAreaServer {
 
 		const duid = device.device.duid;
 		device.roborockService.setProgress(duid, []);
-		await device.updateAttribute(ServiceArea.id, 'progress', [], device.log);
+		this.state.progress = [];
 
 		if (requestedAreas.length === 0) {
 			const allRoomsForActiveMap = device.resolveAllRoomsForActiveMap();
@@ -86,7 +86,9 @@ export class RoborockServiceAreaServer extends MatterbridgeServiceAreaServer {
 
 		if (response.status !== ServiceArea.SkipAreaStatus.Success) return response;
 
-		await device.finalizeSkipArea(skippedArea);
+		const { updatedProgress, nextAreaId } = await device.finalizeSkipArea(skippedArea);
+		this.state.progress = updatedProgress;
+		this.state.currentArea = nextAreaId;
 		return response;
 	}
 }
