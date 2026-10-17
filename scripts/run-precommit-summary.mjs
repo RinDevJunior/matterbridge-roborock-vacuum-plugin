@@ -20,7 +20,7 @@ function runStep(command) {
 }
 
 function compactLines(output, patterns) {
-	const lines = output.split('\n').map((line) => line.trimEnd());
+	const lines = output.split(/\r?\n/).map((line) => line.trimEnd());
 	const matched = lines.filter((line) => patterns.some((re) => re.test(line)));
 	const unique = [...new Set(matched)];
 	return unique.slice(0, MAX_LINES);
@@ -28,7 +28,7 @@ function compactLines(output, patterns) {
 
 function summarize(name, stdout, stderr, code) {
 	if (code === 0) {
-		const passLine = stdout.trim().split('\n').filter(Boolean).pop();
+		const passLine = stdout.trim().split(/\r?\n/).filter(Boolean).pop();
 		return { pass: true, detail: passLine && name === 'test' ? passLine : 'PASS' };
 	}
 
@@ -65,7 +65,7 @@ function summarize(name, stdout, stderr, code) {
 				detail: compactLines(output, [/TESTS FAIL/, /FAILED \d+:/, /^FAILED /, / > /]).join('\n') || 'test failed',
 			};
 		default:
-			return { pass: false, detail: output.split('\n').slice(0, MAX_LINES).join('\n') };
+			return { pass: false, detail: output.split(/\r?\n/).slice(0, MAX_LINES).join('\n') };
 	}
 }
 

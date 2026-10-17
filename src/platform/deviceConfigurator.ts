@@ -11,8 +11,16 @@ import { HomeEntity } from '../core/domain/entities/Home.js';
 import { MatterOverrideSettings } from '../model/RoborockPluginPlatformConfig.js';
 import { PlatformRunner } from '../platformRunner.js';
 import type { Device, DeviceSpecs } from '../roborockCommunication/models/index.js';
+import type { CleaningRunStateStore } from '../services/cleaningRunStateStore.js';
 import { RoborockService } from '../services/roborockService.js';
 import { configureBehavior } from '../share/behaviorFactory.js';
+import {
+	buildAreaFingerprint,
+	isCleaningRunPersistenceSupported,
+	type RestoredRunSeed,
+	validateSnapshotForRestore,
+} from '../share/cleaningRunSnapshot.js';
+import { NotifyMessageTypes } from '../types/notifyMessageTypes.js';
 import { RoborockVacuumCleaner } from '../types/roborockVacuumCleaner.js';
 import { WssSendSnackbarMessage } from '../types/WssSendSnackbarMessage.js';
 import { DeviceRegistry } from './deviceRegistry.js';
@@ -26,7 +34,7 @@ export class DeviceConfigurator {
 	public rrHomeId: number | undefined;
 
 	public constructor(
-		private readonly platform: MatterbridgeDynamicPlatform,
+		private readonly platform: MatterbridgeDynamicPlatform & { cleaningRunStateStore?: CleaningRunStateStore },
 		private readonly configManager: PlatformConfigManager,
 		private readonly registry: DeviceRegistry,
 		private readonly getPlatformRunner: () => PlatformRunner,
@@ -108,6 +116,11 @@ export class DeviceConfigurator {
 		const supportedAreas = resolved.supportedAreas;
 		const supportedMaps = resolved.supportedMaps;
 
+		const restored = await this.tryLoadRestoredRun(vacuum, roborockService);
+		if (restored && restored.activeMapId !== -1) {
+			homeInfo.activeMapId = restored.activeMapId;
+		}
+
 		const robot = new RoborockVacuumCleaner(
 			vacuum,
 			homeInfo,
@@ -116,13 +129,36 @@ export class DeviceConfigurator {
 			this.log,
 			supportedAreas,
 			supportedMaps,
+			restored,
 		);
+
+		if (restored) {
+			roborockService.setSelectedAreas(vacuum.duid, restored.selectedAreas);
+			roborockService.setProgress(vacuum.duid, restored.progress);
+			roborockService.setLastActivelyCleaningState(vacuum.duid, true);
+			roborockService.markRestoredRunPending(vacuum.duid);
+			this.log.notice(
+				`[${vacuum.duid}] Restored saved cleaning run (${restored.selectedAreas.length} selected area(s)), waiting for robot status to confirm`,
+			);
+		}
 
 		roborockService.registerAreasListener(vacuum.duid, (areas, maps) => {
 			const routines = roborockService.getSupportedRoutines(vacuum.duid) ?? [];
 			const routineMap: ServiceArea.Map = { mapId: ROUTINE_MAP_ID, name: 'Routine' };
 			const allMaps = routines.length > 0 ? [...maps, routineMap] : maps;
-			robot.updateAttribute(ServiceArea.id, 'currentArea', null, this.log);
+
+			const pendingResolution = roborockService.consumePendingRoomResolution(vacuum.duid);
+			if (pendingResolution) {
+				this.getPlatformRunner().updateRobotWithPayload({
+					type: NotifyMessageTypes.ServiceAreaUpdate,
+					data: pendingResolution,
+				});
+			} else {
+				const currentArea = robot.getAttribute(ServiceArea.id, 'currentArea', this.log);
+				if (currentArea === null || currentArea === undefined) {
+					robot.updateAttribute(ServiceArea.id, 'currentArea', null, this.log);
+				}
+			}
 			robot.updateAttribute(ServiceArea.id, 'supportedMaps', allMaps, this.log);
 			robot.updateAttribute(ServiceArea.id, 'supportedAreas', [...areas, ...routines], this.log);
 		});
@@ -138,6 +174,7 @@ export class DeviceConfigurator {
 			() => this.getPlatformRunner().burstPolling.startBurstPolling(vacuum.duid),
 			vacuum.featureSet,
 			vacuum.newFeatureSet,
+			() => robot.resetProgressForNewRun(),
 		);
 
 		robot.configureHandler(behaviorHandler);
@@ -148,6 +185,36 @@ export class DeviceConfigurator {
 		}
 
 		return true;
+	}
+
+	private async tryLoadRestoredRun(
+		vacuum: Device,
+		roborockService: RoborockService,
+	): Promise<RestoredRunSeed | undefined> {
+		const store = this.platform.cleaningRunStateStore;
+		if (!store || !isCleaningRunPersistenceSupported(vacuum.pv)) return undefined;
+
+		try {
+			const snapshot = await store.load(vacuum.duid);
+			if (!snapshot) return undefined;
+
+			const supportedAreas = roborockService.getSupportedAreas(vacuum.duid);
+			const result = validateSnapshotForRestore(snapshot, {
+				duid: vacuum.duid,
+				nowMs: Date.now(),
+				supportedAreas,
+				areaFingerprint: buildAreaFingerprint(supportedAreas, roborockService.getSupportedAreasIndexMap(vacuum.duid)),
+			});
+			if (result.ok) return result.seed;
+
+			this.log.info(`[${vacuum.duid}] Saved cleaning run not restored: ${result.reason}`);
+			await store.clear(vacuum.duid);
+		} catch (error) {
+			this.log.warn(
+				`[${vacuum.duid}] Failed to restore saved cleaning run: ${error instanceof Error ? error.message : String(error)}`,
+			);
+		}
+		return undefined;
 	}
 
 	private async addDevice(rvc: RoborockVacuumCleaner): Promise<MatterbridgeEndpoint | undefined> {

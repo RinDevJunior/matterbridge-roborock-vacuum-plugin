@@ -15,7 +15,7 @@ export class RoborockServiceAreaServer extends MatterbridgeServiceAreaServer {
 
 		const duid = device.device.duid;
 		device.roborockService.setProgress(duid, []);
-		await device.updateAttribute(ServiceArea.id, 'progress', [], device.log);
+		this.state.progress = [];
 
 		if (requestedAreas.length === 0) {
 			const allRoomsForActiveMap = device.resolveAllRoomsForActiveMap();
@@ -68,18 +68,27 @@ export class RoborockServiceAreaServer extends MatterbridgeServiceAreaServer {
 			return { status: ServiceArea.SkipAreaStatus.InvalidInMode, statusText: '' };
 		}
 
-		if (!device.skipAreaHandler) {
-			return { status: ServiceArea.SkipAreaStatus.InvalidInMode, statusText: '' };
+		if (currentArea !== null && skippedArea !== currentArea) {
+			return {
+				status: ServiceArea.SkipAreaStatus.InvalidInMode,
+				statusText: `AreaID ${skippedArea} is not the area currently being cleaned`,
+			};
 		}
 
+		// All validation must precede super.skipArea: the native implementation forwards to the
+		// skipArea handler BEFORE validating, so the robot would be commanded for invalid requests.
+		let response: ServiceArea.SkipAreaResponse;
 		try {
-			await device.skipAreaHandler(skippedArea);
+			response = await super.skipArea(request);
 		} catch {
 			return { status: ServiceArea.SkipAreaStatus.InvalidInMode, statusText: '' };
 		}
 
-		await device.finalizeSkipArea(skippedArea);
+		if (response.status !== ServiceArea.SkipAreaStatus.Success) return response;
 
-		return { status: ServiceArea.SkipAreaStatus.Success, statusText: '' };
+		const { updatedProgress, nextAreaId } = await device.finalizeSkipArea(skippedArea);
+		this.state.progress = updatedProgress;
+		this.state.currentArea = nextAreaId;
+		return response;
 	}
 }

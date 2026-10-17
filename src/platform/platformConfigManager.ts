@@ -233,6 +233,14 @@ export class PlatformConfigManager {
 		return this.isAdvancedFeatureEnabled && (this.advancedFeatureSettings.enableEstimatedEndTime ?? false);
 	}
 
+	public get isFilterMonitoringEnabled(): boolean {
+		return this.isAdvancedFeatureEnabled && (this.advancedFeatureSettings.enableFilterMonitoring ?? false);
+	}
+
+	public get isPersistCleaningStateEnabled(): boolean {
+		return this.isAdvancedFeatureEnabled && (this.advancedFeatureSettings.enablePersistCleaningState ?? false);
+	}
+
 	public get emailNotificationSettings(): EmailNotificationSettings | undefined {
 		if (!this.isEmailNotificationEnabled) return undefined;
 		return this.advancedFeatureSettings.emailNotificationSettings;

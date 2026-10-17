@@ -66,6 +66,28 @@ if [ "$thinking" = "true" ]; then
 else
   printf " ${DIM}·${RESET} ${DIM}✻ think:off${RESET}"
 fi
+
+# Claude Code version + update indicator (cache-only read; refresh in background when >6h old)
+cc_ver=$(echo "$input" | jq -r '.version // empty')
+if [ -n "$cc_ver" ]; then
+  printf " ${DIM}·${RESET} ${FAINT}v%s${RESET}" "$cc_ver"
+  cache_dir="$HOME/.claude/cache"; cache_file="$cache_dir/claude-code-latest-version"
+  if [ ! -f "$cache_file" ] || [ -n "$(find "$cache_file" -mmin +360 2>/dev/null)" ]; then
+    mkdir -p "$cache_dir" 2>/dev/null && touch "$cache_file" 2>/dev/null  # touch first: failed lookups retry only after 6h
+    (
+      latest=$(npm view @anthropic-ai/claude-code version 2>/dev/null | tr -d '[:space:]')
+      if printf '%s' "$latest" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+$'; then
+        printf '%s' "$latest" > "$cache_file.tmp.$$" && mv "$cache_file.tmp.$$" "$cache_file"
+      fi
+    ) >/dev/null 2>&1 </dev/null &
+    disown 2>/dev/null
+  fi
+  latest_ver=$(cat "$cache_file" 2>/dev/null | tr -d '[:space:]')
+  if [ -n "$latest_ver" ] && [ "$latest_ver" != "$cc_ver" ] \
+     && [ "$(printf '%s\n%s\n' "$cc_ver" "$latest_ver" | sort -V | tail -1)" = "$latest_ver" ]; then
+    printf " ${YELLOW}⬆ %s${RESET}" "$latest_ver"
+  fi
+fi
 printf "\n"
 
 # Row 2: context bar

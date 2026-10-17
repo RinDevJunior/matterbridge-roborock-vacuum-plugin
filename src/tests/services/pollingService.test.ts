@@ -36,6 +36,7 @@ describe('PollingService', () => {
 
 		mockMessageDispatcher = asPartial<AbstractMessageDispatcher>({
 			getDeviceStatus: vi.fn(async (_duid: string) => undefined),
+			getConsumableStatus: vi.fn(async (_duid: string) => undefined),
 			startRoomCleaning: vi.fn(),
 			pauseCleaning: vi.fn(),
 			resumeCleaning: vi.fn(),
@@ -260,6 +261,135 @@ describe('PollingService', () => {
 				service.stopPolling();
 			}
 
+			expect(service['localIntervals'].size).toBe(0);
+		});
+	});
+
+	describe('activateConsumablePollingOverLocal', () => {
+		it('should activate consumable polling and start interval', () => {
+			const onResult = vi.fn();
+			service.activateConsumablePollingOverLocal(mockDevice, onResult);
+
+			expect(service['consumableIntervals'].has(mockDevice.duid)).toBe(true);
+		});
+
+		it('should call onResult with status when getConsumableStatus succeeds', async () => {
+			const onResult = vi.fn();
+			const mockStatus = { filterWorkTimeSec: 100000 };
+			mockMessageDispatcher.getConsumableStatus = vi.fn().mockResolvedValue(mockStatus);
+
+			service.activateConsumablePollingOverLocal(mockDevice, onResult);
+
+			await vi.advanceTimersByTimeAsync(6 * 60 * 60 * 1000);
+
+			expect(onResult).toHaveBeenCalledWith(mockDevice.duid, mockStatus);
+		});
+
+		it('should not call onResult when getConsumableStatus returns undefined', async () => {
+			const onResult = vi.fn();
+			mockMessageDispatcher.getConsumableStatus = vi.fn().mockResolvedValue(undefined);
+
+			service.activateConsumablePollingOverLocal(mockDevice, onResult);
+
+			await vi.advanceTimersByTimeAsync(6 * 60 * 60 * 1000);
+
+			expect(onResult).not.toHaveBeenCalled();
+		});
+
+		it('should not call onResult when dispatcher lacks getConsumableStatus', async () => {
+			const onResult = vi.fn();
+			const dispatcherWithout = asPartial<AbstractMessageDispatcher>({});
+			vi.mocked(mockMessageRoutingService.getMessageDispatcher).mockReturnValue(dispatcherWithout);
+
+			service.activateConsumablePollingOverLocal(mockDevice, onResult);
+
+			await vi.advanceTimersByTimeAsync(6 * 60 * 60 * 1000);
+
+			expect(onResult).not.toHaveBeenCalled();
+		});
+
+		it('should log error when getConsumableStatus rejects', async () => {
+			const onResult = vi.fn();
+			const testError = new Error('RPC failed');
+			mockMessageDispatcher.getConsumableStatus = vi.fn().mockRejectedValue(testError);
+
+			service.activateConsumablePollingOverLocal(mockDevice, onResult);
+
+			await vi.advanceTimersByTimeAsync(6 * 60 * 60 * 1000);
+
+			expect(mockLogger.error).toHaveBeenCalledWith('Failed to get consumable status:', testError);
+			expect(onResult).not.toHaveBeenCalled();
+		});
+
+		it('should continue polling after error (not clear interval)', async () => {
+			const onResult = vi.fn();
+			const testError = new Error('Network timeout');
+			mockMessageDispatcher.getConsumableStatus = vi
+				.fn()
+				.mockRejectedValueOnce(testError)
+				.mockResolvedValueOnce({ filterWorkTimeSec: 100000 });
+
+			service.activateConsumablePollingOverLocal(mockDevice, onResult);
+
+			await vi.advanceTimersByTimeAsync(6 * 60 * 60 * 1000);
+			expect(mockLogger.error).toHaveBeenCalled();
+			expect(onResult).not.toHaveBeenCalled();
+
+			await vi.advanceTimersByTimeAsync(6 * 60 * 60 * 1000);
+			expect(onResult).toHaveBeenCalledWith(mockDevice.duid, { filterWorkTimeSec: 100000 });
+		});
+
+		it('should clear existing interval before creating new one for same device', () => {
+			const onResult = vi.fn();
+			service.activateConsumablePollingOverLocal(mockDevice, onResult);
+			const firstInterval = service['consumableIntervals'].get(mockDevice.duid);
+
+			service.activateConsumablePollingOverLocal(mockDevice, onResult);
+			const secondInterval = service['consumableIntervals'].get(mockDevice.duid);
+
+			expect(firstInterval).not.toBe(secondInterval);
+		});
+	});
+
+	describe('stopConsumablePollingForDevice', () => {
+		it('should clear interval for specific device', () => {
+			const onResult = vi.fn();
+			service.activateConsumablePollingOverLocal(mockDevice, onResult);
+
+			expect(service['consumableIntervals'].has(mockDevice.duid)).toBe(true);
+
+			service['stopConsumablePollingForDevice'](mockDevice.duid);
+
+			expect(service['consumableIntervals'].has(mockDevice.duid)).toBe(false);
+		});
+
+		it('should not affect other device intervals', async () => {
+			const onResult1 = vi.fn();
+			const onResult2 = vi.fn();
+			service.activateConsumablePollingOverLocal(mockDevice, onResult1);
+			service.activateConsumablePollingOverLocal(mockDevice2, onResult2);
+
+			service['stopConsumablePollingForDevice'](mockDevice.duid);
+
+			await vi.advanceTimersByTimeAsync(6 * 60 * 60 * 1000);
+
+			expect(service['consumableIntervals'].has(mockDevice.duid)).toBe(false);
+			expect(service['consumableIntervals'].has(mockDevice2.duid)).toBe(true);
+		});
+	});
+
+	describe('stopPolling clears consumable intervals', () => {
+		it('should clear all consumable intervals when stopPolling is called', () => {
+			const onResult1 = vi.fn();
+			const onResult2 = vi.fn();
+			service.activateConsumablePollingOverLocal(mockDevice, onResult1);
+			service.activateConsumablePollingOverLocal(mockDevice2, onResult2);
+
+			expect(service['consumableIntervals'].size).toBe(2);
+
+			service.stopPolling();
+
+			expect(service['consumableIntervals'].size).toBe(0);
 			expect(service['localIntervals'].size).toBe(0);
 		});
 	});
