@@ -4,6 +4,22 @@ All notable changes to this project will be documented in this file.
 
 ---
 
+## [1.2.0-rc07] - 2026-10-17
+
+### Changed
+
+- **Minimum Matterbridge raised to 3.10.14** — You may need to run `npm install -g matterbridge@3.10.14` (#185).
+- **Docs and wiki** — Documentation and wiki updates.
+
+### Fixed
+
+- **Scheduled Apple Home clean not starting** — `selectAreas`/`skipArea` awaited a second state update inside the Matter command and hung; the stuck transaction then blocked every later `selectAreas` (#184). If you are on an older rc, restarting Matterbridge clears the stuck state.
+- **Command handler errors now logged** — Errors in fire-and-forget command handlers are now logged instead of being lost.
+
+<a href="https://www.buymeacoffee.com/rinnvspktr" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/default-orange.png" alt="Buy Me A Coffee" height="41" width="174"></a>
+
+---
+
 ## [1.2.0-rc06] - 2026-10-12
 
 ### Added
