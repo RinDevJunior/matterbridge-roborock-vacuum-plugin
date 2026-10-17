@@ -46,8 +46,15 @@ Completed items have been archived to `workspace/to_do_archive.md`. This file tr
 - [ ] **Investigate 08:00 two-room clean (2026-10-12)** — root cause: external Matter `rvcOperationalState.goHome` at 08:19:43 from the same controller session as the 08:00 selectAreas; plugin behaved correctly; open question: who sent the command
 - [ ] **Idea: log Matter command sender** — record the controller/session identity for incoming RVC commands (not started)
 - [ ] **Persisted cleaning run state (PR #181, flag `enablePersistCleaningState` default OFF)** — needs real-robot test before enabling by default
-- [ ] **CHANGELOG entry for rc05** — cover #179 and #181
-- [ ] **Release 1.2.0-rc05** — bump version after changelog
+- [x] **CHANGELOG entry for rc05** — cover #179 and #181
+- [x] **Release 1.2.0-rc05 and 1.2.0-rc06** — published as prereleases + Discord
+- [x] **Min Matterbridge 3.10.13 (PR #183) and 3.10.14 (PR #185)** — no code impact
+- [x] **PR #145 MQTT health monitor** — architecture review: do-not-merge-as-is; closed; branch `worktree-mqtt-reconnect-health-backoff` kept
+- [x] **Wiki refresh for rc06 and selectAreas fix** — wiki 53a2e59, af8224e
+- [ ] **Release rc07 with the #184 selectAreas fix** — when user asks
+- [ ] **Real-device test of selectAreas fix (PR #184)** — scheduled Apple Home clean after restart; confirm no stuck transaction
+- [ ] **Decide WP1–WP3 from `workspace/cleanups-support-bugs`** — awaiting user's 7 decisions/approval. WP1 cleanups: dead `rvc.mode` branch, split `KEEPALIVE_INTERVAL_MS`, codecov.yml, coverage thresholds. WP2 support tools: log command sender, CLI consumable command. WP3 bugs: `getSupportedAreas` find predicate, `lz4BlockDecompressor` truncated input
+- [ ] **Wiki Constants-Reference note for constant rename** — only if WP1 happens
 - [ ] **Possible bug: `getSupportedAreas` 'Unknown Room N' lookup** — `find` matches the room itself
 - [ ] **Possible bug: `lz4BlockDecompressor` truncated input** — silently returns truncated output
 - [ ] **Dead code: `DeviceConfigurator.configureDevice`** — never returns false

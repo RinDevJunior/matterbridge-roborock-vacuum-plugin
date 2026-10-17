@@ -4,6 +4,36 @@ Entries are listed in reverse chronological order (most recent first). Older ent
 
 ---
 
+## 2026-10-17 — Filter life for V1, min Matterbridge 3.10.13/3.10.14, rc05/rc06 releases, PR #145 closed, wiki refresh (PRs #173, #183, #185)
+
+**Task:** Batch of changes since 2026-10-12: V1 filter life, minimum Matterbridge bumps, prerelease publishing, PR #145 review, wiki refreshes.
+
+**Changes:**
+
+- `src/**` (V1 filter life) — filter life via HepaFilterMonitoring, behind `enableFilterMonitoring` (default OFF; Q10 excluded) (PR #173, commit 842c5b6)
+- `package.json` — minimum Matterbridge 3.10.13 (PR #183, f03153a); 3.10.14 (PR #185, c1737a3). Release notes checked: no code impact; Node 22.13+ requirement is below our Node 24
+- Releases 1.2.0-rc05 (edbd0ff) and 1.2.0-rc06 (2c9496d) published as prereleases + Discord announcement
+- PR #145 (MQTT health monitor) reviewed; architecture review said do-not-merge-as-is; commented and closed. Branch `worktree-mqtt-reconnect-health-backoff` kept; notes in `workspace/review-pr-145-mqtt/answer.md`
+- `wiki` — refreshed for rc06 (wiki 53a2e59, pointer d059d2a); then wiki af8224e for the selectAreas fix; main-repo wiki pointer moved to af8224e in PR #185
+
+**Outcome:** Pass. Releases and PRs as listed above.
+
+---
+
+## 2026-10-16 — INCIDENT: scheduled Apple Home clean did not start (PR #184)
+
+**Task:** Investigate Oct 14–16 incident where a scheduled Apple Home clean did not start, and fix it.
+
+**Changes:**
+
+- `src/behaviors/roborockServiceAreaServer.ts` — selectAreas/skipArea no longer await `device.updateAttribute('progress')` inside the command transaction; state written directly in handler; `finalizeSkipArea` returns values
+- `src/**` (7 fire-and-forget handlers) — `.catch` + error log added; `CHANGE_TO_MODE` must not be awaited
+- `src/tests/**` — regression tests for the hang (PR #184, b7adbed)
+
+**Outcome:** Pass. Root cause: self-deadlock in selectAreas/skipArea awaiting an attribute update inside the command transaction; stuck tx 0450d8ec blocked every later selectAreas. Exposed since #175 kept finalized progress after docking. Details: `workspace/investigate-selectareas-hang/answer.md`. Workaround before release: restart Matterbridge. NOT in a release (user asked not to release); not tested on a real device.
+
+---
+
 ## 2026-10-12 — Whole-project test coverage, B01 UDP client fix, persisted cleaning state flag, 08:00 clean investigation (PRs #180, #181, #182)
 
 **Task:** (1) Investigate unexpected two-room clean at 08:00. (2) Fix issue #179 (B01 UDP client leak). (3) Add opt-in persistence of cleaning run state (PR #181). (4) Raise whole-project test coverage (PR #182). Also closed #161 and #170 (Windows-safe CI scripts, coverage gaps).
