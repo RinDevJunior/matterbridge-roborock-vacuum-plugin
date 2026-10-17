@@ -54,7 +54,7 @@ It is version-controlled — commit and push changes so teammates can pull the l
 
 ## Test Patterns
 
-- **ConnectionService UDP tests (Oct 12, 2026):** `udpStub` (hoisted) needs `disconnect`; `disconnect.mockReset()` + `mockResolvedValue` in `beforeEach`. Sync-throw variant via `mockImplementationOnce`.
+- **selectAreas/skipArea progress (Oct 16, 2026):** writes go via `this.state.progress`/`currentArea` (no `updateAttribute`); assert `updateAttribute` calls filtered by attr name, read state via `server['state']`.
 - **ModeResolver.resolveFallback category-aware tests:** import `vacuumOnlyModeConfigs`/`mopOnlyModeConfigs`/`vacuumAndMopModeConfigs` + `baseCleanModeConfigs`; Max/Balanced/Quiet with non-canonical water/route → same-category mode; test vacuum-off/mop-off, unknown suction → Default; exact-triple still wins.
 - **handleErrorOccurred tests (9 branches):** includeVacuumErrorStatus off; vacuum error; Running+no-error; not-Running+no-vacuum+dock-disabled (clear, the bug fix); dock status error/no-error; dockErrorCode active/NoError; both-undefined. Use `buildOperationalError()`; mock `robot.getAttribute` for operationalState.
 - **LegacyMapParser tests:** `buildWallBlock`/`buildZoneBlock` (8B/16B stride; truncated drops partial). Containment tier (Jul 28): containment beats closer centroid; 2+ or 0 matches → nearest-center; exact pixel wins; namedRooms lookup. Y-flip `pyRel = height - 1 - (pyAbs - top)`. Islands: 4-connectivity BFS, wall tol ±3px, per-island 30% heuristic.
@@ -69,7 +69,7 @@ It is version-controlled — commit and push changes so teammates can pull the l
 
 <!-- Things to avoid — bugs found, anti-patterns, footguns -->
 
-- `classifyIslands` (`legacyIslandDetection.ts`) size heuristic (Jul 27, fixed): was gated map-wide via `hasNoWallOrZoneData`; now evaluated per-island as last-resort fallback.
+- Fire-and-forget handlers (Oct 16): `behaviorHandler.executeCommand(...).catch(...)` throws on `vi.fn()` mocks (returns undefined) — use `vi.fn().mockResolvedValue(undefined)`.
 - ESLint `preserve-caught-error` requires re-thrown errors to carry `{ cause: err }` — omitting it fails `lint:fix:ci` even when the message embeds the original error text.
 - ESLint `no-base-to-string` prohibits stringifying `err.cause` directly in templates (`String(err.cause)`) — check `if (cause instanceof Error)` first, then safely access `.message`; this prevents accidental `[object Object]` in logs.
 - Static `import` of `scripts/*.mjs` from `src/tests` breaks `type-check:ci` (checkJs TS7006 + tsconfig rootDir TS6059). Test scripts via child process instead.

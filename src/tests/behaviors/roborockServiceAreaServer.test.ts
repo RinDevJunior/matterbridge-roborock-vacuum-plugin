@@ -142,6 +142,27 @@ describe('RoborockServiceAreaServer', () => {
 			expect(superSelectAreasSpy).toHaveBeenCalledWith(originalRequest);
 			expect(vi.mocked(device.resolveAllRoomsForActiveMap)).not.toHaveBeenCalled();
 		});
+
+		it('should not write progress via updateAttribute and should clear state.progress when non-empty progress exists', async () => {
+			// Arrange
+			const server = createServer(
+				{
+					selectedAreas: [1, 2],
+					progress: [{ areaId: 1, status: ServiceArea.OperationalStatus.Operating }],
+				},
+				device,
+			);
+			const superSelectAreasSpy = vi.spyOn(Object.getPrototypeOf(Object.getPrototypeOf(server)), 'selectAreas');
+			superSelectAreasSpy.mockResolvedValue({ status: ServiceArea.SelectAreasStatus.Success, statusText: '' });
+
+			// Act
+			await server.selectAreas({ newAreas: [1, 2] });
+
+			// Assert
+			const progressWrites = vi.mocked(device.updateAttribute).mock.calls.filter(([, attr]) => attr === 'progress');
+			expect(progressWrites).toHaveLength(0);
+			expect(server['state'].progress).toEqual([]);
+		});
 	});
 
 	describe('skipArea', () => {
@@ -360,6 +381,71 @@ describe('RoborockServiceAreaServer', () => {
 			expect(response.status).toBe(ServiceArea.SkipAreaStatus.InvalidInMode);
 			expect(response.statusText).toBe('');
 			expect(device.finalizeSkipArea).not.toHaveBeenCalled();
+		});
+
+		it('should set state.progress and state.currentArea from finalizeSkipArea result without calling updateAttribute', async () => {
+			// Arrange
+			const server = createServer(
+				{
+					selectedAreas: [1, 2, 3],
+					currentArea: 2,
+					progress: [
+						{ areaId: 1, status: ServiceArea.OperationalStatus.Completed },
+						{ areaId: 2, status: ServiceArea.OperationalStatus.Operating },
+						{ areaId: 3, status: ServiceArea.OperationalStatus.Pending },
+					],
+				},
+				device,
+			);
+			const updatedProgress: ServiceArea.Progress[] = [
+				{ areaId: 1, status: ServiceArea.OperationalStatus.Completed },
+				{ areaId: 2, status: ServiceArea.OperationalStatus.Skipped },
+				{ areaId: 3, status: ServiceArea.OperationalStatus.Operating },
+			];
+			vi.mocked(device.finalizeSkipArea).mockResolvedValueOnce({ updatedProgress, nextAreaId: 3 });
+			const superSkipAreaSpy = vi.spyOn(Object.getPrototypeOf(Object.getPrototypeOf(server)), 'skipArea');
+			superSkipAreaSpy.mockResolvedValue({ status: ServiceArea.SkipAreaStatus.Success, statusText: '' });
+
+			// Act
+			const response = await server.skipArea({ skippedArea: 2 });
+
+			// Assert
+			expect(response.status).toBe(ServiceArea.SkipAreaStatus.Success);
+			expect(server['state'].progress).toEqual(updatedProgress);
+			expect(server['state'].currentArea).toBe(3);
+			const progressOrCurrentAreaWrites = vi
+				.mocked(device.updateAttribute)
+				.mock.calls.filter(([, attr]) => attr === 'progress' || attr === 'currentArea');
+			expect(progressOrCurrentAreaWrites).toHaveLength(0);
+		});
+
+		it('should set state.currentArea to null when finalizeSkipArea reports no next area', async () => {
+			// Arrange
+			const server = createServer(
+				{
+					selectedAreas: [1, 2],
+					currentArea: 2,
+					progress: [
+						{ areaId: 1, status: ServiceArea.OperationalStatus.Completed },
+						{ areaId: 2, status: ServiceArea.OperationalStatus.Operating },
+					],
+				},
+				device,
+			);
+			const updatedProgress: ServiceArea.Progress[] = [
+				{ areaId: 1, status: ServiceArea.OperationalStatus.Completed },
+				{ areaId: 2, status: ServiceArea.OperationalStatus.Skipped },
+			];
+			vi.mocked(device.finalizeSkipArea).mockResolvedValueOnce({ updatedProgress, nextAreaId: null });
+			const superSkipAreaSpy = vi.spyOn(Object.getPrototypeOf(Object.getPrototypeOf(server)), 'skipArea');
+			superSkipAreaSpy.mockResolvedValue({ status: ServiceArea.SkipAreaStatus.Success, statusText: '' });
+
+			// Act
+			await server.skipArea({ skippedArea: 2 });
+
+			// Assert
+			expect(server['state'].progress).toEqual(updatedProgress);
+			expect(server['state'].currentArea).toBeNull();
 		});
 	});
 });

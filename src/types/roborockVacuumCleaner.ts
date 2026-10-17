@@ -186,7 +186,11 @@ export class RoborockVacuumCleaner extends RoboticVacuumCleaner {
 				this.log.info(
 					`Identify command received for endpoint ${endpoint}, cluster ${cluster}, attributes ${debugStringify(attributes)}, request: ${JSON.stringify(request)}`,
 				);
-				behaviorHandler.executeCommand(CommandNames.IDENTIFY, (request as IdentifyCommandRequest).identifyTime ?? 5);
+				behaviorHandler
+					.executeCommand(CommandNames.IDENTIFY, (request as IdentifyCommandRequest).identifyTime ?? 5)
+					.catch((error: unknown) => {
+						this.log.error(`Identify command failed: ${error instanceof Error ? error.message : String(error)}`);
+					});
 			},
 		);
 
@@ -194,7 +198,9 @@ export class RoborockVacuumCleaner extends RoboticVacuumCleaner {
 			const { newAreas } = request as ServiceArea.SelectAreasRequest;
 			const requestedAreas = newAreas ?? [];
 			this.log.info(`Selecting areas: ${requestedAreas.join(', ')}`);
-			behaviorHandler.executeCommand(CommandNames.SELECT_AREAS, requestedAreas);
+			behaviorHandler.executeCommand(CommandNames.SELECT_AREAS, requestedAreas).catch((error: unknown) => {
+				this.log.error(`Select areas command failed: ${error instanceof Error ? error.message : String(error)}`);
+			});
 		});
 
 		this.addCommandHandlerWithErrorHandling(CommandNames.SKIP_AREA, async ({ request }) => {
@@ -206,27 +212,38 @@ export class RoborockVacuumCleaner extends RoboticVacuumCleaner {
 		this.addCommandHandlerWithErrorHandling(CommandNames.CHANGE_TO_MODE, async ({ request }) => {
 			const { newMode } = request as ModeBase.ChangeToModeRequest;
 			this.log.info(`Changing to mode: ${newMode}`);
-			behaviorHandler.executeCommand(CommandNames.CHANGE_TO_MODE, newMode);
+			// Do NOT await: awaiting would make resetProgressForNewRun's updateAttribute wait on this command's own transaction and deadlock.
+			behaviorHandler.executeCommand(CommandNames.CHANGE_TO_MODE, newMode).catch((error: unknown) => {
+				this.log.error(`Change to mode command failed: ${error instanceof Error ? error.message : String(error)}`);
+			});
 		});
 
 		this.addCommandHandlerWithErrorHandling(CommandNames.PAUSE, async () => {
 			this.log.info('Pause command received');
-			behaviorHandler.executeCommand(CommandNames.PAUSE);
+			behaviorHandler.executeCommand(CommandNames.PAUSE).catch((error: unknown) => {
+				this.log.error(`Pause command failed: ${error instanceof Error ? error.message : String(error)}`);
+			});
 		});
 
 		this.addCommandHandlerWithErrorHandling(CommandNames.RESUME, async () => {
 			this.log.info('Resume command received');
-			behaviorHandler.executeCommand(CommandNames.RESUME);
+			behaviorHandler.executeCommand(CommandNames.RESUME).catch((error: unknown) => {
+				this.log.error(`Resume command failed: ${error instanceof Error ? error.message : String(error)}`);
+			});
 		});
 
 		this.addCommandHandlerWithErrorHandling(CommandNames.GO_HOME, async () => {
 			this.log.info('GoHome command received');
-			behaviorHandler.executeCommand(CommandNames.GO_HOME);
+			behaviorHandler.executeCommand(CommandNames.GO_HOME).catch((error: unknown) => {
+				this.log.error(`GoHome command failed: ${error instanceof Error ? error.message : String(error)}`);
+			});
 		});
 
 		this.addCommandHandlerWithErrorHandling(CommandNames.STOP, async () => {
 			this.log.info('Stop command received');
-			behaviorHandler.executeCommand(CommandNames.STOP);
+			behaviorHandler.executeCommand(CommandNames.STOP).catch((error: unknown) => {
+				this.log.error(`Stop command failed: ${error instanceof Error ? error.message : String(error)}`);
+			});
 		});
 
 		if (this.supportsFilterMonitoring) {
@@ -304,8 +321,6 @@ export class RoborockVacuumCleaner extends RoboticVacuumCleaner {
 		const nextAreaId = getNextPendingArea(selectedAreas, existingProgress, skippedArea);
 		const updatedProgress = markAreaSkipped(existingProgress, selectedAreas, skippedArea, nextAreaId);
 		this.roborockService.setProgress(this.device.duid, updatedProgress);
-		await this.updateAttribute(ServiceArea.id, 'progress', updatedProgress, this.log);
-		await this.updateAttribute(ServiceArea.id, 'currentArea', nextAreaId, this.log);
 		return { updatedProgress, nextAreaId };
 	}
 

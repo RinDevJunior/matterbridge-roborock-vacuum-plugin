@@ -262,7 +262,7 @@ describe('RoborockVacuumCleaner', () => {
 
 	it('should call behaviorHandler for identify command', async () => {
 		const behaviorHandler = {
-			executeCommand: vi.fn(),
+			executeCommand: vi.fn().mockResolvedValue(undefined),
 			setCommandHandler: vi.fn(),
 			log: logger,
 			commands: {},
@@ -288,7 +288,7 @@ describe('RoborockVacuumCleaner', () => {
 			vi.spyOn(vacuum, 'getAttribute').mockReturnValue([]);
 
 			const behaviorHandler = {
-				executeCommand: vi.fn(),
+				executeCommand: vi.fn().mockResolvedValue(undefined),
 				setCommandHandler: vi.fn(),
 				log: logger,
 				commands: {},
@@ -316,7 +316,7 @@ describe('RoborockVacuumCleaner', () => {
 			vi.spyOn(vacuum, 'getAttribute').mockReturnValue([]);
 
 			const behaviorHandler = {
-				executeCommand: vi.fn(),
+				executeCommand: vi.fn().mockResolvedValue(undefined),
 				setCommandHandler: vi.fn(),
 				log: logger,
 				commands: {},
@@ -346,7 +346,7 @@ describe('RoborockVacuumCleaner', () => {
 			const updateAttributeSpy = vi.spyOn(vacuum, 'updateAttribute').mockImplementation(() => Promise.resolve(true));
 
 			const behaviorHandler = {
-				executeCommand: vi.fn(),
+				executeCommand: vi.fn().mockResolvedValue(undefined),
 				setCommandHandler: vi.fn(),
 				log: logger,
 				commands: {},
@@ -372,7 +372,7 @@ describe('RoborockVacuumCleaner', () => {
 
 	it('should call behaviorHandler for selectAreas command', async () => {
 		const behaviorHandler = {
-			executeCommand: vi.fn(),
+			executeCommand: vi.fn().mockResolvedValue(undefined),
 			setCommandHandler: vi.fn(),
 			log: logger,
 			commands: {},
@@ -390,7 +390,7 @@ describe('RoborockVacuumCleaner', () => {
 
 	it('should call behaviorHandler for changeToMode command', async () => {
 		const behaviorHandler = {
-			executeCommand: vi.fn(),
+			executeCommand: vi.fn().mockResolvedValue(undefined),
 			setCommandHandler: vi.fn(),
 			log: logger,
 			commands: {},
@@ -409,7 +409,7 @@ describe('RoborockVacuumCleaner', () => {
 
 	it('should call behaviorHandler for pause command', async () => {
 		const behaviorHandler = {
-			executeCommand: vi.fn(),
+			executeCommand: vi.fn().mockResolvedValue(undefined),
 			setCommandHandler: vi.fn(),
 			log: logger,
 			commands: {},
@@ -427,7 +427,7 @@ describe('RoborockVacuumCleaner', () => {
 
 	it('should call behaviorHandler for resume command', async () => {
 		const behaviorHandler = {
-			executeCommand: vi.fn(),
+			executeCommand: vi.fn().mockResolvedValue(undefined),
 			setCommandHandler: vi.fn(),
 			log: logger,
 			commands: {},
@@ -445,7 +445,7 @@ describe('RoborockVacuumCleaner', () => {
 
 	it('should call behaviorHandler for goHome command', async () => {
 		const behaviorHandler = {
-			executeCommand: vi.fn(),
+			executeCommand: vi.fn().mockResolvedValue(undefined),
 			setCommandHandler: vi.fn(),
 			log: logger,
 			commands: {},
@@ -976,7 +976,7 @@ describe('RoborockVacuumCleaner', () => {
 			const v1Vacuum = new RoborockVacuumCleaner(v1Device, homeInfo, configManager, roborockService, logger);
 
 			const mockBehaviorHandler = asPartial<BehaviorFactoryResult>({
-				executeCommand: vi.fn(),
+				executeCommand: vi.fn().mockResolvedValue(undefined),
 				setCommandHandler: vi.fn(),
 				log: logger,
 				commands: {},
@@ -1001,7 +1001,7 @@ describe('RoborockVacuumCleaner', () => {
 			const q10Vacuum = new RoborockVacuumCleaner(q10Device, homeInfo, configManager, roborockService, logger);
 
 			const mockBehaviorHandler = asPartial<BehaviorFactoryResult>({
-				executeCommand: vi.fn(),
+				executeCommand: vi.fn().mockResolvedValue(undefined),
 				setCommandHandler: vi.fn(),
 				log: logger,
 				commands: {},
@@ -1012,10 +1012,93 @@ describe('RoborockVacuumCleaner', () => {
 		});
 	});
 
+	describe('fire-and-forget command handlers', () => {
+		type ExecuteCommandName = Parameters<RoborockVacuumCleaner['executeCommandHandler']>[0];
+		type ExecuteCommandRequest = Parameters<RoborockVacuumCleaner['executeCommandHandler']>[1];
+		type ExecuteCommandCluster = Parameters<RoborockVacuumCleaner['executeCommandHandler']>[2];
+
+		const errorLogCases: [ExecuteCommandName, ExecuteCommandCluster, ExecuteCommandRequest, string][] = [
+			['identify', 'identify', {}, 'Identify command failed'],
+			['selectAreas', 'serviceArea', { newAreas: [1, 2] }, 'Select areas command failed'],
+			['changeToMode', 'modeSelect', { newMode: 42 }, 'Change to mode command failed'],
+			['pause', 'rvcOperationalState', {}, 'Pause command failed'],
+			['resume', 'rvcOperationalState', {}, 'Resume command failed'],
+			['goHome', 'rvcOperationalState', {}, 'GoHome command failed'],
+			['stop', 'rvcOperationalState', {}, 'Stop command failed'],
+		];
+
+		it.each(errorLogCases)(
+			'should log error without throwing when %s executeCommand rejects',
+			async (command, cluster, request, expectedMessage) => {
+				// Arrange
+				const behaviorHandler = asPartial<BehaviorFactoryResult>({
+					executeCommand: vi.fn().mockRejectedValue(new Error('boom')),
+					setCommandHandler: vi.fn(),
+					log: logger,
+					commands: {},
+				});
+				vacuum.configureHandler(behaviorHandler);
+
+				// Act
+				await vacuum.executeCommandHandler(command, request, cluster, asType<never>({}), vacuum);
+
+				// Assert
+				await vi.waitFor(() => {
+					expect(vacuum.log.error).toHaveBeenCalledWith(expect.stringContaining(`${expectedMessage}: boom`));
+				});
+			},
+		);
+
+		it.each(errorLogCases)(
+			'should log stringified error without throwing when %s executeCommand rejects with a non-Error',
+			async (command, cluster, request, expectedMessage) => {
+				// Arrange
+				const behaviorHandler = asPartial<BehaviorFactoryResult>({
+					executeCommand: vi.fn().mockRejectedValue('plain-failure'),
+					setCommandHandler: vi.fn(),
+					log: logger,
+					commands: {},
+				});
+				vacuum.configureHandler(behaviorHandler);
+
+				// Act
+				await vacuum.executeCommandHandler(command, request, cluster, asType<never>({}), vacuum);
+
+				// Assert
+				await vi.waitFor(() => {
+					expect(vacuum.log.error).toHaveBeenCalledWith(expect.stringContaining(`${expectedMessage}: plain-failure`));
+				});
+			},
+		);
+
+		it('should return before executeCommand settles when changeToMode is invoked', async () => {
+			// Arrange
+			const behaviorHandler = asPartial<BehaviorFactoryResult>({
+				executeCommand: vi.fn(() => new Promise<void>(() => {})),
+				setCommandHandler: vi.fn(),
+				log: logger,
+				commands: {},
+			});
+			vacuum.configureHandler(behaviorHandler);
+
+			// Act
+			const outcome = await Promise.race([
+				vacuum
+					.executeCommandHandler('changeToMode', { newMode: 42 }, 'modeSelect', asType<never>({}), vacuum)
+					.then(() => 'handler-resolved'),
+				new Promise<string>((resolve) => setTimeout(() => resolve('timed-out'), 50)),
+			]);
+
+			// Assert
+			expect(outcome).toBe('handler-resolved');
+			expect(behaviorHandler.executeCommand).toHaveBeenCalledWith('changeToMode', 42);
+		});
+	});
+
 	describe('skipArea handler via configureHandler', () => {
 		it('should call behaviorHandler.executeCommand for skipArea command', async () => {
 			const behaviorHandler = {
-				executeCommand: vi.fn(),
+				executeCommand: vi.fn().mockResolvedValue(undefined),
 				setCommandHandler: vi.fn(),
 				log: logger,
 				commands: {},
@@ -1082,7 +1165,7 @@ describe('RoborockVacuumCleaner', () => {
 
 		it('should keep existing identify and SELECT_AREAS tests passing (regression)', async () => {
 			const behaviorHandler = {
-				executeCommand: vi.fn(),
+				executeCommand: vi.fn().mockResolvedValue(undefined),
 				setCommandHandler: vi.fn(),
 				log: logger,
 				commands: {},
@@ -1116,13 +1199,8 @@ describe('RoborockVacuumCleaner', () => {
 
 	describe('finalizeSkipArea', () => {
 		it('should update currentArea and progress when skipping a non-final area', async () => {
-			const updatedProgress: ServiceArea.Progress[] = [
-				{ areaId: 1, status: ServiceArea.OperationalStatus.Completed },
-				{ areaId: 2, status: ServiceArea.OperationalStatus.Skipped },
-				{ areaId: 3, status: ServiceArea.OperationalStatus.Operating },
-			];
 			const updateAttributeSpy = vi.spyOn(vacuum, 'updateAttribute').mockResolvedValue(true);
-			vi.spyOn(vacuum, 'getAttribute').mockImplementation((clusterId, attributeName) => {
+			vi.spyOn(vacuum, 'getAttribute').mockImplementation((_clusterId, attributeName) => {
 				if (attributeName === 'selectedAreas') return [1, 2, 3];
 				return undefined;
 			});
@@ -1138,12 +1216,50 @@ describe('RoborockVacuumCleaner', () => {
 			expect(result.nextAreaId).toBe(3);
 			expect(result.updatedProgress[1].status).toBe(ServiceArea.OperationalStatus.Skipped);
 			expect(result.updatedProgress[2].status).toBe(ServiceArea.OperationalStatus.Operating);
-			expect(updateAttributeSpy).toHaveBeenCalledWith(ServiceArea.id, 'currentArea', 3, expect.anything());
+			expect(updateAttributeSpy).not.toHaveBeenCalled();
+		});
+
+		it('should return updatedProgress and nextAreaId without calling updateAttribute for progress or currentArea', async () => {
+			// Arrange
+			const updateAttributeSpy = vi.spyOn(vacuum, 'updateAttribute').mockResolvedValue(true);
+			vi.spyOn(vacuum, 'getAttribute').mockImplementation((_clusterId, attributeName) => {
+				if (attributeName === 'selectedAreas') return [1, 2, 3];
+				return undefined;
+			});
+			vi.mocked(roborockService.getProgress).mockReturnValue([
+				{ areaId: 1, status: ServiceArea.OperationalStatus.Operating },
+				{ areaId: 2, status: ServiceArea.OperationalStatus.Pending },
+				{ areaId: 3, status: ServiceArea.OperationalStatus.Pending },
+			]);
+			vi.mocked(roborockService.setProgress as any).mockImplementation(() => {});
+
+			// Act
+			const result = await vacuum.finalizeSkipArea(1);
+
+			// Assert
+			expect(result.nextAreaId).toBe(2);
+			expect(result.updatedProgress).toEqual([
+				{ areaId: 1, status: ServiceArea.OperationalStatus.Skipped },
+				{ areaId: 2, status: ServiceArea.OperationalStatus.Operating },
+				{ areaId: 3, status: ServiceArea.OperationalStatus.Pending },
+			]);
+			expect(updateAttributeSpy).not.toHaveBeenCalledWith(
+				ServiceArea.id,
+				'progress',
+				expect.anything(),
+				expect.anything(),
+			);
+			expect(updateAttributeSpy).not.toHaveBeenCalledWith(
+				ServiceArea.id,
+				'currentArea',
+				expect.anything(),
+				expect.anything(),
+			);
 		});
 
 		it('should set currentArea to null when skipping the last area', async () => {
 			const updateAttributeSpy = vi.spyOn(vacuum, 'updateAttribute').mockResolvedValue(true);
-			vi.spyOn(vacuum, 'getAttribute').mockImplementation((clusterId, attributeName) => {
+			vi.spyOn(vacuum, 'getAttribute').mockImplementation((_clusterId, attributeName) => {
 				if (attributeName === 'selectedAreas') return [1, 2, 3];
 				return undefined;
 			});
@@ -1157,13 +1273,13 @@ describe('RoborockVacuumCleaner', () => {
 			const result = await vacuum.finalizeSkipArea(3);
 
 			expect(result.nextAreaId).toBeNull();
-			expect(updateAttributeSpy).toHaveBeenCalledWith(ServiceArea.id, 'currentArea', null, expect.anything());
+			expect(updateAttributeSpy).not.toHaveBeenCalled();
 		});
 
 		it('should call roborockService.setProgress to sync the mirror', async () => {
 			const setProgressSpy = vi.mocked(roborockService.setProgress);
 			vi.spyOn(vacuum, 'updateAttribute').mockResolvedValue(true);
-			vi.spyOn(vacuum, 'getAttribute').mockImplementation((clusterId, attributeName) => {
+			vi.spyOn(vacuum, 'getAttribute').mockImplementation((_clusterId, attributeName) => {
 				if (attributeName === 'selectedAreas') return [1, 2];
 				return undefined;
 			});

@@ -62,7 +62,7 @@ function createMockConfigManager(showRoutinesAsRoom: boolean): PlatformConfigMan
 
 function createMockBehaviorHandler(log: AnsiLogger): BehaviorFactoryResult {
 	return {
-		executeCommand: vi.fn(),
+		executeCommand: vi.fn().mockResolvedValue(undefined),
 		setCommandHandler: vi.fn(),
 		log,
 		commands: {},
@@ -209,7 +209,7 @@ describe('RoborockVacuumCleaner gap coverage', () => {
 	});
 
 	describe('finalizeSkipArea with undefined selection', () => {
-		it('should clear currentArea to null when selectedAreas attribute is undefined', async () => {
+		it('should return null nextAreaId without writing currentArea when selectedAreas attribute is undefined', async () => {
 			const vacuum = buildVacuum();
 			vi.spyOn(vacuum, 'getAttribute').mockReturnValue(undefined);
 			const updateSpy = vi.spyOn(vacuum, 'updateAttribute').mockResolvedValue(true);
@@ -218,7 +218,7 @@ describe('RoborockVacuumCleaner gap coverage', () => {
 
 			expect(result.nextAreaId).toBeNull();
 			expect(roborockService.setProgress).toHaveBeenCalledWith('duid-gap', result.updatedProgress);
-			expect(updateSpy).toHaveBeenCalledWith(ServiceArea.id, 'currentArea', null, expect.anything());
+			expect(updateSpy).not.toHaveBeenCalled();
 		});
 	});
 
