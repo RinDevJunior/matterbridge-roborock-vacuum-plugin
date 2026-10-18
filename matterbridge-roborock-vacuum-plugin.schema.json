@@ -228,6 +228,19 @@
 										"type": "boolean",
 										"default": false
 									},
+									"enableReachability": {
+										"title": "Enable Reachability",
+										"description": "Mark a vacuum as unreachable in Matter after it has been silent for the reachability delay. Recovery is immediate. Requires advanced features.",
+										"type": "boolean",
+										"default": false
+									},
+									"reachabilityDelaySeconds": {
+										"title": "Reachability Delay (seconds)",
+										"description": "How long a vacuum must be silent before it is marked unreachable (default: 600, minimum: 120). Requires enableReachability.",
+										"type": "integer",
+										"default": 600,
+										"minimum": 120
+									},
 									"clearStorageOnStartup": {
 										"title": "Clear Storage On Startup",
 										"description": "Clear persistence storage and re-initialize the plugin on next startup.",

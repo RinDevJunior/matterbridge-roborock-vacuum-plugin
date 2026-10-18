@@ -1,6 +1,7 @@
 import { MatterbridgeIdentifyServer, MatterbridgeServiceAreaServer } from 'matterbridge';
 import { MatterbridgeRvcOperationalStateServer } from 'matterbridge/devices';
 import { AnsiLogger } from 'matterbridge/logger';
+import { BasicInformationServer, BridgedDeviceBasicInformationServer } from 'matterbridge/matter/behaviors';
 import {
 	HepaFilterMonitoring,
 	ModeBase,
@@ -89,6 +90,67 @@ describe('RoborockVacuumCleaner', () => {
 	it('should construct with correct properties', () => {
 		expect(vacuum).toBeInstanceOf(RoborockVacuumCleaner);
 		expect(vacuum.device).toBe(device);
+	});
+
+	describe('setReachable', () => {
+		type ServerNodeStub = NonNullable<RoborockVacuumCleaner['serverNode']>;
+
+		function useMode(mode: 'server' | 'matter', isReady = true): void {
+			setReadOnlyProperty(vacuum, 'mode', mode);
+			setReadOnlyProperty(vacuum, 'lifecycle', { isReady });
+		}
+
+		it('should write reachable=false on BridgedDeviceBasicInformation and return true in bridge mode', async () => {
+			useMode('matter');
+			const setStateSpy = vi.spyOn(vacuum, 'setStateOf').mockResolvedValue(undefined);
+
+			const result = await vacuum.setReachable(false);
+
+			expect(result).toBe(true);
+			expect(setStateSpy).toHaveBeenCalledWith(BridgedDeviceBasicInformationServer, { reachable: false });
+		});
+
+		it('should write reachable=true on the server node BasicInformation and return true in server mode', async () => {
+			useMode('server');
+			const serverNode = asType<ServerNodeStub>({ setStateOf: vi.fn().mockResolvedValue(undefined) });
+			setReadOnlyProperty(vacuum, 'serverNode', serverNode);
+			const setStateSpy = vi.spyOn(vacuum, 'setStateOf');
+
+			const result = await vacuum.setReachable(true);
+
+			expect(result).toBe(true);
+			expect(serverNode.setStateOf).toHaveBeenCalledWith(BasicInformationServer, { reachable: true });
+			expect(setStateSpy).not.toHaveBeenCalled();
+		});
+
+		it('should return false and skip writes when the endpoint is not ready', async () => {
+			useMode('matter', false);
+			const setStateSpy = vi.spyOn(vacuum, 'setStateOf').mockResolvedValue(undefined);
+
+			const result = await vacuum.setReachable(false);
+
+			expect(result).toBe(false);
+			expect(setStateSpy).not.toHaveBeenCalled();
+		});
+
+		it('should return false and skip writes in server mode when serverNode is undefined', async () => {
+			useMode('server');
+			setReadOnlyProperty(vacuum, 'serverNode', undefined);
+
+			const result = await vacuum.setReachable(false);
+
+			expect(result).toBe(false);
+		});
+
+		it('should return false and log a warning without throwing when setStateOf rejects', async () => {
+			useMode('matter');
+			vi.spyOn(vacuum, 'setStateOf').mockRejectedValue(new Error('write failed'));
+
+			const result = await vacuum.setReachable(false);
+
+			expect(result).toBe(false);
+			expect(vacuum.log.warn).toHaveBeenCalledWith(expect.stringContaining('write failed'));
+		});
 	});
 
 	describe('buildPendingProgressSeed', () => {

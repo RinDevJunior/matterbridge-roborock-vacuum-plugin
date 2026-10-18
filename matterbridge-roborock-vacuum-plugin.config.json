@@ -58,7 +58,9 @@
 			"emailNotificationSettings": {},
 			"enableLiveMapUpdates": false,
 			"enableEstimatedEndTime": false,
-			"enableFilterMonitoring": false
+			"enableFilterMonitoring": false,
+			"enableReachability": false,
+			"reachabilityDelaySeconds": 600
 		}
 	}
 }

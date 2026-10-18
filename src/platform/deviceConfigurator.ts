@@ -53,7 +53,11 @@ export class DeviceConfigurator {
 		const configureSuccess = new Map<string, boolean>();
 
 		roborockService.setDeviceNotify(async (payload) => {
-			await this.getPlatformRunner().updateRobotWithPayload(payload);
+			const platformRunner = this.getPlatformRunner();
+			if (payload.type !== NotifyMessageTypes.HomeData) {
+				platformRunner.reachability.markAlive(payload.data.duid);
+			}
+			await platformRunner.updateRobotWithPayload(payload);
 		});
 
 		for (const vacuum of this.registry.getAllDevices()) {
