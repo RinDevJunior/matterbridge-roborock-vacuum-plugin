@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
 import {
 	baseCleanModeConfigs,
@@ -377,6 +377,173 @@ describe('ModeResolver', () => {
 				CleanSequenceType.OneTime,
 			);
 			expect(resolver.resolve(setting)).toBe(CleanModeLabelInfo[CleanModeDisplayLabel.VacuumAndMopDefault].mode);
+		});
+	});
+
+	describe('water slide codes', () => {
+		it('should resolve Balanced + slide 225 to VacuumAndMopMin via normalization', () => {
+			const resolver = new ModeResolver(baseCleanModeConfigs);
+			const setting = new CleanModeSetting(
+				VacuumSuctionPower.Balanced,
+				225,
+				0,
+				MopRoute.Standard,
+				CleanSequenceType.Persist,
+			);
+			expect(resolver.resolve(setting)).toBe(CleanModeLabelInfo[CleanModeDisplayLabel.VacuumAndMopMin].mode);
+		});
+
+		it('should resolve Balanced + slide 227 (position 7, still Low) to VacuumAndMopMin', () => {
+			const resolver = new ModeResolver(baseCleanModeConfigs);
+			const setting = new CleanModeSetting(
+				VacuumSuctionPower.Balanced,
+				227,
+				0,
+				MopRoute.Standard,
+				CleanSequenceType.Persist,
+			);
+			expect(resolver.resolve(setting)).toBe(CleanModeLabelInfo[CleanModeDisplayLabel.VacuumAndMopMin].mode);
+		});
+
+		it('should resolve Off + slide 245 to MopMax and Off + slide 225 to MopMin', () => {
+			const resolver = new ModeResolver(baseCleanModeConfigs);
+			const high = new CleanModeSetting(VacuumSuctionPower.Off, 245, 0, MopRoute.Standard, CleanSequenceType.Persist);
+			const low = new CleanModeSetting(VacuumSuctionPower.Off, 225, 0, MopRoute.Standard, CleanSequenceType.Persist);
+			expect(resolver.resolve(high)).toBe(CleanModeLabelInfo[CleanModeDisplayLabel.MopMax].mode);
+			expect(resolver.resolve(low)).toBe(CleanModeLabelInfo[CleanModeDisplayLabel.MopMin].mode);
+		});
+
+		it('should resolve Balanced + slide 235 to VacuumAndMopDefault', () => {
+			const resolver = new ModeResolver(baseCleanModeConfigs);
+			const setting = new CleanModeSetting(
+				VacuumSuctionPower.Balanced,
+				235,
+				0,
+				MopRoute.Standard,
+				CleanSequenceType.Persist,
+			);
+			expect(resolver.resolve(setting)).toBe(CleanModeLabelInfo[CleanModeDisplayLabel.VacuumAndMopDefault].mode);
+		});
+
+		it.each<[number, number]>([
+			[201, CleanModeLabelInfo[CleanModeDisplayLabel.VacuumAndMopMin].mode],
+			[202, CleanModeLabelInfo[CleanModeDisplayLabel.VacuumAndMopDefault].mode],
+		])('should keep standard water flow %i resolving unchanged (regression)', (waterFlow, expectedMode) => {
+			const resolver = new ModeResolver(baseCleanModeConfigs);
+			const setting = new CleanModeSetting(
+				VacuumSuctionPower.Balanced,
+				waterFlow,
+				0,
+				MopRoute.Standard,
+				CleanSequenceType.Persist,
+			);
+			expect(resolver.resolve(setting)).toBe(expectedMode);
+		});
+
+		it('should keep High water flow 203 resolving to MopMax (regression)', () => {
+			const resolver = new ModeResolver(baseCleanModeConfigs);
+			const setting = new CleanModeSetting(
+				VacuumSuctionPower.Off,
+				203,
+				0,
+				MopRoute.Standard,
+				CleanSequenceType.Persist,
+			);
+			expect(resolver.resolve(setting)).toBe(CleanModeLabelInfo[CleanModeDisplayLabel.MopMax].mode);
+		});
+
+		it('should keep unmapped slide 230 on category fallback when suction is Off', () => {
+			const resolver = new ModeResolver(baseCleanModeConfigs);
+			const setting = new CleanModeSetting(
+				VacuumSuctionPower.Off,
+				230,
+				0,
+				MopRoute.Standard,
+				CleanSequenceType.Persist,
+			);
+			expect(resolver.resolve(setting)).toBe(CleanModeLabelInfo[CleanModeDisplayLabel.MopDefault].mode);
+		});
+
+		it('should resolve unmapped slide 221 the same as the standard Medium fallback', () => {
+			const resolver = new ModeResolver(baseCleanModeConfigs);
+			const unmapped = new CleanModeSetting(
+				VacuumSuctionPower.Balanced,
+				221,
+				0,
+				MopRoute.Standard,
+				CleanSequenceType.Persist,
+			);
+			const medium = new CleanModeSetting(
+				VacuumSuctionPower.Balanced,
+				MopWaterFlow.Medium,
+				0,
+				MopRoute.Standard,
+				CleanSequenceType.Persist,
+			);
+			expect(resolver.resolve(unmapped)).toBe(resolver.resolve(medium));
+		});
+
+		it('should keep unmapped slide 250 on Max vacuum+mop category', () => {
+			const resolver = new ModeResolver(baseCleanModeConfigs);
+			const setting = new CleanModeSetting(
+				VacuumSuctionPower.Max,
+				250,
+				0,
+				MopRoute.Standard,
+				CleanSequenceType.Persist,
+			);
+			expect(resolver.resolve(setting)).toBe(CleanModeLabelInfo[CleanModeDisplayLabel.VacuumAndMopMax].mode);
+		});
+
+		it('should not resolve smart-water code 210 to SmartPlan', () => {
+			const resolver = createSmartModeResolver(smartCleanModeConfigs);
+			const setting = new CleanModeSetting(
+				VacuumSuctionPower.Balanced,
+				210,
+				0,
+				MopRoute.Standard,
+				CleanSequenceType.Persist,
+			);
+			expect(resolver.resolve(setting)).not.toBe(CleanModeLabelInfo[CleanModeDisplayLabel.SmartPlan].mode);
+		});
+
+		it('should keep vacuum-only category for Balanced with waterFlow Off (pin)', () => {
+			const resolver = new ModeResolver(baseCleanModeConfigs);
+			const setting = new CleanModeSetting(
+				VacuumSuctionPower.Balanced,
+				200,
+				0,
+				MopRoute.Standard,
+				CleanSequenceType.Persist,
+			);
+			expect(resolver.resolve(setting)).toBe(CleanModeLabelInfo[CleanModeDisplayLabel.VacuumDefault].mode);
+		});
+
+		it('should pass the raw slide setting to customCheckFn and fall through when it returns undefined', () => {
+			const customCheckFn = vi.fn((_setting: CleanModeSetting): number | undefined => undefined);
+			const resolver = new ModeResolver(baseCleanModeConfigs, customCheckFn);
+			const setting = new CleanModeSetting(
+				VacuumSuctionPower.Balanced,
+				225,
+				0,
+				MopRoute.Standard,
+				CleanSequenceType.Persist,
+			);
+			expect(resolver.resolve(setting)).toBe(CleanModeLabelInfo[CleanModeDisplayLabel.VacuumAndMopMin].mode);
+			expect(customCheckFn).toHaveBeenCalledTimes(1);
+			expect(vi.mocked(customCheckFn).mock.calls[0][0].waterFlow).toBe(225);
+		});
+
+		it('should let custom suction win over slide normalization', () => {
+			const resolver = createDefaultModeResolver(baseCleanModeConfigs);
+			const setting = new CleanModeSetting(
+				VacuumSuctionPower.Custom,
+				225,
+				0,
+				MopRoute.Standard,
+				CleanSequenceType.Persist,
+			);
+			expect(resolver.resolve(setting)).toBe(CleanModeLabelInfo[CleanModeDisplayLabel.VacuumAndMopEnergySaving].mode);
 		});
 	});
 });
