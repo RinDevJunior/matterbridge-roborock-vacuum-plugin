@@ -11,7 +11,7 @@ import { fileURLToPath } from 'node:url';
 export default defineConfig({
 	resolve: { tsconfigPaths: true },
 	test: {
-		include: ['src/**/*.test.ts', 'src/**/*.spec.ts'],
+		include: ['src/**/*.test.ts', 'src/**/*.spec.ts', 'scripts/**/*.test.mjs'],
 		exclude: ['dist', 'node_modules', 'src/pluginTemplate/**', 'src/cli/**', 'src/cli.ts'],
 		globals: true,
 		clearMocks: true,

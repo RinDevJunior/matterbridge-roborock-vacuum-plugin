@@ -3,6 +3,12 @@ name: Publish to npm
 on:
   release:
     types: [created]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Existing release tag to rehearse the PR comment for (always a dry run, posts nothing)'
+        required: true
+        type: string
 
 concurrency:
   group: npm-publish
@@ -16,7 +22,7 @@ permissions:
 jobs:
   publish-release:
     name: Publish release to npm
-    if: github.event.release.prerelease == false
+    if: github.event_name == 'release' && github.event.release.prerelease == false
     runs-on: ubuntu-latest
 
     steps:
@@ -60,7 +66,7 @@ jobs:
 
   publish-release-candidate:
     name: Publish release candidate to npm
-    if: github.event.release.prerelease == true
+    if: github.event_name == 'release' && github.event.release.prerelease == true
     runs-on: ubuntu-latest
 
     steps:
@@ -101,3 +107,61 @@ jobs:
 
       - name: Publish to npm with trusted publishing / OIDC
         run: npm publish --provenance --access public --tag dev
+
+  announce-release:
+    name: Comment released PRs
+    needs: [publish-release, publish-release-candidate]
+    if: ${{ github.event_name == 'release' && !cancelled() && (needs.publish-release.result == 'success' || needs.publish-release-candidate.result == 'success') }}
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    permissions:
+      contents: read
+      pull-requests: write
+      issues: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.release.tag_name }}
+          fetch-depth: 0
+
+      - name: Comment on released PRs
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          TAG: ${{ github.event.release.tag_name }}
+          PRERELEASE: ${{ github.event.release.prerelease }}
+          DRY_RUN: 'false'
+        run: node scripts/release-comment.mjs
+
+  announce-dry-run:
+    name: Dry run only - log released PR comments, post nothing
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
+      issues: read
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.tag }}
+          fetch-depth: 0
+
+      - name: Resolve release type
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          TAG: ${{ inputs.tag }}
+        run: echo "PRERELEASE=$(gh release view "$TAG" --repo "$GH_REPO" --json isPrerelease --jq .isPrerelease)" >> "$GITHUB_ENV"
+
+      - name: Dry-run PR comments
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          TAG: ${{ inputs.tag }}
+          DRY_RUN: 'true'
+        run: node scripts/release-comment.mjs
