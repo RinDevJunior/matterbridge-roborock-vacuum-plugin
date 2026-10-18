@@ -3943,6 +3943,128 @@ describe('handleServiceAreaUpdate — Pending seed on run start', () => {
 	});
 });
 
+describe('handleServiceAreaUpdate — Pending seed grace window', () => {
+	const GRACE_NOW = Date.parse('2026-10-18T10:00:00Z');
+
+	beforeEach(() => {
+		vi.clearAllMocks();
+		vi.useFakeTimers();
+		vi.setSystemTime(GRACE_NOW);
+	});
+
+	afterEach(() => {
+		vi.useRealTimers();
+	});
+
+	it.each([
+		{ label: 'after 5 000 ms', elapsedMs: 5_000 },
+		{ label: 'at 29 999 ms', elapsedMs: 29_999 },
+	])('should keep the pending seed when Idle arrives $label after the seed', async ({ elapsedMs }) => {
+		// Arrange
+		const seed = buildProgressUpdate([], [1, 2], null);
+		const robot = createMockRobot(RUN_END_DUID, 0, undefined, RvcOperationalState.OperationalState.Docked);
+		robot.runStartSeededAtMs = GRACE_NOW - elapsedMs;
+		const { platform, service } = createStatefulProgressPlatform(seed, false, [1, 2]);
+
+		// Act
+		await handleServiceAreaUpdate(robot, createRunEndMessage(OperationStatusCode.Idle), platform);
+
+		// Assert
+		expect(service.getProgress(RUN_END_DUID)).toEqual(seed);
+		expect(vi.mocked(service.setProgress).mock.calls.some((call) => call[1].length === 0)).toBe(false);
+		const progressWrites = vi.mocked(robot.updateAttribute).mock.calls.filter((call) => call[1] === 'progress');
+		expect(progressWrites.some((call) => Array.isArray(call[2]) && call[2].length === 0)).toBe(false);
+		expect(robot.runStartSeededAtMs).toBe(GRACE_NOW - elapsedMs);
+	});
+
+	it.each([
+		{ label: 'at exactly 30 000 ms', elapsedMs: 30_000 },
+		{ label: 'after 31 000 ms', elapsedMs: 31_000 },
+	])('should clear the pending seed when Idle arrives $label after the seed', async ({ elapsedMs }) => {
+		// Arrange
+		const seed = buildProgressUpdate([], [1, 2], null);
+		const robot = createMockRobot(RUN_END_DUID, 0, undefined, RvcOperationalState.OperationalState.Docked);
+		robot.runStartSeededAtMs = GRACE_NOW - elapsedMs;
+		const { platform, service } = createStatefulProgressPlatform(seed, false, [1, 2]);
+
+		// Act
+		await handleServiceAreaUpdate(robot, createRunEndMessage(OperationStatusCode.Idle), platform);
+
+		// Assert
+		expect(service.setProgress).toHaveBeenCalledWith(RUN_END_DUID, []);
+		expect(robot.updateAttribute).toHaveBeenCalledWith(ServiceArea.id, 'progress', [], expect.anything());
+	});
+
+	it.each([
+		{ label: 'at exactly 30 000 ms', elapsedMs: 30_000 },
+		{ label: 'after 31 000 ms', elapsedMs: 31_000 },
+	])('should reset the run-start marker to null when Idle arrives $label after the seed', async ({ elapsedMs }) => {
+		// Arrange
+		const seed = buildProgressUpdate([], [1, 2], null);
+		const robot = createMockRobot(RUN_END_DUID, 0, undefined, RvcOperationalState.OperationalState.Docked);
+		robot.runStartSeededAtMs = GRACE_NOW - elapsedMs;
+		const { platform } = createStatefulProgressPlatform(seed, false, [1, 2]);
+
+		// Act
+		await handleServiceAreaUpdate(robot, createRunEndMessage(OperationStatusCode.Idle), platform);
+
+		// Assert
+		expect(robot.runStartSeededAtMs).toBeNull();
+	});
+
+	it('should clear the pending seed when Idle and the robot has no runStartSeededAtMs field', async () => {
+		// Arrange: mock robot without the field keeps the pre-grace behavior
+		const seed = buildProgressUpdate([], [1, 2], null);
+		const robot = createMockRobot(RUN_END_DUID, 0, undefined, RvcOperationalState.OperationalState.Docked);
+		const { platform, service } = createStatefulProgressPlatform(seed, false, [1, 2]);
+
+		// Act
+		await handleServiceAreaUpdate(robot, createRunEndMessage(OperationStatusCode.Idle), platform);
+
+		// Assert
+		expect(service.setProgress).toHaveBeenCalledWith(RUN_END_DUID, []);
+		expect(robot.updateAttribute).toHaveBeenCalledWith(ServiceArea.id, 'progress', [], expect.anything());
+	});
+
+	it('should keep the seed through an Idle status and drop the marker on the first active status', async () => {
+		// Arrange
+		const seed = buildProgressUpdate([], [1, 2], null);
+		const robot = createMockRobot(RUN_END_DUID, 0, undefined, RvcOperationalState.OperationalState.Docked);
+		vi.mocked(robot.buildPendingProgressSeed).mockReturnValue(seed);
+		robot.runStartSeededAtMs = GRACE_NOW;
+		const { platform, service } = createStatefulProgressPlatform(seed, false, [1, 2]);
+
+		// Act: Idle-coded status inside the grace window, then the first active status
+		await handleServiceAreaUpdate(robot, createRunEndMessage(OperationStatusCode.Idle), platform);
+		vi.setSystemTime(GRACE_NOW + 2_000);
+		vi.mocked(robot.getAttribute).mockImplementation((_clusterId, attrName) =>
+			attrName === 'operationalState' ? RvcOperationalState.OperationalState.Running : undefined,
+		);
+		await handleServiceAreaUpdate(robot, RUN_START_MESSAGE, platform);
+
+		// Assert
+		const setProgressCalls = vi.mocked(service.setProgress).mock.calls;
+		expect(setProgressCalls).toContainEqual([RUN_END_DUID, seed]);
+		expect(setProgressCalls.some((call) => call[1].length === 0)).toBe(false);
+		const progressWrites = vi.mocked(robot.updateAttribute).mock.calls.filter((call) => call[1] === 'progress');
+		expect(progressWrites.some((call) => Array.isArray(call[2]) && call[2].length === 0)).toBe(false);
+		expect(robot.runStartSeededAtMs).toBeNull();
+	});
+
+	it('should reset the run-start marker to null when run end is detected', async () => {
+		// Arrange: was actively cleaning, now Docked
+		const robot = createMockRobot(RUN_END_DUID, 0, undefined, RvcOperationalState.OperationalState.Docked);
+		robot.runStartSeededAtMs = GRACE_NOW - 1_000;
+		const { platform } = createStatefulProgressPlatform(PENDING_PROGRESS, true, [1, 2]);
+
+		// Act
+		await handleServiceAreaUpdate(robot, createRunEndMessage(OperationStatusCode.Idle), platform);
+
+		// Assert
+		expect(robot.runStartSeededAtMs).toBeNull();
+	});
+});
+
 describe('handleServiceAreaUpdate — run-end cleanup', () => {
 	beforeEach(() => {
 		vi.clearAllMocks();

@@ -35,6 +35,7 @@ export class RoborockVacuumCleaner extends RoboticVacuumCleaner {
 	cleanModeSetting: CleanModeSetting | undefined;
 	lastUpdateAt: number | null = null;
 	operationSessionStartMs: number | null = null;
+	public runStartSeededAtMs: number | null = null;
 	operationPausedSinceMs: number | null = null;
 	operationPausedAccumMs = 0;
 	private readonly supportsFilterMonitoring: boolean;
@@ -346,6 +347,7 @@ export class RoborockVacuumCleaner extends RoboticVacuumCleaner {
 		}
 		const seed = this.buildPendingProgressSeed();
 		this.roborockService.setProgress(this.device.duid, seed);
+		this.runStartSeededAtMs = Date.now();
 		await this.updateAttribute(ServiceArea.id, 'progress', seed, this.log);
 	}
 
