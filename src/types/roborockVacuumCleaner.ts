@@ -1,4 +1,4 @@
-import { CommandHandlerData, CommandHandlers } from 'matterbridge';
+import { CommandHandlerPayload, CommandHandlers } from 'matterbridge';
 import { MatterbridgeRvcCleanModeServer, RoboticVacuumCleaner } from 'matterbridge/devices';
 import { AnsiLogger, debugStringify } from 'matterbridge/logger';
 import { CommonAreaNamespaceTag } from 'matterbridge/matter';
@@ -24,6 +24,7 @@ import {
 import { RoborockService } from '../services/roborockService.js';
 import { BehaviorFactoryResult } from '../share/behaviorFactory.js';
 import type { RestoredRunSeed } from '../share/cleaningRunSnapshot.js';
+import { describeCommandSender } from '../share/matterCommandSender.js';
 
 interface IdentifyCommandRequest {
 	identifyTime?: number;
@@ -388,10 +389,11 @@ export class RoborockVacuumCleaner extends RoboticVacuumCleaner {
 	 */
 	private addCommandHandlerWithErrorHandling(
 		commandName: CommandHandlers,
-		handler: (context: CommandHandlerData) => Promise<void>,
+		handler: (context: CommandHandlerPayload) => Promise<void>,
 	): void {
-		this.addCommandHandler(commandName, async (context: CommandHandlerData) => {
+		this.addCommandHandler(commandName, async (context: CommandHandlerPayload) => {
 			try {
+				this.log.info(`${commandName} command from ${describeCommandSender(context.context)}`);
 				await handler(context);
 			} catch (error) {
 				this.log.error(`Error executing ${commandName} command: ${error}`);

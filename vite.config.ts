@@ -30,12 +30,14 @@ export default defineConfig({
 				'src/tests/**/*.ts',
 				// Exclude type declaration files
 				'src/**/*.d.ts',
+				// CLI entry points are excluded from coverage (matches codecov.yml ignore)
+				'src/cli/**',
 			],
 			thresholds: {
-				statements: 75,
-				branches: 75,
-				functions: 75,
-				lines: 75,
+				statements: 99,
+				branches: 97,
+				functions: 99,
+				lines: 99,
 			},
 		},
 	},

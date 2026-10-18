@@ -20,10 +20,14 @@ export const MESSAGE_TIMEOUT_MS = 10000;
 export const RECONNECT_DELAY_MS = 10000;
 
 /**
- * Interval for MQTT keepalive messages (60 minutes).
- * Prevents connection timeout on idle connections.
+ * Interval for forcing an MQTT reconnect to avoid silently stale connections (60 minutes).
  */
-export const KEEPALIVE_INTERVAL_MS = 60 * 60 * 1000;
+export const MQTT_FORCE_RECONNECT_INTERVAL_MS = 60 * 60 * 1000;
+
+/**
+ * Wait time after repeated MQTT auth errors before reconnecting (60 minutes).
+ */
+export const AUTH_ERROR_BACKOFF_MS = 60 * 60 * 1000;
 
 /**
  * Minimum time between verification code requests (15 minutes).

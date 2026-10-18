@@ -1,7 +1,7 @@
 import { AnsiLogger, debugStringify } from 'matterbridge/logger';
 import mqtt, { ErrorWithReasonCode, IConnackPacket, ISubscriptionGrant, MqttClient as MqttLibClient } from 'mqtt';
 
-import { KEEPALIVE_INTERVAL_MS } from '../../constants/timeouts.js';
+import { AUTH_ERROR_BACKOFF_MS, MQTT_FORCE_RECONNECT_INTERVAL_MS } from '../../constants/timeouts.js';
 import * as CryptoUtils from '../helper/cryptoHelper.js';
 import { MessageContext, RequestMessage, Rriot, UserData } from '../models/index.js';
 import { AbstractClient } from '../routing/abstractClient.js';
@@ -129,7 +129,7 @@ export class MQTTClient extends AbstractClient {
 				this.logger.info('[MQTTClient] Force reconnecting to ensure fresh connection (new connection)');
 				this.connect();
 			}
-		}, KEEPALIVE_INTERVAL_MS);
+		}, MQTT_FORCE_RECONNECT_INTERVAL_MS);
 	}
 
 	private async onConnect(result: IConnackPacket): Promise<void> {
@@ -202,7 +202,7 @@ export class MQTTClient extends AbstractClient {
 					this.consecutiveAuthErrors = 0;
 					this.logger.info('[MQTTClient] Auth error backoff period ended, attempting reconnection');
 					this.connect();
-				}, KEEPALIVE_INTERVAL_MS);
+				}, AUTH_ERROR_BACKOFF_MS);
 				this.authErrorBackoffTimeout.unref();
 			}
 		}
