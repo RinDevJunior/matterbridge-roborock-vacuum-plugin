@@ -30,6 +30,7 @@ It is version-controlled — commit and push changes so teammates can pull the l
 - New config sections in schema use JSON Schema `if/then` blocks under `advancedFeature.allOf`.
 - **Agent frontmatter:** `effort`/`maxTurns` after `color`, before `tools`; `tools` MUST be a comma-separated string — YAML block lists silently fail and the subagent falls back to Read/Write/Edit/Bash only.
 - **Subagent toolsets (macOS, Jul 10 2026):** native `Glob`/`Grep` absent from Task subagents — use `mcp__glob-grep__*`. `LSP` only reachable via deferred ToolSearch in wildcard-tools subagents — don't rely on it in agent definitions.
+- **Mode enum name lookup (Oct 18, 2026):** `cleanModeUtils.ts` resolves `MopWaterFlow[str]`/`MopRoute[str]` by member NAME, so new members (Min/Max/Extreme/SmartWater/DeepPlusCn) now accept those config strings instead of falling back.
 - **Subagent task tracking:** `TaskCreate`/`TaskUpdate`/`TodoWrite` never reach Task subagents (Jul 10 2026) — don't list in frontmatter; EM tracks steps in main session, subagents report plain text.
 
 ## Decisions Made
@@ -57,7 +58,7 @@ It is version-controlled — commit and push changes so teammates can pull the l
 - **selectAreas/skipArea progress (Oct 16, 2026):** writes go via `this.state.progress`/`currentArea` (no `updateAttribute`); assert `updateAttribute` calls filtered by attr name, read state via `server['state']`.
 - **ModeResolver.resolveFallback category-aware tests:** import `vacuumOnlyModeConfigs`/`mopOnlyModeConfigs`/`vacuumAndMopModeConfigs` + `baseCleanModeConfigs`; Max/Balanced/Quiet with non-canonical water/route → same-category mode; test vacuum-off/mop-off, unknown suction → Default; exact-triple still wins.
 - **handleErrorOccurred tests (9 branches):** includeVacuumErrorStatus off; vacuum error; Running+no-error; not-Running+no-vacuum+dock-disabled (clear, the bug fix); dock status error/no-error; dockErrorCode active/NoError; both-undefined. Use `buildOperationalError()`; mock `robot.getAttribute` for operationalState.
-- **LegacyMapParser tests:** `buildWallBlock`/`buildZoneBlock` (8B/16B stride; truncated drops partial). Containment tier (Jul 28): containment beats closer centroid; 2+ or 0 matches → nearest-center; exact pixel wins; namedRooms lookup. Y-flip `pyRel = height - 1 - (pyAbs - top)`. Islands: 4-connectivity BFS, wall tol ±3px, per-island 30% heuristic.
+- **Enum name-lookup tests (Oct 18, 2026):** `MopWaterFlow[name]`/`MopRoute[name]` reverse lookup covered in `enums/enums.test.ts`; config-name cases in `cleanModeUtils.test.ts` "name lookup" block.
 - **LZ4/getSupportedAreas regression (Oct 18, 2026):** truncated LZ4 cases go in `it.each` (`[0xf0]`, `[0x1f,0x41,0x01,0x00]`); nameless-room cases use `result.roomIndexMap.areaInfo.get(i)`.
 - **Water-slide codes (Oct 18, 2026):** `waterSlide.ts` normalizes 221-250 by position; 225/235/245 map to 201-203 in `ModeResolver.resolve` before lookup. Raw setting still goes to `customCheckFn`.
 - **`it.each` typing for CleanModeLabelInfo:** it's keyed by `CleanModeLabel`, not `CleanModeDisplayLabel`. Pass `.mode` numbers in the tuple (`it.each<[number, number]>`).

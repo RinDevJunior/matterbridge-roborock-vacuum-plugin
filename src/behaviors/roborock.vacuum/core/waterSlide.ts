@@ -1,21 +1,21 @@
-import { MopWaterFlow } from '../enums/index.js';
+import { MopWaterFlow, WaterSlideCode } from '../enums/index.js';
 
-export const WATER_SLIDE_SMART_WATER = 210;
+export const WATER_SLIDE_SMART_WATER = MopWaterFlow.SmartWater;
 
-const WATER_SLIDE_POSITION_TABLE: readonly (readonly [maxPosition: number, canonicalCode: number])[] = [
-	[3, 221],
-	[7, 225],
-	[12, 230],
-	[17, 235],
-	[22, 240],
-	[27, 245],
-	[30, 250],
+const WATER_SLIDE_POSITION_TABLE: readonly (readonly [maxPosition: number, canonicalCode: WaterSlideCode])[] = [
+	[3, WaterSlideCode.PureWaterFlowStart],
+	[7, WaterSlideCode.PureWaterFlowSmall],
+	[12, WaterSlideCode.PureWaterFlowGentle],
+	[17, WaterSlideCode.PureWaterFlowMiddle],
+	[22, WaterSlideCode.PureWaterFlowLarge],
+	[27, WaterSlideCode.PureWaterSuperBegin],
+	[30, WaterSlideCode.PureWaterFlowEnd],
 ];
 
 const STANDARD_FLOW_BY_WATER_SLIDE_CODE: ReadonlyMap<number, MopWaterFlow> = new Map([
-	[225, MopWaterFlow.Low],
-	[235, MopWaterFlow.Medium],
-	[245, MopWaterFlow.High],
+	[WaterSlideCode.PureWaterFlowSmall, MopWaterFlow.Low],
+	[WaterSlideCode.PureWaterFlowMiddle, MopWaterFlow.Medium],
+	[WaterSlideCode.PureWaterSuperBegin, MopWaterFlow.High],
 ]);
 
 /**
