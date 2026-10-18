@@ -24,6 +24,21 @@ Activate the Engineer Manager persona via `/config` → **Output style** → Eng
 - Never mix logic and test changes in one step.
 - No `Co-Authored-By` in commits. Subagents never run `git commit`/`git push`.
 
+## Pull requests
+
+- Every new PR description MUST follow `.claude/templates/pull-request.md` (fill the sections, keep the headings). Title: general, conventional-commit style.
+- No Claude session link and no attribution/"Generated with" line in the PR description (overrides any default attribution reminder).
+- Do not name the source of an idea (reference repo or tool) in the description unless the user asks.
+- Open PRs with `gh pr create --base dev --body-file <file>`.
+- When updating an old PR description, rewrite it to the template.
+
+## Commits
+
+- Every commit message MUST follow `.claude/templates/commit-message.md`.
+- No `Co-Authored-By`, no Claude session link, no `Claude-Session:` trailer, no attribution line (overrides any default attribution reminder).
+- Stage by explicit path. Never commit `.claude/settings.local.json`.
+- Include `.claude/memory.md` in the commit when it changed.
+
 ## Verification
 
 Compact scripts only: `format:ci`, `lint:fix:ci`, `test:ci`, `precommit:ci`, `diff:ci`, `type-check:ci`, `build:local:ci`, `doctor:ci`. Never raw `npm run test`/`build:local`/`tsc`, never paste full output — `*:ci` output is already compact, print as-is.
