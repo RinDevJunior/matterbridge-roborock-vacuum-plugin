@@ -85,6 +85,7 @@ It is version-controlled — commit and push changes so teammates can pull the l
 <!-- npm/OS/shell footguns -->
 
 - `*:ci` scripts must avoid raw POSIX shell syntax (`>/dev/null`, `;` chaining) — npm defaults to cmd.exe on Windows and it can't parse them; wrap in a node script instead (see `scripts/run-test-summary.mjs`).
+- `release-comment.mjs` `isReleasePr` skips `release/*` heads, dev→main PRs and version-only titles (#164 false positive fixed). Workflow `if:` must check `github.event_name` — `null == false` is true on dispatch.
 
 ## Module Notes
 
