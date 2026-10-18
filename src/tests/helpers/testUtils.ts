@@ -135,6 +135,12 @@ export function createMockConfigManager(overrides: Partial<PlatformConfigManager
 		get includeVacuumErrorStatus() {
 			return overrides.includeVacuumErrorStatus ?? false;
 		},
+		get isReachabilityEnabled() {
+			return overrides.isReachabilityEnabled ?? false;
+		},
+		get reachabilityDelayMs() {
+			return overrides.reachabilityDelayMs ?? 600_000;
+		},
 		validateConfig: () => true,
 		validateAuthentication: () => true,
 	};

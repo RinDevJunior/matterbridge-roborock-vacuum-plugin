@@ -709,6 +709,63 @@ describe('PlatformConfigManager', () => {
 		});
 	});
 
+	it('createDefaultAdvancedFeature defaults enableReachability to false and reachabilityDelaySeconds to 600', () => {
+		const settings = createDefaultAdvancedFeature().settings;
+		expect(settings.enableReachability).toBe(false);
+		expect(settings.reachabilityDelaySeconds).toBe(600);
+	});
+
+	it('isReachabilityEnabled is false by default', () => {
+		expect(manager.isReachabilityEnabled).toBe(false);
+	});
+
+	it('isReachabilityEnabled returns true when advanced feature enabled and enableReachability = true', () => {
+		config.advancedFeature = {
+			enableAdvancedFeature: true,
+			settings: { ...createDefaultAdvancedFeature().settings, enableReachability: true },
+		};
+		manager = PlatformConfigManager.create(config, mockLogger);
+		expect(manager.isReachabilityEnabled).toBe(true);
+	});
+
+	it('isReachabilityEnabled returns false when advanced feature disabled', () => {
+		config.advancedFeature = {
+			enableAdvancedFeature: false,
+			settings: { ...createDefaultAdvancedFeature().settings, enableReachability: true },
+		};
+		manager = PlatformConfigManager.create(config, mockLogger);
+		expect(manager.isReachabilityEnabled).toBe(false);
+	});
+
+	it('reachabilityDelayMs defaults to 600000 when reachabilityDelaySeconds is unset', () => {
+		const settings = { ...createDefaultAdvancedFeature().settings, reachabilityDelaySeconds: undefined };
+		config.advancedFeature = { enableAdvancedFeature: true, settings };
+		manager = PlatformConfigManager.create(config, mockLogger);
+		expect(manager.reachabilityDelayMs).toBe(600_000);
+	});
+
+	it('reachabilityDelayMs converts a configured value from seconds to milliseconds', () => {
+		config.advancedFeature = {
+			enableAdvancedFeature: true,
+			settings: { ...createDefaultAdvancedFeature().settings, reachabilityDelaySeconds: 300 },
+		};
+		manager = PlatformConfigManager.create(config, mockLogger);
+		expect(manager.reachabilityDelayMs).toBe(300_000);
+	});
+
+	it.each([
+		{ configured: 30, expected: 120_000 },
+		{ configured: 0, expected: 120_000 },
+		{ configured: 120, expected: 120_000 },
+	])('reachabilityDelayMs clamps $configured seconds to $expected ms (minimum 120s)', ({ configured, expected }) => {
+		config.advancedFeature = {
+			enableAdvancedFeature: true,
+			settings: { ...createDefaultAdvancedFeature().settings, reachabilityDelaySeconds: configured },
+		};
+		manager = PlatformConfigManager.create(config, mockLogger);
+		expect(manager.reachabilityDelayMs).toBe(expected);
+	});
+
 	describe('device filtering', () => {
 		it('should allow device if whitelist is empty', () => {
 			expect(manager.isDeviceAllowed({ duid: 'abc' })).toBe(true);

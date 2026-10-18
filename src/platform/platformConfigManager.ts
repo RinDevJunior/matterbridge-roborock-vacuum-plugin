@@ -241,6 +241,14 @@ export class PlatformConfigManager {
 		return this.isAdvancedFeatureEnabled && (this.advancedFeatureSettings.enablePersistCleaningState ?? false);
 	}
 
+	public get isReachabilityEnabled(): boolean {
+		return this.isAdvancedFeatureEnabled && (this.advancedFeatureSettings.enableReachability ?? false);
+	}
+
+	public get reachabilityDelayMs(): number {
+		return Math.max(120, this.advancedFeatureSettings.reachabilityDelaySeconds ?? 600) * 1000;
+	}
+
 	public get emailNotificationSettings(): EmailNotificationSettings | undefined {
 		if (!this.isEmailNotificationEnabled) return undefined;
 		return this.advancedFeatureSettings.emailNotificationSettings;

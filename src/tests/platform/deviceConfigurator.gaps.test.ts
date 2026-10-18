@@ -15,6 +15,7 @@ import { RoborockVacuumCleaner } from '../../types/roborockVacuumCleaner.js';
 import type { WssSendSnackbarMessage } from '../../types/WssSendSnackbarMessage.js';
 import {
 	asPartial,
+	asType,
 	createMockConfigManager,
 	createMockDeviceRegistry,
 	createMockLogger,
@@ -185,6 +186,7 @@ describe('DeviceConfigurator gap coverage', () => {
 			requestHomeData: vi.fn().mockResolvedValue(undefined),
 			activateHandlerFunctions: vi.fn(),
 			burstPolling: asPartial<PlatformRunner['burstPolling']>({ startBurstPolling: vi.fn() }),
+			reachability: asPartial<PlatformRunner['reachability']>({ markAlive: vi.fn() }),
 		});
 		platform = makePlatform();
 		roborockService = createService();
@@ -200,11 +202,41 @@ describe('DeviceConfigurator gap coverage', () => {
 			await configurator.onConfigureDevice(roborockService);
 
 			const notify = vi.mocked(roborockService.setDeviceNotify).mock.calls[0][0];
-			const payload = asPartial<Parameters<PlatformRunner['updateRobotWithPayload']>[0]>({
+			const payload = asType<Parameters<PlatformRunner['updateRobotWithPayload']>[0]>({
 				type: NotifyMessageTypes.ServiceAreaUpdate,
+				data: { duid: DUID },
 			});
 			await notify(payload);
 
+			expect(platformRunner.updateRobotWithPayload).toHaveBeenCalledWith(payload);
+		});
+
+		it('should mark the device alive for non-HomeData notify payloads', async () => {
+			const configurator = buildConfigurator([]);
+			await configurator.onConfigureDevice(roborockService);
+
+			const notify = vi.mocked(roborockService.setDeviceNotify).mock.calls[0][0];
+			const payload = asType<Parameters<PlatformRunner['updateRobotWithPayload']>[0]>({
+				type: NotifyMessageTypes.ServiceAreaUpdate,
+				data: { duid: DUID },
+			});
+			await notify(payload);
+
+			expect(platformRunner.reachability.markAlive).toHaveBeenCalledWith(DUID);
+		});
+
+		it('should not mark the device alive for HomeData notify payloads', async () => {
+			const configurator = buildConfigurator([]);
+			await configurator.onConfigureDevice(roborockService);
+
+			const notify = vi.mocked(roborockService.setDeviceNotify).mock.calls[0][0];
+			const payload = asType<Parameters<PlatformRunner['updateRobotWithPayload']>[0]>({
+				type: NotifyMessageTypes.HomeData,
+				data: { devices: [] },
+			});
+			await notify(payload);
+
+			expect(platformRunner.reachability.markAlive).not.toHaveBeenCalled();
 			expect(platformRunner.updateRobotWithPayload).toHaveBeenCalledWith(payload);
 		});
 
