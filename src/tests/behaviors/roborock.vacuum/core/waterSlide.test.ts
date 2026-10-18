@@ -12,6 +12,10 @@ describe('waterSlide', () => {
 		it('should equal 210', () => {
 			expect(WATER_SLIDE_SMART_WATER).toBe(210);
 		});
+
+		it('should equal MopWaterFlow.SmartWater', () => {
+			expect(WATER_SLIDE_SMART_WATER).toBe(MopWaterFlow.SmartWater);
+		});
 	});
 
 	describe('normalizeWaterSlideCode', () => {
