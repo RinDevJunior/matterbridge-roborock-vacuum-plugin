@@ -4,6 +4,45 @@ Entries are listed in reverse chronological order (most recent first). Older ent
 
 ---
 
+## 2026-10-19 — Cleanups, sender log, CLI consumable command, two bug fixes (PR #187)
+
+**Task:** WP1 cleanups, WP2 support tools, WP3 bug fixes from `workspace/cleanups-support-bugs`.
+
+**Changes:**
+
+- `src/**` (WP1) — dead `rvc.mode` branch removed; `KEEPALIVE_INTERVAL_MS` split into `MQTT_FORCE_RECONNECT_INTERVAL_MS` and `AUTH_ERROR_BACKOFF_MS`
+- `codecov.yml` — single block; project auto 1%, patch 90%
+- `vite.config.*` — coverage thresholds 99/99/97/99; `src/cli` excluded
+- `src/**` (WP2) — command sender logged at info level; CLI consumable command added
+- `src/**` (WP3) — `getSupportedAreas` nameless room fix; `lz4BlockDecompressor` throws on truncated input
+- `src/tests/**` — tests added/updated for WP1–WP3
+
+**Outcome:** Pass (d79e2e7). Wiki updated in a separate commit.
+
+---
+
+## 2026-10-18 — Release-comment workflow (PR #186) and clean check on rc07
+
+**Task:** Comment on merged PRs when a release is published to npm; check rc07 clean behaviour.
+
+**Changes:**
+
+- `.github/workflows/publish.yml` — `announce-release` job; dry-run job; publish jobs now require the release event (reviewer caught that `workflow_dispatch` would run a real publish)
+- `scripts/release-comment.mjs` — comments "Released in <version>, published to npm tag dev|latest" on each PR merged since the previous release; release PRs skipped; idempotent marker
+- `src/tests/**` — unit tests for release-comment script (public dev-to-main path covered by unit tests only)
+
+**Outcome:** Pass (5ea859c). First real proof is rc08; check #184–#187 for the comment when released.
+
+**Clean check (rc07, 2026-10-18 08:00):** selectAreas, clean mode and run mode accepted in 33 ms; full cycle completed (09:00:20, 3616 s); all four rooms completed and followed robot segments. Map 0: Kitchen / Study / Living room / Bedroom.
+
+**Decisions:**
+
+- Keep repeated identical ServiceArea.progress / operationalError "Update endpoint" writes — from Matterbridge core deepEqual counting undefined keys; harmless. Architect plan kept in `workspace/log-noise-redundant-writes/` (not implemented). "Clearing error state" message is already debug level.
+- Matterbridge 3.10.14 release checked: no code impact; minimum raised in PR #185.
+- Released 1.2.0-rc07 (07e3a80) with the selectAreas fix (#184).
+
+---
+
 ## 2026-10-17 — Filter life for V1, min Matterbridge 3.10.13/3.10.14, rc05/rc06 releases, PR #145 closed, wiki refresh (PRs #173, #183, #185)
 
 **Task:** Batch of changes since 2026-10-12: V1 filter life, minimum Matterbridge bumps, prerelease publishing, PR #145 review, wiki refreshes.
