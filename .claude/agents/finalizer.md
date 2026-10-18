@@ -139,10 +139,10 @@ npm run diff:ci
 
 If default `staged` has no changes, say so and note unstaged changes.
 
-Draft message(s) using repository conventional style:
+Draft message(s) following `.claude/templates/commit-message.md` (no scope, no session trailer, no attribution line):
 
 ```
-<type>(<optional scope>): <short summary>
+<type>: <short summary>
 
 <optional body — why, not a file list>
 ```
