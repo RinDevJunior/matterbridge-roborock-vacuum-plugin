@@ -32,6 +32,7 @@ It is version-controlled — commit and push changes so teammates can pull the l
 - **Agent frontmatter:** `effort`/`maxTurns` after `color`, before `tools`; `tools` MUST be a comma-separated string — YAML block lists silently fail and the subagent falls back to Read/Write/Edit/Bash only.
 - **Subagent toolsets (macOS, Jul 10 2026):** native `Glob`/`Grep` absent from Task subagents — use `mcp__glob-grep__*`. `LSP` only reachable via deferred ToolSearch in wildcard-tools subagents — don't rely on it in agent definitions.
 - **Mode enum name lookup (Oct 18, 2026):** `cleanModeUtils.ts` resolves `MopWaterFlow[str]`/`MopRoute[str]` by member NAME, so new members (Min/Max/Extreme/SmartWater/DeepPlusCn) now accept those config strings instead of falling back.
+- **format:ci rewrites files:** it reflows edited code (e.g. `(x) =>` arrows, wrapped args); re-Read the file before any further edit.
 - **Subagent task tracking:** `TaskCreate`/`TaskUpdate`/`TodoWrite` never reach Task subagents (Jul 10 2026) — don't list in frontmatter; EM tracks steps in main session, subagents report plain text.
 
 ## Decisions Made
@@ -63,9 +64,11 @@ It is version-controlled — commit and push changes so teammates can pull the l
 - **LZ4/getSupportedAreas regression (Oct 18, 2026):** truncated LZ4 cases go in `it.each` (`[0xf0]`, `[0x1f,0x41,0x01,0x00]`); nameless-room cases use `result.roomIndexMap.areaInfo.get(i)`.
 - **Water-slide codes (Oct 18, 2026):** `waterSlide.ts` normalizes 221-250 by position; 225/235/245 map to 201-203 in `ModeResolver.resolve` before lookup. Raw setting still goes to `customCheckFn`.
 - **`it.each` typing for CleanModeLabelInfo:** it's keyed by `CleanModeLabel`, not `CleanModeDisplayLabel`. Pass `.mode` numbers in the tuple (`it.each<[number, number]>`).
+- **Run-start grace tests (Oct 18, 2026):** `vi.useFakeTimers()`+`setSystemTime` in describe `beforeEach`; set `robot.runStartSeededAtMs` directly on `createMockRobot`. Boundary: 29 999 kept, 30 000 cleared.
 - **`*:ci` guard:** `ciScripts.test.ts` enforces single `node scripts/<x>.mjs` values; new `:ci` scripts must follow it.
 - **Mocking `node:crypto.randomInt` (Oct 12, 2026):** `vi.mock('node:crypto', importOriginal => ({...actual, randomInt: vi.fn()}))`; set `mockImplementation` in `beforeEach` (not once at top). `MapInfo` names never undefined (`Default Map N`), so use `asPartial<MapInfo>` for the `?? 'Map <id>'` arm.
 - **Command-handler wrapper tests (Oct 18, 2026):** `vi.spyOn(vacuum,'addCommandHandler')` pre-configureHandler, then invoke `mock.calls` handler with `asType<CommandHandlerPayload>`; `describeCommandSender` returns exact strings (no regex on PASE parens).
+- **selectAreas same-list no-op tests (Oct 18, 2026):** `spyOnParentSelectAreas(server)` helper; `it.each` objects with `$label`. Mocked super never writes, so no-op guards also need `setProgress`/`trySwitchMap` not-called asserts.
 - **persistCleaningRunState tests (Oct 12, 2026):** SAVE only runs when `operationalState` attr is actively cleaning; CLEAR runs for Docked/Charging unless `message.state` is a cleaning state. Confirmed-restore with attr Docked + Cleaning msg → no clear, no save.
 
 ## Common Pitfalls
