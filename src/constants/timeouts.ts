@@ -105,3 +105,9 @@ export const WATCHDOG_THRESHOLD_MS = 5 * 60 * 1000;
  * Interval for watchdog checks (1 minute).
  */
 export const WATCHDOG_CHECK_INTERVAL_MS = 60 * 1000;
+
+/**
+ * Grace window after a run-start progress seed during which an Idle-coded status keeps the seed (30 seconds).
+ * The robot can report an Idle code before its operationalState turns active.
+ */
+export const RUN_START_SEED_GRACE_MS = 30 * 1000;

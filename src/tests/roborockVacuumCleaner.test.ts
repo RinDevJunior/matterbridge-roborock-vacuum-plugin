@@ -8,7 +8,7 @@ import {
 	RvcOperationalState,
 	ServiceArea,
 } from 'matterbridge/matter/clusters';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { CommandNames } from '../behaviors/BehaviorDeviceGeneric.js';
 import { MapInfo } from '../core/application/models/MapInfo.js';
@@ -180,6 +180,39 @@ describe('RoborockVacuumCleaner', () => {
 				expect(updateSpy).not.toHaveBeenCalled();
 			},
 		);
+
+		describe('run-start seed marker', () => {
+			afterEach(() => {
+				vi.useRealTimers();
+			});
+
+			it('should set runStartSeededAtMs to Date.now() when Docked seeds progress', async () => {
+				// Arrange
+				vi.useFakeTimers();
+				vi.setSystemTime(new Date('2026-10-18T10:00:00Z'));
+				mockOperationalState(RvcOperationalState.OperationalState.Docked);
+				vi.spyOn(vacuum, 'updateAttribute').mockResolvedValue(true);
+
+				// Act
+				await vacuum.resetProgressForNewRun();
+
+				// Assert
+				expect(vacuum.runStartSeededAtMs).toBe(Date.parse('2026-10-18T10:00:00Z'));
+			});
+
+			it('should leave runStartSeededAtMs null when Running skips the reset', async () => {
+				// Arrange
+				mockOperationalState(RvcOperationalState.OperationalState.Running);
+				vi.spyOn(vacuum, 'updateAttribute').mockResolvedValue(true);
+
+				// Act
+				await vacuum.resetProgressForNewRun();
+
+				// Assert
+				expect(vacuum.runStartSeededAtMs).toBeNull();
+				expect(roborockService.setProgress).not.toHaveBeenCalled();
+			});
+		});
 	});
 
 	describe('resolveAllRoomsForActiveMap', () => {
