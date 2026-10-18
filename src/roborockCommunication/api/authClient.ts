@@ -1,12 +1,21 @@
 import crypto from 'node:crypto';
 import { URLSearchParams } from 'node:url';
 
-import axios, { AxiosInstance, AxiosStatic } from 'axios';
+import axios, { AxiosInstance, AxiosResponse, AxiosStatic } from 'axios';
 import * as AxiosLogger from 'axios-logger';
 import { AnsiLogger } from 'matterbridge/logger';
 
 import { AuthenticateResponseCode } from '../enums/index.js';
 import { AuthenticateResponse, BaseUrl, HomeInfo, UserData } from '../models/index.js';
+
+const DEFAULT_AGREEMENT_MAJOR_VERSION = 14;
+const DEFAULT_AGREEMENT_MINOR_VERSION = 0;
+const AGREEMENT_LOOKUP_TIMEOUT_MS = 5000;
+
+interface AgreementVersion {
+	majorVersion?: number;
+	minorVersion?: number;
+}
 
 export class RoborockAuthenticateApi {
 	private sessionId: string;
@@ -114,14 +123,16 @@ export class RoborockAuthenticateApi {
 			}
 		}
 
+		const { majorVersion, minorVersion } = await this.getAgreementVersion(api, country ?? '');
+
 		const response = await api.post('api/v4/auth/email/login/code', null, {
 			params: {
 				email: email,
 				code: code,
 				country: country ?? '',
 				countryCode: countryCode ?? '',
-				majorVersion: '14',
-				minorVersion: '0',
+				majorVersion,
+				minorVersion,
 			},
 			headers: {
 				'Content-Type': 'application/x-www-form-urlencoded',
@@ -257,6 +268,12 @@ export class RoborockAuthenticateApi {
 		if (response.code === AuthenticateResponseCode.RateLimited) {
 			throw new Error('Rate limited. Please wait before trying again.');
 		}
+		if (response.code === AuthenticateResponseCode.NoUserAgreement) {
+			throw new Error('You must accept the user agreement in the Roborock app to continue.');
+		}
+		if (response.code === AuthenticateResponseCode.InvalidUserAgreement) {
+			throw new Error('User agreement must be accepted again - or you are attempting to use the Mi Home app account.');
+		}
 
 		const userdata = response.data;
 		if (!userdata?.token) {
@@ -300,5 +317,53 @@ export class RoborockAuthenticateApi {
 		}
 
 		return apiResponse.data.k;
+	}
+
+	/**
+	 * Look up the latest user agreement version. Never throws: any failure falls back to the
+	 * hardcoded defaults so that this lookup can never block login.
+	 */
+	private async getAgreementVersion(
+		api: AxiosInstance,
+		country: string,
+	): Promise<{ majorVersion: string; minorVersion: string }> {
+		const defaults = {
+			majorVersion: String(DEFAULT_AGREEMENT_MAJOR_VERSION),
+			minorVersion: String(DEFAULT_AGREEMENT_MINOR_VERSION),
+		};
+		if (!country) {
+			this.logger.debug('No country available, using default user agreement version');
+			return defaults;
+		}
+
+		try {
+			const response: AxiosResponse<AuthenticateResponse<AgreementVersion>> | undefined = await api.get(
+				'api/v3/app/agreement/latest',
+				{
+					params: { country },
+					timeout: AGREEMENT_LOOKUP_TIMEOUT_MS,
+				},
+			);
+
+			const apiResponse = response?.data;
+			const major = apiResponse?.data?.majorVersion;
+			const minor = apiResponse?.data?.minorVersion;
+			if (
+				apiResponse?.code === AuthenticateResponseCode.Success &&
+				major !== undefined &&
+				minor !== undefined &&
+				Number.isSafeInteger(major) &&
+				Number.isSafeInteger(minor) &&
+				major >= 0 &&
+				minor >= 0
+			) {
+				this.logger.debug(`Using user agreement version ${major}.${minor} for ${country}`);
+				return { majorVersion: String(major), minorVersion: String(minor) };
+			}
+			this.logger.debug('Unexpected user agreement version response, using default version');
+		} catch {
+			this.logger.debug('Could not fetch latest user agreement version, using default version');
+		}
+		return defaults;
 	}
 }
