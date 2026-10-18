@@ -2,6 +2,7 @@ import { CommandHandlerPayload, CommandHandlers } from 'matterbridge';
 import { MatterbridgeRvcCleanModeServer, RoboticVacuumCleaner } from 'matterbridge/devices';
 import { AnsiLogger, debugStringify } from 'matterbridge/logger';
 import { CommonAreaNamespaceTag } from 'matterbridge/matter';
+import { BasicInformationServer, BridgedDeviceBasicInformationServer } from 'matterbridge/matter/behaviors';
 import { ModeBase, RvcCleanMode, RvcOperationalState, ServiceArea } from 'matterbridge/matter/clusters';
 
 import { CommandNames } from '../behaviors/BehaviorDeviceGeneric.js';
@@ -96,6 +97,31 @@ export class RoborockVacuumCleaner extends RoboticVacuumCleaner {
       Supported Areas and Routines: ${debugStringify(deviceConfig.supportedAreaAndRoutines)},
       Supported Operational States: ${debugStringify(deviceConfig.operationalState)}`,
 		);
+	}
+
+	/**
+	 * Writes Matter `reachable` on the correct cluster for the bridge mode. Never throws; the
+	 * ReachabilityMonitor fires this without awaiting, so failures are logged here.
+	 * @returns true when the value was written, false when skipped (endpoint not ready) or failed.
+	 */
+	public async setReachable(reachable: boolean): Promise<boolean> {
+		try {
+			if (!this.lifecycle.isReady || (this.mode === 'server' && !this.serverNode)) {
+				this.log.debug(`[${this.device.duid}] Endpoint not ready, skipping reachable=${reachable}`);
+				return false;
+			}
+			if (this.mode === 'server') {
+				await this.serverNode?.setStateOf(BasicInformationServer, { reachable });
+				return true;
+			}
+			await this.setStateOf(BridgedDeviceBasicInformationServer, { reachable });
+			return true;
+		} catch (error) {
+			this.log.warn(
+				`[${this.device.duid}] Failed to set reachable=${reachable}: ${error instanceof Error ? error.message : String(error)}`,
+			);
+			return false;
+		}
 	}
 
 	/**
