@@ -84,6 +84,19 @@ describe('describeCommandSender', () => {
 			expect(result).not.toContain('peer node');
 		});
 
+		it('should omit the session part when session.id is absent', () => {
+			// Arrange
+			const context = createRemoteContext({ session: { peerNodeId: 0xe0dceafen, fabric: { label: 'Apple Home' } } });
+
+			// Act
+			const result = describeCommandSender(context);
+
+			// Assert
+			expect(result).toBe('fabric 1 "Apple Home", peer node 0xe0dceafe');
+			expect(result).not.toContain('session');
+			expectNoLeakedNoise(result);
+		});
+
 		it('should omit the label part when the label is an empty string', () => {
 			// Arrange
 			const context = createRemoteContext({ session: { id: 0xc914, fabric: { label: '' } } });
