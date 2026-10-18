@@ -825,6 +825,21 @@ describe('PlatformRunner.updateRobotWithPayload', () => {
 		expect(handleHomeDataMessage.updateFromHomeData).toHaveBeenCalledWith(homeData, platform);
 	});
 
+	it('should apply cloud online status before updating from HomeData', async () => {
+		const devices = [asPartial<Device>({ duid: 'test-duid', online: true })];
+		const homeData = asPartial<Home>({ devices, products: [] });
+		const applySpy = vi.spyOn(runner.reachability, 'applyCloudStatus');
+		const payload: MessagePayload = { type: NotifyMessageTypes.HomeData, data: homeData };
+
+		await runner.updateRobotWithPayload(payload);
+
+		expect(applySpy).toHaveBeenCalledWith(devices);
+		expect(handleHomeDataMessage.updateFromHomeData).toHaveBeenCalledWith(homeData, platform);
+		expect(applySpy.mock.invocationCallOrder[0]).toBeLessThan(
+			vi.mocked(handleHomeDataMessage.updateFromHomeData).mock.invocationCallOrder[0],
+		);
+	});
+
 	it('should not process messages when handlers are not activated', async () => {
 		const newRunner = new PlatformRunner(platform);
 		const errorMessage: DeviceErrorMessage = {
@@ -1526,6 +1541,7 @@ describe('PlatformRunner.startWatchdog / stopWatchdog', () => {
 		platform = asPartial<RoborockMatterbridgePlatform>({
 			registry: createMockDeviceRegistry({}, new Map([['duid1', staleRobot]])),
 			log: mockLog,
+			configManager: createMockConfigManager({ isReachabilityEnabled: false }),
 		});
 		runner = new PlatformRunner(platform);
 		runner.startWatchdog();
@@ -1541,6 +1557,7 @@ describe('PlatformRunner.startWatchdog / stopWatchdog', () => {
 		platform = asPartial<RoborockMatterbridgePlatform>({
 			registry: createMockDeviceRegistry({}, new Map([['duid1', staleRobot]])),
 			log: mockLog,
+			configManager: createMockConfigManager({ isReachabilityEnabled: false }),
 		});
 		runner = new PlatformRunner(platform);
 		runner.startWatchdog();
@@ -1556,6 +1573,7 @@ describe('PlatformRunner.startWatchdog / stopWatchdog', () => {
 		platform = asPartial<RoborockMatterbridgePlatform>({
 			registry: createMockDeviceRegistry({}, new Map([['duid1', freshRobot]])),
 			log: mockLog,
+			configManager: createMockConfigManager({ isReachabilityEnabled: false }),
 		});
 		runner = new PlatformRunner(platform);
 		runner.startWatchdog();
@@ -1569,6 +1587,7 @@ describe('PlatformRunner.startWatchdog / stopWatchdog', () => {
 		platform = asPartial<RoborockMatterbridgePlatform>({
 			registry: createMockDeviceRegistry({}, new Map([['duid1', robot]])),
 			log: mockLog,
+			configManager: createMockConfigManager({ isReachabilityEnabled: false }),
 		});
 		runner = new PlatformRunner(platform);
 		runner.startWatchdog();
@@ -1582,6 +1601,7 @@ describe('PlatformRunner.startWatchdog / stopWatchdog', () => {
 		platform = asPartial<RoborockMatterbridgePlatform>({
 			registry: createMockDeviceRegistry({}, new Map([['duid1', staleRobot]])),
 			log: mockLog,
+			configManager: createMockConfigManager({ isReachabilityEnabled: false }),
 		});
 		runner = new PlatformRunner(platform);
 		runner.startWatchdog();
@@ -1591,10 +1611,83 @@ describe('PlatformRunner.startWatchdog / stopWatchdog', () => {
 		expect(mockLog.error).not.toHaveBeenCalled();
 	});
 
+	it('should call reachability.sweep on every watchdog tick', async () => {
+		platform = asPartial<RoborockMatterbridgePlatform>({
+			registry: createMockDeviceRegistry({}, new Map()),
+			log: mockLog,
+			configManager: createMockConfigManager({ isReachabilityEnabled: false }),
+		});
+		runner = new PlatformRunner(platform);
+		const sweepSpy = vi.spyOn(runner.reachability, 'sweep');
+
+		runner.startWatchdog();
+		await vi.advanceTimersByTimeAsync(WATCHDOG_CHECK_INTERVAL_MS * 2 + 1);
+
+		expect(sweepSpy).toHaveBeenCalledTimes(2);
+	});
+
+	it('should call reachability.reset when stopWatchdog is invoked', () => {
+		platform = asPartial<RoborockMatterbridgePlatform>({
+			registry: createMockDeviceRegistry({}, new Map()),
+			log: mockLog,
+			configManager: createMockConfigManager({ isReachabilityEnabled: false }),
+		});
+		runner = new PlatformRunner(platform);
+		const resetSpy = vi.spyOn(runner.reachability, 'reset');
+
+		runner.startWatchdog();
+		runner.stopWatchdog();
+
+		expect(resetSpy).toHaveBeenCalledTimes(1);
+	});
+
+	it('should mark a silent robot unreachable after the configured delay when reachability is enabled', async () => {
+		const setReachable = vi.fn().mockResolvedValue(true);
+		const silentRobot = asPartial<RoborockVacuumCleaner>({
+			device: asPartial<Device>({ duid: 'duid1', name: 'Robot-duid1', specs: asPartial<DeviceSpecs>({}) }),
+			lastUpdateAt: null,
+			setReachable,
+		});
+		platform = asPartial<RoborockMatterbridgePlatform>({
+			registry: createMockDeviceRegistry({}, new Map([['duid1', silentRobot]])),
+			log: mockLog,
+			configManager: createMockConfigManager({ isReachabilityEnabled: true, reachabilityDelayMs: 120_000 }),
+		});
+		runner = new PlatformRunner(platform);
+		runner.startWatchdog();
+
+		// Tick at 60s starts tracking; tick at 180s is the first with >= 120s of silence.
+		await vi.advanceTimersByTimeAsync(WATCHDOG_CHECK_INTERVAL_MS * 4 + 1);
+
+		expect(setReachable).toHaveBeenCalledTimes(1);
+		expect(setReachable).toHaveBeenCalledWith(false);
+	});
+
+	it('should never change reachability when reachability is disabled', async () => {
+		const setReachable = vi.fn().mockResolvedValue(true);
+		const silentRobot = asPartial<RoborockVacuumCleaner>({
+			device: asPartial<Device>({ duid: 'duid1', name: 'Robot-duid1', specs: asPartial<DeviceSpecs>({}) }),
+			lastUpdateAt: null,
+			setReachable,
+		});
+		platform = asPartial<RoborockMatterbridgePlatform>({
+			registry: createMockDeviceRegistry({}, new Map([['duid1', silentRobot]])),
+			log: mockLog,
+			configManager: createMockConfigManager({ isReachabilityEnabled: false, reachabilityDelayMs: 120_000 }),
+		});
+		runner = new PlatformRunner(platform);
+		runner.startWatchdog();
+
+		await vi.advanceTimersByTimeAsync(WATCHDOG_CHECK_INTERVAL_MS * 10 + 1);
+
+		expect(setReachable).not.toHaveBeenCalled();
+	});
+
 	it('stopWatchdog is a no-op when watchdog not started', () => {
 		platform = asPartial<RoborockMatterbridgePlatform>({
 			registry: createMockDeviceRegistry({}, new Map()),
 			log: mockLog,
+			configManager: createMockConfigManager({ isReachabilityEnabled: false }),
 		});
 		runner = new PlatformRunner(platform);
 		expect(() => runner.stopWatchdog()).not.toThrow();

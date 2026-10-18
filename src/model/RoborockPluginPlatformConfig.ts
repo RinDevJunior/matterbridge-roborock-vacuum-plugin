@@ -56,6 +56,8 @@ export interface AdvancedFeatureSetting {
 	enableEstimatedEndTime?: boolean;
 	enableFilterMonitoring?: boolean;
 	enablePersistCleaningState?: boolean;
+	enableReachability?: boolean;
+	reachabilityDelaySeconds?: number;
 }
 
 export interface DeviceProductNameOverride {
@@ -137,6 +139,8 @@ export function createDefaultAdvancedFeature(): AdvancedFeatureConfiguration {
 			enableEstimatedEndTime: false,
 			enableFilterMonitoring: false,
 			enablePersistCleaningState: false,
+			enableReachability: false,
+			reachabilityDelaySeconds: 600,
 		},
 	};
 }
