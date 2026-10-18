@@ -179,5 +179,102 @@ describe('getSupportedAreas gap coverage', () => {
 			// Assert
 			expect(result.supportedAreas[0]?.areaInfo?.locationInfo?.locationName).toBe('Unknown Room 4242');
 		});
+
+		it('should use the referenced room name when the nameless room is listed before the referenced room', () => {
+			// Arrange
+			const logger = createMockLogger();
+			const rooms: RoomMapping[] = [
+				{ id: 1, iot_name_id: '2', tag: 0, iot_map_id: 0 },
+				{ id: 2, iot_name_id: '0', tag: 0, iot_map_id: 0, iot_name: 'Kitchen' },
+			];
+			const homeEntity = createHomeEntity(rooms);
+
+			// Act
+			const result = getSupportedAreas(homeEntity, logger);
+
+			// Assert
+			expect(result.supportedAreas[0]?.areaInfo?.locationInfo?.locationName).toBe('Kitchen');
+			expect(result.roomIndexMap.areaInfo.get(0)?.roomName).toBe('Kitchen');
+			expect(randomInt).not.toHaveBeenCalled();
+		});
+
+		it('should use the referenced room name when the nameless room is listed after the referenced room', () => {
+			// Arrange
+			const logger = createMockLogger();
+			const rooms: RoomMapping[] = [
+				{ id: 2, iot_name_id: '0', tag: 0, iot_map_id: 0, iot_name: 'Kitchen' },
+				{ id: 1, iot_name_id: '2', tag: 0, iot_map_id: 0 },
+			];
+			const homeEntity = createHomeEntity(rooms);
+
+			// Act
+			const result = getSupportedAreas(homeEntity, logger);
+
+			// Assert
+			expect(result.supportedAreas[1]?.areaInfo?.locationInfo?.locationName).toBe('Kitchen');
+			expect(result.roomIndexMap.areaInfo.get(1)?.roomName).toBe('Kitchen');
+		});
+
+		it('should skip nameless candidates and use the named room when the first reference match is nameless', () => {
+			// Arrange
+			const logger = createMockLogger();
+			const rooms: RoomMapping[] = [
+				{ id: 1, iot_name_id: '5', tag: 0, iot_map_id: 0 },
+				{ id: 5, iot_name_id: '9', tag: 0, iot_map_id: 0 },
+				{ id: 5, iot_name_id: '8', tag: 0, iot_map_id: 1, iot_name: 'Bath' },
+			];
+			const homeEntity = createHomeEntity(rooms);
+
+			// Act
+			const result = getSupportedAreas(homeEntity, logger);
+
+			// Assert
+			expect(result.supportedAreas[0]?.areaInfo?.locationInfo?.locationName).toBe('Bath');
+		});
+
+		it('should borrow the same-id room name from another map when the nameless room has no same-map reference', () => {
+			// Arrange
+			const logger = createMockLogger();
+			const rooms: RoomMapping[] = [
+				{ id: 2, iot_name_id: 'x', tag: 0, iot_map_id: 0 },
+				{ id: 2, iot_name_id: 'y', tag: 0, iot_map_id: 1, iot_name: 'Other map' },
+			];
+			const homeEntity = createHomeEntity(rooms);
+
+			// Act
+			const result = getSupportedAreas(homeEntity, logger);
+
+			// Assert
+			expect(result.supportedAreas[0]?.areaInfo?.locationInfo?.locationName).toBe('Other map');
+		});
+
+		it('should keep an explicit empty string iot_name instead of falling back to a referenced name', () => {
+			// Arrange
+			const logger = createMockLogger();
+			const rooms: RoomMapping[] = [
+				{ id: 1, iot_name_id: '2', tag: 0, iot_map_id: 0, iot_name: '' },
+				{ id: 2, iot_name_id: '0', tag: 0, iot_map_id: 0, iot_name: 'Kitchen' },
+			];
+			const homeEntity = createHomeEntity(rooms);
+
+			// Act
+			const result = getSupportedAreas(homeEntity, logger);
+
+			// Assert
+			expect(result.supportedAreas[0]?.areaInfo?.locationInfo?.locationName).toBe('');
+		});
+
+		it('should not reference the room itself when it is the only match for iot_name_id', () => {
+			// Arrange
+			const logger = createMockLogger();
+			const rooms: RoomMapping[] = [{ id: 4242, iot_name_id: '4242', tag: 0, iot_map_id: 0 }];
+			const homeEntity = createHomeEntity(rooms);
+
+			// Act
+			const result = getSupportedAreas(homeEntity, logger);
+
+			// Assert
+			expect(result.supportedAreas[0]?.areaInfo?.locationInfo?.locationName).toBe('Unknown Room 4242');
+		});
 	});
 });

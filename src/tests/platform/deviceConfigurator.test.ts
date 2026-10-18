@@ -1,5 +1,4 @@
 import type { MatterbridgeDynamicPlatform } from 'matterbridge';
-import { bridgedNode } from 'matterbridge';
 import type { AnsiLogger } from 'matterbridge/logger';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -735,50 +734,6 @@ describe('DeviceConfigurator', () => {
 				cleanModeSettings: createDefaultAdvancedFeature().settings.cleanModeSettings,
 			});
 			const device = makeMockDevice('duid-default-ids');
-			registry = createMockDeviceRegistry({
-				hasDevices: vi.fn().mockReturnValue(true),
-				getAllDevices: vi.fn().mockReturnValue([device]),
-				robotsMap: new Map(),
-			});
-			configurator = new DeviceConfigurator(
-				platform,
-				configManager,
-				registry,
-				() => platformRunner,
-				snackbarMessage,
-				log,
-			);
-
-			await configurator.onConfigureDevice(roborockService);
-
-			expect(platform.registerDevice).toHaveBeenCalled();
-		});
-
-		it('should not duplicate bridgedNode in deviceTypeList when it is already present', async () => {
-			const device = makeMockDevice('duid-dup-bridged');
-			vi.mocked(RoborockVacuumCleaner).mockImplementationOnce(function (this: RoborockVacuumCleaner) {
-				Object.assign(
-					this,
-					asPartial<RoborockVacuumCleaner>({
-						device,
-						deviceName: `Roborock-${device.duid}`,
-						serialNumber: device.duid,
-						configureHandler: vi.fn(),
-						getClusterServerOptions: vi.fn().mockReturnValue({
-							softwareVersion: 1,
-							softwareVersionString: '1.0.0',
-							hardwareVersion: 1,
-							hardwareVersionString: '1.0.0',
-							deviceTypeList: [{ deviceType: bridgedNode.code, revision: bridgedNode.revision }],
-						}),
-						createDefaultIdentifyClusterServer: vi.fn(),
-						createDefaultBridgedDeviceBasicInformationClusterServer: vi.fn(),
-						mode: undefined,
-						deviceTypes: new Map(),
-					}),
-				);
-			});
-
 			registry = createMockDeviceRegistry({
 				hasDevices: vi.fn().mockReturnValue(true),
 				getAllDevices: vi.fn().mockReturnValue([device]),

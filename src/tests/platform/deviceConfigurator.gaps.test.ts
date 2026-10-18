@@ -1,6 +1,5 @@
 import type { MatterbridgeDynamicPlatform } from 'matterbridge';
 import type { AnsiLogger } from 'matterbridge/logger';
-import { Descriptor } from 'matterbridge/matter/clusters';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { MatterOverrideSettings } from '../../model/RoborockPluginPlatformConfig.js';
@@ -100,7 +99,7 @@ function makeRvc(
 		device: makeDevice(DUID),
 		deviceName: 'Roborock-gap',
 		serialNumber: 'serial-gap',
-		mode: undefined,
+		mode: 'matter',
 		deviceTypes: new Map(),
 		vendorId: 65521,
 		vendorName: 'Matterbridge',
@@ -110,9 +109,7 @@ function makeRvc(
 		softwareVersionString: '1.0.0',
 		hardwareVersion: 1,
 		hardwareVersionString: '1.0.0',
-		getClusterServerOptions: vi
-			.fn()
-			.mockImplementation((clusterId: number) => (clusterId === Descriptor.id ? { deviceTypeList: [] } : basicOptions)),
+		getClusterServerOptions: vi.fn().mockReturnValue(basicOptions),
 		createDefaultIdentifyClusterServer: vi.fn(),
 		createDefaultBridgedDeviceBasicInformationClusterServer: vi.fn(),
 		...overrides,
@@ -278,17 +275,35 @@ describe('DeviceConfigurator gap coverage', () => {
 			expect(platform.registerDevice).not.toHaveBeenCalled();
 		});
 
-		it('should skip the bridged-node bootstrap when rvc.mode is already set', async () => {
-			const configurator = buildConfigurator([]);
-			const rvc = makeRvc({}, { mode: 'matter' });
+		it.each(['matter', 'server'] as const)(
+			'should never add the bridged-node device type or BridgedDeviceBasicInformation cluster itself when mode is %s',
+			async (mode) => {
+				// Arrange
+				const registry = createMockDeviceRegistry({
+					hasDevices: vi.fn().mockReturnValue(true),
+					getAllDevices: vi.fn().mockReturnValue([]),
+				});
+				const configurator = new DeviceConfigurator(
+					platform,
+					configManager,
+					registry,
+					() => platformRunner,
+					snackbarMessage,
+					log,
+				);
+				const rvc = makeRvc({}, { mode });
 
-			const result = await configurator['addDevice'](rvc);
+				// Act
+				const result = await configurator['addDevice'](rvc);
 
-			expect(result).toBe(rvc);
-			expect(rvc.deviceTypes.size).toBe(0);
-			expect(rvc.createDefaultBridgedDeviceBasicInformationClusterServer).not.toHaveBeenCalled();
-			expect(platform.registerDevice).toHaveBeenCalledWith(rvc);
-		});
+				// Assert
+				expect(result).toBe(rvc);
+				expect(rvc.deviceTypes.size).toBe(0);
+				expect(rvc.createDefaultBridgedDeviceBasicInformationClusterServer).not.toHaveBeenCalled();
+				expect(platform.registerDevice).toHaveBeenCalledWith(rvc);
+				expect(registry.registerRobot).toHaveBeenCalledWith(rvc);
+			},
+		);
 
 		it('should default hardwareVersion to 1 when the firmware version has no digits', async () => {
 			const configurator = buildConfigurator([]);
