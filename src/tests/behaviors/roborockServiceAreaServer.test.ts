@@ -52,6 +52,12 @@ function createServer(
 	return server;
 }
 
+function spyOnParentSelectAreas(server: RoborockServiceAreaServer) {
+	const spy = vi.spyOn(Object.getPrototypeOf(Object.getPrototypeOf(server)), 'selectAreas');
+	spy.mockResolvedValue({ status: ServiceArea.SelectAreasStatus.Success, statusText: '' });
+	return spy;
+}
+
 describe('RoborockServiceAreaServer', () => {
 	let device: RoborockVacuumCleaner;
 
@@ -143,8 +149,191 @@ describe('RoborockServiceAreaServer', () => {
 			expect(vi.mocked(device.resolveAllRoomsForActiveMap)).not.toHaveBeenCalled();
 		});
 
-		it('should not write progress via updateAttribute and should clear state.progress when non-empty progress exists', async () => {
+		it('should clear progress and forward to super when same list is re-sent while Docked', async () => {
 			// Arrange
+			vi.mocked(device.getAttribute).mockReturnValue(RvcOperationalState.OperationalState.Docked);
+			const server = createServer(
+				{
+					selectedAreas: [1, 2],
+					progress: [
+						{ areaId: 1, status: ServiceArea.OperationalStatus.Completed },
+						{ areaId: 2, status: ServiceArea.OperationalStatus.Completed },
+					],
+				},
+				device,
+			);
+			const superSelectAreasSpy = spyOnParentSelectAreas(server);
+
+			// Act
+			await server.selectAreas({ newAreas: [1, 2] });
+
+			// Assert
+			expect(server['state'].progress).toEqual([]);
+			expect(vi.mocked(device.roborockService.setProgress)).toHaveBeenCalledWith('test-duid', []);
+			expect(vi.mocked(device.trySwitchMap)).toHaveBeenCalledWith([1, 2]);
+			expect(superSelectAreasSpy).toHaveBeenCalledWith({ newAreas: [1, 2] });
+		});
+
+		it.each([
+			{ label: 'Charging', operationalState: RvcOperationalState.OperationalState.Charging },
+			{ label: 'Stopped', operationalState: RvcOperationalState.OperationalState.Stopped },
+			{ label: 'Error', operationalState: RvcOperationalState.OperationalState.Error },
+		])(
+			'should clear progress and forward to super when same list is re-sent while $label',
+			async ({ operationalState }) => {
+				// Arrange
+				vi.mocked(device.getAttribute).mockReturnValue(operationalState);
+				const server = createServer(
+					{
+						selectedAreas: [1, 2],
+						progress: [{ areaId: 1, status: ServiceArea.OperationalStatus.Completed }],
+					},
+					device,
+				);
+				const superSelectAreasSpy = spyOnParentSelectAreas(server);
+
+				// Act
+				await server.selectAreas({ newAreas: [1, 2] });
+
+				// Assert
+				expect(server['state'].progress).toEqual([]);
+				expect(vi.mocked(device.roborockService.setProgress)).toHaveBeenCalledWith('test-duid', []);
+				expect(superSelectAreasSpy).toHaveBeenCalledWith({ newAreas: [1, 2] });
+			},
+		);
+
+		it('should return Success without touching progress or super when same list is re-sent mid-run', async () => {
+			// Arrange
+			vi.mocked(device.getAttribute).mockReturnValue(RvcOperationalState.OperationalState.Running);
+			const progress = [
+				{ areaId: 1, status: ServiceArea.OperationalStatus.Completed },
+				{ areaId: 2, status: ServiceArea.OperationalStatus.Operating },
+			];
+			const server = createServer({ selectedAreas: [1, 2], progress }, device);
+			const superSelectAreasSpy = spyOnParentSelectAreas(server);
+
+			// Act
+			const response = await server.selectAreas({ newAreas: [1, 2] });
+
+			// Assert
+			expect(response).toEqual({ status: ServiceArea.SelectAreasStatus.Success, statusText: '' });
+			expect(server['state'].selectedAreas).toEqual([1, 2]);
+			expect(server['state'].progress).toEqual(progress);
+			expect(vi.mocked(device.roborockService.setProgress)).not.toHaveBeenCalled();
+			expect(superSelectAreasSpy).not.toHaveBeenCalled();
+			expect(vi.mocked(device.trySwitchMap)).not.toHaveBeenCalled();
+		});
+
+		it('should return Success when same set is re-sent in different order or with duplicates mid-run', async () => {
+			// Arrange
+			vi.mocked(device.getAttribute).mockReturnValue(RvcOperationalState.OperationalState.Running);
+			const server = createServer({ selectedAreas: [1, 2], progress: [] }, device);
+			const superSelectAreasSpy = spyOnParentSelectAreas(server);
+
+			// Act
+			const reordered = await server.selectAreas({ newAreas: [2, 1] });
+			const duplicated = await server.selectAreas({ newAreas: [1, 1, 2] });
+
+			// Assert
+			expect(reordered).toEqual({ status: ServiceArea.SelectAreasStatus.Success, statusText: '' });
+			expect(duplicated).toEqual({ status: ServiceArea.SelectAreasStatus.Success, statusText: '' });
+			expect(vi.mocked(device.roborockService.setProgress)).not.toHaveBeenCalled();
+			expect(superSelectAreasSpy).not.toHaveBeenCalled();
+			expect(vi.mocked(device.trySwitchMap)).not.toHaveBeenCalled();
+		});
+
+		it.each([
+			{ label: 'Paused', operationalState: RvcOperationalState.OperationalState.Paused },
+			{ label: 'SeekingCharger', operationalState: RvcOperationalState.OperationalState.SeekingCharger },
+		])(
+			'should return Success without touching progress or super when same list is re-sent while $label',
+			async ({ operationalState }) => {
+				// Arrange
+				vi.mocked(device.getAttribute).mockReturnValue(operationalState);
+				const progress = [{ areaId: 1, status: ServiceArea.OperationalStatus.Operating }];
+				const server = createServer({ selectedAreas: [1, 2], progress }, device);
+				const superSelectAreasSpy = spyOnParentSelectAreas(server);
+
+				// Act
+				const response = await server.selectAreas({ newAreas: [1, 2] });
+
+				// Assert
+				expect(response).toEqual({ status: ServiceArea.SelectAreasStatus.Success, statusText: '' });
+				expect(server['state'].progress).toEqual(progress);
+				expect(vi.mocked(device.roborockService.setProgress)).not.toHaveBeenCalled();
+				expect(superSelectAreasSpy).not.toHaveBeenCalled();
+			},
+		);
+
+		it('should not write selectedAreas, currentArea or progress via updateAttribute when same list is re-sent mid-run', async () => {
+			// Arrange
+			vi.mocked(device.getAttribute).mockReturnValue(RvcOperationalState.OperationalState.Running);
+			const server = createServer(
+				{
+					selectedAreas: [1, 2],
+					currentArea: 2,
+					progress: [{ areaId: 2, status: ServiceArea.OperationalStatus.Operating }],
+				},
+				device,
+			);
+			spyOnParentSelectAreas(server);
+
+			// Act
+			await server.selectAreas({ newAreas: [1, 2] });
+
+			// Assert
+			const attrWrites = vi
+				.mocked(device.updateAttribute)
+				.mock.calls.filter(([, attr]) => ['progress', 'selectedAreas', 'currentArea'].includes(attr));
+			expect(attrWrites).toHaveLength(0);
+		});
+
+		it('should return Success without super when empty request resolves to current selection mid-run', async () => {
+			// Arrange
+			vi.mocked(device.getAttribute).mockReturnValue(RvcOperationalState.OperationalState.Running);
+			vi.mocked(device.resolveAllRoomsForActiveMap).mockReturnValue([1, 2]);
+			const progress = [{ areaId: 1, status: ServiceArea.OperationalStatus.Operating }];
+			const server = createServer({ selectedAreas: [1, 2], progress }, device);
+			const superSelectAreasSpy = spyOnParentSelectAreas(server);
+
+			// Act
+			const response = await server.selectAreas({ newAreas: [] });
+
+			// Assert
+			expect(response).toEqual({ status: ServiceArea.SelectAreasStatus.Success, statusText: '' });
+			expect(vi.mocked(device.resolveAllRoomsForActiveMap)).toHaveBeenCalledTimes(1);
+			expect(server['state'].progress).toEqual(progress);
+			expect(vi.mocked(device.roborockService.setProgress)).not.toHaveBeenCalled();
+			expect(superSelectAreasSpy).not.toHaveBeenCalled();
+			expect(vi.mocked(device.trySwitchMap)).not.toHaveBeenCalled();
+		});
+
+		it('should reset progress and forward resolved rooms to super when empty request resolves to current selection while Docked', async () => {
+			// Arrange
+			vi.mocked(device.getAttribute).mockReturnValue(RvcOperationalState.OperationalState.Docked);
+			vi.mocked(device.resolveAllRoomsForActiveMap).mockReturnValue([1, 2]);
+			const server = createServer(
+				{
+					selectedAreas: [1, 2],
+					progress: [{ areaId: 1, status: ServiceArea.OperationalStatus.Completed }],
+				},
+				device,
+			);
+			const superSelectAreasSpy = spyOnParentSelectAreas(server);
+
+			// Act
+			await server.selectAreas({ newAreas: [] });
+
+			// Assert
+			expect(server['state'].progress).toEqual([]);
+			expect(vi.mocked(device.roborockService.setProgress)).toHaveBeenCalledWith('test-duid', []);
+			expect(superSelectAreasSpy).toHaveBeenCalledWith({ newAreas: [1, 2] });
+			expect(vi.mocked(device.trySwitchMap)).not.toHaveBeenCalled();
+		});
+
+		it('should clear progress, switch map and forward request to super when different list is sent mid-run', async () => {
+			// Arrange
+			vi.mocked(device.getAttribute).mockReturnValue(RvcOperationalState.OperationalState.Running);
 			const server = createServer(
 				{
 					selectedAreas: [1, 2],
@@ -152,16 +341,94 @@ describe('RoborockServiceAreaServer', () => {
 				},
 				device,
 			);
-			const superSelectAreasSpy = vi.spyOn(Object.getPrototypeOf(Object.getPrototypeOf(server)), 'selectAreas');
-			superSelectAreasSpy.mockResolvedValue({ status: ServiceArea.SelectAreasStatus.Success, statusText: '' });
+			const superSelectAreasSpy = spyOnParentSelectAreas(server);
+
+			// Act
+			await server.selectAreas({ newAreas: [3] });
+
+			// Assert
+			expect(server['state'].progress).toEqual([]);
+			expect(vi.mocked(device.roborockService.setProgress)).toHaveBeenCalledWith('test-duid', []);
+			expect(vi.mocked(device.trySwitchMap)).toHaveBeenCalledWith([3]);
+			expect(superSelectAreasSpy).toHaveBeenCalledWith({ newAreas: [3] });
+		});
+
+		it('should clear progress, switch map and forward request to super when different list is sent while Docked', async () => {
+			// Arrange
+			vi.mocked(device.getAttribute).mockReturnValue(RvcOperationalState.OperationalState.Docked);
+			const server = createServer({ selectedAreas: [1, 2], progress: [] }, device);
+			const superSelectAreasSpy = spyOnParentSelectAreas(server);
+
+			// Act
+			await server.selectAreas({ newAreas: [3] });
+
+			// Assert
+			expect(vi.mocked(device.trySwitchMap)).toHaveBeenCalledWith([3]);
+			expect(superSelectAreasSpy).toHaveBeenCalledWith({ newAreas: [3] });
+		});
+
+		it('should clear progress and forward resolved rooms to super when empty request resolves to a different selection mid-run', async () => {
+			// Arrange
+			vi.mocked(device.getAttribute).mockReturnValue(RvcOperationalState.OperationalState.Running);
+			vi.mocked(device.resolveAllRoomsForActiveMap).mockReturnValue([1, 2, 3]);
+			const server = createServer(
+				{
+					selectedAreas: [1, 2],
+					progress: [{ areaId: 1, status: ServiceArea.OperationalStatus.Operating }],
+				},
+				device,
+			);
+			const superSelectAreasSpy = spyOnParentSelectAreas(server);
+
+			// Act
+			await server.selectAreas({ newAreas: [] });
+
+			// Assert
+			expect(server['state'].progress).toEqual([]);
+			expect(superSelectAreasSpy).toHaveBeenCalledWith({ newAreas: [1, 2, 3] });
+			expect(vi.mocked(device.log.info)).toHaveBeenCalledWith(
+				'Populating selected areas with all rooms of active map for global cleaning: 1, 2, 3',
+			);
+			expect(vi.mocked(device.trySwitchMap)).not.toHaveBeenCalled();
+		});
+
+		it('should clear selectedAreas and forward empty list to super when empty request resolves to empty while idle', async () => {
+			// Arrange
+			vi.mocked(device.getAttribute).mockReturnValue(RvcOperationalState.OperationalState.Docked);
+			vi.mocked(device.resolveAllRoomsForActiveMap).mockReturnValue([]);
+			const server = createServer({ selectedAreas: [] }, device);
+			const superSelectAreasSpy = spyOnParentSelectAreas(server);
+
+			// Act
+			await server.selectAreas({ newAreas: [] });
+
+			// Assert
+			expect(vi.mocked(device.log.info)).toHaveBeenCalledWith(
+				'Clearing selected areas (global cleaning on next start)',
+			);
+			expect(superSelectAreasSpy).toHaveBeenCalledWith({ newAreas: [] });
+		});
+
+		it('should reset progress and forward request to super when operationalState is undefined and list is unchanged', async () => {
+			// Arrange
+			vi.mocked(device.getAttribute).mockReturnValue(undefined);
+			const server = createServer(
+				{
+					selectedAreas: [1, 2],
+					progress: [{ areaId: 1, status: ServiceArea.OperationalStatus.Completed }],
+				},
+				device,
+			);
+			const superSelectAreasSpy = spyOnParentSelectAreas(server);
 
 			// Act
 			await server.selectAreas({ newAreas: [1, 2] });
 
 			// Assert
-			const progressWrites = vi.mocked(device.updateAttribute).mock.calls.filter(([, attr]) => attr === 'progress');
-			expect(progressWrites).toHaveLength(0);
 			expect(server['state'].progress).toEqual([]);
+			expect(vi.mocked(device.roborockService.setProgress)).toHaveBeenCalledWith('test-duid', []);
+			expect(vi.mocked(device.trySwitchMap)).toHaveBeenCalledWith([1, 2]);
+			expect(superSelectAreasSpy).toHaveBeenCalledWith({ newAreas: [1, 2] });
 		});
 	});
 

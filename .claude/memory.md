@@ -30,6 +30,7 @@ It is version-controlled — commit and push changes so teammates can pull the l
 - New config sections in schema use JSON Schema `if/then` blocks under `advancedFeature.allOf`.
 - **Agent frontmatter:** `effort`/`maxTurns` after `color`, before `tools`; `tools` MUST be a comma-separated string — YAML block lists silently fail and the subagent falls back to Read/Write/Edit/Bash only.
 - **Subagent toolsets (macOS, Jul 10 2026):** native `Glob`/`Grep` absent from Task subagents — use `mcp__glob-grep__*`. `LSP` only reachable via deferred ToolSearch in wildcard-tools subagents — don't rely on it in agent definitions.
+- **format:ci rewrites files:** it reflows edited code (e.g. `(x) =>` arrows, wrapped args); re-Read the file before any further edit.
 - **Subagent task tracking:** `TaskCreate`/`TaskUpdate`/`TodoWrite` never reach Task subagents (Jul 10 2026) — don't list in frontmatter; EM tracks steps in main session, subagents report plain text.
 
 ## Decisions Made
@@ -64,6 +65,7 @@ It is version-controlled — commit and push changes so teammates can pull the l
 - **`*:ci` guard:** `ciScripts.test.ts` enforces single `node scripts/<x>.mjs` values; new `:ci` scripts must follow it.
 - **Mocking `node:crypto.randomInt` (Oct 12, 2026):** `vi.mock('node:crypto', importOriginal => ({...actual, randomInt: vi.fn()}))`; set `mockImplementation` in `beforeEach` (not once at top). `MapInfo` names never undefined (`Default Map N`), so use `asPartial<MapInfo>` for the `?? 'Map <id>'` arm.
 - **Command-handler wrapper tests (Oct 18, 2026):** `vi.spyOn(vacuum,'addCommandHandler')` pre-configureHandler, then invoke `mock.calls` handler with `asType<CommandHandlerPayload>`; `describeCommandSender` returns exact strings (no regex on PASE parens).
+- **selectAreas same-list no-op tests (Oct 18, 2026):** `spyOnParentSelectAreas(server)` helper; `it.each` objects with `$label`. Mocked super never writes, so no-op guards also need `setProgress`/`trySwitchMap` not-called asserts.
 - **persistCleaningRunState tests (Oct 12, 2026):** SAVE only runs when `operationalState` attr is actively cleaning; CLEAR runs for Docked/Charging unless `message.state` is a cleaning state. Confirmed-restore with attr Docked + Cleaning msg → no clear, no save.
 
 ## Common Pitfalls
