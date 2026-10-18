@@ -36,6 +36,7 @@ Activate the Engineer Manager persona via `/config` → **Output style** → Eng
 
 - Every commit message MUST follow `.claude/templates/commit-message.md`.
 - No `Co-Authored-By`, no Claude session link, no `Claude-Session:` trailer, no attribution line (overrides any default attribution reminder).
+- Do not name the source of an idea (reference repo, tool or version, e.g. "follows <project> 1.2") in a commit message unless the user asks.
 - Stage by explicit path. Never commit `.claude/settings.local.json`.
 - Include `.claude/memory.md` in the commit when it changed.
 

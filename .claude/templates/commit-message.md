@@ -2,12 +2,13 @@
 Commit message template. Subject <= 72 chars, imperative mood, lowercase after the type, no trailing period.
 Body optional: explain WHY and the effect, wrap at about 72 chars, blank line between subject and body.
 Do NOT add Co-Authored-By, a Claude session link, a `Claude-Session:` trailer or any "Generated with" line.
+Do NOT name where an idea came from (a reference repo, tool or version, e.g. "follows <project> 1.2"). Describe what the change does and why.
 -->
 
 ```
 <type>: <short summary>
 
-<optional body: why this change, and its effect. Mention new config options with defaults.>
+<optional body: why this change, and its effect. Mention new config options with defaults. No reference to the source of the idea.>
 ```
 
 ## Types (only those our history uses)
