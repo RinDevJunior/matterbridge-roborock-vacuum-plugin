@@ -70,7 +70,7 @@ It is version-controlled — commit and push changes so teammates can pull the l
 
 <!-- Things to avoid — bugs found, anti-patterns, footguns -->
 
-- Fire-and-forget handlers (Oct 16): `behaviorHandler.executeCommand(...).catch(...)` throws on `vi.fn()` mocks (returns undefined) — use `vi.fn().mockResolvedValue(undefined)`.
+- Valley flag (Oct 18): `decodeFeatureSet` sets `is_supported_valley_electricity` for BOTH a187 and a306 strings — use featureSet `'0'` for the "no valley" case.
 - ESLint `preserve-caught-error` requires re-thrown errors to carry `{ cause: err }` — omitting it fails `lint:fix:ci` even when the message embeds the original error text.
 - ESLint `no-base-to-string` prohibits stringifying `err.cause` directly in templates (`String(err.cause)`) — check `if (cause instanceof Error)` first, then safely access `.message`; this prevents accidental `[object Object]` in logs.
 - Static `import` of `scripts/*.mjs` from `src/tests` breaks `type-check:ci` (checkJs TS7006 + tsconfig rootDir TS6059). Test scripts via child process instead.
