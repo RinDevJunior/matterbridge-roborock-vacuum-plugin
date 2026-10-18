@@ -4,6 +4,28 @@ All notable changes to this project will be documented in this file.
 
 ---
 
+## [1.2.0-rc08] - 2026-10-18
+
+### Added
+
+- **Release announcements on merged PRs** — After a successful npm publish, a new `announce-release` job comments on each PR merged since the previous release ("Released in <version>, published to npm tag dev|latest"); publish jobs now only run on the release event (#186).
+- **Command sender logging** — Each Matterbridge command now logs its sender (fabric, peer node, session) at info level, which helps identify the controller that sent it (#187).
+- **`consumable` CLI command** — New read-only CLI command to inspect device consumables (#187).
+
+### Changed
+
+- **Internal cleanups** — Removed a dead branch, split the MQTT interval constant, added codecov config and set the coverage minimum to 99/99/97/99 (#187).
+- **Docs and wiki** — Documentation and wiki updates (#187, #188).
+
+### Fixed
+
+- **Nameless rooms in supported areas** — `getSupportedAreas` could show "Unknown Room N" for a nameless room (#187).
+- **LZ4 map decompressor** — Now throws a clear error on truncated input instead of failing obscurely (#187).
+
+<a href="https://www.buymeacoffee.com/rinnvspktr" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/default-orange.png" alt="Buy Me A Coffee" height="41" width="174"></a>
+
+---
+
 ## [1.2.0-rc07] - 2026-10-17
 
 ### Changed
