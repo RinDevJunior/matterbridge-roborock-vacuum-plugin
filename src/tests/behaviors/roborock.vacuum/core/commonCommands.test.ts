@@ -23,6 +23,7 @@ function createMockService(): RoborockService {
 		stopAndGoHome: vi.fn().mockResolvedValue(undefined),
 		playSoundToLocate: vi.fn().mockResolvedValue(undefined),
 		stopClean: vi.fn().mockResolvedValue(undefined),
+		resetFilterConsumable: vi.fn().mockResolvedValue(undefined),
 	});
 }
 
@@ -117,6 +118,15 @@ describe('registerCommonCommands', () => {
 			expect(service.stopClean).toHaveBeenCalledWith(duid);
 			expect(onActionTriggered).not.toHaveBeenCalled();
 			expect(logger.notice).toHaveBeenCalledWith(`${behaviorName}-Stop`);
+		});
+	});
+
+	describe('RESET_FILTER command', () => {
+		it('should call resetFilterConsumable and log the action', async () => {
+			service.resetFilterConsumable = vi.fn().mockResolvedValue(undefined);
+			await handler.executeCommand(CommandNames.RESET_FILTER);
+			expect(service.resetFilterConsumable).toHaveBeenCalledWith(duid);
+			expect(logger.notice).toHaveBeenCalledWith(`${behaviorName}-resetFilter`);
 		});
 	});
 

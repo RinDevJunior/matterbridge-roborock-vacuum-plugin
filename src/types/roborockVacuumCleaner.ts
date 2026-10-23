@@ -1,7 +1,8 @@
-import { CommandHandlerData, CommandHandlers } from 'matterbridge';
+import { CommandHandlerPayload, CommandHandlers } from 'matterbridge';
 import { MatterbridgeRvcCleanModeServer, RoboticVacuumCleaner } from 'matterbridge/devices';
 import { AnsiLogger, debugStringify } from 'matterbridge/logger';
 import { CommonAreaNamespaceTag } from 'matterbridge/matter';
+import { BasicInformationServer, BridgedDeviceBasicInformationServer } from 'matterbridge/matter/behaviors';
 import { ModeBase, RvcCleanMode, RvcOperationalState, ServiceArea } from 'matterbridge/matter/clusters';
 
 import { CommandNames } from '../behaviors/BehaviorDeviceGeneric.js';
@@ -14,9 +15,17 @@ import { getOperationalStates, getSupportedCleanModes, getSupportedRoutines } fr
 import { DockStationStatus } from '../model/DockStationStatus.js';
 import { PlatformConfigManager } from '../platform/platformConfigManager.js';
 import { Device } from '../roborockCommunication/models/index.js';
-import { getNextPendingArea, markAreaSkipped } from '../runtimes/handlers/serviceAreaHandler.js';
+import { isV1Device } from '../roborockCommunication/protocol/dispatcher/dispatcherFactory.js';
+import {
+	buildProgressUpdate,
+	getNextPendingArea,
+	isActivelyCleaningOperationalState,
+	markAreaSkipped,
+} from '../runtimes/handlers/serviceAreaHandler.js';
 import { RoborockService } from '../services/roborockService.js';
 import { BehaviorFactoryResult } from '../share/behaviorFactory.js';
+import type { RestoredRunSeed } from '../share/cleaningRunSnapshot.js';
+import { describeCommandSender } from '../share/matterCommandSender.js';
 
 interface IdentifyCommandRequest {
 	identifyTime?: number;
@@ -27,9 +36,10 @@ export class RoborockVacuumCleaner extends RoboticVacuumCleaner {
 	cleanModeSetting: CleanModeSetting | undefined;
 	lastUpdateAt: number | null = null;
 	operationSessionStartMs: number | null = null;
+	public runStartSeededAtMs: number | null = null;
 	operationPausedSinceMs: number | null = null;
 	operationPausedAccumMs = 0;
-	skipAreaHandler?: (skippedArea: number) => Promise<void>;
+	private readonly supportsFilterMonitoring: boolean;
 
 	/**
 	 * Create a new Roborock Vacuum Cleaner device.
@@ -43,10 +53,10 @@ export class RoborockVacuumCleaner extends RoboticVacuumCleaner {
 		log: AnsiLogger,
 		resolvedAreas: ServiceArea.Area[] = [],
 		resolvedMaps: ServiceArea.Map[] = [],
+		restoredRun?: RestoredRunSeed,
 	) {
 		const deviceConfig = RoborockVacuumCleaner.initializeDeviceConfiguration(
 			device,
-			homeInFo,
 			configManager,
 			roborockService,
 			log,
@@ -54,23 +64,28 @@ export class RoborockVacuumCleaner extends RoboticVacuumCleaner {
 			resolvedMaps,
 		);
 
-		super(
-			deviceConfig.deviceName,
-			device.sn ?? device.duid,
-			deviceConfig.bridgeMode,
-			deviceConfig.runModeConfigs[0].mode,
-			deviceConfig.runModeConfigs,
-			deviceConfig.cleanModes[0].mode,
-			deviceConfig.cleanModes,
-			undefined,
-			undefined,
-			RvcOperationalState.OperationalState.Docked,
-			deviceConfig.operationalState,
-			deviceConfig.supportedAreaAndRoutines,
-			undefined,
-			null,
-			deviceConfig.supportedMaps,
-		);
+		super(deviceConfig.deviceName, device.sn ?? device.duid, {
+			mode: deviceConfig.bridgeMode,
+			currentRunMode: deviceConfig.runModeConfigs[0].mode,
+			supportedRunModes: deviceConfig.runModeConfigs,
+			currentCleanMode: deviceConfig.cleanModes[0].mode,
+			supportedCleanModes: deviceConfig.cleanModes,
+			currentPhase: null,
+			phaseList: null,
+			operationalState: RvcOperationalState.OperationalState.Docked,
+			operationalStateList: deviceConfig.operationalState,
+			supportedAreas: deviceConfig.supportedAreaAndRoutines,
+			selectedAreas: restoredRun?.selectedAreas,
+			currentArea: restoredRun?.currentArea ?? null,
+			supportedMaps: deviceConfig.supportedMaps,
+			progress: restoredRun?.progress ?? [],
+		});
+
+		this.supportsFilterMonitoring = deviceConfig.supportsFilterMonitoring;
+
+		if (deviceConfig.supportsFilterMonitoring) {
+			this.createDefaultHepaFilterMonitoringClusterServer();
+		}
 
 		log.debug(
 			`Creating RoborockVacuumCleaner for device: ${deviceConfig.deviceName}, 
@@ -86,14 +101,41 @@ export class RoborockVacuumCleaner extends RoboticVacuumCleaner {
 	}
 
 	/**
+	 * Writes Matter `reachable` on the correct cluster for the bridge mode. Never throws; the
+	 * ReachabilityMonitor fires this without awaiting, so failures are logged here.
+	 * @returns true when the value was written, false when skipped (endpoint not ready) or failed.
+	 */
+	public async setReachable(reachable: boolean): Promise<boolean> {
+		try {
+			if (!this.lifecycle.isReady || (this.mode === 'server' && !this.serverNode)) {
+				this.log.debug(`[${this.device.duid}] Endpoint not ready, skipping reachable=${reachable}`);
+				return false;
+			}
+			if (this.mode === 'server') {
+				await this.serverNode?.setStateOf(BasicInformationServer, { reachable });
+				return true;
+			}
+			await this.setStateOf(BridgedDeviceBasicInformationServer, { reachable });
+			return true;
+		} catch (error) {
+			this.log.warn(
+				`[${this.device.duid}] Failed to set reachable=${reachable}: ${error instanceof Error ? error.message : String(error)}`,
+			);
+			return false;
+		}
+	}
+
+	/**
 	 * Override to enable ServiceArea.Feature.ProgressReporting for per-room cleaning status.
 	 * Adds progress attribute to track area cleaning completion (Pending/Operating/Completed/Skipped).
+	 * ProgressReporting is always enabled for this plugin; the native `progress` option seeds initial progress.
 	 */
 	override createDefaultServiceAreaClusterServer(
 		supportedAreas?: ServiceArea.Area[],
 		selectedAreas?: number[],
 		currentArea?: number | null,
 		supportedMaps?: ServiceArea.Map[],
+		progress?: ServiceArea.Progress[],
 	): this {
 		this.behaviors.require(
 			RoborockServiceAreaServer.with(ServiceArea.Feature.Maps, ServiceArea.Feature.ProgressReporting),
@@ -136,7 +178,7 @@ export class RoborockVacuumCleaner extends RoboticVacuumCleaner {
 				currentArea: currentArea !== undefined ? currentArea : 1,
 				supportedMaps: supportedMaps ?? [],
 				estimatedEndTime: null,
-				progress: [],
+				progress: progress ?? [],
 			},
 		);
 		return this;
@@ -172,7 +214,11 @@ export class RoborockVacuumCleaner extends RoboticVacuumCleaner {
 				this.log.info(
 					`Identify command received for endpoint ${endpoint}, cluster ${cluster}, attributes ${debugStringify(attributes)}, request: ${JSON.stringify(request)}`,
 				);
-				behaviorHandler.executeCommand(CommandNames.IDENTIFY, (request as IdentifyCommandRequest).identifyTime ?? 5);
+				behaviorHandler
+					.executeCommand(CommandNames.IDENTIFY, (request as IdentifyCommandRequest).identifyTime ?? 5)
+					.catch((error: unknown) => {
+						this.log.error(`Identify command failed: ${error instanceof Error ? error.message : String(error)}`);
+					});
 			},
 		);
 
@@ -180,38 +226,60 @@ export class RoborockVacuumCleaner extends RoboticVacuumCleaner {
 			const { newAreas } = request as ServiceArea.SelectAreasRequest;
 			const requestedAreas = newAreas ?? [];
 			this.log.info(`Selecting areas: ${requestedAreas.join(', ')}`);
-			behaviorHandler.executeCommand(CommandNames.SELECT_AREAS, requestedAreas);
+			behaviorHandler.executeCommand(CommandNames.SELECT_AREAS, requestedAreas).catch((error: unknown) => {
+				this.log.error(`Select areas command failed: ${error instanceof Error ? error.message : String(error)}`);
+			});
 		});
 
-		this.skipAreaHandler = async (skippedArea: number) => {
+		this.addCommandHandlerWithErrorHandling(CommandNames.SKIP_AREA, async ({ request }) => {
+			const { skippedArea } = request as ServiceArea.SkipAreaRequest;
+			this.log.info(`Skipping area: ${skippedArea}`);
 			await behaviorHandler.executeCommand(CommandNames.SKIP_AREA, skippedArea);
-		};
+		});
 
 		this.addCommandHandlerWithErrorHandling(CommandNames.CHANGE_TO_MODE, async ({ request }) => {
 			const { newMode } = request as ModeBase.ChangeToModeRequest;
 			this.log.info(`Changing to mode: ${newMode}`);
-			behaviorHandler.executeCommand(CommandNames.CHANGE_TO_MODE, newMode);
+			// Do NOT await: awaiting would make resetProgressForNewRun's updateAttribute wait on this command's own transaction and deadlock.
+			behaviorHandler.executeCommand(CommandNames.CHANGE_TO_MODE, newMode).catch((error: unknown) => {
+				this.log.error(`Change to mode command failed: ${error instanceof Error ? error.message : String(error)}`);
+			});
 		});
 
 		this.addCommandHandlerWithErrorHandling(CommandNames.PAUSE, async () => {
 			this.log.info('Pause command received');
-			behaviorHandler.executeCommand(CommandNames.PAUSE);
+			behaviorHandler.executeCommand(CommandNames.PAUSE).catch((error: unknown) => {
+				this.log.error(`Pause command failed: ${error instanceof Error ? error.message : String(error)}`);
+			});
 		});
 
 		this.addCommandHandlerWithErrorHandling(CommandNames.RESUME, async () => {
 			this.log.info('Resume command received');
-			behaviorHandler.executeCommand(CommandNames.RESUME);
+			behaviorHandler.executeCommand(CommandNames.RESUME).catch((error: unknown) => {
+				this.log.error(`Resume command failed: ${error instanceof Error ? error.message : String(error)}`);
+			});
 		});
 
 		this.addCommandHandlerWithErrorHandling(CommandNames.GO_HOME, async () => {
 			this.log.info('GoHome command received');
-			behaviorHandler.executeCommand(CommandNames.GO_HOME);
+			behaviorHandler.executeCommand(CommandNames.GO_HOME).catch((error: unknown) => {
+				this.log.error(`GoHome command failed: ${error instanceof Error ? error.message : String(error)}`);
+			});
 		});
 
 		this.addCommandHandlerWithErrorHandling(CommandNames.STOP, async () => {
 			this.log.info('Stop command received');
-			behaviorHandler.executeCommand(CommandNames.STOP);
+			behaviorHandler.executeCommand(CommandNames.STOP).catch((error: unknown) => {
+				this.log.error(`Stop command failed: ${error instanceof Error ? error.message : String(error)}`);
+			});
 		});
+
+		if (this.supportsFilterMonitoring) {
+			this.addCommandHandlerWithErrorHandling('HepaFilterMonitoring.resetCondition', async () => {
+				this.log.info('Reset filter condition command received');
+				await behaviorHandler.executeCommand(CommandNames.RESET_FILTER);
+			});
+		}
 	}
 
 	/**
@@ -219,7 +287,6 @@ export class RoborockVacuumCleaner extends RoboticVacuumCleaner {
 	 */
 	private static initializeDeviceConfiguration(
 		device: Device,
-		homeInFo: HomeEntity,
 		configManager: PlatformConfigManager,
 		roborockService: RoborockService,
 		log: AnsiLogger,
@@ -265,9 +332,14 @@ export class RoborockVacuumCleaner extends RoboticVacuumCleaner {
 			supportedMaps,
 			supportedAreaAndRoutines,
 			operationalState,
+			supportsFilterMonitoring: isV1Device(device.pv, device.specs.model) && configManager.isFilterMonitoringEnabled,
 		};
 	}
 
+	/**
+	 * Native skipArea already marked the area Skipped; this advances currentArea to the next pending
+	 * room (marked Operating) and syncs the AreaManagementService progress mirror.
+	 */
 	public async finalizeSkipArea(skippedArea: number): Promise<{
 		updatedProgress: ServiceArea.Progress[];
 		nextAreaId: number | null;
@@ -277,9 +349,32 @@ export class RoborockVacuumCleaner extends RoboticVacuumCleaner {
 		const nextAreaId = getNextPendingArea(selectedAreas, existingProgress, skippedArea);
 		const updatedProgress = markAreaSkipped(existingProgress, selectedAreas, skippedArea, nextAreaId);
 		this.roborockService.setProgress(this.device.duid, updatedProgress);
-		await this.updateAttribute(ServiceArea.id, 'progress', updatedProgress, this.log);
-		await this.updateAttribute(ServiceArea.id, 'currentArea', nextAreaId, this.log);
 		return { updatedProgress, nextAreaId };
+	}
+
+	public buildPendingProgressSeed(): ServiceArea.Progress[] {
+		const selectedAreas: number[] = this.getAttribute(ServiceArea.id, 'selectedAreas', this.log) ?? [];
+		const areaIds = selectedAreas.length > 0 ? selectedAreas : this.resolveAllRoomsForActiveMap();
+		return buildProgressUpdate([], areaIds, null);
+	}
+
+	/**
+	 * Seeds Pending progress rows when a new clean starts. No-op while already actively cleaning
+	 * (e.g. a resume from Paused) so live progress is not wiped.
+	 */
+	public async resetProgressForNewRun(): Promise<void> {
+		const operationalState = this.getAttribute(RvcOperationalState.id, 'operationalState', this.log) as
+			RvcOperationalState.OperationalState | undefined;
+		if (isActivelyCleaningOperationalState(operationalState)) {
+			this.log.debug(
+				`[${this.device.duid}] Skipping progress reset: already actively cleaning (operationalState=${operationalState})`,
+			);
+			return;
+		}
+		const seed = this.buildPendingProgressSeed();
+		this.roborockService.setProgress(this.device.duid, seed);
+		this.runStartSeededAtMs = Date.now();
+		await this.updateAttribute(ServiceArea.id, 'progress', seed, this.log);
 	}
 
 	public async trySwitchMap(selectedAreaIds: number[]): Promise<void> {
@@ -322,10 +417,11 @@ export class RoborockVacuumCleaner extends RoboticVacuumCleaner {
 	 */
 	private addCommandHandlerWithErrorHandling(
 		commandName: CommandHandlers,
-		handler: (context: CommandHandlerData) => Promise<void>,
+		handler: (context: CommandHandlerPayload) => Promise<void>,
 	): void {
-		this.addCommandHandler(commandName, async (context: CommandHandlerData) => {
+		this.addCommandHandler(commandName, async (context: CommandHandlerPayload) => {
 			try {
+				this.log.info(`${commandName} command from ${describeCommandSender(context.context)}`);
 				await handler(context);
 			} catch (error) {
 				this.log.error(`Error executing ${commandName} command: ${error}`);

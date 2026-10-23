@@ -7,6 +7,7 @@ import { SCENE_AREA_ID_MIN } from '../constants/index.js';
 import { MapInfo, RoomIndexMap } from '../core/application/models/index.js';
 import { AuthenticationResponse } from '../model/AuthenticationResponse.js';
 import { CleanCommand } from '../model/CleanCommand.js';
+import { ConsumableStatus } from '../model/ConsumableStatus.js';
 import { PlatformConfigManager } from '../platform/platformConfigManager.js';
 import { RoborockAuthenticateApi } from '../roborockCommunication/api/authClient.js';
 import { RoborockIoTApi } from '../roborockCommunication/api/iotClient.js';
@@ -21,7 +22,7 @@ import {
 	ServiceContainer,
 	ServiceContainerConfig,
 } from '../services/index.js';
-import { DeviceNotifyCallback, Factory } from '../types/index.js';
+import { DeviceNotifyCallback, Factory, NotifyMessageTypes, type ServiceAreaUpdateMessage } from '../types/index.js';
 import { WssSendSnackbarMessage } from '../types/WssSendSnackbarMessage.js';
 import { AuthenticationCoordinator } from './authentication/AuthenticationCoordinator.js';
 
@@ -159,6 +160,14 @@ export class RoborockService {
 	/** Start polling device status via local network. */
 	public activateDeviceNotify(device: Device): void {
 		this.pollingService.activateDeviceNotifyOverLocal(device);
+		if (this.configManager.isFilterMonitoringEnabled) {
+			this.pollingService.activateConsumablePollingOverLocal(device, (duid, status) => {
+				void this.deviceNotify?.({
+					type: NotifyMessageTypes.ConsumableUpdate,
+					data: { duid, filterWorkTimeSec: status.filterWorkTimeSec },
+				});
+			});
+		}
 	}
 
 	/** Trigger a one-shot local/MQTT status request for a device. */
@@ -194,6 +203,14 @@ export class RoborockService {
 	/** Set the stored "was actively cleaning" state for a device. */
 	public setLastActivelyCleaningState(duid: string, isActivelyCleaning: boolean): void {
 		this.areaService.setLastActivelyCleaningState(duid, isActivelyCleaning);
+	}
+
+	public markRestoredRunPending(duid: string): void {
+		this.areaService.markRestoredRunPending(duid);
+	}
+
+	public consumeRestoredRunPending(duid: string): boolean {
+		return this.areaService.consumeRestoredRunPending(duid);
 	}
 
 	/** Get the stored "was actively cleaning" state for a device. */
@@ -295,6 +312,21 @@ export class RoborockService {
 		return this.areaService.requestV1MapRefresh(duid);
 	}
 
+	/** Cache an unresolved Q10 room resolution to retry once areas update. */
+	public setPendingRoomResolution(duid: string, message: ServiceAreaUpdateMessage): void {
+		this.areaService.setPendingRoomResolution(duid, message);
+	}
+
+	/** Consume (get + clear) a cached pending Q10 room resolution, if still fresh. */
+	public consumePendingRoomResolution(duid: string): ServiceAreaUpdateMessage | undefined {
+		return this.areaService.consumePendingRoomResolution(duid);
+	}
+
+	/** Clear a cached pending Q10 room resolution for a device. */
+	public clearPendingRoomResolution(duid: string): void {
+		this.areaService.clearPendingRoomResolution(duid);
+	}
+
 	/** Get all scenes for a home. */
 	public async getScenes(homeId: number): Promise<Scene[] | undefined> {
 		return this.areaService.getScenes(homeId);
@@ -348,6 +380,16 @@ export class RoborockService {
 	/** Play sound to locate vacuum. */
 	public async playSoundToLocate(duid: string): Promise<void> {
 		return this.messageRoutingService.playSoundToLocate(duid);
+	}
+
+	/** Get consumable (filter) status for a device. */
+	public async getConsumableStatus(duid: string): Promise<ConsumableStatus | undefined> {
+		return this.messageRoutingService.getConsumableStatus(duid);
+	}
+
+	/** Reset the filter consumable counter on the device. */
+	public async resetFilterConsumable(duid: string): Promise<void> {
+		await this.messageRoutingService.resetFilterConsumable(duid);
 	}
 
 	private buildCleanCommand(duid: string): CleanCommand {

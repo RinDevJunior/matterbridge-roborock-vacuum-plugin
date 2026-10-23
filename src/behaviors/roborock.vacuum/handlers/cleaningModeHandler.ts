@@ -10,5 +10,10 @@ export class CleaningModeHandler implements ModeHandler {
 		context.logger.notice(`${context.behaviorName}-ChangeRunMode to:`, activity);
 		context.roborockService.setProgress(duid, []);
 		await context.roborockService.startClean(duid);
+		try {
+			await context.onCleaningStart?.();
+		} catch (error) {
+			context.logger.warn(`${context.behaviorName} onCleaningStart failed: ${String(error)}`);
+		}
 	}
 }

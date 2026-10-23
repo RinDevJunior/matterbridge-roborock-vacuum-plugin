@@ -4,6 +4,161 @@ All notable changes to this project will be documented in this file.
 
 ---
 
+## [1.2.0-rc09] - 2026-10-23
+
+### Added
+
+- **Roborock P30 Pro support** — The P30 Pro (`roborock.vacuum.a306`) and dock type 49 are now recognized (#193).
+- **Opt-in reachability** — New options `enableReachability` (default `false`) and `reachabilityDelaySeconds` (default 600, minimum 120) mark a silent robot as unreachable in Matter and restore it as soon as it answers (#193).
+- **New mode names** — `MopWaterFlow` Min, Max, Extreme and SmartWater, `MopRoute` DeepPlusCn and a `WaterSlideCode` enum now resolve from the config instead of falling back to Medium or Standard (#193).
+
+### Changed
+
+- **User agreement version at login** — Login reads the latest agreement version from the API and falls back to 14/0 on any failure; login codes 3006 and 3009 give readable errors (#193).
+- **Water slide codes** — Codes 225, 235 and 245 are read as Low, Medium and High; nothing sent to the robot changes (#193).
+- **CI Node versions** — The tested Node versions now match Matterbridge (22, 24, 26) (#195).
+- **Docs** — Added pull request and commit message templates (#194).
+
+### Fixed
+
+- **Off-peak charging state** — `IsNotCharging` is reported while off-peak charging is waiting (#193).
+- **Service Area progress** — A repeated SelectAreas with the same rooms during a clean, and an Idle status within 30 s of Start, no longer reset the progress (#193).
+
+<a href="https://www.buymeacoffee.com/rinnvspktr" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/default-orange.png" alt="Buy Me A Coffee" height="41" width="174"></a>
+
+---
+
+## [1.2.0-rc08] - 2026-10-18
+
+### Added
+
+- **Release announcements on merged PRs** — After a successful npm publish, a new `announce-release` job comments on each PR merged since the previous release ("Released in <version>, published to npm tag dev|latest"); publish jobs now only run on the release event (#186).
+- **Command sender logging** — Each Matterbridge command now logs its sender (fabric, peer node, session) at info level, which helps identify the controller that sent it (#187).
+- **`consumable` CLI command** — New read-only CLI command to inspect device consumables (#187).
+
+### Changed
+
+- **Internal cleanups** — Removed a dead branch, split the MQTT interval constant, added codecov config and set the coverage minimum to 99/99/97/99 (#187).
+- **Docs and wiki** — Documentation and wiki updates (#187, #188).
+
+### Fixed
+
+- **Nameless rooms in supported areas** — `getSupportedAreas` could show "Unknown Room N" for a nameless room (#187).
+- **LZ4 map decompressor** — Now throws a clear error on truncated input instead of failing obscurely (#187).
+
+<a href="https://www.buymeacoffee.com/rinnvspktr" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/default-orange.png" alt="Buy Me A Coffee" height="41" width="174"></a>
+
+---
+
+## [1.2.0-rc07] - 2026-10-17
+
+### Changed
+
+- **Minimum Matterbridge raised to 3.10.14** — You may need to run `npm install -g matterbridge@3.10.14` (#185).
+- **Docs and wiki** — Documentation and wiki updates.
+
+### Fixed
+
+- **Scheduled Apple Home clean not starting** — `selectAreas`/`skipArea` awaited a second state update inside the Matter command and hung; the stuck transaction then blocked every later `selectAreas` (#184). If you are on an older rc, restarting Matterbridge clears the stuck state.
+- **Command handler errors now logged** — Errors in fire-and-forget command handlers are now logged instead of being lost.
+
+<a href="https://www.buymeacoffee.com/rinnvspktr" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/default-orange.png" alt="Buy Me A Coffee" height="41" width="174"></a>
+
+---
+
+## [1.2.0-rc06] - 2026-10-12
+
+### Added
+
+- **Filter life in Apple Home (V1 devices)** — The Matter HepaFilterMonitoring cluster now shows filter-life % with warning (15% or less) and critical (5% or less) alerts, opt-in via `advancedFeature.settings.enableFilterMonitoring` (default OFF) (#173).
+- **Reset filter command** — Resets both the Matter attribute and the device's own consumable timer.
+- **Filter life calculation** — Computed from `filter_work_time` against a rated life of 150 hours (540000 s): `round((540000 - filter_work_time) / 540000 * 100)`.
+- **Scope and caveats** — V1 protocol devices only (classic S-series and similar); Q10-style devices are excluded for now because the raw data semantics are unverified, and Q7 has no filter-life data source. Please report if the percentage does not match the Roborock app.
+
+<a href="https://www.buymeacoffee.com/rinnvspktr" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/default-orange.png" alt="Buy Me A Coffee" height="41" width="174"></a>
+
+---
+
+## [1.2.0-rc05] - 2026-10-12
+
+### Added
+
+- **Persist cleaning state (experimental)** — New feature flag `advancedFeature.settings.enablePersistCleaningState` (default OFF, V1 models only in this version) saves selected rooms, per-room progress, current room and active map to persistent storage while cleaning, and restores them after a plugin or Matterbridge restart if the robot is still cleaning; saved state older than 3 hours, a changed room list or a finished run starts fresh, and turning the flag off deletes saved data (#181).
+- **Persistence caveats** — Nothing is saved at shutdown, so the last status update can be lost; this needs real-robot feedback, please report your results.
+
+### Changed
+
+- **Windows-safe CI scripts** — The `*:ci` scripts are now Windows-safe (#170).
+- **Expanded unit tests** — A large set of new unit tests raises coverage without CLI to lines 99.8% and branches 98.4%; tooling only (#161, #178, #182).
+
+### Fixed
+
+- **B01 local UDP client leak** — The client is now stored and closed on re-init and shutdown (#179, #180).
+
+<a href="https://www.buymeacoffee.com/rinnvspktr" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/default-orange.png" alt="Buy Me A Coffee" height="41" width="174"></a>
+
+---
+
+## [1.2.0-rc04] - 2026-10-11
+
+### Fixed
+
+- **Stale room list on Start** — Tapping Start cleaning in Apple Home no longer shows the previous run's finished rooms; progress is reset immediately on Start and seeded with Pending rows for the selected rooms (or all rooms of the active map).
+- **Resume keeps progress** — Resuming from Paused keeps the live progress instead of resetting it.
+- **Reliable run-end cleanup** — At run end currentArea and estimatedEndTime are cleared and session timers reset reliably.
+
+<a href="https://www.buymeacoffee.com/rinnvspktr" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/default-orange.png" alt="Buy Me A Coffee" height="41" width="174"></a>
+
+---
+
+## [1.2.0-rc03] - 2026-10-11
+
+### Added
+
+- **Native ServiceArea progress API** — Uses the native Matterbridge 3.10.12 ServiceArea progress/skipArea API; minimum Matterbridge version is now 3.10.12.
+
+### Changed
+
+- **Vite path resolution** — Switched to native Vite `resolve.tsconfigPaths`.
+- **Tooling and tests** — Cleaned up tooling and test setup.
+
+### Fixed
+
+- **ServiceArea progress finalization** — On run end, Operating areas become Completed and never-visited areas become Skipped.
+- **Progress wiped after finished clean** — Charging is no longer treated as cleaning, so progress is kept after a completed clean.
+
+<a href="https://www.buymeacoffee.com/rinnvspktr" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/default-orange.png" alt="Buy Me A Coffee" height="41" width="174"></a>
+
+---
+
+## [1.2.0-rc02] - 2026-09-23
+
+### Fixed
+
+- **`skipArea` rejected for rooms not currently being cleaned** — Room skip requests are now validated against the active cleaning session so `skipArea` is rejected when targeting a room that isn't currently being cleaned, preventing invalid skip commands from being sent to the device.
+
+<a href="https://www.buymeacoffee.com/rinnvspktr" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/default-orange.png" alt="Buy Me A Coffee" height="41" width="174"></a>
+
+---
+
+## [1.2.0-rc01] - 2026-09-20
+
+### Added
+
+- **B01/Q10 cleaning-progress support for estimated finish time** — B01/Q10 devices now also read cleaning progress (DP 87) into `clean_percent`, so the optional "estimated finish time" feature (off by default, `enableEstimatedEndTime` config flag) now works for B01/Q10 too, not just V1 devices.
+
+### Changed
+
+- **B01/Q10 status codes separated from the canonical status enum** — Q10-specific operation status codes now live in a dedicated `B01Q10OperationStatusCode` enum with a Q10 resolver used only for room/cleaning-progress tracking, and codes 101 (Relocating) and 103 (Mopping) now count as active cleaning; behavior for non-Q10 devices is unchanged.
+
+### Fixed
+
+- **B01/Q10 `currentArea` stuck at null while cleaning** — The Matter `ServiceArea.currentArea` attribute now resolves to the real room for B01/Q10-family vacuums (e.g. Q10 S5+) by reading the device's `room_id_list` telemetry, matching the behavior V1 devices already had.
+
+<a href="https://www.buymeacoffee.com/rinnvspktr" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/default-orange.png" alt="Buy Me A Coffee" height="41" width="174"></a>
+
+---
+
 ## [1.1.9] - 2026-09-20
 
 This release also includes all changes from 1.1.8-rc01..rc07, which were not in public 1.1.8.

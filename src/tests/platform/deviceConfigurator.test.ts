@@ -1,5 +1,4 @@
 import type { MatterbridgeDynamicPlatform } from 'matterbridge';
-import { bridgedNode } from 'matterbridge';
 import type { AnsiLogger } from 'matterbridge/logger';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -10,6 +9,7 @@ import type { PlatformConfigManager } from '../../platform/platformConfigManager
 import type { PlatformRunner } from '../../platformRunner.js';
 import { type Device, DeviceInformation, DeviceModel, DeviceSpecs } from '../../roborockCommunication/models/index.js';
 import type { RoborockService } from '../../services/roborockService.js';
+import { configureBehavior } from '../../share/behaviorFactory.js';
 import { RoborockVacuumCleaner } from '../../types/roborockVacuumCleaner.js';
 import type { WssSendSnackbarMessage } from '../../types/WssSendSnackbarMessage.js';
 import {
@@ -18,6 +18,7 @@ import {
 	createMockDeviceRegistry,
 	createMockLogger,
 	createMockRoborockService,
+	setReadOnlyProperty,
 } from '../helpers/testUtils.js';
 
 vi.mock('../../core/application/models/index.js', async (importOriginal) => {
@@ -171,6 +172,38 @@ describe('DeviceConfigurator', () => {
 			expect(roborockService.initializeMessageClientForLocal).toHaveBeenCalledWith(device);
 			expect(platformRunner.requestHomeData).toHaveBeenCalled();
 			expect(platformRunner.activateHandlerFunctions).toHaveBeenCalled();
+		});
+
+		it('should pass a callback that calls robot.resetProgressForNewRun as the 11th configureBehavior argument', async () => {
+			// Arrange
+			const device = makeMockDevice('duid-1');
+			registry = createMockDeviceRegistry({
+				hasDevices: vi.fn().mockReturnValue(true),
+				getAllDevices: vi.fn().mockReturnValue([device]),
+				robotsMap: new Map(),
+			});
+			configurator = new DeviceConfigurator(
+				platform,
+				configManager,
+				registry,
+				() => platformRunner,
+				snackbarMessage,
+				log,
+			);
+			await configurator.onConfigureDevice(roborockService);
+			const behaviorCalls = vi.mocked(configureBehavior).mock.calls;
+			const onCleaningStart = behaviorCalls[behaviorCalls.length - 1][10];
+			const robotInstances = vi.mocked(RoborockVacuumCleaner).mock.instances;
+			const robot = robotInstances[robotInstances.length - 1];
+			const resetProgressForNewRun = vi.fn().mockResolvedValue(undefined);
+			robot.resetProgressForNewRun = resetProgressForNewRun;
+
+			// Act
+			expect(onCleaningStart).toBeTypeOf('function');
+			await onCleaningStart?.();
+
+			// Assert
+			expect(resetProgressForNewRun).toHaveBeenCalledTimes(1);
 		});
 
 		it('should set rrHomeId when device is configured successfully', async () => {
@@ -720,50 +753,6 @@ describe('DeviceConfigurator', () => {
 			expect(platform.registerDevice).toHaveBeenCalled();
 		});
 
-		it('should not duplicate bridgedNode in deviceTypeList when it is already present', async () => {
-			const device = makeMockDevice('duid-dup-bridged');
-			vi.mocked(RoborockVacuumCleaner).mockImplementationOnce(function (this: RoborockVacuumCleaner) {
-				Object.assign(
-					this,
-					asPartial<RoborockVacuumCleaner>({
-						device,
-						deviceName: `Roborock-${device.duid}`,
-						serialNumber: device.duid,
-						configureHandler: vi.fn(),
-						getClusterServerOptions: vi.fn().mockReturnValue({
-							softwareVersion: 1,
-							softwareVersionString: '1.0.0',
-							hardwareVersion: 1,
-							hardwareVersionString: '1.0.0',
-							deviceTypeList: [{ deviceType: bridgedNode.code, revision: bridgedNode.revision }],
-						}),
-						createDefaultIdentifyClusterServer: vi.fn(),
-						createDefaultBridgedDeviceBasicInformationClusterServer: vi.fn(),
-						mode: undefined,
-						deviceTypes: new Map(),
-					}),
-				);
-			});
-
-			registry = createMockDeviceRegistry({
-				hasDevices: vi.fn().mockReturnValue(true),
-				getAllDevices: vi.fn().mockReturnValue([device]),
-				robotsMap: new Map(),
-			});
-			configurator = new DeviceConfigurator(
-				platform,
-				configManager,
-				registry,
-				() => platformRunner,
-				snackbarMessage,
-				log,
-			);
-
-			await configurator.onConfigureDevice(roborockService);
-
-			expect(platform.registerDevice).toHaveBeenCalled();
-		});
-
 		it('should call resolveInitialAreas before constructing RoborockVacuumCleaner', async () => {
 			const device = makeMockDevice('duid-1');
 			const mockAreas = [
@@ -963,6 +952,165 @@ describe('DeviceConfigurator', () => {
 
 			await expect(configurator.onConfigureDevice(roborockService)).rejects.toThrow('Device 1 failed');
 			expect(roborockService.resolveInitialAreas).toHaveBeenCalledTimes(1);
+		});
+
+		describe('registerAreasListener callback behavior', () => {
+			it('should retry pending room resolution when callback invoked with pending message', async () => {
+				const device = makeMockDevice('duid-callback-test-1');
+
+				registry = createMockDeviceRegistry({
+					hasDevices: vi.fn().mockReturnValue(true),
+					getAllDevices: vi.fn().mockReturnValue([device]),
+				});
+
+				roborockService = createMockRoborockService({
+					resolveInitialAreas: vi.fn().mockResolvedValue({ supportedAreas: [], supportedMaps: [] }),
+					initializeMessageClientForLocal: vi.fn().mockResolvedValue(true),
+					registerAreasListener: vi.fn(),
+					startPeriodicAreaRefresh: vi.fn(),
+					setDeviceNotify: vi.fn(),
+					activateDeviceNotify: vi.fn(),
+					consumePendingRoomResolution: vi.fn().mockReturnValue({
+						duid: 'duid-callback-test-1',
+						state: 1,
+						cleaningInfo: { segment_id: 42 },
+						cleaningProcess: { clean_area: 100, clean_time: 60 },
+					}),
+				});
+
+				configurator = new DeviceConfigurator(
+					platform,
+					configManager,
+					registry,
+					() => platformRunner,
+					snackbarMessage,
+					log,
+				);
+
+				await configurator.onConfigureDevice(roborockService);
+
+				// Get the actual robot that was created and registered
+				const capturedRobot = vi.mocked(platform.registerDevice).mock.calls[0][0];
+				const getAttributeMock = vi.fn().mockReturnValue(undefined);
+				const updateAttributeMock = vi.fn().mockResolvedValue(undefined);
+				setReadOnlyProperty(capturedRobot, 'getAttribute', getAttributeMock);
+				setReadOnlyProperty(capturedRobot, 'updateAttribute', updateAttributeMock);
+
+				// Capture and invoke the callback
+				const capturedCallback = vi.mocked(roborockService.registerAreasListener).mock.calls[0][1];
+				capturedCallback([], []);
+
+				// Verify updateRobotWithPayload was called with the pending message
+				expect(platformRunner.updateRobotWithPayload).toHaveBeenCalledWith({
+					type: expect.anything(),
+					data: expect.objectContaining({
+						duid: 'duid-callback-test-1',
+						state: 1,
+						cleaningInfo: { segment_id: 42 },
+					}),
+				});
+			});
+
+			it('should write currentArea to null when no pending resolution and currentArea is undefined', async () => {
+				const device = makeMockDevice('duid-callback-test-2');
+
+				registry = createMockDeviceRegistry({
+					hasDevices: vi.fn().mockReturnValue(true),
+					getAllDevices: vi.fn().mockReturnValue([device]),
+				});
+
+				roborockService = createMockRoborockService({
+					resolveInitialAreas: vi.fn().mockResolvedValue({ supportedAreas: [], supportedMaps: [] }),
+					initializeMessageClientForLocal: vi.fn().mockResolvedValue(true),
+					registerAreasListener: vi.fn(),
+					startPeriodicAreaRefresh: vi.fn(),
+					setDeviceNotify: vi.fn(),
+					activateDeviceNotify: vi.fn(),
+					consumePendingRoomResolution: vi.fn().mockReturnValue(undefined),
+				});
+
+				configurator = new DeviceConfigurator(
+					platform,
+					configManager,
+					registry,
+					() => platformRunner,
+					snackbarMessage,
+					log,
+				);
+
+				await configurator.onConfigureDevice(roborockService);
+
+				// Get the actual robot that was created and registered
+				const capturedRobot = vi.mocked(platform.registerDevice).mock.calls[0][0];
+				const getAttributeMock = vi.fn().mockReturnValue(undefined);
+				const updateAttributeMock = vi.fn().mockResolvedValue(undefined);
+				setReadOnlyProperty(capturedRobot, 'getAttribute', getAttributeMock);
+				setReadOnlyProperty(capturedRobot, 'updateAttribute', updateAttributeMock);
+
+				// Capture and invoke the callback
+				const capturedCallback = vi.mocked(roborockService.registerAreasListener).mock.calls[0][1];
+				capturedCallback([], []);
+
+				// Verify updateAttribute was called with currentArea = null
+				expect(updateAttributeMock).toHaveBeenCalledWith(expect.anything(), 'currentArea', null, expect.anything());
+				// Verify updateRobotWithPayload was NOT called (no pending resolution)
+				expect(platformRunner.updateRobotWithPayload).not.toHaveBeenCalled();
+			});
+
+			it('should NOT write currentArea to null when currentArea already has valid value', async () => {
+				const device = makeMockDevice('duid-callback-test-3');
+
+				registry = createMockDeviceRegistry({
+					hasDevices: vi.fn().mockReturnValue(true),
+					getAllDevices: vi.fn().mockReturnValue([device]),
+				});
+
+				roborockService = createMockRoborockService({
+					resolveInitialAreas: vi.fn().mockResolvedValue({ supportedAreas: [], supportedMaps: [] }),
+					initializeMessageClientForLocal: vi.fn().mockResolvedValue(true),
+					registerAreasListener: vi.fn(),
+					startPeriodicAreaRefresh: vi.fn(),
+					setDeviceNotify: vi.fn(),
+					activateDeviceNotify: vi.fn(),
+					consumePendingRoomResolution: vi.fn().mockReturnValue(undefined),
+				});
+
+				configurator = new DeviceConfigurator(
+					platform,
+					configManager,
+					registry,
+					() => platformRunner,
+					snackbarMessage,
+					log,
+				);
+
+				await configurator.onConfigureDevice(roborockService);
+
+				// Get the actual robot that was created and registered
+				const capturedRobot = vi.mocked(platform.registerDevice).mock.calls[0][0];
+				const getAttributeMock = vi.fn().mockReturnValue(5); // currentArea is 5 (valid)
+				const updateAttributeMock = vi.fn().mockResolvedValue(undefined);
+				setReadOnlyProperty(capturedRobot, 'getAttribute', getAttributeMock);
+				setReadOnlyProperty(capturedRobot, 'updateAttribute', updateAttributeMock);
+
+				// Capture and invoke the callback
+				const capturedCallback = vi.mocked(roborockService.registerAreasListener).mock.calls[0][1];
+				capturedCallback([], []);
+
+				// Verify updateAttribute was NOT called with currentArea = null
+				// (should preserve existing value)
+				const updateAttributeCalls = updateAttributeMock.mock.calls;
+				const nullCurrentAreaCall = updateAttributeCalls.find((call) => call[1] === 'currentArea' && call[2] === null);
+				expect(nullCurrentAreaCall).toBeUndefined();
+
+				// But supportedMaps and supportedAreas should still be updated
+				expect(updateAttributeMock).toHaveBeenCalledWith(
+					expect.anything(),
+					'supportedMaps',
+					expect.anything(),
+					expect.anything(),
+				);
+			});
 		});
 	});
 });

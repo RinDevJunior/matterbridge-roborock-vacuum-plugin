@@ -7,12 +7,11 @@
 
 import { defineConfig } from 'vitest/config';
 import { fileURLToPath } from 'node:url';
-import tsconfigPaths from 'vite-tsconfig-paths';
 
 export default defineConfig({
-	plugins: [tsconfigPaths()],
+	resolve: { tsconfigPaths: true },
 	test: {
-		include: ['src/**/*.test.ts', 'src/**/*.spec.ts'],
+		include: ['src/**/*.test.ts', 'src/**/*.spec.ts', 'scripts/**/*.test.mjs'],
 		exclude: ['dist', 'node_modules', 'src/pluginTemplate/**', 'src/cli/**', 'src/cli.ts'],
 		globals: true,
 		clearMocks: true,
@@ -31,12 +30,14 @@ export default defineConfig({
 				'src/tests/**/*.ts',
 				// Exclude type declaration files
 				'src/**/*.d.ts',
+				// CLI entry points are excluded from coverage (matches codecov.yml ignore)
+				'src/cli/**',
 			],
 			thresholds: {
-				statements: 75,
-				branches: 75,
-				functions: 75,
-				lines: 75,
+				statements: 99,
+				branches: 97,
+				functions: 99,
+				lines: 99,
 			},
 		},
 	},

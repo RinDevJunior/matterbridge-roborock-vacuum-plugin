@@ -20,10 +20,14 @@ export const MESSAGE_TIMEOUT_MS = 10000;
 export const RECONNECT_DELAY_MS = 10000;
 
 /**
- * Interval for MQTT keepalive messages (60 minutes).
- * Prevents connection timeout on idle connections.
+ * Interval for forcing an MQTT reconnect to avoid silently stale connections (60 minutes).
  */
-export const KEEPALIVE_INTERVAL_MS = 60 * 60 * 1000;
+export const MQTT_FORCE_RECONNECT_INTERVAL_MS = 60 * 60 * 1000;
+
+/**
+ * Wait time after repeated MQTT auth errors before reconnecting (60 minutes).
+ */
+export const AUTH_ERROR_BACKOFF_MS = 60 * 60 * 1000;
 
 /**
  * Minimum time between verification code requests (15 minutes).
@@ -72,6 +76,12 @@ export const MQTT_REFRESH_INTERVAL_MULTIPLIER = 500;
 export const LOCAL_REFRESH_INTERVAL_MULTIPLIER = 1000;
 
 /**
+ * Refresh interval for consumable (filter) status polling (6 hours).
+ * Rated life spans hundreds of hours, so frequent polling is unnecessary.
+ */
+export const CONSUMABLE_STATUS_REFRESH_INTERVAL_MS = 6 * 60 * 60 * 1000;
+
+/**
  * Number of consecutive failures before entering backoff mode (5 failures).
  */
 export const FAILURE_THRESHOLD = 5;
@@ -95,3 +105,9 @@ export const WATCHDOG_THRESHOLD_MS = 5 * 60 * 1000;
  * Interval for watchdog checks (1 minute).
  */
 export const WATCHDOG_CHECK_INTERVAL_MS = 60 * 1000;
+
+/**
+ * Grace window after a run-start progress seed during which an Idle-coded status keeps the seed (30 seconds).
+ * The robot can report an Idle code before its operationalState turns active.
+ */
+export const RUN_START_SEED_GRACE_MS = 30 * 1000;

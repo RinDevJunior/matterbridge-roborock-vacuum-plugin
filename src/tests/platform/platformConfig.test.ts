@@ -638,6 +638,132 @@ describe('PlatformConfigManager', () => {
 		it('createDefaultAdvancedFeature defaults enableEstimatedEndTime to false', () => {
 			expect(createDefaultAdvancedFeature().settings.enableEstimatedEndTime).toBe(false);
 		});
+
+		it('isFilterMonitoringEnabled returns true when advanced feature enabled and enableFilterMonitoring = true', () => {
+			config.advancedFeature = {
+				enableAdvancedFeature: true,
+				settings: { ...createDefaultAdvancedFeature().settings, enableFilterMonitoring: true },
+			};
+			manager = PlatformConfigManager.create(config, mockLogger);
+			expect(manager.isFilterMonitoringEnabled).toBe(true);
+		});
+
+		it('isFilterMonitoringEnabled returns false when advanced feature disabled', () => {
+			config.advancedFeature = {
+				enableAdvancedFeature: false,
+				settings: { ...createDefaultAdvancedFeature().settings, enableFilterMonitoring: true },
+			};
+			manager = PlatformConfigManager.create(config, mockLogger);
+			expect(manager.isFilterMonitoringEnabled).toBe(false);
+		});
+
+		it('isFilterMonitoringEnabled returns false when enableFilterMonitoring = false', () => {
+			config.advancedFeature = {
+				enableAdvancedFeature: true,
+				settings: { ...createDefaultAdvancedFeature().settings, enableFilterMonitoring: false },
+			};
+			manager = PlatformConfigManager.create(config, mockLogger);
+			expect(manager.isFilterMonitoringEnabled).toBe(false);
+		});
+
+		it('createDefaultAdvancedFeature defaults enableFilterMonitoring to false', () => {
+			expect(createDefaultAdvancedFeature().settings.enableFilterMonitoring).toBe(false);
+		});
+
+		it('isPersistCleaningStateEnabled returns true when advanced feature enabled and enablePersistCleaningState = true', () => {
+			config.advancedFeature = {
+				enableAdvancedFeature: true,
+				settings: { ...createDefaultAdvancedFeature().settings, enablePersistCleaningState: true },
+			};
+			manager = PlatformConfigManager.create(config, mockLogger);
+			expect(manager.isPersistCleaningStateEnabled).toBe(true);
+		});
+
+		it('isPersistCleaningStateEnabled returns false when advanced feature disabled', () => {
+			config.advancedFeature = {
+				enableAdvancedFeature: false,
+				settings: { ...createDefaultAdvancedFeature().settings, enablePersistCleaningState: true },
+			};
+			manager = PlatformConfigManager.create(config, mockLogger);
+			expect(manager.isPersistCleaningStateEnabled).toBe(false);
+		});
+
+		it('isPersistCleaningStateEnabled returns false when enablePersistCleaningState = false', () => {
+			config.advancedFeature = {
+				enableAdvancedFeature: true,
+				settings: { ...createDefaultAdvancedFeature().settings, enablePersistCleaningState: false },
+			};
+			manager = PlatformConfigManager.create(config, mockLogger);
+			expect(manager.isPersistCleaningStateEnabled).toBe(false);
+		});
+
+		it('isPersistCleaningStateEnabled returns false when enablePersistCleaningState is undefined', () => {
+			const settings = { ...createDefaultAdvancedFeature().settings, enablePersistCleaningState: undefined };
+			config.advancedFeature = { enableAdvancedFeature: true, settings };
+			manager = PlatformConfigManager.create(config, mockLogger);
+			expect(manager.isPersistCleaningStateEnabled).toBe(false);
+		});
+
+		it('createDefaultAdvancedFeature defaults enablePersistCleaningState to false', () => {
+			expect(createDefaultAdvancedFeature().settings.enablePersistCleaningState).toBe(false);
+		});
+	});
+
+	it('createDefaultAdvancedFeature defaults enableReachability to false and reachabilityDelaySeconds to 600', () => {
+		const settings = createDefaultAdvancedFeature().settings;
+		expect(settings.enableReachability).toBe(false);
+		expect(settings.reachabilityDelaySeconds).toBe(600);
+	});
+
+	it('isReachabilityEnabled is false by default', () => {
+		expect(manager.isReachabilityEnabled).toBe(false);
+	});
+
+	it('isReachabilityEnabled returns true when advanced feature enabled and enableReachability = true', () => {
+		config.advancedFeature = {
+			enableAdvancedFeature: true,
+			settings: { ...createDefaultAdvancedFeature().settings, enableReachability: true },
+		};
+		manager = PlatformConfigManager.create(config, mockLogger);
+		expect(manager.isReachabilityEnabled).toBe(true);
+	});
+
+	it('isReachabilityEnabled returns false when advanced feature disabled', () => {
+		config.advancedFeature = {
+			enableAdvancedFeature: false,
+			settings: { ...createDefaultAdvancedFeature().settings, enableReachability: true },
+		};
+		manager = PlatformConfigManager.create(config, mockLogger);
+		expect(manager.isReachabilityEnabled).toBe(false);
+	});
+
+	it('reachabilityDelayMs defaults to 600000 when reachabilityDelaySeconds is unset', () => {
+		const settings = { ...createDefaultAdvancedFeature().settings, reachabilityDelaySeconds: undefined };
+		config.advancedFeature = { enableAdvancedFeature: true, settings };
+		manager = PlatformConfigManager.create(config, mockLogger);
+		expect(manager.reachabilityDelayMs).toBe(600_000);
+	});
+
+	it('reachabilityDelayMs converts a configured value from seconds to milliseconds', () => {
+		config.advancedFeature = {
+			enableAdvancedFeature: true,
+			settings: { ...createDefaultAdvancedFeature().settings, reachabilityDelaySeconds: 300 },
+		};
+		manager = PlatformConfigManager.create(config, mockLogger);
+		expect(manager.reachabilityDelayMs).toBe(300_000);
+	});
+
+	it.each([
+		{ configured: 30, expected: 120_000 },
+		{ configured: 0, expected: 120_000 },
+		{ configured: 120, expected: 120_000 },
+	])('reachabilityDelayMs clamps $configured seconds to $expected ms (minimum 120s)', ({ configured, expected }) => {
+		config.advancedFeature = {
+			enableAdvancedFeature: true,
+			settings: { ...createDefaultAdvancedFeature().settings, reachabilityDelaySeconds: configured },
+		};
+		manager = PlatformConfigManager.create(config, mockLogger);
+		expect(manager.reachabilityDelayMs).toBe(expected);
 	});
 
 	describe('device filtering', () => {
@@ -658,6 +784,84 @@ describe('PlatformConfigManager', () => {
 			config.pluginConfiguration.whiteList = ['abc'];
 			manager = PlatformConfigManager.create(config, mockLogger);
 			expect(manager.isDeviceAllowed({})).toBe(false);
+		});
+	});
+	describe('default fallbacks', () => {
+		it('should return empty string for password when not configured', () => {
+			// Arrange
+			Reflect.deleteProperty(config.authentication, 'password');
+			manager = PlatformConfigManager.create(config, mockLogger);
+			// Act & Assert
+			expect(manager.password).toBe('');
+		});
+
+		it('should default authenticationMethod to Password when not configured', () => {
+			// Arrange
+			Object.assign(config.authentication, { authenticationMethod: undefined });
+			manager = PlatformConfigManager.create(config, mockLogger);
+			// Act & Assert
+			expect(manager.authenticationMethod).toBe('Password');
+		});
+
+		it('should default region to US when not configured', () => {
+			// Arrange
+			Reflect.deleteProperty(config.authentication, 'region');
+			manager = PlatformConfigManager.create(config, mockLogger);
+			// Act & Assert
+			expect(manager.region).toBe('US');
+		});
+
+		it('should default unregisterOnShutdown to false when not configured', () => {
+			// Arrange
+			Reflect.deleteProperty(config.pluginConfiguration, 'unregisterOnShutdown');
+			manager = PlatformConfigManager.create(config, mockLogger);
+			// Act & Assert
+			expect(manager.unregisterOnShutdown).toBe(false);
+		});
+
+		it('should return false for includeDockStationStatus when advanced feature is disabled', () => {
+			// Arrange
+			config.advancedFeature.enableAdvancedFeature = false;
+			config.advancedFeature.settings.includeDockStationStatus = true;
+			manager = PlatformConfigManager.create(config, mockLogger);
+			// Act & Assert
+			expect(manager.includeDockStationStatus).toBe(false);
+		});
+
+		it('should default overrideMatterConfiguration to false when setting is undefined', () => {
+			// Arrange
+			config.advancedFeature.enableAdvancedFeature = true;
+			Object.assign(config.advancedFeature.settings, { overrideMatterConfiguration: undefined });
+			manager = PlatformConfigManager.create(config, mockLogger);
+			// Act & Assert
+			expect(manager.overrideMatterConfiguration).toBe(false);
+		});
+
+		it('should return false for isEmailNotificationEnabled when setting is undefined', () => {
+			// Arrange
+			config.advancedFeature.enableAdvancedFeature = true;
+			Object.assign(config.advancedFeature.settings, { enableEmailNotification: undefined });
+			manager = PlatformConfigManager.create(config, mockLogger);
+			// Act & Assert
+			expect(manager.isEmailNotificationEnabled).toBe(false);
+		});
+
+		it('should return false for isLiveMapUpdatesEnabled when setting is undefined', () => {
+			// Arrange
+			config.advancedFeature.enableAdvancedFeature = true;
+			Object.assign(config.advancedFeature.settings, { enableLiveMapUpdates: undefined });
+			manager = PlatformConfigManager.create(config, mockLogger);
+			// Act & Assert
+			expect(manager.isLiveMapUpdatesEnabled).toBe(false);
+		});
+
+		it('should return false for isEstimatedEndTimeEnabled when setting is undefined', () => {
+			// Arrange
+			config.advancedFeature.enableAdvancedFeature = true;
+			Object.assign(config.advancedFeature.settings, { enableEstimatedEndTime: undefined });
+			manager = PlatformConfigManager.create(config, mockLogger);
+			// Act & Assert
+			expect(manager.isEstimatedEndTimeEnabled).toBe(false);
 		});
 	});
 });

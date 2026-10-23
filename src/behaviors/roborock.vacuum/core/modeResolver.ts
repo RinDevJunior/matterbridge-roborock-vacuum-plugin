@@ -1,6 +1,7 @@
 import { CleanSequenceType, MopWaterFlow, VacuumSuctionPower } from '../enums/index.js';
 import { CleanModeConfig, CleanModeDisplayLabel, CleanModeLabelInfo } from './cleanModeConfig/index.js';
 import { CleanModeSetting } from './CleanModeSetting.js';
+import { waterSlideToStandardFlow } from './waterSlide.js';
 
 function supportsMode(configs: CleanModeConfig[], mode: number): boolean {
 	return configs.some((c) => c.mode === mode);
@@ -45,13 +46,25 @@ export class ModeResolver {
 			}
 		}
 
-		const serialized = this.serializeSetting(setting);
+		const standardFlow = waterSlideToStandardFlow(setting.waterFlow);
+		const effective =
+			standardFlow === undefined
+				? setting
+				: new CleanModeSetting(
+						setting.suctionPower,
+						standardFlow,
+						setting.distance_off,
+						setting.mopRoute,
+						setting.sequenceType,
+					);
+
+		const serialized = this.serializeSetting(effective);
 		const exactMatch = this.settingsToModeMap.get(serialized);
 		if (exactMatch !== undefined) {
 			return exactMatch;
 		}
 
-		return this.resolveFallback(setting);
+		return this.resolveFallback(effective);
 	}
 
 	private serializeSetting(setting: CleanModeSetting): string {

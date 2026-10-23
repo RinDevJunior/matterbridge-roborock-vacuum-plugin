@@ -180,7 +180,11 @@ export class MapInfoListener implements AbstractMessageListener {
 		try {
 			const b01Info = this.b01MapParser.parseRoomsFromEncryptedBinary(mapBuffer, modelShortCode, this.deviceSerial);
 			if (b01Info.rooms.length === 0) {
-				this.logger.debug(`[${this.duid}] MapInfoListener: B01 map binary has no rooms`);
+				// Trace packets (position-only frames) never carry rooms by design — logging this as
+				// a debug event for every trace frame is noisy and misleading, so skip it there.
+				if (!this.b01MapParser.isTracePacket(mapBuffer)) {
+					this.logger.debug(`[${this.duid}] MapInfoListener: B01 map binary has no rooms`);
+				}
 				return;
 			}
 
