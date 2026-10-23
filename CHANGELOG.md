@@ -4,6 +4,30 @@ All notable changes to this project will be documented in this file.
 
 ---
 
+## [1.2.0-rc09] - 2026-10-23
+
+### Added
+
+- **Roborock P30 Pro support** — The P30 Pro (`roborock.vacuum.a306`) and dock type 49 are now recognized (#193).
+- **Opt-in reachability** — New options `enableReachability` (default `false`) and `reachabilityDelaySeconds` (default 600, minimum 120) mark a silent robot as unreachable in Matter and restore it as soon as it answers (#193).
+- **New mode names** — `MopWaterFlow` Min, Max, Extreme and SmartWater, `MopRoute` DeepPlusCn and a `WaterSlideCode` enum now resolve from the config instead of falling back to Medium or Standard (#193).
+
+### Changed
+
+- **User agreement version at login** — Login reads the latest agreement version from the API and falls back to 14/0 on any failure; login codes 3006 and 3009 give readable errors (#193).
+- **Water slide codes** — Codes 225, 235 and 245 are read as Low, Medium and High; nothing sent to the robot changes (#193).
+- **CI Node versions** — The tested Node versions now match Matterbridge (22, 24, 26) (#195).
+- **Docs** — Added pull request and commit message templates (#194).
+
+### Fixed
+
+- **Off-peak charging state** — `IsNotCharging` is reported while off-peak charging is waiting (#193).
+- **Service Area progress** — A repeated SelectAreas with the same rooms during a clean, and an Idle status within 30 s of Start, no longer reset the progress (#193).
+
+<a href="https://www.buymeacoffee.com/rinnvspktr" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/default-orange.png" alt="Buy Me A Coffee" height="41" width="174"></a>
+
+---
+
 ## [1.2.0-rc08] - 2026-10-18
 
 ### Added
