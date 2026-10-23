@@ -19,6 +19,7 @@ It is version-controlled — commit and push changes so teammates can pull the l
 - `tryParseB01MapBinary` skips `Protocol.map_response` for V1 (`mapInfoListener.ts:165`); separate `tryParseV1MapBinary` (`:211-238`) handles V1 binaries via `decryptAndUnzipV1Map`→`resolveCurrentRoom`→`onV1RoomResolved` (confirmed in real S8 logs, Jul 25).
 - `WashingTheMop`(23) override (`stateResolver.ts:128-139`) writes `operationalState=FillingWaterTank` ~2-3min at clean-start before `Running` (Apple Home likely shows "Preparing", unconfirmed); Run/Clean mode clusters update independently.
 - V1 `resolveCurrentRoom` (`mapParser.ts`): exact-pixel tier misses wall/obstacle pixels at room boundaries. Tiers: exact → `findContainingSegment` (bbox, single match only, Jul 28; `LegacySegmentInfo.boundingBox`) → nearest-centroid. No shared point-in-rect helper.
+- Reachability (opt-in `enableReachability`, Oct 18 2026): `ReachabilityMonitor` (`platform/reachabilityMonitor.ts`) fed by `setDeviceNotify` markAlive (non-HomeData) + HomeData `online:true`; down waits `reachabilityDelaySeconds` (min 120, default 600) via `watchdog` sweep; `RoborockVacuumCleaner.setReachable` picks BasicInformation (server) vs BridgedDeviceBasicInformation (matter) mode.
 - V1 `rr` block types beyond charger=1/image=2/robot=8/cleaned=11: `FORBIDDEN_ZONES=9`, `VIRTUAL_WALLS=10`, `NO_MOP_ZONE=12` (same `get_map_v1` buffer). Wall=2 endpoints/8B, zone (9,12)=4 corners/16B, count `u32` at block `+0x08`; units likely mm (medium confidence, no real capture). See `workspace/virtual-wall-detection-feasibility/answers-virtual-wall.md`.
 
 ## Known Patterns
@@ -30,6 +31,8 @@ It is version-controlled — commit and push changes so teammates can pull the l
 - New config sections in schema use JSON Schema `if/then` blocks under `advancedFeature.allOf`.
 - **Agent frontmatter:** `effort`/`maxTurns` after `color`, before `tools`; `tools` MUST be a comma-separated string — YAML block lists silently fail and the subagent falls back to Read/Write/Edit/Bash only.
 - **Subagent toolsets (macOS, Jul 10 2026):** native `Glob`/`Grep` absent from Task subagents — use `mcp__glob-grep__*`. `LSP` only reachable via deferred ToolSearch in wildcard-tools subagents — don't rely on it in agent definitions.
+- **Mode enum name lookup (Oct 18, 2026):** `cleanModeUtils.ts` resolves `MopWaterFlow[str]`/`MopRoute[str]` by member NAME, so new members (Min/Max/Extreme/SmartWater/DeepPlusCn) now accept those config strings instead of falling back.
+- **format:ci rewrites files:** it reflows edited code (e.g. `(x) =>` arrows, wrapped args); re-Read the file before any further edit.
 - **Subagent task tracking:** `TaskCreate`/`TaskUpdate`/`TodoWrite` never reach Task subagents (Jul 10 2026) — don't list in frontmatter; EM tracks steps in main session, subagents report plain text.
 
 ## Decisions Made
@@ -37,12 +40,8 @@ It is version-controlled — commit and push changes so teammates can pull the l
 <!-- Architectural and design decisions with rationale -->
 
 - `extra_time`→`estimatedEndTime` removed (Jul 2026); opt-in `enableEstimatedEndTime` (default off) + `clean_time`/`clean_percent` linear ETA in `src/share/estimatedEndTime.ts`. Sep 20: Q10 reads DP 87 (`b01StatusListener.ts` `tryHandleQ10Push`) so flag works for Q10; Q7 stays `null`.
-- `progress` reset-on-new-clean (Jul 13, 2026): triggers are `selectAreas` and `handleServiceAreaUpdate`'s Idle branch (direct `[]` clear). NOT `RoborockService.startClean` — its `HandlerContext` never carries `robot`/`device`.
 - Matterbridge 3.10.12 native skipArea (PR #643) forwards to the `skipArea` command handler BEFORE `assertSkipServiceArea`; plugin `RoborockServiceAreaServer.skipArea` must validate (#172 rule) first, then `super.skipArea`, then `finalizeSkipArea`.
 - `RoboticVacuumCleanerOptions.progress` exists only on the options-object ctor (positional is deprecated); min Matterbridge = 3.10.14. npm `dev` build 20261002-6a30fb3 predates PR #643 (no skipArea/progress) — wait for npm 3.10.12.
-- Dock→Matter mapping (Jul 2026): default bundle Items 1+2+3+4 in `DockStationStatus.ts` only; Item 3 vs 5 mutually exclusive (full dss vs dustBag-only); codes 32/33/35 as `DockErrorCode` enum; dss priority clearWater→dirty→dustBag→cleanFluid→filter→updown.
-- `progress` reset (Jul 14, 2026), 3rd trigger: `handleServiceAreaUpdate` compares stored-vs-current "actively cleaning" classification (Docked/Stopped/Error = not cleaning), not raw `CLEANING_STATES` (false positives on `ReturningDock` detours). Flag lives in `AreaManagementService`.
-- Vacuum→Matter mapping (Jul 2026): bundle ideas 2–6 in `VacuumStatus.ts`; export `VACUUM_ERROR_TO_MATTER`; unknown non-zero → `UnableToCompleteOperation`; add `VacuumErrorCode.AutoEmptyDockFanError=33`; 8 semantic refinements per spike answer.md.
 - `dss` `isUpdownWaterReady` (bits 0-1) is unreliable on real hardware (dss=2729 → Error while idle, no other error): excluded from `hasError()`/`DSS_FIELD_PRIORITY` (Jul 22, 2026), still parsed. python-roborock parses nothing at bits 0-1 (`v1_containers.py:277-278` is `hatch_door_status`, bits 12-14).
 - Q10 reconnect race fix (Sep 20, 2026): `AreaManagementService.pendingQ10RoomResolution` cache (30s TTL) filled on silent-failure branches of `resolveAreaFromCleaningInfo`; retried via `deviceConfigurator.ts` `registerAreasListener` callback → `PlatformRunner.updateRobotWithPayload` (single subscriber; see `workspace/q10-room-resolution-race-fix/plan.md`).
 - Persist-cleaning-state (Oct 12, 2026, planned): `platform.cleaningRunStateStore` exists only when flag ON; after restart seed mirror flag true + `activeMapId`, confirm-or-discard on first update; validate by `mapId:areaId:roomId` fingerprint (areaIds positional). See `workspace/feature-persist-cleaning-state/plan.md`.
@@ -55,28 +54,26 @@ It is version-controlled — commit and push changes so teammates can pull the l
 ## Test Patterns
 
 - **selectAreas/skipArea progress (Oct 16, 2026):** writes go via `this.state.progress`/`currentArea` (no `updateAttribute`); assert `updateAttribute` calls filtered by attr name, read state via `server['state']`.
-- **ModeResolver.resolveFallback category-aware tests:** import `vacuumOnlyModeConfigs`/`mopOnlyModeConfigs`/`vacuumAndMopModeConfigs` + `baseCleanModeConfigs`; Max/Balanced/Quiet with non-canonical water/route → same-category mode; test vacuum-off/mop-off, unknown suction → Default; exact-triple still wins.
-- **handleErrorOccurred tests (9 branches):** includeVacuumErrorStatus off; vacuum error; Running+no-error; not-Running+no-vacuum+dock-disabled (clear, the bug fix); dock status error/no-error; dockErrorCode active/NoError; both-undefined. Use `buildOperationalError()`; mock `robot.getAttribute` for operationalState.
-- **LegacyMapParser tests:** `buildWallBlock`/`buildZoneBlock` (8B/16B stride; truncated drops partial). Containment tier (Jul 28): containment beats closer centroid; 2+ or 0 matches → nearest-center; exact pixel wins; namedRooms lookup. Y-flip `pyRel = height - 1 - (pyAbs - top)`. Islands: 4-connectivity BFS, wall tol ±3px, per-island 30% heuristic.
+- **Enum name-lookup tests (Oct 18, 2026):** `MopWaterFlow[name]`/`MopRoute[name]` reverse lookup covered in `enums/enums.test.ts`; config-name cases in `cleanModeUtils.test.ts` "name lookup" block.
 - **LZ4/getSupportedAreas regression (Oct 18, 2026):** truncated LZ4 cases go in `it.each` (`[0xf0]`, `[0x1f,0x41,0x01,0x00]`); nameless-room cases use `result.roomIndexMap.areaInfo.get(i)`.
-- **B01StatusListener nested-DPS tests (Sep 20, 2026):** `extractQ10RoomId` malformed guards (non-object `common_request`, missing `clean_expand`, empty/non-array `room_id_list`) never throw → undefined. Sticky `lastRoomId` reused when absent. `onServiceAreaUpdate` gate: any of cleanArea/cleanTime/cleanTaskType/roomId/cleanProgress defined.
-- **scripts/ tests (Oct 11, 2026):** run real `.mjs` via child process; PATH = fake `git`/`codegraph`/`npx` bin dir (+ `/bin/cat` symlink) for POSIX-only `describe.skipIf(win32)`. Pure helpers via `node --input-type=module -e` harness.
-- **`*:ci` guard:** `ciScripts.test.ts` enforces single `node scripts/<x>.mjs` values; new `:ci` scripts must follow it.
+- **Water-slide codes (Oct 18, 2026):** `waterSlide.ts` normalizes 221-250 by position; 225/235/245 map to 201-203 in `ModeResolver.resolve` before lookup. Raw setting still goes to `customCheckFn`.
+- **`it.each` typing for CleanModeLabelInfo:** it's keyed by `CleanModeLabel`, not `CleanModeDisplayLabel`. Pass `.mode` numbers in the tuple (`it.each<[number, number]>`).
+- **Run-start grace tests (Oct 18, 2026):** `vi.useFakeTimers()`+`setSystemTime` in describe `beforeEach`; set `robot.runStartSeededAtMs` directly on `createMockRobot`. Boundary: 29 999 kept, 30 000 cleared.
 - **Mocking `node:crypto.randomInt` (Oct 12, 2026):** `vi.mock('node:crypto', importOriginal => ({...actual, randomInt: vi.fn()}))`; set `mockImplementation` in `beforeEach` (not once at top). `MapInfo` names never undefined (`Default Map N`), so use `asPartial<MapInfo>` for the `?? 'Map <id>'` arm.
 - **Command-handler wrapper tests (Oct 18, 2026):** `vi.spyOn(vacuum,'addCommandHandler')` pre-configureHandler, then invoke `mock.calls` handler with `asType<CommandHandlerPayload>`; `describeCommandSender` returns exact strings (no regex on PASE parens).
+- **selectAreas same-list no-op tests (Oct 18, 2026):** `spyOnParentSelectAreas(server)` helper; `it.each` objects with `$label`. Mocked super never writes, so no-op guards also need `setProgress`/`trySwitchMap` not-called asserts.
 - **persistCleaningRunState tests (Oct 12, 2026):** SAVE only runs when `operationalState` attr is actively cleaning; CLEAR runs for Docked/Charging unless `message.state` is a cleaning state. Confirmed-restore with attr Docked + Cleaning msg → no clear, no save.
 
 ## Common Pitfalls
 
 <!-- Things to avoid — bugs found, anti-patterns, footguns -->
 
-- Fire-and-forget handlers (Oct 16): `behaviorHandler.executeCommand(...).catch(...)` throws on `vi.fn()` mocks (returns undefined) — use `vi.fn().mockResolvedValue(undefined)`.
+- Valley flag (Oct 18): `decodeFeatureSet` sets `is_supported_valley_electricity` for BOTH a187 and a306 strings — use featureSet `'0'` for the "no valley" case.
 - ESLint `preserve-caught-error` requires re-thrown errors to carry `{ cause: err }` — omitting it fails `lint:fix:ci` even when the message embeds the original error text.
 - ESLint `no-base-to-string` prohibits stringifying `err.cause` directly in templates (`String(err.cause)`) — check `if (cause instanceof Error)` first, then safely access `.message`; this prevents accidental `[object Object]` in logs.
 - Static `import` of `scripts/*.mjs` from `src/tests` breaks `type-check:ci` (checkJs TS7006 + tsconfig rootDir TS6059). Test scripts via child process instead.
 - `handleCleaningWithoutInfo`'s `selectedAreas[0]` pin (`serviceAreaHandler.ts:311`) reuses last-known `currentArea` first (PR #150) — sole call site of that read; re-verified Aug 3 against real-S8 log (34/34). `AreaManagementService.lastKnownAreaCache` never existed in `src/` — don't rely on it.
 - `resolveAreaFromCleaningInfo`'s falsy-zero check is fixed (`mappedArea === undefined`, `serviceAreaHandler.ts:405`) — confirmed correct Jul 25, no gap.
-- `DockStationStatus.isUpdownWaterReady` (bits 0-1) is parsed but EXCLUDED from `hasError()`/`getMatterOperationalError()` (Jul 22, 2026): reads Error as steady idle state on real hardware, unlike the 5 other dss fields.
 - `modeResolver.ts` `createDefaultModeResolver`/`createSmartModeResolver` OneTime branch (pre-fix Jul 22) always returned mode 11 regardless of `configs`; real `seq_type` reaches it on any non-B01 device. Fix: gate on `configs.some(mode===11)`, computed once per factory call.
 - `errorStateHandler.ts` `handleErrorOccurred` (fixed Sep 13 2026): `!includeDockStationStatus` guard did bare `return;` without clearing `operationalError`, sticking a vacuum `errorStateId` forever. Fix: `buildOperationalError` helper clears before early return; `errorStateDetails` on all writes.
 - B01/Q10 currentArea (Sep 20, 2026): `resolveAreaFromCleaningInfo`/`RoomIndexMap.getAreaId` (`serviceAreaHandler.ts:392-444`) has no V1-only gate; `B01StatusListener.tryHandleQ10Push` now fills `cleaningInfo.segment_id` from `common_request`(101)→`clean_expand`(91)→`room_id_list`. No handler changes.

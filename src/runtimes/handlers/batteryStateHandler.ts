@@ -4,6 +4,7 @@ import { PowerSource, RvcOperationalState } from 'matterbridge/matter/clusters';
 import { getBatteryState, getBatteryStatus } from '../../initialData/index.js';
 import type { RoborockMatterbridgePlatform } from '../../module.js';
 import type { BatteryMessage } from '../../roborockCommunication/models/index.js';
+import { decodeFeatureSet } from '../../share/featureSetDecoder.js';
 import type { RoborockVacuumCleaner } from '../../types/roborockVacuumCleaner.js';
 
 export async function handleBatteryUpdate(
@@ -24,7 +25,14 @@ export async function handleBatteryUpdate(
 	}
 
 	if (batteryLevel != null && deviceStatus) {
-		const batteryChargeState = getBatteryState(deviceStatus, batteryLevel);
+		const valleyElectricitySupported = decodeFeatureSet(
+			robot.device.featureSet,
+			robot.device.newFeatureSet,
+		).is_supported_valley_electricity;
+		const batteryChargeState = getBatteryState(deviceStatus, batteryLevel, {
+			chargeStatus: message.chargeStatus,
+			valleyElectricitySupported,
+		});
 		await robot.updateAttribute(PowerSource.id, 'batChargeState', batteryChargeState, platform.log);
 
 		const currentOperationState: RvcOperationalState.OperationalState = robot.getAttribute(

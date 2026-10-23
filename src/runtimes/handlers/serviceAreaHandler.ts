@@ -1,7 +1,7 @@
 import { debugStringify } from 'matterbridge/logger';
 import { RvcOperationalState, ServiceArea } from 'matterbridge/matter/clusters';
 
-import { INVALID_SEGMENT_ID } from '../../constants/index.js';
+import { INVALID_SEGMENT_ID, RUN_START_SEED_GRACE_MS } from '../../constants/index.js';
 import type { RoborockMatterbridgePlatform } from '../../module.js';
 import { OperationStatusCode, ProtocolVersion } from '../../roborockCommunication/enums/index.js';
 import { isB01Q10CleaningState, isB01Q10IdleState, isB01Q10Robot } from '../../share/b01Q10StatusResolver.js';
@@ -396,6 +396,7 @@ async function handleServiceAreaUpdateCore(
 		);
 		const seed = robot.buildPendingProgressSeed();
 		platform.roborockService?.setProgress(robot.device.duid, seed);
+		robot.runStartSeededAtMs = null;
 		await robot.updateAttribute(ServiceArea.id, 'progress', seed, logger);
 	}
 
@@ -404,6 +405,7 @@ async function handleServiceAreaUpdateCore(
 		!isActivelyCleaningNow &&
 		(isRunEndOperationalState(operationalState) || isIdleStateForServiceArea(robot, message.state));
 	if (isRunEnd) {
+		robot.runStartSeededAtMs = null;
 		const existingProgress = platform.roborockService?.getProgress(robot.device.duid) ?? [];
 		if (existingProgress.length > 0) {
 			logger.debug(
@@ -423,8 +425,14 @@ async function handleServiceAreaUpdateCore(
 		const selectedAreas = platform.roborockService?.getSelectedAreas(robot.device.duid) ?? [];
 		await robot.updateAttribute(ServiceArea.id, 'selectedAreas', selectedAreas, logger);
 
+		const seedGraceActive =
+			robot.runStartSeededAtMs != null && Date.now() - robot.runStartSeededAtMs < RUN_START_SEED_GRACE_MS;
+		if (!seedGraceActive) robot.runStartSeededAtMs = null;
+
 		const progressNow = platform.roborockService?.getProgress(robot.device.duid) ?? [];
-		if (!isProgressFinalized(progressNow)) {
+		if (!isProgressFinalized(progressNow) && seedGraceActive) {
+			logger.debug(`[${robot.device.duid}] Idle status within run-start grace window, keeping pending seed`);
+		} else if (!isProgressFinalized(progressNow)) {
 			platform.roborockService?.setProgress(robot.device.duid, []);
 			await robot.updateAttribute(ServiceArea.id, 'progress', [], logger);
 		}

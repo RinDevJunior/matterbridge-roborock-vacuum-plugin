@@ -1,6 +1,7 @@
 import { MatterbridgeIdentifyServer, MatterbridgeServiceAreaServer } from 'matterbridge';
 import { MatterbridgeRvcOperationalStateServer } from 'matterbridge/devices';
 import { AnsiLogger } from 'matterbridge/logger';
+import { BasicInformationServer, BridgedDeviceBasicInformationServer } from 'matterbridge/matter/behaviors';
 import {
 	HepaFilterMonitoring,
 	ModeBase,
@@ -8,7 +9,7 @@ import {
 	RvcOperationalState,
 	ServiceArea,
 } from 'matterbridge/matter/clusters';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { CommandNames } from '../behaviors/BehaviorDeviceGeneric.js';
 import { MapInfo } from '../core/application/models/MapInfo.js';
@@ -89,6 +90,67 @@ describe('RoborockVacuumCleaner', () => {
 	it('should construct with correct properties', () => {
 		expect(vacuum).toBeInstanceOf(RoborockVacuumCleaner);
 		expect(vacuum.device).toBe(device);
+	});
+
+	describe('setReachable', () => {
+		type ServerNodeStub = NonNullable<RoborockVacuumCleaner['serverNode']>;
+
+		function useMode(mode: 'server' | 'matter', isReady = true): void {
+			setReadOnlyProperty(vacuum, 'mode', mode);
+			setReadOnlyProperty(vacuum, 'lifecycle', { isReady });
+		}
+
+		it('should write reachable=false on BridgedDeviceBasicInformation and return true in bridge mode', async () => {
+			useMode('matter');
+			const setStateSpy = vi.spyOn(vacuum, 'setStateOf').mockResolvedValue(undefined);
+
+			const result = await vacuum.setReachable(false);
+
+			expect(result).toBe(true);
+			expect(setStateSpy).toHaveBeenCalledWith(BridgedDeviceBasicInformationServer, { reachable: false });
+		});
+
+		it('should write reachable=true on the server node BasicInformation and return true in server mode', async () => {
+			useMode('server');
+			const serverNode = asType<ServerNodeStub>({ setStateOf: vi.fn().mockResolvedValue(undefined) });
+			setReadOnlyProperty(vacuum, 'serverNode', serverNode);
+			const setStateSpy = vi.spyOn(vacuum, 'setStateOf');
+
+			const result = await vacuum.setReachable(true);
+
+			expect(result).toBe(true);
+			expect(serverNode.setStateOf).toHaveBeenCalledWith(BasicInformationServer, { reachable: true });
+			expect(setStateSpy).not.toHaveBeenCalled();
+		});
+
+		it('should return false and skip writes when the endpoint is not ready', async () => {
+			useMode('matter', false);
+			const setStateSpy = vi.spyOn(vacuum, 'setStateOf').mockResolvedValue(undefined);
+
+			const result = await vacuum.setReachable(false);
+
+			expect(result).toBe(false);
+			expect(setStateSpy).not.toHaveBeenCalled();
+		});
+
+		it('should return false and skip writes in server mode when serverNode is undefined', async () => {
+			useMode('server');
+			setReadOnlyProperty(vacuum, 'serverNode', undefined);
+
+			const result = await vacuum.setReachable(false);
+
+			expect(result).toBe(false);
+		});
+
+		it('should return false and log a warning without throwing when setStateOf rejects', async () => {
+			useMode('matter');
+			vi.spyOn(vacuum, 'setStateOf').mockRejectedValue(new Error('write failed'));
+
+			const result = await vacuum.setReachable(false);
+
+			expect(result).toBe(false);
+			expect(vacuum.log.warn).toHaveBeenCalledWith(expect.stringContaining('write failed'));
+		});
 	});
 
 	describe('buildPendingProgressSeed', () => {
@@ -180,6 +242,39 @@ describe('RoborockVacuumCleaner', () => {
 				expect(updateSpy).not.toHaveBeenCalled();
 			},
 		);
+
+		describe('run-start seed marker', () => {
+			afterEach(() => {
+				vi.useRealTimers();
+			});
+
+			it('should set runStartSeededAtMs to Date.now() when Docked seeds progress', async () => {
+				// Arrange
+				vi.useFakeTimers();
+				vi.setSystemTime(new Date('2026-10-18T10:00:00Z'));
+				mockOperationalState(RvcOperationalState.OperationalState.Docked);
+				vi.spyOn(vacuum, 'updateAttribute').mockResolvedValue(true);
+
+				// Act
+				await vacuum.resetProgressForNewRun();
+
+				// Assert
+				expect(vacuum.runStartSeededAtMs).toBe(Date.parse('2026-10-18T10:00:00Z'));
+			});
+
+			it('should leave runStartSeededAtMs null when Running skips the reset', async () => {
+				// Arrange
+				mockOperationalState(RvcOperationalState.OperationalState.Running);
+				vi.spyOn(vacuum, 'updateAttribute').mockResolvedValue(true);
+
+				// Act
+				await vacuum.resetProgressForNewRun();
+
+				// Assert
+				expect(vacuum.runStartSeededAtMs).toBeNull();
+				expect(roborockService.setProgress).not.toHaveBeenCalled();
+			});
+		});
 	});
 
 	describe('resolveAllRoomsForActiveMap', () => {
