@@ -164,7 +164,11 @@ export class RoborockService {
 			this.pollingService.activateConsumablePollingOverLocal(device, (duid, status) => {
 				void this.deviceNotify?.({
 					type: NotifyMessageTypes.ConsumableUpdate,
-					data: { duid, filterWorkTimeSec: status.filterWorkTimeSec },
+					data: {
+						duid,
+						filterWorkTimeSec: status.filterWorkTimeSec,
+						filterConditionPercent: status.filterConditionPercent,
+					},
 				});
 			});
 		}

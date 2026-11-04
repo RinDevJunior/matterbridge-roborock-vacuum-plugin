@@ -50,6 +50,7 @@ It is version-controlled — commit and push changes so teammates can pull the l
 - Filter monitoring config flag (Sep 25, 2026 addendum): opt-in `advancedFeature.settings.enableFilterMonitoring` (default `false`) gates cluster creation + reset-command + consumable polling. Gates at: `roborockVacuumCleaner` line 280 (AND with `isV1Device`), stored as `private readonly supportsFilterMonitoring` field, reset handler at line 226, consumable polling in `roborockService.activateDeviceNotify`. Follows exact pattern of `enableLiveMapUpdates`/`enableEstimatedEndTime`.
 - Consumable/filter-life DPs exist in the wire protocol but are unread: V1 `Protocol.ts` has `main_brush_work_time=125`/`side_brush_work_time=126`/`filter_work_time=127`; Q10 `Q10RequestCode.ts` mirrors them (125-127) + `reset_filter=22` etc — `b01StatusListener.ts`/`V10MessageDispatcher.ts` never read/request them. Rated-life constants (main brush 300h, side 200h, filter 150h, sensor 30h) confirmed by 2 independent reference repos (python-roborock `const.py`, ioBroker `V1ConsumableService.ts`). Q10's DP unit (percent vs elapsed-seconds) is only medium-confidence — no real capture disambiguates.
 - Q7 has zero brush/filter/consumable data source at any layer (`Q7RequestCode.ts` string-prop system, no numeric DPS keyspace) — permanent exclusion for any consumable-monitoring feature, not a gap to fill later.
+- Filter monitoring → Q10 (Nov 4, 2026 plan): `ConsumableStatus` gets optional `filterConditionPercent` (DP127 `filter_life`, assumed already a 0-100 percent, not elapsed-sec like V1) + `resolveFilterConditionPercent()` merges both shapes; gate widened to `isV1Device||isQ10Device`. DP127/DP22 semantics unverified on real hardware — see `workspace/filter-monitoring-q10/plan.md`.
 
 ## Test Patterns
 
@@ -76,6 +77,7 @@ It is version-controlled — commit and push changes so teammates can pull the l
 - `resolveAreaFromCleaningInfo`'s falsy-zero check is fixed (`mappedArea === undefined`, `serviceAreaHandler.ts:405`) — confirmed correct Jul 25, no gap.
 - `modeResolver.ts` `createDefaultModeResolver`/`createSmartModeResolver` OneTime branch (pre-fix Jul 22) always returned mode 11 regardless of `configs`; real `seq_type` reaches it on any non-B01 device. Fix: gate on `configs.some(mode===11)`, computed once per factory call.
 - `errorStateHandler.ts` `handleErrorOccurred` (fixed Sep 13 2026): `!includeDockStationStatus` guard did bare `return;` without clearing `operationalError`, sticking a vacuum `errorStateId` forever. Fix: `buildOperationalError` helper clears before early return; `errorStateDetails` on all writes.
+- `format:ci` reflows edited files mid-task (Nov 4): Edit anchors on wrapped lines fail; re-Read before further edits. Q10 `// #endregion` comments use one tab.
 - B01/Q10 currentArea (Sep 20, 2026): `resolveAreaFromCleaningInfo`/`RoomIndexMap.getAreaId` (`serviceAreaHandler.ts:392-444`) has no V1-only gate; `B01StatusListener.tryHandleQ10Push` now fills `cleaningInfo.segment_id` from `common_request`(101)→`clean_expand`(91)→`room_id_list`. No handler changes.
 
 ## Tooling & Environment

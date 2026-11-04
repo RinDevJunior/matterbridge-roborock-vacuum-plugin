@@ -69,3 +69,11 @@ export function isV1Device(pv: string, model: DeviceModel): boolean {
 		return false;
 	}
 }
+
+export function isQ10Device(pv: string, model: DeviceModel): boolean {
+	try {
+		return calculateProtocol(pv, model) === NewProtocolVersion.B01_Q10;
+	} catch {
+		return false;
+	}
+}
