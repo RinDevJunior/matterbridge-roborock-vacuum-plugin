@@ -8,7 +8,6 @@ import type { RoomIndexMap } from '../../core/application/models/index.js';
 import type { ConsumableStatus } from '../../model/ConsumableStatus.js';
 import type { PlatformConfigManager } from '../../platform/platformConfigManager.js';
 import { RoborockAuthenticateApi } from '../../roborockCommunication/api/authClient.js';
-import { RoborockIoTApi } from '../../roborockCommunication/api/iotClient.js';
 import { Device, UserData } from '../../roborockCommunication/models/index.js';
 import { AreaManagementService } from '../../services/areaManagementService.js';
 import { AuthenticationCoordinator } from '../../services/authentication/AuthenticationCoordinator.js';
@@ -462,7 +461,7 @@ describe('RoborockService - Comprehensive Coverage', () => {
 			const device: Device = { duid: 'test-duid' } as Device;
 			const capturedCallbacks: ((duid: string, status: ConsumableStatus) => void)[] = [];
 
-			vi.mocked(mockPollingService.activateConsumablePollingOverLocal)?.mockImplementation((d, cb) => {
+			vi.mocked(mockPollingService.activateConsumablePollingOverLocal)?.mockImplementation((_d, cb) => {
 				capturedCallbacks.push(cb);
 			});
 
@@ -478,11 +477,31 @@ describe('RoborockService - Comprehensive Coverage', () => {
 			});
 		});
 
+		it('should forward filterConditionPercent in the ConsumableUpdate payload when a Q10 status is received', () => {
+			const device: Device = { duid: 'test-duid' } as Device;
+			const capturedCallbacks: ((duid: string, status: ConsumableStatus) => void)[] = [];
+
+			vi.mocked(mockPollingService.activateConsumablePollingOverLocal)?.mockImplementation((_d, cb) => {
+				capturedCallbacks.push(cb);
+			});
+
+			service.setDeviceNotify(vi.fn());
+			service.activateDeviceNotify(device);
+
+			expect(capturedCallbacks.length).toBe(1);
+			const callback = capturedCallbacks[0];
+			callback('test-duid', { filterConditionPercent: 42 });
+			expect(service.deviceNotify).toHaveBeenCalledWith({
+				type: expect.stringContaining('ConsumableUpdate'),
+				data: { duid: 'test-duid', filterConditionPercent: 42 },
+			});
+		});
+
 		it('should not throw when deviceNotify is undefined', () => {
 			const device: Device = { duid: 'test-duid' } as Device;
 			const capturedCallbacks: ((duid: string, status: ConsumableStatus) => void)[] = [];
 
-			vi.mocked(mockPollingService.activateConsumablePollingOverLocal)?.mockImplementation((d, cb) => {
+			vi.mocked(mockPollingService.activateConsumablePollingOverLocal)?.mockImplementation((_d, cb) => {
 				capturedCallbacks.push(cb);
 			});
 

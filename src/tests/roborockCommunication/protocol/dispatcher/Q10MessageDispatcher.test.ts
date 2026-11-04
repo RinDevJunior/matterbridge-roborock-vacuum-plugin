@@ -2,7 +2,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { CleanModeSetting } from '../../../../behaviors/roborock.vacuum/core/CleanModeSetting.js';
 import { CleanSequenceType } from '../../../../behaviors/roborock.vacuum/enums/CleanSequenceType.js';
-import { RequestMessage } from '../../../../roborockCommunication/models/index.js';
+import { Q10RequestCode } from '../../../../roborockCommunication/enums/Q10RequestCode.js';
+import { RequestMessage, ResponseMessage } from '../../../../roborockCommunication/models/index.js';
 import { Q10MessageDispatcher } from '../../../../roborockCommunication/protocol/dispatcher/Q10MessageDispatcher.js';
 import { asPartial, asType } from '../../../helpers/testUtils.js';
 
@@ -259,6 +260,148 @@ describe('Q10MessageDispatcher', () => {
 			const setting = new CleanModeSetting(0, 0, 4, 1, CleanSequenceType.Persist);
 			await dispatcher.changeCleanMode(duid, setting);
 			expect(client.send).toHaveBeenCalledTimes(1);
+		});
+	});
+
+	describe('getConsumableStatus', () => {
+		it('should return filterConditionPercent when DP 127 is present in the push', async () => {
+			// Arrange
+			client.query.mockResolvedValue(42);
+
+			// Act
+			const result = await dispatcher.getConsumableStatus(duid);
+
+			// Assert
+			expect(result).toEqual({ filterConditionPercent: 42 });
+		});
+
+		it('should round a non-integer DP 127 value to the nearest integer', async () => {
+			// Arrange
+			client.query.mockResolvedValue(67.6);
+
+			// Act
+			const result = await dispatcher.getConsumableStatus(duid);
+
+			// Assert
+			expect(result).toEqual({ filterConditionPercent: 68 });
+		});
+
+		it('should clamp an out-of-range DP 127 value above 100 down to 100', async () => {
+			// Arrange
+			client.query.mockResolvedValue(150);
+
+			// Act
+			const result = await dispatcher.getConsumableStatus(duid);
+
+			// Assert
+			expect(result).toEqual({ filterConditionPercent: 100 });
+		});
+
+		it('should clamp a negative DP 127 value up to 0', async () => {
+			// Arrange
+			client.query.mockResolvedValue(-5);
+
+			// Act
+			const result = await dispatcher.getConsumableStatus(duid);
+
+			// Assert
+			expect(result).toEqual({ filterConditionPercent: 0 });
+		});
+
+		it('should return undefined without throwing when DP 127 is absent from the push', async () => {
+			// Arrange
+			client.query.mockResolvedValue(undefined);
+
+			// Act
+			const result = await dispatcher.getConsumableStatus(duid);
+
+			// Assert
+			expect(result).toBeUndefined();
+		});
+
+		it('should send a dps_request trigger with a messageId via client.query', async () => {
+			// Arrange
+			client.query.mockResolvedValue(10);
+
+			// Act
+			await dispatcher.getConsumableStatus(duid);
+
+			// Assert
+			expect(client.query).toHaveBeenCalledWith(
+				duid,
+				expect.objectContaining({ messageId: expect.any(Number), dps: { [Q10RequestCode.dps_request]: 1 } }),
+				expect.any(Function),
+			);
+		});
+
+		it('should resolve filter_life from msg.body when used as the query parseFn', async () => {
+			// Arrange
+			client.query.mockResolvedValue(undefined);
+			await dispatcher.getConsumableStatus(duid);
+			const parseFn = asType<(msg: ResponseMessage) => unknown>(vi.mocked(client.query).mock.calls[0]?.[2]);
+			const get = vi.fn().mockReturnValue(73);
+			const message = asType<ResponseMessage>({ body: { get } });
+
+			// Act
+			const parsed = parseFn(message);
+
+			// Assert
+			expect(parsed).toBe(73);
+			expect(get).toHaveBeenCalledWith(Q10RequestCode.filter_life);
+		});
+
+		it('should return undefined from the parseFn when the response has no body', async () => {
+			// Arrange
+			client.query.mockResolvedValue(undefined);
+			await dispatcher.getConsumableStatus(duid);
+			const parseFn = asType<(msg: ResponseMessage) => unknown>(vi.mocked(client.query).mock.calls[0]?.[2]);
+
+			// Act
+			const parsed = parseFn(asType<ResponseMessage>({ body: undefined }));
+
+			// Assert
+			expect(parsed).toBeUndefined();
+		});
+
+		it('should return undefined from the parseFn when DP 127 is not a number', async () => {
+			// Arrange
+			client.query.mockResolvedValue(undefined);
+			await dispatcher.getConsumableStatus(duid);
+			const parseFn = asType<(msg: ResponseMessage) => unknown>(vi.mocked(client.query).mock.calls[0]?.[2]);
+
+			// Act
+			const parsed = parseFn(asType<ResponseMessage>({ body: { get: vi.fn().mockReturnValue('abc') } }));
+
+			// Assert
+			expect(parsed).toBeUndefined();
+		});
+	});
+
+	describe('resetFilterConsumable', () => {
+		it('should send DP 22 reset_filter with value 1 via client.send', async () => {
+			// Arrange
+			const expectedDps = { [Q10RequestCode.reset_filter]: 1 };
+
+			// Act
+			await dispatcher.resetFilterConsumable(duid);
+
+			// Assert
+			expect(client.send).toHaveBeenCalledTimes(1);
+			expect(client.send).toHaveBeenCalledWith(
+				duid,
+				expect.objectContaining({ messageId: expect.any(Number), dps: expectedDps }),
+			);
+		});
+
+		it('should not call client.query because the reset is fire-and-forget', async () => {
+			// Arrange
+			// (no additional setup needed; client is fresh per test)
+
+			// Act
+			await dispatcher.resetFilterConsumable(duid);
+
+			// Assert
+			expect(client.query).not.toHaveBeenCalled();
 		});
 	});
 });

@@ -1,8 +1,9 @@
 import { describe, expect, it } from 'vitest';
 
-import { NewProtocolVersion, ProtocolVersion } from '../../../../roborockCommunication/enums/index.js';
+import { ProtocolVersion } from '../../../../roborockCommunication/enums/index.js';
 import { DeviceModel } from '../../../../roborockCommunication/models/deviceModel.js';
 import {
+	isQ10Device,
 	isV1Device,
 	MessageDispatcherFactory,
 } from '../../../../roborockCommunication/protocol/dispatcher/dispatcherFactory.js';
@@ -145,6 +146,66 @@ describe('MessageDispatcherFactory', () => {
 
 		it('should return false when model is undefined for B01 (no throw)', () => {
 			const result = isV1Device(ProtocolVersion.B01, undefined as unknown as DeviceModel);
+			expect(result).toBe(false);
+		});
+	});
+
+	describe('isQ10Device', () => {
+		it('should return true for a B01 Q10 model (roborock.vacuum.ss07)', () => {
+			// Arrange
+			const pv = ProtocolVersion.B01;
+			const model = DeviceModel.Q10_S5_PLUS;
+
+			// Act
+			const result = isQ10Device(pv, model);
+
+			// Assert
+			expect(result).toBe(true);
+		});
+
+		it('should return false for a B01 Q7 model (short code starts with sc)', () => {
+			// Arrange
+			const pv = ProtocolVersion.B01;
+			const model = DeviceModel.Q7;
+
+			// Act
+			const result = isQ10Device(pv, model);
+
+			// Assert
+			expect(result).toBe(false);
+		});
+
+		it('should return false for a V1 device (pv 1.0, S8)', () => {
+			// Arrange
+			const pv = ProtocolVersion.V1;
+			const model = DeviceModel.S8;
+
+			// Act
+			const result = isQ10Device(pv, model);
+
+			// Assert
+			expect(result).toBe(false);
+		});
+
+		it('should return false when the protocol is unsupported (no throw)', () => {
+			// Arrange
+			const pv = 'X99';
+
+			// Act
+			const result = isQ10Device(pv, DeviceModel.S7);
+
+			// Assert
+			expect(result).toBe(false);
+		});
+
+		it('should return false when the B01 model code is unknown (no throw)', () => {
+			// Arrange
+			const model = 'roborock.vacuum.zz01' as DeviceModel;
+
+			// Act
+			const result = isQ10Device(ProtocolVersion.B01, model);
+
+			// Assert
 			expect(result).toBe(false);
 		});
 	});

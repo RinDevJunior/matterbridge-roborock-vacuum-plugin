@@ -4,7 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { RoborockMatterbridgePlatform } from '../../../module.js';
 import { handleConsumableUpdate } from '../../../runtimes/handlers/consumableStateHandler.js';
 import type { RoborockVacuumCleaner } from '../../../types/roborockVacuumCleaner.js';
-import { asPartial, createMockLogger } from '../../helpers/testUtils.js';
+import { asPartial, asType, createMockLogger } from '../../helpers/testUtils.js';
 
 describe('consumableStateHandler', () => {
 	let mockRobot: ReturnType<typeof createMockRobot>;
@@ -30,6 +30,64 @@ describe('consumableStateHandler', () => {
 
 	afterEach(() => {
 		vi.clearAllMocks();
+	});
+
+	describe('handleConsumableUpdate (Q10 filterConditionPercent)', () => {
+		it('should update condition to 42 and changeIndication to Ok when filterConditionPercent is 42', async () => {
+			// Arrange
+			const data = { duid: 'test-duid', filterConditionPercent: 42 };
+
+			// Act
+			await handleConsumableUpdate(mockRobot, data, asType<RoborockMatterbridgePlatform>(mockPlatform));
+
+			// Assert
+			expect(mockRobot.updateAttribute).toHaveBeenCalledWith(
+				HepaFilterMonitoring.id,
+				'condition',
+				42,
+				mockPlatform.log,
+			);
+			expect(mockRobot.updateAttribute).toHaveBeenCalledWith(
+				HepaFilterMonitoring.id,
+				'changeIndication',
+				ResourceMonitoring.ChangeIndication.Ok,
+				mockPlatform.log,
+			);
+			expect(mockRobot.updateAttribute).toHaveBeenCalledTimes(2);
+		});
+
+		it('should update changeIndication to Critical when filterConditionPercent is 3', async () => {
+			// Arrange
+			const data = { duid: 'test-duid', filterConditionPercent: 3 };
+
+			// Act
+			await handleConsumableUpdate(mockRobot, data, asType<RoborockMatterbridgePlatform>(mockPlatform));
+
+			// Assert
+			expect(mockRobot.updateAttribute).toHaveBeenCalledWith(HepaFilterMonitoring.id, 'condition', 3, mockPlatform.log);
+			expect(mockRobot.updateAttribute).toHaveBeenCalledWith(
+				HepaFilterMonitoring.id,
+				'changeIndication',
+				ResourceMonitoring.ChangeIndication.Critical,
+				mockPlatform.log,
+			);
+		});
+
+		it('should clamp an out-of-range filterConditionPercent to 100 before updating condition', async () => {
+			// Arrange
+			const data = { duid: 'test-duid', filterConditionPercent: 150 };
+
+			// Act
+			await handleConsumableUpdate(mockRobot, data, asType<RoborockMatterbridgePlatform>(mockPlatform));
+
+			// Assert
+			expect(mockRobot.updateAttribute).toHaveBeenCalledWith(
+				HepaFilterMonitoring.id,
+				'condition',
+				100,
+				mockPlatform.log,
+			);
+		});
 	});
 
 	describe('handleConsumableUpdate', () => {
