@@ -963,7 +963,7 @@ describe('RoborockVacuumCleaner', () => {
 		});
 	});
 
-	describe('HepaFilterMonitoring cluster (V1-protocol only)', () => {
+	describe('HepaFilterMonitoring cluster (V1 and Q10 protocols)', () => {
 		it('should have HepaFilterMonitoring cluster present for V1 protocol device - can read condition attribute', () => {
 			const v1Device = asType<Device>({
 				duid: 'duid-v1',
@@ -981,21 +981,59 @@ describe('RoborockVacuumCleaner', () => {
 			expect(condition).toBe(100);
 		});
 
-		it('should NOT have HepaFilterMonitoring cluster for Q10 (B01) device - condition attribute returns undefined', () => {
+		it('should have HepaFilterMonitoring cluster present for Q10 (B01) device when filter monitoring is enabled', () => {
 			const q10Device = asType<Device>({
 				duid: 'duid-q10',
-				pv: '2.8.0',
+				pv: 'B01',
 				specs: { model: DeviceModel.Q10_S5_PLUS, firmwareVersion: '1.0.0' },
 				serialNumber: 'serial-q10',
 				name: 'Q10Vac',
 				scenes: [],
 			});
-			const q10Vacuum = new RoborockVacuumCleaner(q10Device, homeInfo, configManager, roborockService, logger);
+			const enabledConfigManager = PlatformConfigManager.create(
+				asPartial<RoborockPluginPlatformConfig>({
+					pluginConfiguration: asPartial<PluginConfiguration>({
+						enableMultipleMap: false,
+						enableServerMode: false,
+					}),
+					advancedFeature: {
+						enableAdvancedFeature: true,
+						settings: { ...createDefaultAdvancedFeature().settings, enableFilterMonitoring: true },
+					},
+				}),
+				createMockLogger(),
+			);
+			const createClusterSpy = vi.spyOn(
+				RoborockVacuumCleaner.prototype,
+				'createDefaultHepaFilterMonitoringClusterServer',
+			);
 
-			// Q10 devices should NOT have HepaFilterMonitoring cluster
-			vi.spyOn(q10Vacuum, 'getAttribute').mockReturnValue(undefined);
-			const condition = q10Vacuum.getAttribute(HepaFilterMonitoring.id, 'condition', logger);
-			expect(condition).toBeUndefined();
+			new RoborockVacuumCleaner(q10Device, homeInfo, enabledConfigManager, roborockService, logger);
+
+			// Q10 devices now get the HepaFilterMonitoring cluster when enableFilterMonitoring is on
+			expect(createClusterSpy).toHaveBeenCalledTimes(1);
+			createClusterSpy.mockRestore();
+		});
+
+		it('should NOT have HepaFilterMonitoring cluster for Q10 (B01) device when filter monitoring is disabled', () => {
+			const q10Device = asType<Device>({
+				duid: 'duid-q10-disabled',
+				pv: 'B01',
+				specs: { model: DeviceModel.Q10_S5_PLUS, firmwareVersion: '1.0.0' },
+				serialNumber: 'serial-q10-disabled',
+				name: 'Q10VacDisabled',
+				scenes: [],
+			});
+			const createClusterSpy = vi.spyOn(
+				RoborockVacuumCleaner.prototype,
+				'createDefaultHepaFilterMonitoringClusterServer',
+			);
+
+			new RoborockVacuumCleaner(q10Device, homeInfo, configManager, roborockService, logger);
+
+			// Default configManager has enableFilterMonitoring off, so the cluster must stay absent
+			expect(createClusterSpy).not.toHaveBeenCalled();
+			createClusterSpy.mockRestore();
 		});
 
 		it('should NOT have HepaFilterMonitoring cluster for Q7 (B01) device - condition attribute returns undefined', () => {
@@ -1084,13 +1122,57 @@ describe('RoborockVacuumCleaner', () => {
 			expect(call).toBeUndefined();
 		});
 
-		it('Q10 device configureHandler does not register HepaFilterMonitoring.resetCondition', () => {
+		it('should call executeCommand(RESET_FILTER) when resetCondition handler is invoked (Q10 device)', async () => {
 			const q10Device = asType<Device>({
 				duid: 'duid-q10',
-				pv: '2.8.0',
+				pv: 'B01',
 				specs: { model: DeviceModel.Q10_S5_PLUS, firmwareVersion: '1.0.0' },
 				serialNumber: 'serial-q10',
 				name: 'Q10Vac',
+				scenes: [],
+			});
+			const enabledConfigManager = PlatformConfigManager.create(
+				asPartial<RoborockPluginPlatformConfig>({
+					pluginConfiguration: asPartial<PluginConfiguration>({
+						enableMultipleMap: false,
+						enableServerMode: false,
+					}),
+					advancedFeature: {
+						enableAdvancedFeature: true,
+						settings: { ...createDefaultAdvancedFeature().settings, enableFilterMonitoring: true },
+					},
+				}),
+				createMockLogger(),
+			);
+			const q10Vacuum = new RoborockVacuumCleaner(q10Device, homeInfo, enabledConfigManager, roborockService, logger);
+
+			const behaviorHandler = asPartial<BehaviorFactoryResult>({
+				executeCommand: vi.fn().mockResolvedValue(undefined),
+				setCommandHandler: vi.fn(),
+				log: logger,
+				commands: {},
+			});
+
+			const addHandlerSpy = vi.spyOn(q10Vacuum, 'addCommandHandler');
+			q10Vacuum.configureHandler(behaviorHandler);
+
+			const call = addHandlerSpy.mock.calls.find(([key]) => key === 'HepaFilterMonitoring.resetCondition');
+			expect(call).toBeDefined();
+			if (call) {
+				const handler = call[1] as (context: unknown) => Promise<void>;
+				await handler({});
+			}
+
+			expect(behaviorHandler.executeCommand).toHaveBeenCalledWith(CommandNames.RESET_FILTER);
+		});
+
+		it('Q10 device does NOT register resetCondition handler when enableFilterMonitoring is false', () => {
+			const q10Device = asType<Device>({
+				duid: 'duid-q10-disabled',
+				pv: 'B01',
+				specs: { model: DeviceModel.Q10_S5_PLUS, firmwareVersion: '1.0.0' },
+				serialNumber: 'serial-q10-disabled',
+				name: 'Q10VacDisabled',
 				scenes: [],
 			});
 			const q10Vacuum = new RoborockVacuumCleaner(q10Device, homeInfo, configManager, roborockService, logger);
@@ -1102,8 +1184,11 @@ describe('RoborockVacuumCleaner', () => {
 				commands: {},
 			});
 
-			// Q10 devices do not register resetCondition handler; should not throw
-			expect(() => q10Vacuum.configureHandler(mockBehaviorHandler)).not.toThrow();
+			const addHandlerSpy = vi.spyOn(q10Vacuum, 'addCommandHandler');
+			q10Vacuum.configureHandler(mockBehaviorHandler);
+
+			const call = addHandlerSpy.mock.calls.find(([key]) => key === 'HepaFilterMonitoring.resetCondition');
+			expect(call).toBeUndefined();
 		});
 	});
 

@@ -1,6 +1,10 @@
 import { AnsiLogger } from 'matterbridge/logger';
 
-import { computeFilterConditionPercent, FILTER_RATED_LIFE_SEC } from '../../model/ConsumableStatus.js';
+import {
+	computeFilterConditionPercent,
+	FILTER_RATED_LIFE_SEC,
+	resolveFilterConditionPercent,
+} from '../../model/ConsumableStatus.js';
 import { RequestMessage } from '../../roborockCommunication/models/requestMessage.js';
 import { connectDevice } from '../connection.js';
 import { CliSession } from '../types.js';
@@ -51,6 +55,18 @@ export async function cmdConsumable(
 	try {
 		if (!dispatcher.getConsumableStatus) {
 			console.log('Consumables are only available on V1 (non-B01) devices.');
+			return;
+		}
+		if (dispatcher.dispatcherName === 'Q10MessageDispatcher') {
+			const status = await dispatcher.getConsumableStatus(duid);
+			if (!status) {
+				console.log('No consumable data received.');
+				return;
+			}
+			console.log(`Consumables for device ${duid}:\n`);
+			console.log(
+				`  filter_life:  ${resolveFilterConditionPercent(status)}% remaining (Q10/B01, unverified semantics)`,
+			);
 			return;
 		}
 		const raw = await dispatcher.getCustomMessage<Record<string, unknown> | undefined>(

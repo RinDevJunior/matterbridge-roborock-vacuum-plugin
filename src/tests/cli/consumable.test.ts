@@ -36,6 +36,16 @@ function createClientRouterStub() {
 	return { disconnect: vi.fn().mockResolvedValue(undefined) };
 }
 
+function createQ10DispatcherStub(response: unknown) {
+	return {
+		dispatcherName: 'Q10MessageDispatcher',
+		getConsumableStatus: vi.fn().mockResolvedValue(response),
+		getCustomMessage: vi.fn(),
+		resetFilterConsumable: vi.fn(),
+		sendCustomMessage: vi.fn(),
+	};
+}
+
 function createV1DispatcherStub(response: unknown) {
 	return {
 		getConsumableStatus: vi.fn().mockResolvedValue(undefined),
@@ -258,6 +268,37 @@ describe('cmdConsumable', () => {
 
 		// Assert
 		expect(consoleLogSpy).toHaveBeenCalledWith('Consumables are only available on V1 (non-B01) devices.');
+		expect(dispatcher.getCustomMessage).not.toHaveBeenCalled();
+		expect(clientRouter.disconnect).toHaveBeenCalledTimes(1);
+	});
+
+	it('should print the Q10 filter_life percent and never call getCustomMessage for a Q10 device', async () => {
+		// Arrange
+		const clientRouter = createClientRouterStub();
+		const dispatcher = createQ10DispatcherStub({ filterConditionPercent: 73 });
+		mockConnectDevice.mockResolvedValue({ clientRouter, dispatcher });
+
+		// Act
+		await cmdConsumable('duid-q10', createSession(), logger);
+
+		// Assert
+		expect(dispatcher.getConsumableStatus).toHaveBeenCalledWith('duid-q10');
+		expect(consoleLogSpy).toHaveBeenCalledWith(expect.stringContaining('73%'));
+		expect(dispatcher.getCustomMessage).not.toHaveBeenCalled();
+		expect(clientRouter.disconnect).toHaveBeenCalledTimes(1);
+	});
+
+	it('should print "No consumable data received." for a Q10 device when no filter status is returned', async () => {
+		// Arrange
+		const clientRouter = createClientRouterStub();
+		const dispatcher = createQ10DispatcherStub(undefined);
+		mockConnectDevice.mockResolvedValue({ clientRouter, dispatcher });
+
+		// Act
+		await cmdConsumable('duid-q10', createSession(), logger);
+
+		// Assert
+		expect(consoleLogSpy).toHaveBeenCalledWith('No consumable data received.');
 		expect(dispatcher.getCustomMessage).not.toHaveBeenCalled();
 		expect(clientRouter.disconnect).toHaveBeenCalledTimes(1);
 	});

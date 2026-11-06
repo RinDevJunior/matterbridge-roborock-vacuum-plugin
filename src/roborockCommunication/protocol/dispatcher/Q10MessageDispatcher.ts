@@ -3,6 +3,7 @@ import { AnsiLogger } from 'matterbridge/logger';
 import { CleanModeSetting } from '../../../behaviors/roborock.vacuum/core/CleanModeSetting.js';
 import { CleanSequenceType } from '../../../behaviors/roborock.vacuum/enums/CleanSequenceType.js';
 import { MapInfo } from '../../../core/application/models/index.js';
+import { ConsumableStatus } from '../../../model/ConsumableStatus.js';
 import { MapRoomResponse } from '../../../types/index.js';
 import { Q10RequestCode, Q10RequestMethod } from '../../enums/Q10RequestCode.js';
 import { B01VacuumModeResolver } from '../../helper/B01VacuumModeResolver.js';
@@ -93,6 +94,26 @@ export class Q10MessageDispatcher implements AbstractMessageDispatcher {
 			duid,
 			new RequestMessage({ messageId: this.messageId, dps: { [Q10RequestCode.multi_map_switch]: mapId } }),
 		);
+	}
+
+	public async getConsumableStatus(duid: string): Promise<ConsumableStatus | undefined> {
+		// DP 127 (filter_life) is assumed to already be a remaining-percent value (0-100), based on
+		// its "_life" naming (vs. V1's elapsed-seconds "_work_time") — unverified on real hardware.
+		// If this proves wrong, only this method needs to change.
+		const request = new RequestMessage({ messageId: this.messageId, dps: { [Q10RequestCode.dps_request]: 1 } });
+		const filterLife = await this.client.query<number>(duid, request, (msg) => {
+			const value = msg.body?.get(Q10RequestCode.filter_life);
+			return typeof value === 'number' ? value : undefined;
+		});
+		if (filterLife === undefined) return undefined;
+		return { filterConditionPercent: Math.max(0, Math.min(100, Math.round(filterLife))) };
+	}
+
+	public async resetFilterConsumable(duid: string): Promise<void> {
+		// DP 22 (reset_filter) trigger value is unverified on real hardware. Sends 1, following the
+		// boolean-trigger convention of sibling reset_* DPs.
+		const request = new RequestMessage({ messageId: this.messageId, dps: { [Q10RequestCode.reset_filter]: 1 } });
+		await this.client.send(duid, request);
 	}
 	// #endregion Core Data Retrieval
 

@@ -138,13 +138,14 @@ export interface ActiveMapChangedPayload {
 
 /**
  * Consumable (filter) update message payload.
- * Contains filter work time from V1 consumable status polling.
+ * V1 sets filterWorkTimeSec (elapsed seconds); B01/Q10 sets filterConditionPercent (remaining percent).
  */
 export interface ConsumableUpdatePayload {
 	type: NotifyMessageTypes.ConsumableUpdate;
 	data: {
 		duid: string;
-		filterWorkTimeSec: number;
+		filterWorkTimeSec?: number;
+		filterConditionPercent?: number;
 	};
 }
 

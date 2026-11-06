@@ -15,7 +15,7 @@ import { getOperationalStates, getSupportedCleanModes, getSupportedRoutines } fr
 import { DockStationStatus } from '../model/DockStationStatus.js';
 import { PlatformConfigManager } from '../platform/platformConfigManager.js';
 import { Device } from '../roborockCommunication/models/index.js';
-import { isV1Device } from '../roborockCommunication/protocol/dispatcher/dispatcherFactory.js';
+import { isQ10Device, isV1Device } from '../roborockCommunication/protocol/dispatcher/dispatcherFactory.js';
 import {
 	buildProgressUpdate,
 	getNextPendingArea,
@@ -332,7 +332,9 @@ export class RoborockVacuumCleaner extends RoboticVacuumCleaner {
 			supportedMaps,
 			supportedAreaAndRoutines,
 			operationalState,
-			supportsFilterMonitoring: isV1Device(device.pv, device.specs.model) && configManager.isFilterMonitoringEnabled,
+			supportsFilterMonitoring:
+				(isV1Device(device.pv, device.specs.model) || isQ10Device(device.pv, device.specs.model)) &&
+				configManager.isFilterMonitoringEnabled,
 		};
 	}
 
