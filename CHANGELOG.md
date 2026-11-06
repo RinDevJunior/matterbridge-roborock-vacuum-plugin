@@ -4,6 +4,20 @@ All notable changes to this project will be documented in this file.
 
 ---
 
+## [1.2.0-rc10] - 2026-11-06
+
+### Added
+
+- **Q10 filter-life reporting** — Q10 devices now report filter life to Apple Home (#199).
+
+### Changed
+
+- **Minimum Matterbridge raised to 3.11.1** — You may need to run `npm install -g matterbridge@3.11.1` (#198).
+
+<a href="https://www.buymeacoffee.com/rinnvspktr" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/default-orange.png" alt="Buy Me A Coffee" height="41" width="174"></a>
+
+---
+
 ## [1.2.0-rc09] - 2026-10-23
 
 ### Added
