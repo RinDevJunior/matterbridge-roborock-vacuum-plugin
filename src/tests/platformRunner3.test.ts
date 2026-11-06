@@ -56,8 +56,8 @@ describe('PlatformRunner.updateRobotWithPayload - resolved state logging', () =>
 			}),
 			updateAttribute: vi.fn().mockResolvedValue(true),
 			getAttribute: vi.fn().mockImplementation((clusterId: number, attribute: string) => {
-				if (clusterId === RvcRunMode.Cluster.id && attribute === 'currentMode') return 1;
-				if (clusterId === RvcOperationalState.Cluster.id && attribute === 'operationalState')
+				if (clusterId === RvcRunMode.id && attribute === 'currentMode') return 1;
+				if (clusterId === RvcOperationalState.id && attribute === 'operationalState')
 					return RvcOperationalState.OperationalState.Paused;
 			}),
 			setAttribute: vi.fn(),
@@ -96,9 +96,9 @@ describe('PlatformRunner.updateRobotWithPayload - resolved state logging', () =>
 		// console.log('log.notice output:\n', logOutput);
 		expect(logOutput).toContain('[test-duid] [test-device] Resolved state:');
 
-		expect(robot.updateAttribute).toHaveBeenCalledWith(RvcRunMode.Cluster.id, 'currentMode', 2, mockLogger);
+		expect(robot.updateAttribute).toHaveBeenCalledWith(RvcRunMode.id, 'currentMode', 2, mockLogger);
 		expect(robot.updateAttribute).toHaveBeenCalledWith(
-			RvcOperationalState.Cluster.id,
+			RvcOperationalState.id,
 			'operationalState',
 			RvcOperationalState.OperationalState.Paused,
 			mockLogger,

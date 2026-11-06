@@ -1,9 +1,11 @@
 import { WATCHDOG_CHECK_INTERVAL_MS, WATCHDOG_THRESHOLD_MS } from './constants/index.js';
 import { RoborockMatterbridgePlatform } from './module.js';
 import { BurstPollingManager } from './platform/burstPollingManager.js';
+import { ReachabilityMonitor } from './platform/reachabilityMonitor.js';
 import { updateFromHomeData } from './runtimes/handleHomeDataMessage.js';
 import { handleBatteryUpdate } from './runtimes/handlers/batteryStateHandler.js';
 import { handleCleanModeUpdate } from './runtimes/handlers/cleanModeHandler.js';
+import { handleConsumableUpdate } from './runtimes/handlers/consumableStateHandler.js';
 import { handleDeviceStatusSimpleUpdate, handleDeviceStatusUpdate } from './runtimes/handlers/deviceStateHandler.js';
 import { handleErrorOccurred } from './runtimes/handlers/errorStateHandler.js';
 import { handleActiveMapChanged, handleServiceAreaUpdate } from './runtimes/handlers/serviceAreaHandler.js';
@@ -18,9 +20,19 @@ export class PlatformRunner {
 	private watchdogTimer: NodeJS.Timeout | undefined;
 
 	public readonly burstPolling: BurstPollingManager;
+	public readonly reachability: ReachabilityMonitor;
 
 	constructor(private readonly platform: RoborockMatterbridgePlatform) {
 		this.burstPolling = new BurstPollingManager(platform);
+		this.reachability = new ReachabilityMonitor({
+			isEnabled: () => platform.configManager.isReachabilityEnabled,
+			getDelayMs: () => platform.configManager.reachabilityDelayMs,
+			getRobotDuids: () => [...platform.registry.robotsMap.keys()],
+			apply: async (duid, reachable) => {
+				return (await platform.registry.getRobot(duid)?.setReachable(reachable)) ?? false;
+			},
+			log: platform.log,
+		});
 	}
 
 	public startWatchdog(): void {
@@ -33,6 +45,7 @@ export class PlatformRunner {
 					);
 				}
 			}
+			this.reachability.sweep();
 		}, WATCHDOG_CHECK_INTERVAL_MS);
 	}
 
@@ -41,6 +54,7 @@ export class PlatformRunner {
 			clearInterval(this.watchdogTimer);
 			this.watchdogTimer = undefined;
 		}
+		this.reachability.reset();
 	}
 
 	public activateHandlerFunctions(): void {
@@ -106,12 +120,18 @@ export class PlatformRunner {
 					handleCleanModeUpdate(robot, data, this.platform),
 				);
 				break;
+			case NotifyMessageTypes.ConsumableUpdate:
+				await this.executeWithRobot(payload.data.duid, payload.data, (robot, data) =>
+					handleConsumableUpdate(robot, data, this.platform),
+				);
+				break;
 			case NotifyMessageTypes.ServiceAreaUpdate:
 				await this.executeWithRobot(payload.data.duid, payload.data, (robot, data) =>
 					handleServiceAreaUpdate(robot, data, this.platform),
 				);
 				break;
 			case NotifyMessageTypes.HomeData:
+				this.reachability.applyCloudStatus(payload.data.devices);
 				await updateFromHomeData(payload.data, this.platform);
 				break;
 			case NotifyMessageTypes.ActiveMapChanged:

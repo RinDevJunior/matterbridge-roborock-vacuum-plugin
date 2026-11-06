@@ -5,6 +5,7 @@ import { CleanModeSetting } from '../../behaviors/roborock.vacuum/core/CleanMode
 import { CleanSequenceType } from '../../behaviors/roborock.vacuum/enums/CleanSequenceType.js';
 import { DeviceError } from '../../errors/index.js';
 import { RoborockIoTApi } from '../../roborockCommunication/api/iotClient.js';
+import { AbstractMessageDispatcher } from '../../roborockCommunication/protocol/dispatcher/abstractMessageDispatcher.js';
 import { V10MessageDispatcher } from '../../roborockCommunication/protocol/dispatcher/V10MessageDispatcher.js';
 import { MessageRoutingService } from '../../services/messageRoutingService.js';
 import { asPartial } from '../testUtils.js';
@@ -545,6 +546,74 @@ describe('MessageRoutingService', () => {
 			await expect(messageService.requestHomeMapPush('unregistered-duid')).rejects.toThrow(
 				'MessageDispatcher not initialized for device unregistered-duid',
 			);
+		});
+	});
+
+	describe('getConsumableStatus', () => {
+		const testDuid = 'test-device-consumable';
+
+		it('should delegate to dispatcher.getConsumableStatus when dispatcher implements it', async () => {
+			// Arrange
+			const mockDispatcherWithConsumable = asPartial<AbstractMessageDispatcher>({
+				getConsumableStatus: vi.fn().mockResolvedValue({ filterWorkTimeSec: 100000 }),
+			});
+			messageService.registerMessageDispatcher(testDuid, mockDispatcherWithConsumable);
+
+			// Act
+			const result = await messageService.getConsumableStatus(testDuid);
+
+			// Assert
+			expect(result).toEqual({ filterWorkTimeSec: 100000 });
+			expect(mockDispatcherWithConsumable.getConsumableStatus).toHaveBeenCalledWith(testDuid);
+		});
+
+		it('should resolve to undefined when dispatcher does not implement getConsumableStatus', async () => {
+			// Arrange
+			const mockDispatcherWithout = asPartial<AbstractMessageDispatcher>({});
+			messageService.registerMessageDispatcher(testDuid, mockDispatcherWithout);
+
+			// Act
+			const result = await messageService.getConsumableStatus(testDuid);
+
+			// Assert
+			expect(result).toBeUndefined();
+		});
+
+		it('should throw DeviceError when dispatcher not registered', async () => {
+			// Act & Assert
+			await expect(messageService.getConsumableStatus('unregistered-duid')).rejects.toThrow(DeviceError);
+		});
+	});
+
+	describe('resetFilterConsumable', () => {
+		const testDuid = 'test-device-reset-filter';
+
+		it('should delegate to dispatcher.resetFilterConsumable when dispatcher implements it', async () => {
+			// Arrange
+			const mockDispatcherWithReset = asPartial<AbstractMessageDispatcher>({
+				resetFilterConsumable: vi.fn().mockResolvedValue(undefined),
+			});
+			messageService.registerMessageDispatcher(testDuid, mockDispatcherWithReset);
+
+			// Act
+			await messageService.resetFilterConsumable(testDuid);
+
+			// Assert
+			expect(mockDispatcherWithReset.resetFilterConsumable).toHaveBeenCalledWith(testDuid);
+		});
+
+		it('should resolve without throwing when dispatcher does not implement resetFilterConsumable', async () => {
+			// Arrange
+			const mockDispatcherWithout = asPartial<AbstractMessageDispatcher>({});
+			messageService.registerMessageDispatcher(testDuid, mockDispatcherWithout);
+
+			// Act & Assert
+			await expect(messageService.resetFilterConsumable(testDuid)).resolves.not.toThrow();
+		});
+
+		it('should throw DeviceError when dispatcher not registered', async () => {
+			// Act & Assert
+			await expect(messageService.resetFilterConsumable('unregistered-duid')).rejects.toThrow(DeviceError);
 		});
 	});
 });

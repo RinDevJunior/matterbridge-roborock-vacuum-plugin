@@ -26,6 +26,7 @@ export function configureBehavior(
 	onActionTriggered: () => void,
 	featureSet?: string,
 	newFeatureSet?: string,
+	onCleaningStart?: () => void | Promise<void>,
 ): BehaviorFactoryResult {
 	const modelKey = forceRunAtDefault ? '' : model;
 	const config = buildBehaviorConfig(modelKey, featureSet, newFeatureSet);
@@ -39,6 +40,7 @@ export function configureBehavior(
 		cleanModeSettings,
 		config,
 		onActionTriggered,
+		onCleaningStart,
 	);
 	return deviceHandler;
 }
@@ -52,6 +54,7 @@ function setCommandHandler(
 	cleanModeSettings: CleanModeSettings | undefined,
 	config: BehaviorConfig,
 	onActionTriggered: () => void,
+	onCleaningStart?: () => void | Promise<void>,
 ): void {
 	const runModeMap = getRunModeDisplayMap(config.runModeConfigs);
 	handler.setCommandHandler(CommandNames.CHANGE_TO_MODE, async (newMode: number) => {
@@ -63,6 +66,7 @@ function setCommandHandler(
 			cleanModeSettings,
 			cleanSettings: config.cleanSettings,
 			behaviorName: config.name,
+			onCleaningStart,
 		};
 		await config.registry.handle(duid, newMode, activity, context);
 		onActionTriggered();

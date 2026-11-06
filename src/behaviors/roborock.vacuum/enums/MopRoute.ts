@@ -4,5 +4,6 @@ export enum MopRoute {
 	Custom = 302,
 	DeepPlus = 303,
 	Fast = 304,
+	DeepPlusCn = 305,
 	Smart = 306,
 }

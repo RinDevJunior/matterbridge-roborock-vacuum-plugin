@@ -4,6 +4,7 @@ import { AnsiLogger } from 'matterbridge/logger';
 import { cmdB01MapInfo } from './commands/b01MapInfo.js';
 import { cmdB01PoseInfo } from './commands/b01PoseInfo.js';
 import { cmdCleanMode } from './commands/cleanMode.js';
+import { cmdConsumable } from './commands/consumable.js';
 import { cmdCustom } from './commands/custom.js';
 import { cmdDevices } from './commands/devices.js';
 import { cmdLegacyMapInfo } from './commands/legacyMapInfo.js';
@@ -100,6 +101,9 @@ export async function main(): Promise<void> {
 				break;
 			case 'clean-mode':
 				await cmdCleanMode(duid, session, logger, local);
+				break;
+			case 'consumable':
+				await cmdConsumable(duid, session, logger, local);
 				break;
 			case 'network-info':
 				await cmdNetworkInfo(duid, session, logger);

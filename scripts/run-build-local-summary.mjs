@@ -18,7 +18,7 @@ if (code !== 0) {
 	console.log('BUILD LOCAL FAIL');
 	const detail = `${stderr}\n${stdout}`
 		.trim()
-		.split('\n')
+		.split(/\r?\n/)
 		.filter((line) => line.trim().length > 0)
 		.slice(-MAX_LINES)
 		.join('\n');

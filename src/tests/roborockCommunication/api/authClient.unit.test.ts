@@ -1,9 +1,9 @@
 import type { AxiosInstance, AxiosStatic } from 'axios';
-import { describe, expect, it, vi } from 'vitest';
+import { describe, expect, it } from 'vitest';
 
 import { RoborockAuthenticateApi } from '../../../roborockCommunication/api/authClient.js';
 import { AuthenticateResponseCode } from '../../../roborockCommunication/enums/index.js';
-import { asPartial, asType, createMockLogger, mkUser } from '../../helpers/testUtils.js';
+import { asPartial, createMockLogger, mkUser } from '../../helpers/testUtils.js';
 
 describe('RoborockAuthenticateApi private helpers', () => {
 	const logger = createMockLogger();
@@ -62,5 +62,17 @@ describe('RoborockAuthenticateApi private helpers', () => {
 		api['loginWithAuthToken']('testuser', 'token123');
 		expect(api['username']).toBe('testuser');
 		expect(api['authToken']).toBe('token123');
+	});
+
+	it('authV4 throws readable message when user agreement must be accepted again (3006)', () => {
+		expect(() =>
+			api['authV4']('e', { code: AuthenticateResponseCode.InvalidUserAgreement, msg: 'x', data: undefined }),
+		).toThrow(/User agreement must be accepted again/);
+	});
+
+	it('authV4 throws readable message when user agreement is not accepted (3009)', () => {
+		expect(() =>
+			api['authV4']('e', { code: AuthenticateResponseCode.NoUserAgreement, msg: 'x', data: undefined }),
+		).toThrow(/You must accept the user agreement/);
 	});
 });

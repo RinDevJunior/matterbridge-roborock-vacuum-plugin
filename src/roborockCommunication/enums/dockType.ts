@@ -14,4 +14,5 @@ export enum DockType {
 	qrevo_s_dock = 15,
 	saros_r10_dock = 16,
 	saros_10_dock = 18,
+	type_49_dock = 49,
 }

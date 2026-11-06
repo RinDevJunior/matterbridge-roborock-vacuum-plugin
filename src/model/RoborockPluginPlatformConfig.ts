@@ -54,6 +54,10 @@ export interface AdvancedFeatureSetting {
 	emailNotificationSettings: EmailNotificationSettings;
 	enableLiveMapUpdates: boolean;
 	enableEstimatedEndTime?: boolean;
+	enableFilterMonitoring?: boolean;
+	enablePersistCleaningState?: boolean;
+	enableReachability?: boolean;
+	reachabilityDelaySeconds?: number;
 }
 
 export interface DeviceProductNameOverride {
@@ -133,6 +137,10 @@ export function createDefaultAdvancedFeature(): AdvancedFeatureConfiguration {
 			emailNotificationSettings: {},
 			enableLiveMapUpdates: false,
 			enableEstimatedEndTime: false,
+			enableFilterMonitoring: false,
+			enablePersistCleaningState: false,
+			enableReachability: false,
+			reachabilityDelaySeconds: 600,
 		},
 	};
 }

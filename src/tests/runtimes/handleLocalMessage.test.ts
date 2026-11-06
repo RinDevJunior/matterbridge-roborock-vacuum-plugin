@@ -47,7 +47,7 @@ describe('triggerDssError', () => {
 
 		expect(result).toBe(true);
 		expect(robot.updateAttribute).toHaveBeenCalledWith(
-			RvcOperationalState.Cluster.id,
+			RvcOperationalState.id,
 			'operationalState',
 			RvcOperationalState.OperationalState.Error,
 			platform.log,

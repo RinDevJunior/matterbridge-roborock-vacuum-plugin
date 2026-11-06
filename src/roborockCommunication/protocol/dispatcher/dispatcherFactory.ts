@@ -61,3 +61,19 @@ function calculateProtocol(protocol: ProtocolVersion | string, model: DeviceMode
 			throw new Error('Unsupported protocol version: ' + protocol);
 	}
 }
+
+export function isV1Device(pv: string, model: DeviceModel): boolean {
+	try {
+		return calculateProtocol(pv, model) === NewProtocolVersion.V1;
+	} catch {
+		return false;
+	}
+}
+
+export function isQ10Device(pv: string, model: DeviceModel): boolean {
+	try {
+		return calculateProtocol(pv, model) === NewProtocolVersion.B01_Q10;
+	} catch {
+		return false;
+	}
+}

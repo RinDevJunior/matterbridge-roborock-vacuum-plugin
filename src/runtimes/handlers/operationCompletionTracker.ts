@@ -47,11 +47,22 @@ export function captureSessionSnapshotFromResolved(resolvedState: ResolvedState)
 	};
 }
 
+export function resetOperationSessionTimers(robot: RoborockVacuumCleaner): void {
+	robot.operationSessionStartMs = null;
+	robot.operationPausedSinceMs = null;
+	robot.operationPausedAccumMs = 0;
+}
+
 export function trackOperationSessionTiming(
 	robot: RoborockVacuumCleaner,
 	before: OperationSessionSnapshot,
 	after: OperationSessionSnapshot,
 ): void {
+	if (!isCleaningOrMappingRunMode(before.runMode) && isCleaningOrMappingRunMode(after.runMode)) {
+		resetOperationSessionTimers(robot);
+		robot.operationSessionStartMs = Date.now();
+	}
+
 	if (isCleaningOrMappingRunMode(after.runMode) && robot.operationSessionStartMs === null) {
 		robot.operationSessionStartMs = Date.now();
 	}
@@ -103,6 +114,5 @@ export async function maybeEmitOperationCompletion(
 		log.error(`Failed to emit operationCompletion event: ${String(error)}`);
 	}
 
-	robot.operationSessionStartMs = null;
-	robot.operationPausedAccumMs = 0;
+	resetOperationSessionTimers(robot);
 }

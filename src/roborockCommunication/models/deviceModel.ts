@@ -26,5 +26,6 @@ export enum DeviceModel {
 	QREVO_EDGE_5V1 = 'roborock.vacuum.a187',
 	QREVO_EDGE_5AE = 'roborock.vacuum.xxxx',
 	QREVO_PLUS = 'roborock.vacuum.a123',
+	P30_PRO = 'roborock.vacuum.a306',
 	Q10_S5_PLUS = 'roborock.vacuum.ss07',
 }

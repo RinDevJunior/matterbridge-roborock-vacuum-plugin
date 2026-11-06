@@ -32,6 +32,7 @@ ${row('pause', '--duid <duid>', 'Pause cleaning')}
 ${row('resume', '--duid <duid>', 'Resume cleaning')}
 ${row('ping', '--duid <duid>', 'Beep robot to locate it (find_me)')}
 ${row('clean-mode', '--duid <duid>', 'Get current clean mode settings')}
+${row('consumable', '--duid <duid>', 'Show consumables (brushes, filter, sensors) and their usage')}
 ${row('room-info', '--duid <duid>', 'Get room mapping (active map)')}
 ${row('map-info', '--duid <duid>', 'Get all maps with rooms')}
 ${row('legacy-map-info', '--duid <duid>', 'Parse V1 map binary: robot position + current room')}
@@ -56,6 +57,7 @@ ${b}Examples:${r}
   npm run cli -- --command ${g}legacy-map-info-v2${r}  --duid ${c}<duid>${r}
   npm run cli -- --command ${g}b01-pose-info${r}  --duid ${c}<duid>${r}
   npm run cli -- --command ${g}b01-map-info${r}  --duid ${c}<duid>${r}
+  npm run cli -- --command ${g}consumable${r}  --duid ${c}<duid>${r}
   npm run cli -- --command ${g}custom     ${r}--duid ${c}<duid>${r} --method get_prop --params '["get_status"]'
   npm run cli -- --command ${g}custom     ${r}--duid ${c}<duid>${r} --method set_clean_motor_mode --params '[{"fan_power":102}]' --send true
 `;

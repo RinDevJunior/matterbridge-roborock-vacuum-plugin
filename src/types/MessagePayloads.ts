@@ -136,6 +136,19 @@ export interface ActiveMapChangedPayload {
 	};
 }
 
+/**
+ * Consumable (filter) update message payload.
+ * V1 sets filterWorkTimeSec (elapsed seconds); B01/Q10 sets filterConditionPercent (remaining percent).
+ */
+export interface ConsumableUpdatePayload {
+	type: NotifyMessageTypes.ConsumableUpdate;
+	data: {
+		duid: string;
+		filterWorkTimeSec?: number;
+		filterConditionPercent?: number;
+	};
+}
+
 export type MessagePayload =
 	| HomeDataPayload
 	| BatteryUpdatePayload
@@ -144,4 +157,5 @@ export type MessagePayload =
 	| DeviceStatusSimplePayload
 	| CleanModeUpdatePayload
 	| ServiceAreaUpdatePayload
-	| ActiveMapChangedPayload;
+	| ActiveMapChangedPayload
+	| ConsumableUpdatePayload;

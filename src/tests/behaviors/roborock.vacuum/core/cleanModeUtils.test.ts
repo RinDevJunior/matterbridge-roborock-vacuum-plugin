@@ -130,5 +130,73 @@ describe('cleanModeUtils', () => {
 			expect(result?.waterFlow).toBe(MopWaterFlow.Medium);
 			expect(result?.mopRoute).toBe(MopRoute.Standard);
 		});
+
+		describe('name lookup for new water flow and route members', () => {
+			it.each([
+				['Min', MopWaterFlow.Min],
+				['Max', MopWaterFlow.Max],
+				['Extreme', MopWaterFlow.Extreme],
+				['SmartWater', MopWaterFlow.SmartWater],
+			])('should resolve waterFlowMode %s to MopWaterFlow value when mopping', (name, expected) => {
+				const settings: CleanModeSettings = {
+					...createDefaultCleanModeSettings(),
+					mopping: { waterFlowMode: name, mopRouteMode: 'Standard', distanceOff: 25 },
+				};
+				const result = getSettingFromCleanMode(CleanModeDisplayLabel.MopDefault, settings);
+				expect(result?.waterFlow).toBe(expected);
+				expect(result?.distance_off).toBe(0);
+			});
+
+			it.each([
+				['Min', MopWaterFlow.Min],
+				['Max', MopWaterFlow.Max],
+				['Extreme', MopWaterFlow.Extreme],
+				['SmartWater', MopWaterFlow.SmartWater],
+			])('should resolve vacmop waterFlowMode %s to MopWaterFlow value', (name, expected) => {
+				const settings: CleanModeSettings = {
+					...createDefaultCleanModeSettings(),
+					vacmop: { fanMode: 'Balanced', waterFlowMode: name, mopRouteMode: 'Standard', distanceOff: 25 },
+				};
+				const result = getSettingFromCleanMode(CleanModeDisplayLabel.VacuumAndMopDefault, settings);
+				expect(result?.waterFlow).toBe(expected);
+			});
+
+			it('should resolve mopRouteMode DeepPlusCn to MopRoute.DeepPlusCn when mopping', () => {
+				const settings: CleanModeSettings = {
+					...createDefaultCleanModeSettings(),
+					mopping: { waterFlowMode: 'Medium', mopRouteMode: 'DeepPlusCn', distanceOff: 25 },
+				};
+				const result = getSettingFromCleanMode(CleanModeDisplayLabel.MopDefault, settings);
+				expect(result?.mopRoute).toBe(MopRoute.DeepPlusCn);
+			});
+
+			it('should resolve mopRouteMode DeepPlusCn to MopRoute.DeepPlusCn when vacuuming', () => {
+				const settings: CleanModeSettings = {
+					...createDefaultCleanModeSettings(),
+					vacuuming: { fanMode: 'Balanced', mopRouteMode: 'DeepPlusCn' },
+				};
+				const result = getSettingFromCleanMode(CleanModeDisplayLabel.VacuumDefault, settings);
+				expect(result?.mopRoute).toBe(MopRoute.DeepPlusCn);
+			});
+
+			it('should fall back to Medium when waterFlowMode is an unknown name', () => {
+				const settings: CleanModeSettings = {
+					...createDefaultCleanModeSettings(),
+					mopping: { waterFlowMode: 'Ultra', mopRouteMode: 'Standard', distanceOff: 25 },
+				};
+				const result = getSettingFromCleanMode(CleanModeDisplayLabel.MopDefault, settings);
+				expect(result?.waterFlow).toBe(MopWaterFlow.Medium);
+			});
+
+			it('should fall back to Standard when mopRouteMode is an unknown name', () => {
+				const settings: CleanModeSettings = {
+					...createDefaultCleanModeSettings(),
+					vacmop: { fanMode: 'Balanced', waterFlowMode: 'Min', mopRouteMode: 'DeepPlusCnX', distanceOff: 25 },
+				};
+				const result = getSettingFromCleanMode(CleanModeDisplayLabel.VacuumAndMopDefault, settings);
+				expect(result?.waterFlow).toBe(MopWaterFlow.Min);
+				expect(result?.mopRoute).toBe(MopRoute.Standard);
+			});
+		});
 	});
 });

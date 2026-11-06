@@ -140,10 +140,11 @@ function processValidData(homeInFo: HomeEntity): ProcessedData {
 	const areaInfos = new Map<number, AreaInfo>();
 	const roomInfos = new Map<string, SegmentInfo>();
 	const supportedAreas: ServiceArea.Area[] = homeInFo.rawRooms.map((room, index) => {
+		const referenced = homeInFo.rawRooms.find(
+			(r) => r !== room && r.iot_name && (String(r.id) === room.iot_name_id || r.id === room.id),
+		);
 		const locationName =
-			room.iot_name ??
-			homeInFo.rawRooms.find((r) => String(r.id) === room.iot_name_id || r.id === room.id)?.iot_name ??
-			`Unknown Room ${randomInt(RANDOM_ROOM_MIN, RANDOM_ROOM_MAX)}`;
+			room.iot_name ?? referenced?.iot_name ?? `Unknown Room ${randomInt(RANDOM_ROOM_MIN, RANDOM_ROOM_MAX)}`;
 
 		const mapId = room.iot_map_id;
 

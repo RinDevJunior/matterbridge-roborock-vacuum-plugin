@@ -13,7 +13,7 @@ if (!existsSync(LOG)) {
 const log = readFileSync(LOG, 'utf8');
 const failures = [];
 
-for (const line of log.split('\n')) {
+for (const line of log.split(/\r?\n/)) {
 	const fileMatch = line.match(/^(.+?\(\d+,\d+\)): (error TS\d+: .+)$/);
 	if (fileMatch) {
 		failures.push(`${fileMatch[1]}: ${fileMatch[2].slice(0, MSG_MAX)}`);
@@ -29,7 +29,7 @@ for (const line of log.split('\n')) {
 if (failures.length === 0) {
 	if (/Found \d+ error/i.test(log) || /\berror TS\d+:/i.test(log)) {
 		const detail = log
-			.split('\n')
+			.split(/\r?\n/)
 			.map((line) => line.trimEnd())
 			.filter((line) => /error TS\d+:/i.test(line) || /Found \d+ error/i.test(line))
 			.slice(0, MAX_LINES)

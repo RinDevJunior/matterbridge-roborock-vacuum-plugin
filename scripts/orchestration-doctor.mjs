@@ -78,7 +78,7 @@ const EXAMPLE_LINE = /\b(e\.g\.|example|instead|such as|would be|could be)\b/i;
 const seen = new Set();
 for (const f of walk('.claude')) {
 	const text = readFileSync(f, 'utf8');
-	const lines = text.split('\n');
+	const lines = text.split(/\r?\n/);
 	for (const line of lines) {
 		if (EXAMPLE_LINE.test(line)) continue;
 		let m;

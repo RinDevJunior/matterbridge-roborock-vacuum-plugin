@@ -1,7 +1,7 @@
 import { PowerSource } from 'matterbridge/matter/clusters';
 
 import { BATTERY_FULL, BATTERY_THRESHOLD_OK, BATTERY_THRESHOLD_WARNING } from '../constants/index.js';
-import { OperationStatusCode } from '../roborockCommunication/enums/index.js';
+import { ChargeStatus, OperationStatusCode } from '../roborockCommunication/enums/index.js';
 
 /**
  * Determine battery charge level based on percentage.
@@ -23,11 +23,23 @@ export function getBatteryStatus(batteryLevel?: number): PowerSource.BatChargeLe
 /**
  * Determine battery charge state based on device status.
  */
-export function getBatteryState(deviceState: number, batRemaining: number): PowerSource.BatChargeState {
+export function getBatteryState(
+	deviceState: number,
+	batRemaining: number,
+	options?: { chargeStatus?: number; valleyElectricitySupported?: boolean },
+): PowerSource.BatChargeState {
 	if (deviceState === OperationStatusCode.Charging || deviceState === OperationStatusCode.Idle) {
-		return batRemaining < BATTERY_FULL
-			? PowerSource.BatChargeState.IsCharging
-			: PowerSource.BatChargeState.IsAtFullCharge;
+		if (batRemaining >= BATTERY_FULL) return PowerSource.BatChargeState.IsAtFullCharge;
+
+		if (
+			deviceState === OperationStatusCode.Charging &&
+			options?.valleyElectricitySupported === true &&
+			options.chargeStatus === ChargeStatus.ChargeWaiting
+		) {
+			return PowerSource.BatChargeState.IsNotCharging;
+		}
+
+		return PowerSource.BatChargeState.IsCharging;
 	}
 
 	if (deviceState === OperationStatusCode.ChargingError) {

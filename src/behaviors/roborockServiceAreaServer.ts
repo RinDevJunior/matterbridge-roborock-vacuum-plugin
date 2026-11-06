@@ -1,6 +1,7 @@
 import { MatterbridgeServiceAreaServer } from 'matterbridge';
 import { RvcOperationalState, ServiceArea } from 'matterbridge/matter/clusters';
 
+import { isActivelyCleaningOperationalState } from '../runtimes/handlers/serviceAreaHandler.js';
 import type { RoborockVacuumCleaner } from '../types/roborockVacuumCleaner.js';
 
 const SKIP_ALLOWED_OPERATIONAL_STATES = new Set<RvcOperationalState.OperationalState>([
@@ -8,20 +9,40 @@ const SKIP_ALLOWED_OPERATIONAL_STATES = new Set<RvcOperationalState.OperationalS
 	RvcOperationalState.OperationalState.Paused,
 ]);
 
+function hasSameAreaSet(current: readonly number[], requested: readonly number[]): boolean {
+	const currentSet = new Set(current);
+	const requestedSet = new Set(requested);
+	return currentSet.size === requestedSet.size && [...requestedSet].every((areaId) => currentSet.has(areaId));
+}
+
 export class RoborockServiceAreaServer extends MatterbridgeServiceAreaServer {
 	override async selectAreas(request: ServiceArea.SelectAreasRequest): Promise<ServiceArea.SelectAreasResponse> {
 		const device = this.endpoint as unknown as RoborockVacuumCleaner;
 		const requestedAreas = request.newAreas ?? [];
+		const effectiveAreas = requestedAreas.length === 0 ? device.resolveAllRoomsForActiveMap() : requestedAreas;
+
+		const operationalState = device.getAttribute(RvcOperationalState.id, 'operationalState', device.log) as
+			RvcOperationalState.OperationalState | undefined;
+
+		// Apple Home may re-send the unchanged list mid-run; resetting progress here would wipe the live run.
+		if (
+			isActivelyCleaningOperationalState(operationalState) &&
+			hasSameAreaSet(this.state.selectedAreas, effectiveAreas)
+		) {
+			device.log.info(
+				`Ignoring SelectAreas: areas unchanged while the robot is running (${effectiveAreas.join(', ')})`,
+			);
+			return { status: ServiceArea.SelectAreasStatus.Success, statusText: '' };
+		}
 
 		const duid = device.device.duid;
 		device.roborockService.setProgress(duid, []);
-		await device.updateAttribute(ServiceArea.id, 'progress', [], device.log);
+		this.state.progress = [];
 
 		if (requestedAreas.length === 0) {
-			const allRoomsForActiveMap = device.resolveAllRoomsForActiveMap();
-			if (allRoomsForActiveMap.length > 0) {
+			if (effectiveAreas.length > 0) {
 				device.log.info(
-					`Populating selected areas with all rooms of active map for global cleaning: ${allRoomsForActiveMap.join(', ')}`,
+					`Populating selected areas with all rooms of active map for global cleaning: ${effectiveAreas.join(', ')}`,
 				);
 			} else {
 				device.log.info('Clearing selected areas (global cleaning on next start)');
@@ -29,7 +50,7 @@ export class RoborockServiceAreaServer extends MatterbridgeServiceAreaServer {
 			// No trySwitchMap here: these rooms were resolved FROM the active map, so there is
 			// never a map to switch to (see roborockVacuumCleaner.ts trySwitchMap doc / memory.md
 			// V10/V1 activeMapId=-1 pitfall).
-			return super.selectAreas({ newAreas: allRoomsForActiveMap });
+			return super.selectAreas({ newAreas: effectiveAreas });
 		}
 
 		await device.trySwitchMap(requestedAreas);
@@ -68,18 +89,27 @@ export class RoborockServiceAreaServer extends MatterbridgeServiceAreaServer {
 			return { status: ServiceArea.SkipAreaStatus.InvalidInMode, statusText: '' };
 		}
 
-		if (!device.skipAreaHandler) {
-			return { status: ServiceArea.SkipAreaStatus.InvalidInMode, statusText: '' };
+		if (currentArea !== null && skippedArea !== currentArea) {
+			return {
+				status: ServiceArea.SkipAreaStatus.InvalidInMode,
+				statusText: `AreaID ${skippedArea} is not the area currently being cleaned`,
+			};
 		}
 
+		// All validation must precede super.skipArea: the native implementation forwards to the
+		// skipArea handler BEFORE validating, so the robot would be commanded for invalid requests.
+		let response: ServiceArea.SkipAreaResponse;
 		try {
-			await device.skipAreaHandler(skippedArea);
+			response = await super.skipArea(request);
 		} catch {
 			return { status: ServiceArea.SkipAreaStatus.InvalidInMode, statusText: '' };
 		}
 
-		await device.finalizeSkipArea(skippedArea);
+		if (response.status !== ServiceArea.SkipAreaStatus.Success) return response;
 
-		return { status: ServiceArea.SkipAreaStatus.Success, statusText: '' };
+		const { updatedProgress, nextAreaId } = await device.finalizeSkipArea(skippedArea);
+		this.state.progress = updatedProgress;
+		this.state.currentArea = nextAreaId;
+		return response;
 	}
 }

@@ -15,6 +15,9 @@ export function decompressLz4Block(data: Buffer): Buffer {
 					throw new Error('LZ4 block decompress failed: unexpected end of input');
 				}
 			}
+			if (index >= data.length) {
+				throw new Error('LZ4 block decompress failed: unexpected end of input');
+			}
 			literalLength += data[index];
 			index += 1;
 		}
@@ -45,6 +48,9 @@ export function decompressLz4Block(data: Buffer): Buffer {
 				if (index >= data.length) {
 					throw new Error('LZ4 block decompress failed: unexpected end of input');
 				}
+			}
+			if (index >= data.length) {
+				throw new Error('LZ4 block decompress failed: unexpected end of input');
 			}
 			matchLength += data[index];
 			index += 1;

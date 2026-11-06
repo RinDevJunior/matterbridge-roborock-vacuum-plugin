@@ -17,8 +17,10 @@ import { DeviceRegistry } from './platform/deviceRegistry.js';
 import { PlatformConfigManager } from './platform/platformConfigManager.js';
 import { PlatformState } from './platform/platformState.js';
 import { PlatformRunner } from './platformRunner.js';
+import { CleaningRunStateStore } from './services/cleaningRunStateStore.js';
 import { RoborockService } from './services/roborockService.js';
 import { PLUGIN_NAME } from './settings.js';
+import { CLEANING_RUN_KEY_PREFIX } from './share/cleaningRunSnapshot.js';
 import { checkDependencyVersions } from './share/dependency-check.js';
 import { FilterLogger } from './share/filterLogger.js';
 import { getWssSendSnackbarMessage, WssSendSnackbarMessage } from './types/WssSendSnackbarMessage.js';
@@ -38,6 +40,7 @@ export default function initializePlugin(
 export class RoborockMatterbridgePlatform extends MatterbridgeDynamicPlatform {
 	public platformRunner: PlatformRunner;
 	public persist: NodePersist.LocalStorage;
+	public cleaningRunStateStore: CleaningRunStateStore | undefined;
 
 	// Platform layer
 	public readonly registry: DeviceRegistry;
@@ -122,6 +125,12 @@ export class RoborockMatterbridgePlatform extends MatterbridgeDynamicPlatform {
 			await this.persist.clear();
 		}
 
+		if (this.configManager.isPersistCleaningStateEnabled) {
+			this.cleaningRunStateStore = new CleaningRunStateStore(this.persist, this.log);
+		} else {
+			await this.removeSavedCleaningRuns();
+		}
+
 		if (!this.configManager.validateConfig()) {
 			this.log.error('"username" (email address) is required in the config');
 			this.snackbarMessage('"username" (email address) is required in the config', 5000, 'error');
@@ -145,6 +154,17 @@ export class RoborockMatterbridgePlatform extends MatterbridgeDynamicPlatform {
 
 		this.log.notice('onStart finished');
 		this.state.setStartupCompleted(true);
+	}
+
+	private async removeSavedCleaningRuns(): Promise<void> {
+		try {
+			const keys = await this.persist.keys();
+			for (const key of keys.filter((k) => k.startsWith(CLEANING_RUN_KEY_PREFIX))) {
+				await this.persist.removeItem(key);
+			}
+		} catch (error) {
+			this.log.warn(`Failed to remove saved cleaning state: ${error instanceof Error ? error.message : String(error)}`);
+		}
 	}
 
 	public override async onConfigure(): Promise<void> {

@@ -206,6 +206,7 @@ describe('module.ts - complete coverage', () => {
 				updateRobotWithPayload: vi.fn().mockResolvedValue(undefined),
 				requestHomeData: vi.fn().mockResolvedValue(undefined),
 				activateHandlerFunctions: vi.fn(),
+				reachability: asPartial<PlatformRunner['reachability']>({ markAlive: vi.fn() }),
 			});
 			platform.platformRunner = mockPlatformRunner;
 
